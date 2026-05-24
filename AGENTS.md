@@ -8,152 +8,83 @@ components through annotated markup patterns.
 Packages:
 
 - `packages/core/` (`@markput/core`): dependency-free TypeScript runtime.
-  Features live under `src/features/<feature-name>/`, shared utilities under
-  `src/shared/`.
 - `packages/react/markput/` (`@markput/react`): React adapter.
 - `packages/vue/markput/` (`@markput/vue`): Vue adapter.
 - `packages/storybook/` (`@markput/storybook`): shared stories and browser
-  tests. Test helpers in `src/shared/lib/`.
-- `packages/react/app/`, `packages/vue/app/`: E2E demo apps.
-- `packages/website/` (`@markput/website`): Astro/Starlight docs in
-  `src/content/docs/`.
+  tests for React and Vue.
+- `packages/react/app/`, `packages/vue/app/`: demo apps.
+- `packages/website/` (`@markput/website`): Astro/Starlight docs.
 
-Default branch: `next`. Shared dependency versions live in the pnpm catalog
-in `pnpm-workspace.yaml`. Use `pnpm` for everything.
+Default branch: `next`. Use `pnpm` for all installs and scripts. Shared
+dependency versions live in the pnpm catalog in `pnpm-workspace.yaml`.
 
 ## Commands
 
-- Setup: `pnpm install`, `pnpm exec playwright install chromium`
-- Focused test: `pnpm -w exec vitest run path/to/file.spec.ts`
+- Setup: `pnpm install`, then `pnpm exec playwright install chromium` when
+  browser tests are needed.
+- Focused test: `pnpm -w exec vitest run path/to/file.spec.ts`.
 - Full checks: `pnpm test`, `pnpm run build`, `pnpm run typecheck`,
-  `pnpm run lint:check`, `pnpm run format:check`
-- Fixers: `pnpm run lint`, `pnpm run format`
+  `pnpm run lint:check`, `pnpm run format:check`.
+- Fixers: `pnpm run lint`, `pnpm run format`.
 - Dev servers: `pnpm run dev`, `pnpm run dev:sb:react`,
-  `pnpm run dev:sb:vue`, `pnpm run dev:react:app`, `pnpm run dev:vue:app`
+  `pnpm run dev:sb:vue`, `pnpm run dev:react:app`, `pnpm run dev:vue:app`,
+  `pnpm run dev:website`.
 
-## Architecture Guardrails
+## Architecture Work
 
-Read `packages/website/src/content/docs/development/architecture.md` before
-changing core behavior, feature boundaries, token rendering, DOM mapping, or
-caret recovery.
+This file is an operating guide, not the architecture source of truth. Before
+changing core behavior, feature boundaries, token rendering, DOM mapping, caret
+recovery, or adapter wiring, read the relevant code and the current docs under
+`packages/website/src/content/docs/development/`.
 
-The Store orchestrates Signals, feature modules, DOM registration, value edits,
-caret recovery, the parser, BlockRegistry, and the event bus. Features
-communicate through `store.<feature>.*`, `store.props`, `store.dom`, and
-`store.caret`, never through direct feature imports.
+The core architecture is actively evolving. Do not preserve stale patterns just
+because they appear in older docs or comments. If code, tests, and docs
+disagree, verify the intended behavior and update the stale source as part of
+the change or call out the mismatch.
 
-Ownership rules:
+Keep ownership boundaries explicit. Runtime state should have one clear owner,
+DOM-to-token questions should go through the DOM/mapping layer that owns them,
+and framework adapters should not reach into core internals unless that is the
+public contract being changed.
 
-- `store.props`: framework-provided configuration. Set via `store.props.set()`.
-- `store.dom`: DOM refs, structural registration, and DOM-to-token mapping.
-- `store.value`: accepted serialized value and replacement APIs.
-- `store.caret`: caret state (`range: Signal<RawRange | undefined>`).
-- `store.slots`: slot components and slot props.
-- Parser: token addresses and the token index derived from options, drag mode,
-  and Mark components.
+## Engineering Defaults
 
-Hard rules:
+- Reuse before adding. Search for existing utilities, hooks, helpers, and test
+  helpers before introducing new ones.
+- Upgrade a close existing abstraction instead of forking a near-duplicate.
+- Push back on over-engineered specs, hidden scope creep, mirrored state, DOM
+  guesses, duplicated parsing/serialization, ad-hoc caches, and untyped
+  boundaries.
+- Prefer clear, direct code over clever code. Performance claims need a
+  benchmark or a documented hot path.
+- Comments should explain constraints or non-obvious trade-offs, not narrate
+  what the code already says.
 
-- Do not mirror runtime state across features. If two features need the same
-  fact, expose it from the feature or store object that owns that fact.
-- DOM/token mapping must go through `store.dom`. Do not infer token location
-  outside `DomController` from DOM child order, public data attributes, user refs,
-  or framework-rendered wrapper shape.
-- User value mutations must go through `store.value.replace()` or
-  `store.value.current()` with raw positions. Callers that want a specific
-  post-edit caret write `store.caret.range({start, end})` in the same handler.
-  Do not write `store.value.current()` directly for user edits.
-- Token objects are parse results, not durable identities. Do not keep a token
-  object for later mutation or comparison across edits; use token addresses,
-  shape snapshots, or clone the token state before comparing.
-- New reactive state must live in the owner of the underlying concept. Do not
-  add ad-hoc Signals that mirror state already owned by another feature.
-- Components depend on the smallest established abstraction that fits: prefer
-  `store.dom`, `store.value`, `store.caret`, `store.parsing`, and slot APIs
-  over direct cross-feature imports or DOM guesses.
-- Temporary compatibility bridges must be named, documented as temporary, and
-  include the condition for removal once the owning feature exists.
+## Testing
 
-## Reuse Before You Add
-
-Before writing a new util, helper, hook, type, or abstraction, search for one
-that already does almost the same thing.
-
-- If an existing util is close but not quite right, **upgrade it** instead of
-  forking a near-duplicate. Adjust its signature, add an option, generalize
-  the implementation.
-- If two places solve the same problem differently, surface the inconsistency
-  and propose a single shared owner.
-- New abstractions need a justification. "Slightly different shape" is not
-  one. "Three callers need this and the existing util cannot represent X" is.
-
-## Spec, Plan, and Architecture Review
-
-When you receive a spec, plan, or design — even a small one — review it before
-implementing. Push back early, not after the code is written.
-
-Flag and propose alternatives for:
-
-- **Over-engineering**: configuration knobs nobody asked for, premature
-  generic types, layers of indirection for a single call site, "future-proof"
-  extension points without a concrete second use case.
-- **Scope creep**: changes that quietly grow beyond the stated goal.
-- **Bad architecture**: state mirrored between features, DOM inferred without
-  `store.dom`, parser logic leaking into adapters, framework code reaching
-  into core internals, abstractions that hide a single concrete behavior.
-- **Code smells**: deep parameter chains, boolean flags driving branches,
-  duplicated parsing/serialization, ad-hoc caches, untyped `any` boundaries.
-
-When something looks dramatically wrong or wasteful, say so plainly and
-propose a concrete better approach. Do not silently implement a bad request.
-
-## Code Quality
-
-- Prefer **clear, readable code** over clever or micro-optimized code. A
-  slower-but-obvious implementation is acceptable unless a benchmark in
-  `packages/core/` or a documented hot path says otherwise. Performance
-  trade-offs need a measurement, not a hunch.
-- Names describe intent, not type or implementation.
-- Functions do one thing. Split when a function needs a comment to explain
-  what its halves do.
-- Avoid comments that narrate the code. Comments explain _why_, constraints,
-  or non-obvious trade-offs.
-
-## Testing Policy
-
-- Test files: `*.spec.ts`, `*.spec.tsx`, or framework-specific storybook
+- Test files are `*.spec.ts`, `*.spec.tsx`, or framework-specific Storybook
   names. Do not add `*.test.ts`.
 - Core unit tests live next to the source and use Vitest.
-- Test names use imperative present without "should":
+- Test names use imperative present without "should", for example
   `it('returns undefined when token missing')`.
 - Parser tests use `toMatchInlineSnapshot()` with `tokensToDebugTree()`.
 - Use `@faker-js/faker` for generated test data.
 - Storybook files live in `packages/storybook/src/pages/` as
   `*.react.stories.tsx`, `*.react.spec.tsx`, `*.vue.stories.ts`, or
   `*.vue.spec.ts`.
-- Browser tests compose Storybook stories and use real Vitest Browser Mode
-  with Playwright. Reuse focus helpers from
-  `packages/storybook/src/shared/lib/focus.ts`; Vue tests can use
-  `withProps()` from `packages/storybook/src/shared/lib/testUtils.vue.ts`.
-- Keep core public functions covered by co-located unit tests.
+- Browser tests use real Vitest Browser Mode with Playwright. Reuse shared
+  helpers from `packages/storybook/src/shared/lib/`.
 
-### HTML / DOM Snapshot Failures
+### Snapshot Failures
 
-When an HTML or DOM snapshot test fails, **do not regenerate it
-automatically**. The snapshot is the contract.
-
-1. Diff the old vs new structure and explain _why_ it changed.
-2. Verify the new structure is intentional: same semantic shape, expected
-   nesting, no accidental extra wrappers, attribute order or ARIA roles
-   preserved where they matter.
-3. If the change is correct, update the snapshot and note in the PR what
-   structural change caused it.
-4. If you cannot explain the diff, treat it as a regression.
+Do not regenerate HTML or DOM snapshots automatically. First diff the old and
+new structure, explain why it changed, and verify the new structure is
+intentional. If you cannot explain the diff, treat it as a regression.
 
 ## Checks
 
-For code, behavior, public API, package config, or build config changes, run
-before finalizing:
+For code, behavior, public API, package config, or build config changes, run the
+full checks when practical:
 
 1. `pnpm test`
 2. `pnpm run build`
@@ -161,24 +92,20 @@ before finalizing:
 4. `pnpm run lint:check`
 5. `pnpm run format:check`
 
-Focused checks are fine during iteration. Report any skipped check with the
+Focused checks are fine during iteration. Report skipped checks with the
 reason.
 
-For docs-only changes, run `pnpm exec oxfmt --check <changed-files>` (or note
-that the file is excluded by `oxfmt.config.ts`). For changes under
-`packages/website/src/content/docs/**` that touch MDX, frontmatter,
-navigation, or config, also run `pnpm -F @markput/website run build`.
+For docs-only changes, run `pnpm exec oxfmt --check <changed-files>` or note
+that the file is excluded by `oxfmt.config.ts`. For website docs changes that
+touch MDX, frontmatter, navigation, or config, also run
+`pnpm -F @markput/website run build`.
 
-Update `packages/website/src/content/docs/` whenever public API, behavior, or
-architecture changes. If runtime behavior and docs disagree, fix the docs or
-flag the inconsistency.
+Update docs under `packages/website/src/content/docs/` whenever public API,
+behavior, or settled architecture changes.
 
-## Communication With This User
+## Communication
 
-- The user is not a native English speaker. When useful, you may add a short
-  "**Language tips**" section for unclear or ungrammatical phrasing from their
-  last message: give the corrected version and briefly say why. Keep it 2-5
-  lines, friendly, not pedantic. Do not force this section on every reply.
-- Ask before installing dependencies or editing the `pnpm-workspace.yaml`
-  catalog.
+- Ask when requirements are unclear.
+- The user is not a native English speaker. When useful, add a short
+  "**Language tips**" section with a corrected phrase and brief explanation.
 - PR titles use Conventional Commits.
