@@ -345,44 +345,32 @@ describe('SelectionController', () => {
 			expect(innerToken?.position.start).toBe(9)
 			expect(innerToken?.position.end).toBe(18)
 			expect(afterToken?.position.start).toBe(18)
-			expect(store.selection.rawPositionFromBoundary(host, 1, 'before')).toEqual({
-				ok: true,
-				value: beforeToken?.position.end,
-			})
-			expect(store.selection.rawPositionFromBoundary(host, 1, 'after')).toEqual({
-				ok: true,
-				value: innerToken?.position.start,
-			})
-			expect(store.selection.rawPositionFromBoundary(host, 2, 'before')).toEqual({
-				ok: true,
-				value: innerToken?.position.end,
-			})
-			expect(store.selection.rawPositionFromBoundary(host, 2, 'after')).toEqual({
-				ok: true,
-				value: afterToken?.position.start,
-			})
+			expect(store.selection.rawPositionFromBoundary(host, 1, 'before')).toBe(beforeToken?.position.end)
+			expect(store.selection.rawPositionFromBoundary(host, 1, 'after')).toBe(innerToken?.position.start)
+			expect(store.selection.rawPositionFromBoundary(host, 2, 'before')).toBe(innerToken?.position.end)
+			expect(store.selection.rawPositionFromBoundary(host, 2, 'after')).toBe(afterToken?.position.start)
 			container.remove()
 		})
 
 		it('maps text-surface boundaries to raw UTF-16 positions', () => {
 			const {store, container, textNode} = mountStructuralInline('hello')
 
-			expect(store.selection.rawPositionFromBoundary(textNode, 2)).toEqual({ok: true, value: 2})
+			expect(store.selection.rawPositionFromBoundary(textNode, 2)).toBe(2)
 			container.remove()
 		})
 
 		it('rejects boundaries that split surrogate pairs', () => {
 			const {store, container, textNode} = mountStructuralInline('a😀b')
 
-			expect(store.selection.rawPositionFromBoundary(textNode, 2)).toEqual({ok: false, reason: 'invalidBoundary'})
+			expect(store.selection.rawPositionFromBoundary(textNode, 2)).toBeUndefined()
 			container.remove()
 		})
 
 		it('maps token shell boundaries by affinity', () => {
 			const {store, container, textSurface} = mountStructuralInline('hello')
 
-			expect(store.selection.rawPositionFromBoundary(textSurface, 0, 'before')).toEqual({ok: true, value: 0})
-			expect(store.selection.rawPositionFromBoundary(textSurface, 1, 'after')).toEqual({ok: true, value: 5})
+			expect(store.selection.rawPositionFromBoundary(textSurface, 0, 'before')).toBe(0)
+			expect(store.selection.rawPositionFromBoundary(textSurface, 1, 'after')).toBe(5)
 			container.remove()
 		})
 
@@ -396,14 +384,11 @@ describe('SelectionController', () => {
 			if (!(descendantText instanceof Text)) throw new Error('Mark descendant did not render a text node')
 			store.host.rendered()
 
-			expect(store.selection.rawPositionFromBoundary(descendantText, 0, 'after')).toEqual({
-				ok: false,
-				reason: 'invalidBoundary',
-			})
+			expect(store.selection.rawPositionFromBoundary(descendantText, 0, 'after')).toBeUndefined()
 			container.remove()
 		})
 
-		it('returns mixedBoundary for selections crossing controls', () => {
+		it('returns undefined for selections crossing controls', () => {
 			const {store, container, textNode, controlText} = mountStructuralBlockWithControl('hello')
 			const selection = window.getSelection()!
 			const range = document.createRange()
@@ -412,7 +397,7 @@ describe('SelectionController', () => {
 			selection.removeAllRanges()
 			selection.addRange(range)
 
-			expect(store.selection.readRaw()).toEqual({ok: false, reason: 'mixedBoundary'})
+			expect(store.selection.readRaw()).toBeUndefined()
 			container.remove()
 		})
 	})

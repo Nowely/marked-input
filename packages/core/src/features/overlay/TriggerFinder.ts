@@ -64,8 +64,8 @@ export class TriggerFinder {
 	#rawRangeForMatch(source: string, index: number) {
 		if (!this.selection) return {start: index, end: index + source.length}
 		const boundary = this.selection.rawPositionFromBoundary(this.node, index + source.length, 'after')
-		if (!boundary.ok) return undefined
-		return {start: boundary.value - source.length, end: boundary.value}
+		if (boundary === undefined) return undefined
+		return {start: boundary - source.length, end: boundary}
 	}
 
 	matchInTextVia(trigger: string = '@') {

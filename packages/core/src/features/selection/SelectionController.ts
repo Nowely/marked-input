@@ -1,6 +1,6 @@
 // packages/core/src/features/selection/SelectionController.ts
 import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
-import type {BoundaryPositionResult, Range, RawSelectionResult, TokenAddress} from '../../shared/editorContracts'
+import type {Range, RawSelection, TokenAddress} from '../../shared/editorContracts'
 import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Computed, Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
@@ -70,15 +70,11 @@ export class SelectionController {
 		this.host.container()?.focus()
 	}
 
-	readRaw(): RawSelectionResult {
+	readRaw(): RawSelection | undefined {
 		return this.#boundary.readSelection()
 	}
 
-	rawPositionFromBoundary(
-		node: Node,
-		offset: number,
-		affinity: 'before' | 'after' = 'after'
-	): BoundaryPositionResult {
+	rawPositionFromBoundary(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): number | undefined {
 		return this.#boundary.fromBoundary(node, offset, affinity)
 	}
 
@@ -255,18 +251,16 @@ export class SelectionController {
 
 	#trackSelection(container: HTMLElement): void {
 		const sync = (): void => {
-			const rawSel = this.#boundary.readSelection()
-			this.range(rawSel.ok ? rawSel.value.range : undefined)
+			this.range(this.#boundary.readSelection()?.range)
 		}
 
 		const syncIfInEditor = (node: Node): void => {
-			const result = this.bridge.locateNode(node)
-			if (!result.ok) {
-				if (result.reason === 'control') return
-				this.range(undefined)
+			if (this.bridge.locateNode(node)) {
+				sync()
 				return
 			}
-			sync()
+			if (this.bridge.isControlAncestor(node)) return
+			this.range(undefined)
 		}
 
 		listen(container, 'focusin', e => {

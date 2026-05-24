@@ -21,15 +21,15 @@ export class ClipboardController {
 			listen(container, 'cut', e => {
 				if (!this.#handleCopy(e)) return
 				const raw = selection.readRaw()
-				if (!raw.ok || raw.value.range.start === raw.value.range.end) return
-				edit.replace(raw.value.range, '')
+				if (!raw || raw.range.start === raw.range.end) return
+				edit.replace(raw.range, '')
 			})
 		})
 	}
 
 	#handleCopy(e: ClipboardEvent): boolean {
 		const raw = this.selection.readRaw()
-		if (!raw.ok || raw.value.range.start === raw.value.range.end) return false
+		if (!raw || raw.range.start === raw.range.end) return false
 
 		const content = this.selection.readSelectedContent()
 		if (!content) return false
@@ -37,7 +37,7 @@ export class ClipboardController {
 		e.preventDefault()
 		e.clipboardData?.setData('text/plain', content.text)
 		e.clipboardData?.setData('text/html', content.html)
-		e.clipboardData?.setData(MARKPUT_MIME, serializeRange(this.tokens.current(), raw.value.range))
+		e.clipboardData?.setData(MARKPUT_MIME, serializeRange(this.tokens.current(), raw.range))
 		return true
 	}
 }

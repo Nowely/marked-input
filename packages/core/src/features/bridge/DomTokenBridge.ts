@@ -1,5 +1,5 @@
 // packages/core/src/features/bridge/DomTokenBridge.ts
-import type {DomRef, NodeLocationResult, TokenAddress, TokenPath} from '../../shared/editorContracts'
+import type {DomRef, TokenAddress, TokenPath} from '../../shared/editorContracts'
 import {batch, event, signal, watch} from '../../shared/signals/index.js'
 import type {Event, Signal} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
@@ -23,6 +23,13 @@ export type PathElements = {
 	rowElement?: HTMLElement
 	tokenElement: HTMLElement
 	textElement?: HTMLElement
+}
+
+export type LocatedNode = {
+	readonly address: TokenAddress
+	readonly tokenElement: HTMLElement
+	readonly textElement?: HTMLElement
+	readonly rowElement?: HTMLElement
 }
 
 type ControlRegistration = {
@@ -110,35 +117,39 @@ export class DomTokenBridge {
 		this.#reconcileStructuralTextSurfaces()
 	}
 
-	locateNode(node: Node): NodeLocationResult {
-		if (!this.#isIndexed()) return {ok: false, reason: 'notIndexed'}
+	locateNode(node: Node): LocatedNode | undefined {
+		const role = this.#nearestRegisteredAncestor(node)
+		if (!role || role.role === 'control') return undefined
+
+		const elements = this.#pathElements.get(pathKey(role.path))
+		if (!elements?.tokenElement) return undefined
+		return {
+			address: role.address,
+			tokenElement: elements.tokenElement,
+			textElement: elements.textElement,
+			rowElement: elements.rowElement,
+		}
+	}
+
+	isControlAncestor(node: Node): boolean {
+		return this.#nearestRegisteredAncestor(node)?.role === 'control'
+	}
+
+	#nearestRegisteredAncestor(node: Node): RegisteredRole | undefined {
+		if (!this.#isIndexed()) return undefined
 		const container = this.host.container()
-		if (!container || !container.contains(node)) return {ok: false, reason: 'outsideEditor'}
+		if (!container || !container.contains(node)) return undefined
 
 		let current: Node | null = node
 		while (current) {
 			if (current instanceof HTMLElement) {
 				const role = this.#elementRoles.get(current)
-				if (role?.role === 'control') return {ok: false, reason: 'control'}
-				if (role) {
-					const elements = this.#pathElements.get(pathKey(role.path))
-					if (!elements?.tokenElement) return {ok: false, reason: 'notIndexed'}
-					return {
-						ok: true,
-						value: {
-							address: role.address,
-							tokenElement: elements.tokenElement,
-							textElement: elements.textElement,
-							rowElement: elements.rowElement,
-						},
-					}
-				}
+				if (role) return role
 			}
-			if (current === container) break
+			if (current === container) return undefined
 			current = current.parentNode
 		}
-
-		return {ok: false, reason: 'outsideEditor'}
+		return undefined
 	}
 
 	pathElements(): IterableIterator<PathElements> {

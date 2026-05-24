@@ -19,41 +19,6 @@ export type RawSelection = {
 	readonly direction?: 'forward' | 'backward'
 }
 
-export type NodeLocationResult =
-	| {
-			ok: true
-			value: {
-				readonly address: TokenAddress
-				readonly tokenElement: HTMLElement
-				readonly textElement?: HTMLElement
-				readonly rowElement?: HTMLElement
-			}
-	  }
-	| {
-			ok: false
-			reason: 'notIndexed' | 'outsideEditor' | 'control'
-	  }
-
-export type RawSelectionResult =
-	| {
-			ok: true
-			value: RawSelection
-	  }
-	| {
-			ok: false
-			reason: 'notIndexed' | 'outsideEditor' | 'control' | 'mixedBoundary' | 'invalidBoundary'
-	  }
-
-export type BoundaryPositionResult =
-	| {
-			ok: true
-			value: number
-	  }
-	| {
-			ok: false
-			reason: 'notIndexed' | 'outsideEditor' | 'control' | 'invalidBoundary' | 'composing'
-	  }
-
 export type OptionalMarkFieldPatch = {readonly kind: 'set'; readonly value: string} | {readonly kind: 'clear'}
 
 export type MarkPatch = {
