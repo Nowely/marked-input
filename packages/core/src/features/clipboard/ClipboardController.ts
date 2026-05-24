@@ -1,8 +1,9 @@
+// packages/core/src/features/clipboard/ClipboardController.ts
 import {listen} from '../../shared/signals/index.js'
-import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
 import type {TokenModel} from '../parsing/TokenModel'
 import {serializeRange} from '../parsing/utils/serializeRange'
+import type {SelectionController} from '../selection/SelectionController'
 import type {Host} from '../state/Host'
 import {MARKPUT_MIME} from './pasteMarkup'
 
@@ -10,7 +11,7 @@ export class ClipboardController {
 	constructor(
 		host: Host,
 		edit: EditController,
-		private readonly dom: DomModel,
+		private readonly selection: SelectionController,
 		private readonly tokens: TokenModel
 	) {
 		host.onMounted(container => {
@@ -19,7 +20,7 @@ export class ClipboardController {
 			})
 			listen(container, 'cut', e => {
 				if (!this.#handleCopy(e)) return
-				const raw = dom.readRawSelection()
+				const raw = selection.readRaw()
 				if (!raw.ok || raw.value.range.start === raw.value.range.end) return
 				edit.replace(raw.value.range, '')
 			})
@@ -27,10 +28,10 @@ export class ClipboardController {
 	}
 
 	#handleCopy(e: ClipboardEvent): boolean {
-		const raw = this.dom.readRawSelection()
+		const raw = this.selection.readRaw()
 		if (!raw.ok || raw.value.range.start === raw.value.range.end) return false
 
-		const content = this.dom.readSelectedContent()
+		const content = this.selection.readSelectedContent()
 		if (!content) return false
 
 		e.preventDefault()

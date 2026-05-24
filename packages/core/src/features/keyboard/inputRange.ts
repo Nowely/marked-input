@@ -1,7 +1,8 @@
+// packages/core/src/features/keyboard/inputRange.ts
 import type {BoundaryPositionResult, RawSelectionResult} from '../../shared/editorContracts'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom'>
+type KbCtx = Pick<Store, 'selection'>
 
 type InputTargetRange = {
 	readonly startContainer: Node
@@ -14,13 +15,13 @@ type RawSelectionFailureReason = Extract<RawSelectionResult, {ok: false}>['reaso
 
 export function rawRangeFromInputEvent(store: KbCtx, event: InputEvent): RawSelectionResult {
 	const ranges = event.getTargetRanges()
-	if (ranges.length === 0) return store.dom.readRawSelection()
+	if (ranges.length === 0) return store.selection.readRaw()
 	return rawRangeFromTargetRange(store, ranges[0])
 }
 
 function rawRangeFromTargetRange(store: KbCtx, range: InputTargetRange): RawSelectionResult {
-	const start = store.dom.rawPositionFromBoundary(range.startContainer, range.startOffset, 'after')
-	const end = store.dom.rawPositionFromBoundary(range.endContainer, range.endOffset, 'before')
+	const start = store.selection.rawPositionFromBoundary(range.startContainer, range.startOffset, 'after')
+	const end = store.selection.rawPositionFromBoundary(range.endContainer, range.endOffset, 'before')
 	if (!start.ok) return {ok: false, reason: rawSelectionReason(start)}
 	if (!end.ok) return {ok: false, reason: rawSelectionReason(end)}
 	return {

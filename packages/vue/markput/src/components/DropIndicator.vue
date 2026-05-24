@@ -19,7 +19,7 @@ const getDropControlRef = () => {
 	if (dropControlRef) return dropControlRef
 	const path = index.value.pathFor(props.token)
 	if (!path) return undefined
-	dropControlRef = store.dom.controlFor(path)
+	dropControlRef = store.bridge.controlFor(path)
 	return dropControlRef
 }
 

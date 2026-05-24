@@ -23,7 +23,7 @@ const getMenuControlRef = () => {
 	if (menuControlRef) return menuControlRef
 	const path = index.value.pathFor(props.token)
 	if (!path) return undefined
-	menuControlRef = store.dom.controlFor(path)
+	menuControlRef = store.bridge.controlFor(path)
 	return menuControlRef
 }
 

@@ -4,7 +4,7 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
+type KbCtx = Pick<Store, 'bridge' | 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
@@ -165,7 +165,7 @@ function handleEnter(store: KbCtx, container: HTMLElement, event: KeyboardEvent)
 		return
 	}
 
-	const raw = store.dom.readRawSelection()
+	const raw = store.selection.readRaw()
 	const absolutePos = raw.ok ? raw.value.range.start : token.position.end
 	store.edit.replace({start: absolutePos, end: absolutePos}, newRowContent)
 }

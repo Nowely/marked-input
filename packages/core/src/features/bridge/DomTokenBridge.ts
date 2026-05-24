@@ -1,6 +1,7 @@
-import type {NodeLocationResult, TokenAddress, TokenPath} from '../../shared/editorContracts'
-import {batch, signal, watch} from '../../shared/signals/index.js'
-import type {Signal} from '../../shared/signals/index.js'
+// packages/core/src/features/bridge/DomTokenBridge.ts
+import type {DomRef, NodeLocationResult, TokenAddress, TokenPath} from '../../shared/editorContracts'
+import {batch, event, signal, watch} from '../../shared/signals/index.js'
+import type {Event, Signal} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
 import type {TokenIndex} from '../parsing/tokenIndex'
@@ -24,27 +25,29 @@ export type PathElements = {
 	textElement?: HTMLElement
 }
 
-export type ControlRegistration = {
+type ControlRegistration = {
 	readonly ownerPath?: TokenPath
 	readonly element: HTMLElement
 }
 
-export type ChildSequenceRegistration = {
+type ChildSequenceRegistration = {
 	readonly ownerPath: TokenPath
 	readonly element: HTMLElement
 }
 
-export interface DomIndexerHost {
-	container(): HTMLElement | null
-	pendingControls(): IterableIterator<ControlRegistration>
-	pendingChildSequences(): IterableIterator<ChildSequenceRegistration>
-	emitIndexed(): void
-	isUserSelecting: Signal<boolean>
-}
+export class DomTokenBridge {
+	readonly indexed: Event<void> = event<void>()
+	readonly isIndexed: Signal<boolean>
 
-export class DomIndexer {
+	readonly #pendingControls = new Map<string, ControlRegistration>()
+	readonly #pendingChildSequences = new Map<string, ChildSequenceRegistration>()
+	#nextControlId = 0
+	#nextChildSequenceId = 0
+
+	#selecting = false
+	#composing = false
+
 	readonly #isIndexed = signal<boolean>({initial: false, readonly: true})
-	readonly isIndexed: Signal<boolean> = this.#isIndexed
 
 	#elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
 	#pathElements = new Map<string, PathElements>()
@@ -52,19 +55,55 @@ export class DomIndexer {
 	#queuedRender = false
 
 	constructor(
-		private readonly host: DomIndexerHost,
-		hostModel: Host,
+		private readonly host: Host,
 		private readonly props: PropsModel,
 		private readonly tokens: TokenModel
 	) {
-		hostModel.onMounted(() => {
-			// Container mounts before MarkedInput, so the first rendered() event
-			// is emitted before this watch subscribes. Run the initial commit
-			// here instead of relying on a follow-up rendered event.
-			watch(hostModel.rendered, () => this.#handleRendered(), {immediate: true})
+		this.isIndexed = this.#isIndexed
+		host.onMounted(() => {
+			watch(host.rendered, () => this.#handleRendered(), {immediate: true})
 			watch(props.readOnly, () => this.reconcile())
-			watch(host.isUserSelecting, () => this.reconcile())
 		})
+	}
+
+	controlFor(ownerPath?: TokenPath): DomRef {
+		const key = `control:${++this.#nextControlId}`
+		return element => {
+			if (element) {
+				this.#pendingControls.set(key, {ownerPath: ownerPath ? [...ownerPath] : undefined, element})
+			} else {
+				this.#pendingControls.delete(key)
+			}
+		}
+	}
+
+	childrenFor(ownerPath: TokenPath): DomRef {
+		const key = `children:${++this.#nextChildSequenceId}`
+		return element => {
+			if (element) {
+				this.#pendingChildSequences.set(key, {ownerPath: [...ownerPath], element})
+			} else {
+				this.#pendingChildSequences.delete(key)
+			}
+		}
+	}
+
+	setSelecting(active: boolean): void {
+		if (this.#selecting === active) return
+		this.#selecting = active
+		this.reconcile()
+	}
+
+	compositionStarted(): void {
+		this.#composing = true
+	}
+
+	compositionEnded(): void {
+		this.#composing = false
+	}
+
+	isComposing(): boolean {
+		return this.#composing
 	}
 
 	reconcile(): void {
@@ -119,7 +158,6 @@ export class DomIndexer {
 			this.#queuedRender = true
 			return
 		}
-
 		this.#rendering = true
 		try {
 			this.#commitRendered()
@@ -133,16 +171,14 @@ export class DomIndexer {
 
 	#commitRendered(): void {
 		const container = this.host.container()
-		if (!container) {
-			return
-		}
+		if (!container) return
 
 		const tokenIndex = this.tokens.index()
 		const pathElements = new Map<string, PathElements>()
 		const elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
 		const controlElements = new Set<HTMLElement>()
 
-		for (const {element} of this.host.pendingControls()) {
+		for (const {element} of this.#pendingControls.values()) {
 			controlElements.add(element)
 			elementRoles.set(element, {role: 'control'})
 		}
@@ -168,7 +204,7 @@ export class DomIndexer {
 		this.#reconcileStructuralTextSurfaces()
 
 		if (!this.#isIndexed()) batch(() => this.#isIndexed(true), {mutable: true})
-		this.host.emitIndexed()
+		this.indexed()
 	}
 
 	#elementChildren(element: HTMLElement): HTMLElement[] {
@@ -185,7 +221,7 @@ export class DomIndexer {
 
 	#childSequenceHostsFor(ownerPath: TokenPath): HTMLElement[] {
 		const hosts: HTMLElement[] = []
-		for (const registration of this.host.pendingChildSequences()) {
+		for (const registration of this.#pendingChildSequences.values()) {
 			if (pathEquals(registration.ownerPath, ownerPath)) hosts.push(registration.element)
 		}
 		return hosts
@@ -219,14 +255,10 @@ export class DomIndexer {
 			return
 		}
 
-		if (hosts.length !== 1) {
-			return
-		}
+		if (hosts.length !== 1) return
 
 		const host = hosts[0]
-		if (!ownerElement.contains(host)) {
-			return
-		}
+		if (!ownerElement.contains(host)) return
 
 		elementRoles.set(host, {role: 'childSequence', path, address})
 		this.#indexTokenSequence(
@@ -250,14 +282,11 @@ export class DomIndexer {
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
 	): void {
 		const rows = this.#elementChildren(container)
-
 		tokens.forEach((token, i) => {
 			const row = rows.at(i)
 			if (!row) return
 			const candidates = this.#elementChildren(row).filter(child => !this.#isControlRoot(child, controlElements))
-			if (candidates.length !== 1) {
-				return
-			}
+			if (candidates.length !== 1) return
 			this.#indexTokenElement(
 				token,
 				[i],
@@ -282,10 +311,7 @@ export class DomIndexer {
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
 	): void {
 		const elements = this.#elementChildren(parent).filter(child => !this.#isControlRoot(child, controlElements))
-		if (elements.length !== tokens.length) {
-			return
-		}
-
+		if (elements.length !== tokens.length) return
 		tokens.forEach((token, i) => {
 			const element = elements.at(i)
 			if (!element) return
@@ -313,9 +339,7 @@ export class DomIndexer {
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
 	): void {
 		const address = tokenIndex.addressFor(path)
-		if (!address) {
-			return
-		}
+		if (!address) return
 
 		const record: PathElements = {
 			path: [...path],
@@ -343,18 +367,14 @@ export class DomIndexer {
 
 	#reconcileStructuralTextSurfaces(): void {
 		const tokenIndex = this.tokens.index()
-		const editable = this.props.readOnly() || this.host.isUserSelecting() ? 'false' : 'true'
+		const editable = this.props.readOnly() || this.#selecting ? 'false' : 'true'
 
 		for (const record of this.#pathElements.values()) {
 			const resolved = tokenIndex.resolveAddress(record.address)
-			if (!resolved.ok) {
-				continue
-			}
+			if (!resolved.ok) continue
 
 			if (record.textElement) {
-				if (resolved.value.type !== 'text') {
-					continue
-				}
+				if (resolved.value.type !== 'text') continue
 				if (record.textElement.textContent !== resolved.value.content) {
 					record.textElement.textContent = resolved.value.content
 				}

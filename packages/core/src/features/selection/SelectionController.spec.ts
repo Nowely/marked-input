@@ -48,9 +48,9 @@ describe('SelectionController', () => {
 		})
 		it('write does not change isUserSelecting', () => {
 			const store = new Store()
-			store.dom.isUserSelecting(true)
+			store.selection.isUserSelecting(true)
 			store.selection.position(5)
-			expect(store.dom.isUserSelecting()).toBe(true)
+			expect(store.selection.isUserSelecting()).toBe(true)
 		})
 		it('write collapses an extended range', () => {
 			const store = new Store()
@@ -108,7 +108,7 @@ describe('SelectionController', () => {
 		it('retains range intent when the DOM has no target yet', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
-			// No container set → dom.isIndexed() is false → placement is deferred
+			// No container set → bridge.isIndexed() is false → placement is deferred
 			// until the next render. The range signal still reflects user intent.
 			store.selection.selectAll()
 			expect(store.selection.range()).toEqual({start: 0, end: 5})
@@ -125,7 +125,7 @@ describe('SelectionController', () => {
 		})
 	})
 
-	describe('restoration via dom.indexed', () => {
+	describe('restoration via bridge.indexed', () => {
 		it('restores range after indexed fires', () => {
 			const store = new Store()
 			const container = document.createElement('div')
@@ -154,7 +154,7 @@ describe('SelectionController', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
-			store.dom.isUserSelecting(true)
+			store.selection.isUserSelecting(true)
 			store.selection.position(3)
 
 			// Clear any pre-existing browser selection so we can detect non-changes.
@@ -180,6 +180,38 @@ describe('SelectionController', () => {
 			expect(store.selection.range()).toEqual({start: 3, end: 3})
 			container.remove()
 		})
+
+		it('clamps OOB caret range and places at maxPos', () => {
+			const store = new Store()
+			store.props.set({defaultValue: 'hello'})
+			const container = document.createElement('div')
+			const span = document.createElement('span')
+			span.appendChild(document.createTextNode('hello'))
+			container.appendChild(span)
+			document.body.appendChild(container)
+			store.host.container(container)
+			store.selection.range({start: 999, end: 999})
+			store.host.rendered()
+
+			expect(store.selection.range()).toEqual({start: 5, end: 5})
+			container.remove()
+		})
+
+		it('clamps OOB selection range', () => {
+			const store = new Store()
+			store.props.set({defaultValue: 'hello'})
+			const container = document.createElement('div')
+			const span = document.createElement('span')
+			span.appendChild(document.createTextNode('hello'))
+			container.appendChild(span)
+			document.body.appendChild(container)
+			store.host.container(container)
+			store.selection.range({start: 999, end: 1000})
+			store.host.rendered()
+
+			expect(store.selection.range()).toEqual({start: 5, end: 5})
+			container.remove()
+		})
 	})
 
 	describe('isUserSelecting → contentEditable', () => {
@@ -196,12 +228,32 @@ describe('SelectionController', () => {
 
 			expect(span.contentEditable).toBe('true')
 
-			store.dom.isUserSelecting(true)
+			store.selection.isUserSelecting(true)
 			expect(span.contentEditable).toBe('false')
 
-			store.dom.isUserSelecting(false)
+			store.selection.isUserSelecting(false)
 			expect(span.contentEditable).toBe('true')
 
+			container.remove()
+		})
+	})
+
+	describe('empty-editor click handler', () => {
+		it('focuses first child on click when editor is empty', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			const span = document.createElement('span')
+			span.contentEditable = 'true'
+			container.appendChild(span)
+			document.body.appendChild(container)
+
+			store.props.set({defaultValue: ''})
+			store.host.container(container)
+			store.host.rendered()
+
+			const focusSpy = vi.spyOn(span, 'focus')
+			container.dispatchEvent(new MouseEvent('click', {bubbles: true}))
+			expect(focusSpy).toHaveBeenCalledTimes(1)
 			container.remove()
 		})
 	})

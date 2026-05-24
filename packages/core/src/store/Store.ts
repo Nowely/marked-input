@@ -1,6 +1,7 @@
+// packages/core/src/store/Store.ts
 import {BlockController, BlockRegistry} from '../features/block'
+import {DomTokenBridge} from '../features/bridge'
 import {ClipboardController} from '../features/clipboard'
-import {DomModel} from '../features/dom'
 import {EditController} from '../features/edit'
 import {KeyboardController} from '../features/keyboard'
 import {OverlayController} from '../features/overlay'
@@ -23,23 +24,15 @@ export class Store {
 
 	readonly slots = new SlotsFeature(this.props)
 
-	readonly dom = new DomModel(this.host, this.props, this.tokens)
+	readonly bridge = new DomTokenBridge(this.host, this.props, this.tokens)
 
-	readonly selection = new SelectionController(this.host, this.dom, this.tokens, this.value, this.props)
+	readonly selection = new SelectionController(this.host, this.bridge, this.tokens, this.value, this.props)
 	readonly edit = new EditController(this.value, this.selection)
 
-	readonly overlay = new OverlayController(
-		this.host,
-		this.props,
-		this.value,
-		this.dom,
-		this.selection,
-		this.edit,
-		this.tokens
-	)
+	readonly overlay = new OverlayController(this.host, this.props, this.value, this.selection, this.edit, this.tokens)
 	readonly keyboard = new KeyboardController(
 		this.host,
-		this.dom,
+		this.bridge,
 		this.value,
 		this.selection,
 		this.edit,
@@ -49,7 +42,7 @@ export class Store {
 	readonly block = new BlockController(this.props, this.value, this.tokens, this.selection, this.edit)
 	readonly blocks = new BlockRegistry()
 
-	readonly clipboard = new ClipboardController(this.host, this.edit, this.dom, this.tokens)
+	readonly clipboard = new ClipboardController(this.host, this.edit, this.selection, this.tokens)
 
 	readonly handler = new MarkputHandler(this.host, this.overlay, this.selection)
 }

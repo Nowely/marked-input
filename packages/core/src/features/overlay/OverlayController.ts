@@ -3,7 +3,6 @@ import {escape} from '../../shared/escape'
 import {signal, computed, event, effect, watch, listen} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
-import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
 import type {Token} from '../parsing'
 import {annotate} from '../parsing'
@@ -40,7 +39,6 @@ export class OverlayController {
 		private readonly host: Host,
 		private readonly props: PropsModel,
 		private readonly value: ValueModel,
-		private readonly dom: DomModel,
 		private readonly selection: SelectionController,
 		private readonly edit: EditController,
 		private readonly tokens: TokenModel
@@ -123,7 +121,7 @@ export class OverlayController {
 
 	#probeTrigger() {
 		const match =
-			TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.dom) ??
+			TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.selection) ??
 			this.#probeTriggerFromCaretRange()
 		this.match(match)
 	}
