@@ -34,10 +34,9 @@ describe('Store', () => {
 			const store = new Store()
 			const handler = store.handler
 			expect(handler.container).toBe(null)
-			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
-			const stub = {} as HTMLDivElement
-			store.host.container(stub)
-			expect(handler.container).toBe(stub)
+			const el = document.createElement('div')
+			store.host.container(el)
+			expect(handler.container).toBe(el)
 		})
 
 		it('reflect state.overlay via handler.overlay', () => {

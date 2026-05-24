@@ -11,35 +11,17 @@ export class Host {
 	readonly container = signal<HTMLElement | null>({initial: null})
 
 	/**
-	 * Run `setup` while the editor is mounted with a host element. The callback
-	 * receives the live container; any subscriptions created inside it
-	 * (`watch`, `listen`, `effect`, nested `effectScope`) are auto-disposed
-	 * when the container swaps to a different element or `unmounted` fires,
-	 * and re-created with the new element on swap. The callback is not invoked
-	 * while either condition is unmet.
+	 * Run `setup` whenever a host container is attached. The callback receives
+	 * the live container; any subscriptions created inside it (`watch`,
+	 * `listen`, `effect`, nested `effectScope`) are auto-disposed when the
+	 * container is detached or swapped, and re-created with the new element on
+	 * swap.
 	 */
 	onMounted(setup: (container: HTMLElement) => void): void {
 		let scope: (() => void) | undefined
-		let mounted = false
-		let active: HTMLElement | null = null
-
-		const reattach = (): void => {
-			const next = mounted ? this.container() : null
-			if (next === active) return
+		watch(this.container, container => {
 			scope?.()
-			scope = undefined
-			active = next
-			if (next) scope = effectScope(() => setup(next))
-		}
-
-		watch(this.mounted, () => {
-			mounted = true
-			reattach()
+			scope = container ? effectScope(() => setup(container)) : undefined
 		})
-		watch(this.unmounted, () => {
-			mounted = false
-			reattach()
-		})
-		watch(this.container, reattach)
 	}
 }

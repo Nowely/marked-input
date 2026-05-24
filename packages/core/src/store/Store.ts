@@ -15,8 +15,6 @@ export type {DragAction} from '../shared/types'
 
 export class Store {
 	readonly key = new KeyGenerator()
-	// 0 from 10
-	readonly blocks = new BlockRegistry()
 
 	readonly host = new Host()
 	readonly props = new PropsModel()
@@ -49,6 +47,8 @@ export class Store {
 		this.props
 	)
 	readonly block = new BlockController(this.props, this.value, this.tokens, this.selection, this.edit)
+	readonly blocks = new BlockRegistry()
+
 	readonly clipboard = new ClipboardController(this.host, this.edit, this.dom, this.tokens)
 
 	readonly handler = new MarkputHandler(this.host, this.overlay, this.selection)

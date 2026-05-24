@@ -13,8 +13,8 @@ Defined in: [core/src/features/parsing/MarkController.ts:6](https://github.com/N
 
 ```ts
 new MarkController(
-   store,
-   address,
+   store, 
+   address, 
    snapshot): MarkController;
 ```
 

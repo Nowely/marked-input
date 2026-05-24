@@ -385,11 +385,10 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 React/Vue render asynchronously, so initialization order matters:
 
 ```typescript
-// 1. Framework writes the container element via store.host.container(el)
-//    and emits store.host.mounted() on initial mount.
-//    → Each feature's onMounted callback fires only when both conditions hold,
-//      receiving the live container element. It also re-fires (with auto-disposal
-//      of the previous scope) if the framework swaps to a different container.
+// 1. Framework writes the container element via store.host.container(el).
+//    → Each feature's onMounted callback fires with the live container element.
+//      It also re-fires (with auto-disposal of the previous scope) if the
+//      framework swaps to a different container.
 
 // 2. After mount, ValueModel accepts props.value/defaultValue. ParseController
 //    subscribed to value.current first inside its onMounted hook, so tokens are
@@ -400,8 +399,8 @@ React/Vue render asynchronously, so initialization order matters:
 
 // 4. Framework emits store.host.rendered() after tokens render
 
-// 5. Framework emits store.host.unmounted() on unmount
-//    → Store disables all features (cleanup DOM listeners, dispose scopes)
+// 5. Framework writes store.host.container(null) on unmount
+//    → Each onMounted scope is disposed (DOM listeners removed, watchers torn down)
 ```
 
 ## Block System (Drag Mode)

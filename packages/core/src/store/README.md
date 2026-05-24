@@ -6,7 +6,7 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
 
 - **Store**: Main state container that manages:
     - **Feature state** (`store.<feature>.*`) — signals owned by features: tokens, accepted serialized value, caret range, drag-selection flag, overlay match
-    - **Host** (`store.host`) — adapter-fed runtime state: `mounted`/`unmounted`/`rendered` events and the `container` HTMLElement signal. Written by React/Vue `MarkedInput`; features read. `host.onMounted(cb)` runs `cb(container)` only while both `mounted` and `container` are non-null, auto-disposing and re-running on container swaps.
+    - **Host** (`store.host`) — adapter-fed runtime state: `mounted`/`unmounted`/`rendered` events and the `container` HTMLElement signal. Written by React/Vue `MarkedInput`; features read. `host.onMounted(cb)` runs `cb(container)` whenever a container is attached, auto-disposing inner subscriptions on detach and re-running with the new element on swap.
     - **Props** (`store.props`) — readonly signals written only via `store.props.set()` (value, options, readOnly, drag, slots, etc.)
     - **Computed values** (`store.<feature>.*`) — derived values: `enabled`, `parser`, `caret.position`, `containerComponent`, `containerProps`, slot resolvers
     - **Events** (`store.<feature>.<event>()`) — typed reactive events: `parsing.reparse`, `overlay.select`, `overlay.close`, `drag.action`, and host lifecycle events
