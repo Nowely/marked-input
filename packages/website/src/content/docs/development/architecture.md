@@ -85,7 +85,7 @@ Both framework adapters share the same component structure:
         ↓
 2. KeyboardController detects input
         ↓
-3. store.dom maps the DOM selection or input target range to a raw value range
+3. store.selection.readRaw() maps the DOM selection or input target range to a raw value range
         ↓
 4. KeyboardController calls store.edit.replace() for every user edit — single-range or whole-value (whole-value writes pass {start: 0, end: -1} as the sentinel and a caretAt for the post-edit caret)
         ↓
@@ -97,10 +97,10 @@ Both framework adapters share the same component structure:
         ↓
 8. React/Vue re-renders via the framework `useMarkput()` hook
         ↓
-9. DomController applies caret.selection to the DOM after the adapter registers the new DOM
+9. SelectionController applies selection.range to the DOM after the adapter registers the new DOM
 ```
 
-All user mutations go through `store.edit.replace()`: features describe the raw range (or `{start: 0, end: -1}` for whole-value writes) plus replacement text, and the edit coordinator places the post-edit caret — either at `range.start + replacement.length` or at an explicit `caretAt` argument — inside a single batch before delegating to `store.value.replace()`. Programmatic raw mutations may still call `store.value.replace()` or `store.value.current()`. `DomController` owns DOM-to-raw boundary mapping and applies `caret.selection` to the DOM after every render, while `ParseController` owns parser selection and string-to-token parsing.
+All user mutations go through `store.edit.replace()`: features describe the raw range (or `{start: 0, end: -1}` for whole-value writes) plus replacement text, and the edit coordinator places the post-edit caret — either at `range.start + replacement.length` or at an explicit `caretAt` argument — inside a single batch before delegating to `store.value.replace()`. Programmatic raw mutations may still call `store.value.replace()` or `store.value.current()`. `SelectionController` owns DOM-to-raw boundary mapping (via private `DomSelectionBridge`) and applies `selection.range` to the DOM after every render, while `TokenModel` owns the active token index.
 
 ### Trigger Flow (Overlay Opens)
 
@@ -227,7 +227,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `unmounted`     | host           | Framework unmount           | `void`                           |
 | `action`        | drag           | Drag-and-drop action        | `DragAction`                     |
 
-`DomController.reconcile()` is a method called by reactive effects and by the post-render focus workflow; it is not a store event.
+`DomTokenBridge.reconcile()` is a method called by reactive effects and by the post-render focus workflow; it is not a store event.
 
 ### Event Usage
 
@@ -316,15 +316,15 @@ class Store {
     // Features live directly on store, not nested under .feature
     readonly host:      Host               // mounted/unmounted/rendered events + container HTMLElement
     readonly props:     PropsModel         // framework-provided configuration
-    readonly caret:     CaretModel         // selection, position (computed), isUserSelecting, isAllSelected
+    readonly selection: SelectionController // selection range, position (computed), isUserSelecting, isAllSelected
     readonly slots:     SlotsFeature       // isBlock, isDragEnabled, slot component/props, mark resolver
     readonly value:     ValueModel         // current, replace()
     readonly edit:      EditController     // replace(range, replacement, caretAt?) — single batched write path
-    readonly parsing:   ParseController    // tokens, parser, token index
-    readonly dom:       DomController      // DOM refs, raw mapping, range placement
+    readonly tokens:    TokenModel         // token list, parser selection, active token index
+    readonly bridge:    DomTokenBridge     // DOM refs, childrenFor/controlFor registries, composition flags
     readonly overlay:   OverlayController  // match, element, slot, select, close
     readonly keyboard:  KeyboardController // input, block editing, arrow navigation
-    readonly drag:      DragController     // drag-and-drop action event
+    readonly block:     BlockController    // block drag actions and operation helpers
     readonly clipboard: ClipboardController // copy/cut handling
 }
 ```
@@ -369,16 +369,16 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 | **Host**                      | Adapter-fed runtime state: the rendered event and the container HTMLElement |
 | **ValueModel**                | Accepted serialized value state, raw range replacement   |
 | **EditController**            | Unified user edit path: `replace(range, replacement, caretAt?)`, `{end: -1}` resolves to current value length |
-| **ParseController**           | Token parsing, parser selection, reparse event            |
+| **TokenModel**                | Token parsing, parser selection, token index             |
 | **OverlayController**         | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution, mark resolver |
-| **CaretModel**                | Caret range, derived location, text selection state       |
+| **SelectionController**       | Caret range, derived location, text selection state       |
 | **KeyboardController**        | Text input, block editing, arrow navigation               |
-| **DomController**             | DOM registration, raw selection mapping, range placement   |
-| **DragController**            | Drag-and-drop reordering of blocks                       |
+| **DomTokenBridge**            | DOM registration, childrenFor/controlFor registries      |
+| **BlockController**           | Drag-and-drop block reordering and operation helpers     |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
-`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. `CaretModel` exposes a `selection: Signal<Range | undefined>` as the single source of truth for the caret/selection position, a writable `position: Signal<number | undefined>` computed bound to `selection.start` (writes collapse the range), an `isUserSelecting: Signal<boolean>` for selection-in-progress state, and `isAllSelected: Signal<boolean>` derived from `selection` and the raw value length.
+`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. `SelectionController` exposes a `range: Signal<Range | undefined>` as the single source of truth for the caret/selection position, a writable `position: Signal<number | undefined>` computed bound to `range.start` (writes collapse the range), an `isUserSelecting: Signal<boolean>` for selection-in-progress state, and `isAllSelected: Signal<boolean>` derived from `range` and the raw value length.
 
 ## Lifecycle Timing
 
@@ -395,7 +395,7 @@ React/Vue render asynchronously, so initialization order matters:
 //    updated before any other onMounted watcher observes the new value.
 
 // 3. Sync contenteditable attributes (layout effect)
-//    → DomController reconciles DOM state
+//    → DomTokenBridge reconciles DOM state
 
 // 4. Framework emits store.host.rendered() after tokens render
 
@@ -428,25 +428,16 @@ WeakMap keys mean garbage collection frees state when tokens are deleted.
 
 ## Core-Owned DOM And Cursor Management
 
-Core owns token addresses, DOM registration, raw selection mapping, raw value mutation, and caret range placement. React and Vue render adapter-owned structural DOM and register it with core through private refs. Features communicate through `store.<name>.*`, `store.props`, and `store.dom`/`store.caret`; production code must not infer token identity from DOM child order.
+Core owns token addresses, DOM registration, raw selection mapping, raw value mutation, and caret range placement. React and Vue render adapter-owned structural DOM and register it with core through private refs. Features communicate through `store.<name>.*`, `store.props`, `store.bridge`, and `store.selection`; production code must not infer token identity from DOM child order.
 
-### CaretModel and caretDom
+### SelectionController and DomSelectionBridge
 
-Caret responsibilities are split into a stateful feature and a stateless helper
-module:
+Selection responsibilities are split into a stateful coordinator and a private DOM selection bridge:
 
-- `CaretModel` (feature) owns the reactive caret/selection state — `selection`,
-  `position`, `isUserSelecting`, and `isAllSelected` signals — plus document-level mouse and
-  selectionchange listeners that keep the signals in sync with the browser
-  selection. It is the single source of truth for DOM caret placement: writes
-  to `caret.selection` are auto-applied to the DOM through an effect, and the
-  same path re-runs after each `dom.indexed`. External features never move the
-  caret imperatively; they write the desired range to `caret.selection`.
-- `caretDom` (stateless module, exported from `@markput/core`) provides
-  pure DOM helpers: `getCaretIndex`, `setAtElement`, `setAtX`, `getRect`,
-  `isOnFirstLine`, `isOnLastLine`. These are used for raw DOM caret math in
-  block-edit arrow navigation and overlay positioning. They do not consult
-  the token index.
+- `SelectionController` (feature) owns the reactive caret/selection state — `range`, `position` (writable computed), `isUserSelecting`, and `isAllSelected` signals — and exposes public delegations for reading selection state. It is the single source of truth for DOM caret placement: writes to `selection.range` are auto-applied to the DOM through `DomSelectionBridge.applyRange`, and the same path re-runs after each `bridge.indexed`.
+- `DomSelectionBridge` (private to selection) owns the `DomBoundary` instance, caret placement mechanisms, and document-level mouse and selectionchange event listeners. It accepts a `SelectionBridgeAttachDeps` configuration to report browser selection changes back to the controller's `range` signal.
+- `DomBoundary` translates a DOM `(node, offset)` to a raw UTF-16 position within the active document value, using the index provided by `DomTokenBridge`.
+- `caretDom` (stateless module, exported from `@markput/core`) provides pure DOM helpers: `getCaretIndex`, `setAtElement`, `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`. These are used for raw DOM caret math in block-edit arrow navigation and overlay positioning. They do not consult the token index.
 
 ```typescript
 import {caretDom} from '@markput/core'
@@ -456,9 +447,9 @@ caretDom.setAtElement(element, 0)
 const rect = caretDom.getRect()
 ```
 
-### DomController
+### DomTokenBridge
 
-`DomController` owns the root container signal and indexes rendered structure after each render:
+`DomTokenBridge` owns the token-to-DOM index, the ref callback registries, and composition state:
 
 - top-level token roots are discovered from the editor container or block rows;
 - nested slot children are discovered from adapter-owned `TokenChildren` hosts registered through `childrenFor(path)`;
@@ -466,7 +457,7 @@ const rect = caretDom.getRect()
 - text token roots are reconciled as editable text surfaces;
 - mark roots receive focusability state.
 
-It exposes raw boundary helpers used by keyboard, clipboard, overlay, block editing, drag, and mark commands. It also applies `caret.selection` to the DOM after every render; ranges that cannot be placed are cleared and reported through DOM diagnostics.
+It acts as a public bridge for Vue and React adapters to register element refs, and for keyboard, clipboard, and overlay features to query the current DOM indexing mapping. During drag/selection operations, `SelectionController` pushes the active selecting state to `bridge.setSelecting(active)`, which temporarily disables `contentEditable` on structural text nodes to prevent the browser from fragmenting the native selection range.
 
 ## Framework Hooks
 

@@ -9,10 +9,10 @@ Markput handles text input, deletion, paste, overlay insertion, block editing, a
 ## Edit Flow
 
 1. React/Vue render adapter-owned token shells and text surfaces.
-2. The adapter registers the root with `store.host.container` and child structure through `store.dom.controlFor(path?)` (for non-editable controls inside a token) and `store.dom.childrenFor(ownerPath)` (for nested `__slot__` child sequence hosts).
-3. Keyboard handlers convert the browser selection to a raw serialized range through `store.dom.readRawSelection()` or `store.dom.rawPositionFromBoundary()`.
-4. Edits call `store.value.replace()` and optionally write `store.caret.selection()` to set the post-edit caret.
-5. `DomController` applies `caret.selection` to the DOM after the next render.
+2. The adapter registers the root with `store.host.container` and child structure through `store.bridge.controlFor(path?)` (for non-editable controls inside a token) and `store.bridge.childrenFor(ownerPath)` (for nested `__slot__` child sequence hosts).
+3. Keyboard handlers convert the browser selection to a raw serialized range through `store.selection.readRaw()` or `store.selection.rawPositionFromBoundary()`.
+4. Edits call `store.value.replace()` and optionally write `store.selection.range()` to set the post-edit caret.
+5. `SelectionController` applies `selection.range` to the DOM after the next render.
 
 Production code should not infer token identity from DOM child order or public data attributes.
 
@@ -22,7 +22,7 @@ Inline text input uses the current raw selection:
 
 ```ts
 store.value.replace(selection.range, text)
-store.caret.selection({start: selection.range.start + text.length, end: selection.range.start + text.length})
+store.selection.range({start: selection.range.start + text.length, end: selection.range.start + text.length})
 ```
 
 Controlled editors emit `onChange` first and update the accepted value after the matching prop echo.

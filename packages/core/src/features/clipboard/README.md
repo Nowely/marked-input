@@ -7,12 +7,12 @@ Provides copy, cut, and paste operations with rich markup support. On copy, writ
 - **ClipboardController**: Controller class handling `copy` and `cut` events — serializes selected tokens to markup/plain/HTML and writes to clipboard; on cut, also deletes the selected tokens through `store.edit.replace()`
 - **captureMarkupPaste**: Captures markput MIME data from a ClipboardEvent
 - **consumeMarkupPaste**: Reads and clears captured markput paste data for a container
-- **DOM raw selection**: Clipboard uses `store.dom.readRawSelection()` to map browser selections to serialized raw ranges.
+- **DOM raw selection**: Clipboard uses `store.selection.readRaw()` to map browser selections to serialized raw ranges.
 
 ## Usage
 
 ```typescript
-const raw = store.dom.readRawSelection()
+const raw = store.selection.readRaw()
 if (raw.ok) {
     const range = raw.value.range
 }

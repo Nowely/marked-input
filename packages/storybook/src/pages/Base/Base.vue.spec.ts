@@ -110,7 +110,7 @@ describe('Component: MarkedInput', () => {
 	it('refreshes child sequence registration when owner path changes', async () => {
 		const callbacks = new Map<string, ReturnType<typeof vi.fn>>()
 		const store = new Store()
-		vi.spyOn(store.dom, 'childrenFor').mockImplementation((path: TokenPath) => {
+		vi.spyOn(store.bridge, 'childrenFor').mockImplementation((path: TokenPath) => {
 			const callback = vi.fn()
 			callbacks.set(path.join('.'), callback)
 			return callback

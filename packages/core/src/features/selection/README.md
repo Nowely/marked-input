@@ -1,50 +1,24 @@
-# Caret Feature
+# Selection Feature
 
-The caret feature owns caret/selection state and DOM-coordinate helpers used
-by overlay positioning and block-edit navigation.
+Owns the reactive caret/selection state, orchestrates DOM placement after render and re-index, and exposes raw-boundary reads for keyboard, clipboard, and overlay consumers. Exposed as `store.selection`.
 
-## Components
+## Layout
 
-- **CaretModel**: Reactive caret/selection state plus DOM↔signal sync. Owns:
-    - `selection: Signal<Range | undefined>` — single source of truth for
-      caret/selection position. External callers move the caret by writing
-      this signal; the auto-apply effect handles DOM placement on the next
-      tick (or defers placement when the DOM has no resolvable target yet).
-    - `position: Signal<number | undefined>` — writable computed bound to
-      `selection.start`; writing collapses the range to `{start: pos, end: pos}`.
-    - `isUserSelecting: Signal<boolean>` — pass-through to
-      `DomModel.isUserSelecting`. Writes from anywhere drive structural text
-      surfaces to `contenteditable="false"` during drags so the browser sees
-      one continuous selection instead of fragmenting it per-node.
-    - `isAllSelected: Signal<boolean>` — computed; true when the selection
-      spans the entire raw value.
-    - `selectAll()` — imperative helper for whole-editor selection.
-    - `placeAtAddress(address, boundary)` — sets a one-shot address hint and
-      writes the selection so the auto-apply effect lands on the right
-      element when a position is shared between two adjacent tokens.
-      Returns `true` on success, `false` when the address cannot be
-      resolved (DOM not indexed yet, or address is stale).
+- `SelectionController.ts` — reactive state + orchestration. Owns `range`, `position` (writable computed), `isAllSelected`, and `isUserSelecting`. Pushes `isUserSelecting` to `bridge.setSelecting` via a watch inside `onMounted`. Public delegations: `selectAll`, `focusFirst`, `placeAtAddress`, `readRaw`, `rawPositionFromBoundary`, `readSelectedContent`.
+- `DomSelectionBridge.ts` — private bridge owning the `DomBoundary` instance, the caret-placement primitives, and the DOM event listeners (`#trackSelection`, `#trackUserSelecting`, `#focusEmptyEditorOnClick`). Read-only access to `range` via `applyRange`; writes back through the explicit `onRangeRead` callback in `SelectionBridgeAttachDeps`.
+- `DomBoundary.ts` — DOM `(node, offset)` ↔ raw position translator. Constructed inside `DomSelectionBridge`.
+- `textOffsets.ts` — pure helpers used by `DomBoundary` and the placement primitives.
+- `caretDom.ts` — stateless DOM caret helpers (`getCaretIndex`, `setAtElement`, `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`, `placeAtTextOffset`, `placeAtChildBoundary`, `placeRangeAcrossSurfaces`, `focusIfNeeded`).
 
-    The user-selecting tracker (mouse/selectionchange listeners that flip
-    the signal) lives inside `CaretModel` itself; the signal it writes to is
-    owned by `DomModel` so the indexer can watch it directly without an
-    extra effect bouncing through `CaretModel`. Caret placement primitives
-    live in `caretDom.ts` (`placeAtTextOffset`, `placeAtChildBoundary`,
-    `placeRangeAcrossSurfaces`, `focusIfNeeded`).
+## Public Surface
 
-- **caretDom**: Stateless DOM helpers — `getCaretIndex`, `setAtElement`,
-  `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine` for raw DOM caret
-  math, plus `placeAtTextOffset`, `placeAtChildBoundary`,
-  `placeRangeAcrossSurfaces`, `focusIfNeeded` used by `CaretModel` for
-  selection placement.
-- **TriggerFinder**: Detects overlay triggers in text based on the current
-  selection.
+- `range: Signal<Range | undefined>` — single source of truth for caret/selection. Writes propagate to the DOM via `watch(range)` → `DomSelectionBridge.applyRange`.
+- `position: Signal<number | undefined>` — writable computed bound to `range.start`; writes collapse the range to `{start: pos, end: pos}`.
+- `isUserSelecting: Signal<boolean>` — selection-in-progress signal. Pushed to `DomTokenBridge.setSelecting` so structural text surfaces flip to `contenteditable="false"` during drags.
+- `isAllSelected: Signal<boolean>` — computed; true when the selection spans the entire raw value.
+- `selectAll()`, `focusFirst()`, `placeAtAddress(address, boundary)` — imperative helpers.
+- `readRaw()`, `rawPositionFromBoundary(node, offset, affinity)`, `readSelectedContent()` — boundary reads, available to non-selection consumers (keyboard, clipboard, overlay) because the `DomBoundary` instance lives inside this feature.
 
-## Usage
+## Wiring
 
-```typescript
-import {caretDom, TriggerFinder} from '@core/features/caret'
-
-const offset = caretDom.getCaretIndex(element)
-const match = TriggerFinder.find(options, opt => opt.overlay?.trigger)
-```
+The controller constructs `DomSelectionBridge` in its body. Inside `host.onMounted`, it calls `bridge.attach(container, deps)` with `onRangeRead`, the `isUserSelecting` signal, and `isPlacingCaret` accessor. Two watches relay caret intent: one on `range`, one on `bridge.indexed`.
