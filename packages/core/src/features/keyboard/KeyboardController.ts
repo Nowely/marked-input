@@ -19,11 +19,11 @@ export class KeyboardController {
 		tokens: TokenModel,
 		props: PropsModel
 	) {
-		const ctx = {host, dom, value, selection, edit, tokens, props}
-		host.onMounted(() => {
-			enableInput(ctx)
-			enableBlockEdit(ctx)
-			enableArrowNav(ctx)
+		const ctx = {dom, value, selection, edit, tokens, props}
+		host.onMounted(container => {
+			enableInput(ctx, container)
+			enableBlockEdit(ctx, container)
+			enableArrowNav(ctx, container)
 		})
 	}
 }

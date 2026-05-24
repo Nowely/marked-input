@@ -2,12 +2,9 @@ import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'host' | 'dom' | 'selection' | 'props' | 'tokens'>
+type KbCtx = Pick<Store, 'dom' | 'selection' | 'props' | 'tokens'>
 
-export function enableArrowNav(store: KbCtx): void {
-	const container = store.host.container()
-	if (!container) return
-
+export function enableArrowNav(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'keydown', e => {
 		if (store.props.layout.isBlock()) return
 

@@ -79,7 +79,7 @@ describe('handleBeforeInput()', () => {
 		range.setEnd(textNode, 1)
 		const event = inputEvent('insertText', range, {data: 'x'})
 
-		handleBeforeInput(store, event)
+		handleBeforeInput(store, container, event)
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(replaceRange).toHaveBeenCalledWith({start: 1, end: 1}, 'x')
@@ -96,7 +96,7 @@ describe('handleBeforeInput()', () => {
 		const event = inputEvent('insertText', range, {data: 'x'})
 
 		store.dom.compositionStarted()
-		handleBeforeInput(store, event)
+		handleBeforeInput(store, container, event)
 
 		expect(replaceRange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('hello')
@@ -111,7 +111,7 @@ describe('handleBeforeInput()', () => {
 		range.setEnd(descendantText, 0)
 		const event = inputEvent('insertText', range, {data: 'x'})
 
-		handleBeforeInput(store, event)
+		handleBeforeInput(store, container, event)
 
 		expect(event.defaultPrevented).toBe(false)
 		expect(replaceRange).not.toHaveBeenCalled()
@@ -122,7 +122,7 @@ describe('handleBeforeInput()', () => {
 describe('composition input', () => {
 	it('commits composition text at the original raw selection', () => {
 		const {store, container, textNode} = mountStructuralInline('ab')
-		enableInput(store)
+		enableInput(store, container)
 		const selection = window.getSelection()
 		const initialRange = document.createRange()
 		initialRange.setStart(textNode, 1)

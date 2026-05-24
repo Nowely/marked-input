@@ -8,15 +8,12 @@ import {MARKPUT_MIME} from './pasteMarkup'
 
 export class ClipboardController {
 	constructor(
-		private readonly host: Host,
-		private readonly edit: EditController,
+		host: Host,
+		edit: EditController,
 		private readonly dom: DomModel,
 		private readonly tokens: TokenModel
 	) {
-		host.onMounted(() => {
-			const container = host.container()
-			if (!container) return
-
+		host.onMounted(container => {
 			listen(container, 'copy', e => {
 				this.#handleCopy(e)
 			})

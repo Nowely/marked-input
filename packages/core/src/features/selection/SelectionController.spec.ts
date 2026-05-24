@@ -122,6 +122,7 @@ describe('SelectionController', () => {
 		it('attaches document listeners on mount', () => {
 			const addSpy = vi.spyOn(document, 'addEventListener')
 			const store = new Store()
+			store.host.container(document.createElement('div'))
 			store.host.mounted()
 			expect(addSpy).toHaveBeenCalledWith('mousedown', expect.any(Function), undefined)
 			addSpy.mockRestore()

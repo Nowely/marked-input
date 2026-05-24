@@ -385,8 +385,11 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 React/Vue render asynchronously, so initialization order matters:
 
 ```typescript
-// 1. Framework emits store.host.mounted() on initial mount
-//    → Store enables all features (DOM listeners, reactive subscriptions)
+// 1. Framework writes the container element via store.host.container(el)
+//    and emits store.host.mounted() on initial mount.
+//    → Each feature's onMounted callback fires only when both conditions hold,
+//      receiving the live container element. It also re-fires (with auto-disposal
+//      of the previous scope) if the framework swaps to a different container.
 
 // 2. After mount, ValueModel accepts props.value/defaultValue. ParseController
 //    subscribed to value.current first inside its onMounted hook, so tokens are

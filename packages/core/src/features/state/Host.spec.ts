@@ -22,21 +22,40 @@ describe('Host', () => {
 	})
 
 	describe('onMounted()', () => {
-		it('runs setup once on mounted', () => {
+		it('runs setup with the container once both mounted and container are set', () => {
 			const store = new Store()
+			const container = document.createElement('div')
 			const setup = vi.fn()
 			store.host.onMounted(setup)
 
 			expect(setup).not.toHaveBeenCalled()
 			store.host.mounted()
+			expect(setup).not.toHaveBeenCalled()
+			store.host.container(container)
 			expect(setup).toHaveBeenCalledTimes(1)
+			expect(setup).toHaveBeenCalledWith(container)
+		})
+
+		it('runs setup when mounted fires after container is already set', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			const setup = vi.fn()
+			store.host.onMounted(setup)
+
+			store.host.container(container)
+			expect(setup).not.toHaveBeenCalled()
+			store.host.mounted()
+			expect(setup).toHaveBeenCalledTimes(1)
+			expect(setup).toHaveBeenCalledWith(container)
 		})
 
 		it('does not re-run setup if mounted fires again without an unmount', () => {
 			const store = new Store()
+			const container = document.createElement('div')
 			const setup = vi.fn()
 			store.host.onMounted(setup)
 
+			store.host.container(container)
 			store.host.mounted()
 			store.host.mounted()
 
@@ -45,12 +64,14 @@ describe('Host', () => {
 
 		it('disposes inner watchers on unmount', () => {
 			const store = new Store()
+			const container = document.createElement('div')
 			const source = signal<number>({initial: 0})
 			const observed = vi.fn()
 			store.host.onMounted(() => {
 				watch(source, value => observed(value))
 			})
 
+			store.host.container(container)
 			store.host.mounted()
 			source(1)
 			expect(observed).toHaveBeenCalledTimes(1)
@@ -63,7 +84,10 @@ describe('Host', () => {
 
 		it('does nothing if registered after mount', () => {
 			const store = new Store()
+			const container = document.createElement('div')
 			const setup = vi.fn()
+
+			store.host.container(container)
 			store.host.mounted()
 			store.host.onMounted(setup)
 			expect(setup).not.toHaveBeenCalled()
@@ -71,6 +95,7 @@ describe('Host', () => {
 
 		it('re-runs setup with a fresh scope on remount', () => {
 			const store = new Store()
+			const container = document.createElement('div')
 			const source = signal<number>({initial: 0})
 			const observed = vi.fn()
 			const setup = vi.fn(() => {
@@ -78,6 +103,7 @@ describe('Host', () => {
 			})
 			store.host.onMounted(setup)
 
+			store.host.container(container)
 			store.host.mounted()
 			source(1)
 			store.host.unmounted()
@@ -88,6 +114,64 @@ describe('Host', () => {
 			expect(observed).toHaveBeenCalledTimes(2)
 			expect(observed).toHaveBeenNthCalledWith(1, 1)
 			expect(observed).toHaveBeenNthCalledWith(2, 2)
+		})
+
+		it('disposes setup when container becomes null while mounted', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			const source = signal<number>({initial: 0})
+			const observed = vi.fn()
+			store.host.onMounted(() => {
+				watch(source, value => observed(value))
+			})
+
+			store.host.container(container)
+			store.host.mounted()
+			source(1)
+			expect(observed).toHaveBeenCalledTimes(1)
+
+			store.host.container(null)
+			source(2)
+			expect(observed).toHaveBeenCalledTimes(1)
+		})
+
+		it('re-runs setup with the new container on swap', () => {
+			const store = new Store()
+			const first = document.createElement('div')
+			const second = document.createElement('div')
+			const setup = vi.fn()
+			store.host.onMounted(setup)
+
+			store.host.container(first)
+			store.host.mounted()
+			expect(setup).toHaveBeenCalledTimes(1)
+			expect(setup).toHaveBeenLastCalledWith(first)
+
+			store.host.container(second)
+			expect(setup).toHaveBeenCalledTimes(2)
+			expect(setup).toHaveBeenLastCalledWith(second)
+		})
+
+		it('disposes the previous scope before re-running on container swap', () => {
+			const store = new Store()
+			const first = document.createElement('div')
+			const second = document.createElement('div')
+			const source = signal<number>({initial: 0})
+			const observed = vi.fn()
+			store.host.onMounted(container => {
+				watch(source, value => observed(container, value))
+			})
+
+			store.host.container(first)
+			store.host.mounted()
+			source(1)
+			expect(observed).toHaveBeenCalledWith(first, 1)
+
+			store.host.container(second)
+			source(2)
+			// only the new scope's watcher fires
+			expect(observed).toHaveBeenCalledTimes(2)
+			expect(observed).toHaveBeenLastCalledWith(second, 2)
 		})
 	})
 })

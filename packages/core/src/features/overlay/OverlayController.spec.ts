@@ -18,6 +18,7 @@ describe('OverlayController', () => {
 
 	beforeEach(() => {
 		store = new Store()
+		store.host.container(document.createElement('div'))
 		store.host.mounted()
 	})
 
