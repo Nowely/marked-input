@@ -7,8 +7,6 @@ export type TokenAddress = {
 	readonly token: Token
 }
 
-export type Result<T, Reason extends string> = {ok: true; value: T} | {ok: false; reason: Reason}
-
 export type DomRef = (element: HTMLElement | null) => void
 
 export type Range = {
@@ -21,25 +19,40 @@ export type RawSelection = {
 	readonly direction?: 'forward' | 'backward'
 }
 
-export type NodeLocationResult = Result<
-	{
-		readonly address: TokenAddress
-		readonly tokenElement: HTMLElement
-		readonly textElement?: HTMLElement
-		readonly rowElement?: HTMLElement
-	},
-	'notIndexed' | 'outsideEditor' | 'control'
->
+export type NodeLocationResult =
+	| {
+			ok: true
+			value: {
+				readonly address: TokenAddress
+				readonly tokenElement: HTMLElement
+				readonly textElement?: HTMLElement
+				readonly rowElement?: HTMLElement
+			}
+	  }
+	| {
+			ok: false
+			reason: 'notIndexed' | 'outsideEditor' | 'control'
+	  }
 
-export type RawSelectionResult = Result<
-	RawSelection,
-	'notIndexed' | 'outsideEditor' | 'control' | 'mixedBoundary' | 'invalidBoundary'
->
+export type RawSelectionResult =
+	| {
+			ok: true
+			value: RawSelection
+	  }
+	| {
+			ok: false
+			reason: 'notIndexed' | 'outsideEditor' | 'control' | 'mixedBoundary' | 'invalidBoundary'
+	  }
 
-export type BoundaryPositionResult = Result<
-	number,
-	'notIndexed' | 'outsideEditor' | 'control' | 'invalidBoundary' | 'composing'
->
+export type BoundaryPositionResult =
+	| {
+			ok: true
+			value: number
+	  }
+	| {
+			ok: false
+			reason: 'notIndexed' | 'outsideEditor' | 'control' | 'invalidBoundary' | 'composing'
+	  }
 
 export type OptionalMarkFieldPatch = {readonly kind: 'set'; readonly value: string} | {readonly kind: 'clear'}
 

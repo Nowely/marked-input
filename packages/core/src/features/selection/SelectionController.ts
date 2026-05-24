@@ -129,8 +129,8 @@ export class SelectionController {
 		if (!this.bridge.isIndexed()) return undefined
 		if (!this.bridge.pathElementsFor(address)) return undefined
 		const resolved = this.tokens.index().resolveAddress(address)
-		if (!resolved.ok) return undefined
-		const pos = boundary === 'end' ? resolved.value.position.end : resolved.value.position.start
+		if (!resolved) return undefined
+		const pos = boundary === 'end' ? resolved.position.end : resolved.position.start
 		this.#preferredAddress = address
 		return {start: pos, end: pos}
 	}
@@ -142,15 +142,15 @@ export class SelectionController {
 		const elements = this.bridge.pathElementsFor(address)
 		if (!elements) return false
 		const resolved = this.tokens.index().resolveAddress(address)
-		if (!resolved.ok) return false
-		if (resolved.value.type === 'mark') {
-			this.#placeAtMarkBoundary(elements.tokenElement, rawPosition, resolved.value.position)
+		if (!resolved) return false
+		if (resolved.type === 'mark') {
+			this.#placeAtMarkBoundary(elements.tokenElement, rawPosition, resolved.position)
 			return true
 		}
 		const target = elements.textElement ?? elements.tokenElement
 		focusIfNeeded(target)
 		if (elements.textElement) {
-			placeAtTextOffset(elements.textElement, rawPosition - resolved.value.position.start)
+			placeAtTextOffset(elements.textElement, rawPosition - resolved.position.start)
 		}
 		return true
 	}
@@ -161,11 +161,11 @@ export class SelectionController {
 		for (const record of this.bridge.pathElements()) {
 			if (!record.textElement) continue
 			const resolved = tokenIndex.resolveAddress(record.address)
-			if (!resolved.ok || resolved.value.type !== 'text') continue
+			if (resolved?.type !== 'text') continue
 			candidates.push({
 				element: record.textElement,
-				start: resolved.value.position.start,
-				end: resolved.value.position.end,
+				start: resolved.position.start,
+				end: resolved.position.end,
 			})
 		}
 		candidates.sort((a, b) => a.start - b.start)
@@ -178,9 +178,9 @@ export class SelectionController {
 		const tokenIndex = this.tokens.index()
 		for (const record of this.bridge.pathElements()) {
 			const resolved = tokenIndex.resolveAddress(record.address)
-			if (!resolved.ok || resolved.value.type !== 'mark') continue
-			if (rawPosition !== resolved.value.position.start && rawPosition !== resolved.value.position.end) continue
-			this.#placeAtMarkBoundary(record.tokenElement, rawPosition, resolved.value.position)
+			if (resolved?.type !== 'mark') continue
+			if (rawPosition !== resolved.position.start && rawPosition !== resolved.position.end) continue
+			this.#placeAtMarkBoundary(record.tokenElement, rawPosition, resolved.position)
 			return true
 		}
 		return false

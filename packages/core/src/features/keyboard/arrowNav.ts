@@ -35,14 +35,14 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	const address = located.value.address
 
 	const token = store.tokens.index().resolveAddress(address)
-	if (!token.ok) return false
+	if (!token) return false
 
 	if (!isFocusedOnMarkElement) {
 		const selection = store.selection.readRaw()
 		if (!selection.ok || selection.value.range.start !== selection.value.range.end) return false
 
-		const atStart = selection.value.range.start <= token.value.position.start
-		const atEnd = selection.value.range.end >= token.value.position.end
+		const atStart = selection.value.range.start <= token.position.start
+		const atEnd = selection.value.range.end >= token.position.end
 		if (direction === 'prev' && !atStart) return false
 		if (direction === 'next' && !atEnd) return false
 	}

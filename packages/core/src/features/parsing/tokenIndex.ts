@@ -1,11 +1,11 @@
-import type {Result, TokenAddress, TokenPath} from '../../shared/editorContracts'
+import type {TokenAddress, TokenPath} from '../../shared/editorContracts'
 import type {Token} from './parser/types'
 
 export type TokenIndex = {
 	pathFor(token: Token): TokenPath | undefined
 	addressFor(path: TokenPath): TokenAddress | undefined
 	resolve(path: TokenPath): Token | undefined
-	resolveAddress(address: TokenAddress): Result<Token, 'stale'>
+	resolveAddress(address: TokenAddress): Token | undefined
 	key(path: TokenPath): string
 }
 
@@ -51,8 +51,8 @@ export function createTokenIndex(tokens: readonly Token[]): TokenIndex {
 		resolve: path => resolvePath(tokens, path),
 		resolveAddress(address) {
 			const current = resolvePath(tokens, address.path)
-			if (!current || current !== address.token) return {ok: false, reason: 'stale'}
-			return {ok: true, value: current}
+			if (!current || current !== address.token) return undefined
+			return current
 		},
 		key: pathKey,
 	}

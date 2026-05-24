@@ -39,15 +39,15 @@ export class DomBoundary {
 		if (!location.ok) return location.reason === 'control' ? {ok: false, reason: 'control'} : location
 
 		const token = this.tokens.index().resolveAddress(location.value.address)
-		if (!token.ok) return {ok: false, reason: 'notIndexed'}
+		if (!token) return {ok: false, reason: 'notIndexed'}
 
 		if (node instanceof HTMLElement) {
 			const role = this.host.roleFor(node)
 			if (role?.role === 'childSequence') {
 				const childCount = node.childNodes.length
-				if (offset <= 0) return {ok: true, value: token.value.position.start}
-				if (offset >= childCount) return {ok: true, value: token.value.position.end}
-				return this.#fromTokenChildBoundary(node, offset, token.value, affinity)
+				if (offset <= 0) return {ok: true, value: token.position.start}
+				if (offset >= childCount) return {ok: true, value: token.position.end}
+				return this.#fromTokenChildBoundary(node, offset, token, affinity)
 			}
 		}
 
@@ -55,28 +55,28 @@ export class DomBoundary {
 		if (textElement?.contains(node)) {
 			const local = textOffsetWithin(textElement, node, offset)
 			if (local === undefined) return {ok: false, reason: 'invalidBoundary'}
-			return {ok: true, value: token.value.position.start + local}
+			return {ok: true, value: token.position.start + local}
 		}
 
 		if (node === location.value.tokenElement) {
 			const childCount = location.value.tokenElement.childNodes.length
-			if (offset <= 0) return {ok: true, value: token.value.position.start}
-			if (offset >= childCount) return {ok: true, value: token.value.position.end}
-			return this.#fromTokenChildBoundary(location.value.tokenElement, offset, token.value, affinity)
+			if (offset <= 0) return {ok: true, value: token.position.start}
+			if (offset >= childCount) return {ok: true, value: token.position.end}
+			return this.#fromTokenChildBoundary(location.value.tokenElement, offset, token, affinity)
 		}
 
-		if (token.value.type === 'mark' && location.value.tokenElement.contains(node)) {
+		if (token.type === 'mark' && location.value.tokenElement.contains(node)) {
 			if (hasEditableAncestorBefore(node, location.value.tokenElement)) {
 				return {ok: false, reason: 'invalidBoundary'}
 			}
 			return {
 				ok: true,
-				value: affinity === 'after' ? token.value.position.start : token.value.position.end,
+				value: affinity === 'after' ? token.position.start : token.position.end,
 			}
 		}
 
 		if (location.value.rowElement && node === location.value.rowElement) {
-			return {ok: true, value: offset <= 0 ? token.value.position.start : token.value.position.end}
+			return {ok: true, value: offset <= 0 ? token.position.start : token.position.end}
 		}
 
 		return {ok: false, reason: 'invalidBoundary'}
@@ -147,10 +147,10 @@ export class DomBoundary {
 		if (before?.ok && after?.ok) {
 			const beforeToken = this.tokens.index().resolveAddress(before.value.address)
 			const afterToken = this.tokens.index().resolveAddress(after.value.address)
-			if (beforeToken.ok && afterToken.ok) {
+			if (beforeToken && afterToken) {
 				return {
 					ok: true,
-					value: affinity === 'before' ? beforeToken.value.position.end : afterToken.value.position.start,
+					value: affinity === 'before' ? beforeToken.position.end : afterToken.position.start,
 				}
 			}
 		}

@@ -371,18 +371,18 @@ export class DomTokenBridge {
 
 		for (const record of this.#pathElements.values()) {
 			const resolved = tokenIndex.resolveAddress(record.address)
-			if (!resolved.ok) continue
+			if (!resolved) continue
 
 			if (record.textElement) {
-				if (resolved.value.type !== 'text') continue
-				if (record.textElement.textContent !== resolved.value.content) {
-					record.textElement.textContent = resolved.value.content
+				if (resolved.type !== 'text') continue
+				if (record.textElement.textContent !== resolved.content) {
+					record.textElement.textContent = resolved.content
 				}
 				record.textElement.contentEditable = editable
 				continue
 			}
 
-			if (resolved.value.type === 'mark') {
+			if (resolved.type === 'mark') {
 				if (this.props.readOnly()) {
 					record.tokenElement.removeAttribute('tabindex')
 				} else {
