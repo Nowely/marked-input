@@ -1,7 +1,7 @@
 import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
-import {applySpanInput, enableInput, handleBeforeInput, replaceAllContentWith} from './input'
+import {applySpanInput, enableInput, handleBeforeInput} from './input'
 
 function mountStructuralInline(value = 'hello') {
 	const store = new Store()
@@ -67,21 +67,6 @@ describe('applySpanInput()', () => {
 		expect(event.preventDefault).toHaveBeenCalledOnce()
 		expect(focus.content).toBe('')
 		expect(focus.caret).toBe(0)
-	})
-})
-
-describe('replaceAllContentWith()', () => {
-	it('controlled full-content replace emits without committing current', () => {
-		const store = new Store()
-		const onChange = vi.fn()
-		store.props.set({value: 'hello', onChange})
-		store.lifecycle.mounted()
-
-		replaceAllContentWith(store, 'world')
-
-		expect(onChange).toHaveBeenCalledWith('world')
-		expect(store.value.current()).toBe('hello')
-		expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 })
 

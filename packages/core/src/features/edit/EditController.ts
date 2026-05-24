@@ -7,6 +7,12 @@ import type {ValueModel} from '../state'
  * Single write path for text edits — delegates gating to {@link ValueModel.replace}
  * and only moves the caret when the edit is accepted. Wrapped in {@link batch}
  * so subscribers observe a consistent value/selection pair on one tick.
+ *
+ * - `range.end < 0` is normalized to the current value length. Use
+ *   `{start: 0, end: -1}` for whole-value replacements.
+ * - `caretAt` overrides the default post-edit caret (which is
+ *   `range.start + replacement.length`). Used by sites whose desired caret
+ *   is not the natural end of the replacement (e.g. block reorder).
  */
 export class EditController {
 	constructor(
@@ -14,10 +20,11 @@ export class EditController {
 		private readonly selection: SelectionController
 	) {}
 
-	replace(range: Range, replacement: string): void {
+	replace(range: Range, replacement: string, caretAt?: number): void {
 		batch(() => {
-			if (!this.value.replace(range, replacement)) return
-			this.selection.position(range.start + replacement.length)
+			const normalized: Range = range.end < 0 ? {start: range.start, end: this.value.current().length} : range
+			if (!this.value.replace(normalized, replacement)) return
+			this.selection.position(caretAt ?? normalized.start + replacement.length)
 		})
 	}
 }

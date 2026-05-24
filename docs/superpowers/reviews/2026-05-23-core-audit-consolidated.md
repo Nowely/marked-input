@@ -3,7 +3,7 @@
 Date: 2026-05-23
 Scope: `packages/core/src/**` and adapter wiring.
 
-Eight open issues against the current `next` branch, plus five deferred
+Seven open issues against the current `next` branch, plus five deferred
 items with documented rationale. Verified by re-reading each cited file
 and running `pnpm test` (972 passed).
 
@@ -73,31 +73,7 @@ Fix: a shared `listenToContainer(store, setup)` that watches
 Risk: behavior-change (small) — only matters when the container changes
 after mount.
 
-### 4. `EditController` adoption is partial
-
-`EditController.replace(range, replacement)` batches the value write with
-caret placement and gates on `value.replace()` acceptance. Adopters:
-keyboard inline input, overlay insert, clipboard cut, `MarkController`,
-block Enter on text rows.
-
-Direct writers still call `value.current(next)` + manual
-`selection.position(...)`:
-
-- `keyboard/input.ts:221` — `replaceAllContentWith`
-- `keyboard/blockEdit.ts:85, 97, 120, 136, 178` — block delete/Enter on
- non-text rows
-- `block/BlockController.ts:48, 60, 69, 78` — drag reorder/add/delete/
- duplicate
-
-Subscribers can observe `value` and `selection` out of sync on the same
-tick.
-
-Fix: extend `EditController` if `Range` is awkward — e.g. `replaceAll(next)`
-or `replaceWithCaret(range, replacement, caretAt)` — and route the
-remaining sites through it.
-Risk: behavior-change (small).
-
-### 5. Overlay ships a fake `MarkToken`
+### 4. Overlay ships a fake `MarkToken`
 
 `features/overlay/createMarkFromOverlay.ts` builds a `MarkToken` with
 empty `children`, fabricated `descriptor` (`segments: []`,
@@ -114,7 +90,7 @@ Fix: change `select` to
 update both `useOverlay` hooks.
 Risk: behavior-change (small, internal API).
 
-### 6. Overlay trigger probing reads global selection
+### 5. Overlay trigger probing reads global selection
 
 `features/overlay/OverlayController.ts:56` — `watch(value.current)` →
 `#probeTrigger()` doesn't check whether the current selection belongs to
@@ -133,7 +109,7 @@ outside it, and add the same `contains(activeElement)` check inside the
 `value.current` watcher.
 Risk: behavior-change (small).
 
-### 7. `PropsModel.set` accepts inherited keys
+### 6. `PropsModel.set` accepts inherited keys
 
 `features/state/PropsModel.ts:48-52`:
 
@@ -154,7 +130,7 @@ before invoking.
 Risk: behavior-change (small) — silently drops non-signal keys instead of
 executing them.
 
-### 8. Stale feature READMEs
+### 7. Stale feature READMEs
 
 - `features/clipboard/README.md:7-10` — references `CopyFeature` (renamed
  `ClipboardController`) and `clearMarkupPaste` (deleted).

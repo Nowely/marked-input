@@ -81,8 +81,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 						})()
 			const previous = rows.at(Math.max(0, blockIndex - 1))
 			const pos = previous ? previous.position.end : 0
-			store.selection.position(pos)
-			store.value.current(newValue)
+			store.edit.replace({start: 0, end: -1}, newValue, pos)
 			return
 		}
 
@@ -93,8 +92,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.selection.position(joinPos)
-				store.value.current(newValue)
+				store.edit.replace({start: 0, end: -1}, newValue, joinPos)
 				return
 			}
 			event.preventDefault()
@@ -116,8 +114,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.selection.position(joinPos)
-				store.value.current(newValue)
+				store.edit.replace({start: 0, end: -1}, newValue, joinPos)
 				return
 			}
 			event.preventDefault()
@@ -132,8 +129,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 				const newValue = mergeDragRows(value, rows, blockIndex + 1)
-				store.selection.position(joinPos)
-				store.value.current(newValue)
+				store.edit.replace({start: 0, end: -1}, newValue, joinPos)
 				return
 			}
 			event.preventDefault()
@@ -174,8 +170,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (!isTextLikeRow(token)) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 		const pos = token.position.end + newRowContent.length
-		store.selection.position(pos)
-		store.value.current(newValue)
+		store.edit.replace({start: 0, end: -1}, newValue, pos)
 		return
 	}
 

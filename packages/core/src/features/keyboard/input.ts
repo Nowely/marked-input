@@ -60,7 +60,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 
 	if (store.selection.isAllSelected()) {
 		event.preventDefault()
-		replaceAllContentWith(store, '')
+		store.edit.replace({start: 0, end: -1}, '')
 		return
 	}
 
@@ -83,7 +83,7 @@ export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
 		}
 		event.preventDefault()
 		const newContent = event.inputType.startsWith('delete') ? '' : (event.data ?? '')
-		replaceAllContentWith(store, newContent)
+		store.edit.replace({start: 0, end: -1}, newContent)
 		return
 	}
 
@@ -213,10 +213,5 @@ export function handlePaste(store: KbCtx, event: ClipboardEvent): void {
 	const c = store.dom.container()
 	const markup = c ? consumeMarkupPaste(c) : undefined
 	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
-	replaceAllContentWith(store, newContent)
-}
-
-export function replaceAllContentWith(store: KbCtx, newContent: string): void {
-	store.selection.position(newContent.length)
-	store.value.current(newContent)
+	store.edit.replace({start: 0, end: -1}, newContent)
 }
