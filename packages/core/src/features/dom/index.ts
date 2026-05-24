@@ -1,2 +1,2 @@
 export {DomModel} from './DomModel'
-export {isTextTokenSpan} from './isTextTokenSpan'
+export {isTextTokenSpan} from '../bridge/isTextTokenSpan'
