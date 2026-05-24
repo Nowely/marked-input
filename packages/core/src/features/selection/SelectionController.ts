@@ -1,6 +1,8 @@
 // packages/core/src/features/selection/SelectionController.ts
+/* eslint-disable no-unused-private-class-members, no-unused-vars */
+import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
 import type {BoundaryPositionResult, Range, RawSelectionResult, TokenAddress} from '../../shared/editorContracts'
-import {computed, signal, watch} from '../../shared/signals'
+import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Computed, Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomTokenBridge} from '../bridge'
@@ -8,6 +10,9 @@ import type {TokenModel} from '../parsing/TokenModel'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
+import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
+import {DomBoundary} from './DomBoundary'
+import type {DomBoundaryHost} from './DomBoundary'
 import {DomSelectionBridge} from './DomSelectionBridge'
 import type {SelectionBridgeAttachDeps} from './DomSelectionBridge'
 
@@ -28,6 +33,8 @@ export class SelectionController {
 
 	readonly #bridge: DomSelectionBridge
 	#isPlacingCaret = false
+	readonly #boundary: DomBoundary
+	#preferredAddress: TokenAddress | undefined
 	#deps: SelectionBridgeAttachDeps | undefined
 
 	constructor(
@@ -38,6 +45,16 @@ export class SelectionController {
 		private readonly props: PropsModel
 	) {
 		this.#bridge = new DomSelectionBridge(this.bridge, this.tokens, this.value, this.host)
+
+		const boundaryHost: DomBoundaryHost = {
+			container: () => this.host.container(),
+			isIndexed: () => this.bridge.isIndexed(),
+			isComposing: () => this.bridge.isComposing(),
+			locateNode: node => this.bridge.locateNode(node),
+			roleFor: element => this.bridge.roleFor(element),
+			pathElementsFor: address => this.bridge.pathElementsFor(address),
+		}
+		this.#boundary = new DomBoundary(boundaryHost, this.tokens)
 
 		host.onMounted(container => {
 			const deps: SelectionBridgeAttachDeps = {
@@ -98,5 +115,93 @@ export class SelectionController {
 		} finally {
 			this.#isPlacingCaret = false
 		}
+	}
+
+	#resolveAddress(address: TokenAddress, boundary: 'start' | 'end'): Range | undefined {
+		if (!this.bridge.isIndexed()) return undefined
+		if (!this.bridge.pathElementsFor(address)) return undefined
+		const resolved = this.tokens.index().resolveAddress(address)
+		if (!resolved.ok) return undefined
+		const pos = boundary === 'end' ? resolved.value.position.end : resolved.value.position.start
+		this.#preferredAddress = address
+		return {start: pos, end: pos}
+	}
+
+	#applyPreferredAddress(rawPosition: number): boolean {
+		const address = this.#preferredAddress
+		this.#preferredAddress = undefined
+		if (!address) return false
+		const elements = this.bridge.pathElementsFor(address)
+		if (!elements) return false
+		const resolved = this.tokens.index().resolveAddress(address)
+		if (!resolved.ok) return false
+		if (resolved.value.type === 'mark') {
+			this.#placeAtMarkBoundary(elements.tokenElement, rawPosition, resolved.value.position)
+			return true
+		}
+		const target = elements.textElement ?? elements.tokenElement
+		focusIfNeeded(target)
+		if (elements.textElement) {
+			placeAtTextOffset(elements.textElement, rawPosition - resolved.value.position.start)
+		}
+		return true
+	}
+
+	#findTextTargetForRawPosition(rawPosition: number): {element: HTMLElement; start: number; end: number} | undefined {
+		const candidates: Array<{element: HTMLElement; start: number; end: number}> = []
+		const tokenIndex = this.tokens.index()
+		for (const record of this.bridge.pathElements()) {
+			if (!record.textElement) continue
+			const resolved = tokenIndex.resolveAddress(record.address)
+			if (!resolved.ok || resolved.value.type !== 'text') continue
+			candidates.push({
+				element: record.textElement,
+				start: resolved.value.position.start,
+				end: resolved.value.position.end,
+			})
+		}
+		candidates.sort((a, b) => a.start - b.start)
+		const containing = candidates.find(c => rawPosition >= c.start && rawPosition <= c.end)
+		if (containing) return containing
+		return candidates.find(c => c.start >= rawPosition)
+	}
+
+	#focusMarkBoundaryForRawPosition(rawPosition: number): boolean {
+		const tokenIndex = this.tokens.index()
+		for (const record of this.bridge.pathElements()) {
+			const resolved = tokenIndex.resolveAddress(record.address)
+			if (!resolved.ok || resolved.value.type !== 'mark') continue
+			if (rawPosition !== resolved.value.position.start && rawPosition !== resolved.value.position.end) continue
+			this.#placeAtMarkBoundary(record.tokenElement, rawPosition, resolved.value.position)
+			return true
+		}
+		return false
+	}
+
+	#placeAtMarkBoundary(element: HTMLElement, rawPosition: number, position: {start: number; end: number}): void {
+		focusIfNeeded(element)
+		placeAtChildBoundary(element, rawPosition === position.end ? 'end' : 'start')
+	}
+
+	#placeCollapsed(rawPosition: number): boolean {
+		if (this.#applyPreferredAddress(rawPosition)) return true
+		const target = this.#findTextTargetForRawPosition(rawPosition)
+		if (target) {
+			focusIfNeeded(target.element)
+			placeAtTextOffset(target.element, rawPosition - target.start)
+			return true
+		}
+		return this.#focusMarkBoundaryForRawPosition(rawPosition)
+	}
+
+	#placeExtended(range: Range): boolean {
+		const startTarget = this.#findTextTargetForRawPosition(range.start)
+		const endTarget = this.#findTextTargetForRawPosition(range.end)
+		if (!startTarget || !endTarget) return false
+		placeRangeAcrossSurfaces(
+			{element: startTarget.element, offset: range.start - startTarget.start},
+			{element: endTarget.element, offset: range.end - endTarget.start}
+		)
+		return true
 	}
 }
