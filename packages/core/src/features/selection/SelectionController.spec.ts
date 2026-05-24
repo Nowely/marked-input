@@ -88,14 +88,13 @@ describe('SelectionController', () => {
 		it('sets range to full value range and applies it to DOM', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
-			store.lifecycle.mounted()
 			const container = document.createElement('div')
 			const span = document.createElement('span')
 			span.appendChild(document.createTextNode('hello'))
 			container.appendChild(span)
 			document.body.appendChild(container)
-			store.dom.container(container)
-			store.lifecycle.rendered()
+			store.host.container(container)
+			store.host.rendered()
 
 			store.selection.selectAll()
 			expect(store.selection.range()).toEqual({start: 0, end: 5})
@@ -109,8 +108,6 @@ describe('SelectionController', () => {
 		it('retains range intent when the DOM has no target yet', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
-			store.lifecycle.mounted()
-
 			// No container set → dom.isIndexed() is false → placement is deferred
 			// until the next render. The range signal still reflects user intent.
 			store.selection.selectAll()
@@ -122,7 +119,7 @@ describe('SelectionController', () => {
 		it('attaches document listeners on mount', () => {
 			const addSpy = vi.spyOn(document, 'addEventListener')
 			const store = new Store()
-			store.lifecycle.mounted()
+			store.host.container(document.createElement('div'))
 			expect(addSpy).toHaveBeenCalledWith('mousedown', expect.any(Function), undefined)
 			addSpy.mockRestore()
 		})
@@ -138,11 +135,10 @@ describe('SelectionController', () => {
 			document.body.appendChild(container)
 
 			store.props.set({defaultValue: 'hello'})
-			store.dom.container(container)
-			store.lifecycle.mounted()
+			store.host.container(container)
 			store.selection.position(5)
 
-			store.lifecycle.rendered()
+			store.host.rendered()
 			const sel = window.getSelection()
 			expect(sel?.focusNode).toBe(span.firstChild)
 			expect(sel?.focusOffset).toBe(5)
@@ -157,14 +153,13 @@ describe('SelectionController', () => {
 			span.appendChild(document.createTextNode('hello'))
 			container.appendChild(span)
 			document.body.appendChild(container)
-			store.dom.container(container)
-			store.lifecycle.mounted()
+			store.host.container(container)
 			store.dom.isUserSelecting(true)
 			store.selection.position(3)
 
 			// Clear any pre-existing browser selection so we can detect non-changes.
 			window.getSelection()?.removeAllRanges()
-			store.lifecycle.rendered()
+			store.host.rendered()
 
 			const sel = window.getSelection()
 			expect(sel?.rangeCount ?? 0).toBe(0)
@@ -179,10 +174,9 @@ describe('SelectionController', () => {
 			const container = document.createElement('div')
 			document.body.appendChild(container)
 			store.props.set({defaultValue: 'hello'})
-			store.dom.container(container)
-			store.lifecycle.mounted()
+			store.host.container(container)
 			store.selection.position(3)
-			store.lifecycle.rendered()
+			store.host.rendered()
 			expect(store.selection.range()).toEqual({start: 3, end: 3})
 			container.remove()
 		})
@@ -197,9 +191,8 @@ describe('SelectionController', () => {
 			span.appendChild(document.createTextNode('hello'))
 			container.appendChild(span)
 			document.body.appendChild(container)
-			store.dom.container(container)
-			store.lifecycle.mounted()
-			store.lifecycle.rendered()
+			store.host.container(container)
+			store.host.rendered()
 
 			expect(span.contentEditable).toBe('true')
 

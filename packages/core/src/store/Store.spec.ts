@@ -34,10 +34,9 @@ describe('Store', () => {
 			const store = new Store()
 			const handler = store.handler
 			expect(handler.container).toBe(null)
-			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
-			const stub = {} as HTMLDivElement
-			store.dom.container(stub)
-			expect(handler.container).toBe(stub)
+			const el = document.createElement('div')
+			store.host.container(el)
+			expect(handler.container).toBe(el)
 		})
 
 		it('reflect state.overlay via handler.overlay', () => {
@@ -131,7 +130,6 @@ describe('Store', () => {
 	describe('value edits', () => {
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
-			store.lifecycle.mounted()
 			store.value.current('hello')
 			expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 			expect(store.value.current()).toBe('hello')
@@ -141,7 +139,6 @@ describe('Store', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			store.lifecycle.mounted()
 			store.value.current('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
@@ -151,7 +148,6 @@ describe('Store', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
-			store.lifecycle.mounted()
 			store.value.current('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
@@ -160,7 +156,6 @@ describe('Store', () => {
 
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
-			store.lifecycle.mounted()
 			expect(() => store.value.current('test')).not.toThrow()
 		})
 	})
@@ -397,7 +392,6 @@ describe('Store', () => {
 		it('reacts to props.value changes when ValueModel is enabled', () => {
 			const store = new Store()
 			store.props.set({value: 'initial'})
-			store.lifecycle.mounted()
 			expect(store.value.current()).toBe('initial')
 			store.props.set({value: 'changed'})
 			expect(store.value.current()).toBe('changed')

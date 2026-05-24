@@ -4,10 +4,7 @@ import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'dom' | 'selection' | 'props' | 'tokens'>
 
-export function enableArrowNav(store: KbCtx): void {
-	const container = store.dom.container()
-	if (!container) return
-
+export function enableArrowNav(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'keydown', e => {
 		if (store.props.layout.isBlock()) return
 

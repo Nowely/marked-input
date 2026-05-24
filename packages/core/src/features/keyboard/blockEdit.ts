@@ -17,21 +17,18 @@ function isTextLikeRow(token: Token): boolean {
 	return token.descriptor.hasSlot && token.descriptor.segments.length === 1
 }
 
-export function enableBlockEdit(store: KbCtx): void {
-	const container = store.dom.container()
-	if (!container) return
-
+export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'keydown', e => {
 		if (!store.props.layout.isBlock()) return
 
 		if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
-			handleBlockArrowLeftRight(store, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
+			handleBlockArrowLeftRight(store, container, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
 		} else if (e.key === KEYBOARD.UP || e.key === KEYBOARD.DOWN) {
-			handleArrowUpDown(store, e)
+			handleArrowUpDown(store, container, e)
 		}
 
-		handleDelete(store, e)
-		handleEnter(store, e)
+		handleDelete(store, container, e)
+		handleEnter(store, container, e)
 	})
 
 	listen(
@@ -40,16 +37,13 @@ export function enableBlockEdit(store: KbCtx): void {
 		e => {
 			if (!store.props.layout.isBlock()) return
 			if (e.defaultPrevented) return
-			handleBlockBeforeInput(store, e)
+			handleBlockBeforeInput(store, container, e)
 		},
 		true
 	)
 }
 
-function handleDelete(store: KbCtx, event: KeyboardEvent) {
-	const container = store.dom.container()
-	if (!container) return
-
+function handleDelete(store: KbCtx, container: HTMLElement, event: KeyboardEvent) {
 	const blockDivs = htmlChildren(container)
 	const blockIndex = blockDivs.findIndex(
 		div => div === document.activeElement || div.contains(document.activeElement)
@@ -139,12 +133,9 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	}
 }
 
-function handleEnter(store: KbCtx, event: KeyboardEvent) {
+function handleEnter(store: KbCtx, container: HTMLElement, event: KeyboardEvent) {
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
-
-	const container = store.dom.container()
-	if (!container) return
 
 	const activeElement = document.activeElement
 	if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return
@@ -194,10 +185,12 @@ function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' |
 	caretDom.setAtElement(row, Infinity)
 }
 
-function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction: 'left' | 'right'): boolean {
-	const container = store.dom.container()
-	if (!container) return false
-
+function handleBlockArrowLeftRight(
+	store: KbCtx,
+	container: HTMLElement,
+	event: KeyboardEvent,
+	direction: 'left' | 'right'
+): boolean {
 	const activeElement = document.activeElement
 	if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return false
 
@@ -228,10 +221,7 @@ function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction
 	return true
 }
 
-function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
-	const container = store.dom.container()
-	if (!container) return
-
+function handleArrowUpDown(store: KbCtx, container: HTMLElement, event: KeyboardEvent) {
 	const activeElement = document.activeElement
 	if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return
 
@@ -266,10 +256,7 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 	}
 }
 
-function handleBlockBeforeInput(store: KbCtx, event: InputEvent) {
-	const container = store.dom.container()
-	if (!container) return
-
+function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent) {
 	const activeElement = document.activeElement
 	if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return
 
@@ -285,8 +272,7 @@ function handleBlockBeforeInput(store: KbCtx, event: InputEvent) {
 		}
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
-			const c = store.dom.container()
-			const markup = c ? consumeMarkupPaste(c) : undefined
+			const markup = consumeMarkupPaste(container)
 			const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
 			replaceBlockRange(store, event, pasteData)
 			break

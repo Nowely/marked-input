@@ -4,7 +4,7 @@ import {computed, listen, signal, watch} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
 import type {TokenModel} from '../parsing/TokenModel'
-import type {Lifecycle} from '../state/Lifecycle'
+import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
@@ -26,19 +26,19 @@ export class SelectionController {
 	#isPlacingCaret = false
 
 	constructor(
-		private readonly lifecycle: Lifecycle,
+		private readonly host: Host,
 		private readonly dom: DomModel,
 		private readonly parsing: TokenModel,
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
 	) {
-		lifecycle.onMounted(() => {
-			this.#focusEmptyEditorOnClick()
+		host.onMounted(container => {
+			this.#focusEmptyEditorOnClick(container)
 
-			this.#trackSelection()
+			this.#trackSelection(container)
 			watch(this.range, () => this.#applyRangeToDOM())
 
-			this.#trackUserSelecting()
+			this.#trackUserSelecting(container)
 			watch(dom.indexed, () => this.#applyRangeToDOM())
 		})
 	}
@@ -46,7 +46,7 @@ export class SelectionController {
 	focusFirst(): void {
 		const firstAddress = this.parsing.index().addressFor([0])
 		if (firstAddress && this.placeAtAddress(firstAddress, 'start')) return
-		this.dom.container()?.focus()
+		this.host.container()?.focus()
 	}
 
 	selectAll(): void {
@@ -83,18 +83,16 @@ export class SelectionController {
 	 * anywhere in the container should focus the first child — otherwise the
 	 * browser leaves the editor unfocused because there's no text to click on.
 	 */
-	#focusEmptyEditorOnClick(): void {
-		const container = this.dom.container()
-		if (!container) return
+	#focusEmptyEditorOnClick(container: HTMLElement): void {
 		listen(container, 'click', () => {
 			const tokens = this.parsing.current()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-				firstHtmlChild(this.dom.container())?.focus()
+				firstHtmlChild(container)?.focus()
 			}
 		})
 	}
 
-	#trackUserSelecting(): void {
+	#trackUserSelecting(container: HTMLElement): void {
 		let pressedAt: Node | null = null
 
 		listen(document, 'mousedown', e => {
@@ -103,8 +101,6 @@ export class SelectionController {
 
 		listen(document, 'mousemove', e => {
 			if (pressedAt === null) return
-			const container = this.dom.container()
-			if (!container) return
 
 			const startedOutsideEditor = !container.contains(pressedAt)
 			const sweepingAcrossNodes = pressedAt !== e.target
@@ -129,10 +125,7 @@ export class SelectionController {
 		listen(document, 'selectionchange', clearIfCollapsed)
 	}
 
-	#trackSelection(): void {
-		const container = this.dom.container()
-		if (!container) return
-
+	#trackSelection(container: HTMLElement): void {
 		const sync = (): void => {
 			const rawSel = this.dom.readRawSelection()
 			if (rawSel.ok) this.range(rawSel.value.range)

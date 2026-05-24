@@ -6,13 +6,12 @@ import {applySpanInput, enableInput, handleBeforeInput} from './input'
 function mountStructuralInline(value = 'hello') {
 	const store = new Store()
 	store.props.set({defaultValue: value})
-	store.lifecycle.mounted()
 	const container = document.createElement('div')
 	const textSurface = document.createElement('span')
 	container.append(textSurface)
 	document.body.append(container)
-	store.dom.container(container)
-	store.lifecycle.rendered()
+	store.host.container(container)
+	store.host.rendered()
 	const textNode = textSurface.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
 	return {store, container, textSurface, textNode}
@@ -21,7 +20,6 @@ function mountStructuralInline(value = 'hello') {
 function mountStructuralMarkWithDescendant(value = '@[world]') {
 	const store = new Store()
 	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: '@[__value__]'}]})
-	store.lifecycle.mounted()
 	const container = document.createElement('div')
 	const before = document.createElement('span')
 	const mark = document.createElement('mark')
@@ -32,8 +30,8 @@ function mountStructuralMarkWithDescendant(value = '@[world]') {
 	mark.append(descendant)
 	container.append(before, mark, after)
 	document.body.append(container)
-	store.dom.container(container)
-	store.lifecycle.rendered()
+	store.host.container(container)
+	store.host.rendered()
 	const descendantText = descendant.firstChild
 	if (!(descendantText instanceof Text)) throw new Error('Structural mark descendant did not render a text node')
 	return {store, container, descendantText}
@@ -79,7 +77,7 @@ describe('handleBeforeInput()', () => {
 		range.setEnd(textNode, 1)
 		const event = inputEvent('insertText', range, {data: 'x'})
 
-		handleBeforeInput(store, event)
+		handleBeforeInput(store, container, event)
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(replaceRange).toHaveBeenCalledWith({start: 1, end: 1}, 'x')
@@ -96,7 +94,7 @@ describe('handleBeforeInput()', () => {
 		const event = inputEvent('insertText', range, {data: 'x'})
 
 		store.dom.compositionStarted()
-		handleBeforeInput(store, event)
+		handleBeforeInput(store, container, event)
 
 		expect(replaceRange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('hello')
@@ -111,7 +109,7 @@ describe('handleBeforeInput()', () => {
 		range.setEnd(descendantText, 0)
 		const event = inputEvent('insertText', range, {data: 'x'})
 
-		handleBeforeInput(store, event)
+		handleBeforeInput(store, container, event)
 
 		expect(event.defaultPrevented).toBe(false)
 		expect(replaceRange).not.toHaveBeenCalled()
@@ -122,7 +120,7 @@ describe('handleBeforeInput()', () => {
 describe('composition input', () => {
 	it('commits composition text at the original raw selection', () => {
 		const {store, container, textNode} = mountStructuralInline('ab')
-		enableInput(store)
+		enableInput(store, container)
 		const selection = window.getSelection()
 		const initialRange = document.createRange()
 		initialRange.setStart(textNode, 1)

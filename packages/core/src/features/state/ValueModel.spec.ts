@@ -15,8 +15,6 @@ describe('ValueModel', () => {
 	it('initializes from controlled value on enable', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
-		store.lifecycle.mounted()
-
 		expect(store.value.current()).toBe('hello')
 		expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
@@ -24,8 +22,6 @@ describe('ValueModel', () => {
 	it('initializes from defaultValue when uncontrolled', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
-		store.lifecycle.mounted()
-
 		expect(store.value.current()).toBe('hello')
 		expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
@@ -33,8 +29,6 @@ describe('ValueModel', () => {
 	it('controlled prop echo commits current and tokens', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
-		store.lifecycle.mounted()
-
 		store.props.set({value: 'world'})
 
 		expect(store.value.current()).toBe('world')
@@ -44,8 +38,6 @@ describe('ValueModel', () => {
 	it('falls back to defaultValue when controlled value becomes undefined', () => {
 		const store = new Store()
 		store.props.set({value: 'hello', defaultValue: 'default'})
-		store.lifecycle.mounted()
-
 		store.props.set({value: undefined})
 
 		expect(store.props.value()).toBeUndefined()
@@ -57,8 +49,6 @@ describe('ValueModel', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
-		store.lifecycle.mounted()
-
 		store.value.current('world')
 
 		expect(onChange).not.toHaveBeenCalled()
@@ -70,8 +60,6 @@ describe('ValueModel', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({value: 'hello', readOnly: true, onChange})
-		store.lifecycle.mounted()
-
 		store.props.set({value: 'world'})
 
 		expect(onChange).not.toHaveBeenCalled()
@@ -83,8 +71,6 @@ describe('ValueModel', () => {
 		it('commits uncontrolled range replacement', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello world'})
-			store.lifecycle.mounted()
-
 			store.value.replace({start: 6, end: 11}, 'markput')
 
 			expect(store.value.current()).toBe('hello markput')
@@ -94,8 +80,6 @@ describe('ValueModel', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({defaultValue: 'hello', onChange})
-			store.lifecycle.mounted()
-
 			store.value.replace({start: 4, end: 2}, 'x')
 
 			expect(onChange).not.toHaveBeenCalled()
@@ -106,8 +90,6 @@ describe('ValueModel', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
-			store.lifecycle.mounted()
-
 			store.value.replace({start: 0, end: 5}, 'world')
 
 			expect(onChange).toHaveBeenCalledWith('world')

@@ -9,7 +9,7 @@ import type {
 import {event, signal} from '../../shared/signals/index.js'
 import type {Signal} from '../../shared/signals/index.js'
 import type {TokenModel} from '../parsing/TokenModel'
-import type {Lifecycle} from '../state/Lifecycle'
+import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import {DomBoundary} from './DomBoundary'
 import type {DomBoundaryHost} from './DomBoundary'
@@ -17,7 +17,6 @@ import {DomIndexer} from './DomIndexer'
 import type {ChildSequenceRegistration, ControlRegistration, DomIndexerHost, PathElements} from './DomIndexer'
 
 export class DomModel {
-	readonly container = signal<HTMLElement | null>({initial: null})
 	readonly indexed = event<void>()
 	readonly isUserSelecting = signal<boolean>({initial: false})
 
@@ -31,19 +30,23 @@ export class DomModel {
 	readonly #boundary: DomBoundary
 	readonly isIndexed: Signal<boolean>
 
-	constructor(lifecycle: Lifecycle, props: PropsModel, tokens: TokenModel) {
+	constructor(
+		private readonly host: Host,
+		props: PropsModel,
+		tokens: TokenModel
+	) {
 		const indexerHost: DomIndexerHost = {
-			container: () => this.container(),
+			container: () => this.host.container(),
 			pendingControls: () => this.#pendingControls.values(),
 			pendingChildSequences: () => this.#pendingChildSequences.values(),
 			emitIndexed: () => this.indexed(),
 			isUserSelecting: this.isUserSelecting,
 		}
-		this.#indexer = new DomIndexer(indexerHost, lifecycle, props, tokens)
+		this.#indexer = new DomIndexer(indexerHost, host, props, tokens)
 		this.isIndexed = this.#indexer.isIndexed
 
 		const boundaryHost: DomBoundaryHost = {
-			container: () => this.container(),
+			container: () => this.host.container(),
 			isIndexed: () => this.isIndexed(),
 			isComposing: () => this.#isComposing,
 			locateNode: node => this.#indexer.locateNode(node),

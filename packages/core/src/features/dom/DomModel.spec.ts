@@ -6,7 +6,6 @@ import {Store} from '../../store/Store'
 function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
 	store.props.set({defaultValue: value, ...props})
-	store.lifecycle.mounted()
 	return store
 }
 
@@ -16,8 +15,8 @@ function mountStructuralInline(value: string) {
 	const textSurface = document.createElement('span')
 	container.append(textSurface)
 	document.body.append(container)
-	store.dom.container(container)
-	store.lifecycle.rendered()
+	store.host.container(container)
+	store.host.rendered()
 	const textNode = textSurface.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
 	return {store, container, textSurface, textNode}
@@ -31,8 +30,8 @@ function mountStructuralInlineMark(value = 'hello @[world]') {
 	const after = document.createElement('span')
 	container.append(before, mark, after)
 	document.body.append(container)
-	store.dom.container(container)
-	store.lifecycle.rendered()
+	store.host.container(container)
+	store.host.rendered()
 	return {store, container, before, mark, after}
 }
 
@@ -48,8 +47,8 @@ function mountStructuralNested(value = '@[before @[nested] after]') {
 	outer.append(before, inner, after)
 	container.append(leading, outer, trailing)
 	document.body.append(container)
-	store.dom.container(container)
-	store.lifecycle.rendered()
+	store.host.container(container)
+	store.host.rendered()
 	return {store, container, leading, outer, before, inner, after, trailing}
 }
 
@@ -70,9 +69,9 @@ function mountStructuralNestedWithChildSequence(value = '@[before @[nested] afte
 	outer.append(control, host)
 	container.append(leading, outer, trailing)
 	document.body.append(container)
-	store.dom.container(container)
+	store.host.container(container)
 	store.dom.childrenFor([1])(host)
-	store.lifecycle.rendered()
+	store.host.rendered()
 	return {store, container, leading, outer, control, host, before, inner, after, trailing}
 }
 
@@ -87,7 +86,7 @@ function mountStructuralNestedWithDuplicateChildSequences(value = '@[before @[ne
 	outer.append(hostA, hostB)
 	container.append(leading, outer, trailing)
 	document.body.append(container)
-	store.dom.container(container)
+	store.host.container(container)
 	store.dom.childrenFor([1])(hostA)
 	store.dom.childrenFor([1])(hostB)
 	return {store, container, outer, hostA, hostB}
@@ -103,7 +102,7 @@ function mountStructuralNestedWithOutsideChildSequence(value = '@[before @[neste
 	leading.append(outsideHost)
 	container.append(leading, outer, trailing)
 	document.body.append(container)
-	store.dom.container(container)
+	store.host.container(container)
 	store.dom.childrenFor([1])(outsideHost)
 	return {store, container, outer, outsideHost}
 }
@@ -118,9 +117,9 @@ function mountStructuralBlockWithControl(value: string) {
 	row.append(control, textSurface)
 	container.append(row)
 	document.body.append(container)
-	store.dom.container(container)
+	store.host.container(container)
 	store.dom.controlFor([0])(control)
-	store.lifecycle.rendered()
+	store.host.rendered()
 	const textNode = textSurface.firstChild
 	const controlText = control.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Structural block text surface did not render a text node')
@@ -140,10 +139,10 @@ function mountStructuralBlockWithControls(value: string) {
 	row.append(beforeControl, textSurface, afterControl)
 	container.append(row)
 	document.body.append(container)
-	store.dom.container(container)
+	store.host.container(container)
 	store.dom.controlFor([0])(beforeControl)
 	store.dom.controlFor([0])(afterControl)
-	store.lifecycle.rendered()
+	store.host.rendered()
 	const textNode = textSurface.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Structural block text surface did not render a text node')
 	return {store, container, row, beforeControl, afterControl, textSurface, textNode}
@@ -157,18 +156,6 @@ describe('DomModel structural indexing', () => {
 		store = new Store()
 		store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
 		store.value.current('hello @[world]')
-	})
-
-	it('owns the container ref signal', () => {
-		const container = document.createElement('div')
-
-		store.dom.container(container)
-
-		expect(store.dom.container()).toBe(container)
-
-		store.dom.container(null)
-
-		expect(store.dom.container()).toBe(null)
 	})
 
 	it('publishes one dom index per rendered commit', () => {
@@ -257,7 +244,7 @@ describe('DomModel structural indexing', () => {
 	it('completes indexing when duplicate child sequence hosts are registered', () => {
 		const {store, container, outer} = mountStructuralNestedWithDuplicateChildSequences()
 
-		store.lifecycle.rendered()
+		store.host.rendered()
 
 		expect(store.dom.isIndexed()).toBe(true)
 		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
@@ -267,7 +254,7 @@ describe('DomModel structural indexing', () => {
 	it('completes indexing when child sequence host is outside owner mark root', () => {
 		const {store, container, outer} = mountStructuralNestedWithOutsideChildSequence()
 
-		store.lifecycle.rendered()
+		store.host.rendered()
 
 		expect(store.dom.isIndexed()).toBe(true)
 		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
@@ -304,8 +291,8 @@ describe('DomModel structural indexing', () => {
 		const trailing = document.createElement('span')
 		container.append(leading, outer, trailing)
 		document.body.append(container)
-		store.dom.container(container)
-		store.lifecycle.rendered()
+		store.host.container(container)
+		store.host.rendered()
 
 		expect(store.dom.isIndexed()).toBe(true)
 		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
@@ -316,7 +303,7 @@ describe('DomModel structural indexing', () => {
 		const {store, container} = mountStructuralInline('hello')
 
 		store.selection.range({start: 999, end: 999})
-		store.lifecycle.rendered()
+		store.host.rendered()
 
 		expect(store.selection.range()).toEqual({start: 5, end: 5})
 		container.remove()
@@ -326,7 +313,7 @@ describe('DomModel structural indexing', () => {
 		const {store, container} = mountStructuralInline('hello')
 
 		store.selection.range({start: 999, end: 1000})
-		store.lifecycle.rendered()
+		store.host.rendered()
 
 		expect(store.selection.range()).toEqual({start: 5, end: 5})
 		container.remove()
@@ -336,7 +323,7 @@ describe('DomModel structural indexing', () => {
 		const {store, container, textNode} = mountStructuralInline('hello')
 
 		store.selection.range({start: 3, end: 3})
-		store.lifecycle.rendered()
+		store.host.rendered()
 
 		const sel = window.getSelection()
 		expect(sel?.focusNode).toBe(textNode)
@@ -347,7 +334,7 @@ describe('DomModel structural indexing', () => {
 	it('clamps OOB range and places caret at clamped position', () => {
 		const {store, container} = mountStructuralInline('hello') // length 5
 		store.selection.range({start: 999, end: 999})
-		store.lifecycle.rendered()
+		store.host.rendered()
 
 		// clamped to maxPos (5); structural equality prevents re-fire
 		expect(store.selection.range()).toEqual({start: 5, end: 5})
@@ -358,7 +345,7 @@ describe('DomModel structural indexing', () => {
 		const {store, container} = mountStructuralInline('hello')
 		store.selection.range({start: 2, end: 2})
 		store.dom.isUserSelecting(true)
-		store.lifecycle.rendered()
+		store.host.rendered()
 
 		expect(store.selection.range()).toEqual({start: 2, end: 2})
 		container.remove()
@@ -395,7 +382,7 @@ describe('DomModel structural indexing', () => {
 			mark.append(descendant)
 			const descendantText = descendant.firstChild
 			if (!(descendantText instanceof Text)) throw new Error('Mark descendant did not render a text node')
-			store.lifecycle.rendered()
+			store.host.rendered()
 
 			expect(store.dom.rawPositionFromBoundary(descendantText, 0, 'after')).toEqual({
 				ok: false,
@@ -424,12 +411,11 @@ describe('DomModel structural indexing', () => {
 			const container = document.createElement('div')
 			document.body.appendChild(container)
 			store.props.set({defaultValue: 'hi'})
-			store.lifecycle.mounted()
-			store.dom.container(container)
+			store.host.container(container)
 
 			const fired = vi.fn()
 			watch(store.dom.indexed, fired)
-			store.lifecycle.rendered()
+			store.host.rendered()
 			expect(fired).toHaveBeenCalledTimes(1)
 			container.remove()
 		})
@@ -441,9 +427,8 @@ describe('DomModel structural indexing', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.props.set({defaultValue: 'hello'})
-			store.lifecycle.mounted()
-			store.dom.container(container)
-			store.lifecycle.rendered()
+			store.host.container(container)
+			store.host.rendered()
 
 			store.dom.isUserSelecting(true)
 			expect(span.contentEditable).toBe('false')
@@ -465,9 +450,8 @@ describe('DomModel structural indexing', () => {
 			document.body.appendChild(container)
 
 			store.props.set({defaultValue: ''})
-			store.dom.container(container)
-			store.lifecycle.mounted()
-			store.lifecycle.rendered()
+			store.host.container(container)
+			store.host.rendered()
 
 			const focusSpy = vi.spyOn(span, 'focus')
 			container.dispatchEvent(new MouseEvent('click', {bubbles: true}))

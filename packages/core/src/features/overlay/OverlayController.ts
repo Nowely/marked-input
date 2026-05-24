@@ -12,7 +12,7 @@ import * as caretDom from '../selection/caretDom'
 import type {SelectionController} from '../selection/SelectionController'
 import {resolveOverlaySlot} from '../slots'
 import type {OverlaySlot} from '../slots'
-import type {Lifecycle} from '../state/Lifecycle'
+import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {TriggerFinder} from './TriggerFinder'
@@ -37,7 +37,7 @@ export class OverlayController {
 	})
 
 	constructor(
-		private readonly lifecycle: Lifecycle,
+		private readonly host: Host,
 		private readonly props: PropsModel,
 		private readonly value: ValueModel,
 		private readonly dom: DomModel,
@@ -47,7 +47,7 @@ export class OverlayController {
 	) {
 		const hasOverlayTrigger = computed(() => this.props.options().some(opt => opt.overlay?.trigger != null))
 
-		this.lifecycle.onMounted(() => {
+		this.host.onMounted(() => {
 			watch(this.close, () => {
 				if (!hasOverlayTrigger()) return
 				this.match(undefined)
@@ -74,7 +74,7 @@ export class OverlayController {
 					e => {
 						const target = e.target instanceof HTMLElement ? e.target : null
 						if (this.element()?.contains(target)) return
-						if (this.dom.container()?.contains(target)) return
+						if (this.host.container()?.contains(target)) return
 						this.close()
 					},
 					true
@@ -84,7 +84,7 @@ export class OverlayController {
 			effect(() => {
 				if (!hasOverlayTrigger()) return
 				const handler = () => {
-					const container = this.dom.container()
+					const container = this.host.container()
 					if (!container?.contains(document.activeElement)) return
 					const showOverlayOn = this.props.showOverlayOn()
 					const type: OverlayTrigger = 'selectionChange'
@@ -153,7 +153,7 @@ export class OverlayController {
 				source,
 				range: {start, end: start + source.length},
 				span: value,
-				node: window.getSelection()?.anchorNode ?? this.dom.container() ?? document.body,
+				node: window.getSelection()?.anchorNode ?? this.host.container() ?? document.body,
 				option,
 			}
 		}

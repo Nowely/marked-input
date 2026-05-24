@@ -13,15 +13,12 @@ type SpanInputTarget = {
 	caret: number
 }
 
-export function enableInput(store: KbCtx): void {
-	const container = store.dom.container()
-	if (!container) return
+export function enableInput(store: KbCtx, container: HTMLElement): void {
 	let compositionRange: Range | undefined
 
 	listen(container, 'paste', e => {
-		const c = store.dom.container()
-		if (c) captureMarkupPaste(e, c)
-		handlePaste(store, e)
+		captureMarkupPaste(e, container)
+		handlePaste(store, container, e)
 	})
 
 	listen(container, 'compositionstart', () => {
@@ -44,7 +41,7 @@ export function enableInput(store: KbCtx): void {
 		container,
 		'beforeinput',
 		e => {
-			handleBeforeInput(store, e)
+			handleBeforeInput(store, container, e)
 		},
 		true
 	)
@@ -75,7 +72,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	store.edit.replace(range, '')
 }
 
-export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
+export function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent): void {
 	if (store.selection.isAllSelected()) {
 		if (event.inputType === 'insertFromPaste') {
 			event.preventDefault()
@@ -92,7 +89,7 @@ export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
 	const raw = rawRangeFromInputEvent(store, event)
 	if (!raw.ok) return
 
-	const replacement = replacementForInput(store, event)
+	const replacement = replacementForInput(container, event)
 	if (replacement === undefined) return
 
 	const range = rangeForInput(store, event, raw.value.range)
@@ -164,11 +161,10 @@ export function applySpanInput(focus: SpanInputTarget, event: InputEvent): boole
 	return true
 }
 
-function replacementForInput(store: KbCtx, event: InputEvent): string | undefined {
+function replacementForInput(container: HTMLElement, event: InputEvent): string | undefined {
 	if (event.inputType.startsWith('delete')) return ''
 	if (event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') {
-		const container = store.dom.container()
-		const markup = container ? consumeMarkupPaste(container) : undefined
+		const markup = consumeMarkupPaste(container)
 		return markup ?? event.dataTransfer?.getData('text/plain') ?? event.data ?? ''
 	}
 	if (event.inputType === 'insertText') return event.data ?? ''
@@ -206,12 +202,11 @@ function adjacentMarkRange(tokens: readonly Token[], position: number, backward:
 	return undefined
 }
 
-export function handlePaste(store: KbCtx, event: ClipboardEvent): void {
+export function handlePaste(store: KbCtx, container: HTMLElement, event: ClipboardEvent): void {
 	if (!store.selection.isAllSelected()) return
 
 	event.preventDefault()
-	const c = store.dom.container()
-	const markup = c ? consumeMarkupPaste(c) : undefined
+	const markup = consumeMarkupPaste(container)
 	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
 	store.edit.replace({start: 0, end: -1}, newContent)
 }

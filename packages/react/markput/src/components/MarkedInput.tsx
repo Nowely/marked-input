@@ -90,11 +90,6 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOp
 		store.props.set(props)
 	})
 
-	useLayoutEffect(() => {
-		store.lifecycle.mounted()
-		return () => store.lifecycle.unmounted()
-	}, [])
-
 	useImperativeHandle(props.ref, () => store.handler, [store])
 
 	return (

@@ -3,20 +3,17 @@ import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
 import type {TokenModel} from '../parsing/TokenModel'
 import {serializeRange} from '../parsing/utils/serializeRange'
-import type {Lifecycle} from '../state/Lifecycle'
+import type {Host} from '../state/Host'
 import {MARKPUT_MIME} from './pasteMarkup'
 
 export class ClipboardController {
 	constructor(
-		private readonly lifecycle: Lifecycle,
-		private readonly edit: EditController,
+		host: Host,
+		edit: EditController,
 		private readonly dom: DomModel,
 		private readonly tokens: TokenModel
 	) {
-		lifecycle.onMounted(() => {
-			const container = dom.container()
-			if (!container) return
-
+		host.onMounted(container => {
 			listen(container, 'copy', e => {
 				this.#handleCopy(e)
 			})
