@@ -63,7 +63,7 @@ describe('TokenIndex', () => {
 		const second = mark('second', 0)
 		const secondIndex = createTokenIndex([second])
 
-		expect(secondIndex.resolveAddress(staleAddress)).toEqual({ok: false, reason: 'stale'})
+		expect(secondIndex.resolveAddress(staleAddress)).toBeUndefined()
 	})
 
 	it('resolves addresses when the same token instance is still at the path', () => {
@@ -71,6 +71,6 @@ describe('TokenIndex', () => {
 		const index = createTokenIndex([token])
 		const address = index.addressFor([0])!
 
-		expect(index.resolveAddress(address)).toEqual({ok: true, value: token})
+		expect(index.resolveAddress(address)).toBe(token)
 	})
 })

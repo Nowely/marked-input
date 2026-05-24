@@ -200,16 +200,16 @@ describe('DomTokenBridge', () => {
 			const {store, textSurface, container} = mountStructuralInline('hello')
 
 			expect(store.bridge.isIndexed()).toBe(true)
-			expect(store.bridge.locateNode(textSurface)).toMatchObject({ok: true})
+			expect(store.bridge.locateNode(textSurface)).toBeDefined()
 			container.remove()
 		})
 
 		it('maps inline token roots by rendered token order', () => {
 			const {store, before, mark, after, container} = mountStructuralInlineMark()
 
-			expect(store.bridge.locateNode(before)).toMatchObject({ok: true, value: {tokenElement: before}})
-			expect(store.bridge.locateNode(mark)).toMatchObject({ok: true, value: {tokenElement: mark}})
-			expect(store.bridge.locateNode(after)).toMatchObject({ok: true, value: {tokenElement: after}})
+			expect(store.bridge.locateNode(before)).toMatchObject({tokenElement: before})
+			expect(store.bridge.locateNode(mark)).toMatchObject({tokenElement: mark})
+			expect(store.bridge.locateNode(after)).toMatchObject({tokenElement: after})
 			container.remove()
 		})
 
@@ -217,8 +217,8 @@ describe('DomTokenBridge', () => {
 			const {store, textSurface, container} = mountStructuralInline('hello')
 
 			expect(store.bridge.locateNode(textSurface)).toMatchObject({
-				ok: true,
-				value: {tokenElement: textSurface, textElement: textSurface},
+				tokenElement: textSurface,
+				textElement: textSurface,
 			})
 			expect(textSurface.textContent).toBe('hello')
 			expect(textSurface.contentEditable).toBe('true')
@@ -228,10 +228,10 @@ describe('DomTokenBridge', () => {
 		it('maps nested children without slot-root wrappers', () => {
 			const {store, outer, before, inner, after, container} = mountStructuralNested()
 
-			expect(store.bridge.locateNode(outer)).toMatchObject({ok: true, value: {tokenElement: outer}})
-			expect(store.bridge.locateNode(before)).toMatchObject({ok: true, value: {tokenElement: before}})
-			expect(store.bridge.locateNode(inner)).toMatchObject({ok: true, value: {tokenElement: inner}})
-			expect(store.bridge.locateNode(after)).toMatchObject({ok: true, value: {tokenElement: after}})
+			expect(store.bridge.locateNode(outer)).toMatchObject({tokenElement: outer})
+			expect(store.bridge.locateNode(before)).toMatchObject({tokenElement: before})
+			expect(store.bridge.locateNode(inner)).toMatchObject({tokenElement: inner})
+			expect(store.bridge.locateNode(after)).toMatchObject({tokenElement: after})
 			container.remove()
 		})
 
@@ -239,12 +239,12 @@ describe('DomTokenBridge', () => {
 			const {store, container, outer, control, host, before, inner, after} =
 				mountStructuralNestedWithChildSequence()
 
-			expect(store.bridge.locateNode(outer)).toMatchObject({ok: true, value: {tokenElement: outer}})
-			expect(store.bridge.locateNode(host)).toMatchObject({ok: true, value: {tokenElement: outer}})
-			expect(store.bridge.locateNode(control)).toMatchObject({ok: true, value: {tokenElement: outer}})
-			expect(store.bridge.locateNode(before)).toMatchObject({ok: true, value: {tokenElement: before}})
-			expect(store.bridge.locateNode(inner)).toMatchObject({ok: true, value: {tokenElement: inner}})
-			expect(store.bridge.locateNode(after)).toMatchObject({ok: true, value: {tokenElement: after}})
+			expect(store.bridge.locateNode(outer)).toMatchObject({tokenElement: outer})
+			expect(store.bridge.locateNode(host)).toMatchObject({tokenElement: outer})
+			expect(store.bridge.locateNode(control)).toMatchObject({tokenElement: outer})
+			expect(store.bridge.locateNode(before)).toMatchObject({tokenElement: before})
+			expect(store.bridge.locateNode(inner)).toMatchObject({tokenElement: inner})
+			expect(store.bridge.locateNode(after)).toMatchObject({tokenElement: after})
 			expect(before.textContent).toBe('before ')
 			expect(after.textContent).toBe(' after')
 			container.remove()
@@ -256,7 +256,7 @@ describe('DomTokenBridge', () => {
 			store.host.rendered()
 
 			expect(store.bridge.isIndexed()).toBe(true)
-			expect(store.bridge.locateNode(outer)).toMatchObject({ok: true})
+			expect(store.bridge.locateNode(outer)).toBeDefined()
 			container.remove()
 		})
 
@@ -266,14 +266,15 @@ describe('DomTokenBridge', () => {
 			store.host.rendered()
 
 			expect(store.bridge.isIndexed()).toBe(true)
-			expect(store.bridge.locateNode(outer)).toMatchObject({ok: true})
+			expect(store.bridge.locateNode(outer)).toBeDefined()
 			container.remove()
 		})
 
-		it('returns control for registered controls', () => {
+		it('reports registered controls without locating them as tokens', () => {
 			const {store, control, container} = mountStructuralBlockWithControl('hello')
 
-			expect(store.bridge.locateNode(control)).toEqual({ok: false, reason: 'control'})
+			expect(store.bridge.locateNode(control)).toBeUndefined()
+			expect(store.bridge.isControlAncestor(control)).toBe(true)
 			container.remove()
 		})
 
@@ -281,12 +282,15 @@ describe('DomTokenBridge', () => {
 			const {store, beforeControl, afterControl, textSurface, container} =
 				mountStructuralBlockWithControls('hello')
 
-			expect(store.bridge.locateNode(beforeControl)).toEqual({ok: false, reason: 'control'})
-			expect(store.bridge.locateNode(afterControl)).toEqual({ok: false, reason: 'control'})
+			expect(store.bridge.locateNode(beforeControl)).toBeUndefined()
+			expect(store.bridge.locateNode(afterControl)).toBeUndefined()
+			expect(store.bridge.isControlAncestor(beforeControl)).toBe(true)
+			expect(store.bridge.isControlAncestor(afterControl)).toBe(true)
 			expect(store.bridge.locateNode(textSurface)).toMatchObject({
-				ok: true,
-				value: {tokenElement: textSurface, textElement: textSurface},
+				tokenElement: textSurface,
+				textElement: textSurface,
 			})
+			expect(store.bridge.isControlAncestor(textSurface)).toBe(false)
 			container.remove()
 		})
 
@@ -305,7 +309,7 @@ describe('DomTokenBridge', () => {
 			store.host.rendered()
 
 			expect(store.bridge.isIndexed()).toBe(true)
-			expect(store.bridge.locateNode(outer)).toMatchObject({ok: true})
+			expect(store.bridge.locateNode(outer)).toBeDefined()
 			container.remove()
 		})
 	})

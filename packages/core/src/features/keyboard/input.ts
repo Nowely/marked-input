@@ -22,8 +22,7 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 	})
 
 	listen(container, 'compositionstart', () => {
-		const selection = store.selection.readRaw()
-		compositionRange = selection.ok ? selection.value.range : undefined
+		compositionRange = store.selection.readRaw()?.range
 		store.bridge.compositionStarted()
 	})
 
@@ -62,10 +61,10 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	}
 
 	const raw = store.selection.readRaw()
-	if (!raw.ok) return
+	if (!raw) return
 
 	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
-	const range = rangeForDelete(store, inputType, raw.value.range)
+	const range = rangeForDelete(store, inputType, raw.range)
 	if (!range) return
 
 	event.preventDefault()
@@ -87,12 +86,12 @@ export function handleBeforeInput(store: KbCtx, container: HTMLElement, event: I
 	if (store.props.layout.isBlock()) return
 
 	const raw = rawRangeFromInputEvent(store, event)
-	if (!raw.ok) return
+	if (!raw) return
 
 	const replacement = replacementForInput(container, event)
 	if (replacement === undefined) return
 
-	const range = rangeForInput(store, event, raw.value.range)
+	const range = rangeForInput(store, event, raw.range)
 	if (!range) return
 
 	event.preventDefault()

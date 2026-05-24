@@ -13,8 +13,8 @@ Provides copy, cut, and paste operations with rich markup support. On copy, writ
 
 ```typescript
 const raw = store.selection.readRaw()
-if (raw.ok) {
-    const range = raw.value.range
+if (raw) {
+    const range = raw.range
 }
 ```
 

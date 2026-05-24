@@ -23,7 +23,6 @@ export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing'
 export type {
 	TokenPath,
 	TokenAddress,
-	Result,
 	Range,
 	RawSelection,
 	MarkPatch,

@@ -29,20 +29,20 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	// actually standing on.
 	const active = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
 	const located = active ? store.bridge.locateNode(active) : undefined
-	if (!located?.ok) return false
+	if (!located) return false
 
-	const isFocusedOnMarkElement = active === located.value.tokenElement && !located.value.textElement
-	const address = located.value.address
+	const isFocusedOnMarkElement = active === located.tokenElement && !located.textElement
+	const address = located.address
 
 	const token = store.tokens.index().resolveAddress(address)
-	if (!token.ok) return false
+	if (!token) return false
 
 	if (!isFocusedOnMarkElement) {
 		const selection = store.selection.readRaw()
-		if (!selection.ok || selection.value.range.start !== selection.value.range.end) return false
+		if (!selection || selection.range.start !== selection.range.end) return false
 
-		const atStart = selection.value.range.start <= token.value.position.start
-		const atEnd = selection.value.range.end >= token.value.position.end
+		const atStart = selection.range.start <= token.position.start
+		const atEnd = selection.range.end >= token.position.end
 		if (direction === 'prev' && !atStart) return false
 		if (direction === 'next' && !atEnd) return false
 	}

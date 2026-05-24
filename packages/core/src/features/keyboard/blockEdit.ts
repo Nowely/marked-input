@@ -166,7 +166,7 @@ function handleEnter(store: KbCtx, container: HTMLElement, event: KeyboardEvent)
 	}
 
 	const raw = store.selection.readRaw()
-	const absolutePos = raw.ok ? raw.value.range.start : token.position.end
+	const absolutePos = raw ? raw.range.start : token.position.end
 	store.edit.replace({start: absolutePos, end: absolutePos}, newRowContent)
 }
 
@@ -291,8 +291,8 @@ function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: Inp
 
 function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string): void {
 	const raw = rawRangeFromInputEvent(store, event)
-	if (!raw.ok) return
-	const range = rangeForBlockInput(store, event, raw.value.range)
+	if (!raw) return
+	const range = rangeForBlockInput(store, event, raw.range)
 	if (!range) return
 
 	event.preventDefault()

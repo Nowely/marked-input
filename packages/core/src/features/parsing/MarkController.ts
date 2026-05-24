@@ -77,7 +77,7 @@ export class MarkController {
 	#resolve(): MarkToken | undefined {
 		if (this.store.props.readOnly()) return undefined
 		const resolved = this.store.tokens.index().resolveAddress(this.address)
-		if (!resolved.ok || resolved.value.type !== 'mark') return undefined
-		return resolved.value
+		if (resolved?.type !== 'mark') return undefined
+		return resolved
 	}
 }
