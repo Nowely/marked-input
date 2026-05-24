@@ -366,7 +366,7 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
-| **Host**                      | Adapter-fed runtime state: mount/unmount/render events and the container HTMLElement |
+| **Host**                      | Adapter-fed runtime state: the rendered event and the container HTMLElement |
 | **ValueModel**                | Accepted serialized value state, raw range replacement   |
 | **EditController**            | Unified user edit path: `replace(range, replacement, caretAt?)`, `{end: -1}` resolves to current value length |
 | **ParseController**           | Token parsing, parser selection, reparse event            |

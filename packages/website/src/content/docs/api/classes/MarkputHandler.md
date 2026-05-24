@@ -13,8 +13,8 @@ Defined in: [core/src/store/MarkputHandler.ts:5](https://github.com/Nowely/marke
 
 ```ts
 new MarkputHandler(
-   host, 
-   overlayFeature, 
+   host,
+   overlayFeature,
    selection): MarkputHandler;
 ```
 

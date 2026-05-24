@@ -6,7 +6,6 @@ import {Store} from '../../store/Store'
 function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
 	store.props.set({defaultValue: value, ...props})
-	store.host.mounted()
 	return store
 }
 
@@ -412,7 +411,6 @@ describe('DomModel structural indexing', () => {
 			const container = document.createElement('div')
 			document.body.appendChild(container)
 			store.props.set({defaultValue: 'hi'})
-			store.host.mounted()
 			store.host.container(container)
 
 			const fired = vi.fn()
@@ -429,7 +427,6 @@ describe('DomModel structural indexing', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.props.set({defaultValue: 'hello'})
-			store.host.mounted()
 			store.host.container(container)
 			store.host.rendered()
 
@@ -454,7 +451,6 @@ describe('DomModel structural indexing', () => {
 
 			store.props.set({defaultValue: ''})
 			store.host.container(container)
-			store.host.mounted()
 			store.host.rendered()
 
 			const focusSpy = vi.spyOn(span, 'focus')

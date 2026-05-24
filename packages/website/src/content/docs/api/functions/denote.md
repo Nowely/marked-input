@@ -7,8 +7,8 @@ title: "denote"
 
 ```ts
 function denote(
-   value, 
-   callback, 
+   value,
+   callback,
    markups): string;
 ```
 

@@ -1,12 +1,10 @@
 import {effectScope, event, signal, watch} from '../../shared/signals'
 
-// Owns adapter-fed runtime state: lifecycle events emitted by the embedding
-// component (mounted/unmounted/rendered) and the host element ref. Features
-// read these; only the React/Vue adapter writes them.
+// Owns adapter-fed runtime state: the rendered event emitted after each
+// component render and the host element ref. Features read these; only the
+// React/Vue adapter writes them.
 
 export class Host {
-	readonly mounted = event()
-	readonly unmounted = event()
 	readonly rendered = event()
 	readonly container = signal<HTMLElement | null>({initial: null})
 

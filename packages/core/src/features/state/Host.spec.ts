@@ -4,10 +4,8 @@ import {signal, watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 describe('Host', () => {
-	it('exposes mounted, unmounted, rendered events', () => {
+	it('exposes the rendered event', () => {
 		const store = new Store()
-		expect(typeof store.host.mounted).toBe('function')
-		expect(typeof store.host.unmounted).toBe('function')
 		expect(typeof store.host.rendered).toBe('function')
 	})
 

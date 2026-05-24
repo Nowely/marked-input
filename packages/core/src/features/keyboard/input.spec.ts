@@ -6,7 +6,6 @@ import {applySpanInput, enableInput, handleBeforeInput} from './input'
 function mountStructuralInline(value = 'hello') {
 	const store = new Store()
 	store.props.set({defaultValue: value})
-	store.host.mounted()
 	const container = document.createElement('div')
 	const textSurface = document.createElement('span')
 	container.append(textSurface)
@@ -21,7 +20,6 @@ function mountStructuralInline(value = 'hello') {
 function mountStructuralMarkWithDescendant(value = '@[world]') {
 	const store = new Store()
 	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: '@[__value__]'}]})
-	store.host.mounted()
 	const container = document.createElement('div')
 	const before = document.createElement('span')
 	const mark = document.createElement('mark')

@@ -88,7 +88,6 @@ describe('SelectionController', () => {
 		it('sets range to full value range and applies it to DOM', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
-			store.host.mounted()
 			const container = document.createElement('div')
 			const span = document.createElement('span')
 			span.appendChild(document.createTextNode('hello'))
@@ -109,8 +108,6 @@ describe('SelectionController', () => {
 		it('retains range intent when the DOM has no target yet', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
-			store.host.mounted()
-
 			// No container set → dom.isIndexed() is false → placement is deferred
 			// until the next render. The range signal still reflects user intent.
 			store.selection.selectAll()
@@ -123,7 +120,6 @@ describe('SelectionController', () => {
 			const addSpy = vi.spyOn(document, 'addEventListener')
 			const store = new Store()
 			store.host.container(document.createElement('div'))
-			store.host.mounted()
 			expect(addSpy).toHaveBeenCalledWith('mousedown', expect.any(Function), undefined)
 			addSpy.mockRestore()
 		})
@@ -140,7 +136,6 @@ describe('SelectionController', () => {
 
 			store.props.set({defaultValue: 'hello'})
 			store.host.container(container)
-			store.host.mounted()
 			store.selection.position(5)
 
 			store.host.rendered()
@@ -159,7 +154,6 @@ describe('SelectionController', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
-			store.host.mounted()
 			store.dom.isUserSelecting(true)
 			store.selection.position(3)
 
@@ -181,7 +175,6 @@ describe('SelectionController', () => {
 			document.body.appendChild(container)
 			store.props.set({defaultValue: 'hello'})
 			store.host.container(container)
-			store.host.mounted()
 			store.selection.position(3)
 			store.host.rendered()
 			expect(store.selection.range()).toEqual({start: 3, end: 3})
@@ -199,7 +192,6 @@ describe('SelectionController', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
-			store.host.mounted()
 			store.host.rendered()
 
 			expect(span.contentEditable).toBe('true')

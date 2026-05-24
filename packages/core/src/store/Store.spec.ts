@@ -130,7 +130,6 @@ describe('Store', () => {
 	describe('value edits', () => {
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
-			store.host.mounted()
 			store.value.current('hello')
 			expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 			expect(store.value.current()).toBe('hello')
@@ -140,7 +139,6 @@ describe('Store', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			store.host.mounted()
 			store.value.current('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
@@ -150,7 +148,6 @@ describe('Store', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
-			store.host.mounted()
 			store.value.current('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
@@ -159,7 +156,6 @@ describe('Store', () => {
 
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
-			store.host.mounted()
 			expect(() => store.value.current('test')).not.toThrow()
 		})
 	})
@@ -396,7 +392,6 @@ describe('Store', () => {
 		it('reacts to props.value changes when ValueModel is enabled', () => {
 			const store = new Store()
 			store.props.set({value: 'initial'})
-			store.host.mounted()
 			expect(store.value.current()).toBe('initial')
 			store.props.set({value: 'changed'})
 			expect(store.value.current()).toBe('changed')

@@ -6,7 +6,7 @@ title: "Markup"
 ---
 
 ```ts
-type Markup = 
+type Markup =
   | ValueMarkup
   | `${ValueMarkup}${MetaMarkup}`
   | `${ValueMarkup}${MetaMarkup}${SlotMarkup}`
