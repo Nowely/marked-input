@@ -1,4 +1,6 @@
-import type {DomModel} from '../dom/DomModel'
+/* oxlint-disable no-extraneous-class */
+// packages/core/src/features/keyboard/KeyboardController.ts
+import type {DomTokenBridge} from '../bridge'
 import type {EditController} from '../edit'
 import type {TokenModel} from '../parsing/TokenModel'
 import type {SelectionController} from '../selection/SelectionController'
@@ -12,14 +14,14 @@ import {enableInput} from './input'
 export class KeyboardController {
 	constructor(
 		host: Host,
-		dom: DomModel,
+		bridge: DomTokenBridge,
 		value: ValueModel,
 		selection: SelectionController,
 		edit: EditController,
 		tokens: TokenModel,
 		props: PropsModel
 	) {
-		const ctx = {dom, value, selection, edit, tokens, props}
+		const ctx = {bridge, value, selection, edit, tokens, props}
 		host.onMounted(container => {
 			enableInput(ctx, container)
 			enableBlockEdit(ctx, container)

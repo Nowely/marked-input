@@ -2,7 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'selection' | 'props' | 'tokens'>
+type KbCtx = Pick<Store, 'bridge' | 'selection' | 'props' | 'tokens'>
 
 export function enableArrowNav(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'keydown', e => {
@@ -28,7 +28,7 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	// is ambiguous; the active element tells us which token the user is
 	// actually standing on.
 	const active = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
-	const located = active ? store.dom.locateNode(active) : undefined
+	const located = active ? store.bridge.locateNode(active) : undefined
 	if (!located?.ok) return false
 
 	const isFocusedOnMarkElement = active === located.value.tokenElement && !located.value.textElement
@@ -38,7 +38,7 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	if (!token.ok) return false
 
 	if (!isFocusedOnMarkElement) {
-		const selection = store.dom.readRawSelection()
+		const selection = store.selection.readRaw()
 		if (!selection.ok || selection.value.range.start !== selection.value.range.end) return false
 
 		const atStart = selection.value.range.start <= token.value.position.start

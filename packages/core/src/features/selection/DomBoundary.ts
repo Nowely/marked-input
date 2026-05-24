@@ -1,3 +1,4 @@
+// packages/core/src/features/selection/DomBoundary.ts
 import type {
 	BoundaryPositionResult,
 	NodeLocationResult,
@@ -5,9 +6,9 @@ import type {
 	TokenAddress,
 	TokenPath,
 } from '../../shared/editorContracts'
+import type {PathElements, RegisteredRole} from '../bridge'
 import type {Token} from '../parsing'
 import type {TokenModel} from '../parsing/TokenModel'
-import type {PathElements, RegisteredRole} from './DomIndexer'
 import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 
 export interface DomBoundaryHost {
