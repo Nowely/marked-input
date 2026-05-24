@@ -204,4 +204,84 @@ export class SelectionController {
 		)
 		return true
 	}
+
+	#focusEmptyEditorOnClick(container: HTMLElement): void {
+		listen(container, 'click', () => {
+			const tokens = this.tokens.current()
+			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
+				firstHtmlChild(container)?.focus()
+			}
+		})
+	}
+
+	#trackUserSelecting(container: HTMLElement): void {
+		let pressedAt: Node | null = null
+
+		listen(document, 'mousedown', e => {
+			pressedAt = nodeTarget(e)
+		})
+
+		listen(document, 'mousemove', e => {
+			if (pressedAt === null) return
+			const startedOutsideEditor = !container.contains(pressedAt)
+			const sweepingAcrossNodes = pressedAt !== e.target
+			const selectionIntersectsEditor = window.getSelection()?.containsNode(container, true) ?? false
+			if ((startedOutsideEditor || sweepingAcrossNodes) && selectionIntersectsEditor) {
+				this.isUserSelecting(true)
+			}
+		})
+
+		const clearIfCollapsed = (): void => {
+			if (!this.isUserSelecting()) return
+			const sel = window.getSelection()
+			if (!sel || sel.isCollapsed) this.isUserSelecting(false)
+		}
+
+		listen(document, 'mouseup', () => {
+			pressedAt = null
+			clearIfCollapsed()
+		})
+
+		listen(document, 'selectionchange', clearIfCollapsed)
+	}
+
+	#trackSelection(container: HTMLElement): void {
+		const sync = (): void => {
+			const rawSel = this.#boundary.readSelection()
+			this.range(rawSel.ok ? rawSel.value.range : undefined)
+		}
+
+		const syncIfInEditor = (node: Node): void => {
+			const result = this.bridge.locateNode(node)
+			if (!result.ok) {
+				if (result.reason === 'control') return
+				this.range(undefined)
+				return
+			}
+			sync()
+		}
+
+		listen(container, 'focusin', e => {
+			if (this.#isPlacingCaret) return
+			const target = e.target instanceof HTMLElement ? e.target : undefined
+			if (!target) {
+				this.range(undefined)
+				return
+			}
+			syncIfInEditor(target)
+		})
+
+		listen(container, 'focusout', () => {
+			queueMicrotask(() => {
+				if (!container.contains(document.activeElement)) this.range(undefined)
+			})
+		})
+
+		listen(document, 'selectionchange', () => {
+			if (this.#isPlacingCaret) return
+			const sel = window.getSelection()
+			if (!sel?.focusNode) return
+			syncIfInEditor(sel.focusNode)
+		})
+	}
 }
