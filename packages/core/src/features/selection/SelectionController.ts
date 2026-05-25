@@ -43,12 +43,12 @@ export class SelectionController {
 			this.#trackSelection(container)
 			this.#trackUserSelecting(container)
 
-			watch(this.range, () => this.#applyRange())
-			watch(this.dom.indexed, () => this.#applyRange())
-
 			watch(this.dom.indexed, () => this.#reconcileSurfaces())
 			watch(this.props.readOnly, () => this.#reconcileSurfaces())
 			watch(this.isUserSelecting, () => this.#reconcileSurfaces())
+
+			watch(this.range, () => this.#applyRange())
+			watch(this.dom.indexed, () => this.#applyRange())
 		})
 	}
 
