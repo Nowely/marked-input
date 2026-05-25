@@ -18,8 +18,7 @@ export class DomIndex {
 	#byElement: WeakMap<HTMLElement, TokenNode> = new WeakMap()
 	#controlRoots: WeakSet<HTMLElement> = new WeakSet()
 	#composing = false
-	#rendering = false
-	#queuedRender = false
+	#committing = false
 
 	constructor(
 		private readonly host: Host,
@@ -29,7 +28,7 @@ export class DomIndex {
 	) {
 		this.isIndexed = this.#isIndexed
 		host.onMounted(() => {
-			watch(host.rendered, () => this.#handleRendered(), {immediate: true})
+			watch(host.rendered, () => this.#commit(), {immediate: true})
 		})
 	}
 
@@ -74,43 +73,32 @@ export class DomIndex {
 		return this.#composing
 	}
 
-	#handleRendered(): void {
-		if (this.#rendering) {
-			this.#queuedRender = true
-			return
-		}
-		this.#rendering = true
-		try {
-			this.#commit()
-		} finally {
-			this.#rendering = false
-			const queued = this.#queuedRender
-			this.#queuedRender = false
-			if (queued) this.#handleRendered()
-		}
-	}
-
 	#commit(): void {
+		if (this.#committing) throw new Error('DomIndex re-entry')
 		const container = this.host.container()
 		if (!container) return
+		this.#committing = true
+		try {
+			const tokens = this.tokens.current()
+			const tokenIndex = this.tokens.index()
+			const result = buildIndex({
+				container,
+				tokens,
+				addressFor: path => tokenIndex.addressFor(path),
+				controlElements: this.refs.controlElements(),
+				childSequenceHostsByPath: this.#collectChildSequenceHostsByPath(tokens),
+				isBlock: this.layout.isBlock(),
+			})
 
-		const tokens = this.tokens.current()
-		const tokenIndex = this.tokens.index()
-		const result = buildIndex({
-			container,
-			tokens,
-			addressFor: path => tokenIndex.addressFor(path),
-			controlElements: this.refs.controlElements(),
-			childSequenceHostsByPath: this.#collectChildSequenceHostsByPath(tokens),
-			isBlock: this.layout.isBlock(),
-		})
+			this.#byPath = result.byPath
+			this.#byElement = result.byElement
+			this.#controlRoots = result.controlRoots
 
-		this.#byPath = result.byPath
-		this.#byElement = result.byElement
-		this.#controlRoots = result.controlRoots
-
-		if (!this.#isIndexed()) batch(() => this.#isIndexed(true), {mutable: true})
-		this.indexed()
+			if (!this.#isIndexed()) batch(() => this.#isIndexed(true), {mutable: true})
+			this.indexed()
+		} finally {
+			this.#committing = false
+		}
 	}
 
 	#collectChildSequenceHostsByPath(tokens: readonly Token[]): ReadonlyMap<string, readonly HTMLElement[]> {
