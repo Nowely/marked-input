@@ -3,7 +3,7 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'bridge' | 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
+type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../parsing'
 import {rawRangeFromInputEvent} from './inputRange'
@@ -23,13 +23,13 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 
 	listen(container, 'compositionstart', () => {
 		compositionRange = store.selection.readRaw()?.range
-		store.bridge.compositionStarted()
+		store.dom.compositionStarted()
 	})
 
 	listen(container, 'compositionend', e => {
 		const range = compositionRange
 		compositionRange = undefined
-		store.bridge.compositionEnded()
+		store.dom.compositionEnded()
 		if (store.props.layout.isBlock()) return
 		if (!range) return
 		const data = e.data

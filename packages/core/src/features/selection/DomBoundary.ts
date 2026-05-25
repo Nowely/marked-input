@@ -1,6 +1,6 @@
 // packages/core/src/features/selection/DomBoundary.ts
 import type {RawSelection, TokenAddress, TokenPath} from '../../shared/editorContracts'
-import type {LocatedNode, PathElements, RegisteredRole} from '../bridge'
+import type {Lookup, TokenNode} from '../dom'
 import type {Token} from '../parsing'
 import type {TokenModel} from '../parsing/TokenModel'
 import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
@@ -9,9 +9,8 @@ export interface DomBoundaryHost {
 	container(): HTMLElement | null
 	isIndexed(): boolean
 	isComposing(): boolean
-	locateNode(node: Node): LocatedNode | undefined
-	roleFor(element: HTMLElement): RegisteredRole | undefined
-	pathElementsFor(address: TokenAddress): PathElements | undefined
+	locate(node: Node): Lookup | undefined
+	nodeFor(address: TokenAddress): TokenNode | undefined
 }
 
 export class DomBoundary {
@@ -29,44 +28,41 @@ export class DomBoundary {
 			return this.#fromContainerBoundary(offset, affinity)
 		}
 
-		const location = this.host.locateNode(node)
-		if (!location) return undefined
+		const lookup = this.host.locate(node)
+		if (lookup?.kind !== 'token') return undefined
 
-		const token = this.tokens.index().resolveAddress(location.address)
+		const token = this.tokens.index().resolveAddress(lookup.node.address)
 		if (!token) return undefined
 
-		if (node instanceof HTMLElement) {
-			const role = this.host.roleFor(node)
-			if (role?.role === 'childSequence') {
-				const childCount = node.childNodes.length
-				if (offset <= 0) return token.position.start
-				if (offset >= childCount) return token.position.end
-				return this.#fromTokenChildBoundary(node, offset, token, affinity)
-			}
+		if (node instanceof HTMLElement && node === lookup.node.childSequenceHost) {
+			const childCount = node.childNodes.length
+			if (offset <= 0) return token.position.start
+			if (offset >= childCount) return token.position.end
+			return this.#fromTokenChildBoundary(node, offset, token, affinity)
 		}
 
-		const textElement = location.textElement
+		const textElement = lookup.node.textElement
 		if (textElement?.contains(node)) {
 			const local = textOffsetWithin(textElement, node, offset)
 			if (local === undefined) return undefined
 			return token.position.start + local
 		}
 
-		if (node === location.tokenElement) {
-			const childCount = location.tokenElement.childNodes.length
+		if (node === lookup.node.tokenElement) {
+			const childCount = lookup.node.tokenElement.childNodes.length
 			if (offset <= 0) return token.position.start
 			if (offset >= childCount) return token.position.end
-			return this.#fromTokenChildBoundary(location.tokenElement, offset, token, affinity)
+			return this.#fromTokenChildBoundary(lookup.node.tokenElement, offset, token, affinity)
 		}
 
-		if (token.type === 'mark' && location.tokenElement.contains(node)) {
-			if (hasEditableAncestorBefore(node, location.tokenElement)) {
+		if (token.type === 'mark' && lookup.node.tokenElement.contains(node)) {
+			if (hasEditableAncestorBefore(node, lookup.node.tokenElement)) {
 				return undefined
 			}
 			return affinity === 'after' ? token.position.start : token.position.end
 		}
 
-		if (location.rowElement && node === location.rowElement) {
+		if (lookup.node.rowElement && node === lookup.node.rowElement) {
 			return offset <= 0 ? token.position.start : token.position.end
 		}
 
@@ -115,12 +111,12 @@ export class DomBoundary {
 		if (token.type === 'text') {
 			const path: TokenPath = this.tokens.index().pathFor(token) ?? []
 			const address = this.tokens.index().addressFor(path)
-			const textElement = address ? this.host.pathElementsFor(address)?.textElement : undefined
+			const textElement = address ? this.host.nodeFor(address)?.textElement : undefined
 			if (!textElement || textLength(textElement) === 0) return token.position.start
 		}
 
-		const before = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset - 1))
-		const after = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset))
+		const before = this.#lookupDescendant(tokenElement.childNodes.item(offset - 1))
+		const after = this.#lookupDescendant(tokenElement.childNodes.item(offset))
 		if (before && after) {
 			const beforeToken = this.tokens.index().resolveAddress(before.address)
 			const afterToken = this.tokens.index().resolveAddress(after.address)
@@ -132,8 +128,9 @@ export class DomBoundary {
 		return affinity === 'before' ? token.position.start : token.position.end
 	}
 
-	#locateRegisteredDescendant(node: Node | null): LocatedNode | undefined {
+	#lookupDescendant(node: Node | null): TokenNode | undefined {
 		if (!node) return undefined
-		return this.host.locateNode(node)
+		const lookup = this.host.locate(node)
+		return lookup?.kind === 'token' ? lookup.node : undefined
 	}
 }

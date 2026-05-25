@@ -36,7 +36,7 @@ function Mention() {
 | `update(patch)` | Serialize a patch and replace the mark raw range. |
 | `remove()` | Delete the mark raw range. |
 
-The controller does not expose a DOM ref. React and Vue own structural DOM and register it privately with core. Keyboard focus and caret placement are handled by `store.bridge` and `store.selection`.
+The controller does not expose a DOM ref. React and Vue own structural DOM and register it privately with core through `store.refs`. Keyboard focus and caret placement are handled by `store.dom` and `store.selection`.
 
 ## Updating Marks
 

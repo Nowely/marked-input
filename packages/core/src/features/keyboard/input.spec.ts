@@ -93,7 +93,7 @@ describe('handleBeforeInput()', () => {
 		range.setEnd(textNode, 1)
 		const event = inputEvent('insertText', range, {data: 'x'})
 
-		store.bridge.compositionStarted()
+		store.dom.compositionStarted()
 		handleBeforeInput(store, container, event)
 
 		expect(replaceRange).not.toHaveBeenCalled()

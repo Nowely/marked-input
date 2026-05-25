@@ -16,7 +16,7 @@ export default defineComponent({
 
 		const getChildSequenceRef = () => {
 			if (childSequenceRef) return childSequenceRef
-			childSequenceRef = store.bridge.childrenFor(props.ownerPath)
+			childSequenceRef = store.refs.children(props.ownerPath)
 			return childSequenceRef
 		}
 
@@ -29,7 +29,7 @@ export default defineComponent({
 			() => props.ownerPath.join('.'),
 			() => {
 				childSequenceRef?.(null)
-				childSequenceRef = store.bridge.childrenFor(props.ownerPath)
+				childSequenceRef = store.refs.children(props.ownerPath)
 				childSequenceRef(currentElement)
 			}
 		)

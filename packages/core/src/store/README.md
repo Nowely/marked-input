@@ -11,7 +11,9 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
     - **Computed values** (`store.<feature>.*`) — derived values: `enabled`, `parser`, `selection.position`, `containerComponent`, `containerProps`, slot resolvers
     - **Events** (`store.<feature>.<event>()`) — typed reactive events: `overlay.select`, `overlay.close`, `block.action`, and host lifecycle events
     - **DOM refs** (`store.host.container`, `store.overlay.element`) — reactive signals holding container and overlay HTMLElement references
-    - **DOM registration & indexing** (`store.bridge`) — adapter-owned structural refs (`controlFor`, `childrenFor`), token location, and composition state
+    - **DOM ref registries** (`store.refs`) — adapter-owned `control(path?)` and `children(ownerPath)` ref-callback factories
+    - **DOM indexing** (`store.dom`) — token-element index built from `host.rendered()`, plus `locate(node)`, `nodeFor(address)`, `nodes()`, and composition state
+    - **Text-surface reconciliation** (`store.surfaces`) — writes `textContent`, `contentEditable`, and `tabIndex` on indexed surfaces
     - **Selection & Caret placement** (`store.selection`) — raw selection mapping and caret range placement
     - **Features** (`store.<feature>`) — all feature instances
     - **`store.props.set()`** — batch update for framework-provided prop signals (used by React/Vue `MarkedInput`)
@@ -31,7 +33,7 @@ batch(() => {
 })
 ```
 
-The Store is created by framework wrappers and passed to all features. Features communicate through feature-owned state/events, `store.props`, `store.bridge`, and `store.selection`. `store.value.current` is the internal accepted serialized value state owned by `ValueModel`; feature code routes edits through `store.value.replace()` or `store.value.current()` instead of mutating tokens or accepted value state directly. `ValueModel` enforces `store.props.readOnly()` for editor-originated writes through the raw value edit pipeline; external controlled `props.value` updates still replace the accepted value.
+The Store is created by framework wrappers and passed to all features. Features communicate through feature-owned state/events, `store.props`, `store.refs`, `store.dom`, `store.surfaces`, and `store.selection`. `store.value.current` is the internal accepted serialized value state owned by `ValueModel`; feature code routes edits through `store.value.replace()` or `store.value.current()` instead of mutating tokens or accepted value state directly. `ValueModel` enforces `store.props.readOnly()` for editor-originated writes through the raw value edit pipeline; external controlled `props.value` updates still replace the accepted value.
 
 ## Readonly Props
 

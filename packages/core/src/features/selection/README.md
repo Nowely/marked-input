@@ -14,7 +14,7 @@ Owns the reactive caret/selection state, orchestrates DOM placement after render
 
 - `range: Signal<Range | undefined>` — single source of truth for caret/selection. Writes propagate to the DOM via `watch(range)` → `DomSelectionBridge.applyRange`.
 - `position: Signal<number | undefined>` — writable computed bound to `range.start`; writes collapse the range to `{start: pos, end: pos}`.
-- `isUserSelecting: Signal<boolean>` — selection-in-progress signal. Pushed to `DomTokenBridge.setSelecting` so structural text surfaces flip to `contenteditable="false"` during drags.
+- `isUserSelecting: Signal<boolean>` — selection-in-progress signal. Pushed to `TextSurfaces.setSelecting` so structural text surfaces flip to `contenteditable="false"` during drags.
 - `isAllSelected: Signal<boolean>` — computed; true when the selection spans the entire raw value.
 - `selectAll()`, `focusFirst()`, `placeAtAddress(address, boundary)` — imperative helpers.
 - `readRaw()`, `rawPositionFromBoundary(node, offset, affinity)`, `readSelectedContent()` — boundary reads, available to non-selection consumers (keyboard, clipboard, overlay) because the `DomBoundary` instance lives inside this feature.

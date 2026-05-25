@@ -4,7 +4,7 @@ import type {Range, RawSelection, TokenAddress} from '../../shared/editorContrac
 import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Computed, Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
-import type {DomTokenBridge} from '../bridge'
+import type {DomIndex, TextSurfaces} from '../dom'
 import type {TokenModel} from '../parsing/TokenModel'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
@@ -34,18 +34,18 @@ export class SelectionController {
 
 	constructor(
 		private readonly host: Host,
-		private readonly bridge: DomTokenBridge,
+		private readonly dom: DomIndex,
+		private readonly surfaces: TextSurfaces,
 		private readonly tokens: TokenModel,
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
 	) {
 		const boundaryHost: DomBoundaryHost = {
 			container: () => this.host.container(),
-			isIndexed: () => this.bridge.isIndexed(),
-			isComposing: () => this.bridge.isComposing(),
-			locateNode: node => this.bridge.locateNode(node),
-			roleFor: element => this.bridge.roleFor(element),
-			pathElementsFor: address => this.bridge.pathElementsFor(address),
+			isIndexed: () => this.dom.isIndexed(),
+			isComposing: () => this.dom.isComposing(),
+			locate: node => this.dom.locate(node),
+			nodeFor: address => this.dom.nodeFor(address),
 		}
 		this.#boundary = new DomBoundary(boundaryHost, this.tokens)
 
@@ -55,8 +55,8 @@ export class SelectionController {
 			this.#trackUserSelecting(container)
 
 			watch(this.range, () => this.#applyRange())
-			watch(bridge.indexed, () => this.#applyRange())
-			watch(this.isUserSelecting, () => bridge.setSelecting(this.isUserSelecting()))
+			watch(this.dom.indexed, () => this.#applyRange())
+			watch(this.isUserSelecting, () => this.surfaces.setSelecting(this.isUserSelecting()))
 		})
 	}
 
@@ -97,7 +97,7 @@ export class SelectionController {
 
 	#applyRange(): void {
 		if (this.isUserSelecting()) return
-		if (!this.bridge.isIndexed()) return
+		if (!this.dom.isIndexed()) return
 		const range = this.range()
 		if (range === undefined) return
 
@@ -122,8 +122,8 @@ export class SelectionController {
 	}
 
 	#resolveAddress(address: TokenAddress, boundary: 'start' | 'end'): Range | undefined {
-		if (!this.bridge.isIndexed()) return undefined
-		if (!this.bridge.pathElementsFor(address)) return undefined
+		if (!this.dom.isIndexed()) return undefined
+		if (!this.dom.nodeFor(address)) return undefined
 		const resolved = this.tokens.index().resolveAddress(address)
 		if (!resolved) return undefined
 		const pos = boundary === 'end' ? resolved.position.end : resolved.position.start
@@ -135,18 +135,18 @@ export class SelectionController {
 		const address = this.#preferredAddress
 		this.#preferredAddress = undefined
 		if (!address) return false
-		const elements = this.bridge.pathElementsFor(address)
-		if (!elements) return false
+		const node = this.dom.nodeFor(address)
+		if (!node) return false
 		const resolved = this.tokens.index().resolveAddress(address)
 		if (!resolved) return false
 		if (resolved.type === 'mark') {
-			this.#placeAtMarkBoundary(elements.tokenElement, rawPosition, resolved.position)
+			this.#placeAtMarkBoundary(node.tokenElement, rawPosition, resolved.position)
 			return true
 		}
-		const target = elements.textElement ?? elements.tokenElement
+		const target = node.textElement ?? node.tokenElement
 		focusIfNeeded(target)
-		if (elements.textElement) {
-			placeAtTextOffset(elements.textElement, rawPosition - resolved.position.start)
+		if (node.textElement) {
+			placeAtTextOffset(node.textElement, rawPosition - resolved.position.start)
 		}
 		return true
 	}
@@ -154,12 +154,12 @@ export class SelectionController {
 	#findTextTargetForRawPosition(rawPosition: number): {element: HTMLElement; start: number; end: number} | undefined {
 		const candidates: Array<{element: HTMLElement; start: number; end: number}> = []
 		const tokenIndex = this.tokens.index()
-		for (const record of this.bridge.pathElements()) {
-			if (!record.textElement) continue
-			const resolved = tokenIndex.resolveAddress(record.address)
+		for (const node of this.dom.nodes()) {
+			if (!node.textElement) continue
+			const resolved = tokenIndex.resolveAddress(node.address)
 			if (resolved?.type !== 'text') continue
 			candidates.push({
-				element: record.textElement,
+				element: node.textElement,
 				start: resolved.position.start,
 				end: resolved.position.end,
 			})
@@ -172,11 +172,11 @@ export class SelectionController {
 
 	#focusMarkBoundaryForRawPosition(rawPosition: number): boolean {
 		const tokenIndex = this.tokens.index()
-		for (const record of this.bridge.pathElements()) {
-			const resolved = tokenIndex.resolveAddress(record.address)
+		for (const node of this.dom.nodes()) {
+			const resolved = tokenIndex.resolveAddress(node.address)
 			if (resolved?.type !== 'mark') continue
 			if (rawPosition !== resolved.position.start && rawPosition !== resolved.position.end) continue
-			this.#placeAtMarkBoundary(record.tokenElement, rawPosition, resolved.position)
+			this.#placeAtMarkBoundary(node.tokenElement, rawPosition, resolved.position)
 			return true
 		}
 		return false
@@ -255,11 +255,12 @@ export class SelectionController {
 		}
 
 		const syncIfInEditor = (node: Node): void => {
-			if (this.bridge.locateNode(node)) {
+			const lookup = this.dom.locate(node)
+			if (lookup?.kind === 'token') {
 				sync()
 				return
 			}
-			if (this.bridge.isControlAncestor(node)) return
+			if (lookup?.kind === 'control') return
 			this.range(undefined)
 		}
 
