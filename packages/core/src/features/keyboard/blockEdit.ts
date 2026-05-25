@@ -17,6 +17,21 @@ function isTextLikeRow(token: Token): boolean {
 	return token.descriptor.hasSlot && token.descriptor.segments.length === 1
 }
 
+type ActiveBlock = {
+	blockDivs: HTMLElement[]
+	index: number
+	div: HTMLElement
+}
+
+function findActiveBlock(container: HTMLElement): ActiveBlock | undefined {
+	const active = document.activeElement
+	if (!isHtmlElement(active) || !container.contains(active)) return undefined
+	const blockDivs = htmlChildren(container)
+	const index = blockDivs.findIndex(div => div === active || div.contains(active))
+	if (index === -1) return undefined
+	return {blockDivs, index, div: blockDivs[index]}
+}
+
 export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'keydown', e => {
 		if (!store.props.layout.isBlock()) return
@@ -44,11 +59,9 @@ export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 }
 
 function handleDelete(store: KbCtx, container: HTMLElement, event: KeyboardEvent) {
-	const blockDivs = htmlChildren(container)
-	const blockIndex = blockDivs.findIndex(
-		div => div === document.activeElement || div.contains(document.activeElement)
-	)
-	if (blockIndex === -1) return
+	const active = findActiveBlock(container)
+	if (!active) return
+	const {blockDivs, index: blockIndex} = active
 
 	const rows = store.tokens.current()
 	if (blockIndex >= rows.length) return
@@ -137,20 +150,11 @@ function handleEnter(store: KbCtx, container: HTMLElement, event: KeyboardEvent)
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
-	const activeElement = document.activeElement
-	if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return
+	const active = findActiveBlock(container)
+	if (!active) return
 
 	event.preventDefault()
-
-	const blockDivs = htmlChildren(container)
-	let blockIndex = -1
-	for (let i = 0; i < blockDivs.length; i++) {
-		if (blockDivs[i] === activeElement || blockDivs[i].contains(activeElement)) {
-			blockIndex = i
-			break
-		}
-	}
-	if (blockIndex === -1) return
+	const {index: blockIndex} = active
 
 	const rows = store.tokens.current()
 	const token = rows[blockIndex]
@@ -191,14 +195,9 @@ function handleBlockArrowLeftRight(
 	event: KeyboardEvent,
 	direction: 'left' | 'right'
 ): void {
-	const activeElement = document.activeElement
-	if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return
-
-	const blockDivs = htmlChildren(container)
-	const blockIndex = blockDivs.findIndex(div => div === activeElement || div.contains(activeElement))
-	if (blockIndex === -1) return
-
-	const blockDiv = blockDivs[blockIndex]
+	const active = findActiveBlock(container)
+	if (!active) return
+	const {blockDivs, index: blockIndex, div: blockDiv} = active
 
 	if (direction === 'left') {
 		if (caretDom.getCaretIndex(blockDiv) !== 0) return
@@ -221,14 +220,9 @@ function handleBlockArrowLeftRight(
 }
 
 function handleArrowUpDown(store: KbCtx, container: HTMLElement, event: KeyboardEvent) {
-	const activeElement = document.activeElement
-	if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return
-
-	const blockDivs = htmlChildren(container)
-	const blockIndex = blockDivs.findIndex(div => div === activeElement || div.contains(activeElement))
-	if (blockIndex === -1) return
-
-	const blockDiv = blockDivs[blockIndex]
+	const active = findActiveBlock(container)
+	if (!active) return
+	const {blockDivs, index: blockIndex, div: blockDiv} = active
 
 	if (event.key === KEYBOARD.UP) {
 		if (!caretDom.isOnFirstLine(blockDiv)) return
@@ -256,12 +250,7 @@ function handleArrowUpDown(store: KbCtx, container: HTMLElement, event: Keyboard
 }
 
 function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent) {
-	const activeElement = document.activeElement
-	if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return
-
-	const blockDivs = htmlChildren(container)
-	const blockIndex = blockDivs.findIndex(div => div === activeElement || div.contains(activeElement))
-	if (blockIndex === -1) return
+	if (!findActiveBlock(container)) return
 
 	switch (event.inputType) {
 		case 'insertText': {
