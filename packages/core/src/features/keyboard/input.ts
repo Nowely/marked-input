@@ -8,11 +8,6 @@ import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../parsing'
 import {rawRangeFromInputEvent} from './inputRange'
 
-type SpanInputTarget = {
-	content: string
-	caret: number
-}
-
 export function enableInput(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'paste', e => {
 		captureMarkupPaste(e, container)
@@ -81,68 +76,6 @@ export function handleBeforeInput(store: KbCtx, container: HTMLElement, event: I
 	store.edit.replace(range, replacement)
 }
 
-export function applySpanInput(focus: SpanInputTarget, event: InputEvent): boolean {
-	const offset = focus.caret
-	const content = focus.content
-	let newContent: string
-	let newCaret: number
-
-	switch (event.inputType) {
-		case 'insertText': {
-			event.preventDefault()
-			const data = event.data ?? ''
-			newContent = content.slice(0, offset) + data + content.slice(offset)
-			newCaret = offset + data.length
-			break
-		}
-		case 'deleteContentBackward':
-		case 'deleteContentForward':
-		case 'deleteWordBackward':
-		case 'deleteWordForward':
-		case 'deleteSoftLineBackward':
-		case 'deleteSoftLineForward': {
-			const ranges = event.getTargetRanges()
-			let startOffset: number
-			let endOffset: number
-			if (ranges.length > 0 && ranges[0].startOffset !== ranges[0].endOffset) {
-				startOffset = ranges[0].startOffset
-				endOffset = ranges[0].endOffset
-			} else {
-				if (event.inputType === 'deleteContentBackward' && offset > 0) {
-					startOffset = offset - 1
-					endOffset = offset
-				} else if (event.inputType === 'deleteContentForward' && offset < content.length) {
-					startOffset = offset
-					endOffset = offset + 1
-				} else {
-					return false
-				}
-			}
-			event.preventDefault()
-			newContent = content.slice(0, startOffset) + content.slice(endOffset)
-			newCaret = startOffset
-			break
-		}
-		case 'insertFromPaste':
-		case 'insertReplacementText': {
-			const text = event.dataTransfer?.getData('text/plain') ?? ''
-			const ranges = event.getTargetRanges()
-			const start = ranges[0]?.startOffset ?? offset
-			const end = ranges[0]?.endOffset ?? offset
-			event.preventDefault()
-			newContent = content.slice(0, start) + text + content.slice(end)
-			newCaret = start + text.length
-			break
-		}
-		default:
-			return false
-	}
-
-	focus.content = newContent
-	focus.caret = newCaret
-	return true
-}
-
 function replacementForInput(container: HTMLElement, event: InputEvent): string | undefined {
 	if (event.inputType.startsWith('delete')) return ''
 	if (event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') {
@@ -184,7 +117,7 @@ function adjacentMarkRange(tokens: readonly Token[], position: number, backward:
 	return undefined
 }
 
-export function handlePaste(store: KbCtx, container: HTMLElement, event: ClipboardEvent): void {
+function handlePaste(store: KbCtx, container: HTMLElement, event: ClipboardEvent): void {
 	if (!store.selection.isAllSelected()) return
 
 	event.preventDefault()
