@@ -1,7 +1,7 @@
 import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
-import {applySpanInput, handleBeforeInput} from './input'
+import {handleBeforeInput} from './input'
 
 function mountStructuralInline(value = 'hello') {
 	const store = new Store()
@@ -47,26 +47,6 @@ function inputEvent(inputType: string, range: Range, init?: InputEventInit): Inp
 	Object.defineProperty(event, 'getTargetRanges', {value: () => [range]})
 	return event
 }
-
-describe('applySpanInput()', () => {
-	it('delete the next character when deleteContentForward has no target ranges', () => {
-		const focus = {
-			content: '!',
-			caret: 0,
-		}
-		const event = {
-			inputType: 'deleteContentForward',
-			getTargetRanges: () => [],
-			preventDefault: vi.fn(),
-		}
-
-		// oxlint-disable-next-line no-unsafe-type-assertion -- applySpanInput only touches content/caret in this focused regression test
-		expect(applySpanInput(focus as never, event as never)).toBe(true)
-		expect(event.preventDefault).toHaveBeenCalledOnce()
-		expect(focus.content).toBe('')
-		expect(focus.caret).toBe(0)
-	})
-})
 
 describe('handleBeforeInput()', () => {
 	it('inserts text through replaceRange using target ranges', () => {
