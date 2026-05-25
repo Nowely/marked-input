@@ -51,30 +51,21 @@ export function duplicateDragRow(value: string, rows: Token[], index: number): s
 }
 
 /**
- * Returns the raw-value position of the join point between row[index-1] and row[index]
- * for use as the caret position after a merge.
- */
-export function getMergeDragRowJoinPos(rows: Token[], index: number): number {
-	if (index <= 0 || index >= rows.length) return 0
-	const prev = rows[index - 1]
-	if (isSlotLeadingMark(prev) && prev.slot) return prev.slot.end
-	return prev.position.end
-}
-
-/**
  * Merges row[index] into row[index - 1] by removing the boundary between them.
  * For text rows: removes the gap between them.
  * For slot-leading marks: removes the first mark's literal suffix, merging slot content.
+ * Returns the new value and the raw-value caret position at the join point.
  */
-export function mergeDragRows(value: string, rows: Token[], index: number): string {
-	if (index <= 0 || index >= rows.length) return value
+export function mergeDragRows(value: string, rows: Token[], index: number): {value: string; caret: number} {
+	if (index <= 0 || index >= rows.length) return {value, caret: 0}
 	const prev = rows[index - 1]
 	const curr = rows[index]
 	if (isSlotLeadingMark(prev) && isSlotLeadingMark(curr)) {
 		const slotEnd = prev.slot ? prev.slot.end : prev.position.end
-		return value.slice(0, slotEnd) + value.slice(curr.position.start)
+		return {value: value.slice(0, slotEnd) + value.slice(curr.position.start), caret: slotEnd}
 	}
-	return value.slice(0, prev.position.end) + value.slice(curr.position.start)
+	const caret = prev.position.end
+	return {value: value.slice(0, caret) + value.slice(curr.position.start), caret}
 }
 
 /**

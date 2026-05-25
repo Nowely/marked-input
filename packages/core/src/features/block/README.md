@@ -10,7 +10,7 @@ Manages the block editing mode where each row/token is rendered as a separate dr
 
 ## Operations (internal)
 
-The feature uses pure functions from `operations.ts` for manipulating the raw value: `reorderDragRows`, `addDragRow`, `deleteDragRow`, `duplicateDragRow`, `mergeDragRows`, `canMergeRows`, `getMergeDragRowJoinPos`.
+The feature uses pure functions from `operations.ts` for manipulating the raw value: `reorderDragRows`, `addDragRow`, `deleteDragRow`, `duplicateDragRow`, `mergeDragRows` (returns `{value, caret}`), `canMergeRows`.
 
 ## Usage
 

@@ -6,7 +6,7 @@ import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
-import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../block/operations'
+import {addDragRow, mergeDragRows, canMergeRows} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../parsing'
 import * as caretDom from '../selection/caretDom'
@@ -285,9 +285,8 @@ function mergeOrFocusNeighbor(
 	const b = rows[joinIndex]
 	event.preventDefault()
 	if (canMergeRows(a, b)) {
-		const joinPos = getMergeDragRowJoinPos(rows, joinIndex)
-		const newValue = mergeDragRows(value, rows, joinIndex)
-		store.edit.replace({start: 0, end: -1}, newValue, joinPos)
+		const merged = mergeDragRows(value, rows, joinIndex)
+		store.edit.replace({start: 0, end: -1}, merged.value, merged.caret)
 		return
 	}
 	focusRow(store, rows[toIndex], blockDivs[toIndex], caretOnFocus)
