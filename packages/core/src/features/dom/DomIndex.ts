@@ -36,16 +36,15 @@ export class DomIndex {
 	locate(node: Node): Lookup | undefined {
 		if (!this.#isIndexed()) return undefined
 		const container = this.host.container()
-		if (!container || !container.contains(node)) return undefined
+		if (!container) return undefined
 
 		let current: Node | null = node
-		while (current) {
+		while (current && current !== container) {
 			if (current instanceof HTMLElement) {
 				const tokenNode = this.#byElement.get(current)
 				if (tokenNode) return {kind: 'token', node: tokenNode, element: current}
 				if (this.#controlRoots.has(current)) return {kind: 'control'}
 			}
-			if (current === container) return undefined
 			current = current.parentNode
 		}
 		return undefined
