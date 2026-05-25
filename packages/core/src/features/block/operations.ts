@@ -1,4 +1,13 @@
+import type {CoreOption, DragAction} from '../../shared/types'
 import type {MarkToken, Token} from '../parsing'
+import {createRowContent} from './createRowContent'
+
+export type DragApplyResult = {
+	readonly value: string
+	readonly caret: number | undefined
+}
+
+const EMPTY_TEXT_TOKEN: Token = {type: 'text', content: '', position: {start: 0, end: 0}}
 
 function gapText(value: string, a: Token, b: Token): string {
 	return value.substring(a.position.end, b.position.start)
@@ -102,4 +111,51 @@ export function reorderDragRows(value: string, rows: Token[], sourceIndex: numbe
 	}
 
 	return parts.join('')
+}
+
+export function applyDragAction(
+	value: string,
+	rows: readonly Token[],
+	action: DragAction,
+	options: CoreOption[]
+): DragApplyResult {
+	const effectiveRows = action.type === 'add' && rows.length === 0 ? [EMPTY_TEXT_TOKEN] : rows
+	const newValue = transformValue(value, effectiveRows, action, options)
+	const caret = caretAfterDrag(action, effectiveRows, newValue)
+	return {value: newValue, caret}
+}
+
+function transformValue(value: string, rows: readonly Token[], action: DragAction, options: CoreOption[]): string {
+	switch (action.type) {
+		case 'reorder':
+			return reorderDragRows(value, [...rows], action.source, action.target)
+		case 'add':
+			return addDragRow(value, [...rows], action.afterIndex, createRowContent(options))
+		case 'delete':
+			return deleteDragRow(value, [...rows], action.index)
+		case 'duplicate':
+			return duplicateDragRow(value, [...rows], action.index)
+	}
+}
+
+function caretAfterDrag(action: DragAction, previousRows: readonly Token[], nextValue: string): number | undefined {
+	switch (action.type) {
+		case 'add': {
+			const after = previousRows.at(action.afterIndex)
+			return after ? after.position.end : nextValue.length
+		}
+		case 'duplicate': {
+			const row = previousRows.at(action.index)
+			return row?.position.end
+		}
+		case 'delete': {
+			const next =
+				previousRows.at(action.index + 1) ?? (action.index > 0 ? previousRows.at(action.index - 1) : undefined)
+			return next ? Math.min(next.position.start, nextValue.length) : 0
+		}
+		case 'reorder': {
+			const moved = previousRows.at(action.source)
+			return moved ? Math.min(moved.position.start, nextValue.length) : undefined
+		}
+	}
 }
