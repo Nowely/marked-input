@@ -43,4 +43,3 @@ non-control element to count as a token surface. The alignment is
 indexing for the whole frame bails. This matches the bridge's previous
 behaviour for well-formed adapter output and fails loud when an adapter renders
 something unexpected.
-
