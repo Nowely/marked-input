@@ -39,6 +39,8 @@ describe('applyDragAction', () => {
 		const result = applyDragAction('', [], {type: 'add', afterIndex: -1}, options)
 		const emptyToken: Token = {type: 'text', content: '', position: {start: 0, end: 0}}
 		expect(result.value).toBe(addDragRow('', [emptyToken], -1, createRowContent(options)))
+		// Pins existing BlockController#add behavior: caret at EMPTY_TEXT_TOKEN.position.end (0).
+		expect(result.caret).toBe(0)
 	})
 
 	it('delete dispatches to deleteDragRow and computes caret at the next row start', () => {
