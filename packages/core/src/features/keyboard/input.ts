@@ -14,26 +14,9 @@ type SpanInputTarget = {
 }
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
-	let compositionRange: Range | undefined
-
 	listen(container, 'paste', e => {
 		captureMarkupPaste(e, container)
 		handlePaste(store, container, e)
-	})
-
-	listen(container, 'compositionstart', () => {
-		compositionRange = store.selection.readRaw()?.range
-		store.dom.compositionStarted()
-	})
-
-	listen(container, 'compositionend', e => {
-		const range = compositionRange
-		compositionRange = undefined
-		store.dom.compositionEnded()
-		if (store.props.layout.isBlock()) return
-		if (!range) return
-		const data = e.data
-		store.edit.replace(range, data)
 	})
 
 	listen(

@@ -90,8 +90,6 @@ export class SelectionController {
 	}
 
 	rawPositionFromBoundary(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): number | undefined {
-		if (this.dom.isComposing()) return undefined
-
 		const container = this.host.container()
 		if (container && node === container) {
 			return this.#fromContainerBoundary(offset, affinity)

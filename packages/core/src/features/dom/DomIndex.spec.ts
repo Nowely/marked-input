@@ -93,15 +93,6 @@ describe('DomIndex', () => {
 		container.remove()
 	})
 
-	it('isComposing flips with compositionStarted/Ended', () => {
-		const store = new Store()
-		expect(store.dom.isComposing()).toBe(false)
-		store.dom.compositionStarted()
-		expect(store.dom.isComposing()).toBe(true)
-		store.dom.compositionEnded()
-		expect(store.dom.isComposing()).toBe(false)
-	})
-
 	it('locate and nodeFor return undefined before any commit has run', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})

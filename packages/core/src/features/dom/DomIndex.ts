@@ -14,7 +14,6 @@ export class DomIndex {
 	#byPath: ReadonlyMap<string, TokenNode> = new Map()
 	#byElement: WeakMap<HTMLElement, TokenNode> = new WeakMap()
 	#controlRoots: WeakSet<HTMLElement> = new WeakSet()
-	#composing = false
 	#committing = false
 
 	constructor(
@@ -50,18 +49,6 @@ export class DomIndex {
 
 	nodes(): IterableIterator<TokenNode> {
 		return this.#byPath.values()
-	}
-
-	compositionStarted(): void {
-		this.#composing = true
-	}
-
-	compositionEnded(): void {
-		this.#composing = false
-	}
-
-	isComposing(): boolean {
-		return this.#composing
 	}
 
 	#commit(): void {

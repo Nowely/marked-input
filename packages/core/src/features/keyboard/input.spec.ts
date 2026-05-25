@@ -1,7 +1,7 @@
 import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
-import {applySpanInput, enableInput, handleBeforeInput} from './input'
+import {applySpanInput, handleBeforeInput} from './input'
 
 function mountStructuralInline(value = 'hello') {
 	const store = new Store()
@@ -85,22 +85,6 @@ describe('handleBeforeInput()', () => {
 		container.remove()
 	})
 
-	it('does not commit beforeinput during composition', () => {
-		const {store, container, textNode} = mountStructuralInline()
-		const replaceRange = vi.spyOn(store.value, 'replace')
-		const range = document.createRange()
-		range.setStart(textNode, 1)
-		range.setEnd(textNode, 1)
-		const event = inputEvent('insertText', range, {data: 'x'})
-
-		store.dom.compositionStarted()
-		handleBeforeInput(store, container, event)
-
-		expect(replaceRange).not.toHaveBeenCalled()
-		expect(store.value.current()).toBe('hello')
-		container.remove()
-	})
-
 	it('ignores beforeinput from editable mark descendants', () => {
 		const {store, container, descendantText} = mountStructuralMarkWithDescendant()
 		const replaceRange = vi.spyOn(store.value, 'replace')
@@ -113,36 +97,6 @@ describe('handleBeforeInput()', () => {
 
 		expect(event.defaultPrevented).toBe(false)
 		expect(replaceRange).not.toHaveBeenCalled()
-		container.remove()
-	})
-})
-
-describe('composition input', () => {
-	it('commits composition text at the original raw selection', () => {
-		const {store, container, textNode} = mountStructuralInline('ab')
-		enableInput(store, container)
-		const selection = window.getSelection()
-		const initialRange = document.createRange()
-		initialRange.setStart(textNode, 1)
-		initialRange.collapse(true)
-		selection?.removeAllRanges()
-		selection?.addRange(initialRange)
-
-		container.dispatchEvent(new Event('compositionstart', {bubbles: true}))
-		textNode.textContent = 'aXb'
-
-		const finalRange = document.createRange()
-		finalRange.setStart(textNode, 2)
-		finalRange.collapse(true)
-		selection?.removeAllRanges()
-		selection?.addRange(finalRange)
-		const compositionEnd = new Event('compositionend', {bubbles: true})
-		Object.defineProperty(compositionEnd, 'data', {value: 'X'})
-
-		container.dispatchEvent(compositionEnd)
-
-		expect(store.value.current()).toBe('aXb')
-		expect(store.selection.range()).toEqual({start: 2, end: 2})
 		container.remove()
 	})
 })
