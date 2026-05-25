@@ -69,7 +69,6 @@ export class SelectionController {
 	}
 
 	readRaw(): RawSelection | undefined {
-		if (!this.dom.isIndexed()) return undefined
 		const selection = window.getSelection()
 		if (!selection || selection.rangeCount === 0) return undefined
 
@@ -91,9 +90,6 @@ export class SelectionController {
 	}
 
 	rawPositionFromBoundary(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): number | undefined {
-		if (!this.dom.isIndexed()) return undefined
-		if (this.dom.isComposing()) return undefined
-
 		const container = this.host.container()
 		if (container && node === container) {
 			return this.#fromContainerBoundary(offset, affinity)
@@ -202,7 +198,6 @@ export class SelectionController {
 
 	#applyRange(): void {
 		if (this.isUserSelecting()) return
-		if (!this.dom.isIndexed()) return
 		const range = this.range()
 		if (range === undefined) return
 
@@ -227,7 +222,6 @@ export class SelectionController {
 	}
 
 	#resolveAddress(address: TokenAddress, boundary: 'start' | 'end'): Range | undefined {
-		if (!this.dom.isIndexed()) return undefined
 		if (!this.dom.nodeFor(address)) return undefined
 		const resolved = this.tokens.index().resolveAddress(address)
 		if (!resolved) return undefined

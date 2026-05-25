@@ -11,7 +11,7 @@ feature in May 2026.
   that should be treated as opaque controls or as nested child sequence hosts.
 - `DomIndex` (`store.dom`) — owns indexing. Rebuilds on every `host.rendered()`
   using `buildIndex`. Exposes `locate(node)`, `nodeFor(address)`, `nodes()`,
-  `isComposing()`, and `compositionStarted/Ended()`.
+  and the `indexed` event.
 - `TextSurfaces` (`store.surfaces`) — owns text reconciliation. Reacts to the
   rendered DOM index, `props.readOnly`, and `setSelecting(active)` and uses
   `reconcileTextSurfaces` to write `textContent`, `contentEditable`, and `tabIndex`
@@ -43,11 +43,3 @@ non-control element to count as a token surface. The alignment is
 indexing for the whole frame bails. This matches the bridge's previous
 behaviour for well-formed adapter output and fails loud when an adapter renders
 something unexpected.
-
-## Composition + selection
-
-`compositionStarted/Ended()` lives on `DomIndex` (called from the keyboard
-input handler). `DomBoundary` reads `dom.isComposing()` to refuse boundary
-mapping during IME composition. `SelectionController` drives the
-`setSelecting()` write on `TextSurfaces` whenever its `isUserSelecting` signal
-flips.

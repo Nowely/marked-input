@@ -183,7 +183,7 @@ describe('SelectionController', () => {
 		it('retains range intent when the DOM has no target yet', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
-			// No container set → bridge.isIndexed() is false → placement is deferred
+			// No container set → no DOM index has been committed → placement is deferred
 			// until the next render. The range signal still reflects user intent.
 			store.selection.selectAll()
 			expect(store.selection.range()).toEqual({start: 0, end: 5})

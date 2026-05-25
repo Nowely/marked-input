@@ -1,7 +1,7 @@
 import {describe, it, expect} from 'vitest'
 
 import type {Token} from '../parsing/parser/types'
-import {createTokenIndex} from '../parsing/tokenIndex'
+import {createTokenIndex, pathKey} from '../parsing/tokenIndex'
 import {markToken, textToken} from './__testing__/tokenFactories'
 import {buildIndex} from './buildIndex'
 
@@ -18,7 +18,7 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set(),
-			childSequenceHostsByPath: new Map(),
+			childSequenceHostsFor: () => [],
 			isBlock: false,
 		})
 
@@ -42,7 +42,7 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set(),
-			childSequenceHostsByPath: new Map(),
+			childSequenceHostsFor: () => [],
 			isBlock: false,
 		})
 
@@ -66,7 +66,7 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set(),
-			childSequenceHostsByPath: new Map(),
+			childSequenceHostsFor: () => [],
 			isBlock: false,
 		})
 
@@ -87,7 +87,7 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set(),
-			childSequenceHostsByPath: new Map(),
+			childSequenceHostsFor: () => [],
 			isBlock: false,
 		})
 
@@ -112,7 +112,7 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set(),
-			childSequenceHostsByPath: new Map(),
+			childSequenceHostsFor: () => [],
 			isBlock: true,
 		})
 
@@ -139,7 +139,7 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set([control]),
-			childSequenceHostsByPath: new Map(),
+			childSequenceHostsFor: () => [],
 			isBlock: true,
 		})
 
@@ -165,7 +165,7 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set(),
-			childSequenceHostsByPath: new Map(),
+			childSequenceHostsFor: () => [],
 			isBlock: true,
 		})
 
@@ -186,7 +186,7 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set([control]),
-			childSequenceHostsByPath: new Map(),
+			childSequenceHostsFor: () => [],
 			isBlock: false,
 		})
 
@@ -209,7 +209,7 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set([control]),
-			childSequenceHostsByPath: new Map(),
+			childSequenceHostsFor: () => [],
 			isBlock: false,
 		})
 
@@ -233,7 +233,7 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set(),
-			childSequenceHostsByPath: new Map([['0', [host]]]),
+			childSequenceHostsFor: path => (pathKey(path) === '0' ? [host] : []),
 			isBlock: false,
 		})
 
@@ -258,12 +258,35 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set(),
-			childSequenceHostsByPath: new Map([['0', [hostA, hostB]]]),
+			childSequenceHostsFor: path => (pathKey(path) === '0' ? [hostA, hostB] : []),
 			isBlock: false,
 		})
 
 		expect(result.byPath.get('0')?.childSequenceHost).toBeUndefined()
 		expect(result.byPath.get('0.0')).toBeUndefined()
+	})
+
+	it('returns controlRoots WeakSet including controls and their ancestors up to container', () => {
+		const container = document.createElement('div')
+		const wrapper = document.createElement('div')
+		const control = document.createElement('button')
+		const tokenEl = document.createElement('span')
+		wrapper.append(control)
+		container.append(wrapper, tokenEl)
+
+		const tokens = [textToken('hi', 0)]
+		const result = buildIndex({
+			container,
+			tokens,
+			addressFor: () => ({path: [0], token: tokens[0]}),
+			controlElements: new Set([control]),
+			childSequenceHostsFor: () => [],
+			isBlock: false,
+		})
+
+		expect(result.controlRoots.has(control)).toBe(true)
+		expect(result.controlRoots.has(wrapper)).toBe(true)
+		expect(result.controlRoots.has(container)).toBe(false)
 	})
 
 	it('ignores a child-sequence host registered outside its owner mark element', () => {
@@ -282,7 +305,7 @@ describe('buildIndex', () => {
 			tokens,
 			addressFor: path => tokenIndex.addressFor(path),
 			controlElements: new Set(),
-			childSequenceHostsByPath: new Map([['1', [outsideHost]]]),
+			childSequenceHostsFor: path => (pathKey(path) === '1' ? [outsideHost] : []),
 			isBlock: false,
 		})
 
