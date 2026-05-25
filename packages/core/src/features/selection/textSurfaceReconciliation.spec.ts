@@ -15,7 +15,7 @@ function mount(value: string) {
 	return {store, container, span}
 }
 
-describe('TextSurfaces', () => {
+describe('text surface reconciliation', () => {
 	it('makes text surfaces contentEditable=true after initial render', () => {
 		const {span, container} = mount('hello')
 		expect(span.contentEditable).toBe('true')
@@ -25,10 +25,10 @@ describe('TextSurfaces', () => {
 	it('flips text surfaces to contentEditable=false while selecting', () => {
 		const {store, span, container} = mount('hello')
 
-		store.surfaces.setSelecting(true)
+		store.selection.isUserSelecting(true)
 		expect(span.contentEditable).toBe('false')
 
-		store.surfaces.setSelecting(false)
+		store.selection.isUserSelecting(false)
 		expect(span.contentEditable).toBe('true')
 		container.remove()
 	})

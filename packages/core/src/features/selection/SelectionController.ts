@@ -4,7 +4,7 @@ import type {Range, RawSelection, TokenAddress} from '../../shared/editorContrac
 import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Computed, Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
-import type {DomIndex, TextSurfaces} from '../dom'
+import {reconcileTextSurfaces, type DomIndex} from '../dom'
 import type {TokenModel} from '../parsing/TokenModel'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
@@ -35,7 +35,6 @@ export class SelectionController {
 	constructor(
 		private readonly host: Host,
 		private readonly dom: DomIndex,
-		private readonly surfaces: TextSurfaces,
 		private readonly tokens: TokenModel,
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
@@ -56,8 +55,17 @@ export class SelectionController {
 
 			watch(this.range, () => this.#applyRange())
 			watch(this.dom.indexed, () => this.#applyRange())
-			watch(this.isUserSelecting, () => this.surfaces.setSelecting(this.isUserSelecting()))
+
+			watch(this.dom.indexed, () => this.#reconcileSurfaces())
+			watch(this.props.readOnly, () => this.#reconcileSurfaces())
+			watch(this.isUserSelecting, () => this.#reconcileSurfaces())
 		})
+	}
+
+	#reconcileSurfaces(): void {
+		const readOnly = this.props.readOnly()
+		const editable = !(readOnly || this.isUserSelecting())
+		reconcileTextSurfaces(this.dom.nodes(), this.tokens.index(), {editable, readOnly})
 	}
 
 	selectAll(): void {
