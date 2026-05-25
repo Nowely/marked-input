@@ -1,7 +1,6 @@
-import type {TokenAddress, TokenPath} from '../../shared/editorContracts'
+import type {TokenAddress} from '../../shared/editorContracts'
 import {event, watch} from '../../shared/signals/index.js'
 import type {Event} from '../../shared/signals/index.js'
-import type {Token} from '../parsing/parser/types'
 import {pathKey} from '../parsing/tokenIndex'
 import type {TokenModel} from '../parsing/TokenModel'
 import type {Host} from '../state/Host'
@@ -78,7 +77,7 @@ export class DomIndex {
 				tokens,
 				addressFor: path => tokenIndex.addressFor(path),
 				controlElements: this.refs.controlElements(),
-				childSequenceHostsByPath: this.#collectChildSequenceHostsByPath(tokens),
+				childSequenceHostsFor: path => this.refs.childSequenceHostsFor(path),
 				isBlock: this.layout.isBlock(),
 			})
 
@@ -90,19 +89,5 @@ export class DomIndex {
 		} finally {
 			this.#committing = false
 		}
-	}
-
-	#collectChildSequenceHostsByPath(tokens: readonly Token[]): ReadonlyMap<string, readonly HTMLElement[]> {
-		const out = new Map<string, readonly HTMLElement[]>()
-		const walk = (list: readonly Token[], basePath: TokenPath): void => {
-			list.forEach((token, i) => {
-				const path = [...basePath, i]
-				const hosts = this.refs.childSequenceHostsFor(path)
-				if (hosts.length > 0) out.set(pathKey(path), hosts)
-				if (token.type === 'mark' && token.children.length > 0) walk(token.children, path)
-			})
-		}
-		walk(tokens, [])
-		return out
 	}
 }

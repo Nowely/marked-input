@@ -8,7 +8,7 @@ export type BuildIndexInput = {
 	tokens: readonly Token[]
 	addressFor: (path: TokenPath) => TokenAddress | undefined
 	controlElements: ReadonlySet<HTMLElement>
-	childSequenceHostsByPath: ReadonlyMap<string, readonly HTMLElement[]>
+	childSequenceHostsFor: (path: TokenPath) => readonly HTMLElement[]
 	isBlock: boolean
 }
 
@@ -26,7 +26,7 @@ type Frame = {
 }
 
 export function buildIndex(input: BuildIndexInput): IndexResult {
-	const {container, tokens, addressFor, controlElements, childSequenceHostsByPath, isBlock} = input
+	const {container, tokens, addressFor, controlElements, childSequenceHostsFor, isBlock} = input
 
 	const byPath = new Map<string, TokenNode>()
 	const byElement = new WeakMap<HTMLElement, TokenNode>()
@@ -85,7 +85,7 @@ export function buildIndex(input: BuildIndexInput): IndexResult {
 		const address = addressFor(path)
 		if (!address) return
 
-		const hosts = childSequenceHostsByPath.get(pathKey(path)) ?? []
+		const hosts = childSequenceHostsFor(path)
 		const childSequenceHost = hosts.length === 1 && element.contains(hosts[0]) ? hosts[0] : undefined
 
 		const node: TokenNode = {
