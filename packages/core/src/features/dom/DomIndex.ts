@@ -1,6 +1,6 @@
 import type {TokenAddress, TokenPath} from '../../shared/editorContracts'
-import {batch, event, signal, watch} from '../../shared/signals/index.js'
-import type {Event, Signal} from '../../shared/signals/index.js'
+import {event, watch} from '../../shared/signals/index.js'
+import type {Event} from '../../shared/signals/index.js'
 import type {Token} from '../parsing/parser/types'
 import {pathKey} from '../parsing/tokenIndex'
 import type {TokenModel} from '../parsing/TokenModel'
@@ -11,9 +11,7 @@ import type {Lookup, TokenNode} from './types'
 
 export class DomIndex {
 	readonly indexed: Event<void> = event<void>()
-	readonly isIndexed: Signal<boolean>
 
-	readonly #isIndexed = signal({initial: false, readonly: true})
 	#byPath: ReadonlyMap<string, TokenNode> = new Map()
 	#byElement: WeakMap<HTMLElement, TokenNode> = new WeakMap()
 	#controlRoots: WeakSet<HTMLElement> = new WeakSet()
@@ -26,14 +24,12 @@ export class DomIndex {
 		private readonly refs: TokenRefs,
 		private readonly layout: {isBlock: () => boolean}
 	) {
-		this.isIndexed = this.#isIndexed
 		host.onMounted(() => {
 			watch(host.rendered, () => this.#commit(), {immediate: true})
 		})
 	}
 
 	locate(node: Node): Lookup | undefined {
-		if (!this.#isIndexed()) return undefined
 		const container = this.host.container()
 		if (!container) return undefined
 
@@ -90,7 +86,6 @@ export class DomIndex {
 			this.#byElement = result.byElement
 			this.#controlRoots = result.controlRoots
 
-			if (!this.#isIndexed()) batch(() => this.#isIndexed(true), {mutable: true})
 			this.indexed()
 		} finally {
 			this.#committing = false

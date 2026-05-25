@@ -16,14 +16,12 @@ function mountInline(value: string) {
 }
 
 describe('DomIndex', () => {
-	it('exposes indexed event and isIndexed signal', () => {
+	it('exposes indexed event', () => {
 		const store = new Store()
 		expect(typeof store.dom.indexed).toBe('function')
-		expect(typeof store.dom.isIndexed).toBe('function')
-		expect(store.dom.isIndexed()).toBe(false)
 	})
 
-	it('fires indexed and flips isIndexed after rendered()', () => {
+	it('fires indexed after rendered()', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hi'})
 		const container = document.createElement('div')
@@ -38,7 +36,6 @@ describe('DomIndex', () => {
 		store.host.rendered()
 
 		expect(onIndexed).toHaveBeenCalledTimes(1)
-		expect(store.dom.isIndexed()).toBe(true)
 		container.remove()
 	})
 
@@ -103,5 +100,24 @@ describe('DomIndex', () => {
 		expect(store.dom.isComposing()).toBe(true)
 		store.dom.compositionEnded()
 		expect(store.dom.isComposing()).toBe(false)
+	})
+
+	it('locate and nodeFor return undefined before any commit has run', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'hello'})
+		const span = document.createElement('span')
+		// intentionally NOT attaching span to a container nor setting store.host.container()
+
+		expect(store.dom.locate(span)).toBeUndefined()
+		const address = store.tokens.index().addressFor([0])!
+		expect(store.dom.nodeFor(address)).toBeUndefined()
+	})
+
+	it('setting selection range before any commit has run does not throw', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'hello'})
+		// intentionally NOT setting store.host.container() — no commit has run
+
+		expect(() => store.selection.range({start: 0, end: 0})).not.toThrow()
 	})
 })
