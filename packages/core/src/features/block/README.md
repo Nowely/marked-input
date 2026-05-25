@@ -4,9 +4,8 @@ Manages the block editing mode where each row/token is rendered as a separate dr
 
 ## Components
 
-- **BlockController**: Subscribes to `store.block.action` (a reactive event) and dispatches drag operations (reorder, add, delete, duplicate). Receives `EditController` so all writes go through the single batched write path.
+- **BlockController**: Subscribes to `store.block.action` (a reactive event) and forwards drag operations to `applyDragAction` in `operations.ts`. Receives `EditController` so all writes go through the single batched write path.
 - **getAlwaysShowHandle**: Extracts `alwaysShowHandle` from `DraggableConfig`
-- **EMPTY_TEXT_TOKEN**: Constant used as placeholder when no rows exist
 
 ## Operations (internal)
 
