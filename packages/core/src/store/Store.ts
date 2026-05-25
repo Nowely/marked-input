@@ -1,7 +1,7 @@
 // packages/core/src/store/Store.ts
 import {BlockController, BlockRegistry} from '../features/block'
-import {DomTokenBridge} from '../features/bridge'
 import {ClipboardController} from '../features/clipboard'
+import {DomIndex, TextSurfaces, TokenRefs} from '../features/dom'
 import {EditController} from '../features/edit'
 import {KeyboardController} from '../features/keyboard'
 import {OverlayController} from '../features/overlay'
@@ -24,15 +24,24 @@ export class Store {
 
 	readonly slots = new SlotsFeature(this.props)
 
-	readonly bridge = new DomTokenBridge(this.host, this.props, this.tokens)
+	readonly refs = new TokenRefs()
+	readonly dom = new DomIndex(this.host, this.tokens, this.refs, this.props.layout)
+	readonly surfaces = new TextSurfaces(this.host, this.props, this.dom, this.tokens)
 
-	readonly selection = new SelectionController(this.host, this.bridge, this.tokens, this.value, this.props)
+	readonly selection = new SelectionController(
+		this.host,
+		this.dom,
+		this.surfaces,
+		this.tokens,
+		this.value,
+		this.props
+	)
 	readonly edit = new EditController(this.value, this.selection)
 
 	readonly overlay = new OverlayController(this.host, this.props, this.value, this.selection, this.edit, this.tokens)
 	readonly keyboard = new KeyboardController(
 		this.host,
-		this.bridge,
+		this.dom,
 		this.value,
 		this.selection,
 		this.edit,

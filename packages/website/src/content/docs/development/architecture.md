@@ -227,7 +227,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `unmounted`     | host           | Framework unmount           | `void`                           |
 | `action`        | drag           | Drag-and-drop action        | `DragAction`                     |
 
-`DomTokenBridge.reconcile()` is a method called by reactive effects and by the post-render focus workflow; it is not a store event.
+`TextSurfaces.setSelecting()` and the internal `host.rendered` watcher are reactive effect hooks, not store events.
 
 ### Event Usage
 
@@ -321,7 +321,9 @@ class Store {
     readonly value:     ValueModel         // current, replace()
     readonly edit:      EditController     // replace(range, replacement, caretAt?) — single batched write path
     readonly tokens:    TokenModel         // token list, parser selection, active token index
-    readonly bridge:    DomTokenBridge     // DOM refs, childrenFor/controlFor registries, composition flags
+    readonly refs:      TokenRefs          // adapter ref-callback factories: control(path?), children(ownerPath)
+    readonly dom:       DomIndex           // token-to-DOM index built on rendered(); locate, nodeFor, nodes, composition flags
+    readonly surfaces:  TextSurfaces       // contentEditable / tabIndex / textContent reconciliation
     readonly overlay:   OverlayController  // match, element, slot, select, close
     readonly keyboard:  KeyboardController // input, block editing, arrow navigation
     readonly block:     BlockController    // block drag actions and operation helpers
@@ -374,7 +376,9 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 | **SlotsFeature**              | Container ref, slot component/props resolution, mark resolver |
 | **SelectionController**       | Caret range, derived location, text selection state       |
 | **KeyboardController**        | Text input, block editing, arrow navigation               |
-| **DomTokenBridge**            | DOM registration, childrenFor/controlFor registries      |
+| **TokenRefs**                 | Adapter ref-callback registries: `control(path?)`, `children(ownerPath)` |
+| **DomIndex**                  | Token-to-DOM index, `locate`, `nodeFor`, `nodes`, composition flags |
+| **TextSurfaces**              | Text-surface reconciliation: `textContent`, `contentEditable`, `tabIndex` |
 | **BlockController**           | Drag-and-drop block reordering and operation helpers     |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
@@ -395,7 +399,8 @@ React/Vue render asynchronously, so initialization order matters:
 //    updated before any other onMounted watcher observes the new value.
 
 // 3. Sync contenteditable attributes (layout effect)
-//    → DomTokenBridge reconciles DOM state
+//    → DomIndex rebuilds the token-element index
+//    → TextSurfaces writes contentEditable / tabIndex / textContent
 
 // 4. Framework emits store.host.rendered() after tokens render
 
@@ -428,7 +433,7 @@ WeakMap keys mean garbage collection frees state when tokens are deleted.
 
 ## Core-Owned DOM And Cursor Management
 
-Core owns token addresses, DOM registration, raw selection mapping, raw value mutation, and caret range placement. React and Vue render adapter-owned structural DOM and register it with core through private refs. Features communicate through `store.<name>.*`, `store.props`, `store.bridge`, and `store.selection`; production code must not infer token identity from DOM child order.
+Core owns token addresses, DOM registration, raw selection mapping, raw value mutation, and caret range placement. React and Vue render adapter-owned structural DOM and register it with core through private refs. Features communicate through `store.<name>.*`, `store.props`, `store.refs`, `store.dom`, `store.surfaces`, and `store.selection`; production code must not infer token identity from DOM child order.
 
 ### SelectionController and DomSelectionBridge
 
@@ -436,7 +441,7 @@ Selection responsibilities are split into a stateful coordinator and a private D
 
 - `SelectionController` (feature) owns the reactive caret/selection state — `range`, `position` (writable computed), `isUserSelecting`, and `isAllSelected` signals — and exposes public delegations for reading selection state. It is the single source of truth for DOM caret placement: writes to `selection.range` are auto-applied to the DOM through `DomSelectionBridge.applyRange`, and the same path re-runs after each `bridge.indexed`.
 - `DomSelectionBridge` (private to selection) owns the `DomBoundary` instance, caret placement mechanisms, and document-level mouse and selectionchange event listeners. It accepts a `SelectionBridgeAttachDeps` configuration to report browser selection changes back to the controller's `range` signal.
-- `DomBoundary` translates a DOM `(node, offset)` to a raw UTF-16 position within the active document value, using the index provided by `DomTokenBridge`.
+- `DomBoundary` translates a DOM `(node, offset)` to a raw UTF-16 position within the active document value, using the index provided by `DomIndex`.
 - `caretDom` (stateless module, exported from `@markput/core`) provides pure DOM helpers: `getCaretIndex`, `setAtElement`, `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`. These are used for raw DOM caret math in block-edit arrow navigation and overlay positioning. They do not consult the token index.
 
 ```typescript
@@ -447,17 +452,13 @@ caretDom.setAtElement(element, 0)
 const rect = caretDom.getRect()
 ```
 
-### DomTokenBridge
+### DOM features: TokenRefs, DomIndex, TextSurfaces
 
-`DomTokenBridge` owns the token-to-DOM index, the ref callback registries, and composition state:
+The DOM responsibilities are split across three features:
 
-- top-level token roots are discovered from the editor container or block rows;
-- nested slot children are discovered from adapter-owned `TokenChildren` hosts registered through `childrenFor(path)`;
-- block controls are registered through `controlFor(path)` and ignored during token indexing;
-- text token roots are reconciled as editable text surfaces;
-- mark roots receive focusability state.
-
-It acts as a public bridge for Vue and React adapters to register element refs, and for keyboard, clipboard, and overlay features to query the current DOM indexing mapping. During drag/selection operations, `SelectionController` pushes the active selecting state to `bridge.setSelecting(active)`, which temporarily disables `contentEditable` on structural text nodes to prevent the browser from fragmenting the native selection range.
+- `TokenRefs` (`store.refs`) owns the ref-callback registries. Adapter components call `refs.control(path?)` to register non-editable controls inside a token, and `refs.children(ownerPath)` to register child-sequence hosts for `__slot__` nesting.
+- `DomIndex` (`store.dom`) owns the token-to-DOM index built on every `host.rendered()`. Top-level token roots are discovered from the editor container (or block rows in block layout); nested slot children are discovered from registered child-sequence hosts and otherwise indexed in place; control registrations are skipped during alignment. Public surface: `locate(node)`, `nodeFor(address)`, `nodes()`, `isComposing()`, `compositionStarted/Ended()`, `indexed` event, `isIndexed` signal.
+- `TextSurfaces` (`store.surfaces`) owns text-surface reconciliation. It reacts to `dom.indexed` and `props.readOnly`, and exposes `setSelecting(active)` for the selection controller to flip text surfaces to `contentEditable="false"` during drag/selection so the browser cannot fragment the native selection range. Mark roots receive `tabIndex=0` whenever the editor is not read-only; text token surfaces receive `textContent` and `contentEditable` writes.
 
 ## Framework Hooks
 

@@ -1,0 +1,7 @@
+export type {TokenNode, Lookup} from './types'
+export {buildIndex} from './buildIndex'
+export type {BuildIndexInput, IndexResult} from './buildIndex'
+export {reconcileTextSurfaces} from './reconcileTextSurfaces'
+export {TokenRefs} from './TokenRefs'
+export {DomIndex} from './DomIndex'
+export {TextSurfaces} from './TextSurfaces'
