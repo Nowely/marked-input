@@ -40,7 +40,7 @@ export class Store {
 		this.tokens,
 		this.props
 	)
-	readonly block = new BlockController(this.props, this.value, this.tokens, this.selection, this.edit)
+	readonly block = new BlockController(this.props, this.value, this.tokens, this.edit)
 	readonly blocks = new BlockRegistry()
 
 	readonly clipboard = new ClipboardController(this.host, this.edit, this.selection, this.tokens)
