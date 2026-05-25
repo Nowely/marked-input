@@ -5,6 +5,16 @@ import {isClickOutside, isEscapeKey} from '../../shared/utils/menuUtils'
 
 export type DropPosition = 'before' | 'after' | null
 
+type ListenerMap = Record<string, (e: Event) => void>
+
+function wireListeners(target: EventTarget, handlers: ListenerMap): () => void {
+	const entries = Object.entries(handlers)
+	for (const [event, handler] of entries) target.addEventListener(event, handler as EventListener)
+	return () => {
+		for (const [event, handler] of entries) target.removeEventListener(event, handler as EventListener)
+	}
+}
+
 export class BlockStore {
 	readonly refs = {
 		container: null as HTMLElement | null,
@@ -31,42 +41,13 @@ export class BlockStore {
 		this.#cleanupContainer?.()
 		this.refs.container = el
 		if (!el) return
-
-		const onMouseEnter = () => this.state.isHovered(true)
-		const onMouseLeave = () => this.state.isHovered(false)
-		const onDragOver = (e: DragEvent) => {
-			if (!e.dataTransfer) return
-			e.preventDefault()
-			e.dataTransfer.dropEffect = 'move'
-			this.state.dropPosition(getDragDropPosition(e.clientY, el.getBoundingClientRect()))
-		}
-		const onDragLeave = (e: DragEvent) => {
-			const ct = e.currentTarget
-			if (ct instanceof Node && ct.contains(e.relatedTarget instanceof Node ? e.relatedTarget : null)) return
-			this.state.dropPosition(null)
-		}
-		const onDrop = (e: DragEvent) => {
-			if (!e.dataTransfer) return
-			e.preventDefault()
-			const sourceIndex = parseDragSourceIndex(e.dataTransfer)
-			if (sourceIndex === null) return
-			const targetIndex = getDragTargetIndex(this.#blockIndex, this.state.dropPosition() ?? 'after')
-			this.state.dropPosition(null)
-			this.#emit({type: 'reorder', source: sourceIndex, target: targetIndex})
-		}
-
-		el.addEventListener('mouseenter', onMouseEnter)
-		el.addEventListener('mouseleave', onMouseLeave)
-		el.addEventListener('dragover', onDragOver)
-		el.addEventListener('dragleave', onDragLeave)
-		el.addEventListener('drop', onDrop)
-		this.#cleanupContainer = () => {
-			el.removeEventListener('mouseenter', onMouseEnter)
-			el.removeEventListener('mouseleave', onMouseLeave)
-			el.removeEventListener('dragover', onDragOver)
-			el.removeEventListener('dragleave', onDragLeave)
-			el.removeEventListener('drop', onDrop)
-		}
+		this.#cleanupContainer = wireListeners(el, {
+			mouseenter: () => this.state.isHovered(true),
+			mouseleave: () => this.state.isHovered(false),
+			dragover: (e: DragEvent) => this.#onContainerDragOver(e, el),
+			dragleave: (e: DragEvent) => this.#onContainerDragLeave(e),
+			drop: (e: DragEvent) => this.#onContainerDrop(e),
+		})
 	}
 
 	attachGrip(el: HTMLButtonElement | null, blockIndex: number, actions: DragActions) {
@@ -74,68 +55,84 @@ export class BlockStore {
 		this.#dragAction = actions.action
 		this.#cleanupGrip?.()
 		if (!el) return
-
-		const onDragStart = (e: DragEvent) => {
-			if (!e.dataTransfer) return
-			e.dataTransfer.effectAllowed = 'move'
-			e.dataTransfer.setData('text/plain', String(this.#blockIndex))
-			this.state.isDragging(true)
-			if (this.refs.container) e.dataTransfer.setDragImage(this.refs.container, 0, 0)
-		}
-		const onDragEnd = () => {
-			this.state.isDragging(false)
-			this.state.dropPosition(null)
-		}
-		const onClick = (e: MouseEvent) => {
-			e.preventDefault()
-			const rect = el.getBoundingClientRect()
-			this.state.menuPosition({top: rect.bottom + 4, left: rect.left})
-			this.state.menuOpen(true)
-		}
-
-		el.addEventListener('dragstart', onDragStart)
-		el.addEventListener('dragend', onDragEnd)
-		el.addEventListener('click', onClick)
-		this.#cleanupGrip = () => {
-			el.removeEventListener('dragstart', onDragStart)
-			el.removeEventListener('dragend', onDragEnd)
-			el.removeEventListener('click', onClick)
-		}
+		this.#cleanupGrip = wireListeners(el, {
+			dragstart: (e: DragEvent) => this.#onGripDragStart(e),
+			dragend: () => this.#onGripDragEnd(),
+			click: (e: MouseEvent) => this.#onGripClick(e, el),
+		})
 	}
 
 	attachMenu(el: HTMLElement | null) {
 		this.#cleanupMenu?.()
 		if (!el) return
-
-		const onMouseDown = (e: MouseEvent) => {
-			if (isClickOutside(e.target, el)) this.closeMenu()
-		}
-		const onKeyDown = (e: KeyboardEvent) => {
-			if (isEscapeKey(e)) this.closeMenu()
-		}
-		document.addEventListener('mousedown', onMouseDown)
-		document.addEventListener('keydown', onKeyDown)
-		this.#cleanupMenu = () => {
-			document.removeEventListener('mousedown', onMouseDown)
-			document.removeEventListener('keydown', onKeyDown)
-		}
+		this.#cleanupMenu = wireListeners(document, {
+			mousedown: (e: MouseEvent) => this.#onMenuOutsideMouseDown(e, el),
+			keydown: (e: KeyboardEvent) => this.#onMenuKeyDown(e),
+		})
 	}
 
 	closeMenu = () => this.state.menuOpen(false)
-	addBlock = () => {
-		this.#emit({type: 'add', afterIndex: this.#blockIndex})
-		this.closeMenu()
+	addBlock = () => this.#emitAndClose({type: 'add', afterIndex: this.#blockIndex})
+	deleteBlock = () => this.#emitAndClose({type: 'delete', index: this.#blockIndex})
+	duplicateBlock = () => this.#emitAndClose({type: 'duplicate', index: this.#blockIndex})
+
+	#onContainerDragOver(e: DragEvent, el: HTMLElement) {
+		if (!e.dataTransfer) return
+		e.preventDefault()
+		e.dataTransfer.dropEffect = 'move'
+		this.state.dropPosition(getDragDropPosition(e.clientY, el.getBoundingClientRect()))
 	}
-	deleteBlock = () => {
-		this.#emit({type: 'delete', index: this.#blockIndex})
-		this.closeMenu()
+
+	#onContainerDragLeave(e: DragEvent) {
+		const ct = e.currentTarget
+		if (ct instanceof Node && ct.contains(e.relatedTarget instanceof Node ? e.relatedTarget : null)) return
+		this.state.dropPosition(null)
 	}
-	duplicateBlock = () => {
-		this.#emit({type: 'duplicate', index: this.#blockIndex})
-		this.closeMenu()
+
+	#onContainerDrop(e: DragEvent) {
+		if (!e.dataTransfer) return
+		e.preventDefault()
+		const sourceIndex = parseDragSourceIndex(e.dataTransfer)
+		if (sourceIndex === null) return
+		const targetIndex = getDragTargetIndex(this.#blockIndex, this.state.dropPosition() ?? 'after')
+		this.state.dropPosition(null)
+		this.#emit({type: 'reorder', source: sourceIndex, target: targetIndex})
+	}
+
+	#onGripDragStart(e: DragEvent) {
+		if (!e.dataTransfer) return
+		e.dataTransfer.effectAllowed = 'move'
+		e.dataTransfer.setData('text/plain', String(this.#blockIndex))
+		this.state.isDragging(true)
+		if (this.refs.container) e.dataTransfer.setDragImage(this.refs.container, 0, 0)
+	}
+
+	#onGripDragEnd() {
+		this.state.isDragging(false)
+		this.state.dropPosition(null)
+	}
+
+	#onGripClick(e: MouseEvent, el: HTMLElement) {
+		e.preventDefault()
+		const rect = el.getBoundingClientRect()
+		this.state.menuPosition({top: rect.bottom + 4, left: rect.left})
+		this.state.menuOpen(true)
+	}
+
+	#onMenuOutsideMouseDown(e: MouseEvent, el: HTMLElement) {
+		if (isClickOutside(e.target, el)) this.closeMenu()
+	}
+
+	#onMenuKeyDown(e: KeyboardEvent) {
+		if (isEscapeKey(e)) this.closeMenu()
 	}
 
 	#emit(action: DragAction) {
 		this.#dragAction?.(action)
+	}
+
+	#emitAndClose(action: DragAction) {
+		this.#emit(action)
+		this.closeMenu()
 	}
 }
