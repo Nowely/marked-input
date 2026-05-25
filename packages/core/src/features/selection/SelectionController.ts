@@ -26,7 +26,7 @@ export class SelectionController {
 		return s?.start === 0 && s.end === v.length && v.length > 0
 	})
 
-	readonly isUserSelecting: Signal<boolean> = signal<boolean>({initial: false})
+	readonly isUserSelecting: Signal<boolean> = signal({initial: false})
 
 	#isPlacingCaret = false
 	#preferredAddress: TokenAddress | undefined

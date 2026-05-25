@@ -24,7 +24,7 @@ export class PropsModel {
 	readonly onChange = signal<(value: string) => void>({readonly: true})
 
 	readonly options = signal<CoreOption[]>({default: DEFAULT_OPTIONS, readonly: true})
-	readonly readOnly = signal<boolean>({default: false, readonly: true})
+	readonly readOnly = signal({default: false, readonly: true})
 
 	readonly layout = signal({
 		default: 'inline' as 'inline' | 'block',

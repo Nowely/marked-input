@@ -4,7 +4,7 @@ import {replaceInString} from '../../shared/utils'
 import type {PropsModel} from './PropsModel'
 
 export class ValueModel {
-	readonly current = signal<string>({
+	readonly current = signal({
 		initial: () => this.props.defaultValue() ?? '',
 		get: value => (this.props.value() !== undefined ? (this.props.value() ?? '') : value),
 		set: (next, previous) => {
