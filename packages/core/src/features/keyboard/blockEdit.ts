@@ -93,17 +93,7 @@ function handleDelete(store: KbCtx, container: HTMLElement, event: KeyboardEvent
 		}
 
 		if (caretAtStart && blockIndex > 0) {
-			const prevToken = rows[blockIndex - 1]
-			const currToken = rows[blockIndex]
-			if (canMergeRows(prevToken, currToken)) {
-				event.preventDefault()
-				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
-				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.edit.replace({start: 0, end: -1}, newValue, joinPos)
-				return
-			}
-			event.preventDefault()
-			focusRow(store, prevToken, blockDivs[blockIndex - 1], 'end')
+			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex - 1, blockDivs, 'end')
 			return
 		}
 	}
@@ -115,32 +105,12 @@ function handleDelete(store: KbCtx, container: HTMLElement, event: KeyboardEvent
 		const caretAtStart = caretIndex === 0
 
 		if (caretAtStart && blockIndex > 0) {
-			const prevToken = rows[blockIndex - 1]
-			const currToken = rows[blockIndex]
-			if (canMergeRows(prevToken, currToken)) {
-				event.preventDefault()
-				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
-				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.edit.replace({start: 0, end: -1}, newValue, joinPos)
-				return
-			}
-			event.preventDefault()
-			focusRow(store, prevToken, blockDivs[blockIndex - 1], 'end')
+			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex - 1, blockDivs, 'end')
 			return
 		}
 
 		if (caretAtEnd && blockIndex < rows.length - 1) {
-			const currToken = rows[blockIndex]
-			const nextToken = rows[blockIndex + 1]
-			if (canMergeRows(currToken, nextToken)) {
-				event.preventDefault()
-				const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
-				const newValue = mergeDragRows(value, rows, blockIndex + 1)
-				store.edit.replace({start: 0, end: -1}, newValue, joinPos)
-				return
-			}
-			event.preventDefault()
-			focusRow(store, nextToken, blockDivs[blockIndex + 1], 'start')
+			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex + 1, blockDivs, 'start')
 			return
 		}
 	}
@@ -298,4 +268,27 @@ function rangeForBlockInput(store: KbCtx, event: InputEvent, range: Range): Rang
 		return {start: range.start, end: range.end + 1}
 	}
 	return undefined
+}
+
+function mergeOrFocusNeighbor(
+	store: KbCtx,
+	event: KeyboardEvent,
+	rows: Token[],
+	value: string,
+	fromIndex: number,
+	toIndex: number,
+	blockDivs: HTMLElement[],
+	caretOnFocus: 'start' | 'end'
+): void {
+	const joinIndex = Math.max(fromIndex, toIndex)
+	const a = rows[Math.min(fromIndex, toIndex)]
+	const b = rows[joinIndex]
+	event.preventDefault()
+	if (canMergeRows(a, b)) {
+		const joinPos = getMergeDragRowJoinPos(rows, joinIndex)
+		const newValue = mergeDragRows(value, rows, joinIndex)
+		store.edit.replace({start: 0, end: -1}, newValue, joinPos)
+		return
+	}
+	focusRow(store, rows[toIndex], blockDivs[toIndex], caretOnFocus)
 }
