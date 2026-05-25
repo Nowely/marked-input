@@ -266,6 +266,29 @@ describe('buildIndex', () => {
 		expect(result.byPath.get('0.0')).toBeUndefined()
 	})
 
+	it('returns controlRoots WeakSet including controls and their ancestors up to container', () => {
+		const container = document.createElement('div')
+		const wrapper = document.createElement('div')
+		const control = document.createElement('button')
+		const tokenEl = document.createElement('span')
+		wrapper.append(control)
+		container.append(wrapper, tokenEl)
+
+		const tokens = [textToken('hi', 0)]
+		const result = buildIndex({
+			container,
+			tokens,
+			addressFor: () => ({path: [0], token: tokens[0]}),
+			controlElements: new Set([control]),
+			childSequenceHostsByPath: new Map(),
+			isBlock: false,
+		})
+
+		expect(result.controlRoots.has(control)).toBe(true)
+		expect(result.controlRoots.has(wrapper)).toBe(true)
+		expect(result.controlRoots.has(container)).toBe(false)
+	})
+
 	it('ignores a child-sequence host registered outside its owner mark element', () => {
 		const container = document.createElement('div')
 		const leading = document.createElement('span')

@@ -16,6 +16,8 @@ export class DomIndex {
 	readonly #isIndexed = signal({initial: false, readonly: true})
 	#byPath: ReadonlyMap<string, TokenNode> = new Map()
 	#byElement: WeakMap<HTMLElement, TokenNode> = new WeakMap()
+	// oxlint-disable-next-line no-unused-private-class-members -- staged: read added in next task when locate() switches to WeakSet lookup
+	#controlRoots: WeakSet<HTMLElement> = new WeakSet()
 	#composing = false
 	#rendering = false
 	#queuedRender = false
@@ -116,6 +118,7 @@ export class DomIndex {
 
 		this.#byPath = result.byPath
 		this.#byElement = result.byElement
+		this.#controlRoots = result.controlRoots
 
 		if (!this.#isIndexed()) batch(() => this.#isIndexed(true), {mutable: true})
 		this.indexed()

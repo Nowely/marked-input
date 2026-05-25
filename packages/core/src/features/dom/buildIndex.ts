@@ -15,6 +15,7 @@ export type BuildIndexInput = {
 export type IndexResult = {
 	byPath: ReadonlyMap<string, TokenNode>
 	byElement: WeakMap<HTMLElement, TokenNode>
+	controlRoots: WeakSet<HTMLElement>
 }
 
 type Frame = {
@@ -51,7 +52,7 @@ export function buildIndex(input: BuildIndexInput): IndexResult {
 		})
 	}
 
-	return {byPath, byElement}
+	return {byPath, byElement, controlRoots}
 
 	function resolveRoot(): Frame {
 		if (!isBlock) {
