@@ -190,35 +190,34 @@ function handleBlockArrowLeftRight(
 	container: HTMLElement,
 	event: KeyboardEvent,
 	direction: 'left' | 'right'
-): boolean {
+): void {
 	const activeElement = document.activeElement
-	if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return false
+	if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return
 
 	const blockDivs = htmlChildren(container)
 	const blockIndex = blockDivs.findIndex(div => div === activeElement || div.contains(activeElement))
-	if (blockIndex === -1) return false
+	if (blockIndex === -1) return
 
 	const blockDiv = blockDivs[blockIndex]
 
 	if (direction === 'left') {
-		if (caretDom.getCaretIndex(blockDiv) !== 0) return false
-		if (blockIndex === 0) return true
+		if (caretDom.getCaretIndex(blockDiv) !== 0) return
+		if (blockIndex === 0) return
 		event.preventDefault()
 		const prevBlock = blockDivs[blockIndex - 1]
 		prevBlock.focus()
 		caretDom.setAtElement(prevBlock, Infinity)
-		return true
+		return
 	}
 
 	const caretIndex = caretDom.getCaretIndex(blockDiv)
 	const textLen = blockDiv.textContent.length
-	if (caretIndex !== textLen) return false
-	if (blockIndex >= blockDivs.length - 1) return true
+	if (caretIndex !== textLen) return
+	if (blockIndex >= blockDivs.length - 1) return
 	event.preventDefault()
 	const nextBlock = blockDivs[blockIndex + 1]
 	nextBlock.focus()
 	caretDom.setAtElement(nextBlock, 0)
-	return true
 }
 
 function handleArrowUpDown(store: KbCtx, container: HTMLElement, event: KeyboardEvent) {
