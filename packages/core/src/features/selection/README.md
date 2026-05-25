@@ -4,10 +4,8 @@ Owns the reactive caret/selection state, orchestrates DOM placement after render
 
 ## Layout
 
-- `SelectionController.ts` — reactive state + orchestration. Owns `range`, `position` (writable computed), `isAllSelected`, and `isUserSelecting`. Pushes `isUserSelecting` to `bridge.setSelecting` via a watch inside `onMounted`. Public delegations: `selectAll`, `focusFirst`, `placeAtAddress`, `readRaw`, `rawPositionFromBoundary`, `readSelectedContent`.
-- `DomSelectionBridge.ts` — private bridge owning the `DomBoundary` instance, the caret-placement primitives, and the DOM event listeners (`#trackSelection`, `#trackUserSelecting`, `#focusEmptyEditorOnClick`). Read-only access to `range` via `applyRange`; writes back through the explicit `onRangeRead` callback in `SelectionBridgeAttachDeps`.
-- `DomBoundary.ts` — DOM `(node, offset)` ↔ raw position translator. Constructed inside `DomSelectionBridge`.
-- `textOffsets.ts` — pure helpers used by `DomBoundary` and the placement primitives.
+- `SelectionController.ts` — reactive state, DOM event listeners, caret placement, and `(node, offset)` ↔ raw position translation. Owns `range`, `position` (writable computed), `isAllSelected`, and `isUserSelecting`. Public surface: `selectAll`, `focusFirst`, `placeAtAddress`, `readRaw`, `rawPositionFromBoundary`, `readSelectedContent`.
+- `textOffsets.ts` — pure helpers used by the boundary translator and the placement primitives.
 - `caretDom.ts` — stateless DOM caret helpers (`getCaretIndex`, `setAtElement`, `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`, `placeAtTextOffset`, `placeAtChildBoundary`, `placeRangeAcrossSurfaces`, `focusIfNeeded`).
 
 ## Public Surface
@@ -17,8 +15,8 @@ Owns the reactive caret/selection state, orchestrates DOM placement after render
 - `isUserSelecting: Signal<boolean>` — selection-in-progress signal. Pushed to `TextSurfaces.setSelecting` so structural text surfaces flip to `contenteditable="false"` during drags.
 - `isAllSelected: Signal<boolean>` — computed; true when the selection spans the entire raw value.
 - `selectAll()`, `focusFirst()`, `placeAtAddress(address, boundary)` — imperative helpers.
-- `readRaw()`, `rawPositionFromBoundary(node, offset, affinity)`, `readSelectedContent()` — boundary reads, available to non-selection consumers (keyboard, clipboard, overlay) because the `DomBoundary` instance lives inside this feature.
+- `readRaw()`, `rawPositionFromBoundary(node, offset, affinity)`, `readSelectedContent()` — boundary reads, available to non-selection consumers (keyboard, clipboard, overlay).
 
 ## Wiring
 
-The controller constructs `DomSelectionBridge` in its body. Inside `host.onMounted`, it calls `bridge.attach(container, deps)` with `onRangeRead`, the `isUserSelecting` signal, and `isPlacingCaret` accessor. Two watches relay caret intent: one on `range`, one on `bridge.indexed`.
+Inside `host.onMounted`, `SelectionController` registers DOM listeners (`#trackSelection`, `#trackUserSelecting`, `#focusEmptyEditorOnClick`) and two watches that re-apply the range: one on `range` itself, one on `dom.indexed`.

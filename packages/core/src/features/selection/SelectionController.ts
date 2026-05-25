@@ -1,17 +1,17 @@
 // packages/core/src/features/selection/SelectionController.ts
 import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
-import type {Range, RawSelection, TokenAddress} from '../../shared/editorContracts'
+import type {Range, RawSelection, TokenAddress, TokenPath} from '../../shared/editorContracts'
 import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Computed, Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
-import type {DomIndex, TextSurfaces} from '../dom'
+import {reconcileTextSurfaces, type DomIndex, type TokenNode} from '../dom'
+import type {Token} from '../parsing'
 import type {TokenModel} from '../parsing/TokenModel'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
-import {DomBoundary} from './DomBoundary'
-import type {DomBoundaryHost} from './DomBoundary'
+import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 
 export class SelectionController {
 	readonly range: Signal<Range | undefined> = signal<Range>({equals: shallow})
@@ -26,38 +26,36 @@ export class SelectionController {
 		return s?.start === 0 && s.end === v.length && v.length > 0
 	})
 
-	readonly isUserSelecting: Signal<boolean> = signal<boolean>({initial: false})
+	readonly isUserSelecting: Signal<boolean> = signal({initial: false})
 
 	#isPlacingCaret = false
-	readonly #boundary: DomBoundary
 	#preferredAddress: TokenAddress | undefined
 
 	constructor(
 		private readonly host: Host,
 		private readonly dom: DomIndex,
-		private readonly surfaces: TextSurfaces,
 		private readonly tokens: TokenModel,
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
 	) {
-		const boundaryHost: DomBoundaryHost = {
-			container: () => this.host.container(),
-			isIndexed: () => this.dom.isIndexed(),
-			isComposing: () => this.dom.isComposing(),
-			locate: node => this.dom.locate(node),
-			nodeFor: address => this.dom.nodeFor(address),
-		}
-		this.#boundary = new DomBoundary(boundaryHost, this.tokens)
-
 		host.onMounted(container => {
 			this.#focusEmptyEditorOnClick(container)
 			this.#trackSelection(container)
 			this.#trackUserSelecting(container)
 
+			watch(this.dom.indexed, () => this.#reconcileSurfaces())
+			watch(this.props.readOnly, () => this.#reconcileSurfaces())
+			watch(this.isUserSelecting, () => this.#reconcileSurfaces())
+
 			watch(this.range, () => this.#applyRange())
 			watch(this.dom.indexed, () => this.#applyRange())
-			watch(this.isUserSelecting, () => this.surfaces.setSelecting(this.isUserSelecting()))
 		})
+	}
+
+	#reconcileSurfaces(): void {
+		const readOnly = this.props.readOnly()
+		const editable = !(readOnly || this.isUserSelecting())
+		reconcileTextSurfaces(this.dom.nodes(), this.tokens.index(), {editable, readOnly})
 	}
 
 	selectAll(): void {
@@ -71,11 +69,118 @@ export class SelectionController {
 	}
 
 	readRaw(): RawSelection | undefined {
-		return this.#boundary.readSelection()
+		if (!this.dom.isIndexed()) return undefined
+		const selection = window.getSelection()
+		if (!selection || selection.rangeCount === 0) return undefined
+
+		const range = selection.getRangeAt(0)
+		const start = this.rawPositionFromBoundary(range.startContainer, range.startOffset, 'after')
+		if (start === undefined) return undefined
+		const end = this.rawPositionFromBoundary(range.endContainer, range.endOffset, 'before')
+		if (end === undefined) return undefined
+
+		const rangeValue = start <= end ? {start, end} : {start: end, end: start}
+		const direction =
+			rangeValue.start === rangeValue.end
+				? undefined
+				: selection.anchorNode === range.endContainer && selection.anchorOffset === range.endOffset
+					? 'backward'
+					: 'forward'
+
+		return direction ? {range: rangeValue, direction} : {range: rangeValue}
 	}
 
 	rawPositionFromBoundary(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): number | undefined {
-		return this.#boundary.fromBoundary(node, offset, affinity)
+		if (!this.dom.isIndexed()) return undefined
+		if (this.dom.isComposing()) return undefined
+
+		const container = this.host.container()
+		if (container && node === container) {
+			return this.#fromContainerBoundary(offset, affinity)
+		}
+
+		const lookup = this.dom.locate(node)
+		if (lookup?.kind !== 'token') return undefined
+
+		const token = this.tokens.index().resolveAddress(lookup.node.address)
+		if (!token) return undefined
+
+		if (node instanceof HTMLElement && node === lookup.node.childSequenceHost) {
+			const childCount = node.childNodes.length
+			if (offset <= 0) return token.position.start
+			if (offset >= childCount) return token.position.end
+			return this.#fromTokenChildBoundary(node, offset, token, affinity)
+		}
+
+		const textElement = lookup.node.textElement
+		if (textElement?.contains(node)) {
+			const local = textOffsetWithin(textElement, node, offset)
+			if (local === undefined) return undefined
+			return token.position.start + local
+		}
+
+		if (node === lookup.node.tokenElement) {
+			const childCount = lookup.node.tokenElement.childNodes.length
+			if (offset <= 0) return token.position.start
+			if (offset >= childCount) return token.position.end
+			return this.#fromTokenChildBoundary(lookup.node.tokenElement, offset, token, affinity)
+		}
+
+		if (token.type === 'mark' && lookup.node.tokenElement.contains(node)) {
+			if (hasEditableAncestorBefore(node, lookup.node.tokenElement)) {
+				return undefined
+			}
+			return affinity === 'after' ? token.position.start : token.position.end
+		}
+
+		if (lookup.node.rowElement && node === lookup.node.rowElement) {
+			return offset <= 0 ? token.position.start : token.position.end
+		}
+
+		return undefined
+	}
+
+	#fromContainerBoundary(offset: number, affinity: 'before' | 'after'): number | undefined {
+		const tokens = this.tokens.current()
+		if (tokens.length === 0) return 0
+		if (offset <= 0) return tokens[0].position.start
+		if (offset >= tokens.length) return tokens[tokens.length - 1].position.end
+
+		const before = tokens[offset - 1]
+		const after = tokens[offset]
+		return affinity === 'before' ? before.position.end : after.position.start
+	}
+
+	#fromTokenChildBoundary(
+		tokenElement: HTMLElement,
+		offset: number,
+		token: Token,
+		affinity: 'before' | 'after'
+	): number | undefined {
+		if (token.type === 'text') {
+			const path: TokenPath = this.tokens.index().pathFor(token) ?? []
+			const address = this.tokens.index().addressFor(path)
+			const textElement = address ? this.dom.nodeFor(address)?.textElement : undefined
+			if (!textElement || textLength(textElement) === 0) return token.position.start
+		}
+
+		const before = this.#lookupDescendant(tokenElement.childNodes.item(offset - 1))
+		const after = this.#lookupDescendant(tokenElement.childNodes.item(offset))
+		if (before && after) {
+			const beforeToken = this.tokens.index().resolveAddress(before.address)
+			const afterToken = this.tokens.index().resolveAddress(after.address)
+			if (beforeToken && afterToken) {
+				return affinity === 'before' ? beforeToken.position.end : afterToken.position.start
+			}
+		}
+
+		return affinity === 'before' ? token.position.start : token.position.end
+	}
+
+	#lookupDescendant(node: Node | null): TokenNode | undefined {
+		if (!node) return undefined
+		const lookup = this.dom.locate(node)
+		return lookup?.kind === 'token' ? lookup.node : undefined
 	}
 
 	readSelectedContent(): {html: string; text: string} | undefined {
@@ -251,7 +356,7 @@ export class SelectionController {
 
 	#trackSelection(container: HTMLElement): void {
 		const sync = (): void => {
-			this.range(this.#boundary.readSelection()?.range)
+			this.range(this.readRaw()?.range)
 		}
 
 		const syncIfInEditor = (node: Node): void => {

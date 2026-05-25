@@ -13,7 +13,7 @@ export class DomIndex {
 	readonly indexed: Event<void> = event<void>()
 	readonly isIndexed: Signal<boolean>
 
-	readonly #isIndexed = signal<boolean>({initial: false, readonly: true})
+	readonly #isIndexed = signal({initial: false, readonly: true})
 	#byPath: ReadonlyMap<string, TokenNode> = new Map()
 	#byElement: WeakMap<HTMLElement, TokenNode> = new WeakMap()
 	#composing = false

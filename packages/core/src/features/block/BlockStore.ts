@@ -11,11 +11,11 @@ export class BlockStore {
 	}
 
 	readonly state = {
-		isHovered: signal<boolean>({initial: false}),
-		isDragging: signal<boolean>({initial: false}),
+		isHovered: signal({initial: false}),
+		isDragging: signal({initial: false}),
 		dropPosition: signal<DropPosition>({initial: null}),
-		menuOpen: signal<boolean>({initial: false}),
-		menuPosition: signal<{top: number; left: number}>({initial: {top: 0, left: 0}}),
+		menuOpen: signal({initial: false}),
+		menuPosition: signal({initial: {top: 0, left: 0}}),
 	}
 
 	#blockIndex = 0
