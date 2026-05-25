@@ -15,7 +15,7 @@ export class BlockStore {
 		isDragging: signal({initial: false}),
 		dropPosition: signal<DropPosition>({initial: null}),
 		menuOpen: signal({initial: false}),
-		menuPosition: signal<{top: number; left: number}>({initial: {top: 0, left: 0}}),
+		menuPosition: signal({initial: {top: 0, left: 0}}),
 	}
 
 	#blockIndex = 0
