@@ -57,10 +57,6 @@ export class DomIndex {
 		return this.#byPath.values()
 	}
 
-	isControl(node: Node): boolean {
-		return this.locate(node)?.kind === 'control'
-	}
-
 	compositionStarted(): void {
 		this.#composing = true
 	}

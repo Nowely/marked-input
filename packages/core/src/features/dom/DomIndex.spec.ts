@@ -77,7 +77,6 @@ describe('DomIndex', () => {
 		store.host.rendered()
 
 		expect(store.dom.locate(control)?.kind).toBe('control')
-		expect(store.dom.isControl(control)).toBe(true)
 		container.remove()
 	})
 
