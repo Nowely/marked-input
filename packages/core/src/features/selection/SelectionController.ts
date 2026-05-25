@@ -1,11 +1,12 @@
 // packages/core/src/features/selection/SelectionController.ts
 import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
-import type {Range, RawSelection, TokenAddress, TokenPath} from '../../shared/editorContracts'
+import type {Range, RawSelection, TokenAddress} from '../../shared/editorContracts'
 import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Computed, Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import {reconcileTextSurfaces, type DomIndex, type TokenNode} from '../dom'
 import type {Token} from '../parsing'
+import type {TokenIndex} from '../parsing/tokenIndex'
 import type {TokenModel} from '../parsing/TokenModel'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
@@ -43,12 +44,14 @@ export class SelectionController {
 			this.#trackSelection(container)
 			this.#trackUserSelecting(container)
 
-			watch(this.dom.indexed, () => this.#reconcileSurfaces())
+			watch(this.dom.indexed, () => {
+				this.#reconcileSurfaces()
+				this.#applyRange()
+			})
 			watch(this.props.readOnly, () => this.#reconcileSurfaces())
 			watch(this.isUserSelecting, () => this.#reconcileSurfaces())
 
 			watch(this.range, () => this.#applyRange())
-			watch(this.dom.indexed, () => this.#applyRange())
 		})
 	}
 
@@ -92,20 +95,21 @@ export class SelectionController {
 	rawPositionFromBoundary(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): number | undefined {
 		const container = this.host.container()
 		if (container && node === container) {
-			return this.#fromContainerBoundary(offset, affinity)
+			return fromContainerBoundary(this.tokens.current(), offset, affinity)
 		}
 
 		const lookup = this.dom.locate(node)
 		if (lookup?.kind !== 'token') return undefined
 
-		const token = this.tokens.index().resolveAddress(lookup.node.address)
+		const tokenIndex = this.tokens.index()
+		const token = tokenIndex.resolveAddress(lookup.node.address)
 		if (!token) return undefined
 
 		if (node instanceof HTMLElement && node === lookup.node.childSequenceHost) {
 			const childCount = node.childNodes.length
 			if (offset <= 0) return token.position.start
 			if (offset >= childCount) return token.position.end
-			return this.#fromTokenChildBoundary(node, offset, token, affinity)
+			return fromTokenChildBoundary(this.dom, tokenIndex, node, offset, token, affinity)
 		}
 
 		const textElement = lookup.node.textElement
@@ -119,7 +123,7 @@ export class SelectionController {
 			const childCount = lookup.node.tokenElement.childNodes.length
 			if (offset <= 0) return token.position.start
 			if (offset >= childCount) return token.position.end
-			return this.#fromTokenChildBoundary(lookup.node.tokenElement, offset, token, affinity)
+			return fromTokenChildBoundary(this.dom, tokenIndex, lookup.node.tokenElement, offset, token, affinity)
 		}
 
 		if (token.type === 'mark' && lookup.node.tokenElement.contains(node)) {
@@ -134,49 +138,6 @@ export class SelectionController {
 		}
 
 		return undefined
-	}
-
-	#fromContainerBoundary(offset: number, affinity: 'before' | 'after'): number | undefined {
-		const tokens = this.tokens.current()
-		if (tokens.length === 0) return 0
-		if (offset <= 0) return tokens[0].position.start
-		if (offset >= tokens.length) return tokens[tokens.length - 1].position.end
-
-		const before = tokens[offset - 1]
-		const after = tokens[offset]
-		return affinity === 'before' ? before.position.end : after.position.start
-	}
-
-	#fromTokenChildBoundary(
-		tokenElement: HTMLElement,
-		offset: number,
-		token: Token,
-		affinity: 'before' | 'after'
-	): number | undefined {
-		if (token.type === 'text') {
-			const path: TokenPath = this.tokens.index().pathFor(token) ?? []
-			const address = this.tokens.index().addressFor(path)
-			const textElement = address ? this.dom.nodeFor(address)?.textElement : undefined
-			if (!textElement || textLength(textElement) === 0) return token.position.start
-		}
-
-		const before = this.#lookupDescendant(tokenElement.childNodes.item(offset - 1))
-		const after = this.#lookupDescendant(tokenElement.childNodes.item(offset))
-		if (before && after) {
-			const beforeToken = this.tokens.index().resolveAddress(before.address)
-			const afterToken = this.tokens.index().resolveAddress(after.address)
-			if (beforeToken && afterToken) {
-				return affinity === 'before' ? beforeToken.position.end : afterToken.position.start
-			}
-		}
-
-		return affinity === 'before' ? token.position.start : token.position.end
-	}
-
-	#lookupDescendant(node: Node | null): TokenNode | undefined {
-		if (!node) return undefined
-		const lookup = this.dom.locate(node)
-		return lookup?.kind === 'token' ? lookup.node : undefined
 	}
 
 	readSelectedContent(): {html: string; text: string} | undefined {
@@ -386,4 +347,52 @@ export class SelectionController {
 			syncIfInEditor(sel.focusNode)
 		})
 	}
+}
+
+function fromContainerBoundary(
+	tokens: readonly Token[],
+	offset: number,
+	affinity: 'before' | 'after'
+): number | undefined {
+	if (tokens.length === 0) return 0
+	if (offset <= 0) return tokens[0].position.start
+	if (offset >= tokens.length) return tokens[tokens.length - 1].position.end
+
+	const before = tokens[offset - 1]
+	const after = tokens[offset]
+	return affinity === 'before' ? before.position.end : after.position.start
+}
+
+function fromTokenChildBoundary(
+	dom: DomIndex,
+	tokenIndex: TokenIndex,
+	tokenElement: HTMLElement,
+	offset: number,
+	token: Token,
+	affinity: 'before' | 'after'
+): number | undefined {
+	if (token.type === 'text') {
+		const path = tokenIndex.pathFor(token) ?? []
+		const address = tokenIndex.addressFor(path)
+		const textElement = address ? dom.nodeFor(address)?.textElement : undefined
+		if (!textElement || textLength(textElement) === 0) return token.position.start
+	}
+
+	const before = lookupTokenDescendant(dom, tokenElement.childNodes.item(offset - 1))
+	const after = lookupTokenDescendant(dom, tokenElement.childNodes.item(offset))
+	if (before && after) {
+		const beforeToken = tokenIndex.resolveAddress(before.address)
+		const afterToken = tokenIndex.resolveAddress(after.address)
+		if (beforeToken && afterToken) {
+			return affinity === 'before' ? beforeToken.position.end : afterToken.position.start
+		}
+	}
+
+	return affinity === 'before' ? token.position.start : token.position.end
+}
+
+function lookupTokenDescendant(dom: DomIndex, node: Node | null): TokenNode | undefined {
+	if (!node) return undefined
+	const lookup = dom.locate(node)
+	return lookup?.kind === 'token' ? lookup.node : undefined
 }
