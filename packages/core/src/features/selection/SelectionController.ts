@@ -200,7 +200,7 @@ export class SelectionController {
 		const resolved = this.tokens.index().resolveAddress(address)
 		if (!resolved) return false
 		if (resolved.type === 'mark') {
-			this.#placeAtMarkBoundary(node.tokenElement, rawPosition, resolved.position)
+			placeAtMarkBoundary(node.tokenElement, rawPosition, resolved.position)
 			return true
 		}
 		const target = node.textElement ?? node.tokenElement
@@ -211,56 +211,30 @@ export class SelectionController {
 		return true
 	}
 
-	#findTextTargetForRawPosition(rawPosition: number): {element: HTMLElement; start: number; end: number} | undefined {
-		const candidates: Array<{element: HTMLElement; start: number; end: number}> = []
-		const tokenIndex = this.tokens.index()
-		for (const node of this.dom.nodes()) {
-			if (!node.textElement) continue
-			const resolved = tokenIndex.resolveAddress(node.address)
-			if (resolved?.type !== 'text') continue
-			candidates.push({
-				element: node.textElement,
-				start: resolved.position.start,
-				end: resolved.position.end,
-			})
-		}
-		candidates.sort((a, b) => a.start - b.start)
-		const containing = candidates.find(c => rawPosition >= c.start && rawPosition <= c.end)
-		if (containing) return containing
-		return candidates.find(c => c.start >= rawPosition)
-	}
+	#placeCollapsed(rawPosition: number): boolean {
+		if (this.#applyPreferredAddress(rawPosition)) return true
 
-	#focusMarkBoundaryForRawPosition(rawPosition: number): boolean {
 		const tokenIndex = this.tokens.index()
-		for (const node of this.dom.nodes()) {
-			const resolved = tokenIndex.resolveAddress(node.address)
-			if (resolved?.type !== 'mark') continue
-			if (rawPosition !== resolved.position.start && rawPosition !== resolved.position.end) continue
-			this.#placeAtMarkBoundary(node.tokenElement, rawPosition, resolved.position)
+		const textTarget = findTextTargetAt(this.dom, tokenIndex, rawPosition)
+		if (textTarget) {
+			focusIfNeeded(textTarget.element)
+			placeAtTextOffset(textTarget.element, rawPosition - textTarget.start)
 			return true
 		}
+
+		const markTarget = findMarkBoundaryAt(this.dom, tokenIndex, rawPosition)
+		if (markTarget) {
+			placeAtMarkBoundary(markTarget.element, rawPosition, markTarget.position)
+			return true
+		}
+
 		return false
 	}
 
-	#placeAtMarkBoundary(element: HTMLElement, rawPosition: number, position: {start: number; end: number}): void {
-		focusIfNeeded(element)
-		placeAtChildBoundary(element, rawPosition === position.end ? 'end' : 'start')
-	}
-
-	#placeCollapsed(rawPosition: number): boolean {
-		if (this.#applyPreferredAddress(rawPosition)) return true
-		const target = this.#findTextTargetForRawPosition(rawPosition)
-		if (target) {
-			focusIfNeeded(target.element)
-			placeAtTextOffset(target.element, rawPosition - target.start)
-			return true
-		}
-		return this.#focusMarkBoundaryForRawPosition(rawPosition)
-	}
-
 	#placeExtended(range: Range): boolean {
-		const startTarget = this.#findTextTargetForRawPosition(range.start)
-		const endTarget = this.#findTextTargetForRawPosition(range.end)
+		const tokenIndex = this.tokens.index()
+		const startTarget = findTextTargetAt(this.dom, tokenIndex, range.start)
+		const endTarget = findTextTargetAt(this.dom, tokenIndex, range.end)
 		if (!startTarget || !endTarget) return false
 		placeRangeAcrossSurfaces(
 			{element: startTarget.element, offset: range.start - startTarget.start},
@@ -395,4 +369,45 @@ function lookupTokenDescendant(dom: DomIndex, node: Node | null): TokenNode | un
 	if (!node) return undefined
 	const lookup = dom.locate(node)
 	return lookup?.kind === 'token' ? lookup.node : undefined
+}
+
+function findTextTargetAt(
+	dom: DomIndex,
+	tokenIndex: TokenIndex,
+	rawPosition: number
+): {element: HTMLElement; start: number; end: number} | undefined {
+	const candidates: Array<{element: HTMLElement; start: number; end: number}> = []
+	for (const node of dom.nodes()) {
+		if (!node.textElement) continue
+		const resolved = tokenIndex.resolveAddress(node.address)
+		if (resolved?.type !== 'text') continue
+		candidates.push({
+			element: node.textElement,
+			start: resolved.position.start,
+			end: resolved.position.end,
+		})
+	}
+	candidates.sort((a, b) => a.start - b.start)
+	const containing = candidates.find(c => rawPosition >= c.start && rawPosition <= c.end)
+	if (containing) return containing
+	return candidates.find(c => c.start >= rawPosition)
+}
+
+function findMarkBoundaryAt(
+	dom: DomIndex,
+	tokenIndex: TokenIndex,
+	rawPosition: number
+): {element: HTMLElement; position: {start: number; end: number}} | undefined {
+	for (const node of dom.nodes()) {
+		const resolved = tokenIndex.resolveAddress(node.address)
+		if (resolved?.type !== 'mark') continue
+		if (rawPosition !== resolved.position.start && rawPosition !== resolved.position.end) continue
+		return {element: node.tokenElement, position: resolved.position}
+	}
+	return undefined
+}
+
+function placeAtMarkBoundary(element: HTMLElement, rawPosition: number, position: {start: number; end: number}): void {
+	focusIfNeeded(element)
+	placeAtChildBoundary(element, rawPosition === position.end ? 'end' : 'start')
 }
