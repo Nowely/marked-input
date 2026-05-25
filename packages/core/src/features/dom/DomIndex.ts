@@ -16,7 +16,6 @@ export class DomIndex {
 	readonly #isIndexed = signal({initial: false, readonly: true})
 	#byPath: ReadonlyMap<string, TokenNode> = new Map()
 	#byElement: WeakMap<HTMLElement, TokenNode> = new WeakMap()
-	// oxlint-disable-next-line no-unused-private-class-members -- staged: read added in next task when locate() switches to WeakSet lookup
 	#controlRoots: WeakSet<HTMLElement> = new WeakSet()
 	#composing = false
 	#rendering = false
@@ -44,7 +43,7 @@ export class DomIndex {
 			if (current instanceof HTMLElement) {
 				const tokenNode = this.#byElement.get(current)
 				if (tokenNode) return {kind: 'token', node: tokenNode, element: current}
-				if (this.#isControlElement(current)) return {kind: 'control'}
+				if (this.#controlRoots.has(current)) return {kind: 'control'}
 			}
 			if (current === container) return undefined
 			current = current.parentNode
@@ -74,15 +73,6 @@ export class DomIndex {
 
 	isComposing(): boolean {
 		return this.#composing
-	}
-
-	#isControlElement(element: HTMLElement): boolean {
-		const controls = this.refs.controlElements()
-		if (controls.has(element)) return true
-		for (const ctrl of controls) {
-			if (element.contains(ctrl)) return true
-		}
-		return false
 	}
 
 	#handleRendered(): void {
