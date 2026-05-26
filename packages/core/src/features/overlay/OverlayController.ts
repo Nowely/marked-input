@@ -1,5 +1,4 @@
 import {KEYBOARD} from '../../shared/constants'
-import {escape} from '../../shared/escape'
 import {signal, computed, event, effect, watch, listen} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
@@ -46,18 +45,51 @@ export class OverlayController {
 		const hasOverlayTrigger = computed(() => this.props.options().some(opt => opt.overlay?.trigger != null))
 
 		this.host.onMounted(() => {
-			watch(this.close, () => {
+			effect(() => {
 				if (!hasOverlayTrigger()) return
-				this.match(undefined)
-			})
 
-			watch(this.value.current, () => {
-				if (!hasOverlayTrigger()) return
-				const showOverlayOn = this.props.showOverlayOn()
-				const type: OverlayTrigger = 'change'
-				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-					this.#probeTrigger()
-				}
+				watch(this.close, () => this.match(undefined))
+
+				watch(this.value.current, () => {
+					const showOverlayOn = this.props.showOverlayOn()
+					const type: OverlayTrigger = 'change'
+					if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
+						this.#probeTrigger()
+					}
+				})
+
+				listen(document, 'selectionchange', () => {
+					const container = this.host.container()
+					if (!container?.contains(document.activeElement)) return
+					const showOverlayOn = this.props.showOverlayOn()
+					const type: OverlayTrigger = 'selectionChange'
+					if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
+						this.#probeTrigger()
+					}
+				})
+
+				watch(this.select, overlayEvent => {
+					const {
+						mark,
+						match: {option, range},
+					} = overlayEvent
+
+					const markup = option.markup
+					if (!markup) return
+
+					const annotation =
+						mark.type === 'mark'
+							? annotate(markup, {
+									value: mark.value,
+									meta: mark.meta,
+								})
+							: annotate(markup, {
+									value: mark.content,
+								})
+
+					this.edit.replace(range, annotation)
+					this.match(undefined)
+				})
 			})
 
 			effect(() => {
@@ -78,82 +110,10 @@ export class OverlayController {
 					true
 				)
 			})
-
-			effect(() => {
-				if (!hasOverlayTrigger()) return
-				const handler = () => {
-					const container = this.host.container()
-					if (!container?.contains(document.activeElement)) return
-					const showOverlayOn = this.props.showOverlayOn()
-					const type: OverlayTrigger = 'selectionChange'
-					if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-						this.#probeTrigger()
-					}
-				}
-				listen(document, 'selectionchange', handler)
-			})
-
-			watch(this.select, overlayEvent => {
-				if (!hasOverlayTrigger()) return
-				const {
-					mark,
-					match: {option, range},
-				} = overlayEvent
-
-				const markup = option.markup
-				if (!markup) return
-
-				const annotation =
-					mark.type === 'mark'
-						? annotate(markup, {
-								value: mark.value,
-								meta: mark.meta,
-							})
-						: annotate(markup, {
-								value: mark.content,
-							})
-
-				this.edit.replace(range, annotation)
-				this.match(undefined)
-			})
 		})
 	}
 
 	#probeTrigger() {
-		const match =
-			TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.selection) ??
-			this.#probeTriggerFromCaretRange()
-		this.match(match)
-	}
-
-	#probeTriggerFromCaretRange(): OverlayMatch | undefined {
-		const sel = this.selection.range()
-		if (!sel || sel.start !== sel.end) return
-
-		const cursor = sel.start
-		const value = this.value.current()
-		const left = value.slice(0, cursor)
-		const right = value.slice(cursor)
-		const rightWord = right.match(/^\w*/)?.[0] ?? ''
-
-		for (const option of this.props.options()) {
-			const trigger = option.overlay?.trigger
-			if (!trigger) continue
-
-			const match = left.match(new RegExp(`${escape(trigger)}(\\w*)$`))
-			if (!match) continue
-
-			const [sourceLeft, wordLeft] = match
-			const source = sourceLeft + rightWord
-			const start = cursor - sourceLeft.length
-			return {
-				value: wordLeft + rightWord,
-				source,
-				range: {start, end: start + source.length},
-				span: value,
-				node: window.getSelection()?.anchorNode ?? this.host.container() ?? document.body,
-				option,
-			}
-		}
+		this.match(TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.selection))
 	}
 }
