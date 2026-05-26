@@ -5,13 +5,23 @@ import {isClickOutside, isEscapeKey} from '../../shared/utils/menuUtils'
 
 export type DropPosition = 'before' | 'after' | null
 
-type ListenerMap = Record<string, (e: Event) => void>
-
-function wireListeners(target: EventTarget, handlers: ListenerMap): () => void {
+// Per-event-target overloads infer the correct event type per handler key
+// (mouseenter → MouseEvent, dragover → DragEvent, etc.). Call sites stay
+// strongly typed without explicit (e: DragEvent) annotations.
+function wireListeners(
+	target: HTMLElement,
+	handlers: Partial<{[K in keyof HTMLElementEventMap]: (e: HTMLElementEventMap[K]) => void}>
+): () => void
+function wireListeners(
+	target: Document,
+	handlers: Partial<{[K in keyof DocumentEventMap]: (e: DocumentEventMap[K]) => void}>
+): () => void
+// oxlint-disable-next-line no-explicit-any -- impl signature must be wide enough to subsume both HTMLElementEventMap and DocumentEventMap handler shapes
+function wireListeners(target: EventTarget, handlers: Record<string, (e: any) => void>): () => void {
 	const entries = Object.entries(handlers)
-	for (const [event, handler] of entries) target.addEventListener(event, handler as EventListener)
+	for (const [event, handler] of entries) target.addEventListener(event, handler)
 	return () => {
-		for (const [event, handler] of entries) target.removeEventListener(event, handler as EventListener)
+		for (const [event, handler] of entries) target.removeEventListener(event, handler)
 	}
 }
 
