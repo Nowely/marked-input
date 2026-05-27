@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.14.3](https://github.com/Nowely/marked-input/compare/0.14.2...0.14.3) (2026-05-26)
+
+
+### Refactoring
+
+* **block:** collapse BlockController, declarative BlockStore wiring ([#263](https://github.com/Nowely/marked-input/issues/263)) ([2f3da8e](https://github.com/Nowely/marked-input/commit/2f3da8ed1bbaa1a484b7ea519ec701979f6ae61c))
+* **core:** inline TextSurfaces & DomBoundary, simplify signal init ([#259](https://github.com/Nowely/marked-input/issues/259)) ([d1c5aed](https://github.com/Nowely/marked-input/commit/d1c5aed23c1fb4ebd110ba6e0d1260bcf3a60aac))
+* **core:** redesign signal() API — options object, default vs initial, typed computed companions ([#252](https://github.com/Nowely/marked-input/issues/252)) ([62aa5d6](https://github.com/Nowely/marked-input/commit/62aa5d63346c211b950ace1bc325ca04dd8f7aef))
+* **core:** replace Lifecycle with Host and clean up container usage ([#255](https://github.com/Nowely/marked-input/issues/255)) ([9dd769c](https://github.com/Nowely/marked-input/commit/9dd769c7064bf2e51da2cf2b80d73576b8806e88))
+* **core:** route block/keyboard edits through EditController with batched writes ([#254](https://github.com/Nowely/marked-input/issues/254)) ([e9b013a](https://github.com/Nowely/marked-input/commit/e9b013a2bcd4abf6b9fe713a8c819d5ff566f0c8))
+* **core:** split DomModel into DomTokenBridge and DomSelectionBridge ([#256](https://github.com/Nowely/marked-input/issues/256)) ([6ef0ae0](https://github.com/Nowely/marked-input/commit/6ef0ae0c9131d8469ac6f409ea349427e67f3036))
+* **dom:** replace DomTokenBridge with DomIndex and related features ([#258](https://github.com/Nowely/marked-input/issues/258)) ([c812739](https://github.com/Nowely/marked-input/commit/c81273995dcc593e00797e895de3aadddac0ef4b))
+* **dom:** simplify DomIndex ([#260](https://github.com/Nowely/marked-input/issues/260)) ([574e98f](https://github.com/Nowely/marked-input/commit/574e98fa4c40dced4fff6624a1244699c075394f))
+* **keyboard:** simplify blockEdit + input cleanup ([#261](https://github.com/Nowely/marked-input/issues/261)) ([033784e](https://github.com/Nowely/marked-input/commit/033784edbe84c18fda6057aa5382446b43f1d900))
+* **selection:** extract pure helpers as free functions ([#262](https://github.com/Nowely/marked-input/issues/262)) ([3c565e7](https://github.com/Nowely/marked-input/commit/3c565e7d9a10775d1625f5b1c1e860257b061ff4))
+* **selection:** inline DomSelectionBridge into SelectionController and drop Result type ([#257](https://github.com/Nowely/marked-input/issues/257)) ([2c73ae6](https://github.com/Nowely/marked-input/commit/2c73ae6e502a37f52a354ffe02143c8bc8ea80aa))
+
 ## [0.14.2](https://github.com/Nowely/marked-input/compare/0.14.1...0.14.2) (2026-05-22)
 
 
