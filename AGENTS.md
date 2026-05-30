@@ -47,35 +47,34 @@ DOM-to-token questions should go through the DOM/mapping layer that owns them,
 and framework adapters should not reach into core internals unless that is the
 public contract being changed.
 
-A model is the single source of truth for its state and hosts only logic it
-owns — move operations (focus, readOnly, selection) into the model that owns the
-state, not a neighbor. Make cross-feature contracts explicit (e.g. emit an
-event) instead of relying on watcher or wiring order.
+Each state owner is the single source of truth for its state and hosts only the
+logic it owns. Put an operation on the owner of the state it mutates rather than
+on a neighbor, and make cross-module contracts explicit instead of relying on
+wiring or watcher order.
 
-When a change alters observable behavior — even a strict improvement (a throwing
-variant becoming infallible, a caret-affinity default shifting token-boundary
-semantics, dropping an internal guard) — state the change and its edge cases in
-the PR description and commit body. Do not bury semantic changes under "internal
-cleanup".
+When a change alters observable behavior — even as a strict improvement — call
+out the change and its edge cases in the PR and commit body. Do not bury a
+behavior change under "internal cleanup".
 
 ## Workflow
 
-- For non-trivial refactors or features, work design-first then plan-first. Do
-  not edit code or dispatch implementer subagents before the design is agreed.
-  When asked to "design" or "plan", stop at that artifact and wait.
-- Write a design spec under `docs/superpowers/specs/`, get it reviewed (a
-  subagent review is encouraged) until approved, then convert it to a checkbox
-  plan under `docs/superpowers/plans/` of independently committable tasks.
-- Sequence tasks and commits so typecheck and tests pass at every boundary —
-  never leave a task where callers still reference a removed or renamed symbol.
-  Land large refactors as small, independently green, revertible PRs, not one
-  big-bang change. Keep unrelated changes in separate commits.
-- For structural changes (moves, renames, splits), relocate code only — keep
-  logic byte-for-byte identical so the diff is a pure move. Do any behavior
-  change as a separate, explicit step.
-- When a spec and its plan disagree, reconcile to one source of truth before
-  coding. Keep self-reviews honest — never write "all gaps resolved" while
-  blockers remain; list the open issues.
+- Agree the design before changing code. Propose designs, alternatives, and
+  trade-offs freely — the gate is on implementing, not on suggesting. When asked
+  to design or plan, deliver that artifact and wait for sign-off before editing
+  code or dispatching implementers.
+- Capture the agreed design as a reviewed spec, then a checkbox implementation
+  plan of independently committable tasks. (This repo keeps both under
+  `docs/superpowers/`.)
+- Keep every task and commit green: typecheck and tests pass at each boundary,
+  with no caller left referencing a removed or renamed symbol. Prefer a series
+  of small, independently revertible changes over one big-bang change, and keep
+  unrelated changes in separate commits.
+- Make structural changes (moves, renames, splits) pure: relocate code without
+  changing behavior, so the diff is a clean move. Do any behavior change as a
+  separate, explicit step.
+- Keep a spec and its plan consistent — reconcile them to one source of truth
+  before coding. Keep self-reviews honest: list open blockers instead of
+  declaring everything resolved.
 
 ## Engineering Defaults
 
@@ -89,32 +88,32 @@ cleanup".
   benchmark or a documented hot path.
 - Comments should explain constraints or non-obvious trade-offs, not narrate
   what the code already says.
-- Actively reduce, don't just preserve. When touching a subsystem, collapse
-  internal flags, generation counters, and mirrored/derived state; inline thin
-  wrappers, bridges, and single-consumer indirection; delete dead code and any
-  internal method, signal, or param with zero non-test consumers.
-- Do not add public surface (methods, params, signals) with no current caller —
-  add a verb only when a caller needs it. Pick the simplest representation (a
-  boolean over a multi-value union, bare `signal({...})` over an explicit type
-  annotation) unless complexity is justified.
-- Before deleting code, dropping a param, or calling a symbol unused, grep every
-  call site across all packages — core, React/Vue adapters, storybook, specs,
-  and `index.ts` exports. A core symbol can look unused in one package while an
-  adapter or shared type still needs it. State the usage evidence; don't
-  preemptively remove. Do not delete the published `@markput/core` surface
-  (`packages/core/index.ts`) unless that contract is the agreed change.
+- Actively reduce, don't just preserve. When you touch a subsystem, collapse
+  redundant flags, counters, and mirrored or derived state; inline thin wrappers
+  and single-consumer indirection; and delete dead code and any internal surface
+  with no non-test consumer.
+- Don't add public surface (methods, params, fields) without a current caller,
+  and pick the simplest representation that works unless added complexity is
+  justified.
+- Before deleting code, dropping a param, or calling a symbol unused, check every
+  call site across all packages, adapters, and tests — usage can hide in a
+  consumer outside the one you are editing. Show the evidence rather than
+  removing preemptively, and don't remove published API unless that contract is
+  the agreed change.
 - Prefer the simple path that works over defensive guards or no-op stubs that
-  hurt DX or read as dead code (keep `range()?.start`, not a wrapping guard). If
-  a fallback or stub is load-bearing, keep it and comment why.
+  hurt ergonomics or read as dead code. Keep a guard or stub only when it is
+  load-bearing, and comment why.
+- Keep proposing improvements. Flag better designs, simplifications, and risks
+  you notice — including out of scope, and the next worthwhile change once you
+  finish. Restraint is on acting unilaterally, not on suggesting.
 
 ### Naming
 
-- Reactive state-holders that own signals and mutations are `*Model`
-  (`ValueModel`, `TokenModel`, `PropsModel`); classes that orchestrate behavior
-  are `*Controller` (`EditController`, `BlockController`). Name a field for the
-  model's role, not its class: `value: ValueModel`, `tokens: TokenModel`.
-- Reject vague or concept-conflating names, but do not rename without a concrete
-  rationale — gratuitous renames are churn.
+- Name a class for its role, with a suffix that separates state-holders from
+  behavior-orchestrators, and name a field for its role rather than its type.
+  (This repo uses `*Model` for state-holders and `*Controller` for behavior.)
+- Reject vague or concept-conflating names, but don't rename without a concrete
+  reason — gratuitous renames are churn.
 
 ## Testing
 
