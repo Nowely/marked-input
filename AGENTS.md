@@ -103,17 +103,13 @@ behavior change under "internal cleanup".
 - Prefer the simple path that works over defensive guards or no-op stubs that
   hurt ergonomics or read as dead code. Keep a guard or stub only when it is
   load-bearing, and comment why.
+- Name a class and field for its role, not a vague or type-based label — use a
+  suffix that separates state-holders from behavior-orchestrators (here,
+  `*Model` vs `*Controller`). Don't rename without a concrete reason; gratuitous
+  renames are churn.
 - Keep proposing improvements. Flag better designs, simplifications, and risks
   you notice — including out of scope, and the next worthwhile change once you
   finish. Restraint is on acting unilaterally, not on suggesting.
-
-### Naming
-
-- Name a class for its role, with a suffix that separates state-holders from
-  behavior-orchestrators, and name a field for its role rather than its type.
-  (This repo uses `*Model` for state-holders and `*Controller` for behavior.)
-- Reject vague or concept-conflating names, but don't rename without a concrete
-  reason — gratuitous renames are churn.
 
 ## Testing
 
