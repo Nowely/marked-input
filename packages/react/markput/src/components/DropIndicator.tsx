@@ -6,7 +6,7 @@ import {useMarkput} from '../lib/hooks/useMarkput'
 import styles from '@markput/core/styles.module.css'
 
 export const DropIndicator = memo(({token, position}: {token: TokenType; position: 'before' | 'after'}) => {
-	const dropPosition = useMarkput(s => s.blocks.get(token).state.dropPosition)
+	const dropPosition = useMarkput(s => s.block.get(token).state.dropPosition)
 	const {refs, index} = useMarkput(s => ({refs: s.refs, index: s.tokens.index}))
 	const path = index.pathFor(token)
 	const controlRef = useMemo(() => (path ? refs.control(path) : undefined), [refs, path])

@@ -17,11 +17,11 @@ interface BlockProps {
 
 export const Block = memo(({token}: BlockProps) => {
 	const {blockStore, action, Component, slotProps, isDragging, tokens} = useMarkput(s => ({
-		blockStore: s.blocks.get(token),
+		blockStore: s.block.get(token),
 		action: s.block.action,
 		Component: s.slots.blockComponent,
 		slotProps: s.slots.blockProps,
-		isDragging: s.blocks.get(token).state.isDragging,
+		isDragging: s.block.get(token).state.isDragging,
 		tokens: s.tokens.current,
 	}))
 	const blockIndex = tokens.indexOf(token)

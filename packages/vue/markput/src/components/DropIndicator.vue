@@ -9,7 +9,7 @@ import styles from '@markput/core/styles.module.css'
 const props = defineProps<{token: TokenType; position: 'before' | 'after'}>()
 
 const store = useStore()
-const blockStore = store.blocks.get(props.token)
+const blockStore = store.block.get(props.token)
 const index = useMarkput(s => s.tokens.index)
 const dropPosition = useMarkput(() => blockStore.state.dropPosition)
 

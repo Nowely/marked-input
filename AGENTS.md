@@ -47,6 +47,35 @@ DOM-to-token questions should go through the DOM/mapping layer that owns them,
 and framework adapters should not reach into core internals unless that is the
 public contract being changed.
 
+Each state owner is the single source of truth for its state and hosts only the
+logic it owns. Put an operation on the owner of the state it mutates rather than
+on a neighbor, and make cross-module contracts explicit instead of relying on
+wiring or watcher order.
+
+When a change alters observable behavior — even as a strict improvement — call
+out the change and its edge cases in the PR and commit body. Do not bury a
+behavior change under "internal cleanup".
+
+## Workflow
+
+- Agree the design before changing code. Propose designs, alternatives, and
+  trade-offs freely — the gate is on implementing, not on suggesting. When asked
+  to design or plan, deliver that artifact and wait for sign-off before editing
+  code or dispatching implementers.
+- Capture the agreed design as a reviewed spec, then a checkbox implementation
+  plan of independently committable tasks. (This repo keeps both under
+  `docs/superpowers/`.)
+- Keep every task and commit green: typecheck and tests pass at each boundary,
+  with no caller left referencing a removed or renamed symbol. Prefer a series
+  of small, independently revertible changes over one big-bang change, and keep
+  unrelated changes in separate commits.
+- Make structural changes (moves, renames, splits) pure: relocate code without
+  changing behavior, so the diff is a clean move. Do any behavior change as a
+  separate, explicit step.
+- Keep a spec and its plan consistent — reconcile them to one source of truth
+  before coding. Keep self-reviews honest: list open blockers instead of
+  declaring everything resolved.
+
 ## Engineering Defaults
 
 - Reuse before adding. Search for existing utilities, hooks, helpers, and test
@@ -59,6 +88,28 @@ public contract being changed.
   benchmark or a documented hot path.
 - Comments should explain constraints or non-obvious trade-offs, not narrate
   what the code already says.
+- Actively reduce, don't just preserve. When you touch a subsystem, collapse
+  redundant flags, counters, and mirrored or derived state; inline thin wrappers
+  and single-consumer indirection; and delete dead code and any internal surface
+  with no non-test consumer.
+- Don't add public surface (methods, params, fields) without a current caller,
+  and pick the simplest representation that works unless added complexity is
+  justified.
+- Before deleting code, dropping a param, or calling a symbol unused, check every
+  call site across all packages, adapters, and tests — usage can hide in a
+  consumer outside the one you are editing. Show the evidence rather than
+  removing preemptively, and don't remove published API unless that contract is
+  the agreed change.
+- Prefer the simple path that works over defensive guards or no-op stubs that
+  hurt ergonomics or read as dead code. Keep a guard or stub only when it is
+  load-bearing, and comment why.
+- Name a class and field for its role, not a vague or type-based label — use a
+  suffix that separates state-holders from behavior-orchestrators (here,
+  `*Model` vs `*Controller`). Don't rename without a concrete reason; gratuitous
+  renames are churn.
+- Keep proposing improvements. Flag better designs, simplifications, and risks
+  you notice — including out of scope, and the next worthwhile change once you
+  finish. Restraint is on acting unilaterally, not on suggesting.
 
 ## Testing
 
@@ -93,7 +144,9 @@ full checks when practical:
 5. `pnpm run format:check`
 
 Focused checks are fine during iteration. Report skipped checks with the
-reason.
+reason. Do not claim work is done, tests pass, or a branch is merge-ready until
+you have actually run these and seen them green. If you ran only focused checks,
+say so explicitly — do not imply everything passed.
 
 For docs-only changes, run `pnpm exec oxfmt --check <changed-files>` or note
 that the file is excluded by `oxfmt.config.ts`. For website docs changes that
@@ -109,3 +162,9 @@ behavior, or settled architecture changes.
 - The user is not a native English speaker. When useful, add a short
   "**Language tips**" section with a corrected phrase and brief explanation.
 - PR titles use Conventional Commits.
+- When the user challenges a decision, re-check it honestly against the code
+  instead of defending it with contrived edge cases. If a scenario you invoked
+  is rare or wrong, say so plainly — no performative agreement.
+- Keep each PR's title and body matched to its actual diff and current scope.
+  When scope shifts, update them rather than letting them go stale, and split
+  unrelated work into a separate PR.

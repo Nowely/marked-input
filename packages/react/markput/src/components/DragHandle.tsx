@@ -10,7 +10,7 @@ const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
 export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockIndex: number}) => {
 	const {blockStore, action, readOnly, draggable, isDragging, isHovered, refs, index} = useMarkput(s => {
-		const blockStore = s.blocks.get(token)
+		const blockStore = s.block.get(token)
 
 		return {
 			blockStore,
