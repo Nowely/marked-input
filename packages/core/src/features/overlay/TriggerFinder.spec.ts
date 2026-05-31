@@ -1,7 +1,7 @@
 /* oxlint-disable no-unsafe-type-assertion */
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
-import type {Markup} from '../parsing'
+import type {Markup} from '../tokens'
 import {TriggerFinder} from './TriggerFinder'
 
 function mockSelection(text: string, offset: number): Text {

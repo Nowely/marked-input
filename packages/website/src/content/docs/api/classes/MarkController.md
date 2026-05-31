@@ -5,7 +5,7 @@ prev: false
 title: "MarkController"
 ---
 
-Defined in: [core/src/features/parsing/MarkController.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/MarkController.ts#L6)
+Defined in: [core/src/features/tokens/MarkController.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/MarkController.ts#L6)
 
 ## Constructors
 
@@ -18,7 +18,7 @@ new MarkController(
    snapshot): MarkController;
 ```
 
-Defined in: [core/src/features/parsing/MarkController.ts:7](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/MarkController.ts#L7)
+Defined in: [core/src/features/tokens/MarkController.ts:7](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/MarkController.ts#L7)
 
 #### Parameters
 
@@ -42,7 +42,7 @@ Defined in: [core/src/features/parsing/MarkController.ts:7](https://github.com/N
 get meta(): string | undefined;
 ```
 
-Defined in: [core/src/features/parsing/MarkController.ts:32](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/MarkController.ts#L32)
+Defined in: [core/src/features/tokens/MarkController.ts:32](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/MarkController.ts#L32)
 
 ##### Returns
 
@@ -58,7 +58,7 @@ Defined in: [core/src/features/parsing/MarkController.ts:32](https://github.com/
 get readOnly(): boolean;
 ```
 
-Defined in: [core/src/features/parsing/MarkController.ts:40](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/MarkController.ts#L40)
+Defined in: [core/src/features/tokens/MarkController.ts:40](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/MarkController.ts#L40)
 
 ##### Returns
 
@@ -74,7 +74,7 @@ Defined in: [core/src/features/parsing/MarkController.ts:40](https://github.com/
 get slot(): string | undefined;
 ```
 
-Defined in: [core/src/features/parsing/MarkController.ts:36](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/MarkController.ts#L36)
+Defined in: [core/src/features/tokens/MarkController.ts:36](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/MarkController.ts#L36)
 
 ##### Returns
 
@@ -90,7 +90,7 @@ Defined in: [core/src/features/parsing/MarkController.ts:36](https://github.com/
 get value(): string;
 ```
 
-Defined in: [core/src/features/parsing/MarkController.ts:28](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/MarkController.ts#L28)
+Defined in: [core/src/features/tokens/MarkController.ts:28](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/MarkController.ts#L28)
 
 ##### Returns
 
@@ -104,7 +104,7 @@ Defined in: [core/src/features/parsing/MarkController.ts:28](https://github.com/
 remove(): void;
 ```
 
-Defined in: [core/src/features/parsing/MarkController.ts:44](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/MarkController.ts#L44)
+Defined in: [core/src/features/tokens/MarkController.ts:44](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/MarkController.ts#L44)
 
 #### Returns
 
@@ -118,7 +118,7 @@ Defined in: [core/src/features/parsing/MarkController.ts:44](https://github.com/
 update(patch): void;
 ```
 
-Defined in: [core/src/features/parsing/MarkController.ts:50](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/MarkController.ts#L50)
+Defined in: [core/src/features/tokens/MarkController.ts:50](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/MarkController.ts#L50)
 
 #### Parameters
 
@@ -138,7 +138,7 @@ Defined in: [core/src/features/parsing/MarkController.ts:50](https://github.com/
 static fromToken(store, token): MarkController;
 ```
 
-Defined in: [core/src/features/parsing/MarkController.ts:13](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/MarkController.ts#L13)
+Defined in: [core/src/features/tokens/MarkController.ts:13](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/MarkController.ts#L13)
 
 #### Parameters
 

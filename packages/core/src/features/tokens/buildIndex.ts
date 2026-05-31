@@ -1,7 +1,7 @@
 import type {TokenAddress, TokenPath} from '../../shared/editorContracts'
-import type {Token} from '../parsing/parser/types'
-import {pathKey} from '../parsing/tokenIndex'
-import type {TokenNode} from './types'
+import type {TokenNode} from './domTypes'
+import type {Token} from './parser/types'
+import {pathKey} from './tokenIndex'
 
 export type BuildIndexInput = {
 	container: HTMLElement

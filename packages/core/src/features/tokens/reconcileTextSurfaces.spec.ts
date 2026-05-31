@@ -1,10 +1,10 @@
 import {describe, it, expect} from 'vitest'
 
-import type {Token} from '../parsing/parser/types'
-import {createTokenIndex} from '../parsing/tokenIndex'
 import {markToken, textToken} from './__testing__/tokenFactories'
+import type {TokenNode} from './domTypes'
+import type {Token} from './parser/types'
 import {reconcileTextSurfaces} from './reconcileTextSurfaces'
-import type {TokenNode} from './types'
+import {createTokenIndex} from './tokenIndex'
 
 describe('reconcileTextSurfaces', () => {
 	it('writes textContent and contentEditable=true on text surfaces when editable', () => {

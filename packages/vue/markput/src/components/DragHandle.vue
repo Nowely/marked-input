@@ -25,7 +25,7 @@ const getPanelControlRef = () => {
 	if (panelControlRef) return panelControlRef
 	const path = index.value.pathFor(props.token)
 	if (!path) return undefined
-	panelControlRef = store.refs.control(path)
+	panelControlRef = store.tokens.control(path)
 	return panelControlRef
 }
 

@@ -1,5 +1,5 @@
 import type {OverlayMatch} from '../../shared/types'
-import type {MarkToken} from '../parsing'
+import type {MarkToken} from '../tokens'
 
 export function createMarkFromOverlay(match: OverlayMatch, value: string, meta?: string): MarkToken {
 	const markup = match.option.markup

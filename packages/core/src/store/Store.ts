@@ -1,13 +1,12 @@
 import {BlockController} from '../features/block'
 import {ClipboardController} from '../features/clipboard'
-import {DomIndex, TokenRefs} from '../features/dom'
 import {EditController} from '../features/edit'
 import {KeyboardController} from '../features/keyboard'
 import {OverlayController} from '../features/overlay'
-import {TokenModel} from '../features/parsing'
 import {SelectionController} from '../features/selection'
 import {SlotsFeature} from '../features/slots'
 import {Host, PropsModel, ValueModel} from '../features/state'
+import {TokenModel} from '../features/tokens'
 import {KeyGenerator} from '../shared/classes'
 import {MarkputHandler} from './MarkputHandler'
 
@@ -19,20 +18,16 @@ export class Store {
 	readonly host = new Host()
 	readonly props = new PropsModel()
 	readonly value = new ValueModel(this.props)
-	readonly tokens = new TokenModel(this.value, this.props)
+	readonly tokens = new TokenModel(this.value, this.props, this.host)
 
 	readonly slots = new SlotsFeature(this.props)
 
-	readonly refs = new TokenRefs()
-	readonly dom = new DomIndex(this.host, this.tokens, this.refs, this.props.layout)
-
-	readonly selection = new SelectionController(this.host, this.dom, this.tokens, this.value, this.props)
+	readonly selection = new SelectionController(this.host, this.tokens, this.value, this.props)
 	readonly edit = new EditController(this.value, this.selection)
 
 	readonly overlay = new OverlayController(this.host, this.props, this.value, this.selection, this.edit, this.tokens)
 	readonly keyboard = new KeyboardController(
 		this.host,
-		this.dom,
 		this.value,
 		this.selection,
 		this.edit,

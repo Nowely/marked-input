@@ -7,9 +7,9 @@ import styles from '@markput/core/styles.module.css'
 
 export const DropIndicator = memo(({token, position}: {token: TokenType; position: 'before' | 'after'}) => {
 	const dropPosition = useMarkput(s => s.block.get(token).state.dropPosition)
-	const {refs, index} = useMarkput(s => ({refs: s.refs, index: s.tokens.index}))
+	const {tokens, index} = useMarkput(s => ({tokens: s.tokens, index: s.tokens.index}))
 	const path = index.pathFor(token)
-	const controlRef = useMemo(() => (path ? refs.control(path) : undefined), [refs, path])
+	const controlRef = useMemo(() => (path ? tokens.control(path) : undefined), [tokens, path])
 
 	if (dropPosition !== position) return null
 

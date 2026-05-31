@@ -15,10 +15,10 @@ function mountInline(value: string) {
 	return {store, container, span}
 }
 
-describe('DomIndex', () => {
+describe('TokenModel index', () => {
 	it('exposes indexed event', () => {
 		const store = new Store()
-		expect(typeof store.dom.indexed).toBe('function')
+		expect(typeof store.tokens.indexed).toBe('function')
 	})
 
 	it('fires indexed after rendered()', () => {
@@ -31,7 +31,7 @@ describe('DomIndex', () => {
 		store.host.container(container)
 
 		const onIndexed = vi.fn()
-		watch(store.dom.indexed, onIndexed)
+		watch(store.tokens.indexed, onIndexed)
 
 		store.host.rendered()
 
@@ -42,7 +42,7 @@ describe('DomIndex', () => {
 	it('locate(node) returns a token lookup with the matching TokenNode', () => {
 		const {store, container, span} = mountInline('hello')
 
-		const lookup = store.dom.locate(span)
+		const lookup = store.tokens.locate(span)
 		expect(lookup?.kind).toBe('token')
 		if (lookup?.kind !== 'token') throw new Error('expected token lookup')
 		expect(lookup.node.tokenElement).toBe(span)
@@ -55,7 +55,7 @@ describe('DomIndex', () => {
 		const {store, container} = mountInline('hello')
 		const stray = document.createElement('div')
 
-		expect(store.dom.locate(stray)).toBeUndefined()
+		expect(store.tokens.locate(stray)).toBeUndefined()
 		container.remove()
 	})
 
@@ -70,10 +70,10 @@ describe('DomIndex', () => {
 		container.append(row)
 		document.body.append(container)
 		store.host.container(container)
-		store.refs.control([0])(control)
+		store.tokens.control([0])(control)
 		store.host.rendered()
 
-		expect(store.dom.locate(control)?.kind).toBe('control')
+		expect(store.tokens.locate(control)?.kind).toBe('control')
 		container.remove()
 	})
 
@@ -81,14 +81,14 @@ describe('DomIndex', () => {
 		const {store, container, span} = mountInline('hello')
 		const address = store.tokens.index().addressFor([0])!
 
-		expect(store.dom.nodeFor(address)?.tokenElement).toBe(span)
+		expect(store.tokens.nodeFor(address)?.tokenElement).toBe(span)
 		container.remove()
 	})
 
 	it('nodes() iterates all indexed TokenNodes', () => {
 		const {store, container} = mountInline('hello')
 
-		const all = Array.from(store.dom.nodes())
+		const all = Array.from(store.tokens.nodes())
 		expect(all).toHaveLength(1)
 		container.remove()
 	})
@@ -99,9 +99,9 @@ describe('DomIndex', () => {
 		const span = document.createElement('span')
 		// intentionally NOT attaching span to a container nor setting store.host.container()
 
-		expect(store.dom.locate(span)).toBeUndefined()
+		expect(store.tokens.locate(span)).toBeUndefined()
 		const address = store.tokens.index().addressFor([0])!
-		expect(store.dom.nodeFor(address)).toBeUndefined()
+		expect(store.tokens.nodeFor(address)).toBeUndefined()
 	})
 
 	it('setting selection range before any commit has run does not throw', () => {

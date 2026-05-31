@@ -4,13 +4,12 @@ import type {Range, RawSelection, TokenAddress} from '../../shared/editorContrac
 import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Computed, Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
-import {reconcileTextSurfaces, type DomIndex, type TokenNode} from '../dom'
-import type {Token} from '../parsing'
-import type {TokenIndex} from '../parsing/tokenIndex'
-import type {TokenModel} from '../parsing/TokenModel'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
+import {reconcileTextSurfaces, type Token, type TokenNode} from '../tokens'
+import type {TokenIndex} from '../tokens/tokenIndex'
+import type {TokenModel} from '../tokens/TokenModel'
 import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
 import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 
@@ -34,7 +33,6 @@ export class SelectionController {
 
 	constructor(
 		private readonly host: Host,
-		private readonly dom: DomIndex,
 		private readonly tokens: TokenModel,
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
@@ -44,7 +42,7 @@ export class SelectionController {
 			this.#trackSelection(container)
 			this.#trackUserSelecting(container)
 
-			watch(this.dom.indexed, () => {
+			watch(this.tokens.indexed, () => {
 				this.#reconcileSurfaces()
 				this.#applyRange()
 			})
@@ -58,7 +56,7 @@ export class SelectionController {
 	#reconcileSurfaces(): void {
 		const readOnly = this.props.readOnly()
 		const editable = !(readOnly || this.isUserSelecting())
-		reconcileTextSurfaces(this.dom.nodes(), this.tokens.index(), {editable, readOnly})
+		reconcileTextSurfaces(this.tokens.nodes(), this.tokens.index(), {editable, readOnly})
 	}
 
 	selectAll(): void {
@@ -98,7 +96,7 @@ export class SelectionController {
 			return fromContainerBoundary(this.tokens.current(), offset, affinity)
 		}
 
-		const lookup = this.dom.locate(node)
+		const lookup = this.tokens.locate(node)
 		if (lookup?.kind !== 'token') return undefined
 
 		const tokenIndex = this.tokens.index()
@@ -109,7 +107,7 @@ export class SelectionController {
 			const childCount = node.childNodes.length
 			if (offset <= 0) return token.position.start
 			if (offset >= childCount) return token.position.end
-			return fromTokenChildBoundary(this.dom, tokenIndex, node, offset, token, affinity)
+			return fromTokenChildBoundary(this.tokens, tokenIndex, node, offset, token, affinity)
 		}
 
 		const textElement = lookup.node.textElement
@@ -123,7 +121,7 @@ export class SelectionController {
 			const childCount = lookup.node.tokenElement.childNodes.length
 			if (offset <= 0) return token.position.start
 			if (offset >= childCount) return token.position.end
-			return fromTokenChildBoundary(this.dom, tokenIndex, lookup.node.tokenElement, offset, token, affinity)
+			return fromTokenChildBoundary(this.tokens, tokenIndex, lookup.node.tokenElement, offset, token, affinity)
 		}
 
 		if (token.type === 'mark' && lookup.node.tokenElement.contains(node)) {
@@ -183,7 +181,7 @@ export class SelectionController {
 	}
 
 	#resolveAddress(address: TokenAddress, boundary: 'start' | 'end'): Range | undefined {
-		if (!this.dom.nodeFor(address)) return undefined
+		if (!this.tokens.nodeFor(address)) return undefined
 		const resolved = this.tokens.index().resolveAddress(address)
 		if (!resolved) return undefined
 		const pos = boundary === 'end' ? resolved.position.end : resolved.position.start
@@ -195,7 +193,7 @@ export class SelectionController {
 		const address = this.#preferredAddress
 		this.#preferredAddress = undefined
 		if (!address) return false
-		const node = this.dom.nodeFor(address)
+		const node = this.tokens.nodeFor(address)
 		if (!node) return false
 		const resolved = this.tokens.index().resolveAddress(address)
 		if (!resolved) return false
@@ -215,14 +213,14 @@ export class SelectionController {
 		if (this.#applyPreferredAddress(rawPosition)) return true
 
 		const tokenIndex = this.tokens.index()
-		const textTarget = findTextTargetAt(this.dom, tokenIndex, rawPosition)
+		const textTarget = findTextTargetAt(this.tokens, tokenIndex, rawPosition)
 		if (textTarget) {
 			focusIfNeeded(textTarget.element)
 			placeAtTextOffset(textTarget.element, rawPosition - textTarget.start)
 			return true
 		}
 
-		const markTarget = findMarkBoundaryAt(this.dom, tokenIndex, rawPosition)
+		const markTarget = findMarkBoundaryAt(this.tokens, tokenIndex, rawPosition)
 		if (markTarget) {
 			placeAtMarkBoundary(markTarget.element, rawPosition, markTarget.position)
 			return true
@@ -233,8 +231,8 @@ export class SelectionController {
 
 	#placeExtended(range: Range): boolean {
 		const tokenIndex = this.tokens.index()
-		const startTarget = findTextTargetAt(this.dom, tokenIndex, range.start)
-		const endTarget = findTextTargetAt(this.dom, tokenIndex, range.end)
+		const startTarget = findTextTargetAt(this.tokens, tokenIndex, range.start)
+		const endTarget = findTextTargetAt(this.tokens, tokenIndex, range.end)
 		if (!startTarget || !endTarget) return false
 		placeRangeAcrossSurfaces(
 			{element: startTarget.element, offset: range.start - startTarget.start},
@@ -289,7 +287,7 @@ export class SelectionController {
 		}
 
 		const syncIfInEditor = (node: Node): void => {
-			const lookup = this.dom.locate(node)
+			const lookup = this.tokens.locate(node)
 			if (lookup?.kind === 'token') {
 				sync()
 				return
@@ -338,7 +336,7 @@ function fromContainerBoundary(
 }
 
 function fromTokenChildBoundary(
-	dom: DomIndex,
+	dom: TokenModel,
 	tokenIndex: TokenIndex,
 	tokenElement: HTMLElement,
 	offset: number,
@@ -365,14 +363,14 @@ function fromTokenChildBoundary(
 	return affinity === 'before' ? token.position.start : token.position.end
 }
 
-function lookupTokenDescendant(dom: DomIndex, node: Node | null): TokenNode | undefined {
+function lookupTokenDescendant(dom: TokenModel, node: Node | null): TokenNode | undefined {
 	if (!node) return undefined
 	const lookup = dom.locate(node)
 	return lookup?.kind === 'token' ? lookup.node : undefined
 }
 
 function findTextTargetAt(
-	dom: DomIndex,
+	dom: TokenModel,
 	tokenIndex: TokenIndex,
 	rawPosition: number
 ): {element: HTMLElement; start: number; end: number} | undefined {
@@ -394,7 +392,7 @@ function findTextTargetAt(
 }
 
 function findMarkBoundaryAt(
-	dom: DomIndex,
+	dom: TokenModel,
 	tokenIndex: TokenIndex,
 	rawPosition: number
 ): {element: HTMLElement; position: {start: number; end: number}} | undefined {

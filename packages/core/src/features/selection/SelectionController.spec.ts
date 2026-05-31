@@ -53,7 +53,7 @@ function mountStructuralNestedWithChildSequence(value = '@[before @[nested] afte
 	container.append(leading, outer, trailing)
 	document.body.append(container)
 	store.host.container(container)
-	store.refs.children([1])(host)
+	store.tokens.children([1])(host)
 	store.host.rendered()
 	return {store, container, leading, outer, control, host, before, inner, after, trailing}
 }
@@ -69,7 +69,7 @@ function mountStructuralBlockWithControl(value: string) {
 	container.append(row)
 	document.body.append(container)
 	store.host.container(container)
-	store.refs.control([0])(control)
+	store.tokens.control([0])(control)
 	store.host.rendered()
 	const textNode = textSurface.firstChild
 	const controlText = control.firstChild

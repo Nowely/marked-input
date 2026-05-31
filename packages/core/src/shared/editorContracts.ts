@@ -1,4 +1,4 @@
-import type {Token} from '../features/parsing/parser/types'
+import type {Token} from '../features/tokens/parser/types'
 
 export type TokenPath = readonly number[]
 

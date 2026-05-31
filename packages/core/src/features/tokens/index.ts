@@ -1,5 +1,4 @@
-// Canonical export point for Parser APIs
-// Public API for parsing and text manipulation
+// Canonical export point for the token layer: parsing, indexing, and DOM binding.
 
 export {Parser} from './parser/Parser'
 export type {Token, TextToken, MarkToken, Markup, ParseOptions} from './parser/types'
@@ -11,3 +10,5 @@ export type {TokenContext} from './utils/findToken'
 export {TokenModel} from './TokenModel'
 export type {TokenIndex} from './tokenIndex'
 export {MarkController} from './MarkController'
+export {reconcileTextSurfaces} from './reconcileTextSurfaces'
+export type {TokenNode, Lookup} from './domTypes'

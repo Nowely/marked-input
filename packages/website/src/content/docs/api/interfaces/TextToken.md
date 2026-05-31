@@ -5,7 +5,7 @@ prev: false
 title: "TextToken"
 ---
 
-Defined in: [core/src/features/parsing/parser/types.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L6)
+Defined in: [core/src/features/tokens/parser/types.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/types.ts#L6)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [core/src/features/parsing/parser/types.ts:6](https://github.com/Now
 content: string;
 ```
 
-Defined in: [core/src/features/parsing/parser/types.ts:8](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L8)
+Defined in: [core/src/features/tokens/parser/types.ts:8](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/types.ts#L8)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [core/src/features/parsing/parser/types.ts:8](https://github.com/Now
 position: object;
 ```
 
-Defined in: [core/src/features/parsing/parser/types.ts:9](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L9)
+Defined in: [core/src/features/tokens/parser/types.ts:9](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/types.ts#L9)
 
 #### end
 
@@ -47,4 +47,4 @@ start: number;
 type: "text";
 ```
 
-Defined in: [core/src/features/parsing/parser/types.ts:7](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L7)
+Defined in: [core/src/features/tokens/parser/types.ts:7](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/types.ts#L7)

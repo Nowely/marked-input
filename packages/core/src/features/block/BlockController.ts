@@ -1,9 +1,9 @@
 import {event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
 import type {EditController} from '../edit'
-import type {TokenModel} from '../parsing/TokenModel'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
+import type {TokenModel} from '../tokens/TokenModel'
 import {BlockStore} from './BlockStore'
 import {applyDragAction} from './operations'
 

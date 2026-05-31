@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
 import type {CoreOption} from '../../shared/types'
-import type {Token} from '../parsing'
+import type {Token} from '../tokens'
 import {createRowContent} from './createRowContent'
 import {addDragRow, applyDragAction, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
 

@@ -1,9 +1,9 @@
 import {describe, it, expect} from 'vitest'
 
-import type {Token} from '../parsing/parser/types'
-import {createTokenIndex, pathKey} from '../parsing/tokenIndex'
 import {markToken, textToken} from './__testing__/tokenFactories'
 import {buildIndex} from './buildIndex'
+import type {Token} from './parser/types'
+import {createTokenIndex, pathKey} from './tokenIndex'
 
 describe('buildIndex', () => {
 	it('indexes a single inline text token to its DOM element', () => {

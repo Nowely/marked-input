@@ -4,12 +4,12 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
+type KbCtx = Pick<Store, 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, mergeDragRows, canMergeRows} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
-import type {Token} from '../parsing'
 import * as caretDom from '../selection/caretDom'
+import type {Token} from '../tokens'
 import {rawRangeFromInputEvent} from './inputRange'
 
 function isTextLikeRow(token: Token): boolean {

@@ -1,5 +1,5 @@
 import type {CoreOption, DragAction} from '../../shared/types'
-import type {MarkToken, Token} from '../parsing'
+import type {MarkToken, Token} from '../tokens'
 import {createRowContent} from './createRowContent'
 
 export type DragApplyResult = {

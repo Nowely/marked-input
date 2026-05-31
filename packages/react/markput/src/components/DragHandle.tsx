@@ -9,7 +9,7 @@ import styles from '@markput/core/styles.module.css'
 const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
 export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockIndex: number}) => {
-	const {blockStore, action, readOnly, draggable, isDragging, isHovered, refs, index} = useMarkput(s => {
+	const {blockStore, action, readOnly, draggable, isDragging, isHovered, tokens, index} = useMarkput(s => {
 		const blockStore = s.block.get(token)
 
 		return {
@@ -19,13 +19,13 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 			draggable: s.props.draggable,
 			isDragging: blockStore.state.isDragging,
 			isHovered: blockStore.state.isHovered,
-			refs: s.refs,
+			tokens: s.tokens,
 			index: s.tokens.index,
 		}
 	})
 	const alwaysShowHandle = useMemo(() => getAlwaysShowHandle(draggable), [draggable])
 	const path = index.pathFor(token)
-	const controlRef = useMemo(() => (path ? refs.control(path) : undefined), [refs, path])
+	const controlRef = useMemo(() => (path ? tokens.control(path) : undefined), [tokens, path])
 
 	if (readOnly) return null
 

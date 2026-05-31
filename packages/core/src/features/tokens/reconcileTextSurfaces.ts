@@ -1,5 +1,5 @@
-import type {TokenIndex} from '../parsing/tokenIndex'
-import type {TokenNode} from './types'
+import type {TokenNode} from './domTypes'
+import type {TokenIndex} from './tokenIndex'
 
 export function reconcileTextSurfaces(
 	nodes: Iterable<TokenNode>,

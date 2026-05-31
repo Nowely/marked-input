@@ -1,5 +1,5 @@
 import type {CoreOption, Slot} from '../../shared/types'
-import type {Token} from '../parsing'
+import type {Token} from '../tokens'
 
 export type {Slot}
 

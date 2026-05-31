@@ -1,6 +1,6 @@
 import type {CoreOption, CoreSlotProps, CoreSlots, Slot} from '../../shared/types'
 import {convertDataAttrs} from '../../shared/utils/dataAttributes'
-import type {Token} from '../parsing'
+import type {Token} from '../tokens'
 import {resolveOptionSlot} from './resolveOptionSlot'
 
 export type SlotName = 'container' | 'block'

@@ -1,6 +1,41 @@
-# Parsing
+# Tokens
 
-Purpose: Handles parsing of text values into tokens and annotations
+The single home for the token layer. `TokenModel` parses the editor value into a
+token tree, indexes it (path ↔ token ↔ address), collects framework ref
+callbacks, and maintains the token ↔ DOM-element index that selection and
+keyboard navigation read from. It is exposed as `store.tokens`.
+
+The heavy logic stays in pure free functions; the class is a thin orchestrator.
+
+## `TokenModel` (`store.tokens`)
+
+- **Parsing** — `current` (computed `Token[]`) and `index` (computed
+  `TokenIndex` for path/address resolution).
+- **Ref collection** (formerly `TokenRefs`) — adapter components call
+  `control(path?)` and `children(ownerPath)` to register DOM elements that should
+  be treated as opaque controls or as nested child-sequence hosts.
+- **DOM index** (formerly `DomIndex`) — rebuilds on every `host.rendered()` using
+  `buildIndex`. Exposes `locate(node)`, `nodeFor(address)`, `nodes()`, and the
+  `indexed` event. Selection, keyboard, and overlay read through these rather
+  than walking DOM children directly.
+
+## Pure helpers
+
+- `buildIndex` — walks tokens and DOM children in lockstep with one iterative
+  stack frame per nesting level, skips control elements, optionally descends into
+  a registered child-sequence host, and emits a `(byPath, byElement)` snapshot.
+- `reconcileTextSurfaces` — writes `textContent` / `contentEditable` on text
+  token surfaces and `tabIndex` on mark roots from a `{editable, readOnly}` pair.
+- `createTokenIndex` — builds the `TokenIndex` (path ↔ token ↔ address) lookups.
+
+## Block layout indexing
+
+`buildIndex` honours block layout when `isBlock` is true: each immediate child of
+the container is treated as a row, and each row must contain exactly one
+non-control element to count as a token surface. The alignment is
+**all-or-nothing** — if any row has zero or more than one non-control element,
+indexing for the whole frame bails, failing loud when an adapter renders
+something unexpected.
 
 ## Benchmarking
 

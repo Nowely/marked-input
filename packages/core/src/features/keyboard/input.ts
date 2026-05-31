@@ -3,9 +3,9 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
+type KbCtx = Pick<Store, 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
-import type {Token} from '../parsing'
+import type {Token} from '../tokens'
 import {rawRangeFromInputEvent} from './inputRange'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {

@@ -18,8 +18,8 @@ export type {
 export {MarkputHandler} from './src/store/MarkputHandler'
 
 // Parsing exports (modern API)
-export {annotate, denote, findToken} from './src/features/parsing'
-export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing'
+export {annotate, denote, findToken} from './src/features/tokens'
+export type {Markup, Token, TextToken, MarkToken} from './src/features/tokens'
 export type {
 	TokenPath,
 	TokenAddress,
@@ -45,4 +45,4 @@ export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './s
 export {getAlwaysShowHandle} from './src/features/block'
 
 // Mark commands
-export {MarkController} from './src/features/parsing'
+export {MarkController} from './src/features/tokens'

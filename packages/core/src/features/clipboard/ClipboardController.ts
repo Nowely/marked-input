@@ -1,10 +1,10 @@
 // packages/core/src/features/clipboard/ClipboardController.ts
 import {listen} from '../../shared/signals/index.js'
 import type {EditController} from '../edit'
-import type {TokenModel} from '../parsing/TokenModel'
-import {serializeRange} from '../parsing/utils/serializeRange'
 import type {SelectionController} from '../selection/SelectionController'
 import type {Host} from '../state/Host'
+import type {TokenModel} from '../tokens/TokenModel'
+import {serializeRange} from '../tokens/utils/serializeRange'
 import {MARKPUT_MIME} from './pasteMarkup'
 
 export class ClipboardController {

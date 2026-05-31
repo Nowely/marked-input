@@ -1,5 +1,5 @@
-import type {MarkupDescriptor} from '../../parsing/parser/core/MarkupDescriptor'
-import type {Token} from '../../parsing/parser/types'
+import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
+import type {Token} from '../parser/types'
 
 // oxlint-disable-next-line no-unsafe-type-assertion -- test fixture: buildIndex / reconcileTextSurfaces never read descriptor fields
 const descriptor = {} as MarkupDescriptor
