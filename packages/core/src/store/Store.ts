@@ -10,8 +10,6 @@ import {TokenModel} from '../features/tokens'
 import {KeyGenerator} from '../shared/classes'
 import {MarkputHandler} from './MarkputHandler'
 
-export type {DragAction} from '../shared/types'
-
 export class Store {
 	readonly key = new KeyGenerator()
 
