@@ -1,5 +1,4 @@
-// packages/core/src/store/Store.ts
-import {BlockController, BlockRegistry} from '../features/block'
+import {BlockController} from '../features/block'
 import {ClipboardController} from '../features/clipboard'
 import {DomIndex, TokenRefs} from '../features/dom'
 import {EditController} from '../features/edit'
@@ -41,7 +40,6 @@ export class Store {
 		this.props
 	)
 	readonly block = new BlockController(this.props, this.value, this.tokens, this.edit)
-	readonly blocks = new BlockRegistry()
 
 	readonly clipboard = new ClipboardController(this.host, this.edit, this.selection, this.tokens)
 

@@ -14,7 +14,7 @@ import styles from '@markput/core/styles.module.css'
 const props = defineProps<{token: TokenType; blockIndex: number}>()
 
 const store = useStore()
-const blockStore = store.blocks.get(props.token)
+const blockStore = store.block.get(props.token)
 
 const blockComponent = useMarkput(s => s.slots.blockComponent)
 const slotProps = useMarkput(s => s.slots.blockProps)

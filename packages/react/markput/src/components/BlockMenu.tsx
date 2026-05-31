@@ -11,7 +11,7 @@ import styles from '@markput/core/styles.module.css'
 
 export const BlockMenu = memo(({token}: {token: Token}) => {
 	const {blockStore, menuOpen, menuPosition, refs, index} = useMarkput(s => {
-		const blockStore = s.blocks.get(token)
+		const blockStore = s.block.get(token)
 
 		return {
 			blockStore,

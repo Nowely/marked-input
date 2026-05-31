@@ -4,7 +4,8 @@ Manages the block editing mode where each row/token is rendered as a separate dr
 
 ## Components
 
-- **BlockController**: Subscribes to `store.block.action` (a reactive event) and forwards drag operations to `applyDragAction` in `operations.ts`. Receives `EditController` so all writes go through the single batched write path.
+- **BlockController**: Owns `store.block.action` (a reactive event) and forwards drag operations to `applyDragAction` in `operations.ts`; receives `EditController` so all writes go through the single batched write path. Also vends each row's `BlockStore` via `store.block.get(token)`, lazily created and cached per token.
+- **BlockStore**: Per-row UI state (drag/hover/menu signals) and DOM wiring (`attachContainer`/`attachGrip`/`attachMenu`). One instance per row token.
 - **getAlwaysShowHandle**: Extracts `alwaysShowHandle` from `DraggableConfig`
 
 ## Operations (internal)
