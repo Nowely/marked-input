@@ -1,35 +1,40 @@
 // packages/core/src/features/overlay/TriggerFinder.ts
 import {escape} from '../../shared/escape'
 import type {OverlayMatch} from '../../shared/types'
-import type {SelectionController} from '../selection/SelectionController'
+import type {TokenModel} from '../tokens/TokenModel'
 
 const wordRegex = new RegExp(/^\w*/)
 
 type TriggerExtractor<T> = (option: T, index: number) => string | undefined
+
+function fallbackAnchor(): {node: Node; offset: number; isCollapsed: boolean} | undefined {
+	const sel = window.getSelection()
+	if (!sel?.anchorNode) return undefined
+	return {node: sel.anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed}
+}
 
 export class TriggerFinder {
 	span: string
 	node: Node
 	dividedText: {left: string; right: string}
 
-	constructor(private readonly selection?: SelectionController) {
-		const sel = window.getSelection()
-		const node = sel?.anchorNode
-		if (!sel || !node || !document.contains(node)) throw new Error('Anchor node of selection is not exists!')
-		this.node = node
-		this.span = node.textContent ?? ''
-		this.dividedText = this.getDividedTextBy(sel.anchorOffset)
+	constructor(private readonly tokens?: TokenModel) {
+		const anchor = tokens?.selectionAnchor() ?? fallbackAnchor()
+		if (!anchor || !document.contains(anchor.node)) throw new Error('Anchor node of selection is not exists!')
+		this.node = anchor.node
+		this.span = anchor.node.textContent ?? ''
+		this.dividedText = this.getDividedTextBy(anchor.offset)
 	}
 
 	static find<T>(
 		options: T[] | undefined,
 		getTrigger: TriggerExtractor<T>,
-		selection?: SelectionController
+		tokens?: TokenModel
 	): OverlayMatch<T> | undefined {
 		if (!options) return
-		if (!window.getSelection()?.isCollapsed) return
+		if (!(tokens?.selectionAnchor() ?? fallbackAnchor())?.isCollapsed) return
 		try {
-			return new TriggerFinder(selection).find(options, getTrigger)
+			return new TriggerFinder(tokens).find(options, getTrigger)
 		} catch {
 			return undefined
 		}
@@ -62,8 +67,8 @@ export class TriggerFinder {
 	}
 
 	#rawRangeForMatch(source: string, index: number) {
-		if (!this.selection) return {start: index, end: index + source.length}
-		const boundary = this.selection.rawPositionFromBoundary(this.node, index + source.length, 'after')
+		if (!this.tokens) return {start: index, end: index + source.length}
+		const boundary = this.tokens.boundaryFor(this.node, index + source.length, 'after')
 		if (boundary === undefined) return undefined
 		return {start: boundary - source.length, end: boundary}
 	}

@@ -12,7 +12,6 @@ import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import type {Token} from '../tokens'
 import {annotate} from '../tokens'
-import * as caretDom from '../tokens/caret'
 import type {TokenModel} from '../tokens/TokenModel'
 import {TriggerFinder} from './TriggerFinder'
 
@@ -30,7 +29,7 @@ export class OverlayController {
 
 	readonly position: Computed<{left: number; top: number}> = computed(() => {
 		if (!this.match()) return {left: 0, top: 0}
-		const rect = caretDom.getRect()
+		const rect = this.tokens.selectionRect()
 		if (!rect) return {left: 0, top: 0}
 		return {left: rect.left, top: rect.top + rect.height + 1}
 	})
@@ -121,7 +120,7 @@ export class OverlayController {
 
 	#probeTrigger() {
 		const match =
-			TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.selection) ??
+			TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.tokens) ??
 			this.#probeTriggerFromCaretRange()
 		this.match(match)
 	}
