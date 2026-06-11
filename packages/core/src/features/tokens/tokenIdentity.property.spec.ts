@@ -1,0 +1,357 @@
+import {faker} from '@faker-js/faker'
+import {describe, expect, it} from 'vitest'
+
+import {Parser} from './parser/Parser'
+import type {Markup, Token} from './parser/types'
+import {createIdentityTracker, type EditHint, type IdentityTracker} from './tokenIdentity'
+
+// Equivalence property (Phase 2 plan, Task 5 — the gate for Task 6's windowed
+// incremental reparse):
+//
+//   For ANY document and ANY single edit,
+//     reconcile(parse(next), hint).tokens deep-equals parse(next)
+//   and ids are: stable for suffix-shifted tokens, fresh for added tokens,
+//   gone for removed tokens.
+//
+// The generator below (generateDocument / generateEdit / applyEdit) is
+// exported so Task 6 can reuse it to assert `incrementalParse ≡ full parse`.
+// On failure the error message carries seed + document + edit so the
+// counterexample is reproducible with `faker.seed(<seed>)`.
+
+const BASE_SEED = 6_122_026
+/** ~200 keeps CI-tolerable runtime; bump locally (e.g. 1000) for soak runs. */
+const ITERATIONS = 200
+
+// --- Generator ---------------------------------------------------------------
+
+export type GeneratedEdit = {
+	/** Edit class — for diagnostics only. */
+	kind: string
+	/** Replaced range in the previous value (start === end → pure insert). */
+	start: number
+	end: number
+	insert: string
+}
+
+export function applyEdit(value: string, edit: GeneratedEdit): string {
+	return value.slice(0, edit.start) + edit.insert + value.slice(edit.end)
+}
+
+export function editHintOf(edit: GeneratedEdit): EditHint {
+	return {start: edit.start, end: edit.end, insertedLength: edit.insert.length}
+}
+
+const word = () => faker.string.alpha({length: faker.number.int({min: 1, max: 6})})
+
+/** A document segment: plain words, valid marks, partial/broken fragments. */
+function generateSegment(sigil: string): string {
+	const kind = faker.helpers.weightedArrayElement([
+		{weight: 4, value: 'word'},
+		{weight: 2, value: 'space'},
+		{weight: 3, value: 'mark'}, // '@[word]'
+		{weight: 1, value: 'open'}, // '@['
+		{weight: 1, value: 'close'}, // ']'
+		{weight: 1, value: 'sigil'}, // '@'
+		{weight: 1, value: 'dangling'}, // '@[word'
+	])
+	switch (kind) {
+		case 'word':
+			return word()
+		case 'space':
+			return ' '
+		case 'mark':
+			return `${sigil}[${word()}]`
+		case 'open':
+			return `${sigil}[`
+		case 'close':
+			return ']'
+		case 'sigil':
+			return sigil
+		case 'dangling':
+			return `${sigil}[${word()}`
+	}
+}
+
+export function generateDocument(sigil: string): string {
+	const segments = faker.number.int({min: 0, max: 12})
+	let doc = ''
+	for (let i = 0; i < segments; i++) doc += generateSegment(sigil)
+	return doc
+}
+
+/** Text used by insert/replace edits — words, fragments, bracket noise. */
+function insertableText(sigil: string): string {
+	const kind = faker.helpers.weightedArrayElement([
+		{weight: 3, value: 'word'},
+		{weight: 3, value: 'segment'},
+		{weight: 2, value: 'noise'},
+	])
+	if (kind === 'word') return word()
+	if (kind === 'segment') return generateSegment(sigil)
+	return faker.helpers.arrayElement([sigil, '[', ']', `${sigil}[`, `]${sigil}[`, `]${sigil}`])
+}
+
+function findAll(doc: string, needle: string): number[] {
+	const out: number[] = []
+	let at = doc.indexOf(needle)
+	while (at !== -1) {
+		out.push(at)
+		at = doc.indexOf(needle, at + 1)
+	}
+	return out
+}
+
+/** Positions of complete `@[word]` marks as [start, length] pairs. */
+function findValidMarks(doc: string, sigil: string): Array<{start: number; length: number}> {
+	const regex = new RegExp(`[${sigil}]\\[[A-Za-z]+\\]`, 'g')
+	return [...doc.matchAll(regex)].map(m => ({start: m.index, length: m[0].length}))
+}
+
+function randomInsert(doc: string, sigil: string, kind: string): GeneratedEdit {
+	const at = faker.number.int({min: 0, max: doc.length})
+	return {kind, start: at, end: at, insert: insertableText(sigil)}
+}
+
+/**
+ * A random single edit, biased towards the adversarial classes: completing a
+ * dangling markup, breaking a valid one, crossing token boundaries, edits at
+ * position 0 / end, zero-width inserts and full-range replaces. Classes that
+ * need material the document lacks fall back to a plain random insert.
+ */
+export function generateEdit(doc: string, sigil: string): GeneratedEdit {
+	const kind = faker.helpers.weightedArrayElement([
+		{weight: 3, value: 'insert'},
+		{weight: 3, value: 'delete'},
+		{weight: 3, value: 'replace'},
+		{weight: 2, value: 'complete'},
+		{weight: 2, value: 'break'},
+		{weight: 1, value: 'crossBoundary'},
+		{weight: 1, value: 'startEdge'},
+		{weight: 1, value: 'endEdge'},
+		{weight: 1, value: 'zeroWidth'},
+		{weight: 1, value: 'fullReplace'},
+	])
+	switch (kind) {
+		case 'insert':
+			return randomInsert(doc, sigil, kind)
+		case 'delete': {
+			if (doc.length === 0) return randomInsert(doc, sigil, kind)
+			const start = faker.number.int({min: 0, max: doc.length - 1})
+			const end = faker.number.int({min: start + 1, max: Math.min(doc.length, start + 8)})
+			return {kind, start, end, insert: ''}
+		}
+		case 'replace': {
+			if (doc.length === 0) return randomInsert(doc, sigil, kind)
+			const start = faker.number.int({min: 0, max: doc.length - 1})
+			const end = faker.number.int({min: start, max: Math.min(doc.length, start + 8)})
+			return {kind, start, end, insert: insertableText(sigil)}
+		}
+		case 'complete': {
+			// insert ']' a little after a '@[' — completes dangling markup
+			const opens = findAll(doc, `${sigil}[`)
+			if (opens.length === 0) return randomInsert(doc, sigil, kind)
+			const open = faker.helpers.arrayElement(opens)
+			const at = Math.min(doc.length, open + 2 + faker.number.int({min: 0, max: 6}))
+			return {kind, start: at, end: at, insert: ']'}
+		}
+		case 'break': {
+			// delete a structural character inside a valid mark
+			const marks = findValidMarks(doc, sigil)
+			if (marks.length === 0) return randomInsert(doc, sigil, kind)
+			const mark = faker.helpers.arrayElement(marks)
+			const at = faker.helpers.arrayElement([
+				mark.start, // the sigil
+				mark.start + 1, // '['
+				mark.start + mark.length - 1, // ']'
+			])
+			return {kind, start: at, end: at + 1, insert: ''}
+		}
+		case 'crossBoundary': {
+			// delete a range straddling a mark's start boundary
+			const marks = findValidMarks(doc, sigil)
+			if (marks.length === 0) return randomInsert(doc, sigil, kind)
+			const mark = faker.helpers.arrayElement(marks)
+			const start = Math.max(0, mark.start - faker.number.int({min: 1, max: 3}))
+			const end = Math.min(doc.length, mark.start + faker.number.int({min: 1, max: 3}))
+			return {kind, start, end, insert: faker.datatype.boolean() ? '' : insertableText(sigil)}
+		}
+		case 'startEdge':
+			return {kind, start: 0, end: 0, insert: insertableText(sigil)}
+		case 'endEdge':
+			return {kind, start: doc.length, end: doc.length, insert: insertableText(sigil)}
+		case 'zeroWidth': {
+			const at = faker.number.int({min: 0, max: doc.length})
+			return {kind, start: at, end: at, insert: ''}
+		}
+		case 'fullReplace':
+			return {kind, start: 0, end: doc.length, insert: generateDocument(sigil)}
+	}
+}
+
+// --- Assertions ---------------------------------------------------------------
+
+function collectTreeIds(tokens: readonly Token[], tracker: IdentityTracker, into = new Set<number>()): Set<number> {
+	for (const token of tokens) {
+		into.add(tracker.idOf(token))
+		if (token.type === 'mark') collectTreeIds(token.children, tracker, into)
+	}
+	return into
+}
+
+/** Independent structural comparison (positions shifted by `delta`). */
+function structurallyEqual(a: Token, b: Token, delta: number): boolean {
+	if (a.type !== b.type || a.content !== b.content) return false
+	if (a.position.start + delta !== b.position.start || a.position.end + delta !== b.position.end) return false
+	if (a.type === 'mark' && b.type === 'mark') {
+		if (a.descriptor !== b.descriptor || a.value !== b.value || a.meta !== b.meta) return false
+		if (a.children.length !== b.children.length) return false
+		return a.children.every((child, i) => structurallyEqual(child, b.children[i], delta))
+	}
+	return true
+}
+
+/** The whole subtree must carry the previous token's ids (suffix shift). */
+function expectInheritedIds(prev: Token, next: Token, tracker: IdentityTracker): void {
+	expect(tracker.idOf(next), 'shifted token must keep its id').toBe(tracker.idOf(prev))
+	if (prev.type === 'mark' && next.type === 'mark') {
+		prev.children.forEach((child, i) => expectInheritedIds(child, next.children[i], tracker))
+	}
+}
+
+/**
+ * Reconcile one edit and assert the property. Returns the reconciled tokens so
+ * chained edits can continue from them.
+ */
+function assertReconcileEquivalence(
+	parser: Parser,
+	tracker: IdentityTracker,
+	prevTokens: Token[],
+	prevValue: string,
+	nextValue: string,
+	edit: GeneratedEdit,
+	useHint: boolean
+): Token[] {
+	const prevIds = collectTreeIds(prevTokens, tracker)
+	const hint = editHintOf(edit)
+	const result = useHint
+		? tracker.reconcile(parser.parse(nextValue), hint)
+		: tracker.reconcile(parser.parse(nextValue), undefined, prevValue, nextValue)
+	const fresh = parser.parse(nextValue)
+
+	// 1. Output equivalence: tokens carry no id field (ids live in a WeakMap),
+	//    so the reconciled tree must deep-equal a fresh parse directly.
+	expect(result.tokens).toEqual(fresh)
+
+	// 2. Changeset id invariants.
+	const newIds = collectTreeIds(result.tokens, tracker)
+	expect(result.changeset.kind).toBe('delta')
+	if (result.changeset.kind !== 'delta') throw new Error('unreachable')
+	const {textChanged, added, removed, shifted} = result.changeset
+	for (const id of removed) {
+		expect(prevIds.has(id), `removed id ${id} was never in the previous tree`).toBe(true)
+		expect(newIds.has(id), `removed id ${id} is still present in the new tree`).toBe(false)
+	}
+	for (const id of added) {
+		expect(prevIds.has(id), `added id ${id} already existed in the previous tree`).toBe(false)
+		expect(newIds.has(id), `added id ${id} is missing from the new tree`).toBe(true)
+	}
+	for (const id of shifted) {
+		expect(prevIds.has(id), `shifted id ${id} was never in the previous tree`).toBe(true)
+		expect(newIds.has(id), `shifted id ${id} is missing from the new tree`).toBe(true)
+	}
+	for (const id of textChanged) {
+		expect(prevIds.has(id), `textChanged id ${id} was never in the previous tree`).toBe(true)
+		expect(newIds.has(id), `textChanged id ${id} is missing from the new tree`).toBe(true)
+	}
+	// Every TOP-LEVEL previous token either survives or is reported removed.
+	// (Descendants of a textChanged mark are deliberately not deep-diffed —
+	// see the Changeset doc comment in tokenIdentity.ts.)
+	const removedSet = new Set(removed)
+	for (const token of prevTokens) {
+		const id = tracker.idOf(token)
+		expect(
+			newIds.has(id) || removedSet.has(id),
+			`top-level previous id ${id} neither survived nor was reported removed`
+		).toBe(true)
+	}
+
+	// 3. Identity stability at the edges (true-hint runs only — the contract is
+	//    defined relative to the edit window).
+	if (useHint) {
+		const delta = hint.insertedLength - (hint.end - hint.start)
+		// untouched prefix: reused by REFERENCE
+		let p = 0
+		while (
+			p < prevTokens.length &&
+			p < fresh.length &&
+			prevTokens[p].position.end <= hint.start &&
+			structurallyEqual(prevTokens[p], fresh[p], 0)
+		) {
+			expect(result.tokens[p], 'untouched prefix token must be reused by reference').toBe(prevTokens[p])
+			p++
+		}
+		// suffix-shifted tokens: ids stable across the whole subtree
+		let prevTail = prevTokens.length - 1
+		let nextTail = fresh.length - 1
+		while (
+			prevTail >= p &&
+			nextTail >= p &&
+			prevTokens[prevTail].position.start >= hint.end &&
+			structurallyEqual(prevTokens[prevTail], fresh[nextTail], delta)
+		) {
+			expectInheritedIds(prevTokens[prevTail], result.tokens[nextTail], tracker)
+			prevTail--
+			nextTail--
+		}
+	}
+
+	return result.tokens
+}
+
+// --- Property runner ----------------------------------------------------------
+
+function runProperty(markup: Markup, sigil: string, iterations: number): void {
+	const parser = new Parser([markup])
+	for (let i = 0; i < iterations; i++) {
+		const seed = BASE_SEED + i
+		faker.seed(seed)
+		const doc = generateDocument(sigil)
+		const tracker = createIdentityTracker()
+		let value = doc
+		let tokens = tracker.reconcile(parser.parse(doc)).tokens
+		// every other iteration chains a second edit through the SAME tracker
+		// to exercise the previous-tree bookkeeping
+		const rounds = 1 + (i % 2)
+		// every 4th iteration exercises the no-hint (findGap-derived) path
+		const useHint = i % 4 !== 3
+		for (let round = 0; round < rounds; round++) {
+			const edit = generateEdit(value, sigil)
+			const next = applyEdit(value, edit)
+			try {
+				tokens = assertReconcileEquivalence(parser, tracker, tokens, value, next, edit, useHint)
+			} catch (error) {
+				const detail = [
+					`seed=${seed} iteration=${i} round=${round} markup=${markup} useHint=${useHint}`,
+					`document: ${JSON.stringify(value)}`,
+					`edit:     ${JSON.stringify(edit)}`,
+					`next:     ${JSON.stringify(next)}`,
+				].join('\n')
+				throw new Error(
+					`tokenIdentity equivalence property failed\n${detail}\n\n${error instanceof Error ? error.message : String(error)}`,
+					{cause: error}
+				)
+			}
+			value = next
+		}
+	}
+}
+
+describe('tokenIdentity equivalence property', () => {
+	it('value markup @[…]: reconciled tree deep-equals a fresh parse and ids follow the contract', () => {
+		runProperty('@[__value__]', '@', ITERATIONS)
+	})
+
+	it('slot markup #[…]: nested children follow the contract too', () => {
+		runProperty('#[__slot__]', '#', Math.ceil(ITERATIONS / 2))
+	})
+})
