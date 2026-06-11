@@ -8,8 +8,8 @@ type KbCtx = Pick<Store, 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, mergeDragRows, canMergeRows} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
-import * as caretDom from '../selection/caretDom'
 import type {Token} from '../tokens'
+import * as caretDom from '../tokens/caret'
 import {rawRangeFromInputEvent} from './inputRange'
 
 function isTextLikeRow(token: Token): boolean {

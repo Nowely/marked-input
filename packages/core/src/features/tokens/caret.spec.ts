@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
-import * as caretDom from './caretDom'
+import * as caretDom from './caret'
 
 describe('caretDom', () => {
 	afterEach(() => {

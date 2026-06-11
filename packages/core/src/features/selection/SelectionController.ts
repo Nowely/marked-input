@@ -8,10 +8,10 @@ import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {reconcileTextSurfaces, type Token, type TokenNode} from '../tokens'
+import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from '../tokens/caret'
+import {hasEditableAncestorBefore, textLength, textOffsetWithin} from '../tokens/textOffsets'
 import type {TokenIndex} from '../tokens/tokenIndex'
 import type {TokenModel} from '../tokens/TokenModel'
-import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
-import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 
 export class SelectionController {
 	readonly range: Signal<Range | undefined> = signal<Range>({equals: shallow})
