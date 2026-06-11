@@ -74,8 +74,6 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	const value = store.value.current()
 
 	if (event.key === KEYBOARD.BACKSPACE) {
-		const caretAtStart = handle.caretIndex() === 0
-
 		const blockText = 'content' in token ? token.content : ''
 		if (blockText === '') {
 			event.preventDefault()
@@ -95,6 +93,8 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 			return
 		}
 
+		const caretAtStart = (handle.caretIndex() ?? 0) === 0
+
 		if (caretAtStart && blockIndex > 0) {
 			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex - 1, 'end')
 			return
@@ -102,7 +102,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	}
 
 	if (event.key === KEYBOARD.DELETE) {
-		const caretIndex = handle.caretIndex()
+		const caretIndex = handle.caretIndex() ?? 0
 		const caretAtEnd = caretIndex === handle.textLength()
 		const caretAtStart = caretIndex === 0
 
@@ -148,8 +148,9 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 
 function focusRow(store: KbCtx, token: Token, rowIndex: number, caret: 'start' | 'end'): void {
 	if (token.type === 'mark') {
-		const path = store.tokens.index().pathFor(token)
-		const address = path ? store.tokens.index().addressFor(path) : undefined
+		const tokenIndex = store.tokens.index()
+		const path = tokenIndex.pathFor(token)
+		const address = path ? tokenIndex.addressFor(path) : undefined
 		if (address && store.selection.placeAtAddress(address, caret)) return
 	}
 
@@ -166,7 +167,7 @@ function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction
 	const rowCount = store.tokens.current().length
 
 	if (direction === 'left') {
-		if (handle.caretIndex() !== 0) return
+		if ((handle.caretIndex() ?? 0) !== 0) return
 		if (blockIndex === 0) return
 		event.preventDefault()
 		const prev = rowHandle(store, blockIndex - 1)
@@ -176,7 +177,7 @@ function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction
 		return
 	}
 
-	if (handle.caretIndex() !== handle.textLength()) return
+	if ((handle.caretIndex() ?? 0) !== handle.textLength()) return
 	if (blockIndex >= rowCount - 1) return
 	event.preventDefault()
 	const next = rowHandle(store, blockIndex + 1)
