@@ -113,7 +113,7 @@ export class TokenModel {
 	}
 
 	/** Locate the indexed token node owning a DOM node, walking up to the container. */
-	locate(node: Node): Lookup | undefined {
+	#locate(node: Node): Lookup | undefined {
 		const container = this.host.container()
 		if (!container) return undefined
 
@@ -129,11 +129,11 @@ export class TokenModel {
 		return undefined
 	}
 
-	nodeFor(address: TokenAddress): TokenNode | undefined {
+	#nodeFor(address: TokenAddress): TokenNode | undefined {
 		return this.#byPath.get(pathKey(address.path))
 	}
 
-	nodes(): IterableIterator<TokenNode> {
+	#nodes(): IterableIterator<TokenNode> {
 		return this.#byPath.values()
 	}
 
@@ -152,7 +152,7 @@ export class TokenModel {
 	 * or undefined if outside the container.
 	 */
 	handleAt(node: Node): TokenHandle | 'control' | undefined {
-		const lookup = this.locate(node)
+		const lookup = this.#locate(node)
 		if (!lookup) return undefined
 		if (lookup.kind === 'control') return 'control'
 		return this.#ensureHandle(lookup.node)
@@ -181,9 +181,9 @@ export class TokenModel {
 			container: this.host.container() ?? undefined,
 			tokens: this.current(),
 			index: this.index(),
-			locate: node => this.locate(node),
-			nodeFor: address => this.nodeFor(address),
-			nodes: () => this.nodes(),
+			locate: node => this.#locate(node),
+			nodeFor: address => this.#nodeFor(address),
+			nodes: () => this.#nodes(),
 		}
 	}
 
@@ -259,7 +259,7 @@ export class TokenModel {
 	placeCaret(target: number | {address: TokenAddress; offset: number}): boolean {
 		if (typeof target === 'number') return this.#placeAtRawPosition(target)
 
-		const node = this.nodeFor(target.address)
+		const node = this.#nodeFor(target.address)
 		const resolved = this.index().resolveAddress(target.address)
 		if (!node || !resolved) return false
 
@@ -340,7 +340,7 @@ export class TokenModel {
 
 	/** Sync text surfaces' textContent/contentEditable and mark tabindex. */
 	reconcileSurfaces(options: {editable: boolean; readOnly: boolean}): void {
-		reconcileTextSurfaces(this.nodes(), this.index(), options)
+		reconcileTextSurfaces(this.#nodes(), this.index(), options)
 	}
 
 	// Note: handle `changed`/`unmounted` watchers run while `#committing` is true;

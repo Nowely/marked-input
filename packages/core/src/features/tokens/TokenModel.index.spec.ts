@@ -2,6 +2,7 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {watch} from '../../shared/signals/index.js'
 import {Store} from '../../store/Store'
+import {TokenHandle} from './TokenHandle'
 
 function mountInline(value: string) {
 	const store = new Store()
@@ -39,27 +40,26 @@ describe('TokenModel index', () => {
 		container.remove()
 	})
 
-	it('locate(node) returns a token lookup with the matching TokenNode', () => {
+	it('handleAt(node) returns the live handle for the owning token', () => {
 		const {store, container, span} = mountInline('hello')
 
-		const lookup = store.tokens.locate(span)
-		expect(lookup?.kind).toBe('token')
-		if (lookup?.kind !== 'token') throw new Error('expected token lookup')
-		expect(lookup.node.tokenElement).toBe(span)
-		expect(lookup.node.textElement).toBe(span)
-		expect(lookup.element).toBe(span)
+		const handle = store.tokens.handleAt(span)
+		expect(handle).toBeInstanceOf(TokenHandle)
+		if (!(handle instanceof TokenHandle)) throw new Error('expected token handle')
+		expect(handle.element()).toBe(span)
+		expect(handle.hasTextSurface()).toBe(true)
 		container.remove()
 	})
 
-	it('locate(node) returns undefined when node is outside container', () => {
+	it('handleAt(node) returns undefined when node is outside container', () => {
 		const {store, container} = mountInline('hello')
 		const stray = document.createElement('div')
 
-		expect(store.tokens.locate(stray)).toBeUndefined()
+		expect(store.tokens.handleAt(stray)).toBeUndefined()
 		container.remove()
 	})
 
-	it('locate(node) on a registered control returns kind=control', () => {
+	it('handleAt(node) on a registered control returns control', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello', layout: 'block'})
 		const container = document.createElement('div')
@@ -73,35 +73,37 @@ describe('TokenModel index', () => {
 		store.tokens.control([0])(control)
 		store.host.rendered()
 
-		expect(store.tokens.locate(control)?.kind).toBe('control')
+		expect(store.tokens.handleAt(control)).toBe('control')
 		container.remove()
 	})
 
-	it('nodeFor(address) returns the node registered for that address', () => {
+	it('handleFor(address) returns the handle registered for that address', () => {
 		const {store, container, span} = mountInline('hello')
 		const address = store.tokens.index().addressFor([0])!
 
-		expect(store.tokens.nodeFor(address)?.tokenElement).toBe(span)
+		expect(store.tokens.handleFor(address)?.element()).toBe(span)
 		container.remove()
 	})
 
-	it('nodes() iterates all indexed TokenNodes', () => {
-		const {store, container} = mountInline('hello')
+	it('handles() iterates all indexed tokens as live handles', () => {
+		const {store, container, span} = mountInline('hello')
 
-		const all = Array.from(store.tokens.nodes())
+		const all = [...store.tokens.handles()]
 		expect(all).toHaveLength(1)
+		expect(all[0].address().path).toEqual([0])
+		expect(all[0].element()).toBe(span)
 		container.remove()
 	})
 
-	it('locate and nodeFor return undefined before any commit has run', () => {
+	it('handleAt and handleFor return undefined before any commit has run', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
 		const span = document.createElement('span')
 		// intentionally NOT attaching span to a container nor setting store.host.container()
 
-		expect(store.tokens.locate(span)).toBeUndefined()
+		expect(store.tokens.handleAt(span)).toBeUndefined()
 		const address = store.tokens.index().addressFor([0])!
-		expect(store.tokens.nodeFor(address)).toBeUndefined()
+		expect(store.tokens.handleFor(address)).toBeUndefined()
 	})
 
 	it('setting selection range before any commit has run does not throw', () => {
