@@ -79,10 +79,9 @@ describe('TokenModel changeset', () => {
 		expect(store.tokens.idOf(store.tokens.current()[2])).toBe(tailId)
 	})
 
-	// Plan deviation (Task 3): the plan predicted `kind: 'full'` after a direct
-	// value set, but since Task 2 the tracker self-derives the hint via findGap
-	// from previous/next values — only the FIRST reconcile is 'full'. The
-	// intent (identity survives a hint-less set) is asserted instead.
+	// Direct value sets carry no edit hint; the identity tracker derives the
+	// changed window via findGap, so the changeset is a precise 'delta'
+	// (only the very first parse reports 'full') and token identity survives.
 	it('direct value.current set keeps identity via the findGap-derived hint and reports delta', () => {
 		const {store} = mountWithMark()
 		const markId = store.tokens.idOf(store.tokens.current()[1])
