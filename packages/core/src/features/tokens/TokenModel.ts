@@ -248,6 +248,13 @@ export class TokenModel {
 	 * surface containing the position, else a mark boundary exactly there);
 	 * address form targets a specific token (callers use it to disambiguate
 	 * tokens sharing a boundary position).
+	 *
+	 * **Address form — `offset` for mark tokens without a text surface:**
+	 * When the addressed token is a `mark` that has no text surface of its own
+	 * (i.e. `node.textElement` is absent), `offset` is interpreted as a binary
+	 * boundary selector, not as a character offset:
+	 * - `offset <= 0` → start boundary of the token element
+	 * - `offset > 0`  → end boundary of the token element
 	 */
 	placeCaret(target: number | {address: TokenAddress; offset: number}): boolean {
 		if (typeof target === 'number') return this.#placeAtRawPosition(target)
@@ -294,21 +301,31 @@ export class TokenModel {
 		return false
 	}
 
-	/** Select [start, end]; collapses via placeCaret when equal. */
+	/**
+	 * Select [start, end]; collapses via placeCaret when equal.
+	 * The arguments are order-insensitive — passing (end, start) is equivalent
+	 * to passing (start, end); the range is always normalized to [lo, hi] before
+	 * being forwarded to the DOM Range API (which would throw on a reversed range).
+	 */
 	selectRange(start: number, end: number): boolean {
 		if (start === end) return this.placeCaret(start)
+		const [lo, hi] = start <= end ? [start, end] : [end, start]
 		const ctx = this.#boundaryContext()
-		const startTarget = textTargetAt(ctx, start)
-		const endTarget = textTargetAt(ctx, end)
+		const startTarget = textTargetAt(ctx, lo)
+		const endTarget = textTargetAt(ctx, hi)
 		if (!startTarget?.node.textElement || !endTarget?.node.textElement) return false
 		placeRangeAcrossSurfaces(
-			{element: startTarget.node.textElement, offset: start - startTarget.start},
-			{element: endTarget.node.textElement, offset: end - endTarget.start}
+			{element: startTarget.node.textElement, offset: lo - startTarget.start},
+			{element: endTarget.node.textElement, offset: hi - endTarget.start}
 		)
 		return true
 	}
 
-	/** Absolute position at viewport coordinates (read half of old setAtX). */
+	/**
+	 * Absolute position at viewport coordinates (read half of old setAtX).
+	 * Returns `undefined` when the point hits nothing hittable, or when the
+	 * resolved DOM boundary falls outside any indexed token.
+	 */
 	caretFromPoint(x: number, y: number): number | undefined {
 		// oxlint-disable-next-line no-unsafe-type-assertion -- non-standard DOM APIs not in TS lib
 		const doc = document as unknown as {

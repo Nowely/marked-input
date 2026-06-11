@@ -129,14 +129,26 @@ describe('TokenModel placement commands', () => {
 		expect(store.tokens.readSelection()?.range).toEqual({start: 1, end: 1})
 	})
 
-	it('placeCaret at a mark boundary collapses at the mark edge', () => {
+	it('placeCaret at a mark/text shared boundary resolves to the text surface', () => {
 		const {store} = mountWithMark()
 		const mark = store.tokens.current().find(t => t.type === 'mark')
 		if (!mark) throw new Error('expected mark')
-		// mark [2,6]: position 6 is also the inclusive start of "llo" [6,9]
+		// mark [2,6]: position 6 is also the inclusive start of text "llo" [6,9].
+		// The text surface wins because textTargetAt finds "llo" before markBoundaryAt
+		// is consulted — the mark branch in #placeAtRawPosition is therefore not
+		// exercised here.
 		expect(store.tokens.placeCaret(mark.position.end)).toBe(true)
 		expect(store.tokens.readSelection()?.range.start).toBe(mark.position.end)
 	})
+
+	// Note: the mark-only branch of #placeAtRawPosition (markBoundaryAt) is not
+	// directly reachable via a raw position in this fixture because the parser always
+	// emits an empty leading text token when a mark is first in the value (confirmed
+	// for '@[x]llo' → [{type:'text',position:{0,0}}, {type:'mark',position:{0,4}},
+	// {type:'text',position:{4,7}}]). textTargetAt therefore always matches before
+	// markBoundaryAt is tried. The mark-form of placeCaret({address, offset}) that
+	// drives the same underlying placeAtChildBoundary call is covered by the
+	// 'placeCaret({address, offset}) targets the addressed token explicitly' test.
 
 	it('placeCaret({address, offset}) targets the addressed token explicitly', () => {
 		const {store} = mountWithMark()
