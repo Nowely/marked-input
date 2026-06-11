@@ -1680,8 +1680,33 @@ git commit -m "chore: DOM encapsulation guard — selection APIs only inside fea
 
 ---
 
+### Task 12: hand off to Phase 2 planning
+
+Phase 1 is not "done" until the next phase is planned — this keeps the spec's phase chain unbroken.
+
+- [ ] **Step 1: Verify all Phase 1 gates**
+
+Run: `pnpm -F core test && pnpm run check:encapsulation`
+Expected: both green. All checkboxes in Tasks 1–11 ticked.
+
+- [ ] **Step 2: Write the Phase 2 implementation plan**
+
+Using the **superpowers:writing-plans** skill, write the Phase 2 (incremental parser) plan against the *now-landed* codebase, from the spec `docs/superpowers/specs/2026-06-11-tokenmodel-dom-encapsulation-design.md` (section "Phase 2 — parser-threaded identity"). Scope: `parse(value, previous?)`, stable token ids, the `{textChanged, added, removed, shifted}` changeset with `full` fallback, handle registry re-keying from path to id, equivalence property spec, incremental-typing benchmark. Save to `docs/superpowers/plans/YYYY-MM-DD-tokenmodel-incremental-parser-phase2.md`.
+
+**The Phase 2 plan MUST end with the same kind of handoff task: "write the Phase 3 (fine-grained commit) plan via writing-plans".** Phase 3's plan then ends the chain (no Phase 4).
+
+- [ ] **Step 3: Commit the Phase 2 plan**
+
+```bash
+git add docs/superpowers/plans/
+git commit -m "docs(tokens): Phase 2 implementation plan — incremental parser with stable identity"
+```
+
+---
+
 ## Done criteria (gates from the spec)
 
 - 1a: `pnpm -F core test` green including TokenHandle + facade parity corpus — old code untouched until parity proven ✓ (Tasks 1–4)
 - 1b: suite green after each consumer commit; consumers contain no raw selection DOM ✓ (Tasks 5–9, one consumer per commit)
 - 1c: grep-clean old surface; guard script wired ✓ (Tasks 10–11)
+- Handoff: Phase 2 plan written via writing-plans and committed; its final task hands off to Phase 3 ✓ (Task 12)
