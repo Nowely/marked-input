@@ -7,17 +7,118 @@ keyboard navigation read from. It is exposed as `store.tokens`.
 
 The heavy logic stays in pure free functions; the class is a thin orchestrator.
 
+**Encapsulation rule:** raw `Selection`, `Range`, and `TreeWalker` DOM APIs live
+only inside this module (`features/tokens/`). The boundary is enforced by
+`pnpm run check:encapsulation` (`scripts/check-dom-encapsulation.sh`). All
+consumers outside the module must go through `store.tokens` methods or
+`TokenHandle`.
+
+Design spec: `docs/superpowers/specs/2026-06-11-tokenmodel-dom-encapsulation-design.md`
+
 ## `TokenModel` (`store.tokens`)
 
 - **Parsing** — `current` (computed `Token[]`) and `index` (computed
   `TokenIndex` for path/address resolution).
 - **Ref collection** (formerly `TokenRefs`) — adapter components call
-  `control(path?)` and `children(ownerPath)` to register DOM elements that should
-  be treated as opaque controls or as nested child-sequence hosts.
-- **DOM index** (formerly `DomIndex`) — rebuilds on every `host.rendered()` using
-  `buildIndex`. Exposes `locate(node)`, `nodeFor(address)`, `nodes()`, and the
-  `indexed` event. Selection, keyboard, and overlay read through these rather
-  than walking DOM children directly.
+  `control(path?)` and `children(ownerPath)` to register DOM elements that
+  should be treated as opaque controls or as nested child-sequence hosts.
+- **DOM index** (formerly `DomIndex`) — rebuilt on every `host.rendered()` using
+  `buildIndex`. All lookups (`#locate`, `#nodeFor`, `#nodes`) are private;
+  consumers use the facade methods below. Fires the `indexed` event after each
+  rebuild.
+
+### Handle lookups
+
+- `handleFor(address)` — live `TokenHandle` for the token at a known address, or
+  `undefined` if not yet indexed.
+- `handleAt(node)` — resolves a DOM node to its `TokenHandle`, `'control'` (if
+  inside a control root), or `undefined` (outside the container).
+- `tokenAt(position)` — `TokenHandle` of the text token containing `position`,
+  or the next one after it.
+- `handles()` — iterate all indexed tokens as live handles.
+
+### DOM→model reads
+
+- `boundaryFor(node, offset, affinity?)` — maps a DOM `(node, offset)` pair to
+  an absolute document position. `affinity` (`'before'` | `'after'`, default
+  `'after'`) breaks ties at token boundaries.
+- `caretFromPoint(x, y)` — absolute position at viewport coordinates using the
+  non-standard `caretRangeFromPoint` / `caretPositionFromPoint` APIs.
+
+### Selection reads
+
+- `readSelection()` — current window selection as a `RawSelection`
+  `{range, direction?}` or `undefined`.
+- `selectedContent()` — `{html, text}` snapshot of the current selection for
+  clipboard use.
+- `selectionRect()` — viewport `DOMRect` of the current caret/selection.
+- `selectionAnchor()` — `{node, offset, isCollapsed}` of the selection anchor
+  (overlay trigger probing).
+- `isSelectionCollapsed()` — tri-state: `true` (collapsed), `false` (range),
+  `undefined` (no selection / not focused).
+- `selectionIntersects(node)` — whether the selection partially or fully contains
+  `node`.
+- `selectionFocusNode()` — the selection's focus node, if any.
+
+### Caret / selection commands
+
+- `placeCaret(target)` — place a collapsed caret. Number form resolves the best
+  text surface or mark boundary; address form
+  `{address, offset}` targets a specific token (disambiguates tokens sharing a
+  boundary position). Returns `false` when placement failed.
+- `selectRange(start, end)` — select `[start, end]`; order-insensitive (passing
+  `(end, start)` is normalized). Collapses via `placeCaret` when equal.
+
+### Surface sync
+
+- `reconcileSurfaces({editable, readOnly})` — writes `textContent` /
+  `contentEditable` on text token surfaces and `tabIndex` on mark roots.
+
+## `TokenHandle`
+
+Live, path-keyed view of one token. Created and synced by `TokenModel`; survives
+DOM commits while a token exists at its path, then dies once. Dead handles never
+throw — stale reads return the last snapshot, commands return `false`, and the
+object is never resurrected.
+
+### Reactive getters
+
+- `token` — the current parsed `Token`.
+- `address` — the current `TokenAddress`.
+- `element` — the token root `HTMLElement`, or `undefined` when unmounted.
+- `text` — shorthand for `token().content`.
+- `dead` — `true` after `unmounted` fires.
+
+### `changed` event
+
+Fires with a `TokenChange` discriminated union:
+
+| `kind`       | extra field           | when                                   |
+| ------------ | --------------------- | -------------------------------------- |
+| `'text'`     | `previous: string`    | `token.content` changed                |
+| `'moved'`    | `previousAddress`     | position shifted without content change |
+| `'mounted'`  | —                     | reserved (Phase 3, not emitted yet)    |
+| `'unmounted'`| —                     | handle dies; fired exactly once        |
+
+### Measurement
+
+- `hasTextSurface()` — whether the token has a `contenteditable` text element.
+- `textLength()` — character count of the token's scope.
+- `caretIndex()` — caret offset within scope (meaningful only when focused).
+- `caretRect(offset)` — `DOMRect` of a character-offset caret within the text
+  surface.
+- `rect()` — bounding rect of the token's scope element.
+- `caretOnFirstLine()` / `caretOnLastLine()` — line-position helpers for
+  vertical arrow-key navigation.
+
+### Commands
+
+All commands return `false` when the handle is dead.
+
+- `placeCaret(offset)` — collapsed caret at a character offset (`Infinity` → end).
+- `placeCaretAtBoundary(side)` — `'start'` or `'end'` of the scope.
+- `placeCaretAtX(x, y?)` — caret at viewport x within the scope.
+- `focus()` — focus the scope element.
 
 ## Pure helpers
 
@@ -27,6 +128,20 @@ The heavy logic stays in pure free functions; the class is a thin orchestrator.
 - `reconcileTextSurfaces` — writes `textContent` / `contentEditable` on text
   token surfaces and `tabIndex` on mark roots from a `{editable, readOnly}` pair.
 - `createTokenIndex` — builds the `TokenIndex` (path ↔ token ↔ address) lookups.
+
+## Internal helpers (private to `features/tokens`)
+
+These modules contain the raw DOM API usage gated by the encapsulation rule:
+
+- `boundary.ts` — translates a DOM `(node, offset)` boundary to an absolute
+  document position. Exports `rawPositionFromBoundary`, `textTargetAt`, and
+  `markBoundaryAt`. Vocabulary: `'before'` / `'after'` = affinity at token
+  boundaries; `'start'` / `'end'` = placement side.
+- `caret.ts` — stateless `Range` / `Selection` mechanics: `placeAtTextOffset`,
+  `placeAtChildBoundary`, `placeRangeAcrossSurfaces`, `setAtX`, `getCaretIndex`,
+  `getRect`, `isOnFirstLine`, `isOnLastLine`, `focusIfNeeded`.
+- `textOffsets.ts` — `TreeWalker`-based text measurement: `textLength`,
+  `textOffsetWithin`, `hasEditableAncestorBefore`.
 
 ## Block layout indexing
 
