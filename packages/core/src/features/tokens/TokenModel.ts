@@ -15,6 +15,8 @@ import {createTextToken} from './parser/utils/createTextToken'
 import {reconcileTextSurfaces} from './reconcileTextSurfaces'
 import {TokenHandle} from './TokenHandle'
 import type {HandleHost} from './TokenHandle'
+import {createIdentityTracker} from './tokenIdentity'
+import type {Changeset, ReconcileResult} from './tokenIdentity'
 import {createTokenIndex, pathEquals, pathKey, type TokenIndex} from './tokenIndex'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
@@ -38,13 +40,39 @@ type ChildSequenceRegistration = {
  * this class is the thin orchestrator that wires them to the live DOM.
  */
 export class TokenModel {
-	readonly current: Computed<Token[]> = computed(() => {
+	readonly #identity = createIdentityTracker()
+
+	// PURITY NOTE: `takePendingEdit()` (and the tracker's internal state) mutate
+	// inside this computed. That is safe because the signals runtime never runs
+	// a computed speculatively: `propagate`/`checkDirty` (shared/signals/
+	// alien-signals/system.ts) only flip flags, the getter executes solely in
+	// `updateComputed`, which clears those flags — so it runs at most ONCE per
+	// dependency change wave, and only when a dependency value actually changed
+	// (equal writes never propagate; checkDirty's non-dirty unwind clears
+	// Pending without running the getter). A parser/options change also re-runs
+	// this computed; by then the hint is consumed or absent and reconcile
+	// degrades to the structural added/removed path, which is correct.
+	readonly #reconciled: Computed<ReconcileResult> = computed(() => {
 		const parser = this.#parser()
 		const value = this.value.current()
-		const tokens = parser ? parser.parse(value) : [createTextToken(value)]
-		return this.props.layout.isBlock() ? filterEmptyText(tokens) : tokens
+		const parsed = parser ? parser.parse(value) : [createTextToken(value)]
+		const tokens = this.props.layout.isBlock() ? filterEmptyText(parsed) : parsed
+		const hint = this.value.takePendingEdit()
+		return this.#identity.reconcile(tokens, hint, this.value.previousValue(), value)
 	})
+
+	readonly current: Computed<Token[]> = computed(() => this.#reconciled().tokens)
 	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.current()))
+
+	/** Changeset of the latest reconcile — Phase 3's routing input. */
+	changeset(): Changeset {
+		return this.#reconciled().changeset
+	}
+
+	/** Stable identity of a token in the current tree. */
+	idOf(token: Token): number {
+		return this.#identity.idOf(token)
+	}
 
 	/** Fires after each DOM re-index. */
 	readonly indexed: Event<void> = event<void>()
