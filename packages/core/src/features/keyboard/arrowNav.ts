@@ -28,12 +28,11 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	// is ambiguous; the active element tells us which token the user is
 	// actually standing on.
 	const active = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
-	const lookup = active ? store.tokens.locate(active) : undefined
-	if (lookup?.kind !== 'token') return false
-	const located = lookup.node
+	const handle = active ? store.tokens.handleAt(active) : undefined
+	if (!handle || handle === 'control') return false
 
-	const isFocusedOnMarkElement = active === located.tokenElement && !located.textElement
-	const address = located.address
+	const isFocusedOnMarkElement = active === handle.element() && !handle.hasTextSurface()
+	const address = handle.address()
 
 	const token = store.tokens.index().resolveAddress(address)
 	if (!token) return false
