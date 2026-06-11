@@ -1,19 +1,22 @@
 // packages/core/src/features/overlay/TriggerFinder.ts
 import {escape} from '../../shared/escape'
 import type {OverlayMatch} from '../../shared/types'
-import type {TokenModel} from '../tokens/TokenModel'
+import type {SelectionAnchor, TokenModel} from '../tokens/TokenModel'
 
 const wordRegex = new RegExp(/^\w*/)
 
 type TriggerExtractor<T> = (option: T, index: number) => string | undefined
-
-type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
 
 export class TriggerFinder {
 	span: string
 	node: Node
 	dividedText: {left: string; right: string}
 
+	/**
+	 * @param anchor - Pre-resolved anchor to use; collapse-checking is `find`'s
+	 *   responsibility. Direct constructors (e.g. in tests) bypass the collapse
+	 *   guard deliberately.
+	 */
 	constructor(
 		private readonly tokens?: TokenModel,
 		anchor?: SelectionAnchor

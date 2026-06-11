@@ -17,6 +17,8 @@ import {TokenHandle} from './TokenHandle'
 import type {HandleHost} from './TokenHandle'
 import {createTokenIndex, pathEquals, pathKey, type TokenIndex} from './tokenIndex'
 
+export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
+
 type ControlRegistration = {
 	readonly ownerPath?: TokenPath
 	readonly element: HTMLElement
@@ -237,13 +239,24 @@ export class TokenModel {
 	}
 
 	/** Anchor node + offset of the current selection (overlay trigger probing). */
-	selectionAnchor(): {node: Node; offset: number; isCollapsed: boolean} | undefined {
+	selectionAnchor(): SelectionAnchor | undefined {
 		const sel = window.getSelection()
 		if (!sel?.anchorNode) return undefined
 		return {node: sel.anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed}
 	}
 
-	/** Whether the current selection is collapsed; undefined when there is no selection. */
+	/**
+	 * Whether the current selection is collapsed.
+	 *
+	 * Tri-state: returns `undefined` when there is **no selection at all** (no
+	 * `Selection` object, or `rangeCount === 0` style absence handled by the
+	 * browser returning a collapsed-but-empty selection — in practice this means
+	 * the element is not focused).  Returns `true` when the caret is collapsed,
+	 * `false` when a range is selected.
+	 *
+	 * Callers that want "no selection counts as collapsed" must compare
+	 * `isSelectionCollapsed() !== false` rather than checking for truthiness.
+	 */
 	isSelectionCollapsed(): boolean | undefined {
 		const sel = window.getSelection()
 		return sel ? sel.isCollapsed : undefined

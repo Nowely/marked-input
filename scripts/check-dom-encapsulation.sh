@@ -5,6 +5,7 @@ set -uo pipefail
 
 violations=$(grep -rn --include='*.ts' \
 	-e 'window\.getSelection' \
+	-e 'document\.getSelection' \
 	-e 'createRange' \
 	-e 'createTreeWalker' \
 	-e 'caretRangeFromPoint' \
@@ -14,7 +15,12 @@ violations=$(grep -rn --include='*.ts' \
 	-e "from '.*tokens/boundary'" \
 	packages/core/src \
 	| grep -v 'packages/core/src/features/tokens/' \
-	| grep -v '\.spec\.ts')
+	| grep -v '\.spec\.ts'); status=$?
+
+if [ "$status" -eq 2 ]; then
+	echo 'grep failed (filesystem error)'
+	exit 2
+fi
 
 if [ -n "$violations" ]; then
 	echo 'DOM encapsulation violations (raw selection APIs outside features/tokens):'
