@@ -73,6 +73,18 @@ type BoundaryTriple = [nodeIndex: number, offset: number, affinity: 'before' | '
  * last green run of the dual-run parity spec (facade vs the since-deleted
  * `SelectionController.rawPositionFromBoundary`). Probes absent from a table
  * were `undefined` in that run and must stay `undefined`.
+ *
+ * HOW TO REGENERATE after a legitimate parser or DOM change:
+ * 1. Build a green reference (the commit just before the change, or a
+ *    passing CI run on `next`).
+ * 2. In the probe loop below, temporarily collect results instead of
+ *    asserting: push `[nodeIndex, offset, affinity, actual]` into an array
+ *    when `actual !== undefined`, then fail the test with
+ *    `expect(rows).toEqual([])` to dump the full array to the console.
+ * 3. Copy the printed array as the new table body (one entry per line).
+ * 4. Revert the temporary collection and verify the spec is green again.
+ * Keep the regeneration in a known-good build only — a broken build's output
+ * would silently pin wrong values.
  */
 const boundaryTables: Record<string, BoundaryTriple[]> = {
 	// Fixture: text "he" [0,2], mark "@[x]" [2,6], text "llo" [6,9].
@@ -193,9 +205,9 @@ describe('TokenModel facade boundary behavior (pinned from dual-run parity)', ()
 				for (const affinity of ['before', 'after'] as const) {
 					probed++
 					const actual = store.tokens.boundaryFor(node, offset, affinity)
-					expect(actual, `${node.nodeName}#${nodeIndex}@${offset}/${affinity}`).toBe(
-						expected.get(`${nodeIndex}:${offset}:${affinity}`)
-					)
+					expect
+						.soft(actual, `${node.nodeName}#${nodeIndex}@${offset}/${affinity}`)
+						.toBe(expected.get(`${nodeIndex}:${offset}:${affinity}`))
 				}
 			}
 			// Every pinned triple must have been visited by the probe walk.
