@@ -174,6 +174,22 @@ export class Parser {
 	}
 
 	/**
+	 * Whether the text contains any markup segment occurrence
+	 *
+	 * Pure query over the registry's segments — parsing behavior is untouched.
+	 * Used by the windowed incremental reparse (`features/tokens/
+	 * incrementalParse.ts`): text outside the reparse window must be inert,
+	 * because a stray segment there (e.g. an unmatched `@[` in plain text) can
+	 * pair non-locally with a segment inside the edited window.
+	 *
+	 * @param text - Text to scan
+	 * @returns `true` when at least one segment occurs in the text
+	 */
+	hasSegments(text: string): boolean {
+		return text.length > 0 && this.segmentMatcher.search(text).length > 0
+	}
+
+	/**
 	 * Escapes markup segments in the given text using backslash
 	 *
 	 * This method uses the registry's unique segments and escapes them by adding

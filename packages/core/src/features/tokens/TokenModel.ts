@@ -9,6 +9,7 @@ import type {BoundaryContext} from './boundary'
 import {buildIndex} from './buildIndex'
 import {focusIfNeeded, getRect, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caret'
 import type {Lookup, TokenNode} from './domTypes'
+import {INCREMENTAL, incrementalParse} from './incrementalParse'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import {createTextToken} from './parser/utils/createTextToken'
@@ -16,7 +17,7 @@ import {reconcileTextSurfaces} from './reconcileTextSurfaces'
 import {TokenHandle} from './TokenHandle'
 import type {HandleHost} from './TokenHandle'
 import {createIdentityTracker} from './tokenIdentity'
-import type {Changeset, ReconcileResult} from './tokenIdentity'
+import type {Changeset, EditHint, ReconcileResult} from './tokenIdentity'
 import {createTokenIndex, pathEquals, pathKey, type TokenIndex} from './tokenIndex'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
@@ -55,11 +56,42 @@ export class TokenModel {
 	readonly #reconciled: Computed<ReconcileResult> = computed(() => {
 		const parser = this.#parser()
 		const value = this.value.current()
-		const parsed = parser ? parser.parse(value) : [createTextToken(value)]
-		const tokens = this.props.layout.isBlock() ? filterEmptyText(parsed) : parsed
 		const hint = this.value.takePendingEdit()
-		return this.#identity.reconcile(tokens, hint, this.value.previousValue(), value)
+		const previousValue = this.value.previousValue()
+		const parsed = this.#parse(parser, value, hint, previousValue)
+		// #lastParsed keeps the UNfiltered tree: incrementalParse splices previous
+		// TOP-LEVEL tokens, so its input must be exactly what parse() emits
+		// (tiling the whole value, empty text tokens included). The identity
+		// tracker keeps receiving the FILTERED tree (block mode) — the tree
+		// handles and the index actually consume.
+		this.#lastParsed = parser ? {parser, value, tokens: parsed} : undefined
+		const tokens = this.props.layout.isBlock() ? filterEmptyText(parsed) : parsed
+		return this.#identity.reconcile(tokens, hint, previousValue, value)
 	})
+
+	/** Previous parse (pre-filterEmptyText) — the splice base for {@link incrementalParse}. */
+	#lastParsed: {parser: Parser; value: string; tokens: Token[]} | undefined
+
+	/**
+	 * Typing hot path: when the edit hint and the matching previous parse are
+	 * available, reparse only a window around the edit; any doubt inside
+	 * incrementalParse falls back to a full parse (output is always
+	 * parse-equivalent — gated by incrementalParse.property.spec.ts).
+	 */
+	#parse(
+		parser: Parser | undefined,
+		value: string,
+		hint: EditHint | undefined,
+		previousValue: string | undefined
+	): Token[] {
+		if (!parser) return [createTextToken(value)]
+		const lastParsed = this.#lastParsed
+		if (!INCREMENTAL || hint === undefined || lastParsed === undefined) return parser.parse(value)
+		// A parser/options change invalidates the previous tree's descriptors;
+		// the hint's ranges are coordinates in exactly the last parsed value.
+		if (lastParsed.parser !== parser || lastParsed.value !== previousValue) return parser.parse(value)
+		return incrementalParse(parser, lastParsed.tokens, lastParsed.value, value, hint)
+	}
 
 	readonly current: Computed<Token[]> = computed(() => this.#reconciled().tokens)
 	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.current()))
