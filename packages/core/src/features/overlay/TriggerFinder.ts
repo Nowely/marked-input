@@ -7,6 +7,8 @@ const wordRegex = new RegExp(/^\w*/)
 
 type TriggerExtractor<T> = (option: T, index: number) => string | undefined
 
+// Exists for callers/tests that don't inject TokenModel; reads live selection directly.
+// Slated for removal in sub-phase 1c (Task 11) when the encapsulation guard lands.
 function fallbackAnchor(): {node: Node; offset: number; isCollapsed: boolean} | undefined {
 	const sel = window.getSelection()
 	if (!sel?.anchorNode) return undefined
@@ -18,12 +20,16 @@ export class TriggerFinder {
 	node: Node
 	dividedText: {left: string; right: string}
 
-	constructor(private readonly tokens?: TokenModel) {
-		const anchor = tokens?.selectionAnchor() ?? fallbackAnchor()
-		if (!anchor || !document.contains(anchor.node)) throw new Error('Anchor node of selection is not exists!')
-		this.node = anchor.node
-		this.span = anchor.node.textContent ?? ''
-		this.dividedText = this.getDividedTextBy(anchor.offset)
+	constructor(
+		private readonly tokens?: TokenModel,
+		anchor?: {node: Node; offset: number; isCollapsed: boolean}
+	) {
+		const resolvedAnchor = anchor ?? tokens?.selectionAnchor() ?? fallbackAnchor()
+		if (!resolvedAnchor || !document.contains(resolvedAnchor.node))
+			throw new Error('Anchor node of selection is not exists!')
+		this.node = resolvedAnchor.node
+		this.span = resolvedAnchor.node.textContent ?? ''
+		this.dividedText = this.getDividedTextBy(resolvedAnchor.offset)
 	}
 
 	static find<T>(
@@ -32,9 +38,10 @@ export class TriggerFinder {
 		tokens?: TokenModel
 	): OverlayMatch<T> | undefined {
 		if (!options) return
-		if (!(tokens?.selectionAnchor() ?? fallbackAnchor())?.isCollapsed) return
+		const anchor = tokens?.selectionAnchor() ?? fallbackAnchor()
+		if (!anchor?.isCollapsed) return
 		try {
-			return new TriggerFinder(tokens).find(options, getTrigger)
+			return new TriggerFinder(tokens, anchor).find(options, getTrigger)
 		} catch {
 			return undefined
 		}
