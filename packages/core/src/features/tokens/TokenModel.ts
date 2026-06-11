@@ -1,14 +1,18 @@
-import type {DomRef, TokenAddress, TokenPath} from '../../shared/editorContracts'
+import type {DomRef, RawSelection, TokenAddress, TokenPath} from '../../shared/editorContracts'
 import {batch, computed, event, signal, watch} from '../../shared/signals/index.js'
 import type {Computed, Event, Signal} from '../../shared/signals/index.js'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
+import {rawPositionFromBoundary, textTargetAt} from './boundary'
+import type {BoundaryContext} from './boundary'
 import {buildIndex} from './buildIndex'
+import {getRect} from './caret'
 import type {Lookup, TokenNode} from './domTypes'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import {createTextToken} from './parser/utils/createTextToken'
+import {reconcileTextSurfaces} from './reconcileTextSurfaces'
 import {TokenHandle} from './TokenHandle'
 import type {HandleHost} from './TokenHandle'
 import {createTokenIndex, pathEquals, pathKey, type TokenIndex} from './tokenIndex'
@@ -170,6 +174,78 @@ export class TokenModel {
 			this.#handles.set(key, handle)
 		}
 		return handle
+	}
+
+	#boundaryContext(): BoundaryContext {
+		return {
+			container: this.host.container() ?? undefined,
+			tokens: this.current(),
+			index: this.index(),
+			locate: node => this.locate(node),
+			nodeFor: address => this.nodeFor(address),
+			nodes: () => this.nodes(),
+		}
+	}
+
+	/** Map a DOM boundary (node, offset) to an absolute document position. */
+	boundaryFor(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): number | undefined {
+		return rawPositionFromBoundary(this.#boundaryContext(), node, offset, affinity)
+	}
+
+	/** Handle of the text token containing `position` (or the next one after). */
+	tokenAt(position: number): TokenHandle | undefined {
+		const target = textTargetAt(this.#boundaryContext(), position)
+		return target ? this.#ensureHandle(target.node) : undefined
+	}
+
+	/** Current window selection as absolute positions. */
+	readSelection(): RawSelection | undefined {
+		const selection = window.getSelection()
+		if (!selection || selection.rangeCount === 0) return undefined
+
+		const range = selection.getRangeAt(0)
+		const start = this.boundaryFor(range.startContainer, range.startOffset, 'after')
+		if (start === undefined) return undefined
+		const end = this.boundaryFor(range.endContainer, range.endOffset, 'before')
+		if (end === undefined) return undefined
+
+		const rangeValue = start <= end ? {start, end} : {start: end, end: start}
+		const direction =
+			rangeValue.start === rangeValue.end
+				? undefined
+				: selection.anchorNode === range.endContainer && selection.anchorOffset === range.endOffset
+					? 'backward'
+					: 'forward'
+
+		return direction ? {range: rangeValue, direction} : {range: rangeValue}
+	}
+
+	/** Current selection serialized for clipboard use. */
+	selectedContent(): {html: string; text: string} | undefined {
+		const sel = window.getSelection()
+		const range = sel?.rangeCount ? sel.getRangeAt(0) : undefined
+		if (!range) return undefined
+		const fragment = range.cloneContents()
+		const div = document.createElement('div')
+		div.appendChild(fragment)
+		return {html: div.innerHTML, text: range.toString()}
+	}
+
+	/** Viewport rect of the current caret/selection. */
+	selectionRect(): DOMRect | undefined {
+		return getRect() ?? undefined
+	}
+
+	/** Anchor node + offset of the current selection (overlay trigger probing). */
+	selectionAnchor(): {node: Node; offset: number; isCollapsed: boolean} | undefined {
+		const sel = window.getSelection()
+		if (!sel?.anchorNode) return undefined
+		return {node: sel.anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed}
+	}
+
+	/** Sync text surfaces' textContent/contentEditable and mark tabindex. */
+	reconcileSurfaces(options: {editable: boolean; readOnly: boolean}): void {
+		reconcileTextSurfaces(this.nodes(), this.index(), options)
 	}
 
 	// Note: handle `changed`/`unmounted` watchers run while `#committing` is true;
