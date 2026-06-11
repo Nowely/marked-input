@@ -31,7 +31,7 @@ export class ClipboardController {
 		const raw = this.selection.readRaw()
 		if (!raw || raw.range.start === raw.range.end) return false
 
-		const content = this.selection.readSelectedContent()
+		const content = this.tokens.selectedContent()
 		if (!content) return false
 
 		e.preventDefault()

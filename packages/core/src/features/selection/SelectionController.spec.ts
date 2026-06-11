@@ -345,32 +345,32 @@ describe('SelectionController', () => {
 			expect(innerToken?.position.start).toBe(9)
 			expect(innerToken?.position.end).toBe(18)
 			expect(afterToken?.position.start).toBe(18)
-			expect(store.selection.rawPositionFromBoundary(host, 1, 'before')).toBe(beforeToken?.position.end)
-			expect(store.selection.rawPositionFromBoundary(host, 1, 'after')).toBe(innerToken?.position.start)
-			expect(store.selection.rawPositionFromBoundary(host, 2, 'before')).toBe(innerToken?.position.end)
-			expect(store.selection.rawPositionFromBoundary(host, 2, 'after')).toBe(afterToken?.position.start)
+			expect(store.tokens.boundaryFor(host, 1, 'before')).toBe(beforeToken?.position.end)
+			expect(store.tokens.boundaryFor(host, 1, 'after')).toBe(innerToken?.position.start)
+			expect(store.tokens.boundaryFor(host, 2, 'before')).toBe(innerToken?.position.end)
+			expect(store.tokens.boundaryFor(host, 2, 'after')).toBe(afterToken?.position.start)
 			container.remove()
 		})
 
 		it('maps text-surface boundaries to raw UTF-16 positions', () => {
 			const {store, container, textNode} = mountStructuralInline('hello')
 
-			expect(store.selection.rawPositionFromBoundary(textNode, 2)).toBe(2)
+			expect(store.tokens.boundaryFor(textNode, 2)).toBe(2)
 			container.remove()
 		})
 
 		it('rejects boundaries that split surrogate pairs', () => {
 			const {store, container, textNode} = mountStructuralInline('a😀b')
 
-			expect(store.selection.rawPositionFromBoundary(textNode, 2)).toBeUndefined()
+			expect(store.tokens.boundaryFor(textNode, 2)).toBeUndefined()
 			container.remove()
 		})
 
 		it('maps token shell boundaries by affinity', () => {
 			const {store, container, textSurface} = mountStructuralInline('hello')
 
-			expect(store.selection.rawPositionFromBoundary(textSurface, 0, 'before')).toBe(0)
-			expect(store.selection.rawPositionFromBoundary(textSurface, 1, 'after')).toBe(5)
+			expect(store.tokens.boundaryFor(textSurface, 0, 'before')).toBe(0)
+			expect(store.tokens.boundaryFor(textSurface, 1, 'after')).toBe(5)
 			container.remove()
 		})
 
@@ -384,7 +384,7 @@ describe('SelectionController', () => {
 			if (!(descendantText instanceof Text)) throw new Error('Mark descendant did not render a text node')
 			store.host.rendered()
 
-			expect(store.selection.rawPositionFromBoundary(descendantText, 0, 'after')).toBeUndefined()
+			expect(store.tokens.boundaryFor(descendantText, 0, 'after')).toBeUndefined()
 			container.remove()
 		})
 

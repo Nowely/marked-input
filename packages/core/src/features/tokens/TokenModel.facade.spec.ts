@@ -53,18 +53,125 @@ function mountBlock(): Mounted {
 }
 
 /**
- * All (node, offset) probes worth checking in a container.
- * @yields each [node, offset] DOM boundary, including the container itself
+ * All (node, offset) probes worth checking in a container. Node index 0 is the
+ * container itself; subsequent indices follow TreeWalker (element + text) order.
+ * @yields each [node, nodeIndex, offset] DOM boundary
  */
-function* probes(container: HTMLElement): Generator<[Node, number]> {
+function* probes(container: HTMLElement): Generator<[Node, number, number]> {
 	const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)
-	for (let node: Node | null = container; node; node = walker.nextNode()) {
+	let index = 0
+	for (let node: Node | null = container; node; node = walker.nextNode(), index++) {
 		const max = node instanceof Text ? node.length : node.childNodes.length
-		for (let offset = 0; offset <= max; offset++) yield [node, offset]
+		for (let offset = 0; offset <= max; offset++) yield [node, index, offset]
 	}
 }
 
-describe('TokenModel facade parity (dual-run vs SelectionController)', () => {
+type BoundaryTriple = [nodeIndex: number, offset: number, affinity: 'before' | 'after', position: number]
+
+/**
+ * Known-good `(node, offset, affinity) → position` tables, captured from the
+ * last green run of the dual-run parity spec (facade vs the since-deleted
+ * `SelectionController.rawPositionFromBoundary`). Probes absent from a table
+ * were `undefined` in that run and must stay `undefined`.
+ */
+const boundaryTables: Record<string, BoundaryTriple[]> = {
+	// Fixture: text "he" [0,2], mark "@[x]" [2,6], text "llo" [6,9].
+	// Node indices: 0 container, 1 span("he"), 2 #text"he", 3 mark span,
+	// 4 #text"x", 5 span("llo"), 6 #text"llo".
+	'inline with mark': [
+		[0, 0, 'before', 0],
+		[0, 0, 'after', 0],
+		[0, 1, 'before', 2],
+		[0, 1, 'after', 2],
+		[0, 2, 'before', 6],
+		[0, 2, 'after', 6],
+		[0, 3, 'before', 9],
+		[0, 3, 'after', 9],
+		[1, 0, 'before', 0],
+		[1, 0, 'after', 0],
+		[1, 1, 'before', 2],
+		[1, 1, 'after', 2],
+		[2, 0, 'before', 0],
+		[2, 0, 'after', 0],
+		[2, 1, 'before', 1],
+		[2, 1, 'after', 1],
+		[2, 2, 'before', 2],
+		[2, 2, 'after', 2],
+		[3, 0, 'before', 2],
+		[3, 0, 'after', 2],
+		[3, 1, 'before', 6],
+		[3, 1, 'after', 6],
+		[4, 0, 'before', 6],
+		[4, 0, 'after', 2],
+		[4, 1, 'before', 6],
+		[4, 1, 'after', 2],
+		[5, 0, 'before', 6],
+		[5, 0, 'after', 6],
+		[5, 1, 'before', 9],
+		[5, 1, 'after', 9],
+		[6, 0, 'before', 6],
+		[6, 0, 'after', 6],
+		[6, 1, 'before', 7],
+		[6, 1, 'after', 7],
+		[6, 2, 'before', 8],
+		[6, 2, 'after', 8],
+		[6, 3, 'before', 9],
+		[6, 3, 'after', 9],
+	],
+	// Fixture: mark "one\n\n" [0,5] (text "one" [0,3]), mark "two\n\n" [5,10]
+	// (text "two" [5,8]). Node indices: 0 container, 1 row div, 2 mark span,
+	// 3 text span, 4 #text"one", 5 row div, 6 mark span, 7 text span, 8 #text"two".
+	'block layout': [
+		[0, 0, 'before', 0],
+		[0, 0, 'after', 0],
+		[0, 1, 'before', 5],
+		[0, 1, 'after', 5],
+		[0, 2, 'before', 10],
+		[0, 2, 'after', 10],
+		[1, 0, 'before', 0],
+		[1, 0, 'after', 0],
+		[1, 1, 'before', 5],
+		[1, 1, 'after', 5],
+		[2, 0, 'before', 0],
+		[2, 0, 'after', 0],
+		[2, 1, 'before', 5],
+		[2, 1, 'after', 5],
+		[3, 0, 'before', 0],
+		[3, 0, 'after', 0],
+		[3, 1, 'before', 3],
+		[3, 1, 'after', 3],
+		[4, 0, 'before', 0],
+		[4, 0, 'after', 0],
+		[4, 1, 'before', 1],
+		[4, 1, 'after', 1],
+		[4, 2, 'before', 2],
+		[4, 2, 'after', 2],
+		[4, 3, 'before', 3],
+		[4, 3, 'after', 3],
+		[5, 0, 'before', 5],
+		[5, 0, 'after', 5],
+		[5, 1, 'before', 10],
+		[5, 1, 'after', 10],
+		[6, 0, 'before', 5],
+		[6, 0, 'after', 5],
+		[6, 1, 'before', 10],
+		[6, 1, 'after', 10],
+		[7, 0, 'before', 5],
+		[7, 0, 'after', 5],
+		[7, 1, 'before', 8],
+		[7, 1, 'after', 8],
+		[8, 0, 'before', 5],
+		[8, 0, 'after', 5],
+		[8, 1, 'before', 6],
+		[8, 1, 'after', 6],
+		[8, 2, 'before', 7],
+		[8, 2, 'after', 7],
+		[8, 3, 'before', 8],
+		[8, 3, 'after', 8],
+	],
+}
+
+describe('TokenModel facade boundary behavior (pinned from dual-run parity)', () => {
 	afterEach(() => {
 		document.body.replaceChildren()
 		window.getSelection()?.removeAllRanges()
@@ -74,23 +181,28 @@ describe('TokenModel facade parity (dual-run vs SelectionController)', () => {
 		['inline with mark', mountWithMark],
 		['block layout', mountBlock],
 	] as const) {
-		it(`boundaryFor matches rawPositionFromBoundary — ${name}`, () => {
+		it(`boundaryFor matches the pinned table — ${name}`, () => {
 			const {store, container} = mount()
-			let defined = 0
-			for (const [node, offset] of probes(container)) {
+			const table = boundaryTables[name]
+			// Non-vacuous guard: the pinned table must carry real expectations.
+			expect(table.length).toBeGreaterThan(0)
+			const expected = new Map(table.map(([n, o, a, pos]) => [`${n}:${o}:${a}`, pos]))
+
+			let probed = 0
+			for (const [node, nodeIndex, offset] of probes(container)) {
 				for (const affinity of ['before', 'after'] as const) {
+					probed++
 					const actual = store.tokens.boundaryFor(node, offset, affinity)
-					expect(actual, `${node.nodeName}@${offset}/${affinity}`).toBe(
-						store.selection.rawPositionFromBoundary(node, offset, affinity)
+					expect(actual, `${node.nodeName}#${nodeIndex}@${offset}/${affinity}`).toBe(
+						expected.get(`${nodeIndex}:${offset}:${affinity}`)
 					)
-					if (actual !== undefined) defined++
 				}
 			}
-			// Guard against a vacuous pass (fixture not indexing → all undefined).
-			expect(defined).toBeGreaterThan(0)
+			// Every pinned triple must have been visited by the probe walk.
+			expect(probed).toBeGreaterThanOrEqual(table.length)
 		})
 
-		it(`readSelection matches readRaw — ${name}`, () => {
+		it(`readSelection reads the live selection as absolute positions — ${name}`, () => {
 			const {store, container} = mount()
 			const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
 			if (!(firstText instanceof Text) || firstText.length === 0) throw new Error('expected a text node')
@@ -100,9 +212,12 @@ describe('TokenModel facade parity (dual-run vs SelectionController)', () => {
 			range.setEnd(firstText, Math.min(1, firstText.length))
 			sel?.removeAllRanges()
 			sel?.addRange(range)
-			expect(store.tokens.readSelection()).toBeDefined()
-			expect(store.tokens.readSelection()).toEqual(store.selection.readRaw())
-			expect(store.tokens.selectedContent()).toEqual(store.selection.readSelectedContent())
+			// Both fixtures start their first text token at absolute position 0.
+			expect(store.tokens.readSelection()).toEqual({range: {start: 0, end: 1}, direction: 'forward'})
+			expect(store.tokens.selectedContent()).toEqual({
+				html: firstText.data.slice(0, 1),
+				text: firstText.data.slice(0, 1),
+			})
 		})
 	}
 
