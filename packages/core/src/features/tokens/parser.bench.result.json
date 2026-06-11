@@ -1,5 +1,69 @@
 [
   {
+    "timestamp": "2026-06-12T02:50:00.000Z",
+    "trends": {
+      "changeFromLast": "-19.9%",
+      "regressions": [],
+      "note": "totalTests increased from 7 to 10 (3 incremental benches added); summary average diluted by low-ops incremental entries — existing scalability/realWorld tests unchanged"
+    },
+    "summary": {
+      "totalTests": 10,
+      "performance": 290823
+    },
+    "tests": {
+      "10 marks": {
+        "category": "scalability",
+        "performance": [161023, 161023, 161023],
+        "changeFromLast": "+16.6%"
+      },
+      "50 marks": {
+        "category": "scalability",
+        "performance": [32384, 32384, 32384],
+        "changeFromLast": "+40.2%"
+      },
+      "100 marks": {
+        "category": "scalability",
+        "performance": [15717, 15717, 15717],
+        "changeFromLast": "+13.9%"
+      },
+      "500 marks": {
+        "category": "scalability",
+        "performance": [3095, 3095, 3095],
+        "changeFromLast": "+47.5%"
+      },
+      "social media": {
+        "category": "realWorld",
+        "performance": [685402, 685402, 685402],
+        "changeFromLast": "+6.5%"
+      },
+      "markdown-like": {
+        "category": "realWorld",
+        "performance": [968943, 968943, 968943],
+        "changeFromLast": "+8.5%"
+      },
+      "code comments": {
+        "category": "realWorld",
+        "performance": [1008905, 1008905, 1008905],
+        "changeFromLast": "+21.9%"
+      },
+      "incremental: full parse baseline (500 marks)": {
+        "category": "incremental",
+        "performance": [7879, 7879, 7879],
+        "changeFromLast": "N/A"
+      },
+      "incremental: tail insert (500 marks)": {
+        "category": "incremental",
+        "performance": [13009, 13009, 13009],
+        "changeFromLast": "N/A"
+      },
+      "incremental: middle insert (500 marks)": {
+        "category": "incremental",
+        "performance": [11871, 11871, 11871],
+        "changeFromLast": "N/A"
+      }
+    }
+  },
+  {
     "timestamp": "2025-11-13T10:26:13.227Z",
     "trends": {
       "changeFromLast": "N/A",

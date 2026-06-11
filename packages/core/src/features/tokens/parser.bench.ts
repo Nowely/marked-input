@@ -3,7 +3,9 @@ import * as path from 'path'
 
 import {bench, describe} from 'vitest'
 
+import {incrementalParse} from './incrementalParse'
 import {Parser as ParserV2} from './index'
+import type {EditHint} from './tokenIdentity'
 
 // Test data generators
 function generateComparisonText(marks: number): string {
@@ -21,12 +23,20 @@ const parserV2 = new ParserV2(['@[__value__](__meta__)', '#[__value__]'])
 // Simplified results storage for saving to JSON
 interface TestResult {
 	name: string
-	category: 'scalability' | 'realWorld' // Internal only, not saved to JSON
+	category: 'scalability' | 'realWorld' | 'incremental' // Internal only, not saved to JSON
 	performance: [number, number, number] // [min, avg, max] for ParserV2
 }
 
 const testResults: TestResult[] = []
-const resultsPath = path.join(import.meta.dirname, 'parser.bench.result.json')
+// path.join is a Node API. When the bench runs in Chromium (vitest browser provider),
+// path.join is not a function and resultsPath computation fails. Guard with a try/catch
+// so the bench still runs and prints numbers; JSON persistence is skipped in that case.
+let resultsPath: string
+try {
+	resultsPath = path.join(import.meta.dirname, 'parser.bench.result.json')
+} catch {
+	resultsPath = ''
+}
 let isCollecting = false // Prevent duplicate collection
 let hasSaved = false // Prevent duplicate saves
 
@@ -45,13 +55,13 @@ function runBenchmark(parser: ParserV2, input: string, iterations: number) {
 	const ops: number[] = []
 
 	for (let i = 0; i < iterations; i++) {
-		const startTime = process.hrtime.bigint()
+		const startTime = performance.now()
 
 		parser.parse(input)
 
-		const endTime = process.hrtime.bigint()
+		const endTime = performance.now()
 
-		const timeMs = Number(endTime - startTime) / 1e6
+		const timeMs = endTime - startTime
 		const hz = 1000 / timeMs
 
 		ops.push(Math.round(hz))
@@ -65,6 +75,17 @@ function saveResults() {
 		return
 	}
 	hasSaved = true
+
+	if (!resultsPath) {
+		// Browser context: path.join unavailable — print summary to console only.
+		console.log('\n📊 Benchmark results (browser context — JSON save skipped):')
+		testResults.forEach(r => {
+			console.log(
+				`  ${r.name}: avg ${r.performance[1].toLocaleString()} ops/sec [min ${r.performance[0].toLocaleString()}, max ${r.performance[2].toLocaleString()}]`
+			)
+		})
+		return
+	}
 
 	console.log('\n💾 Saving benchmark results...')
 
@@ -206,7 +227,12 @@ function saveResults() {
 }
 
 // Collect results after benchmarks complete
-function collectResult(name: string, category: 'scalability' | 'realWorld', input: string, iterations: number) {
+function collectResult(
+	name: string,
+	category: 'scalability' | 'realWorld' | 'incremental',
+	input: string,
+	iterations: number
+) {
 	// Check if already collected to prevent duplicates
 	if (testResults.find(r => r.name === name && r.category === category)) {
 		return
@@ -220,6 +246,87 @@ function collectResult(name: string, category: 'scalability' | 'realWorld', inpu
 		category,
 		performance: [v2Ops.min, v2Ops.avg, v2Ops.max],
 	})
+}
+
+// Collect results for an arbitrary bench function (used by incremental benches)
+function collectResultFn(
+	name: string,
+	category: 'scalability' | 'realWorld' | 'incremental',
+	fn: () => void,
+	iterations: number
+) {
+	if (testResults.find(r => r.name === name && r.category === category)) {
+		return
+	}
+
+	const ops: number[] = []
+	for (let i = 0; i < iterations; i++) {
+		const startTime = performance.now()
+		fn()
+		const endTime = performance.now()
+		const timeMs = endTime - startTime
+		ops.push(Math.round(1000 / timeMs))
+	}
+
+	const stats = calculateStats(ops)
+	testResults.push({
+		name,
+		category,
+		performance: [stats.min, stats.avg, stats.max],
+	})
+}
+
+// ── Incremental-parse typing bench fixtures ────────────────────────────────
+// Pre-built OUTSIDE the timed callback so only the parse itself is measured.
+// Uses @[__value__] markup only, with inter-mark text that is INERT (contains
+// no @[ or ] characters) so the inert-outside guard reliably engages the fast path.
+//
+// IMPORTANT: generateComparisonText(500) uses both @[…] AND #[…] marks and
+// includes the closing ] of #[tagN] in plain text — that ] is a segment of the
+// @[__value__] parser, so the inert-outside guard always fires and forces a full
+// parse. Therefore we generate a separate fixture here with truly inert inter-mark text.
+//
+// CAVEAT on slot-leading markup ('__slot__\n\n' block layout): the text between
+// slot marks contains line-break separators that the inert-outside guard flags as
+// non-inert (the separator characters can be part of the slot markup segments);
+// the incremental fast path does NOT apply there — it is a design-spec known limitation.
+// The win demonstrated here applies to inline @[__value__]-style markup only.
+
+const incrementalParser = new ParserV2(['@[__value__]'])
+
+/** A 500-mark document with truly inert inter-mark text (no @[ or ] in plain text). */
+function generateInertText(marks: number): string {
+	let result = 'Start text'
+	for (let i = 0; i < marks; i++) {
+		// Inter-mark text uses only alphanumeric and spaces — guaranteed no @[, ] chars.
+		result += ` word${i} and more text @[user${i}]`
+	}
+	result += ' end of text'
+	return result
+}
+
+const incrementalBase500 = generateInertText(500)
+// Re-use parserV2 for the "500 marks baseline" (matches the existing 500-mark scalability bench)
+// but the incremental-specific fixture uses a plain @[__value__] parser to maximise fast-path hits.
+const incrementalPrev500 = incrementalParser.parse(incrementalBase500)
+
+// (b) One-char TAIL insert: append 'x' at the very end (in inert trailing text)
+const incrementalTailValue = incrementalBase500 + 'x'
+const incrementalTailHint: EditHint = {
+	start: incrementalBase500.length,
+	end: incrementalBase500.length,
+	insertedLength: 1,
+}
+
+// (c) One-char MIDDLE insert: insert 'x' in plain inter-mark text in the middle.
+// Find a safe position in a run of alphabetic chars (not inside @[…]) — any space works.
+const midPoint = Math.floor(incrementalBase500.length / 2)
+const safePoint = incrementalBase500.indexOf(' ', midPoint)
+const incrementalMidValue = incrementalBase500.slice(0, safePoint) + 'x' + incrementalBase500.slice(safePoint)
+const incrementalMidHint: EditHint = {
+	start: safePoint,
+	end: safePoint,
+	insertedLength: 1,
 }
 
 describe('ParserV2 Performance Benchmark Suite', () => {
@@ -289,6 +396,112 @@ describe('ParserV2 Performance Benchmark Suite', () => {
 				}
 			)
 		})
+	})
+
+	// Incremental-typing benches (500-mark document)
+	// (a) Baseline: full parse per keystroke — same operation as the existing 500-marks scalability bench
+	//     but using the @[__value__] parser so the comparison is apples-to-apples with (b)/(c).
+	describe('Incremental: 500 marks full parse (baseline)', () => {
+		bench(
+			'full parse — 500 marks baseline',
+			() => {
+				incrementalParser.parse(incrementalBase500)
+			},
+			{
+				time: 1000,
+				iterations: 5,
+				teardown() {
+					if (!isCollecting) {
+						isCollecting = true
+						collectResultFn(
+							'incremental: full parse baseline (500 marks)',
+							'incremental',
+							() => incrementalParser.parse(incrementalBase500),
+							5
+						)
+						isCollecting = false
+					}
+				},
+			}
+		)
+	})
+
+	// (b) Incremental tail insert: append one char at the end
+	describe('Incremental: 500 marks — tail insert', () => {
+		bench(
+			'incrementalParse — tail insert (500 marks)',
+			() => {
+				incrementalParse(
+					incrementalParser,
+					incrementalPrev500,
+					incrementalBase500,
+					incrementalTailValue,
+					incrementalTailHint
+				)
+			},
+			{
+				time: 1000,
+				iterations: 5,
+				teardown() {
+					if (!isCollecting) {
+						isCollecting = true
+						collectResultFn(
+							'incremental: tail insert (500 marks)',
+							'incremental',
+							() =>
+								incrementalParse(
+									incrementalParser,
+									incrementalPrev500,
+									incrementalBase500,
+									incrementalTailValue,
+									incrementalTailHint
+								),
+							5
+						)
+						isCollecting = false
+					}
+				},
+			}
+		)
+	})
+
+	// (c) Incremental middle insert: insert one char mid-document
+	describe('Incremental: 500 marks — middle insert', () => {
+		bench(
+			'incrementalParse — middle insert (500 marks)',
+			() => {
+				incrementalParse(
+					incrementalParser,
+					incrementalPrev500,
+					incrementalBase500,
+					incrementalMidValue,
+					incrementalMidHint
+				)
+			},
+			{
+				time: 1000,
+				iterations: 5,
+				teardown() {
+					if (!isCollecting) {
+						isCollecting = true
+						collectResultFn(
+							'incremental: middle insert (500 marks)',
+							'incremental',
+							() =>
+								incrementalParse(
+									incrementalParser,
+									incrementalPrev500,
+									incrementalBase500,
+									incrementalMidValue,
+									incrementalMidHint
+								),
+							5
+						)
+						isCollecting = false
+					}
+				},
+			}
+		)
 	})
 
 	// Save results at the end - using a final bench to ensure it runs
