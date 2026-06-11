@@ -1,6 +1,6 @@
 import type {DomRef, TokenAddress, TokenPath} from '../../shared/editorContracts'
-import {computed, event, watch} from '../../shared/signals/index.js'
-import type {Computed, Event} from '../../shared/signals/index.js'
+import {computed, event, signal, watch} from '../../shared/signals/index.js'
+import type {Computed, Event, Signal} from '../../shared/signals/index.js'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
@@ -9,6 +9,8 @@ import type {Lookup, TokenNode} from './domTypes'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import {createTextToken} from './parser/utils/createTextToken'
+import {TokenHandle} from './TokenHandle'
+import type {HandleHost} from './TokenHandle'
 import {createTokenIndex, pathEquals, pathKey, type TokenIndex} from './tokenIndex'
 
 type ControlRegistration = {
@@ -63,6 +65,14 @@ export class TokenModel {
 	#byElement: WeakMap<HTMLElement, TokenNode> = new WeakMap()
 	#controlRoots: WeakSet<HTMLElement> = new WeakSet()
 	#committing = false
+
+	// Handle registry — path-keyed live token objects.
+	readonly #handles = new Map<string, TokenHandle>()
+	readonly #domVersion: Signal<number> = signal({initial: 0})
+	readonly #handleHost: HandleHost = {
+		version: () => this.#domVersion(),
+		nodeByKey: key => this.#byPath.get(key),
+	}
 
 	constructor(
 		private readonly value: ValueModel,
@@ -123,6 +133,63 @@ export class TokenModel {
 		return this.#byPath.values()
 	}
 
+	/** Return the live handle for a token at the given address, or undefined if not indexed. */
+	handleFor(address: TokenAddress): TokenHandle | undefined {
+		const key = pathKey(address.path)
+		const existing = this.#handles.get(key)
+		if (existing) return existing
+		const node = this.#byPath.get(key)
+		if (!node) return undefined
+		return this.#ensureHandle(node)
+	}
+
+	/**
+	 * Resolve a DOM node to its handle, 'control' if inside a control root,
+	 * or undefined if outside the container.
+	 */
+	handleAt(node: Node): TokenHandle | 'control' | undefined {
+		const lookup = this.locate(node)
+		if (!lookup) return undefined
+		if (lookup.kind === 'control') return 'control'
+		return this.#ensureHandle(lookup.node)
+	}
+
+	/**
+	 * Iterate all live handles in the registry.
+	 * @yields {TokenHandle} each live handle
+	 */
+	*handles(): IterableIterator<TokenHandle> {
+		yield* this.#handles.values()
+	}
+
+	#ensureHandle(node: TokenNode): TokenHandle {
+		const key = pathKey(node.path)
+		let handle = this.#handles.get(key)
+		if (!handle) {
+			handle = new TokenHandle(key, this.#handleHost, node.address.token, node.address)
+			this.#handles.set(key, handle)
+		}
+		return handle
+	}
+
+	#syncHandles(): void {
+		const tokenIndex = this.index()
+		// Kill handles whose path key no longer exists in the new index.
+		for (const [key, handle] of this.#handles) {
+			if (!this.#byPath.has(key)) {
+				handle.kill()
+				this.#handles.delete(key)
+			}
+		}
+		// Sync survivors — update token + address snapshots and emit change events.
+		for (const [key, handle] of this.#handles) {
+			const node = this.#byPath.get(key)
+			if (!node) continue
+			const token = tokenIndex.resolve(node.path)
+			handle.sync(node, token)
+		}
+	}
+
 	#controlElements(): ReadonlySet<HTMLElement> {
 		const out = new Set<HTMLElement>()
 		for (const {element} of this.#pendingControls.values()) out.add(element)
@@ -158,6 +225,8 @@ export class TokenModel {
 			this.#byElement = result.byElement
 			this.#controlRoots = result.controlRoots
 
+			this.#syncHandles()
+			this.#domVersion(this.#domVersion() + 1)
 			this.indexed()
 		} finally {
 			this.#committing = false

@@ -5,8 +5,8 @@ Owns the reactive caret/selection state, orchestrates DOM placement after render
 ## Layout
 
 - `SelectionController.ts` — reactive state, DOM event listeners, caret placement, and `(node, offset)` ↔ raw position translation. Owns `range`, `position` (writable computed), `isAllSelected`, and `isUserSelecting`. Public surface: `selectAll`, `focusFirst`, `placeAtAddress`, `readRaw`, `rawPositionFromBoundary`, `readSelectedContent`.
-- `textOffsets.ts` — pure helpers used by the boundary translator and the placement primitives.
-- `caretDom.ts` — stateless DOM caret helpers (`getCaretIndex`, `setAtElement`, `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`, `placeAtTextOffset`, `placeAtChildBoundary`, `placeRangeAcrossSurfaces`, `focusIfNeeded`).
+- `../tokens/textOffsets.ts` — pure helpers used by the boundary translator and the placement primitives (moved to the tokens feature).
+- `../tokens/caret.ts` — stateless DOM caret helpers (`getCaretIndex`, `setAtElement`, `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`, `placeAtTextOffset`, `placeAtChildBoundary`, `placeRangeAcrossSurfaces`, `focusIfNeeded`) (moved to the tokens feature as `caret.ts`).
 
 ## Public Surface
 
