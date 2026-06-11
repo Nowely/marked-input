@@ -18,10 +18,10 @@ export class TriggerFinder {
 	 *   guard deliberately.
 	 */
 	constructor(
-		private readonly tokens?: TokenModel,
+		private readonly tokens: TokenModel,
 		anchor?: SelectionAnchor
 	) {
-		const resolvedAnchor = anchor ?? tokens?.selectionAnchor()
+		const resolvedAnchor = anchor ?? tokens.selectionAnchor()
 		if (!resolvedAnchor || !document.contains(resolvedAnchor.node))
 			throw new Error('Anchor node of selection is not exists!')
 		this.node = resolvedAnchor.node
@@ -32,11 +32,11 @@ export class TriggerFinder {
 	static find<T>(
 		options: T[] | undefined,
 		getTrigger: TriggerExtractor<T>,
-		tokens?: TokenModel,
+		tokens: TokenModel,
 		anchor?: SelectionAnchor
 	): OverlayMatch<T> | undefined {
 		if (!options) return
-		const resolvedAnchor = anchor ?? tokens?.selectionAnchor()
+		const resolvedAnchor = anchor ?? tokens.selectionAnchor()
 		if (!resolvedAnchor?.isCollapsed) return
 		try {
 			return new TriggerFinder(tokens, resolvedAnchor).find(options, getTrigger)
@@ -72,7 +72,6 @@ export class TriggerFinder {
 	}
 
 	#rawRangeForMatch(source: string, index: number) {
-		if (!this.tokens) return {start: index, end: index + source.length}
 		const boundary = this.tokens.boundaryFor(this.node, index + source.length, 'after')
 		if (boundary === undefined) return undefined
 		return {start: boundary - source.length, end: boundary}
