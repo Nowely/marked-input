@@ -28,6 +28,7 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "typecheck": "pnpm -r run typecheck",
+    "check:encapsulation": "bash scripts/check-dom-encapsulation.sh",
     "clean": "git clean -xdf",
     "clean:dry": "git clean -xdn",
     "preinstall": "npx only-allow pnpm",
