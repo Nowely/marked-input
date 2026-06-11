@@ -4,7 +4,9 @@ import type {EditHint} from './tokenIdentity'
 
 /**
  * Escape hatch for A/B debugging: when `false`, TokenModel full-parses every
- * value change instead of using the windowed incremental reparse.
+ * value change instead of using the windowed incremental reparse. Flip in
+ * source to disable; no runtime override by design (a runtime flag would
+ * require every hot-path caller to re-read it on every keystroke).
  */
 export const INCREMENTAL: boolean = true
 
@@ -172,6 +174,11 @@ function parseWindow(
  * Widen [lo, hi] by the window's own character width on each side (at least
  * one token where an edge remains), snapping the endpoints back to text
  * tokens. Callers guarantee the window is not yet the whole document.
+ *
+ * Text-snapping shares the alternation-invariant rationale of step 2 in the
+ * main JSDoc: the top-level stream strictly alternates text↔mark (empty text
+ * tokens included), so a window with text endpoints always splices back into
+ * a valid stream regardless of how the widenings grew it.
  */
 function widenIndices(prev: readonly Token[], lo: number, hi: number): [number, number] {
 	const last = prev.length - 1
@@ -194,7 +201,9 @@ function widenIndices(prev: readonly Token[], lo: number, hi: number): [number, 
  * No free text of this token may contain a markup segment: text content for
  * text tokens; value, meta and nested children for marks (a mark's own
  * delimiters are balanced — only the free text between them can pair with
- * segments inside the window).
+ * segments inside the window). The children check is recursive — it descends
+ * arbitrarily deep via `children.every`, so a deeply nested text token with a
+ * stray segment will correctly prevent the fast path.
  */
 function isInert(parser: Parser, token: Token): boolean {
 	if (token.type === 'text') return !parser.hasSegments(token.content)
@@ -224,5 +233,6 @@ function equalToken(a: Token, b: Token): boolean {
 		}
 		return equalTokenLists(a.children, b.children)
 	}
+	// text tokens: content + positions already checked above
 	return true
 }

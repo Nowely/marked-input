@@ -89,6 +89,10 @@ export class TokenModel {
 		if (!INCREMENTAL || hint === undefined || lastParsed === undefined) return parser.parse(value)
 		// A parser/options change invalidates the previous tree's descriptors;
 		// the hint's ranges are coordinates in exactly the last parsed value.
+		// `previousValue` is always defined here: the computed reads it from
+		// ValueModel, which initializes it to the value present on first render,
+		// so the undefined case only occurs before the first run — at which point
+		// `lastParsed` is undefined too and we have already returned above.
 		if (lastParsed.parser !== parser || lastParsed.value !== previousValue) return parser.parse(value)
 		return incrementalParse(parser, lastParsed.tokens, lastParsed.value, value, hint)
 	}
