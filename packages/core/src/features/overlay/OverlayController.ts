@@ -150,7 +150,7 @@ export class OverlayController {
 				source,
 				range: {start, end: start + source.length},
 				span: value,
-				node: window.getSelection()?.anchorNode ?? this.host.container() ?? document.body,
+				node: this.tokens.selectionAnchor()?.node ?? this.host.container() ?? document.body,
 				option,
 			}
 		}

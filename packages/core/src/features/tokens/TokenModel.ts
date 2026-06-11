@@ -243,6 +243,22 @@ export class TokenModel {
 		return {node: sel.anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed}
 	}
 
+	/** Whether the current selection is collapsed; undefined when there is no selection. */
+	isSelectionCollapsed(): boolean | undefined {
+		const sel = window.getSelection()
+		return sel ? sel.isCollapsed : undefined
+	}
+
+	/** Whether the current selection intersects `node` (partial containment counts). */
+	selectionIntersects(node: Node): boolean {
+		return window.getSelection()?.containsNode(node, true) ?? false
+	}
+
+	/** Focus node of the current selection, if any. */
+	selectionFocusNode(): Node | undefined {
+		return window.getSelection()?.focusNode ?? undefined
+	}
+
 	/**
 	 * Place a collapsed caret. Number form resolves the best target (text
 	 * surface containing the position, else a mark boundary exactly there);

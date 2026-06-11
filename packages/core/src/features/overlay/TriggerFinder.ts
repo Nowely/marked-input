@@ -7,13 +7,7 @@ const wordRegex = new RegExp(/^\w*/)
 
 type TriggerExtractor<T> = (option: T, index: number) => string | undefined
 
-// Exists for callers/tests that don't inject TokenModel; reads live selection directly.
-// Slated for removal in sub-phase 1c (Task 11) when the encapsulation guard lands.
-function fallbackAnchor(): {node: Node; offset: number; isCollapsed: boolean} | undefined {
-	const sel = window.getSelection()
-	if (!sel?.anchorNode) return undefined
-	return {node: sel.anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed}
-}
+type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
 
 export class TriggerFinder {
 	span: string
@@ -22,9 +16,9 @@ export class TriggerFinder {
 
 	constructor(
 		private readonly tokens?: TokenModel,
-		anchor?: {node: Node; offset: number; isCollapsed: boolean}
+		anchor?: SelectionAnchor
 	) {
-		const resolvedAnchor = anchor ?? tokens?.selectionAnchor() ?? fallbackAnchor()
+		const resolvedAnchor = anchor ?? tokens?.selectionAnchor()
 		if (!resolvedAnchor || !document.contains(resolvedAnchor.node))
 			throw new Error('Anchor node of selection is not exists!')
 		this.node = resolvedAnchor.node
@@ -35,13 +29,14 @@ export class TriggerFinder {
 	static find<T>(
 		options: T[] | undefined,
 		getTrigger: TriggerExtractor<T>,
-		tokens?: TokenModel
+		tokens?: TokenModel,
+		anchor?: SelectionAnchor
 	): OverlayMatch<T> | undefined {
 		if (!options) return
-		const anchor = tokens?.selectionAnchor() ?? fallbackAnchor()
-		if (!anchor?.isCollapsed) return
+		const resolvedAnchor = anchor ?? tokens?.selectionAnchor()
+		if (!resolvedAnchor?.isCollapsed) return
 		try {
-			return new TriggerFinder(tokens, anchor).find(options, getTrigger)
+			return new TriggerFinder(tokens, resolvedAnchor).find(options, getTrigger)
 		} catch {
 			return undefined
 		}
