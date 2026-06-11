@@ -1,0 +1,196 @@
+import type {Token} from './parser/types'
+import {findGap} from './preparsing'
+
+export type EditHint = {
+	/** Replaced range in the PREVIOUS value. */
+	readonly start: number
+	readonly end: number
+	readonly insertedLength: number
+}
+
+export type Changeset =
+	| {kind: 'full'}
+	| {
+			kind: 'delta'
+			textChanged: number[]
+			added: number[]
+			removed: number[]
+			shifted: number[]
+	  }
+
+export type ReconcileResult = {
+	tokens: Token[]
+	changeset: Changeset
+}
+
+export type IdentityTracker = {
+	/**
+	 * Match `next` against the previously reconciled tree. Reuses previous token
+	 * objects by reference where the token (and its subtree) is byte-identical
+	 * including position; carries the previous id onto tokens that are identical
+	 * except for a uniform position shift. Everything else gets a fresh id.
+	 * `hint` is the edit range in the previous value; when absent it is derived
+	 * with findGap from the values (reconstructed from the token contents when
+	 * not provided), and the changeset degrades to `full` only when no previous
+	 * tree exists.
+	 */
+	reconcile(next: Token[], hint: EditHint | undefined, previousValue?: string, nextValue?: string): ReconcileResult
+	/** Stable id of a token from the last reconciled tree (or any reused ancestor). */
+	idOf(token: Token): number
+}
+
+export function createIdentityTracker(): IdentityTracker {
+	const ids = new WeakMap<Token, number>()
+	let nextId = 1
+	let previous: Token[] | undefined
+
+	const ensureId = (token: Token): number => {
+		let id = ids.get(token)
+		if (id === undefined) {
+			id = nextId++
+			ids.set(token, id)
+		}
+		if (token.type === 'mark') token.children.forEach(ensureId)
+		return id
+	}
+
+	const inherit = (from: Token, to: Token): void => {
+		const id = ids.get(from)
+		if (id !== undefined) ids.set(to, id)
+		if (from.type === 'mark' && to.type === 'mark') {
+			const len = Math.min(from.children.length, to.children.length)
+			for (let i = 0; i < len; i++) inherit(from.children[i], to.children[i])
+			to.children.forEach(ensureId)
+		}
+	}
+
+	return {
+		idOf: token => ensureId(token),
+
+		reconcile(next, hint, previousValue, nextValue) {
+			const prev = previous
+
+			if (!prev) {
+				next.forEach(ensureId)
+				previous = next
+				return {tokens: next, changeset: {kind: 'full'}}
+			}
+
+			// Top-level tokens partition the value, so the values can always be
+			// reconstructed when the caller does not provide them.
+			const window = hint ?? hintFromValues(previousValue ?? joinContents(prev), nextValue ?? joinContents(next))
+
+			const shiftDelta = window.insertedLength - (window.end - window.start)
+			const out: Token[] = next.slice()
+			const textChanged: number[] = []
+			const added: number[] = []
+			const shifted: number[] = []
+			const matchedPrev = new Set<Token>()
+
+			// 1. Prefix: tokens entirely before the edit window are identical incl.
+			//    position → reuse the previous OBJECT.
+			let p = 0
+			while (
+				p < prev.length &&
+				p < next.length &&
+				prev[p].position.end <= window.start &&
+				tokensEqual(prev[p], next[p])
+			) {
+				out[p] = prev[p]
+				matchedPrev.add(prev[p])
+				p++
+			}
+
+			// 2. Suffix: walk from the ends; a previous token entirely after the edit
+			//    window matches a next token when shifting its positions by
+			//    shiftDelta makes them identical → new object, inherited id.
+			let prevTail = prev.length - 1
+			let nextTail = next.length - 1
+			while (
+				prevTail >= p &&
+				nextTail >= p &&
+				prev[prevTail].position.start >= window.end &&
+				tokensEqualShifted(prev[prevTail], next[nextTail], shiftDelta)
+			) {
+				inherit(prev[prevTail], next[nextTail])
+				matchedPrev.add(prev[prevTail])
+				if (shiftDelta !== 0) shifted.push(ensureId(next[nextTail]))
+				else out[nextTail] = prev[prevTail]
+				prevTail--
+				nextTail--
+			}
+
+			// 3. Middle: same-index pairing for the window region — a token at the
+			//    same tree slot with the same type+descriptor keeps its id and is
+			//    reported as textChanged; everything else is added.
+			for (let i = p; i <= nextTail; i++) {
+				const candidate = i <= prevTail ? prev[i] : undefined
+				if (
+					candidate !== undefined &&
+					!matchedPrev.has(candidate) &&
+					candidate.type === next[i].type &&
+					sameDescriptor(candidate, next[i])
+				) {
+					inherit(candidate, next[i])
+					matchedPrev.add(candidate)
+					textChanged.push(ensureId(next[i]))
+				} else {
+					added.push(ensureId(next[i]))
+				}
+			}
+
+			const removed = prev.filter(t => !matchedPrev.has(t)).map(t => ensureId(t))
+
+			next.forEach(ensureId)
+			previous = out
+			return {
+				tokens: out,
+				changeset: {kind: 'delta', textChanged, added, removed, shifted},
+			}
+		},
+	}
+}
+
+function joinContents(tokens: readonly Token[]): string {
+	return tokens.map(token => token.content).join('')
+}
+
+function hintFromValues(previousValue: string, nextValue: string): EditHint {
+	const gap = findGap(previousValue, nextValue)
+	// findGap contract (see preparsing/utils/findGap.spec.ts):
+	// - `left` is the first diverging index, i.e. the common prefix length;
+	//   undefined when the previous value is a prefix of the next one.
+	// - `right` is the ABSOLUTE exclusive end of the gap in the PREVIOUS value
+	//   (previous.length - commonSuffixLength); undefined when the previous
+	//   value is a suffix of the next one. It is NOT measured from the end.
+	const prefix = gap.left ?? previousValue.length
+	const suffix = gap.right === undefined ? previousValue.length : previousValue.length - gap.right
+	// Prefix and suffix may overlap (e.g. 'aa' → 'aaa'); clamp the suffix so the
+	// window stays a valid range in both values.
+	const clampedSuffix = Math.min(suffix, Math.min(previousValue.length, nextValue.length) - prefix)
+	const start = prefix
+	const end = previousValue.length - clampedSuffix
+	const insertedLength = nextValue.length - clampedSuffix - start
+	return {start, end, insertedLength}
+}
+
+function tokensEqual(a: Token, b: Token): boolean {
+	return tokensEqualShifted(a, b, 0)
+}
+
+function tokensEqualShifted(a: Token, b: Token, delta: number): boolean {
+	if (a.type !== b.type) return false
+	if (a.content !== b.content) return false
+	if (a.position.start + delta !== b.position.start || a.position.end + delta !== b.position.end) return false
+	if (a.type === 'mark' && b.type === 'mark') {
+		if (!sameDescriptor(a, b) || a.value !== b.value || a.meta !== b.meta) return false
+		if (a.children.length !== b.children.length) return false
+		return a.children.every((child, i) => tokensEqualShifted(child, b.children[i], delta))
+	}
+	return true
+}
+
+function sameDescriptor(a: Token, b: Token): boolean {
+	if (a.type !== 'mark' || b.type !== 'mark') return true
+	return a.descriptor === b.descriptor
+}
