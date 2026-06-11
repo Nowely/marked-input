@@ -17,7 +17,7 @@ describe('tokenIdentity', () => {
 	it('first reconcile assigns fresh ids and reports full', () => {
 		const tracker = createIdentityTracker()
 		const next = parser.parse('he@[x]llo')
-		const result = tracker.reconcile(next, undefined)
+		const result = tracker.reconcile(next)
 		expect(result.changeset).toEqual({kind: 'full'})
 		expect(result.tokens).toHaveLength(3)
 		const ids = result.tokens.map(t => tracker.idOf(t))
@@ -27,7 +27,7 @@ describe('tokenIdentity', () => {
 
 	it('pure text edit: prefix reused by reference, edited token textChanged, suffix shifted with stable ids', () => {
 		const tracker = createIdentityTracker()
-		const first = tracker.reconcile(parser.parse('he@[x]llo'), undefined).tokens
+		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
 		const [text1, mark, text2] = first
 		const idText2 = tracker.idOf(text2)
 
@@ -49,7 +49,7 @@ describe('tokenIdentity', () => {
 
 	it('suffix shift: edit before a mark keeps the mark id and reports shifted', () => {
 		const tracker = createIdentityTracker()
-		const first = tracker.reconcile(parser.parse('he@[x]llo'), undefined).tokens
+		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
 		const markId = tracker.idOf(first[1])
 		const tailId = tracker.idOf(first[2])
 
@@ -68,7 +68,7 @@ describe('tokenIdentity', () => {
 
 	it('structural change: deleting a mark reports removed + textChanged/merge, no id reuse for the gone mark', () => {
 		const tracker = createIdentityTracker()
-		const first = tracker.reconcile(parser.parse('he@[x]llo'), undefined).tokens
+		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
 		const markId = tracker.idOf(first[1])
 
 		// delete the mark entirely: 'hello' (positions 2..6 removed)
@@ -79,11 +79,31 @@ describe('tokenIdentity', () => {
 		expect(result.tokens.some(t => tracker.idOf(t) === markId)).toBe(false)
 	})
 
+	it('structural change: deleting a nested mark reports its CHILD id in removed too', () => {
+		const slotParser = new Parser(['#[__slot__]'])
+		const tracker = createIdentityTracker()
+		// '#[ab]tail' → [text '' [0,0], mark '#[ab]' [0,5] (children: [text 'ab' [2,4]]), text 'tail' [5,9]]
+		const first = tracker.reconcile(slotParser.parse('#[ab]tail')).tokens
+		const mark = first[1]
+		if (mark.type !== 'mark') throw new Error('expected mark')
+		const markId = tracker.idOf(mark)
+		const childId = tracker.idOf(mark.children[0])
+
+		// delete the mark entirely: 'tail' (positions 0..5 removed)
+		const result = tracker.reconcile(slotParser.parse('tail'), {start: 0, end: 5, insertedLength: 0})
+		expect(result.changeset.kind).toBe('delta')
+		if (result.changeset.kind !== 'delta') throw new Error('expected delta')
+		expect(result.changeset.removed).toContain(markId)
+		// the deleted mark's descendant must land in removed as well
+		expect(result.changeset.removed).toContain(childId)
+		expect(result.tokens.some(t => tracker.idOf(t) === markId)).toBe(false)
+	})
+
 	it('no hint falls back to full changeset but still matches identity via findGap', () => {
 		const tracker = createIdentityTracker()
-		const first = tracker.reconcile(parser.parse('he@[x]llo'), undefined).tokens
+		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
 		const markId = tracker.idOf(first[1])
-		const result = tracker.reconcile(parser.parse('he@[x]llo!'), undefined)
+		const result = tracker.reconcile(parser.parse('he@[x]llo!'))
 		// without a hint the changeset must be conservative…
 		expect(['full', 'delta']).toContain(result.changeset.kind)
 		// …but identity should still survive for the untouched prefix (findGap fallback)
@@ -98,7 +118,7 @@ describe('tokenIdentity', () => {
 		// whole previous value is a suffix of the next one. The hint derivation
 		// must clamp instead of bailing out.
 		const tracker = createIdentityTracker()
-		const first = tracker.reconcile(parser.parse('he@[x]llo'), undefined).tokens
+		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
 		const markId = tracker.idOf(first[1])
 		const tailId = tracker.idOf(first[2])
 
@@ -113,10 +133,22 @@ describe('tokenIdentity', () => {
 
 	it('reconcile with an unchanged value reuses every token by reference with an empty delta', () => {
 		const tracker = createIdentityTracker()
-		const first = tracker.reconcile(parser.parse('he@[x]llo'), undefined).tokens
-		const result = tracker.reconcile(parser.parse('he@[x]llo'), undefined)
+		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
+		const firstIds = first.map(t => tracker.idOf(t))
+		const result = tracker.reconcile(parser.parse('he@[x]llo'))
 		expect(result.changeset).toEqual({kind: 'delta', textChanged: [], added: [], removed: [], shifted: []})
 		result.tokens.forEach((token, i) => expect(token).toBe(first[i]))
+		// repeated reconciles must not allocate phantom ids for the discarded
+		// parse arrays: ids stay stable and a 3rd reconcile still returns the
+		// very same objects with the very same ids
+		const third = tracker.reconcile(parser.parse('he@[x]llo'))
+		third.tokens.forEach((token, i) => {
+			expect(token).toBe(first[i])
+			expect(tracker.idOf(token)).toBe(firstIds[i])
+		})
+		// ids are sequential from 1; a brand-new foreign token gets the very next
+		// id after the 3 originals — proof the discarded arrays got no ids
+		expect(tracker.idOf(parser.parse('zzz')[0])).toBe(4)
 	})
 
 	it('nested children: ids stable for children of an unchanged mark', () => {
@@ -124,7 +156,7 @@ describe('tokenIdentity', () => {
 		const tracker = createIdentityTracker()
 		// '#[ab]tail' → [text '' [0,0], mark '#[ab]' [0,5], text 'tail' [5,9]]
 		// (the parser emits an empty leading text token before a value-initial mark)
-		const first = tracker.reconcile(slotParser.parse('#[ab]tail'), undefined).tokens
+		const first = tracker.reconcile(slotParser.parse('#[ab]tail')).tokens
 		expect(first).toHaveLength(3)
 		const mark = first[1]
 		if (mark.type !== 'mark') throw new Error('expected mark')

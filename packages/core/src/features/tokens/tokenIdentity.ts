@@ -1,4 +1,4 @@
-import type {Token} from './parser/types'
+import type {MarkToken, Token} from './parser/types'
 import {findGap} from './preparsing'
 
 export type EditHint = {
@@ -8,6 +8,15 @@ export type EditHint = {
 	readonly insertedLength: number
 }
 
+/**
+ * Delta buckets carry token ids. `added`, `removed` and `shifted` include the
+ * ids of all descendants of the affected tokens (a removed mark's children are
+ * removed, a shifted mark's children shifted). `textChanged` stays at the
+ * matched-token granularity: a textChanged mark's subtree should be treated as
+ * dirty by consumers; deep per-child diffing is deliberately not performed.
+ * Phase 3 note: textChanged on a MARK token may require renderer invalidation
+ * (mark components render `value`); the routing decision belongs to Phase 3.
+ */
 export type Changeset =
 	| {kind: 'full'}
 	| {
@@ -34,8 +43,13 @@ export type IdentityTracker = {
 	 * not provided), and the changeset degrades to `full` only when no previous
 	 * tree exists.
 	 */
-	reconcile(next: Token[], hint: EditHint | undefined, previousValue?: string, nextValue?: string): ReconcileResult
-	/** Stable id of a token from the last reconciled tree (or any reused ancestor). */
+	reconcile(next: Token[], hint?: EditHint, previousValue?: string, nextValue?: string): ReconcileResult
+	/**
+	 * Stable id of a token from the last reconciled tree (or any reused
+	 * ancestor). WRITE SIDE-EFFECT: assigns an id on first sight (and to the
+	 * token's descendants). Intended for tokens belonging to the current
+	 * reconciled tree; probing foreign tokens permanently allocates ids.
+	 */
 	idOf(token: Token): number
 }
 
@@ -52,6 +66,12 @@ export function createIdentityTracker(): IdentityTracker {
 		}
 		if (token.type === 'mark') token.children.forEach(ensureId)
 		return id
+	}
+
+	/** Push the token's id AND all descendant ids into `bucket`. */
+	const collectIds = (token: Token, bucket: number[]): void => {
+		bucket.push(ensureId(token))
+		if (token.type === 'mark') token.children.forEach(child => collectIds(child, bucket))
 	}
 
 	const inherit = (from: Token, to: Token): void => {
@@ -112,10 +132,14 @@ export function createIdentityTracker(): IdentityTracker {
 				prev[prevTail].position.start >= window.end &&
 				tokensEqualShifted(prev[prevTail], next[nextTail], shiftDelta)
 			) {
-				inherit(prev[prevTail], next[nextTail])
 				matchedPrev.add(prev[prevTail])
-				if (shiftDelta !== 0) shifted.push(ensureId(next[nextTail]))
-				else out[nextTail] = prev[prevTail]
+				if (shiftDelta !== 0) {
+					inherit(prev[prevTail], next[nextTail])
+					// descendants shifted too — collect the whole subtree
+					collectIds(next[nextTail], shifted)
+				} else {
+					out[nextTail] = prev[prevTail]
+				}
 				prevTail--
 				nextTail--
 			}
@@ -123,25 +147,39 @@ export function createIdentityTracker(): IdentityTracker {
 			// 3. Middle: same-index pairing for the window region — a token at the
 			//    same tree slot with the same type+descriptor keeps its id and is
 			//    reported as textChanged; everything else is added.
+			//    NOTE: same-index type+descriptor pairing is a heuristic — a merged
+			//    or unrelated text token landing in the same slot inherits the old
+			//    id and reports textChanged. That is acceptable: any token-count
+			//    change puts ids in added/removed (the structural path), and the
+			//    equivalence property in the spec guards output correctness; id
+			//    attribution here is best-effort continuity, not semantics.
 			for (let i = p; i <= nextTail; i++) {
 				const candidate = i <= prevTail ? prev[i] : undefined
+				const token = next[i]
 				if (
 					candidate !== undefined &&
 					!matchedPrev.has(candidate) &&
-					candidate.type === next[i].type &&
-					sameDescriptor(candidate, next[i])
+					(candidate.type === 'mark'
+						? token.type === 'mark' && sameDescriptor(candidate, token)
+						: candidate.type === token.type)
 				) {
-					inherit(candidate, next[i])
+					inherit(candidate, token)
 					matchedPrev.add(candidate)
-					textChanged.push(ensureId(next[i]))
+					textChanged.push(ensureId(token))
 				} else {
-					added.push(ensureId(next[i]))
+					collectIds(token, added)
 				}
 			}
 
-			const removed = prev.filter(t => !matchedPrev.has(t)).map(t => ensureId(t))
+			const removed: number[] = []
+			for (const t of prev) if (!matchedPrev.has(t)) collectIds(t, removed)
 
-			next.forEach(ensureId)
+			// Invariant: every element of the OUTPUT tree has an id. Prefix-reused
+			// prev objects already carry one; suffix/middle/added tokens got theirs
+			// above — this is a cheap final guarantee. Deliberately NOT `next`:
+			// running ensureId over the discarded next-array tokens (the ones
+			// replaced by reused prev objects in `out`) would allocate phantom ids.
+			out.forEach(ensureId)
 			previous = out
 			return {
 				tokens: out,
@@ -190,7 +228,6 @@ function tokensEqualShifted(a: Token, b: Token, delta: number): boolean {
 	return true
 }
 
-function sameDescriptor(a: Token, b: Token): boolean {
-	if (a.type !== 'mark' || b.type !== 'mark') return true
+function sameDescriptor(a: MarkToken, b: MarkToken): boolean {
 	return a.descriptor === b.descriptor
 }
