@@ -159,7 +159,7 @@ export class TokenModel {
 	 * @yields {TokenHandle} each live handle
 	 */
 	*handles(): IterableIterator<TokenHandle> {
-		yield* this.#handles.values()
+		for (const node of this.#byPath.values()) yield this.#ensureHandle(node)
 	}
 
 	#ensureHandle(node: TokenNode): TokenHandle {

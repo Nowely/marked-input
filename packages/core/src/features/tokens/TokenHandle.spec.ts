@@ -69,14 +69,20 @@ describe('TokenHandle', () => {
 		container.remove()
 	})
 
-	it('handleFor resolves by address, handles() iterates all', () => {
+	it('handles() lazily materializes one handle per indexed token, handleFor returns same object', () => {
 		const {store, container} = mountInline('hello')
 
+		// Call handles() BEFORE any handleFor/handleAt — must still yield one handle
+		const allBefore = [...store.tokens.handles()]
+		expect(allBefore).toHaveLength(1)
+
+		// handleFor must return the SAME handle object already yielded by handles()
 		const address = store.tokens.index().addressFor([0])
 		if (!address) throw new Error('expected address')
 		const handle = store.tokens.handleFor(address)
 		expect(handle?.address().path).toEqual([0])
-		expect([...store.tokens.handles()]).toHaveLength(1)
+		expect(handle).toBe(allBefore[0])
+
 		container.remove()
 	})
 
