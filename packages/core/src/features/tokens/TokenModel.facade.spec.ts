@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {afterEach, describe, expect, it} from 'vitest'
 
 import {Store} from '../../store/Store'
 
@@ -65,6 +65,11 @@ function* probes(container: HTMLElement): Generator<[Node, number]> {
 }
 
 describe('TokenModel facade parity (dual-run vs SelectionController)', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+		window.getSelection()?.removeAllRanges()
+	})
+
 	for (const [name, mount] of [
 		['inline with mark', mountWithMark],
 		['block layout', mountBlock],
@@ -83,7 +88,6 @@ describe('TokenModel facade parity (dual-run vs SelectionController)', () => {
 			}
 			// Guard against a vacuous pass (fixture not indexing → all undefined).
 			expect(defined).toBeGreaterThan(0)
-			container.remove()
 		})
 
 		it(`readSelection matches readRaw — ${name}`, () => {
@@ -99,19 +103,16 @@ describe('TokenModel facade parity (dual-run vs SelectionController)', () => {
 			expect(store.tokens.readSelection()).toBeDefined()
 			expect(store.tokens.readSelection()).toEqual(store.selection.readRaw())
 			expect(store.tokens.selectedContent()).toEqual(store.selection.readSelectedContent())
-			sel?.removeAllRanges()
-			container.remove()
 		})
 	}
 
 	it('tokenAt finds the containing text surface and the next one after a gap', () => {
-		const {store, container} = mountWithMark()
+		const {store} = mountWithMark()
 		// value: he@[x]llo → text "he" [0,2], mark [2,6], text "llo" [6,9]
 		expect(store.tokens.tokenAt(1)?.address().path).toEqual([0])
 		expect(store.tokens.tokenAt(2)?.address().path).toEqual([0]) // inclusive end of "he"
 		expect(store.tokens.tokenAt(5)?.address().path).toEqual([2]) // inside mark: no containing surface → next start ≥ 5 is "llo"
 		expect(store.tokens.tokenAt(9)?.address().path).toEqual([2])
 		expect(store.tokens.tokenAt(10)).toBeUndefined() // past the last surface
-		container.remove()
 	})
 })

@@ -112,7 +112,7 @@ function lookupTokenDescendant(ctx: BoundaryContext, node: Node | null): TokenNo
 	return lookup?.kind === 'token' ? lookup.node : undefined
 }
 
-/** Text-token surface containing `rawPosition`, else the next one after it. */
+/** Text token containing `rawPosition`, else the next one after it. */
 export function textTargetAt(
 	ctx: Pick<BoundaryContext, 'nodes' | 'index'>,
 	rawPosition: number
@@ -130,7 +130,11 @@ export function textTargetAt(
 	return candidates.find(c => c.start >= rawPosition)
 }
 
-/** Mark token whose start or end boundary sits exactly at `rawPosition`. */
+/**
+ * Mark token whose start or end boundary sits exactly at `rawPosition`.
+ * Consumed by TokenModel's placement commands (landing in the next task);
+ * currently mirrored by SelectionController's private copy until that migration completes.
+ */
 export function markBoundaryAt(
 	ctx: Pick<BoundaryContext, 'nodes' | 'index'>,
 	rawPosition: number
