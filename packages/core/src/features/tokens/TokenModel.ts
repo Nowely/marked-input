@@ -100,12 +100,15 @@ export class TokenModel {
 	#controlRoots: WeakSet<HTMLElement> = new WeakSet()
 	#committing = false
 
-	// Handle registry — path-keyed live token objects.
-	readonly #handles = new Map<string, TokenHandle>()
+	// Handle registry — keyed by stable token identity id, so a handle follows
+	// its token across structural path shifts. #byId is the per-commit id → node
+	// projection of #byPath (rebuilt in #commit before handles sync).
+	readonly #handles = new Map<number, TokenHandle>()
+	#byId: ReadonlyMap<number, TokenNode> = new Map()
 	readonly #domVersion: Signal<number> = signal({initial: 0})
 	readonly #handleHost: HandleHost = {
 		version: () => this.#domVersion(),
-		nodeByKey: key => this.#byPath.get(key),
+		nodeForId: id => this.#byId.get(id),
 	}
 
 	constructor(
@@ -169,10 +172,7 @@ export class TokenModel {
 
 	/** Return the live handle for a token at the given address, or undefined if not indexed. */
 	handleFor(address: TokenAddress): TokenHandle | undefined {
-		const key = pathKey(address.path)
-		const existing = this.#handles.get(key)
-		if (existing) return existing
-		const node = this.#byPath.get(key)
+		const node = this.#byPath.get(pathKey(address.path))
 		if (!node) return undefined
 		return this.#ensureHandle(node)
 	}
@@ -197,11 +197,11 @@ export class TokenModel {
 	}
 
 	#ensureHandle(node: TokenNode): TokenHandle {
-		const key = pathKey(node.path)
-		let handle = this.#handles.get(key)
+		const id = this.#identity.idOf(node.address.token)
+		let handle = this.#handles.get(id)
 		if (!handle) {
-			handle = new TokenHandle(key, this.#handleHost, node.address.token, node.address)
-			this.#handles.set(key, handle)
+			handle = new TokenHandle(id, this.#handleHost, node.address.token, node.address)
+			this.#handles.set(id, handle)
 		}
 		return handle
 	}
@@ -403,15 +403,15 @@ export class TokenModel {
 	// Note: handle `changed`/`unmounted` watchers run while `#committing` is true;
 	// synchronously triggering `host.rendered()` from them throws the re-entry error by design.
 	#syncHandles(): void {
-		for (const [key, handle] of this.#handles) {
-			const node = this.#byPath.get(key)
+		for (const [id, handle] of this.#handles) {
+			const node = this.#byId.get(id)
 			if (node) {
 				// Addresses were rebuilt from the live index in this commit, so
-				// node.address.token is the current token at this path.
+				// node.address.token is the current token for this identity.
 				handle.sync(node, node.address.token)
 			} else {
 				handle.kill()
-				this.#handles.delete(key)
+				this.#handles.delete(id)
 			}
 		}
 	}
@@ -450,6 +450,13 @@ export class TokenModel {
 			this.#byPath = result.byPath
 			this.#byElement = result.byElement
 			this.#controlRoots = result.controlRoots
+
+			// Rebuild the id → node projection BEFORE handles sync against it.
+			const byId = new Map<number, TokenNode>()
+			for (const node of result.byPath.values()) {
+				byId.set(this.#identity.idOf(node.address.token), node)
+			}
+			this.#byId = byId
 
 			// Batch so handle `changed` watchers flush only after the version bump —
 			// otherwise they would read the previous commit's cached token/address.

@@ -24,14 +24,16 @@ export type TokenChange =
 export type HandleHost = {
 	/** Reactive read; bumped after every DOM commit. */
 	version(): number
-	nodeByKey(key: string): TokenNode | undefined
+	nodeForId(id: number): TokenNode | undefined
 }
 
 /**
- * Live, path-keyed view of one token: reactive getters over the parsed token
- * and its indexed DOM, plus caret commands scoped to it. Created and synced by
- * TokenModel; survives commits while a token exists at its path, then dies
- * (stale reads never throw, commands become no-ops, never resurrected).
+ * Live, identity-keyed view of one token: reactive getters over the parsed
+ * token and its indexed DOM, plus caret commands scoped to it. Created and
+ * synced by TokenModel; keyed by the token's stable identity id, so it follows
+ * its token across structural path shifts (reporting `moved`). Survives
+ * commits while the token exists, then dies (stale reads never throw,
+ * commands become no-ops, never resurrected).
  */
 export class TokenHandle {
 	readonly changed: Event<TokenChange> = event<TokenChange>()
@@ -59,7 +61,7 @@ export class TokenHandle {
 	readonly text: Computed<string> = computed(() => this.token().content)
 
 	constructor(
-		private readonly key: string,
+		private readonly id: number,
 		private readonly host: HandleHost,
 		token: Token,
 		address: TokenAddress
@@ -71,7 +73,7 @@ export class TokenHandle {
 	#node(): TokenNode | undefined {
 		if (this.#dead()) return undefined
 		this.host.version()
-		return this.host.nodeByKey(this.key)
+		return this.host.nodeForId(this.id)
 	}
 
 	/** Row in block layout, else the text surface / token root. */

@@ -152,6 +152,52 @@ describe('TokenHandle', () => {
 		expect(newHandle).not.toBe(handle)
 	})
 
+	it('handle survives a structural shift that changes its path (id-keyed identity)', () => {
+		// Block layout: two rows "alpha\n\n" and "beta\n\n". We capture row 2's
+		// handle, then PREPEND a new row via the real edit path (so the reconcile
+		// hint marks the shift). Under path-keying the handle at path [1] would be
+		// re-bound to a different token (or killed); under id-keying the SAME
+		// handle object follows its token to path [2] and reports a move.
+		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
+
+		const address1 = store.tokens.index().addressFor([1])
+		if (!address1) throw new Error('expected address for row 1')
+		const handle = store.tokens.handleFor(address1)
+		if (!handle) throw new Error('expected handle for row 1')
+		expect(handle.text()).toBe('beta\n\n')
+
+		const onChange = vi.fn()
+		watch(handle.changed, onChange)
+
+		// Prepend a row through the edit controller (records the edit hint)
+		store.edit.replace({start: 0, end: 0}, 'new\n\n')
+
+		// Mirror the render: insert the new row's DOM at the front
+		const rowEl = document.createElement('div')
+		const tokenEl = document.createElement('span')
+		tokenEl.textContent = 'new'
+		rowEl.append(tokenEl)
+		container.prepend(rowEl)
+
+		store.host.rendered()
+
+		// The same handle object now lives at the shifted path
+		expect(handle.dead()).toBe(false)
+		expect(handle.address().path).toEqual([2])
+		expect(handle.text()).toBe('beta\n\n')
+
+		// It fired a move (and was NOT unmounted, NOT a text change)
+		const kinds = onChange.mock.calls.map(([change]) => change.kind)
+		expect(kinds).toEqual(['moved'])
+		const [moved] = onChange.mock.calls[0]
+		expect(moved.previousAddress.path).toEqual([1])
+
+		// Resolving the shifted address returns the SAME handle object
+		const shiftedAddress = store.tokens.index().addressFor([2])
+		if (!shiftedAddress) throw new Error('expected shifted address')
+		expect(store.tokens.handleFor(shiftedAddress)).toBe(handle)
+	})
+
 	it('handleAt returns "control" inside control elements and undefined outside', () => {
 		const {store, container, span} = mountInline('hello')
 
