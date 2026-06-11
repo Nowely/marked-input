@@ -43,11 +43,13 @@ export class TokenHandle {
 	#lastAddress: TokenAddress
 
 	readonly token: Computed<Token> = computed(() => {
+		if (this.#dead()) return this.#lastToken
 		this.host.version()
 		return this.#lastToken
 	})
 
 	readonly address: Computed<TokenAddress> = computed(() => {
+		if (this.#dead()) return this.#lastAddress
 		this.host.version()
 		return this.#lastAddress
 	})
@@ -88,7 +90,11 @@ export class TokenHandle {
 		return scope ? textLength(scope) : 0
 	}
 
-	/** Caret offset within this token's scope, or undefined when unmounted. */
+	/**
+	 * Caret offset within this token's scope, or undefined when unmounted.
+	 * Only meaningful while the selection is inside this token's scope — the
+	 * underlying helper returns 0 when there is no selection.
+	 */
 	caretIndex(): number | undefined {
 		const scope = this.#measureScope()
 		return scope ? getCaretIndex(scope) : undefined
@@ -126,7 +132,11 @@ export class TokenHandle {
 		return this.#measureScope()?.getBoundingClientRect()
 	}
 
-	/** Place a collapsed caret at a character offset (Infinity → end). */
+	/**
+	 * Place a collapsed caret at a character offset (Infinity → end).
+	 * On tokens without a text surface any offset > 0 collapses to the 'end'
+	 * child boundary.
+	 */
 	placeCaret(offset: number): boolean {
 		const node = this.#node()
 		if (!node) return false
@@ -169,8 +179,7 @@ export class TokenHandle {
 	}
 
 	/** @internal Called by TokenModel after each commit. */
-	sync(node: TokenNode, token: Token | undefined): void {
-		if (!token) return
+	sync(node: TokenNode, token: Token): void {
 		const prevToken = this.#lastToken
 		const prevAddress = this.#lastAddress
 		this.#lastToken = token
@@ -186,6 +195,11 @@ export class TokenHandle {
 	kill(): void {
 		if (this.#dead()) return
 		this.#dead(true)
+		// Re-evaluate so the dead guards drop the host.version() dependency,
+		// unlinking this handle from the version signal's subscriber list.
+		void this.token()
+		void this.address()
+		void this.element()
 		this.changed({kind: 'unmounted'})
 	}
 }

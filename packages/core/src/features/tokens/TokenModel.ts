@@ -1,5 +1,5 @@
 import type {DomRef, TokenAddress, TokenPath} from '../../shared/editorContracts'
-import {computed, event, signal, watch} from '../../shared/signals/index.js'
+import {batch, computed, event, signal, watch} from '../../shared/signals/index.js'
 import type {Computed, Event, Signal} from '../../shared/signals/index.js'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
@@ -155,8 +155,8 @@ export class TokenModel {
 	}
 
 	/**
-	 * Iterate all live handles in the registry.
-	 * @yields {TokenHandle} each live handle
+	 * Iterate all indexed tokens, materializing a handle for each on demand.
+	 * @yields each token's live handle
 	 */
 	*handles(): IterableIterator<TokenHandle> {
 		for (const node of this.#byPath.values()) yield this.#ensureHandle(node)
@@ -172,21 +172,19 @@ export class TokenModel {
 		return handle
 	}
 
+	// Note: handle `changed`/`unmounted` watchers run while `#committing` is true;
+	// synchronously triggering `host.rendered()` from them throws the re-entry error by design.
 	#syncHandles(): void {
-		const tokenIndex = this.index()
-		// Kill handles whose path key no longer exists in the new index.
 		for (const [key, handle] of this.#handles) {
-			if (!this.#byPath.has(key)) {
+			const node = this.#byPath.get(key)
+			if (node) {
+				// Addresses were rebuilt from the live index in this commit, so
+				// node.address.token is the current token at this path.
+				handle.sync(node, node.address.token)
+			} else {
 				handle.kill()
 				this.#handles.delete(key)
 			}
-		}
-		// Sync survivors — update token + address snapshots and emit change events.
-		for (const [key, handle] of this.#handles) {
-			const node = this.#byPath.get(key)
-			if (!node) continue
-			const token = tokenIndex.resolve(node.path)
-			handle.sync(node, token)
 		}
 	}
 
@@ -225,8 +223,12 @@ export class TokenModel {
 			this.#byElement = result.byElement
 			this.#controlRoots = result.controlRoots
 
-			this.#syncHandles()
-			this.#domVersion(this.#domVersion() + 1)
+			// Batch so handle `changed` watchers flush only after the version bump —
+			// otherwise they would read the previous commit's cached token/address.
+			batch(() => {
+				this.#syncHandles()
+				this.#domVersion(this.#domVersion() + 1)
+			})
 			this.indexed()
 		} finally {
 			this.#committing = false

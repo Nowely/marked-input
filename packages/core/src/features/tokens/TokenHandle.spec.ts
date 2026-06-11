@@ -1,4 +1,4 @@
-import {describe, expect, it, vi} from 'vitest'
+import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {watch} from '../../shared/signals/index.js'
 import {Store} from '../../store/Store'
@@ -46,8 +46,12 @@ function mountBlock(value: string) {
 }
 
 describe('TokenHandle', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+	})
+
 	it('handleAt resolves a token element to a live handle', () => {
-		const {store, container, span} = mountInline('hello')
+		const {store, span} = mountInline('hello')
 
 		const handle = store.tokens.handleAt(span)
 		expect(handle).not.toBe('control')
@@ -56,21 +60,19 @@ describe('TokenHandle', () => {
 		expect(handle.text()).toBe('hello')
 		expect(handle.token().type).toBe('text')
 		expect(handle.dead()).toBe(false)
-		container.remove()
 	})
 
 	it('returns the same handle for the same path across commits', () => {
-		const {store, container, span} = mountInline('hello')
+		const {store, span} = mountInline('hello')
 
 		const first = store.tokens.handleAt(span)
 		store.host.rendered()
 		const second = store.tokens.handleAt(span)
 		expect(second).toBe(first)
-		container.remove()
 	})
 
 	it('handles() lazily materializes one handle per indexed token, handleFor returns same object', () => {
-		const {store, container} = mountInline('hello')
+		const {store} = mountInline('hello')
 
 		// Call handles() BEFORE any handleFor/handleAt — must still yield one handle
 		const allBefore = [...store.tokens.handles()]
@@ -82,12 +84,10 @@ describe('TokenHandle', () => {
 		const handle = store.tokens.handleFor(address)
 		expect(handle?.address().path).toEqual([0])
 		expect(handle).toBe(allBefore[0])
-
-		container.remove()
 	})
 
 	it('fires text change and refreshes snapshots on value edit', () => {
-		const {store, container, span} = mountInline('hello')
+		const {store, span} = mountInline('hello')
 		const handle = store.tokens.handleAt(span)
 		if (!handle || handle === 'control') throw new Error('expected handle')
 
@@ -100,7 +100,6 @@ describe('TokenHandle', () => {
 
 		expect(onChange).toHaveBeenCalledWith({kind: 'text', previous: 'hello'}, undefined)
 		expect(handle.text()).toBe('hello!')
-		container.remove()
 	})
 
 	it('kills handles whose token disappears (dead-handle contract)', () => {
@@ -151,8 +150,6 @@ describe('TokenHandle', () => {
 		if (!newAddress1) throw new Error('expected fresh address for row 1')
 		const newHandle = store.tokens.handleFor(newAddress1)
 		expect(newHandle).not.toBe(handle)
-
-		container.remove()
 	})
 
 	it('handleAt returns "control" inside control elements and undefined outside', () => {
@@ -166,6 +163,5 @@ describe('TokenHandle', () => {
 		expect(store.tokens.handleAt(control)).toBe('control')
 		expect(store.tokens.handleAt(document.body)).toBeUndefined()
 		expect(store.tokens.handleAt(span)).not.toBeUndefined()
-		container.remove()
 	})
 })
