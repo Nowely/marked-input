@@ -4,10 +4,10 @@ import type {Computed, Event, Signal} from '../../shared/signals/index.js'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
-import {rawPositionFromBoundary, textTargetAt} from './boundary'
+import {markBoundaryAt, rawPositionFromBoundary, textTargetAt} from './boundary'
 import type {BoundaryContext} from './boundary'
 import {buildIndex} from './buildIndex'
-import {getRect} from './caret'
+import {focusIfNeeded, getRect, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caret'
 import type {Lookup, TokenNode} from './domTypes'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
@@ -241,6 +241,84 @@ export class TokenModel {
 		const sel = window.getSelection()
 		if (!sel?.anchorNode) return undefined
 		return {node: sel.anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed}
+	}
+
+	/**
+	 * Place a collapsed caret. Number form resolves the best target (text
+	 * surface containing the position, else a mark boundary exactly there);
+	 * address form targets a specific token (callers use it to disambiguate
+	 * tokens sharing a boundary position).
+	 */
+	placeCaret(target: number | {address: TokenAddress; offset: number}): boolean {
+		if (typeof target === 'number') return this.#placeAtRawPosition(target)
+
+		const node = this.nodeFor(target.address)
+		const resolved = this.index().resolveAddress(target.address)
+		if (!node || !resolved) return false
+
+		if (resolved.type === 'mark' && !node.textElement) {
+			focusIfNeeded(node.tokenElement)
+			placeAtChildBoundary(node.tokenElement, target.offset <= 0 ? 'start' : 'end')
+			return true
+		}
+
+		const surface = node.textElement ?? node.tokenElement
+		focusIfNeeded(surface)
+		if (node.textElement) placeAtTextOffset(node.textElement, target.offset)
+		return true
+	}
+
+	#placeAtRawPosition(rawPosition: number): boolean {
+		const ctx = this.#boundaryContext()
+
+		const textTarget = textTargetAt(ctx, rawPosition)
+		if (textTarget?.node.textElement && rawPosition >= textTarget.start && rawPosition <= textTarget.end) {
+			focusIfNeeded(textTarget.node.textElement)
+			placeAtTextOffset(textTarget.node.textElement, rawPosition - textTarget.start)
+			return true
+		}
+
+		const markTarget = markBoundaryAt(ctx, rawPosition)
+		if (markTarget) {
+			focusIfNeeded(markTarget.element)
+			placeAtChildBoundary(markTarget.element, rawPosition === markTarget.position.end ? 'end' : 'start')
+			return true
+		}
+
+		if (textTarget?.node.textElement) {
+			focusIfNeeded(textTarget.node.textElement)
+			placeAtTextOffset(textTarget.node.textElement, rawPosition - textTarget.start)
+			return true
+		}
+
+		return false
+	}
+
+	/** Select [start, end]; collapses via placeCaret when equal. */
+	selectRange(start: number, end: number): boolean {
+		if (start === end) return this.placeCaret(start)
+		const ctx = this.#boundaryContext()
+		const startTarget = textTargetAt(ctx, start)
+		const endTarget = textTargetAt(ctx, end)
+		if (!startTarget?.node.textElement || !endTarget?.node.textElement) return false
+		placeRangeAcrossSurfaces(
+			{element: startTarget.node.textElement, offset: start - startTarget.start},
+			{element: endTarget.node.textElement, offset: end - endTarget.start}
+		)
+		return true
+	}
+
+	/** Absolute position at viewport coordinates (read half of old setAtX). */
+	caretFromPoint(x: number, y: number): number | undefined {
+		// oxlint-disable-next-line no-unsafe-type-assertion -- non-standard DOM APIs not in TS lib
+		const doc = document as unknown as {
+			caretRangeFromPoint?(x: number, y: number): globalThis.Range | null
+			caretPositionFromPoint?(x: number, y: number): {offsetNode: Node; offset: number} | null
+		}
+		const pos = doc.caretRangeFromPoint?.(x, y) ?? doc.caretPositionFromPoint?.(x, y)
+		if (!pos) return undefined
+		if (pos instanceof globalThis.Range) return this.boundaryFor(pos.startContainer, pos.startOffset)
+		return this.boundaryFor(pos.offsetNode, pos.offset)
 	}
 
 	/** Sync text surfaces' textContent/contentEditable and mark tabindex. */

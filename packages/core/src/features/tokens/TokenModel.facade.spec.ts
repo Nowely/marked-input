@@ -116,3 +116,51 @@ describe('TokenModel facade parity (dual-run vs SelectionController)', () => {
 		expect(store.tokens.tokenAt(10)).toBeUndefined() // past the last surface
 	})
 })
+
+describe('TokenModel placement commands', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+		window.getSelection()?.removeAllRanges()
+	})
+
+	it('placeCaret(raw) places inside the right surface; readSelection round-trips', () => {
+		const {store} = mountWithMark()
+		expect(store.tokens.placeCaret(1)).toBe(true)
+		expect(store.tokens.readSelection()?.range).toEqual({start: 1, end: 1})
+	})
+
+	it('placeCaret at a mark boundary collapses at the mark edge', () => {
+		const {store} = mountWithMark()
+		const mark = store.tokens.current().find(t => t.type === 'mark')
+		if (!mark) throw new Error('expected mark')
+		// mark [2,6]: position 6 is also the inclusive start of "llo" [6,9]
+		expect(store.tokens.placeCaret(mark.position.end)).toBe(true)
+		expect(store.tokens.readSelection()?.range.start).toBe(mark.position.end)
+	})
+
+	it('placeCaret({address, offset}) targets the addressed token explicitly', () => {
+		const {store} = mountWithMark()
+		const address = store.tokens.index().addressFor([2]) // text "llo" [6,9]
+		if (!address) throw new Error('expected address')
+		expect(store.tokens.placeCaret({address, offset: 1})).toBe(true)
+		expect(store.tokens.readSelection()?.range.start).toBe(address.token.position.start + 1) // 6 + 1 = 7
+	})
+
+	it('selectRange spans two text surfaces', () => {
+		const {store} = mountWithMark()
+		const last = store.tokens.current().at(-1)
+		if (!last) throw new Error('expected tokens')
+		expect(store.tokens.selectRange(0, last.position.end)).toBe(true)
+		const read = store.tokens.readSelection()
+		expect(read?.range).toEqual({start: 0, end: last.position.end})
+	})
+
+	it('handle.placeCaret + handle.caretIndex round-trip', () => {
+		const {store} = mountWithMark()
+		const handle = store.tokens.tokenAt(0)
+		if (!handle) throw new Error('expected handle')
+		expect(handle.placeCaret(2)).toBe(true)
+		expect(handle.caretIndex()).toBe(2)
+		expect(handle.textLength()).toBe(handle.text().length)
+	})
+})
