@@ -54,10 +54,10 @@ value edit → parse (windowed; full on cold start / unstable window / markup ch
 
 - **Routing** is inline (~5 lines): text path ⇔ `kind === 'delta'` with empty
   `added`/`removed` — and every `textChanged` id resolving to a `text` token.
-  A `textChanged` MARK escalates structurally (mark components render
-  `value`/`meta` as framework props). Deep reconcile (B3) will make
-  `textChanged` hold text tokens by construction and demote the type check to
-  a dev assertion.
+  A `textChanged` MARK is a refused descend and escalates structurally (mark
+  components render `value`/`meta` as framework props). The type check is a
+  RUNTIME branch, not the dev assertion the consolidation spec planned — see
+  the descend rules below for the documented deviation.
 - **Escalation self-heals:** a text-path apply that cannot resolve a target
   (missing handle, missing surface, id absent from the tree) abandons the
   branch before any mutation and re-binds the current DOM structurally —
@@ -247,14 +247,61 @@ marks. `added`/`removed` include descendant ids recursively.
 
 ### Deep reconcile — descend rules
 
-B3 landed: reconcile descends pairwise into a changed mark's slot when all
-four conditions hold (same descriptor reference; byte-unchanged
-`value`/`meta`; slot-interior-only change; 1:1 structural child pairing) —
-the mark goes to `updated`, its changed text children to `textChanged`, and
-block typing takes the text path. A refused descend keeps mark-level
-`textChanged` with the inherited id (handle continuity) and routes
-structural at runtime. Full write-up lands with the block render gate
-(close-out task).
+When the middle pairing pairs two marks (same tree slot, same descriptor
+candidate), it attempts a deep descend (`tryDescend`) before settling for
+mark-level `textChanged`; nested mark pairs inside a descended slot recurse
+the same check. ALL four conditions must hold:
+
+1. **Same descriptor** — reference equality (descriptors are interned per
+   parser instance).
+2. **Rendered props byte-unchanged** — `value` and `meta` strictly equal.
+   This is the renderer-correctness argument: mark components receive exactly
+   these as framework props, so equal props ⇒ the renderer has nothing new to
+   paint for the mark itself.
+3. **Only the slot interior changed** — both marks carry a slot, and the raw
+   bytes before and after it are equal (compared as `content` slices relative
+   to each mark's own start, so a uniformly shifted mark still qualifies).
+4. **Children pair 1:1 structurally** — same count, pairwise same type, same
+   descriptor for nested mark pairs.
+
+On descend the children are paired inside the slot window with the same
+prefix/suffix/middle logic as the top level — the window is derived from the
+slot contents themselves, independent of how sloppy the outer edit window
+was. Zero-shift matches reuse the previous OBJECT and stay out of every
+bucket; shifted matches inherit their ids into `updated` (descendants
+included); middle pairs recurse the descend for nested marks and report
+`textChanged` for text children. The mark itself inherits its id and enters
+`updated` ALONE — its children report their own changes. Condition 4
+guarantees a descend never contributes to `added`/`removed`, so an edit fully
+absorbed by descends routes the text path.
+
+Bucket honesty vs handle honesty: a descended mark sits in the
+renderer-irrelevant `updated` bucket even when its content changed. The
+handle layer stays honest — the pipeline refreshes every bound `updated` node
+with `update(token, path)` (a never-bound id is skipped; its handle
+materializes on the next bind), which fires `changed({kind: 'text'})`
+whenever content differs (`moved` for pure position shifts). Buckets describe
+what the renderer must do; handle events describe what happened to the token.
+
+**Refused descend** (any condition fails): the mark keeps the conservative
+mark-level `textChanged` WITH the inherited id, and the commit pipeline
+escalates it at runtime — `commitText` finds a non-text `textChanged` entry,
+abandons the branch before any mutation, and self-heals through the
+structural branch. DELIBERATE deviation from the consolidation spec's
+"`textChanged` ⊆ text tokens by construction; demote routing to a dev
+assertion": reclassifying refused descends as `removed`+`added` would break
+handle identity continuity for value-edited marks (`MarkController.update`
+flows pin same-id inheritance), so the runtime escalation branch stays.
+
+**Block-typing consequence:** every row of a slot-leading block markup
+(`'__slot__\n\n'`) is a mark, so before deep reconcile each keystroke in a
+row was a mark-level `textChanged` → structural escalation → re-render. With
+descend the keystroke emits child `textChanged` + mark `updated` → text path
+→ the row's slot surface is patched with ZERO component re-renders — gated
+end-to-end by the block render-count specs
+(`packages/storybook/src/pages/renderCount.react.spec.tsx` /
+`renderCount.vue.spec.ts`). Parse-side cost is unchanged: block markups still
+full-parse (see the block-layout caveat below).
 
 ### Edit-hint flow
 
