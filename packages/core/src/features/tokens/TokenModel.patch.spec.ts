@@ -7,7 +7,7 @@ import type {Token} from './parser/types'
 import {createTextToken} from './parser/utils/createTextToken'
 import type {TokenChange} from './TokenHandle'
 import {createTokenIndex, pathKey} from './tokenIndex'
-import {preparePatch} from './TokenModel'
+import {assertNoDivergence, preparePatch} from './TokenModel'
 
 /** Inline fixture (from TokenModel.facade.spec.ts): text 'he' [0,2], mark '@[x]' [2,6], text 'llo' [6,9]. */
 function mountWithMark() {
@@ -152,5 +152,86 @@ describe('preparePatch (patch pass 1 — escalation detection)', () => {
 	it('returns undefined when the target surface is missing from the index', () => {
 		const {previous, index, idOf} = staleFixture(false)
 		expect(preparePatch(previous, index, idOf, [7])).toBeUndefined()
+	})
+})
+
+/**
+ * Divergence detector: assertNoDivergence white-box tests + integration
+ * no-throw assertions.
+ *
+ * WHY WHITE-BOX ONLY FOR THE THROW CASES:
+ * The machinery self-heals before the check in both commit paths:
+ *
+ * - Rebuild path: assertNoDivergence runs AFTER indexed() fires
+ *   reconcileTextSurfaces, which writes resolved.content to every surface. Any
+ *   hand-corruption introduced before rendered() is fixed by the sweep before
+ *   the detector runs — so a black-box "corrupt then rendered()" test would
+ *   never throw.
+ *
+ * - Patch path: assertNoDivergence checks only the targets that pass-2 just
+ *   wrote itself. Hand-corrupting a non-target cannot reach the check, and
+ *   corrupting a target is immediately overwritten by pass-2 before the check.
+ *
+ * This is precisely WHY the detector exists — it guards the cases where
+ * self-healing itself is broken (a bug in the sweep or in pass-2). Testing the
+ * function directly (white-box) is the only deterministic way to verify it.
+ */
+describe('divergence detector', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+		window.getSelection()?.removeAllRanges()
+	})
+
+	// --- white-box: assertNoDivergence function tests ---
+
+	function makeNode(path: readonly number[], content: string, domText: string): TokenNode {
+		const el = document.createElement('span')
+		el.textContent = domText
+		const token = createTextToken(content)
+		return {path, address: {path, token}, tokenElement: el, textElement: el}
+	}
+
+	it('does not throw when DOM matches the model', () => {
+		const nodes = [makeNode([0], 'hello', 'hello'), makeNode([1], 'world', 'world')]
+		expect(() => assertNoDivergence(nodes)).not.toThrow()
+	})
+
+	it('throws with the path in the message when textContent diverges', () => {
+		const nodes = [makeNode([2], 'llo', 'WRONG')]
+		expect(() => assertNoDivergence(nodes)).toThrow(/TokenModel divergence/)
+		expect(() => assertNoDivergence(nodes)).toThrow(/\[2\]/)
+	})
+
+	it('includes both DOM value and model value in the error message', () => {
+		const nodes = [makeNode([0], 'expected', 'actual')]
+		let message = ''
+		try {
+			assertNoDivergence(nodes)
+		} catch (e) {
+			message = e instanceof Error ? e.message : String(e)
+		}
+		expect(message).toContain('"actual"')
+		expect(message).toContain('"expected"')
+	})
+
+	it('skips nodes without a textElement', () => {
+		const el = document.createElement('span')
+		el.textContent = 'WRONG'
+		const token = createTextToken('right')
+		const markNode: TokenNode = {path: [0], address: {path: [0], token}, tokenElement: el, textElement: undefined}
+		expect(() => assertNoDivergence([markNode])).not.toThrow()
+	})
+
+	// --- integration: normal commits never throw ---
+
+	it('normal full commits never throw', () => {
+		const {store} = mountWithMark()
+		// First rendered() already ran in mountWithMark; a second one is also clean.
+		expect(() => store.host.rendered()).not.toThrow()
+	})
+
+	it('normal patch commits never throw', () => {
+		const {store} = mountWithMark()
+		expect(() => store.edit.replace({start: 9, end: 9}, '!')).not.toThrow()
 	})
 })

@@ -553,8 +553,17 @@ export class TokenModel {
 			this.#syncHandles()
 			this.#domVersion(this.#domVersion() + 1)
 		})
+		const isFirstCommit = !this.#hasCommitted
 		this.#hasCommitted = true
+		// Fire indexed() FIRST: SelectionController's watcher on `indexed` runs
+		// reconcileTextSurfaces synchronously (flush() executes inside the event
+		// call at batchDepth 0). Only AFTER that sweep has corrected every surface
+		// can we assert model–DOM alignment — drift here means the sweep itself
+		// failed to fix a surface, which is the genuine bug class this detector
+		// targets. Skip the very first commit: surfaces haven't been written yet
+		// before this indexed() call, so a check would always false-positive.
 		this.indexed()
+		if (VERIFY_DOM && !isFirstCommit) assertNoDivergence(this.#byPath.values())
 	}
 
 	/**
@@ -618,9 +627,62 @@ export class TokenModel {
 				this.#syncHandles()
 				this.#domVersion(this.#domVersion() + 1)
 			})
+			// Detect model–DOM drift on the patched targets only — AFTER pass-2
+			// writes and BEFORE indexed() fires SelectionController's sweep. Pass-2
+			// wrote the targets itself, so a mismatch here means a missed or
+			// incomplete write (the precise bug class the design spec fears for this
+			// path). Reuse prepared.targets directly; no need to re-derive nodes.
+			if (VERIFY_DOM) {
+				for (const {element, content} of prepared.targets) {
+					if (element.textContent !== content) {
+						throw new Error(
+							`TokenModel divergence at [patch target]: DOM "${element.textContent}" ≠ model "${content}"`
+						)
+					}
+				}
+			}
 			this.indexed()
 		} finally {
 			this.#committing = false
+		}
+	}
+}
+
+/**
+ * Dev-mode guard: active in Vitest and in any downstream bundler's dev build.
+ *
+ * `import.meta.env?.DEV` is resolved by the consumer's bundler at build time:
+ * - Vitest (lib built by Vite): `import.meta.env.DEV === true` → always on in tests.
+ * - Downstream production bundle: bundler replaces with `false` → stripped.
+ * - Downstream dev bundle / unknown runtimes: `?? true` keeps the check live.
+ *
+ * The packages/core vite.config.ts lib build leaves `import.meta.env` as-is
+ * (no `define`), so the consumer's bundler handles substitution — correct for
+ * a distributed library. Follows the same escape-hatch pattern as `INCREMENTAL`.
+ */
+// oxlint-disable-next-line typescript/no-unnecessary-condition -- intentional runtime guard; value depends on bundler
+const VERIFY_DOM: boolean = import.meta.env?.DEV ?? true
+
+/**
+ * Assert that every node with a text surface has `textContent` matching its
+ * token's `content`. Throws inside the `#committing` guard so the error
+ * surfaces immediately. Error message format:
+ * `TokenModel divergence at [path]: DOM "..." ≠ model "..."`
+ *
+ * Rebuild path: called AFTER `indexed()` so the SelectionController sweep has
+ * already run — any remaining mismatch is genuine drift the sweep failed to fix.
+ *
+ * Patch path: called over only the patched targets — AFTER pass-2 writes and
+ * BEFORE `indexed()`. Pass-2 wrote them itself, so a mismatch means a missed or
+ * incomplete write.
+ */
+export function assertNoDivergence(nodes: Iterable<TokenNode>): void {
+	for (const node of nodes) {
+		if (!node.textElement) continue
+		const actual = node.textElement.textContent
+		const expected = node.address.token.content
+		if (actual !== expected) {
+			throw new Error(`TokenModel divergence at [${node.path.join(', ')}]: DOM "${actual}" ≠ model "${expected}"`)
 		}
 	}
 }
