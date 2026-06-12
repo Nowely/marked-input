@@ -389,6 +389,7 @@ describe('createCommitPipeline', () => {
 	})
 
 	describe('escalation (abandon the text branch, self-heal structurally)', () => {
+		// ports: commitRouting 'textChanged mark escalates to structural branch'
 		it('a textChanged MARK routes structural: new tree reference, immediate bind, changed fired without a render', () => {
 			const harness = createHarness()
 			const {pipeline} = harness
@@ -432,6 +433,7 @@ describe('createCommitPipeline', () => {
 			expect(pipeline.byPath().get('1')).toBe(markHandle)
 		})
 
+		// ports: preparePatch 'changed id missing from node map escalates to structural'
 		it('a textChanged id with no handle abandons the patch and self-heals through an immediate bind', () => {
 			const harness = createHarness()
 			const {pipeline, nodes} = harness
@@ -456,6 +458,7 @@ describe('createCommitPipeline', () => {
 			expect(text2.textContent).toBe('llo!')
 		})
 
+		// ports: preparePatch 'missing textElement escalates to structural branch'
 		it('a text target without a surface (unbound after a DOM bail) escalates and keeps the node layer current', () => {
 			const harness = createHarness()
 			const {pipeline, nodes, container} = harness
@@ -490,6 +493,7 @@ describe('createCommitPipeline', () => {
 			expect(pipeline.byPath().get('2')).toBe(tail)
 		})
 
+		// ports: commitRouting 'id absent from new tree routes structural (stale-tree guard)'
 		it('a textChanged id absent from the new tree routes structural (conservative stale-tree guard)', () => {
 			const harness = createHarness()
 			const {pipeline} = harness
@@ -533,6 +537,7 @@ describe('createCommitPipeline', () => {
 		// Black-box at this seam: the per-commit surface sweep is gone, so the text
 		// branch heals only its own targets — a hand-corrupted NON-target survives
 		// to the post-apply check and must throw with its path.
+		// ports: patch.spec 'divergence triplet — throws with path, DOM value, model value'
 		it('a text apply throws with the path when an untouched bound surface diverges', () => {
 			const harness = createHarness()
 			const {text1} = mountValue(harness)

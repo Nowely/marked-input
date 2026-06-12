@@ -45,17 +45,16 @@ export type CommitPipeline = {
 
 type Delta = Extract<Changeset, {kind: 'delta'}>
 
-/**
- * Dev-mode guard for the divergence detector: `import.meta.env?.DEV` is
- * resolved by the consumer's bundler (true under Vitest and dev builds,
- * replaced with `false` and stripped in production bundles); `?? true` keeps
- * the check live on unknown runtimes.
- */
+// Guards the divergence detector: true under Vitest + dev builds, stripped to false in production bundles; ?? true keeps it live on unknown runtimes.
 // oxlint-disable-next-line typescript/no-unnecessary-condition -- intentional runtime guard; value depends on bundler
 const VERIFY_DOM: boolean = import.meta.env?.DEV ?? true
 
 /** Payload for a re-bind with no pending apply (the adapter re-rendered on its own): nothing changed token-wise, the event still marks "DOM re-bound and consistent". */
-const REBIND: Changeset = {kind: 'delta', textChanged: [], added: [], removed: [], shifted: []}
+const REBIND_CHANGESET: Changeset = (() => {
+	// oxlint-disable-next-line no-unsafe-type-assertion -- freezing a typed mutable array; widening back to number[] is intentional and safe
+	const e: number[] = Object.freeze<number[]>([]) as number[]
+	return Object.freeze({kind: 'delta' as const, textChanged: e, added: e, removed: e, shifted: e})
+})()
 
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// `tree` is a plain signal written ONLY by the structural branch — reference
@@ -73,7 +72,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	let controlRoots = new WeakSet<HTMLElement>()
 
 	let pendingStructural = false
-	let pendingChangeset: Changeset = REBIND
+	let pendingChangeset: Changeset = REBIND_CHANGESET
 	let committing = false
 
 	function apply(result: ReconcileResult): void {
@@ -118,12 +117,10 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	 * Text branch: the adapter never re-renders (tree keeps its reference), so
 	 * the bound elements and paths are all still live. Two passes, like the old
 	 * preparePatch: resolve everything pure first — ANY miss abandons the branch
-	 * before a single mutation and the caller escalates structurally.
-	 *
-	 * Resolution honesty: changeset buckets carry ids only, so id → (token, path)
-	 * comes from ONE read-only depth-first walk of the new tree — O(tree) time,
-	 * O(change) allocations. The pipeline's O(change) claim is about state:
-	 * tree/byPath/byElement stay untouched here and only the listed handles update.
+	 * before a single mutation and the caller escalates structurally. Resolution
+	 * honesty: changeset buckets carry ids only, so id → (token, path) comes from
+	 * ONE read-only depth-first walk of the new tree — O(tree) time, O(change)
+	 * allocations — and tree/byPath/byElement stay untouched here.
 	 */
 	function commitText(tokens: readonly Token[], changeset: Delta): boolean {
 		const needed = new Set<number>(changeset.textChanged)
@@ -203,7 +200,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		byPath = result.byPath
 		byElement = result.byElement
 		controlRoots = result.controlRoots
-		const changeset = pendingStructural ? pendingChangeset : REBIND
+		const changeset = pendingStructural ? pendingChangeset : REBIND_CHANGESET
 		pendingStructural = false
 		if (VERIFY_DOM) assertAligned()
 		changed(changeset)
