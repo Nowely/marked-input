@@ -93,6 +93,9 @@ export class MarkController {
 		// the shifted (correct) range. When the bridge cannot resolve (headless
 		// store, identity gone), fall back to the captured address, where
 		// resolveAddress's identity check keeps the fail-closed no-op semantics.
+		// NOTE: the fail-closed property depends on resolveAddress's OBJECT-IDENTITY
+		// check (tokenIndex.ts) — if that is ever relaxed to path-only, this fallback
+		// must be revisited.
 		const address = this.store.tokens.freshAddressFor(this.address.token) ?? this.address
 		const resolved = this.store.tokens.index().resolveAddress(address)
 		if (resolved?.type !== 'mark') return undefined

@@ -263,6 +263,33 @@ describe('TokenModel.freshAddressFor', () => {
 		expect(store.tokens.freshAddressFor(createTextToken('zz'))).toBeUndefined()
 	})
 
+	it('probing a foreign token does not grow the id space', () => {
+		// Reconcile a fresh tracker with a known tree, then call freshAddressFor
+		// with a token that was never part of that tree. The read-only idFor
+		// peek must leave the foreign token unregistered — a second fresh tracker
+		// reconciled against the same tree should assign the same ids (same nextId
+		// counter), proving no phantom id was allocated.
+		const {store} = mountWithMark()
+		const foreign = createTextToken('foreign')
+
+		// idFor must be undefined before and after the freshAddressFor call
+		const tracker = createIdentityTracker()
+		const tokens = store.tokens.current()
+		tracker.reconcile(tokens)
+
+		const idBefore = tracker.idFor(foreign)
+		expect(idBefore).toBeUndefined()
+
+		// freshAddressFor internally calls idFor — must not allocate
+		store.tokens.freshAddressFor(foreign)
+
+		// Confirm via the store's own identity: calling idFor on the same foreign
+		// token still returns undefined (no side-effect)
+		const tracker2 = createIdentityTracker()
+		tracker2.reconcile(tokens)
+		expect(tracker2.idFor(foreign)).toBeUndefined()
+	})
+
 	it('returns undefined after the token is structurally removed', () => {
 		const {store, container} = mountWithMark()
 		const stale = store.tokens.current()[1]

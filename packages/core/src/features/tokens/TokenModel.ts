@@ -153,10 +153,12 @@ export class TokenModel {
 	 * (Phase 2), and `#byId` is rebuilt on every commit including text-path
 	 * patches, so the returned address always carries the live token and its
 	 * fresh position. Returns undefined when the id is no longer indexed
-	 * (token removed, or no DOM commit has happened yet).
+	 * (token removed, or no DOM commit has happened yet), and also when the
+	 * token has never been seen by the identity tracker — no id is allocated.
 	 */
 	freshAddressFor(token: Token): TokenAddress | undefined {
-		return this.#byId.get(this.#identity.idOf(token))?.address
+		const id = this.#identity.idFor(token)
+		return id === undefined ? undefined : this.#byId.get(id)?.address
 	}
 
 	/** Fires after each DOM re-index. */

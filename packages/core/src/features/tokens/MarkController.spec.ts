@@ -34,7 +34,7 @@ function mountedSetup() {
 	document.body.append(container)
 	store.host.container(container)
 	store.host.rendered()
-	const token = store.tokens.current().find(t => t.type === 'mark')
+	const token = store.tokens.structure().find(t => t.type === 'mark')
 	if (!token) throw new Error('expected parsed mark token')
 	const controller = MarkController.fromToken(store, token)
 	return {store, token, controller}
@@ -153,11 +153,23 @@ describe('MarkController across text-path commits (identity bridge)', () => {
 	})
 
 	it('still fails closed once the mark is structurally removed', () => {
-		const {store, controller} = mountedSetup()
+		const {store, token, controller} = mountedSetup()
 
-		// Remove the mark entirely: structural path; the identity is gone
+		// Remove the mark entirely: structural path; the identity is gone from #byId.
 		store.edit.replace({start: 2, end: 6}, '')
 		expect(store.value.current()).toBe('hello')
+
+		// Update the DOM and rebuild #byId so freshAddressFor exercises the
+		// intended "id no longer indexed" path rather than relying on the
+		// pre-rebuild identity check inside resolveAddress (tokenIndex.ts).
+		// Two layers of protection:
+		//   1. freshAddressFor returns undefined (id gone from #byId after rebuild)
+		//   2. resolveAddress's OBJECT-IDENTITY check covers the pre-rebuild window
+		const container = document.querySelector('div')!
+		container.replaceChildren(document.createElement('span'))
+		store.host.rendered()
+
+		expect(store.tokens.freshAddressFor(token)).toBeUndefined()
 
 		controller.update({value: 'bad'})
 

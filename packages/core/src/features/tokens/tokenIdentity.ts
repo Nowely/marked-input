@@ -51,6 +51,12 @@ export type IdentityTracker = {
 	 * reconciled tree; probing foreign tokens permanently allocates ids.
 	 */
 	idOf(token: Token): number
+	/**
+	 * Read-only peek: returns the existing id if the token has been seen before,
+	 * or `undefined` if it has not — without allocating a new id. Unlike `idOf`,
+	 * probing a foreign token with `idFor` is always safe and leaves no side-effect.
+	 */
+	idFor(token: Token): number | undefined
 }
 
 export function createIdentityTracker(): IdentityTracker {
@@ -86,6 +92,8 @@ export function createIdentityTracker(): IdentityTracker {
 
 	return {
 		idOf: token => ensureId(token),
+
+		idFor: token => ids.get(token),
 
 		reconcile(next, hint, previousValue, nextValue) {
 			const prev = previous
