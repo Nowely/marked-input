@@ -132,7 +132,7 @@ describe('preparePatch (patch pass 1 — escalation detection)', () => {
 		expect(prepared.byPath.get(pathKey([0]))?.address.token).toBe(nextToken)
 		expect(prepared.byPath.get(pathKey([0]))?.tokenElement).toBe(node.tokenElement)
 		expect(prepared.byId.get(7)).toBe(prepared.byPath.get(pathKey([0])))
-		expect(prepared.targets).toEqual([{element: node.tokenElement, content: 'llo!'}])
+		expect(prepared.targets).toEqual([{path: [0], element: node.tokenElement, content: 'llo!'}])
 		// Pass 1 is pure: sentinel survives — nothing was written to the DOM or the input map.
 		expect(node.tokenElement.textContent).toBe('sentinel')
 		expect(previous.get(pathKey([0]))?.address.token.content).toBe('llo')

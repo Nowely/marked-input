@@ -553,17 +553,17 @@ export class TokenModel {
 			this.#syncHandles()
 			this.#domVersion(this.#domVersion() + 1)
 		})
-		const isFirstCommit = !this.#hasCommitted
 		this.#hasCommitted = true
 		// Fire indexed() FIRST: SelectionController's watcher on `indexed` runs
 		// reconcileTextSurfaces synchronously (flush() executes inside the event
 		// call at batchDepth 0). Only AFTER that sweep has corrected every surface
 		// can we assert model–DOM alignment — drift here means the sweep itself
 		// failed to fix a surface, which is the genuine bug class this detector
-		// targets. Skip the very first commit: surfaces haven't been written yet
-		// before this indexed() call, so a check would always false-positive.
+		// targets. The first commit is not special: SelectionController's watcher
+		// is registered at mount (onMounted), which runs before the first rendered()
+		// that triggers this commit, so the sweep runs here too.
 		this.indexed()
-		if (VERIFY_DOM && !isFirstCommit) assertNoDivergence(this.#byPath.values())
+		if (VERIFY_DOM) assertNoDivergence(this.#byPath.values())
 	}
 
 	/**
@@ -633,10 +633,10 @@ export class TokenModel {
 			// incomplete write (the precise bug class the design spec fears for this
 			// path). Reuse prepared.targets directly; no need to re-derive nodes.
 			if (VERIFY_DOM) {
-				for (const {element, content} of prepared.targets) {
+				for (const {path, element, content} of prepared.targets) {
 					if (element.textContent !== content) {
 						throw new Error(
-							`TokenModel divergence at [patch target]: DOM "${element.textContent}" ≠ model "${content}"`
+							`TokenModel divergence at [${path.join(', ')}]: DOM "${element.textContent}" ≠ model "${content}"`
 						)
 					}
 				}
@@ -656,9 +656,11 @@ export class TokenModel {
  * - Downstream production bundle: bundler replaces with `false` → stripped.
  * - Downstream dev bundle / unknown runtimes: `?? true` keeps the check live.
  *
- * The packages/core vite.config.ts lib build leaves `import.meta.env` as-is
- * (no `define`), so the consumer's bundler handles substitution — correct for
- * a distributed library. Follows the same escape-hatch pattern as `INCREMENTAL`.
+ * Published adapter artifacts (react, vue) preserve the expression for
+ * consumer-bundler substitution. Core's own dist build bakes this to `false`,
+ * but core's package exports currently point at source, not dist, so consumers
+ * always see the expression — revisit if core's exports ever switch to dist.
+ * Follows the same escape-hatch pattern as `INCREMENTAL`.
  */
 // oxlint-disable-next-line typescript/no-unnecessary-condition -- intentional runtime guard; value depends on bundler
 const VERIFY_DOM: boolean = import.meta.env?.DEV ?? true
@@ -697,7 +699,11 @@ function filterEmptyText(tokens: Token[]): Token[] {
 export type PreparedPatch = {
 	readonly byPath: ReadonlyMap<string, TokenNode>
 	readonly byId: ReadonlyMap<number, TokenNode>
-	readonly targets: readonly {readonly element: HTMLElement; readonly content: string}[]
+	readonly targets: readonly {
+		readonly path: readonly number[]
+		readonly element: HTMLElement
+		readonly content: string
+	}[]
 }
 
 /**
@@ -727,11 +733,11 @@ export function preparePatch(
 		byPath.set(key, refreshed)
 		byId.set(idOf(refreshed.address.token), refreshed)
 	}
-	const targets: {element: HTMLElement; content: string}[] = []
+	const targets: {path: readonly number[]; element: HTMLElement; content: string}[] = []
 	for (const id of textChanged) {
 		const node = byId.get(id)
 		if (!node?.textElement) return undefined
-		targets.push({element: node.textElement, content: node.address.token.content})
+		targets.push({path: node.path, element: node.textElement, content: node.address.token.content})
 	}
 	return {byPath, byId, targets}
 }
