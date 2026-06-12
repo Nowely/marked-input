@@ -91,16 +91,14 @@ Both framework adapters share the same component structure:
         ↓
 5. ValueModel updates uncontrolled state or notifies controlled parents
         ↓
-6. ParseController reactively reparses — it had already subscribed to value.current; tokens update before downstream watchers fire
+6. TokenModel reactively reparses and reconciles — it had already subscribed to value.current; the commit pipeline routes to the text path (DOM patch, no re-render) or the structural path (publish new tree reference)
         ↓
-7. store.parsing.tokens updated (Signal)
+7. On the structural path: React/Vue re-renders via the framework `useMarkput()` hook (tree reference changed); on the text path, no re-render fires
         ↓
-8. React/Vue re-renders via the framework `useMarkput()` hook
-        ↓
-9. SelectionController applies selection.range to the DOM after the adapter registers the new DOM
+8. SelectionController applies selection.range to the DOM after the adapter registers the new DOM
 ```
 
-All user mutations go through `store.edit.replace()`: features describe the raw range (or `{start: 0, end: -1}` for whole-value writes) plus replacement text, and the edit coordinator places the post-edit caret — either at `range.start + replacement.length` or at an explicit `caretAt` argument — inside a single batch before delegating to `store.value.replace()`. Programmatic raw mutations may still call `store.value.replace()` or `store.value.current()`. `SelectionController` owns DOM-to-raw boundary mapping (via private `DomSelectionBridge`) and applies `selection.range` to the DOM after every render, while `TokenModel` owns the active token index.
+All user mutations go through `store.edit.replace()`: features describe the raw range (or `{start: 0, end: -1}` for whole-value writes) plus replacement text, and the edit coordinator places the post-edit caret — either at `range.start + replacement.length` or at an explicit `caretAt` argument — inside a single batch before delegating to `store.value.replace()`. Programmatic raw mutations may still call `store.value.replace()` or `store.value.current()`. `SelectionController` owns DOM-to-raw boundary mapping (via private `DomSelectionBridge`) and applies `selection.range` to the DOM after every render. `TokenModel` owns the token parse, the live node map, and all DOM↔model operations.
 
 ### Trigger Flow (Overlay Opens)
 
@@ -227,7 +225,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `unmounted`     | host           | Framework unmount           | `void`                           |
 | `action`        | drag           | Drag-and-drop action        | `DragAction`                     |
 
-`TextSurfaces.setSelecting()` and the internal `host.rendered` watcher are reactive effect hooks, not store events.
+`TokenModel.setEditable()` (called by `SelectionController`) and the internal `host.rendered` watcher are reactive effect hooks, not store events.
 
 ### Event Usage
 
@@ -320,10 +318,7 @@ class Store {
     readonly slots:     SlotsFeature       // isBlock, isDragEnabled, slot component/props, mark resolver
     readonly value:     ValueModel         // current, replace()
     readonly edit:      EditController     // replace(range, replacement, caretAt?) — single batched write path
-    readonly tokens:    TokenModel         // token list, parser selection, active token index
-    readonly refs:      TokenRefs          // adapter ref-callback factories: control(path?), children(ownerPath)
-    readonly dom:       DomIndex           // token-to-DOM index built on rendered(); locate, nodeFor, nodes, composition flags
-    readonly surfaces:  TextSurfaces       // contentEditable / tabIndex / textContent reconciliation
+    readonly tokens:    TokenModel         // parsing, live node map, DOM↔model facade, ref registries, caret/selection DOM ops
     readonly overlay:   OverlayController  // match, element, slot, select, close
     readonly keyboard:  KeyboardController // input, block editing, arrow navigation
     readonly block:     BlockController    // block drag actions and operation helpers
@@ -336,17 +331,8 @@ class Store {
 Internal feature state, computeds, and events live directly on `store.<name>.*`. Values and options passed from React/Vue live on `store.props` and are updated via `store.props.set()`.
 
 ```typescript
-// Read internal state
-store.parsing.tokens()
-
-// Write internal state
-store.parsing.tokens(newTokens)
-
-// Batch multiple internal writes so dependents run once (same pattern features use)
-import {batch} from '@markput/core'
-batch(() => {
-	store.parsing.tokens(newTokens)
-})
+// Read the current renderer tree (Computed<Token[]>)
+store.tokens.tree()
 
 // Accepted serialized value state is owned by ValueModel.
 // Route edits through raw positions.
@@ -357,7 +343,7 @@ store.value.current('Hello @[World]')
 store.props.set({readOnly: true})
 
 // Use in component (framework-specific reactive binding)
-const tokens = useMarkput(s => s.parsing.tokens())
+const tokens = useMarkput(s => s.tokens.tree())
 ```
 
 ## Features
@@ -371,14 +357,11 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 | **Host**                      | Adapter-fed runtime state: the rendered event and the container HTMLElement |
 | **ValueModel**                | Accepted serialized value state, raw range replacement   |
 | **EditController**            | Unified user edit path: `replace(range, replacement, caretAt?)`, `{end: -1}` resolves to current value length |
-| **TokenModel**                | Token parsing, parser selection, token index             |
+| **TokenModel**                | Parsing, live node map (id-keyed), one commit pipeline (text / structural branches), DOM↔model facade, adapter ref registries, caret/selection DOM operations — see `features/tokens/README.md` |
 | **OverlayController**         | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution, mark resolver |
 | **SelectionController**       | Caret range, derived location, text selection state       |
 | **KeyboardController**        | Text input, block editing, arrow navigation               |
-| **TokenRefs**                 | Adapter ref-callback registries: `control(path?)`, `children(ownerPath)` |
-| **DomIndex**                  | Token-to-DOM index, `locate`, `nodeFor`, `nodes`, composition flags |
-| **TextSurfaces**              | Text-surface reconciliation: `textContent`, `contentEditable`, `tabIndex` |
 | **BlockController**           | Drag-and-drop block reordering and operation helpers     |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
@@ -399,8 +382,8 @@ React/Vue render asynchronously, so initialization order matters:
 //    updated before any other onMounted watcher observes the new value.
 
 // 3. Sync contenteditable attributes (layout effect)
-//    → DomIndex rebuilds the token-element index
-//    → TextSurfaces writes contentEditable / tabIndex / textContent
+//    → TokenModel's commit pipeline runs its first structural bind:
+//      walks the DOM, creates LiveNode handles, writes contentEditable / tabIndex / textContent
 
 // 4. Framework emits store.host.rendered() after tokens render
 
@@ -433,7 +416,7 @@ WeakMap keys mean garbage collection frees state when tokens are deleted.
 
 ## Core-Owned DOM And Cursor Management
 
-Core owns token addresses, DOM registration, raw selection mapping, raw value mutation, and caret range placement. React and Vue render adapter-owned structural DOM and register it with core through private refs. Features communicate through `store.<name>.*`, `store.props`, `store.refs`, `store.dom`, `store.surfaces`, and `store.selection`; production code must not infer token identity from DOM child order.
+Core owns token addresses, DOM registration, raw selection mapping, raw value mutation, and caret range placement. React and Vue render adapter-owned structural DOM and register it with core through private refs. Features communicate through `store.<name>.*`, `store.props`, and `store.selection`; production code must not infer token identity from DOM child order. All DOM↔model operations go through `store.tokens` — see `features/tokens/README.md` for the full surface.
 
 ### SelectionController and DomSelectionBridge
 
@@ -452,13 +435,16 @@ caretDom.setAtElement(element, 0)
 const rect = caretDom.getRect()
 ```
 
-### DOM features: TokenRefs, DomIndex, TextSurfaces
+### Token layer: `store.tokens`
 
-The DOM responsibilities are split across three features:
+`TokenModel` consolidates the DOM responsibilities that were previously split across `TokenRefs`, `DomIndex`, and `TextSurfaces`:
 
-- `TokenRefs` (`store.refs`) owns the ref-callback registries. Adapter components call `refs.control(path?)` to register non-editable controls inside a token, and `refs.children(ownerPath)` to register child-sequence hosts for `__slot__` nesting.
-- `DomIndex` (`store.dom`) owns the token-to-DOM index built on every `host.rendered()`. Top-level token roots are discovered from the editor container (or block rows in block layout); nested slot children are discovered from registered child-sequence hosts and otherwise indexed in place; control registrations are skipped during alignment. Public surface: `locate(node)`, `nodeFor(address)`, `nodes()`, `isComposing()`, `compositionStarted/Ended()`, `indexed` event.
-- `TextSurfaces` (`store.surfaces`) owns text-surface reconciliation. It reacts to `dom.indexed` and `props.readOnly`, and exposes `setSelecting(active)` for the selection controller to flip text surfaces to `contentEditable="false"` during drag/selection so the browser cannot fragment the native selection range. Mark roots receive `tabIndex=0` whenever the editor is not read-only; text token surfaces receive `textContent` and `contentEditable` writes.
+- **Adapter ref registries** — `tokens.control(path?)` and `tokens.children(ownerPath)` register non-editable control elements and `__slot__` child-sequence hosts.
+- **Live node map and commit pipeline** — one id-keyed map of `TokenHandle` records; every value change flows through a single `apply(reconcileResult)` that routes to a fast text-path (DOM patch, no re-render) or a structural path (publish `tree`, bind freshly rendered DOM).
+- **DOM↔model facade** — `locate(node)`, `handleFor(address)`, `handleAt(node)`, `boundaryFor`, `placeCaret`, `selectRange`, `readSelection`, and related caret/selection helpers.
+- **Editable-state application** — `setEditable({editable, readOnly})` is called by `SelectionController` whenever `readOnly` or `isUserSelecting` changes; bind applies the same state to newly mounted surfaces.
+
+See `packages/core/src/features/tokens/README.md` for the full architecture of the token layer.
 
 ## Framework Hooks
 

@@ -2,6 +2,7 @@ import type {TokenPath} from '../../../shared/editorContracts'
 import {batch} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
 import {pathKey} from '../tokenIndex'
+import {applyEditableState} from './editableState'
 import {TokenHandle} from './LiveNode'
 import type {ElementBindings} from './LiveNode'
 
@@ -218,17 +219,14 @@ function applyMountState(
 	const surface = bindings.textElement
 	if (surface) {
 		if (surface.textContent !== token.content) surface.textContent = token.content
-		if (previous?.textElement !== surface) {
-			const editableAttr = editable.editable ? 'true' : 'false'
-			if (surface.contentEditable !== editableAttr) surface.contentEditable = editableAttr
-		}
+		// Apply editable state only to NEWLY bound text surfaces (mount); elements
+		// that stay bound keep what the model shell's scoped setter last wrote.
+		if (previous?.textElement !== surface) applyEditableState(bindings, editable)
 		return
 	}
+	// Apply tabindex only to NEWLY bound mark roots.
 	if (token.type !== 'mark' || previous?.tokenElement === bindings.tokenElement) return
-	if (editable.readOnly) bindings.tokenElement.removeAttribute('tabindex')
-	// Conditional on the ATTRIBUTE, not the property: natively focusable mark
-	// roots (e.g. <button>) report tabIndex 0 without carrying the attribute.
-	else if (bindings.tokenElement.getAttribute('tabindex') !== '0') bindings.tokenElement.tabIndex = 0
+	applyEditableState(bindings, editable)
 }
 
 function nonControlChildren(parent: HTMLElement, controlRoots: WeakSet<HTMLElement>): HTMLElement[] {

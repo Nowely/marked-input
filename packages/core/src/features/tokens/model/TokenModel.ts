@@ -15,6 +15,7 @@ import {createIdentityTracker} from '../tokenIdentity'
 import type {Changeset, EditHint, ReconcileResult} from '../tokenIdentity'
 import {pathEquals, pathKey, resolvePath} from '../tokenIndex'
 import {createCommitPipeline} from './commit'
+import {applyEditableState} from './editableState'
 import type {TokenHandle} from './LiveNode'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
@@ -435,26 +436,16 @@ export class TokenModel {
 	/**
 	 * @internal Scoped editable-state application: conditional contentEditable
 	 * on bound text surfaces, tabindex on bound mark roots, and the seed for
-	 * future binds (replaces the old per-commit sweep; the caller wiring is
-	 * decided at cutover).
+	 * future binds (replaces the old per-commit sweep). SelectionController
+	 * owns the policy: it calls this whenever readOnly or isUserSelecting changes.
 	 */
 	setEditable(options: {editable: boolean; readOnly: boolean}): void {
 		this.#editable = {editable: options.editable, readOnly: options.readOnly}
-		const editableAttr = options.editable ? 'true' : 'false'
 		for (const handle of this.#pipeline.byPath().values()) {
 			const bindings = handle.node()
 			if (!bindings) continue
-			if (bindings.textElement) {
-				if (bindings.textElement.contentEditable !== editableAttr) {
-					bindings.textElement.contentEditable = editableAttr
-				}
-				continue
-			}
-			if (handle.token().type !== 'mark') continue
-			if (options.readOnly) bindings.tokenElement.removeAttribute('tabindex')
-			// Attribute check, not the property: natively focusable mark roots
-			// (e.g. <button>) report tabIndex 0 without carrying the attribute.
-			else if (bindings.tokenElement.getAttribute('tabindex') !== '0') bindings.tokenElement.tabIndex = 0
+			if (!bindings.textElement && handle.token().type !== 'mark') continue
+			applyEditableState(bindings, options)
 		}
 	}
 
@@ -479,7 +470,7 @@ export class TokenModel {
 	}
 }
 
-/** Construction seam (Store wires this at cutover): the same (value, props, host) triple the old shell takes. */
+/** Standalone / test construction seam: creates a TokenModel from the same (value, props, host) triple Store uses directly. */
 export function createTokenModel(value: ValueModel, props: PropsModel, host: Host): TokenModel {
 	return new TokenModel(value, props, host)
 }

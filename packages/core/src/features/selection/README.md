@@ -39,6 +39,7 @@ Inside `host.onMounted`, `SelectionController` registers three DOM listeners and
 four watches:
 
 **Listeners** (all private):
+
 - `#focusEmptyEditorOnClick` — focuses the first child when the editor has a
   single empty text token.
 - `#trackSelection` — syncs `range` from `tokens.readSelection()` on `focusin`,
@@ -48,6 +49,7 @@ four watches:
   `mousemove` / `mouseup` / `selectionchange`.
 
 **Watches**:
+
 - `tokens.changed` → `#applyRange` (re-applies the stored range after each
   commit, once the DOM is consistent).
 - `props.readOnly` → `#applyEditablePolicy` (computes `{editable, readOnly}`

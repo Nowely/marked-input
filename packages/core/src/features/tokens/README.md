@@ -108,20 +108,25 @@ unexpected.
 
 ```ts
 // renderer contract
-tree: Computed<Token[]>      // structural tree; reference changes ⇔ renderer must run
-changed: Event<Changeset>    // THE model-level detector; fires after the DOM is consistent
+tree: Computed<Token[]> // structural tree; reference changes ⇔ renderer must run
+changed: Event<Changeset> // THE model-level detector; fires after the DOM is consistent
 
 // per-token live views
-handleFor(address)           // handle bound at address.path, or undefined
-handleAt(node)               // handle | 'control' | undefined for a DOM node
-tokenAt(position)            // handle of the text token containing position
-handles()                    // iterate all bound handles
-handleOf(token)              // id-bridge for (possibly stale) token objects; latch-gated
+handleFor(address) // handle bound at address.path, or undefined
+handleAt(node) // handle | 'control' | undefined for a DOM node
+tokenAt(position) // handle of the text token containing position
+handles() // iterate all bound handles
+handleOf(token) // id-bridge for (possibly stale) token objects; latch-gated
 
 // DOM↔model facade
 boundaryFor / caretFromPoint / placeCaret / selectRange
-readSelection / selectedContent / selectionRect / selectionAnchor /
-isSelectionCollapsed / selectionIntersects / selectionFocusNode
+readSelection /
+    selectedContent /
+    selectionRect /
+    selectionAnchor /
+    isSelectionCollapsed /
+    selectionIntersects /
+    selectionFocusNode
 
 // adapter refs
 control() / children()
@@ -236,8 +241,8 @@ the changeset degrades to `{kind: 'full'}` only on the very first reconcile.
 
 ```ts
 type Changeset =
-  | {kind: 'full'}
-  | {kind: 'delta'; textChanged: number[]; added: number[]; removed: number[]; updated: number[]}
+    | {kind: 'full'}
+    | {kind: 'delta'; textChanged: number[]; added: number[]; removed: number[]; updated: number[]}
 ```
 
 `textChanged` carries text-token ids plus marks whose descend was refused (a
@@ -376,22 +381,22 @@ Results are stored as an array of run entries in `parser.bench.result.json`. Eac
 
 ```json
 {
-  "timestamp": "2026-06-12T02:50:00.000Z",
-  "trends": {
-    "changeFromLast": "-19.9%",
-    "regressions": []
-  },
-  "summary": {
-    "totalTests": 10,
-    "performance": 290823
-  },
-  "tests": {
-    "10 marks": {
-      "category": "scalability",
-      "performance": [161023, 161023, 161023],
-      "changeFromLast": "+16.6%"
+    "timestamp": "2026-06-12T02:50:00.000Z",
+    "trends": {
+        "changeFromLast": "-19.9%",
+        "regressions": []
+    },
+    "summary": {
+        "totalTests": 10,
+        "performance": 290823
+    },
+    "tests": {
+        "10 marks": {
+            "category": "scalability",
+            "performance": [161023, 161023, 161023],
+            "changeFromLast": "+16.6%"
+        }
     }
-  }
 }
 ```
 

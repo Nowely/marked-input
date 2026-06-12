@@ -11,9 +11,9 @@ import {focusAtEnd} from '../shared/lib/focus'
 /**
  * Design-spec Phase 3 headline gates (commit routing):
  * - pure text edit → 0 committed renderer invocations (the core text path
- *   patches the DOM directly; structure() keeps its reference, so React's
+ *   patches the DOM directly; tree keeps its reference, so React's
  *   useSyncExternalStore snapshot is reference-equal and skips the re-render)
- * - structural edit → ≥1 renderer invocation (structure() reference changes)
+ * - structural edit → ≥1 renderer invocation (tree reference changes)
  *
  * The spy lives in the Span component BODY, so it counts render invocations —
  * getSnapshot calls without a commit never reach it. The harness renders
@@ -51,7 +51,7 @@ describe('Render-count gates: commit routing', () => {
 		expect(spanRender.mock.calls.length).toBe(baseline)
 
 		// Gate: completing a markup adds a mark token — a structural edit that
-		// invalidates structure() and re-renders through React.
+		// invalidates tree and re-renders through React.
 		await userEvent.keyboard('@[[struct](2)')
 		await expect.element(page.getByText('struct')).toBeInTheDocument()
 		expect(spanRender.mock.calls.length).toBeGreaterThan(baseline)
