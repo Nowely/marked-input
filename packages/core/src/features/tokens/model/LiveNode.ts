@@ -16,7 +16,7 @@ import {textLength} from '../textOffsets'
 export type TokenChange =
 	| {kind: 'text'; previous: string}
 	| {kind: 'moved'; previousAddress: TokenAddress}
-	| {kind: 'unmounted'}
+	| {kind: 'unmounted'} // `mounted` is intentionally absent — that variant was never emitted
 
 /** DOM bindings of a live node — set by bind, cleared on unbind/kill. */
 export type ElementBindings = {
@@ -84,7 +84,6 @@ export class TokenHandle {
 
 	/** @internal Current DOM bindings; undefined while unbound or dead. */
 	node(): ElementBindings | undefined {
-		this.dirty()
 		const tokenElement = this.#tokenElement
 		if (!tokenElement) return undefined
 		return {
@@ -97,12 +96,10 @@ export class TokenHandle {
 
 	/** Row in block layout, else the text surface / token root. */
 	#measureScope(): HTMLElement | undefined {
-		this.dirty()
 		return this.#rowElement ?? this.#textElement ?? this.#tokenElement
 	}
 
 	hasTextSurface(): boolean {
-		this.dirty()
 		return this.#textElement != null
 	}
 
@@ -122,7 +119,6 @@ export class TokenHandle {
 	}
 
 	caretRect(offset: number): DOMRect | undefined {
-		this.dirty()
 		const surface = this.#textElement
 		if (!surface) return undefined
 		const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
@@ -159,7 +155,6 @@ export class TokenHandle {
 	 * child boundary.
 	 */
 	placeCaret(offset: number): boolean {
-		this.dirty()
 		const tokenElement = this.#tokenElement
 		if (!tokenElement) return false
 		const textElement = this.#textElement
@@ -175,7 +170,6 @@ export class TokenHandle {
 	}
 
 	placeCaretAtBoundary(side: 'start' | 'end'): boolean {
-		this.dirty()
 		const tokenElement = this.#tokenElement
 		if (!tokenElement) return false
 		if (!this.#textElement) {
@@ -240,12 +234,7 @@ export class TokenHandle {
 		this.#bumpDirty()
 	}
 
-	/**
-	 * @internal Token disappeared from the tree: freeze reads, drop the DOM,
-	 * fire `unmounted` once. No unlink dance (the old kill re-read computeds to
-	 * drop a GLOBAL version dependency): `dirty`/`dead` are per-node signals
-	 * sharing this object's lifetime, so a dead handle pins nothing beyond itself.
-	 */
+	/** @internal Drops DOM, marks dead, fires unmounted once. A dead handle pins nothing; no unlink needed. */
 	kill(): void {
 		if (this.#dead()) return
 		this.#clearElements()

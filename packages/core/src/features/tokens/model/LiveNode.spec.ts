@@ -13,7 +13,7 @@ function mountSurface(content: string) {
 	return {container, span}
 }
 
-describe('LiveNode', () => {
+describe('TokenHandle (model/LiveNode)', () => {
 	afterEach(() => {
 		window.getSelection()?.removeAllRanges()
 		document.body.replaceChildren()
@@ -157,8 +157,9 @@ describe('LiveNode', () => {
 			watch(b.changed, bChanged)
 
 			// address() allocates a fresh object per evaluation, so reference
-			// stability below proves the getter never re-ran — the equality
-			// cutoff cannot mask an evaluation the way it can for token()/element().
+			// stability below is corroborating evidence that the getter never re-ran —
+			// the strict proof is the evaluation counters above (a cached computed
+			// serves without re-running; the reference check cannot mask that).
 			const aAddressBefore = a.address()
 			const bAddressBefore = b.address()
 			const bTokenBefore = b.token()
