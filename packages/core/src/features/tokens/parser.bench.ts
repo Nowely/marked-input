@@ -78,6 +78,8 @@ function saveResults() {
 
 	if (!resultsPath) {
 		// Browser context: path.join unavailable — print summary to console only.
+		// Browser-mode (Chromium) runs cannot write parser.bench.result.json (the write path is skipped);
+		// the 2026-06-12 entry was recorded manually from a browser run — regenerate from a Node-context run when the bench infra supports it.
 		console.log('\n📊 Benchmark results (browser context — JSON save skipped):')
 		testResults.forEach(r => {
 			console.log(
@@ -401,11 +403,12 @@ describe('ParserV2 Performance Benchmark Suite', () => {
 	// Incremental-typing benches (500-mark document)
 	// (a) Baseline: full parse per keystroke — same operation as the existing 500-marks scalability bench
 	//     but using the @[__value__] parser so the comparison is apples-to-apples with (b)/(c).
+	//     Parses the POST-EDIT value (incrementalTailValue) for apples-to-apples comparison with incremental benches.
 	describe('Incremental: 500 marks full parse (baseline)', () => {
 		bench(
 			'full parse — 500 marks baseline',
 			() => {
-				incrementalParser.parse(incrementalBase500)
+				incrementalParser.parse(incrementalTailValue)
 			},
 			{
 				time: 1000,
@@ -416,7 +419,7 @@ describe('ParserV2 Performance Benchmark Suite', () => {
 						collectResultFn(
 							'incremental: full parse baseline (500 marks)',
 							'incremental',
-							() => incrementalParser.parse(incrementalBase500),
+							() => incrementalParser.parse(incrementalTailValue),
 							5
 						)
 						isCollecting = false
