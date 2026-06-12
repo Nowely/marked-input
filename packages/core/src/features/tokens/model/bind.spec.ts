@@ -595,6 +595,39 @@ describe('bind', () => {
 			expect(readOnlyMark.hasAttribute('tabindex')).toBe(false)
 		})
 
+		it('applies tabindex ATTRIBUTE (not just property) to a natively focusable mark root', () => {
+			// A <button> reports tabIndex 0 without any tabindex attribute set.
+			// The fix in applyMountState must check getAttribute('tabindex'), not
+			// the .tabIndex property, to avoid skipping the write on editable mount
+			// and must removeAttribute (not set -1) on readOnly mount.
+			const editableButton = document.createElement('button')
+			const editableContainer = document.createElement('div')
+			editableContainer.append(editableButton)
+			const editableToken = markToken('a', '@[a]', 0)
+
+			const readOnlyButton = document.createElement('button')
+			const readOnlyContainer = document.createElement('div')
+			readOnlyContainer.append(readOnlyButton)
+			const readOnlyToken = markToken('b', '@[b]', 0)
+
+			const ids = createIds()
+			ids.registerAll([editableToken, readOnlyToken])
+
+			bind(inputFor(editableContainer, [editableToken], ids.idFor))
+			bind(
+				inputFor(readOnlyContainer, [readOnlyToken], ids.idFor, {
+					editable: {editable: false, readOnly: true},
+				})
+			)
+
+			// Editable: tabindex attribute must be written so the button participates
+			// in the field's managed tab order rather than the native default.
+			expect(editableButton.getAttribute('tabindex')).toBe('0')
+			// ReadOnly: tabindex attribute must be absent — the button's native
+			// focusability is removed so focus cannot enter the mark.
+			expect(readOnlyButton.hasAttribute('tabindex')).toBe(false)
+		})
+
 		it('does not reapply contentEditable to a surface that stays bound', () => {
 			// Prop-change application is the model shell's job (scoped editable
 			// setter); bind only handles MOUNT-time state. A surface that stays
