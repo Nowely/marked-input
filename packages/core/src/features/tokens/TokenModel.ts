@@ -137,7 +137,7 @@ export class TokenModel {
 	 */
 	readonly structureIndex: Computed<TokenIndex> = computed(() => createTokenIndex(this.structure()))
 
-	/** Changeset of the latest reconcile — Phase 3's routing input. */
+	/** Changeset of the latest reconcile — public read for consumers building fine-grained reactions. */
 	changeset(): Changeset {
 		return this.#reconciled().changeset
 	}

@@ -159,7 +159,7 @@ one-char inserts, ~1.5–1.65× faster than full parse for inline markups).
 ### `TokenModel` API additions (Phase 2)
 
 ```ts
-changeset(): Changeset   // routing input for Phase 3; reflects the latest reconcile
+changeset(): Changeset   // public changeset read for consumers building fine-grained reactions; reflects the latest reconcile
 idOf(token: Token): number   // stable id of a token in the current tree (assign-on-first-sight)
 ```
 
@@ -177,6 +177,8 @@ renderer invocations, structural edit → ≥1.  Gated by the render-count specs
 `commitRouting.spec.ts` (core, watch-spy) and
 `packages/storybook/src/pages/renderCount.react.spec.tsx` (React end-to-end,
 render spy in a custom `Span`).
+
+**Block-layout scope:** in block layout every visible text token sits inside a slot-leading mark, so typing produces `textChanged` on a MARK — a `textChanged` MARK routes structural — and the renderer runs on every keystroke, identical to pre-Phase-3 behaviour.  The render-bypass optimisation is therefore effectively an inline-markup optimisation, consistent with the incremental-parse caveat above.
 
 ### Routing rule as implemented (`commitRouting.ts`)
 
@@ -409,7 +411,7 @@ Fires with a `TokenChange` discriminated union:
 | ------------ | --------------------- | -------------------------------------- |
 | `'text'`     | `previous: string`    | `token.content` changed                |
 | `'moved'`    | `previousAddress`     | position shifted without content change |
-| `'mounted'`  | —                     | reserved (Phase 3, not emitted yet)    |
+| `'mounted'`  | —                     | reserved; never emitted — mount lifecycle stayed with the full commit path |
 | `'unmounted'`| —                     | handle dies; fired exactly once        |
 
 ### Measurement

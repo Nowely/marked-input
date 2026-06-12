@@ -17,7 +17,7 @@ import {textLength} from './textOffsets'
 export type TokenChange =
 	| {kind: 'text'; previous: string}
 	| {kind: 'moved'; previousAddress: TokenAddress}
-	| {kind: 'mounted'} // reserved for Phase 3 (not emitted in Phase 1)
+	| {kind: 'mounted'} // reserved; never emitted — mount lifecycle stayed with the full commit path
 	| {kind: 'unmounted'}
 
 /** Internal view of TokenModel state a handle reads through. */
