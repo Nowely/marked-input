@@ -183,6 +183,11 @@ describe('tokenIdentity', () => {
 // '#[ab](m)'       → mark '#[ab](m)' [0,8] {value '', meta 'm', slot 'ab' [2,4], children: [text 'ab' [2,4]]}
 // 'abc\n\ndef\n\n' → text '' [0,0], mark 'abc\n\n' [0,5] {slot 'abc' [0,3], children: [text 'abc' [0,3]]},
 //                    text '' [5,5], mark 'def\n\n' [5,10] {slot 'def' [5,8], children: [text 'def' [5,8]]}, text '' [10,10]
+//
+// Dual-markup parser(['#[__slot__]', '%[__slot__]']) shapes for the descriptor-mismatch fixture:
+// '#[a #[b] c]' → [text '' [0,0], mark '#[…]' [0,11] {slot [2,10], children: [text 'a ' [2,4], mark '#[b]' [4,8] {descriptor index 0, slot 'b' [6,7]}, text ' c' [8,10]]}, text '' [11,11]]
+// '#[a %[b] c]' → [text '' [0,0], mark '#[…]' [0,11] {slot [2,10], children: [text 'a ' [2,4], mark '%[b]' [4,8] {descriptor index 1, slot 'b' [6,7]}, text ' c' [8,10]]}, text '' [11,11]]
+// same outer descriptor, same child count (3), aligned types — inner descriptors differ (index 0 vs 1)
 describe('deep reconcile (descend)', () => {
 	const slotParser = new Parser(['#[__slot__]'])
 
@@ -322,11 +327,13 @@ describe('deep reconcile (descend)', () => {
 		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(markId)
 	})
 
-	// The real parser cannot emit two same-descriptor marks whose outside-slot
-	// bytes differ while value/meta stay byte-equal (delimiters are fixed by the
-	// markup; every variable outside-slot byte is captured as value or meta), so
-	// conditions 3–4 below are pinned with hand-built tokens around a REAL
-	// descriptor — the same data shapes, descriptor reference included.
+	// Outside-slot change (condition 3) is parser-unreachable: delimiters are
+	// fixed, so every variable outside-slot byte is captured as value or meta —
+	// a same-descriptor pair always has byte-equal outside-slot content.
+	// Child-type mismatch (condition 4) is also parser-unreachable: TreeBuilder
+	// children strictly alternate text,(mark,text)* so equal child count implies
+	// equal type sequence. Both cases use hand-built tokens around a REAL
+	// descriptor (same data shapes, descriptor reference included).
 	const text = (content: string, start: number): Token => ({
 		type: 'text',
 		content,
@@ -432,38 +439,47 @@ describe('deep reconcile (descend)', () => {
 	})
 
 	it('refusal: nested-mark descriptor mismatch → mark-level textChanged with id inheritance', () => {
-		const descriptor = stolenDescriptor()
-		const foreignDescriptor = asMark(new Parser(['%[__slot__]']).parse('%[b]')[1]).descriptor
-		const innerOf = (desc: typeof descriptor, sigil: string): MarkToken => ({
-			type: 'mark',
-			content: `${sigil}[b]`,
-			position: {start: 2, end: 6},
-			descriptor: desc,
-			value: '',
-			slot: {content: 'b', start: 4, end: 5},
-			children: [text('b', 4)],
-		})
-		const outerOf = (inner: MarkToken, sigil: string): MarkToken => ({
-			type: 'mark',
-			content: `#[${sigil}[b]]`,
-			position: {start: 0, end: 7},
-			descriptor,
-			value: '',
-			slot: {content: `${sigil}[b]`, start: 2, end: 6},
-			children: [inner],
-		})
-		const prevMark = outerOf(innerOf(descriptor, '#'), '#')
-		const nextMark = outerOf(innerOf(foreignDescriptor, '%'), '%')
-		const tracker = createIdentityTracker()
-		tracker.reconcile([prevMark])
-		const markId = tracker.idOf(prevMark)
+		// Real parser(dual-markup) fixture: '#[a #[b] c]' and '#[a %[b] c]' produce
+		// same child count (3), aligned types — inner descriptors differ (index 0 vs 1).
+		// Pin shapes with a failing assertion first (verified against real output above).
+		const dualParser = new Parser(['#[__slot__]', '%[__slot__]'])
+		const tokensA = dualParser.parse('#[a #[b] c]')
+		const tokensB = dualParser.parse('#[a %[b] c]')
 
-		const result = tracker.reconcile([nextMark], {start: 2, end: 3, insertedLength: 1})
+		// shape pin: both produce 3 top-level tokens
+		expect(tokensA).toHaveLength(3)
+		expect(tokensB).toHaveLength(3)
+
+		const outerA = asMark(tokensA[1])
+		const outerB = asMark(tokensB[1])
+
+		// shape pin: both outer marks have 3 children
+		expect(outerA.children).toHaveLength(3)
+		expect(outerB.children).toHaveLength(3)
+
+		const innerA = asMark(outerA.children[1])
+		const innerB = asMark(outerB.children[1])
+
+		// shape pin: aligned types (text, mark, text) and differing inner descriptors
+		expect(outerA.children[0].type).toBe('text')
+		expect(outerA.children[2].type).toBe('text')
+		expect(outerB.children[0].type).toBe('text')
+		expect(outerB.children[2].type).toBe('text')
+		expect(innerA.descriptor).not.toBe(innerB.descriptor)
+		// same outer descriptor (both use '#[__slot__]', index 0)
+		expect(outerA.descriptor).toBe(outerB.descriptor)
+
+		const tracker = createIdentityTracker()
+		tracker.reconcile(tokensA)
+		const markId = tracker.idOf(outerA)
+
+		// edit: '#[a #[b] c]' → '#[a %[b] c]' — replace '#' at offset 4 with '%'
+		const result = tracker.reconcile(tokensB, {start: 4, end: 5, insertedLength: 1})
 		const changeset = delta(result)
 
 		expect(changeset.textChanged).toEqual([markId])
 		expect(changeset.updated).toEqual([])
-		expect(tracker.idOf(nextMark)).toBe(markId)
+		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(markId)
 	})
 
 	it('refusal: a slotless mark pair (empty slot) → mark-level textChanged with id inheritance', () => {

@@ -136,11 +136,8 @@ export function createIdentityTracker(): IdentityTracker {
 				if (!sameDescriptor(prevMark, nextMark)) return false
 				// 2. rendered props byte-unchanged
 				if (prevMark.value !== nextMark.value || prevMark.meta !== nextMark.meta) return false
-				// 3. only the slot interior changed: the raw content before
-				//    slot.start and after slot.end is byte-equal. Equality of the
-				//    mark-relative slices pins the slot's offsets within the mark,
-				//    so positions shift consistently by the parser invariant
-				//    content.length === position.end - position.start.
+				// 3. only the slot interior changed: head and tail bytes outside the slot are equal
+				//    (content.length === position.end - position.start keeps offsets consistent).
 				const prevSlot = prevMark.slot
 				const nextSlot = nextMark.slot
 				if (!prevSlot || !nextSlot) return false
