@@ -46,13 +46,14 @@ export class TokenModel {
 	// PURITY NOTE: `takePendingEdit()` (and the tracker's internal state) mutate
 	// inside this computed. That is safe because the signals runtime never runs
 	// a computed speculatively: `propagate`/`checkDirty` (shared/signals/
-	// alien-signals/system.ts) only flip flags, the getter executes solely in
-	// `updateComputed`, which clears those flags — so it runs at most ONCE per
-	// dependency change wave, and only when a dependency value actually changed
-	// (equal writes never propagate; checkDirty's non-dirty unwind clears
-	// Pending without running the getter). A parser/options change also re-runs
-	// this computed; by then the hint is consumed or absent and reconcile
-	// degrades to the structural added/removed path, which is correct.
+	// alien-signals/system.ts) only flip flags; the getter executes in
+	// `updateComputed` — and on the very first read, through the computed's
+	// first-read branch — still at most ONCE per dependency change wave, and
+	// only when a dependency value actually changed (equal writes never propagate;
+	// checkDirty's non-dirty unwind clears Pending without running the getter).
+	// A parser/options change also re-runs this computed; by then the hint is
+	// consumed or absent and reconcile degrades to the structural added/removed
+	// path, which is correct.
 	readonly #reconciled: Computed<ReconcileResult> = computed(() => {
 		const parser = this.#parser()
 		const value = this.value.current()

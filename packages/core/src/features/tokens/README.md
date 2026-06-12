@@ -15,6 +15,151 @@ consumers outside the module must go through `store.tokens` methods or
 
 Design spec: `docs/superpowers/specs/2026-06-11-tokenmodel-dom-encapsulation-design.md`
 
+## Phase 2 — token identity, changesets, and incremental reparse
+
+Phase 2 wires stable token identity across reparses, a per-commit changeset, and
+an optional windowed fast-path reparse.  The parse output is always correct and
+unaffected by these layers; they only add identity continuity and routing signals
+on top.
+
+### Identity tracker (`tokenIdentity.ts`)
+
+`createIdentityTracker()` returns an `IdentityTracker` that maps each `Token`
+object to a stable integer id via a `WeakMap<Token, number>`.  Ids are allocated
+once per token on first sight and never reused.
+
+`reconcile(next, hint?, previousValue?, nextValue?)` matches `next` against the
+previously reconciled tree and returns `{tokens, changeset}`:
+
+- **Prefix reuse** — top-level tokens that are byte-identical to their predecessor
+  (content, type, descriptor, positions, and full subtree) AND lie entirely before
+  the edit window are returned `===` the previous object.  The comparison is exact:
+  a token with shifted positions is never reused by reference.
+- **Suffix id-carry** — top-level tokens lying entirely after the edit window that
+  are identical except for a uniform position shift (`shiftDelta`) inherit the
+  previous token's id (and its children's ids recursively) onto the new object.
+  They are new objects (positions differ) but carry the old id.
+- **Middle pairing** — tokens inside the edit window are paired at the same tree
+  slot with the same type and descriptor.  A paired token inherits the old id and
+  is placed in `textChanged`; anything without a pair gets a fresh id and goes to
+  `added`.
+
+`idOf(token)` assigns an id on first sight and is idempotent afterwards.  Calling
+it on a token that is not part of the current reconciled tree permanently allocates
+an id — probe only tokens belonging to the live tree.
+
+Edit hint fallback: when no `hint` is provided, the tracker reconstructs one from
+the token contents via `findGap` (the same divergence-range utility used by
+preparsing).  Changeset degrades to `{kind: 'full'}` only on the very first
+reconcile (no previous tree to compare against).
+
+### Changeset vocabulary
+
+```ts
+type Changeset =
+  | {kind: 'full'}
+  | {kind: 'delta'; textChanged: number[]; added: number[]; removed: number[]; shifted: number[]}
+```
+
+`textChanged` and `shifted` carry ids of top-level tokens only (children are
+subsumed).  `added` and `removed` carry the full subtree of affected tokens
+(children's ids are included recursively).
+
+`textChanged` on a `mark` token means its content changed; the subtree is treated
+as dirty and not diffed per-child.  Whether a textChanged mark requires renderer
+invalidation is a Phase 3 decision.
+
+**THE ROUTING RULE** (from the design spec, Phase 3):
+
+> `textChanged` and `shifted` are both text-path — a pure text edit shifts every
+> suffix token's position, and that must NOT trigger the renderer, or React would
+> render on every keystroke.  `added` or `removed` non-empty → structural path →
+> renderer re-render.
+
+```
+value edit → incremental parse → changeset
+  ├─ textChanged/shifted only → patch text surfaces directly; renderer not invoked
+  └─ added/removed present   → request renderer re-render; rebuild index
+```
+
+### Edit-hint flow
+
+`EditController.replace` is the single production write path to the value.  The
+hint threading works as follows:
+
+1. `EditController.replace` normalizes the replacement range and calls
+   `ValueModel.replace(range, replacement)`.
+2. `ValueModel.replace` records `{start, end, insertedLength}` in `#pendingEdit`
+   (only when the value actually changes — a no-op replace leaves `#pendingEdit`
+   undefined to avoid a stale hint on a later unrelated write).
+3. `ValueModel.takePendingEdit()` is a consume-once accessor: the first caller
+   drains the hint and subsequent calls return `undefined`.
+4. `ValueModel.previousValue()` captures the value as it was before the most
+   recent accepted write.  Both direct `current(x)` sets and `replace()` calls
+   update it through the signal's set-transform, which fires synchronously before
+   the stored value changes — ensuring readers never see a half-updated pair.
+5. `TokenModel.#reconciled` (a `Computed`) calls `takePendingEdit()` and
+   `previousValue()` on every recompute; it passes them into `#identity.reconcile`
+   after parsing.
+
+**Controlled-mode limitation (precision, not correctness):** in controlled mode
+the parent controls `props.value` without calling `replace`.  A stale hint may
+survive in `#pendingEdit` from a previous replace; if the parent later updates
+`props.value` for an unrelated reason without triggering a local write, that stale
+hint degrades changeset precision — the identity tracker may misattribute
+`textChanged` vs `added/removed`.  Token correctness (parse output) is never
+affected.
+
+### Windowed incremental reparse (`incrementalParse.ts`)
+
+Enabled by default (`INCREMENTAL = true`; flip to `false` in source for A/B
+debugging).  Used by `TokenModel.#parse` when a hint is available and the previous
+parse matches the previous value.
+
+Algorithm:
+
+1. **Validate the hint** — range within bounds, length consistent, values identical
+   outside the edited range.  Any failure → full parse.
+2. **Window in prev coordinates** — expand `[hint.start, hint.end]` to the
+   enclosing top-level token boundaries, widen by one whole token per side, then
+   snap both endpoints outward to text tokens (the parser emits a strictly
+   alternating text/mark stream including empty text tokens, so text-endpoint
+   windows splice back into a valid stream).
+3. **Inert-outside guard** — every text content outside the window (top-level text
+   tokens plus nested text/value/meta inside outside marks) must contain no markup
+   segment at all.  This is the key safety rule for non-local pairing: a segment
+   outside the window could pair with one inside it, making a bounded reparse
+   incorrect regardless of window width.  Guard trips → full parse.
+4. **Parse the window slice** and shift resulting positions by `windowStart`.
+5. **Stabilization (doubling check)** — reparse a window widened by its own
+   character width; compare the content the two windows produce over the doubled
+   range.  Equal → accept and splice.  Different → adopt the doubled window and
+   retry up to `MAX_WIDENINGS` (3) times.  A window that grows to the whole
+   document is already the full parse.  Budget exhausted → full parse.
+6. **Splice** — `[prefix prev tokens, reparsed window, suffix prev tokens shifted
+   by delta]`.  The identity tracker then runs on the spliced tree.
+
+**Full-parse fallback guarantee:** correctness never depends on incrementality.
+Every guard that detects doubt falls back to `parser.parse(nextValue)`.
+
+**Block-layout caveat:** slot-leading markups (block layout prefixes values with
+`'__slot__\n\n'`) almost always fall back to a full parse — the inert-outside
+guard trips on the `\n\n` segment in the prefix text token.  The incremental win
+therefore applies primarily to inline-style markups (no multi-line prefix).
+Benchmark reference: `parser.bench.ts` (500-mark document, tail and middle
+one-char inserts, ~1.5–1.65× faster than full parse for inline markups).
+
+### `TokenModel` API additions (Phase 2)
+
+```ts
+changeset(): Changeset   // routing input for Phase 3; reflects the latest reconcile
+idOf(token: Token): number   // stable id of a token in the current tree (assign-on-first-sight)
+```
+
+`changeset()` reads `#reconciled()`, which is a Computed — it is reactive and
+will re-run only when the value or parser options change.  `idOf` delegates to the
+identity tracker's `WeakMap` lookup.
+
 ## `TokenModel` (`store.tokens`)
 
 - **Parsing** — `current` (computed `Token[]`) and `index` (computed

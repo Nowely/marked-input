@@ -25,6 +25,9 @@ export class ValueModel {
 			// applied purely through props.value (without a local write) bypass
 			// this — consumers treat #previousValue as best-effort (TokenModel's
 			// identity tracker reconstructs the true value from tokens otherwise).
+			// Note: a stale hint surviving in #pendingEdit when a controlled-mode
+			// props.value change fires degrades changeset precision only — token
+			// correctness (parse output) is never affected.
 			this.#previousValue = untracked(() => this.current())
 			this.props.onChange()?.(next)
 			return this.props.value() !== undefined ? previous : next
