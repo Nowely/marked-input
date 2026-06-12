@@ -1,0 +1,478 @@
+import type {DomRef, RawSelection, TokenAddress, TokenPath} from '../../../shared/editorContracts'
+import {computed, watch} from '../../../shared/signals/index.js'
+import type {Computed, Event} from '../../../shared/signals/index.js'
+import type {Host} from '../../state/Host'
+import type {PropsModel} from '../../state/PropsModel'
+import type {ValueModel} from '../../state/ValueModel'
+import {markBoundaryAt, rawPositionFromBoundary, textTargetAt} from '../boundary'
+import type {BoundaryContext} from '../boundary'
+import {focusIfNeeded, getRect, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from '../caret'
+import type {Lookup, TokenNode} from '../domTypes'
+import {incrementalParse} from '../incrementalParse'
+import {Parser} from '../parser/Parser'
+import type {Token} from '../parser/types'
+import {createTextToken} from '../parser/utils/createTextToken'
+import {createIdentityTracker} from '../tokenIdentity'
+import type {Changeset, EditHint, ReconcileResult} from '../tokenIdentity'
+import {createTokenIndex, pathEquals, pathKey, type TokenIndex} from '../tokenIndex'
+import {createCommitPipeline} from './commit'
+import type {TokenHandle} from './LiveNode'
+
+export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
+
+type ControlRegistration = {
+	readonly ownerPath?: TokenPath
+	readonly element: HTMLElement
+}
+
+type ChildSequenceRegistration = {
+	readonly ownerPath: TokenPath
+	readonly element: HTMLElement
+}
+
+/**
+ * The thin public shell over the live node layer: parses the value, reconciles
+ * token identity, and feeds the one commit pipeline; everything else — handle
+ * lookups, the DOM↔model facade, adapter refs — is a read over the pipeline's
+ * node layer. Owns the `nodes` map the pipeline mutates.
+ */
+export class TokenModel {
+	readonly #identity = createIdentityTracker()
+
+	/** THE live node layer, keyed by stable token id — mutated only through the pipeline. */
+	readonly #nodes = new Map<number, TokenHandle>()
+
+	// Ref registries — populated by framework ref callbacks, read by bind.
+	readonly #pendingControls = new Map<string, ControlRegistration>()
+	readonly #pendingChildSequences = new Map<string, ChildSequenceRegistration>()
+	#nextControlId = 0
+	#nextChildSequenceId = 0
+
+	/** Last state written by {@link setEditable}; until then derived from props at bind time. */
+	#editable: {editable: boolean; readOnly: boolean} | undefined
+
+	readonly #pipeline = createCommitPipeline({
+		container: () => this.host.container(),
+		nodes: this.#nodes,
+		idFor: token => this.#identity.idFor(token),
+		editableState: () => this.#editableState(),
+		controlElements: () => this.#controlElements(),
+		childSequenceHostsFor: path => this.#childSequenceHostsFor(path),
+		isBlock: () => this.props.layout.isBlock(),
+	})
+
+	/** Renderer contract: reference changes ⇔ the renderer must run. */
+	readonly tree: Computed<Token[]> = this.#pipeline.tree
+
+	/** THE model-level detector: fires once per commit, only after the DOM is consistent. */
+	readonly changed: Event<Changeset> = this.#pipeline.changed
+
+	readonly #parser: Computed<Parser | undefined> = computed(() => {
+		const Mark = this.props.Mark()
+		const options = this.props.options()
+		const hasMark = Mark != null || options.some(opt => 'Mark' in opt && opt.Mark != null)
+		if (!hasMark) return
+		const markups = options.map(opt => opt.markup)
+		if (!markups.some(Boolean)) return
+		return new Parser(markups)
+	})
+
+	/** Previous parse (pre-filterEmptyText) — the splice base for {@link incrementalParse}. */
+	#lastParsed: {parser: Parser; value: string; tokens: Token[]} | undefined
+
+	// PURITY: the consume-once hint read and the #lastParsed write mutate inside
+	// this computed — safe because the runtime executes a getter at most once per
+	// dependency change wave (verified in shared/signals; equal writes never propagate).
+	readonly #reconciled: Computed<ReconcileResult> = computed(() => {
+		const parser = this.#parser()
+		const value = this.value.current()
+		const hint = this.value.takePendingEdit()
+		const previousValue = this.value.previousValue()
+		const parsed = this.#parse(parser, value, hint, previousValue)
+		// #lastParsed keeps the UNfiltered tree: incrementalParse splices previous
+		// top-level tokens, so its input must be exactly what parse() emits. The
+		// identity tracker receives the FILTERED tree (block mode) — what renders.
+		this.#lastParsed = parser ? {parser, value, tokens: parsed} : undefined
+		const tokens = this.props.layout.isBlock() ? filterEmptyText(parsed) : parsed
+		return this.#identity.reconcile(tokens, hint, previousValue, value)
+	})
+
+	/**
+	 * Typing hot path: reparse only a window around the edit hint when the
+	 * matching previous parse is available; incrementalParse itself falls back
+	 * to a full parse on any doubt (output is always parse-equivalent — gated
+	 * by incrementalParse.property.spec.ts).
+	 */
+	#parse(
+		parser: Parser | undefined,
+		value: string,
+		hint: EditHint | undefined,
+		previousValue: string | undefined
+	): Token[] {
+		if (!parser) return [createTextToken(value)]
+		const lastParsed = this.#lastParsed
+		if (hint === undefined || lastParsed === undefined) return parser.parse(value)
+		// A parser/options change invalidates the previous tree's descriptors; the
+		// hint's ranges are coordinates in exactly the last parsed value.
+		if (lastParsed.parser !== parser || lastParsed.value !== previousValue) return parser.parse(value)
+		return incrementalParse(parser, lastParsed.tokens, lastParsed.value, value, hint)
+	}
+
+	/** Fresh-tree index for the boundary facade (the node layer stays the source of element truth). */
+	readonly #index: Computed<TokenIndex> = computed(() => createTokenIndex(this.#reconciled().tokens))
+
+	constructor(
+		private readonly value: ValueModel,
+		private readonly props: PropsModel,
+		private readonly host: Host
+	) {
+		host.onMounted(() => {
+			// Order matters: the immediate apply seeds the pipeline (cold start is
+			// a structural pass), so the immediate onRendered right after can bind
+			// a pre-built DOM — the shell is live once the container attaches.
+			watch(this.#reconciled, result => this.#pipeline.apply(result), {immediate: true})
+			watch(host.rendered, () => this.#pipeline.onRendered(), {immediate: true})
+		})
+	}
+
+	/** Ref callback for a control element (e.g. overlay, drag handle). */
+	control(ownerPath?: TokenPath): DomRef {
+		const key = `control:${++this.#nextControlId}`
+		return element => {
+			if (element) {
+				this.#pendingControls.set(key, {ownerPath: ownerPath ? [...ownerPath] : undefined, element})
+			} else {
+				this.#pendingControls.delete(key)
+			}
+		}
+	}
+
+	/** Ref callback for the element hosting a token's child sequence. */
+	children(ownerPath: TokenPath): DomRef {
+		const key = `children:${++this.#nextChildSequenceId}`
+		return element => {
+			if (element) {
+				this.#pendingChildSequences.set(key, {ownerPath: [...ownerPath], element})
+			} else {
+				this.#pendingChildSequences.delete(key)
+			}
+		}
+	}
+
+	/** Live handle of the token bound at `address.path`, or undefined if not bound. */
+	handleFor(address: TokenAddress): TokenHandle | undefined {
+		return this.#pipeline.byPath().get(pathKey(address.path))
+	}
+
+	/**
+	 * Resolve a DOM node to its handle, 'control' if inside a control root,
+	 * or undefined if outside the container.
+	 */
+	handleAt(node: Node): TokenHandle | 'control' | undefined {
+		const lookup = this.#locate(node)
+		if (!lookup) return undefined
+		if (lookup.kind === 'control') return 'control'
+		return this.#pipeline.byElement(lookup.element)
+	}
+
+	/**
+	 * Bridge a (possibly stale) token object to its live handle via the stable
+	 * identity id. Fails closed while a structural apply awaits its bind — the
+	 * node layer is one generation stale there, and handing out a handle would
+	 * let mutations act on a tree the DOM never showed. `handleFor`/`handleAt`
+	 * stay ungated by design: they resolve through the CURRENT maps (address-
+	 * and DOM-keyed, not stale-token-keyed), matching the old shell's behavior
+	 * during the same window.
+	 */
+	handleOf(token: Token): TokenHandle | undefined {
+		if (this.#pipeline.pending()) return undefined
+		// Read-only id peek: probing a foreign token must not allocate an id.
+		const id = this.#identity.idFor(token)
+		return id === undefined ? undefined : this.#nodes.get(id)
+	}
+
+	/**
+	 * Iterate all bound tokens' live handles.
+	 * @yields each bound token's handle
+	 */
+	*handles(): IterableIterator<TokenHandle> {
+		yield* this.#pipeline.byPath().values()
+	}
+
+	/** Handle of the text token containing `position` (or the next one after). */
+	tokenAt(position: number): TokenHandle | undefined {
+		const target = textTargetAt(this.#boundaryContext(), position)
+		return target ? this.#pipeline.byElement(target.node.tokenElement) : undefined
+	}
+
+	/** Locate the live node owning a DOM node, walking up to the container (the old #locate over the pipeline lookups). */
+	#locate(node: Node): Lookup | undefined {
+		const container = this.host.container()
+		if (!container) return undefined
+
+		let current: Node | null = node
+		while (current && current !== container) {
+			if (current instanceof HTMLElement) {
+				const handle = this.#pipeline.byElement(current)
+				if (handle) {
+					const view = this.#view(handle)
+					return view ? {kind: 'token', node: view, element: current} : undefined
+				}
+				if (this.#pipeline.isControlRoot(current)) return {kind: 'control'}
+			}
+			current = current.parentNode
+		}
+		return undefined
+	}
+
+	/** TokenNode-shaped read of a handle for the boundary facade: fresh address over the live bindings. */
+	#view(handle: TokenHandle): TokenNode | undefined {
+		const bindings = handle.node()
+		if (!bindings) return undefined
+		const address = handle.address()
+		return {path: address.path, address, ...bindings}
+	}
+
+	#nodeFor(address: TokenAddress): TokenNode | undefined {
+		const handle = this.#pipeline.byPath().get(pathKey(address.path))
+		return handle ? this.#view(handle) : undefined
+	}
+
+	*#views(): IterableIterator<TokenNode> {
+		for (const handle of this.#pipeline.byPath().values()) {
+			const view = this.#view(handle)
+			if (view) yield view
+		}
+	}
+
+	#boundaryContext(): BoundaryContext {
+		return {
+			container: this.host.container() ?? undefined,
+			tokens: this.#reconciled().tokens,
+			index: this.#index(),
+			locate: node => this.#locate(node),
+			nodeFor: address => this.#nodeFor(address),
+			nodes: () => this.#views(),
+		}
+	}
+
+	/** Map a DOM boundary (node, offset) to an absolute document position. */
+	boundaryFor(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): number | undefined {
+		return rawPositionFromBoundary(this.#boundaryContext(), node, offset, affinity)
+	}
+
+	/** Current window selection as absolute positions. */
+	readSelection(): RawSelection | undefined {
+		const selection = window.getSelection()
+		if (!selection || selection.rangeCount === 0) return undefined
+
+		const range = selection.getRangeAt(0)
+		const start = this.boundaryFor(range.startContainer, range.startOffset, 'after')
+		if (start === undefined) return undefined
+		const end = this.boundaryFor(range.endContainer, range.endOffset, 'before')
+		if (end === undefined) return undefined
+
+		const rangeValue = start <= end ? {start, end} : {start: end, end: start}
+		const direction =
+			rangeValue.start === rangeValue.end
+				? undefined
+				: selection.anchorNode === range.endContainer && selection.anchorOffset === range.endOffset
+					? 'backward'
+					: 'forward'
+
+		return direction ? {range: rangeValue, direction} : {range: rangeValue}
+	}
+
+	/** Current selection serialized for clipboard use. */
+	selectedContent(): {html: string; text: string} | undefined {
+		const sel = window.getSelection()
+		const range = sel?.rangeCount ? sel.getRangeAt(0) : undefined
+		if (!range) return undefined
+		const fragment = range.cloneContents()
+		const div = document.createElement('div')
+		div.appendChild(fragment)
+		return {html: div.innerHTML, text: range.toString()}
+	}
+
+	/** Viewport rect of the current caret/selection. */
+	selectionRect(): DOMRect | undefined {
+		return getRect() ?? undefined
+	}
+
+	/** Anchor node + offset of the current selection (overlay trigger probing). */
+	selectionAnchor(): SelectionAnchor | undefined {
+		const sel = window.getSelection()
+		if (!sel?.anchorNode) return undefined
+		return {node: sel.anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed}
+	}
+
+	/**
+	 * Whether the current selection is collapsed.
+	 *
+	 * Tri-state: `undefined` when there is no Selection object at all (in
+	 * practice: the element is not focused), `true` for a collapsed caret,
+	 * `false` for a range. Callers wanting "no selection counts as collapsed"
+	 * must compare `isSelectionCollapsed() !== false`.
+	 */
+	isSelectionCollapsed(): boolean | undefined {
+		const sel = window.getSelection()
+		return sel ? sel.isCollapsed : undefined
+	}
+
+	/** Whether the current selection intersects `node` (partial containment counts). */
+	selectionIntersects(node: Node): boolean {
+		return window.getSelection()?.containsNode(node, true) ?? false
+	}
+
+	/** Focus node of the current selection, if any. */
+	selectionFocusNode(): Node | undefined {
+		return window.getSelection()?.focusNode ?? undefined
+	}
+
+	/**
+	 * Place a collapsed caret. Number form resolves the best target (text
+	 * surface containing the position, else a mark boundary exactly there);
+	 * address form targets a specific token (callers use it to disambiguate
+	 * tokens sharing a boundary position).
+	 *
+	 * **Address form — `offset` for mark tokens without a text surface:**
+	 * `offset <= 0` selects the start child boundary of the token element,
+	 * `offset > 0` the end — a binary selector, not a character offset.
+	 */
+	placeCaret(target: number | {address: TokenAddress; offset: number}): boolean {
+		if (typeof target === 'number') return this.#placeAtRawPosition(target)
+
+		const node = this.#nodeFor(target.address)
+		const resolved = this.#index().resolveAddress(target.address)
+		if (!node || !resolved) return false
+
+		if (resolved.type === 'mark' && !node.textElement) {
+			focusIfNeeded(node.tokenElement)
+			placeAtChildBoundary(node.tokenElement, target.offset <= 0 ? 'start' : 'end')
+			return true
+		}
+
+		const surface = node.textElement ?? node.tokenElement
+		focusIfNeeded(surface)
+		if (node.textElement) placeAtTextOffset(node.textElement, target.offset)
+		return true
+	}
+
+	#placeAtRawPosition(rawPosition: number): boolean {
+		const ctx = this.#boundaryContext()
+
+		const textTarget = textTargetAt(ctx, rawPosition)
+		if (textTarget?.node.textElement && rawPosition >= textTarget.start && rawPosition <= textTarget.end) {
+			focusIfNeeded(textTarget.node.textElement)
+			placeAtTextOffset(textTarget.node.textElement, rawPosition - textTarget.start)
+			return true
+		}
+
+		const markTarget = markBoundaryAt(ctx, rawPosition)
+		if (markTarget) {
+			focusIfNeeded(markTarget.element)
+			placeAtChildBoundary(markTarget.element, rawPosition === markTarget.position.end ? 'end' : 'start')
+			return true
+		}
+
+		if (textTarget?.node.textElement) {
+			focusIfNeeded(textTarget.node.textElement)
+			placeAtTextOffset(textTarget.node.textElement, rawPosition - textTarget.start)
+			return true
+		}
+
+		return false
+	}
+
+	/**
+	 * Select [start, end]; collapses via placeCaret when equal. Order-
+	 * insensitive: the range is normalized to [lo, hi] before being forwarded
+	 * to the DOM Range API (which would throw on a reversed range).
+	 */
+	selectRange(start: number, end: number): boolean {
+		if (start === end) return this.placeCaret(start)
+		const [lo, hi] = start <= end ? [start, end] : [end, start]
+		const ctx = this.#boundaryContext()
+		const startTarget = textTargetAt(ctx, lo)
+		const endTarget = textTargetAt(ctx, hi)
+		if (!startTarget?.node.textElement || !endTarget?.node.textElement) return false
+		placeRangeAcrossSurfaces(
+			{element: startTarget.node.textElement, offset: lo - startTarget.start},
+			{element: endTarget.node.textElement, offset: hi - endTarget.start}
+		)
+		return true
+	}
+
+	/**
+	 * Absolute position at viewport coordinates (read half of old setAtX).
+	 * Returns `undefined` when the point hits nothing hittable, or when the
+	 * resolved DOM boundary falls outside any bound token.
+	 */
+	caretFromPoint(x: number, y: number): number | undefined {
+		// oxlint-disable-next-line no-unsafe-type-assertion -- non-standard DOM APIs not in TS lib
+		const doc = document as unknown as {
+			caretRangeFromPoint?(x: number, y: number): globalThis.Range | null
+			caretPositionFromPoint?(x: number, y: number): {offsetNode: Node; offset: number} | null
+		}
+		const pos = doc.caretRangeFromPoint?.(x, y) ?? doc.caretPositionFromPoint?.(x, y)
+		if (!pos) return undefined
+		if (pos instanceof globalThis.Range) return this.boundaryFor(pos.startContainer, pos.startOffset)
+		return this.boundaryFor(pos.offsetNode, pos.offset)
+	}
+
+	/**
+	 * @internal Scoped editable-state application: conditional contentEditable
+	 * on bound text surfaces, tabindex on bound mark roots, and the seed for
+	 * future binds (replaces the old per-commit sweep; the caller wiring is
+	 * decided at cutover).
+	 */
+	setEditable(options: {editable: boolean; readOnly: boolean}): void {
+		this.#editable = {editable: options.editable, readOnly: options.readOnly}
+		const editableAttr = options.editable ? 'true' : 'false'
+		for (const handle of this.#pipeline.byPath().values()) {
+			const bindings = handle.node()
+			if (!bindings) continue
+			if (bindings.textElement) {
+				if (bindings.textElement.contentEditable !== editableAttr) {
+					bindings.textElement.contentEditable = editableAttr
+				}
+				continue
+			}
+			if (handle.token().type !== 'mark') continue
+			if (options.readOnly) bindings.tokenElement.removeAttribute('tabindex')
+			else if (bindings.tokenElement.tabIndex !== 0) bindings.tokenElement.tabIndex = 0
+		}
+	}
+
+	#editableState(): {editable: boolean; readOnly: boolean} {
+		if (this.#editable) return this.#editable
+		const readOnly = this.props.readOnly()
+		return {editable: !readOnly, readOnly}
+	}
+
+	#controlElements(): ReadonlySet<HTMLElement> {
+		const out = new Set<HTMLElement>()
+		for (const {element} of this.#pendingControls.values()) out.add(element)
+		return out
+	}
+
+	#childSequenceHostsFor(ownerPath: TokenPath): HTMLElement[] {
+		const out: HTMLElement[] = []
+		for (const registration of this.#pendingChildSequences.values()) {
+			if (pathEquals(registration.ownerPath, ownerPath)) out.push(registration.element)
+		}
+		return out
+	}
+}
+
+/** Construction seam (Store wires this at cutover): the same (value, props, host) triple the old shell takes. */
+export function createTokenModel(value: ValueModel, props: PropsModel, host: Host): TokenModel {
+	return new TokenModel(value, props, host)
+}
+
+function filterEmptyText(tokens: Token[]): Token[] {
+	return tokens.filter(token => {
+		if (token.type !== 'text') return true
+		return token.position.start !== token.position.end
+	})
+}
