@@ -476,6 +476,9 @@ export class TokenModel {
 
 	// Note: handle `changed`/`unmounted` watchers run while `#committing` is true;
 	// synchronously triggering `host.rendered()` from them throws the re-entry error by design.
+	// Synchronous VALUE-SIGNAL writes from `changed`/`indexed` watchers likewise re-enter the
+	// commit machinery and throw by design (fail-loud); async (queueMicrotask) writes are the
+	// supported pattern.
 	#syncHandles(): void {
 		for (const [id, handle] of this.#handles) {
 			const node = this.#byId.get(id)
@@ -574,8 +577,14 @@ export class TokenModel {
 	#patchCommit(textChanged: readonly number[]): void {
 		if (this.#committing) throw new Error('TokenModel index re-entry')
 		const container = this.host.container()
-		// Nothing to patch before the adapter has painted: wait for rendered().
-		if (!container || this.#byPath.size === 0) return
+		// No container: adapter has not mounted yet — nothing to patch, wait for rendered().
+		if (!container) return
+		// Empty index: adapter painted but the index has not been built yet — self-heal
+		// via the structural machinery (consistent with the !prepared escalation below).
+		if (this.#byPath.size === 0) {
+			this.#rebuildIndex(container)
+			return
+		}
 		this.#committing = true
 		try {
 			// Pass 1 (pure): refresh addresses in place — same paths and elements,

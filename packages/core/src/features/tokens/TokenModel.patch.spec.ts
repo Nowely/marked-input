@@ -124,6 +124,8 @@ describe('preparePatch (patch pass 1 — escalation detection)', () => {
 
 	it('resolves a full patch: refreshed addresses, same elements, surface writes', () => {
 		const {previous, index, idOf, node, nextToken} = staleFixture()
+		// Set a sentinel so the purity assertion proves no write occurred (not just the default '').
+		node.tokenElement.textContent = 'sentinel'
 		const prepared = preparePatch(previous, index, idOf, [7])
 		if (!prepared) throw new Error('expected a prepared patch')
 		// Address refreshed from the new index; elements carried over untouched.
@@ -131,8 +133,8 @@ describe('preparePatch (patch pass 1 — escalation detection)', () => {
 		expect(prepared.byPath.get(pathKey([0]))?.tokenElement).toBe(node.tokenElement)
 		expect(prepared.byId.get(7)).toBe(prepared.byPath.get(pathKey([0])))
 		expect(prepared.targets).toEqual([{element: node.tokenElement, content: 'llo!'}])
-		// Pass 1 is pure: nothing was written to the DOM or the input map.
-		expect(node.tokenElement.textContent).toBe('')
+		// Pass 1 is pure: sentinel survives — nothing was written to the DOM or the input map.
+		expect(node.tokenElement.textContent).toBe('sentinel')
 		expect(previous.get(pathKey([0]))?.address.token.content).toBe('llo')
 	})
 

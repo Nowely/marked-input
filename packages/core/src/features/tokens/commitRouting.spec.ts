@@ -122,6 +122,17 @@ describe('isTextPath classifier', () => {
 		}
 		expect(isTextPath(tokens, changeset, idOf)).toBe(true)
 	})
+
+	it('delta with textChanged id not found in the tree → structural (conservative, stale-tree guard)', () => {
+		const changeset: Changeset = {
+			kind: 'delta',
+			textChanged: [99999],
+			added: [],
+			removed: [],
+			shifted: [],
+		}
+		expect(isTextPath(tokens, changeset, idOf)).toBe(false)
+	})
 })
 
 // ---------------------------------------------------------------------------

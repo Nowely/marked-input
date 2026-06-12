@@ -22,5 +22,6 @@ export function isTextPath(tokens: readonly Token[], changeset: Changeset, idOf:
 		}
 		if (token.type === 'mark') stack.push(...token.children)
 	}
-	return true
+	// Conservative: an unverifiable id (not found in the tree) routes structural.
+	return pending === 0
 }
