@@ -440,7 +440,7 @@ describe('bind', () => {
 		it('keeps handles alive but unbound when the DOM walk bails (transient misalignment)', () => {
 			// DELIBERATE DIVERGENCE from the old TokenModel: #syncHandles killed every
 			// handle whose id vanished from #byId, and on a bail #byId was empty — a
-			// transiently misaligned DOM (adapter mid-render) executed all handles.
+			// transiently misaligned DOM (adapter mid-render) killed all handles.
 			// Here only ids genuinely absent from the TREE die; on a bail the nodes
 			// keep token/path (refreshed from the authoritative tree) and lose only
 			// their element bindings.
