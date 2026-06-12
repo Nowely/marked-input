@@ -7,7 +7,8 @@ import {shallow} from '../../shared/utils/shallow'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
-import type {TokenModel} from '../tokens/TokenModel'
+import type {TokenModel} from '../tokens'
+import {freshTokens} from '../tokens'
 
 export class SelectionController {
 	readonly range: Signal<Range | undefined> = signal<Range>({equals: shallow})
@@ -38,21 +39,24 @@ export class SelectionController {
 			this.#trackSelection(container)
 			this.#trackUserSelecting(container)
 
-			watch(this.tokens.indexed, () => {
-				this.#reconcileSurfaces()
-				this.#applyRange()
-			})
-			watch(this.props.readOnly, () => this.#reconcileSurfaces())
-			watch(this.isUserSelecting, () => this.#reconcileSurfaces())
+			// The model announces `changed` only after the DOM is consistent (both
+			// commit branches), so the caret re-place runs against live surfaces —
+			// exactly when the old per-commit index event fired.
+			watch(this.tokens.changed, () => this.#applyRange())
+			// Editable POLICY stays here (readOnly + user-selection sweep gating);
+			// the model owns the application: scoped writes on bound surfaces now,
+			// and the seed for surfaces bound later.
+			watch(this.props.readOnly, () => this.#applyEditablePolicy())
+			watch(this.isUserSelecting, () => this.#applyEditablePolicy())
 
 			watch(this.range, () => this.#applyRange())
 		})
 	}
 
-	#reconcileSurfaces(): void {
+	#applyEditablePolicy(): void {
 		const readOnly = this.props.readOnly()
 		const editable = !(readOnly || this.isUserSelecting())
-		this.tokens.reconcileSurfaces({editable, readOnly})
+		this.tokens.setEditable({editable, readOnly})
 	}
 
 	selectAll(): void {
@@ -60,8 +64,8 @@ export class SelectionController {
 	}
 
 	focusFirst(): void {
-		const firstAddress = this.tokens.index().addressFor([0])
-		if (firstAddress && this.placeAtAddress(firstAddress, 'start')) return
+		const first = this.tokens.tree().at(0)
+		if (first && this.placeAtAddress({path: [0], token: first}, 'start')) return
 		this.host.container()?.focus()
 	}
 
@@ -102,10 +106,13 @@ export class SelectionController {
 	}
 
 	#resolveAddress(address: TokenAddress, boundary: 'start' | 'end'): Range | undefined {
-		if (!this.tokens.handleFor(address)) return undefined
-		const resolved = this.tokens.index().resolveAddress(address)
-		if (!resolved) return undefined
-		const pos = boundary === 'end' ? resolved.position.end : resolved.position.start
+		// Mount-check via the bound layer, identity via the id bridge: a stale
+		// tree() token resolves to its live handle, a replaced or foreign one
+		// fails closed (handleOf is also latch-gated through structural windows).
+		const handle = this.tokens.handleFor(address)
+		if (!handle || this.tokens.handleOf(address.token) !== handle) return undefined
+		const position = handle.token().position
+		const pos = boundary === 'end' ? position.end : position.start
 		this.#preferredAddress = address
 		return {start: pos, end: pos}
 	}
@@ -114,9 +121,9 @@ export class SelectionController {
 		const address = this.#preferredAddress
 		this.#preferredAddress = undefined
 		if (!address) return false
-		const resolved = this.tokens.index().resolveAddress(address)
-		if (!resolved) return false
-		return this.tokens.placeCaret({address, offset: rawPosition - resolved.position.start})
+		const handle = this.tokens.handleFor(address)
+		if (!handle || this.tokens.handleOf(address.token) !== handle) return false
+		return this.tokens.placeCaret({address, offset: rawPosition - handle.token().position.start})
 	}
 
 	#placeCollapsed(rawPosition: number): boolean {
@@ -130,7 +137,10 @@ export class SelectionController {
 
 	#focusEmptyEditorOnClick(container: HTMLElement): void {
 		listen(container, 'click', () => {
-			const tokens = this.tokens.current()
+			// freshTokens, not tree(): after typing into the single empty text
+			// token the tree keeps its reference (text path) — the stale ''
+			// content would steal focus on every click into a non-empty editor.
+			const tokens = freshTokens(this.tokens)
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 				firstHtmlChild(container)?.focus()
 			}

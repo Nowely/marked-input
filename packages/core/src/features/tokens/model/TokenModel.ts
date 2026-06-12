@@ -5,16 +5,15 @@ import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
 import type {ValueModel} from '../../state/ValueModel'
 import {markBoundaryAt, rawPositionFromBoundary, textTargetAt} from '../boundary'
-import type {BoundaryContext} from '../boundary'
+import type {BoundaryContext, Lookup, TokenView} from '../boundary'
 import {focusIfNeeded, getRect, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from '../caret'
-import type {Lookup, TokenNode} from '../domTypes'
 import {incrementalParse} from '../incrementalParse'
 import {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {createIdentityTracker} from '../tokenIdentity'
 import type {Changeset, EditHint, ReconcileResult} from '../tokenIdentity'
-import {createTokenIndex, pathEquals, pathKey, type TokenIndex} from '../tokenIndex'
+import {pathEquals, pathKey, resolvePath} from '../tokenIndex'
 import {createCommitPipeline} from './commit'
 import type {TokenHandle} from './LiveNode'
 
@@ -118,9 +117,6 @@ export class TokenModel {
 		return incrementalParse(parser, lastParsed.tokens, lastParsed.value, value, hint)
 	}
 
-	/** Fresh-tree index for the boundary facade (the node layer stays the source of element truth). */
-	readonly #index: Computed<TokenIndex> = computed(() => createTokenIndex(this.#reconciled().tokens))
-
 	constructor(
 		private readonly value: ValueModel,
 		private readonly props: PropsModel,
@@ -172,7 +168,7 @@ export class TokenModel {
 		const lookup = this.#locate(node)
 		if (!lookup) return undefined
 		if (lookup.kind === 'control') return 'control'
-		return this.#pipeline.byElement(lookup.element)
+		return lookup.node.handle
 	}
 
 	/**
@@ -201,8 +197,7 @@ export class TokenModel {
 
 	/** Handle of the text token containing `position` (or the next one after). */
 	tokenAt(position: number): TokenHandle | undefined {
-		const target = textTargetAt(this.#boundaryContext(), position)
-		return target ? this.#pipeline.byElement(target.node.tokenElement) : undefined
+		return textTargetAt(this.#boundaryContext(), position)?.node.handle
 	}
 
 	/** Locate the live node owning a DOM node, walking up to the container (the old #locate over the pipeline lookups). */
@@ -216,7 +211,7 @@ export class TokenModel {
 				const handle = this.#pipeline.byElement(current)
 				if (handle) {
 					const view = this.#view(handle)
-					return view ? {kind: 'token', node: view, element: current} : undefined
+					return view ? {kind: 'token', node: view} : undefined
 				}
 				if (this.#pipeline.isControlRoot(current)) return {kind: 'control'}
 			}
@@ -225,33 +220,45 @@ export class TokenModel {
 		return undefined
 	}
 
-	/** TokenNode-shaped read of a handle for the boundary facade: fresh address over the live bindings. */
-	#view(handle: TokenHandle): TokenNode | undefined {
+	/** View of a handle for the boundary facade: fresh address over the live bindings. */
+	#view(handle: TokenHandle): TokenView | undefined {
 		const bindings = handle.node()
 		if (!bindings) return undefined
-		const address = handle.address()
-		return {path: address.path, address, ...bindings}
+		return {handle, address: handle.address(), ...bindings}
 	}
 
-	#nodeFor(address: TokenAddress): TokenNode | undefined {
-		const handle = this.#pipeline.byPath().get(pathKey(address.path))
-		return handle ? this.#view(handle) : undefined
-	}
-
-	*#views(): IterableIterator<TokenNode> {
+	*#views(): IterableIterator<TokenView> {
 		for (const handle of this.#pipeline.byPath().values()) {
 			const view = this.#view(handle)
 			if (view) yield view
 		}
 	}
 
+	/**
+	 * Fail-closed address check against the CURRENT reconciled tree (path AND
+	 * object identity must match). Node-layer views carry fresh token objects,
+	 * so this only rejects while a structural apply awaits its bind (the layer
+	 * is one generation stale) and for foreign or removed addresses.
+	 */
+	#resolveAddress(address: TokenAddress): Token | undefined {
+		const current = resolvePath(this.#reconciled().tokens, address.path)
+		return current === address.token ? current : undefined
+	}
+
+	/** Id-bridged view of a current-tree token's bound node (boundary internals; reached only behind {@link #resolveAddress}). */
+	#viewOf(token: Token): TokenView | undefined {
+		const id = this.#identity.idFor(token)
+		const handle = id === undefined ? undefined : this.#nodes.get(id)
+		return handle ? this.#view(handle) : undefined
+	}
+
 	#boundaryContext(): BoundaryContext {
 		return {
 			container: this.host.container() ?? undefined,
 			tokens: this.#reconciled().tokens,
-			index: this.#index(),
+			resolveAddress: address => this.#resolveAddress(address),
+			viewOf: token => this.#viewOf(token),
 			locate: node => this.#locate(node),
-			nodeFor: address => this.#nodeFor(address),
 			nodes: () => this.#views(),
 		}
 	}
@@ -342,19 +349,24 @@ export class TokenModel {
 	placeCaret(target: number | {address: TokenAddress; offset: number}): boolean {
 		if (typeof target === 'number') return this.#placeAtRawPosition(target)
 
-		const node = this.#nodeFor(target.address)
-		const resolved = this.#index().resolveAddress(target.address)
-		if (!node || !resolved) return false
+		// Id-bridged resolution: the address's token may be a stale tree() object
+		// after text-path commits — accept it iff its identity currently lives at
+		// the addressed path. handleOf's latch gate keeps this fail-closed while
+		// a structural apply awaits its bind.
+		const handle = this.handleFor(target.address)
+		if (!handle || this.handleOf(target.address.token) !== handle) return false
+		const bindings = handle.node()
+		if (!bindings) return false
 
-		if (resolved.type === 'mark' && !node.textElement) {
-			focusIfNeeded(node.tokenElement)
-			placeAtChildBoundary(node.tokenElement, target.offset <= 0 ? 'start' : 'end')
+		if (handle.token().type === 'mark' && !bindings.textElement) {
+			focusIfNeeded(bindings.tokenElement)
+			placeAtChildBoundary(bindings.tokenElement, target.offset <= 0 ? 'start' : 'end')
 			return true
 		}
 
-		const surface = node.textElement ?? node.tokenElement
+		const surface = bindings.textElement ?? bindings.tokenElement
 		focusIfNeeded(surface)
-		if (node.textElement) placeAtTextOffset(node.textElement, target.offset)
+		if (bindings.textElement) placeAtTextOffset(bindings.textElement, target.offset)
 		return true
 	}
 
@@ -440,7 +452,9 @@ export class TokenModel {
 			}
 			if (handle.token().type !== 'mark') continue
 			if (options.readOnly) bindings.tokenElement.removeAttribute('tabindex')
-			else if (bindings.tokenElement.tabIndex !== 0) bindings.tokenElement.tabIndex = 0
+			// Attribute check, not the property: natively focusable mark roots
+			// (e.g. <button>) report tabIndex 0 without carrying the attribute.
+			else if (bindings.tokenElement.getAttribute('tabindex') !== '0') bindings.tokenElement.tabIndex = 0
 		}
 	}
 

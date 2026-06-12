@@ -8,6 +8,7 @@ import {createRowContent} from '../block/createRowContent'
 import {addDragRow, mergeDragRows, canMergeRows} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Token, TokenHandle} from '../tokens'
+import {freshTokens} from '../tokens'
 import {rawRangeFromInputEvent} from './inputRange'
 
 function isTextLikeRow(token: Token): boolean {
@@ -21,8 +22,11 @@ type ActiveRow = {
 }
 
 function rowHandle(store: KbCtx, rowIndex: number): TokenHandle | undefined {
-	const address = store.tokens.index().addressFor([rowIndex])
-	return address ? store.tokens.handleFor(address) : undefined
+	// Row identity from the render tree, liveness from the id bridge — the
+	// tree token may be a stale object after text-path commits, the handle is
+	// always the current one (and undefined while a structural apply is unbound).
+	const row = store.tokens.tree().at(rowIndex)
+	return row ? store.tokens.handleOf(row) : undefined
 }
 
 function findActiveRow(store: KbCtx): ActiveRow | undefined {
@@ -67,7 +71,9 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	if (!active) return
 	const {handle, index: blockIndex} = active
 
-	const rows = store.tokens.current()
+	// Fresh read: row positions slice value.current() — stale tree() positions
+	// after a text-path commit would cut the wrong ranges.
+	const rows = freshTokens(store.tokens)
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
@@ -128,7 +134,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	event.preventDefault()
 	const {index: blockIndex} = active
 
-	const rows = store.tokens.current()
+	const rows = freshTokens(store.tokens)
 	const token = rows[blockIndex]
 	const value = store.value.current()
 
@@ -148,10 +154,9 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 
 function focusRow(store: KbCtx, token: Token, rowIndex: number, caret: 'start' | 'end'): void {
 	if (token.type === 'mark') {
-		const tokenIndex = store.tokens.index()
-		const path = tokenIndex.pathFor(token)
-		const address = path ? tokenIndex.addressFor(path) : undefined
-		if (address && store.selection.placeAtAddress(address, caret)) return
+		// A row's path is its index by construction; the (fresh) token rides
+		// along for placeAtAddress's identity check.
+		if (store.selection.placeAtAddress({path: [rowIndex], token}, caret)) return
 	}
 
 	const row = rowHandle(store, rowIndex)
@@ -164,7 +169,8 @@ function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction
 	const active = findActiveRow(store)
 	if (!active) return
 	const {handle, index: blockIndex} = active
-	const rowCount = store.tokens.current().length
+	// Count-only read: row COUNT is structural, so the render tree is never stale here.
+	const rowCount = store.tokens.tree().length
 
 	if (direction === 'left') {
 		if ((handle.caretIndex() ?? 0) !== 0) return
@@ -190,7 +196,7 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 	const active = findActiveRow(store)
 	if (!active) return
 	const {handle, index: blockIndex} = active
-	const rowCount = store.tokens.current().length
+	const rowCount = store.tokens.tree().length
 
 	if (event.key === KEYBOARD.UP) {
 		if (!handle.caretOnFirstLine()) return

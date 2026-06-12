@@ -2,14 +2,6 @@ import type {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import type {EditHint} from './tokenIdentity'
 
-/**
- * Escape hatch for A/B debugging: when `false`, TokenModel full-parses every
- * value change instead of using the windowed incremental reparse. Flip in
- * source to disable; no runtime override by design (a runtime flag would
- * require every hot-path caller to re-read it on every keystroke).
- */
-export const INCREMENTAL: boolean = true
-
 /** Stabilization budget: window widenings before the full-parse fallback. */
 const MAX_WIDENINGS = 3
 

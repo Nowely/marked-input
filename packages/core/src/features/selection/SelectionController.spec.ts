@@ -2,6 +2,7 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
+import {resolvePath} from '../tokens/tokenIndex'
 
 function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
@@ -200,8 +201,8 @@ describe('SelectionController', () => {
 		})
 	})
 
-	describe('restoration via bridge.indexed', () => {
-		it('restores range after indexed fires', () => {
+	describe('restoration via tokens.changed', () => {
+		it('restores range after the model announces consistency', () => {
 			const store = new Store()
 			const container = document.createElement('div')
 			const span = document.createElement('span')
@@ -336,10 +337,10 @@ describe('SelectionController', () => {
 	describe('boundary mapping', () => {
 		it('maps registered child sequence host boundaries to nested child positions', () => {
 			const {store, container, host} = mountStructuralNestedWithChildSequence()
-			const tokenIndex = store.tokens.index()
-			const beforeToken = tokenIndex.resolve([1, 0])
-			const innerToken = tokenIndex.resolve([1, 1])
-			const afterToken = tokenIndex.resolve([1, 2])
+			const tree = store.tokens.tree()
+			const beforeToken = resolvePath(tree, [1, 0])
+			const innerToken = resolvePath(tree, [1, 1])
+			const afterToken = resolvePath(tree, [1, 2])
 
 			expect(beforeToken?.position.end).toBe(9)
 			expect(innerToken?.position.start).toBe(9)

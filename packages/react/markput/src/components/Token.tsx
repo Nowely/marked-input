@@ -1,33 +1,35 @@
-import type {Token as TokenType} from '@markput/core'
+import type {Token as TokenType, TokenPath} from '@markput/core'
 import {memo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {TokenContext} from '../lib/providers/TokenContext'
 import {TokenChildren} from './TokenChildren'
 
-export const Token = memo(({token}: {token: TokenType}) => {
-	const {resolveMarkSlot, key, index, store} = useMarkput(s => ({
+/**
+ * `path` arrives by construction: the parent that maps the tree knows every
+ * child's index, so no per-token lookup is needed — and none would work here,
+ * since during a structural render the freshly published tree is not bound to
+ * the node layer yet.
+ */
+export const Token = memo(({token, path}: {token: TokenType; path: TokenPath}) => {
+	const {resolveMarkSlot, key, store} = useMarkput(s => ({
 		resolveMarkSlot: s.slots.mark,
 		key: s.key,
-		index: s.tokens.structureIndex,
 		store: s,
 	}))
-	const path = index.pathFor(token)
-	const address = path ? index.addressFor(path) : undefined
-	if (!path || !address) return null
 
 	const [Component, props] = resolveMarkSlot(token)
 	const children =
 		token.type === 'mark' && token.children.length > 0 ? (
 			<TokenChildren ownerPath={path}>
-				{token.children.map(child => (
-					<Token key={key.get(child)} token={child} />
+				{token.children.map((child, i) => (
+					<Token key={key.get(child)} token={child} path={[...path, i]} />
 				))}
 			</TokenChildren>
 		) : undefined
 
 	return (
-		<TokenContext value={{store, token, address}}>
+		<TokenContext value={{store, token, address: {path, token}}}>
 			{children ? <Component {...props}>{children}</Component> : <Component {...props} />}
 		</TokenContext>
 	)

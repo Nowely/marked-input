@@ -13,18 +13,17 @@ import styles from '@markput/core/styles.module.css'
 
 interface BlockProps {
 	token: TokenType
+	blockIndex: number
 }
 
-export const Block = memo(({token}: BlockProps) => {
-	const {blockStore, action, Component, slotProps, isDragging, tokens} = useMarkput(s => ({
+export const Block = memo(({token, blockIndex}: BlockProps) => {
+	const {blockStore, action, Component, slotProps, isDragging} = useMarkput(s => ({
 		blockStore: s.block.get(token),
 		action: s.block.action,
 		Component: s.slots.blockComponent,
 		slotProps: s.slots.blockProps,
 		isDragging: s.block.get(token).state.isDragging,
-		tokens: s.tokens.structure,
 	}))
-	const blockIndex = tokens.indexOf(token)
 
 	const setBlockRef = (el: HTMLElement | null) => {
 		blockStore.attachContainer(el, blockIndex, {action})
@@ -40,15 +39,15 @@ export const Block = memo(({token}: BlockProps) => {
 			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.style is raw and needs casting to CSSProperties
 			style={{opacity: isDragging ? 0.4 : 1, ...(slotProps?.style as CSSProperties | undefined)}}
 		>
-			<DropIndicator token={token} position="before" />
+			<DropIndicator token={token} blockIndex={blockIndex} position="before" />
 
 			<DragHandle token={token} blockIndex={blockIndex} />
 
-			<Token token={token} />
+			<Token token={token} path={[blockIndex]} />
 
-			<DropIndicator token={token} position="after" />
+			<DropIndicator token={token} blockIndex={blockIndex} position="after" />
 
-			<BlockMenu token={token} />
+			<BlockMenu token={token} blockIndex={blockIndex} />
 		</Component>
 	)
 })

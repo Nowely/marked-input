@@ -4,19 +4,29 @@ import type {Markup} from '.'
 import {Store} from '../../store/Store'
 import {MarkController} from './MarkController'
 
+/**
+ * Mounted fixture: one span per top-level token (marks render childless),
+ * bound on rendered(). The model resolves through the live node layer, so a
+ * controller needs a bound store — there is no headless resolution path.
+ */
 function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {
 	const store = new Store()
 	store.props.set({defaultValue: value, Mark: () => null, options: [{markup}]})
-	const token = store.tokens.current().find(t => t.type === 'mark')
+	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
+	container.replaceChildren(...store.tokens.tree().map(() => document.createElement('span')))
+	store.host.rendered()
+	const token = store.tokens.tree().find(t => t.type === 'mark')
 	if (!token) throw new Error('expected parsed mark token')
 	const controller = MarkController.fromToken(store, token)
 	return {store, token, controller}
 }
 
 /**
- * Mounted fixture (manual-adapter pattern from commitRouting.spec.ts):
- * text 'he' [0,2], mark '@[x]' [2,6], text 'llo' [6,9] — with a committed DOM
- * index, so text-path edits run #patchCommit and the identity bridge is live.
+ * Mounted fixture: text 'he' [0,2], mark '@[x]' [2,6], text 'llo' [6,9] —
+ * with a bound DOM, so text-path edits patch in place and the identity
+ * bridge is live.
  */
 function mountedSetup() {
 	const store = new Store()
@@ -34,7 +44,7 @@ function mountedSetup() {
 	document.body.append(container)
 	store.host.container(container)
 	store.host.rendered()
-	const token = store.tokens.structure().find(t => t.type === 'mark')
+	const token = store.tokens.tree().find(t => t.type === 'mark')
 	if (!token) throw new Error('expected parsed mark token')
 	const controller = MarkController.fromToken(store, token)
 	return {store, token, controller}
@@ -83,12 +93,18 @@ describe('MarkController', () => {
 		expect(store.value.current()).not.toContain('__slot__')
 	})
 
-	it('fails closed when address is stale', () => {
+	it('fails closed when the mark is gone from the value', () => {
 		const {store, controller} = setup()
-		store.value.current('different @[token]')
+		// Wholesale replacement WITHOUT a successor mark: the identity dies, the
+		// structural apply latches, and the captured address no longer resolves
+		// in the new tree — the mutation must no-op. (A replacement mark of the
+		// same descriptor in the same slot would INHERIT the identity instead —
+		// continuity the id bridge deliberately preserves, pinned below in the
+		// identity-bridge describe.)
+		store.value.current('different text')
 
 		controller.update({value: 'bad'})
-		expect(store.value.current()).toBe('different @[token]')
+		expect(store.value.current()).toBe('different text')
 	})
 
 	it('does not mutate in read-only mode', () => {
@@ -119,7 +135,7 @@ describe('MarkController across text-path commits (identity bridge)', () => {
 		store.edit.replace({start: 0, end: 0}, 'XX')
 		expect(store.value.current()).toBe('XXhe@[x]llo')
 		// Sanity: reconcile replaced the mark object — the captured token is stale
-		expect(store.tokens.current().find(t => t.type === 'mark')).not.toBe(token)
+		expect(store.tokens.handleOf(token)?.token()).not.toBe(token)
 
 		controller.update({value: 'markput'})
 
@@ -155,21 +171,21 @@ describe('MarkController across text-path commits (identity bridge)', () => {
 	it('still fails closed once the mark is structurally removed', () => {
 		const {store, token, controller} = mountedSetup()
 
-		// Remove the mark entirely: structural path; the identity is gone from #byId.
+		// Remove the mark entirely: structural path; the identity is gone.
 		store.edit.replace({start: 2, end: 6}, '')
 		expect(store.value.current()).toBe('hello')
 
-		// Update the DOM and rebuild #byId so freshAddressFor exercises the
-		// intended "id no longer indexed" path rather than relying on the
-		// pre-rebuild identity check inside resolveAddress (tokenIndex.ts).
-		// Two layers of protection:
-		//   1. freshAddressFor returns undefined (id gone from #byId after rebuild)
-		//   2. resolveAddress's OBJECT-IDENTITY check covers the pre-rebuild window
+		// Render the new tree so bind kills the removed mark's handle and the
+		// bridge exercises the intended "identity gone" path rather than the
+		// pre-bind latch. Two layers of protection:
+		//   1. handleOf returns undefined (handle killed and dropped at bind)
+		//   2. the captured address's object-identity check against the new tree
+		//      covers the latched pre-bind window
 		const container = document.querySelector('div')!
 		container.replaceChildren(document.createElement('span'))
 		store.host.rendered()
 
-		expect(store.tokens.freshAddressFor(token)).toBeUndefined()
+		expect(store.tokens.handleOf(token)).toBeUndefined()
 
 		controller.update({value: 'bad'})
 

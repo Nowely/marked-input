@@ -2,7 +2,8 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {watch} from '../../shared/signals/index.js'
 import {Store} from '../../store/Store'
-import {TokenHandle} from './TokenHandle'
+import {TokenHandle} from './model/LiveNode'
+import {createTextToken} from './parser/utils/createTextToken'
 
 function mountInline(value: string) {
 	const store = new Store()
@@ -16,13 +17,13 @@ function mountInline(value: string) {
 	return {store, container, span}
 }
 
-describe('TokenModel index', () => {
-	it('exposes indexed event', () => {
+describe('TokenModel lookups', () => {
+	it('exposes the changed event', () => {
 		const store = new Store()
-		expect(typeof store.tokens.indexed).toBe('function')
+		expect(typeof store.tokens.changed).toBe('function')
 	})
 
-	it('fires indexed after rendered()', () => {
+	it('fires changed after rendered()', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hi'})
 		const container = document.createElement('div')
@@ -31,12 +32,12 @@ describe('TokenModel index', () => {
 		document.body.append(container)
 		store.host.container(container)
 
-		const onIndexed = vi.fn()
-		watch(store.tokens.indexed, onIndexed)
+		const onChanged = vi.fn()
+		watch(store.tokens.changed, onChanged)
 
 		store.host.rendered()
 
-		expect(onIndexed).toHaveBeenCalledTimes(1)
+		expect(onChanged).toHaveBeenCalledTimes(1)
 		container.remove()
 	})
 
@@ -77,15 +78,15 @@ describe('TokenModel index', () => {
 		container.remove()
 	})
 
-	it('handleFor(address) returns the handle registered for that address', () => {
+	it('handleFor(address) returns the handle bound at that path', () => {
 		const {store, container, span} = mountInline('hello')
-		const address = store.tokens.index().addressFor([0])!
+		const address = {path: [0], token: store.tokens.tree()[0]}
 
 		expect(store.tokens.handleFor(address)?.element()).toBe(span)
 		container.remove()
 	})
 
-	it('handles() iterates all indexed tokens as live handles', () => {
+	it('handles() iterates all bound tokens as live handles', () => {
 		const {store, container, span} = mountInline('hello')
 
 		const all = [...store.tokens.handles()]
@@ -102,8 +103,7 @@ describe('TokenModel index', () => {
 		// intentionally NOT attaching span to a container nor setting store.host.container()
 
 		expect(store.tokens.handleAt(span)).toBeUndefined()
-		const address = store.tokens.index().addressFor([0])!
-		expect(store.tokens.handleFor(address)).toBeUndefined()
+		expect(store.tokens.handleFor({path: [0], token: createTextToken('hello')})).toBeUndefined()
 	})
 
 	it('setting selection range before any commit has run does not throw', () => {

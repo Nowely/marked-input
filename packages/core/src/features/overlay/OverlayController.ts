@@ -10,9 +10,8 @@ import type {OverlaySlot} from '../slots'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
-import type {Token} from '../tokens'
+import type {Token, TokenModel} from '../tokens'
 import {annotate} from '../tokens'
-import type {TokenModel} from '../tokens/TokenModel'
 import {TriggerFinder} from './TriggerFinder'
 
 export class OverlayController {

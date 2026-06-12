@@ -71,6 +71,13 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	let byElement = new WeakMap<HTMLElement, TokenHandle>()
 	let controlRoots = new WeakSet<HTMLElement>()
 
+	// The latest RECONCILED tree — what bind projects onto the node layer.
+	// Deliberately not tree(): the render tree keeps its (stale) reference
+	// across text applies, and a re-render arriving after one (any unrelated
+	// adapter update) must re-bind the fresh tokens, not regress the node
+	// layer — and the DOM text with it — to the pre-edit generation.
+	let latest: Token[] = []
+
 	let pendingStructural = false
 	let pendingChangeset: Changeset = REBIND_CHANGESET
 	let committing = false
@@ -80,6 +87,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		committing = true
 		try {
 			const {tokens, changeset} = result
+			latest = tokens
 			// Routing: text path ⇔ delta with no added/removed — IF the node layer
 			// is current. While the structural latch is up the layer is one
 			// generation stale, so every apply folds into the pending window
@@ -115,9 +123,9 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 
 	/**
 	 * Text branch: the adapter never re-renders (tree keeps its reference), so
-	 * the bound elements and paths are all still live. Two passes, like the old
-	 * preparePatch: resolve everything pure first — ANY miss abandons the branch
-	 * before a single mutation and the caller escalates structurally. Resolution
+	 * the bound elements and paths are all still live. Two passes: resolve
+	 * everything pure first — ANY miss abandons the branch before a single
+	 * mutation and the caller escalates structurally. Resolution
 	 * honesty: changeset buckets carry ids only, so id → (token, path) comes from
 	 * ONE read-only depth-first walk of the new tree — O(tree) time, O(change)
 	 * allocations — and tree/byPath/byElement stay untouched here.
@@ -171,8 +179,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	/**
 	 * Structural branch: publish the new tree (reference change ⇔ the renderer
 	 * must run) and latch until the freshly painted DOM is bound. `selfHeal`
-	 * (the text branch escalating, matching the old #patchCommit → #rebuildIndex)
-	 * also binds the CURRENT DOM right away — its structure is nominally
+	 * (the text branch escalating) also binds the CURRENT DOM right away — its structure is nominally
 	 * unchanged on that path, so the node layer recovers without waiting for the
 	 * adapter, whose later onRendered() just re-binds idempotently.
 	 */
@@ -189,7 +196,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	function bindAndAnnounce(container: HTMLElement): void {
 		const result = bind({
 			container,
-			tokens: tree(),
+			tokens: latest,
 			idFor: deps.idFor,
 			nodes: deps.nodes,
 			controlElements: deps.controlElements(),

@@ -13,7 +13,6 @@ const props = defineProps<{token: TokenType; blockIndex: number}>()
 const store = useStore()
 const readOnly = useMarkput(s => s.props.readOnly)
 const draggable = useMarkput(s => s.props.draggable)
-const index = useMarkput(s => s.tokens.structureIndex)
 const blockStore = store.block.get(props.token)
 const isDragging = useMarkput(() => blockStore.state.isDragging)
 const isHovered = useMarkput(() => blockStore.state.isHovered)
@@ -22,15 +21,13 @@ const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))
 let panelControlRef: ((element: HTMLElement | null) => void) | undefined
 
 const getPanelControlRef = () => {
-	if (panelControlRef) return panelControlRef
-	const path = index.value.pathFor(props.token)
-	if (!path) return undefined
-	panelControlRef = store.tokens.control(path)
+	// A row's path is its block index by construction.
+	panelControlRef ??= store.tokens.control([props.blockIndex])
 	return panelControlRef
 }
 
 const setPanelRef = (el: unknown) => {
-	getPanelControlRef()?.(el as HTMLElement | null)
+	getPanelControlRef()(el as HTMLElement | null)
 }
 
 const setGripRef = (el: unknown) => {

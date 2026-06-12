@@ -224,6 +224,28 @@ describe('createCommitPipeline', () => {
 			expect(pipeline.tree()).toBe(treeBefore)
 			expect(text2.textContent).toBe('llo')
 		})
+
+		it('a re-render after a text apply re-binds the FRESH tokens, never the stale render tree', () => {
+			// tree() keeps its reference across text applies — its token objects
+			// are the pre-edit generation. An unrelated adapter re-render (any
+			// parent update) must re-bind the reconciled tokens: binding the
+			// render tree would regress the node layer AND rewrite the patched
+			// surface text back to the pre-edit content.
+			const harness = createHarness()
+			const {pipeline} = harness
+			const {text2} = mountValue(harness)
+
+			harness.apply('he@[x]llo!')
+			expect(text2.textContent).toBe('llo!')
+			const handle = pipeline.byElement(text2)
+			expect(handle?.token().content).toBe('llo!')
+
+			pipeline.onRendered()
+
+			expect(text2.textContent).toBe('llo!')
+			expect(pipeline.byElement(text2)?.token().content).toBe('llo!')
+			expect(pipeline.byElement(text2)).toBe(handle)
+		})
 	})
 
 	describe('structural branch (quiet until rendered)', () => {
@@ -389,7 +411,7 @@ describe('createCommitPipeline', () => {
 	})
 
 	describe('escalation (abandon the text branch, self-heal structurally)', () => {
-		// ports: commitRouting 'textChanged mark escalates to structural branch'
+		// ports the old routing case: textChanged mark escalates to the structural branch
 		it('a textChanged MARK routes structural: new tree reference, immediate bind, changed fired without a render', () => {
 			const harness = createHarness()
 			const {pipeline} = harness
@@ -433,15 +455,15 @@ describe('createCommitPipeline', () => {
 			expect(pipeline.byPath().get('1')).toBe(markHandle)
 		})
 
-		// ports: preparePatch 'changed id missing from node map escalates to structural'
+		// ports the old patch pass-1 case: changed id missing from the node map escalates
 		it('a textChanged id with no handle abandons the patch and self-heals through an immediate bind', () => {
 			const harness = createHarness()
 			const {pipeline, nodes} = harness
 			const {text2} = mountValue(harness)
 			const tail = pipeline.byPath().get('2')
 			if (!tail) throw new Error('expected tail handle')
-			// Simulate a lost projection (the old preparePatch "changed id missing"
-			// case): the shell owns the map, so the seam is the map itself.
+			// Simulate a lost projection (the old pass-1 "changed id missing" case):
+			// the shell owns the map, so the seam is the map itself.
 			nodes.delete(tail.id)
 			const changedSpy = vi.fn()
 			watch(pipeline.changed, changedSpy)
@@ -458,7 +480,7 @@ describe('createCommitPipeline', () => {
 			expect(text2.textContent).toBe('llo!')
 		})
 
-		// ports: preparePatch 'missing textElement escalates to structural branch'
+		// ports the old patch pass-1 case: missing text surface escalates
 		it('a text target without a surface (unbound after a DOM bail) escalates and keeps the node layer current', () => {
 			const harness = createHarness()
 			const {pipeline, nodes, container} = harness
@@ -493,7 +515,7 @@ describe('createCommitPipeline', () => {
 			expect(pipeline.byPath().get('2')).toBe(tail)
 		})
 
-		// ports: commitRouting 'id absent from new tree routes structural (stale-tree guard)'
+		// ports the old routing case: id absent from the new tree routes structural
 		it('a textChanged id absent from the new tree routes structural (conservative stale-tree guard)', () => {
 			const harness = createHarness()
 			const {pipeline} = harness

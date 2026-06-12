@@ -8,13 +8,13 @@ import {useStore} from './useStore'
 
 export const useMark = (): MarkController => {
 	const store = useStore()
-	const tokenRef = inject(TOKEN_KEY)
+	const addressRef = inject(TOKEN_KEY)
 
-	if (!tokenRef) {
+	if (!addressRef) {
 		throw new Error('Token not found. Make sure to use useMark inside a Token provider.')
 	}
 
-	const token = tokenRef.value
+	const token = addressRef.value.token
 	if (token.type !== 'mark') throw new Error('useMark must be called within a mark token context')
 
 	useMarkput(s => s.props.readOnly)

@@ -1,6 +1,7 @@
 import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
+import {resolvePath} from '../tokens/tokenIndex'
 
 type KbCtx = Pick<Store, 'selection' | 'props' | 'tokens'>
 
@@ -33,9 +34,8 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 
 	const isFocusedOnMarkElement = active === handle.element() && !handle.hasTextSurface()
 	const address = handle.address()
-
-	const token = store.tokens.index().resolveAddress(address)
-	if (!token) return false
+	// The handle IS the fresh read: its token carries current positions.
+	const token = handle.token()
 
 	if (!isFocusedOnMarkElement) {
 		const selection = store.selection.readRaw()
@@ -50,12 +50,13 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	const path = address.path
 	const siblingIndex = direction === 'prev' ? path[path.length - 1] - 1 : path[path.length - 1] + 1
 	const siblingPath = [...path.slice(0, -1), siblingIndex]
-	const siblingAddress = store.tokens.index().addressFor(siblingPath)
-	if (!siblingAddress) return false
+	const sibling = resolvePath(store.tokens.tree(), siblingPath)
+	if (!sibling) return false
 
 	event.preventDefault()
 	// Address-based placement disambiguates the sibling from any neighbouring
 	// token that shares a boundary position. Position-only placement would pick
-	// the wrong token at text↔mark boundaries.
-	return store.selection.placeAtAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
+	// the wrong token at text↔mark boundaries. (A stale tree() sibling object is
+	// fine: placeAtAddress bridges it to the live handle by identity.)
+	return store.selection.placeAtAddress({path: siblingPath, token: sibling}, direction === 'prev' ? 'end' : 'start')
 }

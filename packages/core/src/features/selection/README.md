@@ -48,8 +48,10 @@ four watches:
   `mousemove` / `mouseup` / `selectionchange`.
 
 **Watches**:
-- `tokens.indexed` → `#reconcileSurfaces` then `#applyRange` (re-applies the
-  stored range after each DOM rebuild).
-- `props.readOnly` → `#reconcileSurfaces`.
-- `isUserSelecting` → `#reconcileSurfaces`.
+- `tokens.changed` → `#applyRange` (re-applies the stored range after each
+  commit, once the DOM is consistent).
+- `props.readOnly` → `#applyEditablePolicy` (computes `{editable, readOnly}`
+  and hands it to `tokens.setEditable` — policy lives here, application in the
+  model).
+- `isUserSelecting` → `#applyEditablePolicy`.
 - `range` → `#applyRange`.

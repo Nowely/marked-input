@@ -1,4 +1,4 @@
-// Canonical export point for the token layer: parsing, indexing, and DOM binding.
+// Canonical export point for the token layer: parsing, the live node model, and the DOM facade.
 
 export {Parser} from './parser/Parser'
 export type {Token, TextToken, MarkToken, Markup, ParseOptions} from './parser/types'
@@ -7,10 +7,10 @@ export {denote} from './parser/utils/denote'
 export {toString} from './parser/utils/toString'
 export {findToken} from './utils/findToken'
 export type {TokenContext} from './utils/findToken'
-export {TokenModel} from './TokenModel'
-export type {SelectionAnchor} from './TokenModel'
-export {TokenHandle} from './TokenHandle'
-export type {TokenChange} from './TokenHandle'
-export type {TokenIndex} from './tokenIndex'
+export {freshTokens} from './utils/freshTokens'
+export {TokenModel, createTokenModel} from './model/TokenModel'
+export type {SelectionAnchor} from './model/TokenModel'
+export {TokenHandle} from './model/LiveNode'
+export type {TokenChange} from './model/LiveNode'
 export type {Changeset, EditHint} from './tokenIdentity'
 export {MarkController} from './MarkController'

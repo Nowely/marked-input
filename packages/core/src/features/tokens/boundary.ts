@@ -1,16 +1,34 @@
 import type {TokenAddress} from '../../shared/editorContracts'
-import type {Lookup, TokenNode} from './domTypes'
+import type {TokenHandle} from './model/LiveNode'
 import type {Token} from './parser/types'
 import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
-import type {TokenIndex} from './tokenIndex'
+
+/** A bound token as the facade reads it: fresh address over the live DOM bindings, plus the handle itself. */
+export type TokenView = {
+	readonly handle: TokenHandle
+	readonly address: TokenAddress
+	readonly tokenElement: HTMLElement
+	readonly textElement?: HTMLElement
+	readonly rowElement?: HTMLElement
+	readonly childSequenceHost?: HTMLElement
+}
+
+export type Lookup = {readonly kind: 'control'} | {readonly kind: 'token'; readonly node: TokenView}
 
 export type BoundaryContext = {
 	container: HTMLElement | undefined
 	tokens: readonly Token[]
-	index: TokenIndex
+	/**
+	 * Fail-closed address check: the address's token object must still sit at
+	 * its path in the CURRENT tree. Views carry fresh tokens by construction,
+	 * so this only rejects during the structural reconcile → bind window
+	 * (node layer one generation stale) and for foreign addresses.
+	 */
+	resolveAddress(address: TokenAddress): Token | undefined
+	/** Id-bridged view of a current-tree token's bound node, if any. */
+	viewOf(token: Token): TokenView | undefined
 	locate(node: Node): Lookup | undefined
-	nodeFor(address: TokenAddress): TokenNode | undefined
-	nodes(): IterableIterator<TokenNode>
+	nodes(): IterableIterator<TokenView>
 }
 
 /** Map a DOM boundary (node, offset) to an absolute document position. */
@@ -27,7 +45,7 @@ export function rawPositionFromBoundary(
 	const lookup = ctx.locate(node)
 	if (lookup?.kind !== 'token') return undefined
 
-	const token = ctx.index.resolveAddress(lookup.node.address)
+	const token = ctx.resolveAddress(lookup.node.address)
 	if (!token) return undefined
 
 	if (node instanceof HTMLElement && node === lookup.node.childSequenceHost) {
@@ -87,17 +105,15 @@ function fromTokenChildBoundary(
 	affinity: 'before' | 'after'
 ): number | undefined {
 	if (token.type === 'text') {
-		const path = ctx.index.pathFor(token) ?? []
-		const address = ctx.index.addressFor(path)
-		const textElement = address ? ctx.nodeFor(address)?.textElement : undefined
+		const textElement = ctx.viewOf(token)?.textElement
 		if (!textElement || textLength(textElement) === 0) return token.position.start
 	}
 
 	const before = lookupTokenDescendant(ctx, tokenElement.childNodes.item(offset - 1))
 	const after = lookupTokenDescendant(ctx, tokenElement.childNodes.item(offset))
 	if (before && after) {
-		const beforeToken = ctx.index.resolveAddress(before.address)
-		const afterToken = ctx.index.resolveAddress(after.address)
+		const beforeToken = ctx.resolveAddress(before.address)
+		const afterToken = ctx.resolveAddress(after.address)
 		if (beforeToken && afterToken) {
 			return affinity === 'before' ? beforeToken.position.end : afterToken.position.start
 		}
@@ -106,7 +122,7 @@ function fromTokenChildBoundary(
 	return affinity === 'before' ? token.position.start : token.position.end
 }
 
-function lookupTokenDescendant(ctx: BoundaryContext, node: Node | null): TokenNode | undefined {
+function lookupTokenDescendant(ctx: BoundaryContext, node: Node | null): TokenView | undefined {
 	if (!node) return undefined
 	const lookup = ctx.locate(node)
 	return lookup?.kind === 'token' ? lookup.node : undefined
@@ -114,13 +130,13 @@ function lookupTokenDescendant(ctx: BoundaryContext, node: Node | null): TokenNo
 
 /** Text token containing `rawPosition`, else the next one after it. */
 export function textTargetAt(
-	ctx: Pick<BoundaryContext, 'nodes' | 'index'>,
+	ctx: Pick<BoundaryContext, 'nodes' | 'resolveAddress'>,
 	rawPosition: number
-): {node: TokenNode; start: number; end: number} | undefined {
-	const candidates: Array<{node: TokenNode; start: number; end: number}> = []
+): {node: TokenView; start: number; end: number} | undefined {
+	const candidates: Array<{node: TokenView; start: number; end: number}> = []
 	for (const node of ctx.nodes()) {
 		if (!node.textElement) continue
-		const resolved = ctx.index.resolveAddress(node.address)
+		const resolved = ctx.resolveAddress(node.address)
 		if (resolved?.type !== 'text') continue
 		candidates.push({node, start: resolved.position.start, end: resolved.position.end})
 	}
@@ -130,17 +146,13 @@ export function textTargetAt(
 	return candidates.find(c => c.start >= rawPosition)
 }
 
-/**
- * Mark token whose start or end boundary sits exactly at `rawPosition`.
- * Consumed by TokenModel's placement commands (landing in the next task);
- * currently mirrored by SelectionController's private copy until that migration completes.
- */
+/** Mark token whose start or end boundary sits exactly at `rawPosition`. */
 export function markBoundaryAt(
-	ctx: Pick<BoundaryContext, 'nodes' | 'index'>,
+	ctx: Pick<BoundaryContext, 'nodes' | 'resolveAddress'>,
 	rawPosition: number
 ): {element: HTMLElement; position: {start: number; end: number}} | undefined {
 	for (const node of ctx.nodes()) {
-		const resolved = ctx.index.resolveAddress(node.address)
+		const resolved = ctx.resolveAddress(node.address)
 		if (resolved?.type !== 'mark') continue
 		if (rawPosition !== resolved.position.start && rawPosition !== resolved.position.end) continue
 		return {element: node.tokenElement, position: resolved.position}

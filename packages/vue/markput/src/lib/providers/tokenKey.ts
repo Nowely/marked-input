@@ -1,4 +1,5 @@
-import type {Token} from '@markput/core'
+import type {TokenAddress} from '@markput/core'
 import type {InjectionKey, Ref} from 'vue'
 
-export const TOKEN_KEY: InjectionKey<Ref<Token>> = Symbol('MarkputToken')
+/** Render-time token address: the path arrives from the tree map, frozen at the last structural render. */
+export const TOKEN_KEY: InjectionKey<Ref<TokenAddress>> = Symbol('MarkputToken')

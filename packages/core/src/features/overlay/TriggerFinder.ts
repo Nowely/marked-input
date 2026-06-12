@@ -1,7 +1,7 @@
 // packages/core/src/features/overlay/TriggerFinder.ts
 import {escape} from '../../shared/escape'
 import type {OverlayMatch} from '../../shared/types'
-import type {SelectionAnchor, TokenModel} from '../tokens/TokenModel'
+import type {SelectionAnchor, TokenModel} from '../tokens'
 
 const wordRegex = new RegExp(/^\w*/)
 

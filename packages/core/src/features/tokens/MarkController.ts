@@ -1,7 +1,8 @@
-import type {MarkToken} from '.'
-import type {MarkPatch, MarkSnapshot, TokenAddress} from '../../shared/editorContracts'
+import type {MarkToken, Token} from '.'
+import type {MarkPatch, MarkSnapshot, TokenAddress, TokenPath} from '../../shared/editorContracts'
 import type {Store} from '../../store'
 import {annotate} from './parser/utils/annotate'
+import {resolvePath} from './tokenIndex'
 
 export class MarkController {
 	constructor(
@@ -11,11 +12,11 @@ export class MarkController {
 	) {}
 
 	static fromToken(store: Store, token: MarkToken): MarkController {
-		// Adapters hand in tokens from the reference-stable structure() tree,
-		// which may be stale after text-path commits — bridge by identity to the
-		// current address first. The index lookup remains for tokens that ARE
-		// current (headless stores, first paint before any DOM commit).
-		const address = store.tokens.freshAddressFor(token) ?? MarkController.#addressFromIndex(store, token)
+		// Adapters hand in tokens from the reference-stable tree(), which may be
+		// stale after text-path commits — bridge by identity to the live handle
+		// first. The tree walk remains for tokens that are current but unbound
+		// (structural apply awaiting its bind, transient DOM misalignment).
+		const address = store.tokens.handleOf(token)?.address() ?? MarkController.#addressInTree(store, token)
 
 		return new MarkController(store, address, {
 			value: token.value,
@@ -25,13 +26,10 @@ export class MarkController {
 		})
 	}
 
-	static #addressFromIndex(store: Store, token: MarkToken): TokenAddress {
-		const index = store.tokens.index()
-		const path = index.pathFor(token)
-		if (!path) throw new Error('Cannot create MarkController for unindexed token')
-		const address = index.addressFor(path)
-		if (!address) throw new Error('Cannot create MarkController for unresolved token path')
-		return address
+	static #addressInTree(store: Store, token: MarkToken): TokenAddress {
+		const path = pathOf(store.tokens.tree(), token)
+		if (!path) throw new Error('Cannot create MarkController for a token outside the current tree')
+		return {path, token}
 	}
 
 	get value(): string {
@@ -88,17 +86,31 @@ export class MarkController {
 		// Identity bridge: this controller may have been captured before N
 		// text-path commits (the adapter never re-rendered), leaving the captured
 		// address with a stale token object and stale position. The token's id
-		// survives object replacement and every commit refreshes the id → address
-		// projection, so the bridge yields the CURRENT address — mutations hit
-		// the shifted (correct) range. When the bridge cannot resolve (headless
-		// store, identity gone), fall back to the captured address, where
-		// resolveAddress's identity check keeps the fail-closed no-op semantics.
-		// NOTE: the fail-closed property depends on resolveAddress's OBJECT-IDENTITY
-		// check (tokenIndex.ts) — if that is ever relaxed to path-only, this fallback
-		// must be revisited.
-		const address = this.store.tokens.freshAddressFor(this.address.token) ?? this.address
-		const resolved = this.store.tokens.index().resolveAddress(address)
+		// survives object replacement and the node layer is refreshed by every
+		// commit, so the handle yields the CURRENT token — mutations hit the
+		// shifted (correct) range. When the bridge cannot resolve (identity gone,
+		// or a structural apply awaiting its bind — handleOf's latch gate), fall
+		// back to the captured address; its OBJECT-IDENTITY check against the
+		// render tree keeps the fail-closed no-op semantics.
+		const resolved = this.store.tokens.handleOf(this.address.token)?.token() ?? this.#resolveCaptured()
 		if (resolved?.type !== 'mark') return undefined
 		return resolved
 	}
+
+	#resolveCaptured(): Token | undefined {
+		const current = resolvePath(this.store.tokens.tree(), this.address.path)
+		return current === this.address.token ? current : undefined
+	}
+}
+
+/** Depth-first path of a token in the tree, by object identity. */
+function pathOf(tokens: readonly Token[], target: Token, base: TokenPath = []): TokenPath | undefined {
+	for (let i = 0; i < tokens.length; i++) {
+		const token = tokens[i]
+		if (token === target) return [...base, i]
+		if (token.type !== 'mark') continue
+		const nested = pathOf(token.children, target, [...base, i])
+		if (nested) return nested
+	}
+	return undefined
 }

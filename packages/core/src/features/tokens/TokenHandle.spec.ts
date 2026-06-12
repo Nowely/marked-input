@@ -71,7 +71,7 @@ describe('TokenHandle', () => {
 		expect(second).toBe(first)
 	})
 
-	it('handles() lazily materializes one handle per indexed token, handleFor returns same object', () => {
+	it('handles() yields one handle per bound token, handleFor returns the same object', () => {
 		const {store} = mountInline('hello')
 
 		// Call handles() BEFORE any handleFor/handleAt — must still yield one handle
@@ -79,8 +79,7 @@ describe('TokenHandle', () => {
 		expect(allBefore).toHaveLength(1)
 
 		// handleFor must return the SAME handle object already yielded by handles()
-		const address = store.tokens.index().addressFor([0])
-		if (!address) throw new Error('expected address')
+		const address = {path: [0], token: store.tokens.tree()[0]}
 		const handle = store.tokens.handleFor(address)
 		expect(handle?.address().path).toEqual([0])
 		expect(handle).toBe(allBefore[0])
@@ -108,10 +107,8 @@ describe('TokenHandle', () => {
 		// row, update the DOM to one row, and rendered(). The handle should die.
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
-		// Grab the second row's token element (index path [1])
-		const address1 = store.tokens.index().addressFor([1])
-		if (!address1) throw new Error('expected address for row 1')
-		const handle = store.tokens.handleFor(address1)
+		// Grab the second row's handle (path [1])
+		const handle = store.tokens.handleFor({path: [1], token: store.tokens.tree()[1]})
 		if (!handle) throw new Error('expected handle for row 1')
 
 		const onChange = vi.fn()
@@ -146,9 +143,7 @@ describe('TokenHandle', () => {
 		store.value.current('alpha\n\nbeta\n\n')
 		store.host.rendered()
 
-		const newAddress1 = store.tokens.index().addressFor([1])
-		if (!newAddress1) throw new Error('expected fresh address for row 1')
-		const newHandle = store.tokens.handleFor(newAddress1)
+		const newHandle = store.tokens.handleFor({path: [1], token: store.tokens.tree()[1]})
 		expect(newHandle).not.toBe(handle)
 	})
 
@@ -160,9 +155,7 @@ describe('TokenHandle', () => {
 		// handle object follows its token to path [2] and reports a move.
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
-		const address1 = store.tokens.index().addressFor([1])
-		if (!address1) throw new Error('expected address for row 1')
-		const handle = store.tokens.handleFor(address1)
+		const handle = store.tokens.handleFor({path: [1], token: store.tokens.tree()[1]})
 		if (!handle) throw new Error('expected handle for row 1')
 		expect(handle.text()).toBe('beta\n\n')
 
@@ -193,9 +186,7 @@ describe('TokenHandle', () => {
 		expect(moved.previousAddress.path).toEqual([1])
 
 		// Resolving the shifted address returns the SAME handle object
-		const shiftedAddress = store.tokens.index().addressFor([2])
-		if (!shiftedAddress) throw new Error('expected shifted address')
-		expect(store.tokens.handleFor(shiftedAddress)).toBe(handle)
+		expect(store.tokens.handleFor({path: [2], token: store.tokens.tree()[2]})).toBe(handle)
 	})
 
 	it('handleAt returns "control" inside control elements and undefined outside', () => {

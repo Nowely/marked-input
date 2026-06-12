@@ -9,7 +9,7 @@ import Token from './Token.vue'
 const store = useStore()
 const result = useMarkput(s => ({
 	isBlock: s.props.layout.isBlock,
-	tokens: s.tokens.structure,
+	tokens: s.tokens.tree,
 	key: s.key,
 }))
 
@@ -37,7 +37,12 @@ onUpdated(() => store.host.rendered())
 			/>
 		</template>
 		<template v-else>
-			<Token v-for="token in result.tokens" :key="result.key.get(token)" :token="token" />
+			<Token
+				v-for="(token, index) in result.tokens"
+				:key="result.key.get(token)"
+				:token="token"
+				:path="[index]"
+			/>
 		</template>
 	</component>
 </template>

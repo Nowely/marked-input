@@ -3,6 +3,18 @@ import {describe, it, expect, vi} from 'vitest'
 import {replaceInString} from '../../shared/utils'
 import {Store} from '../../store/Store'
 
+/**
+ * Tokens publish only on a mounted store; a bare container is enough — with
+ * no aligned DOM every commit settles structurally and `tree()` stays exactly
+ * the reconciled parse of the accepted value. Mount AFTER props: the value's
+ * lazy initial reads defaultValue at the model's first read, and mounting IS
+ * a read (real adapters always set props before the container attaches).
+ */
+function mount(store: Store): Store {
+	store.host.container(document.createElement('div'))
+	return store
+}
+
 describe('ValueModel', () => {
 	it('exposes accepted value state', () => {
 		const store = new Store()
@@ -15,56 +27,62 @@ describe('ValueModel', () => {
 	it('initializes from controlled value on enable', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
+		mount(store)
 		expect(store.value.current()).toBe('hello')
-		expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.tree()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
 	it('initializes from defaultValue when uncontrolled', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
+		mount(store)
 		expect(store.value.current()).toBe('hello')
-		expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.tree()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
 	it('controlled prop echo commits current and tokens', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
+		mount(store)
 		store.props.set({value: 'world'})
 
 		expect(store.value.current()).toBe('world')
-		expect(store.tokens.current()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+		expect(store.tokens.tree()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 	})
 
 	it('falls back to defaultValue when controlled value becomes undefined', () => {
 		const store = new Store()
 		store.props.set({value: 'hello', defaultValue: 'default'})
+		mount(store)
 		store.props.set({value: undefined})
 
 		expect(store.props.value()).toBeUndefined()
 		expect(store.value.current()).toBe('default')
-		expect(store.tokens.current()).toEqual([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
+		expect(store.tokens.tree()).toEqual([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
 	})
 
 	it('readOnly rejects editor-originated range replacement', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
+		mount(store)
 		store.value.current('world')
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('hello')
-		expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.tree()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
 	it('readOnly allows controlled prop updates to replace accepted value', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({value: 'hello', readOnly: true, onChange})
+		mount(store)
 		store.props.set({value: 'world'})
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('world')
-		expect(store.tokens.current()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+		expect(store.tokens.tree()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 	})
 
 	describe('replace()', () => {

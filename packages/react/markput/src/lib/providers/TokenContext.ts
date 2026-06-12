@@ -4,7 +4,8 @@ import {createContext, useContext} from 'react'
 export type TokenContextValue = {
 	readonly store: Store
 	readonly token: Token
-	readonly address?: TokenAddress
+	/** Render-time address: the path arrives from the tree map, frozen at the last structural render. */
+	readonly address: TokenAddress
 }
 
 export const TokenContext = createContext<TokenContextValue | undefined>(undefined)

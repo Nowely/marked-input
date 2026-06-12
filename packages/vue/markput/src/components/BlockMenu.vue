@@ -9,27 +9,24 @@ import Popup from './Popup/Popup.vue'
 
 import styles from '@markput/core/styles.module.css'
 
-const props = defineProps<{token: TokenType}>()
+const props = defineProps<{token: TokenType; blockIndex: number}>()
 
 const store = useStore()
 const blockStore = store.block.get(props.token)
-const index = useMarkput(s => s.tokens.structureIndex)
 const menuOpen = useMarkput(() => blockStore.state.menuOpen)
 const menuPosition = useMarkput(() => blockStore.state.menuPosition)
 
 let menuControlRef: ((element: HTMLElement | null) => void) | undefined
 
 const getMenuControlRef = () => {
-	if (menuControlRef) return menuControlRef
-	const path = index.value.pathFor(props.token)
-	if (!path) return undefined
-	menuControlRef = store.tokens.control(path)
+	// A row's path is its block index by construction.
+	menuControlRef ??= store.tokens.control([props.blockIndex])
 	return menuControlRef
 }
 
 const setMenuRef = (el: HTMLElement | null) => {
 	blockStore.attachMenu(el)
-	getMenuControlRef()?.(el)
+	getMenuControlRef()(el)
 }
 </script>
 

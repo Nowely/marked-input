@@ -6,25 +6,22 @@ import {useStore} from '../lib/hooks/useStore'
 
 import styles from '@markput/core/styles.module.css'
 
-const props = defineProps<{token: TokenType; position: 'before' | 'after'}>()
+const props = defineProps<{token: TokenType; blockIndex: number; position: 'before' | 'after'}>()
 
 const store = useStore()
 const blockStore = store.block.get(props.token)
-const index = useMarkput(s => s.tokens.structureIndex)
 const dropPosition = useMarkput(() => blockStore.state.dropPosition)
 
 let dropControlRef: ((element: HTMLElement | null) => void) | undefined
 
 const getDropControlRef = () => {
-	if (dropControlRef) return dropControlRef
-	const path = index.value.pathFor(props.token)
-	if (!path) return undefined
-	dropControlRef = store.tokens.control(path)
+	// A row's path is its block index by construction.
+	dropControlRef ??= store.tokens.control([props.blockIndex])
 	return dropControlRef
 }
 
 const setDropRef = (el: unknown) => {
-	getDropControlRef()?.(el as HTMLElement | null)
+	getDropControlRef()(el as HTMLElement | null)
 }
 </script>
 

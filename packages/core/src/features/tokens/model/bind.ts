@@ -197,7 +197,7 @@ function walkDom(
 }
 
 /**
- * Mount-time DOM state, absorbed from the per-commit reconcileTextSurfaces sweep:
+ * Mount-time DOM state (absorbed here from the deleted per-commit sweep):
  *
  * - textContent: EVERY bound text surface is reconciled to its token content
  *   (conditional write — an untouched Text node keeps the caret stable). bind
@@ -226,7 +226,9 @@ function applyMountState(
 	}
 	if (token.type !== 'mark' || previous?.tokenElement === bindings.tokenElement) return
 	if (editable.readOnly) bindings.tokenElement.removeAttribute('tabindex')
-	else if (bindings.tokenElement.tabIndex !== 0) bindings.tokenElement.tabIndex = 0
+	// Conditional on the ATTRIBUTE, not the property: natively focusable mark
+	// roots (e.g. <button>) report tabIndex 0 without carrying the attribute.
+	else if (bindings.tokenElement.getAttribute('tabindex') !== '0') bindings.tokenElement.tabIndex = 0
 }
 
 function nonControlChildren(parent: HTMLElement, controlRoots: WeakSet<HTMLElement>): HTMLElement[] {

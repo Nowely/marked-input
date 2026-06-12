@@ -33,13 +33,16 @@ describe('BlockController', () => {
 		expect(typeof store.block.action).toBe('function')
 	})
 
-	it('commits drag edits through current() and writes caret.selection', () => {
+	it('commits drag edits through the live token read and writes caret.selection', () => {
 		store.props.set({
 			layout: 'block',
 			draggable: true,
 			Mark: () => null,
 			options: [{markup: '__slot__\n\n'}],
 		})
+		// Drag actions read the mounted token layer (a bare container is enough:
+		// commits settle structurally and freshTokens stays the reconciled parse).
+		store.host.container(document.createElement('div'))
 		store.value.current('alpha\n\nbeta\n\n')
 		const currentSpy = vi.spyOn(store.value, 'current')
 
@@ -56,6 +59,7 @@ describe('BlockController', () => {
 			Mark: () => null,
 			options: [{markup: '__slot__\n\n'}],
 		})
+		store.host.container(document.createElement('div'))
 		store.value.current('alpha\n\nbeta\n\n')
 
 		let runs = 0
@@ -79,6 +83,7 @@ describe('BlockController', () => {
 			Mark: () => null,
 			options: [{markup: '__slot__\n\n'}],
 		})
+		store.host.container(document.createElement('div'))
 		store.value.current('alpha\n\nbeta\n\n')
 		const replaceSpy = vi.spyOn(store.value, 'replace')
 		const positionSpy = vi.spyOn(store.selection, 'position')

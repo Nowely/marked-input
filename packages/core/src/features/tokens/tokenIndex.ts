@@ -1,13 +1,5 @@
-import type {TokenAddress, TokenPath} from '../../shared/editorContracts'
+import type {TokenPath} from '../../shared/editorContracts'
 import type {Token} from './parser/types'
-
-export type TokenIndex = {
-	pathFor(token: Token): TokenPath | undefined
-	addressFor(path: TokenPath): TokenAddress | undefined
-	resolve(path: TokenPath): Token | undefined
-	resolveAddress(address: TokenAddress): Token | undefined
-	key(path: TokenPath): string
-}
 
 export function pathEquals(a: TokenPath, b: TokenPath): boolean {
 	return a.length === b.length && a.every((part, index) => part === b[index])
@@ -27,33 +19,4 @@ export function resolvePath(tokens: readonly Token[], path: TokenPath): Token | 
 		current = token.type === 'mark' ? token.children : []
 	}
 	return token
-}
-
-export function createTokenIndex(tokens: readonly Token[]): TokenIndex {
-	const paths = new WeakMap<Token, TokenPath>()
-
-	const visit = (items: readonly Token[], parent: TokenPath) => {
-		items.forEach((token, index) => {
-			const path = [...parent, index]
-			paths.set(token, path)
-			if (token.type === 'mark') visit(token.children, path)
-		})
-	}
-
-	visit(tokens, [])
-
-	return {
-		pathFor: token => paths.get(token),
-		addressFor(path) {
-			const token = resolvePath(tokens, path)
-			return token ? {path: [...path], token} : undefined
-		},
-		resolve: path => resolvePath(tokens, path),
-		resolveAddress(address) {
-			const current = resolvePath(tokens, address.path)
-			if (!current || current !== address.token) return undefined
-			return current
-		},
-		key: pathKey,
-	}
 }
