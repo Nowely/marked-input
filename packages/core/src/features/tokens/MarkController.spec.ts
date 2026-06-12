@@ -60,6 +60,15 @@ describe('MarkController', () => {
 		expect(controller.readOnly).toBe(false)
 	})
 
+	it('reads an EMPTY slot as the empty string, not undefined', () => {
+		// '@[user]()' parses with a zero-width slot window (empty slot ≠ no slot —
+		// the Phase 0 parser contract): the controller surfaces '' where a
+		// slotless markup (pinned above) surfaces undefined.
+		const {controller} = setup('hi @[user]()', '@[__value__](__slot__)')
+
+		expect(controller.slot).toBe('')
+	})
+
 	it('removes a mark through the value pipeline', () => {
 		const {store, controller} = setup()
 
