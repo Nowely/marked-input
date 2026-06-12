@@ -224,8 +224,8 @@ After a text-path commit the structure tree lags the value: the edited token's
 `textContent` was patched directly, and the fresh tree lives in `current()`.
 Consequences for adapter authors:
 
-- The default text slot (`'span'`, rendered WITHOUT a `value` prop —
-  `resolveSlot.ts`) never renders content from the token; core owns the text
+- The bare `'span'` fallback (no custom Span configured) is rendered WITHOUT a `value` prop
+  (`resolveSlot.ts` line 60); it never renders content from the token, core owns the text
   via the patch and the reconcile sweep, so it cannot go stale.
 - A custom `Span` receives `value` as a prop; on the text path that prop (and
   any vdom built from it) goes stale while the DOM stays correct.  A custom
