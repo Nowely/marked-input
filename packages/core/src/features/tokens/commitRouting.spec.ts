@@ -1,5 +1,6 @@
-import {afterEach, describe, expect, it} from 'vitest'
+import {afterEach, describe, expect, it, vi} from 'vitest'
 
+import {watch} from '../../shared/signals/index.js'
 import {Store} from '../../store/Store'
 import {isTextPath} from './commitRouting'
 import {Parser} from './parser/Parser'
@@ -301,5 +302,65 @@ describe('TokenModel.freshAddressFor', () => {
 		store.host.rendered()
 
 		expect(store.tokens.freshAddressFor(stale)).toBeUndefined()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Render-count gates (design-spec Phase 3 headline numbers)
+// ---------------------------------------------------------------------------
+
+describe('render-count gates: text edits bypass the renderer, structural edits invoke it', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+	})
+
+	it('3 text edits → structure watcher 0 / indexed 3; structural edit → structure watcher 1, completed by rendered()', () => {
+		const {store, container} = mountWithMark()
+
+		// A watch on structure pulls the computed every flush wave; its callback
+		// only fires when the recomputed value differs (equality cutoff) — exactly
+		// the adapters' subscription semantics (useSyncExternalStore / shallowRef).
+		const structureSpy = vi.fn()
+		watch(store.tokens.structure, structureSpy)
+		const indexedSpy = vi.fn()
+		watch(store.tokens.indexed, indexedSpy)
+
+		// Three consecutive tail text edits — the adapter never re-renders
+		// (rendered() is deliberately not called): 'llo' → 'llo!' → 'llo!!' → 'llo!!!'
+		store.edit.replace({start: 9, end: 9}, '!')
+		store.edit.replace({start: 10, end: 10}, '!')
+		store.edit.replace({start: 11, end: 11}, '!')
+
+		// Gate: text edit → 0 committed renderer invocations…
+		expect(structureSpy).toHaveBeenCalledTimes(0)
+		// …while every edit still committed through the patch path.
+		expect(indexedSpy).toHaveBeenCalledTimes(3)
+		// And the DOM was patched without the renderer.
+		expect(container.children[2].textContent).toBe('llo!!!')
+
+		// One structural edit: 'he@[x]llo!!!' → 'he@[x]llo!!!@[y]' (added tokens).
+		store.edit.replace({start: 12, end: 12}, '@[y]')
+
+		// Gate: structural edit → ≥1 renderer invocation. The watcher fires in the
+		// same flush wave as the edit (the watch pulls structure; new reference).
+		expect(structureSpy).toHaveBeenCalledTimes(1)
+		// The renderer owns this change: nothing was indexed yet.
+		expect(indexedSpy).toHaveBeenCalledTimes(3)
+
+		// The (manual) adapter re-renders from the new structure and reports back.
+		expect(store.tokens.structure()).toBe(store.tokens.current())
+		container.replaceChildren(
+			...store.tokens.structure().map(token => {
+				const span = document.createElement('span')
+				if (token.type === 'mark') span.append(document.createTextNode(token.value))
+				return span
+			})
+		)
+		store.host.rendered()
+
+		// The full commit completes the structural flow — exactly one more index
+		// wave, and no further renderer invalidation.
+		expect(indexedSpy).toHaveBeenCalledTimes(4)
+		expect(structureSpy).toHaveBeenCalledTimes(1)
 	})
 })
