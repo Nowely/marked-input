@@ -119,4 +119,42 @@ describe('Render-count gates: block layout', () => {
 		expect(getAllRows(container)).toHaveLength(3)
 		expect(markRender.mock.calls.length).toBeGreaterThan(markBaseline)
 	})
+
+	it('first keystroke into a freshly-Enter-created empty row rides the text path', async () => {
+		const markRender = vi.fn()
+		const spanRender = vi.fn()
+		const RowMark = ({children, value}: MarkProps) => {
+			markRender()
+			return <span>{children ?? value}</span>
+		}
+		const Span = ({value}: MarkProps) => {
+			spanRender()
+			return <span>{value}</span>
+		}
+		// oxlint-disable-next-line no-unsafe-type-assertion -- raw markup literal, as in the Drag fixtures
+		const options: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: RowMark}]
+
+		const {container} = await render(
+			<MarkedInput Span={Span} options={options} defaultValue={'First row\n\n'} layout="block" draggable />
+		)
+		expect(getAllRows(container)).toHaveLength(1)
+
+		await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
+
+		// Enter at the row end creates an EMPTY row with the caret inside it —
+		// structural, re-renders. The gate below is a delta from AFTER it settled.
+		await userEvent.keyboard('{Enter}')
+		expect(getAllRows(container)).toHaveLength(2)
+		const markBaseline = markRender.mock.calls.length
+		const spanBaseline = spanRender.mock.calls.length
+
+		// Gate: the FIRST keystroke into the fresh empty row rides the text path —
+		// the empty slot Span is patched in place, zero component re-renders.
+		// (Pre-fix: TreeBuilder collapsed the empty slot to undefined, tryDescend
+		// refused, and the keystroke escalated to a full framework re-render.)
+		await userEvent.keyboard('x')
+		await expect.element(page.getByText('x')).toBeInTheDocument()
+		expect(spanRender.mock.calls.length).toBe(spanBaseline)
+		expect(markRender.mock.calls.length).toBe(markBaseline)
+	})
 })
