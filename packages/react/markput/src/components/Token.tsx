@@ -9,7 +9,7 @@ export const Token = memo(({token}: {token: TokenType}) => {
 	const {resolveMarkSlot, key, index, store} = useMarkput(s => ({
 		resolveMarkSlot: s.slots.mark,
 		key: s.key,
-		index: s.tokens.index,
+		index: s.tokens.structureIndex,
 		store: s,
 	}))
 	const path = index.pathFor(token)

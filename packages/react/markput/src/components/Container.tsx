@@ -8,7 +8,7 @@ export const Container = memo(() => {
 	const {host, isBlock, tokens, key, Component, props} = useMarkput(s => ({
 		host: s.host,
 		isBlock: s.props.layout.isBlock,
-		tokens: s.tokens.current,
+		tokens: s.tokens.structure,
 		key: s.key,
 		Component: s.slots.containerComponent,
 		props: s.slots.containerProps,

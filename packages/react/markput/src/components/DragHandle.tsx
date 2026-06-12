@@ -20,7 +20,7 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 			isDragging: blockStore.state.isDragging,
 			isHovered: blockStore.state.isHovered,
 			tokens: s.tokens,
-			index: s.tokens.index,
+			index: s.tokens.structureIndex,
 		}
 	})
 	const alwaysShowHandle = useMemo(() => getAlwaysShowHandle(draggable), [draggable])

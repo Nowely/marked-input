@@ -125,6 +125,17 @@ export class TokenModel {
 		return tokens
 	})
 
+	/**
+	 * Adapter-facing index, aligned with {@link structure}: built over the same
+	 * tree the renderer painted, so `pathFor`/`addressFor` resolve the token
+	 * objects adapters actually hold. Reference-stable across text-path
+	 * reconciles BECAUSE `structure()` returns the same array reference there
+	 * and the signals runtime's equality cutoff stops downstream invalidation —
+	 * the same mechanism that lets Container skip re-rendering. Core internals
+	 * keep using the fresh {@link index}.
+	 */
+	readonly structureIndex: Computed<TokenIndex> = computed(() => createTokenIndex(this.structure()))
+
 	/** Changeset of the latest reconcile — Phase 3's routing input. */
 	changeset(): Changeset {
 		return this.#reconciled().changeset
@@ -133,6 +144,19 @@ export class TokenModel {
 	/** Stable identity of a token in the current tree. */
 	idOf(token: Token): number {
 		return this.#identity.idOf(token)
+	}
+
+	/**
+	 * Bridge a possibly-stale token object — held by an adapter across
+	 * text-path commits, where the renderer never re-runs — to its CURRENT
+	 * address. Token ids survive object replacement in the identity WeakMap
+	 * (Phase 2), and `#byId` is rebuilt on every commit including text-path
+	 * patches, so the returned address always carries the live token and its
+	 * fresh position. Returns undefined when the id is no longer indexed
+	 * (token removed, or no DOM commit has happened yet).
+	 */
+	freshAddressFor(token: Token): TokenAddress | undefined {
+		return this.#byId.get(this.#identity.idOf(token))?.address
 	}
 
 	/** Fires after each DOM re-index. */

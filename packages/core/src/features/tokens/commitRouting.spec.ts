@@ -4,6 +4,7 @@ import {Store} from '../../store/Store'
 import {isTextPath} from './commitRouting'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
+import {createTextToken} from './parser/utils/createTextToken'
 import type {Changeset} from './tokenIdentity'
 import {createIdentityTracker} from './tokenIdentity'
 
@@ -181,5 +182,97 @@ describe('TokenModel.structure computed', () => {
 		expect(after).not.toBe(before)
 		// and it must equal current()
 		expect(after).toEqual(store.tokens.current())
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Mounted structureIndex computed tests
+// ---------------------------------------------------------------------------
+
+describe('TokenModel.structureIndex computed', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+	})
+
+	it('tail text edit — structureIndex() reference-stable while index() is fresh', () => {
+		const {store} = mountWithMark()
+		const before = store.tokens.structureIndex()
+		const freshBefore = store.tokens.index()
+
+		// Append '!' at end: text-path reconcile (only the trailing text token changes)
+		store.edit.replace({start: 9, end: 9}, '!')
+
+		// structureIndex must NOT recompute: structure() kept its reference and
+		// the signals equality cutoff stops downstream invalidation
+		expect(store.tokens.structureIndex()).toBe(before)
+		// while the internal index is rebuilt over the fresh tree
+		expect(store.tokens.index()).not.toBe(freshBefore)
+		// and it still resolves the structure tree it is aligned with
+		const structureMark = store.tokens.structure()[1]
+		expect(store.tokens.structureIndex().pathFor(structureMark)).toEqual([1])
+	})
+
+	it('structural edit — structureIndex() is a new reference resolving the new tree', () => {
+		const {store} = mountWithMark()
+		const before = store.tokens.structureIndex()
+
+		// 'he@[x]llo' → 'he@[x]llo@[y]': added tokens → structural path
+		store.edit.replace({start: 9, end: 9}, '@[y]')
+
+		const after = store.tokens.structureIndex()
+		expect(after).not.toBe(before)
+		// structure() === current() on the structural path; the index resolves it
+		expect(after.pathFor(store.tokens.current()[3])).toEqual([3])
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Identity-bridged fresh resolution
+// ---------------------------------------------------------------------------
+
+describe('TokenModel.freshAddressFor', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+	})
+
+	it('bridges a stale token object to its current address after a text-path commit', () => {
+		const {store} = mountWithMark()
+		const stale = store.tokens.current()[1] // mark '@[x]' at [2,6]
+
+		// Preceding text edit shifts the mark: 'he@[x]llo' → 'XXhe@[x]llo'.
+		// Text path: the adapter never re-renders, so `stale` survives in the
+		// structure tree while reconcile replaced its object in current().
+		store.edit.replace({start: 0, end: 0}, 'XX')
+		expect(store.tokens.current()[1]).not.toBe(stale)
+
+		const fresh = store.tokens.freshAddressFor(stale)
+		expect(fresh).toBeDefined()
+		expect(fresh?.token).toBe(store.tokens.current()[1])
+		expect(fresh?.token.position).toEqual({start: 4, end: 8})
+		expect(fresh?.path).toEqual([1])
+	})
+
+	it('returns undefined before any DOM commit (headless store)', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'he@[x]llo', options: [{markup: '@[__value__]'}], Mark: () => null})
+		expect(store.tokens.freshAddressFor(store.tokens.current()[1])).toBeUndefined()
+	})
+
+	it('returns undefined for a token unknown to the identity tracker', () => {
+		const {store} = mountWithMark()
+		expect(store.tokens.freshAddressFor(createTextToken('zz'))).toBeUndefined()
+	})
+
+	it('returns undefined after the token is structurally removed', () => {
+		const {store, container} = mountWithMark()
+		const stale = store.tokens.current()[1]
+
+		// Remove the mark: 'he@[x]llo' → 'hello' (structural: removed non-empty)
+		store.edit.replace({start: 2, end: 6}, '')
+		// The (manual) adapter re-renders: one text surface remains
+		container.replaceChildren(document.createElement('span'))
+		store.host.rendered()
+
+		expect(store.tokens.freshAddressFor(stale)).toBeUndefined()
 	})
 })

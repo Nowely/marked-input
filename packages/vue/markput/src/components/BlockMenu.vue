@@ -13,7 +13,7 @@ const props = defineProps<{token: TokenType}>()
 
 const store = useStore()
 const blockStore = store.block.get(props.token)
-const index = useMarkput(s => s.tokens.index)
+const index = useMarkput(s => s.tokens.structureIndex)
 const menuOpen = useMarkput(() => blockStore.state.menuOpen)
 const menuPosition = useMarkput(() => blockStore.state.menuPosition)
 
