@@ -4,7 +4,14 @@ import type {CoreOption} from '../../shared/types'
 import type {Token} from '../tokens'
 import {Parser} from '../tokens/parser/Parser'
 import {createRowContent} from './createRowContent'
-import {addDragRow, applyDragAction, deleteDragRow, duplicateDragRow, mergeDragRows, reorderDragRows} from './operations'
+import {
+	addDragRow,
+	applyDragAction,
+	deleteDragRow,
+	duplicateDragRow,
+	mergeDragRows,
+	reorderDragRows,
+} from './operations'
 
 function textToken(content: string, start: number): Token {
 	return {type: 'text', content, position: {start, end: start + content.length}}
