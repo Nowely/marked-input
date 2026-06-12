@@ -211,6 +211,8 @@ export class TokenModel {
 			// Text-path commits: a reconcile classified as a pure text edit keeps
 			// structure() reference-stable, so the adapter never re-renders and
 			// rendered() never fires — the DOM and index are patched here instead.
+			// FINE_GRAINED=false (commitRouting.ts) makes isTextPath always false,
+			// cutting this watch AND structure()'s reference reuse in one point.
 			watch(this.#reconciled, ({tokens, changeset}) => {
 				if (!this.#hasCommitted) return // first paint must come from the adapter
 				// Structural reconciles go through the adapter: structure() changed

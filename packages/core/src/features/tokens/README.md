@@ -68,8 +68,9 @@ type Changeset =
 are included recursively).
 
 `textChanged` on a `mark` token means its content changed; the subtree is treated
-as dirty and not diffed per-child.  Whether a textChanged mark requires renderer
-invalidation is a Phase 3 decision.
+as dirty and not diffed per-child.  **Phase 3 decision (resolved):** a textChanged
+mark routes STRUCTURAL — mark components render `value`/`meta` as framework props,
+so the renderer must re-run (see "Routing rule as implemented" below).
 
 **THE ROUTING RULE** (from the design spec, Phase 3):
 
@@ -83,6 +84,10 @@ value edit → incremental parse → changeset
   ├─ textChanged/shifted only → patch text surfaces directly; renderer not invoked
   └─ added/removed present   → request renderer re-render; rebuild index
 ```
+
+As implemented, the rule is refined: a `textChanged` id belonging to a **mark**
+token also routes structural — the Phase 3 section below documents the rule
+that actually ships.
 
 ### Edit-hint flow
 
@@ -162,17 +167,176 @@ idOf(token: Token): number   // stable id of a token in the current tree (assign
 will re-run only when the value or parser options change.  `idOf` delegates to the
 identity tracker's `WeakMap` lookup.
 
+## Phase 3 — fine-grained commit (changeset-routed)
+
+Phase 3 consumes the Phase 2 changeset to route every reconcile down one of two
+commit paths: pure text edits patch the DOM and the index in place — the
+framework renderer is never invoked — while structural edits invalidate the
+renderer exactly as before.  Design-spec gates: text edit → 0 committed
+renderer invocations, structural edit → ≥1.  Gated by the render-count specs in
+`commitRouting.spec.ts` (core, watch-spy) and
+`packages/storybook/src/pages/renderCount.react.spec.tsx` (React end-to-end,
+render spy in a custom `Span`).
+
+### Routing rule as implemented (`commitRouting.ts`)
+
+`isTextPath(tokens, changeset, idOf)` returns `true` (text path) iff:
+
+- `changeset.kind === 'delta'`, and
+- `added` and `removed` are both empty, and
+- every id in `textChanged` is found in the reconciled tree AND is a `text`
+  token.
+
+`shifted`-only and empty deltas are text path: a pure text edit shifts every
+suffix token's position, and that must not invoke the renderer.  Two deliberate
+refinements over the design spec's routing rule:
+
+- **A `textChanged` MARK routes structural.**  Mark components receive
+  `value`/`meta` as framework props (`resolveSlot.ts` builds
+  `{value: token.value, meta: token.meta}`), so a mark content change requires
+  the renderer — conservative and correct for custom Mark components.  This is
+  the resolution of the question Phase 2 left open above.
+- **An unverifiable id routes structural.**  The classifier walks the tree
+  counting down the `textChanged` ids it can verify; if any id is not found
+  (`pending > 0` after the walk), the reconcile routes structural rather than
+  trusting a changeset that disagrees with the tree.
+
+### `structure` / `structureIndex` — the renderer contract
+
+```ts
+structure(): Token[]              // reference-stable across text-path reconciles
+structureIndex(): TokenIndex      // index over structure(); same stability
+freshAddressFor(token: Token): TokenAddress | undefined  // stale object → current address
+```
+
+`structure` is the token tree for STRUCTURAL rendering: on a text-path
+reconcile it returns the PREVIOUS array reference; on a structural reconcile it
+returns the fresh tree (`=== current()`).  Both adapters subscribe to it (React
+`Container` via `useSyncExternalStore` over a `computed` + `watch`; Vue via
+`effect` + `shallowRef`) and skip re-rendering when the snapshot is
+reference-equal — the signals runtime's equality cutoff stops downstream
+invalidation.  This is the codebase's signal-idiomatic equivalent of the design
+spec's sketched `structureInvalidated` event.
+
+**Token objects inside `structure()` are stale on the text path BY DESIGN.**
+After a text-path commit the structure tree lags the value: the edited token's
+`content` and every suffix token's `position` are out of date — the DOM
+`textContent` was patched directly, and the fresh tree lives in `current()`.
+Consequences for adapter authors:
+
+- The default text slot (`'span'`, rendered WITHOUT a `value` prop —
+  `resolveSlot.ts`) never renders content from the token; core owns the text
+  via the patch and the reconcile sweep, so it cannot go stale.
+- A custom `Span` receives `value` as a prop; on the text path that prop (and
+  any vdom built from it) goes stale while the DOM stays correct.  A custom
+  `Span` that renders `{value}` as its children therefore has a stale vdom
+  between structural renders: the conditional patch keeps the DOM correct
+  (it skips surfaces whose `textContent` already matches — typically the edited
+  surface itself, already updated by the browser's contentEditable mutation),
+  the next structural render re-syncs the vdom, and the dev-mode divergence
+  detector throws if model–DOM drift ever survives a commit.  The detector is
+  the honesty mechanism behind this caveat — staleness is tolerated only
+  because drift fails loud.
+- `structureIndex` resolves the token OBJECTS adapters actually hold
+  (`pathFor`/`addressFor`/`key` against the painted tree).  Core internals keep
+  using the fresh `index`; a structure-tree token fed to the fresh `index`
+  misses after a text-path commit.
+
+### Stale-token bridging — `freshAddressFor` and `MarkController`
+
+`freshAddressFor(token)` bridges a possibly-stale token object — held by an
+adapter across text-path commits, where the renderer never re-runs — to its
+CURRENT address.  Token ids survive object replacement in the identity
+tracker's `WeakMap`, and the id → node projection is rebuilt on EVERY commit,
+full and patch alike, so the returned address always carries the live token and
+its fresh position.  Returns `undefined` when the id is no longer indexed
+(token removed, or no DOM commit yet) or when the token was never seen by the
+tracker — the lookup is read-only and never allocates an id.
+
+`MarkController.fromToken` is identity-bridged through it: a controller built
+from a captured (possibly stale) mark token resolves the CURRENT address at
+construction AND again on each mutation (`#resolve`), so `update`/`remove` hit
+the shifted, correct range even after N text-path commits.  When the bridge
+cannot resolve (headless store, identity gone), the fallback resolves the
+captured address through `resolveAddress`, whose OBJECT-IDENTITY check makes
+stale mutations fail closed (no-op) instead of editing the wrong range.
+
+### `#patchCommit` — the text path
+
+On a text-path reconcile the adapter never runs (`structure()` kept its
+reference), so the previous commit's elements are all still live and paths are
+unchanged by definition.  A watch on `#reconciled` (registered at mount) routes
+here only after the first full commit; without a container it waits for the
+adapter, and an empty index self-heals through the structural machinery.
+
+Two-pass, escalation-first (design spec, "Error handling"):
+
+1. **Pass 1 — `preparePatch` (pure, `patchCommit.ts`):** refresh every indexed
+   node's address from the fresh token index (same paths, same elements, new
+   tokens) and resolve each `textChanged` id to its text surface.  ANY lookup
+   failure abandons the whole patch and `#patchCommit` escalates to the full
+   structural rebuild instead of dropping the edit.
+2. **Pass 2 — commit:** swap in the prepared `byPath`/`byId` maps (rebuilding
+   `byElement` from the carried-over elements), then write `textContent` on the
+   changed surfaces — `reconcileTextSurfaces`' conditional write scoped to the
+   changed ids.  The condition is a mandated invariant, not an optimization:
+   writing identical text would recreate the text node and destroy the caret.
+
+The tail mirrors `#commit`: handle sync and the DOM-version bump share one
+batch (handle `changed` watchers flush only after the bump), then `indexed`
+fires — SelectionController still runs its surface sweep and `#applyRange` on
+`indexed`, so contentEditable/tabindex upkeep and caret restoration behave
+exactly as after a full commit.  On this path the browser caret is already
+correct: the keystroke happened inside that surface.
+
+### Divergence detector (`VERIFY_DOM`, `patchCommit.ts`)
+
+In dev/test builds, after every commit, each text surface's `textContent` must
+equal its token's `content`; a mismatch throws
+`TokenModel divergence at [path]: DOM "…" ≠ model "…"` inside the committing
+guard (fail loud).  Placement differs per path:
+
+- **Rebuild path:** `assertNoDivergence` over the whole index, AFTER
+  `indexed()` — the SelectionController sweep has already corrected every
+  surface, so any remaining mismatch is genuine drift the sweep failed to fix.
+- **Patch path:** only over the patched targets, AFTER the pass-2 writes and
+  BEFORE `indexed()` — pass 2 wrote them itself, so a mismatch means a missed
+  or incomplete write.
+
+The throw cases are covered white-box (`TokenModel.patch.spec.ts`): through the
+public API the machinery self-heals before each check (the sweep fixes
+hand-corruption on the rebuild path; pass 2 overwrites corrupted targets on the
+patch path), so a black-box corruption test can never make the detector throw.
+That is precisely why it exists — it guards the case where self-healing itself
+is broken — and why the function is tested directly.
+
+### Flags
+
+- **`FINE_GRAINED`** (`commitRouting.ts`, default `true`) — build-time A/B
+  escape hatch for the whole Phase 3 feature.  `false` makes `isTextPath`
+  always return `false`, the single point both consumers gate on: `structure()`
+  stops reusing its previous reference (adapters re-render on every edit and
+  drive full commits through `rendered()`, with `structureIndex` following
+  automatically) and the patch watch never passes its guard — the pre-Phase-3
+  pipeline, end to end.  Flip in source; no runtime override by design (same
+  escape-hatch pattern as `INCREMENTAL`).
+- **`VERIFY_DOM`** (`patchCommit.ts`) — divergence detector switch.
+  `import.meta.env?.DEV ?? true`, resolved by the consumer bundler at build
+  time: always on in Vitest and dev bundles, stripped from production bundles.
+
 ## `TokenModel` (`store.tokens`)
 
 - **Parsing** — `current` (computed `Token[]`) and `index` (computed
-  `TokenIndex` for path/address resolution).
+  `TokenIndex` for path/address resolution); `structure` and `structureIndex`
+  are their renderer-facing counterparts, reference-stable across text-path
+  reconciles (Phase 3 above).
 - **Ref collection** (formerly `TokenRefs`) — adapter components call
   `control(path?)` and `children(ownerPath)` to register DOM elements that
   should be treated as opaque controls or as nested child-sequence hosts.
 - **DOM index** (formerly `DomIndex`) — rebuilt on every `host.rendered()` using
-  `buildIndex`. All lookups (`#locate`, `#nodeFor`, `#nodes`) are private;
-  consumers use the facade methods below. Fires the `indexed` event after each
-  rebuild.
+  `buildIndex`, and refreshed in place by text-path patch commits (Phase 3). All
+  lookups (`#locate`, `#nodeFor`, `#nodes`) are private; consumers use the
+  facade methods below. Fires the `indexed` event after each rebuild or patch.
 
 ### Handle lookups
 

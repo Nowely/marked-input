@@ -2,11 +2,26 @@ import type {Token} from './parser/types'
 import type {Changeset} from './tokenIdentity'
 
 /**
+ * Escape hatch for A/B debugging: when `false`, every reconcile is classified
+ * structural — `structure()` returns a fresh reference each wave (so adapters
+ * re-render and drive a full commit through `rendered()`) and TokenModel's
+ * patch watch never passes its `isTextPath` guard, restoring the pre-Phase-3
+ * pipeline end to end. Flip in source to disable; no runtime override by
+ * design (a runtime flag would require every hot-path caller to re-read it on
+ * every keystroke). Follows the same escape-hatch pattern as `INCREMENTAL`.
+ */
+export const FINE_GRAINED: boolean = true
+
+/**
  * Text path ⇔ delta with no added/removed and every textChanged id is a TEXT
  * token. A textChanged MARK routes structural: mark components render
  * value/meta as framework props, so the renderer must run.
+ *
+ * {@link FINE_GRAINED} cuts here — the single point both consumers gate on:
+ * the `structure` computed (reference reuse) and TokenModel's patch watch.
  */
 export function isTextPath(tokens: readonly Token[], changeset: Changeset, idOf: (t: Token) => number): boolean {
+	if (!FINE_GRAINED) return false
 	if (changeset.kind !== 'delta') return false
 	if (changeset.added.length > 0 || changeset.removed.length > 0) return false
 	if (changeset.textChanged.length === 0 && changeset.shifted.length === 0) return true
