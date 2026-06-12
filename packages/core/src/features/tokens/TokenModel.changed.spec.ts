@@ -67,7 +67,7 @@ describe('TokenModel changed event', () => {
 			textChanged: [tailId],
 			added: [],
 			removed: [],
-			shifted: [],
+			updated: [],
 		})
 		// identity survives the edit: the same handles answer for the new tree
 		expect(handleId(store, 1)).toBe(markId)
@@ -88,8 +88,8 @@ describe('TokenModel changed event', () => {
 		const changeset = changedSpy.mock.calls[0][0]
 		expect(changeset.kind).toBe('delta')
 		if (changeset.kind !== 'delta') throw new Error('expected delta')
-		expect(changeset.shifted).toContain(markId)
-		expect(changeset.shifted).toContain(tailId)
+		expect(changeset.updated).toContain(markId)
+		expect(changeset.updated).toContain(tailId)
 		expect(changeset.added).toEqual([])
 		expect(changeset.removed).toEqual([])
 		expect(handleId(store, 1)).toBe(markId)
@@ -114,7 +114,7 @@ describe('TokenModel changed event', () => {
 			textChanged: [tailId],
 			added: [],
 			removed: [],
-			shifted: [],
+			updated: [],
 		})
 		// the mark id survived a set that carried no edit hint
 		expect(handleId(store, 1)).toBe(markId)

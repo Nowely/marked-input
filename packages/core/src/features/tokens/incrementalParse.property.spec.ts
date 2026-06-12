@@ -4,7 +4,16 @@ import {describe, expect, it} from 'vitest'
 import {incrementalParse} from './incrementalParse'
 import {Parser} from './parser/Parser'
 import type {Markup, Token} from './parser/types'
-import {applyEdit, editHintOf, generateDocument, generateEdit} from './tokenIdentity.property.spec'
+import {
+	applyEdit,
+	editHintOf,
+	generateDocument,
+	generateEdit,
+	generateInRowEdit,
+	generateInSlotEdit,
+	generateSlotLeadingDocument,
+	generateSlotLeadingEdit,
+} from './tokenIdentity.property.spec'
 
 // Equivalence property (Phase 2 plan, Task 6 — the gate for the windowed
 // incremental reparse):
@@ -25,7 +34,7 @@ const BASE_SEED = 6_122_026
 /** ~200 keeps CI-tolerable runtime; bump locally (e.g. 1000) for soak runs. */
 const ITERATIONS = 200
 
-function runProperty(markup: Markup, sigil: string, iterations: number): void {
+function runProperty(markup: Markup, sigil: string, iterations: number, inSlot = false): void {
 	const parser = new Parser([markup])
 	for (let i = 0; i < iterations; i++) {
 		const seed = BASE_SEED + i
@@ -36,7 +45,10 @@ function runProperty(markup: Markup, sigil: string, iterations: number): void {
 		// round 0 becomes the previous tree of round 1 (splice-of-splice)
 		const rounds = 1 + (i % 2)
 		for (let round = 0; round < rounds; round++) {
-			const edit = generateEdit(value, sigil)
+			// every 3rd edit of an in-slot run targets a slot interior (descend class)
+			const edit =
+				(inSlot && (i + round) % 3 === 0 ? generateInSlotEdit(value, sigil) : undefined) ??
+				generateEdit(value, sigil)
 			const next = applyEdit(value, edit)
 			const actual = incrementalParse(parser, tokens, value, next, editHintOf(edit))
 			const expected = parser.parse(next)
@@ -60,91 +72,10 @@ function runProperty(markup: Markup, sigil: string, iterations: number): void {
 	}
 }
 
-// --- Slot-leading generator --------------------------------------------------
-// The existing generateDocument/generateEdit API is sigil-based and cannot
-// express `\n\n` separators. Build the document and edits inline.
-
-const word = () => faker.string.alpha({length: faker.number.int({min: 1, max: 6})})
-
-/** A slot-leading document: random words joined by `\n\n` (0–6 rows, some unterminated). */
-function generateSlotLeadingDocument(): string {
-	const rows = faker.number.int({min: 0, max: 6})
-	if (rows === 0) return ''
-	const parts: string[] = []
-	for (let r = 0; r < rows; r++) {
-		// each "row" is a few words separated by single spaces
-		const wordCount = faker.number.int({min: 0, max: 4})
-		const row = Array.from({length: wordCount}, () => word()).join(' ')
-		parts.push(row)
-	}
-	// with 50 % probability leave the last row unterminated (no trailing \n\n)
-	const sep = '\n\n'
-	return faker.datatype.boolean() ? parts.join(sep) + sep : parts.join(sep)
-}
-
-/**
- * A random single edit for slot-leading documents. The adversarial class here
- * is edits that SPLIT or MERGE rows by inserting/deleting `\n` or `\n\n`.
- */
-function generateSlotLeadingEdit(doc: string): {kind: string; start: number; end: number; insert: string} {
-	const kind = faker.helpers.weightedArrayElement([
-		{weight: 3, value: 'insertWord'},
-		{weight: 3, value: 'deleteChars'},
-		{weight: 3, value: 'replaceChars'},
-		{weight: 3, value: 'insertNewline'}, // might split a row
-		{weight: 3, value: 'insertDoubleSep'}, // inserts \n\n — always splits
-		{weight: 3, value: 'deleteNewline'}, // might merge rows
-		{weight: 2, value: 'startEdge'},
-		{weight: 2, value: 'endEdge'},
-		{weight: 1, value: 'fullReplace'},
-	])
-	switch (kind) {
-		case 'insertWord': {
-			const at = faker.number.int({min: 0, max: doc.length})
-			return {kind, start: at, end: at, insert: word()}
-		}
-		case 'deleteChars': {
-			if (doc.length === 0) return {kind: 'noop', start: 0, end: 0, insert: ''}
-			const start = faker.number.int({min: 0, max: doc.length - 1})
-			const end = faker.number.int({min: start + 1, max: Math.min(doc.length, start + 6)})
-			return {kind, start, end, insert: ''}
-		}
-		case 'replaceChars': {
-			if (doc.length === 0) return {kind: 'insertWord', start: 0, end: 0, insert: word()}
-			const start = faker.number.int({min: 0, max: doc.length - 1})
-			const end = faker.number.int({min: start, max: Math.min(doc.length, start + 6)})
-			return {kind, start, end, insert: word()}
-		}
-		case 'insertNewline': {
-			const at = faker.number.int({min: 0, max: doc.length})
-			return {kind, start: at, end: at, insert: '\n'}
-		}
-		case 'insertDoubleSep': {
-			const at = faker.number.int({min: 0, max: doc.length})
-			return {kind, start: at, end: at, insert: '\n\n'}
-		}
-		case 'deleteNewline': {
-			// find any \n in the doc and delete it (or the pair \n\n)
-			const positions: number[] = []
-			for (let j = 0; j < doc.length; j++) {
-				if (doc[j] === '\n') positions.push(j)
-			}
-			if (positions.length === 0) return {kind: 'insertWord', start: 0, end: 0, insert: word()}
-			const at = faker.helpers.arrayElement(positions)
-			// delete 1 or 2 chars to merge a single \n or a \n\n separator
-			const end = Math.min(doc.length, at + (doc.slice(at, at + 2) === '\n\n' ? 2 : 1))
-			return {kind, start: at, end, insert: ''}
-		}
-		case 'startEdge':
-			return {kind, start: 0, end: 0, insert: word()}
-		case 'endEdge':
-			return {kind, start: doc.length, end: doc.length, insert: word()}
-		case 'fullReplace':
-			return {kind, start: 0, end: doc.length, insert: generateSlotLeadingDocument()}
-		default:
-			return {kind: 'noop', start: 0, end: 0, insert: ''}
-	}
-}
+// --- Slot-leading run ----------------------------------------------------------
+// Documents and edits come from the shared generators (tokenIdentity.property):
+// the sigil-based generateDocument/generateEdit API cannot express `\n\n`
+// separators.
 
 function runSlotLeadingProperty(iterations: number): void {
 	const markup = '__slot__\n\n' as Markup
@@ -157,7 +88,10 @@ function runSlotLeadingProperty(iterations: number): void {
 		// chain a second edit on every other iteration (splice-of-splice)
 		const rounds = 1 + (i % 2)
 		for (let round = 0; round < rounds; round++) {
-			const edit = generateSlotLeadingEdit(value)
+			// every 3rd edit stays inside a row (the descend class); the rest
+			// exercise row split/merge
+			const edit =
+				((i + round) % 3 === 0 ? generateInRowEdit(value) : undefined) ?? generateSlotLeadingEdit(value)
 			const next = value.slice(0, edit.start) + edit.insert + value.slice(edit.end)
 			const hint = {start: edit.start, end: edit.end, insertedLength: edit.insert.length}
 			const actual = incrementalParse(parser, tokens, value, next, hint)
@@ -187,8 +121,8 @@ describe('incrementalParse equivalence property', () => {
 		runProperty('@[__value__]', '@', ITERATIONS)
 	})
 
-	it('slot markup #[…]: nested children survive the splice too', () => {
-		runProperty('#[__slot__]', '#', Math.ceil(ITERATIONS / 2))
+	it('slot markup #[…]: nested children survive the splice too, in-slot edits included', () => {
+		runProperty('#[__slot__]', '#', Math.ceil(ITERATIONS / 2), true)
 	})
 
 	it('slot-leading markup __slot__\\n\\n: row-split/merge edits preserved by windowed reparse', () => {

@@ -1,7 +1,9 @@
 import {describe, expect, it} from 'vitest'
 
 import {Parser} from './parser/Parser'
+import type {MarkToken, Token} from './parser/types'
 import {createIdentityTracker} from './tokenIdentity'
+import type {ReconcileResult} from './tokenIdentity'
 
 // Pinned parser shapes (verified against real output):
 // 'he@[x]llo'  → text 'he' [0,2], mark '@[x]' [2,6] (children: []), text 'llo' [6,9]
@@ -47,7 +49,7 @@ describe('tokenIdentity', () => {
 		expect(result.changeset.removed).toEqual([])
 	})
 
-	it('suffix shift: edit before a mark keeps the mark id and reports shifted', () => {
+	it('suffix shift: edit before a mark keeps the mark id and reports updated', () => {
 		const tracker = createIdentityTracker()
 		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
 		const markId = tracker.idOf(first[1])
@@ -59,8 +61,8 @@ describe('tokenIdentity', () => {
 		if (result.changeset.kind !== 'delta') throw new Error('expected delta')
 		expect(tracker.idOf(result.tokens[1])).toBe(markId)
 		expect(tracker.idOf(result.tokens[2])).toBe(tailId)
-		expect(result.changeset.shifted).toContain(markId)
-		expect(result.changeset.shifted).toContain(tailId)
+		expect(result.changeset.updated).toContain(markId)
+		expect(result.changeset.updated).toContain(tailId)
 		// shifted tokens are NEW objects (positions differ) with identical content
 		expect(result.tokens[1]).not.toBe(first[1])
 		expect(result.tokens[1].content).toBe(first[1].content)
@@ -127,8 +129,8 @@ describe('tokenIdentity', () => {
 		if (result.changeset.kind !== 'delta') throw new Error('expected delta')
 		expect(tracker.idOf(result.tokens[1])).toBe(markId)
 		expect(tracker.idOf(result.tokens[2])).toBe(tailId)
-		expect(result.changeset.shifted).toContain(markId)
-		expect(result.changeset.shifted).toContain(tailId)
+		expect(result.changeset.updated).toContain(markId)
+		expect(result.changeset.updated).toContain(tailId)
 	})
 
 	it('reconcile with an unchanged value reuses every token by reference with an empty delta', () => {
@@ -136,7 +138,7 @@ describe('tokenIdentity', () => {
 		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
 		const firstIds = first.map(t => tracker.idOf(t))
 		const result = tracker.reconcile(parser.parse('he@[x]llo'))
-		expect(result.changeset).toEqual({kind: 'delta', textChanged: [], added: [], removed: [], shifted: []})
+		expect(result.changeset).toEqual({kind: 'delta', textChanged: [], added: [], removed: [], updated: []})
 		result.tokens.forEach((token, i) => expect(token).toBe(first[i]))
 		// repeated reconciles must not allocate phantom ids for the discarded
 		// parse arrays: ids stay stable and a 3rd reconcile still returns the
@@ -168,5 +170,313 @@ describe('tokenIdentity', () => {
 		if (mark2.type !== 'mark') throw new Error('expected mark')
 		expect(mark2).toBe(mark) // untouched prefix mark reused by reference
 		expect(tracker.idOf(mark2.children[0])).toBe(childId)
+	})
+})
+
+// Pinned parser shapes for the descend fixtures (verified against real output):
+// '#[ab]tail'      → text '' [0,0], mark '#[ab]' [0,5] {value '', slot 'ab' [2,4], children: [text 'ab' [2,4]]}, text 'tail' [5,9]
+// '#[aXb]tail'     → text '' [0,0], mark '#[aXb]' [0,6] {slot 'aXb' [2,5]}, text 'tail' [6,10]
+// '#[a #[b] c]'    → mark [0,11] {slot 'a #[b] c' [2,10], children: [text 'a ' [2,4], mark '#[b]' [4,8] {slot 'b' [6,7]}, text ' c' [8,10]]}
+// '#[a c]'         → mark '#[a c]' [0,6] {slot 'a c' [2,5], children: [text 'a c' [2,5]]}
+// '#[]'            → mark '#[]' [0,3] {value '', NO slot, children: [text '' [2,2]]}
+// '@[v](ab)'       → mark '@[v](ab)' [0,8] {value 'v', slot 'ab' [5,7], children: [text 'ab' [5,7]]}
+// '#[ab](m)'       → mark '#[ab](m)' [0,8] {value '', meta 'm', slot 'ab' [2,4], children: [text 'ab' [2,4]]}
+// 'abc\n\ndef\n\n' → text '' [0,0], mark 'abc\n\n' [0,5] {slot 'abc' [0,3], children: [text 'abc' [0,3]]},
+//                    text '' [5,5], mark 'def\n\n' [5,10] {slot 'def' [5,8], children: [text 'def' [5,8]]}, text '' [10,10]
+describe('deep reconcile (descend)', () => {
+	const slotParser = new Parser(['#[__slot__]'])
+
+	const delta = (result: ReconcileResult) => {
+		if (result.changeset.kind !== 'delta') throw new Error('expected delta')
+		return result.changeset
+	}
+
+	const asMark = (token: Token): MarkToken => {
+		if (token.type !== 'mark') throw new Error('expected mark')
+		return token
+	}
+
+	it('in-slot edit descends: child textChanged, mark updated, both ids stable, output ≡ fresh parse', () => {
+		const tracker = createIdentityTracker()
+		const first = tracker.reconcile(slotParser.parse('#[ab]tail')).tokens
+		const mark = asMark(first[1])
+		const markId = tracker.idOf(mark)
+		const childId = tracker.idOf(mark.children[0])
+		const tailId = tracker.idOf(first[2])
+
+		// insert 'X' inside the slot: '#[ab]tail' → '#[aXb]tail'
+		const result = tracker.reconcile(slotParser.parse('#[aXb]tail'), {start: 3, end: 3, insertedLength: 1})
+		const changeset = delta(result)
+
+		expect(result.tokens).toEqual(slotParser.parse('#[aXb]tail'))
+		expect(changeset.added).toEqual([])
+		expect(changeset.removed).toEqual([])
+		// the changed text lives on the CHILD; the mark is an update, not a text change
+		expect(changeset.textChanged).toEqual([childId])
+		expect(changeset.updated).toContain(markId)
+		expect(changeset.updated).toContain(tailId) // suffix text shifted by +1
+		// ids carried onto the NEW objects (content/positions/slot updated)
+		const mark2 = asMark(result.tokens[1])
+		expect(mark2).not.toBe(mark)
+		expect(tracker.idOf(mark2)).toBe(markId)
+		expect(tracker.idOf(mark2.children[0])).toBe(childId)
+		// untouched prefix reused by reference
+		expect(result.tokens[0]).toBe(first[0])
+	})
+
+	it('nested descend (mark-in-slot-in-mark): inner child textChanged, both marks updated, untouched in-slot siblings reused by reference', () => {
+		const tracker = createIdentityTracker()
+		const first = tracker.reconcile(slotParser.parse('#[a #[b] c]')).tokens
+		const outer = asMark(first[1])
+		const [head, innerToken, tail] = outer.children
+		const inner = asMark(innerToken)
+		const outerId = tracker.idOf(outer)
+		const innerId = tracker.idOf(inner)
+		const innerChildId = tracker.idOf(inner.children[0])
+		const headId = tracker.idOf(head)
+		const tailId = tracker.idOf(tail)
+
+		// insert 'X' inside the INNER slot ('b' → 'bX', absolute offset 7)
+		const result = tracker.reconcile(slotParser.parse('#[a #[bX] c]'), {start: 7, end: 7, insertedLength: 1})
+		const changeset = delta(result)
+
+		expect(result.tokens).toEqual(slotParser.parse('#[a #[bX] c]'))
+		expect(changeset.added).toEqual([])
+		expect(changeset.removed).toEqual([])
+		expect(changeset.textChanged).toEqual([innerChildId])
+		expect(changeset.updated).toContain(outerId)
+		expect(changeset.updated).toContain(innerId)
+		expect(changeset.updated).toContain(tailId) // ' c' shifted within the slot
+		const outer2 = asMark(result.tokens[1])
+		// in-slot child before the edit window: byte-identical → reused by REFERENCE
+		expect(outer2.children[0]).toBe(head)
+		expect(tracker.idOf(outer2.children[0])).toBe(headId)
+		const inner2 = asMark(outer2.children[1])
+		expect(tracker.idOf(inner2)).toBe(innerId)
+		expect(tracker.idOf(inner2.children[0])).toBe(innerChildId)
+		expect(tracker.idOf(outer2.children[2])).toBe(tailId)
+	})
+
+	it('block-row fixture (slot-leading): typing in a row descends, later rows update with stable ids', () => {
+		const rowParser = new Parser(['__slot__\n\n'])
+		const tracker = createIdentityTracker()
+		const first = tracker.reconcile(rowParser.parse('abc\n\ndef\n\n')).tokens
+		const rowA = asMark(first[1])
+		const rowB = asMark(first[3])
+		const rowAId = tracker.idOf(rowA)
+		const rowAChildId = tracker.idOf(rowA.children[0])
+		const rowBId = tracker.idOf(rowB)
+		const rowBChildId = tracker.idOf(rowB.children[0])
+
+		// keystroke inside the first row: 'abc' → 'aXbc'
+		const result = tracker.reconcile(rowParser.parse('aXbc\n\ndef\n\n'), {start: 1, end: 1, insertedLength: 1})
+		const changeset = delta(result)
+
+		expect(result.tokens).toEqual(rowParser.parse('aXbc\n\ndef\n\n'))
+		expect(changeset.added).toEqual([])
+		expect(changeset.removed).toEqual([])
+		expect(changeset.textChanged).toEqual([rowAChildId])
+		expect(changeset.updated).toContain(rowAId)
+		expect(changeset.updated).toContain(rowBId)
+		expect(changeset.updated).toContain(rowBChildId)
+		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(rowAId)
+		expect(tracker.idOf(asMark(result.tokens[3]))).toBe(rowBId)
+		expect(tracker.idOf(asMark(result.tokens[1]).children[0])).toBe(rowAChildId)
+	})
+
+	it('refusal: value differs → mark-level textChanged with id inheritance (handle continuity)', () => {
+		const valueSlotParser = new Parser(['@[__value__](__slot__)'])
+		const tracker = createIdentityTracker()
+		const first = tracker.reconcile(valueSlotParser.parse('@[v](ab)')).tokens
+		const mark = asMark(first[1])
+		const markId = tracker.idOf(mark)
+		const childId = tracker.idOf(mark.children[0])
+
+		// edit the VALUE: '@[v](ab)' → '@[w](ab)'
+		const result = tracker.reconcile(valueSlotParser.parse('@[w](ab)'), {start: 2, end: 3, insertedLength: 1})
+		const changeset = delta(result)
+
+		expect(changeset.textChanged).toEqual([markId])
+		expect(changeset.updated).toEqual([])
+		expect(changeset.added).toEqual([])
+		expect(changeset.removed).toEqual([])
+		// continuity: the SAME id answers for the new mark and its child
+		const mark2 = asMark(result.tokens[1])
+		expect(tracker.idOf(mark2)).toBe(markId)
+		expect(tracker.idOf(mark2.children[0])).toBe(childId)
+	})
+
+	it('refusal: meta differs → mark-level textChanged with id inheritance', () => {
+		const metaSlotParser = new Parser(['#[__slot__](__meta__)'])
+		const tracker = createIdentityTracker()
+		const first = tracker.reconcile(metaSlotParser.parse('#[ab](m)')).tokens
+		const mark = asMark(first[1])
+		const markId = tracker.idOf(mark)
+
+		// edit the META: '#[ab](m)' → '#[ab](n)'
+		const result = tracker.reconcile(metaSlotParser.parse('#[ab](n)'), {start: 6, end: 7, insertedLength: 1})
+		const changeset = delta(result)
+
+		expect(changeset.textChanged).toEqual([markId])
+		expect(changeset.updated).toEqual([])
+		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(markId)
+	})
+
+	// The real parser cannot emit two same-descriptor marks whose outside-slot
+	// bytes differ while value/meta stay byte-equal (delimiters are fixed by the
+	// markup; every variable outside-slot byte is captured as value or meta), so
+	// conditions 3–4 below are pinned with hand-built tokens around a REAL
+	// descriptor — the same data shapes, descriptor reference included.
+	const text = (content: string, start: number): Token => ({
+		type: 'text',
+		content,
+		position: {start, end: start + content.length},
+	})
+
+	const stolenDescriptor = () => asMark(slotParser.parse('#[ab]')[1]).descriptor
+
+	it('refusal: outside-slot change → mark-level textChanged with id inheritance', () => {
+		const descriptor = stolenDescriptor()
+		const prevMark: MarkToken = {
+			type: 'mark',
+			content: '#[ab]',
+			position: {start: 0, end: 5},
+			descriptor,
+			value: '',
+			slot: {content: 'ab', start: 2, end: 4},
+			children: [text('ab', 2)],
+		}
+		// same descriptor, same value/meta, same slot interior — but the raw
+		// content BEFORE the slot changed ('#[' → 'X[')
+		const nextMark: MarkToken = {
+			type: 'mark',
+			content: 'X[ab]',
+			position: {start: 0, end: 5},
+			descriptor,
+			value: '',
+			slot: {content: 'ab', start: 2, end: 4},
+			children: [text('ab', 2)],
+		}
+		const tracker = createIdentityTracker()
+		tracker.reconcile([prevMark])
+		const markId = tracker.idOf(prevMark)
+
+		const result = tracker.reconcile([nextMark], {start: 0, end: 1, insertedLength: 1})
+		const changeset = delta(result)
+
+		expect(changeset.textChanged).toEqual([markId])
+		expect(changeset.updated).toEqual([])
+		expect(tracker.idOf(nextMark)).toBe(markId)
+	})
+
+	it('refusal: child count differs → mark-level textChanged, subtree treated dirty (no per-child diff)', () => {
+		const tracker = createIdentityTracker()
+		const first = tracker.reconcile(slotParser.parse('#[a #[b] c]')).tokens
+		const outer = asMark(first[1])
+		const outerId = tracker.idOf(outer)
+		const tailTextId = tracker.idOf(first[2])
+
+		// delete '#[b] ' from the slot: children collapse 3 → 1
+		const result = tracker.reconcile(slotParser.parse('#[a c]'), {start: 4, end: 9, insertedLength: 0})
+		const changeset = delta(result)
+
+		expect(result.tokens).toEqual(slotParser.parse('#[a c]'))
+		expect(changeset.textChanged).toEqual([outerId])
+		expect(changeset.updated).toEqual([tailTextId]) // trailing '' shifted by -5
+		expect(changeset.added).toEqual([])
+		// pinned: the refused mark's subtree is DIRTY, not diffed — the vanished
+		// inner mark is not reported removed (consumers treat the mark as opaque)
+		expect(changeset.removed).toEqual([])
+		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(outerId)
+	})
+
+	it('refusal: child type mismatch → mark-level textChanged with id inheritance', () => {
+		const descriptor = stolenDescriptor()
+		const childlessMark = (content: string, start: number): MarkToken => ({
+			type: 'mark',
+			content,
+			position: {start, end: start + content.length},
+			descriptor,
+			value: '',
+			children: [],
+		})
+		const prevMark: MarkToken = {
+			type: 'mark',
+			content: '#[ab]',
+			position: {start: 0, end: 5},
+			descriptor,
+			value: '',
+			slot: {content: 'ab', start: 2, end: 4},
+			children: [text('ab', 2)],
+		}
+		// same count (1), but the child flipped text → mark
+		const nextMark: MarkToken = {
+			type: 'mark',
+			content: '#[cd]',
+			position: {start: 0, end: 5},
+			descriptor,
+			value: '',
+			slot: {content: 'cd', start: 2, end: 4},
+			children: [childlessMark('cd', 2)],
+		}
+		const tracker = createIdentityTracker()
+		tracker.reconcile([prevMark])
+		const markId = tracker.idOf(prevMark)
+
+		const result = tracker.reconcile([nextMark], {start: 2, end: 4, insertedLength: 2})
+		const changeset = delta(result)
+
+		expect(changeset.textChanged).toEqual([markId])
+		expect(changeset.updated).toEqual([])
+		expect(tracker.idOf(nextMark)).toBe(markId)
+	})
+
+	it('refusal: nested-mark descriptor mismatch → mark-level textChanged with id inheritance', () => {
+		const descriptor = stolenDescriptor()
+		const foreignDescriptor = asMark(new Parser(['%[__slot__]']).parse('%[b]')[1]).descriptor
+		const innerOf = (desc: typeof descriptor, sigil: string): MarkToken => ({
+			type: 'mark',
+			content: `${sigil}[b]`,
+			position: {start: 2, end: 6},
+			descriptor: desc,
+			value: '',
+			slot: {content: 'b', start: 4, end: 5},
+			children: [text('b', 4)],
+		})
+		const outerOf = (inner: MarkToken, sigil: string): MarkToken => ({
+			type: 'mark',
+			content: `#[${sigil}[b]]`,
+			position: {start: 0, end: 7},
+			descriptor,
+			value: '',
+			slot: {content: `${sigil}[b]`, start: 2, end: 6},
+			children: [inner],
+		})
+		const prevMark = outerOf(innerOf(descriptor, '#'), '#')
+		const nextMark = outerOf(innerOf(foreignDescriptor, '%'), '%')
+		const tracker = createIdentityTracker()
+		tracker.reconcile([prevMark])
+		const markId = tracker.idOf(prevMark)
+
+		const result = tracker.reconcile([nextMark], {start: 2, end: 3, insertedLength: 1})
+		const changeset = delta(result)
+
+		expect(changeset.textChanged).toEqual([markId])
+		expect(changeset.updated).toEqual([])
+		expect(tracker.idOf(nextMark)).toBe(markId)
+	})
+
+	it('refusal: a slotless mark pair (empty slot) → mark-level textChanged with id inheritance', () => {
+		const tracker = createIdentityTracker()
+		// '#[]' has NO slot range (parser fact) — descend cannot scope a window
+		const first = tracker.reconcile(slotParser.parse('#[]')).tokens
+		const markId = tracker.idOf(asMark(first[1]))
+
+		const result = tracker.reconcile(slotParser.parse('#[a]'), {start: 2, end: 2, insertedLength: 1})
+		const changeset = delta(result)
+
+		expect(result.tokens).toEqual(slotParser.parse('#[a]'))
+		expect(changeset.textChanged).toEqual([markId])
+		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(markId)
 	})
 })

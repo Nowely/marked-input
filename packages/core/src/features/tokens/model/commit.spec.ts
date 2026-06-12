@@ -2,6 +2,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {computed, effect, watch} from '../../../shared/signals/index.js'
 import {Parser} from '../parser/Parser'
+import type {Token} from '../parser/types'
 import {createIdentityTracker} from '../tokenIdentity'
 import {createCommitPipeline} from './commit'
 import type {TokenChange, TokenHandle} from './LiveNode'
@@ -219,7 +220,7 @@ describe('createCommitPipeline', () => {
 				textChanged: [],
 				added: [],
 				removed: [],
-				shifted: [],
+				updated: [],
 			})
 			expect(pipeline.tree()).toBe(treeBefore)
 			expect(text2.textContent).toBe('llo')
@@ -424,9 +425,12 @@ describe('createCommitPipeline', () => {
 			const changedSpy = vi.fn()
 			watch(pipeline.changed, changeset => changedSpy(changeset))
 
-			// '@[x]' → '@[y]': same descriptor, 1:1 slot pairing — reconcile reports
-			// the MARK as textChanged with added/removed empty. Mark components
-			// render value as a framework prop, so the renderer must run.
+			// '@[x]' → '@[y]': same descriptor, same-index pairing — a value-markup
+			// mark has no slot, so the deep descend is REFUSED and reconcile
+			// reports the MARK as textChanged (id inherited) with added/removed
+			// empty. Mark components render value as a framework prop, so the
+			// renderer must run; handle continuity across the escalation is the
+			// pinned contract this spec guards.
 			const result = harness.apply('he@[y]llo')
 
 			expect(pipeline.tree()).not.toBe(treeBefore)
@@ -449,7 +453,7 @@ describe('createCommitPipeline', () => {
 				textChanged: [],
 				added: [],
 				removed: [],
-				shifted: [],
+				updated: [],
 			})
 			expect(harness.container.children[1].textContent).toBe('y')
 			expect(pipeline.byPath().get('1')).toBe(markHandle)
@@ -526,7 +530,7 @@ describe('createCommitPipeline', () => {
 			const tokens = [...pipeline.tree()]
 			pipeline.apply({
 				tokens,
-				changeset: {kind: 'delta', textChanged: [99999], added: [], removed: [], shifted: []},
+				changeset: {kind: 'delta', textChanged: [99999], added: [], removed: [], updated: []},
 			})
 
 			expect(changedSpy).toHaveBeenCalledTimes(1)
@@ -594,6 +598,97 @@ describe('createCommitPipeline', () => {
 			expect(() => harness.apply('he@[x]llo!@[y]')).not.toThrow()
 			expect(() => harness.render()).not.toThrow()
 			expect(() => harness.pipeline.onRendered()).not.toThrow()
+		})
+	})
+
+	describe('deep reconcile integration (in-slot edits ride the text path)', () => {
+		// Slot harness: marks render their CHILDREN as nested spans (the real
+		// adapters' shape for slot markups), so bind descends into the mark and
+		// the child text token owns a text surface of its own.
+		// '#[ab]tail' → text '' [0,0], mark '#[ab]' [0,5] {child text 'ab' [2,4]}, text 'tail' [5,9]
+		function createSlotHarness() {
+			const tracker = createIdentityTracker()
+			const parser = new Parser(['#[__slot__]'])
+			const nodes = new Map<number, TokenHandle>()
+			const container = document.createElement('div')
+			document.body.append(container)
+			const pipeline = createCommitPipeline({
+				container: () => container,
+				nodes,
+				idFor: token => tracker.idFor(token),
+				editableState: () => ({editable: true, readOnly: false}),
+				controlElements: () => new Set<HTMLElement>(),
+				childSequenceHostsFor: () => [],
+				isBlock: () => false,
+			})
+			const apply = (value: string) => {
+				const result = tracker.reconcile(parser.parse(value))
+				pipeline.apply(result)
+				return result
+			}
+			const render = () => {
+				const paint = (tokens: readonly Token[]): HTMLElement[] =>
+					tokens.map(token => {
+						const span = document.createElement('span')
+						if (token.type === 'mark') span.append(...paint(token.children))
+						return span
+					})
+				container.replaceChildren(...paint(pipeline.tree()))
+				pipeline.onRendered()
+			}
+			return {pipeline, apply, render, container}
+		}
+
+		it('an in-slot edit routes TEXT: child surface patched, tree untouched, changed once, mark handle fires text', () => {
+			const harness = createSlotHarness()
+			const {pipeline} = harness
+			harness.apply('#[ab]tail')
+			harness.render()
+			const markHandle = pipeline.byPath().get('1')
+			const childHandle = pipeline.byPath().get('1.0')
+			const tailHandle = pipeline.byPath().get('2')
+			if (!markHandle || !childHandle || !tailHandle) throw new Error('expected handles')
+			const childSurface = childHandle.node()?.textElement
+			if (!childSurface) throw new Error('expected child surface')
+			expect(childSurface.textContent).toBe('ab')
+			const markElement = markHandle.element()
+			const treeBefore = pipeline.tree()
+			const byPathBefore = pipeline.byPath()
+			const markChanges: TokenChange[] = []
+			watch(markHandle.changed, change => markChanges.push(change))
+			const childChanges: TokenChange[] = []
+			watch(childHandle.changed, change => childChanges.push(change))
+			const tailChanges: TokenChange[] = []
+			watch(tailHandle.changed, change => tailChanges.push(change))
+			const changedSpy = vi.fn()
+			let domAtEvent: string | null = null
+			watch(pipeline.changed, changeset => {
+				changedSpy(changeset)
+				domAtEvent = childSurface.textContent
+			})
+
+			// Keystroke inside the slot: '#[ab]tail' → '#[aXb]tail'. The renderer
+			// is deliberately never invoked — render() is not called again.
+			const result = harness.apply('#[aXb]tail')
+
+			// routed TEXT: no tree change, no lookup rebuilds, no pending latch
+			expect(pipeline.tree()).toBe(treeBefore)
+			expect(pipeline.byPath()).toBe(byPathBefore)
+			expect(pipeline.pending()).toBe(false)
+			expect(changedSpy).toHaveBeenCalledTimes(1)
+			expect(changedSpy).toHaveBeenCalledWith(result.changeset)
+			// the child surface was patched in place, before changed fired
+			expect(childSurface.textContent).toBe('aXb')
+			expect(domAtEvent).toBe('aXb')
+			expect(childHandle.node()?.textElement).toBe(childSurface)
+			expect(markHandle.element()).toBe(markElement)
+			// handle-layer honesty: the mark's raw content DID change → 'text';
+			// buckets and handle events are separate layers by design
+			expect(markChanges).toEqual([{kind: 'text', previous: '#[ab]'}])
+			expect(childChanges).toEqual([{kind: 'text', previous: 'ab'}])
+			expect(tailChanges.map(change => change.kind)).toEqual(['moved'])
+			expect(markHandle.token().content).toBe('#[aXb]')
+			expect(childHandle.text()).toBe('aXb')
 		})
 	})
 

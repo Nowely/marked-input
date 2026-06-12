@@ -53,7 +53,7 @@ const VERIFY_DOM: boolean = import.meta.env?.DEV ?? true
 const REBIND_CHANGESET: Changeset = (() => {
 	// oxlint-disable-next-line no-unsafe-type-assertion -- freezing a typed mutable array; widening back to number[] is intentional and safe
 	const e: number[] = Object.freeze<number[]>([]) as number[]
-	return Object.freeze({kind: 'delta' as const, textChanged: e, added: e, removed: e, shifted: e})
+	return Object.freeze({kind: 'delta' as const, textChanged: e, added: e, removed: e, updated: e})
 })()
 
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
@@ -132,7 +132,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	 */
 	function commitText(tokens: readonly Token[], changeset: Delta): boolean {
 		const needed = new Set<number>(changeset.textChanged)
-		for (const id of changeset.shifted) needed.add(id)
+		for (const id of changeset.updated) needed.add(id)
 		const resolved = new Map<number, {token: Token; path: TokenPath}>()
 		if (needed.size > 0) collectChanged(tokens, needed, resolved)
 
@@ -142,10 +142,16 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			const entry = resolved.get(id)
 			// Unknown id: conservative stale-tree guard (old isTextPath parity).
 			if (!entry) return false
-			// A textChanged MARK renders value/meta as framework props — the
-			// renderer must run. B3's deep reconcile makes this branch unreachable
-			// (textChanged will hold text tokens by construction); demote it to a
-			// dev assertion then.
+			// A textChanged MARK is a REFUSED descend (deep reconcile, B3): its
+			// value/meta/outside-slot bytes or child structure changed, and mark
+			// components render value/meta as framework props — the renderer must
+			// run. DELIBERATE deviation from the consolidation plan's "demote to a
+			// dev assertion": refused descends keep mark-level textChanged with
+			// the inherited id (handle continuity — the pinned escalation spec
+			// below relies on the same handle surviving a value edit), so this
+			// stays a runtime escalation. Descend-eligible in-slot edits never
+			// reach it: their children carry textChanged and the mark arrives in
+			// `updated`.
 			if (entry.token.type !== 'text') return false
 			const handle = deps.nodes.get(id)
 			const surface = handle?.node()?.textElement
@@ -153,7 +159,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			updates.push({handle, token: entry.token, path: entry.path})
 			patches.push({surface, content: entry.token.content})
 		}
-		for (const id of changeset.shifted) {
+		for (const id of changeset.updated) {
 			const handle = deps.nodes.get(id)
 			if (!handle) continue // never bound — a handle materializes on the next bind
 			const entry = resolved.get(id)

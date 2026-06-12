@@ -2,7 +2,7 @@ import {faker} from '@faker-js/faker'
 import {describe, expect, it} from 'vitest'
 
 import {Parser} from './parser/Parser'
-import type {Markup, Token} from './parser/types'
+import type {Markup, MarkToken, Token} from './parser/types'
 import {createIdentityTracker, type EditHint, type IdentityTracker} from './tokenIdentity'
 
 // Equivalence property (Phase 2 plan, Task 5 — the gate for Task 6's windowed
@@ -13,10 +13,16 @@ import {createIdentityTracker, type EditHint, type IdentityTracker} from './toke
 //   and ids are: stable for suffix-shifted tokens, fresh for added tokens,
 //   gone for removed tokens.
 //
-// The generator below (generateDocument / generateEdit / applyEdit) is
-// exported so Task 6 can reuse it to assert `incrementalParse ≡ full parse`.
-// On failure the error message carries seed + document + edit so the
-// counterexample is reproducible with `faker.seed(<seed>)`.
+// Deep reconcile (B3) adds the in-slot/in-row edit classes: a structure-
+// preserving edit inside a mark's slot must put the mark in `updated` (stable
+// id) and the covering text child in `textChanged` (stable id) — the descend
+// invariants, asserted on top of the base property.
+//
+// The generators below (generateDocument / generateEdit / applyEdit and the
+// slot-leading/in-slot families) are exported so the incrementalParse property
+// can reuse them to assert `incrementalParse ≡ full parse`. On failure the
+// error message carries seed + document + edit so the counterexample is
+// reproducible with `faker.seed(<seed>)`.
 
 const BASE_SEED = 6_122_026
 /** ~200 keeps CI-tolerable runtime; bump locally (e.g. 1000) for soak runs. */
@@ -188,6 +194,166 @@ export function generateEdit(doc: string, sigil: string): GeneratedEdit {
 	}
 }
 
+// --- In-slot edits (deep-descend class) ----------------------------------------
+
+/**
+ * A structure-preserving random edit strictly inside a complete `#[word]`
+ * mark's slot interior: insert/delete/replace of plain alpha text. Deletes
+ * keep at least one interior character (an emptied slot loses its slot range
+ * and legitimately refuses the descend); replaces guarantee a difference.
+ * Returns undefined when the document has no complete simple mark.
+ */
+export function generateInSlotEdit(doc: string, sigil: string): GeneratedEdit | undefined {
+	const marks = findValidMarks(doc, sigil)
+	if (marks.length === 0) return undefined
+	const mark = faker.helpers.arrayElement(marks)
+	const lo = mark.start + 2 // first interior char (after '#[')
+	const hi = mark.start + mark.length - 1 // exclusive interior end (before ']')
+	const kind = faker.helpers.arrayElement(['inSlotInsert', 'inSlotDelete', 'inSlotReplace'])
+	if (kind === 'inSlotDelete' && hi - lo > 1) {
+		// keep ≥1 interior char: never delete the whole interior
+		const start = faker.number.int({min: lo, max: hi - 1})
+		const maxEnd = start === lo ? hi - 1 : hi
+		const end = faker.number.int({min: start + 1, max: maxEnd})
+		if (end > start) return {kind, start, end, insert: ''}
+	}
+	if (kind === 'inSlotReplace') {
+		const start = faker.number.int({min: lo, max: hi - 1})
+		const end = faker.number.int({min: start + 1, max: hi})
+		let insert = word()
+		if (insert === doc.slice(start, end)) insert += 'X'
+		return {kind, start, end, insert}
+	}
+	const at = faker.number.int({min: lo, max: hi})
+	return {kind: 'inSlotInsert', start: at, end: at, insert: word()}
+}
+
+// --- Slot-leading documents (block rows) ---------------------------------------
+// The sigil-based generateDocument/generateEdit API cannot express `\n\n`
+// separators; the row family below covers the `'__slot__\n\n'` markup.
+
+/** A slot-leading document: random words joined by `\n\n` (0–6 rows, some unterminated). */
+export function generateSlotLeadingDocument(): string {
+	const rows = faker.number.int({min: 0, max: 6})
+	if (rows === 0) return ''
+	const parts: string[] = []
+	for (let r = 0; r < rows; r++) {
+		// each "row" is a few words separated by single spaces
+		const wordCount = faker.number.int({min: 0, max: 4})
+		const row = Array.from({length: wordCount}, () => word()).join(' ')
+		parts.push(row)
+	}
+	// with 50 % probability leave the last row unterminated (no trailing \n\n)
+	const sep = '\n\n'
+	return faker.datatype.boolean() ? parts.join(sep) + sep : parts.join(sep)
+}
+
+/**
+ * A random single edit for slot-leading documents. The adversarial class here
+ * is edits that SPLIT or MERGE rows by inserting/deleting `\n` or `\n\n`.
+ */
+export function generateSlotLeadingEdit(doc: string): GeneratedEdit {
+	const kind = faker.helpers.weightedArrayElement([
+		{weight: 3, value: 'insertWord'},
+		{weight: 3, value: 'deleteChars'},
+		{weight: 3, value: 'replaceChars'},
+		{weight: 3, value: 'insertNewline'}, // might split a row
+		{weight: 3, value: 'insertDoubleSep'}, // inserts \n\n — always splits
+		{weight: 3, value: 'deleteNewline'}, // might merge rows
+		{weight: 2, value: 'startEdge'},
+		{weight: 2, value: 'endEdge'},
+		{weight: 1, value: 'fullReplace'},
+	])
+	switch (kind) {
+		case 'insertWord': {
+			const at = faker.number.int({min: 0, max: doc.length})
+			return {kind, start: at, end: at, insert: word()}
+		}
+		case 'deleteChars': {
+			if (doc.length === 0) return {kind: 'noop', start: 0, end: 0, insert: ''}
+			const start = faker.number.int({min: 0, max: doc.length - 1})
+			const end = faker.number.int({min: start + 1, max: Math.min(doc.length, start + 6)})
+			return {kind, start, end, insert: ''}
+		}
+		case 'replaceChars': {
+			if (doc.length === 0) return {kind: 'insertWord', start: 0, end: 0, insert: word()}
+			const start = faker.number.int({min: 0, max: doc.length - 1})
+			const end = faker.number.int({min: start, max: Math.min(doc.length, start + 6)})
+			return {kind, start, end, insert: word()}
+		}
+		case 'insertNewline': {
+			const at = faker.number.int({min: 0, max: doc.length})
+			return {kind, start: at, end: at, insert: '\n'}
+		}
+		case 'insertDoubleSep': {
+			const at = faker.number.int({min: 0, max: doc.length})
+			return {kind, start: at, end: at, insert: '\n\n'}
+		}
+		case 'deleteNewline': {
+			// find any \n in the doc and delete it (or the pair \n\n)
+			const positions: number[] = []
+			for (let j = 0; j < doc.length; j++) {
+				if (doc[j] === '\n') positions.push(j)
+			}
+			if (positions.length === 0) return {kind: 'insertWord', start: 0, end: 0, insert: word()}
+			const at = faker.helpers.arrayElement(positions)
+			// delete 1 or 2 chars to merge a single \n or a \n\n separator
+			const end = Math.min(doc.length, at + (doc.slice(at, at + 2) === '\n\n' ? 2 : 1))
+			return {kind, start: at, end, insert: ''}
+		}
+		case 'startEdge':
+			return {kind, start: 0, end: 0, insert: word()}
+		case 'endEdge':
+			return {kind, start: doc.length, end: doc.length, insert: word()}
+		case 'fullReplace':
+			return {kind, start: 0, end: doc.length, insert: generateSlotLeadingDocument()}
+		default:
+			return {kind: 'noop', start: 0, end: 0, insert: ''}
+	}
+}
+
+/** Offsets of the complete (separator-terminated), non-empty rows of a slot-leading document. */
+function completeRows(doc: string): Array<{start: number; end: number}> {
+	const out: Array<{start: number; end: number}> = []
+	let at = 0
+	for (let sep = doc.indexOf('\n\n'); sep !== -1; sep = doc.indexOf('\n\n', at)) {
+		if (sep > at) out.push({start: at, end: sep})
+		at = sep + 2
+	}
+	return out
+}
+
+/**
+ * A structure-preserving random edit strictly inside a complete row's slot:
+ * insert/delete/replace of plain alpha text. Deletes keep the row non-empty
+ * (an emptied row loses its slot range) and never join `\n…\n` into a row
+ * separator. Returns undefined when the document has no complete row.
+ */
+export function generateInRowEdit(doc: string): GeneratedEdit | undefined {
+	const rows = completeRows(doc)
+	if (rows.length === 0) return undefined
+	const row = faker.helpers.arrayElement(rows)
+	const kind = faker.helpers.arrayElement(['inRowInsert', 'inRowDelete', 'inRowReplace'])
+	if (kind === 'inRowDelete' && row.end - row.start > 1) {
+		const start = faker.number.int({min: row.start, max: row.end - 1})
+		const maxEnd = start === row.start ? row.end - 1 : row.end
+		const end = faker.number.int({min: start + 1, max: maxEnd})
+		// rows may contain single '\n's: a delete must not make two of them
+		// adjacent (that would SPLIT the row — a structural edit, not in-row)
+		const joined = doc.slice(Math.max(0, start - 1), start) + doc.slice(end, end + 1)
+		if (end > start && joined !== '\n\n') return {kind, start, end, insert: ''}
+	}
+	if (kind === 'inRowReplace') {
+		const start = faker.number.int({min: row.start, max: row.end - 1})
+		const end = faker.number.int({min: start + 1, max: row.end})
+		let insert = word()
+		if (insert === doc.slice(start, end)) insert += 'X'
+		return {kind, start, end, insert}
+	}
+	const at = faker.number.int({min: row.start, max: row.end})
+	return {kind: 'inRowInsert', start: at, end: at, insert: word()}
+}
+
 // --- Assertions ---------------------------------------------------------------
 
 function collectTreeIds(tokens: readonly Token[], tracker: IdentityTracker, into = new Set<number>()): Set<number> {
@@ -218,6 +384,17 @@ function expectInheritedIds(prev: Token, next: Token, tracker: IdentityTracker):
 	}
 }
 
+/** Deepest mark whose slot range contains [start, end] — the descend target of an in-slot edit. */
+function deepestSlotMarkContaining(tokens: readonly Token[], start: number, end: number): MarkToken | undefined {
+	for (const token of tokens) {
+		if (token.type !== 'mark') continue
+		const slot = token.slot
+		if (!slot || start < slot.start || end > slot.end) continue
+		return deepestSlotMarkContaining(token.children, start, end) ?? token
+	}
+	return undefined
+}
+
 /**
  * Reconcile one edit and assert the property. Returns the reconciled tokens so
  * chained edits can continue from them.
@@ -246,7 +423,7 @@ function assertReconcileEquivalence(
 	const newIds = collectTreeIds(result.tokens, tracker)
 	expect(result.changeset.kind).toBe('delta')
 	if (result.changeset.kind !== 'delta') throw new Error('unreachable')
-	const {textChanged, added, removed, shifted} = result.changeset
+	const {textChanged, added, removed, updated} = result.changeset
 	for (const id of removed) {
 		expect(prevIds.has(id), `removed id ${id} was never in the previous tree`).toBe(true)
 		expect(newIds.has(id), `removed id ${id} is still present in the new tree`).toBe(false)
@@ -255,9 +432,9 @@ function assertReconcileEquivalence(
 		expect(prevIds.has(id), `added id ${id} already existed in the previous tree`).toBe(false)
 		expect(newIds.has(id), `added id ${id} is missing from the new tree`).toBe(true)
 	}
-	for (const id of shifted) {
-		expect(prevIds.has(id), `shifted id ${id} was never in the previous tree`).toBe(true)
-		expect(newIds.has(id), `shifted id ${id} is missing from the new tree`).toBe(true)
+	for (const id of updated) {
+		expect(prevIds.has(id), `updated id ${id} was never in the previous tree`).toBe(true)
+		expect(newIds.has(id), `updated id ${id} is missing from the new tree`).toBe(true)
 	}
 	for (const id of textChanged) {
 		expect(prevIds.has(id), `textChanged id ${id} was never in the previous tree`).toBe(true)
@@ -275,7 +452,32 @@ function assertReconcileEquivalence(
 		).toBe(true)
 	}
 
-	// 3. Identity stability at the edges (true-hint runs only — the contract is
+	// 3. Deep-descend invariants (in-slot/in-row edit classes): a structure-
+	//    preserving edit inside a slot must put the containing mark in
+	//    `updated` with a stable id, and the covering text child in
+	//    `textChanged` with a stable id — never mark-level textChanged, never
+	//    added/removed (the generators only emit these kinds when a complete
+	//    slot/row exists, so no skip path is needed here).
+	if (edit.kind.startsWith('inSlot') || edit.kind.startsWith('inRow')) {
+		const mark = deepestSlotMarkContaining(prevTokens, edit.start, edit.end)
+		expect(mark, 'an in-slot edit must land inside a previous slot mark').toBeDefined()
+		if (!mark) throw new Error('unreachable')
+		const markId = tracker.idOf(mark)
+		expect(updated, 'in-slot edit: the mark must be in updated').toContain(markId)
+		expect(textChanged, 'in-slot edit: the mark must not be textChanged').not.toContain(markId)
+		expect(added, 'in-slot edit: the mark must not be added').not.toContain(markId)
+		expect(removed, 'in-slot edit: the mark must not be removed').not.toContain(markId)
+		const child = mark.children.find(
+			c => c.type === 'text' && c.position.start <= edit.start && edit.end <= c.position.end
+		)
+		expect(child, 'in-slot edit: a text child must cover the edit window').toBeDefined()
+		if (!child) throw new Error('unreachable')
+		const childId = tracker.idOf(child)
+		expect(textChanged, 'in-slot edit: the covering text child must be textChanged').toContain(childId)
+		expect(newIds.has(childId), 'in-slot edit: the child id must survive into the new tree').toBe(true)
+	}
+
+	// 4. Identity stability at the edges (true-hint runs only — the contract is
 	//    defined relative to the edit window).
 	if (useHint) {
 		const delta = hint.insertedLength - (hint.end - hint.start)
@@ -310,7 +512,7 @@ function assertReconcileEquivalence(
 
 // --- Property runner ----------------------------------------------------------
 
-function runProperty(markup: Markup, sigil: string, iterations: number): void {
+function runProperty(markup: Markup, sigil: string, iterations: number, inSlot = false): void {
 	const parser = new Parser([markup])
 	for (let i = 0; i < iterations; i++) {
 		const seed = BASE_SEED + i
@@ -325,7 +527,10 @@ function runProperty(markup: Markup, sigil: string, iterations: number): void {
 		// every 4th iteration exercises the no-hint (findGap-derived) path
 		const useHint = i % 4 !== 3
 		for (let round = 0; round < rounds; round++) {
-			const edit = generateEdit(value, sigil)
+			// every 3rd edit of an in-slot run targets a slot interior (descend class)
+			const edit =
+				(inSlot && (i + round) % 3 === 0 ? generateInSlotEdit(value, sigil) : undefined) ??
+				generateEdit(value, sigil)
 			const next = applyEdit(value, edit)
 			try {
 				tokens = assertReconcileEquivalence(parser, tracker, tokens, value, next, edit, useHint)
@@ -346,12 +551,53 @@ function runProperty(markup: Markup, sigil: string, iterations: number): void {
 	}
 }
 
+function runSlotLeadingProperty(iterations: number): void {
+	const markup: Markup = '__slot__\n\n'
+	const parser = new Parser([markup])
+	for (let i = 0; i < iterations; i++) {
+		const seed = BASE_SEED + i
+		faker.seed(seed)
+		const doc = generateSlotLeadingDocument()
+		const tracker = createIdentityTracker()
+		let value = doc
+		let tokens = tracker.reconcile(parser.parse(doc)).tokens
+		const rounds = 1 + (i % 2)
+		const useHint = i % 4 !== 3
+		for (let round = 0; round < rounds; round++) {
+			// 2 of 3 edits stay inside a row (the block-typing descend class);
+			// the rest exercise row split/merge through the same tracker
+			const edit =
+				((i + round) % 3 !== 2 ? generateInRowEdit(value) : undefined) ?? generateSlotLeadingEdit(value)
+			const next = applyEdit(value, edit)
+			try {
+				tokens = assertReconcileEquivalence(parser, tracker, tokens, value, next, edit, useHint)
+			} catch (error) {
+				const detail = [
+					`seed=${seed} iteration=${i} round=${round} markup=${JSON.stringify(markup)} useHint=${useHint}`,
+					`document: ${JSON.stringify(value)}`,
+					`edit:     ${JSON.stringify(edit)}`,
+					`next:     ${JSON.stringify(next)}`,
+				].join('\n')
+				throw new Error(
+					`tokenIdentity equivalence property failed\n${detail}\n\n${error instanceof Error ? error.message : String(error)}`,
+					{cause: error}
+				)
+			}
+			value = next
+		}
+	}
+}
+
 describe('tokenIdentity equivalence property', () => {
 	it('value markup @[…]: reconciled tree deep-equals a fresh parse and ids follow the contract', () => {
 		runProperty('@[__value__]', '@', ITERATIONS)
 	})
 
-	it('slot markup #[…]: nested children follow the contract too', () => {
-		runProperty('#[__slot__]', '#', Math.ceil(ITERATIONS / 2))
+	it('slot markup #[…]: nested children follow the contract too, in-slot edits descend', () => {
+		runProperty('#[__slot__]', '#', Math.ceil(ITERATIONS / 2), true)
+	})
+
+	it('slot-leading markup __slot__\\n\\n: in-row edits descend (mark updated, child ids stable)', () => {
+		runSlotLeadingProperty(Math.ceil(ITERATIONS / 2))
 	})
 })

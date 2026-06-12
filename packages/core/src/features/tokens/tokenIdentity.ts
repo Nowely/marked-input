@@ -9,13 +9,21 @@ export type EditHint = {
 }
 
 /**
- * Delta buckets carry token ids. `added`, `removed` and `shifted` include the
- * ids of all descendants of the affected tokens (a removed mark's children are
- * removed, a shifted mark's children shifted). `textChanged` stays at the
- * matched-token granularity: a textChanged mark's subtree should be treated as
- * dirty by consumers; deep per-child diffing is deliberately not performed.
- * Phase 3 note: textChanged on a MARK token may require renderer invalidation
- * (mark components render `value`); the routing decision belongs to Phase 3.
+ * Delta buckets carry token ids. `added`/`removed` include the ids of all
+ * descendants of the affected tokens. `updated` holds renderer-irrelevant
+ * changes: position-only shifts (descendants included) and deep-descended
+ * container marks (slot interior changed; descriptor, value/meta and child
+ * structure unchanged — spec §Deep reconcile). A descended mark enters
+ * `updated` alone: its children report their own changes. `textChanged`
+ * holds text tokens whose content changed, plus marks whose descend was
+ * REFUSED (value/meta/outside-slot/child-structure changed): those keep
+ * mark-level granularity with the id inherited — the subtree is dirty, not
+ * diffed — and the commit pipeline escalates them structurally at runtime.
+ * DELIBERATE deviation from the consolidation plan's "textChanged ⊆ text
+ * tokens by construction; demote routing to a dev assertion": reclassifying
+ * refused descends as removed+added would break handle identity continuity
+ * for value-edited marks (MarkController.update flows pin same-id
+ * inheritance), so commit.ts keeps its runtime mark-escalation branch.
  */
 export type Changeset =
 	| {kind: 'full'}
@@ -24,7 +32,7 @@ export type Changeset =
 			textChanged: number[]
 			added: number[]
 			removed: number[]
-			shifted: number[]
+			updated: number[]
 	  }
 
 export type ReconcileResult = {
@@ -112,8 +120,120 @@ export function createIdentityTracker(): IdentityTracker {
 			const out: Token[] = next.slice()
 			const textChanged: number[] = []
 			const added: number[] = []
-			const shifted: number[] = []
+			const updated: number[] = []
 			const matchedPrev = new Set<Token>()
+
+			/**
+			 * Deep descend (spec §Deep reconcile): an id-matched mark pair whose
+			 * difference is confined to the slot interior becomes an UPDATE — the
+			 * children carry the change at their own granularity. All four
+			 * conditions must hold; any refusal keeps today's conservative
+			 * mark-level textChanged (id inherited — handle continuity for
+			 * refused descends is the pinned contract).
+			 */
+			const tryDescend = (prevMark: MarkToken, nextMark: MarkToken): boolean => {
+				// 1. same descriptor (reference — interned per parser instance)
+				if (!sameDescriptor(prevMark, nextMark)) return false
+				// 2. rendered props byte-unchanged
+				if (prevMark.value !== nextMark.value || prevMark.meta !== nextMark.meta) return false
+				// 3. only the slot interior changed: the raw content before
+				//    slot.start and after slot.end is byte-equal. Equality of the
+				//    mark-relative slices pins the slot's offsets within the mark,
+				//    so positions shift consistently by the parser invariant
+				//    content.length === position.end - position.start.
+				const prevSlot = prevMark.slot
+				const nextSlot = nextMark.slot
+				if (!prevSlot || !nextSlot) return false
+				const prevBase = prevMark.position.start
+				const nextBase = nextMark.position.start
+				const headEqual =
+					prevMark.content.slice(0, prevSlot.start - prevBase) ===
+					nextMark.content.slice(0, nextSlot.start - nextBase)
+				if (!headEqual) return false
+				const tailEqual =
+					prevMark.content.slice(prevSlot.end - prevBase) === nextMark.content.slice(nextSlot.end - nextBase)
+				if (!tailEqual) return false
+				// 4. children pair 1:1 structurally
+				const prevKids = prevMark.children
+				const nextKids = nextMark.children
+				if (prevKids.length !== nextKids.length) return false
+				for (let i = 0; i < prevKids.length; i++) {
+					const a = prevKids[i]
+					const b = nextKids[i]
+					if (a.type !== b.type) return false
+					if (a.type === 'mark' && b.type === 'mark' && !sameDescriptor(a, b)) return false
+				}
+				// Descend: pair the children inside the slot window, then carry the
+				// id onto the new mark. ensureId runs AFTER pairing — the children
+				// already hold their inherited ids, so no phantom allocations.
+				const id = ids.get(prevMark)
+				if (id !== undefined) ids.set(nextMark, id)
+				pairSlotChildren(prevMark, nextMark, prevSlot, nextSlot)
+				updated.push(ensureId(nextMark))
+				return true
+			}
+
+			/**
+			 * Children of a descended mark: the same prefix/suffix/middle pairing,
+			 * scoped to the slot window. The window is derived minimally from the
+			 * slot contents themselves (independent of how sloppy the outer window
+			 * was); `headShift` moves children before the interior edit (the whole
+			 * mark may have shifted), `tailShift` adds the interior growth for
+			 * children after it. Condition 4 guarantees index-aligned pairs, so no
+			 * child is ever added/removed here.
+			 */
+			const pairSlotChildren = (
+				prevMark: MarkToken,
+				nextMark: MarkToken,
+				prevSlot: NonNullable<MarkToken['slot']>,
+				nextSlot: NonNullable<MarkToken['slot']>
+			): void => {
+				const interior = hintFromValues(prevSlot.content, nextSlot.content)
+				const start = prevSlot.start + interior.start
+				const end = prevSlot.start + interior.end
+				const headShift = nextSlot.start - prevSlot.start
+				const tailShift = headShift + interior.insertedLength - (interior.end - interior.start)
+				const prevKids = prevMark.children
+				// Mutated in place: zero-shift matches reuse the previous OBJECT
+				// (byte-identical, so the output still deep-equals a fresh parse).
+				const kids = nextMark.children
+				let lo = 0
+				while (
+					lo < prevKids.length &&
+					prevKids[lo].position.end <= start &&
+					tokensEqualShifted(prevKids[lo], kids[lo], headShift)
+				) {
+					if (headShift === 0) {
+						kids[lo] = prevKids[lo]
+					} else {
+						inherit(prevKids[lo], kids[lo])
+						collectIds(kids[lo], updated)
+					}
+					lo++
+				}
+				let hi = prevKids.length - 1
+				while (
+					hi >= lo &&
+					prevKids[hi].position.start >= end &&
+					tokensEqualShifted(prevKids[hi], kids[hi], tailShift)
+				) {
+					if (tailShift === 0) {
+						kids[hi] = prevKids[hi]
+					} else {
+						inherit(prevKids[hi], kids[hi])
+						collectIds(kids[hi], updated)
+					}
+					hi--
+				}
+				for (let i = lo; i <= hi; i++) {
+					const a = prevKids[i]
+					const b = kids[i]
+					// nested marks descend recursively under the same four conditions
+					if (a.type === 'mark' && b.type === 'mark' && tryDescend(a, b)) continue
+					inherit(a, b)
+					textChanged.push(ensureId(b))
+				}
+			}
 
 			// 1. Prefix: tokens entirely before the edit window are identical incl.
 			//    position → reuse the previous OBJECT.
@@ -144,7 +264,7 @@ export function createIdentityTracker(): IdentityTracker {
 				if (shiftDelta !== 0) {
 					inherit(prev[prevTail], next[nextTail])
 					// descendants shifted too — collect the whole subtree
-					collectIds(next[nextTail], shifted)
+					collectIds(next[nextTail], updated)
 				} else {
 					out[nextTail] = prev[prevTail]
 				}
@@ -153,8 +273,9 @@ export function createIdentityTracker(): IdentityTracker {
 			}
 
 			// 3. Middle: same-index pairing for the window region — a token at the
-			//    same tree slot with the same type+descriptor keeps its id and is
-			//    reported as textChanged; everything else is added.
+			//    same tree slot with the same type+descriptor keeps its id. Paired
+			//    MARKS first attempt the deep descend above; refused or non-mark
+			//    pairs are reported as textChanged; everything else is added.
 			//    NOTE: same-index type+descriptor pairing is a heuristic — a merged
 			//    or unrelated text token landing in the same slot inherits the old
 			//    id and reports textChanged. That is acceptable: any token-count
@@ -171,8 +292,9 @@ export function createIdentityTracker(): IdentityTracker {
 						? token.type === 'mark' && sameDescriptor(candidate, token)
 						: candidate.type === token.type)
 				) {
-					inherit(candidate, token)
 					matchedPrev.add(candidate)
+					if (candidate.type === 'mark' && token.type === 'mark' && tryDescend(candidate, token)) continue
+					inherit(candidate, token)
 					textChanged.push(ensureId(token))
 				} else {
 					collectIds(token, added)
@@ -191,7 +313,7 @@ export function createIdentityTracker(): IdentityTracker {
 			previous = out
 			return {
 				tokens: out,
-				changeset: {kind: 'delta', textChanged, added, removed, shifted},
+				changeset: {kind: 'delta', textChanged, added, removed, updated},
 			}
 		},
 	}
@@ -225,6 +347,8 @@ function tokensEqual(a: Token, b: Token): boolean {
 }
 
 function tokensEqualShifted(a: Token, b: Token, delta: number): boolean {
+	// Fast path: a reused object is equal to itself exactly when nothing shifted.
+	if (a === b) return delta === 0
 	if (a.type !== b.type) return false
 	if (a.content !== b.content) return false
 	if (a.position.start + delta !== b.position.start || a.position.end + delta !== b.position.end) return false

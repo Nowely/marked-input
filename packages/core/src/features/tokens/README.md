@@ -41,7 +41,7 @@ Every value change flows through a single `apply(reconcileResult)`:
 value edit → parse (windowed; full on cold start / unstable window / markup change)
            → reconcile → changeset
   ├─ text path (added/removed empty, textChanged all text tokens):
-  │    update changed/shifted nodes in place (token, positions),
+  │    update textChanged/updated nodes in place (token, positions),
   │    conditionally patch textContent of changed text surfaces,
   │    bump ONLY those nodes' dirty signals → fire changed(changeset)
   └─ structural:
@@ -218,7 +218,7 @@ new parse against the previous tree and returns `{tokens, changeset}`:
   previous object.
 - **Suffix id-carry** — tokens after the window identical modulo a uniform
   position shift inherit the previous id (descendants recursively) onto the
-  new object and are reported in `shifted`; zero-shift suffixes are reused by
+  new object and are reported in `updated`; zero-shift suffixes are reused by
   reference like the prefix.
 - **Middle pairing** — same-slot tokens with the same type (and descriptor for
   marks) inherit the old id and land in `textChanged`; everything unpaired is
@@ -237,21 +237,24 @@ the changeset degrades to `{kind: 'full'}` only on the very first reconcile.
 ```ts
 type Changeset =
   | {kind: 'full'}
-  | {kind: 'delta'; textChanged: number[]; added: number[]; removed: number[]; shifted: number[]}
+  | {kind: 'delta'; textChanged: number[]; added: number[]; removed: number[]; updated: number[]}
 ```
 
-`textChanged` carries ids at matched-token granularity (a changed mark's
-subtree is dirty, not diffed per child — until deep reconcile lands).
-`shifted`/`added`/`removed` include descendant ids recursively.
+`textChanged` carries text-token ids plus marks whose descend was refused (a
+refused mark's subtree is dirty, not diffed per child). `updated` holds
+position-only shifts (descendants recursively) and deep-descended container
+marks. `added`/`removed` include descendant ids recursively.
 
 ### Deep reconcile — descend rules
 
-Placeholder: B3 adds pairwise descend into a changed mark's slot (same
-descriptor, byte-unchanged `value`/`meta`, slot-interior-only change, 1:1
-child pairing), renaming `shifted` → `updated`. Until then a changed mark
-routes structural — in block layout every visible text token sits inside a
-slot-leading mark, so block typing re-renders per keystroke while inline
-typing takes the text path.
+B3 landed: reconcile descends pairwise into a changed mark's slot when all
+four conditions hold (same descriptor reference; byte-unchanged
+`value`/`meta`; slot-interior-only change; 1:1 structural child pairing) —
+the mark goes to `updated`, its changed text children to `textChanged`, and
+block typing takes the text path. A refused descend keeps mark-level
+`textChanged` with the inherited id (handle continuity) and routes
+structural at runtime. Full write-up lands with the block render gate
+(close-out task).
 
 ### Edit-hint flow
 
