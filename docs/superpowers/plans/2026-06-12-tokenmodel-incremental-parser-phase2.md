@@ -1,6 +1,6 @@
 # TokenModel Incremental Parser (Phase 2) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Implement Phase 2 of `docs/superpowers/specs/2026-06-11-tokenmodel-dom-encapsulation-design.md` — stable token identity across reparses with a per-commit **changeset** (`{textChanged, added, removed, shifted}` | `full`), handles re-keyed from path to id, and a windowed incremental reparse for the typing hot path. This unblocks Phase 3 (fine-grained commit: changeset routing decides whether the renderer runs).
 
@@ -29,15 +29,15 @@
 - Modify: `packages/core/src/features/overlay/TriggerFinder.ts`
 - Modify: `packages/core/src/features/overlay/TriggerFinder.spec.ts`
 
-- [ ] **Step 1: Make `tokens` required**
+- [x] **Step 1: Make `tokens` required**
 
 `TriggerFinder`'s `tokens?: TokenModel` optionality (and the index-based pseudo-range branch in `#rawRangeForMatch`) exists only for direct-construction unit tests. Change the constructor to `(private readonly tokens: TokenModel, anchor?: SelectionAnchor)` and `static find<T>(options, getTrigger, tokens: TokenModel, anchor?: SelectionAnchor)`. Delete the `if (!this.tokens) return {start: index, end: index + source.length}` branch in `#rawRangeForMatch`.
 
-- [ ] **Step 2: Mount a Store in the spec**
+- [x] **Step 2: Mount a Store in the spec**
 
 `TriggerFinder.spec.ts` constructs `new TriggerFinder(undefined, anchorIn(...))` in ~25 tests. Add a tiny mount helper (copy the `mountInline` pattern from `packages/core/src/features/tokens/TokenHandle.spec.ts` — Store + container + span + `host.rendered()`), build one store per test file scope (or per test — match the file's existing structure), and pass `store.tokens` as the first arg. The `anchorIn(text, offset)` helper stays — anchors remain explicit. Tests asserting the pseudo-range fallback behavior: re-point them at the real `boundaryFor`-based range using anchors created INSIDE the mounted container (so `boundaryFor` resolves), or — where a test's whole point was the tokens-less fallback — delete the test and note it in the commit message (the branch no longer exists). Do not weaken any other assertion. The "throws when no anchor node" test: `new TriggerFinder(store.tokens)` with no selection still throws (selectionAnchor() returns undefined) — verify.
 
-- [ ] **Step 3: Gates + commit**
+- [x] **Step 3: Gates + commit**
 
 Run: `pnpm -w exec vitest run --project core TriggerFinder` then `pnpm -F core test` — green.
 
@@ -56,7 +56,7 @@ The heart of Phase 2. Pure module, no DOM, fully unit-testable.
 - Create: `packages/core/src/features/tokens/tokenIdentity.ts`
 - Create: `packages/core/src/features/tokens/tokenIdentity.spec.ts`
 
-- [ ] **Step 1: Write the failing spec**
+- [x] **Step 1: Write the failing spec**
 
 Create `tokenIdentity.spec.ts`. Use the real `Parser` (`./parser/Parser`) with markup `'@[__value__]'` to produce trees — no hand-built token mocks. Scenarios:
 
@@ -164,11 +164,11 @@ describe('tokenIdentity', () => {
 
 NOTE for the implementer: the fixture values above assume parser output shapes (`'he@[x]llo'` → text[0,2] mark[2,6] text[6,9] — pinned during Phase 1) and that `'#[__slot__]'` produces a mark with one text child. PIN every fixture against real parser output first (temporary failing assertion printing `tokens.map(t => [t.type, t.position, 'children' in t ? t.children.length : 0])`), and adjust offsets/expectations to reality. The CONTRACT under test (reference-reuse, id stability, changeset fields) must not be weakened.
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 `pnpm -w exec vitest run --project core tokenIdentity` → FAIL (`createIdentityTracker` not found).
 
-- [ ] **Step 3: Implement `tokenIdentity.ts`**
+- [x] **Step 3: Implement `tokenIdentity.ts`**
 
 ```ts
 import {findGap} from './preparsing'
@@ -368,11 +368,11 @@ IMPORTANT implementer notes:
 - Prefix step compares `prev[p]` to `next[p]` at the SAME index — valid because an edit strictly after `prev[p].position.end` cannot change anything before it *in this grammar* only when the parse is stable; the suffix/middle steps and the Task 6 equivalence property are the safety net. If the property test finds a counterexample (e.g. an edit completing a markup whose opening segment was in the "prefix"), the prefix loop must additionally stop at the first token whose `position.end >= window.start - maxLookbehind`; derive `maxLookbehind` from the registry's longest segment length. Do NOT pre-build that machinery unless the property test demands it — let the test drive.
 - `shifted` ids: per the design spec's routing rule these are TEXT-PATH (no renderer invalidation); `out[nextTail] = prev[prevTail]` reuse happens only when `shiftDelta === 0` because shifted tokens have different positions and must be new objects (the spec's "suffix keeps ids, gets shifted positions").
 
-- [ ] **Step 4: Iterate until the spec is green, then full suite**
+- [x] **Step 4: Iterate until the spec is green, then full suite**
 
 `pnpm -w exec vitest run --project core tokenIdentity` → PASS. `pnpm -F core test` → green (nothing wires it yet).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A packages/core
@@ -388,7 +388,7 @@ git commit -m "feat(tokens): identity tracker — stable ids and changesets acro
 - Modify: `packages/core/src/features/tokens/TokenModel.ts`
 - Test: extend `packages/core/src/features/tokens/tokenIdentity.spec.ts` or a new `TokenModel.changeset.spec.ts`
 
-- [ ] **Step 1: Failing spec**
+- [x] **Step 1: Failing spec**
 
 New file `packages/core/src/features/tokens/TokenModel.changeset.spec.ts` (mount pattern from `TokenHandle.spec.ts`):
 
@@ -403,7 +403,7 @@ it('exposes a changeset signal that is delta after edit.replace and full after d
 
 Write it as real code; pin against actual store API (`store.edit.replace` exists — see `features/edit/EditController.ts`).
 
-- [ ] **Step 2: ValueModel records the hint**
+- [x] **Step 2: ValueModel records the hint**
 
 In `ValueModel.replace(range, replacement)`: before `this.current(next)`, store the hint:
 
@@ -433,7 +433,7 @@ Also add, for the findGap fallback (Task 2's `reconcile` accepts `previousValue/
 
 maintained by capturing `this.#previousValue = this.current()` at the top of `replace()` AND via a `watch(this.current, (_, old) => { this.#previousValue = old })` for direct sets — read how `watch` exposes the old value in `shared/signals` (the TokenHandle spec asserts watch passes `(value, oldValue)`) and pick the single mechanism that covers both paths without double-capture; document the choice.
 
-- [ ] **Step 3: TokenModel pipeline**
+- [x] **Step 3: TokenModel pipeline**
 
 In `TokenModel`: add `readonly #identity = createIdentityTracker()` and a `#changeset` signal. Rework `current`:
 
@@ -460,7 +460,7 @@ CAUTION — purity: `takePendingEdit()` mutates inside a computed. That is accep
 
 Note: when the markup options change (`#parser` recomputes), the previous tree's descriptors no longer match (`sameDescriptor` is reference equality) — identity naturally degrades to added/removed, which is correct. Add a spec case if cheap.
 
-- [ ] **Step 4: Suite + commit**
+- [x] **Step 4: Suite + commit**
 
 Full suite green (existing parse behavior unchanged — `current()` returns the reconciled tree whose objects are equal-or-reused; the facade parity tables must still pass UNCHANGED — they assert positions/values, not identity).
 
@@ -478,7 +478,7 @@ git commit -m "feat(tokens): edit hints flow from ValueModel into identity recon
 - Modify: `packages/core/src/features/tokens/TokenHandle.ts` (key type/doc only, if anything)
 - Test: extend `packages/core/src/features/tokens/TokenHandle.spec.ts`
 
-- [ ] **Step 1: Failing spec**
+- [x] **Step 1: Failing spec**
 
 Add to `TokenHandle.spec.ts`:
 
@@ -498,7 +498,7 @@ it('handle survives a structural shift that changes its path (id-keyed identity)
 
 Write as real code; pin the block fixture against the existing one in this spec file.
 
-- [ ] **Step 2: Re-key**
+- [x] **Step 2: Re-key**
 
 In `TokenModel`:
 - `#handles` key becomes the identity id (`Map<number, TokenHandle>`).
@@ -506,7 +506,7 @@ In `TokenModel`:
 - `#syncHandles()`: iterate `#handles` by id against `#byId` — present → `sync(node, node.address.token)` (the existing text/moved event logic now fires `moved` precisely when a shifted token kept its id — exactly the spec's contract); absent → `kill()` + delete.
 - `handleFor(address)`: resolve node via `#byPath` (path from the address), then `#ensureHandle(node)` — unchanged externally.
 
-- [ ] **Step 3: Suite + commit**
+- [x] **Step 3: Suite + commit**
 
 `pnpm -w exec vitest run --project core TokenHandle` green (including the OLD dead-handle test — a removed token's id vanishes from `#byId`, so the kill path is preserved), full suite green, typecheck clean.
 
@@ -522,7 +522,7 @@ git commit -m "feat(tokens): handles keyed by stable token identity — survive 
 **Files:**
 - Create: `packages/core/src/features/tokens/tokenIdentity.property.spec.ts`
 
-- [ ] **Step 1: Write the property test (it should PASS already — it gates Task 6)**
+- [x] **Step 1: Write the property test (it should PASS already — it gates Task 6)**
 
 Seeded faker (same pattern as `Parser.spec.ts:1`), e.g. 200 iterations in CI-tolerable time:
 
@@ -543,11 +543,11 @@ Seeded faker (same pattern as `Parser.spec.ts:1`), e.g. 200 iterations in CI-tol
 
 Write it as real code. Structure: a `deepTokenEqual(a, b)` helper (or `expect(strip(a)).toEqual(strip(b))` where `strip` removes nothing — tokens carry no id field, so plain `toEqual` between reconciled and fresh-parsed trees works directly — verify and prefer that).
 
-- [ ] **Step 2: Run it repeatedly**
+- [x] **Step 2: Run it repeatedly**
 
 `pnpm -w exec vitest run --project core tokenIdentity.property` — run at least 3 times (different seeds per run if the harness allows; otherwise bump iteration count once locally to 1000). ANY failure is a Task 2 algorithm bug: minimize the counterexample, add it as a named regression case in `tokenIdentity.spec.ts`, fix (the plan's predicted fix: prefix loop must stop `maxLookbehind` before the window — see Task 2 notes), re-run.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add -A packages/core
@@ -565,11 +565,11 @@ Until now every keystroke still costs a full `parser.parse`. This task adds the 
 - Modify: `packages/core/src/features/tokens/TokenModel.ts` (`#reconciled` uses it)
 - Test: extend the property spec to ALSO assert windowed output ≡ full parse
 
-- [ ] **Step 1: Extend the property spec first**
+- [x] **Step 1: Extend the property spec first**
 
 Same generator as Task 5, asserting `incrementalParse(parser, prevTokens, prevValue, nextValue, hint)` deep-equals `parser.parse(nextValue)`. Failing (module doesn't exist).
 
-- [ ] **Step 2: Implement `incrementalParse.ts`**
+- [x] **Step 2: Implement `incrementalParse.ts`**
 
 Strategy (stabilization-checked window):
 
@@ -608,11 +608,11 @@ export function incrementalParse(
 
 Implement fully (the doubling-compare in step 4 is the simple, provably-conservative stabilization check: if reparsing 2× the window yields the same tokens inside the original window with the same edge alignment, accept; budget at most 3 widenings before full fallback). Position-shifting a Token subtree needs a `shiftToken(token, delta): Token` helper — recursive, new objects, shifted `position`/`slot` ranges.
 
-- [ ] **Step 3: Wire into TokenModel behind the hint**
+- [x] **Step 3: Wire into TokenModel behind the hint**
 
 In `#reconciled`: when `hint` exists AND a previous value/tree are available → `incrementalParse(...)`, else `parser.parse(value)`. The identity reconcile runs on the result either way (it doesn't care who produced the tree). Keep a module-level escape hatch: `const INCREMENTAL = true` constant (flag) so Phase 3 debugging can A/B quickly.
 
-- [ ] **Step 4: Property green ×3, suite, bench**
+- [x] **Step 4: Property green ×3, suite, bench**
 
 Property spec green on repeated runs (same escalation as Task 5 if not). Full suite green. Add the benchmark (next task runs it).
 
@@ -628,11 +628,11 @@ git commit -m "feat(tokens): windowed incremental reparse with stabilization fal
 **Files:**
 - Modify: `packages/core/src/features/tokens/parser.bench.ts`
 
-- [ ] **Step 1: Add the benchmark**
+- [x] **Step 1: Add the benchmark**
 
 Mirror the existing `bench()` structure (read the file): a 500-mark document; benchmark (a) full `parser.parse(value)` per keystroke vs (b) `incrementalParse` with a one-char tail insert hint and (c) a one-char middle insert. Use the existing `generateComparisonText(500)` fixture.
 
-- [ ] **Step 2: Run and record**
+- [x] **Step 2: Run and record**
 
 `pnpm run bench` (or `pnpm -F core run test:bench` — check package.json). Gate (from the design spec's phasing table): the incremental path must show a clear win on the 500-mark typing case — report the numbers. `parser.bench.result.json` is updated automatically; commit it.
 
@@ -651,15 +651,15 @@ If the win does NOT materialize (window overhead dominates), say so honestly in 
 - Possibly create: `packages/core/src/features/tokens/` extraction modules
 - Modify: `packages/core/src/features/tokens/README.md`
 
-- [ ] **Step 1: Size check (conditional extraction from the Phase 1 final review)**
+- [x] **Step 1: Size check (conditional extraction from the Phase 1 final review)**
 
 `wc -l packages/core/src/features/tokens/TokenModel.ts` — if > ~600 lines after Tasks 3–6, extract the cohesive selection-read cluster (`readSelection`/`selectedContent`/`selectionRect`/`selectionAnchor`/`isSelectionCollapsed`/`selectionIntersects`/`selectionFocusNode`) into `selectionReads.ts` (free functions, TokenModel delegates) — mechanical, suite-gated. If ≤ 600, skip and note it.
 
-- [ ] **Step 2: README**
+- [x] **Step 2: README**
 
 Update `features/tokens/README.md`: identity tracker (ids, WeakMap, reconcile), changeset vocabulary + the ROUTING RULE quote from the design spec (`textChanged`/`shifted` → text path; `added`/`removed` → renderer), edit-hint flow, incremental window strategy + fallback guarantee, `idOf`/`changeset()` API.
 
-- [ ] **Step 3: Gates + commit**
+- [x] **Step 3: Gates + commit**
 
 Full suite + typecheck + `pnpm run check:encapsulation` green.
 
@@ -674,17 +674,17 @@ git commit -m "docs(tokens): identity, changeset and incremental-parse documenta
 
 Phase 2 is not done until Phase 3 is planned — the chain from the Phase 1 plan continues.
 
-- [ ] **Step 1: Verify all Phase 2 gates**
+- [x] **Step 1: Verify all Phase 2 gates**
 
 `pnpm -F core test && pnpm -F core typecheck && pnpm run check:encapsulation` — green. Equivalence property green across repeated runs. Bench numbers recorded. All checkboxes in Tasks 1–8 ticked.
 
-- [ ] **Step 2: Write the Phase 3 implementation plan**
+- [x] **Step 2: Write the Phase 3 implementation plan**
 
 Using the **superpowers:writing-plans** skill, write the Phase 3 (fine-grained commit) plan against the now-landed codebase, from the design spec section "Phase 3 — fine-grained commit": changeset routing in `#commit()` (`textChanged`/`shifted` → patch path with CONDITIONAL textContent writes; `added`/`removed` → `structureInvalidated` renderer contract), `reconcileTextSurfaces` dissolution, dev-mode divergence detector, render-count specs (text edit → 0 renderer invocations, structural → 1), React adapter subscription. Save to `docs/superpowers/plans/YYYY-MM-DD-tokenmodel-finegrained-commit-phase3.md`.
 
 **Phase 3's plan ENDS THE CHAIN — no Phase 4 handoff task.** Its final task is the design spec's overall completion check (all three phase gates green).
 
-- [ ] **Step 3: Commit the Phase 3 plan**
+- [x] **Step 3: Commit the Phase 3 plan**
 
 ```bash
 git add docs/superpowers/plans/

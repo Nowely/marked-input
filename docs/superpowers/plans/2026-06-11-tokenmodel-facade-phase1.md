@@ -1,6 +1,6 @@
 # TokenModel Facade (Phase 1) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Implement Phase 1 (sub-phases 1a/1b/1c) of `docs/superpowers/specs/2026-06-11-tokenmodel-dom-encapsulation-design.md` — a hybrid TokenHandle + facade API on TokenModel backed by the current engine, migrate every consumer off raw DOM code, then delete the old surface.
 
@@ -33,7 +33,7 @@ Pure file moves. No behavior change; the whole suite is the gate.
 - Modify: `packages/core/src/features/keyboard/blockEdit.ts:11`
 - Modify: `packages/core/src/features/overlay/OverlayController.ts:7`
 
-- [ ] **Step 1: Move the files with git mv**
+- [x] **Step 1: Move the files with git mv**
 
 ```bash
 git mv packages/core/src/features/selection/textOffsets.ts packages/core/src/features/tokens/textOffsets.ts
@@ -43,7 +43,7 @@ git mv packages/core/src/features/selection/caretDom.spec.ts packages/core/src/f
 
 File contents are unchanged. The `'../../shared/checkers'` import inside both files stays valid (same directory depth).
 
-- [ ] **Step 2: Update the three importers**
+- [x] **Step 2: Update the three importers**
 
 In `packages/core/src/features/selection/SelectionController.ts` replace lines 13–14:
 
@@ -64,16 +64,16 @@ In `packages/core/src/features/overlay/OverlayController.ts` replace line 7:
 import * as caretDom from '../tokens/caret'
 ```
 
-- [ ] **Step 3: Fix the moved spec's import**
+- [x] **Step 3: Fix the moved spec's import**
 
 In `packages/core/src/features/tokens/caret.spec.ts`, change any `from './caretDom'` import to `from './caret'`.
 
-- [ ] **Step 4: Run the full suite**
+- [x] **Step 4: Run the full suite**
 
 Run: `pnpm -F core test`
 Expected: all green (move only).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A packages/core
@@ -92,7 +92,7 @@ TDD. Handles are path-keyed live objects cached by TokenModel; `handleFor`/`hand
 - Modify: `packages/core/src/features/tokens/TokenModel.ts`
 - Modify: `packages/core/src/features/tokens/index.ts`
 
-- [ ] **Step 1: Write the failing spec**
+- [x] **Step 1: Write the failing spec**
 
 Create `packages/core/src/features/tokens/TokenHandle.spec.ts`:
 
@@ -218,12 +218,12 @@ describe('TokenHandle', () => {
 })
 ```
 
-- [ ] **Step 2: Run the spec to verify it fails**
+- [x] **Step 2: Run the spec to verify it fails**
 
 Run: `pnpm -w exec vitest run --project core TokenHandle`
 Expected: FAIL — `handleAt is not a function`.
 
-- [ ] **Step 3: Implement TokenHandle**
+- [x] **Step 3: Implement TokenHandle**
 
 Create `packages/core/src/features/tokens/TokenHandle.ts`:
 
@@ -419,7 +419,7 @@ export class TokenHandle {
 
 Note: `caretRect` uses TreeWalker directly rather than `findTextBoundary` because the latter is non-exported and creates DOM (an empty Text node) as a side effect — wrong for a measurement.
 
-- [ ] **Step 4: Wire the registry into TokenModel**
+- [x] **Step 4: Wire the registry into TokenModel**
 
 In `packages/core/src/features/tokens/TokenModel.ts`:
 
@@ -498,7 +498,7 @@ And add the sync method:
 	}
 ```
 
-- [ ] **Step 5: Export the handle types**
+- [x] **Step 5: Export the handle types**
 
 In `packages/core/src/features/tokens/index.ts` add:
 
@@ -507,7 +507,7 @@ export {TokenHandle} from './TokenHandle'
 export type {TokenChange} from './TokenHandle'
 ```
 
-- [ ] **Step 6: Run the spec until green, then the full suite**
+- [x] **Step 6: Run the spec until green, then the full suite**
 
 Run: `pnpm -w exec vitest run --project core TokenHandle`
 Expected: PASS. If the dead-handle spec's mount choreography fights the block-layout filter, adjust the *spec* (the simplest valid mount that removes a token), not the registry.
@@ -515,7 +515,7 @@ Expected: PASS. If the dead-handle spec's mount choreography fights the block-la
 Run: `pnpm -F core test`
 Expected: all green.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A packages/core
@@ -533,7 +533,7 @@ Move `SelectionController`'s boundary parsing into tokens **without changing Sel
 - Create: `packages/core/src/features/tokens/TokenModel.facade.spec.ts`
 - Modify: `packages/core/src/features/tokens/TokenModel.ts`
 
-- [ ] **Step 1: Create the boundary module**
+- [x] **Step 1: Create the boundary module**
 
 Create `packages/core/src/features/tokens/boundary.ts` — the five helper functions at the bottom of `SelectionController.ts:324-406` moved verbatim with a context object replacing the `TokenModel` parameter (so 1c can privatize the lookups):
 
@@ -685,7 +685,7 @@ export function markBoundaryAt(
 }
 ```
 
-- [ ] **Step 2: Add the facade reads to TokenModel**
+- [x] **Step 2: Add the facade reads to TokenModel**
 
 In `packages/core/src/features/tokens/TokenModel.ts` add imports:
 
@@ -775,7 +775,7 @@ Add methods:
 
 (`RawSelection`'s `direction` field is `'forward' | 'backward'` — the moved code is identical to `SelectionController.readRaw`, so types already line up.)
 
-- [ ] **Step 3: Write the dual-run parity spec**
+- [x] **Step 3: Write the dual-run parity spec**
 
 Create `packages/core/src/features/tokens/TokenModel.facade.spec.ts`. It mounts realistic fixtures and asserts the facade equals the (still-present) old SelectionController implementation node-for-node:
 
@@ -883,7 +883,7 @@ describe('TokenModel facade parity (dual-run vs SelectionController)', () => {
 
 Note for the implementer: the `tokenAt(5)` expectation above documents *intent*; before finalizing, print the actual parsed positions (`store.tokens.current().map(t => t.position)`) and pin the assertions to the real parser output for `'he@[x]llo'` with markup `'@[__value__]'`. The invariant being tested: containing-surface first, else next surface by start position — identical to old `findTextTargetAt`. Same for the fixture DOM shape: mirror what `packages/core/src/features/tokens/TokenModel.index.spec.ts` and `SelectionController.spec.ts` do for mark fixtures (they are the source of truth for adapter-shaped DOM).
 
-- [ ] **Step 4: Run facade spec, then full suite**
+- [x] **Step 4: Run facade spec, then full suite**
 
 Run: `pnpm -w exec vitest run --project core facade`
 Expected: PASS (fix fixture shapes against existing spec patterns if buildIndex bails — symptom: `boundaryFor` returns undefined everywhere because `byPath` is empty).
@@ -891,7 +891,7 @@ Expected: PASS (fix fixture shapes against existing spec patterns if buildIndex 
 Run: `pnpm -F core test`
 Expected: all green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A packages/core
@@ -906,7 +906,7 @@ git commit -m "feat(tokens): boundary module and facade reads with dual-run pari
 - Modify: `packages/core/src/features/tokens/TokenModel.ts`
 - Modify: `packages/core/src/features/tokens/TokenModel.facade.spec.ts`
 
-- [ ] **Step 1: Write the failing specs**
+- [x] **Step 1: Write the failing specs**
 
 Append to `TokenModel.facade.spec.ts`:
 
@@ -959,12 +959,12 @@ describe('TokenModel placement commands', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `pnpm -w exec vitest run --project core facade`
 Expected: FAIL — `placeCaret is not a function`.
 
-- [ ] **Step 3: Implement on TokenModel**
+- [x] **Step 3: Implement on TokenModel**
 
 Add imports from `./caret`:
 
@@ -1055,12 +1055,12 @@ Add methods:
 
 **Ordering note:** `#placeAtRawPosition` differs from the old `#placeCollapsed` in one deliberate way — the old code tried any `textTargetAt` result first (including "next surface after a gap") *before* mark boundaries; this version prefers a *containing* text surface, then an exact mark boundary, then the next-surface fallback. At positions exactly on a text↔mark boundary the containing text surface still wins (old behavior preserved: `findTextTargetAt` used `position >= start && <= end` inclusive). Existing SelectionController placement specs are the gate — if any disagree, match old behavior exactly and drop this refinement.
 
-- [ ] **Step 4: Run facade spec + full suite**
+- [x] **Step 4: Run facade spec + full suite**
 
 Run: `pnpm -w exec vitest run --project core facade` → PASS
 Run: `pnpm -F core test` → all green
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A packages/core
@@ -1076,7 +1076,7 @@ git commit -m "feat(tokens): placement commands placeCaret/selectRange/caretFrom
 **Files:**
 - Modify: `packages/core/src/features/keyboard/inputRange.ts`
 
-- [ ] **Step 1: Switch to the facade**
+- [x] **Step 1: Switch to the facade**
 
 Replace the file body (keep `RawSelection` import):
 
@@ -1112,7 +1112,7 @@ function rawRangeFromTargetRange(store: KbCtx, range: InputTargetRange): RawSele
 
 Check the two call sites (`blockEdit.ts`, and grep `rawRangeFromInputEvent` for others) — their `KbCtx` picks must include `'tokens'`; `blockEdit.ts`'s already does.
 
-- [ ] **Step 2: Test + commit**
+- [x] **Step 2: Test + commit**
 
 Run: `pnpm -F core test` → all green
 
@@ -1130,7 +1130,7 @@ git commit -m "refactor(keyboard): inputRange reads boundaries via tokens.bounda
 - Modify: `packages/core/src/features/overlay/OverlayController.ts`
 - Modify: `packages/core/src/features/overlay/TriggerFinder.spec.ts` (constructor arg type if it stubs selection)
 
-- [ ] **Step 1: TriggerFinder takes TokenModel**
+- [x] **Step 1: TriggerFinder takes TokenModel**
 
 In `TriggerFinder.ts`: replace the `SelectionController` import with `import type {TokenModel} from '../tokens/TokenModel'`, and change the constructor + the two selection touchpoints:
 
@@ -1179,7 +1179,7 @@ function fallbackAnchor(): {node: Node; offset: number; isCollapsed: boolean} | 
 
 (The fallback is deleted in 1c if `TriggerFinder.spec.ts` can pass a real store; if it can't cheaply, keep the fallback — it reads, never writes, and lives behind the facade in spirit. Flag it in the 1c task.)
 
-- [ ] **Step 2: OverlayController drops caretDom**
+- [x] **Step 2: OverlayController drops caretDom**
 
 In `OverlayController.ts`: delete the `import * as caretDom from '../tokens/caret'` line, change `position` to use the facade, and pass tokens to TriggerFinder:
 
@@ -1194,7 +1194,7 @@ In `OverlayController.ts`: delete the `import * as caretDom from '../tokens/care
 
 At line ~124: `TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.tokens) ?? ...`
 
-- [ ] **Step 3: Test + commit**
+- [x] **Step 3: Test + commit**
 
 Run: `pnpm -F core test` → all green (TriggerFinder.spec.ts exercises the fallback path; OverlayController specs the facade path)
 
@@ -1214,7 +1214,7 @@ The big shrink: SelectionController keeps policy (range signal, preferred addres
 - Modify: `packages/core/src/features/clipboard/ClipboardController.ts:34`
 - Modify: `packages/core/src/features/selection/SelectionController.spec.ts`
 
-- [ ] **Step 1: Replace mechanics with facade calls**
+- [x] **Step 1: Replace mechanics with facade calls**
 
 In `SelectionController.ts`:
 
@@ -1291,19 +1291,19 @@ In `SelectionController.ts`:
 
 7. Delete the six module-level helper functions at the bottom of the file (`fromContainerBoundary`, `fromTokenChildBoundary`, `lookupTokenDescendant`, `findTextTargetAt`, `findMarkBoundaryAt`, `placeAtMarkBoundary`) — they live in `tokens/boundary.ts` / `TokenModel` now.
 
-- [ ] **Step 2: ClipboardController**
+- [x] **Step 2: ClipboardController**
 
 At `ClipboardController.ts:34` replace `this.selection.readSelectedContent()` with `this.tokens.selectedContent()` (the class already receives... **verify**: if `ClipboardController` has no `tokens` member, add it to the constructor where `Store` wires it — check `packages/core/src/store/Store.ts` for the construction site and pass `this.tokens`).
 
-- [ ] **Step 3: Update SelectionController.spec.ts**
+- [x] **Step 3: Update SelectionController.spec.ts**
 
 The `rawPositionFromBoundary` assertions (lines ~348–387) move to the facade: replace `store.selection.rawPositionFromBoundary(` with `store.tokens.boundaryFor(` throughout the spec. `readRaw` assertions stay as-is (the delegate keeps the API). If the spec imports moved caret helpers, point them at `../tokens/caret`.
 
-- [ ] **Step 4: Remove the dual-run parity spec's old-API side**
+- [x] **Step 4: Remove the dual-run parity spec's old-API side**
 
 `TokenModel.facade.spec.ts` still calls `store.selection.rawPositionFromBoundary` / `readSelectedContent` — they no longer exist. Rewrite those parity assertions as direct behavior assertions (the expected values are now pinned by the previous green run): replace each `expect(facade).toBe(old)` with `expect(facade).toBe(<the concrete expectation already proven>)` — concretely, change the boundary parity test to assert `boundaryFor` against a small table of known-good `(node, offset, affinity) → position` triples per fixture, captured from the last green run of the dual-run version.
 
-- [ ] **Step 5: Test + commit**
+- [x] **Step 5: Test + commit**
 
 Run: `pnpm -F core test` → all green. The SelectionController suite is the real gate here; investigate any placement regression against the Ordering note in Task 4 before touching boundary.ts.
 
@@ -1319,7 +1319,7 @@ git commit -m "refactor(selection): SelectionController keeps policy, delegates 
 **Files:**
 - Modify: `packages/core/src/features/keyboard/arrowNav.ts:30-38`
 
-- [ ] **Step 1: Replace locate with handleAt**
+- [x] **Step 1: Replace locate with handleAt**
 
 ```ts
 function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'next'): boolean {
@@ -1341,7 +1341,7 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 
 The rest of the function (`path`/`siblingAddress`/`placeAtAddress`) is unchanged.
 
-- [ ] **Step 2: Test + commit**
+- [x] **Step 2: Test + commit**
 
 Run: `pnpm -F core test` → all green
 
@@ -1359,7 +1359,7 @@ The dense one. Every `caretDom.*` call and the DOM-walking `findActiveBlock` go 
 **Files:**
 - Modify: `packages/core/src/features/keyboard/blockEdit.ts`
 
-- [ ] **Step 1: Replace findActiveBlock with handle resolution**
+- [x] **Step 1: Replace findActiveBlock with handle resolution**
 
 Delete `findActiveBlock`, the `ActiveBlock` type, the `caretDom` import, and the `htmlChildren, isHtmlElement` import (keep what's still used). Add:
 
@@ -1390,7 +1390,7 @@ function findActiveRow(store: KbCtx): ActiveRow | undefined {
 }
 ```
 
-- [ ] **Step 2: Migrate each handler**
+- [x] **Step 2: Migrate each handler**
 
 `handleDelete` — head becomes:
 
@@ -1526,7 +1526,7 @@ function handleArrowUpDown(store: KbCtx, container: HTMLElement, event: Keyboard
 
 After these changes the `container` parameter is unused in `handleDelete`, `handleEnter`, `handleBlockArrowLeftRight`, and `handleArrowUpDown` — remove it from those signatures and update the call sites inside `enableBlockEdit` (the `listen(container, ...)` wiring itself stays).
 
-- [ ] **Step 2.5: Decide on rowRect**
+- [x] **Step 2.5: Decide on rowRect**
 
 Given the parenthetical above and that `caretOnFirstLine`/`caretIndex`/`placeCaretAtX` already use the row scope, the rect should too. Add to `TokenHandle`:
 
@@ -1538,7 +1538,7 @@ Given the parenthetical above and that `caretOnFirstLine`/`caretIndex`/`placeCar
 
 and use `handle.rect()` / `prev.rect()` / `next.rect()` instead of `element()?.getBoundingClientRect()` in `handleArrowUpDown`.
 
-- [ ] **Step 3: Test + commit**
+- [x] **Step 3: Test + commit**
 
 Run: `pnpm -F core test` → all green (block keyboard specs are the gate)
 
@@ -1558,7 +1558,7 @@ git commit -m "refactor(keyboard): blockEdit navigates and places carets via tok
 - Modify: `packages/core/src/features/tokens/index.ts`
 - Modify: `packages/core/src/features/tokens/TokenModel.index.spec.ts`
 
-- [ ] **Step 1: Verify nothing outside tokens still uses the old API**
+- [x] **Step 1: Verify nothing outside tokens still uses the old API**
 
 ```bash
 grep -rn "tokens\.locate\|tokens\.nodeFor\|tokens\.nodes()\|from '../tokens/caret'\|from '../tokens/textOffsets'\|reconcileTextSurfaces\|TokenNode\|Lookup" packages/core/src --include='*.ts' | grep -v "src/features/tokens/"
@@ -1566,7 +1566,7 @@ grep -rn "tokens\.locate\|tokens\.nodeFor\|tokens\.nodes()\|from '../tokens/care
 
 Expected: empty output. Any hit is an unmigrated consumer — fix it first.
 
-- [ ] **Step 2: Privatize locate/nodeFor/nodes**
+- [x] **Step 2: Privatize locate/nodeFor/nodes**
 
 In `TokenModel.ts` rename `locate` → `#locate`, `nodeFor` → `#nodeFor`, `nodes` → `#nodes` and update the internal callers (`handleAt`, `#boundaryContext`, `reconcileSurfaces`, `placeCaret`). TS private-name methods can't be referenced in the `#boundaryContext` object literal via `this.#locate` inside arrow functions — they can (arrow functions close over `this`), so:
 
@@ -1583,7 +1583,7 @@ In `TokenModel.ts` rename `locate` → `#locate`, `nodeFor` → `#nodeFor`, `nod
 	}
 ```
 
-- [ ] **Step 3: Trim the tokens barrel**
+- [x] **Step 3: Trim the tokens barrel**
 
 In `packages/core/src/features/tokens/index.ts` delete these lines:
 
@@ -1594,7 +1594,7 @@ export type {TokenNode, Lookup} from './domTypes'
 
 (`reconcileTextSurfaces.spec.ts` imports the free function from `./reconcileTextSurfaces` directly — unaffected.)
 
-- [ ] **Step 4: Update TokenModel.index.spec.ts**
+- [x] **Step 4: Update TokenModel.index.spec.ts**
 
 Its ~13 `locate`/`nodeFor`/`nodes()` references become facade calls. Mapping:
 - `store.tokens.locate(el)` asserting `kind === 'token'` + `node.tokenElement` → `store.tokens.handleAt(el)` asserting a `TokenHandle` with `handle.element()`
@@ -1604,7 +1604,7 @@ Its ~13 `locate`/`nodeFor`/`nodes()` references become facade calls. Mapping:
 
 Assertions about `textElement`/`rowElement`/`childSequenceHost` internals: where the *behavior* is what matters (e.g. "text surface is indexed"), assert via `handle.hasTextSurface()`; for row/childSequenceHost structure, move those cases into `buildIndex.spec.ts` (which legitimately tests internals) if not already covered there — check first; most are.
 
-- [ ] **Step 5: Test + commit**
+- [x] **Step 5: Test + commit**
 
 Run: `pnpm -F core test` → all green
 
@@ -1621,7 +1621,7 @@ git commit -m "refactor(tokens)!: remove locate/nodeFor/nodes and TokenNode from
 - Create: `scripts/check-dom-encapsulation.sh`
 - Modify: `package.json` (root)
 
-- [ ] **Step 1: Write the guard script**
+- [x] **Step 1: Write the guard script**
 
 Create `scripts/check-dom-encapsulation.sh`:
 
@@ -1656,7 +1656,7 @@ echo 'DOM encapsulation: clean'
 chmod +x scripts/check-dom-encapsulation.sh
 ```
 
-- [ ] **Step 2: Wire it into package.json**
+- [x] **Step 2: Wire it into package.json**
 
 In root `package.json` scripts add:
 
@@ -1664,12 +1664,12 @@ In root `package.json` scripts add:
 "check:encapsulation": "bash scripts/check-dom-encapsulation.sh",
 ```
 
-- [ ] **Step 3: Run it; fix or document any stragglers**
+- [x] **Step 3: Run it; fix or document any stragglers**
 
 Run: `pnpm run check:encapsulation`
 Expected: `DOM encapsulation: clean`. Known possible straggler: `TriggerFinder`'s `fallbackAnchor()` (Task 6) uses `window.getSelection`. Resolve it here, don't suppress it: preferred fix is updating `TriggerFinder.spec.ts` to mount a Store (copy the mount helper from `TokenModel.facade.spec.ts`) and pass `store.tokens`, then delete `fallbackAnchor`. Adding grep exclusions to the script is not an acceptable resolution.
 
-- [ ] **Step 4: Full suite + commit**
+- [x] **Step 4: Full suite + commit**
 
 Run: `pnpm -F core test && pnpm run check:encapsulation` → both green
 
@@ -1684,18 +1684,18 @@ git commit -m "chore: DOM encapsulation guard — selection APIs only inside fea
 
 Phase 1 is not "done" until the next phase is planned — this keeps the spec's phase chain unbroken.
 
-- [ ] **Step 1: Verify all Phase 1 gates**
+- [x] **Step 1: Verify all Phase 1 gates**
 
 Run: `pnpm -F core test && pnpm run check:encapsulation`
 Expected: both green. All checkboxes in Tasks 1–11 ticked.
 
-- [ ] **Step 2: Write the Phase 2 implementation plan**
+- [x] **Step 2: Write the Phase 2 implementation plan**
 
 Using the **superpowers:writing-plans** skill, write the Phase 2 (incremental parser) plan against the *now-landed* codebase, from the spec `docs/superpowers/specs/2026-06-11-tokenmodel-dom-encapsulation-design.md` (section "Phase 2 — parser-threaded identity"). Scope: `parse(value, previous?)`, stable token ids, the `{textChanged, added, removed, shifted}` changeset with `full` fallback, handle registry re-keying from path to id, equivalence property spec, incremental-typing benchmark. Save to `docs/superpowers/plans/YYYY-MM-DD-tokenmodel-incremental-parser-phase2.md`.
 
 **The Phase 2 plan MUST end with the same kind of handoff task: "write the Phase 3 (fine-grained commit) plan via writing-plans".** Phase 3's plan then ends the chain (no Phase 4).
 
-- [ ] **Step 3: Commit the Phase 2 plan**
+- [x] **Step 3: Commit the Phase 2 plan**
 
 ```bash
 git add docs/superpowers/plans/

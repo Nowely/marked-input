@@ -1,6 +1,6 @@
 # TokenModel Fine-Grained Commit (Phase 3) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Implement Phase 3 of `docs/superpowers/specs/2026-06-11-tokenmodel-dom-encapsulation-design.md` — changeset-routed commits: pure text edits patch the DOM directly (no adapter re-render, no full re-index), structural edits invalidate the renderer; dev-mode divergence detector; render-count gates. **This plan ends the phase chain — its final task is the overall completion check, no Phase 4 handoff.**
 
@@ -26,7 +26,7 @@
 - Create: `packages/core/src/features/tokens/commitRouting.spec.ts`
 - Modify: `packages/core/src/features/tokens/TokenModel.ts`
 
-- [ ] **Step 1: Failing spec**
+- [x] **Step 1: Failing spec**
 
 `commitRouting.spec.ts` — pure unit tests for the classifier plus mounted tests for the computed:
 
@@ -44,7 +44,7 @@
 
 Write as real code; pin fixtures as the existing specs do. The classifier needs token-type lookup for textChanged ids — pass it the reconciled tree + changeset (`isTextPath(tokens, changeset, idOf)`); use `idOf` to map ids back (build a Map<number, Token> over the tree).
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `commitRouting.ts`:
 
@@ -101,7 +101,7 @@ TokenModel: add the `structure` computed — reference-stable across text-path c
 
 (Same once-per-wave purity argument as the existing PURITY NOTE — reference it. `current()` stays as-is; consumers needing live content keep using it.)
 
-- [ ] **Step 3: Green + full suite + commit**
+- [x] **Step 3: Green + full suite + commit**
 
 ```bash
 git add -A packages/core
@@ -116,7 +116,7 @@ git commit -m "feat(tokens): commit routing classifier and reference-stable stru
 - Modify: `packages/core/src/features/tokens/TokenModel.ts`
 - Create: `packages/core/src/features/tokens/TokenModel.patch.spec.ts`
 
-- [ ] **Step 1: Failing spec**
+- [x] **Step 1: Failing spec**
 
 `TokenModel.patch.spec.ts` (manual-adapter mount): mount `'he@[x]llo'`-style fixture, render once. Then a tail text edit via `edit.replace` WITHOUT calling `host.rendered()` again (the adapter wouldn't re-render — structure is reference-stable). Assert:
 - the text surface's `textContent` was patched to the new content;
@@ -126,7 +126,7 @@ git commit -m "feat(tokens): commit routing classifier and reference-stable stru
 - a STRUCTURAL edit still requires `host.rendered()` (no patch): after a mark-inserting replace without rendered(), the index still reflects… — pin actual current behavior: the patch path must NOT fire for structural changes (watch-spy on indexed stays quiet until rendered()).
 - the editable/readOnly attributes survive (contentEditable still set on the patched surface).
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 In TokenModel's constructor `host.onMounted`, alongside the existing rendered-watch:
 
@@ -149,7 +149,7 @@ Caret note (document in code): on the text path the browser's caret is already c
 
 Edge to handle: `#patchCommit` runs only when a container exists and `#byPath` is non-empty; otherwise wait for the adapter.
 
-- [ ] **Step 3: Green + full suite + typecheck + commit**
+- [x] **Step 3: Green + full suite + typecheck + commit**
 
 The FULL suite is the regression gate — every existing spec calls `host.rendered()` manually after DOM changes; the new watch must not double-commit (rendered() after a patch re-runs `#commit` — idempotent by construction; verify no spec breaks).
 
@@ -166,11 +166,11 @@ git commit -m "feat(tokens): patch commits — text-path edits update DOM and in
 - Modify: `packages/core/src/features/tokens/TokenModel.ts` (or a small `divergence.ts`)
 - Test: extend `TokenModel.patch.spec.ts`
 
-- [ ] **Step 1: Failing spec**
+- [x] **Step 1: Failing spec**
 
 A test that manually corrupts a text surface (`span.textContent = 'WRONG'`) and triggers a commit → expect the detector to throw with the token's path/address in the message. And a happy-path test that normal commits never throw.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 ```ts
 const VERIFY_DOM = import.meta.env?.DEV ?? true // bundlers strip in prod builds; always on in vitest
@@ -178,7 +178,7 @@ const VERIFY_DOM = import.meta.env?.DEV ?? true // bundlers strip in prod builds
 
 (Verify how `import.meta.env` behaves in the vite lib build — if unavailable, use `process.env.NODE_ENV !== 'production'` guarded by typeof, or a module flag set true and rely on the library build docs; pick what the build actually supports and document.) After every `#commit` AND `#patchCommit`: iterate `#byPath`, for each node with a `textElement`, resolve its token; if `textContent !== content`, throw `new Error('TokenModel divergence at [path]: DOM "<...>" ≠ model "<...>"')`. Run it INSIDE the committing guard so the throw fails loud, as the design spec demands.
 
-- [ ] **Step 3: Green ×full suite (detector active across every existing spec — that's the point) + commit**
+- [x] **Step 3: Green ×full suite (detector active across every existing spec — that's the point) + commit**
 
 ```bash
 git add -A packages/core
@@ -194,15 +194,15 @@ git commit -m "feat(tokens): dev-mode divergence detector — DOM text must matc
 - Modify: the Vue equivalent (`packages/vue/markput/src/.../Container.vue` — find the `tokens.current` consumption; same swap)
 - Test: existing storybook specs are the regression gate
 
-- [ ] **Step 1: Swap the subscription in both adapters**
+- [x] **Step 1: Swap the subscription in both adapters**
 
 Read each Container first. Only the STRUCTURAL render subscription changes; anything reading token content for rendering (e.g. `<Span value={token.content}>`)… NOTE: token objects inside `structure()` are stale on the text path BY DESIGN (content prop stale; textContent patched directly). Verify `Token.tsx` doesn't read anything that must be fresh on the text path (key derivation, address registration). If Token registers addresses from the stale tree, confirm `handleAt`/index refresh (Task 2's in-place address rebuild) keeps lookups working — core patch spec already asserts this; the storybook suites assert end-to-end.
 
-- [ ] **Step 2: Run the react + vue storybook suites**
+- [x] **Step 2: Run the react + vue storybook suites**
 
 `pnpm -w exec vitest run --project react` and `--project vue` — green. Plus full core suite.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add -A packages
@@ -217,9 +217,9 @@ git commit -m "feat(adapters): containers render from tokens.structure — text 
 - Extend: `packages/core/src/features/tokens/commitRouting.spec.ts` (core watch-spy: structure ref stability already covered in Task 1 — add an end-to-end count: N text edits → structure watcher fired 0 times, indexed fired N times)
 - Create: a React render-count spec in `packages/storybook/src/pages/` following the existing `*.react.spec.tsx` patterns: custom `Span` component with a `vi.fn()` render spy passed via the public prop; type a character into the rendered editor (vitest-browser-react interaction); assert spy call count does NOT increase for a pure text keystroke, then perform a structural edit (complete a markup) and assert it DOES re-render.
 
-- [ ] **Step 1: Write both specs (failing only if Tasks 1–4 are wrong — these are the design-spec gates: text edit → 0 renderer invocations, structural → ≥1)**
-- [ ] **Step 2: Green; investigate honestly if the React spec shows extra renders (useSyncExternalStore re-snapshot without commit is allowed; assert COMMITTED re-renders via the spy, not snapshot calls)**
-- [ ] **Step 3: Commit**
+- [x] **Step 1: Write both specs (failing only if Tasks 1–4 are wrong — these are the design-spec gates: text edit → 0 renderer invocations, structural → ≥1)**
+- [x] **Step 2: Green; investigate honestly if the React spec shows extra renders (useSyncExternalStore re-snapshot without commit is allowed; assert COMMITTED re-renders via the spy, not snapshot calls)**
+- [x] **Step 3: Commit**
 
 ```bash
 git add -A packages
@@ -234,9 +234,9 @@ git commit -m "test: render-count gates — text edits bypass the renderer, stru
 - Modify: `packages/core/src/features/tokens/README.md`
 - Modify: `packages/core/src/features/tokens/commitRouting.ts` (FINE_GRAINED escape hatch if not already)
 
-- [ ] **Step 1:** Add a `FINE_GRAINED = true` module flag (same pattern/JSDoc as `INCREMENTAL`) gating the `#patchCommit` watch — build-time A/B hatch.
-- [ ] **Step 2:** README Phase 3 section: routing rule as implemented (incl. the mark-textChanged→structural decision), `structure` vs `current` contract for adapter authors (custom Span children staleness caveat + why the divergence detector keeps it honest), `#patchCommit` mechanics, divergence detector, both flags. Resolve the Phase 2 README's open "Phase 3 decision" note — it's decided now.
-- [ ] **Step 3:** Gates: full core + react + vue suites, typecheck, encapsulation. Commit:
+- [x] **Step 1:** Add a `FINE_GRAINED = true` module flag (same pattern/JSDoc as `INCREMENTAL`) gating the `#patchCommit` watch — build-time A/B hatch.
+- [x] **Step 2:** README Phase 3 section: routing rule as implemented (incl. the mark-textChanged→structural decision), `structure` vs `current` contract for adapter authors (custom Span children staleness caveat + why the divergence detector keeps it honest), `#patchCommit` mechanics, divergence detector, both flags. Resolve the Phase 2 README's open "Phase 3 decision" note — it's decided now.
+- [x] **Step 3:** Gates: full core + react + vue suites, typecheck, encapsulation. Commit:
 
 ```bash
 git add -A packages
@@ -249,13 +249,13 @@ git commit -m "docs(tokens): fine-grained commit documentation and FINE_GRAINED 
 
 No Phase 4. This task closes the spec.
 
-- [ ] **Step 1: Run every gate from the design spec's phasing table**
+- [x] **Step 1: Run every gate from the design spec's phasing table**
   - Phase 1: `pnpm -F core test` + `pnpm run check:encapsulation`
   - Phase 2: equivalence property specs green ×3; bench numbers present in `parser.bench.result.json`
   - Phase 3: render-count specs green; divergence detector active across the suite
   - All: `pnpm -F core typecheck`, react + vue project suites
-- [ ] **Step 2: Mark the spec implemented** — add a `**Status:** Implemented (Phases 1–3 complete, YYYY-MM-DD)` line to `docs/superpowers/specs/2026-06-11-tokenmodel-dom-encapsulation-design.md` and tick any remaining plan checkboxes across the three plan files.
-- [ ] **Step 3: Commit**
+- [x] **Step 2: Mark the spec implemented** — add a `**Status:** Implemented (Phases 1–3 complete, YYYY-MM-DD)` line to `docs/superpowers/specs/2026-06-11-tokenmodel-dom-encapsulation-design.md` and tick any remaining plan checkboxes across the three plan files.
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs
