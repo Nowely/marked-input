@@ -1,7 +1,7 @@
 # TokenModel Fine-Grained Consolidation — Design Spec
 
 **Date:** 2026-06-12
-**Status:** Approved design, pending implementation plan
+**Status:** Implemented (2026-06-12)
 **Predecessor:** `2026-06-11-tokenmodel-dom-encapsulation-design.md` (Phases 1–3, implemented). This spec supersedes its *internal architecture* while keeping its facade contract and its gates.
 
 ## Motivation
@@ -125,7 +125,9 @@ features/tokens/
 {textChanged, added, removed, shifted}  →  {textChanged, added, removed, updated}
 ```
 
-`updated` absorbs the old `shifted` (position-only) **plus** deep-descended container marks (content/positions changed; structure and rendered props unchanged; renderer-irrelevant). `textChanged` then contains text tokens **by construction**, and routing collapses to: **text path ⇔ `added`/`removed` empty**. The classifier's runtime type-walk becomes a dev-mode assertion.
+`updated` absorbs the old `shifted` (position-only) **plus** deep-descended container marks (content/positions changed; structure and rendered props unchanged; renderer-irrelevant). `textChanged` then contains text tokens **by construction** for successful descends, and routing is: **text path ⇔ `added`/`removed` empty** (the structural latch is the only other override). The classifier's runtime type-walk was planned as a dev-mode assertion.
+
+Resolved during implementation: refused descends (all four conditions not met) keep mark-level `textChanged` with the inherited id — id continuity is load-bearing for `MarkController` and handle identity across a value edit (see `model/commit.spec.ts` pinned escalation scenario). A mark arriving in `textChanged` therefore signals a refused descend whose mark component inputs changed; the runtime check in `commitText` (`entry.token.type !== 'text' → return false`) stays as a correctness gate — escalating to the structural branch — not merely a dev assertion. In-slot edits that pass all four descend conditions never reach it: their mark arrives in `updated` and their children carry `textChanged`.
 
 ### Descend conditions (all four, else today's conservative mark-level `textChanged` → structural)
 
