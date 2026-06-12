@@ -82,4 +82,59 @@ describe('Render-count gates: block layout', () => {
 		expect(getAllRows(container)).toHaveLength(3)
 		expect(markRender.mock.calls.length).toBeGreaterThan(markBaseline)
 	})
+
+	it('first keystroke into a freshly-Enter-created empty row rides the text path', async () => {
+		const markRender = vi.fn()
+		const spanRender = vi.fn()
+		const RowMark = defineComponent({
+			props: {value: String},
+			setup(props, {slots}) {
+				return () => {
+					markRender()
+					return h('span', {}, slots.default?.() ?? props.value)
+				}
+			},
+		})
+		const Span = defineComponent({
+			props: {value: String},
+			setup(props) {
+				return () => {
+					spanRender()
+					return h('span', {}, props.value)
+				}
+			},
+		})
+		// oxlint-disable-next-line no-unsafe-type-assertion -- raw markup literal, as in the Drag fixtures
+		const options: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: RowMark}]
+		const Fixture = defineComponent({
+			setup() {
+				return () =>
+					h(MarkedInput, {
+						Span,
+						options,
+						defaultValue: 'First row\n\n',
+						layout: 'block',
+						draggable: true,
+					})
+			},
+		})
+
+		const {container} = await render(Fixture)
+		expect(getAllRows(container)).toHaveLength(1)
+
+		await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
+
+		// Enter creates an EMPTY row (caret inside it) — structural, re-renders.
+		await userEvent.keyboard('{Enter}')
+		expect(getAllRows(container)).toHaveLength(2)
+		const markBaseline = markRender.mock.calls.length
+		const spanBaseline = spanRender.mock.calls.length
+
+		// Gate: the FIRST keystroke into the fresh empty row rides the text path —
+		// the empty slot Span is patched in place, zero component re-renders.
+		await userEvent.keyboard('x')
+		await expect.element(page.getByText('x')).toBeInTheDocument()
+		expect(spanRender.mock.calls.length).toBe(spanBaseline)
+		expect(markRender.mock.calls.length).toBe(markBaseline)
+	})
 })

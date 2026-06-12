@@ -2,8 +2,9 @@ import {describe, expect, it} from 'vitest'
 
 import type {CoreOption} from '../../shared/types'
 import type {Token} from '../tokens'
+import {Parser} from '../tokens/parser/Parser'
 import {createRowContent} from './createRowContent'
-import {addDragRow, applyDragAction, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
+import {addDragRow, applyDragAction, deleteDragRow, duplicateDragRow, mergeDragRows, reorderDragRows} from './operations'
 
 function textToken(content: string, start: number): Token {
 	return {type: 'text', content, position: {start, end: start + content.length}}
@@ -59,5 +60,22 @@ describe('applyDragAction', () => {
 		const result = applyDragAction(value, rows, {type: 'duplicate', index: 0}, options)
 		expect(result.value).toBe(expected)
 		expect(result.caret).toBe(rows[0].position.end)
+	})
+})
+
+describe('mergeDragRows', () => {
+	it('merging into an EMPTY previous row drops its suffix (zero-width slot)', () => {
+		// rows: '' and 'b' — the empty row's slot is a zero-width window at its
+		// start (Phase 0 parser fix), so the merge removes the empty row's '\n\n'
+		// suffix entirely. Old behavior (slot undefined → slotEnd = position.end)
+		// was a silent no-op.
+		const rowParser = new Parser(['__slot__\n\n'])
+		const value = '\n\nb\n\n'
+		const rows = rowParser.parse(value).filter(token => token.type === 'mark')
+		expect(rows).toHaveLength(2)
+
+		const result = mergeDragRows(value, rows, 1)
+
+		expect(result).toEqual({value: 'b\n\n', caret: 0})
 	})
 })
