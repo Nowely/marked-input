@@ -32,13 +32,15 @@ once per token on first sight and never reused.
 previously reconciled tree and returns `{tokens, changeset}`:
 
 - **Prefix reuse** — top-level tokens that are byte-identical to their predecessor
-  (content, type, descriptor, positions, and full subtree) AND lie entirely before
+  (type, content, positions, descriptor, value/meta, and full subtree) AND lie entirely before
   the edit window are returned `===` the previous object.  The comparison is exact:
   a token with shifted positions is never reused by reference.
 - **Suffix id-carry** — top-level tokens lying entirely after the edit window that
   are identical except for a uniform position shift (`shiftDelta`) inherit the
   previous token's id (and its children's ids recursively) onto the new object.
-  They are new objects (positions differ) but carry the old id.
+  When `shiftDelta !== 0` they are new objects (positions differ) with inherited id
+  and are reported in `shifted`; when `shiftDelta === 0` they are reused by reference
+  like the prefix and are NOT reported in `shifted`.
 - **Middle pairing** — tokens inside the edit window are paired at the same tree
   slot with the same type and descriptor.  A paired token inherits the old id and
   is placed in `textChanged`; anything without a pair gets a fresh id and goes to
@@ -61,9 +63,9 @@ type Changeset =
   | {kind: 'delta'; textChanged: number[]; added: number[]; removed: number[]; shifted: number[]}
 ```
 
-`textChanged` and `shifted` carry ids of top-level tokens only (children are
-subsumed).  `added` and `removed` carry the full subtree of affected tokens
-(children's ids are included recursively).
+`textChanged` carries ids of top-level tokens only (its subtree is dirty, no per-child diff).
+`shifted`, `added`, and `removed` include the ids of all descendant tokens (children's ids
+are included recursively).
 
 `textChanged` on a `mark` token means its content changed; the subtree is treated
 as dirty and not diffed per-child.  Whether a textChanged mark requires renderer
