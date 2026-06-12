@@ -510,39 +510,48 @@ export class TokenModel {
 		if (!container) return
 		this.#committing = true
 		try {
-			const tokens = this.current()
-			const tokenIndex = this.index()
-			const result = buildIndex({
-				container,
-				tokens,
-				addressFor: path => tokenIndex.addressFor(path),
-				controlElements: this.#controlElements(),
-				childSequenceHostsFor: path => this.#childSequenceHostsFor(path),
-				isBlock: this.props.layout.isBlock(),
-			})
-
-			this.#byPath = result.byPath
-			this.#byElement = result.byElement
-			this.#controlRoots = result.controlRoots
-
-			// Rebuild the id → node projection BEFORE handles sync against it.
-			const byId = new Map<number, TokenNode>()
-			for (const node of result.byPath.values()) {
-				byId.set(this.#identity.idOf(node.address.token), node)
-			}
-			this.#byId = byId
-
-			// Batch so handle `changed` watchers flush only after the version bump —
-			// otherwise they would read the previous commit's cached token/address.
-			batch(() => {
-				this.#syncHandles()
-				this.#domVersion(this.#domVersion() + 1)
-			})
-			this.#hasCommitted = true
-			this.indexed()
+			this.#rebuildIndex(container)
 		} finally {
 			this.#committing = false
 		}
+	}
+
+	/**
+	 * Full structural (re)index against the current DOM — #commit's body, and
+	 * the escalation target for a text-path patch whose lookups fail. Callers
+	 * own the re-entry guard.
+	 */
+	#rebuildIndex(container: HTMLElement): void {
+		const tokens = this.current()
+		const tokenIndex = this.index()
+		const result = buildIndex({
+			container,
+			tokens,
+			addressFor: path => tokenIndex.addressFor(path),
+			controlElements: this.#controlElements(),
+			childSequenceHostsFor: path => this.#childSequenceHostsFor(path),
+			isBlock: this.props.layout.isBlock(),
+		})
+
+		this.#byPath = result.byPath
+		this.#byElement = result.byElement
+		this.#controlRoots = result.controlRoots
+
+		// Rebuild the id → node projection BEFORE handles sync against it.
+		const byId = new Map<number, TokenNode>()
+		for (const node of result.byPath.values()) {
+			byId.set(this.#identity.idOf(node.address.token), node)
+		}
+		this.#byId = byId
+
+		// Batch so handle `changed` watchers flush only after the version bump —
+		// otherwise they would read the previous commit's cached token/address.
+		batch(() => {
+			this.#syncHandles()
+			this.#domVersion(this.#domVersion() + 1)
+		})
+		this.#hasCommitted = true
+		this.indexed()
 	}
 
 	/**
@@ -552,6 +561,11 @@ export class TokenModel {
 	 * node keeps its elements and gets a fresh address from the new token index —
 	 * and the changed text surfaces are patched directly.
 	 *
+	 * Two-pass: {@link preparePatch} first resolves every refreshed address and
+	 * patch target without touching any state; only a fully resolved patch is
+	 * committed. If any lookup fails, the whole patch is abandoned and the full
+	 * structural machinery re-indexes the current DOM instead.
+	 *
 	 * Caret note: the browser caret is already correct on this path (the
 	 * keystroke happened inside that surface); `indexed` still triggers
 	 * SelectionController's #applyRange, which re-places from the range signal
@@ -559,41 +573,35 @@ export class TokenModel {
 	 */
 	#patchCommit(textChanged: readonly number[]): void {
 		if (this.#committing) throw new Error('TokenModel index re-entry')
+		const container = this.host.container()
 		// Nothing to patch before the adapter has painted: wait for rendered().
-		if (!this.host.container() || this.#byPath.size === 0) return
+		if (!container || this.#byPath.size === 0) return
 		this.#committing = true
 		try {
-			const tokenIndex = this.index()
+			// Pass 1 (pure): refresh addresses in place — same paths and elements,
+			// new tokens — and resolve every changed id to its text surface.
+			const prepared = preparePatch(this.#byPath, this.index(), token => this.#identity.idOf(token), textChanged)
+			if (!prepared) {
+				// Design spec (2026-06-11 tokenmodel-dom-encapsulation, "Error
+				// handling"): a patch whose target is missing from the index
+				// escalates to the structural path instead of dropping the edit.
+				this.#rebuildIndex(container)
+				return
+			}
 
-			// Refresh addresses in place: same paths and elements, new tokens.
-			const byPath = new Map<string, TokenNode>()
+			// Pass 2: commit the prepared maps and write the changed surfaces.
 			const byElement = new WeakMap<HTMLElement, TokenNode>()
-			for (const [key, previous] of this.#byPath) {
-				const address = tokenIndex.addressFor(previous.path)
-				if (!address) continue // mirrors buildIndex: unresolvable paths drop out
-				const node: TokenNode = {...previous, address}
-				byPath.set(key, node)
-				indexNodeElements(node, byElement)
-			}
-			this.#byPath = byPath
+			for (const node of prepared.byPath.values()) indexNodeElements(node, byElement)
+			this.#byPath = prepared.byPath
 			this.#byElement = byElement
-
-			// Rebuild the id → node projection BEFORE handles sync against it.
-			const byId = new Map<number, TokenNode>()
-			for (const node of byPath.values()) {
-				byId.set(this.#identity.idOf(node.address.token), node)
-			}
-			this.#byId = byId
+			this.#byId = prepared.byId
 
 			// Patch the changed text surfaces — reconcileTextSurfaces' conditional
 			// write, scoped to the changed ids (isTextPath guarantees they are all
 			// text tokens). contentEditable/tabindex upkeep stays with the full
 			// sweep, which SelectionController still runs on `indexed`.
-			for (const id of textChanged) {
-				const node = byId.get(id)
-				if (!node?.textElement) continue
-				const content = node.address.token.content
-				if (node.textElement.textContent !== content) node.textElement.textContent = content
+			for (const {element, content} of prepared.targets) {
+				if (element.textContent !== content) element.textContent = content
 			}
 
 			// Same tail as #commit: sync handles after the version bump, then notify.
@@ -613,4 +621,46 @@ function filterEmptyText(tokens: Token[]): Token[] {
 		if (token.type !== 'text') return true
 		return token.position.start !== token.position.end
 	})
+}
+
+export type PreparedPatch = {
+	readonly byPath: ReadonlyMap<string, TokenNode>
+	readonly byId: ReadonlyMap<number, TokenNode>
+	readonly targets: readonly {readonly element: HTMLElement; readonly content: string}[]
+}
+
+/**
+ * Pass 1 of the text-path patch commit — pure resolution, no state or DOM
+ * mutation: refresh each indexed node's address from the new token index and
+ * resolve every changed id to its text surface. Returns undefined when any
+ * lookup fails (unresolvable path, changed id missing from the projection, or
+ * target without a text surface) so the caller can escalate to a full
+ * structural rebuild — the design spec's "Error handling" section mandates
+ * escalation over silently dropping the edit. Exported for spec coverage:
+ * text-path routing invariants make the failure branches unreachable through
+ * the public API (buildIndex always gives text tokens a surface; paths are
+ * stable on the text path), so they are unit-tested directly.
+ */
+export function preparePatch(
+	previous: ReadonlyMap<string, TokenNode>,
+	index: TokenIndex,
+	idOf: (token: Token) => number,
+	textChanged: readonly number[]
+): PreparedPatch | undefined {
+	const byPath = new Map<string, TokenNode>()
+	const byId = new Map<number, TokenNode>()
+	for (const [key, node] of previous) {
+		const address = index.addressFor(node.path)
+		if (!address) return undefined
+		const refreshed: TokenNode = {...node, address}
+		byPath.set(key, refreshed)
+		byId.set(idOf(refreshed.address.token), refreshed)
+	}
+	const targets: {element: HTMLElement; content: string}[] = []
+	for (const id of textChanged) {
+		const node = byId.get(id)
+		if (!node?.textElement) return undefined
+		targets.push({element: node.textElement, content: node.address.token.content})
+	}
+	return {byPath, byId, targets}
 }

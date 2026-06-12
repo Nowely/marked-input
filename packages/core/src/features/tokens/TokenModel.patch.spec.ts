@@ -2,7 +2,12 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {watch} from '../../shared/signals/index.js'
 import {Store} from '../../store/Store'
+import type {TokenNode} from './domTypes'
+import type {Token} from './parser/types'
+import {createTextToken} from './parser/utils/createTextToken'
 import type {TokenChange} from './TokenHandle'
+import {createTokenIndex, pathKey} from './tokenIndex'
+import {preparePatch} from './TokenModel'
 
 /** Inline fixture (from TokenModel.facade.spec.ts): text 'he' [0,2], mark '@[x]' [2,6], text 'llo' [6,9]. */
 function mountWithMark() {
@@ -80,5 +85,70 @@ describe('TokenModel patch commits (text path, no renderer)', () => {
 		// rendered() → the full commit runs exactly once.
 		store.host.rendered()
 		expect(indexedSpy).toHaveBeenCalledTimes(1)
+	})
+})
+
+/**
+ * Escalation seam (design spec "Error handling"): a text-only patch whose
+ * target is missing from the index must escalate to the structural path
+ * instead of silently dropping the edit. The failure branches are unreachable
+ * through the public API while text-path routing invariants hold — buildIndex
+ * always gives an indexed text token a text surface, and the text path keeps
+ * paths stable, so addressFor and the id projection cannot miss. Hence the
+ * detection seam (preparePatch, pass 1 of #patchCommit) is unit-tested
+ * directly here: #patchCommit escalates to a full rebuild exactly when it
+ * returns undefined, and the happy path is covered end-to-end above. A
+ * black-box DOM-corruption trigger would require monkey-patching internals.
+ */
+describe('preparePatch (patch pass 1 — escalation detection)', () => {
+	function indexedNode(path: readonly number[], token: Token, withSurface = true): TokenNode {
+		const tokenElement = document.createElement('span')
+		return {
+			path,
+			address: {path, token},
+			tokenElement,
+			textElement: withSurface ? tokenElement : undefined,
+		}
+	}
+
+	/** One stale indexed text node + the post-edit index: 'llo' → 'llo!' (id 7). */
+	function staleFixture(withSurface = true) {
+		const previousToken = createTextToken('llo')
+		const nextToken = createTextToken('llo!')
+		const node = indexedNode([0], previousToken, withSurface)
+		const previous = new Map([[pathKey([0]), node]])
+		const index = createTokenIndex([nextToken])
+		const idOf = (token: Token) => (token === nextToken ? 7 : -1)
+		return {previous, index, idOf, node, nextToken}
+	}
+
+	it('resolves a full patch: refreshed addresses, same elements, surface writes', () => {
+		const {previous, index, idOf, node, nextToken} = staleFixture()
+		const prepared = preparePatch(previous, index, idOf, [7])
+		if (!prepared) throw new Error('expected a prepared patch')
+		// Address refreshed from the new index; elements carried over untouched.
+		expect(prepared.byPath.get(pathKey([0]))?.address.token).toBe(nextToken)
+		expect(prepared.byPath.get(pathKey([0]))?.tokenElement).toBe(node.tokenElement)
+		expect(prepared.byId.get(7)).toBe(prepared.byPath.get(pathKey([0])))
+		expect(prepared.targets).toEqual([{element: node.tokenElement, content: 'llo!'}])
+		// Pass 1 is pure: nothing was written to the DOM or the input map.
+		expect(node.tokenElement.textContent).toBe('')
+		expect(previous.get(pathKey([0]))?.address.token.content).toBe('llo')
+	})
+
+	it('returns undefined when an indexed path no longer resolves (addressFor miss)', () => {
+		const {previous, index, idOf, node} = staleFixture()
+		const orphan = new Map([...previous, [pathKey([1]), {...node, path: [1]}]])
+		expect(preparePatch(orphan, index, idOf, [7])).toBeUndefined()
+	})
+
+	it('returns undefined when a changed id is missing from the projection', () => {
+		const {previous, index, idOf} = staleFixture()
+		expect(preparePatch(previous, index, idOf, [99])).toBeUndefined()
+	})
+
+	it('returns undefined when the target surface is missing from the index', () => {
+		const {previous, index, idOf} = staleFixture(false)
+		expect(preparePatch(previous, index, idOf, [7])).toBeUndefined()
 	})
 })
