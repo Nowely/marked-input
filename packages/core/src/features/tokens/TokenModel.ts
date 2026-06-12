@@ -6,7 +6,7 @@ import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {markBoundaryAt, rawPositionFromBoundary, textTargetAt} from './boundary'
 import type {BoundaryContext} from './boundary'
-import {buildIndex} from './buildIndex'
+import {buildIndex, indexNodeElements} from './buildIndex'
 import {focusIfNeeded, getRect, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caret'
 import {isTextPath} from './commitRouting'
 import type {Lookup, TokenNode} from './domTypes'
@@ -160,6 +160,8 @@ export class TokenModel {
 	#byElement: WeakMap<HTMLElement, TokenNode> = new WeakMap()
 	#controlRoots: WeakSet<HTMLElement> = new WeakSet()
 	#committing = false
+	/** Whether a full #commit has run — the first paint must come from the adapter. */
+	#hasCommitted = false
 
 	// Handle registry — keyed by stable token identity id, so a handle follows
 	// its token across structural path shifts. #byId is the per-commit id → node
@@ -179,6 +181,17 @@ export class TokenModel {
 	) {
 		host.onMounted(() => {
 			watch(host.rendered, () => this.#commit(), {immediate: true})
+			// Text-path commits: a reconcile classified as a pure text edit keeps
+			// structure() reference-stable, so the adapter never re-renders and
+			// rendered() never fires — the DOM and index are patched here instead.
+			watch(this.#reconciled, ({tokens, changeset}) => {
+				if (!this.#hasCommitted) return // first paint must come from the adapter
+				// Structural reconciles go through the adapter: structure() changed
+				// reference → re-render → rendered() → #commit.
+				if (changeset.kind !== 'delta') return
+				if (!isTextPath(tokens, changeset, t => this.#identity.idOf(t))) return
+				this.#patchCommit(changeset.textChanged)
+			})
 		})
 	}
 
@@ -521,6 +534,69 @@ export class TokenModel {
 
 			// Batch so handle `changed` watchers flush only after the version bump —
 			// otherwise they would read the previous commit's cached token/address.
+			batch(() => {
+				this.#syncHandles()
+				this.#domVersion(this.#domVersion() + 1)
+			})
+			this.#hasCommitted = true
+			this.indexed()
+		} finally {
+			this.#committing = false
+		}
+	}
+
+	/**
+	 * Text-path commit: the adapter never ran (structure() kept its reference),
+	 * so the previous commit's elements are all still live. Paths are unchanged
+	 * by definition of the text path, so the index is refreshed in place — each
+	 * node keeps its elements and gets a fresh address from the new token index —
+	 * and the changed text surfaces are patched directly.
+	 *
+	 * Caret note: the browser caret is already correct on this path (the
+	 * keystroke happened inside that surface); `indexed` still triggers
+	 * SelectionController's #applyRange, which re-places from the range signal
+	 * exactly as it does after a full commit — behavior unchanged.
+	 */
+	#patchCommit(textChanged: readonly number[]): void {
+		if (this.#committing) throw new Error('TokenModel index re-entry')
+		// Nothing to patch before the adapter has painted: wait for rendered().
+		if (!this.host.container() || this.#byPath.size === 0) return
+		this.#committing = true
+		try {
+			const tokenIndex = this.index()
+
+			// Refresh addresses in place: same paths and elements, new tokens.
+			const byPath = new Map<string, TokenNode>()
+			const byElement = new WeakMap<HTMLElement, TokenNode>()
+			for (const [key, previous] of this.#byPath) {
+				const address = tokenIndex.addressFor(previous.path)
+				if (!address) continue // mirrors buildIndex: unresolvable paths drop out
+				const node: TokenNode = {...previous, address}
+				byPath.set(key, node)
+				indexNodeElements(node, byElement)
+			}
+			this.#byPath = byPath
+			this.#byElement = byElement
+
+			// Rebuild the id → node projection BEFORE handles sync against it.
+			const byId = new Map<number, TokenNode>()
+			for (const node of byPath.values()) {
+				byId.set(this.#identity.idOf(node.address.token), node)
+			}
+			this.#byId = byId
+
+			// Patch the changed text surfaces — reconcileTextSurfaces' conditional
+			// write, scoped to the changed ids (isTextPath guarantees they are all
+			// text tokens). contentEditable/tabindex upkeep stays with the full
+			// sweep, which SelectionController still runs on `indexed`.
+			for (const id of textChanged) {
+				const node = byId.get(id)
+				if (!node?.textElement) continue
+				const content = node.address.token.content
+				if (node.textElement.textContent !== content) node.textElement.textContent = content
+			}
+
+			// Same tail as #commit: sync handles after the version bump, then notify.
 			batch(() => {
 				this.#syncHandles()
 				this.#domVersion(this.#domVersion() + 1)

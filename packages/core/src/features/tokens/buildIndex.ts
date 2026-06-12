@@ -25,6 +25,17 @@ type Frame = {
 	rows?: ReadonlyMap<number, HTMLElement>
 }
 
+/**
+ * Register a node's elements (token, row, child-sequence host) in the element
+ * index. Shared by the full rebuild below and TokenModel's in-place refresh
+ * (#patchCommit) so the element → node mapping has a single definition.
+ */
+export function indexNodeElements(node: TokenNode, byElement: WeakMap<HTMLElement, TokenNode>): void {
+	byElement.set(node.tokenElement, node)
+	if (node.rowElement) byElement.set(node.rowElement, node)
+	if (node.childSequenceHost) byElement.set(node.childSequenceHost, node)
+}
+
 export function buildIndex(input: BuildIndexInput): IndexResult {
 	const {container, tokens, addressFor, controlElements, childSequenceHostsFor, isBlock} = input
 
@@ -98,9 +109,7 @@ export function buildIndex(input: BuildIndexInput): IndexResult {
 		}
 
 		byPath.set(pathKey(path), node)
-		byElement.set(element, node)
-		if (rowElement) byElement.set(rowElement, node)
-		if (childSequenceHost) byElement.set(childSequenceHost, node)
+		indexNodeElements(node, byElement)
 		return node
 	}
 }
