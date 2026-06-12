@@ -223,10 +223,11 @@ identity tracker's `WeakMap` lookup.
 
 ## `TokenHandle`
 
-Live, path-keyed view of one token. Created and synced by `TokenModel`; survives
-DOM commits while a token exists at its path, then dies once. Dead handles never
-throw — stale reads return the last snapshot, commands return `false`, and the
-object is never resurrected.
+Live, identity-keyed view of one token. Created and synced by `TokenModel`; keyed
+by the token's stable identity id, so it follows its token across structural path
+shifts (fires `moved`). Survives commits while the token exists, then dies once.
+Dead handles never throw — stale reads return the last snapshot, commands return
+`false`, and the object is never resurrected.
 
 ### Reactive getters
 

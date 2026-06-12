@@ -99,7 +99,7 @@ describe('tokenIdentity', () => {
 		expect(result.tokens.some(t => tracker.idOf(t) === markId)).toBe(false)
 	})
 
-	it('no hint falls back to full changeset but still matches identity via findGap', () => {
+	it('no hint derives the window via findGap and keeps identity', () => {
 		const tracker = createIdentityTracker()
 		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
 		const markId = tracker.idOf(first[1])
