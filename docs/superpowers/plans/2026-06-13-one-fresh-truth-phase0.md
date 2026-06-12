@@ -23,7 +23,7 @@
 **Files:**
 - Modify: `packages/storybook/src/pages/renderCount.react.spec.tsx` (append inside `describe('Render-count gates: block layout')`)
 
-- [ ] **Step 1: Write the failing gate test**
+- [x] **Step 1: Write the failing gate test**
 
 Append after the existing `it('block keystroke into a row …')` block, inside the same `describe`:
 
@@ -67,12 +67,12 @@ Append after the existing `it('block keystroke into a row …')` block, inside t
 	})
 ```
 
-- [ ] **Step 2: Run it — verify it fails for the right reason**
+- [x] **Step 2: Run it — verify it fails for the right reason**
 
 Run: `pnpm -F storybook test -- renderCount.react`
 Expected: the NEW test FAILS on the two final assertions (render counts grew — currently mark and span each re-render on the first keystroke); the pre-existing tests still pass. If it fails on anything before the keystroke assertions (row counts, focus), STOP and report — the harness assumption is wrong, not the gate.
 
-- [ ] **Step 3: Commit the red gate**
+- [x] **Step 3: Commit the red gate**
 
 ```bash
 git add packages/storybook/src/pages/renderCount.react.spec.tsx
@@ -88,7 +88,7 @@ git commit -m "test(storybook): failing gate — first keystroke into a fresh em
 - Modify: `packages/core/src/features/tokens/tokenIdentity.spec.ts:485-497`
 - Modify: `packages/core/src/features/tokens/parser/Parser.spec.ts` (one inline snapshot)
 
-- [ ] **Step 1: The fix — empty slot ≠ no slot**
+- [x] **Step 1: The fix — empty slot ≠ no slot**
 
 In `TreeBuilder.ts`, `createMarkToken` currently converts an empty slot string to `undefined` before delegating:
 
@@ -133,7 +133,7 @@ Then replace `createSlotSourceInfo` (keeping its position in the file):
 
 Note: `hasSlotContent` and `getContentBounds` already key off `match.gaps.slot` — leave them untouched.
 
-- [ ] **Step 2: Run the core suite to surface the two pins**
+- [x] **Step 2: Run the core suite to surface the two pins**
 
 Run: `pnpm -F core test`
 Expected: exactly 2 failures —
@@ -142,7 +142,7 @@ Expected: exactly 2 failures —
 
 If anything ELSE fails, STOP and report before touching specs.
 
-- [ ] **Step 3: Rewrite the tokenIdentity pin — refusal becomes descend success**
+- [x] **Step 3: Rewrite the tokenIdentity pin — refusal becomes descend success**
 
 In `tokenIdentity.spec.ts`, replace the whole `it('refusal: a slotless mark pair (empty slot) → mark-level textChanged with id inheritance', …)` block (currently lines 485–497) with:
 
@@ -173,19 +173,19 @@ In `tokenIdentity.spec.ts`, replace the whole `it('refusal: a slotless mark pair
 
 (`slotParser`, `asMark`, `delta` already exist in this file — reuse them.)
 
-- [ ] **Step 4: Update the Parser inline snapshot**
+- [x] **Step 4: Update the Parser inline snapshot**
 
 Run: `pnpm -F core test -- Parser.spec -u`
 Then inspect the diff: the ONLY change must be the empty-slot mark in `handles __label__ and __slot__ with empty nested content` gaining a slot entry (e.g. `slot: ''` / a zero-width slot object on `MARK "@[user]()"`). If the `-u` flag is not accepted by the browser-mode runner, edit the inline snapshot by hand to match the new parse output. Revert anything else `-u` touched.
 
-- [ ] **Step 5: Verify green — core + the new gate**
+- [x] **Step 5: Verify green — core + the new gate**
 
 Run: `pnpm -F core test`
 Expected: full pass (724 passed, 1 todo).
 Run: `pnpm -F storybook test -- renderCount.react`
 Expected: ALL tests pass, including Task 1's gate.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/core/src/features/tokens/parser/core/TreeBuilder.ts packages/core/src/features/tokens/tokenIdentity.spec.ts packages/core/src/features/tokens/parser/Parser.spec.ts
@@ -199,7 +199,7 @@ git commit -m "fix(parser): empty slot keeps a zero-width window — first keyst
 **Files:**
 - Modify: `packages/storybook/src/pages/renderCount.vue.spec.ts` (append inside `describe('Render-count gates: block layout')`)
 
-- [ ] **Step 1: Write the Vue mirror of Task 1's gate**
+- [x] **Step 1: Write the Vue mirror of Task 1's gate**
 
 Append after the existing `it(…)` block, inside the same `describe`:
 
@@ -260,12 +260,12 @@ Append after the existing `it(…)` block, inside the same `describe`:
 	})
 ```
 
-- [ ] **Step 2: Run both adapter gates**
+- [x] **Step 2: Run both adapter gates**
 
 Run: `pnpm -F storybook test -- renderCount`
 Expected: all pass (react + vue, old gates + both new ones).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add packages/storybook/src/pages/renderCount.vue.spec.ts
@@ -281,7 +281,7 @@ The fix gives an empty row a zero-width `slot`, so `mergeDragRows` (`packages/co
 **Files:**
 - Modify: `packages/core/src/features/block/operations.spec.ts`
 
-- [ ] **Step 1: Add the pin**
+- [x] **Step 1: Add the pin**
 
 Add imports at the top of the file (alongside the existing ones):
 
@@ -313,12 +313,12 @@ describe('mergeDragRows', () => {
 
 Note: `Parser(['__slot__\n\n'])` needs the markup cast used elsewhere in core specs if `Markup` is a branded type — copy the cast style from `tokenIdentity.spec.ts`'s parser construction if the typecheck complains.
 
-- [ ] **Step 2: Run**
+- [x] **Step 2: Run**
 
 Run: `pnpm -F core test -- operations`
 Expected: all pass, including the new pin.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add packages/core/src/features/block/operations.spec.ts
@@ -335,7 +335,7 @@ A structural publish whose `rendered()` never arrives is a silent adapter-handsh
 - Modify: `packages/core/src/features/tokens/model/commit.ts`
 - Modify: `packages/core/src/features/tokens/model/commit.spec.ts`
 
-- [ ] **Step 1: Write the failing spec**
+- [x] **Step 1: Write the failing spec**
 
 In `commit.spec.ts`, first make the harness accept the new dep — change the `createHarness` signature and pipeline construction (lines 19, 27-35):
 
@@ -374,12 +374,12 @@ Then append a new describe at the end of the top-level `describe('createCommitPi
 	})
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `pnpm -F core test -- commit.spec`
 Expected: the new test FAILS (typecheck error on the unknown `renderedTimeoutMs` dep, or zero warn calls). Existing tests pass.
 
-- [ ] **Step 3: Implement the warning**
+- [x] **Step 3: Implement the warning**
 
 In `commit.ts`:
 
@@ -423,12 +423,12 @@ In `bindAndAnnounce`, as its first line:
 
 The timer body re-checks `pendingStructural` and `deps.container()`: an unmounted container is the legitimate cold-start state, not a broken handshake. Production bundles strip the whole branch via `VERIFY_DOM`.
 
-- [ ] **Step 4: Run to verify green**
+- [x] **Step 4: Run to verify green**
 
 Run: `pnpm -F core test -- commit.spec`
 Expected: all pass. (Other commit.spec scenarios that latch without rendering may emit the warning after their test ends — harmless console noise in dev/test, never an assertion failure.)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/core/src/features/tokens/model/commit.ts packages/core/src/features/tokens/model/commit.spec.ts
@@ -439,7 +439,7 @@ git commit -m "feat(tokens): dev warning when rendered() never follows a structu
 
 ### Task 6: Full verification
 
-- [ ] **Step 1: All suites + guards**
+- [x] **Step 1: All suites + guards**
 
 Run, expecting full pass on each:
 ```bash
@@ -451,7 +451,7 @@ pnpm run typecheck         # recursive tsc --noEmit
 pnpm run check:encapsulation
 ```
 
-- [ ] **Step 2: Commit anything outstanding (should be nothing) and report**
+- [x] **Step 2: Commit anything outstanding (should be nothing) and report**
 
 `git status` must be clean. Report the suite numbers.
 
@@ -459,9 +459,9 @@ pnpm run check:encapsulation
 
 ### Task 7: Write the Phase 1 plan (phase chaining)
 
-- [ ] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase1.md` for **Phase 1 — identity unification** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`): stamp `token.id` at reconcile (keep the WeakMap as an internal shim for one phase), `keyOf()` on the adapter SPI, switch both adapters' Containers off KeyGenerator, re-key BlockController `#stores` by id, verify the suffix-remount fix in storybook. Ground the plan by reading `tokenIdentity.ts`, both `Container` components, `Store.key`/KeyGenerator, and `BlockController.ts` first — no placeholder steps.
+- [x] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase1.md` for **Phase 1 — identity unification** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`): stamp `token.id` at reconcile (keep the WeakMap as an internal shim for one phase), `keyOf()` on the adapter SPI, switch both adapters' Containers off KeyGenerator, re-key BlockController `#stores` by id, verify the suffix-remount fix in storybook. Ground the plan by reading `tokenIdentity.ts`, both `Container` components, `Store.key`/KeyGenerator, and `BlockController.ts` first — no placeholder steps.
 
-- [ ] **Step 2: Commit the plan**
+- [x] **Step 2: Commit the plan**
 
 ```bash
 git add docs/superpowers/plans/2026-06-13-one-fresh-truth-phase1.md
