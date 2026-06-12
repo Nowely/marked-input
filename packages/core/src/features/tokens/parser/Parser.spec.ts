@@ -244,7 +244,7 @@ describe('Parser', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[user]()" [0-9] [value="user"]
+							 1: MARK "@[user]()" [0-9] [value="user", slot=""]
 								1.0: TEXT "" [8-8]
 							 2: TEXT "" [9-9]"
 						`)

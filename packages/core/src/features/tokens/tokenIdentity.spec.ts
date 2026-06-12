@@ -482,17 +482,26 @@ describe('deep reconcile (descend)', () => {
 		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(markId)
 	})
 
-	it('refusal: a slotless mark pair (empty slot) → mark-level textChanged with id inheritance', () => {
+	it('empty slot descends: zero-width window pairs the empty text child (first keystroke into a fresh row)', () => {
 		const tracker = createIdentityTracker()
-		// '#[]' has NO slot range (parser fact) — descend cannot scope a window
+		// '#[]' keeps a zero-width slot range — empty slot ≠ no slot (parser
+		// contract since the Phase 0 empty-row fix), so descend scopes its window
+		// and the empty text child pairs 1:1 with the typed-into child.
 		const first = tracker.reconcile(slotParser.parse('#[]')).tokens
-		const markId = tracker.idOf(asMark(first[1]))
+		const mark = asMark(first[1])
+		const markId = tracker.idOf(mark)
+		const childId = tracker.idOf(mark.children[0])
 
 		const result = tracker.reconcile(slotParser.parse('#[a]'), {start: 2, end: 2, insertedLength: 1})
 		const changeset = delta(result)
 
 		expect(result.tokens).toEqual(slotParser.parse('#[a]'))
-		expect(changeset.textChanged).toEqual([markId])
+		// Text-path shape: the child carries the change, the mark is an update.
+		expect(changeset.textChanged).toEqual([childId])
+		expect(changeset.added).toEqual([])
+		expect(changeset.removed).toEqual([])
+		expect(changeset.updated).toContain(markId)
 		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(markId)
+		expect(tracker.idOf(asMark(result.tokens[1]).children[0])).toBe(childId)
 	})
 })

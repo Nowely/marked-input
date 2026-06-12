@@ -176,8 +176,6 @@ export class TreeBuilder {
 		const slotStr = this.extractSubstring(match.gaps.slot?.start, match.gaps.slot?.end)
 		const metaStr = this.extractSubstring(match.gaps.meta?.start, match.gaps.meta?.end)
 
-		// Convert empty strings to undefined for slot, but meta can be empty string
-		const slotContent = slotStr || undefined
 		const meta = match.gaps.meta !== undefined ? metaStr : undefined
 
 		return {
@@ -188,7 +186,7 @@ export class TreeBuilder {
 			value,
 			meta,
 			position: {start: match.start, end: match.end},
-			slot: this.createSlotSourceInfo(match, slotContent),
+			slot: this.createSlotSourceInfo(match, slotStr),
 		}
 	}
 
@@ -233,10 +231,13 @@ export class TreeBuilder {
 	}
 
 	/**
-	 * Creates children source info object if children content exists
+	 * Creates children source info object if the markup has a slot gap.
+	 * An EMPTY slot is still a slot: a fresh empty row ('\n\n') keeps a
+	 * zero-width window so reconcile can descend into it — the first keystroke
+	 * into the row stays on the text path instead of re-rendering.
 	 */
-	private createSlotSourceInfo(match: Match, slotContent: string | undefined): MarkToken['slot'] {
-		if (!slotContent || match.gaps.slot === undefined) {
+	private createSlotSourceInfo(match: Match, slotContent: string): MarkToken['slot'] {
+		if (match.gaps.slot === undefined) {
 			return undefined
 		}
 		return {
