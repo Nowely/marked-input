@@ -8,6 +8,7 @@ import {markBoundaryAt, rawPositionFromBoundary, textTargetAt} from './boundary'
 import type {BoundaryContext} from './boundary'
 import {buildIndex} from './buildIndex'
 import {focusIfNeeded, getRect, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caret'
+import {isTextPath} from './commitRouting'
 import type {Lookup, TokenNode} from './domTypes'
 import {INCREMENTAL, incrementalParse} from './incrementalParse'
 import {Parser} from './parser/Parser'
@@ -100,6 +101,29 @@ export class TokenModel {
 
 	readonly current: Computed<Token[]> = computed(() => this.#reconciled().tokens)
 	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.current()))
+
+	#lastStructure: Token[] | undefined
+
+	/**
+	 * Renderer contract: the token tree for STRUCTURAL rendering. Reference-
+	 * stable across text-path reconciles, so adapters subscribed via snapshot
+	 * comparison (React useSyncExternalStore, Vue shallowRef) skip re-rendering
+	 * on pure text edits. Refined form of the design spec's sketched
+	 * structureInvalidated event — signal-idiomatic for this codebase.
+	 *
+	 * PURITY NOTE: `#lastStructure` mutates inside this computed. That is safe
+	 * for the same reason as `#reconciled`'s consume-once mutation — the signals
+	 * runtime only executes a computed's getter at most ONCE per dependency change
+	 * wave (see the PURITY NOTE on `#reconciled` for the full argument).
+	 */
+	readonly structure: Computed<Token[]> = computed(() => {
+		const {tokens, changeset} = this.#reconciled()
+		if (this.#lastStructure && isTextPath(tokens, changeset, t => this.#identity.idOf(t))) {
+			return this.#lastStructure
+		}
+		this.#lastStructure = tokens
+		return tokens
+	})
 
 	/** Changeset of the latest reconcile — Phase 3's routing input. */
 	changeset(): Changeset {
