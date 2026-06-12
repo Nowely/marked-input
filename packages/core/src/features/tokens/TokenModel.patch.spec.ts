@@ -5,9 +5,9 @@ import {Store} from '../../store/Store'
 import type {TokenNode} from './domTypes'
 import type {Token} from './parser/types'
 import {createTextToken} from './parser/utils/createTextToken'
+import {assertNoDivergence, preparePatch} from './patchCommit'
 import type {TokenChange} from './TokenHandle'
 import {createTokenIndex, pathKey} from './tokenIndex'
-import {assertNoDivergence, preparePatch} from './TokenModel'
 
 /** Inline fixture (from TokenModel.facade.spec.ts): text 'he' [0,2], mark '@[x]' [2,6], text 'llo' [6,9]. */
 function mountWithMark() {
