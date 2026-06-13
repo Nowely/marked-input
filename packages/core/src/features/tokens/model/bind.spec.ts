@@ -1,6 +1,5 @@
-import {describe, expect, it, vi} from 'vitest'
+import {describe, expect, it} from 'vitest'
 
-import {watch} from '../../../shared/signals/index.js'
 import {markToken, textToken} from '../__testing__/tokenFactories'
 import type {Token} from '../parser/types'
 import {pathKey} from '../tokenIndex'
@@ -74,7 +73,7 @@ describe('bind', () => {
 			expect(handle).toBeDefined()
 			expect(nodes.get(1)).toBe(handle)
 			expect(handle?.token()).toBe(tokens[0])
-			expect(handle?.address()).toEqual({path: [0], token: tokens[0]})
+			expect(handle?.path()).toEqual([0])
 			expect(handle?.element()).toBe(span)
 			expect(handle?.node()).toEqual({tokenElement: span, textElement: span})
 			expect(result.byElement.get(span)).toBe(handle)
@@ -349,9 +348,6 @@ describe('bind', () => {
 			const handle = nodes.get(1)
 			if (!handle) throw new Error('expected handle for id 1')
 
-			const onChange = vi.fn()
-			watch(handle.changed, onChange)
-
 			// Structural re-render: new token object (id inherited), new DOM.
 			const next = textToken('hello!', 0)
 			ids.set(next, 1)
@@ -365,12 +361,11 @@ describe('bind', () => {
 			expect(result.byPath.get('0')).toBe(handle)
 			expect(result.byElement.get(renderedSpan)).toBe(handle)
 			expect(handle.token()).toBe(next)
+			expect(handle.token().content).toBe('hello!')
 			expect(handle.element()).toBe(renderedSpan)
-			expect(onChange).toHaveBeenCalledTimes(1)
-			expect(onChange).toHaveBeenCalledWith({kind: 'text', previous: 'hello'}, undefined)
 		})
 
-		it('fires moved and rebinds when a token shifts to a new path', () => {
+		it('rebinds when a token shifts to a new path', () => {
 			const container = document.createElement('div')
 			container.append(spanWith('alpha '), spanWith('beta'))
 			const a = textToken('alpha ', 0)
@@ -382,9 +377,6 @@ describe('bind', () => {
 			bind(inputFor(container, [a, b], ids.idFor, {nodes}))
 			const handleB = nodes.get(2)
 			if (!handleB) throw new Error('expected handle for id 2')
-
-			const onChange = vi.fn()
-			watch(handleB.changed, onChange)
 
 			// A token is prepended: b keeps content, shifts position and path.
 			const inserted = textToken('x ', 0)
@@ -399,12 +391,8 @@ describe('bind', () => {
 			const result = bind(inputFor(container, [inserted, a2, b2], ids.idFor, {nodes}))
 
 			expect(result.byPath.get('2')).toBe(handleB)
-			expect(handleB.address().path).toEqual([2])
+			expect(handleB.path()).toEqual([2])
 			expect(handleB.element()).toBe(spanB2)
-			expect(onChange).toHaveBeenCalledTimes(1)
-			const [change] = onChange.mock.calls[0]
-			expect(change.kind).toBe('moved')
-			expect(change.previousAddress.path).toEqual([1])
 		})
 
 		it('kills and removes handles whose ids are absent from the new tree', () => {
@@ -422,18 +410,13 @@ describe('bind', () => {
 			const handleB = nodes.get(2)
 			if (!handleA || !handleB) throw new Error('expected handles for both ids')
 
-			const onChange = vi.fn()
-			watch(handleB.changed, onChange)
-
 			container.replaceChildren(spanA)
 			bind(inputFor(container, [a], ids.idFor, {nodes}))
 
-			expect(handleB.dead()).toBe(true)
-			expect(onChange).toHaveBeenCalledTimes(1)
-			expect(onChange).toHaveBeenCalledWith({kind: 'unmounted'}, undefined)
+			expect(handleB.alive()).toBe(false)
 			expect(nodes.has(2)).toBe(false)
 			expect(nodes.size).toBe(1)
-			expect(handleA.dead()).toBe(false)
+			expect(handleA.alive()).toBe(true)
 			expect(handleA.element()).toBe(spanA)
 		})
 
@@ -457,11 +440,6 @@ describe('bind', () => {
 			const handleB = nodes.get(2)
 			if (!handleA || !handleB) throw new Error('expected handles for both ids')
 
-			const changesA = vi.fn()
-			const changesB = vi.fn()
-			watch(handleA.changed, changesA)
-			watch(handleB.changed, changesB)
-
 			// New tree (text grew), but the DOM is misaligned: one element, two tokens.
 			const a2 = textToken('alpha! ', 0)
 			const b2 = textToken('beta', 7)
@@ -472,18 +450,16 @@ describe('bind', () => {
 			const result = bind(inputFor(container, [a2, b2], ids.idFor, {nodes}))
 
 			expect(result.byPath.size).toBe(0)
+			// Both handles survive in the node map — not killed, only unbound.
 			expect(nodes.size).toBe(2)
-			expect(handleA.dead()).toBe(false)
-			expect(handleB.dead()).toBe(false)
 			expect(handleA.element()).toBeUndefined()
 			expect(handleB.element()).toBeUndefined()
 			expect(handleA.node()).toBeUndefined()
 			// Token and path stay current with the tree even while unbound.
 			expect(handleA.token()).toBe(a2)
+			expect(handleA.token().content).toBe('alpha! ')
 			expect(handleB.token()).toBe(b2)
-			expect(handleB.address().path).toEqual([1])
-			expect(changesA).toHaveBeenCalledWith({kind: 'text', previous: 'alpha '}, undefined)
-			expect(changesB.mock.calls[0][0].kind).toBe('moved')
+			expect(handleB.path()).toEqual([1])
 		})
 
 		it('keeps an existing handle alive and current when its subtree goes unrendered', () => {
@@ -513,11 +489,11 @@ describe('bind', () => {
 
 			expect(result.byPath.get('0')).toBeDefined()
 			expect(result.byPath.get('0.0')).toBeUndefined()
+			// The child survives in the node map — not killed, only unbound.
 			expect(nodes.has(2)).toBe(true)
-			expect(child.dead()).toBe(false)
 			expect(child.element()).toBeUndefined()
 			expect(child.token()).toBe(childToken2)
-			expect(child.text()).toBe('b')
+			expect(child.token().content).toBe('b')
 		})
 
 		it('throws before mutating anything when a tree token has no id', () => {
@@ -538,7 +514,7 @@ describe('bind', () => {
 
 			// Pre-pass failed before any mutation: the node layer is untouched.
 			expect(nodes.size).toBe(1)
-			expect(handle.dead()).toBe(false)
+			expect(handle.alive()).toBe(true)
 			expect(handle.element()).toBe(span)
 		})
 	})
@@ -704,44 +680,6 @@ describe('bind', () => {
 			ids.set(next, 1)
 			bind(inputFor(container, [next], ids.idFor, {nodes}))
 			expect(span.firstChild).toBe(initialTextNode)
-		})
-	})
-
-	describe('batching', () => {
-		it('flushes changed watchers only after the whole layer is bound', () => {
-			const container = document.createElement('div')
-			container.append(spanWith('alpha '), spanWith('beta'))
-			const a = textToken('alpha ', 0)
-			const b = textToken('beta', 6)
-			const ids = createIds()
-			ids.registerAll([a, b])
-			const nodes = new Map<number, TokenHandle>()
-
-			bind(inputFor(container, [a, b], ids.idFor, {nodes}))
-			const handleA = nodes.get(1)
-			const handleB = nodes.get(2)
-			if (!handleA || !handleB) throw new Error('expected handles for both ids')
-
-			// A is updated before B in tree order; its watcher must still observe
-			// B's POST-bind state — the whole walk commits as one batch.
-			let observedText: string | undefined
-			let observedElement: HTMLElement | undefined
-			watch(handleA.changed, () => {
-				observedText = handleB.text()
-				observedElement = handleB.element()
-			})
-
-			const a2 = textToken('alpha! ', 0)
-			const b2 = textToken('beta!', 7)
-			ids.set(a2, 1)
-			ids.set(b2, 2)
-			const spanB2 = spanWith('beta!')
-			container.replaceChildren(spanWith('alpha! '), spanB2)
-
-			bind(inputFor(container, [a2, b2], ids.idFor, {nodes}))
-
-			expect(observedText).toBe('beta!')
-			expect(observedElement).toBe(spanB2)
 		})
 	})
 })

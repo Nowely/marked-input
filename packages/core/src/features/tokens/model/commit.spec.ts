@@ -1,11 +1,11 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
-import {computed, effect, watch} from '../../../shared/signals/index.js'
+import {watch} from '../../../shared/signals/index.js'
 import {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
 import {createIdentityTracker} from '../tokenIdentity'
 import {createCommitPipeline} from './commit'
-import type {TokenChange, TokenHandle} from './LiveNode'
+import type {TokenHandle} from './LiveNode'
 
 /**
  * Inline fixture (TokenModel.facade.spec lineage): 'he@[x]llo' parses to
@@ -113,8 +113,6 @@ describe('createCommitPipeline', () => {
 
 			const tail = pipeline.byPath().get('2')
 			if (!tail) throw new Error('expected tail handle')
-			const changes: TokenChange[] = []
-			watch(tail.changed, change => changes.push(change))
 			const changedSpy = vi.fn()
 			let domAtEvent: string | null = null
 			watch(pipeline.changed, () => {
@@ -131,14 +129,15 @@ describe('createCommitPipeline', () => {
 			expect(text2.textContent).toBe('llo!')
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 			expect(domAtEvent).toBe('llo!')
-			expect(changes).toEqual([{kind: 'text', previous: 'llo'}])
-			expect(tail.text()).toBe('llo!')
-			expect(tail.address()).toEqual({path: [2], token: result.tokens[2]})
+			expect(tail.alive()).toBe(true)
+			expect(tail.token().content).toBe('llo!')
+			expect(tail.path()).toEqual([2])
+			expect(tail.token()).toBe(result.tokens[2])
 			expect(text2.contentEditable).toBe('true')
 			expect(pipeline.pending()).toBe(false)
 		})
 
-		it('bumps only the changed nodes: an untouched handle never recomputes and its changed stays silent', () => {
+		it('touches only the changed nodes: an untouched handle keeps its token and element', () => {
 			const harness = createHarness()
 			const {pipeline} = harness
 			mountValue(harness)
@@ -146,34 +145,17 @@ describe('createCommitPipeline', () => {
 			const tail = pipeline.byPath().get('2')
 			if (!he || !tail) throw new Error('expected handles')
 
-			// Evaluation counters with live effect subscribers — the adapters' shape.
-			let heEvaluations = 0
-			let tailEvaluations = 0
-			const heProbe = computed(() => {
-				heEvaluations++
-				return [he.token(), he.address(), he.element(), he.text(), he.dead()] as const
-			})
-			const tailProbe = computed(() => {
-				tailEvaluations++
-				return [tail.token(), tail.address(), tail.element(), tail.text(), tail.dead()] as const
-			})
-			const stopHe = effect(() => void heProbe())
-			const stopTail = effect(() => void tailProbe())
-			expect(heEvaluations).toBe(1)
-			expect(tailEvaluations).toBe(1)
-			const heChanged = vi.fn()
-			watch(he.changed, heChanged)
-			const heDirtyBefore = he.dirty()
+			const heTokenBefore = he.token()
+			const heElementBefore = he.element()
+			const tailTokenBefore = tail.token()
 
 			harness.apply('he@[x]llo!')
 
-			expect(tailEvaluations).toBe(2)
-			expect(heEvaluations).toBe(1)
-			expect(he.dirty()).toBe(heDirtyBefore)
-			expect(heChanged).not.toHaveBeenCalled()
-
-			stopHe()
-			stopTail()
+			// The edited tail refreshed its token in place; the untouched 'he' did not.
+			expect(tail.token()).not.toBe(tailTokenBefore)
+			expect(tail.token().content).toBe('llo!')
+			expect(he.token()).toBe(heTokenBefore)
+			expect(he.element()).toBe(heElementBefore)
 		})
 
 		it('shifted suffix: positions refresh in place, paths/elements/lookups stay untouched', () => {
@@ -184,8 +166,6 @@ describe('createCommitPipeline', () => {
 			if (!markHandle) throw new Error('expected mark handle')
 			const byPathBefore = pipeline.byPath()
 			const treeBefore = pipeline.renderTree()
-			const markChanges: TokenChange[] = []
-			watch(markHandle.changed, change => markChanges.push(change))
 			const changedSpy = vi.fn()
 			watch(pipeline.changed, changedSpy)
 
@@ -196,9 +176,7 @@ describe('createCommitPipeline', () => {
 			expect(mark.textContent).toBe('x')
 			expect(markHandle.token().position).toEqual({start: 4, end: 8})
 			expect(markHandle.element()).toBe(mark)
-			expect(markChanges).toHaveLength(1)
-			expect(markChanges[0].kind).toBe('moved')
-			expect(markHandle.address().path).toEqual([1])
+			expect(markHandle.path()).toEqual([1])
 			// O(change) producer behavior: no lookup or tree rebuilds on the text path.
 			expect(pipeline.byPath()).toBe(byPathBefore)
 			expect(pipeline.renderTree()).toBe(treeBefore)
@@ -287,8 +265,6 @@ describe('createCommitPipeline', () => {
 			const tailHandle = pipeline.byPath().get('2')
 			if (!markHandle || !tailHandle) throw new Error('expected handles')
 			const markId = markHandle.id
-			const unmounted = vi.fn()
-			watch(markHandle.changed, unmounted)
 			const changedSpy = vi.fn()
 			watch(pipeline.changed, changedSpy)
 
@@ -298,17 +274,16 @@ describe('createCommitPipeline', () => {
 			expect(result.structural).toBe(true)
 			expect(result.removedIds).toContain(markId)
 			expect(changedSpy).not.toHaveBeenCalled()
-			expect(markHandle.dead()).toBe(false)
+			expect(markHandle.alive()).toBe(true)
 			expect(pipeline.pending()).toBe(true)
 
 			harness.render()
 
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(markHandle.dead()).toBe(true)
-			expect(tailHandle.dead()).toBe(true)
-			expect(unmounted).toHaveBeenCalledWith({kind: 'unmounted'}, undefined)
+			expect(markHandle.alive()).toBe(false)
+			expect(tailHandle.alive()).toBe(false)
 			expect(nodes.size).toBe(1)
-			expect(pipeline.byPath().get('0')?.text()).toBe('hello')
+			expect(pipeline.byPath().get('0')?.token().content).toBe('hello')
 		})
 
 		it('tree() stays reference-stable across N text applies and breaks exactly once per structural apply', () => {
@@ -383,14 +358,14 @@ describe('createCommitPipeline', () => {
 			expect(pipeline.pending()).toBe(true)
 			expect(changedSpy).not.toHaveBeenCalled()
 			// Fail-closed: neither the handle nor the DOM was half-patched.
-			expect(tail.text()).toBe('llo')
+			expect(tail.token().content).toBe('llo')
 			expect(text2.textContent).toBe('llo')
 
 			harness.render()
 
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 			expect(pipeline.pending()).toBe(false)
-			expect(tail.text()).toBe('llo!')
+			expect(tail.token().content).toBe('llo!')
 			expect(harness.container.children[2].textContent).toBe('llo!')
 			expect(pipeline.byPath().size).toBe(5)
 		})
@@ -419,8 +394,6 @@ describe('createCommitPipeline', () => {
 			const markHandle = pipeline.byPath().get('1')
 			if (!markHandle) throw new Error('expected mark handle')
 			const treeBefore = pipeline.renderTree()
-			const markChanges: TokenChange[] = []
-			watch(markHandle.changed, change => markChanges.push(change))
 			const changedSpy = vi.fn()
 			watch(pipeline.changed, changedSpy)
 
@@ -448,8 +421,8 @@ describe('createCommitPipeline', () => {
 			expect(pipeline.pending()).toBe(false)
 			// Handle continuity: same object (id-keyed), now carrying the new token.
 			expect(pipeline.byPath().get('1')).toBe(markHandle)
+			expect(markHandle.alive()).toBe(true)
 			expect(markHandle.token()).toBe(result.tokens[1])
-			expect(markChanges).toEqual([{kind: 'text', previous: '@[x]'}])
 			expect(harness.container.children[1].textContent).toBe('y')
 		})
 
@@ -473,7 +446,7 @@ describe('createCommitPipeline', () => {
 			// bind re-materialized the handle and wrote the surface itself.
 			const healed = pipeline.byPath().get('2')
 			expect(healed).toBeDefined()
-			expect(healed?.text()).toBe('llo!')
+			expect(healed?.token().content).toBe('llo!')
 			expect(healed?.element()).toBe(text2)
 			expect(text2.textContent).toBe('llo!')
 		})
@@ -491,7 +464,7 @@ describe('createCommitPipeline', () => {
 			container.lastElementChild?.remove()
 			pipeline.onRendered()
 			expect(pipeline.byPath().size).toBe(0)
-			expect(tail.dead()).toBe(false)
+			// Survives in the node layer — not killed, only unbound after the bail.
 			expect(tail.element()).toBeUndefined()
 			const changedSpy = vi.fn()
 			watch(pipeline.changed, changedSpy)
@@ -502,7 +475,7 @@ describe('createCommitPipeline', () => {
 			// the node layer is refreshed from the authoritative tree.
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 			expect(pipeline.pending()).toBe(false)
-			expect(tail.text()).toBe('llo!')
+			expect(tail.token().content).toBe('llo!')
 			expect(nodes.size).toBe(3)
 
 			// The adapter re-renders from the (new-reference) tree and heals fully.
@@ -651,12 +624,6 @@ describe('createCommitPipeline', () => {
 			const markElement = markHandle.element()
 			const treeBefore = pipeline.renderTree()
 			const byPathBefore = pipeline.byPath()
-			const markChanges: TokenChange[] = []
-			watch(markHandle.changed, change => markChanges.push(change))
-			const childChanges: TokenChange[] = []
-			watch(childHandle.changed, change => childChanges.push(change))
-			const tailChanges: TokenChange[] = []
-			watch(tailHandle.changed, change => tailChanges.push(change))
 			const changedSpy = vi.fn()
 			let domAtEvent: string | null = null
 			watch(pipeline.changed, () => {
@@ -679,13 +646,12 @@ describe('createCommitPipeline', () => {
 			expect(domAtEvent).toBe('aXb')
 			expect(childHandle.node()?.textElement).toBe(childSurface)
 			expect(markHandle.element()).toBe(markElement)
-			// handle-layer honesty: the mark's raw content DID change → 'text';
-			// buckets and handle events are separate layers by design
-			expect(markChanges).toEqual([{kind: 'text', previous: '#[ab]'}])
-			expect(childChanges).toEqual([{kind: 'text', previous: 'ab'}])
-			expect(tailChanges.map(change => change.kind)).toEqual(['moved'])
+			// handle-layer honesty: the in-slot edit refreshed the mark and child
+			// content in place; the shifted tail stays alive at its path.
 			expect(markHandle.token().content).toBe('#[aXb]')
-			expect(childHandle.text()).toBe('aXb')
+			expect(childHandle.token().content).toBe('aXb')
+			expect(tailHandle.alive()).toBe(true)
+			expect(tailHandle.path()).toEqual([2])
 		})
 	})
 

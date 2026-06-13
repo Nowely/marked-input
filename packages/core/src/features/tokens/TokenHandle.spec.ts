@@ -1,6 +1,5 @@
-import {afterEach, describe, expect, it, vi} from 'vitest'
+import {afterEach, describe, expect, it} from 'vitest'
 
-import {watch} from '../../shared/signals/index.js'
 import {Store} from '../../store/Store'
 
 function mountInline(value: string) {
@@ -57,9 +56,9 @@ describe('TokenHandle', () => {
 		expect(handle).not.toBe('control')
 		if (!handle || handle === 'control') throw new Error('expected handle')
 		expect(handle.element()).toBe(span)
-		expect(handle.text()).toBe('hello')
+		expect(handle.token().content).toBe('hello')
 		expect(handle.token().type).toBe('text')
-		expect(handle.dead()).toBe(false)
+		expect(handle.alive()).toBe(true)
 	})
 
 	it('returns the same handle for the same path across commits', () => {
@@ -79,20 +78,17 @@ describe('TokenHandle', () => {
 		expect(handle?.path()).toEqual([0])
 	})
 
-	it('fires text change and refreshes snapshots on value edit', () => {
+	it('refreshes snapshots on value edit', () => {
 		const {store, span} = mountInline('hello')
 		const handle = store.tokens.handleAt(span)
 		if (!handle || handle === 'control') throw new Error('expected handle')
-
-		const onChange = vi.fn()
-		watch(handle.changed, onChange)
 
 		store.value.current('hello!')
 		span.textContent = 'hello!'
 		store.host.rendered()
 
-		expect(onChange).toHaveBeenCalledWith({kind: 'text', previous: 'hello'}, undefined)
-		expect(handle.text()).toBe('hello!')
+		expect(handle.alive()).toBe(true)
+		expect(handle.token().content).toBe('hello!')
 	})
 
 	it('kills handles whose token disappears (dead-handle contract)', () => {
@@ -104,9 +100,6 @@ describe('TokenHandle', () => {
 		// Grab the second row's handle (path [1])
 		const handle = store.tokens.handle(store.tokens.tokens()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
-
-		const onChange = vi.fn()
-		watch(handle.changed, onChange)
 
 		const lastToken = handle.token()
 
@@ -120,8 +113,7 @@ describe('TokenHandle', () => {
 
 		store.host.rendered()
 
-		expect(onChange).toHaveBeenCalledWith({kind: 'unmounted'}, undefined)
-		expect(handle.dead()).toBe(true)
+		expect(handle.alive()).toBe(false)
 		expect(handle.element()).toBeUndefined()
 		// token() still returns the last snapshot
 		expect(handle.token()).toBe(lastToken)
@@ -151,10 +143,7 @@ describe('TokenHandle', () => {
 
 		const handle = store.tokens.handle(store.tokens.tokens()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
-		expect(handle.text()).toBe('beta\n\n')
-
-		const onChange = vi.fn()
-		watch(handle.changed, onChange)
+		expect(handle.token().content).toBe('beta\n\n')
 
 		// Prepend a row through the edit controller (records the edit hint)
 		store.edit.replace({start: 0, end: 0}, 'new\n\n')
@@ -169,15 +158,9 @@ describe('TokenHandle', () => {
 		store.host.rendered()
 
 		// The same handle object now lives at the shifted path
-		expect(handle.dead()).toBe(false)
+		expect(handle.alive()).toBe(true)
 		expect(handle.path()).toEqual([2])
-		expect(handle.text()).toBe('beta\n\n')
-
-		// It fired a move (and was NOT unmounted, NOT a text change)
-		const kinds = onChange.mock.calls.map(([change]) => change.kind)
-		expect(kinds).toEqual(['moved'])
-		const [moved] = onChange.mock.calls[0]
-		expect(moved.previousAddress.path).toEqual([1])
+		expect(handle.token().content).toBe('beta\n\n')
 
 		// Resolving the shifted id returns the SAME handle object
 		expect(store.tokens.handle(store.tokens.tokens()[2].id!)).toBe(handle)

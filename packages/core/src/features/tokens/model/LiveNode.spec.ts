@@ -1,6 +1,5 @@
-import {afterEach, describe, expect, it, vi} from 'vitest'
+import {afterEach, describe, expect, it} from 'vitest'
 
-import {computed, effect, watch} from '../../../shared/signals/index.js'
 import {Store} from '../../../store/Store'
 import {markToken, textToken} from '../__testing__/tokenFactories'
 import {TokenHandle} from './LiveNode'
@@ -63,166 +62,36 @@ describe('TokenHandle (model/LiveNode)', () => {
 	})
 
 	describe('creation', () => {
-		it('exposes id, token, text, derived address and liveness from (id, token, path)', () => {
+		it('exposes id, token, content and path from (id, token, path)', () => {
 			const token = textToken('hello', 0)
 			const handle = new TokenHandle(7, token, [0])
 
 			expect(handle.id).toBe(7)
 			expect(handle.token()).toBe(token)
-			expect(handle.text()).toBe('hello')
-			expect(handle.dead()).toBe(false)
+			expect(handle.token().content).toBe('hello')
 			expect(handle.element()).toBeUndefined()
-			expect(handle.address()).toEqual({path: [0], token})
+			expect(handle.path()).toEqual([0])
 		})
 
-		it('derives the address on read: the input path is copied, the value is cached until a change', () => {
+		it('copies the input path on read: mutating the caller array does not leak in', () => {
 			const token = textToken('hello', 0)
 			const path = [1]
 			const handle = new TokenHandle(1, token, path)
 
 			path.push(99)
-			expect(handle.address().path).toEqual([1])
-			// Computed caching: the same object until this node changes.
-			expect(handle.address()).toBe(handle.address())
+			expect(handle.path()).toEqual([1])
 		})
 	})
 
 	describe('update', () => {
-		it('refreshes token and path in place and bumps dirty', () => {
+		it('refreshes token and path in place', () => {
 			const handle = new TokenHandle(1, textToken('hello', 0), [0])
-			const dirtyBefore = handle.dirty()
 
 			const next = textToken('hello!', 0)
 			handle.update(next, [2])
 
-			expect(handle.dirty()).toBe(dirtyBefore + 1)
 			expect(handle.token()).toBe(next)
-			expect(handle.text()).toBe('hello!')
-			expect(handle.address()).toEqual({path: [2], token: next})
-		})
-
-		it('fires text with the previous content when content changes', () => {
-			const handle = new TokenHandle(1, textToken('hello', 0), [0])
-			const onChange = vi.fn()
-			watch(handle.changed, onChange)
-
-			handle.update(textToken('hello!', 0), [0])
-
-			expect(onChange).toHaveBeenCalledTimes(1)
-			expect(onChange).toHaveBeenCalledWith({kind: 'text', previous: 'hello'}, undefined)
-		})
-
-		it('text wins over moved when both content and position change', () => {
-			const handle = new TokenHandle(1, textToken('hello', 0), [0])
-			const onChange = vi.fn()
-			watch(handle.changed, onChange)
-
-			handle.update(textToken('hey', 4), [1])
-
-			expect(onChange).toHaveBeenCalledTimes(1)
-			expect(onChange.mock.calls[0][0]).toEqual({kind: 'text', previous: 'hello'})
-		})
-
-		it('fires moved with the previous address when only the position shifts', () => {
-			const first = textToken('beta', 6)
-			const handle = new TokenHandle(2, first, [1])
-			const onChange = vi.fn()
-			watch(handle.changed, onChange)
-
-			const shifted = textToken('beta', 11)
-			handle.update(shifted, [2])
-
-			expect(onChange).toHaveBeenCalledTimes(1)
-			const [change] = onChange.mock.calls[0]
-			expect(change.kind).toBe('moved')
-			expect(change.previousAddress.path).toEqual([1])
-			expect(change.previousAddress.token).toBe(first)
-			expect(handle.address().path).toEqual([2])
-		})
-
-		it('is silent on a path-only refresh (content and position unchanged) but still bumps dirty', () => {
-			const token = textToken('beta', 6)
-			const handle = new TokenHandle(2, token, [1])
-			const onChange = vi.fn()
-			watch(handle.changed, onChange)
-			const dirtyBefore = handle.dirty()
-
-			handle.update(token, [3])
-
-			expect(onChange).not.toHaveBeenCalled()
-			expect(handle.address().path).toEqual([3])
-			expect(handle.dirty()).toBe(dirtyBefore + 1)
-		})
-
-		it('changed watchers observe the already-updated handle', () => {
-			const handle = new TokenHandle(1, textToken('hello', 0), [0])
-			let observedText: string | undefined
-			let observedPath: readonly number[] | undefined
-			watch(handle.changed, () => {
-				observedText = handle.text()
-				observedPath = handle.address().path
-			})
-
-			handle.update(textToken('hello!', 0), [3])
-
-			expect(observedText).toBe('hello!')
-			expect(observedPath).toEqual([3])
-		})
-	})
-
-	describe('fine-grained isolation', () => {
-		it('updating node A never re-evaluates node B computeds and keeps B changed silent', () => {
-			const {span: spanA} = mountSurface('alpha')
-			const {span: spanB} = mountSurface('beta')
-			const a = new TokenHandle(1, textToken('alpha', 0), [0])
-			const b = new TokenHandle(2, textToken('beta', 6), [1])
-			a.bindElements({tokenElement: spanA, textElement: spanA})
-			b.bindElements({tokenElement: spanB, textElement: spanB})
-
-			// Evaluation counters over every public computed, with live effect
-			// subscribers — the shape adapters actually create over handles.
-			let aEvaluations = 0
-			let bEvaluations = 0
-			const aProbe = computed(() => {
-				aEvaluations++
-				return [a.token(), a.address(), a.element(), a.text(), a.dead()] as const
-			})
-			const bProbe = computed(() => {
-				bEvaluations++
-				return [b.token(), b.address(), b.element(), b.text(), b.dead()] as const
-			})
-			const stopA = effect(() => void aProbe())
-			const stopB = effect(() => void bProbe())
-			expect(aEvaluations).toBe(1)
-			expect(bEvaluations).toBe(1)
-
-			const bChanged = vi.fn()
-			watch(b.changed, bChanged)
-
-			// address() allocates a fresh object per evaluation, so reference
-			// stability below is corroborating evidence that the getter never re-ran —
-			// the strict proof is the evaluation counters above (a cached computed
-			// serves without re-running; the reference check cannot mask that).
-			const aAddressBefore = a.address()
-			const bAddressBefore = b.address()
-			const bTokenBefore = b.token()
-			const bDirtyBefore = b.dirty()
-
-			a.update(textToken('alpha!', 0), [0])
-
-			// The instrumentation is sensitive: A recomputed...
-			expect(aEvaluations).toBe(2)
-			expect(a.address()).not.toBe(aAddressBefore)
-			// ...B never did: no propagation reached its subscribers, and a
-			// direct re-read serves the cached values without running any getter.
-			expect(bEvaluations).toBe(1)
-			expect(b.address()).toBe(bAddressBefore)
-			expect(b.token()).toBe(bTokenBefore)
-			expect(b.dirty()).toBe(bDirtyBefore)
-			expect(bChanged).not.toHaveBeenCalled()
-
-			stopA()
-			stopB()
+			expect(handle.path()).toEqual([2])
 		})
 	})
 
@@ -270,14 +139,6 @@ describe('TokenHandle (model/LiveNode)', () => {
 			expect(handle.caretOnFirstLine()).toBe(true)
 			expect(handle.caretOnLastLine()).toBe(true)
 
-			const start = handle.caretRect(0)
-			const end = handle.caretRect(4)
-			expect(start).toBeInstanceOf(DOMRect)
-			expect(end).toBeInstanceOf(DOMRect)
-			if (!start || !end) throw new Error('expected caret rects')
-			expect(start.left).toBeLessThan(end.left)
-			expect(handle.caretRect(99)).toBeUndefined()
-
 			const rect = handle.rect()
 			const spanRect = span.getBoundingClientRect()
 			expect(rect?.left).toBe(spanRect.left)
@@ -308,7 +169,6 @@ describe('TokenHandle (model/LiveNode)', () => {
 			expect(handle.hasTextSurface()).toBe(false)
 			expect(handle.textLength()).toBe(0)
 			expect(handle.caretIndex()).toBeUndefined()
-			expect(handle.caretRect(0)).toBeUndefined()
 			expect(handle.rect()).toBeUndefined()
 			expect(handle.caretOnFirstLine()).toBe(true)
 			expect(handle.caretOnLastLine()).toBe(true)
@@ -320,7 +180,6 @@ describe('TokenHandle (model/LiveNode)', () => {
 			const handle = new TokenHandle(1, textToken('hello', 0), [0])
 
 			expect(handle.placeCaret(0)).toBe(false)
-			expect(handle.placeCaretAtBoundary('start')).toBe(false)
 			expect(handle.placeCaretAtX(10, 10)).toBe(false)
 			expect(handle.focus()).toBe(false)
 		})
@@ -362,22 +221,6 @@ describe('TokenHandle (model/LiveNode)', () => {
 			selection = window.getSelection()
 			expect(selection?.anchorNode).toBe(tokenElement)
 			expect(selection?.anchorOffset).toBe(tokenElement.childNodes.length)
-
-			expect(handle.placeCaretAtBoundary('start')).toBe(true)
-			expect(window.getSelection()?.anchorOffset).toBe(0)
-			expect(handle.placeCaretAtBoundary('end')).toBe(true)
-			expect(window.getSelection()?.anchorOffset).toBe(tokenElement.childNodes.length)
-		})
-
-		it('placeCaretAtBoundary targets start and end of the text surface', () => {
-			const {span} = mountSurface('hello')
-			const handle = new TokenHandle(1, textToken('hello', 0), [0])
-			handle.bindElements({tokenElement: span, textElement: span})
-
-			expect(handle.placeCaretAtBoundary('end')).toBe(true)
-			expect(handle.caretIndex()).toBe(5)
-			expect(handle.placeCaretAtBoundary('start')).toBe(true)
-			expect(handle.caretIndex()).toBe(0)
 		})
 
 		it('focuses the scope element', () => {
@@ -403,33 +246,28 @@ describe('TokenHandle (model/LiveNode)', () => {
 	})
 
 	describe('dead contract', () => {
-		it('kill fires unmounted once, freezes reads, disables commands and never resurrects', () => {
+		it('kill freezes reads, disables commands and never resurrects', () => {
 			const {span} = mountSurface('hello')
 			const token = textToken('hello', 0)
 			const handle = new TokenHandle(5, token, [0])
 			handle.bindElements({tokenElement: span, textElement: span})
-			const onChange = vi.fn()
-			watch(handle.changed, onChange)
+			expect(handle.alive()).toBe(true)
 
 			handle.kill()
 
-			expect(onChange).toHaveBeenCalledTimes(1)
-			expect(onChange).toHaveBeenCalledWith({kind: 'unmounted'}, undefined)
-			expect(handle.dead()).toBe(true)
+			expect(handle.alive()).toBe(false)
 			expect(handle.element()).toBeUndefined()
 			expect(handle.node()).toBeUndefined()
 			// Stale reads stay safe and serve the last state.
 			expect(handle.token()).toBe(token)
-			expect(handle.text()).toBe('hello')
-			expect(handle.address().path).toEqual([0])
+			expect(handle.path()).toEqual([0])
 
-			// Idempotent: a second kill is silent.
+			// Idempotent: a second kill is silent (no throw, still dead).
 			handle.kill()
-			expect(onChange).toHaveBeenCalledTimes(1)
+			expect(handle.alive()).toBe(false)
 
 			// Commands no-op false, measurements collapse to their unbound defaults.
 			expect(handle.placeCaret(0)).toBe(false)
-			expect(handle.placeCaretAtBoundary('start')).toBe(false)
 			expect(handle.placeCaretAtX(0)).toBe(false)
 			expect(handle.focus()).toBe(false)
 			expect(handle.textLength()).toBe(0)
@@ -437,14 +275,11 @@ describe('TokenHandle (model/LiveNode)', () => {
 			expect(handle.hasTextSurface()).toBe(false)
 
 			// Never resurrected: update/bindElements are inert on a dead handle.
-			const dirtyAfterKill = handle.dirty()
 			handle.update(textToken('zombie', 0), [4])
 			handle.bindElements({tokenElement: span, textElement: span})
-			expect(handle.dead()).toBe(true)
+			expect(handle.alive()).toBe(false)
 			expect(handle.token()).toBe(token)
 			expect(handle.element()).toBeUndefined()
-			expect(handle.dirty()).toBe(dirtyAfterKill)
-			expect(onChange).toHaveBeenCalledTimes(1)
 		})
 	})
 
