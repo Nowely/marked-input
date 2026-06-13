@@ -201,33 +201,123 @@ describe('MarkController across text-path commits (identity bridge)', () => {
 		expect(store.value.current()).toBe('hello')
 	})
 
-	it('same-slot replacement inherits identity — controller bridges across the structural commit', () => {
+	it('same-slot replacement inherits identity — the captured handle SURVIVES across the structural commit', () => {
 		// Structural path: the whole value is replaced wholesale, but the new
 		// value carries the SAME descriptor in the SAME slot position. Reconcile
-		// pairs the mark by index and it inherits its predecessor's id, so the id
-		// bridge keeps the controller live ACROSS the commit. Phase 2 routes a
-		// refused-descend / value-replaced mark structurally at reconcile time, so
-		// it waits for the adapter handshake like any structural change (the old
-		// synchronous self-heal was a refused-descend special case — narrowed for
-		// one uniform rule). What survives is identity continuity, not resolution
-		// timing: once the new tree is painted and rendered() fires, bind resolves
-		// the inherited-id mark and the controller applies.
+		// pairs the mark by index and it inherits its predecessor's id, so bind
+		// UPDATES the inherited-id node IN PLACE (it is not killed/recreated) —
+		// empirically verified: handle(inheritedId) after the commit IS the SAME
+		// object the controller captured, and it is alive once the new tree is
+		// painted and rendered() fires. So the handle-backed controller stays live
+		// ACROSS the commit WITHOUT re-derivation. (Phase 4 fail-closed semantics
+		// bite only when the handle is genuinely KILLED — the mark removed, see the
+		// dead-handle no-op case — not when its id is inherited.)
 		const {store, controller} = mountedSetup()
 
 		// Same descriptor (@[__value__]) in the same slot (index 0): identity inherited.
 		store.value.current('different @[x]')
 
-		// Paint the new tree (text + value-only mark span) and complete the
-		// handshake — bind re-resolves the inherited-id mark onto the new surface.
+		// Paint the FULL render tree (text, value-only mark, trailing empty text)
+		// and complete the handshake — bind re-resolves the inherited-id mark in
+		// place onto the new surface. A short-count repaint would bail the frame
+		// (all-or-nothing alignment) and leave every handle unbound.
 		const container = document.querySelector('div')!
-		const text = document.createElement('span')
-		const markEl = document.createElement('span')
-		markEl.append(document.createTextNode('x'))
-		container.replaceChildren(text, markEl)
+		const spans = store.tokens.renderTree().map(tok => {
+			const span = document.createElement('span')
+			if (tok.type === 'mark') span.append(document.createTextNode(tok.value))
+			return span
+		})
+		container.replaceChildren(...spans)
 		store.host.rendered()
 
+		// The ORIGINAL captured controller applies — its handle survived the
+		// inheriting commit (NOT re-derived from the fresh token).
 		controller.update({value: 'probe'})
 
 		expect(store.value.current()).toBe('different @[probe]')
+	})
+})
+
+describe('MarkController live-read parity (handle-backed)', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+	})
+
+	// value / meta / slot / readOnly are LIVE reads of the current token — they
+	// track text-path commits WITHOUT re-capturing the controller.
+	it('value tracks the current token across a text-path edit', () => {
+		const {store, controller} = mountedSetup()
+		expect(controller.value).toBe('x')
+		// Text-path edit before the mark shifts its position but not its value.
+		store.edit.replace({start: 0, end: 0}, 'XX')
+		expect(store.value.current()).toBe('XXhe@[x]llo')
+		// The controller's value is a LIVE read of the (shifted, same-value) token.
+		expect(controller.value).toBe('x')
+	})
+
+	it('update() reflects a value change made through the controller itself (live read)', () => {
+		const {store, controller} = mountedSetup()
+		controller.update({value: 'y'})
+		expect(store.value.current()).toBe('he@[y]llo')
+		// After the structural commit re-binds, the live read sees the new value.
+		const container = document.querySelector('div')!
+		const text1 = document.createElement('span')
+		const markEl = document.createElement('span')
+		markEl.append(document.createTextNode('y'))
+		const text2 = document.createElement('span')
+		container.replaceChildren(text1, markEl, text2)
+		store.host.rendered()
+		expect(controller.value).toBe('y')
+	})
+
+	it('meta and slot are live reads (parity table)', () => {
+		const store = new Store()
+		store.props.set({
+			defaultValue: 'a @[v](m)',
+			options: [{markup: '@[__value__](__meta__)'}],
+			Mark: () => null,
+		})
+		const container = document.createElement('div')
+		// 'a @[v](m)' parses to text 'a ', mark '@[v](m)', trailing empty text — one
+		// span per token (a short-count repaint bails the frame, binding nothing).
+		container.append(document.createElement('span'), document.createElement('span'), document.createElement('span'))
+		document.body.append(container)
+		store.host.container(container)
+		store.host.rendered()
+		const token = store.tokens.tokens().find(t => t.type === 'mark')!
+		const controller = MarkController.fromToken(store, token)
+		expect(controller.value).toBe('v')
+		expect(controller.meta).toBe('m')
+		expect(controller.slot).toBeUndefined()
+	})
+
+	it('readOnly is a live read of props.readOnly()', () => {
+		const {store, controller} = mountedSetup()
+		expect(controller.readOnly).toBe(false)
+		store.props.set({readOnly: true})
+		expect(controller.readOnly).toBe(true)
+	})
+
+	it('update() against a dead handle is a fail-closed no-op returning false', () => {
+		const {store, controller} = mountedSetup()
+		// Structurally remove the mark and re-bind so its handle is killed.
+		store.edit.replace({start: 2, end: 6}, '')
+		expect(store.value.current()).toBe('hello')
+		const container = document.querySelector('div')!
+		container.replaceChildren(document.createElement('span'))
+		store.host.rendered()
+
+		const result = controller.update({value: 'bad'})
+		expect(result).toBe(false)
+		expect(store.value.current()).toBe('hello')
+	})
+
+	it('update() while a structural apply awaits its bind is a fail-closed no-op returning false', () => {
+		const {store, controller} = mountedSetup()
+		// Trigger a structural commit but do NOT render() — the latch is closed.
+		store.value.current('different @[x]')
+		// handle(id) fails closed mid-window, so the live read sees no mark.
+		const result = controller.update({value: 'bad'})
+		expect(result).toBe(false)
 	})
 })

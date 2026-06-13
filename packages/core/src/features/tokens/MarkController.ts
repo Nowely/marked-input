@@ -1,64 +1,74 @@
-import type {MarkToken, Token} from '.'
-import type {MarkPatch, MarkSnapshot, TokenAddress, TokenPath} from '../../shared/editorContracts'
+import type {MarkToken} from '.'
+import type {MarkPatch} from '../../shared/editorContracts'
 import type {Store} from '../../store'
+import type {TokenHandle} from './model/LiveNode'
 import {annotate} from './parser/utils/annotate'
-import {resolvePath} from './tokenIndex'
 
+/**
+ * Handle-backed mark command surface. The controller holds a {@link TokenHandle},
+ * not a frozen `{address, snapshot}` capture: `value`/`meta`/`slot`/`readOnly`
+ * are LIVE reads of the handle's current token, so they track text-path commits
+ * (and the controller's own updates after re-bind) without re-capture. `update`/
+ * `remove` resolve the live mark first; against a pending (mid-window) or dead
+ * handle, or in read-only mode, they are a fail-closed no-op.
+ */
 export class MarkController {
 	constructor(
 		private readonly store: Store,
-		private readonly address: TokenAddress,
-		private readonly snapshot: MarkSnapshot
+		private readonly handle: TokenHandle
 	) {}
 
 	static fromToken(store: Store, token: MarkToken): MarkController {
-		// Adapters hand in tokens from the reference-stable tree(), which may be
-		// stale after text-path commits — bridge by identity to the live handle
-		// first. The tree walk remains for tokens that are current but unbound
-		// (structural apply awaiting its bind, transient DOM misalignment).
-		const address = store.tokens.handleOf(token)?.address() ?? MarkController.#addressInTree(store, token)
-
-		return new MarkController(store, address, {
-			value: token.value,
-			meta: token.meta,
-			slot: token.slot?.content,
-			readOnly: store.props.readOnly(),
-		})
+		// The adapter hands in a render-tree token; bridge by its stable id (the
+		// Phase-1 plain field) to the live handle. A token outside the current tree
+		// (no id, or no live node) has no controller — same failure surface as the
+		// old pathOf throw.
+		if (token.id === undefined) throw new Error('Cannot create MarkController for a token without an id')
+		const handle = store.tokens.handle(token.id)
+		if (!handle) throw new Error('Cannot create MarkController for a token outside the current tree')
+		return new MarkController(store, handle)
 	}
 
-	static #addressInTree(store: Store, token: MarkToken): TokenAddress {
-		const path = pathOf(store.tokens.tokens(), token)
-		if (!path) throw new Error('Cannot create MarkController for a token outside the current tree')
-		return {path, token}
+	/** The live mark token at this handle, or undefined (dead, mid-window, or no longer a mark). */
+	#liveMark(): MarkToken | undefined {
+		// Re-resolve through the LATCH-GATED id lookup: handle(id) serves undefined
+		// while a structural apply awaits its bind (the node layer is one generation
+		// stale there — the captured handle still points at the OLD DOM/token). A
+		// killed mark drops out of the map entirely. Only a live, bound, still-mark
+		// handle yields a token to mutate.
+		const handle = this.store.tokens.handle(this.handle.id)
+		if (handle !== this.handle || !handle.alive()) return undefined
+		const token = handle.token()
+		return token.type === 'mark' ? token : undefined
 	}
 
 	get value(): string {
-		return this.snapshot.value
+		return this.#liveMark()?.value ?? ''
 	}
 
 	get meta(): string | undefined {
-		return this.snapshot.meta
+		return this.#liveMark()?.meta
 	}
 
 	get slot(): string | undefined {
-		return this.snapshot.slot
+		return this.#liveMark()?.slot?.content
 	}
 
 	get readOnly(): boolean {
-		return this.snapshot.readOnly
+		return this.store.props.readOnly()
 	}
 
-	remove() {
-		const resolved = this.#resolve()
-		if (!resolved) return
-		this.store.value.replace(resolved.position, '')
+	remove(): boolean {
+		const token = this.#resolve()
+		if (!token) return false
+		this.store.value.replace(token.position, '')
+		return true
 	}
 
-	update(patch: MarkPatch) {
-		const resolved = this.#resolve()
-		if (!resolved) return
+	update(patch: MarkPatch): boolean {
+		const token = this.#resolve()
+		if (!token) return false
 
-		const token = resolved
 		const value = patch.value ?? token.value
 		const meta =
 			patch.meta?.kind === 'clear' ? undefined : patch.meta?.kind === 'set' ? patch.meta.value : token.meta
@@ -71,6 +81,7 @@ export class MarkController {
 		const serialized = this.#serialize(token, {value, meta, slot})
 
 		this.store.value.replace(token.position, serialized)
+		return true
 	}
 
 	#serialize(token: MarkToken, fields: {value: string; meta?: string; slot?: string}): string {
@@ -81,36 +92,9 @@ export class MarkController {
 		})
 	}
 
+	/** The live mark to mutate, or undefined in read-only mode / against a dead or mid-window handle. */
 	#resolve(): MarkToken | undefined {
 		if (this.store.props.readOnly()) return undefined
-		// Identity bridge: this controller may have been captured before N
-		// text-path commits (the adapter never re-rendered), leaving the captured
-		// address with a stale token object and stale position. The token's id
-		// survives object replacement and the node layer is refreshed by every
-		// commit, so the handle yields the CURRENT token — mutations hit the
-		// shifted (correct) range. When the bridge cannot resolve (identity gone,
-		// or a structural apply awaiting its bind — handleOf's latch gate), fall
-		// back to the captured address; its OBJECT-IDENTITY check against the
-		// render tree keeps the fail-closed no-op semantics.
-		const resolved = this.store.tokens.handleOf(this.address.token)?.token() ?? this.#resolveCaptured()
-		if (resolved?.type !== 'mark') return undefined
-		return resolved
+		return this.#liveMark()
 	}
-
-	#resolveCaptured(): Token | undefined {
-		const current = resolvePath(this.store.tokens.tokens(), this.address.path)
-		return current === this.address.token ? current : undefined
-	}
-}
-
-/** Depth-first path of a token in the tree, by object identity. */
-function pathOf(tokens: readonly Token[], target: Token, base: TokenPath = []): TokenPath | undefined {
-	for (let i = 0; i < tokens.length; i++) {
-		const token = tokens[i]
-		if (token === target) return [...base, i]
-		if (token.type !== 'mark') continue
-		const nested = pathOf(token.children, target, [...base, i])
-		if (nested) return nested
-	}
-	return undefined
 }
