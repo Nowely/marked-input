@@ -26,8 +26,8 @@ policy-only.
 - `selectAll()` — sets `range` to `[0, value.length]`.
 - `focusFirst()` — collapses to the first indexed token's start, or falls back to
   `container.focus()`.
-- `placeAtAddress(address, boundary?)` — collapses to the `'start'` or `'end'`
-  of a specific token address; stores the preferred address so the next
+- `placeAtHandle(handle, boundary?)` — collapses to the `'start'` or `'end'`
+  of a specific token handle; stores the preferred handle so the next
   `#applyRange` can disambiguate tokens sharing a boundary position.
 - `readRaw()` — delegates to `tokens.readSelection()`; returns the current window
   selection as a `RawSelection` or `undefined`. Used by keyboard, clipboard, and
