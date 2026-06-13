@@ -78,6 +78,10 @@ export function createIdentityTracker(): IdentityTracker {
 			id = nextId++
 			ids.set(token, id)
 		}
+		// Phase 1 shim: the WeakMap stays the internal source of truth for one
+		// phase; the plain field mirrors it so consumers (keyOf, adapters) read
+		// token.id without reaching into the tracker.
+		token.id = id
 		if (token.type === 'mark') token.children.forEach(ensureId)
 		return id
 	}
@@ -90,7 +94,10 @@ export function createIdentityTracker(): IdentityTracker {
 
 	const inherit = (from: Token, to: Token): void => {
 		const id = ids.get(from)
-		if (id !== undefined) ids.set(to, id)
+		if (id !== undefined) {
+			ids.set(to, id)
+			to.id = id
+		}
 		if (from.type === 'mark' && to.type === 'mark') {
 			const len = Math.min(from.children.length, to.children.length)
 			for (let i = 0; i < len; i++) inherit(from.children[i], to.children[i])

@@ -10,6 +10,8 @@ export interface TextToken {
 		start: number
 		end: number
 	}
+	/** Stable identity id, stamped by reconcile (tokenIdentity) — NOT by the parser. Absent on freshly parsed, never-reconciled trees. */
+	id?: number
 }
 
 export interface MarkToken {
@@ -19,6 +21,8 @@ export interface MarkToken {
 		start: number
 		end: number
 	}
+	/** Stable identity id, stamped by reconcile (tokenIdentity) — NOT by the parser. Absent on freshly parsed, never-reconciled trees. */
+	id?: number
 	descriptor: MarkupDescriptor
 	value: string
 	meta?: string

@@ -135,7 +135,7 @@ describe('Store', () => {
 			const store = new Store()
 			store.host.container(document.createElement('div'))
 			store.value.current('hello')
-			expect(store.tokens.tree()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 			expect(store.value.current()).toBe('hello')
 		})
 
@@ -156,7 +156,7 @@ describe('Store', () => {
 			store.value.current('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
-			expect(store.tokens.tree()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 		})
 
 		it('not throw when onChange is not set', () => {

@@ -415,9 +415,20 @@ function assertReconcileEquivalence(
 		: tracker.reconcile(parser.parse(nextValue), undefined, prevValue, nextValue)
 	const fresh = parser.parse(nextValue)
 
-	// 1. Output equivalence: tokens carry no id field (ids live in a WeakMap),
-	//    so the reconciled tree must deep-equal a fresh parse directly.
-	expect(result.tokens).toEqual(fresh)
+	// 1. Output equivalence: the reconciled tree must match a fresh parse on
+	//    every parser-produced field. toMatchObject (not toEqual) because
+	//    reconcile stamps the extra `id` field on its output — `fresh` carries none.
+	expect(result.tokens).toMatchObject(fresh)
+
+	// 1b. Identity-field coherence: every reconciled token carries its id as a
+	//     plain field, equal to the tracker's answer (the phase-1 WeakMap shim).
+	const assertIdField = (tokens: readonly Token[]): void => {
+		for (const token of tokens) {
+			expect(token.id, 'reconciled token must carry its id as a plain field').toBe(tracker.idOf(token))
+			if (token.type === 'mark') assertIdField(token.children)
+		}
+	}
+	assertIdField(result.tokens)
 
 	// 2. Changeset id invariants.
 	const newIds = collectTreeIds(result.tokens, tracker)

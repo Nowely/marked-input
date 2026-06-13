@@ -26,18 +26,18 @@ describe('TokenModel', () => {
 	describe('auto-parse on value change', () => {
 		it('sets tokens from initial value on mount', () => {
 			mountWith('hello')
-			expect(store.tokens.tree()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 		})
 
 		it('updates tokens when value changes via replaceAll', () => {
 			mountWith('hello')
 			store.value.current('world')
-			expect(store.tokens.tree()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 		})
 
 		it('falls back to empty string when defaultValue is empty', () => {
 			mountWith('')
-			expect(store.tokens.tree()).toEqual([{type: 'text', content: '', position: {start: 0, end: 0}}])
+			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: '', position: {start: 0, end: 0}}])
 		})
 
 		it('mount with defaultValue initializes value current', () => {
@@ -49,7 +49,9 @@ describe('TokenModel', () => {
 			store.props.set({options: [{markup: '@[__value__]'}]})
 			store.host.container(document.createElement('div'))
 			store.value.current('@[test]')
-			expect(store.tokens.tree()).toEqual([{type: 'text', content: '@[test]', position: {start: 0, end: 7}}])
+			expect(store.tokens.tree()).toMatchObject([
+				{type: 'text', content: '@[test]', position: {start: 0, end: 7}},
+			])
 		})
 
 		it('parses markup when Mark is set', () => {
@@ -76,7 +78,7 @@ describe('TokenModel', () => {
 			store.props.set({Mark: undefined})
 			store.value.current('second')
 			store.props.set({Mark: () => null})
-			expect(store.tokens.tree()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
+			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
 		})
 	})
 
@@ -95,7 +97,7 @@ describe('TokenModel', () => {
 
 			store.value.current('hello')
 
-			expect(tokensAtChangeTime).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(tokensAtChangeTime).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			stop()
 		})

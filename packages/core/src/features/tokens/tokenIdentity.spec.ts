@@ -213,7 +213,7 @@ describe('deep reconcile (descend)', () => {
 		const result = tracker.reconcile(slotParser.parse('#[aXb]tail'), {start: 3, end: 3, insertedLength: 1})
 		const changeset = delta(result)
 
-		expect(result.tokens).toEqual(slotParser.parse('#[aXb]tail'))
+		expect(result.tokens).toMatchObject(slotParser.parse('#[aXb]tail'))
 		expect(changeset.added).toEqual([])
 		expect(changeset.removed).toEqual([])
 		// the changed text lives on the CHILD; the mark is an update, not a text change
@@ -245,7 +245,7 @@ describe('deep reconcile (descend)', () => {
 		const result = tracker.reconcile(slotParser.parse('#[a #[bX] c]'), {start: 7, end: 7, insertedLength: 1})
 		const changeset = delta(result)
 
-		expect(result.tokens).toEqual(slotParser.parse('#[a #[bX] c]'))
+		expect(result.tokens).toMatchObject(slotParser.parse('#[a #[bX] c]'))
 		expect(changeset.added).toEqual([])
 		expect(changeset.removed).toEqual([])
 		expect(changeset.textChanged).toEqual([innerChildId])
@@ -277,7 +277,7 @@ describe('deep reconcile (descend)', () => {
 		const result = tracker.reconcile(rowParser.parse('aXbc\n\ndef\n\n'), {start: 1, end: 1, insertedLength: 1})
 		const changeset = delta(result)
 
-		expect(result.tokens).toEqual(rowParser.parse('aXbc\n\ndef\n\n'))
+		expect(result.tokens).toMatchObject(rowParser.parse('aXbc\n\ndef\n\n'))
 		expect(changeset.added).toEqual([])
 		expect(changeset.removed).toEqual([])
 		expect(changeset.textChanged).toEqual([rowAChildId])
@@ -387,7 +387,7 @@ describe('deep reconcile (descend)', () => {
 		const result = tracker.reconcile(slotParser.parse('#[a c]'), {start: 4, end: 9, insertedLength: 0})
 		const changeset = delta(result)
 
-		expect(result.tokens).toEqual(slotParser.parse('#[a c]'))
+		expect(result.tokens).toMatchObject(slotParser.parse('#[a c]'))
 		expect(changeset.textChanged).toEqual([outerId])
 		expect(changeset.updated).toEqual([tailTextId]) // trailing '' shifted by -5
 		expect(changeset.added).toEqual([])
@@ -495,7 +495,7 @@ describe('deep reconcile (descend)', () => {
 		const result = tracker.reconcile(slotParser.parse('#[a]'), {start: 2, end: 2, insertedLength: 1})
 		const changeset = delta(result)
 
-		expect(result.tokens).toEqual(slotParser.parse('#[a]'))
+		expect(result.tokens).toMatchObject(slotParser.parse('#[a]'))
 		// Text-path shape: the child carries the change, the mark is an update.
 		expect(changeset.textChanged).toEqual([childId])
 		expect(changeset.added).toEqual([])
@@ -503,5 +503,36 @@ describe('deep reconcile (descend)', () => {
 		expect(changeset.updated).toContain(markId)
 		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(markId)
 		expect(tracker.idOf(asMark(result.tokens[1]).children[0])).toBe(childId)
+	})
+})
+
+describe('token.id plain field (identity unification, phase 1)', () => {
+	it('stamps id on every reconciled token, mirroring idOf', () => {
+		const tracker = createIdentityTracker()
+		const slotted = new Parser(['#[__slot__]'])
+		const result = tracker.reconcile(slotted.parse('#[ab]tail'))
+
+		const assertIdField = (tokens: readonly Token[]): void => {
+			for (const token of tokens) {
+				expect(token.id).toBe(tracker.idOf(token))
+				if (token.type === 'mark') assertIdField(token.children)
+			}
+		}
+		expect(result.tokens).toHaveLength(3)
+		assertIdField(result.tokens)
+	})
+
+	it('a suffix-shifted token carries its inherited id as a field', () => {
+		const tracker = createIdentityTracker()
+		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
+		const markId = first[1].id
+
+		// edit before the mark: 'he@[x]llo' → 'hAe@[x]llo' — the mark suffix-
+		// shifts into a NEW object; the id field must travel with the identity
+		const result = tracker.reconcile(parser.parse('hAe@[x]llo'), {start: 1, end: 1, insertedLength: 1})
+
+		expect(typeof markId).toBe('number')
+		expect(result.tokens[1]).not.toBe(first[1])
+		expect(result.tokens[1].id).toBe(markId)
 	})
 })
