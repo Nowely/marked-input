@@ -12,7 +12,7 @@ import {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {createIdentityTracker} from '../tokenIdentity'
-import type {Changeset, EditHint, ReconcileResult} from '../tokenIdentity'
+import type {EditHint, ReconcileResult} from '../tokenIdentity'
 import {pathEquals, pathKey, resolvePath} from '../tokenIndex'
 import {createCommitPipeline} from './commit'
 import {applyEditableState} from './editableState'
@@ -64,8 +64,16 @@ export class TokenModel {
 	/** Renderer contract: reference changes ⇔ the renderer must run. */
 	readonly tree: Computed<Token[]> = this.#pipeline.tree
 
-	/** THE model-level detector: fires once per commit, only after the DOM is consistent. */
-	readonly changed: Event<Changeset> = this.#pipeline.changed
+	/** THE model-level detector: fires once per commit, only after the DOM is consistent. Payloadless — consumers re-read. */
+	readonly changed: Event<void> = this.#pipeline.changed
+
+	/**
+	 * Internal: ids removed (subtree included) by the LAST committed reconcile —
+	 * the prune feed for id-keyed UI-state stores. Read inside a `changed` watch;
+	 * the public event carries no payload, so this accessor is the migration path
+	 * for consumers that read the old changeset's `removed` bucket (BlockController).
+	 */
+	readonly removedIds = (): readonly number[] => this.#pipeline.removedIds()
 
 	/**
 	 * Adapter SPI: the framework key of a render-tree token — its stable

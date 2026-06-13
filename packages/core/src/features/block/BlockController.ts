@@ -36,9 +36,10 @@ export class BlockController {
 			this.edit.replace({start: 0, end: -1}, result.value, result.caret)
 		})
 
-		watch(this.tokens.changed, changeset => {
-			if (changeset.kind !== 'delta') return
-			for (const id of changeset.removed) this.#stores.delete(id)
+		// changed is payloadless (Phase 2); the removed ids of the last commit
+		// come from the model's removedIds() accessor — the prune feed.
+		watch(this.tokens.changed, () => {
+			for (const id of this.tokens.removedIds()) this.#stores.delete(id)
 		})
 	}
 
