@@ -29,7 +29,7 @@ export const Token = memo(({token, path}: {token: TokenType; path: TokenPath}) =
 		) : undefined
 
 	return (
-		<TokenContext value={{store, token, address: {path, token}}}>
+		<TokenContext value={{store, token, path}}>
 			{children ? <Component {...props}>{children}</Component> : <Component {...props} />}
 		</TokenContext>
 	)

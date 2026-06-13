@@ -3,29 +3,21 @@ import {inject} from 'vue'
 
 import {TOKEN_KEY} from '../providers/tokenKey'
 
-/**
- * Mark metadata for the surrounding mark token context.
- *
- * Staleness note: the returned `address` is frozen at the last STRUCTURAL
- * render — text-path commits patch the DOM without re-rendering, so its token
- * object and position can lag the value. Feeding a lagging address to
- * position-sensitive APIs is fail-closed (the model bridges tokens by identity
- * and rejects replaced ones) — for mutations prefer handle-based flows
- * (`useMark`'s controller already bridges identity internally).
- */
+/** Mark metadata for the surrounding mark token context. */
 export const useMarkInfo = (): MarkInfo => {
-	const addressRef = inject(TOKEN_KEY)
-	if (!addressRef) throw new Error('Token not found. Make sure to use useMarkInfo inside a Token provider.')
+	const contextRef = inject(TOKEN_KEY)
+	if (!contextRef) throw new Error('Token not found. Make sure to use useMarkInfo inside a Token provider.')
 
-	const address = addressRef.value
-	const token = address.token
+	const {path, token} = contextRef.value
 	if (token.type !== 'mark') throw new Error('useMarkInfo must be called within a mark token context')
+	if (token.id === undefined) throw new Error('useMarkInfo: mark token has no id (not reconciled)')
 
 	return {
-		address,
+		id: token.id,
+		path,
 		// One path segment per nesting level: a top-level token has depth 0.
-		depth: address.path.length - 1,
+		depth: path.length - 1,
 		hasNestedMarks: token.children.some(child => child.type === 'mark'),
-		key: address.path.join('.'),
+		key: path.join('.'),
 	}
 }

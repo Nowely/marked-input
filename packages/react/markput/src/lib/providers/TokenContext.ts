@@ -1,11 +1,11 @@
-import type {Store, Token, TokenAddress} from '@markput/core'
+import type {Store, Token, TokenPath} from '@markput/core'
 import {createContext, useContext} from 'react'
 
 export type TokenContextValue = {
 	readonly store: Store
 	readonly token: Token
-	/** Render-time address: the path arrives from the tree map, frozen at the last structural render. */
-	readonly address: TokenAddress
+	/** Render-time tree path: arrives from the tree map by construction (the parent knows each child's index). */
+	readonly path: TokenPath
 }
 
 export const TokenContext = createContext<TokenContextValue | undefined>(undefined)
