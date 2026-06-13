@@ -130,4 +130,22 @@ describe('TokenModel', () => {
 			expect(store.tokens.tree()[2].type).toBe('text')
 		})
 	})
+
+	describe('keyOf (adapter SPI)', () => {
+		it('returns the stable identity id — a suffix-shifted token keeps its key', () => {
+			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.host.container(document.createElement('div'))
+			const mark = store.tokens.tree()[1]
+			const markKey = store.tokens.keyOf(mark)
+
+			// edit BEFORE the mark: 'he@[x]llo' → 'Xhe@[x]llo' — the mark suffix-
+			// shifts into a NEW object with an INHERITED id; the framework key
+			// must not change (object-keyed counters remounted it, the defect)
+			store.value.current('Xhe@[x]llo')
+
+			const shifted = store.tokens.tree()[1]
+			expect(shifted).not.toBe(mark)
+			expect(store.tokens.keyOf(shifted)).toBe(markKey)
+		})
+	})
 })

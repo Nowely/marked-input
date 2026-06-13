@@ -67,6 +67,16 @@ export class TokenModel {
 	/** THE model-level detector: fires once per commit, only after the DOM is consistent. */
 	readonly changed: Event<Changeset> = this.#pipeline.changed
 
+	/**
+	 * Adapter SPI: the framework key of a render-tree token — its stable
+	 * identity id, so a suffix-shifted token (new object, inherited id) keeps
+	 * its key and is reconciled in place instead of remounted. Arrow property:
+	 * adapters pass it around unbound. Total like the KeyGenerator it replaces;
+	 * the idOf fallback covers tokens that predate reconcile stamping (and
+	 * allocates for foreign tokens, exactly as the old per-object counter did).
+	 */
+	readonly keyOf = (token: Token): number => token.id ?? this.#identity.idOf(token)
+
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
 		const Mark = this.props.Mark()
 		const options = this.props.options()

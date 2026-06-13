@@ -11,6 +11,7 @@ import {KeyGenerator} from '../shared/classes'
 import {MarkputHandler} from './MarkputHandler'
 
 export class Store {
+	/** Overlay OPTION keying only (OverlayRenderer) — token framework keys come from tokens.keyOf (stable identity ids). */
 	readonly key = new KeyGenerator()
 
 	readonly host = new Host()
