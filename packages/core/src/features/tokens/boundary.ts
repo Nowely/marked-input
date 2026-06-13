@@ -1,12 +1,11 @@
-import type {TokenAddress} from '../../shared/editorContracts'
 import type {TokenHandle} from './model/LiveNode'
 import type {Token} from './parser/types'
 import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 
-/** A bound token as the facade reads it: fresh address over the live DOM bindings, plus the handle itself. */
+/** A bound token as the facade reads it: the fresh current token over the live DOM bindings, plus the handle itself. */
 export type TokenView = {
 	readonly handle: TokenHandle
-	readonly address: TokenAddress
+	readonly token: Token
 	readonly tokenElement: HTMLElement
 	readonly textElement?: HTMLElement
 	readonly rowElement?: HTMLElement
@@ -19,12 +18,12 @@ export type BoundaryContext = {
 	container: HTMLElement | undefined
 	tokens: readonly Token[]
 	/**
-	 * Fail-closed address check: the address's token object must still sit at
-	 * its path in the CURRENT tree. Views carry fresh tokens by construction,
-	 * so this only rejects during the structural reconcile → bind window
-	 * (node layer one generation stale) and for foreign addresses.
+	 * The view's fresh current token, or `undefined` if its handle is no longer
+	 * live. Views carry `handle.token()` by construction, so this only rejects
+	 * during the structural reconcile → bind window (the node layer is one
+	 * generation stale) and for killed handles.
 	 */
-	resolveAddress(address: TokenAddress): Token | undefined
+	tokenOf(view: TokenView): Token | undefined
 	/** Id-bridged view of a current-tree token's bound node, if any. */
 	viewOf(token: Token): TokenView | undefined
 	locate(node: Node): Lookup | undefined
@@ -45,7 +44,7 @@ export function rawPositionFromBoundary(
 	const lookup = ctx.locate(node)
 	if (lookup?.kind !== 'token') return undefined
 
-	const token = ctx.resolveAddress(lookup.node.address)
+	const token = ctx.tokenOf(lookup.node)
 	if (!token) return undefined
 
 	if (node instanceof HTMLElement && node === lookup.node.childSequenceHost) {
@@ -112,8 +111,8 @@ function fromTokenChildBoundary(
 	const before = lookupTokenDescendant(ctx, tokenElement.childNodes.item(offset - 1))
 	const after = lookupTokenDescendant(ctx, tokenElement.childNodes.item(offset))
 	if (before && after) {
-		const beforeToken = ctx.resolveAddress(before.address)
-		const afterToken = ctx.resolveAddress(after.address)
+		const beforeToken = ctx.tokenOf(before)
+		const afterToken = ctx.tokenOf(after)
 		if (beforeToken && afterToken) {
 			return affinity === 'before' ? beforeToken.position.end : afterToken.position.start
 		}
@@ -130,13 +129,13 @@ function lookupTokenDescendant(ctx: BoundaryContext, node: Node | null): TokenVi
 
 /** Text token containing `rawPosition`, else the next one after it. */
 export function textTargetAt(
-	ctx: Pick<BoundaryContext, 'nodes' | 'resolveAddress'>,
+	ctx: Pick<BoundaryContext, 'nodes' | 'tokenOf'>,
 	rawPosition: number
 ): {node: TokenView; start: number; end: number} | undefined {
 	const candidates: Array<{node: TokenView; start: number; end: number}> = []
 	for (const node of ctx.nodes()) {
 		if (!node.textElement) continue
-		const resolved = ctx.resolveAddress(node.address)
+		const resolved = ctx.tokenOf(node)
 		if (resolved?.type !== 'text') continue
 		candidates.push({node, start: resolved.position.start, end: resolved.position.end})
 	}
@@ -148,11 +147,11 @@ export function textTargetAt(
 
 /** Mark token whose start or end boundary sits exactly at `rawPosition`. */
 export function markBoundaryAt(
-	ctx: Pick<BoundaryContext, 'nodes' | 'resolveAddress'>,
+	ctx: Pick<BoundaryContext, 'nodes' | 'tokenOf'>,
 	rawPosition: number
 ): {element: HTMLElement; position: {start: number; end: number}} | undefined {
 	for (const node of ctx.nodes()) {
-		const resolved = ctx.resolveAddress(node.address)
+		const resolved = ctx.tokenOf(node)
 		if (resolved?.type !== 'mark') continue
 		if (rawPosition !== resolved.position.start && rawPosition !== resolved.position.end) continue
 		return {element: node.tokenElement, position: resolved.position}

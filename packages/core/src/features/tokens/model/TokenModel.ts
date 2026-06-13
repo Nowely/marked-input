@@ -1,4 +1,4 @@
-import type {DomRef, RawSelection, TokenAddress, TokenPath} from '../../../shared/editorContracts'
+import type {DomRef, RawSelection, TokenPath} from '../../../shared/editorContracts'
 import {computed, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
@@ -13,7 +13,7 @@ import type {Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {createIdentityTracker} from '../tokenIdentity'
 import type {EditHint, ReconcileResult} from '../tokenIdentity'
-import {pathEquals, resolvePath} from '../tokenIndex'
+import {pathEquals} from '../tokenIndex'
 import {createCommitPipeline} from './commit'
 import {applyEditableState} from './editableState'
 import type {TokenHandle} from './LiveNode'
@@ -247,11 +247,11 @@ export class TokenModel {
 		return undefined
 	}
 
-	/** View of a handle for the boundary facade: fresh address over the live bindings. */
+	/** View of a handle for the boundary facade: the fresh current token over the live bindings. */
 	#view(handle: TokenHandle): TokenView | undefined {
 		const bindings = handle.node()
 		if (!bindings) return undefined
-		return {handle, address: handle.address(), ...bindings}
+		return {handle, token: handle.token(), ...bindings}
 	}
 
 	*#views(): IterableIterator<TokenView> {
@@ -261,21 +261,14 @@ export class TokenModel {
 		}
 	}
 
-	/**
-	 * Fail-closed address check against the CURRENT reconciled tree (path AND
-	 * object identity must match). Node-layer views carry fresh token objects,
-	 * so this only rejects while a structural apply awaits its bind (the layer
-	 * is one generation stale) and for foreign or removed addresses.
-	 */
-	#resolveAddress(address: TokenAddress): Token | undefined {
-		const current = resolvePath(this.tokens(), address.path)
-		return current === address.token ? current : undefined
+	/** The view's fresh current token while its handle is live (views are built from live handles, so this is total for an in-hand view). */
+	#tokenOf(view: TokenView): Token | undefined {
+		return view.handle.alive() ? view.token : undefined
 	}
 
-	/** Id-bridged view of a current-tree token's bound node (boundary internals; reached only behind {@link #resolveAddress}). */
+	/** Id-bridged view of a current-tree token's bound node (boundary internals). */
 	#viewOf(token: Token): TokenView | undefined {
-		const id = this.#identity.idFor(token)
-		const handle = id === undefined ? undefined : this.#nodes.get(id)
+		const handle = token.id === undefined ? undefined : this.handle(token.id)
 		return handle ? this.#view(handle) : undefined
 	}
 
@@ -283,7 +276,7 @@ export class TokenModel {
 		return {
 			container: this.host.container() ?? undefined,
 			tokens: this.tokens(),
-			resolveAddress: address => this.#resolveAddress(address),
+			tokenOf: view => this.#tokenOf(view),
 			viewOf: token => this.#viewOf(token),
 			locate: node => this.#locate(node),
 			nodes: () => this.#views(),
