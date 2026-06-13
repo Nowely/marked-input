@@ -7,12 +7,10 @@ import type {ValueModel} from '../../state/ValueModel'
 import {markBoundaryAt, rawPositionFromBoundary, textTargetAt} from '../boundary'
 import type {BoundaryContext, Lookup, TokenView} from '../boundary'
 import {focusIfNeeded, getRect, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from '../caret'
-import {incrementalParse} from '../incrementalParse'
 import {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {createIdentityTracker} from '../tokenIdentity'
-import type {EditHint, ReconcileResult} from '../tokenIdentity'
 import {pathEquals} from '../tokenIndex'
 import {createCommitPipeline} from './commit'
 import {applyEditableState} from './editableState'
@@ -126,45 +124,25 @@ export class TokenModel {
 		return new Parser(markups)
 	})
 
-	/** Previous parse (pre-filterEmptyText) — the splice base for {@link incrementalParse}. */
-	#lastParsed: {parser: Parser; value: string; tokens: Token[]} | undefined
-
-	// PURITY: the consume-once hint read and the #lastParsed write mutate inside
-	// this computed — safe because the runtime executes a getter at most once per
-	// dependency change wave (verified in shared/signals; equal writes never propagate).
-	readonly #reconciled: Computed<ReconcileResult> = computed(() => {
-		const parser = this.#parser()
-		const value = this.value.current()
+	/**
+	 * THE reparse pipeline entry (the spec's watch-callback hint flow). Driven by
+	 * the one watch over the `(value, parser, isBlock)` tuple in the constructor:
+	 * when any of the three changes, drain the consume-once edit hint, full-parse
+	 * the value (inline parsing is always a full parse — the windowed
+	 * `incrementalParse` is deleted; Phase 7's pre-split row parser is the
+	 * incrementality story), filter empty texts in block mode, then reconcile and
+	 * apply. The hint + `previousValue` are plain fields the `current` write set
+	 * synchronously, so draining them HERE — inside an `untracked` watch callback,
+	 * once per wave by construction — needs no PURITY argument (the old
+	 * `#reconciled` computed drained them inside a getter, leaning on the runtime's
+	 * once-per-wave guarantee; that dependence is gone).
+	 */
+	#reparse(value: string, parser: Parser | undefined, isBlock: boolean): void {
 		const hint = this.value.takePendingEdit()
 		const previousValue = this.value.previousValue()
-		const parsed = this.#parse(parser, value, hint, previousValue)
-		// #lastParsed keeps the UNfiltered tree: incrementalParse splices previous
-		// top-level tokens, so its input must be exactly what parse() emits. The
-		// identity tracker receives the FILTERED tree (block mode) — what renders.
-		this.#lastParsed = parser ? {parser, value, tokens: parsed} : undefined
-		const tokens = this.props.layout.isBlock() ? filterEmptyText(parsed) : parsed
-		return this.#identity.reconcile(tokens, hint, previousValue, value)
-	})
-
-	/**
-	 * Typing hot path: reparse only a window around the edit hint when the
-	 * matching previous parse is available; incrementalParse itself falls back
-	 * to a full parse on any doubt (output is always parse-equivalent — gated
-	 * by incrementalParse.property.spec.ts).
-	 */
-	#parse(
-		parser: Parser | undefined,
-		value: string,
-		hint: EditHint | undefined,
-		previousValue: string | undefined
-	): Token[] {
-		if (!parser) return [createTextToken(value)]
-		const lastParsed = this.#lastParsed
-		if (hint === undefined || lastParsed === undefined) return parser.parse(value)
-		// A parser/options change invalidates the previous tree's descriptors; the
-		// hint's ranges are coordinates in exactly the last parsed value.
-		if (lastParsed.parser !== parser || lastParsed.value !== previousValue) return parser.parse(value)
-		return incrementalParse(parser, lastParsed.tokens, lastParsed.value, value, hint)
+		const parsed = parser ? parser.parse(value) : [createTextToken(value)]
+		const tokens = isBlock ? filterEmptyText(parsed) : parsed
+		this.#pipeline.apply(this.#identity.reconcile(tokens, hint, previousValue, value))
 	}
 
 	constructor(
@@ -173,10 +151,19 @@ export class TokenModel {
 		private readonly host: Host
 	) {
 		host.onMounted(() => {
-			// Order matters: the immediate apply seeds the pipeline (cold start is
+			// Order matters: the immediate reparse seeds the pipeline (cold start is
 			// a structural pass), so the immediate onRendered right after can bind
 			// a pre-built DOM — the shell is live once the container attaches.
-			watch(this.#reconciled, result => this.#pipeline.apply(result), {immediate: true})
+			//
+			// THE reparse trigger: one watch over the (value, parser, isBlock) tuple
+			// (the spec's named tuple). The trigger reads exactly those three signals
+			// — so the watch fires on exactly the waves the old #reconciled computed
+			// recomputed on — and #reparse drains the hint + applies in the callback.
+			watch(
+				() => ({value: this.value.current(), parser: this.#parser(), isBlock: this.props.layout.isBlock()}),
+				({value, parser, isBlock}) => this.#reparse(value, parser, isBlock),
+				{immediate: true}
+			)
 			watch(host.rendered, () => this.#pipeline.onRendered(), {immediate: true})
 		})
 	}
