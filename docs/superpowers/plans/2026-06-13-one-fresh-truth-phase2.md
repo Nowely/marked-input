@@ -35,7 +35,7 @@
 
 This task introduces the new result type and makes reconcile return it, deriving `changes`/`removedIds`/`structural` from the EXISTING four buckets as a temporary bridge (Task 2 threads the paths through the walk and deletes the bridge). Cheap, compiles green, keeps every existing id-bucket assertion alive one more task.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append at the end of `tokenIdentity.spec.ts` (after the `token.id plain field` describe), as a new top-level describe. `parser` is the module-level `new Parser(['@[__value__]'])`:
 
@@ -87,12 +87,12 @@ describe('reconcile structural result (phase 2)', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `pnpm -F core test -- tokenIdentity.spec`
 Expected: the 3 new tests FAIL (`result.structural`/`result.changes`/`result.removedIds` are `undefined`; `result.changeset` still exists). All pre-existing tokenIdentity tests pass.
 
-- [ ] **Step 3: Add the new types and a bridge from the existing buckets**
+- [x] **Step 3: Add the new types and a bridge from the existing buckets**
 
 In `tokenIdentity.ts`, REPLACE the `Changeset` / `ReconcileResult` block (lines 11-41 — the `Delta buckets` doc comment, the `Changeset` union, and `ReconcileResult`) with:
 
@@ -231,12 +231,12 @@ function bridge(
 
 NOTE: this task keeps the bucket-filling code (`textChanged.push`, `added`, `updated`, `removed`, `collectIds`) UNTOUCHED — the bridge consumes them. The buckets and bridge die together in Task 2.
 
-- [ ] **Step 4: Run to verify green**
+- [x] **Step 4: Run to verify green**
 
 Run: `pnpm -F core test -- tokenIdentity.spec`
 Expected: the 3 new tests pass. Pre-existing tokenIdentity tests will now FAIL TO COMPILE / fail at runtime wherever they read `result.changeset` — that is EXPECTED and fixed in Step 5 (the property spec reads `result.changeset.kind`; the spec file reads it too). If a test fails for any reason OTHER than `changeset` being undefined, STOP and report.
 
-- [ ] **Step 5: Migrate the in-file changeset reads — `tokenIdentity.spec.ts` and the property spec**
+- [x] **Step 5: Migrate the in-file changeset reads — `tokenIdentity.spec.ts` and the property spec**
 
 The reconcile-shape change breaks the spec sites that read `result.changeset`. Migrate them to the new fields (these are the SAME assertions, re-expressed):
 
@@ -262,7 +262,7 @@ Run `pnpm -F core test -- tokenIdentity.spec` and fix each failing assertion mec
 
 and delete the now-stale `expect(result.changeset.kind).toBe('delta')` + the `if (result.changeset.kind !== 'delta') throw` guard lines directly above it. The four downstream `for (const id of …)` invariant loops, the descend invariants (`updated`/`textChanged` `.toContain`), and the `removedSet` survival loop all keep working against these local arrays unchanged.
 
-- [ ] **Step 6: Run the full core suite**
+- [x] **Step 6: Run the full core suite**
 
 Run: `pnpm -F core test`
 Expected: `tokenIdentity.spec`, `tokenIdentity.property.spec` green. `commit.ts` / `commit.spec` / `TokenModel.changed.spec` / `TokenModel.ts` / `BlockController.ts` still reference `result.changeset` / `tokens.changed: Event<Changeset>` and will FAIL TO COMPILE — that is EXPECTED (Tasks 3-6). To keep this task's commit green in isolation, this task does NOT touch those files; run ONLY the identity specs here:
@@ -270,7 +270,7 @@ Expected: `tokenIdentity.spec`, `tokenIdentity.property.spec` green. `commit.ts`
 Run: `pnpm -F core test -- tokenIdentity`
 Expected: both identity specs fully green. The broken consumers are this task's deliberate red, handed to Tasks 3-6.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git commit -m "feat(tokens): reconcile emits {structural, changes, removedIds} (bridged over the buckets)" -- packages/core/src/features/tokens/tokenIdentity.ts packages/core/src/features/tokens/tokenIdentity.spec.ts packages/core/src/features/tokens/tokenIdentity.property.spec.ts
@@ -286,7 +286,7 @@ git commit -m "feat(tokens): reconcile emits {structural, changes, removedIds} (
 
 This is the heart of Phase 2: reconcile builds `changes` DIRECTLY at each token it visits (it has the path component in hand), so the bridge's re-walk dies. The four bucket arrays become a single `changes` array plus `removedIds`; `structural` is set inline.
 
-- [ ] **Step 1: Write the path-correctness property (failing-by-construction gate)**
+- [x] **Step 1: Write the path-correctness property (failing-by-construction gate)**
 
 In `tokenIdentity.property.spec.ts`, add to `assertReconcileEquivalence` — directly AFTER the local `added`/`textChanged`/`updated`/`removed` arrays are derived (Task 1 Step 5) — a path-resolution property. Add this helper near the top-level helpers (after `collectTreeIds`):
 
@@ -317,7 +317,7 @@ and add, inside `assertReconcileEquivalence` right after the new local arrays:
 	}
 ```
 
-- [ ] **Step 2: Run — verify the bridge already satisfies it**
+- [x] **Step 2: Run — verify the bridge already satisfies it**
 
 Run: `pnpm -F core test -- tokenIdentity.property`
 Expected: GREEN. The Task-1 bridge already resolves paths from the output tree, so the path property passes over the bridged result. This pins the contract BEFORE the refactor so Task 2's rewrite cannot silently break it (a red here after the rewrite is the gate firing). Commit the property now so the gate is in place:
@@ -326,7 +326,7 @@ Expected: GREEN. The Task-1 bridge already resolves paths from the output tree, 
 git commit -m "test(tokens): pin reconcile change-path correctness before threading paths" -- packages/core/src/features/tokens/tokenIdentity.property.spec.ts
 ```
 
-- [ ] **Step 3: Replace the bucket arrays with a `changes` collector + inline `structural`**
+- [x] **Step 3: Replace the bucket arrays with a `changes` collector + inline `structural`**
 
 In `tokenIdentity.ts`, inside `reconcile`, REPLACE the four bucket declarations (lines ~128-131):
 
@@ -363,7 +363,7 @@ Replace `collectIds` (lines ~89-93) — which pushed ids into a bucket — with 
 
 (`ensureId` still stamps the subtree; `collectChanges` only walks to push entries — the recursion mirrors the old `collectIds`.)
 
-- [ ] **Step 4: Thread `basePath` through `tryDescend` and `pairSlotChildren`; rewrite the three walks**
+- [x] **Step 4: Thread `basePath` through `tryDescend` and `pairSlotChildren`; rewrite the three walks**
 
 `tryDescend` and `pairSlotChildren` gain a `basePath: TokenPath` parameter (the path of the mark being descended). Apply these edits:
 
@@ -521,17 +521,17 @@ Add `collectRemovedIds` as a local helper near `collectChanges`:
 
 **Delete the dead bridge helpers:** remove the module-level `collectAddChanges` and `bridge` functions added in Task 1 (the cold start now inlines its own `collect`; the delta path builds `changes` inline).
 
-- [ ] **Step 5: Run the identity specs**
+- [x] **Step 5: Run the identity specs**
 
 Run: `pnpm -F core test -- tokenIdentity`
 Expected: `tokenIdentity.spec` and `tokenIdentity.property` BOTH green — including the path-correctness property from Step 1 (now satisfied by the real threaded paths, not the bridge). The id-invariant loops, descend invariants, and equivalence assertion are unchanged and must stay green. If the path property fails, a threaded path is wrong — fix the offending walk; do NOT relax the property.
 
-- [ ] **Step 6: Run the full core suite (expect the consumers still red)**
+- [x] **Step 6: Run the full core suite (expect the consumers still red)**
 
 Run: `pnpm -F core test -- tokenIdentity`
 Expected: green. The pipeline consumers (`commit.ts`, specs) are still on the old shape and handed to Tasks 3-6 — do not touch them here.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git commit -m "feat(tokens): thread (id, token, path) through the reconcile walk — delete the bridge" -- packages/core/src/features/tokens/tokenIdentity.ts packages/core/src/features/tokens/tokenIdentity.property.spec.ts
@@ -546,7 +546,7 @@ git commit -m "feat(tokens): thread (id, token, path) through the reconcile walk
 
 This is the consumer of Task 2. The text branch iterates `result.changes` (paths already resolved) instead of re-walking; routing reads `result.structural`; the `pendingStructural` fold guard stays. The public `changed` event becomes `Event<void>` here; the pipeline gains a `removedIds()` accessor for BlockController (Task 5).
 
-- [ ] **Step 1: Rewrite the type imports, the deps, and the pipeline interface**
+- [x] **Step 1: Rewrite the type imports, the deps, and the pipeline interface**
 
 In `commit.ts`, change the import (line 5) from:
 
@@ -571,7 +571,7 @@ Replace the `changed: Event<Changeset>` field in `CommitPipeline` (line 40) and 
 
 Delete the `type Delta = Extract<Changeset, {kind: 'delta'}>` line (48) and the entire `REBIND_CHANGESET` block (lines ~54-59) — the void event needs no payload.
 
-- [ ] **Step 2: Rewrite `apply`, the signal/event setup, and the latch state**
+- [x] **Step 2: Rewrite `apply`, the signal/event setup, and the latch state**
 
 Replace the signal/event/latch declarations (lines ~66-85) — keep `tree`, swap the event and the pending payload for the new shape:
 
@@ -620,7 +620,7 @@ Replace `apply` (lines ~92-116) — route on `result.structural`, keep the fold 
 	}
 ```
 
-- [ ] **Step 3: Rewrite `commitText` — iterate `changes`, no walk, no type-walk escalation**
+- [x] **Step 3: Rewrite `commitText` — iterate `changes`, no walk, no type-walk escalation**
 
 Replace `commitText` (lines ~131-190) with:
 
@@ -672,7 +672,7 @@ Replace `commitText` (lines ~131-190) with:
 
 (The old `entry.token.type !== 'text'` escalation is GONE: reconcile set `structural` for a refused-descend mark, so `apply` already routed it to `commitStructural` before reaching here. The "unknown id" stale-tree guard survives as `if (!handle) return false` on a `text` change.)
 
-- [ ] **Step 4: Rewrite `commitStructural`, `bindAndAnnounce`, delete `collectChanged`**
+- [x] **Step 4: Rewrite `commitStructural`, `bindAndAnnounce`, delete `collectChanged`**
 
 Replace `commitStructural` (lines ~199-217) — it no longer carries a changeset, only the removed ids:
 
@@ -727,7 +727,7 @@ Add `let pendingRemovedIds: readonly number[] = []` next to `pendingStructural` 
 
 DELETE the entire `collectChanged` function (lines ~241-259).
 
-- [ ] **Step 5: Wire the return object**
+- [x] **Step 5: Wire the return object**
 
 In the returned object (lines ~280-289), replace `changed,` (it is the same `changed` reference, now `Event<void>`) — no change to the line itself — and add the accessor:
 
@@ -745,12 +745,12 @@ In the returned object (lines ~280-289), replace `changed,` (it is the same `cha
 	}
 ```
 
-- [ ] **Step 6: Run the commit spec (expect deliberate red — rewritten in Task 4)**
+- [x] **Step 6: Run the commit spec (expect deliberate red — rewritten in Task 4)**
 
 Run: `pnpm -F core test -- commit.spec`
 Expected: `commit.ts` COMPILES (typecheck via the test build), but `commit.spec.ts` still asserts the four-bucket payload (`changedSpy.mock.calls[0][0]` deep-equality, `result.changeset`) and FAILS. That is this task's hand-off to Task 4. Do NOT edit the spec here. If `commit.ts` itself fails to compile, fix `commit.ts` — the spec failures are expected, a compile error is not.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git commit -m "feat(tokens): commit reads reconcile changes directly — delete collectChanged + the type-walk" -- packages/core/src/features/tokens/model/commit.ts
@@ -765,11 +765,11 @@ git commit -m "feat(tokens): commit reads reconcile changes directly — delete 
 
 Deliberate rewrite (spec acceptance bar). Every behavior the old spec pinned stays; the assertions move from the four-bucket payload to `result.structural` + `result.changes` + a `void` changed event. The harness's `apply` returns the `ReconcileResult`, so `result.structural`/`result.changes`/`result.removedIds` are available in every test.
 
-- [ ] **Step 1: Migrate the harness and the changed-spy idiom**
+- [x] **Step 1: Migrate the harness and the changed-spy idiom**
 
 The harness `apply` (lines ~37-41) already returns `result` — no change needed. The pervasive idiom `expect(changedSpy).toHaveBeenCalledWith(result.changeset)` becomes `expect(changedSpy).toHaveBeenCalledTimes(N)` (the event is `void` — there is no payload to match). Apply this mechanically across the file: every `toHaveBeenCalledWith(result.changeset)` / `toHaveBeenCalledWith({kind: …})` on `changedSpy` becomes a `toHaveBeenCalledTimes` count assertion (the surrounding test already establishes the count; where it does not, add `expect(changedSpy).toHaveBeenCalledTimes(1)`).
 
-- [ ] **Step 2: Rewrite the payload-shape assertions test-by-test**
+- [x] **Step 2: Rewrite the payload-shape assertions test-by-test**
 
 Translate each deep-payload assertion to the new shape:
 
@@ -783,12 +783,12 @@ Translate each deep-payload assertion to the new shape:
 - `deep reconcile integration` in-slot case (line ~643-693) — keep the DOM/handle/`markChanges`/`childChanges` assertions UNCHANGED (those are `handle.changed` per-node events, untouched); replace `toHaveBeenCalledWith(result.changeset)` with `toHaveBeenCalledTimes(1)` and add `expect(result.structural).toBe(false)`.
 - `re-entry guard`, `divergence detector`, `rendered() timeout`, `lookups` describes — no payload reads; leave UNCHANGED.
 
-- [ ] **Step 3: Run the commit spec to green**
+- [x] **Step 3: Run the commit spec to green**
 
 Run: `pnpm -F core test -- commit.spec`
 Expected: full pass. If a test now over- or under-counts `changed` calls, the count is the contract — re-read the surrounding flow (text branch fires once per apply; structural fires at bind; self-heal fires immediately then the follow-up render fires an idempotent re-bind = a second call). Adjust the COUNT to the real flow, never loosen a behavioral assertion.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git commit -m "test(tokens): rewrite commit.spec against {structural, changes} + void changed" -- packages/core/src/features/tokens/model/commit.spec.ts
@@ -804,7 +804,7 @@ git commit -m "test(tokens): rewrite commit.spec against {structural, changes} +
 - Modify: `packages/core/src/features/block/BlockController.ts` (the prune watch)
 - Modify: `packages/core/src/features/block/BlockController.spec.ts` (the prune test still passes through the new path — verify, adjust only if it reads the payload)
 
-- [ ] **Step 1: Migrate TokenModel.ts**
+- [x] **Step 1: Migrate TokenModel.ts**
 
 In `TokenModel.ts`, change the import (line 15) from:
 
@@ -837,7 +837,7 @@ and add directly after it (mirroring the pipeline accessor onto the public shell
 	readonly removedIds = (): readonly number[] => this.#pipeline.removedIds()
 ```
 
-- [ ] **Step 2: Drop the `Changeset` export**
+- [x] **Step 2: Drop the `Changeset` export**
 
 In `tokens/index.ts` (line 15), change:
 
@@ -853,7 +853,7 @@ export type {EditHint, TokenChangeEntry} from './tokenIdentity'
 
 (Export `TokenChangeEntry` — the new internal change type — so it is available to any consumer that later needs the change list; `Changeset` no longer exists.)
 
-- [ ] **Step 3: Migrate BlockController's prune watch**
+- [x] **Step 3: Migrate BlockController's prune watch**
 
 In `BlockController.ts`, replace the prune watch (lines ~39-42):
 
@@ -874,7 +874,7 @@ with:
 			})
 ```
 
-- [ ] **Step 4: Run the affected specs**
+- [x] **Step 4: Run the affected specs**
 
 Run: `pnpm -F core test -- BlockController`
 Expected: green — including the Phase-1 `prunes the store of a structurally removed token after the removal commit` test (it observes the prune through `store.block.get(token)` returning a fresh store, not through the payload, so it passes unchanged). If the spec reads `changeset.removed` anywhere, migrate that read to `store.tokens.removedIds()`; the grep in Background facts says it does not.
@@ -885,7 +885,7 @@ Expected: green — `SelectionController.ts:45` already ignored the payload; onl
 Run: `pnpm -F core test -- TokenModel.index`
 Expected: green — `exposes the changed event` (typeof function) and `fires changed after rendered()` (call count) do not read a payload.
 
-- [ ] **Step 5: Full core suite + guards**
+- [x] **Step 5: Full core suite + guards**
 
 Run: `pnpm -F core test`
 Expected: full pass. `TokenModel.changed.spec.ts` is the remaining payload-reader — handed to Task 6. If it is the ONLY failing file, proceed; if anything else fails, STOP and report.
@@ -893,7 +893,7 @@ Expected: full pass. `TokenModel.changed.spec.ts` is the remaining payload-reade
 Run: `pnpm run typecheck`
 Expected: clean — no dangling `Changeset` references remain (the export, the field types, the pipeline interface all migrated).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "feat(tokens): public changed → Event<void>; BlockController prunes via removedIds()" -- packages/core/src/features/tokens/model/TokenModel.ts packages/core/src/features/tokens/index.ts packages/core/src/features/block/BlockController.ts packages/core/src/features/block/BlockController.spec.ts
@@ -910,7 +910,7 @@ git commit -m "feat(tokens): public changed → Event<void>; BlockController pru
 
 The last payload-reader. Its `render-count gates` describe (lines ~128-179) is UNTOUCHED (it asserts tree-watcher and changed COUNTS, not payloads). Only the `TokenModel changed event` describe (lines ~34-122) reads the four-bucket payload.
 
-- [ ] **Step 1: Rewrite the payload assertions**
+- [x] **Step 1: Rewrite the payload assertions**
 
 Translate the `TokenModel changed event` describe:
 - `the first bind announces full …` (line ~44) `expect(changedSpy.mock.calls[0][0]).toEqual({kind: 'full'})` → `expect(changedSpy).toHaveBeenCalledTimes(1)` (the event is void). Keep the id-distinctness assertions (lines ~46-51) UNCHANGED.
@@ -920,12 +920,12 @@ Translate the `TokenModel changed event` describe:
 
 The `render-count gates` describe (lines ~128-179) stays UNCHANGED — confirm by NOT editing it.
 
-- [ ] **Step 2: Run**
+- [x] **Step 2: Run**
 
 Run: `pnpm -F core test -- TokenModel.changed`
 Expected: full pass, both describes.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git commit -m "test(tokens): rewrite TokenModel.changed.spec against the void changed event" -- packages/core/src/features/tokens/TokenModel.changed.spec.ts
@@ -935,7 +935,7 @@ git commit -m "test(tokens): rewrite TokenModel.changed.spec against the void ch
 
 ### Task 7: Full verification
 
-- [ ] **Step 1: All suites + guards**
+- [x] **Step 1: All suites + guards**
 
 Run, expecting full pass on each (do NOT use `pnpm -F react test` / `pnpm -F vue test` — silent no-ops, see Tech Stack):
 
@@ -946,7 +946,7 @@ pnpm run typecheck           # recursive tsc --noEmit — zero dangling Changese
 pnpm run check:encapsulation
 ```
 
-- [ ] **Step 2: Confirm the deletions landed**
+- [x] **Step 2: Confirm the deletions landed**
 
 Run: `grep -rn "collectChanged\|REBIND_CHANGESET\|Changeset\|\.changeset\b" packages/core/src`
 Expected: ZERO hits in production code. `Changeset` (the type), `collectChanged` (the DFS), `REBIND_CHANGESET`, and any `result.changeset` read are all gone. Any remaining hit is a missed migration — fix it before reporting.
@@ -954,7 +954,7 @@ Expected: ZERO hits in production code. `Changeset` (the type), `collectChanged`
 Run: `grep -rn "result.structural\|result.changes\|removedIds" packages/core/src/features/tokens/model/commit.ts`
 Expected: the new routing reads are present.
 
-- [ ] **Step 3: Confirm clean and report**
+- [x] **Step 3: Confirm clean and report**
 
 `git status` must be clean (everything committed task-by-task, path-scoped). Report: the core suite pass count, the storybook react/vue counts, and confirm typecheck + encapsulation guard green.
 
@@ -962,9 +962,9 @@ Expected: the new routing reads are present.
 
 ### Task 8: Write the Phase 3 plan (phase chaining)
 
-- [ ] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase3.md` for **Phase 3 — one fresh truth** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`, Phase 3): expose `tokens()`/`at()` on the public API (the always-fresh reconciled tree); migrate the 6 `freshTokens` production call sites + the ~7 core `tree()` consumer reads to `tokens()`; delete `utils/freshTokens.ts` (+ its 18 staleness comments); move `renderTree` (today's `tree` Computed) to the `markput/adapter` import as the renderer-only contract. Ground the plan by reading FIRST, with fresh eyes, the post-Phase-2 code: `packages/core/src/features/tokens/utils/freshTokens.ts` and EVERY `freshTokens(` call site (grep across `packages/core/src` — SelectionController, BlockController, and the rest), `packages/core/src/features/tokens/model/TokenModel.ts` (the `tree` Computed, `#reconciled`, the boundary facade's `#reconciled().tokens` reads), `packages/core/src/features/tokens/index.ts`, and the adapter entry points that import `tree` (`packages/react/markput/src/**`, `packages/vue/markput/src/**` — the Container/Token selectors). No placeholder steps — every step shows exact code; bite-sized TDD tasks; frequent path-scoped commits. Start with the required plan header (Goal / Architecture / Tech Stack / Commits-in-a-shared-checkout / Spec / Background facts). The LAST task of the Phase 3 plan must be "write the Phase 4 plan" (phase chaining). Verification commands MUST follow this plan's Tech Stack note: `pnpm -F core test`, `pnpm -F storybook test` / `test:react` / `test:vue`, `pnpm run typecheck`, `pnpm run check:encapsulation` — NEVER `pnpm -F react test` or `pnpm -F vue test` (silent no-ops).
+- [x] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase3.md` for **Phase 3 — one fresh truth** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`, Phase 3): expose `tokens()`/`at()` on the public API (the always-fresh reconciled tree); migrate the 6 `freshTokens` production call sites + the ~7 core `tree()` consumer reads to `tokens()`; delete `utils/freshTokens.ts` (+ its 18 staleness comments); move `renderTree` (today's `tree` Computed) to the `markput/adapter` import as the renderer-only contract. Ground the plan by reading FIRST, with fresh eyes, the post-Phase-2 code: `packages/core/src/features/tokens/utils/freshTokens.ts` and EVERY `freshTokens(` call site (grep across `packages/core/src` — SelectionController, BlockController, and the rest), `packages/core/src/features/tokens/model/TokenModel.ts` (the `tree` Computed, `#reconciled`, the boundary facade's `#reconciled().tokens` reads), `packages/core/src/features/tokens/index.ts`, and the adapter entry points that import `tree` (`packages/react/markput/src/**`, `packages/vue/markput/src/**` — the Container/Token selectors). No placeholder steps — every step shows exact code; bite-sized TDD tasks; frequent path-scoped commits. Start with the required plan header (Goal / Architecture / Tech Stack / Commits-in-a-shared-checkout / Spec / Background facts). The LAST task of the Phase 3 plan must be "write the Phase 4 plan" (phase chaining). Verification commands MUST follow this plan's Tech Stack note: `pnpm -F core test`, `pnpm -F storybook test` / `test:react` / `test:vue`, `pnpm run typecheck`, `pnpm run check:encapsulation` — NEVER `pnpm -F react test` or `pnpm -F vue test` (silent no-ops).
 
-- [ ] **Step 2: Commit the plan**
+- [x] **Step 2: Commit the plan**
 
 ```bash
 git commit -m "docs(plan): one-fresh-truth phase 3 — one fresh truth" -- docs/superpowers/plans/2026-06-13-one-fresh-truth-phase3.md
