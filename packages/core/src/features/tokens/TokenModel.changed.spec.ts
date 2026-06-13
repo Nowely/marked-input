@@ -40,8 +40,10 @@ describe('TokenModel changed event', () => {
 		const changedSpy = vi.fn()
 		const {store} = mountWithMark(s => watch(s.tokens.changed, changedSpy))
 
-		// Mount binds the pre-built DOM immediately and announces the cold start.
-		expect(changedSpy.mock.calls[0][0]).toEqual({kind: 'full'})
+		// Mount binds the pre-built DOM immediately and announces the cold start,
+		// then the explicit rendered() re-binds idempotently — two announcements
+		// (the event is payloadless in Phase 2; the count is the contract).
+		expect(changedSpy).toHaveBeenCalledTimes(2)
 
 		const ids = store.tokens.tree().map((_, i) => handleId(store, i))
 		expect(ids).toHaveLength(3)
@@ -51,7 +53,7 @@ describe('TokenModel changed event', () => {
 		expect(store.tokens.tree().map((_, i) => handleId(store, i))).toEqual(ids)
 	})
 
-	it('edit.replace announces a delta with the edited token in textChanged by id', () => {
+	it('edit.replace fires changed once and the edited token’s handle identity survives', () => {
 		const {store} = mountWithMark()
 		const markId = handleId(store, 1)
 		const tailId = handleId(store, 2)
@@ -61,14 +63,10 @@ describe('TokenModel changed event', () => {
 		// append '!' at the end of the trailing text: 'he@[x]llo' → 'he@[x]llo!'
 		store.edit.replace({start: 9, end: 9}, '!')
 
+		// The event is payloadless (Phase 2): one announcement per commit, and a
+		// pure text edit removes nothing.
 		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(changedSpy.mock.calls[0][0]).toEqual({
-			kind: 'delta',
-			textChanged: [tailId],
-			added: [],
-			removed: [],
-			updated: [],
-		})
+		expect(store.tokens.removedIds()).toEqual([])
 		// identity survives the edit: the same handles answer for the new tree
 		expect(handleId(store, 1)).toBe(markId)
 		expect(handleId(store, 2)).toBe(tailId)
@@ -84,14 +82,11 @@ describe('TokenModel changed event', () => {
 		// prepend 'X' at position 0: mark and tail shift right by 1
 		store.edit.replace({start: 0, end: 0}, 'X')
 
+		// One payloadless announcement; the suffix shift removes nothing. The old
+		// `updated` bucket's contract — the shifted mark and tail keep their ids —
+		// is exactly the handle-identity survival asserted below.
 		expect(changedSpy).toHaveBeenCalledTimes(1)
-		const changeset = changedSpy.mock.calls[0][0]
-		expect(changeset.kind).toBe('delta')
-		if (changeset.kind !== 'delta') throw new Error('expected delta')
-		expect(changeset.updated).toContain(markId)
-		expect(changeset.updated).toContain(tailId)
-		expect(changeset.added).toEqual([])
-		expect(changeset.removed).toEqual([])
+		expect(store.tokens.removedIds()).toEqual([])
 		expect(handleId(store, 1)).toBe(markId)
 		expect(handleId(store, 2)).toBe(tailId)
 	})
@@ -102,20 +97,13 @@ describe('TokenModel changed event', () => {
 	it('direct value.current set keeps identity via the findGap-derived hint and announces delta', () => {
 		const {store} = mountWithMark()
 		const markId = handleId(store, 1)
-		const tailId = handleId(store, 2)
 		const changedSpy = vi.fn()
 		watch(store.tokens.changed, changedSpy)
 
 		store.value.current('he@[x]llo!')
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(changedSpy.mock.calls[0][0]).toEqual({
-			kind: 'delta',
-			textChanged: [tailId],
-			added: [],
-			removed: [],
-			updated: [],
-		})
+		expect(store.tokens.removedIds()).toEqual([])
 		// the mark id survived a set that carried no edit hint
 		expect(handleId(store, 1)).toBe(markId)
 	})
