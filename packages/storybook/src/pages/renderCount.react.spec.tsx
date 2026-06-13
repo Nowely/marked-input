@@ -1,5 +1,6 @@
 import type {MarkProps, Markup, Option} from '@markput/react'
 import {MarkedInput} from '@markput/react'
+import {useEffect} from 'react'
 import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
@@ -156,5 +157,46 @@ describe('Render-count gates: block layout', () => {
 		await expect.element(page.getByText('x')).toBeInTheDocument()
 		expect(spanRender.mock.calls.length).toBe(spanBaseline)
 		expect(markRender.mock.calls.length).toBe(markBaseline)
+	})
+})
+
+/**
+ * Remount gate (identity unification, phase 1): framework keys come from the
+ * stable identity id (`tokens.keyOf`), not per-object WeakMap counters — a
+ * suffix-shifted token (NEW object after an edit before it, INHERITED id)
+ * must keep its key, so React reconciles it in place instead of
+ * unmount+remount (which silently drops component-local state and DOM focus).
+ * The spy records each Mark MOUNT (empty-deps effect), keyed by value, so
+ * transient renders cannot skew it — only real unmount/remount cycles count.
+ */
+describe('Remount gates: identity keys', () => {
+	it('a structural edit before a mark does not remount the suffix marks', async () => {
+		const mounts: string[] = []
+		const Mark = ({value}: MarkProps) => {
+			useEffect(() => {
+				mounts.push(String(value))
+			}, [])
+			return <mark>{value}</mark>
+		}
+		const Span = ({value}: MarkProps) => <span>{value}</span>
+
+		await render(<MarkedInput Mark={Mark} Span={Span} defaultValue="Hello @[a](1) and @[b](2)!" />)
+		await expect.element(page.getByText('b')).toBeInTheDocument()
+		expect(mounts.filter(v => v === 'a')).toHaveLength(1)
+		expect(mounts.filter(v => v === 'b')).toHaveLength(1)
+
+		// Structural edit BEFORE both marks: completing a markup inserts a new
+		// mark token at the caret; @[a] and @[b] suffix-shift — NEW token
+		// objects carrying INHERITED ids.
+		await focusAtEnd(getElement(page.getByText('Hello')))
+		await userEvent.keyboard('@[[new](3)')
+		await expect.element(page.getByText('new')).toBeInTheDocument()
+
+		// Gate: the shifted marks keep their framework keys — only the inserted
+		// mark mounts. (Pre-fix: the object-keyed KeyGenerator handed the
+		// shifted marks brand-new keys, so React unmounted and remounted them.)
+		expect(mounts.filter(v => v === 'new')).toHaveLength(1)
+		expect(mounts.filter(v => v === 'a')).toHaveLength(1)
+		expect(mounts.filter(v => v === 'b')).toHaveLength(1)
 	})
 })
