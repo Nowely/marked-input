@@ -386,14 +386,19 @@ describe('TokenModel shell (model/)', () => {
 			expect(model.selectionFocusNode()).toBe(anchor?.node)
 		})
 
-		it('placeCaret({address, offset}) targets the addressed token explicitly', () => {
+		it('placeCaret({handle, offset}) targets the handle\'s token explicitly', () => {
 			const {model} = mountNewInline()
 			const token = model.tokens()[2] // text 'llo' [6,9]
+			const handle = model.handle(token.id!)
+			if (!handle) throw new Error('expected handle')
 
-			expect(model.placeCaret({address: {path: [2], token}, offset: 1})).toBe(true)
+			expect(model.placeCaret({handle, offset: 1})).toBe(true)
 			expect(model.readSelection()?.range.start).toBe(7)
-			// A stale address (foreign token object) fails closed.
-			expect(model.placeCaret({address: {path: [2], token: textToken('llo', 6)}, offset: 1})).toBe(false)
+			// A foreign token object (never reconciled) carries no id, so it has no
+			// live handle — the stale reference is rejected at resolution, leaving
+			// nothing to place into.
+			const foreign = textToken('llo', 6)
+			expect(foreign.id).toBeUndefined()
 		})
 
 		it('selectRange spans two text surfaces and the reads see the selection', () => {

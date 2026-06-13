@@ -273,15 +273,17 @@ describe('TokenModel placement commands', () => {
 	// emits an empty leading text token when a mark is first in the value (confirmed
 	// for '@[x]llo' → [{type:'text',position:{0,0}}, {type:'mark',position:{0,4}},
 	// {type:'text',position:{4,7}}]). textTargetAt therefore always matches before
-	// markBoundaryAt is tried. The mark-form of placeCaret({address, offset}) that
+	// markBoundaryAt is tried. The mark-form of placeCaret({handle, offset}) that
 	// drives the same underlying placeAtChildBoundary call is covered by the
-	// 'placeCaret({address, offset}) targets the addressed token explicitly' test.
+	// 'placeCaret({handle, offset}) targets the handle's token explicitly' test.
 
-	it('placeCaret({address, offset}) targets the addressed token explicitly', () => {
+	it('placeCaret({handle, offset}) targets the handle\'s token explicitly', () => {
 		const {store} = mountWithMark()
-		const address = {path: [2], token: store.tokens.tokens()[2]} // text "llo" [6,9]
-		expect(store.tokens.placeCaret({address, offset: 1})).toBe(true)
-		expect(store.tokens.readSelection()?.range.start).toBe(address.token.position.start + 1) // 6 + 1 = 7
+		const token = store.tokens.tokens()[2] // text "llo" [6,9]
+		const handle = store.tokens.handle(token.id!)
+		if (!handle) throw new Error('expected handle')
+		expect(store.tokens.placeCaret({handle, offset: 1})).toBe(true)
+		expect(store.tokens.readSelection()?.range.start).toBe(token.position.start + 1) // 6 + 1 = 7
 	})
 
 	it('selectRange spans two text surfaces', () => {

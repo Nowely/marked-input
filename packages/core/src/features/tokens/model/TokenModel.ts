@@ -387,22 +387,20 @@ export class TokenModel {
 	/**
 	 * Place a collapsed caret. Number form resolves the best target (text
 	 * surface containing the position, else a mark boundary exactly there);
-	 * address form targets a specific token (callers use it to disambiguate
-	 * tokens sharing a boundary position).
+	 * handle form targets a specific token's live handle (callers use it to
+	 * disambiguate tokens sharing a boundary position).
 	 *
-	 * **Address form — `offset` for mark tokens without a text surface:**
+	 * **Handle form — `offset` for mark tokens without a text surface:**
 	 * `offset <= 0` selects the start child boundary of the token element,
 	 * `offset > 0` the end — a binary selector, not a character offset.
 	 */
-	placeCaret(target: number | {address: TokenAddress; offset: number}): boolean {
+	placeCaret(target: number | {handle: TokenHandle; offset: number}): boolean {
 		if (typeof target === 'number') return this.#placeAtRawPosition(target)
 
-		// Id-bridged resolution: the address's token may be a stale tree() object
-		// after text-path commits — accept it iff its identity currently lives at
-		// the addressed path. handleOf's latch gate keeps this fail-closed while
-		// a structural apply awaits its bind.
-		const handle = this.handleFor(target.address)
-		if (!handle || this.handleOf(target.address.token) !== handle) return false
+		// The handle IS the resolution: a live handle carries the current bindings;
+		// a dead or mid-window handle fails closed.
+		const handle = target.handle
+		if (!handle.alive()) return false
 		const bindings = handle.node()
 		if (!bindings) return false
 

@@ -1,13 +1,13 @@
 // packages/core/src/features/selection/SelectionController.ts
 import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
-import type {Range, RawSelection, TokenAddress} from '../../shared/editorContracts'
+import type {Range, RawSelection} from '../../shared/editorContracts'
 import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Computed, Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
-import type {TokenModel} from '../tokens'
+import type {TokenHandle, TokenModel} from '../tokens'
 
 export class SelectionController {
 	readonly range: Signal<Range | undefined> = signal<Range>({equals: shallow})
@@ -25,7 +25,7 @@ export class SelectionController {
 	readonly isUserSelecting: Signal<boolean> = signal({initial: false})
 
 	#isPlacingCaret = false
-	#preferredAddress: TokenAddress | undefined
+	#preferredHandle: TokenHandle | undefined
 
 	constructor(
 		private readonly host: Host,
@@ -64,7 +64,8 @@ export class SelectionController {
 
 	focusFirst(): void {
 		const first = this.tokens.at(0)
-		if (first && this.placeAtAddress({path: [0], token: first}, 'start')) return
+		const handle = first?.id !== undefined ? this.tokens.handle(first.id) : undefined
+		if (handle && this.placeAtHandle(handle, 'start')) return
 		this.host.container()?.focus()
 	}
 
@@ -72,8 +73,8 @@ export class SelectionController {
 		return this.tokens.readSelection()
 	}
 
-	placeAtAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): boolean {
-		const resolved = this.#resolveAddress(address, boundary)
+	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {
+		const resolved = this.#resolveHandle(handle, boundary)
 		if (!resolved) return false
 		if (!this.range(resolved)) this.#applyRange()
 		return true
@@ -104,29 +105,25 @@ export class SelectionController {
 		}
 	}
 
-	#resolveAddress(address: TokenAddress, boundary: 'start' | 'end'): Range | undefined {
-		// Mount-check via the bound layer, identity via the id bridge: a stale
-		// tree() token resolves to its live handle, a replaced or foreign one
-		// fails closed (handleOf is also latch-gated through structural windows).
-		const handle = this.tokens.handleFor(address)
-		if (!handle || this.tokens.handleOf(address.token) !== handle) return undefined
+	#resolveHandle(handle: TokenHandle, boundary: 'start' | 'end'): Range | undefined {
+		// The handle IS the identity AND the mount check: a live handle's token()
+		// carries current positions; a dead or mid-window handle fails closed.
+		if (!handle.alive()) return undefined
 		const position = handle.token().position
 		const pos = boundary === 'end' ? position.end : position.start
-		this.#preferredAddress = address
+		this.#preferredHandle = handle
 		return {start: pos, end: pos}
 	}
 
-	#applyPreferredAddress(rawPosition: number): boolean {
-		const address = this.#preferredAddress
-		this.#preferredAddress = undefined
-		if (!address) return false
-		const handle = this.tokens.handleFor(address)
-		if (!handle || this.tokens.handleOf(address.token) !== handle) return false
-		return this.tokens.placeCaret({address, offset: rawPosition - handle.token().position.start})
+	#applyPreferredHandle(rawPosition: number): boolean {
+		const handle = this.#preferredHandle
+		this.#preferredHandle = undefined
+		if (!handle || !handle.alive()) return false
+		return this.tokens.placeCaret({handle, offset: rawPosition - handle.token().position.start})
 	}
 
 	#placeCollapsed(rawPosition: number): boolean {
-		if (this.#applyPreferredAddress(rawPosition)) return true
+		if (this.#applyPreferredHandle(rawPosition)) return true
 		return this.tokens.placeCaret(rawPosition)
 	}
 
