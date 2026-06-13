@@ -238,21 +238,28 @@ describe('MarkController across text-path commits (identity bridge)', () => {
 /**
  * MarkController live-read parity tables (spec §MarkController semantics).
  *
- * The controller is HANDLE-BACKED: value/meta/slot/readOnly are LIVE reads of
- * the current token, not a frozen snapshot. The parity table:
+ * The controller is ID-BACKED: value/meta/slot/readOnly prefer LIVE reads of the
+ * current token (re-resolved through the latch-gated handle), not a frozen
+ * snapshot. When the live handle is unresolvable (the pending window or a dead
+ * mark) READS fall back to the construction-time token — the adapter hands a
+ * fresh token to fromToken every render and never re-renders after bind, so a
+ * latch-gated read that flashed empty would leave the rendered mark blank.
+ * WRITES never use the captured token: they resolve the live handle only and
+ * fail closed mid-window. The parity table:
  *
  *   read       | live source                          | mid-window / dead
- *   -----------|--------------------------------------|-------------------
- *   value      | handle.token().value                 | '' (no live mark)
- *   meta       | handle.token().meta                  | undefined
- *   slot       | handle.token().slot?.content         | undefined
+ *   -----------|--------------------------------------|-------------------------
+ *   value      | handle.token().value                 | captured token value
+ *   meta       | handle.token().meta                  | captured token meta
+ *   slot       | handle.token().slot?.content         | captured token slot
  *   readOnly   | store.props.readOnly()               | (always live)
  *   update()   | mutate the live mark's range         | false (fail-closed)
  *   remove()   | replace the live mark's range with ''| false (fail-closed)
  *
  * SEMVER-MAJOR: a controller captured before a structural commit that kills its
- * handle no longer auto-bridges — it fails closed; the adapter re-derives it
- * from the fresh token (useMark's useMemo re-runs on the new token object).
+ * handle no longer auto-bridges its WRITES — they fail closed; the adapter
+ * re-derives it from the fresh token (useMark's useMemo re-runs on the new token
+ * object).
  */
 describe('MarkController live-read parity (handle-backed)', () => {
 	afterEach(() => {
@@ -335,5 +342,50 @@ describe('MarkController live-read parity (handle-backed)', () => {
 		// handle(id) fails closed mid-window, so the live read sees no mark.
 		const result = controller.update({value: 'bad'})
 		expect(result).toBe(false)
+	})
+
+	// Render-path contract: BOTH adapters call fromToken synchronously during
+	// render (react useMark inside useMemo, vue useMark inside setup), so fromToken
+	// runs in the routine pending window on every structural commit — BEFORE the
+	// freshly-painted DOM binds, and the adapter never schedules a re-render once it
+	// does. So fromToken must NOT throw there, AND reads must surface the
+	// just-handed-in token (not flash empty) while writes fail closed until the
+	// same-id handle binds. A throw here crashes the rendered component (the
+	// storybook regression this pins against).
+	it('fromToken during the pending-latch window reads the captured token and fails closed on writes, then goes live after bind', () => {
+		const {store} = mountedSetup()
+
+		// Structural commit, NO rendered() — the latch is closed and handle(id)
+		// serves undefined for the FRESH render-tree mark. fromToken (which both
+		// adapters call synchronously during render) must build a controller on the
+		// id, not throw on the unresolvable handle.
+		store.value.current('different @[x]')
+		const freshToken = store.tokens.renderTree().find(t => t.type === 'mark')!
+		const controller = MarkController.fromToken(store, freshToken)
+		expect(controller).toBeInstanceOf(MarkController)
+
+		// READ falls back to the construction-time token mid-window: the rendered
+		// mark shows its value immediately (the adapter hands fromToken a fresh token
+		// every render and never re-renders after bind).
+		expect(controller.value).toBe('x')
+		// WRITE stays latch-gated: no live handle resolves through the latch, so the
+		// mutation fails closed and the value is untouched.
+		expect(controller.update({value: 'bad'})).toBe(false)
+		expect(store.value.current()).toBe('different @[x]')
+
+		// Paint the render tree and complete the handshake — the same-id handle
+		// binds and reads/writes go live WITHOUT re-derivation.
+		const container = document.querySelector('div')!
+		const spans = store.tokens.renderTree().map(tok => {
+			const span = document.createElement('span')
+			if (tok.type === 'mark') span.append(document.createTextNode(tok.value))
+			return span
+		})
+		container.replaceChildren(...spans)
+		store.host.rendered()
+
+		expect(controller.value).toBe('x')
+		expect(controller.update({value: 'ok'})).toBe(true)
+		expect(store.value.current()).toBe('different @[ok]')
 	})
 })
