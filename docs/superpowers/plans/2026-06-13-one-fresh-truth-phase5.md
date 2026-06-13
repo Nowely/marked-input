@@ -73,13 +73,13 @@ The six selection micro-reads are the model's window-selection face. Today each 
 
 `address()` has exactly two production readers, both reading `.path` off the snapshot. `path()` (added in Phase 4) returns the same `TokenPath` directly. Migrate them so `address()` becomes spec-only, ready for deletion in Task 4. This task is behavior-preserving (the path value is identical) and keeps the suite green.
 
-- [ ] **Step 1: Capture the baseline**
+- [x] **Step 1: Capture the baseline**
 
 Run: `pnpm -w exec vitest run --project core "model/commit.spec"`
 Run: `pnpm -F core test`
 Expected: full pass (the pre-change baseline; `blockEdit` is exercised via storybook + keyboard specs in the full run).
 
-- [ ] **Step 2: `blockEdit.ts` — `findActiveRow`**
+- [x] **Step 2: `blockEdit.ts` — `findActiveRow`**
 
 In `blockEdit.ts`, change line 36 from:
 
@@ -93,7 +93,7 @@ to:
 	const index = handle.path()[0]
 ```
 
-- [ ] **Step 3: `commit.ts` — divergence message**
+- [x] **Step 3: `commit.ts` — divergence message**
 
 In `commit.ts` (~line 233), change:
 
@@ -107,7 +107,7 @@ to:
 				`TokenModel divergence at [${handle.path().join(', ')}]: DOM "${actual}" ≠ model "${expected}"`
 ```
 
-- [ ] **Step 4: Verify zero production `address()` readers remain**
+- [x] **Step 4: Verify zero production `address()` readers remain**
 
 Run:
 
@@ -117,7 +117,7 @@ grep -rn "\.address()" packages/core/src --include="*.ts" | grep -v "\.spec\."
 
 Expected: ZERO hits (production). Only spec files may still read `.address()` (migrated/deleted in Task 4).
 
-- [ ] **Step 5: Run the affected specs + full core**
+- [x] **Step 5: Run the affected specs + full core**
 
 Run: `pnpm -w exec vitest run --project core "model/commit.spec"`
 Expected: full pass (the divergence message is only asserted on the divergence-throw path; the path string is unchanged).
@@ -128,7 +128,7 @@ Expected: full pass.
 Run: `pnpm run typecheck`
 Expected: clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "refactor(tokens): production address() readers use handle.path()" -- packages/core/src/features/keyboard/blockEdit.ts packages/core/src/features/tokens/model/commit.ts
@@ -146,7 +146,7 @@ git commit -m "refactor(tokens): production address() readers use handle.path()"
 
 PURELY ADDITIVE: `selection()` lands alongside the six micro-reads so the suite stays green. Tasks 3 migrate the consumers onto it, then Task 4-region deletes the six.
 
-- [ ] **Step 1: Write the failing parity tests**
+- [x] **Step 1: Write the failing parity tests**
 
 In `TokenModel.facade.spec.ts`, read the existing `readSelection reads the live selection …` test (~lines 217-233) — it shows the exact selection-setup idiom this file uses: `mountWithMark()` (the module-scoped fixture: text `'he'` [0,2], mark `'@[x]'` [2,6], text `'llo'` [6,9], returning `{store, container}`), then walk to the first text node via `document.createTreeWalker(container, NodeFilter.SHOW_TEXT)` and build a `Range` on it. The first text token `'he'` starts at absolute position 0. Append a new top-level describe (after the `TokenModel placement commands` describe near the file end; `mountWithMark` is module-scoped and reusable):
 
@@ -208,12 +208,12 @@ describe('TokenModel selection() — the one snapshot', () => {
 
 (`mountWithMark()` is the file's existing fixture — verify its return shape `{store, container}` and the first text node `'he'` at the top of the file before writing. Do NOT invent a `mountInline`/`span` helper; the facade spec has no such helper.)
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `pnpm -w exec vitest run --project core TokenModel.facade.spec`
 Expected: the 3 new tests FAIL (`store.tokens.selection` is not a function). All pre-existing facade tests pass.
 
-- [ ] **Step 3: Add the `SelectionSnapshot` type + `selection()` to `TokenModel.ts`**
+- [x] **Step 3: Add the `SelectionSnapshot` type + `selection()` to `TokenModel.ts`**
 
 In `TokenModel.ts`, add the type right after the existing `SelectionAnchor` type (~line 21):
 
@@ -283,7 +283,7 @@ Then add the `selection()` method directly above the existing `readSelection()` 
 
 (`#rawSelectionFrom` is the body of the existing `readSelection()` lifted to take the `Selection` directly — `readSelection()` will delegate to it in Step 4 so the two share one implementation until `readSelection` is deleted. `getRect` is already imported — verify line 9: `import {focusIfNeeded, getRect, …} from '../caret'`. `RawSelection`/`SelectionAnchor` are in scope.)
 
-- [ ] **Step 4: Re-point `readSelection()` at the shared helper (keep it green)**
+- [x] **Step 4: Re-point `readSelection()` at the shared helper (keep it green)**
 
 In `TokenModel.ts`, replace the body of the existing `readSelection()` (~lines 292-311) so it delegates to the new helper (avoids two copies until `readSelection` is deleted with its consumers):
 
@@ -296,12 +296,12 @@ In `TokenModel.ts`, replace the body of the existing `readSelection()` (~lines 2
 	}
 ```
 
-- [ ] **Step 5: Run the facade spec**
+- [x] **Step 5: Run the facade spec**
 
 Run: `pnpm -w exec vitest run --project core TokenModel.facade.spec`
 Expected: full pass — the 3 new `selection()` tests green, all pre-existing `readSelection`/`tokenAt` tests still green.
 
-- [ ] **Step 6: Export `SelectionSnapshot`**
+- [x] **Step 6: Export `SelectionSnapshot`**
 
 In `packages/core/src/features/tokens/index.ts`, extend the `SelectionAnchor` export line:
 
@@ -317,7 +317,7 @@ export type {SelectionSnapshot} from './src/features/tokens'
 
 (Insert it adjacent to the existing `export type {Markup, Token, TextToken, MarkToken} from './src/features/tokens'` line.)
 
-- [ ] **Step 7: Full core suite + typecheck**
+- [x] **Step 7: Full core suite + typecheck**
 
 Run: `pnpm -F core test`
 Expected: full pass (additive — `selection()` alongside the six).
@@ -325,7 +325,7 @@ Expected: full pass (additive — `selection()` alongside the six).
 Run: `pnpm run typecheck`
 Expected: clean.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git commit -m "feat(tokens): add selection() — the one selection snapshot" -- packages/core/src/features/tokens/model/TokenModel.ts packages/core/src/features/tokens/index.ts packages/core/index.ts packages/core/src/features/tokens/TokenModel.facade.spec.ts
@@ -346,7 +346,7 @@ git commit -m "feat(tokens): add selection() — the one selection snapshot" -- 
 
 Each consumer reads the snapshot ONCE per call and pulls the field it needs. `readSelection()` survives implicitly as `selection()?.raw`. After all consumers migrate, the six methods have zero callers and are deleted.
 
-- [ ] **Step 1: `SelectionController.readRaw()` → `selection()?.raw`**
+- [x] **Step 1: `SelectionController.readRaw()` → `selection()?.raw`**
 
 In `SelectionController.ts`, change `readRaw()` (~lines 72-74) from:
 
@@ -366,7 +366,7 @@ to:
 
 (`readRaw()` is the public method ClipboardController + `#trackSelection.sync` call — keep it as the thin wrapper. `RawSelection` import on line 3 stays.)
 
-- [ ] **Step 2: `SelectionController.#trackUserSelecting` — intersects + collapsed**
+- [x] **Step 2: `SelectionController.#trackUserSelecting` — intersects + collapsed**
 
 In `#trackUserSelecting` (~lines 146-175), the `mousemove` handler reads `selectionIntersects(container)` and `clearIfCollapsed` reads `isSelectionCollapsed() !== false`. Read the live snapshot once per event. Change the `mousemove` listener (~lines 153-161) from:
 
@@ -418,7 +418,7 @@ to:
 
 (The tri-state collapses: `selection()` is `undefined` for no range → `undefined?.collapsed` is `undefined` → `undefined !== false` is `true` — identical to the old `isSelectionCollapsed() === undefined → undefined !== false → true`.)
 
-- [ ] **Step 3: `SelectionController.#trackSelection` — focusNode**
+- [x] **Step 3: `SelectionController.#trackSelection` — focusNode**
 
 In `#trackSelection` (~lines 208-213), change the `selectionchange` listener from:
 
@@ -442,7 +442,7 @@ to:
 		})
 ```
 
-- [ ] **Step 4: `OverlayController` — rect + anchor**
+- [x] **Step 4: `OverlayController` — rect + anchor**
 
 In `OverlayController.ts`, change `position` (~lines 29-34) from:
 
@@ -478,7 +478,7 @@ to:
 				node: this.tokens.selection()?.anchor.node ?? this.host.container() ?? document.body,
 ```
 
-- [ ] **Step 5: `TriggerFinder` — anchor**
+- [x] **Step 5: `TriggerFinder` — anchor**
 
 In `TriggerFinder.ts`, the constructor (~line 24) and the static `find` (~line 39) both read `tokens.selectionAnchor()`. Change line 24 from:
 
@@ -506,7 +506,7 @@ to:
 
 (The `SelectionAnchor` import on line 4 STAYS — the `anchor?` constructor/`find` param still uses it. `selection()?.anchor` is typed `SelectionAnchor | undefined`, matching `anchor ?? …`.)
 
-- [ ] **Step 6: `blockEdit.ts` — selectionRect ×2**
+- [x] **Step 6: `blockEdit.ts` — selectionRect ×2**
 
 In `blockEdit.ts`, change line 205 from:
 
@@ -526,7 +526,7 @@ Change line 216 (the DOWN branch, identical text) the same way:
 		const caretX = store.tokens.selection()?.rect?.left ?? handle.rect()?.left ?? 0
 ```
 
-- [ ] **Step 7: Verify zero production callers of the six remain**
+- [x] **Step 7: Verify zero production callers of the six remain**
 
 Run:
 
@@ -536,7 +536,7 @@ grep -rn "readSelection\|selectionRect\|selectionAnchor\|isSelectionCollapsed\|s
 
 Expected: ZERO hits (every production caller migrated; only the method DEFINITIONS in `model/TokenModel.ts` remain). If a call site remains, migrate it before deleting.
 
-- [ ] **Step 8: Delete the six micro-reads from `TokenModel.ts`**
+- [x] **Step 8: Delete the six micro-reads from `TokenModel.ts`**
 
 In `TokenModel.ts`, delete the entire `readSelection` method (now only `selection()`/`#rawSelectionFrom` provide the raw read — `readSelection` has no caller after Step 1). Delete `selectionRect`, `selectionAnchor`, `isSelectionCollapsed` (with its tri-state JSDoc block), `selectionIntersects`, and `selectionFocusNode`. The methods to delete (verbatim, ~lines 291-357 in the post-Task-2 file — `selectedContent` at ~313-322 is BETWEEN them and STAYS):
 
@@ -588,7 +588,7 @@ In `TokenModel.ts`, delete the entire `readSelection` method (now only `selectio
 
 (Keep `selectedContent()` and `#rawSelectionFrom` — both still used: `selectedContent` by ClipboardController, `#rawSelectionFrom` by `selection()`. `getRect` is still imported and used inside `selection()`.)
 
-- [ ] **Step 9: Migrate the model-spec + facade-spec micro-read tests**
+- [x] **Step 9: Migrate the model-spec + facade-spec micro-read tests**
 
 In `model/TokenModel.spec.ts`, the selection-read tests (~lines 357-412) read `selectionRect`/`isSelectionCollapsed`/`selectionAnchor`/`selectionFocusNode`/`selectionIntersects`/`readSelection`/`caretFromPoint`. Migrate each to the snapshot (and DROP the `caretFromPoint` block — deleted in Task 4; if it shares a test with `selectionRect`, split the surviving `selectionRect` assertion onto `selection()?.rect`). Read the block first, then for each:
 - `model.readSelection()` → `model.selection()?.raw`
@@ -602,7 +602,7 @@ In `model/TokenModel.spec.ts`, the selection-read tests (~lines 357-412) read `s
 
 In `TokenModel.facade.spec.ts`, the `readSelection reads the live selection …` test (~217-234) and the `placeCaret(raw) … readSelection round-trips` test (~253-258, 286, 294) read `store.tokens.readSelection()`. Migrate each `store.tokens.readSelection()` → `store.tokens.selection()?.raw`. (Keep the test titles or rename to `selection().raw`.) The `tokenAt` test at ~236-243 is a Task-4 deletion target — leave it for now (it still passes; `tokenAt` exists until Task 4).
 
-- [ ] **Step 10: Run the affected specs + full core + typecheck**
+- [x] **Step 10: Run the affected specs + full core + typecheck**
 
 Run, expecting full pass each:
 
@@ -620,7 +620,7 @@ Expected: full pass (overlay + clipboard + block keyboard exercised in the full 
 Run: `pnpm run typecheck`
 Expected: clean — `TokenModel` no longer declares the six; `RawSelection`/`SelectionAnchor` imports stay (used by `selection()`/`#rawSelectionFrom`/the `SelectionSnapshot` type).
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git commit -m "refactor(selection): consumers read selection() snapshot; delete six micro-reads" -- packages/core/src/features/selection/SelectionController.ts packages/core/src/features/overlay/OverlayController.ts packages/core/src/features/overlay/TriggerFinder.ts packages/core/src/features/keyboard/blockEdit.ts packages/core/src/features/tokens/model/TokenModel.ts packages/core/src/features/tokens/model/TokenModel.spec.ts packages/core/src/features/tokens/TokenModel.facade.spec.ts
@@ -639,7 +639,7 @@ git commit -m "refactor(selection): consumers read selection() snapshot; delete 
 
 All three are grep-verified to have ZERO production consumers (Task background facts). Delete the methods and the specs that probe them. `handleAt` (the surviving DOM lookup) and `handle(id)` (the surviving id lookup) remain.
 
-- [ ] **Step 1: Re-verify zero production consumers**
+- [x] **Step 1: Re-verify zero production consumers**
 
 Run:
 
@@ -649,7 +649,7 @@ grep -rn "\.tokenAt(\|\.handles()\|\.caretFromPoint(" packages/core/src packages
 
 Expected: ZERO hits. (If a production hit appears — it must not, per the background grep — STOP and migrate it; do not delete a live method.)
 
-- [ ] **Step 2: Delete the three methods from `TokenModel.ts`**
+- [x] **Step 2: Delete the three methods from `TokenModel.ts`**
 
 Delete `tokenAt` (~lines 225-228):
 
@@ -695,7 +695,7 @@ Delete `caretFromPoint` (~lines 441-451):
 
 (`textTargetAt` is still imported — used by `#placeAtRawPosition`/`selectRange`. `boundaryFor` stays — used by `#rawSelectionFrom`. No import becomes unused.)
 
-- [ ] **Step 3: Delete the specs that probe the deleted methods**
+- [x] **Step 3: Delete the specs that probe the deleted methods**
 
 In `TokenModel.facade.spec.ts`, delete the `tokenAt finds the containing text surface and the next one after a gap` test (~lines 236-243) and any other `it(...)` whose body's sole subject is `store.tokens.tokenAt(...)` (e.g. the one at ~line 300 — read it; if `tokenAt` is incidental to a placeCaret assertion, migrate the surrounding assertion to `handleAt`/`handle(id)` instead of deleting; if the test is purely `tokenAt`, delete it).
 
@@ -733,7 +733,7 @@ In `TokenHandle.spec.ts`, the `handles() yields one handle per bound token, hand
 	})
 ```
 
-- [ ] **Step 4: Verify zero references anywhere**
+- [x] **Step 4: Verify zero references anywhere**
 
 Run:
 
@@ -743,7 +743,7 @@ grep -rn "\.tokenAt(\|\.handles()\|\.caretFromPoint(" packages/core/src --includ
 
 Expected: ZERO hits (production AND spec). Any remaining hit is a missed spec deletion — fix it.
 
-- [ ] **Step 5: Run the affected specs + full core + typecheck**
+- [x] **Step 5: Run the affected specs + full core + typecheck**
 
 Run, expecting full pass each:
 
@@ -760,7 +760,7 @@ Expected: full pass.
 Run: `pnpm run typecheck`
 Expected: clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "refactor(tokens): delete dead TokenModel surface — tokenAt, handles(), caretFromPoint" -- packages/core/src/features/tokens/model/TokenModel.ts packages/core/src/features/tokens/TokenModel.facade.spec.ts packages/core/src/features/tokens/model/TokenModel.spec.ts packages/core/src/features/tokens/TokenModel.index.spec.ts packages/core/src/features/tokens/TokenHandle.spec.ts
@@ -787,7 +787,7 @@ The survivor map:
 - `handle.placeCaretAtBoundary(side)` test → delete or fold into `placeCaret(0)`/`placeCaret(Infinity)` (the method is removed; `placeCaret` is the survivor).
 - `watch(handle.changed, …)` assertions on `{kind:'text'|'moved'|'unmounted'}` → assert the RESULTING state: after `update`, read `handle.token()`/`handle.path()`; after `kill`, read `!handle.alive()` and that reads still serve the last token.
 
-- [ ] **Step 1: `LiveNode.spec.ts` — the `creation`, `update`, `dead contract`, `measurements`, `commands`, and `fine-grained isolation` describes**
+- [x] **Step 1: `LiveNode.spec.ts` — the `creation`, `update`, `dead contract`, `measurements`, `commands`, and `fine-grained isolation` describes**
 
 Read `LiveNode.spec.ts` in full first. Then:
 
@@ -873,12 +873,12 @@ Read `LiveNode.spec.ts` in full first. Then:
 
   Drop any now-unused import from line 1/3 (`import {afterEach, describe, expect, it, vi} from 'vitest'`; `import {computed, effect, watch} from '../../../shared/signals/index.js'`). If `watch`/`computed`/`effect`/`vi` have zero remaining uses, remove them; keep what survives.
 
-- [ ] **Step 2: Run `LiveNode.spec` (must stay green — `LiveNode.ts` is untouched)**
+- [x] **Step 2: Run `LiveNode.spec` (must stay green — `LiveNode.ts` is untouched)**
 
 Run: `pnpm -w exec vitest run --project core LiveNode.spec`
 Expected: full pass. (The deleted-target getters still EXIST in `LiveNode.ts`; this step only proves the rewritten specs pass against the current implementation before Task 6 removes the getters.)
 
-- [ ] **Step 3: `TokenHandle.spec.ts` — `text()`/`dead()`/`changed`**
+- [x] **Step 3: `TokenHandle.spec.ts` — `text()`/`dead()`/`changed`**
 
 Read `TokenHandle.spec.ts`. For each:
 - `handle.text()` reads (~60, 101, 160, 180) → `handle.token().content`.
@@ -890,7 +890,7 @@ Read `TokenHandle.spec.ts`. For each:
 
 (Read each `it` and apply the survivor map. The `handles()`-rewritten test was already handled in Task 4 Step 3.)
 
-- [ ] **Step 4: `bind.spec.ts` — `address()`/`text()`/`dead()`/`changed`**
+- [x] **Step 4: `bind.spec.ts` — `address()`/`text()`/`dead()`/`changed`**
 
 Read the relevant blocks (`address()` at ~77, 402, 484; `text()` at ~520, 730; `dead()` at ~431, 436, 476, 477, 517, 541; `changed` at ~353, 387, 426, 462-463, 729). Apply the survivor map:
 - `handle.address()` (the `{path, token}` object, ~77) → assert `handle.path()` and `handle.token()` separately: `expect(handle?.path()).toEqual([0])` + `expect(handle?.token()).toBe(tokens[0])`.
@@ -899,7 +899,7 @@ Read the relevant blocks (`address()` at ~77, 402, 484; `text()` at ~520, 730; `
 - `handle.dead()` (~431, 436, 476, 477, 517, 541) → `handle.alive()` with the boolean inverted, applying the killed-vs-bound rule (a `dead()===true` after a kill → `alive()===false`; a `dead()===false` on a still-bound handle → `alive()===true`).
 - `watch(handle.changed, …)` (~353, 387, 426, 462-463, 729): rewrite to assert resulting `token()`/`path()`/`alive()` state, or delete if the test is purely an event-payload assertion. The ~729 `observedText = handleB.text()` inside a `changed` watcher (a "watcher sees updated state" test) — if the event is gone, the test's premise is gone; delete it (the in-place refresh is covered by `LiveNode.spec`'s rewritten `refreshes token and path in place`).
 
-- [ ] **Step 5: `commit.spec.ts` — `address()`/`text()`/`dead()`/`changed` + `TokenChange` import**
+- [x] **Step 5: `commit.spec.ts` — `address()`/`text()`/`dead()`/`changed` + `TokenChange` import**
 
 Read the blocks. `commit.spec.ts` imports `type {TokenChange}` (line 8) and builds `markChanges`/`childChanges`/`tailChanges: TokenChange[]` arrays via `watch(handle.changed, …)`. Apply:
 - `handle.address()` (~136, 154, 158, 201) → `handle.path()` (path) / split into `path()`+`token()` for the object form (~136: `expect(tail.address()).toEqual({path:[2], token: result.tokens[2]})` → `expect(tail.path()).toEqual([2])` + `expect(tail.token()).toBe(result.tokens[2])`).
@@ -910,7 +910,7 @@ Read the blocks. `commit.spec.ts` imports `type {TokenChange}` (line 8) and buil
 
 (Distinguish carefully: `watch(pipeline.changed, …)` STAYS; `watch(<handle>.changed, …)` / `watch(markHandle.changed, …)` / `watch(he.changed, …)` / `watch(tail.changed, …)` GO.)
 
-- [ ] **Step 6: `TokenModel.index.spec.ts` — `handle.changed`/`address()`**
+- [x] **Step 6: `TokenModel.index.spec.ts` — `handle.changed`/`address()`**
 
 Read line 22 (`expect(typeof store.tokens.changed).toBe('function')`) and line 35 (`watch(store.tokens.changed, onChanged)`): these subscribe to the MODEL `changed` (`store.tokens.changed`, the `Event<void>`), NOT a handle — LEAVE them. Line 93 (`expect(all[0].address().path).toEqual([0])`) was part of the `handles()` test rewritten in Task 4 — if it survived, change it to `handle?.path()`. Grep to confirm no `<handle>.address()` / `<handle>.changed` (non-`store.tokens.changed`) remains:
 
@@ -920,7 +920,7 @@ grep -n "\.address()\|\.changed" packages/core/src/features/tokens/TokenModel.in
 
 Expected: only `store.tokens.changed` (the model event) — fix any `<handle>.address()` to `<handle>.path()`.
 
-- [ ] **Step 7: Verify zero spec reads of the doomed handle members remain**
+- [x] **Step 7: Verify zero spec reads of the doomed handle members remain**
 
 Run:
 
@@ -938,7 +938,7 @@ grep -rn "watch([a-zA-Z]*[Hh]andle\.changed\|watch(he\.changed\|watch(tail\.chan
 
 Expected: ZERO hits (every per-handle `changed` watcher migrated/deleted; only `store.tokens.changed`/`pipeline.changed` remain).
 
-- [ ] **Step 8: Run the affected specs + full core**
+- [x] **Step 8: Run the affected specs + full core**
 
 Run, expecting full pass each (against the STILL-PRESENT getters — Task 6 deletes them next):
 
@@ -956,7 +956,7 @@ Expected: full pass.
 Run: `pnpm run typecheck`
 Expected: clean — `commit.spec.ts` no longer imports `TokenChange`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git commit -m "test(tokens): migrate handle specs off address()/text()/dead()/changed; delete isolation spec" -- packages/core/src/features/tokens/model/LiveNode.spec.ts packages/core/src/features/tokens/TokenHandle.spec.ts packages/core/src/features/tokens/model/bind.spec.ts packages/core/src/features/tokens/model/commit.spec.ts packages/core/src/features/tokens/TokenModel.index.spec.ts
@@ -972,14 +972,14 @@ git commit -m "test(tokens): migrate handle specs off address()/text()/dead()/ch
 
 The heart of the win-4 trade. `token`/`element` become PLAIN getters reading the backing fields (no `dirty` dependency). The per-node `dirty` signal, the `changed` event, the `TokenChange`/`TokenSnapshot` types, and the now-dead `address`/`text`/`dead`/`caretRect`/`placeCaretAtBoundary` members are deleted. `path()`/`alive()` (Phase 4) drop their `dirty()`/`#dead()`-signal reads and read the plain fields. `update`/`bindElements`/`unbind`/`kill` keep mutating the fields but drop the `batch`/`#bumpDirty`/event emits. Every spec was migrated in Task 5, so the suite stays green.
 
-- [ ] **Step 1: Capture the baseline**
+- [x] **Step 1: Capture the baseline**
 
 Run: `pnpm -w exec vitest run --project core LiveNode.spec`
 Run: `pnpm -w exec vitest run --project core "model/bind.spec"`
 Run: `pnpm -w exec vitest run --project core "model/commit.spec"`
 Expected: full pass (Task 5 left these green against the still-reactive implementation).
 
-- [ ] **Step 2: Rewrite `LiveNode.ts`**
+- [x] **Step 2: Rewrite `LiveNode.ts`**
 
 Replace the ENTIRE contents of `packages/core/src/features/tokens/model/LiveNode.ts` with the de-reactified version below. Every member keeps its signature; only the reactive plumbing is removed. `#dead` becomes a plain boolean field; `token`/`element` become plain methods; `address`/`text`/`dead`/`caretRect`/`placeCaretAtBoundary`/`changed`/`dirty` are gone; `update`/`kill`/`bind`/`unbind` mutate plainly.
 
@@ -1185,7 +1185,7 @@ export class TokenHandle {
 
 (Dropped: the `signals` import (`batch`/`computed`/`event`/`signal` + `Computed`/`Event`/`Signal` types), the `TokenSnapshot` type, the `TokenChange` type, the `changed` event, the `dirty` signal, the `#dead` SIGNAL (now a plain boolean), and the `address`/`text`/`dead`/`caretRect`/`placeCaretAtBoundary` members. `caretRect` removed because no caller survives. `placeCaretAtBoundary` removed because `placeCaret` is the survivor. KEPT: `id`, `token()`, `path()`, `alive()`, `element()`, `node()`, all caret/measure commands, `update`/`bindElements`/`unbind`/`kill`. `update` no longer emits, no longer batches.)
 
-- [ ] **Step 3: Drop the `TokenChange` export from `tokens/index.ts`**
+- [x] **Step 3: Drop the `TokenChange` export from `tokens/index.ts`**
 
 In `packages/core/src/features/tokens/index.ts`, delete the line:
 
@@ -1195,7 +1195,7 @@ export type {TokenChange} from './model/LiveNode'
 
 (`TokenChange` is gone from `LiveNode.ts`. `TokenHandle` (the value) export stays. `TokenChangeEntry` from `tokenIdentity` is unrelated — leave it.)
 
-- [ ] **Step 4: Run the handle/model specs**
+- [x] **Step 4: Run the handle/model specs**
 
 Run, expecting full pass each:
 
@@ -1206,7 +1206,7 @@ pnpm -w exec vitest run --project core "model/bind.spec"
 pnpm -w exec vitest run --project core "model/commit.spec"
 ```
 
-- [ ] **Step 5: Full core suite + typecheck + encapsulation**
+- [x] **Step 5: Full core suite + typecheck + encapsulation**
 
 Run: `pnpm -F core test`
 Expected: full pass — `TokenModel.#view`/`placeCaret`/`setEditable` call `handle.token()` (now plain), `commit.ts` divergence calls `handle.token().content` + `handle.path()` (Task 1), bind/commit call `update`/`bindElements`/`unbind`/`kill` (now plain). No behavior change for any production read.
@@ -1217,7 +1217,7 @@ Expected: clean — `LiveNode.ts` exports only `TokenHandle` + `ElementBindings`
 Run: `pnpm run check:encapsulation`
 Expected: pass.
 
-- [ ] **Step 6: Verify the reactive plumbing is gone**
+- [x] **Step 6: Verify the reactive plumbing is gone**
 
 Run:
 
@@ -1227,7 +1227,7 @@ grep -n "dirty\|changed\|computed\|signal\|event\|batch\|TokenChange\|TokenSnaps
 
 Expected: ZERO hits — no `dirty`, no `changed`, no signals import, no `TokenChange`/`TokenSnapshot`, no `address`/`caretRect`/`placeCaretAtBoundary`, no public `dead`. (`#dead` the private boolean field is fine — the grep `\.dead\b` matches the public getter form; `#dead` won't match `\.dead`. If it does flag `#dead`, that is the private field — expected, leave it.)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git commit -m "refactor(tokens): de-reactify TokenHandle — plain getters; delete dirty/changed/address/text/dead" -- packages/core/src/features/tokens/model/LiveNode.ts packages/core/src/features/tokens/index.ts
@@ -1237,7 +1237,7 @@ git commit -m "refactor(tokens): de-reactify TokenHandle — plain getters; dele
 
 ### Task 7: Full verification
 
-- [ ] **Step 1: All suites + guards**
+- [x] **Step 1: All suites + guards**
 
 Run, expecting full pass on each (do NOT use `pnpm -F react test` / `pnpm -F vue test` — silent no-ops, see Tech Stack):
 
@@ -1248,7 +1248,7 @@ pnpm run typecheck           # recursive tsc/vue-tsc — zero TokenChange/TokenS
 pnpm run check:encapsulation
 ```
 
-- [ ] **Step 2: Confirm the deletions and the new surface**
+- [x] **Step 2: Confirm the deletions and the new surface**
 
 Run: `grep -rn "\.tokenAt(\|\.handles()\|\.caretFromPoint(\|\.caretRect(\|\.placeCaretAtBoundary(\|readSelection\|selectionRect\|selectionAnchor\|isSelectionCollapsed\|selectionIntersects\|selectionFocusNode" packages/core/src packages/react/markput/src packages/vue/markput/src --include="*.ts" --include="*.tsx" --include="*.vue"`
 Expected: ZERO hits — the dead model surface and the six micro-reads are gone from production AND specs.
@@ -1262,7 +1262,7 @@ Expected: the new `selection()` method + the `SelectionSnapshot` type are presen
 Run: `grep -n "token()\|path()\|alive()\|element()\|dirty\|computed\|signal\|event" packages/core/src/features/tokens/model/LiveNode.ts`
 Expected: `token()`/`path()`/`alive()`/`element()` present as plain methods; ZERO `dirty`/`computed`/`signal`/`event`.
 
-- [ ] **Step 3: Confirm clean and report**
+- [x] **Step 3: Confirm clean and report**
 
 `git status` must be clean (everything committed task-by-task, path-scoped). Report: the core suite pass count, the storybook react/vue counts, and confirm typecheck + encapsulation guard green. State explicitly that the handle getters are now PLAIN (win-4 traded; the per-node `dirty` signal + `changed` event + `TokenChange`/`TokenSnapshot` deleted), the dead surface (`tokenAt`, `handles()`, `caretFromPoint`, `caretRect`, `placeCaretAtBoundary`, `address()`, `text()`, `dead()`) is gone, the fine-grained isolation spec is deleted, and the six selection micro-reads + the `!== false` tri-state are replaced by one `selection(): SelectionSnapshot | undefined`. Note that this phase broke no consumed public API (the deleted members had zero production callers; `selection()` is additive over `readRaw`'s migration).
 
@@ -1270,9 +1270,9 @@ Expected: `token()`/`path()`/`alive()`/`element()` present as plain methods; ZER
 
 ### Task 8: Write the Phase 6 plan (phase chaining)
 
-- [ ] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase6.md` for **Phase 6 — pipeline + parse trim (2 days)** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`, Phase 6): the `(value, parser, isBlock)` watch replaces the PURITY computed (the `#reconciled` computed in `TokenModel.ts` that consume-once-reads `takePendingEdit` and mutates `#lastParsed` inside a getter — replace it with an explicit hint flow through a watch-callback pipeline entry, removing the dependence on the runtime's once-per-wave PURITY guarantee); explicit hint flow; delete `incrementalParse` + its property spec (`incrementalParse.ts` + `incrementalParse.property.spec.ts` — but KEEP `EditHint` and the bench as the regression tripwire); delete dead `preparsing/getClosestIndexes` (the Phase-6 rider). Ground the plan by reading FIRST, with fresh eyes, the POST-Phase-5 code: `packages/core/src/features/tokens/model/TokenModel.ts` (`#reconciled`/`#lastParsed`/`#parse`/`#parser` and the mount `watch` over `#reconciled`, plus the PURITY comment block), `packages/core/src/features/tokens/incrementalParse.ts` + `incrementalParse.property.spec.ts`, `packages/core/src/features/tokens/tokenIdentity.ts` (the `EditHint`/`takePendingEdit` seam), and the `preparsing/getClosestIndexes` dead code. Decide the EXACT watch-callback pipeline-entry shape and how the explicit hint threads from `ValueModel.takePendingEdit` through the new entry (no consume-once-inside-a-computed). No placeholder steps — every step shows exact code; bite-sized TDD; frequent path-scoped commits; the required plan header. The LAST task of the Phase 6 plan must be "write the Phase 7 plan" (phase chaining — Phase 7 is first-class rows, the final phase; its plan's last task is the migration completion / README shrink rider, not a Phase 8). Verification commands MUST follow this plan's Tech Stack note: `pnpm -F core test`, `pnpm -F storybook test` / `test:react` / `test:vue`, `pnpm run typecheck`, `pnpm run check:encapsulation` — NEVER `pnpm -F react test` or `pnpm -F vue test` (silent no-ops).
+- [x] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase6.md` for **Phase 6 — pipeline + parse trim (2 days)** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`, Phase 6): the `(value, parser, isBlock)` watch replaces the PURITY computed (the `#reconciled` computed in `TokenModel.ts` that consume-once-reads `takePendingEdit` and mutates `#lastParsed` inside a getter — replace it with an explicit hint flow through a watch-callback pipeline entry, removing the dependence on the runtime's once-per-wave PURITY guarantee); explicit hint flow; delete `incrementalParse` + its property spec (`incrementalParse.ts` + `incrementalParse.property.spec.ts` — but KEEP `EditHint` and the bench as the regression tripwire); delete dead `preparsing/getClosestIndexes` (the Phase-6 rider). Ground the plan by reading FIRST, with fresh eyes, the POST-Phase-5 code: `packages/core/src/features/tokens/model/TokenModel.ts` (`#reconciled`/`#lastParsed`/`#parse`/`#parser` and the mount `watch` over `#reconciled`, plus the PURITY comment block), `packages/core/src/features/tokens/incrementalParse.ts` + `incrementalParse.property.spec.ts`, `packages/core/src/features/tokens/tokenIdentity.ts` (the `EditHint`/`takePendingEdit` seam), and the `preparsing/getClosestIndexes` dead code. Decide the EXACT watch-callback pipeline-entry shape and how the explicit hint threads from `ValueModel.takePendingEdit` through the new entry (no consume-once-inside-a-computed). No placeholder steps — every step shows exact code; bite-sized TDD; frequent path-scoped commits; the required plan header. The LAST task of the Phase 6 plan must be "write the Phase 7 plan" (phase chaining — Phase 7 is first-class rows, the final phase; its plan's last task is the migration completion / README shrink rider, not a Phase 8). Verification commands MUST follow this plan's Tech Stack note: `pnpm -F core test`, `pnpm -F storybook test` / `test:react` / `test:vue`, `pnpm run typecheck`, `pnpm run check:encapsulation` — NEVER `pnpm -F react test` or `pnpm -F vue test` (silent no-ops).
 
-- [ ] **Step 2: Commit the plan**
+- [x] **Step 2: Commit the plan**
 
 ```bash
 git commit -m "docs(plan): one-fresh-truth phase 6 — pipeline + parse trim" -- docs/superpowers/plans/2026-06-13-one-fresh-truth-phase6.md
