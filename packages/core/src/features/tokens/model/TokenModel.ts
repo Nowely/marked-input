@@ -346,13 +346,6 @@ export class TokenModel {
 		return direction ? {range: rangeValue, direction} : {range: rangeValue}
 	}
 
-	/** Current window selection as absolute positions. */
-	readSelection(): RawSelection | undefined {
-		const selection = window.getSelection()
-		if (!selection || selection.rangeCount === 0) return undefined
-		return this.#rawSelectionFrom(selection)
-	}
-
 	/** Current selection serialized for clipboard use. */
 	selectedContent(): {html: string; text: string} | undefined {
 		const sel = window.getSelection()
@@ -362,41 +355,6 @@ export class TokenModel {
 		const div = document.createElement('div')
 		div.appendChild(fragment)
 		return {html: div.innerHTML, text: range.toString()}
-	}
-
-	/** Viewport rect of the current caret/selection. */
-	selectionRect(): DOMRect | undefined {
-		return getRect() ?? undefined
-	}
-
-	/** Anchor node + offset of the current selection (overlay trigger probing). */
-	selectionAnchor(): SelectionAnchor | undefined {
-		const sel = window.getSelection()
-		if (!sel?.anchorNode) return undefined
-		return {node: sel.anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed}
-	}
-
-	/**
-	 * Whether the current selection is collapsed.
-	 *
-	 * Tri-state: `undefined` when there is no Selection object at all (in
-	 * practice: the element is not focused), `true` for a collapsed caret,
-	 * `false` for a range. Callers wanting "no selection counts as collapsed"
-	 * must compare `isSelectionCollapsed() !== false`.
-	 */
-	isSelectionCollapsed(): boolean | undefined {
-		const sel = window.getSelection()
-		return sel ? sel.isCollapsed : undefined
-	}
-
-	/** Whether the current selection intersects `node` (partial containment counts). */
-	selectionIntersects(node: Node): boolean {
-		return window.getSelection()?.containsNode(node, true) ?? false
-	}
-
-	/** Focus node of the current selection, if any. */
-	selectionFocusNode(): Node | undefined {
-		return window.getSelection()?.focusNode ?? undefined
 	}
 
 	/**

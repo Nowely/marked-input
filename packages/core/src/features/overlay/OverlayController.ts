@@ -28,7 +28,7 @@ export class OverlayController {
 
 	readonly position: Computed<{left: number; top: number}> = computed(() => {
 		if (!this.match()) return {left: 0, top: 0}
-		const rect = this.tokens.selectionRect()
+		const rect = this.tokens.selection()?.rect
 		if (!rect) return {left: 0, top: 0}
 		return {left: rect.left, top: rect.top + rect.height + 1}
 	})
@@ -149,7 +149,7 @@ export class OverlayController {
 				source,
 				range: {start, end: start + source.length},
 				span: value,
-				node: this.tokens.selectionAnchor()?.node ?? this.host.container() ?? document.body,
+				node: this.tokens.selection()?.anchor.node ?? this.host.container() ?? document.body,
 				option,
 			}
 		}

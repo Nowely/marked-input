@@ -225,7 +225,7 @@ describe('TokenModel facade boundary behavior (pinned from dual-run parity)', ()
 			sel?.removeAllRanges()
 			sel?.addRange(range)
 			// Both fixtures start their first text token at absolute position 0.
-			expect(store.tokens.readSelection()).toEqual({range: {start: 0, end: 1}, direction: 'forward'})
+			expect(store.tokens.selection()?.raw).toEqual({range: {start: 0, end: 1}, direction: 'forward'})
 			expect(store.tokens.selectedContent()).toEqual({
 				html: firstText.data.slice(0, 1),
 				text: firstText.data.slice(0, 1),
@@ -253,7 +253,7 @@ describe('TokenModel placement commands', () => {
 	it('placeCaret(raw) places inside the right surface; readSelection round-trips', () => {
 		const {store} = mountWithMark()
 		expect(store.tokens.placeCaret(1)).toBe(true)
-		expect(store.tokens.readSelection()?.range).toEqual({start: 1, end: 1})
+		expect(store.tokens.selection()?.raw?.range).toEqual({start: 1, end: 1})
 	})
 
 	it('placeCaret at a mark/text shared boundary resolves to the text surface', () => {
@@ -265,7 +265,7 @@ describe('TokenModel placement commands', () => {
 		// is consulted — the mark branch in #placeAtRawPosition is therefore not
 		// exercised here.
 		expect(store.tokens.placeCaret(mark.position.end)).toBe(true)
-		expect(store.tokens.readSelection()?.range.start).toBe(mark.position.end)
+		expect(store.tokens.selection()?.raw?.range.start).toBe(mark.position.end)
 	})
 
 	// Note: the mark-only branch of #placeAtRawPosition (markBoundaryAt) is not
@@ -283,7 +283,7 @@ describe('TokenModel placement commands', () => {
 		const handle = store.tokens.handle(token.id!)
 		if (!handle) throw new Error('expected handle')
 		expect(store.tokens.placeCaret({handle, offset: 1})).toBe(true)
-		expect(store.tokens.readSelection()?.range.start).toBe(token.position.start + 1) // 6 + 1 = 7
+		expect(store.tokens.selection()?.raw?.range.start).toBe(token.position.start + 1) // 6 + 1 = 7
 	})
 
 	it('selectRange spans two text surfaces', () => {
@@ -291,7 +291,7 @@ describe('TokenModel placement commands', () => {
 		const last = store.tokens.tokens().at(-1)
 		if (!last) throw new Error('expected tokens')
 		expect(store.tokens.selectRange(0, last.position.end)).toBe(true)
-		const read = store.tokens.readSelection()
+		const read = store.tokens.selection()?.raw
 		expect(read?.range).toEqual({start: 0, end: last.position.end})
 	})
 

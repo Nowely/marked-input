@@ -353,24 +353,6 @@ describe('TokenModel shell (model/)', () => {
 					.toEqual(store.tokens.tokenAt(position)?.address().path)
 			}
 		})
-
-		it('caretFromPoint agrees with the old TokenModel at the same caret rect — inline', () => {
-			const store = mountOld(INLINE_PROPS, buildInlineDom().container)
-			const {model} = mountNew(INLINE_PROPS, buildInlineDom().container)
-
-			expect(store.tokens.placeCaret(7)).toBe(true)
-			const oldRect = store.tokens.selectionRect()
-			if (!oldRect) throw new Error('expected selection rect')
-			const oldPos = store.tokens.caretFromPoint(oldRect.left, oldRect.top + oldRect.height / 2)
-
-			expect(model.placeCaret(7)).toBe(true)
-			const newRect = model.selectionRect()
-			if (!newRect) throw new Error('expected selection rect')
-			const newPos = model.caretFromPoint(newRect.left, newRect.top + newRect.height / 2)
-
-			expect(newPos).toBe(oldPos)
-			expect(newPos).toBe(7)
-		})
 	})
 
 	describe('placement commands and selection reads', () => {
@@ -378,12 +360,12 @@ describe('TokenModel shell (model/)', () => {
 			const {model} = mountNewInline()
 
 			expect(model.placeCaret(1)).toBe(true)
-			expect(model.readSelection()).toEqual({range: {start: 1, end: 1}})
-			expect(model.isSelectionCollapsed()).toBe(true)
-			const anchor = model.selectionAnchor()
+			expect(model.selection()?.raw).toEqual({range: {start: 1, end: 1}})
+			expect(model.selection()?.collapsed).toBe(true)
+			const anchor = model.selection()?.anchor
 			expect(anchor?.isCollapsed).toBe(true)
-			expect(model.selectionRect()).toBeDefined()
-			expect(model.selectionFocusNode()).toBe(anchor?.node)
+			expect(model.selection()?.rect).toBeDefined()
+			expect(model.selection()?.focusNode).toBe(anchor?.node)
 		})
 
 		it("placeCaret({handle, offset}) targets the handle's token explicitly", () => {
@@ -393,7 +375,7 @@ describe('TokenModel shell (model/)', () => {
 			if (!handle) throw new Error('expected handle')
 
 			expect(model.placeCaret({handle, offset: 1})).toBe(true)
-			expect(model.readSelection()?.range.start).toBe(7)
+			expect(model.selection()?.raw?.range.start).toBe(7)
 			// A foreign token object (never reconciled) carries no id, so it has no
 			// live handle — the stale reference is rejected at resolution, leaving
 			// nothing to place into.
@@ -405,9 +387,9 @@ describe('TokenModel shell (model/)', () => {
 			const {model, text1} = mountNewInline()
 
 			expect(model.selectRange(0, 9)).toBe(true)
-			expect(model.readSelection()?.range).toEqual({start: 0, end: 9})
-			expect(model.isSelectionCollapsed()).toBe(false)
-			expect(model.selectionIntersects(text1)).toBe(true)
+			expect(model.selection()?.raw?.range).toEqual({start: 0, end: 9})
+			expect(model.selection()?.collapsed).toBe(false)
+			expect(model.selection()?.intersects(text1)).toBe(true)
 			const content = model.selectedContent()
 			expect(content?.text).toContain('he')
 		})

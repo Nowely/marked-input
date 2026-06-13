@@ -70,7 +70,7 @@ export class SelectionController {
 	}
 
 	readRaw(): RawSelection | undefined {
-		return this.tokens.readSelection()
+		return this.tokens.selection()?.raw
 	}
 
 	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {
@@ -154,7 +154,7 @@ export class SelectionController {
 			if (pressedAt === null) return
 			const startedOutsideEditor = !container.contains(pressedAt)
 			const sweepingAcrossNodes = pressedAt !== e.target
-			const selectionIntersectsEditor = this.tokens.selectionIntersects(container)
+			const selectionIntersectsEditor = this.tokens.selection()?.intersects(container) ?? false
 			if ((startedOutsideEditor || sweepingAcrossNodes) && selectionIntersectsEditor) {
 				this.isUserSelecting(true)
 			}
@@ -163,7 +163,7 @@ export class SelectionController {
 		const clearIfCollapsed = (): void => {
 			if (!this.isUserSelecting()) return
 			// No selection (undefined) is treated like collapsed, matching the raw `!sel || sel.isCollapsed`.
-			if (this.tokens.isSelectionCollapsed() !== false) this.isUserSelecting(false)
+			if (this.tokens.selection()?.collapsed !== false) this.isUserSelecting(false)
 		}
 
 		listen(document, 'mouseup', () => {
@@ -207,7 +207,7 @@ export class SelectionController {
 
 		listen(document, 'selectionchange', () => {
 			if (this.#isPlacingCaret) return
-			const focusNode = this.tokens.selectionFocusNode()
+			const focusNode = this.tokens.selection()?.focusNode
 			if (!focusNode) return
 			syncIfInEditor(focusNode)
 		})

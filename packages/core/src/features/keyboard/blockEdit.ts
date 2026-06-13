@@ -202,7 +202,7 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 		if (blockIndex === 0) return
 
 		event.preventDefault()
-		const caretX = store.tokens.selectionRect()?.left ?? handle.rect()?.left ?? 0
+		const caretX = store.tokens.selection()?.rect?.left ?? handle.rect()?.left ?? 0
 		const prev = rowHandle(store, blockIndex - 1)
 		if (!prev) return
 		prev.focus()
@@ -213,7 +213,7 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 		if (blockIndex >= rowCount - 1) return
 
 		event.preventDefault()
-		const caretX = store.tokens.selectionRect()?.left ?? handle.rect()?.left ?? 0
+		const caretX = store.tokens.selection()?.rect?.left ?? handle.rect()?.left ?? 0
 		const next = rowHandle(store, blockIndex + 1)
 		if (!next) return
 		next.focus()
