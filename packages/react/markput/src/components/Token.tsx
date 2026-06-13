@@ -12,9 +12,9 @@ import {TokenChildren} from './TokenChildren'
  * the node layer yet.
  */
 export const Token = memo(({token, path}: {token: TokenType; path: TokenPath}) => {
-	const {resolveMarkSlot, key, store} = useMarkput(s => ({
+	const {resolveMarkSlot, keyOf, store} = useMarkput(s => ({
 		resolveMarkSlot: s.slots.mark,
-		key: s.key,
+		keyOf: s.tokens.keyOf,
 		store: s,
 	}))
 
@@ -23,7 +23,7 @@ export const Token = memo(({token, path}: {token: TokenType; path: TokenPath}) =
 		token.type === 'mark' && token.children.length > 0 ? (
 			<TokenChildren ownerPath={path}>
 				{token.children.map((child, i) => (
-					<Token key={key.get(child)} token={child} path={[...path, i]} />
+					<Token key={keyOf(child)} token={child} path={[...path, i]} />
 				))}
 			</TokenChildren>
 		) : undefined

@@ -6,11 +6,11 @@ import {Block} from './Block'
 import {Token} from './Token'
 
 export const Container = memo(() => {
-	const {host, isBlock, tokens, key, Component, props} = useMarkput(s => ({
+	const {host, isBlock, tokens, keyOf, Component, props} = useMarkput(s => ({
 		host: s.host,
 		isBlock: s.props.layout.isBlock,
 		tokens: s.tokens.tree,
-		key: s.key,
+		keyOf: s.tokens.keyOf,
 		Component: s.slots.containerComponent,
 		props: s.slots.containerProps,
 	}))
@@ -36,8 +36,8 @@ export const Container = memo(() => {
 	return (
 		<Component {...props} ref={setRef}>
 			{isBlock
-				? tokens.map((t, i) => <Block key={key.get(t)} token={t} blockIndex={i} />)
-				: tokens.map((t, i) => <Token key={key.get(t)} token={t} path={[i]} />)}
+				? tokens.map((t, i) => <Block key={keyOf(t)} token={t} blockIndex={i} />)
+				: tokens.map((t, i) => <Token key={keyOf(t)} token={t} path={[i]} />)}
 		</Component>
 	)
 })
