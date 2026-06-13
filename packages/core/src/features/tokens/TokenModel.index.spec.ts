@@ -155,3 +155,27 @@ describe('TokenModel.tokens() / at() — the fresh reconciled read', () => {
 		expect(store.tokens.tokens()).toEqual([])
 	})
 })
+
+describe('TokenModel.handle(id) — the id-keyed fail-closed lookup', () => {
+	it('handle(id) returns the live handle for a reconciled token id', () => {
+		const {store, container, span} = mountInline('hello')
+		const id = store.tokens.tokens()[0].id
+		expect(id).toBeTypeOf('number')
+		const handle = store.tokens.handle(id!)
+		expect(handle).toBeInstanceOf(TokenHandle)
+		expect(handle?.element()).toBe(span)
+		container.remove()
+	})
+
+	it('handle(id) returns undefined for an id with no live node', () => {
+		const {store, container} = mountInline('hello')
+		expect(store.tokens.handle(999999)).toBeUndefined()
+		container.remove()
+	})
+
+	it('handle(id) returns undefined before any commit has run', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'hello'})
+		expect(store.tokens.handle(0)).toBeUndefined()
+	})
+})

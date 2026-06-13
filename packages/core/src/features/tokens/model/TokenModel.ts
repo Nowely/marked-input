@@ -223,6 +223,19 @@ export class TokenModel {
 	}
 
 	/**
+	 * Resolve a token id to its live handle, or `undefined`. The id-keyed read
+	 * over the live node layer — fails closed while a structural apply awaits its
+	 * bind (the layer is one generation stale, so a handle would let mutations act
+	 * on a tree the DOM never showed). THE identity lookup: a consumer holding a
+	 * render-tree token resolves `handle(token.id)`; the handle's `token()` carries
+	 * current content and positions, and its existence IS the validity check.
+	 */
+	handle(id: number): TokenHandle | undefined {
+		if (this.#pipeline.pending()) return undefined
+		return this.#nodes.get(id)
+	}
+
+	/**
 	 * Iterate all bound tokens' live handles.
 	 * @yields each bound token's handle
 	 */
