@@ -28,7 +28,7 @@ export function canMergeRows(a: Token, b: Token): boolean {
 	return false
 }
 
-export function addDragRow(value: string, rows: Token[], afterIndex: number, newRowContent: string): string {
+export function addDragRow(value: string, rows: readonly Token[], afterIndex: number, newRowContent: string): string {
 	if (rows.length === 0) return value + newRowContent
 	if (value === '' || (rows.length === 1 && rows[0].type === 'text' && rows[0].content === ''))
 		return newRowContent + newRowContent
@@ -65,7 +65,7 @@ export function duplicateDragRow(value: string, rows: Token[], index: number): s
  * For slot-leading marks: removes the first mark's literal suffix, merging slot content.
  * Returns the new value and the raw-value caret position at the join point.
  */
-export function mergeDragRows(value: string, rows: Token[], index: number): {value: string; caret: number} {
+export function mergeDragRows(value: string, rows: readonly Token[], index: number): {value: string; caret: number} {
 	if (index <= 0 || index >= rows.length) return {value, caret: 0}
 	const prev = rows[index - 1]
 	const curr = rows[index]

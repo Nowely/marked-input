@@ -8,7 +8,6 @@ import {createRowContent} from '../block/createRowContent'
 import {addDragRow, mergeDragRows, canMergeRows} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Token, TokenHandle} from '../tokens'
-import {freshTokens} from '../tokens'
 import {rawRangeFromInputEvent} from './inputRange'
 
 function isTextLikeRow(token: Token): boolean {
@@ -22,10 +21,10 @@ type ActiveRow = {
 }
 
 function rowHandle(store: KbCtx, rowIndex: number): TokenHandle | undefined {
-	// Row identity from the render tree, liveness from the id bridge — the
-	// tree token may be a stale object after text-path commits, the handle is
-	// always the current one (and undefined while a structural apply is unbound).
-	const row = store.tokens.tree().at(rowIndex)
+	// Row identity from the fresh reconciled tree, liveness from the id bridge:
+	// tokens() carries the current row object; handleOf maps it to the live
+	// handle (undefined while a structural apply is unbound — fail-closed).
+	const row = store.tokens.at(rowIndex)
 	return row ? store.tokens.handleOf(row) : undefined
 }
 
@@ -71,9 +70,9 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	if (!active) return
 	const {handle, index: blockIndex} = active
 
-	// Fresh read: row positions slice value.current() — stale tree() positions
-	// after a text-path commit would cut the wrong ranges.
-	const rows = freshTokens(store.tokens)
+	// Fresh read: row positions slice value.current(); tokens() is the reconciled
+	// tree consistent with the value, so the cuts hit the right ranges.
+	const rows = store.tokens.tokens()
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
@@ -134,7 +133,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	event.preventDefault()
 	const {index: blockIndex} = active
 
-	const rows = freshTokens(store.tokens)
+	const rows = store.tokens.tokens()
 	const token = rows[blockIndex]
 	const value = store.value.current()
 
@@ -169,8 +168,7 @@ function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction
 	const active = findActiveRow(store)
 	if (!active) return
 	const {handle, index: blockIndex} = active
-	// Count-only read: row COUNT is structural, so the render tree is never stale here.
-	const rowCount = store.tokens.tree().length
+	const rowCount = store.tokens.tokens().length
 
 	if (direction === 'left') {
 		if ((handle.caretIndex() ?? 0) !== 0) return
@@ -196,7 +194,7 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 	const active = findActiveRow(store)
 	if (!active) return
 	const {handle, index: blockIndex} = active
-	const rowCount = store.tokens.tree().length
+	const rowCount = store.tokens.tokens().length
 
 	if (event.key === KEYBOARD.UP) {
 		if (!handle.caretOnFirstLine()) return
@@ -277,7 +275,7 @@ function rangeForBlockInput(store: KbCtx, event: InputEvent, range: Range): Rang
 function mergeOrFocusNeighbor(
 	store: KbCtx,
 	event: KeyboardEvent,
-	rows: Token[],
+	rows: readonly Token[],
 	value: string,
 	fromIndex: number,
 	toIndex: number,
