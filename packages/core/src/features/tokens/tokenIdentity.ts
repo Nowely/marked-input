@@ -94,12 +94,6 @@ export function createIdentityTracker(): IdentityTracker {
 		return id
 	}
 
-	/** Push the token's id AND all descendant ids into `bucket`. */
-	const collectIds = (token: Token, bucket: number[]): void => {
-		bucket.push(ensureId(token))
-		if (token.type === 'mark') token.children.forEach(child => collectIds(child, bucket))
-	}
-
 	const inherit = (from: Token, to: Token): void => {
 		const id = ids.get(from)
 		if (id !== undefined) {
@@ -125,7 +119,14 @@ export function createIdentityTracker(): IdentityTracker {
 				next.forEach(ensureId)
 				previous = next
 				const changes: TokenChangeEntry[] = []
-				collectAddChanges(next, [], changes)
+				const collect = (tokens: readonly Token[], basePath: TokenPath): void => {
+					tokens.forEach((token, i) => {
+						const path = [...basePath, i]
+						changes.push({id: ensureId(token), token, path, kind: 'add'})
+						if (token.type === 'mark') collect(token.children, path)
+					})
+				}
+				collect(next, [])
 				return {tokens: next, structural: true, changes, removedIds: []}
 			}
 
@@ -135,10 +136,25 @@ export function createIdentityTracker(): IdentityTracker {
 
 			const shiftDelta = window.insertedLength - (window.end - window.start)
 			const out: Token[] = next.slice()
-			const textChanged: number[] = []
-			const added: number[] = []
-			const updated: number[] = []
+			const changes: TokenChangeEntry[] = []
+			const removedIds: number[] = []
+			let structural = false
 			const matchedPrev = new Set<Token>()
+
+			/** Push the token's subtree into `changes` as `kind`, each entry at its full path. */
+			const collectChanges = (token: Token, basePath: TokenPath, kind: TokenChangeEntry['kind']): void => {
+				const id = ensureId(token)
+				changes.push({id, token, path: basePath, kind})
+				if (token.type === 'mark') {
+					token.children.forEach((child, i) => collectChanges(child, [...basePath, i], kind))
+				}
+			}
+
+			/** Push the removed token's subtree ids into `removedIds` (no path — it is gone from the tree). */
+			const collectRemovedIds = (token: Token, bucket: number[]): void => {
+				bucket.push(ensureId(token))
+				if (token.type === 'mark') token.children.forEach(child => collectRemovedIds(child, bucket))
+			}
 
 			/**
 			 * Deep descend (spec §Deep reconcile): an id-matched mark pair whose
@@ -148,7 +164,7 @@ export function createIdentityTracker(): IdentityTracker {
 			 * mark-level textChanged (id inherited — handle continuity for
 			 * refused descends is the pinned contract).
 			 */
-			const tryDescend = (prevMark: MarkToken, nextMark: MarkToken): boolean => {
+			const tryDescend = (prevMark: MarkToken, nextMark: MarkToken, basePath: TokenPath): boolean => {
 				// 1. same descriptor (reference — interned per parser instance)
 				if (!sameDescriptor(prevMark, nextMark)) return false
 				// 2. rendered props byte-unchanged
@@ -182,8 +198,8 @@ export function createIdentityTracker(): IdentityTracker {
 				// already hold their inherited ids, so no phantom allocations.
 				const id = ids.get(prevMark)
 				if (id !== undefined) ids.set(nextMark, id)
-				pairSlotChildren(prevMark, nextMark, prevSlot, nextSlot)
-				updated.push(ensureId(nextMark))
+				pairSlotChildren(prevMark, nextMark, prevSlot, nextSlot, basePath)
+				changes.push({id: ensureId(nextMark), token: nextMark, path: basePath, kind: 'update'})
 				return true
 			}
 
@@ -200,7 +216,8 @@ export function createIdentityTracker(): IdentityTracker {
 				prevMark: MarkToken,
 				nextMark: MarkToken,
 				prevSlot: NonNullable<MarkToken['slot']>,
-				nextSlot: NonNullable<MarkToken['slot']>
+				nextSlot: NonNullable<MarkToken['slot']>,
+				basePath: TokenPath
 			): void => {
 				const interior = hintFromValues(prevSlot.content, nextSlot.content)
 				const start = prevSlot.start + interior.start
@@ -221,7 +238,7 @@ export function createIdentityTracker(): IdentityTracker {
 						kids[lo] = prevKids[lo]
 					} else {
 						inherit(prevKids[lo], kids[lo])
-						collectIds(kids[lo], updated)
+						collectChanges(kids[lo], [...basePath, lo], 'update')
 					}
 					lo++
 				}
@@ -235,17 +252,18 @@ export function createIdentityTracker(): IdentityTracker {
 						kids[hi] = prevKids[hi]
 					} else {
 						inherit(prevKids[hi], kids[hi])
-						collectIds(kids[hi], updated)
+						collectChanges(kids[hi], [...basePath, hi], 'update')
 					}
 					hi--
 				}
 				for (let i = lo; i <= hi; i++) {
 					const a = prevKids[i]
 					const b = kids[i]
+					const childPath = [...basePath, i]
 					// nested marks descend recursively under the same four conditions
-					if (a.type === 'mark' && b.type === 'mark' && tryDescend(a, b)) continue
+					if (a.type === 'mark' && b.type === 'mark' && tryDescend(a, b, childPath)) continue
 					inherit(a, b)
-					textChanged.push(ensureId(b))
+					changes.push({id: ensureId(b), token: b, path: childPath, kind: 'text'})
 				}
 			}
 
@@ -277,8 +295,8 @@ export function createIdentityTracker(): IdentityTracker {
 				matchedPrev.add(prev[prevTail])
 				if (shiftDelta !== 0) {
 					inherit(prev[prevTail], next[nextTail])
-					// descendants shifted too — collect the whole subtree
-					collectIds(next[nextTail], updated)
+					// descendants shifted too — collect the whole subtree as update
+					collectChanges(next[nextTail], [nextTail], 'update')
 				} else {
 					out[nextTail] = prev[prevTail]
 				}
@@ -307,16 +325,24 @@ export function createIdentityTracker(): IdentityTracker {
 						: candidate.type === token.type)
 				) {
 					matchedPrev.add(candidate)
-					if (candidate.type === 'mark' && token.type === 'mark' && tryDescend(candidate, token)) continue
+					if (candidate.type === 'mark' && token.type === 'mark' && tryDescend(candidate, token, [i]))
+						continue
 					inherit(candidate, token)
-					textChanged.push(ensureId(token))
+					// refused-descend MARK (value/meta/child-structure changed) renders
+					// framework props → structural; a text token stays on the text path.
+					if (token.type === 'mark') structural = true
+					changes.push({id: ensureId(token), token, path: [i], kind: 'text'})
 				} else {
-					collectIds(token, added)
+					collectChanges(token, [i], 'add')
+					structural = true
 				}
 			}
 
-			const removed: number[] = []
-			for (const t of prev) if (!matchedPrev.has(t)) collectIds(t, removed)
+			for (const t of prev) {
+				if (matchedPrev.has(t)) continue
+				collectRemovedIds(t, removedIds)
+				structural = true
+			}
 
 			// Invariant: every element of the OUTPUT tree has an id. Prefix-reused
 			// prev objects already carry one; suffix/middle/added tokens got theirs
@@ -325,7 +351,7 @@ export function createIdentityTracker(): IdentityTracker {
 			// replaced by reused prev objects in `out`) would allocate phantom ids.
 			out.forEach(ensureId)
 			previous = out
-			return bridge(out, textChanged, added, updated, removed)
+			return {tokens: out, structural, changes, removedIds}
 		},
 	}
 }
@@ -373,57 +399,4 @@ function tokensEqualShifted(a: Token, b: Token, delta: number): boolean {
 
 function sameDescriptor(a: MarkToken, b: MarkToken): boolean {
 	return a.descriptor === b.descriptor
-}
-
-/** Cold start: every token of the tree is an `add` change at its path. */
-function collectAddChanges(tokens: readonly Token[], basePath: TokenPath, out: TokenChangeEntry[]): void {
-	tokens.forEach((token, i) => {
-		const path = [...basePath, i]
-		// id was stamped by ensureId before this runs
-		out.push({id: token.id ?? 0, token, path, kind: 'add'})
-		if (token.type === 'mark') collectAddChanges(token.children, path, out)
-	})
-}
-
-/**
- * TEMPORARY Phase-2 bridge: rebuild `changes`/`structural`/`removedIds` from the
- * legacy id buckets by re-walking the output tree for paths. Task 2 threads the
- * paths through the reconcile walk itself and DELETES this — the buckets and this
- * function vanish together.
- */
-function bridge(
-	out: Token[],
-	textChanged: readonly number[],
-	added: readonly number[],
-	updated: readonly number[],
-	removed: readonly number[]
-): ReconcileResult {
-	const byId = new Map<number, {token: Token; path: TokenPath}>()
-	const walk = (tokens: readonly Token[], basePath: TokenPath): void => {
-		tokens.forEach((token, i) => {
-			const path = [...basePath, i]
-			if (token.id !== undefined) byId.set(token.id, {token, path})
-			if (token.type === 'mark') walk(token.children, path)
-		})
-	}
-	walk(out, [])
-	const changes: TokenChangeEntry[] = []
-	let structural = removed.length > 0
-	for (const id of added) {
-		const hit = byId.get(id)
-		if (hit) changes.push({id, token: hit.token, path: hit.path, kind: 'add'})
-		structural = true
-	}
-	for (const id of textChanged) {
-		const hit = byId.get(id)
-		if (!hit) continue
-		changes.push({id, token: hit.token, path: hit.path, kind: 'text'})
-		// a textChanged MARK is a refused descend → structural (commit's old type-walk)
-		if (hit.token.type !== 'text') structural = true
-	}
-	for (const id of updated) {
-		const hit = byId.get(id)
-		if (hit) changes.push({id, token: hit.token, path: hit.path, kind: 'update'})
-	}
-	return {tokens: out, structural, changes, removedIds: [...removed]}
 }
