@@ -155,10 +155,11 @@ a token id to its live handle, failing closed while a structural apply awaits it
 
 `boundary.ts` owns the view types and reads the node layer through a
 `BoundaryContext` the shell builds per call: `locate` walks a DOM node up to
-its bound handle, `resolveAddress` is the fail-closed address check (path AND
-object identity against the current reconciled tree), `viewOf` is the
-id-bridged element read. `TokenView` carries the handle itself, so DOM→handle
-resolution is a single lookup.
+its bound handle, `tokenOf(view)` returns the view's fresh current token (or
+`undefined` mid-window — the liveness gate, since `#view` excludes unbound
+handles), `viewOf(token)` is the id-bridged element read. `TokenView` carries
+the live token (`handle.token()`), so DOM→token resolution is a single read —
+the path-and-identity round-trip (`resolveAddress`) was removed in Phase 4.
 
 - `boundary.ts` — DOM `(node, offset)` → absolute position
   (`rawPositionFromBoundary`, `textTargetAt`, `markBoundaryAt`). Vocabulary:
@@ -173,17 +174,27 @@ resolution is a single lookup.
 
 ## `TokenHandle`
 
-Live, identity-keyed view of one token — the LiveNode's public face. Follows
-its token across structural path shifts (fires `moved`), survives commits
-while the token exists, then dies once.
+Live, identity-keyed view of one token — the LiveNode's public face. The face
+is `{id, token(), path(), alive(), element(), …}`: a consumer holding a
+render-tree token resolves `handle(token.id)`, and the handle's `token()`
+carries current content and positions — its existence IS the validity check.
+Follows its token across structural path shifts (fires `moved`), survives
+commits while the token exists, then dies once.
 
-### Reactive getters
+### Reads
 
+- `id` — the stable identity integer (the key `handle(id)` resolves by).
 - `token` — the current parsed `Token` (fresh content and positions).
-- `address` — the current `TokenAddress`, derived on read.
+- `path()` — the handle's current tree position; a live read, tracks moves.
+- `alive()` — live AND bound (not killed and holding a DOM element). The whole
+  validity check a holder of the handle needs.
 - `element` — the token root `HTMLElement`, or `undefined` when unbound.
 - `text` — shorthand for `token().content`.
-- `dead` — `true` after `unmounted` fires.
+- `address` — a derived `{path, token}` snapshot. _Deprecated_ (Phase-5
+  deletion target — prefer `path()` + `token()`); no longer the public
+  `TokenAddress` type, which was removed in Phase 4.
+- `dead` — `true` after `unmounted` fires (the inverse of bound liveness;
+  Phase-5 deletion target — prefer `alive()`).
 
 ### `changed` event
 
@@ -203,6 +214,31 @@ elements (row scope in block layout), inert defaults when unbound.
 
 All return `false` when unbound or dead: `placeCaret(offset)` (`Infinity` →
 end), `placeCaretAtBoundary(side)`, `placeCaretAtX(x, y?)`, `focus()`.
+
+## Mark commands (`MarkController`)
+
+The mark command surface (`MarkController.fromToken(store, token)`, the adapter
+hook) is HANDLE-BACKED — it holds a `TokenHandle`, not a frozen `{address,
+snapshot}` capture. `value` / `meta` / `slot` / `readOnly` are LIVE reads of
+the handle's current token, so they track text-path commits (and the
+controller's own updates after re-bind) without re-capture: a mid-window or
+dead handle reads `value === ''` and `meta` / `slot` `=== undefined`. `update`
+and `remove` resolve the live mark first; against a pending (mid-window) or
+dead handle, or in read-only mode, they are a fail-closed no-op returning
+`false`. SEMVER-MAJOR (Phase 4): a controller captured before a structural
+commit that KILLS its handle no longer auto-bridges — it fails closed, and the
+adapter re-derives the controller from the fresh token (`useMark`'s `useMemo`
+re-runs on the new token object), bridging by the inherited id to the new live
+handle. The `TokenAddress` surface this used to ride on was removed in Phase 4.
+
+## Caret placement by handle
+
+`placeCaret` takes a raw position (`number`) or a handle form
+(`placeCaret({handle, offset})`); `SelectionController.placeAtHandle(handle,
+boundary)` places at a handle's start/end. Both fail closed against a dead or
+mid-window handle (`!handle.alive()` → `false`). The path-and-token
+`placeAtAddress` / `placeCaret({address})` forms were removed in Phase 4 — the
+handle IS the identity, so no `{path, token}` round-trip remains.
 
 ## Parse and identity
 

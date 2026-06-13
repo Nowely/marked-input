@@ -235,6 +235,25 @@ describe('MarkController across text-path commits (identity bridge)', () => {
 	})
 })
 
+/**
+ * MarkController live-read parity tables (spec §MarkController semantics).
+ *
+ * The controller is HANDLE-BACKED: value/meta/slot/readOnly are LIVE reads of
+ * the current token, not a frozen snapshot. The parity table:
+ *
+ *   read       | live source                          | mid-window / dead
+ *   -----------|--------------------------------------|-------------------
+ *   value      | handle.token().value                 | '' (no live mark)
+ *   meta       | handle.token().meta                  | undefined
+ *   slot       | handle.token().slot?.content         | undefined
+ *   readOnly   | store.props.readOnly()               | (always live)
+ *   update()   | mutate the live mark's range         | false (fail-closed)
+ *   remove()   | replace the live mark's range with ''| false (fail-closed)
+ *
+ * SEMVER-MAJOR: a controller captured before a structural commit that kills its
+ * handle no longer auto-bridges — it fails closed; the adapter re-derives it
+ * from the fresh token (useMark's useMemo re-runs on the new token object).
+ */
 describe('MarkController live-read parity (handle-backed)', () => {
 	afterEach(() => {
 		document.body.replaceChildren()
