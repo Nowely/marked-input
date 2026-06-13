@@ -300,6 +300,9 @@ describe('deep reconcile (descend)', () => {
 		const result = tracker.reconcile(valueSlotParser.parse('@[w](ab)'), {start: 2, end: 3, insertedLength: 1})
 		const changeset = delta(result)
 
+		// a refused deep-descend renders framework props → structural (the routing
+		// contract: a kind:'text' entry whose token is a MARK forces structural).
+		expect(result.structural).toBe(true)
 		expect(changeset.textChanged).toEqual([markId])
 		expect(changeset.updated).toEqual([])
 		expect(changeset.added).toEqual([])
@@ -321,6 +324,7 @@ describe('deep reconcile (descend)', () => {
 		const result = tracker.reconcile(metaSlotParser.parse('#[ab](n)'), {start: 6, end: 7, insertedLength: 1})
 		const changeset = delta(result)
 
+		expect(result.structural).toBe(true)
 		expect(changeset.textChanged).toEqual([markId])
 		expect(changeset.updated).toEqual([])
 		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(markId)
@@ -370,6 +374,7 @@ describe('deep reconcile (descend)', () => {
 		const result = tracker.reconcile([nextMark], {start: 0, end: 1, insertedLength: 1})
 		const changeset = delta(result)
 
+		expect(result.structural).toBe(true)
 		expect(changeset.textChanged).toEqual([markId])
 		expect(changeset.updated).toEqual([])
 		expect(tracker.idOf(nextMark)).toBe(markId)
@@ -387,6 +392,7 @@ describe('deep reconcile (descend)', () => {
 		const changeset = delta(result)
 
 		expect(result.tokens).toMatchObject(slotParser.parse('#[a c]'))
+		expect(result.structural).toBe(true)
 		expect(changeset.textChanged).toEqual([outerId])
 		expect(changeset.updated).toEqual([tailTextId]) // trailing '' shifted by -5
 		expect(changeset.added).toEqual([])
@@ -432,6 +438,7 @@ describe('deep reconcile (descend)', () => {
 		const result = tracker.reconcile([nextMark], {start: 2, end: 4, insertedLength: 2})
 		const changeset = delta(result)
 
+		expect(result.structural).toBe(true)
 		expect(changeset.textChanged).toEqual([markId])
 		expect(changeset.updated).toEqual([])
 		expect(tracker.idOf(nextMark)).toBe(markId)
@@ -479,6 +486,35 @@ describe('deep reconcile (descend)', () => {
 		expect(changeset.textChanged).toEqual([markId])
 		expect(changeset.updated).toEqual([])
 		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(markId)
+	})
+
+	it('refusal nested in a descended slot: value-changed inner mark sets structural (routing equivalence)', () => {
+		// parser exposes BOTH an outer slot mark (descends) and an inner value mark
+		// (refuses on value change). '#[a @[x] b]' → '#[a @[y] b]' edits only the
+		// inner value: the outer slot descends, but the inner refused-descend MARK
+		// reported as kind:'text' inside pairSlotChildren must still flip structural.
+		const nestedParser = new Parser(['#[__slot__]', '@[__value__]'])
+		const tracker = createIdentityTracker()
+		const tokensA = nestedParser.parse('#[a @[x] b]')
+		const first = tracker.reconcile(tokensA).tokens
+		const outer = asMark(first[1])
+		const outerId = tracker.idOf(outer)
+		const inner = asMark(outer.children[1])
+		const innerId = tracker.idOf(inner)
+
+		// edit the inner mark's VALUE 'x' → 'y' at absolute offset 6
+		const result = tracker.reconcile(nestedParser.parse('#[a @[y] b]'), {start: 6, end: 7, insertedLength: 1})
+		const changeset = delta(result)
+
+		expect(result.tokens).toMatchObject(nestedParser.parse('#[a @[y] b]'))
+		// the outer slot descends (update), the inner mark refuses → kind:'text'
+		expect(changeset.updated).toContain(outerId)
+		expect(changeset.textChanged).toContain(innerId)
+		// the refused-descend MARK must force structural even when nested inside a
+		// descended slot — the routing contract the top-level walk already honors.
+		expect(result.structural).toBe(true)
+		expect(changeset.added).toEqual([])
+		expect(changeset.removed).toEqual([])
 	})
 
 	it('empty slot descends: zero-width window pairs the empty text child (first keystroke into a fresh row)', () => {

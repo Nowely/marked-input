@@ -478,7 +478,7 @@ function assertReconcileEquivalence(
 	}
 	// Every TOP-LEVEL previous token either survives or is reported removed.
 	// (Descendants of a textChanged mark are deliberately not deep-diffed —
-	// see the Changeset doc comment in tokenIdentity.ts.)
+	// see the TokenChangeEntry doc comment in tokenIdentity.ts.)
 	const removedSet = new Set(removed)
 	for (const token of prevTokens) {
 		const id = tracker.idOf(token)

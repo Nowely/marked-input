@@ -263,6 +263,9 @@ export function createIdentityTracker(): IdentityTracker {
 					// nested marks descend recursively under the same four conditions
 					if (a.type === 'mark' && b.type === 'mark' && tryDescend(a, b, childPath)) continue
 					inherit(a, b)
+					// refused-descend MARK renders framework props → structural, mirroring
+					// the top-level middle walk; a text token stays on the text path.
+					if (b.type === 'mark') structural = true
 					changes.push({id: ensureId(b), token: b, path: childPath, kind: 'text'})
 				}
 			}
