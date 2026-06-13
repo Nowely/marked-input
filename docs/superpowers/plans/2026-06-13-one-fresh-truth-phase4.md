@@ -57,7 +57,7 @@ The deepest cut is the boundary facade. `TokenView.address` (the `{path, token}`
 
 This task is PURELY ADDITIVE: it introduces `handle(id)` alongside the existing four lookups so the suite stays green. Later tasks migrate callers off `handleFor`/`handleOf` onto `handle(id)`/the handle, then delete the dead lookups.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append a new sibling top-level describe to `TokenModel.index.spec.ts` (after the `TokenModel.tokens() / at()` describe; `mountInline` is module-scoped and reusable):
 
@@ -87,12 +87,12 @@ describe('TokenModel.handle(id) — the id-keyed fail-closed lookup', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `pnpm -w exec vitest run --project core TokenModel.index.spec`
 Expected: the 3 new tests FAIL (`store.tokens.handle` is `undefined` — not a function). All pre-existing tests pass.
 
-- [ ] **Step 3: Add `handle(id)` to the model**
+- [x] **Step 3: Add `handle(id)` to the model**
 
 In `TokenModel.ts`, add directly after the existing `handleOf` method (~line 223, after its closing brace), a new method. Keep `handleOf` in place for now — Task 5 deletes it once callers migrate:
 
@@ -111,17 +111,17 @@ In `TokenModel.ts`, add directly after the existing `handleOf` method (~line 223
 	}
 ```
 
-- [ ] **Step 4: Run to verify green**
+- [x] **Step 4: Run to verify green**
 
 Run: `pnpm -w exec vitest run --project core TokenModel.index.spec`
 Expected: all tests pass, including the 3 new ones.
 
-- [ ] **Step 5: Full core suite (additive — must stay green)**
+- [x] **Step 5: Full core suite (additive — must stay green)**
 
 Run: `pnpm -F core test`
 Expected: full pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "feat(tokens): add handle(id) — the id-keyed fail-closed lookup" -- packages/core/src/features/tokens/model/TokenModel.ts packages/core/src/features/tokens/TokenModel.index.spec.ts
@@ -137,7 +137,7 @@ git commit -m "feat(tokens): add handle(id) — the id-keyed fail-closed lookup"
 
 The spec's handle face is `{id, token(), path(), alive(), element(), …}`. `id` and `token()` exist. This task adds `path()` (the public read of the handle's tree position) and `alive()` (live + bound), and severs `LiveNode`'s dependence on the soon-deleted public `TokenAddress` type by defining a local `TokenSnapshot` for the internal `previousAddress`/`address()` plumbing (a Phase-5 deletion target, kept working here).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `LiveNode.spec.ts`, read the existing mount/handle-construction pattern at the top of the file, then append inside the top-level `describe` (match the file's existing fixture style — if the file constructs a `TokenHandle` directly via `new TokenHandle(id, token, path)`, reuse that; if it mounts a Store, reuse that). Add:
 
@@ -166,12 +166,12 @@ In `LiveNode.spec.ts`, read the existing mount/handle-construction pattern at th
 
 (If `LiveNode.spec.ts` has no `mountInline`/`mountBlock` helper, copy the `mountInline`/`mountBlock` helpers verbatim from `TokenHandle.spec.ts` lines 6–46 into this spec's top — they are self-contained and import only `Store`. Verify the imports `{Store}` and `{TokenHandle}` are present; add them if missing.)
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `pnpm -w exec vitest run --project core LiveNode.spec`
 Expected: the 2 new tests FAIL (`handle.path` / `handle.alive` not functions).
 
-- [ ] **Step 3: Define the local `TokenSnapshot`; drop the `TokenAddress` import**
+- [x] **Step 3: Define the local `TokenSnapshot`; drop the `TokenAddress` import**
 
 In `LiveNode.ts`, change the import line 1 from:
 
@@ -236,7 +236,7 @@ to:
 		const previousAddress: TokenSnapshot = {path: this.#path, token: prevToken}
 ```
 
-- [ ] **Step 4: Add `path()` and `alive()`**
+- [x] **Step 4: Add `path()` and `alive()`**
 
 In `LiveNode.ts`, add directly after the `address` getter (the deprecated snapshot one) and before the `element` getter (~line 77):
 
@@ -253,12 +253,12 @@ In `LiveNode.ts`, add directly after the `address` getter (the deprecated snapsh
 	}
 ```
 
-- [ ] **Step 5: Run to verify green**
+- [x] **Step 5: Run to verify green**
 
 Run: `pnpm -w exec vitest run --project core LiveNode.spec`
 Expected: all tests pass, including the 2 new ones.
 
-- [ ] **Step 6: Full core suite + typecheck**
+- [x] **Step 6: Full core suite + typecheck**
 
 Run: `pnpm -F core test`
 Expected: full pass — `TokenChange.moved.previousAddress` is the same `{path, token}` shape under a new type name; `address()` unchanged in behavior.
@@ -266,7 +266,7 @@ Expected: full pass — `TokenChange.moved.previousAddress` is the same `{path, 
 Run: `pnpm run typecheck`
 Expected: clean — `LiveNode` no longer imports `TokenAddress` (it is still exported from `editorContracts` for now; deleted in Task 8). `boundary.ts` still imports `TokenAddress` — migrated in Task 7. No dangling reference yet.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git commit -m "feat(tokens): TokenHandle.path()/alive(); localize address snapshot type" -- packages/core/src/features/tokens/model/LiveNode.ts packages/core/src/features/tokens/model/LiveNode.spec.ts
@@ -282,7 +282,7 @@ git commit -m "feat(tokens): TokenHandle.path()/alive(); localize address snapsh
 
 This is the heart of the phase. `MarkController` stops capturing a frozen `{address, snapshot}` and holds a `TokenHandle`. `value`/`meta`/`slot`/`readOnly` become LIVE reads of `handle.token()`. `update()`/`remove()` against a pending or dead handle return a fail-closed no-op (`false` / silent). `#resolveCaptured`, `pathOf`, and the captured address all die.
 
-- [ ] **Step 1: Write the failing parity-table tests**
+- [x] **Step 1: Write the failing parity-table tests**
 
 Append to `MarkController.spec.ts` a new describe pinning the LIVE-read semantics (the spec's §MarkController semantics). Reuse the module-scoped `mountedSetup` helper (text `he` [0,2], mark `@[x]` [2,6], text `llo` [6,9]):
 
@@ -372,12 +372,12 @@ describe('MarkController live-read parity (handle-backed)', () => {
 
 (NOTE: the existing `MarkController across text-path commits (identity bridge)` describe already covers `update()`/`remove()` mutating the SHIFTED range; those cases stay green because the handle's `token()` IS the shifted token — the live read replaces the explicit bridge. The existing `fails closed when the mark is gone from the value` and `does not mutate in read-only mode` cases also stay green. Run the WHOLE spec, not just the new describe.)
 
-- [ ] **Step 2: Run to verify the new tests fail (and capture which existing ones need migration)**
+- [x] **Step 2: Run to verify the new tests fail (and capture which existing ones need migration)**
 
 Run: `pnpm -w exec vitest run --project core MarkController.spec`
 Expected: the new `update()` no-op tests FAIL on the `expect(result).toBe(false)` line (`update` currently returns `void`/`undefined`, not `false`). The new live-read tests may PASS or FAIL depending on the snapshot capture — note which. This is the red baseline.
 
-- [ ] **Step 3: Rewrite `MarkController.ts`**
+- [x] **Step 3: Rewrite `MarkController.ts`**
 
 Replace the ENTIRE contents of `packages/core/src/features/tokens/MarkController.ts` with:
 
@@ -480,7 +480,7 @@ export class MarkController {
 
 (Note: `MarkSnapshot` and `TokenAddress`/`TokenPath` are no longer imported here. `remove`/`update` now RETURN `boolean` — the spec's fail-closed-returns-`false` contract. The `MarkToken`/`Token` import from `'.'` narrows to just `MarkToken`. `resolvePath` is gone. The 11-line justification comment, `#resolveCaptured`, `#addressInTree`, and the `pathOf` DFS are deleted.)
 
-- [ ] **Step 4: Run the full MarkController spec**
+- [x] **Step 4: Run the full MarkController spec**
 
 Run: `pnpm -w exec vitest run --project core MarkController.spec`
 Expected: full pass — the new live-read + no-op tests green; the existing identity-bridge cases green (the handle's `token()` IS the shifted/current token, so `update`/`remove` hit the correct range; the structural-removal and read-only cases no-op).
@@ -512,7 +512,7 @@ If the existing `same-slot replacement inherits identity` case (line ~204) regre
 
 Also AMEND the `update() after a preceding text edit mutates the shifted (correct) range` case and its siblings (`remove() after`, `survives several consecutive text-path commits`): these capture the controller, then text-edit (TEXT path — the handle is NOT killed, only `update()`d in place), then mutate. Under handle-backing the SAME handle survives a text-path commit (`update(token, path)` refreshes `#token` without killing), so `handle.token()` is the shifted mark and these cases STAY GREEN unchanged. VERIFY by running — if green, leave them. Their `expect(store.tokens.handleOf(token)?.token())` line (line ~147) references `handleOf`, which Task 5 deletes; for NOW `handleOf` still exists, so it passes. Task 5's grep will catch it — migrate that assertion line to `store.tokens.handle(token.id!)?.token()` in Task 5, NOT here (keep this task's diff to MarkController + its spec).
 
-- [ ] **Step 5: Full core suite + typecheck**
+- [x] **Step 5: Full core suite + typecheck**
 
 Run: `pnpm -F core test`
 Expected: full pass.
@@ -520,7 +520,7 @@ Expected: full pass.
 Run: `pnpm run typecheck`
 Expected: clean — `MarkController` no longer references `TokenAddress`/`MarkSnapshot`/`resolvePath`. `MarkController.remove`/`update` returning `boolean` is a widening (callers ignore the return today); verify no caller relied on `void`. The adapter `useMark` returns the controller as-is (no return-type assertion).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "refactor(tokens): re-back MarkController by a handle — live reads, fail-closed no-op" -- packages/core/src/features/tokens/MarkController.ts packages/core/src/features/tokens/MarkController.spec.ts
@@ -535,12 +535,12 @@ git commit -m "refactor(tokens): re-back MarkController by a handle — live rea
 
 `SelectionController` carries two copies of the validity idiom (`#resolveAddress`, `#applyPreferredAddress`) and a `placeAtAddress` entry point. All three collapse onto a handle. `#preferredAddress` becomes `#preferredHandle`. `placeAtAddress(address, boundary)` becomes `placeAtHandle(handle, boundary)`.
 
-- [ ] **Step 1: Run the selection baseline**
+- [x] **Step 1: Run the selection baseline**
 
 Run: `pnpm -w exec vitest run --project core SelectionController.spec`
 Expected: full pass (the pre-change baseline).
 
-- [ ] **Step 2: Migrate the imports**
+- [x] **Step 2: Migrate the imports**
 
 In `SelectionController.ts`, change line 3 from:
 
@@ -560,7 +560,7 @@ Add an import of `TokenHandle` (it is exported from `'../tokens'` — verify: `t
 import type {TokenHandle, TokenModel} from '../tokens'
 ```
 
-- [ ] **Step 3: Migrate `#preferredAddress` → `#preferredHandle`**
+- [x] **Step 3: Migrate `#preferredAddress` → `#preferredHandle`**
 
 Change line 28 from:
 
@@ -574,7 +574,7 @@ to:
 	#preferredHandle: TokenHandle | undefined
 ```
 
-- [ ] **Step 4: Migrate `focusFirst`**
+- [x] **Step 4: Migrate `focusFirst`**
 
 Change `focusFirst` (~line 65) from:
 
@@ -597,7 +597,7 @@ to:
 	}
 ```
 
-- [ ] **Step 5: Migrate `placeAtAddress` → `placeAtHandle`**
+- [x] **Step 5: Migrate `placeAtAddress` → `placeAtHandle`**
 
 Change `placeAtAddress` (~line 75) from:
 
@@ -621,7 +621,7 @@ to:
 	}
 ```
 
-- [ ] **Step 6: Migrate `#resolveAddress` → `#resolveHandle`**
+- [x] **Step 6: Migrate `#resolveAddress` → `#resolveHandle`**
 
 Change `#resolveAddress` (~line 107) from:
 
@@ -653,7 +653,7 @@ to:
 	}
 ```
 
-- [ ] **Step 7: Migrate `#applyPreferredAddress` → `#applyPreferredHandle`**
+- [x] **Step 7: Migrate `#applyPreferredAddress` → `#applyPreferredHandle`**
 
 Change `#applyPreferredAddress` (~line 119) from:
 
@@ -679,7 +679,7 @@ to:
 	}
 ```
 
-- [ ] **Step 8: Update the `#placeCollapsed` caller**
+- [x] **Step 8: Update the `#placeCollapsed` caller**
 
 Change `#placeCollapsed` (~line 128) from:
 
@@ -701,7 +701,7 @@ to:
 
 (This task calls `this.tokens.placeCaret({handle, offset})` — the handle form. `placeCaret` still has the ADDRESS form until Task 6; this is a forward reference. Sequencing: Task 6 adds the handle form to `placeCaret` BEFORE this code runs in the suite. To keep THIS task green standalone, Task 6 must land first OR this task temporarily keeps the address form. **Resolution: reorder — do Task 6 (placeCaret handle form) conceptually first.** Since the plan is executed in order, MOVE the `placeCaret` handle-form change into THIS task as Step 8b below, then Task 6 only deletes the address form. This keeps each task green.)
 
-- [ ] **Step 8b: Add the handle form to `placeCaret` (so this task is green standalone)**
+- [x] **Step 8b: Add the handle form to `placeCaret` (so this task is green standalone)**
 
 In `TokenModel.ts`, change the `placeCaret` signature and address-branch (~line 384) from:
 
@@ -735,7 +735,7 @@ to:
 
 (The rest of `placeCaret`'s body — `handle.token().type === 'mark' && !bindings.textElement` etc. — is unchanged: it already reads `handle`, not `target.address`. Just verify lines ~396-405 reference `handle`/`bindings`/`target.offset` and not `target.address`.)
 
-- [ ] **Step 9: Run selection + facade + caret specs**
+- [x] **Step 9: Run selection + facade + caret specs**
 
 Run: `pnpm -w exec vitest run --project core SelectionController.spec`
 Expected: full pass.
@@ -746,7 +746,7 @@ Expected: full pass (the placeCaret handle form preserves the facade's caret pla
 Run: `pnpm -w exec vitest run --project core caret.spec`
 Expected: full pass.
 
-- [ ] **Step 10: Full core suite + typecheck**
+- [x] **Step 10: Full core suite + typecheck**
 
 Run: `pnpm -F core test`
 Expected: full pass.
@@ -754,7 +754,7 @@ Expected: full pass.
 Run: `pnpm run typecheck`
 Expected: clean. (`SelectionController` no longer references `TokenAddress`/`handleFor`/`handleOf`. `placeCaret`'s address form is gone — its only external caller was `#applyPreferredAddress`, now migrated. `TokenModel` still has `handleFor`/`handleOf` for the OTHER callers, deleted in Task 5.)
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git commit -m "refactor(selection): placeAtHandle/#preferredHandle; placeCaret handle form" -- packages/core/src/features/selection/SelectionController.ts packages/core/src/features/tokens/model/TokenModel.ts
@@ -775,7 +775,7 @@ git commit -m "refactor(selection): placeAtHandle/#preferredHandle; placeCaret h
 
 The keyboard consumers are the last `placeAtAddress`/`handleOf` production callers. After they migrate, `handleFor` and `handleOf` have zero production references and are deleted; the specs that probe them migrate to `handle(id)`/`placeAtHandle`.
 
-- [ ] **Step 1: `arrowNav.ts`**
+- [x] **Step 1: `arrowNav.ts`**
 
 In `shiftFocus` (~line 50-61), the current code resolves a sibling token by path then calls `placeAtAddress`. Replace the tail (from `const path = address.path` through the `return store.selection.placeAtAddress(...)`) — read the current lines 35, 50-61:
 
@@ -835,7 +835,7 @@ to:
 
 (`resolvePath` import on line 4 STAYS — still used to find the sibling token by path. `handle.path()` replaces `handle.address().path`; line 36 was the only `address` use.)
 
-- [ ] **Step 2: `blockEdit.ts` — `focusRow`**
+- [x] **Step 2: `blockEdit.ts` — `focusRow`**
 
 In `focusRow` (~line 154-165), change from:
 
@@ -874,7 +874,7 @@ function focusRow(store: KbCtx, token: Token, rowIndex: number, caret: 'start' |
 
 (`rowHandle` already uses `store.tokens.handleOf(row)` at line 28 — change that too, next step.)
 
-- [ ] **Step 3: `blockEdit.ts` — `rowHandle` (the last `handleOf` production caller)**
+- [x] **Step 3: `blockEdit.ts` — `rowHandle` (the last `handleOf` production caller)**
 
 In `rowHandle` (~line 23-29), change from:
 
@@ -900,7 +900,7 @@ function rowHandle(store: KbCtx, rowIndex: number): TokenHandle | undefined {
 }
 ```
 
-- [ ] **Step 4: Verify zero production `handleFor`/`handleOf` references remain**
+- [x] **Step 4: Verify zero production `handleFor`/`handleOf` references remain**
 
 Run:
 
@@ -910,7 +910,7 @@ grep -rn "handleFor\|handleOf" packages/core/src --include="*.ts" | grep -v "\.s
 
 Expected: ONLY the `TokenModel.ts` METHOD DEFINITIONS (`handleFor(address)` ~line 194, `handleOf(token)` ~line 218) and any JSDoc mentioning them. ZERO call sites. If a call site remains, migrate it before deleting.
 
-- [ ] **Step 5: Delete `handleFor` and `handleOf` from `TokenModel.ts`**
+- [x] **Step 5: Delete `handleFor` and `handleOf` from `TokenModel.ts`**
 
 Delete the entire `handleFor` method (~lines 193-196):
 
@@ -961,7 +961,7 @@ grep -n "pathKey" packages/core/src/features/tokens/model/TokenModel.ts
 
 Expected: ZERO hits after the edit.
 
-- [ ] **Step 6: Migrate the spec `handleFor`/`handleOf` reads**
+- [x] **Step 6: Migrate the spec `handleFor`/`handleOf` reads**
 
 In `TokenModel.index.spec.ts`:
 - The `handleFor(address) returns the handle bound at that path` test (~line 81-87) probes `handleFor`. Rewrite it to `handle(id)`:
@@ -1053,7 +1053,7 @@ In `MarkController.spec.ts`:
 - The `update() after a preceding text edit` case's sanity line (~line 147): `expect(store.tokens.handleOf(token)?.token()).not.toBe(token)` → `expect(store.tokens.handle(token.id!)?.token()).not.toBe(token)`.
 - The `still fails closed once the mark is structurally removed` case (~line 197): `expect(store.tokens.handleOf(token)).toBeUndefined()` → `expect(store.tokens.handle(token.id!)).toBeUndefined()`.
 
-- [ ] **Step 7: Run the affected specs**
+- [x] **Step 7: Run the affected specs**
 
 Run each, expecting full pass:
 
@@ -1064,7 +1064,7 @@ pnpm -w exec vitest run --project core "model/TokenModel.spec"
 pnpm -w exec vitest run --project core MarkController.spec
 ```
 
-- [ ] **Step 8: Full core suite + typecheck**
+- [x] **Step 8: Full core suite + typecheck**
 
 Run: `pnpm -F core test`
 Expected: full pass (`arrowNav`/`blockEdit` exercised via keyboard + storybook specs; full run covers them).
@@ -1075,7 +1075,7 @@ Expected: clean — no `handleFor`/`handleOf` member on `TokenModel`; no `pathKe
 Run: `grep -rn "handleFor\|handleOf" packages/core/src`
 Expected: ZERO hits (production AND spec). Any remaining hit is a missed migration — fix it.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git commit -m "refactor(tokens): keyboard reads handle(id)/placeAtHandle; delete handleFor/handleOf" -- packages/core/src/features/keyboard/arrowNav.ts packages/core/src/features/keyboard/blockEdit.ts packages/core/src/features/tokens/model/TokenModel.ts packages/core/src/features/tokens/TokenModel.index.spec.ts packages/core/src/features/tokens/TokenHandle.spec.ts packages/core/src/features/tokens/model/TokenModel.spec.ts packages/core/src/features/tokens/MarkController.spec.ts
@@ -1090,7 +1090,7 @@ git commit -m "refactor(tokens): keyboard reads handle(id)/placeAtHandle; delete
 
 Task 4 (Step 8b) already converted `placeCaret`'s signature to the handle form. This task is a verification + JSDoc tidy — `placeCaret`'s doc still describes the "address form". Make the doc match the handle form, and confirm `TokenAddress` no longer appears in `TokenModel.ts` except the import line (deleted in Task 8).
 
-- [ ] **Step 1: Update the `placeCaret` JSDoc**
+- [x] **Step 1: Update the `placeCaret` JSDoc**
 
 In `TokenModel.ts`, the `placeCaret` JSDoc (~lines 374-383) reads:
 
@@ -1122,7 +1122,7 @@ Replace with:
 	 */
 ```
 
-- [ ] **Step 2: Confirm `TokenAddress` is gone from the body**
+- [x] **Step 2: Confirm `TokenAddress` is gone from the body**
 
 Run:
 
@@ -1132,7 +1132,7 @@ grep -n "TokenAddress\|target.address\|\.address(" packages/core/src/features/to
 
 Expected: ONLY the line-1 import (`import type {DomRef, RawSelection, TokenAddress, TokenPath} ...`) and possibly `#resolveAddress`/`#viewOf` (migrated in Task 7) — but NO `target.address` and NO `placeCaret` body reference. If `placeCaret` still references `target.address`, Task 4 Step 8b was incomplete — fix it.
 
-- [ ] **Step 3: Typecheck + the caret/facade specs**
+- [x] **Step 3: Typecheck + the caret/facade specs**
 
 Run: `pnpm run typecheck`
 Expected: clean.
@@ -1141,7 +1141,7 @@ Run: `pnpm -w exec vitest run --project core caret.spec`
 Run: `pnpm -w exec vitest run --project core TokenModel.facade.spec`
 Expected: full pass each.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git commit -m "docs(tokens): placeCaret JSDoc — handle form" -- packages/core/src/features/tokens/model/TokenModel.ts
@@ -1157,12 +1157,12 @@ git commit -m "docs(tokens): placeCaret JSDoc — handle form" -- packages/core/
 
 The boundary facade carries `address` per view and re-checks it against `tokens()`. Both derive from the live handle, so they collapse onto the handle's fresh token. This is the last internal `TokenAddress` user in core; after it, only the type definition + public export remain (Task 8).
 
-- [ ] **Step 1: Capture the facade baseline**
+- [x] **Step 1: Capture the facade baseline**
 
 Run: `pnpm -w exec vitest run --project core TokenModel.facade.spec`
 Expected: full pass (the behavior this task must preserve byte-for-byte).
 
-- [ ] **Step 2: Re-shape `TokenView` and `BoundaryContext` in `boundary.ts`**
+- [x] **Step 2: Re-shape `TokenView` and `BoundaryContext` in `boundary.ts`**
 
 In `boundary.ts`, change the import (line 1) from:
 
@@ -1245,7 +1245,7 @@ export type BoundaryContext = {
 }
 ```
 
-- [ ] **Step 3: Migrate `boundary.ts`'s `resolveAddress` call sites to `tokenOf`**
+- [x] **Step 3: Migrate `boundary.ts`'s `resolveAddress` call sites to `tokenOf`**
 
 There are 5 call sites in `boundary.ts` (grep-verified): `rawPositionFromBoundary` (line 48), `fromTokenChildBoundary` (lines 116, 117), `textTargetAt` (line 139), `markBoundaryAt` (line 155). Each takes a `node.address` / `before.address` / `after.address` and returns the resolved token. Replace each `ctx.resolveAddress(X.address)` with `ctx.tokenOf(X)`:
 
@@ -1269,7 +1269,7 @@ to:
 
 (The `textTarget`/`markBoundaryAt` callers in `TokenModel.ts` — `#placeAtRawPosition`, `selectRange` — pass `this.#boundaryContext()`, which still satisfies the narrowed `Pick`. No change there.)
 
-- [ ] **Step 4: Migrate `TokenModel.ts`'s `#view`/`#viewOf`/`#boundaryContext`; delete `#resolveAddress`**
+- [x] **Step 4: Migrate `TokenModel.ts`'s `#view`/`#viewOf`/`#boundaryContext`; delete `#resolveAddress`**
 
 In `TokenModel.ts`, change `#view` (~lines 258-263) from:
 
@@ -1365,7 +1365,7 @@ grep -n "resolvePath" packages/core/src/features/tokens/model/TokenModel.ts
 
 If ZERO hits remain, change line 16 from `import {pathEquals, resolvePath} from '../tokenIndex'` to `import {pathEquals} from '../tokenIndex'`.
 
-- [ ] **Step 5: Run the facade + caret + selection specs**
+- [x] **Step 5: Run the facade + caret + selection specs**
 
 Run, expecting full pass each:
 
@@ -1376,7 +1376,7 @@ pnpm -w exec vitest run --project core SelectionController.spec
 pnpm -w exec vitest run --project core TokenModel.spec
 ```
 
-- [ ] **Step 6: Full core suite + typecheck**
+- [x] **Step 6: Full core suite + typecheck**
 
 Run: `pnpm -F core test`
 Expected: full pass — the boundary resolves the same fresh tokens, now via `view.token` instead of the address round-trip.
@@ -1390,7 +1390,7 @@ grep -rn "address:" packages/core/src/features/tokens --include="*.spec.ts"
 
 Expected: ZERO hits constructing a `TokenView`/address literal (the `MarkInfo` `address:` lives in adapters, not core specs). Fix any core-spec TokenView literal to `token:`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git commit -m "refactor(tokens): boundary facade reads view.token; delete #resolveAddress" -- packages/core/src/features/tokens/boundary.ts packages/core/src/features/tokens/model/TokenModel.ts
@@ -1407,7 +1407,7 @@ git commit -m "refactor(tokens): boundary facade reads view.token; delete #resol
 
 With every internal user migrated, `TokenAddress` the TYPE is deleted. `MarkInfo` loses its `address` field and gains `id`/`path`.
 
-- [ ] **Step 1: Verify zero `TokenAddress` references in core (except the definition + exports)**
+- [x] **Step 1: Verify zero `TokenAddress` references in core (except the definition + exports)**
 
 Run:
 
@@ -1417,7 +1417,7 @@ grep -rn "TokenAddress" packages/core/src
 
 Expected: ONLY `editorContracts.ts` (the `type TokenAddress` definition + the `MarkInfo.address` field). If `TokenModel.ts` line 1 still imports it, that is expected (removed in Step 4). NO other `src` file. If `boundary.ts`/`LiveNode.ts`/`MarkController.ts`/`SelectionController.ts` still reference it, a prior task is incomplete — fix before proceeding.
 
-- [ ] **Step 2: Delete `TokenAddress` and re-shape `MarkInfo` in `editorContracts.ts`**
+- [x] **Step 2: Delete `TokenAddress` and re-shape `MarkInfo` in `editorContracts.ts`**
 
 In `editorContracts.ts`, delete (lines 5-8):
 
@@ -1461,7 +1461,7 @@ grep -n "Token\b" packages/core/src/shared/editorContracts.ts
 
 If `Token` is now unused (only `TokenPath` referenced), delete line 1. If still used, keep it. (`TokenPath` is defined locally in this file — line 3 — so `MarkInfo.path: TokenPath` needs no import.)
 
-- [ ] **Step 3: Drop the `TokenAddress` public export**
+- [x] **Step 3: Drop the `TokenAddress` public export**
 
 In `packages/core/index.ts`, in the `editorContracts` type re-export block (~lines 22-31), delete the `TokenAddress,` line:
 
@@ -1478,7 +1478,7 @@ export type {
 
 (`TokenPath` STAYS — the providers, `MarkInfo.path`, and `handle.path()` use it.)
 
-- [ ] **Step 4: Drop the `TokenAddress` import from `TokenModel.ts`**
+- [x] **Step 4: Drop the `TokenAddress` import from `TokenModel.ts`**
 
 In `TokenModel.ts`, change line 1 from:
 
@@ -1492,12 +1492,12 @@ to:
 import type {DomRef, RawSelection, TokenPath} from '../../../shared/editorContracts'
 ```
 
-- [ ] **Step 5: Typecheck — the breaking surface surfaces in the adapters**
+- [x] **Step 5: Typecheck — the breaking surface surfaces in the adapters**
 
 Run: `pnpm run typecheck`
 Expected: the CORE typechecks clean. The ADAPTERS (`packages/react/markput`, `packages/vue/markput`) FAIL — `TokenContext.ts` and `tokenKey.ts` import `TokenAddress` from `@markput/core`, and `useMarkInfo` builds the old `MarkInfo` shape. THIS IS THE PREDICTED RED — Task 9 fixes the adapters. (If core itself fails, a reference was missed — fix in core before moving on. Distinguish: core errors mention `packages/core/...`; adapter errors mention `packages/react/...`/`packages/vue/...`.)
 
-- [ ] **Step 6: Commit the core half**
+- [x] **Step 6: Commit the core half**
 
 ```bash
 git commit -m "feat(core)!: delete TokenAddress; MarkInfo ships id/path (semver-major)" -- packages/core/src/shared/editorContracts.ts packages/core/index.ts packages/core/src/features/tokens/model/TokenModel.ts
@@ -1517,7 +1517,7 @@ git commit -m "feat(core)!: delete TokenAddress; MarkInfo ships id/path (semver-
 
 The adapters provided a `TokenAddress` (`{path, token}`) at render time and `useMarkInfo` returned it as `MarkInfo.address`. Now `MarkInfo` ships `id`/`path` instead, derived from the render-time path the provider already carries. The providers switch from the deleted `TokenAddress` to local `{path, token}` shapes (`TokenPath` + `Token`, both still exported from core).
 
-- [ ] **Step 1: React `TokenContext.ts`**
+- [x] **Step 1: React `TokenContext.ts`**
 
 Replace the contents of `packages/react/markput/src/lib/providers/TokenContext.ts` with:
 
@@ -1554,7 +1554,7 @@ export function useTokenContext(): TokenContextValue {
 
 (`address: TokenAddress` → `path: TokenPath`; the `Token` import stays. No trailing newline — match the original `.ts`.)
 
-- [ ] **Step 2: React `Token.tsx` provider value**
+- [x] **Step 2: React `Token.tsx` provider value**
 
 In `packages/react/markput/src/components/Token.tsx`, the provider (~line 32) reads `<TokenContext value={{store, token, address: {path, token}}}>`. Change it to:
 
@@ -1562,7 +1562,7 @@ In `packages/react/markput/src/components/Token.tsx`, the provider (~line 32) re
 		<TokenContext value={{store, token, path}}>
 ```
 
-- [ ] **Step 3: React `useMarkInfo.tsx`**
+- [x] **Step 3: React `useMarkInfo.tsx`**
 
 Replace the contents of `packages/react/markput/src/lib/hooks/useMarkInfo.tsx` with:
 
@@ -1590,7 +1590,7 @@ export const useMarkInfo = (): MarkInfo => {
 
 (The staleness JSDoc warning is DELETED. `address.path` → `path`. `id` added.)
 
-- [ ] **Step 4: Vue `tokenKey.ts`**
+- [x] **Step 4: Vue `tokenKey.ts`**
 
 Replace the contents of `packages/vue/markput/src/lib/providers/tokenKey.ts` with:
 
@@ -1606,11 +1606,11 @@ export const TOKEN_KEY: InjectionKey<Ref<TokenContext>> = Symbol('MarkputToken')
 
 (No trailing newline — match the original `.ts`. The injected value is still a `Ref<{path, token}>`; only the type name changes from `TokenAddress` to a local `TokenContext`.)
 
-- [ ] **Step 5: Vue `Token.vue` provider value**
+- [x] **Step 5: Vue `Token.vue` provider value**
 
 In `packages/vue/markput/src/components/Token.vue`, the provide (~line 24-26) reads `provide(TOKEN_KEY, toRef(() => ({path: props.path, token: props.token})))`. The shape is unchanged (`{path, token}`) — it now satisfies the local `TokenContext` type. No code change needed, but VERIFY it still typechecks (the `toRef` value `{path, token}` matches `TokenContext`). If `vue-tsc` flags it, no change is required beyond Step 4's type.
 
-- [ ] **Step 6: Vue `useMarkInfo.ts`**
+- [x] **Step 6: Vue `useMarkInfo.ts`**
 
 Replace the contents of `packages/vue/markput/src/lib/hooks/useMarkInfo.ts` with:
 
@@ -1642,16 +1642,16 @@ export const useMarkInfo = (): MarkInfo => {
 
 (The staleness JSDoc warning is DELETED. `address.token`/`address.path` → `token`/`path`. `id` added. The `.ts` file has no trailing newline — match the original.)
 
-- [ ] **Step 7: Check `useMark.ts` (vue) — it reads `addressRef.value.token`**
+- [x] **Step 7: Check `useMark.ts` (vue) — it reads `addressRef.value.token`**
 
 In `packages/vue/markput/src/lib/hooks/useMark.ts` (~line 17), it reads `const token = addressRef.value.token`. The injected value is still `{path, token}`, so `addressRef.value.token` is unchanged — VERIFY it typechecks under the renamed `TokenContext` type. The variable name `addressRef` is cosmetic; leave it or rename to `contextRef` for clarity (optional — if renaming, update both the `inject` assignment and the `.value.token` read). React `useMark.tsx` reads `const {store, token} = useTokenContext()` — `token` still exists on `TokenContextValue`, no change.
 
-- [ ] **Step 8: Typecheck — now fully green**
+- [x] **Step 8: Typecheck — now fully green**
 
 Run: `pnpm run typecheck`
 Expected: clean across ALL packages — core, react, vue. The adapters no longer import `TokenAddress`; `MarkInfo` consumers read `id`/`path`/`depth`/`hasNestedMarks`/`key`.
 
-- [ ] **Step 9: Storybook page specs (the real adapter render path + MarkInfo consumers)**
+- [x] **Step 9: Storybook page specs (the real adapter render path + MarkInfo consumers)**
 
 Run: `pnpm -F storybook test`
 Expected: full pass — `nested.react.spec.tsx`/`nested.vue.spec.ts` read `mark.depth`/`.hasNestedMarks`/`.key` (unchanged values: `depth = path.length - 1`, `key = path.join('.')` — identical to the old `address.path`-derived ones). No consumer read `.address`, so dropping it breaks nothing.
@@ -1663,7 +1663,7 @@ pnpm -F storybook test:react
 pnpm -F storybook test:vue
 ```
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git commit -m "feat(adapters)!: useMarkInfo ships id/path; drop TokenAddress + staleness warning" -- packages/react/markput/src/lib/providers/TokenContext.ts packages/react/markput/src/components/Token.tsx packages/react/markput/src/lib/hooks/useMarkInfo.tsx packages/vue/markput/src/lib/providers/tokenKey.ts packages/vue/markput/src/components/Token.vue packages/vue/markput/src/lib/hooks/useMarkInfo.ts packages/vue/markput/src/lib/hooks/useMark.ts
@@ -1681,7 +1681,7 @@ git commit -m "feat(adapters)!: useMarkInfo ships id/path; drop TokenAddress + s
 
 Task 3 already added the live-read tests. This task LABELS them as THE parity tables the spec's §MarkController semantics names, ensuring the breaking contract is pinned and discoverable, and updates the README to the handle-backed model.
 
-- [ ] **Step 1: Add the parity-table doc comment to the MarkController live-read describe**
+- [x] **Step 1: Add the parity-table doc comment to the MarkController live-read describe**
 
 In `MarkController.spec.ts`, add a leading doc comment above the `describe('MarkController live-read parity (handle-backed)', …)` block (added in Task 3):
 
@@ -1707,12 +1707,12 @@ In `MarkController.spec.ts`, add a leading doc comment above the `describe('Mark
  */
 ```
 
-- [ ] **Step 2: Run MarkController.spec**
+- [x] **Step 2: Run MarkController.spec**
 
 Run: `pnpm -w exec vitest run --project core MarkController.spec`
 Expected: full pass (the comment is documentation; no behavior change).
 
-- [ ] **Step 3: Update the README**
+- [x] **Step 3: Update the README**
 
 In `packages/core/src/features/tokens/README.md`, find the MarkController / handle-face sections (grep for `MarkController`, `address`, `handleFor`, `handleOf`, `TokenAddress`):
 
@@ -1727,7 +1727,7 @@ For each hit:
 
 (Do NOT attempt the full ≤150-line README rewrite — that is the rolling rider. Keep edits surgical to the Phase-4 surface. If the README has no MarkController/lookup section to update, add a short "### Mark commands" block stating the handle-backed contract above.)
 
-- [ ] **Step 4: Encapsulation guard + full core**
+- [x] **Step 4: Encapsulation guard + full core**
 
 Run: `pnpm run check:encapsulation`
 Expected: pass.
@@ -1735,7 +1735,7 @@ Expected: pass.
 Run: `pnpm -F core test`
 Expected: full pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "docs(tokens): pin MarkController live-read parity tables; README handle-backed surface" -- packages/core/src/features/tokens/MarkController.spec.ts packages/core/src/features/tokens/README.md
@@ -1745,7 +1745,7 @@ git commit -m "docs(tokens): pin MarkController live-read parity tables; README 
 
 ### Task 11: Full verification
 
-- [ ] **Step 1: All suites + guards**
+- [x] **Step 1: All suites + guards**
 
 Run, expecting full pass on each (do NOT use `pnpm -F react test` / `pnpm -F vue test` — silent no-ops, see Tech Stack):
 
@@ -1756,7 +1756,7 @@ pnpm run typecheck           # recursive tsc/vue-tsc — zero TokenAddress, zero
 pnpm run check:encapsulation
 ```
 
-- [ ] **Step 2: Confirm the deletions and renames landed**
+- [x] **Step 2: Confirm the deletions and renames landed**
 
 Run: `grep -rn "TokenAddress" packages/core/src packages/react/markput/src packages/vue/markput/src`
 Expected: ZERO hits — the type is gone from definition, exports, internal users, and adapters.
@@ -1770,7 +1770,7 @@ Expected: the new `handle(id)` lookup, `placeAtHandle`, `alive()`, and `path()` 
 Run: `grep -rn "id:\|path:" packages/core/src/shared/editorContracts.ts`
 Expected: `MarkInfo` now carries `id` and `path` (and no `address`).
 
-- [ ] **Step 3: Confirm clean and report**
+- [x] **Step 3: Confirm clean and report**
 
 `git status` must be clean (everything committed task-by-task, path-scoped). Report: the core suite pass count, the storybook react/vue counts, and confirm typecheck + encapsulation guard green. State explicitly that `TokenAddress` is deleted (semver-major), `handle(id)` + `handleAt(node)` are the only two lookups, `MarkController` is handle-backed with live reads + fail-closed `update()`/`remove()` returning `false`, `placeCaret`/`placeAtHandle` take handles, `useMarkInfo` ships `id`/`path` (staleness warning gone), the boundary facade reads `view.token`, and the pending-window matrix holds (`handle(id)`/`handleAt(node)` fail closed mid-window; `tokens()` stays always-fresh from Phase 3).
 
@@ -1778,9 +1778,9 @@ Expected: `MarkInfo` now carries `id` and `path` (and no `address`).
 
 ### Task 12: Write the Phase 5 plan (phase chaining)
 
-- [ ] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase5.md` for **Phase 5 — de-reactify + surface deletion (1–2 days)** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`, Phase 5): convert the handle getters from per-node reactive `Computed`s to PLAIN getters (the win-4 trade — "handle getters stay methods, so per-node signals can return behind them additively"); DELETE the dead surface members the spec's "What dies" table names (`tokenAt`, `handles()`, `caretFromPoint`, `handle.changed`/`.dead`/`.text`/`.caretRect`/`.placeCaretAtBoundary`, the now-deprecated `address()`) and the per-node dirty signals + reactive getters + isolation specs; replace the six selection micro-reads + the `!== false` tri-state (`readSelection`/`selectionRect`/`selectionAnchor`/`isSelectionCollapsed`/`selectionIntersects`/`selectionFocusNode`) with one `selection(): SelectionSnapshot | undefined` snapshot. Ground the plan by reading FIRST, with fresh eyes, the POST-Phase-4 code: `packages/core/src/features/tokens/model/LiveNode.ts` (the `dirty` signal, the `Computed` getters `token`/`address`/`element`/`text`, `dead`, and the now-added plain `path()`/`alive()`), `packages/core/src/features/tokens/model/TokenModel.ts` (`tokenAt`, `handles()`, `caretFromPoint`, the six selection micro-reads), the isolation specs (grep `dirty`/`isolation` under `packages/core/src/features/tokens`), and the selection consumers across core + the adapters that read the six micro-reads (`SelectionController`, `ClipboardController`, overlay). Decide the EXACT `SelectionSnapshot` shape and which of the six reads each consumer needs. No placeholder steps — every step shows exact code; bite-sized TDD; frequent path-scoped commits; the required plan header. The LAST task of the Phase 5 plan must be "write the Phase 6 plan" (phase chaining). Verification commands MUST follow this plan's Tech Stack note: `pnpm -F core test`, `pnpm -F storybook test` / `test:react` / `test:vue`, `pnpm run typecheck`, `pnpm run check:encapsulation` — NEVER `pnpm -F react test` or `pnpm -F vue test` (silent no-ops).
+- [x] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase5.md` for **Phase 5 — de-reactify + surface deletion (1–2 days)** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`, Phase 5): convert the handle getters from per-node reactive `Computed`s to PLAIN getters (the win-4 trade — "handle getters stay methods, so per-node signals can return behind them additively"); DELETE the dead surface members the spec's "What dies" table names (`tokenAt`, `handles()`, `caretFromPoint`, `handle.changed`/`.dead`/`.text`/`.caretRect`/`.placeCaretAtBoundary`, the now-deprecated `address()`) and the per-node dirty signals + reactive getters + isolation specs; replace the six selection micro-reads + the `!== false` tri-state (`readSelection`/`selectionRect`/`selectionAnchor`/`isSelectionCollapsed`/`selectionIntersects`/`selectionFocusNode`) with one `selection(): SelectionSnapshot | undefined` snapshot. Ground the plan by reading FIRST, with fresh eyes, the POST-Phase-4 code: `packages/core/src/features/tokens/model/LiveNode.ts` (the `dirty` signal, the `Computed` getters `token`/`address`/`element`/`text`, `dead`, and the now-added plain `path()`/`alive()`), `packages/core/src/features/tokens/model/TokenModel.ts` (`tokenAt`, `handles()`, `caretFromPoint`, the six selection micro-reads), the isolation specs (grep `dirty`/`isolation` under `packages/core/src/features/tokens`), and the selection consumers across core + the adapters that read the six micro-reads (`SelectionController`, `ClipboardController`, overlay). Decide the EXACT `SelectionSnapshot` shape and which of the six reads each consumer needs. No placeholder steps — every step shows exact code; bite-sized TDD; frequent path-scoped commits; the required plan header. The LAST task of the Phase 5 plan must be "write the Phase 6 plan" (phase chaining). Verification commands MUST follow this plan's Tech Stack note: `pnpm -F core test`, `pnpm -F storybook test` / `test:react` / `test:vue`, `pnpm run typecheck`, `pnpm run check:encapsulation` — NEVER `pnpm -F react test` or `pnpm -F vue test` (silent no-ops).
 
-- [ ] **Step 2: Commit the plan**
+- [x] **Step 2: Commit the plan**
 
 ```bash
 git commit -m "docs(plan): one-fresh-truth phase 5 — de-reactify + surface deletion" -- docs/superpowers/plans/2026-06-13-one-fresh-truth-phase5.md
