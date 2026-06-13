@@ -50,13 +50,13 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	const path = address.path
 	const siblingIndex = direction === 'prev' ? path[path.length - 1] - 1 : path[path.length - 1] + 1
 	const siblingPath = [...path.slice(0, -1), siblingIndex]
-	const sibling = resolvePath(store.tokens.tree(), siblingPath)
+	const sibling = resolvePath(store.tokens.tokens(), siblingPath)
 	if (!sibling) return false
 
 	event.preventDefault()
 	// Address-based placement disambiguates the sibling from any neighbouring
 	// token that shares a boundary position. Position-only placement would pick
-	// the wrong token at text↔mark boundaries. (A stale tree() sibling object is
-	// fine: placeAtAddress bridges it to the live handle by identity.)
+	// the wrong token at text↔mark boundaries. (The sibling rides along for
+	// placeAtAddress's identity check; tokens() makes it the fresh object.)
 	return store.selection.placeAtAddress({path: siblingPath, token: sibling}, direction === 'prev' ? 'end' : 'start')
 }

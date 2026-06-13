@@ -8,7 +8,6 @@ import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import type {TokenModel} from '../tokens'
-import {freshTokens} from '../tokens'
 
 export class SelectionController {
 	readonly range: Signal<Range | undefined> = signal<Range>({equals: shallow})
@@ -64,7 +63,7 @@ export class SelectionController {
 	}
 
 	focusFirst(): void {
-		const first = this.tokens.tree().at(0)
+		const first = this.tokens.at(0)
 		if (first && this.placeAtAddress({path: [0], token: first}, 'start')) return
 		this.host.container()?.focus()
 	}
@@ -137,10 +136,10 @@ export class SelectionController {
 
 	#focusEmptyEditorOnClick(container: HTMLElement): void {
 		listen(container, 'click', () => {
-			// freshTokens, not tree(): after typing into the single empty text
-			// token the tree keeps its reference (text path) — the stale ''
-			// content would steal focus on every click into a non-empty editor.
-			const tokens = freshTokens(this.tokens)
+			// The fresh reconciled tree: after typing into the single empty text
+			// token, tokens() tracks value.current() (renderTree keeps its stale
+			// reference — reading it would steal focus into a non-empty editor).
+			const tokens = this.tokens.tokens()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 				firstHtmlChild(container)?.focus()
 			}

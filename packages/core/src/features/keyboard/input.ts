@@ -6,7 +6,6 @@ import type {Store} from '../../store/Store'
 type KbCtx = Pick<Store, 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../tokens'
-import {freshTokens} from '../tokens'
 import {rawRangeFromInputEvent} from './inputRange'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
@@ -96,9 +95,9 @@ function rangeForDelete(store: KbCtx, inputType: string, range: Range): Range | 
 	if (range.start !== range.end) return range
 
 	// Fresh read: adjacency compares mark POSITIONS against the live caret
-	// position — tree() positions lag after text-path commits (typing right
-	// before a mark, then deleting, must still swallow the whole mark).
-	const adjacentMark = adjacentMarkRange(freshTokens(store.tokens), range.start, inputType.endsWith('Backward'))
+	// position; tokens() is the reconciled tree consistent with value.current()
+	// (typing right before a mark, then deleting, must still swallow the mark).
+	const adjacentMark = adjacentMarkRange(store.tokens.tokens(), range.start, inputType.endsWith('Backward'))
 	if (adjacentMark) return adjacentMark
 
 	if (inputType.endsWith('Backward') && range.start > 0) {
