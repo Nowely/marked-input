@@ -174,13 +174,13 @@ export class Parser {
 	}
 
 	/**
-	 * Whether the text contains any markup segment occurrence
+	 * Whether the text contains any markup segment occurrence.
 	 *
-	 * Pure query over the registry's segments — parsing behavior is untouched.
-	 * Used by the windowed incremental reparse (`features/tokens/
-	 * incrementalParse.ts`): text outside the reparse window must be inert,
-	 * because a stray segment there (e.g. an unmatched `@[` in plain text) can
-	 * pair non-locally with a segment inside the edited window.
+	 * Pure query over the registry's segments — parsing behavior is untouched. No
+	 * current caller (the windowed incremental reparse that used it for its
+	 * inert-outside guard is deleted — inline parsing is always a full parse);
+	 * kept as a cheap segment probe for a future row-terminator validation
+	 * (Phase 7) or an external consumer.
 	 *
 	 * @param text - Text to scan
 	 * @returns `true` when at least one segment occurs in the text
