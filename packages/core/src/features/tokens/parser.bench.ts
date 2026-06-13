@@ -3,9 +3,7 @@ import * as path from 'path'
 
 import {bench, describe} from 'vitest'
 
-import {incrementalParse} from './incrementalParse'
 import {Parser as ParserV2} from './index'
-import type {EditHint} from './tokenIdentity'
 
 // Test data generators
 function generateComparisonText(marks: number): string {
@@ -278,21 +276,13 @@ function collectResultFn(
 	})
 }
 
-// ── Incremental-parse typing bench fixtures ────────────────────────────────
+// ── Typing-cost bench fixtures ─────────────────────────────────────────────
 // Pre-built OUTSIDE the timed callback so only the parse itself is measured.
-// Uses @[__value__] markup only, with inter-mark text that is INERT (contains
-// no @[ or ] characters) so the inert-outside guard reliably engages the fast path.
-//
-// IMPORTANT: generateComparisonText(500) uses both @[…] AND #[…] marks and
-// includes the closing ] of #[tagN] in plain text — that ] is a segment of the
-// @[__value__] parser, so the inert-outside guard always fires and forces a full
-// parse. Therefore we generate a separate fixture here with truly inert inter-mark text.
-//
-// CAVEAT on slot-leading markup ('__slot__\n\n' block layout): the text between
-// slot marks contains line-break separators that the inert-outside guard flags as
-// non-inert (the separator characters can be part of the slot markup segments);
-// the incremental fast path does NOT apply there — it is a design-spec known limitation.
-// The win demonstrated here applies to inline @[__value__]-style markup only.
+// Inline parsing is always a full parse (the windowed incrementalParse is
+// deleted — Phase 7's pre-split row parser is the incrementality story), so the
+// 500-mark full-parse-per-keystroke bench below IS the inline typing cost and
+// the regression tripwire the design keeps. Uses @[__value__] markup with
+// inert inter-mark text for a representative realistic-document shape.
 
 const incrementalParser = new ParserV2(['@[__value__]'])
 
@@ -308,28 +298,10 @@ function generateInertText(marks: number): string {
 }
 
 const incrementalBase500 = generateInertText(500)
-// Re-use parserV2 for the "500 marks baseline" (matches the existing 500-mark scalability bench)
-// but the incremental-specific fixture uses a plain @[__value__] parser to maximise fast-path hits.
-const incrementalPrev500 = incrementalParser.parse(incrementalBase500)
 
-// (b) One-char TAIL insert: append 'x' at the very end (in inert trailing text)
+// One-char tail insert: append 'x' at the very end (the post-edit value the
+// full-parse-per-keystroke bench parses).
 const incrementalTailValue = incrementalBase500 + 'x'
-const incrementalTailHint: EditHint = {
-	start: incrementalBase500.length,
-	end: incrementalBase500.length,
-	insertedLength: 1,
-}
-
-// (c) One-char MIDDLE insert: insert 'x' in plain inter-mark text in the middle.
-// Find a safe position in a run of alphabetic chars (not inside @[…]) — any space works.
-const midPoint = Math.floor(incrementalBase500.length / 2)
-const safePoint = incrementalBase500.indexOf(' ', midPoint)
-const incrementalMidValue = incrementalBase500.slice(0, safePoint) + 'x' + incrementalBase500.slice(safePoint)
-const incrementalMidHint: EditHint = {
-	start: safePoint,
-	end: safePoint,
-	insertedLength: 1,
-}
 
 describe('ParserV2 Performance Benchmark Suite', () => {
 	// Scalability tests
@@ -400,13 +372,12 @@ describe('ParserV2 Performance Benchmark Suite', () => {
 		})
 	})
 
-	// Incremental-typing benches (500-mark document)
-	// (a) Baseline: full parse per keystroke — same operation as the existing 500-marks scalability bench
-	//     but using the @[__value__] parser so the comparison is apples-to-apples with (b)/(c).
-	//     Parses the POST-EDIT value (incrementalTailValue) for apples-to-apples comparison with incremental benches.
-	describe('Incremental: 500 marks full parse (baseline)', () => {
+	// Typing-cost bench (500-mark document): full parse per keystroke — the inline
+	// typing cost (inline parsing is always a full parse) and the regression
+	// tripwire. Parses the POST-EDIT value (incrementalTailValue).
+	describe('Typing cost: 500 marks full parse per keystroke', () => {
 		bench(
-			'full parse — 500 marks baseline',
+			'full parse — 500 marks per keystroke',
 			() => {
 				incrementalParser.parse(incrementalTailValue)
 			},
@@ -417,87 +388,9 @@ describe('ParserV2 Performance Benchmark Suite', () => {
 					if (!isCollecting) {
 						isCollecting = true
 						collectResultFn(
-							'incremental: full parse baseline (500 marks)',
+							'typing: full parse per keystroke (500 marks)',
 							'incremental',
 							() => incrementalParser.parse(incrementalTailValue),
-							5
-						)
-						isCollecting = false
-					}
-				},
-			}
-		)
-	})
-
-	// (b) Incremental tail insert: append one char at the end
-	describe('Incremental: 500 marks — tail insert', () => {
-		bench(
-			'incrementalParse — tail insert (500 marks)',
-			() => {
-				incrementalParse(
-					incrementalParser,
-					incrementalPrev500,
-					incrementalBase500,
-					incrementalTailValue,
-					incrementalTailHint
-				)
-			},
-			{
-				time: 1000,
-				iterations: 5,
-				teardown() {
-					if (!isCollecting) {
-						isCollecting = true
-						collectResultFn(
-							'incremental: tail insert (500 marks)',
-							'incremental',
-							() =>
-								incrementalParse(
-									incrementalParser,
-									incrementalPrev500,
-									incrementalBase500,
-									incrementalTailValue,
-									incrementalTailHint
-								),
-							5
-						)
-						isCollecting = false
-					}
-				},
-			}
-		)
-	})
-
-	// (c) Incremental middle insert: insert one char mid-document
-	describe('Incremental: 500 marks — middle insert', () => {
-		bench(
-			'incrementalParse — middle insert (500 marks)',
-			() => {
-				incrementalParse(
-					incrementalParser,
-					incrementalPrev500,
-					incrementalBase500,
-					incrementalMidValue,
-					incrementalMidHint
-				)
-			},
-			{
-				time: 1000,
-				iterations: 5,
-				teardown() {
-					if (!isCollecting) {
-						isCollecting = true
-						collectResultFn(
-							'incremental: middle insert (500 marks)',
-							'incremental',
-							() =>
-								incrementalParse(
-									incrementalParser,
-									incrementalPrev500,
-									incrementalBase500,
-									incrementalMidValue,
-									incrementalMidHint
-								),
 							5
 						)
 						isCollecting = false

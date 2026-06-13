@@ -19,10 +19,9 @@ import {createIdentityTracker, type EditHint, type IdentityTracker} from './toke
 // invariants, asserted on top of the base property.
 //
 // The generators below (generateDocument / generateEdit / applyEdit and the
-// slot-leading/in-slot families) are exported so the incrementalParse property
-// can reuse them to assert `incrementalParse ≡ full parse`. On failure the
-// error message carries seed + document + edit so the counterexample is
-// reproducible with `faker.seed(<seed>)`.
+// slot-leading/in-slot families) are exported for reuse within the identity
+// property run. On failure the error message carries seed + document + edit so
+// the counterexample is reproducible with `faker.seed(<seed>)`.
 
 const BASE_SEED = 6_122_026
 /** ~200 keeps CI-tolerable runtime; bump locally (e.g. 1000) for soak runs. */
