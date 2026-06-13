@@ -80,7 +80,8 @@ describe('createCommitPipeline', () => {
 
 			const result = harness.apply('he@[x]llo')
 
-			expect(result.changeset).toEqual({kind: 'full'})
+			expect(result.structural).toBe(true)
+			expect(result.changes.every(c => c.kind === 'add')).toBe(true)
 			expect(pipeline.tree()).toBe(result.tokens)
 			expect(pipeline.pending()).toBe(true)
 			expect(changedSpy).not.toHaveBeenCalled()
@@ -91,7 +92,6 @@ describe('createCommitPipeline', () => {
 			const [text1, mark, text2] = harness.render()
 
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(changedSpy.mock.calls[0][0]).toBe(result.changeset)
 			expect(pipeline.pending()).toBe(false)
 			expect(nodes.size).toBe(3)
 			expect(pipeline.byPath().size).toBe(3)
@@ -117,8 +117,8 @@ describe('createCommitPipeline', () => {
 			watch(tail.changed, change => changes.push(change))
 			const changedSpy = vi.fn()
 			let domAtEvent: string | null = null
-			watch(pipeline.changed, changeset => {
-				changedSpy(changeset)
+			watch(pipeline.changed, () => {
+				changedSpy()
 				domAtEvent = text2.textContent
 			})
 
@@ -126,9 +126,10 @@ describe('createCommitPipeline', () => {
 			// adapter never re-renders, render() is deliberately not called again.
 			const result = harness.apply('he@[x]llo!')
 
+			expect(result.structural).toBe(false)
+			expect(result.changes.map(c => c.kind)).toContain('text')
 			expect(text2.textContent).toBe('llo!')
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(changedSpy).toHaveBeenCalledWith(result.changeset)
 			expect(domAtEvent).toBe('llo!')
 			expect(changes).toEqual([{kind: 'text', previous: 'llo'}])
 			expect(tail.text()).toBe('llo!')
@@ -186,10 +187,10 @@ describe('createCommitPipeline', () => {
 			const markChanges: TokenChange[] = []
 			watch(markHandle.changed, change => markChanges.push(change))
 			const changedSpy = vi.fn()
-			watch(pipeline.changed, changeset => changedSpy(changeset))
+			watch(pipeline.changed, changedSpy)
 
 			// Prepend 'XX': 'he' is textChanged, mark and tail shift right by 2.
-			const result = harness.apply('XXhe@[x]llo')
+			harness.apply('XXhe@[x]llo')
 
 			expect(text1.textContent).toBe('XXhe')
 			expect(mark.textContent).toBe('x')
@@ -202,7 +203,6 @@ describe('createCommitPipeline', () => {
 			expect(pipeline.byPath()).toBe(byPathBefore)
 			expect(pipeline.tree()).toBe(treeBefore)
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(changedSpy).toHaveBeenCalledWith(result.changeset)
 		})
 
 		it('a no-op apply (empty delta) still announces consistency without touching anything', () => {
@@ -211,18 +211,13 @@ describe('createCommitPipeline', () => {
 			const {text2} = mountValue(harness)
 			const treeBefore = pipeline.tree()
 			const changedSpy = vi.fn()
-			watch(pipeline.changed, changeset => changedSpy(changeset))
+			watch(pipeline.changed, changedSpy)
 
-			harness.apply('he@[x]llo')
+			const result = harness.apply('he@[x]llo')
 
+			expect(result.structural).toBe(false)
+			expect(result.changes).toEqual([])
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(changedSpy).toHaveBeenCalledWith({
-				kind: 'delta',
-				textChanged: [],
-				added: [],
-				removed: [],
-				updated: [],
-			})
 			expect(pipeline.tree()).toBe(treeBefore)
 			expect(text2.textContent).toBe('llo')
 		})
@@ -258,14 +253,16 @@ describe('createCommitPipeline', () => {
 			const treeBefore = pipeline.tree()
 			const changedSpy = vi.fn()
 			let boundAtEvent = 0
-			watch(pipeline.changed, changeset => {
-				changedSpy(changeset)
+			watch(pipeline.changed, () => {
+				changedSpy()
 				boundAtEvent = pipeline.byPath().size
 			})
 
 			// Insert a second mark: added tokens — the renderer owns this change.
 			const result = harness.apply('he@[x]llo@[y]')
 
+			expect(result.structural).toBe(true)
+			expect(result.changes.some(c => c.kind === 'add')).toBe(true)
 			expect(pipeline.tree()).not.toBe(treeBefore)
 			expect(pipeline.tree()).toBe(result.tokens)
 			expect(changedSpy).not.toHaveBeenCalled()
@@ -275,7 +272,6 @@ describe('createCommitPipeline', () => {
 			harness.render()
 
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(changedSpy).toHaveBeenCalledWith(result.changeset)
 			// 5 tokens: the parse tiles the whole value, so a trailing mark is
 			// followed by an empty text token (inline mode keeps it).
 			expect(boundAtEvent).toBe(5)
@@ -290,14 +286,17 @@ describe('createCommitPipeline', () => {
 			const markHandle = pipeline.byPath().get('1')
 			const tailHandle = pipeline.byPath().get('2')
 			if (!markHandle || !tailHandle) throw new Error('expected handles')
+			const markId = markHandle.id
 			const unmounted = vi.fn()
 			watch(markHandle.changed, unmounted)
 			const changedSpy = vi.fn()
 			watch(pipeline.changed, changedSpy)
 
 			// Remove the mark: 'he@[x]llo' → 'hello' (removed non-empty).
-			harness.apply('hello')
+			const result = harness.apply('hello')
 
+			expect(result.structural).toBe(true)
+			expect(result.removedIds).toContain(markId)
 			expect(changedSpy).not.toHaveBeenCalled()
 			expect(markHandle.dead()).toBe(false)
 			expect(pipeline.pending()).toBe(true)
@@ -371,7 +370,7 @@ describe('createCommitPipeline', () => {
 			const tail = pipeline.byPath().get('2')
 			if (!tail) throw new Error('expected tail handle')
 			const changedSpy = vi.fn()
-			watch(pipeline.changed, changeset => changedSpy(changeset))
+			watch(pipeline.changed, changedSpy)
 
 			harness.apply('he@[x]llo@[y]')
 			const treeAfterFirst = pipeline.tree()
@@ -390,7 +389,6 @@ describe('createCommitPipeline', () => {
 			harness.render()
 
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(changedSpy).toHaveBeenCalledWith(second.changeset)
 			expect(pipeline.pending()).toBe(false)
 			expect(tail.text()).toBe('llo!')
 			expect(harness.container.children[2].textContent).toBe('llo!')
@@ -413,8 +411,8 @@ describe('createCommitPipeline', () => {
 	})
 
 	describe('escalation (abandon the text branch, self-heal structurally)', () => {
-		// ports the old routing case: textChanged mark escalates to the structural branch
-		it('a textChanged MARK routes structural: new tree reference, immediate bind, changed fired without a render', () => {
+		// ports the old routing case: a refused-descend MARK routes structural
+		it('a refused-descend MARK routes structural: new tree reference, quiet until rendered, handle survives', () => {
 			const harness = createHarness()
 			const {pipeline} = harness
 			const {mark} = mountValue(harness)
@@ -424,40 +422,35 @@ describe('createCommitPipeline', () => {
 			const markChanges: TokenChange[] = []
 			watch(markHandle.changed, change => markChanges.push(change))
 			const changedSpy = vi.fn()
-			watch(pipeline.changed, changeset => changedSpy(changeset))
+			watch(pipeline.changed, changedSpy)
 
 			// '@[x]' → '@[y]': same descriptor, same-index pairing — a value-markup
-			// mark has no slot, so the deep descend is REFUSED and reconcile
-			// reports the MARK as textChanged (id inherited) with added/removed
-			// empty. Mark components render value as a framework prop, so the
-			// renderer must run; handle continuity across the escalation is the
-			// pinned contract this spec guards.
+			// mark has no slot, so the deep descend is REFUSED and reconcile sets
+			// result.structural directly (Phase 2: the routing decision moved out of
+			// the commit-time type-walk). Mark components render value as a framework
+			// prop, so the renderer must run — this is a plain structural apply that
+			// waits for the adapter render; handle continuity across it (id-keyed) is
+			// the pinned contract this spec guards.
 			const result = harness.apply('he@[y]llo')
 
+			expect(result.structural).toBe(true)
 			expect(pipeline.tree()).not.toBe(treeBefore)
 			expect(pipeline.tree()).toBe(result.tokens)
-			// Self-heal bound the current DOM immediately — no render needed first.
-			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(changedSpy).toHaveBeenCalledWith(result.changeset)
-			expect(pipeline.pending()).toBe(false)
-			expect(markHandle.token()).toBe(result.tokens[1])
-			expect(markChanges).toEqual([{kind: 'text', previous: '@[x]'}])
+			// Quiet until the renderer paints — the renderer owns a refused-descend mark.
+			expect(changedSpy).not.toHaveBeenCalled()
+			expect(pipeline.pending()).toBe(true)
 			expect(markHandle.element()).toBe(mark)
 
-			// The adapter reacts to the tree change; the follow-up bind is idempotent
-			// and announces a re-bind (empty delta — nothing changed token-wise).
+			// The adapter paints the new value; bind completes the structural pass.
 			harness.render()
 
-			expect(changedSpy).toHaveBeenCalledTimes(2)
-			expect(changedSpy).toHaveBeenLastCalledWith({
-				kind: 'delta',
-				textChanged: [],
-				added: [],
-				removed: [],
-				updated: [],
-			})
-			expect(harness.container.children[1].textContent).toBe('y')
+			expect(changedSpy).toHaveBeenCalledTimes(1)
+			expect(pipeline.pending()).toBe(false)
+			// Handle continuity: same object (id-keyed), now carrying the new token.
 			expect(pipeline.byPath().get('1')).toBe(markHandle)
+			expect(markHandle.token()).toBe(result.tokens[1])
+			expect(markChanges).toEqual([{kind: 'text', previous: '@[x]'}])
+			expect(harness.container.children[1].textContent).toBe('y')
 		})
 
 		// ports the old patch pass-1 case: changed id missing from the node map escalates
@@ -501,14 +494,13 @@ describe('createCommitPipeline', () => {
 			expect(tail.dead()).toBe(false)
 			expect(tail.element()).toBeUndefined()
 			const changedSpy = vi.fn()
-			watch(pipeline.changed, changeset => changedSpy(changeset))
+			watch(pipeline.changed, changedSpy)
 
-			const result = harness.apply('he@[x]llo!')
+			harness.apply('he@[x]llo!')
 
 			// Escalated: the immediate bind bails again on the misaligned DOM, but
 			// the node layer is refreshed from the authoritative tree.
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(changedSpy).toHaveBeenCalledWith(result.changeset)
 			expect(pipeline.pending()).toBe(false)
 			expect(tail.text()).toBe('llo!')
 			expect(nodes.size).toBe(3)
@@ -529,9 +521,13 @@ describe('createCommitPipeline', () => {
 			watch(pipeline.changed, changedSpy)
 
 			const tokens = [...pipeline.tree()]
+			// A `text` change whose id has no handle abandons the text branch and
+			// self-heals structurally (the conservative stale-tree guard).
 			pipeline.apply({
 				tokens,
-				changeset: {kind: 'delta', textChanged: [99999], added: [], removed: [], updated: []},
+				structural: false,
+				changes: [{id: 99999, token: tokens[0], path: [0], kind: 'text'}],
+				removedIds: [],
 			})
 
 			expect(changedSpy).toHaveBeenCalledTimes(1)
@@ -663,8 +659,8 @@ describe('createCommitPipeline', () => {
 			watch(tailHandle.changed, change => tailChanges.push(change))
 			const changedSpy = vi.fn()
 			let domAtEvent: string | null = null
-			watch(pipeline.changed, changeset => {
-				changedSpy(changeset)
+			watch(pipeline.changed, () => {
+				changedSpy()
 				domAtEvent = childSurface.textContent
 			})
 
@@ -673,11 +669,11 @@ describe('createCommitPipeline', () => {
 			const result = harness.apply('#[aXb]tail')
 
 			// routed TEXT: no tree change, no lookup rebuilds, no pending latch
+			expect(result.structural).toBe(false)
 			expect(pipeline.tree()).toBe(treeBefore)
 			expect(pipeline.byPath()).toBe(byPathBefore)
 			expect(pipeline.pending()).toBe(false)
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(changedSpy).toHaveBeenCalledWith(result.changeset)
 			// the child surface was patched in place, before changed fired
 			expect(childSurface.textContent).toBe('aXb')
 			expect(domAtEvent).toBe('aXb')
