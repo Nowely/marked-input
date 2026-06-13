@@ -20,6 +20,21 @@ import type {TokenHandle} from './LiveNode'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
 
+export type SelectionSnapshot = {
+	/** Absolute in-editor positions of the selection, or undefined if it falls outside any bound token. */
+	readonly raw: RawSelection | undefined
+	/** Viewport rect of the caret/selection. */
+	readonly rect: DOMRect | undefined
+	/** Anchor node + offset + collapsed flag of the raw window selection. */
+	readonly anchor: SelectionAnchor
+	/** Whether the raw selection is collapsed. */
+	readonly collapsed: boolean
+	/** Focus node of the raw window selection. */
+	readonly focusNode: Node | undefined
+	/** Whether the raw selection intersects `node` (partial containment counts). */
+	intersects(node: Node): boolean
+}
+
 type ControlRegistration = {
 	readonly ownerPath?: TokenPath
 	readonly element: HTMLElement
@@ -288,11 +303,32 @@ export class TokenModel {
 		return rawPositionFromBoundary(this.#boundaryContext(), node, offset, affinity)
 	}
 
-	/** Current window selection as absolute positions. */
-	readSelection(): RawSelection | undefined {
-		const selection = window.getSelection()
-		if (!selection || selection.rangeCount === 0) return undefined
+	/**
+	 * THE selection read: one snapshot of the live window selection, or
+	 * `undefined` when there is no range (the element is unfocused / nothing
+	 * selected). Subsumes the six micro-reads — `raw` is the absolute in-editor
+	 * range (undefined when the selection is outside the editor), `rect`/`anchor`/
+	 * `collapsed`/`focusNode` reflect the raw selection, and `intersects` closes
+	 * over it. A consumer that treated "no selection" as collapsed compares
+	 * `selection()?.collapsed !== false`.
+	 */
+	selection(): SelectionSnapshot | undefined {
+		const sel = window.getSelection()
+		if (!sel || sel.rangeCount === 0) return undefined
+		const anchorNode = sel.anchorNode
+		if (!anchorNode) return undefined
+		return {
+			raw: this.#rawSelectionFrom(sel),
+			rect: getRect() ?? undefined,
+			anchor: {node: anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed},
+			collapsed: sel.isCollapsed,
+			focusNode: sel.focusNode ?? undefined,
+			intersects: node => sel.containsNode(node, true),
+		}
+	}
 
+	/** Absolute in-editor positions of a window selection's first range, or undefined if it maps outside any bound token. */
+	#rawSelectionFrom(selection: Selection): RawSelection | undefined {
 		const range = selection.getRangeAt(0)
 		const start = this.boundaryFor(range.startContainer, range.startOffset, 'after')
 		if (start === undefined) return undefined
@@ -308,6 +344,13 @@ export class TokenModel {
 					: 'forward'
 
 		return direction ? {range: rangeValue, direction} : {range: rangeValue}
+	}
+
+	/** Current window selection as absolute positions. */
+	readSelection(): RawSelection | undefined {
+		const selection = window.getSelection()
+		if (!selection || selection.rangeCount === 0) return undefined
+		return this.#rawSelectionFrom(selection)
 	}
 
 	/** Current selection serialized for clipboard use. */

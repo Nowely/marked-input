@@ -20,14 +20,8 @@ export {MarkputHandler} from './src/store/MarkputHandler'
 // Parsing exports (modern API)
 export {annotate, denote, findToken} from './src/features/tokens'
 export type {Markup, Token, TextToken, MarkToken} from './src/features/tokens'
-export type {
-	TokenPath,
-	Range,
-	RawSelection,
-	MarkPatch,
-	MarkSnapshot,
-	MarkInfo,
-} from './src/shared/editorContracts'
+export type {SelectionSnapshot} from './src/features/tokens'
+export type {TokenPath, Range, RawSelection, MarkPatch, MarkSnapshot, MarkInfo} from './src/shared/editorContracts'
 
 // Reactive system
 export type {Signal, Computed, Event, SignalValues} from './src/shared/signals'

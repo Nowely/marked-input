@@ -277,7 +277,7 @@ describe('TokenModel placement commands', () => {
 	// drives the same underlying placeAtChildBoundary call is covered by the
 	// 'placeCaret({handle, offset}) targets the handle's token explicitly' test.
 
-	it('placeCaret({handle, offset}) targets the handle\'s token explicitly', () => {
+	it("placeCaret({handle, offset}) targets the handle's token explicitly", () => {
 		const {store} = mountWithMark()
 		const token = store.tokens.tokens()[2] // text "llo" [6,9]
 		const handle = store.tokens.handle(token.id!)
@@ -302,5 +302,59 @@ describe('TokenModel placement commands', () => {
 		expect(handle.placeCaret(2)).toBe(true)
 		expect(handle.caretIndex()).toBe(2)
 		expect(handle.textLength()).toBe(handle.text().length)
+	})
+})
+
+describe('TokenModel selection() — the one snapshot', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+		window.getSelection()?.removeAllRanges()
+	})
+
+	it('returns undefined when there is no range', () => {
+		const {store} = mountWithMark()
+		window.getSelection()?.removeAllRanges()
+		expect(store.tokens.selection()).toBeUndefined()
+	})
+
+	it('carries raw absolute positions, anchor, collapsed, focusNode, rect, and intersects', () => {
+		const {store, container} = mountWithMark()
+		const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
+		if (!(firstText instanceof Text) || firstText.length < 2) throw new Error('expected the "he" text node')
+		const range = document.createRange()
+		range.setStart(firstText, 0)
+		range.setEnd(firstText, 2)
+		const sel = window.getSelection()!
+		sel.removeAllRanges()
+		sel.addRange(range)
+
+		const snapshot = store.tokens.selection()
+		if (!snapshot) throw new Error('expected a selection snapshot')
+		// "he" is [0,2] absolute.
+		expect(snapshot.raw?.range).toEqual({start: 0, end: 2})
+		expect(snapshot.collapsed).toBe(false)
+		expect(snapshot.anchor.node).toBe(firstText)
+		expect(snapshot.anchor.isCollapsed).toBe(false)
+		expect(snapshot.focusNode).toBe(firstText)
+		expect(snapshot.rect).toBeInstanceOf(DOMRect)
+		expect(snapshot.intersects(firstText)).toBe(true)
+		expect(snapshot.intersects(document.body)).toBe(true)
+	})
+
+	it('collapsed is true and raw is a zero-width range for a caret', () => {
+		const {store, container} = mountWithMark()
+		const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
+		if (!(firstText instanceof Text) || firstText.length < 1) throw new Error('expected the "he" text node')
+		const range = document.createRange()
+		range.setStart(firstText, 1)
+		range.collapse(true)
+		const sel = window.getSelection()!
+		sel.removeAllRanges()
+		sel.addRange(range)
+
+		const snapshot = store.tokens.selection()
+		if (!snapshot) throw new Error('expected a selection snapshot')
+		expect(snapshot.collapsed).toBe(true)
+		expect(snapshot.raw?.range).toEqual({start: 1, end: 1})
 	})
 })
