@@ -3,8 +3,9 @@ import {MarkedInput} from '@markput/vue'
 import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
-import {defineComponent, h} from 'vue'
+import {defineComponent, h, onMounted} from 'vue'
 
+import {getElement} from '../shared/lib/dom'
 import {getAllRows, getEditableInRow} from '../shared/lib/dragTestHelpers'
 import {focusAtEnd} from '../shared/lib/focus'
 
@@ -136,5 +137,52 @@ describe('Render-count gates: block layout', () => {
 		await expect.element(page.getByText('x')).toBeInTheDocument()
 		expect(spanRender.mock.calls.length).toBe(spanBaseline)
 		expect(markRender.mock.calls.length).toBe(markBaseline)
+	})
+})
+
+/**
+ * Vue mirror of the react remount gate (renderCount.react.spec.tsx — see its
+ * comment for the identity-key mechanics). The mount spy is onMounted, keyed
+ * by value: only real unmount/remount cycles count.
+ */
+describe('Remount gates: identity keys', () => {
+	it('a structural edit before a mark does not remount the suffix marks', async () => {
+		const mounts: string[] = []
+		const Mark = defineComponent({
+			props: {value: String},
+			setup(props) {
+				onMounted(() => {
+					mounts.push(props.value ?? '')
+				})
+				return () => h('mark', {}, props.value)
+			},
+		})
+		const Span = defineComponent({
+			props: {value: String},
+			setup(props) {
+				return () => h('span', {}, props.value)
+			},
+		})
+		const Fixture = defineComponent({
+			setup() {
+				return () => h(MarkedInput, {Mark, Span, defaultValue: 'Hello @[a](1) and @[b](2)!'})
+			},
+		})
+
+		await render(Fixture)
+		await expect.element(page.getByText('b')).toBeInTheDocument()
+		expect(mounts.filter(v => v === 'a')).toHaveLength(1)
+		expect(mounts.filter(v => v === 'b')).toHaveLength(1)
+
+		// Structural edit BEFORE both marks — @[a] and @[b] suffix-shift into
+		// NEW token objects carrying INHERITED ids.
+		await focusAtEnd(getElement(page.getByText('Hello')))
+		await userEvent.keyboard('@[[new](3)')
+		await expect.element(page.getByText('new')).toBeInTheDocument()
+
+		// Gate: only the inserted mark mounts — the shifted marks keep their keys.
+		expect(mounts.filter(v => v === 'new')).toHaveLength(1)
+		expect(mounts.filter(v => v === 'a')).toHaveLength(1)
+		expect(mounts.filter(v => v === 'b')).toHaveLength(1)
 	})
 })
