@@ -1,6 +1,4 @@
 import type {TokenPath} from '../../../shared/editorContracts'
-import {batch, computed, event, signal} from '../../../shared/signals/index.js'
-import type {Computed, Event, Signal} from '../../../shared/signals/index.js'
 import {
 	focusIfNeeded,
 	getCaretIndex,
@@ -13,14 +11,6 @@ import {
 import type {Token} from '../parser/types'
 import {textLength} from '../textOffsets'
 
-/** @internal A handle's tree position + the token there, at a moment in time. Internal plumbing for the `moved` event and the (Phase-5-doomed) `address()` getter — NOT the deleted public address. */
-export type TokenSnapshot = {readonly path: TokenPath; readonly token: Token}
-
-export type TokenChange =
-	| {kind: 'text'; previous: string}
-	| {kind: 'moved'; previousAddress: TokenSnapshot}
-	| {kind: 'unmounted'} // `mounted` is intentionally absent — that variant was never emitted
-
 /** DOM bindings of a live node — set by bind, cleared on unbind/kill. */
 export type ElementBindings = {
 	readonly tokenElement: HTMLElement
@@ -31,11 +21,13 @@ export type ElementBindings = {
 
 /**
  * The live record of one token — the single source of truth for everything
- * currently true about it: the CURRENT parsed token, its tree position, its
- * DOM bindings, and a per-node `dirty` version signal. The class doubles as
- * the public handle face: reactive getters and caret commands read this
- * node's own state and track ONLY this node's `dirty`, so an untouched
- * token's handle cannot recompute during someone else's edit.
+ * currently true about it: the CURRENT parsed token, its tree position, and
+ * its DOM bindings. The class doubles as the public handle face: plain getters
+ * (`token()`/`path()`/`element()`/`alive()`) and caret commands read this
+ * node's own fields. No per-node reactivity — the spec's win-4 trade: zero
+ * production consumers subscribed to a handle's getters, so signals are pure
+ * overhead here (reversible: the getters stay methods, so per-node signals can
+ * return behind them additively).
  *
  * Lifetime: created when its token enters the tree (keyed by the token's
  * stable identity id), mutated in place by `update`/`bindElements`/`unbind`,
@@ -43,13 +35,7 @@ export type ElementBindings = {
  * no-ops, never resurrected).
  */
 export class TokenHandle {
-	readonly changed: Event<TokenChange> = event<TokenChange>()
-
-	/** Per-node version — THE fine-grained unit; bumped on every mutation of this node. */
-	readonly dirty: Signal<number> = signal({initial: 0})
-
-	readonly #dead: Signal<boolean> = signal({initial: false})
-	readonly dead: Computed<boolean> = computed(() => this.#dead())
+	#dead = false
 
 	#token: Token
 	#path: TokenPath
@@ -67,34 +53,25 @@ export class TokenHandle {
 		this.#path = [...path]
 	}
 
-	readonly token: Computed<Token> = computed(() => {
-		this.dirty()
+	/** The handle's current token. A plain read of the backing field. */
+	token(): Token {
 		return this.#token
-	})
+	}
 
-	/** Derived on read: a fresh `{path, token}` snapshot per evaluation of this node's state. @deprecated Phase-5 deletion target — prefer `path()` + `token()`. */
-	readonly address: Computed<TokenSnapshot> = computed(() => {
-		this.dirty()
-		return {path: [...this.#path], token: this.#token}
-	})
-
-	/** The handle's current tree position. A live read; tracks reconcile moves. */
+	/** The handle's current tree position (a fresh copy each read). */
 	path(): TokenPath {
-		this.dirty()
 		return [...this.#path]
 	}
 
 	/** Live AND bound: not killed and currently holding a DOM element. The whole validity check a holder of this handle needs. */
 	alive(): boolean {
-		return !this.#dead() && this.#tokenElement != null
+		return !this.#dead && this.#tokenElement != null
 	}
 
-	readonly element: Computed<HTMLElement | undefined> = computed(() => {
-		this.dirty()
+	/** The handle's current token root element, or undefined while unbound/dead. */
+	element(): HTMLElement | undefined {
 		return this.#tokenElement
-	})
-
-	readonly text: Computed<string> = computed(() => this.token().content)
+	}
 
 	/** @internal Current DOM bindings; undefined while unbound or dead. */
 	node(): ElementBindings | undefined {
@@ -132,23 +109,6 @@ export class TokenHandle {
 		return scope ? getCaretIndex(scope) : undefined
 	}
 
-	caretRect(offset: number): DOMRect | undefined {
-		const surface = this.#textElement
-		if (!surface) return undefined
-		const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
-		let remaining = Math.max(0, offset)
-		for (let text = walker.nextNode(); text instanceof Text; text = walker.nextNode()) {
-			if (remaining <= text.length) {
-				const range = document.createRange()
-				range.setStart(text, remaining)
-				range.collapse(true)
-				return range.getBoundingClientRect()
-			}
-			remaining -= text.length
-		}
-		return undefined
-	}
-
 	caretOnFirstLine(): boolean {
 		const scope = this.#measureScope()
 		return scope ? isOnFirstLine(scope) : true
@@ -183,17 +143,6 @@ export class TokenHandle {
 		return true
 	}
 
-	placeCaretAtBoundary(side: 'start' | 'end'): boolean {
-		const tokenElement = this.#tokenElement
-		if (!tokenElement) return false
-		if (!this.#textElement) {
-			focusIfNeeded(tokenElement)
-			placeAtChildBoundary(tokenElement, side)
-			return true
-		}
-		return this.placeCaret(side === 'start' ? 0 : Infinity)
-	}
-
 	/** Place caret at viewport x (and optional y) within this token's scope. */
 	placeCaretAtX(x: number, y?: number): boolean {
 		const scope = this.#measureScope()
@@ -210,53 +159,33 @@ export class TokenHandle {
 		return true
 	}
 
-	/**
-	 * @internal Refresh token/path after a reconcile; fires `text`/`moved` and
-	 * bumps `dirty`. Batched so `changed` watchers flush only after the bump —
-	 * they must read the post-update token/address.
-	 */
+	/** @internal Refresh token/path after a reconcile. Inert on a dead handle. */
 	update(token: Token, path: TokenPath): void {
-		if (this.#dead()) return
-		const prevToken = this.#token
-		const previousAddress: TokenSnapshot = {path: this.#path, token: prevToken}
+		if (this.#dead) return
 		this.#token = token
 		this.#path = [...path]
-		batch(() => {
-			this.#bumpDirty()
-			if (token.content !== prevToken.content) {
-				this.changed({kind: 'text', previous: prevToken.content})
-			} else if (token.position.start !== prevToken.position.start) {
-				this.changed({kind: 'moved', previousAddress})
-			}
-		})
 	}
 
 	/** @internal Set/replace the DOM bindings (structural bind). */
 	bindElements(bindings: ElementBindings): void {
-		if (this.#dead()) return
+		if (this.#dead) return
 		this.#tokenElement = bindings.tokenElement
 		this.#textElement = bindings.textElement
 		this.#rowElement = bindings.rowElement
 		this.#childSequenceHost = bindings.childSequenceHost
-		this.#bumpDirty()
 	}
 
 	/** @internal Clear the DOM bindings (token unmounted from the DOM). */
 	unbind(): void {
-		if (this.#dead()) return
+		if (this.#dead) return
 		this.#clearElements()
-		this.#bumpDirty()
 	}
 
-	/** @internal Drops DOM, marks dead, fires unmounted once. A dead handle pins nothing; no unlink needed. */
+	/** @internal Drops DOM, marks dead. A dead handle pins nothing; no unlink needed. */
 	kill(): void {
-		if (this.#dead()) return
+		if (this.#dead) return
 		this.#clearElements()
-		batch(() => {
-			this.#dead(true)
-			this.#bumpDirty()
-			this.changed({kind: 'unmounted'})
-		})
+		this.#dead = true
 	}
 
 	#clearElements(): void {
@@ -264,9 +193,5 @@ export class TokenHandle {
 		this.#textElement = undefined
 		this.#rowElement = undefined
 		this.#childSequenceHost = undefined
-	}
-
-	#bumpDirty(): void {
-		this.dirty(this.dirty() + 1)
 	}
 }
