@@ -71,18 +71,12 @@ describe('TokenHandle', () => {
 		expect(second).toBe(first)
 	})
 
-	it('handles() yields one handle per bound token, handle(id) returns the same object', () => {
+	it('handle(id) returns the bound handle for a token id', () => {
 		const {store} = mountInline('hello')
 
-		// Call handles() BEFORE any handle(id)/handleAt — must still yield one handle
-		const allBefore = [...store.tokens.handles()]
-		expect(allBefore).toHaveLength(1)
-
-		// handle(id) must return the SAME handle object already yielded by handles()
 		const id = store.tokens.tokens()[0].id!
 		const handle = store.tokens.handle(id)
 		expect(handle?.path()).toEqual([0])
-		expect(handle).toBe(allBefore[0])
 	})
 
 	it('fires text change and refreshes snapshots on value edit', () => {

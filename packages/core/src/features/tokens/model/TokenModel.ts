@@ -229,19 +229,6 @@ export class TokenModel {
 		return this.#nodes.get(id)
 	}
 
-	/**
-	 * Iterate all bound tokens' live handles.
-	 * @yields each bound token's handle
-	 */
-	*handles(): IterableIterator<TokenHandle> {
-		yield* this.#pipeline.byPath().values()
-	}
-
-	/** Handle of the text token containing `position` (or the next one after). */
-	tokenAt(position: number): TokenHandle | undefined {
-		return textTargetAt(this.#boundaryContext(), position)?.node.handle
-	}
-
 	/** Locate the live node owning a DOM node, walking up to the container (the old #locate over the pipeline lookups). */
 	#locate(node: Node): Lookup | undefined {
 		const container = this.host.container()
@@ -432,23 +419,6 @@ export class TokenModel {
 			{element: endTarget.node.textElement, offset: hi - endTarget.start}
 		)
 		return true
-	}
-
-	/**
-	 * Absolute position at viewport coordinates (read half of old setAtX).
-	 * Returns `undefined` when the point hits nothing hittable, or when the
-	 * resolved DOM boundary falls outside any bound token.
-	 */
-	caretFromPoint(x: number, y: number): number | undefined {
-		// oxlint-disable-next-line no-unsafe-type-assertion -- non-standard DOM APIs not in TS lib
-		const doc = document as unknown as {
-			caretRangeFromPoint?(x: number, y: number): globalThis.Range | null
-			caretPositionFromPoint?(x: number, y: number): {offsetNode: Node; offset: number} | null
-		}
-		const pos = doc.caretRangeFromPoint?.(x, y) ?? doc.caretPositionFromPoint?.(x, y)
-		if (!pos) return undefined
-		if (pos instanceof globalThis.Range) return this.boundaryFor(pos.startContainer, pos.startOffset)
-		return this.boundaryFor(pos.offsetNode, pos.offset)
 	}
 
 	/**

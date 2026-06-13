@@ -85,13 +85,13 @@ describe('TokenModel lookups', () => {
 		container.remove()
 	})
 
-	it('handles() iterates all bound tokens as live handles', () => {
+	it('handle(id) returns the bound handle for a token id', () => {
 		const {store, container, span} = mountInline('hello')
 
-		const all = [...store.tokens.handles()]
-		expect(all).toHaveLength(1)
-		expect(all[0].address().path).toEqual([0])
-		expect(all[0].element()).toBe(span)
+		const id = store.tokens.tokens()[0].id!
+		const handle = store.tokens.handle(id)
+		expect(handle?.path()).toEqual([0])
+		expect(handle?.element()).toBe(span)
 		container.remove()
 	})
 

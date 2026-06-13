@@ -232,16 +232,6 @@ describe('TokenModel facade boundary behavior (pinned from dual-run parity)', ()
 			})
 		})
 	}
-
-	it('tokenAt finds the containing text surface and the next one after a gap', () => {
-		const {store} = mountWithMark()
-		// value: he@[x]llo → text "he" [0,2], mark [2,6], text "llo" [6,9]
-		expect(store.tokens.tokenAt(1)?.address().path).toEqual([0])
-		expect(store.tokens.tokenAt(2)?.address().path).toEqual([0]) // inclusive end of "he"
-		expect(store.tokens.tokenAt(5)?.address().path).toEqual([2]) // inside mark: no containing surface → next start ≥ 5 is "llo"
-		expect(store.tokens.tokenAt(9)?.address().path).toEqual([2])
-		expect(store.tokens.tokenAt(10)).toBeUndefined() // past the last surface
-	})
 })
 
 describe('TokenModel placement commands', () => {
@@ -297,11 +287,11 @@ describe('TokenModel placement commands', () => {
 
 	it('handle.placeCaret + handle.caretIndex round-trip', () => {
 		const {store} = mountWithMark()
-		const handle = store.tokens.tokenAt(0)
+		const handle = store.tokens.handle(store.tokens.tokens()[0].id!)
 		if (!handle) throw new Error('expected handle')
 		expect(handle.placeCaret(2)).toBe(true)
 		expect(handle.caretIndex()).toBe(2)
-		expect(handle.textLength()).toBe(handle.text().length)
+		expect(handle.textLength()).toBe(handle.token().content.length)
 	})
 })
 

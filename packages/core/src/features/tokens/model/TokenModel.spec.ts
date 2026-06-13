@@ -151,9 +151,7 @@ describe('TokenModel shell (model/)', () => {
 			expect(model.tokens()).toEqual([])
 			expect(model.boundaryFor(document.body, 0)).toBeUndefined()
 			expect(model.handleAt(document.body)).toBeUndefined()
-			expect([...model.handles()]).toHaveLength(0)
 			expect(model.handle(0)).toBeUndefined()
-			expect(model.tokenAt(0)).toBeUndefined()
 			expect(model.placeCaret(0)).toBe(false)
 		})
 	})
@@ -229,14 +227,13 @@ describe('TokenModel shell (model/)', () => {
 			expect(model.handleAt(document.createElement('div'))).toBeUndefined()
 		})
 
-		it('handle(id) resolves by token id and handles() iterates the bound layer', () => {
+		it('handle(id) resolves by token id over the bound layer', () => {
 			const {model, text2} = mountNewInline()
 
 			expect(model.handle(model.tokens()[2].id!)?.element()).toBe(text2)
 			expect(model.handle(999999)).toBeUndefined()
-			const all = [...model.handles()]
-			expect(all).toHaveLength(3)
-			expect(all.map(h => h.path())).toEqual([[0], [1], [2]])
+			const paths = model.tokens().map(token => model.handle(token.id!)?.path())
+			expect(paths).toEqual([[0], [1], [2]])
 		})
 
 		it('handle(id) bridges fresh and stale token objects by identity and rejects foreign ids', () => {
@@ -270,16 +267,6 @@ describe('TokenModel shell (model/)', () => {
 			render()
 
 			expect(model.handle(stale.id!)).toBe(handle)
-		})
-
-		it('tokenAt finds the containing text surface and the next one after a gap', () => {
-			const {model} = mountNewInline()
-
-			expect(model.tokenAt(1)?.address().path).toEqual([0])
-			expect(model.tokenAt(2)?.address().path).toEqual([0])
-			expect(model.tokenAt(5)?.address().path).toEqual([2])
-			expect(model.tokenAt(9)?.address().path).toEqual([2])
-			expect(model.tokenAt(10)).toBeUndefined()
 		})
 
 		it('children() refs scope the structural walk to the registered child-sequence host', () => {
@@ -342,17 +329,6 @@ describe('TokenModel shell (model/)', () => {
 				expect(defined).toBeGreaterThan(10)
 			})
 		}
-
-		it('tokenAt agrees with the old TokenModel across the whole position range — inline', () => {
-			const store = mountOld(INLINE_PROPS, buildInlineDom().container)
-			const {model} = mountNew(INLINE_PROPS, buildInlineDom().container)
-
-			for (let position = 0; position <= 10; position++) {
-				expect
-					.soft(model.tokenAt(position)?.address().path, `position ${position}`)
-					.toEqual(store.tokens.tokenAt(position)?.address().path)
-			}
-		})
 	})
 
 	describe('placement commands and selection reads', () => {
