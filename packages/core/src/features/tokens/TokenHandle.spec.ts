@@ -79,7 +79,7 @@ describe('TokenHandle', () => {
 		expect(allBefore).toHaveLength(1)
 
 		// handleFor must return the SAME handle object already yielded by handles()
-		const address = {path: [0], token: store.tokens.tree()[0]}
+		const address = {path: [0], token: store.tokens.tokens()[0]}
 		const handle = store.tokens.handleFor(address)
 		expect(handle?.address().path).toEqual([0])
 		expect(handle).toBe(allBefore[0])
@@ -108,7 +108,7 @@ describe('TokenHandle', () => {
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
 		// Grab the second row's handle (path [1])
-		const handle = store.tokens.handleFor({path: [1], token: store.tokens.tree()[1]})
+		const handle = store.tokens.handleFor({path: [1], token: store.tokens.tokens()[1]})
 		if (!handle) throw new Error('expected handle for row 1')
 
 		const onChange = vi.fn()
@@ -143,7 +143,7 @@ describe('TokenHandle', () => {
 		store.value.current('alpha\n\nbeta\n\n')
 		store.host.rendered()
 
-		const newHandle = store.tokens.handleFor({path: [1], token: store.tokens.tree()[1]})
+		const newHandle = store.tokens.handleFor({path: [1], token: store.tokens.tokens()[1]})
 		expect(newHandle).not.toBe(handle)
 	})
 
@@ -155,7 +155,7 @@ describe('TokenHandle', () => {
 		// handle object follows its token to path [2] and reports a move.
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
-		const handle = store.tokens.handleFor({path: [1], token: store.tokens.tree()[1]})
+		const handle = store.tokens.handleFor({path: [1], token: store.tokens.tokens()[1]})
 		if (!handle) throw new Error('expected handle for row 1')
 		expect(handle.text()).toBe('beta\n\n')
 
@@ -186,7 +186,7 @@ describe('TokenHandle', () => {
 		expect(moved.previousAddress.path).toEqual([1])
 
 		// Resolving the shifted address returns the SAME handle object
-		expect(store.tokens.handleFor({path: [2], token: store.tokens.tree()[2]})).toBe(handle)
+		expect(store.tokens.handleFor({path: [2], token: store.tokens.tokens()[2]})).toBe(handle)
 	})
 
 	it('handleAt returns "control" inside control elements and undefined outside', () => {

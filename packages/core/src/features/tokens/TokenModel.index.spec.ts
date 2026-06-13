@@ -80,7 +80,7 @@ describe('TokenModel lookups', () => {
 
 	it('handleFor(address) returns the handle bound at that path', () => {
 		const {store, container, span} = mountInline('hello')
-		const address = {path: [0], token: store.tokens.tree()[0]}
+		const address = {path: [0], token: store.tokens.tokens()[0]}
 
 		expect(store.tokens.handleFor(address)?.element()).toBe(span)
 		container.remove()

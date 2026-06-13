@@ -61,8 +61,8 @@ export class TokenModel {
 		isBlock: () => this.props.layout.isBlock(),
 	})
 
-	/** Renderer contract: reference changes ⇔ the renderer must run. */
-	readonly tree: Computed<Token[]> = this.#pipeline.tree
+	/** Renderer contract (adapter-only — `@markput/core/adapter`): reference change ⇔ the renderer must run. NOT a consumer data read — use `tokens()`. */
+	readonly renderTree: Computed<Token[]> = this.#pipeline.renderTree
 
 	/**
 	 * THE consumer read: the latest reconciled tree, always fresh and consistent

@@ -15,9 +15,9 @@ function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
-	container.replaceChildren(...store.tokens.tree().map(() => document.createElement('span')))
+	container.replaceChildren(...store.tokens.tokens().map(() => document.createElement('span')))
 	store.host.rendered()
-	const token = store.tokens.tree().find(t => t.type === 'mark')
+	const token = store.tokens.tokens().find(t => t.type === 'mark')
 	if (!token) throw new Error('expected parsed mark token')
 	const controller = MarkController.fromToken(store, token)
 	return {store, token, controller}
@@ -44,7 +44,7 @@ function mountedSetup() {
 	document.body.append(container)
 	store.host.container(container)
 	store.host.rendered()
-	const token = store.tokens.tree().find(t => t.type === 'mark')
+	const token = store.tokens.tokens().find(t => t.type === 'mark')
 	if (!token) throw new Error('expected parsed mark token')
 	const controller = MarkController.fromToken(store, token)
 	return {store, token, controller}

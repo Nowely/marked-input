@@ -35,7 +35,7 @@ export type CommitPipeline = {
 	/** Adapter signal: the renderer painted — bind the DOM and complete a pending structural apply. */
 	onRendered(): void
 	/** Structural tree; reference changes ⇔ the renderer must run. */
-	tree: Computed<Token[]>
+	renderTree: Computed<Token[]>
 	/** THE consumer read: the latest reconciled tree — always fresh, consistent with value.current() (it is `latest`, reassigned at the top of every apply). Never latch-gated. */
 	tokens(): readonly Token[]
 	/** THE model-level detector: fires once per commit, only after the DOM is consistent (both branches). Payloadless — consumers re-read. */
@@ -54,11 +54,11 @@ export type CommitPipeline = {
 const VERIFY_DOM: boolean = import.meta.env?.DEV ?? true
 
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
-	// `tree` is a plain signal written ONLY by the structural branch — reference
-	// stability on the text path is direct control flow. A computed would have
-	// to derive the kept reference from the latest reconcile result, reviving
-	// the old memo-mutation-inside-a-computed pattern this pipeline deletes.
-	const tree = signal<Token[]>({initial: []})
+	// `renderTree` is a plain signal written ONLY by the structural branch —
+	// reference stability on the text path is direct control flow. A computed
+	// would have to derive the kept reference from the latest reconcile result,
+	// reviving the old memo-mutation-inside-a-computed pattern this pipeline deletes.
+	const renderTree = signal<Token[]>({initial: []})
 	const changed = event<void>()
 
 	// Derived lookups over the bound nodes — replaced wholesale by bind on the
@@ -69,7 +69,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	let controlRoots = new WeakSet<HTMLElement>()
 
 	// The latest RECONCILED tree — what bind projects onto the node layer.
-	// Deliberately not tree(): the render tree keeps its (stale) reference
+	// Deliberately not renderTree(): the render tree keeps its (stale) reference
 	// across text applies, and a re-render arriving after one (any unrelated
 	// adapter update) must re-bind the fresh tokens, not regress the node
 	// layer — and the DOM text with it — to the pre-edit generation.
@@ -176,7 +176,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	function commitStructural(tokens: Token[], removedIds: readonly number[], selfHeal: boolean): void {
 		pendingRemovedIds = removedIds
 		pendingStructural = true
-		tree(tokens)
+		renderTree(tokens)
 		if (VERIFY_DOM) {
 			clearTimeout(renderedTimer)
 			renderedTimer = setTimeout(() => {
@@ -238,7 +238,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	return {
 		apply,
 		onRendered,
-		tree,
+		renderTree,
 		tokens: () => latest,
 		changed,
 		removedIds: () => lastRemovedIds,

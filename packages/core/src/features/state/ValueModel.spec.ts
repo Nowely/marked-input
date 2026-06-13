@@ -5,7 +5,7 @@ import {Store} from '../../store/Store'
 
 /**
  * Tokens publish only on a mounted store; a bare container is enough — with
- * no aligned DOM every commit settles structurally and `tree()` stays exactly
+ * no aligned DOM every commit settles structurally and `tokens()` stays exactly
  * the reconciled parse of the accepted value. Mount AFTER props: the value's
  * lazy initial reads defaultValue at the model's first read, and mounting IS
  * a read (real adapters always set props before the container attaches).
@@ -29,7 +29,7 @@ describe('ValueModel', () => {
 		store.props.set({value: 'hello'})
 		mount(store)
 		expect(store.value.current()).toBe('hello')
-		expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.tokens()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
 	it('initializes from defaultValue when uncontrolled', () => {
@@ -37,7 +37,7 @@ describe('ValueModel', () => {
 		store.props.set({defaultValue: 'hello'})
 		mount(store)
 		expect(store.value.current()).toBe('hello')
-		expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.tokens()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
 	it('controlled prop echo commits current and tokens', () => {
@@ -47,7 +47,7 @@ describe('ValueModel', () => {
 		store.props.set({value: 'world'})
 
 		expect(store.value.current()).toBe('world')
-		expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+		expect(store.tokens.tokens()).toMatchObject([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 	})
 
 	it('falls back to defaultValue when controlled value becomes undefined', () => {
@@ -58,7 +58,7 @@ describe('ValueModel', () => {
 
 		expect(store.props.value()).toBeUndefined()
 		expect(store.value.current()).toBe('default')
-		expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
+		expect(store.tokens.tokens()).toMatchObject([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
 	})
 
 	it('readOnly rejects editor-originated range replacement', () => {
@@ -70,7 +70,7 @@ describe('ValueModel', () => {
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('hello')
-		expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.tokens()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
 	it('readOnly allows controlled prop updates to replace accepted value', () => {
@@ -82,7 +82,7 @@ describe('ValueModel', () => {
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('world')
-		expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+		expect(store.tokens.tokens()).toMatchObject([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 	})
 
 	describe('replace()', () => {

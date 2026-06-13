@@ -69,9 +69,9 @@ function mountNew(props: CoreProps, container: HTMLElement) {
 	const setup = createNew(props)
 	setup.host.container(container)
 	setup.host.rendered()
-	/** Manual adapter for structural passes: repaint tree() (value-only inline markups), report rendered. */
+	/** Manual adapter for structural passes: repaint renderTree() (value-only inline markups), report rendered. */
 	const render = () => {
-		const spans = setup.model.tree().map(token => {
+		const spans = setup.model.renderTree().map(token => {
 			const span = document.createElement('span')
 			if (token.type === 'mark') span.append(document.createTextNode(token.value))
 			return span
@@ -122,19 +122,19 @@ describe('TokenModel shell (model/)', () => {
 	})
 
 	describe('construction seam and wiring', () => {
-		it('mounts directly on the state models: tree publishes the parse, changed announces the first bind', () => {
+		it('mounts directly on the state models: renderTree publishes the parse, changed announces the first bind', () => {
 			const setup = createNew(INLINE_PROPS)
 			const changedSpy = vi.fn()
 			watch(setup.model.changed, changedSpy)
 			// Renderer contract: nothing published before mount.
-			expect(setup.model.tree()).toEqual([])
+			expect(setup.model.renderTree()).toEqual([])
 
 			const dom = buildInlineDom()
 			setup.host.container(dom.container)
 
 			// Mount applied the first reconcile and bound the pre-built DOM.
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(setup.model.tree().map(t => t.content)).toEqual(['he', '@[x]', 'llo'])
+			expect(setup.model.renderTree().map(t => t.content)).toEqual(['he', '@[x]', 'llo'])
 			expect(dom.text1.textContent).toBe('he')
 			expect(dom.text2.textContent).toBe('llo')
 			expect(dom.text1.contentEditable).toBe('true')
@@ -148,7 +148,7 @@ describe('TokenModel shell (model/)', () => {
 		it('facade reads fail soft before mount', () => {
 			const {model} = createNew({defaultValue: 'hello'})
 
-			expect(model.tree()).toEqual([])
+			expect(model.tokens()).toEqual([])
 			expect(model.boundaryFor(document.body, 0)).toBeUndefined()
 			expect(model.handleAt(document.body)).toBeUndefined()
 			expect([...model.handles()]).toHaveLength(0)
@@ -158,12 +158,12 @@ describe('TokenModel shell (model/)', () => {
 		})
 	})
 
-	describe('tree and changed (renderer contract)', () => {
+	describe('renderTree and changed (renderer contract)', () => {
 		it('text edits keep the tree reference, patch the DOM in place and fire changed once after consistency', () => {
 			const {model, value, text2} = mountNewInline()
-			const treeBefore = model.tree()
+			const treeBefore = model.renderTree()
 			const treeSpy = vi.fn()
-			watch(model.tree, treeSpy)
+			watch(model.renderTree, treeSpy)
 			const changedSpy = vi.fn()
 			let domAtEvent: string | null = null
 			watch(model.changed, changeset => {
@@ -175,7 +175,7 @@ describe('TokenModel shell (model/)', () => {
 
 			expect(text2.textContent).toBe('llo!')
 			expect(domAtEvent).toBe('llo!')
-			expect(model.tree()).toBe(treeBefore)
+			expect(model.renderTree()).toBe(treeBefore)
 			expect(treeSpy).not.toHaveBeenCalled()
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 
@@ -183,19 +183,19 @@ describe('TokenModel shell (model/)', () => {
 			value.replace({start: 10, end: 10}, '!')
 			expect(text2.textContent).toBe('llo!!')
 			expect(changedSpy).toHaveBeenCalledTimes(2)
-			expect(model.tree()).toBe(treeBefore)
+			expect(model.renderTree()).toBe(treeBefore)
 		})
 
 		it('structural edits publish a new tree and stay quiet until the adapter renders', () => {
 			const {model, value, render} = mountNewInline()
-			const treeBefore = model.tree()
+			const treeBefore = model.renderTree()
 			const changedSpy = vi.fn()
 			watch(model.changed, changedSpy)
 
 			value.replace({start: 9, end: 9}, '@[y]')
 
-			expect(model.tree()).not.toBe(treeBefore)
-			expect(model.tree().map(t => t.content)).toEqual(['he', '@[x]', 'llo', '@[y]', ''])
+			expect(model.renderTree()).not.toBe(treeBefore)
+			expect(model.renderTree().map(t => t.content)).toEqual(['he', '@[x]', 'llo', '@[y]', ''])
 			expect(changedSpy).not.toHaveBeenCalled()
 
 			const spans = render()
@@ -223,7 +223,7 @@ describe('TokenModel shell (model/)', () => {
 			// Walk-up: a text node inside the mark resolves to the mark's handle.
 			const markText = mark.firstChild
 			if (!markText) throw new Error('expected mark text node')
-			expect(model.handleAt(markText)).toBe(model.handleOf(model.tree()[1]))
+			expect(model.handleAt(markText)).toBe(model.handleOf(model.tokens()[1]))
 			// Walk-up inside a control root resolves to 'control'.
 			expect(model.handleAt(inner)).toBe('control')
 			expect(model.handleAt(document.createElement('div'))).toBeUndefined()
@@ -232,8 +232,8 @@ describe('TokenModel shell (model/)', () => {
 		it('handleFor resolves by path and handles() iterates the bound layer', () => {
 			const {model, text2} = mountNewInline()
 
-			expect(model.handleFor({path: [2], token: model.tree()[2]})?.element()).toBe(text2)
-			expect(model.handleFor({path: [9], token: model.tree()[0]})).toBeUndefined()
+			expect(model.handleFor({path: [2], token: model.tokens()[2]})?.element()).toBe(text2)
+			expect(model.handleFor({path: [9], token: model.tokens()[0]})).toBeUndefined()
 			const all = [...model.handles()]
 			expect(all).toHaveLength(3)
 			expect(all.map(h => h.address().path)).toEqual([[0], [1], [2]])
@@ -241,7 +241,7 @@ describe('TokenModel shell (model/)', () => {
 
 		it('handleOf bridges fresh and stale token objects by identity and rejects foreign tokens', () => {
 			const {model, value, text2} = mountNewInline()
-			const stale = model.tree()[2]
+			const stale = model.tokens()[2]
 			const handle = model.handleOf(stale)
 			expect(handle?.element()).toBe(text2)
 
@@ -257,7 +257,7 @@ describe('TokenModel shell (model/)', () => {
 
 		it('handleOf fails closed while a structural apply awaits its bind, then resolves again', () => {
 			const {model, value, render} = mountNewInline()
-			const stale = model.tree()[2]
+			const stale = model.tokens()[2]
 			const handle = model.handleOf(stale)
 			expect(handle).toBeInstanceOf(TokenHandle)
 
@@ -299,7 +299,7 @@ describe('TokenModel shell (model/)', () => {
 			setup.host.container(container)
 			setup.host.rendered()
 
-			const mark = setup.model.tree()[1]
+			const mark = setup.model.tokens()[1]
 			if (mark.type !== 'mark') throw new Error('expected mark')
 			expect(setup.model.handleOf(mark)?.node()?.childSequenceHost).toBe(wrapper)
 			const child = setup.model.handleOf(mark.children[0])
@@ -388,7 +388,7 @@ describe('TokenModel shell (model/)', () => {
 
 		it('placeCaret({address, offset}) targets the addressed token explicitly', () => {
 			const {model} = mountNewInline()
-			const token = model.tree()[2] // text 'llo' [6,9]
+			const token = model.tokens()[2] // text 'llo' [6,9]
 
 			expect(model.placeCaret({address: {path: [2], token}, offset: 1})).toBe(true)
 			expect(model.readSelection()?.range.start).toBe(7)

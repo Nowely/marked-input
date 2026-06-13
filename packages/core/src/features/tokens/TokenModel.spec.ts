@@ -8,7 +8,7 @@ import type {Token} from './parser/types'
  * Parse-pipeline behavior through the Store. The model publishes nothing
  * before mount, so each test attaches a bare container; with no aligned DOM
  * every commit settles structurally (the text branch escalates on missing
- * surfaces), keeping `tree()` exactly the reconciled parse — which is what
+ * surfaces), keeping `tokens()` exactly the reconciled parse — which is what
  * these scenarios pin.
  */
 describe('TokenModel', () => {
@@ -26,18 +26,22 @@ describe('TokenModel', () => {
 	describe('auto-parse on value change', () => {
 		it('sets tokens from initial value on mount', () => {
 			mountWith('hello')
-			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.tokens.tokens()).toMatchObject([
+				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
+			])
 		})
 
 		it('updates tokens when value changes via replaceAll', () => {
 			mountWith('hello')
 			store.value.current('world')
-			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+			expect(store.tokens.tokens()).toMatchObject([
+				{type: 'text', content: 'world', position: {start: 0, end: 5}},
+			])
 		})
 
 		it('falls back to empty string when defaultValue is empty', () => {
 			mountWith('')
-			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: '', position: {start: 0, end: 0}}])
+			expect(store.tokens.tokens()).toMatchObject([{type: 'text', content: '', position: {start: 0, end: 0}}])
 		})
 
 		it('mount with defaultValue initializes value current', () => {
@@ -49,7 +53,7 @@ describe('TokenModel', () => {
 			store.props.set({options: [{markup: '@[__value__]'}]})
 			store.host.container(document.createElement('div'))
 			store.value.current('@[test]')
-			expect(store.tokens.tree()).toMatchObject([
+			expect(store.tokens.tokens()).toMatchObject([
 				{type: 'text', content: '@[test]', position: {start: 0, end: 7}},
 			])
 		})
@@ -58,7 +62,7 @@ describe('TokenModel', () => {
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
 			store.host.container(document.createElement('div'))
 			store.value.current('@[test]')
-			expect(store.tokens.tree()).toEqual(expect.arrayContaining([expect.objectContaining({type: 'mark'})]))
+			expect(store.tokens.tokens()).toEqual(expect.arrayContaining([expect.objectContaining({type: 'mark'})]))
 		})
 	})
 
@@ -66,7 +70,7 @@ describe('TokenModel', () => {
 		it('re-parses when parser changes', () => {
 			mountWith('hello @[world]')
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
-			expect(store.tokens.tree()).toEqual([
+			expect(store.tokens.tokens()).toEqual([
 				expect.objectContaining({type: 'text', content: 'hello '}),
 				expect.objectContaining({type: 'mark', content: '@[world]', value: 'world'}),
 				expect.objectContaining({type: 'text', content: ''}),
@@ -78,21 +82,23 @@ describe('TokenModel', () => {
 			store.props.set({Mark: undefined})
 			store.value.current('second')
 			store.props.set({Mark: () => null})
-			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
+			expect(store.tokens.tokens()).toMatchObject([
+				{type: 'text', content: 'second', position: {start: 0, end: 6}},
+			])
 		})
 	})
 
 	describe('signal ordering guarantee', () => {
-		it('tokens.tree is updated when value.current fires', () => {
+		it('tokens() is updated when value.current fires', () => {
 			// The model's reconcile watch is registered at mount, before any other
 			// watcher added afterwards, so by the time downstream listeners observe
-			// value.current, tree() reflects the new value (the structural commit
+			// value.current, tokens() reflects the new value (the structural commit
 			// self-heals synchronously against the bare container).
 			store.props.set({Mark: () => null, defaultValue: ''})
 			store.host.container(document.createElement('div'))
-			let tokensAtChangeTime: Token[] | undefined
+			let tokensAtChangeTime: readonly Token[] | undefined
 			const stop = watch(store.value.current, () => {
-				tokensAtChangeTime = store.tokens.tree()
+				tokensAtChangeTime = store.tokens.tokens()
 			})
 
 			store.value.current('hello')
@@ -112,8 +118,8 @@ describe('TokenModel', () => {
 				defaultValue: '@[hello]',
 			})
 			store.host.container(document.createElement('div'))
-			expect(store.tokens.tree()).toHaveLength(1)
-			expect(store.tokens.tree()[0].type).toBe('mark')
+			expect(store.tokens.tokens()).toHaveLength(1)
+			expect(store.tokens.tokens()[0].type).toBe('mark')
 		})
 
 		it('does not filter out empty text tokens when layout is inline', () => {
@@ -124,10 +130,10 @@ describe('TokenModel', () => {
 				defaultValue: '@[hello]',
 			})
 			store.host.container(document.createElement('div'))
-			expect(store.tokens.tree()).toHaveLength(3)
-			expect(store.tokens.tree()[0].type).toBe('text')
-			expect(store.tokens.tree()[1].type).toBe('mark')
-			expect(store.tokens.tree()[2].type).toBe('text')
+			expect(store.tokens.tokens()).toHaveLength(3)
+			expect(store.tokens.tokens()[0].type).toBe('text')
+			expect(store.tokens.tokens()[1].type).toBe('mark')
+			expect(store.tokens.tokens()[2].type).toBe('text')
 		})
 	})
 
@@ -135,7 +141,7 @@ describe('TokenModel', () => {
 		it('returns the stable identity id — a suffix-shifted token keeps its key', () => {
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
 			store.host.container(document.createElement('div'))
-			const mark = store.tokens.tree()[1]
+			const mark = store.tokens.tokens()[1]
 			const markKey = store.tokens.keyOf(mark)
 
 			// edit BEFORE the mark: 'he@[x]llo' → 'Xhe@[x]llo' — the mark suffix-
@@ -143,7 +149,7 @@ describe('TokenModel', () => {
 			// must not change (object-keyed counters remounted it, the defect)
 			store.value.current('Xhe@[x]llo')
 
-			const shifted = store.tokens.tree()[1]
+			const shifted = store.tokens.tokens()[1]
 			expect(shifted).not.toBe(mark)
 			expect(store.tokens.keyOf(shifted)).toBe(markKey)
 		})

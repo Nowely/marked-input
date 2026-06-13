@@ -26,7 +26,7 @@ function mountWithMark(beforeMount?: (store: Store) => void) {
 
 /** Stable identity of the token at a top-level index, read through its live handle. */
 function handleId(store: Store, index: number): number {
-	const handle = store.tokens.handleOf(store.tokens.tree()[index])
+	const handle = store.tokens.handleOf(store.tokens.tokens()[index])
 	if (!handle) throw new Error(`expected a handle at [${index}]`)
 	return handle.id
 }
@@ -45,12 +45,12 @@ describe('TokenModel changed event', () => {
 		// (the event is payloadless in Phase 2; the count is the contract).
 		expect(changedSpy).toHaveBeenCalledTimes(2)
 
-		const ids = store.tokens.tree().map((_, i) => handleId(store, i))
+		const ids = store.tokens.tokens().map((_, i) => handleId(store, i))
 		expect(ids).toHaveLength(3)
 		expect(new Set(ids).size).toBe(3)
 		ids.forEach(id => expect(typeof id).toBe('number'))
 		// stable across repeated reads
-		expect(store.tokens.tree().map((_, i) => handleId(store, i))).toEqual(ids)
+		expect(store.tokens.tokens().map((_, i) => handleId(store, i))).toEqual(ids)
 	})
 
 	it('edit.replace fires changed once and the edited token’s handle identity survives', () => {
@@ -118,14 +118,14 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 		document.body.replaceChildren()
 	})
 
-	it('3 text edits → tree watcher 0 / changed 3; structural edit → tree watcher 1, completed by rendered()', () => {
+	it('3 text edits → renderTree watcher 0 / changed 3; structural edit → renderTree watcher 1, completed by rendered()', () => {
 		const {store, container} = mountWithMark()
 
-		// A watch on tree pulls the signal every flush wave; its callback only
+		// A watch on renderTree pulls the signal every flush wave; its callback only
 		// fires when the value differs (equality cutoff) — exactly the adapters'
 		// subscription semantics (useSyncExternalStore / shallowRef).
 		const treeSpy = vi.fn()
-		watch(store.tokens.tree, treeSpy)
+		watch(store.tokens.renderTree, treeSpy)
 		const changedSpy = vi.fn()
 		watch(store.tokens.changed, changedSpy)
 
@@ -145,14 +145,14 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 		// One structural edit: 'he@[x]llo!!!' → 'he@[x]llo!!!@[y]' (added tokens).
 		store.edit.replace({start: 12, end: 12}, '@[y]')
 
-		// Gate: structural edit → ≥1 renderer invocation (tree reference changed).
+		// Gate: structural edit → ≥1 renderer invocation (renderTree reference changed).
 		expect(treeSpy).toHaveBeenCalledTimes(1)
 		// The renderer owns this change: consistency is not announced yet.
 		expect(changedSpy).toHaveBeenCalledTimes(3)
 
 		// The (manual) adapter re-renders from the new tree and reports back.
 		container.replaceChildren(
-			...store.tokens.tree().map(token => {
+			...store.tokens.tokens().map(token => {
 				const span = document.createElement('span')
 				if (token.type === 'mark') span.append(document.createTextNode(token.value))
 				return span

@@ -40,7 +40,7 @@ function createHarness(overrides?: {renderedTimeoutMs?: number}) {
 		return result
 	}
 	const render = () => {
-		const spans = pipeline.tree().map(token => {
+		const spans = pipeline.renderTree().map(token => {
 			const span = document.createElement('span')
 			if (token.type === 'mark') span.append(document.createTextNode(token.value))
 			return span
@@ -75,14 +75,14 @@ describe('createCommitPipeline', () => {
 			const {pipeline, container, nodes} = harness
 			const changedSpy = vi.fn()
 			watch(pipeline.changed, changedSpy)
-			expect(pipeline.tree()).toEqual([])
+			expect(pipeline.renderTree()).toEqual([])
 			expect(pipeline.pending()).toBe(false)
 
 			const result = harness.apply('he@[x]llo')
 
 			expect(result.structural).toBe(true)
 			expect(result.changes.every(c => c.kind === 'add')).toBe(true)
-			expect(pipeline.tree()).toBe(result.tokens)
+			expect(pipeline.renderTree()).toBe(result.tokens)
 			expect(pipeline.pending()).toBe(true)
 			expect(changedSpy).not.toHaveBeenCalled()
 			// Nothing painted, nothing bound: the first paint belongs to the adapter.
@@ -183,7 +183,7 @@ describe('createCommitPipeline', () => {
 			const markHandle = pipeline.byPath().get('1')
 			if (!markHandle) throw new Error('expected mark handle')
 			const byPathBefore = pipeline.byPath()
-			const treeBefore = pipeline.tree()
+			const treeBefore = pipeline.renderTree()
 			const markChanges: TokenChange[] = []
 			watch(markHandle.changed, change => markChanges.push(change))
 			const changedSpy = vi.fn()
@@ -201,7 +201,7 @@ describe('createCommitPipeline', () => {
 			expect(markHandle.address().path).toEqual([1])
 			// O(change) producer behavior: no lookup or tree rebuilds on the text path.
 			expect(pipeline.byPath()).toBe(byPathBefore)
-			expect(pipeline.tree()).toBe(treeBefore)
+			expect(pipeline.renderTree()).toBe(treeBefore)
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 		})
 
@@ -209,7 +209,7 @@ describe('createCommitPipeline', () => {
 			const harness = createHarness()
 			const {pipeline} = harness
 			const {text2} = mountValue(harness)
-			const treeBefore = pipeline.tree()
+			const treeBefore = pipeline.renderTree()
 			const changedSpy = vi.fn()
 			watch(pipeline.changed, changedSpy)
 
@@ -218,7 +218,7 @@ describe('createCommitPipeline', () => {
 			expect(result.structural).toBe(false)
 			expect(result.changes).toEqual([])
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(pipeline.tree()).toBe(treeBefore)
+			expect(pipeline.renderTree()).toBe(treeBefore)
 			expect(text2.textContent).toBe('llo')
 		})
 
@@ -250,7 +250,7 @@ describe('createCommitPipeline', () => {
 			const harness = createHarness()
 			const {pipeline} = harness
 			const {text2} = mountValue(harness)
-			const treeBefore = pipeline.tree()
+			const treeBefore = pipeline.renderTree()
 			const changedSpy = vi.fn()
 			let boundAtEvent = 0
 			watch(pipeline.changed, () => {
@@ -263,8 +263,8 @@ describe('createCommitPipeline', () => {
 
 			expect(result.structural).toBe(true)
 			expect(result.changes.some(c => c.kind === 'add')).toBe(true)
-			expect(pipeline.tree()).not.toBe(treeBefore)
-			expect(pipeline.tree()).toBe(result.tokens)
+			expect(pipeline.renderTree()).not.toBe(treeBefore)
+			expect(pipeline.renderTree()).toBe(result.tokens)
 			expect(changedSpy).not.toHaveBeenCalled()
 			expect(text2.textContent).toBe('llo')
 			expect(pipeline.pending()).toBe(true)
@@ -316,10 +316,10 @@ describe('createCommitPipeline', () => {
 			const {pipeline, container} = harness
 			mountValue(harness)
 			const treeSpy = vi.fn()
-			watch(pipeline.tree, treeSpy)
+			watch(pipeline.renderTree, treeSpy)
 			const changedSpy = vi.fn()
 			watch(pipeline.changed, changedSpy)
-			const treeBefore = pipeline.tree()
+			const treeBefore = pipeline.renderTree()
 
 			harness.apply('he@[x]llo!')
 			harness.apply('he@[x]llo!!')
@@ -327,7 +327,7 @@ describe('createCommitPipeline', () => {
 
 			// Gate: text edits → 0 renderer invalidations, every edit still committed.
 			expect(treeSpy).toHaveBeenCalledTimes(0)
-			expect(pipeline.tree()).toBe(treeBefore)
+			expect(pipeline.renderTree()).toBe(treeBefore)
 			expect(changedSpy).toHaveBeenCalledTimes(3)
 			expect(container.children[2].textContent).toBe('llo!!!')
 
@@ -373,13 +373,13 @@ describe('createCommitPipeline', () => {
 			watch(pipeline.changed, changedSpy)
 
 			harness.apply('he@[x]llo@[y]')
-			const treeAfterFirst = pipeline.tree()
+			const treeAfterFirst = pipeline.renderTree()
 			// Looks like a pure text edit relative to the PENDING tree — but the node
 			// layer is one generation stale, so it must fold into the latched window.
 			const second = harness.apply('he@[x]llo!@[y]')
 
-			expect(pipeline.tree()).not.toBe(treeAfterFirst)
-			expect(pipeline.tree()).toBe(second.tokens)
+			expect(pipeline.renderTree()).not.toBe(treeAfterFirst)
+			expect(pipeline.renderTree()).toBe(second.tokens)
 			expect(pipeline.pending()).toBe(true)
 			expect(changedSpy).not.toHaveBeenCalled()
 			// Fail-closed: neither the handle nor the DOM was half-patched.
@@ -418,7 +418,7 @@ describe('createCommitPipeline', () => {
 			const {mark} = mountValue(harness)
 			const markHandle = pipeline.byPath().get('1')
 			if (!markHandle) throw new Error('expected mark handle')
-			const treeBefore = pipeline.tree()
+			const treeBefore = pipeline.renderTree()
 			const markChanges: TokenChange[] = []
 			watch(markHandle.changed, change => markChanges.push(change))
 			const changedSpy = vi.fn()
@@ -434,8 +434,8 @@ describe('createCommitPipeline', () => {
 			const result = harness.apply('he@[y]llo')
 
 			expect(result.structural).toBe(true)
-			expect(pipeline.tree()).not.toBe(treeBefore)
-			expect(pipeline.tree()).toBe(result.tokens)
+			expect(pipeline.renderTree()).not.toBe(treeBefore)
+			expect(pipeline.renderTree()).toBe(result.tokens)
 			// Quiet until the renderer paints — the renderer owns a refused-descend mark.
 			expect(changedSpy).not.toHaveBeenCalled()
 			expect(pipeline.pending()).toBe(true)
@@ -520,7 +520,7 @@ describe('createCommitPipeline', () => {
 			const changedSpy = vi.fn()
 			watch(pipeline.changed, changedSpy)
 
-			const tokens = [...pipeline.tree()]
+			const tokens = [...pipeline.renderTree()]
 			// A `text` change whose id has no handle abandons the text branch and
 			// self-heals structurally (the conservative stale-tree guard).
 			pipeline.apply({
@@ -532,7 +532,7 @@ describe('createCommitPipeline', () => {
 
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 			expect(pipeline.pending()).toBe(false)
-			expect(pipeline.tree()).toBe(tokens)
+			expect(pipeline.renderTree()).toBe(tokens)
 			expect(pipeline.byPath().size).toBe(3)
 		})
 	})
@@ -630,7 +630,7 @@ describe('createCommitPipeline', () => {
 						if (token.type === 'mark') span.append(...paint(token.children))
 						return span
 					})
-				container.replaceChildren(...paint(pipeline.tree()))
+				container.replaceChildren(...paint(pipeline.renderTree()))
 				pipeline.onRendered()
 			}
 			return {pipeline, apply, render, container}
@@ -649,7 +649,7 @@ describe('createCommitPipeline', () => {
 			if (!childSurface) throw new Error('expected child surface')
 			expect(childSurface.textContent).toBe('ab')
 			const markElement = markHandle.element()
-			const treeBefore = pipeline.tree()
+			const treeBefore = pipeline.renderTree()
 			const byPathBefore = pipeline.byPath()
 			const markChanges: TokenChange[] = []
 			watch(markHandle.changed, change => markChanges.push(change))
@@ -670,7 +670,7 @@ describe('createCommitPipeline', () => {
 
 			// routed TEXT: no tree change, no lookup rebuilds, no pending latch
 			expect(result.structural).toBe(false)
-			expect(pipeline.tree()).toBe(treeBefore)
+			expect(pipeline.renderTree()).toBe(treeBefore)
 			expect(pipeline.byPath()).toBe(byPathBefore)
 			expect(pipeline.pending()).toBe(false)
 			expect(changedSpy).toHaveBeenCalledTimes(1)
@@ -698,7 +698,7 @@ describe('createCommitPipeline', () => {
 			// Manual adapter render with a control alongside the token elements.
 			const button = document.createElement('button')
 			controls.add(button)
-			const spans = pipeline.tree().map(token => {
+			const spans = pipeline.renderTree().map(token => {
 				const span = document.createElement('span')
 				if (token.type === 'mark') span.append(document.createTextNode(token.value))
 				return span

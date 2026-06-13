@@ -7,8 +7,8 @@ import {Store} from './Store'
 describe('Store', () => {
 	it('construct with no arguments', () => {
 		const store = new Store()
-		// The renderer contract: nothing is published before a container mounts.
-		expect(store.tokens.tree()).toEqual([])
+		// The fresh read: nothing is reconciled before a container mounts.
+		expect(store.tokens.tokens()).toEqual([])
 		expect(store.props.readOnly()).toBe(false)
 	})
 
@@ -130,12 +130,14 @@ describe('Store', () => {
 
 	describe('value edits', () => {
 		// Tokens publish only on a mounted store; with a bare container every
-		// commit settles structurally and tree() is the parse of the accepted value.
+		// commit settles structurally and tokens() is the parse of the accepted value.
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			store.host.container(document.createElement('div'))
 			store.value.current('hello')
-			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.tokens.tokens()).toMatchObject([
+				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
+			])
 			expect(store.value.current()).toBe('hello')
 		})
 
@@ -156,7 +158,9 @@ describe('Store', () => {
 			store.value.current('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
-			expect(store.tokens.tree()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.tokens.tokens()).toMatchObject([
+				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
+			])
 		})
 
 		it('not throw when onChange is not set', () => {
