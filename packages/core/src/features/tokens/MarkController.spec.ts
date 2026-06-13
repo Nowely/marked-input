@@ -201,19 +201,31 @@ describe('MarkController across text-path commits (identity bridge)', () => {
 		expect(store.value.current()).toBe('hello')
 	})
 
-	it('same-slot replacement inherits identity — controller bridges without rendered()', () => {
+	it('same-slot replacement inherits identity — controller bridges across the structural commit', () => {
 		// Structural path: the whole value is replaced wholesale, but the new
 		// value carries the SAME descriptor in the SAME slot position. Reconcile
-		// pairs tokens by index and the mark inherits its predecessor's id — the
-		// id bridge therefore keeps the controller live with no manual rendered().
-		// The textChanged-mark escalation is synchronous, so the handle is fresh
-		// the instant value.current() returns.
+		// pairs the mark by index and it inherits its predecessor's id, so the id
+		// bridge keeps the controller live ACROSS the commit. Phase 2 routes a
+		// refused-descend / value-replaced mark structurally at reconcile time, so
+		// it waits for the adapter handshake like any structural change (the old
+		// synchronous self-heal was a refused-descend special case — narrowed for
+		// one uniform rule). What survives is identity continuity, not resolution
+		// timing: once the new tree is painted and rendered() fires, bind resolves
+		// the inherited-id mark and the controller applies.
 		const {store, controller} = mountedSetup()
 
 		// Same descriptor (@[__value__]) in the same slot (index 0): identity inherited.
 		store.value.current('different @[x]')
 
-		// No rendered() call needed — the escalation re-binds synchronously.
+		// Paint the new tree (text + value-only mark span) and complete the
+		// handshake — bind re-resolves the inherited-id mark onto the new surface.
+		const container = document.querySelector('div')!
+		const text = document.createElement('span')
+		const markEl = document.createElement('span')
+		markEl.append(document.createTextNode('x'))
+		container.replaceChildren(text, markEl)
+		store.host.rendered()
+
 		controller.update({value: 'probe'})
 
 		expect(store.value.current()).toBe('different @[probe]')

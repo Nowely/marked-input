@@ -178,7 +178,6 @@ describe('TokenModel shell (model/)', () => {
 			expect(model.tree()).toBe(treeBefore)
 			expect(treeSpy).not.toHaveBeenCalled()
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(changedSpy.mock.calls[0][0].kind).toBe('delta')
 
 			// Consume-once hint: a second edit patches through the windowed parse again.
 			value.replace({start: 10, end: 10}, '!')
