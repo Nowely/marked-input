@@ -20,7 +20,8 @@ describe('tokenIdentity', () => {
 		const tracker = createIdentityTracker()
 		const next = parser.parse('he@[x]llo')
 		const result = tracker.reconcile(next)
-		expect(result.changeset).toEqual({kind: 'full'})
+		expect(result.structural).toBe(true)
+		expect(result.changes.every(c => c.kind === 'add')).toBe(true)
 		expect(result.tokens).toHaveLength(3)
 		const ids = result.tokens.map(t => tracker.idOf(t))
 		expect(new Set(ids).size).toBe(3)
@@ -36,17 +37,16 @@ describe('tokenIdentity', () => {
 		// insert 'A' inside the trailing text: 'he@[x]lAlo', edit at offset 7
 		const result = tracker.reconcile(parser.parse('he@[x]lAlo'), {start: 7, end: 7, insertedLength: 1})
 
-		expect(result.changeset.kind).toBe('delta')
-		if (result.changeset.kind !== 'delta') throw new Error('expected delta')
+		expect(result.structural).toBe(false)
 		// prefix: identical region reused by REFERENCE
 		expect(result.tokens[0]).toBe(text1)
 		expect(result.tokens[1]).toBe(mark)
 		// edited token: new object, SAME id, listed in textChanged
 		expect(result.tokens[2]).not.toBe(text2)
 		expect(tracker.idOf(result.tokens[2])).toBe(idText2)
-		expect(result.changeset.textChanged).toEqual([idText2])
-		expect(result.changeset.added).toEqual([])
-		expect(result.changeset.removed).toEqual([])
+		expect(result.changes.filter(c => c.kind === 'text').map(c => c.id)).toEqual([idText2])
+		expect(result.changes.filter(c => c.kind === 'add').map(c => c.id)).toEqual([])
+		expect(result.removedIds).toEqual([])
 	})
 
 	it('suffix shift: edit before a mark keeps the mark id and reports updated', () => {
@@ -57,12 +57,11 @@ describe('tokenIdentity', () => {
 
 		// insert at offset 1 inside 'he' → mark and tail shift right by 1
 		const result = tracker.reconcile(parser.parse('hAe@[x]llo'), {start: 1, end: 1, insertedLength: 1})
-		expect(result.changeset.kind).toBe('delta')
-		if (result.changeset.kind !== 'delta') throw new Error('expected delta')
+		const updated = result.changes.filter(c => c.kind === 'update').map(c => c.id)
 		expect(tracker.idOf(result.tokens[1])).toBe(markId)
 		expect(tracker.idOf(result.tokens[2])).toBe(tailId)
-		expect(result.changeset.updated).toContain(markId)
-		expect(result.changeset.updated).toContain(tailId)
+		expect(updated).toContain(markId)
+		expect(updated).toContain(tailId)
 		// shifted tokens are NEW objects (positions differ) with identical content
 		expect(result.tokens[1]).not.toBe(first[1])
 		expect(result.tokens[1].content).toBe(first[1].content)
@@ -75,9 +74,7 @@ describe('tokenIdentity', () => {
 
 		// delete the mark entirely: 'hello' (positions 2..6 removed)
 		const result = tracker.reconcile(parser.parse('hello'), {start: 2, end: 6, insertedLength: 0})
-		expect(result.changeset.kind).toBe('delta')
-		if (result.changeset.kind !== 'delta') throw new Error('expected delta')
-		expect(result.changeset.removed).toContain(markId)
+		expect(result.removedIds).toContain(markId)
 		expect(result.tokens.some(t => tracker.idOf(t) === markId)).toBe(false)
 	})
 
@@ -93,11 +90,9 @@ describe('tokenIdentity', () => {
 
 		// delete the mark entirely: 'tail' (positions 0..5 removed)
 		const result = tracker.reconcile(slotParser.parse('tail'), {start: 0, end: 5, insertedLength: 0})
-		expect(result.changeset.kind).toBe('delta')
-		if (result.changeset.kind !== 'delta') throw new Error('expected delta')
-		expect(result.changeset.removed).toContain(markId)
+		expect(result.removedIds).toContain(markId)
 		// the deleted mark's descendant must land in removed as well
-		expect(result.changeset.removed).toContain(childId)
+		expect(result.removedIds).toContain(childId)
 		expect(result.tokens.some(t => tracker.idOf(t) === markId)).toBe(false)
 	})
 
@@ -106,9 +101,8 @@ describe('tokenIdentity', () => {
 		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
 		const markId = tracker.idOf(first[1])
 		const result = tracker.reconcile(parser.parse('he@[x]llo!'))
-		// without a hint the changeset must be conservative…
-		expect(['full', 'delta']).toContain(result.changeset.kind)
-		// …but identity should still survive for the untouched prefix (findGap fallback)
+		// without a hint the changeset must be conservative, but identity should
+		// still survive for the untouched prefix (findGap fallback)
 		expect(tracker.idOf(result.tokens[1])).toBe(markId)
 		// the untouched prefix is reused by reference, not just by id
 		expect(result.tokens[0]).toBe(first[0])
@@ -125,12 +119,11 @@ describe('tokenIdentity', () => {
 		const tailId = tracker.idOf(first[2])
 
 		const result = tracker.reconcile(parser.parse('Xhe@[x]llo'), undefined, 'he@[x]llo', 'Xhe@[x]llo')
-		expect(result.changeset.kind).toBe('delta')
-		if (result.changeset.kind !== 'delta') throw new Error('expected delta')
+		const updated = result.changes.filter(c => c.kind === 'update').map(c => c.id)
 		expect(tracker.idOf(result.tokens[1])).toBe(markId)
 		expect(tracker.idOf(result.tokens[2])).toBe(tailId)
-		expect(result.changeset.updated).toContain(markId)
-		expect(result.changeset.updated).toContain(tailId)
+		expect(updated).toContain(markId)
+		expect(updated).toContain(tailId)
 	})
 
 	it('reconcile with an unchanged value reuses every token by reference with an empty delta', () => {
@@ -138,7 +131,9 @@ describe('tokenIdentity', () => {
 		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
 		const firstIds = first.map(t => tracker.idOf(t))
 		const result = tracker.reconcile(parser.parse('he@[x]llo'))
-		expect(result.changeset).toEqual({kind: 'delta', textChanged: [], added: [], removed: [], updated: []})
+		expect(result.structural).toBe(false)
+		expect(result.changes).toEqual([])
+		expect(result.removedIds).toEqual([])
 		result.tokens.forEach((token, i) => expect(token).toBe(first[i]))
 		// repeated reconciles must not allocate phantom ids for the discarded
 		// parse arrays: ids stay stable and a 3rd reconcile still returns the
@@ -191,10 +186,14 @@ describe('tokenIdentity', () => {
 describe('deep reconcile (descend)', () => {
 	const slotParser = new Parser(['#[__slot__]'])
 
-	const delta = (result: ReconcileResult) => {
-		if (result.changeset.kind !== 'delta') throw new Error('expected delta')
-		return result.changeset
-	}
+	// Phase 2: the four legacy id buckets re-derived from the new change shape, so
+	// the descend assertions below read as before (added/removed/textChanged/updated).
+	const delta = (result: ReconcileResult) => ({
+		added: result.changes.filter(c => c.kind === 'add').map(c => c.id),
+		textChanged: result.changes.filter(c => c.kind === 'text').map(c => c.id),
+		updated: result.changes.filter(c => c.kind === 'update').map(c => c.id),
+		removed: result.removedIds,
+	})
 
 	const asMark = (token: Token): MarkToken => {
 		if (token.type !== 'mark') throw new Error('expected mark')
@@ -534,5 +533,51 @@ describe('token.id plain field (identity unification, phase 1)', () => {
 		expect(typeof markId).toBe('number')
 		expect(result.tokens[1]).not.toBe(first[1])
 		expect(result.tokens[1].id).toBe(markId)
+	})
+})
+
+describe('reconcile structural result (phase 2)', () => {
+	it('cold start: structural true, every token an add change at its path, no removals', () => {
+		const tracker = createIdentityTracker()
+		const slotted = new Parser(['#[__slot__]'])
+		const result = tracker.reconcile(slotted.parse('#[ab]tail'))
+
+		expect(result.structural).toBe(true)
+		expect(result.removedIds).toEqual([])
+		// '#[ab]tail' → text '' [0,0], mark '#[ab]' {child 'ab'}, text 'tail'
+		// one add entry per token of the whole tree, each at its tree path
+		const paths = result.changes.map(c => c.path)
+		expect(paths).toContainEqual([0])
+		expect(paths).toContainEqual([1])
+		expect(paths).toContainEqual([1, 0])
+		expect(paths).toContainEqual([2])
+		for (const change of result.changes) {
+			expect(change.kind).toBe('add')
+			expect(change.id).toBe(change.token.id)
+		}
+	})
+
+	it('a tail text edit: structural false, one text change at the tail path', () => {
+		const tracker = createIdentityTracker()
+		tracker.reconcile(parser.parse('he@[x]llo'))
+		const result = tracker.reconcile(parser.parse('he@[x]llo!'), {start: 9, end: 9, insertedLength: 1})
+
+		expect(result.structural).toBe(false)
+		expect(result.removedIds).toEqual([])
+		const text = result.changes.filter(c => c.kind === 'text')
+		expect(text).toHaveLength(1)
+		expect(text[0].path).toEqual([2])
+		expect(text[0].token.content).toBe('llo!')
+		expect(text[0].id).toBe(result.tokens[2].id)
+	})
+
+	it('a removed mark: structural true, the mark id (and child id) in removedIds', () => {
+		const tracker = createIdentityTracker()
+		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
+		const markId = first[1].id
+		const result = tracker.reconcile(parser.parse('hello'), {start: 2, end: 6, insertedLength: 0})
+
+		expect(result.structural).toBe(true)
+		expect(result.removedIds).toContain(markId)
 	})
 })

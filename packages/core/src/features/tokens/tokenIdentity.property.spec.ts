@@ -430,11 +430,12 @@ function assertReconcileEquivalence(
 	}
 	assertIdField(result.tokens)
 
-	// 2. Changeset id invariants.
+	// 2. Change id invariants (Phase 2: routing kinds, not buckets).
 	const newIds = collectTreeIds(result.tokens, tracker)
-	expect(result.changeset.kind).toBe('delta')
-	if (result.changeset.kind !== 'delta') throw new Error('unreachable')
-	const {textChanged, added, removed, updated} = result.changeset
+	const added = result.changes.filter(c => c.kind === 'add').map(c => c.id)
+	const textChanged = result.changes.filter(c => c.kind === 'text').map(c => c.id)
+	const updated = result.changes.filter(c => c.kind === 'update').map(c => c.id)
+	const removed = result.removedIds
 	for (const id of removed) {
 		expect(prevIds.has(id), `removed id ${id} was never in the previous tree`).toBe(true)
 		expect(newIds.has(id), `removed id ${id} is still present in the new tree`).toBe(false)

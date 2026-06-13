@@ -1,5 +1,27 @@
+import type {TokenPath} from '../../shared/editorContracts'
 import type {MarkToken, Token} from './parser/types'
 import {findGap} from './preparsing'
+
+/**
+ * One change to the reconciled tree, resolved AT RECONCILE TIME (Phase 2): the
+ * id, the new token object, and its tree path — so the commit pipeline patches
+ * without a second tree walk. `kind` carries the routing the old id-buckets did:
+ *
+ * - `text`   the token's rendered text content changed. A TEXT token → patch its
+ *            surface. A MARK with this kind is a REFUSED deep-descend (value/meta
+ *            /outside-slot/child-structure changed); it sets `structural` (mark
+ *            components render value/meta as framework props) but keeps the entry
+ *            for handle-event continuity (the inherited id fires `text`).
+ * - `update` position-only refresh (a suffix shift or an in-slot child move):
+ *            update the node's token/path, no surface patch, no render.
+ * - `add`    a token new to the tree (no previous id). Forces `structural`.
+ */
+export type TokenChangeEntry = {
+	readonly id: number
+	readonly token: Token
+	readonly path: TokenPath
+	readonly kind: 'text' | 'update' | 'add'
+}
 
 export type EditHint = {
 	/** Replaced range in the PREVIOUS value. */
@@ -9,35 +31,21 @@ export type EditHint = {
 }
 
 /**
- * Delta buckets carry token ids. `added`/`removed` include the ids of all
- * descendants of the affected tokens. `updated` holds renderer-irrelevant
- * changes: position-only shifts (descendants included) and deep-descended
- * container marks (slot interior changed; descriptor, value/meta and child
- * structure unchanged — spec §Deep reconcile). A descended mark enters
- * `updated` alone: its children report their own changes. `textChanged`
- * holds text tokens whose content changed, plus marks whose descend was
- * REFUSED (value/meta/outside-slot/child-structure changed): those keep
- * mark-level granularity with the id inherited — the subtree is dirty, not
- * diffed — and the commit pipeline escalates them structurally at runtime.
- * DELIBERATE deviation from the consolidation plan's "textChanged ⊆ text
- * tokens by construction; demote routing to a dev assertion": reclassifying
- * refused descends as removed+added would break handle identity continuity
- * for value-edited marks (MarkController.update flows pin same-id
- * inheritance), so commit.ts keeps its runtime mark-escalation branch.
+ * The reconcile output (Phase 2 — routing decided here, not at commit time):
+ *
+ * - `tokens`     the reconciled tree (ids stamped, prev objects reused).
+ * - `structural` the renderer must run: a token was added or removed, or a mark
+ *                refused its deep-descend. The commit text branch is taken iff
+ *                this is false AND no structural apply is pending (the fold guard).
+ * - `changes`    every changed token as `(id, token, path)` + routing kind, in
+ *                tree order — the commit branch reads them directly.
+ * - `removedIds` ids gone from the tree (subtree included) — the prune feed.
  */
-export type Changeset =
-	| {kind: 'full'}
-	| {
-			kind: 'delta'
-			textChanged: number[]
-			added: number[]
-			removed: number[]
-			updated: number[]
-	  }
-
 export type ReconcileResult = {
 	tokens: Token[]
-	changeset: Changeset
+	structural: boolean
+	changes: TokenChangeEntry[]
+	removedIds: number[]
 }
 
 export type IdentityTracker = {
@@ -116,7 +124,9 @@ export function createIdentityTracker(): IdentityTracker {
 			if (!prev) {
 				next.forEach(ensureId)
 				previous = next
-				return {tokens: next, changeset: {kind: 'full'}}
+				const changes: TokenChangeEntry[] = []
+				collectAddChanges(next, [], changes)
+				return {tokens: next, structural: true, changes, removedIds: []}
 			}
 
 			// Top-level tokens partition the value, so the values can always be
@@ -315,10 +325,7 @@ export function createIdentityTracker(): IdentityTracker {
 			// replaced by reused prev objects in `out`) would allocate phantom ids.
 			out.forEach(ensureId)
 			previous = out
-			return {
-				tokens: out,
-				changeset: {kind: 'delta', textChanged, added, removed, updated},
-			}
+			return bridge(out, textChanged, added, updated, removed)
 		},
 	}
 }
@@ -366,4 +373,57 @@ function tokensEqualShifted(a: Token, b: Token, delta: number): boolean {
 
 function sameDescriptor(a: MarkToken, b: MarkToken): boolean {
 	return a.descriptor === b.descriptor
+}
+
+/** Cold start: every token of the tree is an `add` change at its path. */
+function collectAddChanges(tokens: readonly Token[], basePath: TokenPath, out: TokenChangeEntry[]): void {
+	tokens.forEach((token, i) => {
+		const path = [...basePath, i]
+		// id was stamped by ensureId before this runs
+		out.push({id: token.id ?? 0, token, path, kind: 'add'})
+		if (token.type === 'mark') collectAddChanges(token.children, path, out)
+	})
+}
+
+/**
+ * TEMPORARY Phase-2 bridge: rebuild `changes`/`structural`/`removedIds` from the
+ * legacy id buckets by re-walking the output tree for paths. Task 2 threads the
+ * paths through the reconcile walk itself and DELETES this — the buckets and this
+ * function vanish together.
+ */
+function bridge(
+	out: Token[],
+	textChanged: readonly number[],
+	added: readonly number[],
+	updated: readonly number[],
+	removed: readonly number[]
+): ReconcileResult {
+	const byId = new Map<number, {token: Token; path: TokenPath}>()
+	const walk = (tokens: readonly Token[], basePath: TokenPath): void => {
+		tokens.forEach((token, i) => {
+			const path = [...basePath, i]
+			if (token.id !== undefined) byId.set(token.id, {token, path})
+			if (token.type === 'mark') walk(token.children, path)
+		})
+	}
+	walk(out, [])
+	const changes: TokenChangeEntry[] = []
+	let structural = removed.length > 0
+	for (const id of added) {
+		const hit = byId.get(id)
+		if (hit) changes.push({id, token: hit.token, path: hit.path, kind: 'add'})
+		structural = true
+	}
+	for (const id of textChanged) {
+		const hit = byId.get(id)
+		if (!hit) continue
+		changes.push({id, token: hit.token, path: hit.path, kind: 'text'})
+		// a textChanged MARK is a refused descend → structural (commit's old type-walk)
+		if (hit.token.type !== 'text') structural = true
+	}
+	for (const id of updated) {
+		const hit = byId.get(id)
+		if (hit) changes.push({id, token: hit.token, path: hit.path, kind: 'update'})
+	}
+	return {tokens: out, structural, changes, removedIds: [...removed]}
 }
