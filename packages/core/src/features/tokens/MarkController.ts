@@ -27,7 +27,7 @@ export class MarkController {
 	}
 
 	static #addressInTree(store: Store, token: MarkToken): TokenAddress {
-		const path = pathOf(store.tokens.tree(), token)
+		const path = pathOf(store.tokens.tokens(), token)
 		if (!path) throw new Error('Cannot create MarkController for a token outside the current tree')
 		return {path, token}
 	}
@@ -98,7 +98,7 @@ export class MarkController {
 	}
 
 	#resolveCaptured(): Token | undefined {
-		const current = resolvePath(this.store.tokens.tree(), this.address.path)
+		const current = resolvePath(this.store.tokens.tokens(), this.address.path)
 		return current === this.address.token ? current : undefined
 	}
 }

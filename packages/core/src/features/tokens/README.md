@@ -107,9 +107,12 @@ unexpected.
 ## Public API — the whole surface (`model/TokenModel.ts`)
 
 ```ts
-// renderer contract
-tree: Computed<Token[]> // structural tree; reference changes ⇔ renderer must run
-changed: Event<Changeset> // THE model-level detector; fires after the DOM is consistent
+// consumer read
+tokens() // the always-fresh reconciled tree; at(i) the token at top-level index i
+
+// renderer contract (adapter-only — @markput/core/adapter)
+renderTree: Computed<Token[]> // structural tree; reference change ⇔ renderer must run
+changed: Event<void> // THE model-level detector; fires after the DOM is consistent
 
 // per-token live views
 handleFor(address) // handle bound at address.path, or undefined
@@ -140,22 +143,14 @@ Nothing is published before a container mounts: `tree()` is `[]` and facade
 reads fail soft. Adapters mount the container ref, re-render from the first
 structural commit, and report `rendered()`.
 
-### The staleness contract
+### The fresh read
 
-`tree()` is the RENDER tree: on the text path it keeps its previous reference
-(adapters subscribed via snapshot comparison skip re-rendering), so its token
-objects lag the value by design — the fresh truth lives in the node layer.
-
-- **Handles are always fresh:** `handle.token()` carries current content and
-  positions on both branches.
-- **`handleOf(token)`** bridges a stale tree object to its live handle via the
-  stable id (ids survive object replacement in the identity WeakMap). It fails
-  closed while a structural apply awaits its bind.
-- **`freshTokens(store.tokens)`** (`utils/freshTokens.ts`) is the canonical
-  whole-tree fresh read for consumers that slice the live value by token
-  positions (keyboard block edits, drag operations, clipboard serialization):
-  tree shape from `tree()`, per-token freshness through the id bridge. A fresh
-  mark token carries fresh children, so it never recurses.
+`tokens()` is the always-fresh reconciled tree — consistent with `value.current()`
+on both commit branches (it is the pipeline's `latest`, reassigned every apply).
+`renderTree` is the RENDERER signal: it keeps its reference across text-path
+commits so subscribed adapters skip re-rendering — adapter-only, not consumer data.
+Handles (`handle.token()`) carry current content/positions; `handleOf(token)` maps
+a token to its live handle, failing closed while a structural apply awaits its bind.
 
 ### Boundary facade internals
 
