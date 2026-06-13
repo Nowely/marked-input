@@ -1,11 +1,4 @@
-import type {Token} from '../features/tokens/parser/types'
-
 export type TokenPath = readonly number[]
-
-export type TokenAddress = {
-	readonly path: TokenPath
-	readonly token: Token
-}
 
 export type DomRef = (element: HTMLElement | null) => void
 
@@ -35,7 +28,10 @@ export type MarkSnapshot = {
 }
 
 export type MarkInfo = {
-	readonly address: TokenAddress
+	/** The mark token's stable identity id (use with `store.tokens.handle(id)` for the live handle). */
+	readonly id: number
+	/** The mark's render-time tree path (one index per nesting level). */
+	readonly path: TokenPath
 	readonly depth: number
 	readonly hasNestedMarks: boolean
 	readonly key: string

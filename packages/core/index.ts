@@ -22,7 +22,6 @@ export {annotate, denote, findToken} from './src/features/tokens'
 export type {Markup, Token, TextToken, MarkToken} from './src/features/tokens'
 export type {
 	TokenPath,
-	TokenAddress,
 	Range,
 	RawSelection,
 	MarkPatch,
