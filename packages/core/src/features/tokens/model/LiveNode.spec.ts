@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {computed, effect, watch} from '../../../shared/signals/index.js'
+import {Store} from '../../../store/Store'
 import {markToken, textToken} from '../__testing__/tokenFactories'
 import {TokenHandle} from './LiveNode'
 
@@ -11,6 +12,48 @@ function mountSurface(content: string) {
 	container.append(span)
 	document.body.append(container)
 	return {container, span}
+}
+
+function mountInline(value: string) {
+	const store = new Store()
+	store.props.set({defaultValue: value})
+	const container = document.createElement('div')
+	const span = document.createElement('span')
+	container.append(span)
+	document.body.append(container)
+	store.host.container(container)
+	store.host.rendered()
+	return {store, container, span}
+}
+
+/**
+ * Block layout: two rows with mark tokens using the block controller pattern
+ * (Mark + markup '__slot__\n\n').
+ */
+function mountBlock(value: string) {
+	const store = new Store()
+	store.props.set({
+		defaultValue: value,
+		layout: 'block',
+		Mark: () => null,
+		options: [{markup: '__slot__\n\n'}],
+	})
+	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
+
+	// Build DOM rows: one div+span per mark token
+	const rows = value.split('\n\n').filter(r => r.length > 0)
+	for (const row of rows) {
+		const rowEl = document.createElement('div')
+		const tokenEl = document.createElement('span')
+		tokenEl.textContent = row
+		rowEl.append(tokenEl)
+		container.append(rowEl)
+	}
+
+	store.host.rendered()
+	return {store, container}
 }
 
 describe('TokenHandle (model/LiveNode)', () => {
@@ -403,5 +446,26 @@ describe('TokenHandle (model/LiveNode)', () => {
 			expect(handle.dirty()).toBe(dirtyAfterKill)
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})
+	})
+
+	it('path() returns the handle tree position; alive() is true while bound', () => {
+		const {store, span} = mountInline('hello')
+		const handle = store.tokens.handleAt(span)
+		if (!handle || handle === 'control') throw new Error('expected handle')
+		expect(handle.path()).toEqual([0])
+		expect(handle.alive()).toBe(true)
+	})
+
+	it('alive() is false once the handle is killed', () => {
+		// Block layout: capture row 1's handle, then shrink to one row so bind kills it.
+		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
+		const handle = store.tokens.handle(store.tokens.tokens()[1].id!)
+		if (!handle) throw new Error('expected handle for row 1')
+		const secondRow = container.children[1]
+		if (!(secondRow instanceof HTMLElement)) throw new Error('expected HTMLElement')
+		secondRow.remove()
+		store.value.current('alpha\n\n')
+		store.host.rendered()
+		expect(handle.alive()).toBe(false)
 	})
 })

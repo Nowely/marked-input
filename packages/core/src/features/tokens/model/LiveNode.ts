@@ -1,4 +1,4 @@
-import type {TokenAddress, TokenPath} from '../../../shared/editorContracts'
+import type {TokenPath} from '../../../shared/editorContracts'
 import {batch, computed, event, signal} from '../../../shared/signals/index.js'
 import type {Computed, Event, Signal} from '../../../shared/signals/index.js'
 import {
@@ -13,9 +13,12 @@ import {
 import type {Token} from '../parser/types'
 import {textLength} from '../textOffsets'
 
+/** @internal A handle's tree position + the token there, at a moment in time. Internal plumbing for the `moved` event and the (Phase-5-doomed) `address()` getter — NOT the deleted public address. */
+export type TokenSnapshot = {readonly path: TokenPath; readonly token: Token}
+
 export type TokenChange =
 	| {kind: 'text'; previous: string}
-	| {kind: 'moved'; previousAddress: TokenAddress}
+	| {kind: 'moved'; previousAddress: TokenSnapshot}
 	| {kind: 'unmounted'} // `mounted` is intentionally absent — that variant was never emitted
 
 /** DOM bindings of a live node — set by bind, cleared on unbind/kill. */
@@ -69,11 +72,22 @@ export class TokenHandle {
 		return this.#token
 	})
 
-	/** Derived on read: a fresh `{path, token}` per evaluation of this node's state. */
-	readonly address: Computed<TokenAddress> = computed(() => {
+	/** Derived on read: a fresh `{path, token}` snapshot per evaluation of this node's state. @deprecated Phase-5 deletion target — prefer `path()` + `token()`. */
+	readonly address: Computed<TokenSnapshot> = computed(() => {
 		this.dirty()
 		return {path: [...this.#path], token: this.#token}
 	})
+
+	/** The handle's current tree position. A live read; tracks reconcile moves. */
+	path(): TokenPath {
+		this.dirty()
+		return [...this.#path]
+	}
+
+	/** Live AND bound: not killed and currently holding a DOM element. The whole validity check a holder of this handle needs. */
+	alive(): boolean {
+		return !this.#dead() && this.#tokenElement != null
+	}
 
 	readonly element: Computed<HTMLElement | undefined> = computed(() => {
 		this.dirty()
@@ -204,7 +218,7 @@ export class TokenHandle {
 	update(token: Token, path: TokenPath): void {
 		if (this.#dead()) return
 		const prevToken = this.#token
-		const previousAddress: TokenAddress = {path: this.#path, token: prevToken}
+		const previousAddress: TokenSnapshot = {path: this.#path, token: prevToken}
 		this.#token = token
 		this.#path = [...path]
 		batch(() => {
