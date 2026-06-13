@@ -114,3 +114,44 @@ describe('TokenModel lookups', () => {
 		expect(() => store.selection.range({start: 0, end: 0})).not.toThrow()
 	})
 })
+
+describe('TokenModel.tokens() / at() — the fresh reconciled read', () => {
+	it('tokens() returns the reconciled tree, consistent with value.current()', () => {
+		const {store, container} = mountInline('hello')
+		expect(store.tokens.tokens()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		container.remove()
+	})
+
+	it('at(index) returns the token at that top-level index, undefined past the end', () => {
+		const store = new Store()
+		// markup config idiom verified in TokenModel.spec.ts: a Mark + an options
+		// markup are BOTH required for the parser to emit mark tokens.
+		store.props.set({Mark: () => null, defaultValue: 'a@[x]b', options: [{markup: '@[__value__]'}]})
+		const container = document.createElement('div')
+		container.append(document.createElement('span'), document.createElement('span'), document.createElement('span'))
+		document.body.append(container)
+		store.host.container(container)
+		store.host.rendered()
+
+		expect(store.tokens.at(0)).toBe(store.tokens.tokens()[0])
+		expect(store.tokens.at(1)?.type).toBe('mark')
+		expect(store.tokens.at(99)).toBeUndefined()
+		container.remove()
+	})
+
+	it('tokens() stays fresh across a text-path edit — content tracks value.current()', () => {
+		const {store, container} = mountInline('hello')
+		store.value.replace({start: 5, end: 5}, '!')
+		// text-path commit: renderTree keeps its reference, but tokens() is the
+		// reconciled latest — fresh content, consistent with the new value.
+		expect(store.value.current()).toBe('hello!')
+		expect(store.tokens.tokens()[0]).toMatchObject({type: 'text', content: 'hello!', position: {start: 0, end: 6}})
+		container.remove()
+	})
+
+	it('tokens() is [] before any commit has run', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'hello'})
+		expect(store.tokens.tokens()).toEqual([])
+	})
+})

@@ -36,6 +36,8 @@ export type CommitPipeline = {
 	onRendered(): void
 	/** Structural tree; reference changes ⇔ the renderer must run. */
 	tree: Computed<Token[]>
+	/** THE consumer read: the latest reconciled tree — always fresh, consistent with value.current() (it is `latest`, reassigned at the top of every apply). Never latch-gated. */
+	tokens(): readonly Token[]
 	/** THE model-level detector: fires once per commit, only after the DOM is consistent (both branches). Payloadless — consumers re-read. */
 	changed: Event<void>
 	/** Ids removed by the LAST committed reconcile (subtree included) — the prune feed for id-keyed stores. Empty on a re-bind. */
@@ -237,6 +239,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		apply,
 		onRendered,
 		tree,
+		tokens: () => latest,
 		changed,
 		removedIds: () => lastRemovedIds,
 		pending: () => pendingStructural,

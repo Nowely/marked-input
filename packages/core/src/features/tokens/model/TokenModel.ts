@@ -64,6 +64,22 @@ export class TokenModel {
 	/** Renderer contract: reference changes ⇔ the renderer must run. */
 	readonly tree: Computed<Token[]> = this.#pipeline.tree
 
+	/**
+	 * THE consumer read: the latest reconciled tree, always fresh and consistent
+	 * with `value.current()`. Unlike `renderTree` (the renderer signal, which keeps
+	 * its reference across text-path commits), `tokens()` is the pipeline's private
+	 * `latest` — reassigned at the top of every apply, fresh in the pending window
+	 * too. The boundary facade and every value-slicing consumer read it.
+	 */
+	tokens(): readonly Token[] {
+		return this.#pipeline.tokens()
+	}
+
+	/** The top-level token at `index` of the fresh reconciled tree, or undefined. */
+	at(index: number): Token | undefined {
+		return this.#pipeline.tokens()[index]
+	}
+
 	/** THE model-level detector: fires once per commit, only after the DOM is consistent. Payloadless — consumers re-read. */
 	readonly changed: Event<void> = this.#pipeline.changed
 
