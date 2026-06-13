@@ -276,7 +276,7 @@ export class TokenModel {
 	 * is one generation stale) and for foreign or removed addresses.
 	 */
 	#resolveAddress(address: TokenAddress): Token | undefined {
-		const current = resolvePath(this.#reconciled().tokens, address.path)
+		const current = resolvePath(this.tokens(), address.path)
 		return current === address.token ? current : undefined
 	}
 
@@ -290,7 +290,7 @@ export class TokenModel {
 	#boundaryContext(): BoundaryContext {
 		return {
 			container: this.host.container() ?? undefined,
-			tokens: this.#reconciled().tokens,
+			tokens: this.tokens(),
 			resolveAddress: address => this.#resolveAddress(address),
 			viewOf: token => this.#viewOf(token),
 			locate: node => this.#locate(node),
