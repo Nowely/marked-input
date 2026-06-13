@@ -31,7 +31,7 @@
 - Modify: `packages/core/src/features/state/ValueModel.spec.ts` (6 equality pins)
 - Modify: `packages/core/src/store/Store.spec.ts` (2 equality pins)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append at the end of `tokenIdentity.spec.ts` (after the closing `})` of `describe('deep reconcile (descend)')`), as a new top-level describe. `parser` is the module-level `new Parser(['@[__value__]'])`; the local slot parser is constructed inline because the existing `slotParser` is scoped to the descend describe:
 
@@ -68,12 +68,12 @@ describe('token.id plain field (identity unification, phase 1)', () => {
 })
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `pnpm -F core test -- tokenIdentity.spec`
 Expected: the 2 new tests FAIL (`token.id` is `undefined` — the field does not exist yet); all pre-existing tests pass.
 
-- [ ] **Step 3: Implement the field**
+- [x] **Step 3: Implement the field**
 
 In `parser/types.ts`, add the same optional field to BOTH interfaces. `TextToken` becomes:
 
@@ -129,12 +129,12 @@ to:
 
 (`tryDescend`'s direct `ids.set(nextMark, id)` at line 167 needs no mirror: `pairSlotChildren` + the trailing `updated.push(ensureId(nextMark))` stamp it immediately after.)
 
-- [ ] **Step 4: Run the core suite to surface the equality pins**
+- [x] **Step 4: Run the core suite to surface the equality pins**
 
 Run: `pnpm -F core test`
 Expected: the 2 new tests pass; the ONLY failures are deep-equality pins comparing a reconciled tree against a fresh parse or a token literal (extra `id` field on the received value) — the exact 20 sites listed in Step 5. If anything ELSE fails, STOP and report.
 
-- [ ] **Step 5: Rewrite the equality pins — `toEqual` → `toMatchObject`**
+- [x] **Step 5: Rewrite the equality pins — `toEqual` → `toMatchObject`**
 
 Mechanical rule: at each site below, change `.toEqual(` to `.toMatchObject(` (same arguments; `toMatchObject` still pins array lengths and every parser-produced field, while tolerating the stamped `id`).
 
@@ -170,12 +170,12 @@ Mechanical rule: at each site below, change `.toEqual(` to `.toMatchObject(` (sa
 	assertIdField(result.tokens)
 ```
 
-- [ ] **Step 6: Run the full core suite to verify green**
+- [x] **Step 6: Run the full core suite to verify green**
 
 Run: `pnpm -F core test`
 Expected: full pass (728 passed, 1 todo — the pre-phase-1 726 + the 2 new tests; if the baseline differs, the delta must be exactly +2 and zero failures).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add packages/core/src/features/tokens/parser/types.ts packages/core/src/features/tokens/tokenIdentity.ts packages/core/src/features/tokens/tokenIdentity.spec.ts packages/core/src/features/tokens/tokenIdentity.property.spec.ts packages/core/src/features/tokens/TokenModel.spec.ts packages/core/src/features/state/ValueModel.spec.ts packages/core/src/store/Store.spec.ts
@@ -191,7 +191,7 @@ git commit -m "feat(tokens): stamp token.id at reconcile — plain field mirrors
 - Modify: `packages/core/src/features/tokens/TokenModel.spec.ts` (append a describe)
 - Modify: `packages/core/src/store/Store.ts:14` (comment only)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append inside `TokenModel.spec.ts`'s top-level `describe('TokenModel')` (after the `block layout empty text filtering` describe), reusing the file's `store` from `beforeEach`:
 
@@ -215,12 +215,12 @@ Append inside `TokenModel.spec.ts`'s top-level `describe('TokenModel')` (after t
 	})
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `pnpm -F core test -- TokenModel`
 Expected: the new test FAILS (`store.tokens.keyOf is not a function`); everything else passes.
 
-- [ ] **Step 3: Implement `keyOf`**
+- [x] **Step 3: Implement `keyOf`**
 
 In `model/TokenModel.ts`, directly after the `changed` field declaration (`readonly changed: Event<Changeset> = this.#pipeline.changed`), add:
 
@@ -243,12 +243,12 @@ In `store/Store.ts`, annotate the surviving KeyGenerator (line 14) so nobody re-
 	readonly key = new KeyGenerator()
 ```
 
-- [ ] **Step 4: Run to verify green**
+- [x] **Step 4: Run to verify green**
 
 Run: `pnpm -F core test -- TokenModel`
 Expected: all pass, including the new test.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/core/src/features/tokens/model/TokenModel.ts packages/core/src/features/tokens/TokenModel.spec.ts packages/core/src/store/Store.ts
@@ -262,7 +262,7 @@ git commit -m "feat(tokens): keyOf on the adapter SPI — framework keys from st
 **Files:**
 - Modify: `packages/storybook/src/pages/renderCount.react.spec.tsx` (append a top-level describe; add `useEffect` import)
 
-- [ ] **Step 1: Write the failing gate**
+- [x] **Step 1: Write the failing gate**
 
 Add to the react imports at the top of the file:
 
@@ -315,12 +315,12 @@ describe('Remount gates: identity keys', () => {
 })
 ```
 
-- [ ] **Step 2: Run it — verify it fails for the right reason**
+- [x] **Step 2: Run it — verify it fails for the right reason**
 
 Run: `pnpm -F storybook test -- renderCount.react`
 Expected: the NEW test FAILS on the post-edit `'a'`/`'b'` filters (length 2 — the shifted marks remounted under the object-keyed KeyGenerator); the pre-existing tests still pass. If it fails BEFORE the keyboard step (initial mounts, focus), STOP and report — the harness assumption is wrong, not the gate.
 
-- [ ] **Step 3: Commit the red gate**
+- [x] **Step 3: Commit the red gate**
 
 ```bash
 git add packages/storybook/src/pages/renderCount.react.spec.tsx
@@ -335,7 +335,7 @@ git commit -m "test(storybook): failing gate — a structural edit before a mark
 - Modify: `packages/react/markput/src/components/Container.tsx:9-16, 39-40`
 - Modify: `packages/react/markput/src/components/Token.tsx:15-19, 26`
 
-- [ ] **Step 1: Switch Container.tsx to keyOf**
+- [x] **Step 1: Switch Container.tsx to keyOf**
 
 In the `useMarkput` selector, replace the line `key: s.key,` with:
 
@@ -350,7 +350,7 @@ change the destructuring from `const {host, isBlock, tokens, key, Component, pro
 				: tokens.map((t, i) => <Token key={keyOf(t)} token={t} path={[i]} />)}
 ```
 
-- [ ] **Step 2: Switch Token.tsx to keyOf**
+- [x] **Step 2: Switch Token.tsx to keyOf**
 
 Same shape: in the selector replace `key: s.key,` with `keyOf: s.tokens.keyOf,`, the destructuring `const {resolveMarkSlot, key, store} = …` with `const {resolveMarkSlot, keyOf, store} = …`, and the child line with:
 
@@ -360,14 +360,14 @@ Same shape: in the selector replace `key: s.key,` with `keyOf: s.tokens.keyOf,`,
 
 (Leave `OverlayRenderer.tsx` alone — it keys the overlay by OPTION object, the KeyGenerator's surviving job.)
 
-- [ ] **Step 3: Run the gate and the full react project to verify green**
+- [x] **Step 3: Run the gate and the full react project to verify green**
 
 Run: `pnpm -F storybook test -- renderCount.react`
 Expected: ALL tests pass, including Task 3's gate.
 Run: `pnpm -F storybook test:react`
 Expected: full pass (220 — the pre-phase-1 219 + Task 3's gate).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/react/markput/src/components/Container.tsx packages/react/markput/src/components/Token.tsx
@@ -381,7 +381,7 @@ git commit -m "feat(react): key tokens by stable identity id — suffix shifts n
 **Files:**
 - Modify: `packages/storybook/src/pages/renderCount.vue.spec.ts` (append a top-level describe; extend imports)
 
-- [ ] **Step 1: Write the failing gate**
+- [x] **Step 1: Write the failing gate**
 
 Extend the vue import to `import {defineComponent, h, onMounted} from 'vue'` and add `import {getElement} from '../shared/lib/dom'` alongside the other shared-lib imports. Append at the end of the file:
 
@@ -434,12 +434,12 @@ describe('Remount gates: identity keys', () => {
 })
 ```
 
-- [ ] **Step 2: Run it — verify it fails for the right reason**
+- [x] **Step 2: Run it — verify it fails for the right reason**
 
 Run: `pnpm -F storybook test -- renderCount.vue`
 Expected: the NEW test FAILS on the post-edit `'a'`/`'b'` filters (length 2); pre-existing tests pass. Failures before the keyboard step mean a broken harness assumption — STOP and report.
 
-- [ ] **Step 3: Commit the red gate**
+- [x] **Step 3: Commit the red gate**
 
 ```bash
 git add packages/storybook/src/pages/renderCount.vue.spec.ts
@@ -454,7 +454,7 @@ git commit -m "test(storybook): failing gate — a structural edit before a mark
 - Modify: `packages/vue/markput/src/components/Container.vue:10-14, 34, 42`
 - Modify: `packages/vue/markput/src/components/Token.vue:29, 40`
 
-- [ ] **Step 1: Switch Container.vue to keyOf**
+- [x] **Step 1: Switch Container.vue to keyOf**
 
 In the `useMarkput` selector, replace `key: s.key,` with:
 
@@ -468,7 +468,7 @@ and in the template replace BOTH `:key="result.key.get(token)"` (the Block loop 
 				:key="result.keyOf(token)"
 ```
 
-- [ ] **Step 2: Switch Token.vue to keyOf**
+- [x] **Step 2: Switch Token.vue to keyOf**
 
 Replace `const key = store.key` with:
 
@@ -484,14 +484,14 @@ and the child render line with:
 
 (Leave `OverlayRenderer.vue` alone — option keying.)
 
-- [ ] **Step 3: Run the gate and the full vue project to verify green**
+- [x] **Step 3: Run the gate and the full vue project to verify green**
 
 Run: `pnpm -F storybook test -- renderCount.vue`
 Expected: ALL tests pass, including Task 5's gate.
 Run: `pnpm -F storybook test:vue`
 Expected: full pass (202 — the pre-phase-1 201 + Task 5's gate).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/vue/markput/src/components/Container.vue packages/vue/markput/src/components/Token.vue
@@ -506,7 +506,7 @@ git commit -m "feat(vue): key tokens by stable identity id — suffix shifts no 
 - Modify: `packages/core/src/features/block/BlockController.ts`
 - Modify: `packages/core/src/features/block/BlockController.spec.ts` (append a describe; add a `Token` type import)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `BlockController.spec.ts`, add `import type {Token} from '../tokens'` after the Store import, then append at the end of the file, INSIDE the top-level `describe('BlockController')` (after the `skips writes when reorder is a no-op` test):
 
@@ -555,12 +555,12 @@ In `BlockController.spec.ts`, add `import type {Token} from '../tokens'` after t
 	})
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `pnpm -F core test -- BlockController`
 Expected: both new tests FAIL — the same-id pair gets two different stores, and the removed token's store survives (object-keyed WeakMap, no pruning). A typecheck complaint about `get(token: object)` vs the fabricated `Token` literals is the same red. Pre-existing tests pass.
 
-- [ ] **Step 3: Re-key the stores**
+- [x] **Step 3: Re-key the stores**
 
 In `BlockController.ts`, change the tokens import from `import type {TokenModel} from '../tokens'` to:
 
@@ -604,12 +604,12 @@ Replace `get` with:
 	}
 ```
 
-- [ ] **Step 4: Run to verify green**
+- [x] **Step 4: Run to verify green**
 
 Run: `pnpm -F core test -- BlockController`
 Expected: all pass, including both new tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/core/src/features/block/BlockController.ts packages/core/src/features/block/BlockController.spec.ts
@@ -620,7 +620,7 @@ git commit -m "feat(block): per-row stores keyed by identity id — suffix-shift
 
 ### Task 8: Full verification
 
-- [ ] **Step 1: All suites + guards**
+- [x] **Step 1: All suites + guards**
 
 Run, expecting full pass on each (do NOT use `pnpm -F react test` / `pnpm -F vue test` — silent no-ops, see Tech Stack):
 
@@ -631,7 +631,7 @@ pnpm run typecheck           # recursive tsc --noEmit
 pnpm run check:encapsulation
 ```
 
-- [ ] **Step 2: Confirm clean and report**
+- [x] **Step 2: Confirm clean and report**
 
 `git status` must be clean (everything committed task-by-task). Report the suite numbers.
 
@@ -639,9 +639,9 @@ pnpm run check:encapsulation
 
 ### Task 9: Write the Phase 2 plan (phase chaining)
 
-- [ ] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase2.md` for **Phase 2 — reconcile-side routing** from the spec: reconcile emits `{structural, changes: [{id, token, path}], removedIds}` (paths threaded through `tryDescend`; the property spec extended with path-correctness properties), delete `collectChanged` and the runtime escalation type-walk, public `changed` becomes `Event<void>`, the commit-time fold guard stays, render gates untouched. Ground the plan by reading `tokenIdentity.ts`, `commit.ts`, `bind.ts`, and `tokenIdentity.property.spec.ts` first — no placeholder steps. Verification commands must follow this plan's Tech Stack note (`pnpm -F storybook test`, never `pnpm -F react test`).
+- [x] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase2.md` for **Phase 2 — reconcile-side routing** from the spec: reconcile emits `{structural, changes: [{id, token, path}], removedIds}` (paths threaded through `tryDescend`; the property spec extended with path-correctness properties), delete `collectChanged` and the runtime escalation type-walk, public `changed` becomes `Event<void>`, the commit-time fold guard stays, render gates untouched. Ground the plan by reading `tokenIdentity.ts`, `commit.ts`, `bind.ts`, and `tokenIdentity.property.spec.ts` first — no placeholder steps. Verification commands must follow this plan's Tech Stack note (`pnpm -F storybook test`, never `pnpm -F react test`).
 
-- [ ] **Step 2: Commit the plan**
+- [x] **Step 2: Commit the plan**
 
 ```bash
 git add docs/superpowers/plans/2026-06-13-one-fresh-truth-phase2.md
