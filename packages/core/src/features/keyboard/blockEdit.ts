@@ -33,7 +33,7 @@ function findActiveRow(store: KbCtx): ActiveRow | undefined {
 	if (!active) return undefined
 	const handle = store.tokens.handleAt(active)
 	if (!handle || handle === 'control') return undefined
-	const index = handle.address().path[0]
+	const index = handle.path()[0]
 	const row = rowHandle(store, index)
 	if (!row) return undefined
 	return {handle: row, index}

@@ -230,7 +230,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			const actual = surface.textContent
 			if (actual === expected) continue
 			throw new Error(
-				`TokenModel divergence at [${handle.address().path.join(', ')}]: DOM "${actual}" ≠ model "${expected}"`
+				`TokenModel divergence at [${handle.path().join(', ')}]: DOM "${actual}" ≠ model "${expected}"`
 			)
 		}
 	}
