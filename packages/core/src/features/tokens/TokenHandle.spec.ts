@@ -71,17 +71,17 @@ describe('TokenHandle', () => {
 		expect(second).toBe(first)
 	})
 
-	it('handles() yields one handle per bound token, handleFor returns the same object', () => {
+	it('handles() yields one handle per bound token, handle(id) returns the same object', () => {
 		const {store} = mountInline('hello')
 
-		// Call handles() BEFORE any handleFor/handleAt — must still yield one handle
+		// Call handles() BEFORE any handle(id)/handleAt — must still yield one handle
 		const allBefore = [...store.tokens.handles()]
 		expect(allBefore).toHaveLength(1)
 
-		// handleFor must return the SAME handle object already yielded by handles()
-		const address = {path: [0], token: store.tokens.tokens()[0]}
-		const handle = store.tokens.handleFor(address)
-		expect(handle?.address().path).toEqual([0])
+		// handle(id) must return the SAME handle object already yielded by handles()
+		const id = store.tokens.tokens()[0].id!
+		const handle = store.tokens.handle(id)
+		expect(handle?.path()).toEqual([0])
 		expect(handle).toBe(allBefore[0])
 	})
 
@@ -108,7 +108,7 @@ describe('TokenHandle', () => {
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
 		// Grab the second row's handle (path [1])
-		const handle = store.tokens.handleFor({path: [1], token: store.tokens.tokens()[1]})
+		const handle = store.tokens.handle(store.tokens.tokens()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
 
 		const onChange = vi.fn()
@@ -143,7 +143,7 @@ describe('TokenHandle', () => {
 		store.value.current('alpha\n\nbeta\n\n')
 		store.host.rendered()
 
-		const newHandle = store.tokens.handleFor({path: [1], token: store.tokens.tokens()[1]})
+		const newHandle = store.tokens.handle(store.tokens.tokens()[1].id!)
 		expect(newHandle).not.toBe(handle)
 	})
 
@@ -155,7 +155,7 @@ describe('TokenHandle', () => {
 		// handle object follows its token to path [2] and reports a move.
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
-		const handle = store.tokens.handleFor({path: [1], token: store.tokens.tokens()[1]})
+		const handle = store.tokens.handle(store.tokens.tokens()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
 		expect(handle.text()).toBe('beta\n\n')
 
@@ -176,7 +176,7 @@ describe('TokenHandle', () => {
 
 		// The same handle object now lives at the shifted path
 		expect(handle.dead()).toBe(false)
-		expect(handle.address().path).toEqual([2])
+		expect(handle.path()).toEqual([2])
 		expect(handle.text()).toBe('beta\n\n')
 
 		// It fired a move (and was NOT unmounted, NOT a text change)
@@ -185,8 +185,8 @@ describe('TokenHandle', () => {
 		const [moved] = onChange.mock.calls[0]
 		expect(moved.previousAddress.path).toEqual([1])
 
-		// Resolving the shifted address returns the SAME handle object
-		expect(store.tokens.handleFor({path: [2], token: store.tokens.tokens()[2]})).toBe(handle)
+		// Resolving the shifted id returns the SAME handle object
+		expect(store.tokens.handle(store.tokens.tokens()[2].id!)).toBe(handle)
 	})
 
 	it('handleAt returns "control" inside control elements and undefined outside', () => {

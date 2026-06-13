@@ -33,7 +33,7 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	if (!handle || handle === 'control') return false
 
 	const isFocusedOnMarkElement = active === handle.element() && !handle.hasTextSurface()
-	const address = handle.address()
+	const path = handle.path()
 	// The handle IS the fresh read: its token carries current positions.
 	const token = handle.token()
 
@@ -47,16 +47,17 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 		if (direction === 'next' && !atEnd) return false
 	}
 
-	const path = address.path
 	const siblingIndex = direction === 'prev' ? path[path.length - 1] - 1 : path[path.length - 1] + 1
 	const siblingPath = [...path.slice(0, -1), siblingIndex]
 	const sibling = resolvePath(store.tokens.tokens(), siblingPath)
-	if (!sibling) return false
+	if (sibling?.id === undefined) return false
+	const siblingHandle = store.tokens.handle(sibling.id)
+	if (!siblingHandle) return false
 
 	event.preventDefault()
-	// Address-based placement disambiguates the sibling from any neighbouring
+	// Handle-based placement disambiguates the sibling from any neighbouring
 	// token that shares a boundary position. Position-only placement would pick
-	// the wrong token at text↔mark boundaries. (The sibling rides along for
-	// placeAtAddress's identity check; tokens() makes it the fresh object.)
-	return store.selection.placeAtAddress({path: siblingPath, token: sibling}, direction === 'prev' ? 'end' : 'start')
+	// the wrong token at text↔mark boundaries. The sibling's id bridges to its
+	// live handle; placeAtHandle reads the handle's current positions.
+	return store.selection.placeAtHandle(siblingHandle, direction === 'prev' ? 'end' : 'start')
 }

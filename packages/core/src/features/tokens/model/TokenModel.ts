@@ -13,7 +13,7 @@ import type {Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {createIdentityTracker} from '../tokenIdentity'
 import type {EditHint, ReconcileResult} from '../tokenIdentity'
-import {pathEquals, pathKey, resolvePath} from '../tokenIndex'
+import {pathEquals, resolvePath} from '../tokenIndex'
 import {createCommitPipeline} from './commit'
 import {applyEditableState} from './editableState'
 import type {TokenHandle} from './LiveNode'
@@ -190,11 +190,6 @@ export class TokenModel {
 		}
 	}
 
-	/** Live handle of the token bound at `address.path`, or undefined if not bound. */
-	handleFor(address: TokenAddress): TokenHandle | undefined {
-		return this.#pipeline.byPath().get(pathKey(address.path))
-	}
-
 	/**
 	 * Resolve a DOM node to its handle, 'control' if inside a control root,
 	 * or undefined if outside the container.
@@ -204,22 +199,6 @@ export class TokenModel {
 		if (!lookup) return undefined
 		if (lookup.kind === 'control') return 'control'
 		return lookup.node.handle
-	}
-
-	/**
-	 * Bridge a (possibly stale) token object to its live handle via the stable
-	 * identity id. Fails closed while a structural apply awaits its bind — the
-	 * node layer is one generation stale there, and handing out a handle would
-	 * let mutations act on a tree the DOM never showed. `handleFor`/`handleAt`
-	 * stay ungated by design: they resolve through the CURRENT maps (address-
-	 * and DOM-keyed, not stale-token-keyed), matching the old shell's behavior
-	 * during the same window.
-	 */
-	handleOf(token: Token): TokenHandle | undefined {
-		if (this.#pipeline.pending()) return undefined
-		// Read-only id peek: probing a foreign token must not allocate an id.
-		const id = this.#identity.idFor(token)
-		return id === undefined ? undefined : this.#nodes.get(id)
 	}
 
 	/**

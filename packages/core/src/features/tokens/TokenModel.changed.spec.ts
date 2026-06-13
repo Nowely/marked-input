@@ -26,7 +26,7 @@ function mountWithMark(beforeMount?: (store: Store) => void) {
 
 /** Stable identity of the token at a top-level index, read through its live handle. */
 function handleId(store: Store, index: number): number {
-	const handle = store.tokens.handleOf(store.tokens.tokens()[index])
+	const handle = store.tokens.handle(store.tokens.tokens()[index].id!)
 	if (!handle) throw new Error(`expected a handle at [${index}]`)
 	return handle.id
 }

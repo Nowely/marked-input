@@ -3,7 +3,6 @@ import {describe, it, expect, vi} from 'vitest'
 import {watch} from '../../shared/signals/index.js'
 import {Store} from '../../store/Store'
 import {TokenHandle} from './model/LiveNode'
-import {createTextToken} from './parser/utils/createTextToken'
 
 function mountInline(value: string) {
 	const store = new Store()
@@ -78,11 +77,11 @@ describe('TokenModel lookups', () => {
 		container.remove()
 	})
 
-	it('handleFor(address) returns the handle bound at that path', () => {
+	it('handle(id) returns the handle for that token id', () => {
 		const {store, container, span} = mountInline('hello')
-		const address = {path: [0], token: store.tokens.tokens()[0]}
+		const id = store.tokens.tokens()[0].id!
 
-		expect(store.tokens.handleFor(address)?.element()).toBe(span)
+		expect(store.tokens.handle(id)?.element()).toBe(span)
 		container.remove()
 	})
 
@@ -96,14 +95,12 @@ describe('TokenModel lookups', () => {
 		container.remove()
 	})
 
-	it('handleAt and handleFor return undefined before any commit has run', () => {
+	it('handleAt returns undefined before any commit has run', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
 		const span = document.createElement('span')
-		// intentionally NOT attaching span to a container nor setting store.host.container()
 
 		expect(store.tokens.handleAt(span)).toBeUndefined()
-		expect(store.tokens.handleFor({path: [0], token: createTextToken('hello')})).toBeUndefined()
 	})
 
 	it('setting selection range before any commit has run does not throw', () => {

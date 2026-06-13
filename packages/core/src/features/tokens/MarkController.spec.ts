@@ -144,7 +144,7 @@ describe('MarkController across text-path commits (identity bridge)', () => {
 		store.edit.replace({start: 0, end: 0}, 'XX')
 		expect(store.value.current()).toBe('XXhe@[x]llo')
 		// Sanity: reconcile replaced the mark object — the captured token is stale
-		expect(store.tokens.handleOf(token)?.token()).not.toBe(token)
+		expect(store.tokens.handle(token.id!)?.token()).not.toBe(token)
 
 		controller.update({value: 'markput'})
 
@@ -184,17 +184,14 @@ describe('MarkController across text-path commits (identity bridge)', () => {
 		store.edit.replace({start: 2, end: 6}, '')
 		expect(store.value.current()).toBe('hello')
 
-		// Render the new tree so bind kills the removed mark's handle and the
-		// bridge exercises the intended "identity gone" path rather than the
-		// pre-bind latch. Two layers of protection:
-		//   1. handleOf returns undefined (handle killed and dropped at bind)
-		//   2. the captured address's object-identity check against the new tree
-		//      covers the latched pre-bind window
+		// Render the new tree so bind kills the removed mark's handle: handle(id)
+		// returns undefined (the handle is killed and dropped at bind), so the
+		// controller's live read sees no mark and update() fails closed.
 		const container = document.querySelector('div')!
 		container.replaceChildren(document.createElement('span'))
 		store.host.rendered()
 
-		expect(store.tokens.handleOf(token)).toBeUndefined()
+		expect(store.tokens.handle(token.id!)).toBeUndefined()
 
 		controller.update({value: 'bad'})
 

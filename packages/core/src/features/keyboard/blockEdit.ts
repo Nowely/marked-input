@@ -22,10 +22,10 @@ type ActiveRow = {
 
 function rowHandle(store: KbCtx, rowIndex: number): TokenHandle | undefined {
 	// Row identity from the fresh reconciled tree, liveness from the id bridge:
-	// tokens() carries the current row object; handleOf maps it to the live
-	// handle (undefined while a structural apply is unbound — fail-closed).
+	// at(i) carries the current row object; handle(id) maps it to the live handle
+	// (undefined while a structural apply is unbound — fail-closed).
 	const row = store.tokens.at(rowIndex)
-	return row ? store.tokens.handleOf(row) : undefined
+	return row?.id !== undefined ? store.tokens.handle(row.id) : undefined
 }
 
 function findActiveRow(store: KbCtx): ActiveRow | undefined {
@@ -152,10 +152,11 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 }
 
 function focusRow(store: KbCtx, token: Token, rowIndex: number, caret: 'start' | 'end'): void {
-	if (token.type === 'mark') {
-		// A row's path is its index by construction; the (fresh) token rides
-		// along for placeAtAddress's identity check.
-		if (store.selection.placeAtAddress({path: [rowIndex], token}, caret)) return
+	if (token.type === 'mark' && token.id !== undefined) {
+		// Bridge the row token by its id to its live handle; placeAtHandle reads
+		// the handle's current positions to disambiguate a shared boundary.
+		const handle = store.tokens.handle(token.id)
+		if (handle && store.selection.placeAtHandle(handle, caret)) return
 	}
 
 	const row = rowHandle(store, rowIndex)

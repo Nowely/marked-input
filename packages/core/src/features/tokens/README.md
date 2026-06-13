@@ -64,8 +64,8 @@ value edit → parse (windowed; full on cold start / unstable window / markup ch
   no render needed first; the adapter's later `rendered()` re-binds
   idempotently.
 - **`pendingStructural` latch:** between a structural apply and its bind the
-  node layer is one generation stale. `handleOf` (and everything id-bridged
-  through it: `MarkController` mutations, address-form `placeCaret`) returns
+  node layer is one generation stale. `handle(id)` (and everything id-bridged
+  through it: `MarkController` mutations, handle-form `placeCaret`) returns
   `undefined` while latched — mutations fail closed instead of acting on a
   tree the DOM never showed. Applies landing inside the window fold into the
   pending structural pass.
@@ -115,11 +115,10 @@ renderTree: Computed<Token[]> // structural tree; reference change ⇔ renderer 
 changed: Event<void> // THE model-level detector; fires after the DOM is consistent
 
 // per-token live views
-handleFor(address) // handle bound at address.path, or undefined
+handle(id) // id-keyed live handle for a token id, or undefined; latch-gated
 handleAt(node) // handle | 'control' | undefined for a DOM node
 tokenAt(position) // handle of the text token containing position
 handles() // iterate all bound handles
-handleOf(token) // id-bridge for (possibly stale) token objects; latch-gated
 
 // DOM↔model facade
 boundaryFor / caretFromPoint / placeCaret / selectRange
@@ -149,8 +148,8 @@ structural commit, and report `rendered()`.
 on both commit branches (it is the pipeline's `latest`, reassigned every apply).
 `renderTree` is the RENDERER signal: it keeps its reference across text-path
 commits so subscribed adapters skip re-rendering — adapter-only, not consumer data.
-Handles (`handle.token()`) carry current content/positions; `handleOf(token)` maps
-a token to its live handle, failing closed while a structural apply awaits its bind.
+Handles (`handle.token()`) carry current content/positions; `handle(id)` maps
+a token id to its live handle, failing closed while a structural apply awaits its bind.
 
 ### Boundary facade internals
 
