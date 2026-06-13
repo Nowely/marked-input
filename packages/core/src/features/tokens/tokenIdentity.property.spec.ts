@@ -364,6 +364,21 @@ function collectTreeIds(tokens: readonly Token[], tracker: IdentityTracker, into
 	return into
 }
 
+/** Resolve a tree path to its token, or undefined if the path is invalid. */
+function tokenAtPath(tokens: readonly Token[], path: readonly number[]): Token | undefined {
+	let level: readonly Token[] | undefined = tokens
+	let token: Token | undefined
+	for (const i of path) {
+		if (!level) return undefined
+		// .at keeps the index lookup typed as possibly-undefined (an out-of-bounds
+		// path component returns undefined) so the guard below is a real check.
+		token = level.at(i)
+		if (!token) return undefined
+		level = token.type === 'mark' ? token.children : undefined
+	}
+	return token
+}
+
 /** Independent structural comparison (positions shifted by `delta`). */
 function structurallyEqual(a: Token, b: Token, delta: number): boolean {
 	if (a.type !== b.type || a.content !== b.content) return false
@@ -436,6 +451,15 @@ function assertReconcileEquivalence(
 	const textChanged = result.changes.filter(c => c.kind === 'text').map(c => c.id)
 	const updated = result.changes.filter(c => c.kind === 'update').map(c => c.id)
 	const removed = result.removedIds
+
+	// 2a. Path correctness (Phase 2): every emitted change resolves, at its path,
+	//     to its own token in the OUTPUT tree, and the entry id matches.
+	for (const change of result.changes) {
+		const at = tokenAtPath(result.tokens, change.path)
+		expect(at, `change path [${change.path.join(', ')}] must resolve in the output tree`).toBe(change.token)
+		expect(change.token.id, 'change token must carry the change id').toBe(change.id)
+	}
+
 	for (const id of removed) {
 		expect(prevIds.has(id), `removed id ${id} was never in the previous tree`).toBe(true)
 		expect(newIds.has(id), `removed id ${id} is still present in the new tree`).toBe(false)
