@@ -10,7 +10,7 @@ const store = useStore()
 const result = useMarkput(s => ({
 	isBlock: s.props.layout.isBlock,
 	tokens: s.tokens.tree,
-	key: s.key,
+	keyOf: s.tokens.keyOf,
 }))
 
 const setContainerRef = (el: unknown) => {
@@ -31,18 +31,13 @@ onUpdated(() => store.host.rendered())
 		<template v-if="result.isBlock">
 			<Block
 				v-for="(token, index) in result.tokens"
-				:key="result.key.get(token)"
+				:key="result.keyOf(token)"
 				:token="token"
 				:block-index="index"
 			/>
 		</template>
 		<template v-else>
-			<Token
-				v-for="(token, index) in result.tokens"
-				:key="result.key.get(token)"
-				:token="token"
-				:path="[index]"
-			/>
+			<Token v-for="(token, index) in result.tokens" :key="result.keyOf(token)" :token="token" :path="[index]" />
 		</template>
 	</component>
 </template>

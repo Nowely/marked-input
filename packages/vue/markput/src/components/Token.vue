@@ -26,7 +26,7 @@ const Token = defineComponent({
 		)
 
 		const store = useStore()
-		const key = store.key
+		const keyOf = store.tokens.keyOf
 		const resolveMarkSlot = useMarkput(s => s.slots.mark)
 
 		return () => {
@@ -37,7 +37,7 @@ const Token = defineComponent({
 					? () =>
 							h(markRaw(TokenChildren), {ownerPath: props.path}, () =>
 								token.children.map((child, i) =>
-									h(markRaw(Token), {key: key.get(child), token: child, path: [...props.path, i]})
+									h(markRaw(Token), {key: keyOf(child), token: child, path: [...props.path, i]})
 								)
 							)
 					: undefined
