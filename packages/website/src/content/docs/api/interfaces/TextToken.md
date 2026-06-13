@@ -19,6 +19,18 @@ Defined in: [core/src/features/tokens/parser/types.ts:8](https://github.com/Nowe
 
 ***
 
+### id?
+
+```ts
+optional id: number;
+```
+
+Defined in: [core/src/features/tokens/parser/types.ts:14](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/types.ts#L14)
+
+Stable identity id, stamped by reconcile (tokenIdentity) — NOT by the parser. Absent on freshly parsed, never-reconciled trees.
+
+***
+
 ### position
 
 ```ts
