@@ -77,7 +77,7 @@ After Phase 3 the mental model is the acceptance sentence: **handles are fresh; 
 
 This task exposes the fresh read WITHOUT touching any consumer — it is purely additive, so the full suite stays green. Consumers migrate in Tasks 3-5.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `TokenModel.index.spec.ts`, inside the `describe('TokenModel lookups', …)` block (it already has `mountInline`). Add a new describe at the end of the file (before the final `})` of the top-level describe is fine, or as a sibling top-level describe — make it a sibling top-level describe so the `mountInline` helper is reused via import-free closure; `mountInline` is module-scoped so a sibling describe can call it):
 
@@ -126,12 +126,12 @@ describe('TokenModel.tokens() / at() — the fresh reconciled read', () => {
 
 (The markup-config idiom is `{Mark: () => null, options: [{markup: '@[__value__]'}]}` — verified in `TokenModel.spec.ts` (both a `Mark` and an `options` markup are required for the parser to emit marks). If any mount detail drifts, read a `TokenModel.spec.ts`/`TokenModel.facade.spec.ts` mount and copy its `props.set` shape verbatim. The assertion intent is the contract; the mount boilerplate must match the codebase.)
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `pnpm -w exec vitest run --project core TokenModel.index.spec`
 Expected: the 4 new tests FAIL (`store.tokens.tokens` / `store.tokens.at` are `undefined` — not functions). All pre-existing `TokenModel lookups` tests pass.
 
-- [ ] **Step 3: Add `tokens()` to the pipeline**
+- [x] **Step 3: Add `tokens()` to the pipeline**
 
 In `commit.ts`, add to the `CommitPipeline` type (after the `tree` field, ~line 38):
 
@@ -148,7 +148,7 @@ and add it to the returned object (after `tree,`, ~line 239):
 
 (`latest` is already in scope and reassigned first thing in `apply`; this accessor exposes it read-only.)
 
-- [ ] **Step 4: Add `tokens()`/`at()` to the model**
+- [x] **Step 4: Add `tokens()`/`at()` to the model**
 
 In `TokenModel.ts`, add directly after the `tree` field (~line 65, keep the existing `tree` field for now — it is renamed in Task 6):
 
@@ -170,17 +170,17 @@ In `TokenModel.ts`, add directly after the `tree` field (~line 65, keep the exis
 	}
 ```
 
-- [ ] **Step 5: Run to verify green**
+- [x] **Step 5: Run to verify green**
 
 Run: `pnpm -w exec vitest run --project core TokenModel.index.spec`
 Expected: all tests pass, including the 4 new ones (the text-path-freshness test confirms `tokens()` reads `latest`, not the stale `tree`).
 
-- [ ] **Step 6: Full core suite (additive change — must stay green)**
+- [x] **Step 6: Full core suite (additive change — must stay green)**
 
 Run: `pnpm -F core test`
 Expected: full pass — this task added only new members, touched no consumer, renamed nothing.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git commit -m "feat(tokens): expose tokens()/at() — the always-fresh reconciled read" -- packages/core/src/features/tokens/model/commit.ts packages/core/src/features/tokens/model/TokenModel.ts packages/core/src/features/tokens/TokenModel.index.spec.ts
@@ -195,12 +195,12 @@ git commit -m "feat(tokens): expose tokens()/at() — the always-fresh reconcile
 
 The facade currently reaches the reconciled tree via `#reconciled().tokens` (re-running the memoized reconcile computed). Point it at `this.tokens()` — the same `latest`, now the single public read. This satisfies the matrix's "boundary/position reads serve the latest reconciled tree" and removes the facade's independent path to a second tree object.
 
-- [ ] **Step 1: Run the facade spec to capture the green baseline**
+- [x] **Step 1: Run the facade spec to capture the green baseline**
 
 Run: `pnpm -w exec vitest run --project core TokenModel.facade.spec`
 Expected: full pass (this is the pre-change baseline — the facade behavior is what Task 2 must preserve exactly).
 
-- [ ] **Step 2: Repoint the two reads**
+- [x] **Step 2: Repoint the two reads**
 
 In `TokenModel.ts`, in `#resolveAddress` (~line 263), change:
 
@@ -228,7 +228,7 @@ to:
 
 Leave the `watch(this.#reconciled, …)` apply wiring (line 148) and the `#reconciled` computed itself UNTOUCHED — it still drives `apply`. Only the two FACADE reads move to `tokens()`. (After this, `#reconciled` is read only by the apply watch; that is correct and intended — the facade no longer re-derives the tree.)
 
-- [ ] **Step 3: Run the facade spec + selection/caret specs**
+- [x] **Step 3: Run the facade spec + selection/caret specs**
 
 Run: `pnpm -w exec vitest run --project core TokenModel.facade.spec`
 Expected: full pass — `tokens()` returns the same reconciled tree the facade read before, so boundary/position reads, `resolveAddress`, and `placeCaret` are byte-for-byte equivalent.
@@ -236,12 +236,12 @@ Expected: full pass — `tokens()` returns the same reconciled tree the facade r
 Run: `pnpm -w exec vitest run --project core SelectionController.spec`
 Expected: full pass.
 
-- [ ] **Step 4: Full core suite**
+- [x] **Step 4: Full core suite**
 
 Run: `pnpm -F core test`
 Expected: full pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "refactor(tokens): boundary facade reads tokens() — one fresh tree" -- packages/core/src/features/tokens/model/TokenModel.ts
@@ -259,7 +259,7 @@ git commit -m "refactor(tokens): boundary facade reads tokens() — one fresh tr
 
 These four consumers each migrate either a `freshTokens(…)` call or a `tree()` read to `tokens()`, drop the now-unused `freshTokens` import, and shed the staleness comments. Disjoint files from Tasks 4-5 — commit them together.
 
-- [ ] **Step 1: `SelectionController.ts`**
+- [x] **Step 1: `SelectionController.ts`**
 
 Remove the `freshTokens` import (line 11): delete `import {freshTokens} from '../tokens'`.
 
@@ -289,7 +289,7 @@ to:
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 ```
 
-- [ ] **Step 2: `input.ts`**
+- [x] **Step 2: `input.ts`**
 
 Remove the `freshTokens` import (line 11): delete `import {freshTokens} from '../tokens'`. (`import type {Token}` on line 8 stays.)
 
@@ -311,7 +311,7 @@ to:
 	const adjacentMark = adjacentMarkRange(store.tokens.tokens(), range.start, inputType.endsWith('Backward'))
 ```
 
-- [ ] **Step 3: `arrowNav.ts`**
+- [x] **Step 3: `arrowNav.ts`**
 
 In `shiftFocus` (~line 53), change:
 
@@ -336,7 +336,7 @@ The trailing comment block at lines 58-60 mentions "A stale tree() sibling objec
 
 (`arrowNav.ts` imports nothing from `'../tokens'` named `freshTokens` — only `resolvePath` from `'../tokens/tokenIndex'`; no import change.)
 
-- [ ] **Step 4: `ClipboardController.ts`**
+- [x] **Step 4: `ClipboardController.ts`**
 
 Remove the `freshTokens` import (line 7): delete `import {freshTokens} from '../tokens'`. (`import type {TokenModel}` on line 6 stays.)
 
@@ -358,13 +358,13 @@ to:
 		e.clipboardData?.setData(MARKPUT_MIME, serializeRange(this.tokens.tokens(), raw.range))
 ```
 
-- [ ] **Step 5: Run the affected specs**
+- [x] **Step 5: Run the affected specs**
 
 Run: `pnpm -w exec vitest run --project core SelectionController.spec`
 Run: `pnpm -w exec vitest run --project core ClipboardController`
 Expected: full pass each. (`input.ts`/`arrowNav.ts` are exercised through keyboard/block specs and the storybook page specs; the full core run in Step 6 covers them.)
 
-- [ ] **Step 6: Full core suite + typecheck**
+- [x] **Step 6: Full core suite + typecheck**
 
 Run: `pnpm -F core test`
 Expected: full pass.
@@ -372,7 +372,7 @@ Expected: full pass.
 Run: `pnpm run typecheck`
 Expected: clean — no dangling `freshTokens` import in these four files. (`freshTokens.ts` itself still exists; the export line still exists — deleted in Task 5. The remaining `blockEdit.ts`/`BlockController.ts` imports are migrated in Task 4.)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git commit -m "refactor(tokens): selection/input/arrowNav/clipboard read tokens() — drop freshTokens" -- packages/core/src/features/selection/SelectionController.ts packages/core/src/features/keyboard/input.ts packages/core/src/features/keyboard/arrowNav.ts packages/core/src/features/clipboard/ClipboardController.ts
@@ -388,7 +388,7 @@ git commit -m "refactor(tokens): selection/input/arrowNav/clipboard read tokens(
 
 The two block consumers hold the remaining `freshTokens` imports (2 call sites in `blockEdit`, 1 in `BlockController`) and the three `tree()` reads (`rowHandle`, two `rowCount`). All become `tokens()`.
 
-- [ ] **Step 1: `blockEdit.ts`**
+- [x] **Step 1: `blockEdit.ts`**
 
 Remove the `freshTokens` import (line 11): delete `import {freshTokens} from '../tokens'`. (`import type {Token, TokenHandle}` on line 10 stays.)
 
@@ -455,7 +455,7 @@ In `handleArrowUpDown` (~line 199), change `const rowCount = store.tokens.tree()
 
 NOTE: `handleDelete`/`handleEnter`/`mergeOrFocusNeighbor` pass `rows` (now `store.tokens.tokens()`, typed `readonly Token[]`) into helpers typed `rows: Token[]` (`mergeOrFocusNeighbor` ~line 281, and the `addDragRow`/`mergeDragRows`/`applyDragAction` operation signatures). If `tokens()`'s `readonly Token[]` return type triggers a `readonly`-assignability typecheck error at any call, the minimal fix is to widen those local helper/operation parameter types to `readonly Token[]` (they never mutate the array) — do NOT cast away `readonly`. Verify in Step 3; apply only where the typecheck demands it, in `blockEdit.ts`/`operations.ts` signatures.
 
-- [ ] **Step 2: `BlockController.ts`**
+- [x] **Step 2: `BlockController.ts`**
 
 Remove the `freshTokens` import (line 7): delete `import {freshTokens} from '../tokens'`. (`import type {Token, TokenModel}` on line 6 stays.)
 
@@ -479,7 +479,7 @@ to:
 
 (`applyDragAction`'s `rows` parameter type may need widening to `readonly Token[]` — same `readonly`-assignability note as Step 1; fix in `operations.ts` only if the typecheck demands it.)
 
-- [ ] **Step 3: Run the block specs + typecheck**
+- [x] **Step 3: Run the block specs + typecheck**
 
 Run: `pnpm -w exec vitest run --project core BlockController`
 Expected: full pass (including the Phase-1 prune test — untouched; it reads through `removedIds()`, not the tree).
@@ -487,7 +487,7 @@ Expected: full pass (including the Phase-1 prune test — untouched; it reads th
 Run: `pnpm run typecheck`
 Expected: clean. If a `readonly Token[]` is not assignable to a `Token[]` parameter, widen that parameter to `readonly Token[]` in `blockEdit.ts`/`operations.ts` (the operation never mutates the input array — verify by reading the function body before widening). If the function DOES mutate, it must `.slice()` first; do not strip `readonly` with a cast.
 
-- [ ] **Step 4: Full core + storybook (block typing/drag run through the page specs)**
+- [x] **Step 4: Full core + storybook (block typing/drag run through the page specs)**
 
 Run: `pnpm -F core test`
 Expected: full pass.
@@ -495,7 +495,7 @@ Expected: full pass.
 Run: `pnpm -F storybook test`
 Expected: full pass — the block render-count gates and the empty-row gate (Phase 0) exercise `blockEdit` row typing through `tokens()` now; they assert tree-watcher/mount counts, unaffected by the read-source swap.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 If `operations.ts` was edited for the `readonly` widening, include it in the path list; otherwise omit it.
 
@@ -517,7 +517,7 @@ git commit -m "refactor(tokens): block edit + drag read tokens() — drop freshT
 
 MarkController holds the last two `tree()` reads. After they migrate, `freshTokens` has zero references and is deleted with its export and its 18-line staleness comment.
 
-- [ ] **Step 1: `MarkController.ts`**
+- [x] **Step 1: `MarkController.ts`**
 
 In `#addressInTree` (~line 30), change:
 
@@ -545,12 +545,12 @@ to:
 
 (`pathOf`/`resolvePath` take `readonly Token[]`-compatible inputs — `pathOf`'s parameter is already `readonly Token[]` at line 107; `resolvePath` is read-only. No signature change. The MarkController identity/path semantics are unchanged — `tokens()` is the same tree shape, now fresh. The full re-backing of MarkController by a handle, deleting `#resolveCaptured`/`pathOf`, is Phase 4 — NOT this phase.)
 
-- [ ] **Step 2: Run MarkController.spec**
+- [x] **Step 2: Run MarkController.spec**
 
 Run: `pnpm -w exec vitest run --project core MarkController.spec`
 Expected: full pass — the controller resolves the same token objects (now from the fresh tree). The `MarkController.spec` continuity cases (incl. the Phase-2-amended `same-slot replacement`) read through the public `update()`/`remove()` flow, unaffected by the internal data-source swap.
 
-- [ ] **Step 3: Delete `freshTokens.ts` and its export**
+- [x] **Step 3: Delete `freshTokens.ts` and its export**
 
 Verify zero remaining references first:
 
@@ -572,7 +572,7 @@ In `tokens/index.ts`, delete line 10:
 export {freshTokens} from './utils/freshTokens'
 ```
 
-- [ ] **Step 4: Update the README**
+- [x] **Step 4: Update the README**
 
 In `packages/core/src/features/tokens/README.md`:
 
@@ -602,7 +602,7 @@ changed: Event<void> // THE model-level detector; fires after the DOM is consist
 
 (This corrects the stale `changed: Event<Changeset>` line Phase 2 left behind — a free fix while editing this block. Do NOT attempt the full README ≤150-line rewrite; that is the rolling rider.)
 
-- [ ] **Step 5: Run + typecheck + encapsulation**
+- [x] **Step 5: Run + typecheck + encapsulation**
 
 Run: `pnpm -F core test`
 Expected: full pass.
@@ -613,7 +613,7 @@ Expected: clean — `freshTokens` is gone from every import and the export; no m
 Run: `pnpm run check:encapsulation`
 Expected: pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "refactor(tokens): MarkController reads tokens(); delete freshTokens + staleness contract" -- packages/core/src/features/tokens/MarkController.ts packages/core/src/features/tokens/utils/freshTokens.ts packages/core/src/features/tokens/index.ts packages/core/src/features/tokens/README.md
@@ -635,7 +635,7 @@ git commit -m "refactor(tokens): MarkController reads tokens(); delete freshToke
 
 This renames the renderer signal to `renderTree` everywhere it is the RENDERER contract (the structural signal whose reference-stability gates re-renders) and documents the adapter surface as a subpath import. Consumer DATA reads were already migrated to `tokens()` in Tasks 1-5, so the only `tree`/`renderTree` references left are renderer-contract ones.
 
-- [ ] **Step 1: Find every remaining `tree` reference**
+- [x] **Step 1: Find every remaining `tree` reference**
 
 Run:
 
@@ -649,7 +649,7 @@ Triage each hit:
 
 (This is a mechanical sweep. The distinction is always: a `watch(…tree, …)` on the signal object = renderer gate = `renderTree`; a `…tree()` call reading the array as data = `tokens()`.)
 
-- [ ] **Step 2: Rename in `commit.ts`**
+- [x] **Step 2: Rename in `commit.ts`**
 
 In `commit.ts`:
 - The local `const tree = signal<Token[]>({initial: []})` (~line 59) → `const renderTree = signal<Token[]>({initial: []})`. Update its doc comment to refer to the renderer signal by the new name.
@@ -657,7 +657,7 @@ In `commit.ts`:
 - The `CommitPipeline.tree: Computed<Token[]>` field (~line 38) → `renderTree: Computed<Token[]>` (keep the "reference changes ⇔ the renderer must run" comment).
 - The returned object's `tree,` (~line 239) → `renderTree,`.
 
-- [ ] **Step 3: Rename in `TokenModel.ts`**
+- [x] **Step 3: Rename in `TokenModel.ts`**
 
 In `TokenModel.ts`, the field (~line 64-65):
 
@@ -673,7 +673,7 @@ becomes:
 	readonly renderTree: Computed<Token[]> = this.#pipeline.renderTree
 ```
 
-- [ ] **Step 4: Create the adapter SPI surface**
+- [x] **Step 4: Create the adapter SPI surface**
 
 Create `packages/core/adapter.ts`:
 
@@ -695,7 +695,7 @@ export type RenderTree = Computed<Token[]>
 
 (This is the minimal honest surface: the adapter SPI's runtime members live on the `TokenModel` instance reached through `Store` — there is no second instance to construct. The subpath export NAMES the contract. If a later phase grows freestanding adapter helpers, they land here. Keep it small and true.)
 
-- [ ] **Step 5: Add the `"./adapter"` subpath export**
+- [x] **Step 5: Add the `"./adapter"` subpath export**
 
 In `packages/core/package.json`, in the `exports` map, add the `"./adapter"` entry (after `"."`):
 
@@ -711,7 +711,7 @@ In `packages/core/package.json`, in the `exports` map, add the `"./adapter"` ent
   },
 ```
 
-- [ ] **Step 6: Migrate the renderer-contract spec watch + the data-read spec assertions**
+- [x] **Step 6: Migrate the renderer-contract spec watch + the data-read spec assertions**
 
 In `TokenModel.changed.spec.ts`:
 - Line ~128 `watch(store.tokens.tree, treeSpy)` → `watch(store.tokens.renderTree, treeSpy)` (the render-count gate — it asserts the renderer signal fires 0 times on text edits, 1 on structural; the signal is now `renderTree`).
@@ -719,7 +719,7 @@ In `TokenModel.changed.spec.ts`:
 
 In the remaining DATA-read specs from Step 1's triage (`TokenModel.spec.ts`, `ValueModel.spec.ts`, `Store.spec.ts`, `TokenModel.facade.spec.ts`, `TokenModel.index.spec.ts`, `MarkController.spec.ts`, `TokenHandle.spec.ts`, `SelectionController.spec.ts`), replace each `store.tokens.tree()` data read with `store.tokens.tokens()`. These are mechanical `tree()` → `tokens()` swaps on the array-as-data reads; the assertions are unchanged (same tree shape, now the fresh read). Do them spec-by-spec, running each after, to keep the diff legible.
 
-- [ ] **Step 7: Run the core suite + typecheck**
+- [x] **Step 7: Run the core suite + typecheck**
 
 Run: `pnpm -F core test`
 Expected: full pass — `renderTree` watch fires on the same schedule `tree` did (rename only); the data-read specs assert the same tree through `tokens()`.
@@ -730,7 +730,7 @@ Expected: clean — no `.tree` member remains on `TokenModel`/`CommitPipeline`; 
 Run: `grep -rn "\.tree\b\|tokens\.tree\b" packages/core/src`
 Expected: ZERO hits (every `tree` is renamed or migrated). Any remaining hit is a missed rename — fix it.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git commit -m "refactor(tokens): rename tree → renderTree; expose @markput/core/adapter SPI" -- packages/core/src/features/tokens/model/commit.ts packages/core/src/features/tokens/model/TokenModel.ts packages/core/adapter.ts packages/core/package.json packages/core/src/features/tokens/TokenModel.changed.spec.ts packages/core/src/features/tokens/TokenModel.spec.ts packages/core/src/features/state/ValueModel.spec.ts packages/core/src/store/Store.spec.ts packages/core/src/features/tokens/TokenModel.facade.spec.ts packages/core/src/features/tokens/TokenModel.index.spec.ts packages/core/src/features/tokens/MarkController.spec.ts packages/core/src/features/tokens/TokenHandle.spec.ts packages/core/src/features/selection/SelectionController.spec.ts
@@ -748,7 +748,7 @@ git commit -m "refactor(tokens): rename tree → renderTree; expose @markput/cor
 
 The adapters reach the renderer signal through the `Store` (`s.tokens.renderTree`). They import nothing named `tree`; the only change is the selector key.
 
-- [ ] **Step 1: React `Container.tsx`**
+- [x] **Step 1: React `Container.tsx`**
 
 In the `useMarkput` selector (~line 12), change:
 
@@ -764,7 +764,7 @@ to:
 
 (The local destructured name `tokens` and its `.map` at lines 39-40 stay — it is the rendered token array, correctly sourced from the renderer signal now named `renderTree`. `keyOf` is unchanged.)
 
-- [ ] **Step 2: Vue `Container.vue`**
+- [x] **Step 2: Vue `Container.vue`**
 
 In the `useMarkput` selector (~line 12), change:
 
@@ -780,12 +780,12 @@ to:
 
 (`result.tokens` in the template `v-for` and `result.keyOf` are unchanged.)
 
-- [ ] **Step 3: Typecheck both adapters**
+- [x] **Step 3: Typecheck both adapters**
 
 Run: `pnpm run typecheck`
 Expected: clean — `s.tokens.renderTree` resolves (the `Store`'s `tokens` is the `TokenModel`, which now has `renderTree`); `s.tokens.tree` no longer exists, so a missed rename would surface here.
 
-- [ ] **Step 4: Storybook page specs (the real adapter render path)**
+- [x] **Step 4: Storybook page specs (the real adapter render path)**
 
 Run: `pnpm -F storybook test`
 Expected: full pass — both the react and vue render-count/remount/empty-row gates render through `s.tokens.renderTree` now. The render gating is reference-stability of the same signal (renamed), so the counts are identical.
@@ -797,7 +797,7 @@ pnpm -F storybook test:react
 pnpm -F storybook test:vue
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "refactor(adapters): Container reads s.tokens.renderTree" -- packages/react/markput/src/components/Container.tsx packages/vue/markput/src/components/Container.vue
@@ -807,7 +807,7 @@ git commit -m "refactor(adapters): Container reads s.tokens.renderTree" -- packa
 
 ### Task 8: Full verification
 
-- [ ] **Step 1: All suites + guards**
+- [x] **Step 1: All suites + guards**
 
 Run, expecting full pass on each (do NOT use `pnpm -F react test` / `pnpm -F vue test` — silent no-ops, see Tech Stack):
 
@@ -818,7 +818,7 @@ pnpm run typecheck           # recursive tsc/vue-tsc — zero dangling .tree mem
 pnpm run check:encapsulation
 ```
 
-- [ ] **Step 2: Confirm the deletions and renames landed**
+- [x] **Step 2: Confirm the deletions and renames landed**
 
 Run: `grep -rn "freshTokens" packages/core/src`
 Expected: ZERO hits except the `BlockController.spec.ts:45` COMMENT mention (which references the historical behavior; update that comment to say "tokens() stays the reconciled parse" if it still reads as a `freshTokens` claim, then re-grep — zero `freshTokens(` call expressions anywhere).
@@ -832,7 +832,7 @@ Expected: the new `tokens()`/`at()` methods and the `renderTree` field are prese
 Run: `ls packages/core/adapter.ts && grep -n "\"./adapter\"" packages/core/package.json`
 Expected: the adapter module exists and the subpath export is registered.
 
-- [ ] **Step 3: Confirm clean and report**
+- [x] **Step 3: Confirm clean and report**
 
 `git status` must be clean (everything committed task-by-task, path-scoped). Report: the core suite pass count, the storybook react/vue counts, and confirm typecheck + encapsulation guard green. State explicitly that `freshTokens.ts` is deleted, `tokens()`/`at()` are the public fresh read, `renderTree` is the renamed renderer signal behind `@markput/core/adapter`, and the pending-window matrix holds (`tokens()` always fresh, handle lookups still fail-closed).
 
@@ -840,9 +840,9 @@ Expected: the adapter module exists and the subpath export is registered.
 
 ### Task 9: Write the Phase 4 plan (phase chaining)
 
-- [ ] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase4.md` for **Phase 4 — kill TokenAddress (semver-major)** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`, Phase 4): replace the four lookups with `handle(id)` + `handleAt(node)` only; add the `placeCaret` handle form; re-back `MarkController` by a handle (deleting `#resolveCaptured`, the `pathOf` DFS, and the justification comment), with `value`/`meta`/`slot`/`readOnly` becoming live reads of the current token and `update()` against a pending/dead id a fail-closed no-op returning `false`; delete `TokenAddress = {path, token}`, `#resolveAddress`, and the triple-duplicated `handleFor(address) + handleOf(address.token) !== handle` validity idiom from `editorContracts` and its call sites (`SelectionController.#resolveAddress`/`#applyPreferredAddress`, `placeCaret`'s address form, `arrowNav`/`blockEdit` `placeAtAddress`); ship `useMarkInfo` with `path()`/id (deleting its end-user staleness warning); pin the MarkController live-read parity tables (the spec's §MarkController semantics). Ground the plan by reading FIRST, with fresh eyes, the POST-Phase-3 code: `packages/core/src/shared/editorContracts.ts` (the `TokenAddress`/`TokenPath` types), `packages/core/src/features/tokens/model/TokenModel.ts` (`handleFor`/`handleAt`/`handleOf`/`tokenAt`/`handles`, `#resolveAddress`, `#viewOf`, `placeCaret`'s address form, the boundary facade now on `tokens()`), `packages/core/src/features/tokens/MarkController.ts` (`fromToken`/`#addressInTree`/`#resolve`/`#resolveCaptured`/`pathOf`), `packages/core/src/features/selection/SelectionController.ts` (`#resolveAddress`/`#applyPreferredAddress`/`placeAtAddress`), `packages/core/src/features/keyboard/arrowNav.ts` + `blockEdit.ts` (`placeAtAddress` call sites + `focusRow`), and the adapter `useMarkInfo` hooks (`packages/react/markput/src/lib/hooks/useMarkInfo.tsx`, `packages/vue/markput/src/lib/hooks/useMarkInfo.ts`) and the `TokenContext`/`tokenKey` providers that carry the render-time path. Decide the EXACT `handle(id)` signature and how `MarkController.fromToken` resolves an id (the adapter still hands in a render-tree token — bridge by `token.id`, the Phase-1 plain field). No placeholder steps — every step shows exact code; bite-sized TDD tasks; frequent path-scoped commits; the required plan header (Goal / Architecture / Tech Stack / Commits-in-a-shared-checkout / Spec / Background facts). The LAST task of the Phase 4 plan must be "write the Phase 5 plan" (phase chaining). Verification commands MUST follow this plan's Tech Stack note: `pnpm -F core test`, `pnpm -F storybook test` / `test:react` / `test:vue`, `pnpm run typecheck`, `pnpm run check:encapsulation` — NEVER `pnpm -F react test` or `pnpm -F vue test` (silent no-ops).
+- [x] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase4.md` for **Phase 4 — kill TokenAddress (semver-major)** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`, Phase 4): replace the four lookups with `handle(id)` + `handleAt(node)` only; add the `placeCaret` handle form; re-back `MarkController` by a handle (deleting `#resolveCaptured`, the `pathOf` DFS, and the justification comment), with `value`/`meta`/`slot`/`readOnly` becoming live reads of the current token and `update()` against a pending/dead id a fail-closed no-op returning `false`; delete `TokenAddress = {path, token}`, `#resolveAddress`, and the triple-duplicated `handleFor(address) + handleOf(address.token) !== handle` validity idiom from `editorContracts` and its call sites (`SelectionController.#resolveAddress`/`#applyPreferredAddress`, `placeCaret`'s address form, `arrowNav`/`blockEdit` `placeAtAddress`); ship `useMarkInfo` with `path()`/id (deleting its end-user staleness warning); pin the MarkController live-read parity tables (the spec's §MarkController semantics). Ground the plan by reading FIRST, with fresh eyes, the POST-Phase-3 code: `packages/core/src/shared/editorContracts.ts` (the `TokenAddress`/`TokenPath` types), `packages/core/src/features/tokens/model/TokenModel.ts` (`handleFor`/`handleAt`/`handleOf`/`tokenAt`/`handles`, `#resolveAddress`, `#viewOf`, `placeCaret`'s address form, the boundary facade now on `tokens()`), `packages/core/src/features/tokens/MarkController.ts` (`fromToken`/`#addressInTree`/`#resolve`/`#resolveCaptured`/`pathOf`), `packages/core/src/features/selection/SelectionController.ts` (`#resolveAddress`/`#applyPreferredAddress`/`placeAtAddress`), `packages/core/src/features/keyboard/arrowNav.ts` + `blockEdit.ts` (`placeAtAddress` call sites + `focusRow`), and the adapter `useMarkInfo` hooks (`packages/react/markput/src/lib/hooks/useMarkInfo.tsx`, `packages/vue/markput/src/lib/hooks/useMarkInfo.ts`) and the `TokenContext`/`tokenKey` providers that carry the render-time path. Decide the EXACT `handle(id)` signature and how `MarkController.fromToken` resolves an id (the adapter still hands in a render-tree token — bridge by `token.id`, the Phase-1 plain field). No placeholder steps — every step shows exact code; bite-sized TDD tasks; frequent path-scoped commits; the required plan header (Goal / Architecture / Tech Stack / Commits-in-a-shared-checkout / Spec / Background facts). The LAST task of the Phase 4 plan must be "write the Phase 5 plan" (phase chaining). Verification commands MUST follow this plan's Tech Stack note: `pnpm -F core test`, `pnpm -F storybook test` / `test:react` / `test:vue`, `pnpm run typecheck`, `pnpm run check:encapsulation` — NEVER `pnpm -F react test` or `pnpm -F vue test` (silent no-ops).
 
-- [ ] **Step 2: Commit the plan**
+- [x] **Step 2: Commit the plan**
 
 ```bash
 git commit -m "docs(plan): one-fresh-truth phase 4 — kill TokenAddress" -- docs/superpowers/plans/2026-06-13-one-fresh-truth-phase4.md
