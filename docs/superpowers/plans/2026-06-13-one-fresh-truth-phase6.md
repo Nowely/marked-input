@@ -93,14 +93,14 @@ watch(
 
 This is the heart of Phase 6. The `#reconciled` `Computed` (consume-once-drains the hint + writes `#lastParsed`, both inside a getter) is deleted; the constructor watch over it becomes a watch over the explicit `(value, parser, isBlock)` tuple whose callback drains the hint, parses (full parse), reconciles, and applies. `#lastParsed` and the incremental branch of `#parse` are removed here too (the full parse is inlined into the new `#reparse`), so `incrementalParse` loses its production caller before Task 2 deletes the file. No spec reads these private members, so the suite stays green by behavior preservation alone — pinned by `TokenModel.changed.spec.ts`'s render-count gates.
 
-- [ ] **Step 1: Capture the baseline**
+- [x] **Step 1: Capture the baseline**
 
 Run: `pnpm -w exec vitest run --project core TokenModel.changed.spec`
 Run: `pnpm -w exec vitest run --project core TokenModel.index.spec`
 Run: `pnpm -F core test`
 Expected: full pass (the pre-change baseline — the render-count gates + the fresh-read + the whole core suite are green against the current PURITY computed).
 
-- [ ] **Step 2: Delete `#lastParsed`, rewrite `#reconciled`→`#reparse`, collapse `#parse`**
+- [x] **Step 2: Delete `#lastParsed`, rewrite `#reconciled`→`#reparse`, collapse `#parse`**
 
 In `TokenModel.ts`, delete the `#lastParsed` field + the `#reconciled` computed + the `#parse` method (`:129-168`) — the whole block from the `/** Previous parse … */` comment through the end of `#parse`:
 
@@ -174,7 +174,7 @@ Replace that entire block with the explicit pipeline entry — a plain method, n
 
 (The `#parser` computed directly above (`:119-127`) is UNTOUCHED — leave it exactly as is. `#reparse` lands where `#parse` was. `filterEmptyText` is the module function at the file end — unchanged. `createTextToken`/`createIdentityTracker` imports stay.)
 
-- [ ] **Step 3: Re-point the constructor watch at the tuple trigger**
+- [x] **Step 3: Re-point the constructor watch at the tuple trigger**
 
 In `TokenModel.ts`, the constructor's `onMounted` (`:175-181`) watches `#reconciled`. Change it from:
 
@@ -209,7 +209,7 @@ to:
 		})
 ```
 
-- [ ] **Step 4: Drop the now-unused imports**
+- [x] **Step 4: Drop the now-unused imports**
 
 In `TokenModel.ts`, the `incrementalParse` value import (`:10`) and the `EditHint`/`ReconcileResult` type imports (`:15`) are now unused (`#parse` and `#reconciled` are gone — `#reparse` names no `EditHint`, the watch callback names no `ReconcileResult`, and the full parse calls `parser.parse` directly). `Computed` (`:3`) is STILL used by `renderTree` (`:80`) — keep it. `Parser` (`:11`) is STILL used by `#parser`'s `new Parser(markups)` + the `#reparse`/`#parser` type — keep it.
 
@@ -232,7 +232,7 @@ to — drop both names (the file no longer references `EditHint` or `ReconcileRe
 
 (i.e. DELETE line 15 entirely. Verify with the grep in Step 5 that neither `EditHint` nor `ReconcileResult` is named anywhere else in `TokenModel.ts` — they are not: `EditHint` was only `#parse`'s param, `ReconcileResult` only `#reconciled`'s element type.)
 
-- [ ] **Step 5: Verify the imports are clean**
+- [x] **Step 5: Verify the imports are clean**
 
 Run:
 
@@ -250,7 +250,7 @@ grep -n "Computed\|Parser\b\|createTextToken\|filterEmptyText" packages/core/src
 
 Expected: `Computed` present (renderTree), `Parser` present (`#parser`/`#reparse`), `createTextToken` present (`#reparse`'s no-parser arm), `filterEmptyText` present (the module function + `#reparse`'s block arm) — none became unused.
 
-- [ ] **Step 6: Run the regression specs + full core + typecheck**
+- [x] **Step 6: Run the regression specs + full core + typecheck**
 
 Run: `pnpm -w exec vitest run --project core TokenModel.changed.spec`
 Expected: full pass — the render-count gates (3 text edits → renderTree 0 / changed 3; structural → renderTree 1 / changed 4) and the edit-hint flow tests are green UNCHANGED. This is the proof the watch-callback entry preserves the per-edit cadence and the explicit hint drain is behavior-identical.
@@ -266,7 +266,7 @@ Expected: full pass (the whole core suite — `incrementalParse.property.spec.ts
 Run: `pnpm run typecheck`
 Expected: clean — `TokenModel.ts` no longer imports `incrementalParse`/`EditHint`/`ReconcileResult`; `Parser`/`Computed`/`createTextToken` imports are still used. (If typecheck regenerated `packages/website/src/content/docs/api/*.md`, do NOT commit those — `git checkout -- packages/website` or just scope the commit below.)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git commit -m "refactor(tokens): reparse via a (value, parser, isBlock) watch — delete the PURITY computed" -- packages/core/src/features/tokens/model/TokenModel.ts
@@ -283,7 +283,7 @@ git commit -m "refactor(tokens): reparse via a (value, parser, isBlock) watch �
 
 With Task 1 done, `incrementalParse` has exactly two callers left: its own property spec and the bench's incremental cases (b)/(c). Both go — the property spec because its subject (the windowed splicer's parse-equivalence) ceases to exist, and (b)/(c) because they call the deleted function. The FULL-PARSE benches survive as the regression tripwire (per the spec): the scalability suite, the real-world scenarios, and the full-parse baseline (a) — which now ARE the per-keystroke cost. `EditHint` survives in `tokenIdentity.ts` (reconcile windowing); only the bench's `EditHint` import (used solely by the deleted incremental hints) dies.
 
-- [ ] **Step 1: Re-verify `incrementalParse` has no production caller**
+- [x] **Step 1: Re-verify `incrementalParse` has no production caller**
 
 Run:
 
@@ -293,7 +293,7 @@ grep -rn "incrementalParse" packages/core/src --include="*.ts" | grep -v "increm
 
 Expected: ZERO hits — `TokenModel.ts` no longer imports it (Task 1). The remaining mentions are: `incrementalParse.ts` (the file, deleted in Step 2), `incrementalParse.property.spec.ts` (deleted in Step 2), `parser.bench.ts` (trimmed in Step 4), `Parser.ts` (a JSDoc comment, fixed in Task 3), and `tokenIdentity.property.spec.ts` (a COMMENT referencing the property — see Step 5). If a production `.ts` hit appears, STOP — Task 1 missed a caller; migrate it before deleting the file.
 
-- [ ] **Step 2: Delete the two files**
+- [x] **Step 2: Delete the two files**
 
 ```bash
 git rm packages/core/src/features/tokens/incrementalParse.ts packages/core/src/features/tokens/incrementalParse.property.spec.ts
@@ -301,11 +301,11 @@ git rm packages/core/src/features/tokens/incrementalParse.ts packages/core/src/f
 
 (`git rm` stages the deletions; the path-scoped commit in Step 7 includes them. The bench import of `incrementalParse` now dangles — Step 4 removes it before any test/typecheck run.)
 
-- [ ] **Step 3: Read the bench's incremental section first**
+- [x] **Step 3: Read the bench's incremental section first**
 
 Read `parser.bench.ts` lines 281-508 (the `── Incremental-parse typing bench fixtures ──` block through the three incremental `describe`s). Confirm the structure matches the Background fact: fixtures `incrementalParser`/`incrementalBase500`/`incrementalPrev500`/`incrementalTailValue`/`incrementalTailHint`/`midPoint`/`safePoint`/`incrementalMidValue`/`incrementalMidHint` (`:297-332`); bench (a) full-parse baseline (`:407-430`, calls `incrementalParser.parse`); bench (b) tail insert (`:433-469`, calls `incrementalParse`); bench (c) middle insert (`:472-508`, calls `incrementalParse`). The SURVIVORS are (a) + `incrementalParser`/`incrementalBase500`/`generateInertText`/`incrementalTailValue` (a still parses `incrementalTailValue`). The DELETIONS are (b), (c), `incrementalPrev500`, `incrementalTailHint`, the whole mid-insert fixture (`midPoint`/`safePoint`/`incrementalMidValue`/`incrementalMidHint`), and the `incrementalParse`/`EditHint` imports.
 
-- [ ] **Step 4: Trim the bench**
+- [x] **Step 4: Trim the bench**
 
 In `parser.bench.ts`:
 
@@ -468,7 +468,7 @@ to:
 
 (The leading comment block at `:404-406` says "Baseline: full parse per keystroke — same operation as … but using the @[__value__] parser so the comparison is apples-to-apples with (b)/(c)." Trim it to drop the "(b)/(c)" comparison — it now stands alone as the per-keystroke typing cost. A minimal edit of that comment is enough; do not rewrite the whole header. Keep the `── Incremental-parse typing bench fixtures ──` section comment but update the wording that promises (b)/(c) — see Step 4b.)
 
-- [ ] **Step 4b: Update the bench section comment that references (b)/(c) and `incrementalParse`**
+- [x] **Step 4b: Update the bench section comment that references (b)/(c) and `incrementalParse`**
 
 The fixtures section comment (`:281-295`) explains the `incrementalParse` fast-path and the inert-text caveat. Since `incrementalParse` is gone and only the full-parse bench survives, trim it so no comment promises a deleted bench or references the deleted function. Read `:281-295` and replace the block with a short version that explains only the surviving full-parse typing bench:
 
@@ -484,11 +484,11 @@ The fixtures section comment (`:281-295`) explains the `incrementalParse` fast-p
 
 (This replaces the `IMPORTANT`/`CAVEAT` paragraphs that explained the inert-outside guard and the slot-leading fast-path limitation — both are properties of the deleted `incrementalParse`. The `generateInertText` helper + `incrementalBase500`/`incrementalTailValue` lines that FOLLOW this comment stay.)
 
-- [ ] **Step 5: Update the `tokenIdentity.property.spec.ts` comment that references `incrementalParse`**
+- [x] **Step 5: Update the `tokenIdentity.property.spec.ts` comment that references `incrementalParse`**
 
 `tokenIdentity.property.spec.ts:22-23` carries a COMMENT: *"slot-leading/in-slot families) are exported so the incrementalParse property can reuse them …"*. The `incrementalParse` property spec is deleted, so the export-for-reuse rationale is stale. This file's GENERATORS (`generateDocument`/`generateEdit`/`editHintOf`/etc.) are STILL exported and STILL used by `tokenIdentity.property.spec.ts` itself — only the cross-reference to the deleted property spec is wrong. Read `:18-30` (the comment block around the generator exports) and trim the sentence that says the generators are exported "so the incrementalParse property can reuse them" to state they are exported for reuse within the identity property run (drop the dangling cross-reference). Do NOT touch the generators or any test — comment-only edit. (If the comment's only purpose was the cross-reference and removing it leaves the sentence empty, delete the dangling clause; keep the rest of the comment intact.)
 
-- [ ] **Step 6: Verify the bench builds and the deletions are clean**
+- [x] **Step 6: Verify the bench builds and the deletions are clean**
 
 Run:
 
@@ -514,7 +514,7 @@ pnpm -w exec vitest bench --project core parser.bench
 
 Expected: the bench RUNS to completion — the scalability, real-world, and the surviving "Typing cost: 500 marks full parse per keystroke" benches print ops/sec; no compile error from a dangling `incrementalParse`/`EditHint` reference. (Browser-context JSON persistence is skipped — see the file's `saveResults` guard; printing numbers is the pass condition.)
 
-- [ ] **Step 7: Run the full core suite + typecheck**
+- [x] **Step 7: Run the full core suite + typecheck**
 
 Run: `pnpm -F core test`
 Expected: full pass — `incrementalParse.property.spec.ts` is GONE (no longer in the run), and nothing else regressed (the full-parse path was always the correctness baseline the property spec deep-equaled). The test COUNT drops by the property spec's cases (the 3 equivalence runs + the 6 regression/guarantee cases at `incrementalParse.property.spec.ts:119-198`).
@@ -522,7 +522,7 @@ Expected: full pass — `incrementalParse.property.spec.ts` is GONE (no longer i
 Run: `pnpm run typecheck`
 Expected: clean — no file imports the deleted `incrementalParse.ts`; `parser.bench.ts` no longer imports `incrementalParse`/`EditHint`. (Ignore/checkout any regenerated `packages/website/...` typedoc output.)
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git commit -m "refactor(tokens): delete incrementalParse + property spec; bench keeps the full-parse tripwire" -- packages/core/src/features/tokens/incrementalParse.ts packages/core/src/features/tokens/incrementalParse.property.spec.ts packages/core/src/features/tokens/parser.bench.ts packages/core/src/features/tokens/tokenIdentity.property.spec.ts
@@ -539,7 +539,7 @@ git commit -m "refactor(tokens): delete incrementalParse + property spec; bench 
 
 `hasSegments` (`Parser.ts:188`) was the inert-outside guard's query; its only caller (`isInert` in the deleted `incrementalParse.ts`) is gone, leaving `hasSegments` consumer-less for now. The method is KEPT (a clean `Parser` query the spec does not name for deletion; Phase 7's row-terminator validation is a plausible future consumer), but its JSDoc points at the deleted `incrementalParse.ts` — the one remaining `incrementalParse` reference in non-comment-trimmed code. Fix the doc so no comment references a deleted file.
 
-- [ ] **Step 1: Read the JSDoc**
+- [x] **Step 1: Read the JSDoc**
 
 Read `Parser.ts:176-190` (the `hasSegments` doc + signature). It currently reads:
 
@@ -559,7 +559,7 @@ Read `Parser.ts:176-190` (the `hasSegments` doc + signature). It currently reads
 	hasSegments(text: string): boolean {
 ```
 
-- [ ] **Step 2: Rewrite the doc — drop the deleted-file reference**
+- [x] **Step 2: Rewrite the doc — drop the deleted-file reference**
 
 Replace the JSDoc block (keep the signature line) with one that states the query's nature and that it currently has no caller (so a future reader does not hunt for the deleted windowed reparse):
 
@@ -579,7 +579,7 @@ Replace the JSDoc block (keep the signature line) with one that states the query
 	hasSegments(text: string): boolean {
 ```
 
-- [ ] **Step 3: Verify no `incrementalParse` reference survives anywhere**
+- [x] **Step 3: Verify no `incrementalParse` reference survives anywhere**
 
 Run:
 
@@ -589,7 +589,7 @@ grep -rn "incrementalParse" packages/core/src --include="*.ts"
 
 Expected: ZERO hits — the deleted file's name no longer appears in any source or comment.
 
-- [ ] **Step 4: Run the parser specs + typecheck**
+- [x] **Step 4: Run the parser specs + typecheck**
 
 Run: `pnpm -w exec vitest run --project core "parser/Parser.spec"`
 Expected: full pass (comment-only change — `hasSegments` behavior is untouched; if no `Parser.spec` filter matches, run `pnpm -F core test` instead, which covers it).
@@ -597,7 +597,7 @@ Expected: full pass (comment-only change — `hasSegments` behavior is untouched
 Run: `pnpm run typecheck`
 Expected: clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "docs(parser): hasSegments no longer references the deleted incrementalParse" -- packages/core/src/features/tokens/parser/Parser.ts
@@ -613,7 +613,7 @@ git commit -m "docs(parser): hasSegments no longer references the deleted increm
 
 `getClosestIndexes` is grep-verified to have ZERO consumers outside its own barrel re-export — the spec's Riders name it for deletion in Phase 6. Its sibling `findGap` IS used (by `tokenIdentity.hintFromValues`) and stays, with its spec.
 
-- [ ] **Step 1: Re-verify zero consumers**
+- [x] **Step 1: Re-verify zero consumers**
 
 Run:
 
@@ -623,13 +623,13 @@ grep -rn "getClosestIndexes" packages/core/src packages/react packages/vue --inc
 
 Expected: hits ONLY in `preparsing/utils/getClosestIndexes.ts` (the file) and `preparsing/index.ts` (the re-export). NO other consumer. If any other hit appears — it must not, per the background grep — STOP and migrate it; do not delete a live util.
 
-- [ ] **Step 2: Delete the file**
+- [x] **Step 2: Delete the file**
 
 ```bash
 git rm packages/core/src/features/tokens/preparsing/utils/getClosestIndexes.ts
 ```
 
-- [ ] **Step 3: Drop the re-export from the barrel**
+- [x] **Step 3: Drop the re-export from the barrel**
 
 In `packages/core/src/features/tokens/preparsing/index.ts`, delete the second line so only `findGap` is re-exported:
 
@@ -639,7 +639,7 @@ export {getClosestIndexes} from './utils/getClosestIndexes'
 
 (The file then reads only `export {findGap} from './utils/findGap'`. `findGap`'s import in `tokenIdentity.ts` (`import {findGap} from './preparsing'`) still resolves.)
 
-- [ ] **Step 4: Verify and run**
+- [x] **Step 4: Verify and run**
 
 Run:
 
@@ -656,7 +656,7 @@ Run: `pnpm -F core test`
 Run: `pnpm run typecheck`
 Expected: full pass / clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "refactor(tokens): delete dead preparsing/getClosestIndexes" -- packages/core/src/features/tokens/preparsing/utils/getClosestIndexes.ts packages/core/src/features/tokens/preparsing/index.ts
@@ -666,7 +666,7 @@ git commit -m "refactor(tokens): delete dead preparsing/getClosestIndexes" -- pa
 
 ### Task 5: Full verification
 
-- [ ] **Step 1: All suites + guards**
+- [x] **Step 1: All suites + guards**
 
 Run, expecting full pass on each (do NOT use `pnpm -F react test` / `pnpm -F vue test` — silent no-ops, see Tech Stack):
 
@@ -677,7 +677,7 @@ pnpm run typecheck           # recursive tsc/vue-tsc — zero incrementalParse/E
 pnpm run check:encapsulation
 ```
 
-- [ ] **Step 2: Confirm the deletions and the new shape**
+- [x] **Step 2: Confirm the deletions and the new shape**
 
 Run: `grep -rn "incrementalParse\|getClosestIndexes" packages/core/src --include="*.ts"`
 Expected: ZERO hits — the windowed reparse and the dead util are gone from production, specs, the bench, and every comment.
@@ -694,7 +694,7 @@ Expected: `EditHint` is still DEFINED in `tokenIdentity.ts` and still EXPORTED f
 Run: `pnpm -w exec vitest bench --project core parser.bench`
 Expected: the bench RUNS — the full-parse "Typing cost: 500 marks full parse per keystroke" bench (the kept regression tripwire) + scalability + real-world benches print ops/sec; no dangling `incrementalParse` reference.
 
-- [ ] **Step 3: Confirm clean and report**
+- [x] **Step 3: Confirm clean and report**
 
 `git status` must be clean (everything committed task-by-task, path-scoped; the regenerated `packages/website/...` typedoc output, if any, left uncommitted or reverted). Report: the core suite pass count (noting it dropped by the deleted `incrementalParse.property.spec.ts` cases), the storybook react/vue counts, and confirm typecheck + encapsulation guard green + the bench still runs. State explicitly that the reparse trigger is now ONE explicit `watch` over the `(value, parser, isBlock)` tuple with the edit hint drained inside the watch callback (the PURITY computed + `#lastParsed` + `#parse` deleted; the runtime's once-per-wave dependence removed), inline parsing is now ALWAYS a full parse (`incrementalParse.ts` + its property spec deleted; the windowed splicer, alternation snapping, inert-outside guard, and doubling stabilization all gone), `EditHint` + the typing bench survive as the regression tripwire (the bench's incremental cases removed, its full-parse cases kept), and the dead `preparsing/getClosestIndexes` is deleted. Note that this phase broke no public API (`incrementalParse`/`getClosestIndexes` were internal, never re-exported from `packages/core/index.ts`; `#reconciled`/`#lastParsed`/`#parse` were private) — it is a pipeline + parse trim, behavior-identical per edit (pinned by the unchanged render-count gates in `TokenModel.changed.spec.ts`).
 
@@ -702,9 +702,9 @@ Expected: the bench RUNS — the full-parse "Typing cost: 500 marks full parse p
 
 ### Task 6: Write the Phase 7 plan (phase chaining — the final phase)
 
-- [ ] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase7.md` for **Phase 7 — first-class rows (~1–2 weeks)** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`, §First-class rows (Phase 7 design) + the Phase 7 line in §Migration + the row entries in §What dies + the Riders). Phase 7 is the spec's LARGEST and FINAL phase: a pre-split parser + a first-class `RowToken` node, a bind/ops/keyboard/adapters migration, the cascade deletions the §What dies table names (rows-as-slot-marks: `resolveSlotLeadingMatches` + the Match special case, the empty-slot collapse, `filterEmptyText` + the dual `#lastParsed` — already gone after Phase 6, so reconcile only — `descend-for-rows`, the five `isTextLikeRow`/`isSlotLeadingMark` sniffing sites, the `addDragRow` doubled-content quirk, the rows-map/one-non-control-child bolt-ons), the round-trip + row-locality properties (`split → parse → serialize ≡ value`; editing inside row k leaves all other rows' parse results reference-equal), the block render gates re-pinned on Row trees, and the Riders (rewrite the rotten `parser/README.md`, fix `Parser.unescape` lossiness for user-typed backslashes, shrink the tokens README to the new model). Block-mode `tokens()` returns `RowToken[]` — a breaking tree-shape change; the semver-major is cut after Phase 7 lands (or after Phase 6 if Phase 7 detaches — note this in the plan's framing). GROUND the plan by reading FIRST, with fresh eyes, the POST-Phase-6 code: the parser's slot-leading machinery (`PatternMatcher.resolveSlotLeadingMatches` + the Match special case, the slot-leading TreeBuilder path), `filterEmptyText` (now in `TokenModel.ts` — the only remaining empty-slot collapse after Phase 6), the `isTextLikeRow`/`isSlotLeadingMark` sniffing sites (grep them), `tryDescend`'s descend-for-rows arm in `tokenIdentity.ts`, the block bind path (`rowElement` plumbing, one-non-control-child rule), `BlockController`/block keyboard `addDragRow`/`canMergeRows`/`mergeDragRows`, the adapters' `Container`→`Block` mapping, `Parser.unescape`, `parser/README.md`, and the tokens README. Decide the EXACT `RowToken` shape (the spec's `{type:'row', id, children, content/position, terminated}`), the terminator derivation (`'__slot__\n\n'` → `'\n\n'`; default `'\n\n'`), the pre-split-then-parse-per-segment pipeline, and how reconcile/bind/ops/keyboard/adapters route on `token.type === 'row'`. No placeholder steps — every step shows exact code; bite-sized TDD; frequent path-scoped commits; the required plan header. Because Phase 7 is the FINAL phase, its LAST task is the **migration completion / README shrink rider**, NOT "write the Phase 8 plan" — there is no Phase 8. That final task ties off the migration: the tokens README shrunk to the two-sentence model ("handles are fresh; the render tree is for renderers"; the spec's acceptance bar — toward ≤150 lines), the `parser/README.md` rewrite, the `Parser.unescape` fix, a final full-suite + storybook + typecheck + encapsulation green, and a closing report confirming all four wins still gate (with win 4 traded), the public surface matches the spec's §Public API, and the semver-major is ready to cut. Verification commands MUST follow this plan's Tech Stack note: `pnpm -F core test`, `pnpm -F storybook test` / `test:react` / `test:vue`, `pnpm run typecheck`, `pnpm run check:encapsulation`, `pnpm -w exec vitest bench --project core parser.bench` (the kept tripwire; Phase 7's row-local parse should show the typing cost drop) — NEVER `pnpm -F react test` or `pnpm -F vue test` (silent no-ops).
+- [x] **Step 1: Invoke the superpowers:writing-plans skill** to produce `docs/superpowers/plans/2026-06-13-one-fresh-truth-phase7.md` for **Phase 7 — first-class rows (~1–2 weeks)** from the spec (`docs/superpowers/specs/2026-06-13-tokenmodel-one-fresh-truth-design.md`, §First-class rows (Phase 7 design) + the Phase 7 line in §Migration + the row entries in §What dies + the Riders). Phase 7 is the spec's LARGEST and FINAL phase: a pre-split parser + a first-class `RowToken` node, a bind/ops/keyboard/adapters migration, the cascade deletions the §What dies table names (rows-as-slot-marks: `resolveSlotLeadingMatches` + the Match special case, the empty-slot collapse, `filterEmptyText` + the dual `#lastParsed` — already gone after Phase 6, so reconcile only — `descend-for-rows`, the five `isTextLikeRow`/`isSlotLeadingMark` sniffing sites, the `addDragRow` doubled-content quirk, the rows-map/one-non-control-child bolt-ons), the round-trip + row-locality properties (`split → parse → serialize ≡ value`; editing inside row k leaves all other rows' parse results reference-equal), the block render gates re-pinned on Row trees, and the Riders (rewrite the rotten `parser/README.md`, fix `Parser.unescape` lossiness for user-typed backslashes, shrink the tokens README to the new model). Block-mode `tokens()` returns `RowToken[]` — a breaking tree-shape change; the semver-major is cut after Phase 7 lands (or after Phase 6 if Phase 7 detaches — note this in the plan's framing). GROUND the plan by reading FIRST, with fresh eyes, the POST-Phase-6 code: the parser's slot-leading machinery (`PatternMatcher.resolveSlotLeadingMatches` + the Match special case, the slot-leading TreeBuilder path), `filterEmptyText` (now in `TokenModel.ts` — the only remaining empty-slot collapse after Phase 6), the `isTextLikeRow`/`isSlotLeadingMark` sniffing sites (grep them), `tryDescend`'s descend-for-rows arm in `tokenIdentity.ts`, the block bind path (`rowElement` plumbing, one-non-control-child rule), `BlockController`/block keyboard `addDragRow`/`canMergeRows`/`mergeDragRows`, the adapters' `Container`→`Block` mapping, `Parser.unescape`, `parser/README.md`, and the tokens README. Decide the EXACT `RowToken` shape (the spec's `{type:'row', id, children, content/position, terminated}`), the terminator derivation (`'__slot__\n\n'` → `'\n\n'`; default `'\n\n'`), the pre-split-then-parse-per-segment pipeline, and how reconcile/bind/ops/keyboard/adapters route on `token.type === 'row'`. No placeholder steps — every step shows exact code; bite-sized TDD; frequent path-scoped commits; the required plan header. Because Phase 7 is the FINAL phase, its LAST task is the **migration completion / README shrink rider**, NOT "write the Phase 8 plan" — there is no Phase 8. That final task ties off the migration: the tokens README shrunk to the two-sentence model ("handles are fresh; the render tree is for renderers"; the spec's acceptance bar — toward ≤150 lines), the `parser/README.md` rewrite, the `Parser.unescape` fix, a final full-suite + storybook + typecheck + encapsulation green, and a closing report confirming all four wins still gate (with win 4 traded), the public surface matches the spec's §Public API, and the semver-major is ready to cut. Verification commands MUST follow this plan's Tech Stack note: `pnpm -F core test`, `pnpm -F storybook test` / `test:react` / `test:vue`, `pnpm run typecheck`, `pnpm run check:encapsulation`, `pnpm -w exec vitest bench --project core parser.bench` (the kept tripwire; Phase 7's row-local parse should show the typing cost drop) — NEVER `pnpm -F react test` or `pnpm -F vue test` (silent no-ops).
 
-- [ ] **Step 2: Commit the plan**
+- [x] **Step 2: Commit the plan**
 
 ```bash
 git commit -m "docs(plan): one-fresh-truth phase 7 — first-class rows" -- docs/superpowers/plans/2026-06-13-one-fresh-truth-phase7.md
