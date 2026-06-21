@@ -69,9 +69,12 @@ export class SelectionController {
 	}
 
 	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {
+		// A dead or mid-window handle fails closed; alive() is the mount check.
 		if (!handle.alive()) return false
 		const position = handle.token().position
 		const pos = boundary === 'end' ? position.end : position.start
+		// Stash BEFORE the range() write: the range signal fires #applyRange()
+		// synchronously, which reads and clears #preferredHandle via #placeCollapsed.
 		this.#preferredHandle = handle
 		if (!this.range({start: pos, end: pos})) this.#applyRange()
 		return true
@@ -106,6 +109,9 @@ export class SelectionController {
 	}
 
 	#placeCollapsed(rawPosition: number): boolean {
+		// Consume the handle stashed by placeAtHandle: read then clear unconditionally
+		// so a later collapse never reuses a stale preferred handle. A live handle
+		// disambiguates tokens sharing this position; otherwise fall back to raw.
 		const handle = this.#preferredHandle
 		this.#preferredHandle = undefined
 		if (handle?.alive() && handle.placeCaret(rawPosition - handle.token().position.start)) return true
