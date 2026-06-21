@@ -1,5 +1,4 @@
 import type {OverlayMatch} from '@markput/core'
-import {createMarkFromOverlay} from '@markput/core'
 import type {RefObject} from 'react'
 import {useCallback, useMemo} from 'react'
 
@@ -24,13 +23,8 @@ export function useOverlay(): OverlayHandler {
 
 	const close = useCallback(() => overlay.close(), [overlay])
 	const select = useCallback(
-		(value: {value: string; meta?: string}) => {
-			if (!match) return
-			const mark = createMarkFromOverlay(match, value.value, value.meta)
-			overlay.select({mark, match})
-			overlay.close()
-		},
-		[match, overlay]
+		(value: {value: string; meta?: string}) => overlay.choose(value.value, value.meta),
+		[overlay]
 	)
 
 	const ref = useMemo(

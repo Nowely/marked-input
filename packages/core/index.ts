@@ -31,7 +31,7 @@ export {Store} from './src/store'
 export type {MarkSlot, OverlaySlot} from './src/features/slots'
 
 // Overlay
-export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './src/features/overlay'
+export {filterSuggestions, navigateSuggestions} from './src/features/overlay'
 
 // Drag
 export {getAlwaysShowHandle} from './src/features/block'

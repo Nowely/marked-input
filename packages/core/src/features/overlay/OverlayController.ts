@@ -10,7 +10,7 @@ import type {OverlaySlot} from '../slots'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
-import type {Token, TokenModel} from '../tokens'
+import type {TokenModel} from '../tokens'
 import {annotate} from '../tokens'
 import {TriggerFinder} from './TriggerFinder'
 
@@ -23,7 +23,6 @@ export class OverlayController {
 		return (option?: CoreOption, defaultComponent?: Slot) => resolveOverlaySlot(Overlay, option, defaultComponent)
 	})
 
-	readonly select = event<{mark: Token; match: OverlayMatch}>()
 	readonly close = event()
 
 	readonly position: Computed<{left: number; top: number}> = computed(() => {
@@ -90,31 +89,17 @@ export class OverlayController {
 				}
 				listen(document, 'selectionchange', handler)
 			})
-
-			watch(this.select, overlayEvent => {
-				if (!hasOverlayTrigger()) return
-				const {
-					mark,
-					match: {option, range},
-				} = overlayEvent
-
-				const markup = option.markup
-				if (!markup) return
-
-				const annotation =
-					mark.type === 'mark'
-						? annotate(markup, {
-								value: mark.value,
-								meta: mark.meta,
-							})
-						: annotate(markup, {
-								value: mark.content,
-							})
-
-				this.edit.replace(range, annotation)
-				this.match(undefined)
-			})
 		})
+	}
+
+	/** Commit the active overlay match as an annotation of (value, meta), then close. */
+	choose(value: string, meta?: string): void {
+		const match = this.match()
+		if (!match) return
+		const markup = match.option.markup
+		if (!markup) return
+		this.edit.replace(match.range, annotate(markup, {value, meta}))
+		this.match(undefined)
 	}
 
 	#probeTrigger() {
