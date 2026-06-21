@@ -1,14 +1,10 @@
-import type {TokenHandle} from './model/TokenHandle'
+import type {ElementBindings, TokenHandle} from './model/TokenHandle'
 import type {Token} from './parser/types'
 import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 
 /** A bound token as the facade reads it: the live DOM bindings plus the handle itself. */
-export type TokenView = {
+export type TokenView = ElementBindings & {
 	readonly handle: TokenHandle
-	readonly tokenElement: HTMLElement
-	readonly textElement?: HTMLElement
-	readonly rowElement?: HTMLElement
-	readonly childSequenceHost?: HTMLElement
 }
 
 export type Lookup = {readonly kind: 'control'} | {readonly kind: 'token'; readonly node: TokenView}
