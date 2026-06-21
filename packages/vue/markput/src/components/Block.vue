@@ -4,6 +4,7 @@ import {computed} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
+import {unwrapEl} from '../lib/unwrapEl'
 import BlockMenu from './BlockMenu.vue'
 import DragHandle from './DragHandle.vue'
 import DropIndicator from './DropIndicator.vue'
@@ -33,8 +34,7 @@ const otherSlotProps = computed(() => {
 })
 
 const setBlockRef = (el: unknown) => {
-	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
-	const element = (resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLElement | null
+	const element = unwrapEl(el)
 	blockStore.attachContainer(element, props.blockIndex, {action: store.block.action})
 }
 </script>

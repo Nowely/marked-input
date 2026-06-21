@@ -4,6 +4,7 @@ import type {Ref} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
+import {unwrapEl} from '../lib/unwrapEl'
 import Block from './Block.vue'
 import Token from './Token.vue'
 
@@ -36,8 +37,7 @@ const boundProps = computed(() => {
 })
 
 const setContainerRef = (el: unknown) => {
-	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
-	const element = (resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null
+	const element = unwrapEl(el)
 	store.host.container(element)
 
 	const user = userRef.value
