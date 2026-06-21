@@ -100,9 +100,9 @@ export class TokenModel {
 
 	/**
 	 * Internal: ids removed (subtree included) by the LAST committed reconcile —
-	 * the prune feed for id-keyed UI-state stores. Read inside a `changed` watch;
-	 * the public event carries no payload, so this accessor is the migration path
-	 * for consumers that read the old changeset's `removed` bucket (BlockController).
+	 * the prune feed for consumers (BlockController) since the changed() event
+	 * carries no payload. Read inside a `changed` watch; valid only for the
+	 * duration of that wave (reassigned on every commit).
 	 */
 	readonly removedIds = (): readonly number[] => this.#pipeline.removedIds()
 
@@ -130,14 +130,15 @@ export class TokenModel {
 	 * THE reparse pipeline entry (the spec's watch-callback hint flow). Driven by
 	 * the one watch over the `(value, parser, isBlock)` tuple in the constructor:
 	 * when any of the three changes, drain the consume-once edit hint, full-parse
-	 * the value (inline parsing is always a full parse — the windowed
-	 * `incrementalParse` is deleted; Phase 7's pre-split row parser is the
-	 * incrementality story), filter empty texts in block mode, then reconcile and
-	 * apply. The hint + `previousValue` are plain fields the `current` write set
-	 * synchronously, so draining them HERE — inside an `untracked` watch callback,
-	 * once per wave by construction — needs no PURITY argument (the old
-	 * `#reconciled` computed drained them inside a getter, leaning on the runtime's
-	 * once-per-wave guarantee; that dependence is gone).
+	 * the value (inline and block parse are both full parses — the windowed
+	 * incrementalParse is deleted; a future pre-split row parser was scoped as
+	 * Phase 7 but detached/reverted — see branch phase7-first-class-rows-wip),
+	 * filter empty texts in block mode, then reconcile and apply. The hint +
+	 * `previousValue` are plain fields the `current` write set synchronously, so
+	 * draining them HERE — inside an `untracked` watch callback, once per wave by
+	 * construction — needs no PURITY argument (the old `#reconciled` computed
+	 * drained them inside a getter, leaning on the runtime's once-per-wave
+	 * guarantee; that dependence is gone).
 	 */
 	#reparse(value: string, parser: Parser | undefined, isBlock: boolean): void {
 		const hint = this.value.takePendingEdit()

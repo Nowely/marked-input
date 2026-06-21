@@ -151,9 +151,9 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			patches.push({surface, content: change.token.content})
 		}
 
-		// Commit: update the listed nodes (each bumps only its own dirty) and patch
-		// the changed surfaces, in one batch so handle watchers flush against a
-		// consistent DOM. Conditional writes keep untouched Text nodes alive.
+		// Commit: update the listed nodes (in-place field writes) and patch the
+		// changed surfaces, in one batch so subscribers flush against a consistent
+		// DOM. Conditional writes keep untouched Text nodes alive.
 		batch(() => {
 			for (const {handle, token, path} of updates) handle.update(token, path)
 			for (const {surface, content} of patches) {
