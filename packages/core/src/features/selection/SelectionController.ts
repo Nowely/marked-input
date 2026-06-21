@@ -119,7 +119,7 @@ export class SelectionController {
 		const handle = this.#preferredHandle
 		this.#preferredHandle = undefined
 		if (!handle || !handle.alive()) return false
-		return this.tokens.placeCaret({handle, offset: rawPosition - handle.token().position.start})
+		return handle.placeCaret(rawPosition - handle.token().position.start)
 	}
 
 	#placeCollapsed(rawPosition: number): boolean {

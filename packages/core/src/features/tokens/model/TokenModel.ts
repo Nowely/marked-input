@@ -145,7 +145,7 @@ export class TokenModel {
 		const previousValue = this.value.previousValue()
 		const parsed = parser ? parser.parse(value) : [createTextToken(value)]
 		const tokens = isBlock ? filterEmptyText(parsed) : parsed
-		this.#pipeline.apply(this.#identity.reconcile(tokens, hint, previousValue, value))
+		this.#pipeline.apply(this.#identity.reconcile(tokens, hint, previousValue))
 	}
 
 	constructor(
@@ -335,38 +335,11 @@ export class TokenModel {
 	}
 
 	/**
-	 * Place a collapsed caret. Number form resolves the best target (text
-	 * surface containing the position, else a mark boundary exactly there);
-	 * handle form targets a specific token's live handle (callers use it to
-	 * disambiguate tokens sharing a boundary position).
-	 *
-	 * **Handle form — `offset` for mark tokens without a text surface:**
-	 * `offset <= 0` selects the start child boundary of the token element,
-	 * `offset > 0` the end — a binary selector, not a character offset.
+	 * Place a collapsed caret at an absolute document position: the text surface
+	 * containing it, else a mark boundary exactly there, else the nearest text
+	 * surface. (Per-token placement is `TokenHandle.placeCaret`.)
 	 */
-	placeCaret(target: number | {handle: TokenHandle; offset: number}): boolean {
-		if (typeof target === 'number') return this.#placeAtRawPosition(target)
-
-		// The handle IS the resolution: a live handle carries the current bindings;
-		// a dead or mid-window handle fails closed.
-		const handle = target.handle
-		if (!handle.alive()) return false
-		const bindings = handle.node()
-		if (!bindings) return false
-
-		if (handle.token().type === 'mark' && !bindings.textElement) {
-			focusIfNeeded(bindings.tokenElement)
-			placeAtChildBoundary(bindings.tokenElement, target.offset <= 0 ? 'start' : 'end')
-			return true
-		}
-
-		const surface = bindings.textElement ?? bindings.tokenElement
-		focusIfNeeded(surface)
-		if (bindings.textElement) placeAtTextOffset(bindings.textElement, target.offset)
-		return true
-	}
-
-	#placeAtRawPosition(rawPosition: number): boolean {
+	placeCaret(rawPosition: number): boolean {
 		const ctx = this.#boundaryContext()
 
 		const textTarget = textTargetAt(ctx, rawPosition)

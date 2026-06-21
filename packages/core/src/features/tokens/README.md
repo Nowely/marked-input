@@ -242,11 +242,12 @@ by the inherited id to the new live handle.
 
 ## Caret placement by handle
 
-`placeCaret` takes a raw position (`number`) or a handle form
-(`placeCaret({handle, offset})`); `SelectionController.placeAtHandle(handle,
-boundary)` places at a handle's start/end. Both fail closed against a dead or
-mid-window handle (`!handle.alive()` → `false`). The handle carries the stable
-id, so no path-and-token round-trip is involved.
+`TokenModel.placeCaret(rawPosition)` resolves the best target for an absolute
+position; per-token placement is `TokenHandle.placeCaret(offset)`, and
+`SelectionController.placeAtHandle(handle, boundary)` places at a handle's
+start/end. The handle paths fail closed against a dead or mid-window handle
+(`!handle.alive()` → `false`). The handle carries the stable id, so no
+path-and-token round-trip is involved.
 
 ## Parse and identity
 

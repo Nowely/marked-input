@@ -343,13 +343,12 @@ describe('TokenModel shell (model/)', () => {
 			expect(model.selection()?.focusNode).toBe(anchor?.node)
 		})
 
-		it("placeCaret({handle, offset}) targets the handle's token explicitly", () => {
+		it("handle.placeCaret targets the handle's token explicitly", () => {
 			const {model} = mountNewInline()
 			const token = model.current()[2] // text 'llo' [6,9]
 			const handle = model.handle(token.id!)
 			if (!handle) throw new Error('expected handle')
-
-			expect(model.placeCaret({handle, offset: 1})).toBe(true)
+			expect(handle.placeCaret(1)).toBe(true)
 			expect(model.selection()?.raw?.range.start).toBe(7)
 			// A foreign token object (never reconciled) carries no id, so it has no
 			// live handle — the stale reference is rejected at resolution, leaving

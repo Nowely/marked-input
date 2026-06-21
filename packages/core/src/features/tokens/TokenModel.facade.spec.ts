@@ -258,21 +258,21 @@ describe('TokenModel placement commands', () => {
 		expect(store.tokens.selection()?.raw?.range.start).toBe(mark.position.end)
 	})
 
-	// Note: the mark-only branch of #placeAtRawPosition (markBoundaryAt) is not
-	// directly reachable via a raw position in this fixture because the parser always
+	// Note: the mark-only branch of placeCaret (markBoundaryAt) is not directly
+	// reachable via a raw position in this fixture because the parser always
 	// emits an empty leading text token when a mark is first in the value (confirmed
 	// for '@[x]llo' → [{type:'text',position:{0,0}}, {type:'mark',position:{0,4}},
 	// {type:'text',position:{4,7}}]). textTargetAt therefore always matches before
-	// markBoundaryAt is tried. The mark-form of placeCaret({handle, offset}) that
-	// drives the same underlying placeAtChildBoundary call is covered by the
-	// 'placeCaret({handle, offset}) targets the handle's token explicitly' test.
+	// markBoundaryAt is tried. Per-token placement (the same underlying
+	// placeAtChildBoundary call) is covered by the
+	// 'handle.placeCaret targets the handle's token explicitly' test below.
 
-	it("placeCaret({handle, offset}) targets the handle's token explicitly", () => {
+	it("handle.placeCaret targets the handle's token explicitly", () => {
 		const {store} = mountWithMark()
 		const token = store.tokens.current()[2] // text "llo" [6,9]
 		const handle = store.tokens.handle(token.id!)
 		if (!handle) throw new Error('expected handle')
-		expect(store.tokens.placeCaret({handle, offset: 1})).toBe(true)
+		expect(handle.placeCaret(1)).toBe(true)
 		expect(store.tokens.selection()?.raw?.range.start).toBe(token.position.start + 1) // 6 + 1 = 7
 	})
 
