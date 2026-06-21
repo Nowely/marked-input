@@ -117,7 +117,7 @@ All user mutations go through `store.edit.replace()`: features describe the raw 
 6. User selects item:
    - Overlay calls select({ value, meta })
         ↓
-7. store.overlay.select() emitted
+7. store.overlay.choose(value, meta) annotates and replaces the trigger range
         ↓
 8. Markup inserted, onChange called with new text
         ↓
