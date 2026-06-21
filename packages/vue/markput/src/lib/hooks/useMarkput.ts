@@ -1,11 +1,8 @@
-import {effect, isReactive} from '@markput/core'
-import type {Signal, Computed, SignalValues, Store} from '@markput/core'
+import {effect, readSelected} from '@markput/core'
+import type {SignalValues, Store, Selectable, ObjectSelector} from '@markput/core'
 import {shallowRef, onUnmounted, type Ref} from 'vue'
 
 import {useStore} from './useStore'
-
-type Selectable<T> = Signal<T> | Computed<T>
-type ObjectSelector = Record<string, Selectable<unknown> | unknown>
 
 export function useMarkput<T>(selector: (store: Store) => Selectable<T>): Ref<T>
 export function useMarkput<R extends ObjectSelector>(selector: (store: Store) => R): Ref<SignalValues<R>>
@@ -16,23 +13,11 @@ export function useMarkput(selector: (store: Store) => Selectable<unknown> | Obj
 	// The selector is NOT re-run reactively — it is a stable signal picker.
 	const target = selector(store)
 
-	const getValue = (): unknown => {
-		if (typeof target === 'function') {
-			return target()
-		}
-		const out: Record<string, unknown> = {}
-		for (const k in target) {
-			const val = target[k]
-			out[k] = isReactive(val) ? (val as () => unknown)() : val
-		}
-		return out
-	}
-
 	// shallowRef + effect bridges the two reactive systems.
 	// The effect re-runs whenever tracked signals change, updating the ref.
 	const r = shallowRef<unknown>(undefined)
 	const stop = effect(() => {
-		r.value = getValue()
+		r.value = readSelected(target)
 	})
 	onUnmounted(stop)
 

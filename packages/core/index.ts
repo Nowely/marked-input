@@ -22,6 +22,8 @@ export {annotate, denote} from './src/features/tokens'
 export type {Markup, Token, TextToken, MarkToken} from './src/features/tokens'
 export type {TokenPath, Range, MarkPatch, MarkInfo} from './src/shared/editorContracts'
 export {toMarkInfo} from './src/shared/editorContracts'
+export type {Selectable, ObjectSelector} from './src/shared/readSelected'
+export {readSelected} from './src/shared/readSelected'
 
 // Reactive system
 export type {Signal, Computed, Event, SignalValues} from './src/shared/signals'
