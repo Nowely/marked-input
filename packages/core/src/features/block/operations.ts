@@ -132,7 +132,7 @@ function transformValue(value: string, rows: readonly Token[], action: DragActio
 		case 'add':
 			return addDragRow(value, [...rows], action.afterIndex, createRowContent(options))
 		case 'delete':
-			return deleteDragRow(value, [...rows], action.index)
+			return deleteDragRow(value, rows, action.index)
 		case 'duplicate':
 			return duplicateDragRow(value, [...rows], action.index)
 	}

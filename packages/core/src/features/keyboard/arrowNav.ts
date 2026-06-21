@@ -58,5 +58,4 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	// the wrong token at text↔mark boundaries. The sibling's id bridges to its
 	// live handle; placeAtHandle reads the handle's current positions.
 	store.selection.placeAtHandle(siblingHandle, direction === 'prev' ? 'end' : 'start')
-	return
 }
