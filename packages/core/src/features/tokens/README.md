@@ -66,7 +66,7 @@ value edit → full parse → reconcile (identity carry + routing decided here)
   later `onRendered()` re-binds idempotently.
 - **`pendingStructural` latch:** between a structural apply and its bind the node
   layer is one generation stale. `handle(id)` (and everything id-bridged through
-  it: `MarkController` mutations, handle-form `placeCaret`) returns `undefined`
+  it: `MarkController` mutations) returns `undefined`
   while latched (`pending()` is true) — mutations fail closed instead of acting
   on a tree the DOM never showed. Applies landing inside the window fold into
   the pending structural pass.
@@ -84,10 +84,6 @@ value edit → full parse → reconcile (identity carry + routing decided here)
   (SelectionController re-places the caret on it). Consumers re-read via
   `current()` / `handle(id)`; removed ids come from the separate `removedIds()`
   accessor. During a latched window only the final commit announces.
-
-A dev-only tripwire (`renderedTimeoutMs`, default 2000) warns when a structural
-publish's `onRendered()` never arrives — a broken adapter handshake would leave
-the editor silently stale.
 
 ## Structural DOM walk (`model/bind.ts`)
 
@@ -113,7 +109,6 @@ the whole frame, failing loud when an adapter renders something unexpected.
 ```ts
 // consumer read
 current() // readonly Token[] — the always-fresh reconciled tree
-at(index) // the top-level token at index, or undefined
 
 // renderer contract (adapter-only)
 renderTree: Computed<Token[]> // structural tree; reference change ⇔ renderer must run
@@ -127,7 +122,7 @@ handleAt(node) // handle | 'control' | undefined for a DOM node
 
 // DOM↔model facade
 boundaryFor(node, offset, affinity?) // DOM (node, offset) → absolute position
-placeCaret(target) // number | {handle, offset}
+placeCaret(rawPosition: number) // place a collapsed caret at an absolute position
 selectRange(start, end)
 selection(): SelectionSnapshot | undefined // THE selection read
 selectedContent(): {html; text} | undefined // selection serialized for clipboard
@@ -155,14 +150,13 @@ type SelectionSnapshot = {
     raw: RawSelection | undefined // absolute in-editor range, undefined if outside any bound token
     rect: DOMRect | undefined
     anchor: SelectionAnchor // {node, offset, isCollapsed}
-    collapsed: boolean
     focusNode: Node | undefined
     intersects(node: Node): boolean // partial containment counts
 }
 ```
 
 A consumer that treats "no selection" as collapsed compares
-`selection()?.collapsed !== false`.
+`selection()?.anchor.isCollapsed !== false`.
 
 ### The fresh read
 

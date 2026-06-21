@@ -23,7 +23,7 @@ export type SelectionSnapshot = {
 	readonly raw: RawSelection | undefined
 	/** Viewport rect of the caret/selection. */
 	readonly rect: DOMRect | undefined
-	/** Anchor node + offset + collapsed flag of the raw window selection. */
+	/** Anchor node, offset, and collapsed state of the raw window selection. */
 	readonly anchor: SelectionAnchor
 	/** Focus node of the raw window selection. */
 	readonly focusNode: Node | undefined
@@ -236,7 +236,7 @@ export class TokenModel {
 		return undefined
 	}
 
-	/** View of a handle for the boundary facade: the fresh current token over the live bindings. */
+	/** View of a handle for the boundary facade: its live DOM bindings plus the handle. */
 	#view(handle: TokenHandle): TokenView | undefined {
 		const bindings = handle.node()
 		if (!bindings) return undefined
