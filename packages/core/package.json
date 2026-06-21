@@ -7,9 +7,6 @@
     ".": {
       "import": "./index.ts"
     },
-    "./adapter": {
-      "import": "./adapter.ts"
-    },
     "./styles.module.css": "./styles.module.css"
   },
   "scripts": {
