@@ -1,7 +1,6 @@
 import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
-import {handleBeforeInput} from './input'
 
 function mountStructuralInline(value = 'hello') {
 	const store = new Store()
@@ -57,7 +56,9 @@ describe('handleBeforeInput()', () => {
 		range.setEnd(textNode, 1)
 		const event = inputEvent('insertText', range, {data: 'x'})
 
-		handleBeforeInput(store, container, event)
+		// Drive handleBeforeInput through the beforeinput listener enableInput
+		// wired at mount (capture phase on the container).
+		textNode.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(replaceRange).toHaveBeenCalledWith({start: 1, end: 1}, 'x')
@@ -73,7 +74,8 @@ describe('handleBeforeInput()', () => {
 		range.setEnd(descendantText, 0)
 		const event = inputEvent('insertText', range, {data: 'x'})
 
-		handleBeforeInput(store, container, event)
+		// Through the wired beforeinput listener (see above).
+		descendantText.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(false)
 		expect(replaceRange).not.toHaveBeenCalled()

@@ -49,7 +49,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	store.edit.replace(range, '')
 }
 
-export function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent): void {
+function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent): void {
 	if (store.selection.isAllSelected()) {
 		if (event.inputType === 'insertFromPaste') {
 			event.preventDefault()
