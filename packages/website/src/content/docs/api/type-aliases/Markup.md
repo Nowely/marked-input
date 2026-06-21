@@ -23,7 +23,7 @@ type Markup =
   | `${MetaMarkup}${SlotMarkup}${ValueMarkup}`;
 ```
 
-Defined in: [core/src/features/tokens/parser/types.ts:65](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/types.ts#L65)
+Defined in: [core/src/features/tokens/parser/types.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/types.ts#L63)
 
 Modern Markup type supporting value, meta, and slot placeholders
 
