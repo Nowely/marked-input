@@ -254,7 +254,7 @@ path-and-token round-trip is involved.
 ### Identity tracker (`tokenIdentity.ts`)
 
 `createIdentityTracker()` maps each `Token` object to a stable integer id via a
-`WeakMap`. `reconcile(next, hint?)` matches the new parse against the previous
+plain `id` field stamped directly on the token. `reconcile(next, hint?)` matches the new parse against the previous
 tree and returns a `ReconcileResult`:
 
 ```ts

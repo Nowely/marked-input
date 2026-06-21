@@ -67,9 +67,11 @@ export type IdentityTracker = {
 	 */
 	idOf(token: Token): number
 	/**
-	 * Read-only peek: returns the existing id if the token has been seen before,
-	 * or `undefined` if it has not — without allocating a new id. Unlike `idOf`,
-	 * probing a foreign token with `idFor` is always safe and leaves no side-effect.
+	 * Read-only peek: returns the id stamped on the token by a prior reconcile,
+	 * or `undefined` if it has never been stamped — without allocating a new id.
+	 * The pipeline threads this into bind so it never allocates. Do NOT probe a
+	 * token from a different tracker instance: the `id` field carries THAT
+	 * tracker's stamp, not this one's.
 	 */
 	idFor(token: Token): number | undefined
 }
@@ -184,9 +186,10 @@ export function createIdentityTracker(): IdentityTracker {
 					const b = nextKids[i]
 					if (a.type === 'mark' && b.type === 'mark' && !sameDescriptor(a, b)) return false
 				}
-				// Descend: pair the children inside the slot window, then carry the
-				// id onto the new mark. ensureId runs AFTER pairing — the children
-				// already hold their inherited ids, so no phantom allocations.
+				// Descend: carry the id onto the new mark FIRST (children must be
+				// stamped before pairSlotChildren runs ensureId on them), then pair
+				// inside the slot window. The final ensureId runs AFTER pairing — the
+				// children already hold their inherited ids, so no phantom allocations.
 				if (prevMark.id !== undefined) nextMark.id = prevMark.id
 				pairSlotChildren(prevMark, nextMark, prevSlot, nextSlot, basePath)
 				changes.push({id: ensureId(nextMark), token: nextMark, path: basePath, kind: 'update'})
