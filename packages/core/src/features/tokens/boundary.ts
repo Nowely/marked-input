@@ -2,10 +2,9 @@ import type {TokenHandle} from './model/TokenHandle'
 import type {Token} from './parser/types'
 import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 
-/** A bound token as the facade reads it: the fresh current token over the live DOM bindings, plus the handle itself. */
+/** A bound token as the facade reads it: the live DOM bindings plus the handle itself. */
 export type TokenView = {
 	readonly handle: TokenHandle
-	readonly token: Token
 	readonly tokenElement: HTMLElement
 	readonly textElement?: HTMLElement
 	readonly rowElement?: HTMLElement
@@ -18,10 +17,9 @@ export type BoundaryContext = {
 	container: HTMLElement | undefined
 	tokens: readonly Token[]
 	/**
-	 * The view's fresh current token, or `undefined` if its handle is no longer
-	 * live. Views carry `handle.token()` by construction, so this only rejects
-	 * during the structural reconcile → bind window (the node layer is one
-	 * generation stale) and for killed handles.
+	 * Reads the handle's live token, or `undefined` if its handle is no longer
+	 * live. Rejects during the structural reconcile → bind window (the node layer
+	 * is one generation stale) and for killed handles.
 	 */
 	tokenOf(view: TokenView): Token | undefined
 	/** Id-bridged view of a current-tree token's bound node, if any. */

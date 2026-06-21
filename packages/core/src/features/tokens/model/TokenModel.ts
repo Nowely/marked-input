@@ -242,7 +242,7 @@ export class TokenModel {
 	#view(handle: TokenHandle): TokenView | undefined {
 		const bindings = handle.node()
 		if (!bindings) return undefined
-		return {handle, token: handle.token(), ...bindings}
+		return {handle, ...bindings}
 	}
 
 	*#views(): IterableIterator<TokenView> {
@@ -252,9 +252,9 @@ export class TokenModel {
 		}
 	}
 
-	/** The view's fresh current token while its handle is live (views are built from live handles, so this is total for an in-hand view). */
+	/** The view's fresh current token while its handle is live. */
 	#tokenOf(view: TokenView): Token | undefined {
-		return view.handle.alive() ? view.token : undefined
+		return view.handle.alive() ? view.handle.token() : undefined
 	}
 
 	/** Id-bridged view of a current-tree token's bound node (boundary internals). */
