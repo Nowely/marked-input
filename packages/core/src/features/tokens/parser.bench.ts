@@ -3,7 +3,7 @@ import * as path from 'path'
 
 import {bench, describe} from 'vitest'
 
-import {Parser as ParserV2} from './parser/Parser'
+import {Parser} from './parser/Parser'
 
 // Test data generators
 function generateComparisonText(marks: number): string {
@@ -16,7 +16,7 @@ function generateComparisonText(marks: number): string {
 }
 
 // Parser configurations
-const parserV2 = new ParserV2(['@[__value__](__meta__)', '#[__value__]'])
+const parserV2 = new Parser(['@[__value__](__meta__)', '#[__value__]'])
 
 // Simplified results storage for saving to JSON
 interface TestResult {
@@ -49,7 +49,7 @@ function calculateStats(values: number[]) {
 	}
 }
 
-function runBenchmark(parser: ParserV2, input: string, iterations: number) {
+function runBenchmark(parser: Parser, input: string, iterations: number) {
 	const ops: number[] = []
 
 	for (let i = 0; i < iterations; i++) {
@@ -284,7 +284,7 @@ function collectResultFn(
 // the regression tripwire the design keeps. Uses @[__value__] markup with
 // inert inter-mark text for a representative realistic-document shape.
 
-const incrementalParser = new ParserV2(['@[__value__]'])
+const incrementalParser = new Parser(['@[__value__]'])
 
 /** A 500-mark document with truly inert inter-mark text (no @[ or ] in plain text). */
 function generateInertText(marks: number): string {

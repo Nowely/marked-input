@@ -99,9 +99,9 @@ export function setAtX(element: HTMLElement, x: number, y?: number): void {
 /**
  * Resolve a character offset within a structural text surface to a concrete
  * (Text, offset) pair. If the surface contains no Text node, append an empty
- * one and target it. Used for caret placement in CaretModel — needs the
- * fallback because freshly-mounted empty surfaces should still accept a
- * caret.
+ * one and target it. Used by `placeAtTextOffset` / `placeRangeAcrossSurfaces` —
+ * needs the empty-Text fallback so freshly-mounted empty surfaces still accept
+ * a caret.
  */
 function findTextBoundary(surface: HTMLElement, offset: number): {node: Text; offset: number} {
 	const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)

@@ -2,7 +2,7 @@ import {PLACEHOLDER} from '../constants'
 import type {Markup} from '../types'
 
 /**
- * Make annotation from the markup for ParserV2
+ * Make annotation from the markup for Parser
  *
  * @param markup - Markup pattern with __value__, __meta__, and/or __slot__ placeholders
  * @param params - Object with optional value, meta, and slot strings
