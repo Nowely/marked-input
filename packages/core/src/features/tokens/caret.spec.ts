@@ -54,22 +54,6 @@ describe('caretDom', () => {
 		})
 	})
 
-	describe('setAtElement', () => {
-		it('does not throw when element has no text nodes', () => {
-			const el = document.createElement('div')
-			expect(() => caretDom.setAtElement(el, 0)).not.toThrow()
-		})
-
-		it('places caret at offset within text', () => {
-			const el = document.createElement('div')
-			el.appendChild(document.createTextNode('hello world'))
-			document.body.appendChild(el)
-			caretDom.setAtElement(el, 5)
-			expect(window.getSelection()?.getRangeAt(0).startOffset).toBe(5)
-			document.body.removeChild(el)
-		})
-	})
-
 	describe('placeAtTextOffset', () => {
 		it('places caret at character offset within a single text node', () => {
 			const el = document.createElement('span')

@@ -13,15 +13,13 @@ interface DocumentWithCaretFromPoint {
 }
 
 export function getCaretIndex(element: HTMLElement): number {
-	let position = 0
 	const selection = window.getSelection()
-	if (!selection?.rangeCount) return position
+	if (!selection?.rangeCount) return 0
 	const range = selection.getRangeAt(0)
 	const preCaretRange = range.cloneRange()
 	preCaretRange.selectNodeContents(element)
 	preCaretRange.setEnd(range.endContainer, range.endOffset)
-	position = preCaretRange.toString().length
-	return position
+	return preCaretRange.toString().length
 }
 
 export function getRect(): DOMRect | null {
@@ -47,26 +45,23 @@ export function isOnLastLine(element: HTMLElement): boolean {
 	return caretRect.bottom > elRect.bottom - caretRect.height - 2
 }
 
-export function setAtElement(element: HTMLElement, offset: number): void {
+function setAtElement(element: HTMLElement): void {
 	try {
 		const selection = window.getSelection()
 		if (!selection) return
 		const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
 		let node = nextText(walker)
 		if (!node) return
-		let remaining = isFinite(offset) ? Math.max(0, offset) : Infinity
 		for (;;) {
 			const next = nextText(walker)
-			if (!next || remaining <= node.length) {
-				const charOffset = isFinite(remaining) ? Math.min(remaining, node.length) : node.length
+			if (!next) {
 				const range = document.createRange()
-				range.setStart(node, charOffset)
+				range.setStart(node, node.length)
 				range.collapse(true)
 				selection.removeAllRanges()
 				selection.addRange(range)
 				return
 			}
-			remaining -= node.length
 			node = next
 		}
 	} catch (e) {
@@ -94,7 +89,7 @@ export function setAtX(element: HTMLElement, x: number, y?: number): void {
 		return
 	}
 	if (!element.contains(domRange.startContainer)) {
-		setAtElement(element, Infinity)
+		setAtElement(element)
 		return
 	}
 	sel.removeAllRanges()
