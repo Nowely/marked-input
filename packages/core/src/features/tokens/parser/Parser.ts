@@ -2,10 +2,7 @@ import {MarkupRegistry} from './core/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
 import {SegmentMatcher} from './core/SegmentMatcher'
 import {TreeBuilder} from './core/TreeBuilder'
-import type {MarkToken, Markup, ParseOptions, Token} from './types'
-import {createTextToken} from './utils/createTextToken'
-import {processTokensWithCallback} from './utils/processTokens'
-import {toString as tokensToString} from './utils/toString'
+import type {Markup, Token} from './types'
 
 /**
  * Parser - High-performance tree-based markup parser
@@ -17,7 +14,6 @@ import {toString as tokensToString} from './utils/toString'
  * ```typescript
  * const parser = new Parser(['@[__value__](__meta__)', '#[__slot__]'])
  * const tokens = parser.parse('Hello @[world](test) and #[tag]')
- * const text = parser.stringify(tokens)
  * ```
  */
 export class Parser {
@@ -25,7 +21,6 @@ export class Parser {
 	private readonly segmentMatcher: SegmentMatcher
 	private readonly patternMatcher: PatternMatcher
 	private readonly treeBuilder: TreeBuilder
-	private readonly parseOptions: ParseOptions
 
 	/**
 	 * Creates a new Parser instance with the specified markup patterns
@@ -35,7 +30,6 @@ export class Parser {
 	 *   - `__meta__` - metadata (plain text, no nesting)
 	 *   - `__slot__` - content supporting nested structures
 	 *   - `undefined` - skipped, but original array indices are preserved for descriptor matching
-	 * @param options - Optional parse options to control token output
 	 *
 	 * @example
 	 * ```typescript
@@ -47,50 +41,11 @@ export class Parser {
 	 * ])
 	 * ```
 	 */
-	constructor(markups: (Markup | undefined)[], options?: ParseOptions) {
+	constructor(markups: (Markup | undefined)[]) {
 		this.registry = new MarkupRegistry(markups)
 		this.segmentMatcher = new SegmentMatcher(this.registry.segments)
 		this.patternMatcher = new PatternMatcher(this.registry)
-		this.parseOptions = options ?? {}
 		this.treeBuilder = new TreeBuilder()
-	}
-
-	/**
-	 * Parses text into tokens (static convenience method)
-	 *
-	 * @param value - Text to parse
-	 * @param options - Options with markup patterns and token filtering
-	 * @returns Array of tokens (TextToken and MarkToken)
-	 *
-	 * @example
-	 * ```typescript
-	 * const tokens = Parser.parse('Hello @[world]', {
-	 *   markup: ['@[__value__]']
-	 * })
-	 * ```
-	 */
-	static parse(value: string, options?: {markup: Markup[]} & ParseOptions): Token[] {
-		const markups = options?.markup
-		if (!markups || markups.length === 0) {
-			return [createTextToken(value)]
-		}
-		const {markup: _, ...parseOptions} = options
-		return new Parser(markups, parseOptions).parse(value)
-	}
-
-	/**
-	 * Converts tokens back to text (static convenience method)
-	 *
-	 * @param tokens - Array of tokens to convert
-	 * @returns Reconstructed text string
-	 *
-	 * @example
-	 * ```typescript
-	 * const text = Parser.stringify(tokens)
-	 * ```
-	 */
-	static stringify(tokens: Token[]): string {
-		return tokensToString(tokens)
 	}
 
 	/**
@@ -120,100 +75,5 @@ export class Parser {
 		const segments = this.segmentMatcher.search(value)
 		const matches = this.patternMatcher.process(segments)
 		return this.treeBuilder.build(matches, value)
-	}
-
-	/**
-	 * Converts tokens back to the original text
-	 *
-	 * This is the inverse operation of parse(). It reconstructs the original
-	 * text from a token tree, preserving all markup and structure.
-	 *
-	 * @param tokens - Array of tokens to convert
-	 * @returns Reconstructed text string
-	 *
-	 * @example
-	 * ```typescript
-	 * const text = 'Hello @[world](test)'
-	 * const tokens = parser.parse(text)
-	 * const reconstructed = parser.stringify(tokens)
-	 * console.log(reconstructed === text) // true
-	 * ```
-	 */
-	stringify(tokens: Token[]): string {
-		return tokensToString(tokens)
-	}
-
-	/**
-	 * Transforms annotated text by processing all mark tokens with a callback
-	 *
-	 * This method parses the text, recursively processes all MarkTokens
-	 * (including nested ones) with the provided callback, and returns
-	 * the transformed text.
-	 *
-	 * @param value - Annotated text to process
-	 * @param callback - Function to transform each MarkToken
-	 * @returns Transformed text
-	 *
-	 * @example
-	 * ```typescript
-	 * // Extract all values
-	 * const text = '@[Hello](world) and #[tag]'
-	 * const result = parser.transform(text, mark => mark.value)
-	 * // Returns: 'Hello and tag'
-	 *
-	 * // Custom transformation
-	 * const result = parser.transform(text, mark =>
-	 *   mark.meta ? `${mark.value}:${mark.meta}` : mark.value
-	 * )
-	 * // Returns: 'Hello:world and tag'
-	 * ```
-	 */
-	transform(value: string, callback: (mark: MarkToken) => string): string {
-		const tokens = this.parse(value)
-		return processTokensWithCallback(tokens, callback)
-	}
-
-	/**
-	 * Escapes markup segments in the given text using backslash
-	 *
-	 * This method uses the registry's unique segments and escapes them by adding
-	 * a backslash before each character of each segment, preventing them from being
-	 * parsed as markup when the text is processed again.
-	 *
-	 * @param text - Text to escape segments in
-	 * @returns Text with escaped segments
-	 *
-	 * @example
-	 * ```typescript
-	 * const parser = new Parser(['**__slot__**', '@[__value__]'])
-	 * const escaped = parser.escape('Hello **world** and @[user]')
-	 * // Returns: 'Hello \*\*world\*\* and \@[user]'
-	 * ```
-	 */
-	escape(text: string): string {
-		return this.registry.segments
-			.filter((segment): segment is string => typeof segment === 'string')
-			.toSorted((a, b) => b.length - a.length)
-			.reduce((result, segment) => result.replaceAll(segment, segment.replace(/(.)/g, '\\$1')), text)
-	}
-
-	/**
-	 * Unescapes markup patterns in the given text
-	 *
-	 * This method removes escape characters from segments that were previously
-	 * escaped using escape(), allowing the patterns to be parsed normally.
-	 *
-	 * @param text - Text to unescape patterns in
-	 * @returns Text with unescaped patterns
-	 *
-	 * @example
-	 * ```typescript
-	 * const parser = new Parser(['**__slot__**', '@[__value__]'])
-	 * const unescaped = parser.unescape('Hello \*\*world\*\* and \@[user]')
-	 * // Returns: 'Hello **world** and @[user]'
-	 * ```
-	 */
-	unescape(text: string): string {
-		return text.replaceAll(/\\(.)/g, '$1')
 	}
 }

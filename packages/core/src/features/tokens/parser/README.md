@@ -29,10 +29,6 @@ const tokens = parser.parse('Hello @[world](test) and #[tag]')
 //   MarkToken{value: 'tag'}
 // ]
 
-// Convert tokens back to text
-const text = parser.stringify(tokens)
-// Returns: 'Hello @[world](test) and #[tag]'
-
 // Patterns with __slot__ - supports nesting
 const nestedMarkups = ['@[__slot__]', '#[__slot__]']
 const nestedParser = new Parser(nestedMarkups)
@@ -43,21 +39,6 @@ const nestedResult = nestedParser.parse('@[hello #[world]]')
 //   MarkToken{value: 'hello #[world]', children: [...], nested: {...}},
 //   TextToken('')
 // ]
-
-// Transform markup to extract values
-const transformed = parser.transform('Hello @[world](test)', mark => mark.value)
-// Returns: 'Hello world'
-```
-
-### Migration from Old API
-
-The API uses clear method names:
-
-```typescript
-// ✅ Parser API
-parser.parse(text) // Parse text into tokens
-parser.stringify(tokens) // Convert tokens back to text
-parser.transform(text, callback) // Transform annotated text
 ```
 
 ## Performance
@@ -242,18 +223,9 @@ Input Text → SegmentMatcher (Dual Strategy) → SegmentMatches
 
 ```typescript
 class Parser {
-  // Constructor
   constructor(markups: Markup[])
-
-  // Main methods
   parse(input: string): Token[]
-  stringify(tokens: Token[]): string
-  transform(value: string, callback: (mark: MarkToken) => string): string
 }
-
-// Static methods
-Parser.parse(input: string, options?: {markup: Markup[]}): Token[]
-Parser.stringify(tokens: Token[]): string
 ```
 
 ### Method Details
@@ -276,36 +248,6 @@ const tokens = parser.parse('Hello @[world](test)')
 //   MarkToken('@[world](test)', value='world', meta='test'),
 //   TextToken('')
 // ]
-```
-
-#### `stringify(tokens: Token[]): string`
-
-Converts tokens back to the original text. This is the inverse operation of `parse()`.
-
-**Example:**
-
-```typescript
-const text = 'Hello @[world](test)'
-const tokens = parser.parse(text)
-const reconstructed = parser.stringify(tokens)
-console.log(reconstructed === text) // true
-```
-
-#### `transform(value: string, callback: (mark: MarkToken) => string): string`
-
-Transforms annotated text by processing all mark tokens (including nested ones) with a callback.
-
-**Example:**
-
-```typescript
-// Extract all values
-const text = '@[Hello](world) and #[tag]'
-const result = parser.transform(text, mark => mark.value)
-// Returns: 'Hello and tag'
-
-// Custom transformation
-const result = parser.transform(text, mark => (mark.meta ? `${mark.value}:${mark.meta}` : mark.value))
-// Returns: 'Hello:world and tag'
 ```
 
 ### Utility Functions

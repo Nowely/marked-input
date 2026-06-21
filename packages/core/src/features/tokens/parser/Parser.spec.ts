@@ -27,50 +27,6 @@ describe('Parser', () => {
 		parser = new Parser(markups)
 	})
 
-	describe('static split', () => {
-		it('parse text with provided options and return Token[]', () => {
-			const value = 'Hello @[world](test) and #[tag]'
-			const options: {markup: Markup[]} = {markup: ['@[__value__](__meta__)', '#[__value__]']}
-
-			const result = Parser.parse(value, options)
-
-			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-				"0: TEXT "Hello " [0-6]
-				 1: MARK "@[world](test)" [6-20] [value="world", meta="test"]
-				 2: TEXT " and " [20-25]
-				 3: MARK "#[tag]" [25-31] [value="tag"]
-				 4: TEXT "" [31-31]"
-			`)
-		})
-
-		it('handle text without options', () => {
-			const value = 'Hello world'
-			const result = Parser.parse(value)
-
-			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`"0: TEXT "Hello world" [0-11]"`)
-		})
-	})
-
-	describe('static join', () => {
-		it('convert tokens back to string with provided options', () => {
-			const value = 'Hello @[world](test) and #[tag]'
-			const options: {markup: Markup[]} = {markup: ['@[__value__](__meta__)', '#[__value__]']}
-
-			const tokens = Parser.parse(value, options)
-			const result = Parser.stringify(tokens)
-
-			expect(result).toBe(value)
-		})
-
-		it('handle tokens without options', () => {
-			const value = 'Hello world'
-			const tokens = Parser.parse(value)
-			const result = Parser.stringify(tokens)
-
-			expect(result).toBe(value)
-		})
-	})
-
 	describe('parsing', () => {
 		describe('basic functionality', () => {
 			it('parses plain text without markups', () => {
@@ -678,80 +634,6 @@ describe('Parser', () => {
 			})
 		})
 
-		describe('escape and unescape', () => {
-			it('escape complete patterns using backslash', () => {
-				const parser = new Parser(['**__slot__**', '@[__value__]'])
-
-				const testInput = 'Hello **world** and @[user]'
-				const result = parser.escape(testInput)
-
-				expect(result).toBe('Hello \\*\\*world\\*\\* and \\@\\[user\\]')
-			})
-
-			it('escape patterns with nested content', () => {
-				const parser = new Parser(['@[__slot__]'])
-
-				const testInput = '@[user **bold** text]'
-				const result = parser.escape(testInput)
-
-				expect(result).toBe('\\@\\[user **bold** text\\]')
-			})
-
-			it('handle empty text', () => {
-				const parser = new Parser(['**__slot__**'])
-
-				const result = parser.escape('')
-
-				expect(result).toBe('')
-			})
-
-			it('handle text without patterns', () => {
-				const parser = new Parser(['**__slot__**'])
-
-				const testInput = 'Hello world'
-				const result = parser.escape(testInput)
-
-				expect(result).toBe('Hello world')
-			})
-
-			it('unescape patterns', () => {
-				const parser = new Parser(['**__slot__**', '@[__value__]'])
-
-				const escapedInput = 'Hello \\*\\*world\\*\\* and \\@[user]'
-				const result = parser.unescape(escapedInput)
-
-				expect(result).toBe('Hello **world** and @[user]')
-			})
-
-			it('unescape nested patterns', () => {
-				const parser = new Parser(['**__slot__**', '@[__slot__]'])
-
-				const escapedInput = '\\@[user \\*\\*bold\\*\\* text]'
-				const result = parser.unescape(escapedInput)
-
-				expect(result).toBe('@[user **bold** text]')
-			})
-
-			it('round-trip correctly', () => {
-				const parser = new Parser(['**__slot__**', '@[__value__](__meta__)'])
-
-				const original = 'Hello **world** and @[user](admin)'
-				const escaped = parser.escape(original)
-				const unescaped = parser.unescape(escaped)
-
-				expect(unescaped).toBe(original)
-			})
-
-			it('handle multiple patterns correctly', () => {
-				const parser = new Parser(['**__slot__**', '@[__value__]', '#[__value__]'])
-
-				const testInput = '**bold** @[user] #[tag]'
-				const result = parser.escape(testInput)
-
-				expect(result).toBe('\\*\\*bold\\*\\* \\@\\[user\\] \\#\\[tag\\]')
-			})
-		})
-
 		describe('integration', () => {
 			it('handles complex real-world scenarios', () => {
 				const input =
@@ -1330,31 +1212,6 @@ describe('Parser', () => {
 			})
 		})
 
-		it('handle complex nested structures with diverse content', () => {
-			const testCases = Array.from({length: 15}, () => {
-				const outerName = parser.escape(faker.company.name())
-				const innerTag = parser.escape(faker.word.noun())
-				const innerValue = parser.escape(faker.word.adjective())
-				const prefix = parser.escape(faker.lorem.words(3))
-
-				return {outerName, innerTag, innerValue, prefix}
-			})
-
-			testCases.forEach(({outerName, innerTag, innerValue, prefix}) => {
-				const input = `${prefix} @[${outerName} #[${innerTag}](${innerValue})]`
-				const result = parser.parse(input)
-
-				const marks = result.filter(t => t.type === 'mark')
-				expect(marks.length).toBeGreaterThan(0)
-
-				// Should have outer mark
-				const outerMark = marks.find(m => m.content.includes(outerName))
-				expect(outerMark).toBeDefined()
-				expect(outerMark?.children).toBeDefined()
-				expect(Array.isArray(outerMark?.children)).toBe(true)
-			})
-		})
-
 		it('handle various text lengths and complexity', () => {
 			const testCases = [
 				// Very short
@@ -1381,38 +1238,6 @@ describe('Parser', () => {
 					expect(mark.value).toBeDefined()
 					expect(typeof mark.value).toBe('string')
 				})
-			})
-		})
-
-		describe('join', () => {
-			it('convert tokens back to original string', () => {
-				const parser = new Parser(['@[__value__](__meta__)', '#[__value__]'])
-				const input = 'Hello @[world](test) and #[tag]'
-
-				const tokens = parser.parse(input)
-				const result = parser.stringify(tokens)
-
-				expect(result).toBe(input)
-			})
-
-			it('handle nested tokens', () => {
-				const parser = new Parser(['@[__slot__](__meta__)', '#[__value__]'])
-				const input = 'Check @[#[urgent] task](priority)'
-
-				const tokens = parser.parse(input)
-				const result = parser.stringify(tokens)
-
-				expect(result).toBe(input)
-			})
-
-			it('handle plain text tokens', () => {
-				const parser = new Parser(['@[__value__]'])
-				const input = 'Hello world'
-
-				const tokens = parser.parse(input)
-				const result = parser.stringify(tokens)
-
-				expect(result).toBe(input)
 			})
 		})
 	})
@@ -1468,14 +1293,6 @@ describe('Parser', () => {
 			expect(mark.children[1].type).toBe('mark')
 			expect(mark.children[2].type).toBe('text')
 			expect(result[2].type).toBe('text')
-		})
-
-		it('round-trips through Parser.stringify', () => {
-			const input = 'First\n\nSecond\n\n'
-			const parser = new Parser(['__slot__\n\n'])
-			const tokens = parser.parse(input)
-
-			expect(Parser.stringify(tokens)).toBe(input)
 		})
 
 		it('handles single paragraph', () => {

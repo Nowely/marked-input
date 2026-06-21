@@ -34,8 +34,6 @@ export interface MarkToken {
 	children: Token[]
 }
 
-export interface ParseOptions {}
-
 /**
  * Position range representing a span in text with start and end positions
  * Used for various positioning needs throughout the parser
