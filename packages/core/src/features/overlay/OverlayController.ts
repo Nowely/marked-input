@@ -94,6 +94,8 @@ export class OverlayController {
 
 	/** Commit the active overlay match as an annotation of (value, meta), then close. */
 	choose(value: string, meta?: string): void {
+		// No hasOverlayTrigger guard needed: match is only ever set by #probeTrigger,
+		// which requires a trigger option, so a missing trigger means match() is undefined.
 		const match = this.match()
 		if (!match) return
 		const markup = match.option.markup
