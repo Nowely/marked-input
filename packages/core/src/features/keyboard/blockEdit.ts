@@ -5,7 +5,7 @@ import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
-import {addDragRow, mergeDragRows, canMergeRows} from '../block/operations'
+import {addDragRow, mergeDragRows, canMergeRows, deleteDragRow} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Token, TokenHandle} from '../tokens'
 import {rawRangeFromInputEvent} from './inputRange'
@@ -78,16 +78,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 		const blockText = 'content' in token ? token.content : ''
 		if (blockText === '') {
 			event.preventDefault()
-			const newValue =
-				rows.length <= 1
-					? ''
-					: (() => {
-							if (blockIndex >= rows.length - 1) return value.slice(0, rows[blockIndex - 1].position.end)
-							return (
-								value.slice(0, rows[blockIndex].position.start) +
-								value.slice(rows[blockIndex + 1].position.start)
-							)
-						})()
+			const newValue = deleteDragRow(value, rows, blockIndex)
 			const previous = rows.at(Math.max(0, blockIndex - 1))
 			const pos = previous ? previous.position.end : 0
 			store.edit.replace({start: 0, end: -1}, newValue, pos)

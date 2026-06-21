@@ -38,7 +38,7 @@ export function addDragRow(value: string, rows: readonly Token[], afterIndex: nu
 	return value.slice(0, insertPos) + newRowContent + value.slice(insertPos)
 }
 
-function deleteDragRow(value: string, rows: Token[], index: number): string {
+export function deleteDragRow(value: string, rows: readonly Token[], index: number): string {
 	if (rows.length <= 1) return ''
 
 	if (index >= rows.length - 1) {
