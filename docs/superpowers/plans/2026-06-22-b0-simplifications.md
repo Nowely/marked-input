@@ -425,9 +425,11 @@ packages/core/src/features/tokens/TokenModel.changed.spec.ts
 
 ---
 
-### Task T10: Remove the inert empty-loop `batch()` wrappers
+### Task T10: Remove the inert empty-loop `batch()` wrappers — ⛔ ABANDONED (reverted `f3c4adbc`)
 
-**Findings:** #21 (low)
+> **Outcome:** Attempted (`4b24245d`) then **reverted**. The wrappers are NOT inert: removing the `bind()` batch drops the first-mount `changed` announcement from 2→1 (`TokenModel.changed.spec.ts` "the first bind announces full"), bisected to `4b24245d`. The 2nd announcement drives SelectionController's caret re-placement on `rendered()` — an observable behavior change, so finding #21's "none observable" verdict was wrong. The batches are load-bearing for `changed`-event coalescing and stay. **Do not retry.**
+
+**Findings:** #21 (low) — rejected on test evidence
 
 **Files:**
 - Modify: `packages/core/src/features/tokens/model/commit.ts`
