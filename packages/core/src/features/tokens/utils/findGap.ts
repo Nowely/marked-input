@@ -1,6 +1,6 @@
-export type Gap = {left?: number; right?: number}
+type Gap = {left?: number; right?: number}
 
-export function findGap(previous: string = '', current: string = ''): Gap {
+export function findGap(previous: string, current: string): Gap {
 	if (previous === current) return {}
 
 	let left: number | undefined
