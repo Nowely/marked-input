@@ -3,7 +3,7 @@ import {MarkedInput} from '@markput/vue'
 import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
-import {defineComponent, h} from 'vue'
+import {defineComponent, h, ref} from 'vue'
 
 const TestMark = defineComponent({
 	props: {value: String, children: {type: null}},
@@ -101,6 +101,55 @@ describe('Slots API', () => {
 
 			const containerDiv = container.querySelector<HTMLElement>('div')!
 			await expect.element(containerDiv).toHaveStyle({color: 'rgb(255, 0, 0)', backgroundColor: 'rgb(0, 0, 255)'})
+		})
+
+		it('compose user slotProps.container ref (object) with host ref — editor still renders', async () => {
+			const userRef = ref<HTMLElement | null>(null)
+
+			const {container} = await render(MarkedInput, {
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slotProps: {
+						container: {
+							ref: userRef,
+						},
+					},
+				},
+			})
+
+			// (a) the user ref must receive the container element
+			const containerDiv = container.querySelector<HTMLElement>('div')!
+			expect(userRef.value).toBe(containerDiv)
+
+			// (b) the host ref must also have fired — the editor publishes tokens
+			// only after the container mounts, so the value should still render.
+			await expect
+				.element(container.querySelector<HTMLElement>('span[contenteditable]')!)
+				.toHaveTextContent('Hello world')
+		})
+
+		it('compose user slotProps.container ref (function) with host ref — editor still renders', async () => {
+			const userRef = vi.fn()
+
+			const {container} = await render(MarkedInput, {
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slotProps: {
+						container: {
+							ref: userRef,
+						},
+					},
+				},
+			})
+
+			const containerDiv = container.querySelector<HTMLElement>('div')!
+			expect(userRef).toHaveBeenCalledWith(containerDiv)
+
+			await expect
+				.element(container.querySelector<HTMLElement>('span[contenteditable]')!)
+				.toHaveTextContent('Hello world')
 		})
 	})
 
