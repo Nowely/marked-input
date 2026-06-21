@@ -124,15 +124,20 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	 * before a single mutation and the caller escalates structurally.
 	 */
 	function commitText(changes: readonly TokenChangeEntry[], removedIds: readonly number[]): boolean {
+		// surface is set only for 'text'-kind entries; absent → update-only (no DOM write).
 		const updates: {handle: TokenHandle; token: Token; path: TokenPath; surface?: HTMLElement}[] = []
 		for (const change of changes) {
 			const handle = deps.nodes.get(change.id)
 			if (change.kind === 'update') {
+				// Never bound yet (a handle materializes on the next bind) — skip, not a
+				// miss: an unrendered token has no surface to patch.
 				if (!handle) continue
 				updates.push({handle, token: change.token, path: change.path})
 				continue
 			}
-			// kind 'text' on the text branch is always a TEXT token — resolve its surface.
+			// kind 'text' on the text branch is always a TEXT token (a refused-descend
+			// MARK sets result.structural, routing to commitStructural, so we are not
+			// here). Resolve its surface.
 			if (!handle) return false
 			const surface = handle.node()?.textElement
 			if (!surface) return false
