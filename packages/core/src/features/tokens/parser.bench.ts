@@ -22,7 +22,7 @@ const parserV2 = new Parser(['@[__value__](__meta__)', '#[__value__]'])
 interface TestResult {
 	name: string
 	category: 'scalability' | 'realWorld' | 'incremental' // Internal only, not saved to JSON
-	performance: [number, number, number] // [min, avg, max] for ParserV2
+	performance: [number, number, number] // [min, avg, max] for Parser
 }
 
 const testResults: TestResult[] = []
@@ -303,7 +303,7 @@ const incrementalBase500 = generateInertText(500)
 // full-parse-per-keystroke bench parses).
 const incrementalTailValue = incrementalBase500 + 'x'
 
-describe('ParserV2 Performance Benchmark Suite', () => {
+describe('Parser Performance Benchmark Suite', () => {
 	// Scalability tests
 	const sizes = [10, 50, 100, 500]
 
