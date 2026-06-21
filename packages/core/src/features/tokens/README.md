@@ -110,7 +110,7 @@ unexpected.
 // consumer read
 current() // the always-fresh reconciled tree; at(i) the token at top-level index i
 
-// renderer contract (adapter-only — @markput/core/adapter)
+// renderer contract (adapter-only)
 renderTree: Computed<Token[]> // structural tree; reference change ⇔ renderer must run
 changed: Event<void> // THE model-level detector; fires after the DOM is consistent
 

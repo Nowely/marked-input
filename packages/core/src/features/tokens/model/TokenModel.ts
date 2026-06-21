@@ -74,7 +74,7 @@ export class TokenModel {
 		isBlock: () => this.props.layout.isBlock(),
 	})
 
-	/** Renderer contract (adapter-only — `@markput/core/adapter`): reference change ⇔ the renderer must run. NOT a consumer data read — use `current()`. */
+	/** Renderer contract (adapter-only): reference change ⇔ the renderer must run. NOT a consumer data read — use `current()`. */
 	readonly renderTree: Computed<Token[]> = this.#pipeline.renderTree
 
 	/**
