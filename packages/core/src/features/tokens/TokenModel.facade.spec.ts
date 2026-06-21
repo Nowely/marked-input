@@ -248,7 +248,7 @@ describe('TokenModel placement commands', () => {
 
 	it('placeCaret at a mark/text shared boundary resolves to the text surface', () => {
 		const {store} = mountWithMark()
-		const mark = store.tokens.tokens().find(t => t.type === 'mark')
+		const mark = store.tokens.current().find(t => t.type === 'mark')
 		if (!mark) throw new Error('expected mark')
 		// mark [2,6]: position 6 is also the inclusive start of text "llo" [6,9].
 		// The text surface wins because textTargetAt finds "llo" before markBoundaryAt
@@ -269,7 +269,7 @@ describe('TokenModel placement commands', () => {
 
 	it("placeCaret({handle, offset}) targets the handle's token explicitly", () => {
 		const {store} = mountWithMark()
-		const token = store.tokens.tokens()[2] // text "llo" [6,9]
+		const token = store.tokens.current()[2] // text "llo" [6,9]
 		const handle = store.tokens.handle(token.id!)
 		if (!handle) throw new Error('expected handle')
 		expect(store.tokens.placeCaret({handle, offset: 1})).toBe(true)
@@ -278,7 +278,7 @@ describe('TokenModel placement commands', () => {
 
 	it('selectRange spans two text surfaces', () => {
 		const {store} = mountWithMark()
-		const last = store.tokens.tokens().at(-1)
+		const last = store.tokens.current().at(-1)
 		if (!last) throw new Error('expected tokens')
 		expect(store.tokens.selectRange(0, last.position.end)).toBe(true)
 		const read = store.tokens.selection()?.raw
@@ -287,7 +287,7 @@ describe('TokenModel placement commands', () => {
 
 	it('handle.placeCaret + handle.caretIndex round-trip', () => {
 		const {store} = mountWithMark()
-		const handle = store.tokens.handle(store.tokens.tokens()[0].id!)
+		const handle = store.tokens.handle(store.tokens.current()[0].id!)
 		if (!handle) throw new Error('expected handle')
 		expect(handle.placeCaret(2)).toBe(true)
 		expect(handle.caretIndex()).toBe(2)

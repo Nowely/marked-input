@@ -108,7 +108,7 @@ unexpected.
 
 ```ts
 // consumer read
-tokens() // the always-fresh reconciled tree; at(i) the token at top-level index i
+current() // the always-fresh reconciled tree; at(i) the token at top-level index i
 
 // renderer contract (adapter-only — @markput/core/adapter)
 renderTree: Computed<Token[]> // structural tree; reference change ⇔ renderer must run
@@ -144,7 +144,7 @@ structural commit, and report `rendered()`.
 
 ### The fresh read
 
-`tokens()` is the always-fresh reconciled tree — consistent with `value.current()`
+`current()` is the always-fresh reconciled tree — consistent with `value.current()`
 on both commit branches (it is the pipeline's `latest`, reassigned every apply).
 `renderTree` is the RENDERER signal: it keeps its reference across text-path
 commits so subscribed adapters skip re-rendering — adapter-only, not consumer data.

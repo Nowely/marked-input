@@ -74,23 +74,25 @@ export class TokenModel {
 		isBlock: () => this.props.layout.isBlock(),
 	})
 
-	/** Renderer contract (adapter-only — `@markput/core/adapter`): reference change ⇔ the renderer must run. NOT a consumer data read — use `tokens()`. */
+	/** Renderer contract (adapter-only — `@markput/core/adapter`): reference change ⇔ the renderer must run. NOT a consumer data read — use `current()`. */
 	readonly renderTree: Computed<Token[]> = this.#pipeline.renderTree
 
 	/**
 	 * THE consumer read: the latest reconciled tree, always fresh and consistent
-	 * with `value.current()`. Unlike `renderTree` (the renderer signal, which keeps
-	 * its reference across text-path commits), `tokens()` is the pipeline's private
-	 * `latest` — reassigned at the top of every apply, fresh in the pending window
-	 * too. The boundary facade and every value-slicing consumer read it.
+	 * with `value.current()` (the parallel: `value.current()` is the string,
+	 * `tokens.current()` is its parsed tree). Unlike `renderTree` (the renderer
+	 * signal, which keeps its reference across text-path commits), `current()` is
+	 * the pipeline's private `latest` — reassigned at the top of every apply, fresh
+	 * in the pending window too. The boundary facade and every value-slicing
+	 * consumer read it.
 	 */
-	tokens(): readonly Token[] {
-		return this.#pipeline.tokens()
+	current(): readonly Token[] {
+		return this.#pipeline.current()
 	}
 
 	/** The top-level token at `index` of the fresh reconciled tree, or undefined. */
 	at(index: number): Token | undefined {
-		return this.#pipeline.tokens()[index]
+		return this.#pipeline.current()[index]
 	}
 
 	/** THE model-level detector: fires once per commit, only after the DOM is consistent. Payloadless — consumers re-read. */
@@ -264,7 +266,7 @@ export class TokenModel {
 	#boundaryContext(): BoundaryContext {
 		return {
 			container: this.host.container() ?? undefined,
-			tokens: this.tokens(),
+			tokens: this.current(),
 			tokenOf: view => this.#tokenOf(view),
 			viewOf: token => this.#viewOf(token),
 			locate: node => this.#locate(node),

@@ -79,7 +79,7 @@ describe('TokenModel lookups', () => {
 
 	it('handle(id) returns the handle for that token id', () => {
 		const {store, container, span} = mountInline('hello')
-		const id = store.tokens.tokens()[0].id!
+		const id = store.tokens.current()[0].id!
 
 		expect(store.tokens.handle(id)?.element()).toBe(span)
 		container.remove()
@@ -88,7 +88,7 @@ describe('TokenModel lookups', () => {
 	it('handle(id) returns the bound handle for a token id', () => {
 		const {store, container, span} = mountInline('hello')
 
-		const id = store.tokens.tokens()[0].id!
+		const id = store.tokens.current()[0].id!
 		const handle = store.tokens.handle(id)
 		expect(handle?.path()).toEqual([0])
 		expect(handle?.element()).toBe(span)
@@ -112,10 +112,10 @@ describe('TokenModel lookups', () => {
 	})
 })
 
-describe('TokenModel.tokens() / at() — the fresh reconciled read', () => {
-	it('tokens() returns the reconciled tree, consistent with value.current()', () => {
+describe('TokenModel.current() / at() — the fresh reconciled read', () => {
+	it('current() returns the reconciled tree, consistent with value.current()', () => {
 		const {store, container} = mountInline('hello')
-		expect(store.tokens.tokens()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.current()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 		container.remove()
 	})
 
@@ -130,33 +130,33 @@ describe('TokenModel.tokens() / at() — the fresh reconciled read', () => {
 		store.host.container(container)
 		store.host.rendered()
 
-		expect(store.tokens.at(0)).toBe(store.tokens.tokens()[0])
+		expect(store.tokens.at(0)).toBe(store.tokens.current()[0])
 		expect(store.tokens.at(1)?.type).toBe('mark')
 		expect(store.tokens.at(99)).toBeUndefined()
 		container.remove()
 	})
 
-	it('tokens() stays fresh across a text-path edit — content tracks value.current()', () => {
+	it('current() stays fresh across a text-path edit — content tracks value.current()', () => {
 		const {store, container} = mountInline('hello')
 		store.value.replace({start: 5, end: 5}, '!')
-		// text-path commit: renderTree keeps its reference, but tokens() is the
+		// text-path commit: renderTree keeps its reference, but current() is the
 		// reconciled latest — fresh content, consistent with the new value.
 		expect(store.value.current()).toBe('hello!')
-		expect(store.tokens.tokens()[0]).toMatchObject({type: 'text', content: 'hello!', position: {start: 0, end: 6}})
+		expect(store.tokens.current()[0]).toMatchObject({type: 'text', content: 'hello!', position: {start: 0, end: 6}})
 		container.remove()
 	})
 
-	it('tokens() is [] before any commit has run', () => {
+	it('current() is [] before any commit has run', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
-		expect(store.tokens.tokens()).toEqual([])
+		expect(store.tokens.current()).toEqual([])
 	})
 })
 
 describe('TokenModel.handle(id) — the id-keyed fail-closed lookup', () => {
 	it('handle(id) returns the live handle for a reconciled token id', () => {
 		const {store, container, span} = mountInline('hello')
-		const id = store.tokens.tokens()[0].id
+		const id = store.tokens.current()[0].id
 		expect(id).toBeTypeOf('number')
 		const handle = store.tokens.handle(id!)
 		expect(handle).toBeInstanceOf(TokenHandle)

@@ -73,7 +73,7 @@ describe('TokenHandle', () => {
 	it('handle(id) returns the bound handle for a token id', () => {
 		const {store} = mountInline('hello')
 
-		const id = store.tokens.tokens()[0].id!
+		const id = store.tokens.current()[0].id!
 		const handle = store.tokens.handle(id)
 		expect(handle?.path()).toEqual([0])
 	})
@@ -98,7 +98,7 @@ describe('TokenHandle', () => {
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
 		// Grab the second row's handle (path [1])
-		const handle = store.tokens.handle(store.tokens.tokens()[1].id!)
+		const handle = store.tokens.handle(store.tokens.current()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
 
 		const lastToken = handle.token()
@@ -129,7 +129,7 @@ describe('TokenHandle', () => {
 		store.value.current('alpha\n\nbeta\n\n')
 		store.host.rendered()
 
-		const newHandle = store.tokens.handle(store.tokens.tokens()[1].id!)
+		const newHandle = store.tokens.handle(store.tokens.current()[1].id!)
 		expect(newHandle).not.toBe(handle)
 	})
 
@@ -141,7 +141,7 @@ describe('TokenHandle', () => {
 		// handle object follows its token to path [2] and reports a move.
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
-		const handle = store.tokens.handle(store.tokens.tokens()[1].id!)
+		const handle = store.tokens.handle(store.tokens.current()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
 		expect(handle.token().content).toBe('beta\n\n')
 
@@ -163,7 +163,7 @@ describe('TokenHandle', () => {
 		expect(handle.token().content).toBe('beta\n\n')
 
 		// Resolving the shifted id returns the SAME handle object
-		expect(store.tokens.handle(store.tokens.tokens()[2].id!)).toBe(handle)
+		expect(store.tokens.handle(store.tokens.current()[2].id!)).toBe(handle)
 	})
 
 	it('handleAt returns "control" inside control elements and undefined outside', () => {

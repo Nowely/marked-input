@@ -97,7 +97,7 @@ function rangeForDelete(store: KbCtx, inputType: string, range: Range): Range | 
 	// Fresh read: adjacency compares mark POSITIONS against the live caret
 	// position; tokens() is the reconciled tree consistent with value.current()
 	// (typing right before a mark, then deleting, must still swallow the mark).
-	const adjacentMark = adjacentMarkRange(store.tokens.tokens(), range.start, inputType.endsWith('Backward'))
+	const adjacentMark = adjacentMarkRange(store.tokens.current(), range.start, inputType.endsWith('Backward'))
 	if (adjacentMark) return adjacentMark
 
 	if (inputType.endsWith('Backward') && range.start > 0) {

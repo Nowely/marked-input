@@ -26,7 +26,7 @@ function mountWithMark(beforeMount?: (store: Store) => void) {
 
 /** Stable identity of the token at a top-level index, read through its live handle. */
 function handleId(store: Store, index: number): number {
-	const handle = store.tokens.handle(store.tokens.tokens()[index].id!)
+	const handle = store.tokens.handle(store.tokens.current()[index].id!)
 	if (!handle) throw new Error(`expected a handle at [${index}]`)
 	return handle.id
 }
@@ -45,12 +45,12 @@ describe('TokenModel changed event', () => {
 		// (the event is payloadless in Phase 2; the count is the contract).
 		expect(changedSpy).toHaveBeenCalledTimes(2)
 
-		const ids = store.tokens.tokens().map((_, i) => handleId(store, i))
+		const ids = store.tokens.current().map((_, i) => handleId(store, i))
 		expect(ids).toHaveLength(3)
 		expect(new Set(ids).size).toBe(3)
 		ids.forEach(id => expect(typeof id).toBe('number'))
 		// stable across repeated reads
-		expect(store.tokens.tokens().map((_, i) => handleId(store, i))).toEqual(ids)
+		expect(store.tokens.current().map((_, i) => handleId(store, i))).toEqual(ids)
 	})
 
 	it('edit.replace fires changed once and the edited token’s handle identity survives', () => {
@@ -152,7 +152,7 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 
 		// The (manual) adapter re-renders from the new tree and reports back.
 		container.replaceChildren(
-			...store.tokens.tokens().map(token => {
+			...store.tokens.current().map(token => {
 				const span = document.createElement('span')
 				if (token.type === 'mark') span.append(document.createTextNode(token.value))
 				return span

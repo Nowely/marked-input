@@ -38,9 +38,9 @@ export class ClipboardController {
 		e.clipboardData?.setData('text/plain', content.text)
 		e.clipboardData?.setData('text/html', content.html)
 		// Fresh read: the copied range came from the live selection, so the
-		// serialized tokens carry live positions — tokens() is the reconciled
+		// serialized tokens carry live positions — current() is the reconciled
 		// tree consistent with value.current() (copy right after typing is fresh).
-		e.clipboardData?.setData(MARKPUT_MIME, serializeRange(this.tokens.tokens(), raw.range))
+		e.clipboardData?.setData(MARKPUT_MIME, serializeRange(this.tokens.current(), raw.range))
 		return true
 	}
 }

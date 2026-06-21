@@ -30,7 +30,7 @@ export class BlockController {
 			// Fresh read: drag operations slice the live value by row positions;
 			// tokens() is the reconciled tree consistent with value.current() at
 			// drop time.
-			const result = applyDragAction(value, this.tokens.tokens(), action, this.props.options())
+			const result = applyDragAction(value, this.tokens.current(), action, this.props.options())
 			if (result.value === value) return
 			this.edit.replace({start: 0, end: -1}, result.value, result.caret)
 		})

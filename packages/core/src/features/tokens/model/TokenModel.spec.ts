@@ -148,7 +148,7 @@ describe('TokenModel shell (model/)', () => {
 		it('facade reads fail soft before mount', () => {
 			const {model} = createNew({defaultValue: 'hello'})
 
-			expect(model.tokens()).toEqual([])
+			expect(model.current()).toEqual([])
 			expect(model.boundaryFor(document.body, 0)).toBeUndefined()
 			expect(model.handleAt(document.body)).toBeUndefined()
 			expect(model.handle(0)).toBeUndefined()
@@ -221,7 +221,7 @@ describe('TokenModel shell (model/)', () => {
 			// Walk-up: a text node inside the mark resolves to the mark's handle.
 			const markText = mark.firstChild
 			if (!markText) throw new Error('expected mark text node')
-			expect(model.handleAt(markText)).toBe(model.handle(model.tokens()[1].id!))
+			expect(model.handleAt(markText)).toBe(model.handle(model.current()[1].id!))
 			// Walk-up inside a control root resolves to 'control'.
 			expect(model.handleAt(inner)).toBe('control')
 			expect(model.handleAt(document.createElement('div'))).toBeUndefined()
@@ -230,15 +230,15 @@ describe('TokenModel shell (model/)', () => {
 		it('handle(id) resolves by token id over the bound layer', () => {
 			const {model, text2} = mountNewInline()
 
-			expect(model.handle(model.tokens()[2].id!)?.element()).toBe(text2)
+			expect(model.handle(model.current()[2].id!)?.element()).toBe(text2)
 			expect(model.handle(999999)).toBeUndefined()
-			const paths = model.tokens().map(token => model.handle(token.id!)?.path())
+			const paths = model.current().map(token => model.handle(token.id!)?.path())
 			expect(paths).toEqual([[0], [1], [2]])
 		})
 
 		it('handle(id) bridges fresh and stale token objects by identity and rejects foreign ids', () => {
 			const {model, value, text2} = mountNewInline()
-			const stale = model.tokens()[2]
+			const stale = model.current()[2]
 			const handle = model.handle(stale.id!)
 			expect(handle?.element()).toBe(text2)
 
@@ -254,7 +254,7 @@ describe('TokenModel shell (model/)', () => {
 
 		it('handle(id) fails closed while a structural apply awaits its bind, then resolves again', () => {
 			const {model, value, render} = mountNewInline()
-			const stale = model.tokens()[2]
+			const stale = model.current()[2]
 			const handle = model.handle(stale.id!)
 			expect(handle).toBeInstanceOf(TokenHandle)
 
@@ -286,7 +286,7 @@ describe('TokenModel shell (model/)', () => {
 			setup.host.container(container)
 			setup.host.rendered()
 
-			const mark = setup.model.tokens()[1]
+			const mark = setup.model.current()[1]
 			if (mark.type !== 'mark') throw new Error('expected mark')
 			expect(setup.model.handle(mark.id!)?.node()?.childSequenceHost).toBe(wrapper)
 			const child = setup.model.handle(mark.children[0].id!)
@@ -346,7 +346,7 @@ describe('TokenModel shell (model/)', () => {
 
 		it("placeCaret({handle, offset}) targets the handle's token explicitly", () => {
 			const {model} = mountNewInline()
-			const token = model.tokens()[2] // text 'llo' [6,9]
+			const token = model.current()[2] // text 'llo' [6,9]
 			const handle = model.handle(token.id!)
 			if (!handle) throw new Error('expected handle')
 

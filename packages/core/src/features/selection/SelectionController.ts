@@ -136,7 +136,7 @@ export class SelectionController {
 			// The fresh reconciled tree: after typing into the single empty text
 			// token, tokens() tracks value.current() (renderTree keeps its stale
 			// reference — reading it would steal focus into a non-empty editor).
-			const tokens = this.tokens.tokens()
+			const tokens = this.tokens.current()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 				firstHtmlChild(container)?.focus()
 			}

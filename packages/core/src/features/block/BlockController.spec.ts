@@ -42,7 +42,7 @@ describe('BlockController', () => {
 			options: [{markup: '__slot__\n\n'}],
 		})
 		// Drag actions read the mounted token layer (a bare container is enough:
-		// commits settle structurally and tokens() stays the reconciled parse).
+		// commits settle structurally and current() stays the reconciled parse).
 		store.host.container(document.createElement('div'))
 		store.value.current('alpha\n\nbeta\n\n')
 		const currentSpy = vi.spyOn(store.value, 'current')
@@ -121,7 +121,7 @@ describe('BlockController', () => {
 			document.body.append(container)
 			store.host.container(container)
 			store.host.rendered()
-			const token = store.tokens.tokens().find(t => t.type === 'mark')
+			const token = store.tokens.current().find(t => t.type === 'mark')
 			if (!token) throw new Error('expected parsed mark token')
 			const blockStore = store.block.get(token)
 

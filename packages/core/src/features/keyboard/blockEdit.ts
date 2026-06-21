@@ -72,7 +72,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 
 	// Fresh read: row positions slice value.current(); tokens() is the reconciled
 	// tree consistent with the value, so the cuts hit the right ranges.
-	const rows = store.tokens.tokens()
+	const rows = store.tokens.current()
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
@@ -133,7 +133,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	event.preventDefault()
 	const {index: blockIndex} = active
 
-	const rows = store.tokens.tokens()
+	const rows = store.tokens.current()
 	const token = rows[blockIndex]
 	const value = store.value.current()
 
@@ -169,7 +169,7 @@ function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction
 	const active = findActiveRow(store)
 	if (!active) return
 	const {handle, index: blockIndex} = active
-	const rowCount = store.tokens.tokens().length
+	const rowCount = store.tokens.current().length
 
 	if (direction === 'left') {
 		if ((handle.caretIndex() ?? 0) !== 0) return
@@ -195,7 +195,7 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 	const active = findActiveRow(store)
 	if (!active) return
 	const {handle, index: blockIndex} = active
-	const rowCount = store.tokens.tokens().length
+	const rowCount = store.tokens.current().length
 
 	if (event.key === KEYBOARD.UP) {
 		if (!handle.caretOnFirstLine()) return

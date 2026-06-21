@@ -294,7 +294,7 @@ describe('TokenHandle (model/LiveNode)', () => {
 	it('alive() is false once the handle is killed', () => {
 		// Block layout: capture row 1's handle, then shrink to one row so bind kills it.
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
-		const handle = store.tokens.handle(store.tokens.tokens()[1].id!)
+		const handle = store.tokens.handle(store.tokens.current()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
 		const secondRow = container.children[1]
 		if (!(secondRow instanceof HTMLElement)) throw new Error('expected HTMLElement')
