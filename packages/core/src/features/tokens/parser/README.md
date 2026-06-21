@@ -1,8 +1,6 @@
-# ParserV2
+# Parser
 
 High-performance tree-based parser for processing nested markup constructs in text with a single-pass tree-building algorithm.
-
-**RFC:** [Nested marks](../../../../docs/RFC.%20Nested%20marks.md) - detailed requirements and architectural decisions.
 
 ## Table of Contents
 
@@ -16,7 +14,7 @@ High-performance tree-based parser for processing nested markup constructs in te
 ## Quick Start
 
 ```typescript
-import {Parser} from './ParserV2'
+import {Parser} from './Parser'
 
 // Patterns with __value__ - no nesting support
 const simpleMarkups = ['@[__value__](__meta__)', '#[__value__]']
@@ -64,7 +62,7 @@ parser.transform(text, callback) // Transform annotated text
 
 ## Performance
 
-**Benchmark Results (ParserV2):**
+**Benchmark Results:**
 
 | Test Case     | Performance Range     | Key Characteristics      |
 | ------------- | --------------------- | ------------------------ |
@@ -118,26 +116,26 @@ interface MarkToken {
 ### Module Structure
 
 ```
-ParserV2/
-├── Parser.ts                # Main parser class
+parser/
+├── Parser.ts                # Main parser class (exported as `Parser`)
 ├── Parser.spec.ts           # Tests
-├── Parser.bench.ts          # Performance benchmarks
 ├── README.md                # Documentation and parser rules
-├── OPTIMIZATION_RESULTS.md  # SegmentMatcher optimization summary
-├── index.ts                 # Public exports
 ├── types.ts                 # Types and interfaces
 ├── constants.ts             # Constants and placeholders
 ├── core/                    # Core parsing logic
 │   ├── MarkupDescriptor.ts  # Markup descriptor creation and validation
+│   ├── MarkupRegistry.ts    # Descriptor registry with fast lookups
 │   ├── PatternMatcher.ts    # State machine pattern matching
-│   ├── TreeBuilder.ts       # Optimized tree construction with pre-computed children
-│   └── TokenBuilder.ts      # Token creation utilities
+│   ├── SegmentMatcher.ts    # Dual-matcher strategy for optimal performance
+│   ├── TreeBuilder.ts       # Optimized tree construction
+│   └── Match.ts             # Match types
 └── utils/                   # Utilities
-    ├── MarkupRegistry.ts    # Descriptor registry with fast lookups
-    ├── SegmentMatcher.ts    # Dual-matcher strategy for optimal performance
-    ├── toString.ts          # Token serialization
-    ├── denote.ts            # Token processing with callbacks
-    └── annotate.ts          # Markup template instantiation
+    ├── annotate.ts          # Markup template instantiation
+    ├── createTextToken.ts   # Text-token construction helper
+    ├── denote.ts            # Transform annotated text with a callback
+    ├── getSegmentIndex.ts   # Segment-index lookup helper
+    ├── processTokens.ts     # Post-parse token processing
+    └── toString.ts          # Token serialization
 ```
 
 ## Visualization
@@ -360,7 +358,7 @@ Transform annotated text by recursively processing all tokens (including nested 
 ```typescript
 import {denote} from '@markput/core'
 
-function transform(value: string, callback: (mark: MarkToken) => string, ...markups: Markup[]): string
+function denote(value: string, callback: (mark: MarkToken) => string, markups: Markup[]): string
 ```
 
 **Examples:**
@@ -371,15 +369,15 @@ import {denote} from '@markput/core'
 const text = '@[Hello](world) and #[nested @[content]]'
 
 // Extract all values recursively
-transform(text, mark => mark.value, '@[__value__](__meta__)', '#[__slot__]')
+denote(text, mark => mark.value, ['@[__value__](__meta__)', '#[__slot__]'])
 // Returns: 'Hello and nested content'
 
 // Extract meta values
-transform('@[user](Alice) mentioned @[user](Bob)', mark => mark.meta || mark.value, '@[__value__](__meta__)')
+denote('@[user](Alice) mentioned @[user](Bob)', mark => mark.meta || mark.value, ['@[__value__](__meta__)'])
 // Returns: 'Alice mentioned Bob'
 
 // Custom transformation
-transform('@[Hello](world) and @[Bye](test)', mark => `[${mark.value}: ${mark.meta}]`, '@[__value__](__meta__)')
+denote('@[Hello](world) and @[Bye](test)', mark => `[${mark.value}: ${mark.meta}]`, ['@[__value__](__meta__)'])
 // Returns: '[Hello: world] and [Bye: test]'
 ```
 
@@ -763,12 +761,12 @@ Return roots
 
 ```typescript
 // ❌ With __meta__ - nesting does NOT work
-const parser1 = new ParserV2(['@[__meta__]', '#[__meta__]'])
+const parser1 = new Parser(['@[__meta__]', '#[__meta__]'])
 parser1.parse('@[hello #[world]]')
 // → [MarkToken{meta: "hello #[world]", children: []}] - no nesting
 
 // ✅ With __slot__ - nesting works
-const parser2 = new ParserV2(['@[__slot__]', '#[__slot__]'])
+const parser2 = new Parser(['@[__slot__]', '#[__slot__]'])
 parser2.parse('@[hello #[world]]')
 // → [MarkToken{meta: "hello #[world]", children: [MarkToken{meta: "world"}]}] - has nesting
 ```
@@ -952,7 +950,7 @@ Output: [
 
 ## Conflicting Pattern Examples
 
-ParserV2 uses a deterministic priority system to resolve conflicts between patterns that can match at the same text segment.
+The Parser uses a deterministic priority system to resolve conflicts between patterns that can match at the same text segment.
 
 ### Core Priority Principles
 
