@@ -16,7 +16,7 @@ import type {TokenHandle} from './TokenHandle'
  * reports `onRendered()`. Marks render their value as a bare text node —
  * value-only markups are childless, so bind never descends into them.
  */
-function createHarness(overrides?: {renderedTimeoutMs?: number}) {
+function createHarness() {
 	const tracker = createIdentityTracker()
 	const parser = new Parser(['@[__value__]'])
 	const nodes = new Map<number, TokenHandle>()
@@ -32,7 +32,6 @@ function createHarness(overrides?: {renderedTimeoutMs?: number}) {
 		controlElements: () => controls,
 		childSequenceHostsFor: () => [],
 		isBlock: () => false,
-		renderedTimeoutMs: overrides?.renderedTimeoutMs,
 	})
 	const apply = (value: string) => {
 		const result = tracker.reconcile(parser.parse(value))
@@ -678,27 +677,6 @@ describe('createCommitPipeline', () => {
 			expect(pipeline.byElement(button)).toBeUndefined()
 			expect(pipeline.isControlRoot(button)).toBe(true)
 			expect(pipeline.isControlRoot(spans[0])).toBe(false)
-		})
-	})
-
-	describe('rendered() timeout warning (dev)', () => {
-		it('warns when a structural publish never gets rendered(); a timely handshake stays silent', async () => {
-			const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-			try {
-				const harness = createHarness({renderedTimeoutMs: 20})
-				harness.apply('he@[x]llo')
-				await new Promise(resolve => setTimeout(resolve, 60))
-				expect(warn).toHaveBeenCalledTimes(1)
-				expect(String(warn.mock.calls[0][0])).toContain('rendered()')
-
-				harness.render()
-				harness.apply('he@[x]llo@[y]')
-				harness.render()
-				await new Promise(resolve => setTimeout(resolve, 60))
-				expect(warn).toHaveBeenCalledTimes(1)
-			} finally {
-				warn.mockRestore()
-			}
 		})
 	})
 })

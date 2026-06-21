@@ -25,8 +25,6 @@ export type CommitDeps = {
 	controlElements: () => ReadonlySet<HTMLElement>
 	childSequenceHostsFor: (path: TokenPath) => readonly HTMLElement[]
 	isBlock: () => boolean
-	/** Dev-only: ms before warning that a structural publish never got rendered(). Test seam; defaults to 2000. */
-	renderedTimeoutMs?: number
 }
 
 export type CommitPipeline = {
@@ -81,11 +79,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// after changed fires). A re-bind with no pending change removed nothing.
 	let lastRemovedIds: readonly number[] = []
 	let committing = false
-
-	// Dev-only handshake tripwire: a structural publish whose rendered() never
-	// arrives leaves the editor silently stale (e.g. a shadowed container ref).
-	const renderedTimeoutMs = deps.renderedTimeoutMs ?? 2000
-	let renderedTimer: ReturnType<typeof setTimeout> | undefined
 
 	function apply(result: ReconcileResult): void {
 		if (committing) throw new Error('TokenModel commit re-entry')
@@ -177,17 +170,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		pendingRemovedIds = removedIds
 		pendingStructural = true
 		renderTree(tokens)
-		if (VERIFY_DOM) {
-			clearTimeout(renderedTimer)
-			renderedTimer = setTimeout(() => {
-				if (pendingStructural && deps.container()) {
-					console.warn(
-						`[markput] rendered() was not called within ${renderedTimeoutMs}ms of a structural update — ` +
-							'the adapter handshake is broken (host.rendered must run after every paint)'
-					)
-				}
-			}, renderedTimeoutMs)
-		}
 		if (!selfHeal) return
 		const container = deps.container()
 		if (container) bindAndAnnounce(container)
@@ -195,7 +177,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 
 	/** Shared endpoint of onRendered and escalation: one DOM+tree walk onto the node layer, then announce. */
 	function bindAndAnnounce(container: HTMLElement): void {
-		clearTimeout(renderedTimer)
 		const result = bind({
 			container,
 			tokens: latest,
