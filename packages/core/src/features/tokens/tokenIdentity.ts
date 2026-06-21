@@ -75,30 +75,18 @@ export type IdentityTracker = {
 }
 
 export function createIdentityTracker(): IdentityTracker {
-	const ids = new WeakMap<Token, number>()
 	let nextId = 1
 	let previous: Token[] | undefined
 
 	const ensureId = (token: Token): number => {
-		let id = ids.get(token)
-		if (id === undefined) {
-			id = nextId++
-			ids.set(token, id)
-		}
-		// Phase 1 shim: the WeakMap stays the internal source of truth for one
-		// phase; the plain field mirrors it so consumers (keyOf, adapters) read
-		// token.id without reaching into the tracker.
-		token.id = id
+		// token.id is the single identity source; allocate only on first sight so the nextId sequence is stable.
+		const id = token.id ?? (token.id = nextId++)
 		if (token.type === 'mark') token.children.forEach(ensureId)
 		return id
 	}
 
 	const inherit = (from: Token, to: Token): void => {
-		const id = ids.get(from)
-		if (id !== undefined) {
-			ids.set(to, id)
-			to.id = id
-		}
+		if (from.id !== undefined) to.id = from.id
 		if (from.type === 'mark' && to.type === 'mark') {
 			const len = Math.min(from.children.length, to.children.length)
 			for (let i = 0; i < len; i++) inherit(from.children[i], to.children[i])
@@ -109,7 +97,7 @@ export function createIdentityTracker(): IdentityTracker {
 	return {
 		idOf: token => ensureId(token),
 
-		idFor: token => ids.get(token),
+		idFor: token => token.id,
 
 		reconcile(next, hint) {
 			const prev = previous
@@ -190,8 +178,7 @@ export function createIdentityTracker(): IdentityTracker {
 				// Descend: pair the children inside the slot window, then carry the
 				// id onto the new mark. ensureId runs AFTER pairing — the children
 				// already hold their inherited ids, so no phantom allocations.
-				const id = ids.get(prevMark)
-				if (id !== undefined) ids.set(nextMark, id)
+				if (prevMark.id !== undefined) nextMark.id = prevMark.id
 				pairSlotChildren(prevMark, nextMark, prevSlot, nextSlot, basePath)
 				changes.push({id: ensureId(nextMark), token: nextMark, path: basePath, kind: 'update'})
 				return true
