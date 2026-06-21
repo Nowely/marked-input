@@ -417,16 +417,13 @@ function assertReconcileEquivalence(
 	parser: Parser,
 	tracker: IdentityTracker,
 	prevTokens: Token[],
-	prevValue: string,
 	nextValue: string,
 	edit: GeneratedEdit,
 	useHint: boolean
 ): Token[] {
 	const prevIds = collectTreeIds(prevTokens, tracker)
 	const hint = editHintOf(edit)
-	const result = useHint
-		? tracker.reconcile(parser.parse(nextValue), hint)
-		: tracker.reconcile(parser.parse(nextValue), undefined, prevValue, nextValue)
+	const result = tracker.reconcile(parser.parse(nextValue), useHint ? hint : undefined)
 	const fresh = parser.parse(nextValue)
 
 	// 1. Output equivalence: the reconciled tree must match a fresh parse on
@@ -568,7 +565,7 @@ function runProperty(markup: Markup, sigil: string, iterations: number, inSlot =
 				generateEdit(value, sigil)
 			const next = applyEdit(value, edit)
 			try {
-				tokens = assertReconcileEquivalence(parser, tracker, tokens, value, next, edit, useHint)
+				tokens = assertReconcileEquivalence(parser, tracker, tokens, next, edit, useHint)
 			} catch (error) {
 				const detail = [
 					`seed=${seed} iteration=${i} round=${round} markup=${markup} useHint=${useHint}`,
@@ -605,7 +602,7 @@ function runSlotLeadingProperty(iterations: number): void {
 				((i + round) % 3 !== 2 ? generateInRowEdit(value) : undefined) ?? generateSlotLeadingEdit(value)
 			const next = applyEdit(value, edit)
 			try {
-				tokens = assertReconcileEquivalence(parser, tracker, tokens, value, next, edit, useHint)
+				tokens = assertReconcileEquivalence(parser, tracker, tokens, next, edit, useHint)
 			} catch (error) {
 				const detail = [
 					`seed=${seed} iteration=${i} round=${round} markup=${JSON.stringify(markup)} useHint=${useHint}`,

@@ -1,5 +1,5 @@
 import type {Range} from '../../shared/editorContracts'
-import {signal, untracked} from '../../shared/signals/index.js'
+import {signal} from '../../shared/signals/index.js'
 import {replaceInString} from '../../shared/utils'
 import type {PropsModel} from './PropsModel'
 
@@ -7,28 +7,16 @@ export class ValueModel {
 	/** Consume-once edit hint recorded by {@link replace}; see {@link takePendingEdit}. */
 	#pendingEdit: {start: number; end: number; insertedLength: number} | undefined
 
-	/** Effective value before the most recent accepted write; see {@link previousValue}. */
-	#previousValue: string | undefined
-
 	readonly current = signal({
 		initial: () => this.props.defaultValue() ?? '',
 		get: value => (this.props.value() !== undefined ? (this.props.value() ?? '') : value),
 		set: (next, previous) => {
 			if (next === undefined) return previous
 			if (this.props.readOnly()) return previous
-			// Capture point for #previousValue: every accepted write — replace()
-			// and direct current(...) sets alike — funnels through this transform
-			// SYNCHRONOUSLY before the stored value changes, so readers never see
-			// a half-updated pair (unlike a watch(), which only fires at effect
-			// flush). untracked: a write inside a reactive scope must not link
-			// `current` as a dependency of that scope. Controlled-mode changes
-			// applied purely through props.value (without a local write) bypass
-			// this — consumers treat #previousValue as best-effort (TokenModel's
-			// identity tracker reconstructs the true value from tokens otherwise).
-			// Note: a stale hint surviving in #pendingEdit when a controlled-mode
-			// props.value change fires degrades changeset precision only — token
-			// correctness (parse output) is never affected.
-			this.#previousValue = untracked(() => this.current())
+			// #pendingEdit (consumed once by takePendingEdit) is the only edit state
+			// the reparse needs. Note: a stale hint surviving in #pendingEdit when a
+			// controlled-mode props.value change fires degrades changeset precision
+			// only — token correctness (parse output) is never affected.
 			this.props.onChange()?.(next)
 			return this.props.value() !== undefined ? previous : next
 		},
@@ -45,11 +33,6 @@ export class ValueModel {
 		const hint = this.#pendingEdit
 		this.#pendingEdit = undefined
 		return hint
-	}
-
-	/** Value as it was before the most recent accepted `current()` write. */
-	previousValue(): string | undefined {
-		return this.#previousValue
 	}
 
 	/**

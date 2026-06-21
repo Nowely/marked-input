@@ -109,16 +109,17 @@ describe('tokenIdentity', () => {
 		expect(result.tokens[1]).toBe(first[1])
 	})
 
-	it('no hint, explicit values: prepend derives a window even when findGap reports no right edge', () => {
+	it('no hint: prepend derives a window from token contents even when findGap reports no right edge', () => {
 		// findGap('he@[x]llo', 'Xhe@[x]llo') → {left: 0, right: undefined} — the
 		// whole previous value is a suffix of the next one. The hint derivation
-		// must clamp instead of bailing out.
+		// must clamp instead of bailing out. With no hint, reconcile reconstructs
+		// both values from the token contents.
 		const tracker = createIdentityTracker()
 		const first = tracker.reconcile(parser.parse('he@[x]llo')).tokens
 		const markId = tracker.idOf(first[1])
 		const tailId = tracker.idOf(first[2])
 
-		const result = tracker.reconcile(parser.parse('Xhe@[x]llo'), undefined, 'he@[x]llo', 'Xhe@[x]llo')
+		const result = tracker.reconcile(parser.parse('Xhe@[x]llo'), undefined)
 		const updated = result.changes.filter(c => c.kind === 'update').map(c => c.id)
 		expect(tracker.idOf(result.tokens[1])).toBe(markId)
 		expect(tracker.idOf(result.tokens[2])).toBe(tailId)

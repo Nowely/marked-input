@@ -55,11 +55,10 @@ export type IdentityTracker = {
 	 * including position; carries the previous id onto tokens that are identical
 	 * except for a uniform position shift. Everything else gets a fresh id.
 	 * `hint` is the edit range in the previous value; when absent it is derived
-	 * with findGap from the values (reconstructed from the token contents when
-	 * not provided), and the changeset degrades to `full` only when no previous
-	 * tree exists.
+	 * with findGap from the previous and next values reconstructed from the token
+	 * contents, and degrades to a full reconcile only when no previous tree exists.
 	 */
-	reconcile(next: Token[], hint?: EditHint, previousValue?: string, nextValue?: string): ReconcileResult
+	reconcile(next: Token[], hint?: EditHint): ReconcileResult
 	/**
 	 * Stable id of a token from the last reconciled tree (or any reused
 	 * ancestor). WRITE SIDE-EFFECT: assigns an id on first sight (and to the
@@ -112,7 +111,7 @@ export function createIdentityTracker(): IdentityTracker {
 
 		idFor: token => ids.get(token),
 
-		reconcile(next, hint, previousValue, nextValue) {
+		reconcile(next, hint) {
 			const prev = previous
 
 			if (!prev) {
@@ -130,9 +129,9 @@ export function createIdentityTracker(): IdentityTracker {
 				return {tokens: next, structural: true, changes, removedIds: []}
 			}
 
-			// Top-level tokens partition the value, so the values can always be
-			// reconstructed when the caller does not provide them.
-			const window = hint ?? hintFromValues(previousValue ?? joinContents(prev), nextValue ?? joinContents(next))
+			// Top-level tokens partition the value, so both values are reconstructed
+			// from the token contents — no caller needs to thread them through.
+			const window = hint ?? hintFromValues(joinContents(prev), joinContents(next))
 
 			const shiftDelta = window.insertedLength - (window.end - window.start)
 			const out: Token[] = next.slice()

@@ -133,19 +133,17 @@ export class TokenModel {
 	 * the value (inline and block parse are both full parses — the windowed
 	 * incrementalParse is deleted; a future pre-split row parser was scoped as
 	 * Phase 7 but detached/reverted — see branch phase7-first-class-rows-wip),
-	 * filter empty texts in block mode, then reconcile and apply. The hint +
-	 * `previousValue` are plain fields the `current` write set synchronously, so
-	 * draining them HERE — inside an `untracked` watch callback, once per wave by
-	 * construction — needs no PURITY argument (the old `#reconciled` computed
-	 * drained them inside a getter, leaning on the runtime's once-per-wave
-	 * guarantee; that dependence is gone).
+	 * filter empty texts in block mode, then reconcile and apply. The hint is a
+	 * plain field the `current` write set synchronously, so draining it HERE —
+	 * inside an `untracked` watch callback, once per wave by construction — needs
+	 * no PURITY argument (the old `#reconciled` computed drained it inside a getter,
+	 * leaning on the runtime's once-per-wave guarantee; that dependence is gone).
 	 */
 	#reparse(value: string, parser: Parser | undefined, isBlock: boolean): void {
 		const hint = this.value.takePendingEdit()
-		const previousValue = this.value.previousValue()
 		const parsed = parser ? parser.parse(value) : [createTextToken(value)]
 		const tokens = isBlock ? filterEmptyText(parsed) : parsed
-		this.#pipeline.apply(this.#identity.reconcile(tokens, hint, previousValue))
+		this.#pipeline.apply(this.#identity.reconcile(tokens, hint))
 	}
 
 	constructor(

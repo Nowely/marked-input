@@ -254,8 +254,8 @@ path-and-token round-trip is involved.
 ### Identity tracker (`tokenIdentity.ts`)
 
 `createIdentityTracker()` maps each `Token` object to a stable integer id via a
-`WeakMap`. `reconcile(next, hint?, previousValue?, nextValue?)` matches the new
-parse against the previous tree and returns a `ReconcileResult`:
+`WeakMap`. `reconcile(next, hint?)` matches the new parse against the previous
+tree and returns a `ReconcileResult`:
 
 ```ts
 type ReconcileResult = {
@@ -356,9 +356,10 @@ render-count specs (`packages/storybook/src/pages/renderCount.react.spec.tsx` /
 ### Edit-hint flow
 
 `EditController.replace` → `ValueModel.replace(range, replacement)` records a
-consume-once `{start, end, insertedLength}` hint; `ValueModel.previousValue()`
-captures the pre-write value synchronously in the signal's set-transform. The
-model's reparse watch drains both per wave and hands them to the tracker.
+consume-once `{start, end, insertedLength}` hint. The model's reparse watch
+drains it per wave and hands it to the tracker; when no hint is present,
+`reconcile` reconstructs the previous and next values from the token contents
+(top-level tokens partition the value) and derives the window via `findGap`.
 
 **Controlled-mode limitation (precision, not correctness):** a parent driving
 `props.value` without a local `replace` can leave a stale hint behind; that
