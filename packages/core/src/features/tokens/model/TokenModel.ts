@@ -447,11 +447,6 @@ export class TokenModel {
 	}
 }
 
-/** Standalone / test construction seam: creates a TokenModel from the same (value, props, host) triple Store uses directly. */
-export function createTokenModel(value: ValueModel, props: PropsModel, host: Host): TokenModel {
-	return new TokenModel(value, props, host)
-}
-
 function filterEmptyText(tokens: Token[]): Token[] {
 	return tokens.filter(token => {
 		if (token.type !== 'text') return true

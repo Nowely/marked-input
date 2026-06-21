@@ -5,8 +5,7 @@ import {Store} from '../../../store/Store'
 import {Host, PropsModel, ValueModel} from '../../state'
 import {textToken} from '../__testing__/tokenFactories'
 import {TokenHandle} from './LiveNode'
-import {createTokenModel} from './TokenModel'
-import type {TokenModel} from './TokenModel'
+import {TokenModel} from './TokenModel'
 
 /**
  * Inline fixture (TokenModel.facade.spec lineage): 'he@[x]llo' parses to
@@ -60,7 +59,7 @@ function createNew(props: CoreProps) {
 	const propsModel = new PropsModel()
 	const value = new ValueModel(propsModel)
 	const host = new Host()
-	const model: TokenModel = createTokenModel(value, propsModel, host)
+	const model: TokenModel = new TokenModel(value, propsModel, host)
 	propsModel.set(props)
 	return {model, value, props: propsModel, host}
 }
