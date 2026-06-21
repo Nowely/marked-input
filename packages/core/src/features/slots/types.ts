@@ -1,8 +1,6 @@
 import type {CoreOption, Slot} from '../../shared/types'
 import type {Token} from '../tokens'
 
-export type {Slot}
-
 export interface MarkSlot {
 	(): (token: Token) => readonly [Slot, Record<string, unknown>]
 }

@@ -420,6 +420,3 @@ describe('ParserV2 Performance Benchmark Suite', () => {
 		)
 	})
 })
-
-// Export for external usage
-export {saveResults}
