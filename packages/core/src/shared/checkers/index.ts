@@ -1,1 +1,1 @@
-export {firstHtmlChild, htmlChildren, isHtmlElement, nextText, nodeTarget} from './domGuards'
+export {firstHtmlChild, nextText, nodeTarget} from './domGuards'

@@ -1,14 +1,3 @@
-/** Type guard: checks if a value is an HTMLElement. */
-export function isHtmlElement(el: unknown): el is HTMLElement {
-	return typeof HTMLElement !== 'undefined' && el instanceof HTMLElement
-}
-
-/** Get all children of an element as HTMLElement[], filtering out non-HTML elements. */
-export function htmlChildren(parent: Element | null | undefined): HTMLElement[] {
-	if (!parent) return []
-	return Array.from(parent.children).filter((child): child is HTMLElement => child instanceof HTMLElement)
-}
-
 /** Get the first element child as HTMLElement, or null. */
 export function firstHtmlChild(parent: Element | null | undefined): HTMLElement | null {
 	const child = parent?.firstElementChild
