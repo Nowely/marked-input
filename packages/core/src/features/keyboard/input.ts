@@ -69,7 +69,7 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 	const replacement = replacementForInput(container, event)
 	if (replacement === undefined) return
 
-	const range = rangeForInput(store, event, raw.range)
+	const range = rangeForInput(store, event, raw)
 	if (!range) return
 
 	event.preventDefault()

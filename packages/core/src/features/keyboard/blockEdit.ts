@@ -240,7 +240,7 @@ function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: Inp
 function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string): void {
 	const raw = rawRangeFromInputEvent(store, event)
 	if (!raw) return
-	const range = rangeForBlockInput(store, event, raw.range)
+	const range = rangeForBlockInput(store, event, raw)
 	if (!range) return
 
 	event.preventDefault()
