@@ -1,7 +1,4 @@
-function nextTextNode(walker: TreeWalker): Text | null {
-	const node = walker.nextNode()
-	return node instanceof Text ? node : null
-}
+import {nextText} from '../../shared/checkers'
 
 function splitsSurrogatePair(text: string, offset: number): boolean {
 	if (offset <= 0 || offset >= text.length) return false
@@ -24,11 +21,11 @@ export function textOffsetWithin(surface: HTMLElement, node: Node, offset: numbe
 function textOffsetFromTreeWalker(surface: HTMLElement, target: Text, targetOffset: number): number | undefined {
 	let total = 0
 	const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
-	let current = nextTextNode(walker)
+	let current = nextText(walker)
 	while (current) {
 		if (current === target) return total + targetOffset
 		total += current.length
-		current = nextTextNode(walker)
+		current = nextText(walker)
 	}
 	return undefined
 }
@@ -36,10 +33,10 @@ function textOffsetFromTreeWalker(surface: HTMLElement, target: Text, targetOffs
 export function textLength(surface: HTMLElement): number {
 	let total = 0
 	const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
-	let current = nextTextNode(walker)
+	let current = nextText(walker)
 	while (current) {
 		total += current.length
-		current = nextTextNode(walker)
+		current = nextText(walker)
 	}
 	return total
 }
