@@ -8,9 +8,8 @@ No feature flags; full parse and full DOM bind survive only as internal
 cold-start/fallback branches.
 
 **Encapsulation rule:** raw `Selection`, `Range`, and `TreeWalker` DOM APIs live
-only inside this module (`features/tokens/`). The boundary is enforced by
-`pnpm run check:encapsulation` (`scripts/check-dom-encapsulation.sh`). All
-consumers outside the module go through `store.tokens` methods or `TokenHandle`.
+only inside this module (`features/tokens/`). All consumers outside the module
+go through `store.tokens` methods or `TokenHandle`.
 
 Design spec: `docs/superpowers/specs/2026-06-12-tokenmodel-finegrained-consolidation-design.md`
 (facade contract inherited from `2026-06-11-tokenmodel-dom-encapsulation-design.md`).
