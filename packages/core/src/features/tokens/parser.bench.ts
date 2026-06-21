@@ -3,7 +3,7 @@ import * as path from 'path'
 
 import {bench, describe} from 'vitest'
 
-import {Parser as ParserV2} from './index'
+import {Parser as ParserV2} from './parser/Parser'
 
 // Test data generators
 function generateComparisonText(marks: number): string {

@@ -42,7 +42,7 @@ export type BindInput = {
 }
 
 /** Derived lookups over the nodes the walk actually bound (buildIndex's IndexResult, handle-valued). */
-export type BindResult = {
+type BindResult = {
 	byPath: ReadonlyMap<string, TokenHandle>
 	byElement: WeakMap<HTMLElement, TokenHandle>
 	controlRoots: WeakSet<HTMLElement>
