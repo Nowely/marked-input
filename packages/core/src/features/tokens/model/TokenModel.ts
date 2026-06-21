@@ -107,14 +107,15 @@ export class TokenModel {
 	readonly removedIds = (): readonly number[] => this.#pipeline.removedIds()
 
 	/**
-	 * Adapter SPI: the framework key of a render-tree token — its stable
-	 * identity id, so a suffix-shifted token (new object, inherited id) keeps
-	 * its key and is reconciled in place instead of remounted. Arrow property:
-	 * adapters pass it around unbound. Total like the KeyGenerator it replaces;
-	 * the idOf fallback covers tokens that predate reconcile stamping (and
-	 * allocates for foreign tokens, exactly as the old per-object counter did).
+	 * Adapter SPI: the framework key of a render-tree token — its stable identity
+	 * id. Every token an adapter renders comes from the reconciled tree, so the id
+	 * is always present (bind.ts throws loud otherwise). Arrow property: adapters
+	 * pass it around unbound.
 	 */
-	readonly keyOf = (token: Token): number => token.id ?? this.#identity.idOf(token)
+	readonly keyOf = (token: Token): number => {
+		if (token.id === undefined) throw new Error('keyOf: token has no id — must come from the reconciled tree')
+		return token.id
+	}
 
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
 		const Mark = this.props.Mark()
