@@ -20,13 +20,6 @@ export type MarkPatch = {
 	readonly slot?: OptionalMarkFieldPatch
 }
 
-export type MarkSnapshot = {
-	readonly value: string
-	readonly meta: string | undefined
-	readonly slot: string | undefined
-	readonly readOnly: boolean
-}
-
 export type MarkInfo = {
 	/** The mark token's stable identity id (use with `store.tokens.handle(id)` for the live handle). */
 	readonly id: number
