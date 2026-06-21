@@ -12,20 +12,12 @@
  * - Gap position management for nested content extraction
  */
 
+import {getOrCreate} from '../utils/getOrCreate'
 import {getSegmentIndex} from '../utils/getSegmentIndex'
 import type {MarkupDescriptor} from './MarkupDescriptor'
 import type {MarkupRegistry} from './MarkupRegistry'
 import {Match} from './Match'
 import type {SegmentMatch} from './SegmentMatcher'
-
-function getOrCreate<K, V>(map: Map<K, V[]>, key: K): V[] {
-	let arr = map.get(key)
-	if (!arr) {
-		arr = []
-		map.set(key, arr)
-	}
-	return arr
-}
 
 /**
  * Optimized parser using state machine approach

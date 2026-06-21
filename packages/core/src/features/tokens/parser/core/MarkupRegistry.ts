@@ -1,16 +1,8 @@
 import type {Markup} from '../types'
+import {getOrCreate} from '../utils/getOrCreate'
 import type {MarkupDescriptor} from './MarkupDescriptor'
 import {createMarkupDescriptor} from './MarkupDescriptor'
 import type {SegmentDefinition} from './SegmentMatcher'
-
-function getOrCreate<K, V>(map: Map<K, V[]>, key: K): V[] {
-	let arr = map.get(key)
-	if (!arr) {
-		arr = []
-		map.set(key, arr)
-	}
-	return arr
-}
 
 /**
  * Registry for managing markup descriptors
