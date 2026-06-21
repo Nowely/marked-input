@@ -9,8 +9,6 @@ export type {
 	CoreSlots,
 	CoreSlotProps,
 	DataAttributes,
-	DragAction,
-	DragActions,
 	DraggableConfig,
 	Slot,
 	SlotRegistry,

@@ -215,12 +215,11 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 
 ### Store Events
 
-| Event           | Feature        | When Fired                  | Payload                          |
-| --------------- | -------------- | --------------------------- | -------------------------------- |
-| `close`         | overlay        | Close overlay               | `void`                           |
-| `select`        | overlay        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
-| `rendered`      | host           | After each component render  | `void`                           |
-| `action`        | drag           | Drag-and-drop action        | `DragAction`                     |
+| Event           | Feature        | When Fired                  | Payload                                  |
+| --------------- | -------------- | --------------------------- | ---------------------------------------- |
+| `close`         | overlay        | Close overlay               | `void`                                   |
+| `rendered`      | host           | After each component render  | `void`                                  |
+| `action`        | drag           | Drag-and-drop action        | `{type, ...}` (internal `DragAction`)    |
 
 Re-parsing is not a store event: it is the private `TokenModel.#reparse`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. `TokenModel.setEditable()` (called by `SelectionController`) and the internal `host.rendered` watcher are reactive effect hooks, not store events.
 
