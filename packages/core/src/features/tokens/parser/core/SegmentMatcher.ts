@@ -99,7 +99,6 @@ export class SegmentMatcher {
 			const entries: SegmentEntry[] = []
 
 			dynamics.forEach(({segment, index}) => {
-				if (typeof segment === 'string') return
 				const [before, after, exclusions] = segment
 				indices.add(index)
 				const pattern = computeDynamicPattern(before, after, exclusions)
@@ -108,11 +107,7 @@ export class SegmentMatcher {
 			})
 
 			// Sort by pattern length (longest first) for optimal matching
-			entries.sort((a, b) => {
-				const aLen = typeof a.definition === 'string' ? a.definition.length : a.pattern.length
-				const bLen = typeof b.definition === 'string' ? b.definition.length : b.pattern.length
-				return bLen - aLen
-			})
+			entries.sort((a, b) => b.pattern.length - a.pattern.length)
 
 			this.dynamic = {
 				entries,
