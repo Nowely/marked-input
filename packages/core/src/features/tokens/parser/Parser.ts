@@ -174,22 +174,6 @@ export class Parser {
 	}
 
 	/**
-	 * Whether the text contains any markup segment occurrence.
-	 *
-	 * Pure query over the registry's segments — parsing behavior is untouched. No
-	 * current caller (the windowed incremental reparse that used it for its
-	 * inert-outside guard is deleted — inline parsing is always a full parse);
-	 * kept as a cheap segment probe for a future row-terminator validation
-	 * (Phase 7) or an external consumer.
-	 *
-	 * @param text - Text to scan
-	 * @returns `true` when at least one segment occurs in the text
-	 */
-	hasSegments(text: string): boolean {
-		return text.length > 0 && this.segmentMatcher.search(text).length > 0
-	}
-
-	/**
 	 * Escapes markup segments in the given text using backslash
 	 *
 	 * This method uses the registry's unique segments and escapes them by adding
