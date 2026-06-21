@@ -29,7 +29,6 @@ export function canMergeRows(a: Token, b: Token): boolean {
 }
 
 export function addDragRow(value: string, rows: readonly Token[], afterIndex: number, newRowContent: string): string {
-	if (rows.length === 0) return value + newRowContent
 	if (value === '' || (rows.length === 1 && rows[0].type === 'text' && rows[0].content === ''))
 		return newRowContent + newRowContent
 	if (afterIndex >= rows.length - 1) return value + newRowContent
