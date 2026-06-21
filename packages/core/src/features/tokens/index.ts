@@ -5,8 +5,6 @@ export type {Token, TextToken, MarkToken, Markup, ParseOptions} from './parser/t
 export {annotate} from './parser/utils/annotate'
 export {denote} from './parser/utils/denote'
 export {toString} from './parser/utils/toString'
-export {findToken} from './utils/findToken'
-export type {TokenContext} from './utils/findToken'
 export {TokenModel, createTokenModel} from './model/TokenModel'
 export type {SelectionAnchor, SelectionSnapshot} from './model/TokenModel'
 export {TokenHandle} from './model/LiveNode'
