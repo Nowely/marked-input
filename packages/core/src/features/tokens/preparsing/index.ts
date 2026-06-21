@@ -1,1 +1,0 @@
-export {findGap} from './utils/findGap'

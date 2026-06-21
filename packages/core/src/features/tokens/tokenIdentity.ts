@@ -1,6 +1,6 @@
 import type {TokenPath} from '../../shared/editorContracts'
 import type {MarkToken, Token} from './parser/types'
-import {findGap} from './preparsing'
+import {findGap} from './utils/findGap'
 
 /**
  * One change to the reconciled tree, resolved AT RECONCILE TIME (Phase 2): the
@@ -365,7 +365,7 @@ function joinContents(tokens: readonly Token[]): string {
 
 function hintFromValues(previousValue: string, nextValue: string): EditHint {
 	const gap = findGap(previousValue, nextValue)
-	// findGap contract (see preparsing/utils/findGap.spec.ts):
+	// findGap contract (see utils/findGap.spec.ts):
 	// - `left` is the first diverging index, i.e. the common prefix length;
 	//   undefined when the previous value is a prefix of the next one.
 	// - `right` is the ABSOLUTE exclusive end of the gap in the PREVIOUS value
