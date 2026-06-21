@@ -168,28 +168,23 @@ export function createIdentityTracker(): IdentityTracker {
 				if (!sameDescriptor(prevMark, nextMark)) return false
 				// 2. rendered props byte-unchanged
 				if (prevMark.value !== nextMark.value || prevMark.meta !== nextMark.meta) return false
-				// 3. only the slot interior changed: head and tail bytes outside the slot are equal
-				//    (content.length === position.end - position.start keeps offsets consistent).
+				// 3. both have slots — the descend operates on the slot interior.
+				//    (Conditions 1+2 pin descriptor/value/meta equal; the parser captures
+				//    all outside-slot variation as value/meta, so outside-slot bytes are
+				//    necessarily equal here — the reconcile-equivalence property spec is
+				//    the regression net for that parser invariant.)
 				const prevSlot = prevMark.slot
 				const nextSlot = nextMark.slot
 				if (!prevSlot || !nextSlot) return false
-				const prevBase = prevMark.position.start
-				const nextBase = nextMark.position.start
-				const headEqual =
-					prevMark.content.slice(0, prevSlot.start - prevBase) ===
-					nextMark.content.slice(0, nextSlot.start - nextBase)
-				if (!headEqual) return false
-				const tailEqual =
-					prevMark.content.slice(prevSlot.end - prevBase) === nextMark.content.slice(nextSlot.end - nextBase)
-				if (!tailEqual) return false
-				// 4. children pair 1:1 structurally
+				// 4. children pair 1:1: same count, and nested marks keep their descriptor.
+				//    (TreeBuilder's strict text,(mark,text)* alternation makes equal count
+				//    imply equal type sequence — also property-spec guarded.)
 				const prevKids = prevMark.children
 				const nextKids = nextMark.children
 				if (prevKids.length !== nextKids.length) return false
 				for (let i = 0; i < prevKids.length; i++) {
 					const a = prevKids[i]
 					const b = nextKids[i]
-					if (a.type !== b.type) return false
 					if (a.type === 'mark' && b.type === 'mark' && !sameDescriptor(a, b)) return false
 				}
 				// Descend: pair the children inside the slot window, then carry the

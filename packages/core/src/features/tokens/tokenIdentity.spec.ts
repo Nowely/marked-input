@@ -331,56 +331,6 @@ describe('deep reconcile (descend)', () => {
 		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(markId)
 	})
 
-	// Outside-slot change (condition 3) is parser-unreachable: delimiters are
-	// fixed, so every variable outside-slot byte is captured as value or meta —
-	// a same-descriptor pair always has byte-equal outside-slot content.
-	// Child-type mismatch (condition 4) is also parser-unreachable: TreeBuilder
-	// children strictly alternate text,(mark,text)* so equal child count implies
-	// equal type sequence. Both cases use hand-built tokens around a REAL
-	// descriptor (same data shapes, descriptor reference included).
-	const text = (content: string, start: number): Token => ({
-		type: 'text',
-		content,
-		position: {start, end: start + content.length},
-	})
-
-	const stolenDescriptor = () => asMark(slotParser.parse('#[ab]')[1]).descriptor
-
-	it('refusal: outside-slot change → mark-level textChanged with id inheritance', () => {
-		const descriptor = stolenDescriptor()
-		const prevMark: MarkToken = {
-			type: 'mark',
-			content: '#[ab]',
-			position: {start: 0, end: 5},
-			descriptor,
-			value: '',
-			slot: {content: 'ab', start: 2, end: 4},
-			children: [text('ab', 2)],
-		}
-		// same descriptor, same value/meta, same slot interior — but the raw
-		// content BEFORE the slot changed ('#[' → 'X[')
-		const nextMark: MarkToken = {
-			type: 'mark',
-			content: 'X[ab]',
-			position: {start: 0, end: 5},
-			descriptor,
-			value: '',
-			slot: {content: 'ab', start: 2, end: 4},
-			children: [text('ab', 2)],
-		}
-		const tracker = createIdentityTracker()
-		tracker.reconcile([prevMark])
-		const markId = tracker.idOf(prevMark)
-
-		const result = tracker.reconcile([nextMark], {start: 0, end: 1, insertedLength: 1})
-		const changeset = delta(result)
-
-		expect(result.structural).toBe(true)
-		expect(changeset.textChanged).toEqual([markId])
-		expect(changeset.updated).toEqual([])
-		expect(tracker.idOf(nextMark)).toBe(markId)
-	})
-
 	it('refusal: child count differs → mark-level textChanged, subtree treated dirty (no per-child diff)', () => {
 		const tracker = createIdentityTracker()
 		const first = tracker.reconcile(slotParser.parse('#[a #[b] c]')).tokens
@@ -401,48 +351,6 @@ describe('deep reconcile (descend)', () => {
 		// inner mark is not reported removed (consumers treat the mark as opaque)
 		expect(changeset.removed).toEqual([])
 		expect(tracker.idOf(asMark(result.tokens[1]))).toBe(outerId)
-	})
-
-	it('refusal: child type mismatch → mark-level textChanged with id inheritance', () => {
-		const descriptor = stolenDescriptor()
-		const childlessMark = (content: string, start: number): MarkToken => ({
-			type: 'mark',
-			content,
-			position: {start, end: start + content.length},
-			descriptor,
-			value: '',
-			children: [],
-		})
-		const prevMark: MarkToken = {
-			type: 'mark',
-			content: '#[ab]',
-			position: {start: 0, end: 5},
-			descriptor,
-			value: '',
-			slot: {content: 'ab', start: 2, end: 4},
-			children: [text('ab', 2)],
-		}
-		// same count (1), but the child flipped text → mark
-		const nextMark: MarkToken = {
-			type: 'mark',
-			content: '#[cd]',
-			position: {start: 0, end: 5},
-			descriptor,
-			value: '',
-			slot: {content: 'cd', start: 2, end: 4},
-			children: [childlessMark('cd', 2)],
-		}
-		const tracker = createIdentityTracker()
-		tracker.reconcile([prevMark])
-		const markId = tracker.idOf(prevMark)
-
-		const result = tracker.reconcile([nextMark], {start: 2, end: 4, insertedLength: 2})
-		const changeset = delta(result)
-
-		expect(result.structural).toBe(true)
-		expect(changeset.textChanged).toEqual([markId])
-		expect(changeset.updated).toEqual([])
-		expect(tracker.idOf(nextMark)).toBe(markId)
 	})
 
 	it('refusal: nested-mark descriptor mismatch → mark-level textChanged with id inheritance', () => {

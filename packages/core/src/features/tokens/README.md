@@ -308,19 +308,25 @@ the tree (forces `structural`); the discarded counterparts are in `removedIds`.
 
 When the middle pairing pairs two marks (same tree slot, same descriptor), it
 attempts a deep descend (`tryDescend`) before settling for mark-level `text`;
-nested mark pairs inside a descended slot recurse the same check. ALL four
-conditions must hold:
+nested mark pairs inside a descended slot recurse the same check. ALL of the
+following must hold:
 
 1. **Same descriptor** — reference equality (descriptors are interned per parser
    instance).
 2. **Rendered props byte-unchanged** — `value` and `meta` strictly equal. Mark
    components receive exactly these as framework props, so equal props ⇒ the
    renderer has nothing new to paint for the mark itself.
-3. **Only the slot interior changed** — both marks carry a slot, and the raw
-   bytes before and after it are equal (compared as `content` slices relative to
-   each mark's own start, so a uniformly shifted mark still qualifies).
-4. **Children pair 1:1 structurally** — same count, pairwise same type, same
-   descriptor for nested mark pairs.
+3. **Both carry a slot** — the descend operates on the slot interior. Once 1+2
+   hold, the bytes outside the slot are necessarily equal (the parser captures all
+   outside-slot variation as `value`/`meta`), so this is a parser invariant rather
+   than an inline check.
+4. **Children pair 1:1** — same count, and nested mark pairs keep their
+   descriptor. Equal child count already implies an equal type sequence
+   (TreeBuilder emits a strict `text,(mark,text)*` alternation), so no per-child
+   type check is needed.
+
+The reconcile-equivalence property spec is the regression net for the conditions
+3–4 parser invariants.
 
 On descend the children are paired inside the slot window with the same
 prefix/suffix/middle logic as the top level — the window is derived from the slot
