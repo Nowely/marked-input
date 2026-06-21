@@ -17,7 +17,6 @@ function getOrCreate<K, V>(map: Map<K, V[]>, key: K): V[] {
  * Centralizes access to all markup patterns and their descriptors
  */
 export class MarkupRegistry {
-	readonly markups: (Markup | undefined)[]
 	readonly descriptors: MarkupDescriptor[]
 	/** Deduplicated list of unique segment definitions (static strings or dynamic patterns) */
 	readonly segments: SegmentDefinition[] = []
@@ -25,8 +24,6 @@ export class MarkupRegistry {
 	readonly firstSegmentIndexMap: Map<number, MarkupDescriptor[]> = new Map()
 
 	constructor(markups: (Markup | undefined)[]) {
-		this.markups = markups
-
 		const segmentIndexMap = new Map<string, number>()
 
 		this.descriptors = markups
