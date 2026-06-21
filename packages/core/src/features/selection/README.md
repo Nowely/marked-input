@@ -8,7 +8,7 @@ policy-only.
 ## Layout
 
 - `SelectionController.ts` — reactive state, DOM event listeners, and caret
-  placement. ~208 lines; delegates every DOM read/write to `store.tokens`.
+  placement; delegates every DOM read/write to `store.tokens`.
 
 ## Public Surface
 
@@ -20,18 +20,18 @@ policy-only.
 - `isAllSelected: Computed<boolean>` — true when the range spans the entire raw
   value.
 - `isUserSelecting: Signal<boolean>` — true while the user is dragging a
-  selection. When true, `#applyRange` skips DOM placement and
-  `#reconcileSurfaces` flips text surfaces to `contenteditable="false"` so the
-  browser owns the selection.
+  selection. When true, `#applyRange` skips DOM placement and the
+  `isUserSelecting` watch on `#applyEditablePolicy` recomputes editability
+  (setting surfaces non-editable so the browser owns the selection).
 - `selectAll()` — sets `range` to `[0, value.length]`.
 - `focusFirst()` — collapses to the first indexed token's start, or falls back to
   `container.focus()`.
 - `placeAtHandle(handle, boundary?)` — collapses to the `'start'` or `'end'`
   of a specific token handle; stores the preferred handle so the next
   `#applyRange` can disambiguate tokens sharing a boundary position.
-- `readRaw()` — delegates to `tokens.readSelection()`; returns the current window
-  selection as a `RawSelection` or `undefined`. Used by keyboard, clipboard, and
-  overlay consumers.
+- `readRaw()` — returns `tokens.selection()?.raw`: the current window selection
+  as a `RawSelection` or `undefined`. Used by keyboard, clipboard, and overlay
+  consumers.
 
 ## Wiring
 
@@ -42,7 +42,7 @@ four watches:
 
 - `#focusEmptyEditorOnClick` — focuses the first child when the editor has a
   single empty text token.
-- `#trackSelection` — syncs `range` from `tokens.readSelection()` on `focusin`,
+- `#trackSelection` — syncs `range` from `tokens.selection()` on `focusin`,
   `focusout`, and `selectionchange`; clears range when focus leaves the container
   or lands in a control root.
 - `#trackUserSelecting` — sets/clears `isUserSelecting` by watching `mousedown` /
