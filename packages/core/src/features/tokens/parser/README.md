@@ -223,8 +223,8 @@ Input Text → SegmentMatcher (Dual Strategy) → SegmentMatches
 
 ```typescript
 class Parser {
-  constructor(markups: Markup[])
-  parse(input: string): Token[]
+    constructor(markups: Markup[])
+    parse(input: string): Token[]
 }
 ```
 
