@@ -38,7 +38,7 @@ export function addDragRow(value: string, rows: readonly Token[], afterIndex: nu
 	return value.slice(0, insertPos) + newRowContent + value.slice(insertPos)
 }
 
-export function deleteDragRow(value: string, rows: Token[], index: number): string {
+function deleteDragRow(value: string, rows: Token[], index: number): string {
 	if (rows.length <= 1) return ''
 
 	if (index >= rows.length - 1) {
@@ -48,7 +48,7 @@ export function deleteDragRow(value: string, rows: Token[], index: number): stri
 	return value.slice(0, rows[index].position.start) + value.slice(rows[index + 1].position.start)
 }
 
-export function duplicateDragRow(value: string, rows: Token[], index: number): string {
+function duplicateDragRow(value: string, rows: Token[], index: number): string {
 	const row = rows[index]
 	const rowText = value.substring(row.position.start, row.position.end)
 
@@ -81,7 +81,7 @@ export function mergeDragRows(value: string, rows: readonly Token[], index: numb
  * Reorders rows by moving the row at `sourceIndex` to `targetIndex`.
  * Gaps between adjacent rows are extracted from the original value and preserved.
  */
-export function reorderDragRows(value: string, rows: Token[], sourceIndex: number, targetIndex: number): string {
+function reorderDragRows(value: string, rows: Token[], sourceIndex: number, targetIndex: number): string {
 	if (sourceIndex === targetIndex || sourceIndex === targetIndex - 1) return value
 	if (rows.length < 2) return value
 	if (sourceIndex < 0 || sourceIndex >= rows.length) return value

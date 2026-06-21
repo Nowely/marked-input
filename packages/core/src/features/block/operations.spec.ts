@@ -4,14 +4,7 @@ import type {CoreOption} from '../../shared/types'
 import type {Token} from '../tokens'
 import {Parser} from '../tokens/parser/Parser'
 import {createRowContent} from './createRowContent'
-import {
-	addDragRow,
-	applyDragAction,
-	deleteDragRow,
-	duplicateDragRow,
-	mergeDragRows,
-	reorderDragRows,
-} from './operations'
+import {addDragRow, applyDragAction, mergeDragRows} from './operations'
 
 function textToken(content: string, start: number): Token {
 	return {type: 'text', content, position: {start, end: start + content.length}}
@@ -24,7 +17,8 @@ describe('applyDragAction', () => {
 		const rows = [textToken('a', 0), textToken('b', 2), textToken('c', 4)]
 		const value = 'a\nb\nc'
 		const result = applyDragAction(value, rows, {type: 'reorder', source: 0, target: 2}, options)
-		expect(result.value).toBe(reorderDragRows(value, [...rows], 0, 2))
+		// reorderDragRows moves row 0 ('a') to index 2: 'b' + 'a' + 'c', gaps collapsed.
+		expect(result.value).toBe('b\nac')
 	})
 
 	it('reorder returns the original value when source equals target (no-op)', () => {
@@ -54,8 +48,9 @@ describe('applyDragAction', () => {
 	it('delete dispatches to deleteDragRow and computes caret at the next row start', () => {
 		const rows = [textToken('a', 0), textToken('b', 2), textToken('c', 4)]
 		const value = 'a\nb\nc'
-		const expected = deleteDragRow(value, [...rows], 1)
 		const result = applyDragAction(value, rows, {type: 'delete', index: 1}, options)
+		// deleteDragRow drops row 1 ('b') by splicing [start of row 1, start of row 2): 'a\nc'.
+		const expected = 'a\nc'
 		expect(result.value).toBe(expected)
 		expect(result.caret).toBe(Math.min(rows[2].position.start, expected.length))
 	})
@@ -63,9 +58,9 @@ describe('applyDragAction', () => {
 	it('duplicate dispatches to duplicateDragRow and computes caret at original row end', () => {
 		const rows = [textToken('a', 0), textToken('b', 2)]
 		const value = 'a\nb'
-		const expected = duplicateDragRow(value, [...rows], 0)
 		const result = applyDragAction(value, rows, {type: 'duplicate', index: 0}, options)
-		expect(result.value).toBe(expected)
+		// duplicateDragRow inserts a copy of row 0 ('a') plus its gap before row 1: 'a\na\nb'.
+		expect(result.value).toBe('a\na\nb')
 		expect(result.caret).toBe(rows[0].position.end)
 	})
 })
