@@ -7,8 +7,10 @@ import {useMarkput} from './useMarkput'
 
 export const useMark = (): MarkController => {
 	const {store, token} = useTokenContext()
-	const readOnly = useMarkput(s => s.props.readOnly)
+	// Subscribe to readOnly changes to trigger a re-render when it changes;
+	// MarkController reads readOnly lazily so the retained controller is correct.
+	useMarkput(s => s.props.readOnly)
 	if (token.type !== 'mark') throw new Error('useMark must be called within a mark token context')
 
-	return useMemo(() => CoreMarkController.fromToken(store, token), [store, token, readOnly])
+	return useMemo(() => CoreMarkController.fromToken(store, token), [store, token])
 }

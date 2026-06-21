@@ -7,8 +7,10 @@ import styles from '@markput/core/styles.module.css'
 
 export const DropIndicator = memo(
 	({token, blockIndex, position}: {token: TokenType; blockIndex: number; position: 'before' | 'after'}) => {
-		const dropPosition = useMarkput(s => s.block.get(token).state.dropPosition)
-		const {tokens} = useMarkput(s => ({tokens: s.tokens}))
+		const {dropPosition, tokens} = useMarkput(s => ({
+			dropPosition: s.block.get(token).state.dropPosition,
+			tokens: s.tokens,
+		}))
 		// A row's path is its block index by construction.
 		const controlRef = useMemo(() => tokens.control([blockIndex]), [tokens, blockIndex])
 

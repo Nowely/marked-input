@@ -17,13 +17,16 @@ interface BlockProps {
 }
 
 export const Block = memo(({token, blockIndex}: BlockProps) => {
-	const {blockStore, action, Component, slotProps, isDragging} = useMarkput(s => ({
-		blockStore: s.block.get(token),
-		action: s.block.action,
-		Component: s.slots.blockComponent,
-		slotProps: s.slots.blockProps,
-		isDragging: s.block.get(token).state.isDragging,
-	}))
+	const {blockStore, action, Component, slotProps, isDragging} = useMarkput(s => {
+		const blockStore = s.block.get(token)
+		return {
+			blockStore,
+			action: s.block.action,
+			Component: s.slots.blockComponent,
+			slotProps: s.slots.blockProps,
+			isDragging: blockStore.state.isDragging,
+		}
+	})
 
 	const setBlockRef = (el: HTMLElement | null) => {
 		blockStore.attachContainer(el, blockIndex, {action})
