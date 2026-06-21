@@ -1,3 +1,5 @@
+import type {Token} from '../features/tokens'
+
 export type TokenPath = readonly number[]
 
 export type DomRef = (element: HTMLElement | null) => void
@@ -26,8 +28,6 @@ export type MarkInfo = {
 	/** Whether this mark directly contains other marks. */
 	readonly hasNestedMarks: boolean
 }
-
-import type {Token} from '../features/tokens'
 
 /**
  * Build a {@link MarkInfo} snapshot for a mark token at the given render-tree path.
