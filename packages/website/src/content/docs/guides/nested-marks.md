@@ -30,7 +30,7 @@ function TreeMark({children}: {children?: React.ReactNode}) {
     const info = useMarkInfo()
 
     return (
-        <span data-depth={info.depth} data-mark-key={info.key}>
+        <span data-depth={info.depth}>
             {info.hasNestedMarks ? children : mark.slot ?? mark.value}
         </span>
     )
@@ -39,10 +39,8 @@ function TreeMark({children}: {children?: React.ReactNode}) {
 
 | Property | Purpose |
 | -------- | ------- |
-| `address` | Core token address for the current parse generation. |
 | `depth` | Nesting depth, where top-level marks are `0`. |
 | `hasNestedMarks` | Whether any child token is a mark. |
-| `key` | Stable key for the current token path. |
 
 Parent and child traversal is intentionally not exposed through `useMark()`. Core owns token addresses and validates them through the token index.
 

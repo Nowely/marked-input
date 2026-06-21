@@ -21,11 +21,23 @@ export type MarkPatch = {
 }
 
 export type MarkInfo = {
-	/** The mark token's stable identity id (use with `store.tokens.handle(id)` for the live handle). */
-	readonly id: number
-	/** The mark's render-time tree path (one index per nesting level). */
-	readonly path: TokenPath
+	/** Nesting level: a top-level mark has depth 0. */
 	readonly depth: number
+	/** Whether this mark directly contains other marks. */
 	readonly hasNestedMarks: boolean
-	readonly key: string
+}
+
+import type {Token} from '../features/tokens'
+
+/**
+ * Build a {@link MarkInfo} snapshot for a mark token at the given render-tree path.
+ * `path` is an input used to compute `depth = path.length - 1`; it is not returned.
+ * Throws if `token` is not a mark token.
+ */
+export function toMarkInfo(token: Token, path: TokenPath): MarkInfo {
+	if (token.type !== 'mark') throw new Error('toMarkInfo: token is not a mark')
+	return {
+		depth: path.length - 1,
+		hasNestedMarks: token.children.some(child => child.type === 'mark'),
+	}
 }

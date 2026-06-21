@@ -451,7 +451,7 @@ mark.update({value: 'updated'})
 mark.remove()
 ```
 
-Use `useMarkInfo()` for structural metadata such as `id`, `path`, `depth`, `hasNestedMarks`, and `key`.
+Use `useMarkInfo()` for structural metadata: `depth` and `hasNestedMarks`.
 
 ### useOverlay
 
