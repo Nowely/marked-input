@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {Token as TokenType} from '@markput/core'
+import {computed} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
@@ -16,17 +17,12 @@ const blockStore = store.block.get(props.token)
 const menuOpen = useMarkput(() => blockStore.state.menuOpen)
 const menuPosition = useMarkput(() => blockStore.state.menuPosition)
 
-let menuControlRef: ((element: HTMLElement | null) => void) | undefined
-
-const getMenuControlRef = () => {
-	// A row's path is its block index by construction.
-	menuControlRef ??= store.tokens.control([props.blockIndex])
-	return menuControlRef
-}
+// A row's path is its block index by construction.
+const menuControlRef = computed(() => store.tokens.control([props.blockIndex]))
 
 const setMenuRef = (el: HTMLElement | null) => {
 	blockStore.attachMenu(el)
-	getMenuControlRef()(el)
+	menuControlRef.value(el)
 }
 </script>
 

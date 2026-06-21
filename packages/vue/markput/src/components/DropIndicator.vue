@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {Token as TokenType} from '@markput/core'
+import {computed} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
@@ -12,16 +13,11 @@ const store = useStore()
 const blockStore = store.block.get(props.token)
 const dropPosition = useMarkput(() => blockStore.state.dropPosition)
 
-let dropControlRef: ((element: HTMLElement | null) => void) | undefined
-
-const getDropControlRef = () => {
-	// A row's path is its block index by construction.
-	dropControlRef ??= store.tokens.control([props.blockIndex])
-	return dropControlRef
-}
+// A row's path is its block index by construction.
+const dropControlRef = computed(() => store.tokens.control([props.blockIndex]))
 
 const setDropRef = (el: unknown) => {
-	getDropControlRef()(el as HTMLElement | null)
+	dropControlRef.value(el as HTMLElement | null)
 }
 </script>
 
