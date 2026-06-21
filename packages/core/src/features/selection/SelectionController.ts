@@ -73,9 +73,11 @@ export class SelectionController {
 	}
 
 	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {
-		const resolved = this.#resolveHandle(handle, boundary)
-		if (!resolved) return false
-		if (!this.range(resolved)) this.#applyRange()
+		if (!handle.alive()) return false
+		const position = handle.token().position
+		const pos = boundary === 'end' ? position.end : position.start
+		this.#preferredHandle = handle
+		if (!this.range({start: pos, end: pos})) this.#applyRange()
 		return true
 	}
 
@@ -93,7 +95,10 @@ export class SelectionController {
 		this.#isPlacingCaret = true
 		let placed: boolean
 		try {
-			placed = clamped.start === clamped.end ? this.#placeCollapsed(clamped.start) : this.#placeExtended(clamped)
+			placed =
+				clamped.start === clamped.end
+					? this.#placeCollapsed(clamped.start)
+					: this.tokens.selectRange(clamped.start, clamped.end)
 		} finally {
 			this.#isPlacingCaret = false
 		}
@@ -104,30 +109,11 @@ export class SelectionController {
 		}
 	}
 
-	#resolveHandle(handle: TokenHandle, boundary: 'start' | 'end'): Range | undefined {
-		// The handle IS the identity AND the mount check: a live handle's token()
-		// carries current positions; a dead or mid-window handle fails closed.
-		if (!handle.alive()) return undefined
-		const position = handle.token().position
-		const pos = boundary === 'end' ? position.end : position.start
-		this.#preferredHandle = handle
-		return {start: pos, end: pos}
-	}
-
-	#applyPreferredHandle(rawPosition: number): boolean {
+	#placeCollapsed(rawPosition: number): boolean {
 		const handle = this.#preferredHandle
 		this.#preferredHandle = undefined
-		if (!handle || !handle.alive()) return false
-		return handle.placeCaret(rawPosition - handle.token().position.start)
-	}
-
-	#placeCollapsed(rawPosition: number): boolean {
-		if (this.#applyPreferredHandle(rawPosition)) return true
+		if (handle?.alive() && handle.placeCaret(rawPosition - handle.token().position.start)) return true
 		return this.tokens.placeCaret(rawPosition)
-	}
-
-	#placeExtended(range: Range): boolean {
-		return this.tokens.selectRange(range.start, range.end)
 	}
 
 	#focusEmptyEditorOnClick(container: HTMLElement): void {
