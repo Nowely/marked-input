@@ -143,6 +143,15 @@ export function createIdentityTracker(): IdentityTracker {
 				if (token.type === 'mark') token.children.forEach(child => collectRemovedIds(child, bucket))
 			}
 
+			// Pair an id-matched (a,b): descend if possible, else inherit + report as
+			// a text change (a refused-descend MARK renders framework props → structural).
+			const matchOrText = (a: Token, b: Token, path: TokenPath): void => {
+				if (a.type === 'mark' && b.type === 'mark' && tryDescend(a, b, path)) return
+				inherit(a, b)
+				if (b.type === 'mark') structural = true
+				changes.push({id: ensureId(b), token: b, path, kind: 'text'})
+			}
+
 			/**
 			 * Deep descend (spec §Deep reconcile): an id-matched mark pair whose
 			 * difference is confined to the slot interior becomes an UPDATE — the
@@ -238,16 +247,7 @@ export function createIdentityTracker(): IdentityTracker {
 					hi--
 				}
 				for (let i = lo; i <= hi; i++) {
-					const a = prevKids[i]
-					const b = kids[i]
-					const childPath = [...basePath, i]
-					// nested marks descend recursively under the same four conditions
-					if (a.type === 'mark' && b.type === 'mark' && tryDescend(a, b, childPath)) continue
-					inherit(a, b)
-					// refused-descend MARK renders framework props → structural, mirroring
-					// the top-level middle walk; a text token stays on the text path.
-					if (b.type === 'mark') structural = true
-					changes.push({id: ensureId(b), token: b, path: childPath, kind: 'text'})
+					matchOrText(prevKids[i], kids[i], [...basePath, i])
 				}
 			}
 
@@ -258,7 +258,7 @@ export function createIdentityTracker(): IdentityTracker {
 				p < prev.length &&
 				p < next.length &&
 				prev[p].position.end <= window.start &&
-				tokensEqual(prev[p], next[p])
+				tokensEqualShifted(prev[p], next[p], 0)
 			) {
 				out[p] = prev[p]
 				matchedPrev.add(prev[p])
@@ -309,13 +309,7 @@ export function createIdentityTracker(): IdentityTracker {
 						: candidate.type === token.type)
 				) {
 					matchedPrev.add(candidate)
-					if (candidate.type === 'mark' && token.type === 'mark' && tryDescend(candidate, token, [i]))
-						continue
-					inherit(candidate, token)
-					// refused-descend MARK (value/meta/child-structure changed) renders
-					// framework props → structural; a text token stays on the text path.
-					if (token.type === 'mark') structural = true
-					changes.push({id: ensureId(token), token, path: [i], kind: 'text'})
+					matchOrText(candidate, token, [i])
 				} else {
 					collectChanges(token, [i], 'add')
 					structural = true
@@ -361,10 +355,6 @@ function hintFromValues(previousValue: string, nextValue: string): EditHint {
 	const end = previousValue.length - clampedSuffix
 	const insertedLength = nextValue.length - clampedSuffix - start
 	return {start, end, insertedLength}
-}
-
-function tokensEqual(a: Token, b: Token): boolean {
-	return tokensEqualShifted(a, b, 0)
 }
 
 function tokensEqualShifted(a: Token, b: Token, delta: number): boolean {
