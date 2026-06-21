@@ -307,7 +307,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 		expect(store.tokens.selection()).toBeUndefined()
 	})
 
-	it('carries raw absolute positions, anchor, collapsed, focusNode, rect, and intersects', () => {
+	it('carries raw absolute positions, anchor, focusNode, rect, and intersects', () => {
 		const {store, container} = mountWithMark()
 		const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
 		if (!(firstText instanceof Text) || firstText.length < 2) throw new Error('expected the "he" text node')
@@ -322,16 +322,15 @@ describe('TokenModel selection() — the one snapshot', () => {
 		if (!snapshot) throw new Error('expected a selection snapshot')
 		// "he" is [0,2] absolute.
 		expect(snapshot.raw?.range).toEqual({start: 0, end: 2})
-		expect(snapshot.collapsed).toBe(false)
-		expect(snapshot.anchor.node).toBe(firstText)
 		expect(snapshot.anchor.isCollapsed).toBe(false)
+		expect(snapshot.anchor.node).toBe(firstText)
 		expect(snapshot.focusNode).toBe(firstText)
 		expect(snapshot.rect).toBeInstanceOf(DOMRect)
 		expect(snapshot.intersects(firstText)).toBe(true)
 		expect(snapshot.intersects(document.body)).toBe(true)
 	})
 
-	it('collapsed is true and raw is a zero-width range for a caret', () => {
+	it('anchor.isCollapsed is true and raw is a zero-width range for a caret', () => {
 		const {store, container} = mountWithMark()
 		const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
 		if (!(firstText instanceof Text) || firstText.length < 1) throw new Error('expected the "he" text node')
@@ -344,7 +343,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 
 		const snapshot = store.tokens.selection()
 		if (!snapshot) throw new Error('expected a selection snapshot')
-		expect(snapshot.collapsed).toBe(true)
+		expect(snapshot.anchor.isCollapsed).toBe(true)
 		expect(snapshot.raw?.range).toEqual({start: 1, end: 1})
 	})
 })

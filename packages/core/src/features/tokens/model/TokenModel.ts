@@ -25,8 +25,6 @@ export type SelectionSnapshot = {
 	readonly rect: DOMRect | undefined
 	/** Anchor node + offset + collapsed flag of the raw window selection. */
 	readonly anchor: SelectionAnchor
-	/** Whether the raw selection is collapsed. */
-	readonly collapsed: boolean
 	/** Focus node of the raw window selection. */
 	readonly focusNode: Node | undefined
 	/** Whether the raw selection intersects `node` (partial containment counts). */
@@ -284,9 +282,10 @@ export class TokenModel {
 	 * `undefined` when there is no range (the element is unfocused / nothing
 	 * selected). Subsumes the six micro-reads — `raw` is the absolute in-editor
 	 * range (undefined when the selection is outside the editor), `rect`/`anchor`/
-	 * `collapsed`/`focusNode` reflect the raw selection, and `intersects` closes
-	 * over it. A consumer that treated "no selection" as collapsed compares
-	 * `selection()?.collapsed !== false`.
+	 * `focusNode` reflect the raw selection, and `intersects` closes over it.
+	 * Whether the selection is collapsed is `anchor.isCollapsed`. A consumer that
+	 * treated "no selection" as collapsed compares
+	 * `selection()?.anchor.isCollapsed !== false`.
 	 */
 	selection(): SelectionSnapshot | undefined {
 		const sel = window.getSelection()
@@ -297,7 +296,6 @@ export class TokenModel {
 			raw: this.#rawSelectionFrom(sel),
 			rect: getRect() ?? undefined,
 			anchor: {node: anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed},
-			collapsed: sel.isCollapsed,
 			focusNode: sel.focusNode ?? undefined,
 			intersects: node => sel.containsNode(node, true),
 		}

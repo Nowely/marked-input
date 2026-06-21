@@ -162,7 +162,7 @@ export class SelectionController {
 		const clearIfCollapsed = (): void => {
 			if (!this.isUserSelecting()) return
 			// No selection (undefined) is treated like collapsed, matching the raw `!sel || sel.isCollapsed`.
-			if (this.tokens.selection()?.collapsed !== false) this.isUserSelecting(false)
+			if (this.tokens.selection()?.anchor.isCollapsed !== false) this.isUserSelecting(false)
 		}
 
 		listen(document, 'mouseup', () => {

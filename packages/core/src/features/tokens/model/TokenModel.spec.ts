@@ -336,7 +336,6 @@ describe('TokenModel shell (model/)', () => {
 
 			expect(model.placeCaret(1)).toBe(true)
 			expect(model.selection()?.raw).toEqual({range: {start: 1, end: 1}})
-			expect(model.selection()?.collapsed).toBe(true)
 			const anchor = model.selection()?.anchor
 			expect(anchor?.isCollapsed).toBe(true)
 			expect(model.selection()?.rect).toBeDefined()
@@ -362,7 +361,7 @@ describe('TokenModel shell (model/)', () => {
 
 			expect(model.selectRange(0, 9)).toBe(true)
 			expect(model.selection()?.raw?.range).toEqual({start: 0, end: 9})
-			expect(model.selection()?.collapsed).toBe(false)
+			expect(model.selection()?.anchor.isCollapsed).toBe(false)
 			expect(model.selection()?.intersects(text1)).toBe(true)
 			const content = model.selectedContent()
 			expect(content?.text).toContain('he')
