@@ -5,7 +5,7 @@ import {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
 import {createIdentityTracker} from '../tokenIdentity'
 import {createCommitPipeline} from './commit'
-import type {TokenHandle} from './LiveNode'
+import type {TokenHandle} from './TokenHandle'
 
 /**
  * Inline fixture (TokenModel.facade.spec lineage): 'he@[x]llo' parses to

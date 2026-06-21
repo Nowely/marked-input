@@ -14,7 +14,7 @@ import {createIdentityTracker} from '../tokenIdentity'
 import {pathEquals} from '../tokenIndex'
 import {createCommitPipeline} from './commit'
 import {applyEditableState} from './editableState'
-import type {TokenHandle} from './LiveNode'
+import type {TokenHandle} from './TokenHandle'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
 

@@ -2,7 +2,7 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {watch} from '../../shared/signals/index.js'
 import {Store} from '../../store/Store'
-import {TokenHandle} from './model/LiveNode'
+import {TokenHandle} from './model/TokenHandle'
 
 function mountInline(value: string) {
 	const store = new Store()

@@ -383,7 +383,7 @@ React/Vue render asynchronously, so initialization order matters:
 
 // 3. Sync contenteditable attributes (layout effect)
 //    → TokenModel's commit pipeline runs its first structural bind:
-//      walks the DOM, creates LiveNode handles, writes contentEditable / tabIndex / textContent
+//      walks the DOM, creates TokenHandle handles, writes contentEditable / tabIndex / textContent
 
 // 4. Framework emits store.host.rendered() after tokens render
 

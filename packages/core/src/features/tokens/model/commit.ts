@@ -4,7 +4,7 @@ import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
 import type {ReconcileResult, TokenChangeEntry} from '../tokenIdentity'
 import {bind} from './bind'
-import type {TokenHandle} from './LiveNode'
+import type {TokenHandle} from './TokenHandle'
 
 /**
  * The one commit pipeline: every reconciled value change flows through a

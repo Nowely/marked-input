@@ -3,8 +3,8 @@ import {batch} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
 import {pathKey} from '../tokenIndex'
 import {applyEditableState} from './editableState'
-import {TokenHandle} from './LiveNode'
-import type {ElementBindings} from './LiveNode'
+import {TokenHandle} from './TokenHandle'
+import type {ElementBindings} from './TokenHandle'
 
 /**
  * The structural DOM walk of the one commit pipeline: zip the freshly rendered

@@ -4,7 +4,7 @@ import {watch} from '../../../shared/signals/index.js'
 import {Store} from '../../../store/Store'
 import {Host, PropsModel, ValueModel} from '../../state'
 import {textToken} from '../__testing__/tokenFactories'
-import {TokenHandle} from './LiveNode'
+import {TokenHandle} from './TokenHandle'
 import {TokenModel} from './TokenModel'
 
 /**

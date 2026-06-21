@@ -1,4 +1,4 @@
-import type {TokenHandle} from './model/LiveNode'
+import type {TokenHandle} from './model/TokenHandle'
 import type {Token} from './parser/types'
 import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 

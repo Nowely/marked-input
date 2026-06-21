@@ -14,7 +14,7 @@ go through `store.tokens` methods or `TokenHandle`.
 Design spec: `docs/superpowers/specs/2026-06-12-tokenmodel-finegrained-consolidation-design.md`
 (facade contract inherited from `2026-06-11-tokenmodel-dom-encapsulation-design.md`).
 
-## LiveNode — the single source of truth (`model/LiveNode.ts`)
+## TokenHandle — the single source of truth (`model/TokenHandle.ts`)
 
 One live record per token, keyed by its stable identity id. The record IS the
 public handle (`TokenHandle`): it owns the CURRENT parsed token, the tree path,
@@ -46,7 +46,7 @@ value edit → parse (windowed; full on cold start / unstable window / markup ch
   └─ structural:
        set tree signal (new reference) → renderer renders → rendered() →
        bind(container, latest tree): one DOM+tree walk —
-         create/update/kill LiveNodes, set element bindings,
+         create/update/kill TokenHandles, set element bindings,
          apply contentEditable/tabindex to NEWLY BOUND surfaces and mark roots
        → fire changed(changeset)
 ```
@@ -173,7 +173,7 @@ the path-and-identity round-trip (`resolveAddress`) was removed in Phase 4.
 
 ## `TokenHandle`
 
-Live, identity-keyed view of one token — the LiveNode's public face. The face
+Live, identity-keyed view of one token — the live record's public face. The face
 is `{id, token(), path(), alive(), element(), …}`: a consumer holding a
 render-tree token resolves `handle(token.id)`, and the handle's `token()`
 carries current content and positions — its existence IS the validity check.

@@ -1,4 +1,4 @@
-import type {ElementBindings} from './LiveNode'
+import type {ElementBindings} from './TokenHandle'
 
 /**
  * Apply contentEditable / tabindex to a handle's bindings.

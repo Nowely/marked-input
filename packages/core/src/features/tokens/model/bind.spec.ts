@@ -5,7 +5,7 @@ import type {Token} from '../parser/types'
 import {pathKey} from '../tokenIndex'
 import {bind} from './bind'
 import type {BindInput} from './bind'
-import type {TokenHandle} from './LiveNode'
+import type {TokenHandle} from './TokenHandle'
 
 /**
  * Test stand-in for the identity tracker's read side: bind receives a

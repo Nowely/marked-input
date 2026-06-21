@@ -2,7 +2,7 @@ import {afterEach, describe, expect, it} from 'vitest'
 
 import {Store} from '../../../store/Store'
 import {markToken, textToken} from '../__testing__/tokenFactories'
-import {TokenHandle} from './LiveNode'
+import {TokenHandle} from './TokenHandle'
 
 function mountSurface(content: string) {
 	const container = document.createElement('div')
@@ -55,7 +55,7 @@ function mountBlock(value: string) {
 	return {store, container}
 }
 
-describe('TokenHandle (model/LiveNode)', () => {
+describe('TokenHandle', () => {
 	afterEach(() => {
 		window.getSelection()?.removeAllRanges()
 		document.body.replaceChildren()
