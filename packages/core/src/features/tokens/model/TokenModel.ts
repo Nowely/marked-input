@@ -90,11 +90,6 @@ export class TokenModel {
 		return this.#pipeline.current()
 	}
 
-	/** The top-level token at `index` of the fresh reconciled tree, or undefined. */
-	at(index: number): Token | undefined {
-		return this.#pipeline.current()[index]
-	}
-
 	/** THE model-level detector: fires once per commit, only after the DOM is consistent. Payloadless — consumers re-read. */
 	readonly changed: Event<void> = this.#pipeline.changed
 
@@ -218,6 +213,11 @@ export class TokenModel {
 		return this.#nodes.get(id)
 	}
 
+	/** The live handle for a render-tree token, or undefined (no id / mid-window / dead). */
+	handleOf(token: Token | undefined): TokenHandle | undefined {
+		return token?.id === undefined ? undefined : this.handle(token.id)
+	}
+
 	/** Locate the live node owning a DOM node, walking up to the container (the old #locate over the pipeline lookups). */
 	#locate(node: Node): Lookup | undefined {
 		const container = this.host.container()
@@ -259,7 +259,7 @@ export class TokenModel {
 
 	/** Id-bridged view of a current-tree token's bound node (boundary internals). */
 	#viewOf(token: Token): TokenView | undefined {
-		const handle = token.id === undefined ? undefined : this.handle(token.id)
+		const handle = this.handleOf(token)
 		return handle ? this.#view(handle) : undefined
 	}
 

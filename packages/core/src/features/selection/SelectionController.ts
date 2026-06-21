@@ -63,8 +63,7 @@ export class SelectionController {
 	}
 
 	focusFirst(): void {
-		const first = this.tokens.at(0)
-		const handle = first?.id !== undefined ? this.tokens.handle(first.id) : undefined
+		const handle = this.tokens.handleOf(this.tokens.current()[0])
 		if (handle && this.placeAtHandle(handle, 'start')) return
 		this.host.container()?.focus()
 	}

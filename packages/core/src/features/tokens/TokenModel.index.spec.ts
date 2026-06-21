@@ -112,27 +112,10 @@ describe('TokenModel lookups', () => {
 	})
 })
 
-describe('TokenModel.current() / at() — the fresh reconciled read', () => {
+describe('TokenModel.current() — the fresh reconciled read', () => {
 	it('current() returns the reconciled tree, consistent with value.current()', () => {
 		const {store, container} = mountInline('hello')
 		expect(store.tokens.current()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-		container.remove()
-	})
-
-	it('at(index) returns the token at that top-level index, undefined past the end', () => {
-		const store = new Store()
-		// markup config idiom verified in TokenModel.spec.ts: a Mark + an options
-		// markup are BOTH required for the parser to emit mark tokens.
-		store.props.set({Mark: () => null, defaultValue: 'a@[x]b', options: [{markup: '@[__value__]'}]})
-		const container = document.createElement('div')
-		container.append(document.createElement('span'), document.createElement('span'), document.createElement('span'))
-		document.body.append(container)
-		store.host.container(container)
-		store.host.rendered()
-
-		expect(store.tokens.at(0)).toBe(store.tokens.current()[0])
-		expect(store.tokens.at(1)?.type).toBe('mark')
-		expect(store.tokens.at(99)).toBeUndefined()
 		container.remove()
 	})
 

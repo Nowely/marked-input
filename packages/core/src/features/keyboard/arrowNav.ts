@@ -50,8 +50,7 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	const siblingIndex = direction === 'prev' ? path[path.length - 1] - 1 : path[path.length - 1] + 1
 	const siblingPath = [...path.slice(0, -1), siblingIndex]
 	const sibling = resolvePath(store.tokens.current(), siblingPath)
-	if (sibling?.id === undefined) return false
-	const siblingHandle = store.tokens.handle(sibling.id)
+	const siblingHandle = store.tokens.handleOf(sibling)
 	if (!siblingHandle) return false
 
 	event.preventDefault()
