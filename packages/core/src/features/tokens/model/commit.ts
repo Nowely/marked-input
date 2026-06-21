@@ -1,5 +1,5 @@
 import type {TokenPath} from '../../../shared/editorContracts'
-import {event, signal} from '../../../shared/signals/index.js'
+import {batch, event, signal} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
 import type {ReconcileResult, TokenChangeEntry} from '../tokenIdentity'
@@ -139,10 +139,12 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			updates.push({handle, token: change.token, path: change.path, surface})
 		}
 
-		for (const {handle, token, path, surface} of updates) {
-			handle.update(token, path)
-			if (surface && surface.textContent !== token.content) surface.textContent = token.content
-		}
+		batch(() => {
+			for (const {handle, token, path, surface} of updates) {
+				handle.update(token, path)
+				if (surface && surface.textContent !== token.content) surface.textContent = token.content
+			}
+		})
 		if (VERIFY_DOM) assertAligned()
 		lastRemovedIds = removedIds
 		changed()

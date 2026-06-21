@@ -1,4 +1,5 @@
 import type {TokenPath} from '../../../shared/editorContracts'
+import {batch} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
 import {pathKey} from '../tokenIndex'
 import {applyEditableState} from './editableState'
@@ -18,6 +19,8 @@ import type {ElementBindings} from './TokenHandle'
  *   the tree is authoritative, only the DOM is (transiently) misaligned
  * - id absent from the tree    → `kill()` + delete from the map
  *
+ * The whole projection commits as ONE batch, so handle `changed` watchers
+ * flush only after every node reflects the new tree and DOM.
  */
 export type BindInput = {
 	container: HTMLElement
@@ -71,40 +74,42 @@ export function bind(input: BindInput): BindResult {
 	const byPath = new Map<string, TokenHandle>()
 	const byElement = new WeakMap<HTMLElement, TokenHandle>()
 
-	const treeIds = new Set<number>()
-	for (const {id, token, path} of tree) {
-		treeIds.add(id)
-		const bindings = bound.get(token)
-		const existing = nodes.get(id)
-		// An unrendered NEW token materializes no handle; one appears when a
-		// later walk reaches it (or on demand through the model shell).
-		if (!existing && !bindings) continue
-		const handle = existing ?? new TokenHandle(id, token, path)
-		if (existing) existing.update(token, path)
-		else nodes.set(id, handle)
-		if (!bindings) {
-			handle.unbind()
-			continue
+	batch(() => {
+		const treeIds = new Set<number>()
+		for (const {id, token, path} of tree) {
+			treeIds.add(id)
+			const bindings = bound.get(token)
+			const existing = nodes.get(id)
+			// An unrendered NEW token materializes no handle; one appears when a
+			// later walk reaches it (or on demand through the model shell).
+			if (!existing && !bindings) continue
+			const handle = existing ?? new TokenHandle(id, token, path)
+			if (existing) existing.update(token, path)
+			else nodes.set(id, handle)
+			if (!bindings) {
+				handle.unbind()
+				continue
+			}
+			const previous = handle.node()
+			handle.bindElements(bindings)
+			applyMountState(token, bindings, previous, editable)
+			byPath.set(pathKey(path), handle)
+			byElement.set(bindings.tokenElement, handle)
+			if (bindings.rowElement) byElement.set(bindings.rowElement, handle)
+			if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
 		}
-		const previous = handle.node()
-		handle.bindElements(bindings)
-		applyMountState(token, bindings, previous, editable)
-		byPath.set(pathKey(path), handle)
-		byElement.set(bindings.tokenElement, handle)
-		if (bindings.rowElement) byElement.set(bindings.rowElement, handle)
-		if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
-	}
 
-	// Kill ONLY ids genuinely absent from the new TREE. A DOM-walk bail must
-	// not kill: the DOM is transiently misaligned (adapter mid-render) while
-	// the tree still owns those tokens — they were unbound above instead.
-	// (Deliberate divergence from the old TokenModel#syncHandles, which
-	// rebuilt #byId from byPath and so killed every handle on a bail.)
-	for (const [id, handle] of nodes) {
-		if (treeIds.has(id)) continue
-		handle.kill()
-		nodes.delete(id)
-	}
+		// Kill ONLY ids genuinely absent from the new TREE. A DOM-walk bail must
+		// not kill: the DOM is transiently misaligned (adapter mid-render) while
+		// the tree still owns those tokens — they were unbound above instead.
+		// (Deliberate divergence from the old TokenModel#syncHandles, which
+		// rebuilt #byId from byPath and so killed every handle on a bail.)
+		for (const [id, handle] of nodes) {
+			if (treeIds.has(id)) continue
+			handle.kill()
+			nodes.delete(id)
+		}
+	})
 
 	return {byPath, byElement, controlRoots}
 }
