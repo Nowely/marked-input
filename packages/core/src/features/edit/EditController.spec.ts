@@ -31,7 +31,7 @@ describe('EditController', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', onChange})
-		store.selection.position(2)
+		store.selection.range({start: 2, end: 2})
 
 		store.edit.replace({start: 4, end: 2}, 'x')
 
@@ -44,7 +44,7 @@ describe('EditController', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
-		store.selection.position(1)
+		store.selection.range({start: 1, end: 1})
 
 		store.edit.replace({start: 1, end: 4}, 'i')
 

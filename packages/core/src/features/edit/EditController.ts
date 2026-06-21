@@ -24,7 +24,8 @@ export class EditController {
 		batch(() => {
 			const normalized: Range = range.end < 0 ? {start: range.start, end: this.value.current().length} : range
 			if (!this.value.replace(normalized, replacement)) return
-			this.selection.position(caretAt ?? normalized.start + replacement.length)
+			const caret = caretAt ?? normalized.start + replacement.length
+			this.selection.range({start: caret, end: caret})
 		})
 	}
 }

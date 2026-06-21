@@ -87,12 +87,12 @@ describe('BlockController', () => {
 		store.host.container(document.createElement('div'))
 		store.value.current('alpha\n\nbeta\n\n')
 		const replaceSpy = vi.spyOn(store.value, 'replace')
-		const positionSpy = vi.spyOn(store.selection, 'position')
+		const rangeSpy = vi.spyOn(store.selection, 'range')
 
 		store.block.action({type: 'reorder', source: 0, target: 0})
 
 		expect(replaceSpy).not.toHaveBeenCalled()
-		expect(positionSpy).not.toHaveBeenCalled()
+		expect(rangeSpy).not.toHaveBeenCalled()
 	})
 
 	describe('per-row stores (identity-keyed)', () => {

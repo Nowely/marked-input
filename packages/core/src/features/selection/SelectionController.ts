@@ -11,10 +11,6 @@ import type {TokenHandle, TokenModel} from '../tokens'
 
 export class SelectionController {
 	readonly range: Signal<Range | undefined> = signal<Range>({equals: shallow})
-	readonly position = computed({
-		get: () => this.range()?.start,
-		set: value => this.range(value !== undefined ? {start: value, end: value} : undefined),
-	})
 
 	readonly isAllSelected: Computed<boolean> = computed(() => {
 		const s = this.range()
