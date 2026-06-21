@@ -124,33 +124,25 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	 * before a single mutation and the caller escalates structurally.
 	 */
 	function commitText(changes: readonly TokenChangeEntry[], removedIds: readonly number[]): boolean {
-		const updates: {handle: TokenHandle; token: Token; path: TokenPath}[] = []
-		const patches: {surface: HTMLElement; content: string}[] = []
+		const updates: {handle: TokenHandle; token: Token; path: TokenPath; surface?: HTMLElement}[] = []
 		for (const change of changes) {
 			const handle = deps.nodes.get(change.id)
 			if (change.kind === 'update') {
-				// Never bound yet (a handle materializes on the next bind) — skip,
-				// not a miss: an unrendered token has no surface to patch.
 				if (!handle) continue
 				updates.push({handle, token: change.token, path: change.path})
 				continue
 			}
-			// kind 'text' on the text branch is always a TEXT token (a refused-descend
-			// MARK set result.structural, so we are not here). Resolve its surface.
+			// kind 'text' on the text branch is always a TEXT token — resolve its surface.
 			if (!handle) return false
 			const surface = handle.node()?.textElement
 			if (!surface) return false
-			updates.push({handle, token: change.token, path: change.path})
-			patches.push({surface, content: change.token.content})
+			updates.push({handle, token: change.token, path: change.path, surface})
 		}
 
-		// Commit: update the listed nodes (in-place field writes) and patch the
-		// changed surfaces, in one batch so subscribers flush against a consistent
-		// DOM. Conditional writes keep untouched Text nodes alive.
 		batch(() => {
-			for (const {handle, token, path} of updates) handle.update(token, path)
-			for (const {surface, content} of patches) {
-				if (surface.textContent !== content) surface.textContent = content
+			for (const {handle, token, path, surface} of updates) {
+				handle.update(token, path)
+				if (surface && surface.textContent !== token.content) surface.textContent = token.content
 			}
 		})
 		if (VERIFY_DOM) assertAligned()
