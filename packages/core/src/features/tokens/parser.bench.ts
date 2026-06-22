@@ -16,7 +16,7 @@ function generateComparisonText(marks: number): string {
 }
 
 // Parser configurations
-const parserV2 = new Parser(['@[__value__](__meta__)', '#[__value__]'])
+const parser = new Parser(['@[__value__](__meta__)', '#[__value__]'])
 
 // Simplified results storage for saving to JSON
 interface TestResult {
@@ -238,13 +238,13 @@ function collectResult(
 		return
 	}
 
-	const v2Results = runBenchmark(parserV2, input, iterations)
-	const v2Ops = calculateStats(v2Results.ops)
+	const results = runBenchmark(parser, input, iterations)
+	const stats = calculateStats(results.ops)
 
 	testResults.push({
 		name,
 		category,
-		performance: [v2Ops.min, v2Ops.avg, v2Ops.max],
+		performance: [stats.min, stats.avg, stats.max],
 	})
 }
 
@@ -313,9 +313,9 @@ describe('Parser Performance Benchmark Suite', () => {
 
 		describe(`Scalability: ${size} marks`, () => {
 			bench(
-				`Parser v2 (${size} marks)`,
+				`Parser (${size} marks)`,
 				() => {
-					parserV2.parse(input)
+					parser.parse(input)
 				},
 				{
 					time: 1000,
@@ -352,9 +352,9 @@ describe('Parser Performance Benchmark Suite', () => {
 	scenarios.forEach(({name, text}) => {
 		describe(`Real-world: ${name}`, () => {
 			bench(
-				`Parser v2: ${name}`,
+				`Parser: ${name}`,
 				() => {
-					parserV2.parse(text)
+					parser.parse(text)
 				},
 				{
 					time: 1000,
