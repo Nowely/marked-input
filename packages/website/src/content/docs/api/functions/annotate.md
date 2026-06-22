@@ -11,7 +11,7 @@ function annotate(markup, params): string;
 
 Defined in: [core/src/features/tokens/parser/utils/annotate.ts:18](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/utils/annotate.ts#L18)
 
-Make annotation from the markup for ParserV2
+Make annotation from the markup for Parser
 
 ## Parameters
 
