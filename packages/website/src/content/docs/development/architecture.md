@@ -309,7 +309,7 @@ class Store {
     // Features live directly on store, not nested under .feature
     readonly host:      Host               // rendered event + container signal + onMounted lifecycle
     readonly props:     PropsModel         // framework-provided configuration
-    readonly selection: SelectionController // selection range, position (computed), isUserSelecting, isAllSelected
+    readonly selection: SelectionController // selection range, isUserSelecting, isAllSelected
     readonly slots:     SlotsFeature       // isBlock, isDragEnabled, slot component/props, mark resolver
     readonly value:     ValueModel         // current, replace()
     readonly edit:      EditController     // replace(range, replacement, caretAt?) — single batched write path
@@ -361,7 +361,7 @@ Signal subscription order is significant: inside its constructor `onMounted` hoo
 | **BlockController**           | Drag-and-drop block reordering and operation helpers     |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
-`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. `SelectionController` exposes a `range: Signal<Range | undefined>` as the single source of truth for the caret/selection position, a writable `position: Signal<number | undefined>` computed bound to `range.start` (writes collapse the range), an `isUserSelecting: Signal<boolean>` for selection-in-progress state, and `isAllSelected: Signal<boolean>` derived from `range` and the raw value length.
+`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. `SelectionController` exposes a `range: Signal<Range | undefined>` as the single source of truth for the caret/selection position (collapse the caret by writing a zero-width range), an `isUserSelecting: Signal<boolean>` for selection-in-progress state, and `isAllSelected: Signal<boolean>` derived from `range` and the raw value length.
 
 ## Lifecycle Timing
 
@@ -422,7 +422,7 @@ Core owns token identity (stable ids and live handles), DOM registration, raw se
 
 `SelectionController` is a stateful coordinator that owns the reactive caret/selection state and delegates every DOM read and write to `store.tokens`:
 
-- It owns the `range`, `position` (writable computed), `isUserSelecting`, and `isAllSelected` signals, and exposes public delegations for reading selection state. It is the single source of truth for the caret/selection position.
+- It owns the `range`, `isUserSelecting`, and `isAllSelected` signals, and exposes public delegations for reading selection state. It is the single source of truth for the caret/selection position.
 - It does not touch the DOM directly. To read the live browser selection it calls `tokens.selection()` (and `tokens.selection()?.raw` via `readRaw()`); to write the caret it calls `tokens.placeCaret(...)` / `tokens.selectRange(...)`. DOM↔raw boundary mapping (the internal `boundary.ts`) and caret placement (the internal `caret.ts`) live entirely inside `store.tokens` and are not exported from `@markput/core`.
 - It re-applies the selection after every commit: in its `onMounted` hook it watches `tokens.changed` (which fires only once the DOM is consistent) and `range`, re-running `#applyRange()` against the live surfaces.
 - Editable policy stays here: it watches `props.readOnly` and `isUserSelecting` and calls `tokens.setEditable({editable, readOnly})`; `store.tokens` owns the application to bound surfaces.
