@@ -108,6 +108,34 @@ describe('SelectionController', () => {
 		stop()
 	})
 
+	describe('position', () => {
+		it('is undefined when range is undefined', () => {
+			expect(new Store().selection.position()).toBeUndefined()
+		})
+		it('returns start when collapsed', () => {
+			const store = new Store()
+			store.selection.range({start: 5, end: 5})
+			expect(store.selection.position()).toBe(5)
+		})
+		it('write collapses range to {pos, pos}', () => {
+			const store = new Store()
+			store.selection.position(5)
+			expect(store.selection.range()).toEqual({start: 5, end: 5})
+		})
+		it('write does not change isUserSelecting', () => {
+			const store = new Store()
+			store.selection.isUserSelecting(true)
+			store.selection.position(5)
+			expect(store.selection.isUserSelecting()).toBe(true)
+		})
+		it('write collapses an extended range', () => {
+			const store = new Store()
+			store.selection.range({start: 2, end: 8})
+			store.selection.position(3)
+			expect(store.selection.range()).toEqual({start: 3, end: 3})
+		})
+	})
+
 	describe('isAllSelected', () => {
 		it('returns false when value is empty', () => {
 			expect(new Store().selection.isAllSelected()).toBe(false)
@@ -184,7 +212,7 @@ describe('SelectionController', () => {
 
 			store.props.set({defaultValue: 'hello'})
 			store.host.container(container)
-			store.selection.range({start: 5, end: 5})
+			store.selection.position(5)
 
 			store.host.rendered()
 			const sel = window.getSelection()
@@ -203,7 +231,7 @@ describe('SelectionController', () => {
 			document.body.appendChild(container)
 			store.host.container(container)
 			store.selection.isUserSelecting(true)
-			store.selection.range({start: 3, end: 3})
+			store.selection.position(3)
 
 			// Clear any pre-existing browser selection so we can detect non-changes.
 			window.getSelection()?.removeAllRanges()
@@ -223,7 +251,7 @@ describe('SelectionController', () => {
 			document.body.appendChild(container)
 			store.props.set({defaultValue: 'hello'})
 			store.host.container(container)
-			store.selection.range({start: 3, end: 3})
+			store.selection.position(3)
 			store.host.rendered()
 			expect(store.selection.range()).toEqual({start: 3, end: 3})
 			container.remove()
