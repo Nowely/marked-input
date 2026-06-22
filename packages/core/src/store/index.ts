@@ -1,4 +1,1 @@
 export {Store} from './Store'
-export {PropsModel} from '../features/state/PropsModel'
-export {BlockStore} from '../features/block/BlockStore'
-export type {DropPosition} from '../features/block/BlockStore'

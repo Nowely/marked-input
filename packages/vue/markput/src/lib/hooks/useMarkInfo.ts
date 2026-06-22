@@ -1,29 +1,15 @@
 import type {MarkInfo} from '@markput/core'
-import {findToken} from '@markput/core'
+import {toMarkInfo} from '@markput/core'
 import {inject} from 'vue'
 
 import {TOKEN_KEY} from '../providers/tokenKey'
-import {useStore} from './useStore'
 
+/** Mark metadata for the surrounding mark token context. */
 export const useMarkInfo = (): MarkInfo => {
-	const store = useStore()
-	const tokenRef = inject(TOKEN_KEY)
-	if (!tokenRef) throw new Error('Token not found. Make sure to use useMarkInfo inside a Token provider.')
+	const contextRef = inject(TOKEN_KEY)
+	if (!contextRef) throw new Error('Token not found. Make sure to use useMarkInfo inside a Token provider.')
 
-	const token = tokenRef.value
+	const {path, token} = contextRef.value
 	if (token.type !== 'mark') throw new Error('useMarkInfo must be called within a mark token context')
-
-	const index = store.tokens.index()
-	const path = index.pathFor(token)
-	if (!path) throw new Error('Mark token is not indexed')
-	const address = index.addressFor(path)
-	if (!address) throw new Error('Mark token path is stale')
-
-	const info = findToken(store.tokens.current(), token)
-	return {
-		address,
-		depth: info?.depth ?? 0,
-		hasNestedMarks: token.children.some(child => child.type === 'mark'),
-		key: index.key(path),
-	}
+	return toMarkInfo(token, path)
 }

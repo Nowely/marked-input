@@ -1,5 +1,5 @@
 import type {CoreOption} from '../../shared/types'
-import {annotate} from '../parsing'
+import {annotate} from '../tokens'
 
 export function createRowContent(options: CoreOption[]): string {
 	const firstOption = options[0]

@@ -5,7 +5,6 @@ Manages the autocomplete/suggestion overlay. Detects overlay triggers using `Tri
 ## Components
 
 - **OverlayController**: Reactive controller that checks for overlay triggers on text/selection changes, manages overlay open/close (Escape key, outside click), and tracks the input span for overlay operations
-- **createMarkFromOverlay**: Creates a `MarkToken` from an `OverlayMatch` result
 - **filterSuggestions**: Filters a string array by case-insensitive substring match
 - **navigateSuggestions**: Keyboard navigation (up/down/enter) through suggestion lists with wrap-around
 

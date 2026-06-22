@@ -1,4 +1,4 @@
-import type {Markup} from '../features/parsing/parser/types'
+import type {Markup} from '../features/tokens/parser/types'
 import type {CoreOption} from './types'
 
 export const KEYBOARD = {

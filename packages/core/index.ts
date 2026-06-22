@@ -9,8 +9,6 @@ export type {
 	CoreSlots,
 	CoreSlotProps,
 	DataAttributes,
-	DragAction,
-	DragActions,
 	DraggableConfig,
 	Slot,
 	SlotRegistry,
@@ -18,17 +16,12 @@ export type {
 export {MarkputHandler} from './src/store/MarkputHandler'
 
 // Parsing exports (modern API)
-export {annotate, denote, findToken} from './src/features/parsing'
-export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing'
-export type {
-	TokenPath,
-	TokenAddress,
-	Range,
-	RawSelection,
-	MarkPatch,
-	MarkSnapshot,
-	MarkInfo,
-} from './src/shared/editorContracts'
+export {annotate, denote} from './src/features/tokens'
+export type {Markup, Token, TextToken, MarkToken} from './src/features/tokens'
+export type {TokenPath, Range, MarkPatch, MarkInfo} from './src/shared/editorContracts'
+export {toMarkInfo} from './src/shared/editorContracts'
+export type {Selectable, ObjectSelector} from './src/shared/readSelected'
+export {readSelected} from './src/shared/readSelected'
 
 // Reactive system
 export type {Signal, Computed, Event, SignalValues} from './src/shared/signals'
@@ -39,10 +32,10 @@ export {Store} from './src/store'
 export type {MarkSlot, OverlaySlot} from './src/features/slots'
 
 // Overlay
-export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './src/features/overlay'
+export {filterSuggestions, navigateSuggestions} from './src/features/overlay'
 
 // Drag
 export {getAlwaysShowHandle} from './src/features/block'
 
 // Mark commands
-export {MarkController} from './src/features/parsing'
+export {MarkController} from './src/features/tokens'

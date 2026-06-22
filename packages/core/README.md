@@ -9,7 +9,7 @@ This package provides low-level utilities for working with annotated text, inclu
 - Core data structures and types
 - Utility classes for text manipulation
 - Event handling system
-- Caret utilities: `import {caretDom} from '@markput/core'` — `getCaretIndex`, `setAtElement`, `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`
+- Caret utilities: `import {caretDom} from '@markput/core'` — `getCaretIndex`, `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`
 - Text preprocessing utilities
 
 ## Installation

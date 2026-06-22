@@ -7,8 +7,8 @@ import {useMarkput} from '../lib/hooks/useMarkput'
 const sequenceHostStyle: CSSProperties = {display: 'contents'}
 
 export const TokenChildren = memo(({ownerPath, children}: {ownerPath: TokenPath; children: ReactNode}) => {
-	const {refs} = useMarkput(s => ({refs: s.refs}))
-	const ref = useMemo(() => refs.children(ownerPath), [refs, ownerPath])
+	const {tokens} = useMarkput(s => ({tokens: s.tokens}))
+	const ref = useMemo(() => tokens.children(ownerPath), [tokens, ownerPath])
 
 	return (
 		<span ref={ref} style={sequenceHostStyle}>

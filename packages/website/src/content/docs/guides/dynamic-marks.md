@@ -90,11 +90,11 @@ function NestedAwareMark({children}: {children?: React.ReactNode}) {
     const info = useMarkInfo()
 
     return (
-        <span data-depth={info.depth} data-key={info.key}>
+        <span data-depth={info.depth}>
             {info.hasNestedMarks ? children : mark.value}
         </span>
     )
 }
 ```
 
-`useMarkInfo()` returns `address`, `depth`, `hasNestedMarks`, and `key`.
+`useMarkInfo()` returns `depth` and `hasNestedMarks`.

@@ -1,5 +1,2 @@
 export {BlockController} from './BlockController'
-export {BlockStore} from './BlockStore'
-export type {DropPosition} from './BlockStore'
-export {getDragDropPosition, parseDragSourceIndex, getDragTargetIndex} from '../../shared/utils/dragUtils'
 export {getAlwaysShowHandle} from './config'

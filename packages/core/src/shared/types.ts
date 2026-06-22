@@ -1,6 +1,6 @@
 import type * as CSS from 'csstype'
 
-import type {Markup} from '../features/parsing/parser/types'
+import type {Markup} from '../features/tokens/parser/types'
 import type {Range} from './editorContracts'
 
 /**

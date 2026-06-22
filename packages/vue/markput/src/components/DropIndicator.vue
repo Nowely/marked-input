@@ -1,30 +1,23 @@
 <script setup lang="ts">
 import type {Token as TokenType} from '@markput/core'
+import {computed} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 
 import styles from '@markput/core/styles.module.css'
 
-const props = defineProps<{token: TokenType; position: 'before' | 'after'}>()
+const props = defineProps<{token: TokenType; blockIndex: number; position: 'before' | 'after'}>()
 
 const store = useStore()
 const blockStore = store.block.get(props.token)
-const index = useMarkput(s => s.tokens.index)
 const dropPosition = useMarkput(() => blockStore.state.dropPosition)
 
-let dropControlRef: ((element: HTMLElement | null) => void) | undefined
-
-const getDropControlRef = () => {
-	if (dropControlRef) return dropControlRef
-	const path = index.value.pathFor(props.token)
-	if (!path) return undefined
-	dropControlRef = store.refs.control(path)
-	return dropControlRef
-}
+// A row's path is its block index by construction.
+const dropControlRef = computed(() => store.tokens.control([props.blockIndex]))
 
 const setDropRef = (el: unknown) => {
-	getDropControlRef()?.(el as HTMLElement | null)
+	dropControlRef.value(el as HTMLElement | null)
 }
 </script>
 

@@ -723,53 +723,53 @@ exports[`Component: stories > Dynamic stories > Story Removable 1`] = `
 
 exports[`Component: stories > Experimental stories > Story Controlled 1`] = `
 "<div contenteditable="true">
-  <span></span>
-  <mark data-value="John" data-meta="id:123">John</mark>
-  <span></span>
-  <mark data-value="World" data-meta="greeting">World</mark>
-  <span></span>
+  <span contenteditable="true">Hello </span>
+  <mark data-value="John" data-meta="id:123" tabindex="0">John</mark>
+  <span contenteditable="true"> and </span>
+  <mark data-value="World" data-meta="greeting" tabindex="0">World</mark>
+  <span contenteditable="true">!</span>
 </div>"
 `;
 
 exports[`Component: stories > Experimental stories > Story Markdown 1`] = `
 "<div contenteditable="true">
-  <span></span>
-  <strong data-type="heading">Welcome to Markdown Editor</strong>
-  <span></span>
-  <strong data-type="bold">
+  <span contenteditable="true"></span>
+  <strong data-type="heading" tabindex="0">Welcome to Markdown Editor</strong>
+  <span contenteditable="true">&#10;Try editing this text with </span>
+  <strong data-type="bold" tabindex="0">
     <span>
-      <span></span>
+      <span contenteditable="true">bold</span>
     </span>
   </strong>
-  <span></span>
-  <em data-type="italic">
+  <span contenteditable="true">, </span>
+  <em data-type="italic" tabindex="0">
     <span>
-      <span></span>
+      <span contenteditable="true">italic</span>
     </span>
   </em>
-  <span></span>
-  <code data-type="code">
+  <span contenteditable="true">, </span>
+  <code data-type="code" tabindex="0">
     <span>
-      <span></span>
+      <span contenteditable="true">code</span>
     </span>
   </code>
-  <span></span>
-  <a href="links" data-type="link" data-url="links">links</a>
-  <span></span>
-  <span data-type="blockquote">&gt; </span>
-  <span></span>
-  <span data-type="blockquote">&gt; </span>
-  <span></span>
+  <span contenteditable="true">, and </span>
+  <a href="links" data-type="link" data-url="links" tabindex="0">links</a>
+  <span contenteditable="true">.&#10;&#10;</span>
+  <span data-type="blockquote" tabindex="0">&gt; </span>
+  <span contenteditable="true">This is a blockquote&#10;</span>
+  <span data-type="blockquote" tabindex="0">&gt; </span>
+  <span contenteditable="true">You can add multiple lines&#10;&#10;- List item 1&#10;- List item 2&#10;- List item 3</span>
 </div>"
 `;
 
 exports[`Component: stories > Experimental stories > Story Uncontrolled 1`] = `
 "<div contenteditable="true">
-  <span></span>
-  <mark data-value="John" data-meta="id:123">John</mark>
-  <span></span>
-  <mark data-value="World" data-meta="greeting">World</mark>
-  <span></span>
+  <span contenteditable="true">Hello </span>
+  <mark data-value="John" data-meta="id:123" tabindex="0">John</mark>
+  <span contenteditable="true"> and </span>
+  <mark data-value="World" data-meta="greeting" tabindex="0">World</mark>
+  <span contenteditable="true">! Try editing - cursor stays in place!</span>
 </div>"
 `;
 

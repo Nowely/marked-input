@@ -4,16 +4,14 @@ import {signal, computed, event, effect, watch, listen} from '../../shared/signa
 import type {Computed} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
 import type {EditController} from '../edit'
-import type {Token} from '../parsing'
-import {annotate} from '../parsing'
-import type {TokenModel} from '../parsing/TokenModel'
-import * as caretDom from '../selection/caretDom'
 import type {SelectionController} from '../selection/SelectionController'
-import {resolveOverlaySlot} from '../slots'
 import type {OverlaySlot} from '../slots'
+import {resolveOverlaySlot} from '../slots/resolveSlot'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
+import type {TokenModel} from '../tokens'
+import {annotate} from '../tokens'
 import {TriggerFinder} from './TriggerFinder'
 
 export class OverlayController {
@@ -25,12 +23,11 @@ export class OverlayController {
 		return (option?: CoreOption, defaultComponent?: Slot) => resolveOverlaySlot(Overlay, option, defaultComponent)
 	})
 
-	readonly select = event<{mark: Token; match: OverlayMatch}>()
 	readonly close = event()
 
 	readonly position: Computed<{left: number; top: number}> = computed(() => {
 		if (!this.match()) return {left: 0, top: 0}
-		const rect = caretDom.getRect()
+		const rect = this.tokens.selection()?.rect
 		if (!rect) return {left: 0, top: 0}
 		return {left: rect.left, top: rect.top + rect.height + 1}
 	})
@@ -92,36 +89,24 @@ export class OverlayController {
 				}
 				listen(document, 'selectionchange', handler)
 			})
-
-			watch(this.select, overlayEvent => {
-				if (!hasOverlayTrigger()) return
-				const {
-					mark,
-					match: {option, range},
-				} = overlayEvent
-
-				const markup = option.markup
-				if (!markup) return
-
-				const annotation =
-					mark.type === 'mark'
-						? annotate(markup, {
-								value: mark.value,
-								meta: mark.meta,
-							})
-						: annotate(markup, {
-								value: mark.content,
-							})
-
-				this.edit.replace(range, annotation)
-				this.match(undefined)
-			})
 		})
+	}
+
+	/** Commit the active overlay match as an annotation of (value, meta), then close. */
+	choose(value: string, meta?: string): void {
+		// No hasOverlayTrigger guard needed: match is only ever set by #probeTrigger,
+		// which requires a trigger option, so a missing trigger means match() is undefined.
+		const match = this.match()
+		if (!match) return
+		const markup = match.option.markup
+		if (!markup) return
+		this.edit.replace(match.range, annotate(markup, {value, meta}))
+		this.match(undefined)
 	}
 
 	#probeTrigger() {
 		const match =
-			TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.selection) ??
+			TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.tokens) ??
 			this.#probeTriggerFromCaretRange()
 		this.match(match)
 	}
@@ -151,7 +136,7 @@ export class OverlayController {
 				source,
 				range: {start, end: start + source.length},
 				span: value,
-				node: window.getSelection()?.anchorNode ?? this.host.container() ?? document.body,
+				node: this.tokens.selection()?.anchor.node ?? this.host.container() ?? document.body,
 				option,
 			}
 		}

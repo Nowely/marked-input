@@ -1,7 +1,7 @@
 // packages/core/src/features/overlay/TriggerFinder.ts
 import {escape} from '../../shared/escape'
 import type {OverlayMatch} from '../../shared/types'
-import type {SelectionController} from '../selection/SelectionController'
+import type {SelectionAnchor, TokenModel} from '../tokens'
 
 const wordRegex = new RegExp(/^\w*/)
 
@@ -12,24 +12,34 @@ export class TriggerFinder {
 	node: Node
 	dividedText: {left: string; right: string}
 
-	constructor(private readonly selection?: SelectionController) {
-		const sel = window.getSelection()
-		const node = sel?.anchorNode
-		if (!sel || !node || !document.contains(node)) throw new Error('Anchor node of selection is not exists!')
-		this.node = node
-		this.span = node.textContent ?? ''
-		this.dividedText = this.getDividedTextBy(sel.anchorOffset)
+	/**
+	 * @param anchor - Pre-resolved anchor to use; collapse-checking is `find`'s
+	 *   responsibility. Direct constructors (e.g. in tests) bypass the collapse
+	 *   guard deliberately.
+	 */
+	constructor(
+		private readonly tokens: TokenModel,
+		anchor?: SelectionAnchor
+	) {
+		const resolvedAnchor = anchor ?? tokens.selection()?.anchor
+		if (!resolvedAnchor || !document.contains(resolvedAnchor.node))
+			throw new Error('Anchor node of selection is not exists!')
+		this.node = resolvedAnchor.node
+		this.span = resolvedAnchor.node.textContent ?? ''
+		this.dividedText = this.getDividedTextBy(resolvedAnchor.offset)
 	}
 
 	static find<T>(
 		options: T[] | undefined,
 		getTrigger: TriggerExtractor<T>,
-		selection?: SelectionController
+		tokens: TokenModel,
+		anchor?: SelectionAnchor
 	): OverlayMatch<T> | undefined {
 		if (!options) return
-		if (!window.getSelection()?.isCollapsed) return
+		const resolvedAnchor = anchor ?? tokens.selection()?.anchor
+		if (!resolvedAnchor?.isCollapsed) return
 		try {
-			return new TriggerFinder(selection).find(options, getTrigger)
+			return new TriggerFinder(tokens, resolvedAnchor).find(options, getTrigger)
 		} catch {
 			return undefined
 		}
@@ -62,8 +72,7 @@ export class TriggerFinder {
 	}
 
 	#rawRangeForMatch(source: string, index: number) {
-		if (!this.selection) return {start: index, end: index + source.length}
-		const boundary = this.selection.rawPositionFromBoundary(this.node, index + source.length, 'after')
+		const boundary = this.tokens.boundaryFor(this.node, index + source.length, 'after')
 		if (boundary === undefined) return undefined
 		return {start: boundary - source.length, end: boundary}
 	}

@@ -1,22 +1,59 @@
 # Selection Feature
 
-Owns the reactive caret/selection state, orchestrates DOM placement after render and re-index, and exposes raw-boundary reads for keyboard, clipboard, and overlay consumers. Exposed as `store.selection`.
+Owns the reactive caret/selection state and orchestrates DOM placement after
+render and re-index. Exposed as `store.selection`. All raw DOM mechanics
+(Selection/Range/TreeWalker) are handled by `store.tokens`; this module is
+policy-only.
 
 ## Layout
 
-- `SelectionController.ts` — reactive state, DOM event listeners, caret placement, and `(node, offset)` ↔ raw position translation. Owns `range`, `position` (writable computed), `isAllSelected`, and `isUserSelecting`. Public surface: `selectAll`, `focusFirst`, `placeAtAddress`, `readRaw`, `rawPositionFromBoundary`, `readSelectedContent`.
-- `textOffsets.ts` — pure helpers used by the boundary translator and the placement primitives.
-- `caretDom.ts` — stateless DOM caret helpers (`getCaretIndex`, `setAtElement`, `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`, `placeAtTextOffset`, `placeAtChildBoundary`, `placeRangeAcrossSurfaces`, `focusIfNeeded`).
+- `SelectionController.ts` — reactive state, DOM event listeners, and caret
+  placement; delegates every DOM read/write to `store.tokens`.
 
 ## Public Surface
 
-- `range: Signal<Range | undefined>` — single source of truth for caret/selection. Writes propagate to the DOM via `watch(range)` → `DomSelectionBridge.applyRange`.
-- `position: Signal<number | undefined>` — writable computed bound to `range.start`; writes collapse the range to `{start: pos, end: pos}`.
-- `isUserSelecting: Signal<boolean>` — selection-in-progress signal. Pushed to `TextSurfaces.setSelecting` so structural text surfaces flip to `contenteditable="false"` during drags.
-- `isAllSelected: Signal<boolean>` — computed; true when the selection spans the entire raw value.
-- `selectAll()`, `focusFirst()`, `placeAtAddress(address, boundary)` — imperative helpers.
-- `readRaw()`, `rawPositionFromBoundary(node, offset, affinity)`, `readSelectedContent()` — boundary reads, available to non-selection consumers (keyboard, clipboard, overlay).
+- `range: Signal<Range | undefined>` — single source of truth for caret/selection
+  (`{start, end}` absolute positions). Writes trigger `#applyRange` which clamps
+  to value length, then calls `tokens.placeCaret` or `tokens.selectRange`.
+- `position: Signal<number | undefined>` — writable computed bound to
+  `range().start`; writes collapse the range to `{start: pos, end: pos}`.
+- `isAllSelected: Computed<boolean>` — true when the range spans the entire raw
+  value.
+- `isUserSelecting: Signal<boolean>` — true while the user is dragging a
+  selection. When true, `#applyRange` skips DOM placement and the
+  `isUserSelecting` watch on `#applyEditablePolicy` recomputes editability
+  (setting surfaces non-editable so the browser owns the selection).
+- `selectAll()` — sets `range` to `[0, value.length]`.
+- `focusFirst()` — collapses to the first indexed token's start, or falls back to
+  `container.focus()`.
+- `placeAtHandle(handle, boundary?)` — collapses to the `'start'` or `'end'`
+  of a specific token handle; stores the preferred handle so the next
+  `#applyRange` can disambiguate tokens sharing a boundary position.
+- `readRaw()` — returns `tokens.selection()?.raw`: the current window selection
+  as a `RawSelection` or `undefined`. Used by keyboard, clipboard, and overlay
+  consumers.
 
 ## Wiring
 
-Inside `host.onMounted`, `SelectionController` registers DOM listeners (`#trackSelection`, `#trackUserSelecting`, `#focusEmptyEditorOnClick`) and two watches that re-apply the range: one on `range` itself, one on `dom.indexed`.
+Inside `host.onMounted`, `SelectionController` registers three DOM listeners and
+four watches:
+
+**Listeners** (all private):
+
+- `#focusEmptyEditorOnClick` — focuses the first child when the editor has a
+  single empty text token.
+- `#trackSelection` — syncs `range` from `tokens.selection()` on `focusin`,
+  `focusout`, and `selectionchange`; clears range when focus leaves the container
+  or lands in a control root.
+- `#trackUserSelecting` — sets/clears `isUserSelecting` by watching `mousedown` /
+  `mousemove` / `mouseup` / `selectionchange`.
+
+**Watches**:
+
+- `tokens.changed` → `#applyRange` (re-applies the stored range after each
+  commit, once the DOM is consistent).
+- `props.readOnly` → `#applyEditablePolicy` (computes `{editable, readOnly}`
+  and hands it to `tokens.setEditable` — policy lives here, application in the
+  model).
+- `isUserSelecting` → `#applyEditablePolicy`.
+- `range` → `#applyRange`.

@@ -22,11 +22,11 @@ describe('OverlayController', () => {
 	})
 
 	describe('ownership', () => {
-		it('owns match, element (DOM ref), slot (computed), select, close', () => {
+		it('owns match, element (DOM ref), slot (computed), choose, close', () => {
 			expect(typeof store.overlay.match).toBe('function')
 			expect(typeof store.overlay.element).toBe('function')
 			expect(typeof store.overlay.slot).toBe('function')
-			expect(typeof store.overlay.select).toBe('function')
+			expect(typeof store.overlay.choose).toBe('function')
 			expect(typeof store.overlay.close).toBe('function')
 		})
 	})
@@ -119,14 +119,9 @@ describe('OverlayController', () => {
 		})
 	})
 
-	describe('select()', () => {
+	describe('choose()', () => {
 		it('delegates trigger replacement to the edit coordinator', () => {
 			const replaceRange = vi.spyOn(store.edit, 'replace')
-			const mark = {
-				type: 'text' as const,
-				content: 'world',
-				position: {start: 0, end: 5},
-			}
 			const match: OverlayMatch = {
 				...stubMatch,
 				source: '@wo',
@@ -137,7 +132,7 @@ describe('OverlayController', () => {
 			store.props.set({options: [{overlay: {trigger: '@'}}]})
 			store.overlay.match(match)
 
-			store.overlay.select({mark, match})
+			store.overlay.choose('world')
 
 			expect(replaceRange).toHaveBeenCalledWith({start: 6, end: 9}, '@[world]')
 			expect(store.overlay.match()).toBeUndefined()

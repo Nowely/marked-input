@@ -1,5 +1,4 @@
 import type {OverlayMatch} from '@markput/core'
-import {createMarkFromOverlay} from '@markput/core'
 import {computed, type Ref, type ComputedRef} from 'vue'
 
 import type {Option} from '../../types'
@@ -27,13 +26,7 @@ export function useOverlay(): OverlayHandler {
 	const style = computed(() => store.overlay.position())
 
 	const close = () => store.overlay.close()
-	const select = (value: {value: string; meta?: string}) => {
-		const match = matchRef.value
-		if (!match) return
-		const mark = createMarkFromOverlay(match, value.value, value.meta)
-		store.overlay.select({mark, match})
-		store.overlay.close()
-	}
+	const select = (value: {value: string; meta?: string}) => store.overlay.choose(value.value, value.meta)
 
 	const ref = {
 		get current() {

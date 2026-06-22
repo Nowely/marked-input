@@ -162,7 +162,6 @@ const InteractiveMark = ({children}: MarkProps) => {
 		console.log('Mark clicked:', {
 			depth: mark.depth,
 			hasNestedMarks: mark.hasNestedMarks,
-			key: mark.key,
 		})
 	}
 

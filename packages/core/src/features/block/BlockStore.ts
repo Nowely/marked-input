@@ -1,7 +1,33 @@
 import {signal} from '../../shared/signals'
 import type {DragAction, DragActions} from '../../shared/types'
-import {getDragDropPosition, getDragTargetIndex, parseDragSourceIndex} from '../../shared/utils/dragUtils'
-import {isClickOutside, isEscapeKey} from '../../shared/utils/menuUtils'
+
+function getDragDropPosition(clientY: number, rect: DOMRect): 'before' | 'after' {
+	return clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+}
+
+function parseDragSourceIndex(dataTransfer: DataTransfer): number | null {
+	const index = parseInt(dataTransfer.getData('text/plain'), 10)
+	return isNaN(index) ? null : index
+}
+
+function getDragTargetIndex(blockIndex: number, position: 'before' | 'after'): number {
+	return position === 'before' ? blockIndex : blockIndex + 1
+}
+
+/**
+ * Returns true when `target` is outside `element` (i.e. not contained by it).
+ * Useful for closing a menu when the user clicks outside of it.
+ */
+function isClickOutside(target: EventTarget | null, element: Element | null): boolean {
+	return !!element && !element.contains(target instanceof Node ? target : null)
+}
+
+/**
+ * Returns true when the keyboard event is the Escape key.
+ */
+function isEscapeKey(e: KeyboardEvent): boolean {
+	return e.key === 'Escape'
+}
 
 export type DropPosition = 'before' | 'after' | null
 

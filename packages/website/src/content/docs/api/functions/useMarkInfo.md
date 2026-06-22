@@ -9,7 +9,9 @@ title: "useMarkInfo"
 function useMarkInfo(): MarkInfo;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useMarkInfo.tsx:6](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useMarkInfo.tsx#L6)
+Defined in: [react/markput/src/lib/hooks/useMarkInfo.tsx:7](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useMarkInfo.tsx#L7)
+
+Mark metadata for the surrounding mark token context.
 
 ## Returns
 

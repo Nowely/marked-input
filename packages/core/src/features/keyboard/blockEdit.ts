@@ -1,15 +1,13 @@
-import {htmlChildren, isHtmlElement} from '../../shared/checkers'
 import {KEYBOARD} from '../../shared/constants'
 import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
+type KbCtx = Pick<Store, 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
-import {addDragRow, mergeDragRows, canMergeRows} from '../block/operations'
+import {addDragRow, mergeDragRows, canMergeRows, deleteDragRow} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
-import type {Token} from '../parsing'
-import * as caretDom from '../selection/caretDom'
+import type {Token, TokenHandle} from '../tokens'
 import {rawRangeFromInputEvent} from './inputRange'
 
 function isTextLikeRow(token: Token): boolean {
@@ -17,19 +15,24 @@ function isTextLikeRow(token: Token): boolean {
 	return token.descriptor.hasSlot && token.descriptor.segments.length === 1
 }
 
-type ActiveBlock = {
-	blockDivs: HTMLElement[]
+type ActiveRow = {
+	handle: TokenHandle
 	index: number
-	div: HTMLElement
 }
 
-function findActiveBlock(container: HTMLElement): ActiveBlock | undefined {
+function rowHandle(store: KbCtx, rowIndex: number): TokenHandle | undefined {
+	return store.tokens.handleOf(store.tokens.current()[rowIndex])
+}
+
+function findActiveRow(store: KbCtx): ActiveRow | undefined {
 	const active = document.activeElement
-	if (!isHtmlElement(active) || !container.contains(active)) return undefined
-	const blockDivs = htmlChildren(container)
-	const index = blockDivs.findIndex(div => div === active || div.contains(active))
-	if (index === -1) return undefined
-	return {blockDivs, index, div: blockDivs[index]}
+	if (!active) return undefined
+	const handle = store.tokens.handleAt(active)
+	if (!handle || handle === 'control') return undefined
+	const index = handle.path()[0]
+	const row = rowHandle(store, index)
+	if (!row) return undefined
+	return {handle: row, index}
 }
 
 export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
@@ -37,13 +40,13 @@ export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 		if (!store.props.layout.isBlock()) return
 
 		if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
-			handleBlockArrowLeftRight(store, container, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
+			handleBlockArrowLeftRight(store, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
 		} else if (e.key === KEYBOARD.UP || e.key === KEYBOARD.DOWN) {
-			handleArrowUpDown(store, container, e)
+			handleArrowUpDown(store, e)
 		}
 
-		handleDelete(store, container, e)
-		handleEnter(store, container, e)
+		handleDelete(store, e)
+		handleEnter(store, e)
 	})
 
 	listen(
@@ -58,11 +61,13 @@ export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 	)
 }
 
-function handleDelete(store: KbCtx, container: HTMLElement, event: KeyboardEvent) {
-	const active = findActiveBlock(container)
+function handleDelete(store: KbCtx, event: KeyboardEvent) {
+	const active = findActiveRow(store)
 	if (!active) return
-	const {blockDivs, index: blockIndex} = active
+	const {handle, index: blockIndex} = active
 
+	// Fresh read: row positions slice value.current(); tokens() is the reconciled
+	// tree consistent with the value, so the cuts hit the right ranges.
 	const rows = store.tokens.current()
 	if (blockIndex >= rows.length) return
 
@@ -70,57 +75,46 @@ function handleDelete(store: KbCtx, container: HTMLElement, event: KeyboardEvent
 	const value = store.value.current()
 
 	if (event.key === KEYBOARD.BACKSPACE) {
-		const blockDiv = blockDivs[blockIndex]
-		const caretAtStart = caretDom.getCaretIndex(blockDiv) === 0
-
 		const blockText = 'content' in token ? token.content : ''
 		if (blockText === '') {
 			event.preventDefault()
-			const newValue =
-				rows.length <= 1
-					? ''
-					: (() => {
-							if (blockIndex >= rows.length - 1) return value.slice(0, rows[blockIndex - 1].position.end)
-							return (
-								value.slice(0, rows[blockIndex].position.start) +
-								value.slice(rows[blockIndex + 1].position.start)
-							)
-						})()
+			const newValue = deleteDragRow(value, rows, blockIndex)
 			const previous = rows.at(Math.max(0, blockIndex - 1))
 			const pos = previous ? previous.position.end : 0
 			store.edit.replace({start: 0, end: -1}, newValue, pos)
 			return
 		}
 
+		const caretAtStart = (handle.caretIndex() ?? 0) === 0
+
 		if (caretAtStart && blockIndex > 0) {
-			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex - 1, blockDivs, 'end')
+			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex - 1, 'end')
 			return
 		}
 	}
 
 	if (event.key === KEYBOARD.DELETE) {
-		const blockDiv = blockDivs[blockIndex]
-		const caretIndex = caretDom.getCaretIndex(blockDiv)
-		const caretAtEnd = caretIndex === blockDiv.textContent.length
+		const caretIndex = handle.caretIndex() ?? 0
+		const caretAtEnd = caretIndex === handle.textLength()
 		const caretAtStart = caretIndex === 0
 
 		if (caretAtStart && blockIndex > 0) {
-			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex - 1, blockDivs, 'end')
+			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex - 1, 'end')
 			return
 		}
 
 		if (caretAtEnd && blockIndex < rows.length - 1) {
-			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex + 1, blockDivs, 'start')
+			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex + 1, 'start')
 			return
 		}
 	}
 }
 
-function handleEnter(store: KbCtx, container: HTMLElement, event: KeyboardEvent) {
+function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
-	const active = findActiveBlock(container)
+	const active = findActiveRow(store)
 	if (!active) return
 
 	event.preventDefault()
@@ -144,83 +138,79 @@ function handleEnter(store: KbCtx, container: HTMLElement, event: KeyboardEvent)
 	store.edit.replace({start: absolutePos, end: absolutePos}, newRowContent)
 }
 
-function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' | 'end'): void {
+function focusRow(store: KbCtx, token: Token, rowIndex: number, caret: 'start' | 'end'): void {
 	if (token.type === 'mark') {
-		const path = store.tokens.index().pathFor(token)
-		const address = path ? store.tokens.index().addressFor(path) : undefined
-		if (address && store.selection.placeAtAddress(address, caret)) return
+		// Bridge the row token by its id to its live handle; placeAtHandle reads
+		// the handle's current positions to disambiguate a shared boundary.
+		const handle = store.tokens.handleOf(token)
+		if (handle && store.selection.placeAtHandle(handle, caret)) return
 	}
 
+	const row = rowHandle(store, rowIndex)
+	if (!row) return
 	row.focus()
-	if (caret === 'start') {
-		caretDom.setAtElement(row, 0)
-		return
-	}
-	caretDom.setAtElement(row, Infinity)
+	row.placeCaret(caret === 'start' ? 0 : Infinity)
 }
 
-function handleBlockArrowLeftRight(
-	store: KbCtx,
-	container: HTMLElement,
-	event: KeyboardEvent,
-	direction: 'left' | 'right'
-): void {
-	const active = findActiveBlock(container)
+function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction: 'left' | 'right'): void {
+	const active = findActiveRow(store)
 	if (!active) return
-	const {blockDivs, index: blockIndex, div: blockDiv} = active
+	const {handle, index: blockIndex} = active
+	const rowCount = store.tokens.current().length
 
 	if (direction === 'left') {
-		if (caretDom.getCaretIndex(blockDiv) !== 0) return
+		if ((handle.caretIndex() ?? 0) !== 0) return
 		if (blockIndex === 0) return
 		event.preventDefault()
-		const prevBlock = blockDivs[blockIndex - 1]
-		prevBlock.focus()
-		caretDom.setAtElement(prevBlock, Infinity)
+		const prev = rowHandle(store, blockIndex - 1)
+		if (!prev) return
+		prev.focus()
+		prev.placeCaret(Infinity)
 		return
 	}
 
-	const caretIndex = caretDom.getCaretIndex(blockDiv)
-	const textLen = blockDiv.textContent.length
-	if (caretIndex !== textLen) return
-	if (blockIndex >= blockDivs.length - 1) return
+	if ((handle.caretIndex() ?? 0) !== handle.textLength()) return
+	if (blockIndex >= rowCount - 1) return
 	event.preventDefault()
-	const nextBlock = blockDivs[blockIndex + 1]
-	nextBlock.focus()
-	caretDom.setAtElement(nextBlock, 0)
+	const next = rowHandle(store, blockIndex + 1)
+	if (!next) return
+	next.focus()
+	next.placeCaret(0)
 }
 
-function handleArrowUpDown(store: KbCtx, container: HTMLElement, event: KeyboardEvent) {
-	const active = findActiveBlock(container)
+function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
+	const active = findActiveRow(store)
 	if (!active) return
-	const {blockDivs, index: blockIndex, div: blockDiv} = active
+	const {handle, index: blockIndex} = active
+	const rowCount = store.tokens.current().length
 
 	if (event.key === KEYBOARD.UP) {
-		if (!caretDom.isOnFirstLine(blockDiv)) return
+		if (!handle.caretOnFirstLine()) return
 		if (blockIndex === 0) return
 
 		event.preventDefault()
-		const caretRect = caretDom.getRect()
-		const caretX = caretRect?.left ?? blockDiv.getBoundingClientRect().left
-		const prevBlockDiv = blockDivs[blockIndex - 1]
-		prevBlockDiv.focus()
-		const prevRect = prevBlockDiv.getBoundingClientRect()
-		caretDom.setAtX(prevBlockDiv, caretX, prevRect.bottom - 4)
+		const caretX = store.tokens.selection()?.rect?.left ?? handle.rect()?.left ?? 0
+		const prev = rowHandle(store, blockIndex - 1)
+		if (!prev) return
+		prev.focus()
+		const prevRect = prev.rect()
+		prev.placeCaretAtX(caretX, prevRect ? prevRect.bottom - 4 : undefined)
 	} else if (event.key === KEYBOARD.DOWN) {
-		if (!caretDom.isOnLastLine(blockDiv)) return
-		if (blockIndex >= blockDivs.length - 1) return
+		if (!handle.caretOnLastLine()) return
+		if (blockIndex >= rowCount - 1) return
 
 		event.preventDefault()
-		const caretRect = caretDom.getRect()
-		const caretX = caretRect?.left ?? blockDiv.getBoundingClientRect().left
-		const nextBlockDiv = blockDivs[blockIndex + 1]
-		nextBlockDiv.focus()
-		const nextRect = nextBlockDiv.getBoundingClientRect()
-		caretDom.setAtX(nextBlockDiv, caretX, nextRect.top + 4)
+		const caretX = store.tokens.selection()?.rect?.left ?? handle.rect()?.left ?? 0
+		const next = rowHandle(store, blockIndex + 1)
+		if (!next) return
+		next.focus()
+		const nextRect = next.rect()
+		next.placeCaretAtX(caretX, nextRect ? nextRect.top + 4 : undefined)
 	}
 }
 
 function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent) {
-	if (!findActiveBlock(container)) return
+	if (!findActiveRow(store)) return
 
 	switch (event.inputType) {
 		case 'insertText': {
@@ -250,7 +240,7 @@ function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: Inp
 function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string): void {
 	const raw = rawRangeFromInputEvent(store, event)
 	if (!raw) return
-	const range = rangeForBlockInput(store, event, raw.range)
+	const range = rangeForBlockInput(store, event, raw)
 	if (!range) return
 
 	event.preventDefault()
@@ -273,11 +263,10 @@ function rangeForBlockInput(store: KbCtx, event: InputEvent, range: Range): Rang
 function mergeOrFocusNeighbor(
 	store: KbCtx,
 	event: KeyboardEvent,
-	rows: Token[],
+	rows: readonly Token[],
 	value: string,
 	fromIndex: number,
 	toIndex: number,
-	blockDivs: HTMLElement[],
 	caretOnFocus: 'start' | 'end'
 ): void {
 	const joinIndex = Math.max(fromIndex, toIndex)
@@ -289,5 +278,5 @@ function mergeOrFocusNeighbor(
 		store.edit.replace({start: 0, end: -1}, merged.value, merged.caret)
 		return
 	}
-	focusRow(store, rows[toIndex], blockDivs[toIndex], caretOnFocus)
+	focusRow(store, rows[toIndex], toIndex, caretOnFocus)
 }

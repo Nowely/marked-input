@@ -4,6 +4,7 @@ import {computed} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
+import {unwrapEl} from '../lib/unwrapEl'
 import BlockMenu from './BlockMenu.vue'
 import DragHandle from './DragHandle.vue'
 import DropIndicator from './DropIndicator.vue'
@@ -33,8 +34,7 @@ const otherSlotProps = computed(() => {
 })
 
 const setBlockRef = (el: unknown) => {
-	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
-	const element = (resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLElement | null
+	const element = unwrapEl(el)
 	blockStore.attachContainer(element, props.blockIndex, {action: store.block.action})
 }
 </script>
@@ -48,10 +48,10 @@ const setBlockRef = (el: unknown) => {
 		:class="[styles.Block, slotProps?.className as string | undefined]"
 		:style="blockStyle"
 	>
-		<DropIndicator :token="token" position="before" />
+		<DropIndicator :token="token" :block-index="blockIndex" position="before" />
 		<DragHandle :token="token" :block-index="blockIndex" />
-		<Token :token="token" />
-		<DropIndicator :token="token" position="after" />
-		<BlockMenu :token="token" />
+		<Token :token="token" :path="[blockIndex]" />
+		<DropIndicator :token="token" :block-index="blockIndex" position="after" />
+		<BlockMenu :token="token" :block-index="blockIndex" />
 	</component>
 </template>

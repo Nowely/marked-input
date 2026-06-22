@@ -7,7 +7,8 @@ import {Store} from './Store'
 describe('Store', () => {
 	it('construct with no arguments', () => {
 		const store = new Store()
-		expect(store.tokens.current()).toEqual([{type: 'text', content: '', position: {start: 0, end: 0}}])
+		// The fresh read: nothing is reconciled before a container mounts.
+		expect(store.tokens.current()).toEqual([])
 		expect(store.props.readOnly()).toBe(false)
 	})
 
@@ -67,14 +68,14 @@ describe('Store', () => {
 			const store = new Store()
 			store.selection.isUserSelecting(true)
 			expect(store.selection.isUserSelecting()).toBe(true)
-			expect(store.tokens.current()).toEqual([{type: 'text', content: '', position: {start: 0, end: 0}}])
+			expect(store.value.current()).toBe('')
 		})
 
 		it('batch multiple internal writes so effects fire once', () => {
 			const store = new Store()
 			const effectSpy = vi.fn()
 			effect(() => {
-				store.tokens.current()
+				store.value.current()
 				store.selection.isUserSelecting()
 				effectSpy()
 			})
@@ -128,10 +129,15 @@ describe('Store', () => {
 	})
 
 	describe('value edits', () => {
+		// Tokens publish only on a mounted store; with a bare container every
+		// commit settles structurally and current() is the parse of the accepted value.
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
+			store.host.container(document.createElement('div'))
 			store.value.current('hello')
-			expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.tokens.current()).toMatchObject([
+				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
+			])
 			expect(store.value.current()).toBe('hello')
 		})
 
@@ -146,12 +152,15 @@ describe('Store', () => {
 
 		it('emits without committing until controlled replacement is echoed', () => {
 			const store = new Store()
+			store.host.container(document.createElement('div'))
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
 			store.value.current('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
-			expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.tokens.current()).toMatchObject([
+				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
+			])
 		})
 
 		it('not throw when onChange is not set', () => {

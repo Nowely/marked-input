@@ -1,7 +1,13 @@
 import type {CoreOption, CoreSlotProps, CoreSlots, Slot} from '../../shared/types'
 import {convertDataAttrs} from '../../shared/utils/dataAttributes'
-import type {Token} from '../parsing'
-import {resolveOptionSlot} from './resolveOptionSlot'
+import type {Token} from '../tokens'
+
+function resolveOptionSlot<T extends object>(optionConfig: T | ((base: T) => T) | undefined, baseProps: T): T {
+	if (optionConfig !== undefined) {
+		return typeof optionConfig === 'function' ? optionConfig(baseProps) : optionConfig
+	}
+	return baseProps
+}
 
 export type SlotName = 'container' | 'block'
 

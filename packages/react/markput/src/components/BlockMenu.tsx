@@ -9,20 +9,19 @@ import {Popup} from './Popup/Popup'
 
 import styles from '@markput/core/styles.module.css'
 
-export const BlockMenu = memo(({token}: {token: Token}) => {
-	const {blockStore, menuOpen, menuPosition, refs, index} = useMarkput(s => {
+export const BlockMenu = memo(({token, blockIndex}: {token: Token; blockIndex: number}) => {
+	const {blockStore, menuOpen, menuPosition, tokens} = useMarkput(s => {
 		const blockStore = s.block.get(token)
 
 		return {
 			blockStore,
 			menuOpen: blockStore.state.menuOpen,
 			menuPosition: blockStore.state.menuPosition,
-			refs: s.refs,
-			index: s.tokens.index,
+			tokens: s.tokens,
 		}
 	})
-	const path = index.pathFor(token)
-	const controlRef = useMemo(() => (path ? refs.control(path) : undefined), [refs, path])
+	// A row's path is its block index by construction.
+	const controlRef = useMemo(() => tokens.control([blockIndex]), [tokens, blockIndex])
 
 	if (!menuOpen) return null
 
@@ -30,7 +29,7 @@ export const BlockMenu = memo(({token}: {token: Token}) => {
 		<Popup
 			ref={(el: HTMLDivElement | null) => {
 				blockStore.attachMenu(el)
-				controlRef?.(el)
+				controlRef(el)
 			}}
 			style={{top: menuPosition.top, left: menuPosition.left}}
 		>

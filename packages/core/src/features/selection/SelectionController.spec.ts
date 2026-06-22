@@ -2,6 +2,7 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
+import {resolvePath} from '../tokens/tokenIndex'
 
 function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
@@ -53,7 +54,7 @@ function mountStructuralNestedWithChildSequence(value = '@[before @[nested] afte
 	container.append(leading, outer, trailing)
 	document.body.append(container)
 	store.host.container(container)
-	store.refs.children([1])(host)
+	store.tokens.children([1])(host)
 	store.host.rendered()
 	return {store, container, leading, outer, control, host, before, inner, after, trailing}
 }
@@ -69,7 +70,7 @@ function mountStructuralBlockWithControl(value: string) {
 	container.append(row)
 	document.body.append(container)
 	store.host.container(container)
-	store.refs.control([0])(control)
+	store.tokens.control([0])(control)
 	store.host.rendered()
 	const textNode = textSurface.firstChild
 	const controlText = control.firstChild
@@ -200,8 +201,8 @@ describe('SelectionController', () => {
 		})
 	})
 
-	describe('restoration via bridge.indexed', () => {
-		it('restores range after indexed fires', () => {
+	describe('restoration via tokens.changed', () => {
+		it('restores range after the model announces consistency', () => {
 			const store = new Store()
 			const container = document.createElement('div')
 			const span = document.createElement('span')
@@ -336,41 +337,41 @@ describe('SelectionController', () => {
 	describe('boundary mapping', () => {
 		it('maps registered child sequence host boundaries to nested child positions', () => {
 			const {store, container, host} = mountStructuralNestedWithChildSequence()
-			const tokenIndex = store.tokens.index()
-			const beforeToken = tokenIndex.resolve([1, 0])
-			const innerToken = tokenIndex.resolve([1, 1])
-			const afterToken = tokenIndex.resolve([1, 2])
+			const tree = store.tokens.current()
+			const beforeToken = resolvePath(tree, [1, 0])
+			const innerToken = resolvePath(tree, [1, 1])
+			const afterToken = resolvePath(tree, [1, 2])
 
 			expect(beforeToken?.position.end).toBe(9)
 			expect(innerToken?.position.start).toBe(9)
 			expect(innerToken?.position.end).toBe(18)
 			expect(afterToken?.position.start).toBe(18)
-			expect(store.selection.rawPositionFromBoundary(host, 1, 'before')).toBe(beforeToken?.position.end)
-			expect(store.selection.rawPositionFromBoundary(host, 1, 'after')).toBe(innerToken?.position.start)
-			expect(store.selection.rawPositionFromBoundary(host, 2, 'before')).toBe(innerToken?.position.end)
-			expect(store.selection.rawPositionFromBoundary(host, 2, 'after')).toBe(afterToken?.position.start)
+			expect(store.tokens.boundaryFor(host, 1, 'before')).toBe(beforeToken?.position.end)
+			expect(store.tokens.boundaryFor(host, 1, 'after')).toBe(innerToken?.position.start)
+			expect(store.tokens.boundaryFor(host, 2, 'before')).toBe(innerToken?.position.end)
+			expect(store.tokens.boundaryFor(host, 2, 'after')).toBe(afterToken?.position.start)
 			container.remove()
 		})
 
 		it('maps text-surface boundaries to raw UTF-16 positions', () => {
 			const {store, container, textNode} = mountStructuralInline('hello')
 
-			expect(store.selection.rawPositionFromBoundary(textNode, 2)).toBe(2)
+			expect(store.tokens.boundaryFor(textNode, 2)).toBe(2)
 			container.remove()
 		})
 
 		it('rejects boundaries that split surrogate pairs', () => {
 			const {store, container, textNode} = mountStructuralInline('a😀b')
 
-			expect(store.selection.rawPositionFromBoundary(textNode, 2)).toBeUndefined()
+			expect(store.tokens.boundaryFor(textNode, 2)).toBeUndefined()
 			container.remove()
 		})
 
 		it('maps token shell boundaries by affinity', () => {
 			const {store, container, textSurface} = mountStructuralInline('hello')
 
-			expect(store.selection.rawPositionFromBoundary(textSurface, 0, 'before')).toBe(0)
-			expect(store.selection.rawPositionFromBoundary(textSurface, 1, 'after')).toBe(5)
+			expect(store.tokens.boundaryFor(textSurface, 0, 'before')).toBe(0)
+			expect(store.tokens.boundaryFor(textSurface, 1, 'after')).toBe(5)
 			container.remove()
 		})
 
@@ -384,7 +385,7 @@ describe('SelectionController', () => {
 			if (!(descendantText instanceof Text)) throw new Error('Mark descendant did not render a text node')
 			store.host.rendered()
 
-			expect(store.selection.rawPositionFromBoundary(descendantText, 0, 'after')).toBeUndefined()
+			expect(store.tokens.boundaryFor(descendantText, 0, 'after')).toBeUndefined()
 			container.remove()
 		})
 

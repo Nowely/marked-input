@@ -1,5 +1,5 @@
 import type {CoreOption, DragAction} from '../../shared/types'
-import type {MarkToken, Token} from '../parsing'
+import type {MarkToken, Token} from '../tokens'
 import {createRowContent} from './createRowContent'
 
 export type DragApplyResult = {
@@ -28,8 +28,7 @@ export function canMergeRows(a: Token, b: Token): boolean {
 	return false
 }
 
-export function addDragRow(value: string, rows: Token[], afterIndex: number, newRowContent: string): string {
-	if (rows.length === 0) return value + newRowContent
+export function addDragRow(value: string, rows: readonly Token[], afterIndex: number, newRowContent: string): string {
 	if (value === '' || (rows.length === 1 && rows[0].type === 'text' && rows[0].content === ''))
 		return newRowContent + newRowContent
 	if (afterIndex >= rows.length - 1) return value + newRowContent
@@ -38,7 +37,7 @@ export function addDragRow(value: string, rows: Token[], afterIndex: number, new
 	return value.slice(0, insertPos) + newRowContent + value.slice(insertPos)
 }
 
-export function deleteDragRow(value: string, rows: Token[], index: number): string {
+export function deleteDragRow(value: string, rows: readonly Token[], index: number): string {
 	if (rows.length <= 1) return ''
 
 	if (index >= rows.length - 1) {
@@ -48,7 +47,7 @@ export function deleteDragRow(value: string, rows: Token[], index: number): stri
 	return value.slice(0, rows[index].position.start) + value.slice(rows[index + 1].position.start)
 }
 
-export function duplicateDragRow(value: string, rows: Token[], index: number): string {
+function duplicateDragRow(value: string, rows: Token[], index: number): string {
 	const row = rows[index]
 	const rowText = value.substring(row.position.start, row.position.end)
 
@@ -65,7 +64,7 @@ export function duplicateDragRow(value: string, rows: Token[], index: number): s
  * For slot-leading marks: removes the first mark's literal suffix, merging slot content.
  * Returns the new value and the raw-value caret position at the join point.
  */
-export function mergeDragRows(value: string, rows: Token[], index: number): {value: string; caret: number} {
+export function mergeDragRows(value: string, rows: readonly Token[], index: number): {value: string; caret: number} {
 	if (index <= 0 || index >= rows.length) return {value, caret: 0}
 	const prev = rows[index - 1]
 	const curr = rows[index]
@@ -81,7 +80,7 @@ export function mergeDragRows(value: string, rows: Token[], index: number): {val
  * Reorders rows by moving the row at `sourceIndex` to `targetIndex`.
  * Gaps between adjacent rows are extracted from the original value and preserved.
  */
-export function reorderDragRows(value: string, rows: Token[], sourceIndex: number, targetIndex: number): string {
+function reorderDragRows(value: string, rows: Token[], sourceIndex: number, targetIndex: number): string {
 	if (sourceIndex === targetIndex || sourceIndex === targetIndex - 1) return value
 	if (rows.length < 2) return value
 	if (sourceIndex < 0 || sourceIndex >= rows.length) return value
@@ -132,7 +131,7 @@ function transformValue(value: string, rows: readonly Token[], action: DragActio
 		case 'add':
 			return addDragRow(value, [...rows], action.afterIndex, createRowContent(options))
 		case 'delete':
-			return deleteDragRow(value, [...rows], action.index)
+			return deleteDragRow(value, rows, action.index)
 		case 'duplicate':
 			return duplicateDragRow(value, [...rows], action.index)
 	}

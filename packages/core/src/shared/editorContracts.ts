@@ -1,11 +1,6 @@
-import type {Token} from '../features/parsing/parser/types'
+import type {Token} from '../features/tokens'
 
 export type TokenPath = readonly number[]
-
-export type TokenAddress = {
-	readonly path: TokenPath
-	readonly token: Token
-}
 
 export type DomRef = (element: HTMLElement | null) => void
 
@@ -27,16 +22,22 @@ export type MarkPatch = {
 	readonly slot?: OptionalMarkFieldPatch
 }
 
-export type MarkSnapshot = {
-	readonly value: string
-	readonly meta: string | undefined
-	readonly slot: string | undefined
-	readonly readOnly: boolean
+export type MarkInfo = {
+	/** Nesting level: a top-level mark has depth 0. */
+	readonly depth: number
+	/** Whether this mark directly contains other marks. */
+	readonly hasNestedMarks: boolean
 }
 
-export type MarkInfo = {
-	readonly address: TokenAddress
-	readonly depth: number
-	readonly hasNestedMarks: boolean
-	readonly key: string
+/**
+ * Build a {@link MarkInfo} snapshot for a mark token at the given render-tree path.
+ * `path` is an input used to compute `depth = path.length - 1`; it is not returned.
+ * Throws if `token` is not a mark token.
+ */
+export function toMarkInfo(token: Token, path: TokenPath): MarkInfo {
+	if (token.type !== 'mark') throw new Error('toMarkInfo: token is not a mark')
+	return {
+		depth: path.length - 1,
+		hasNestedMarks: token.children.some(child => child.type === 'mark'),
+	}
 }

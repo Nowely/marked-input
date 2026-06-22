@@ -7,8 +7,7 @@ Resolver utilities that implement the component slot/customization system — al
 - **resolveSlot**: Resolves a named slot to its component (defaulting to `'div'` or `'span'`)
 - **resolveSlotProps**: Resolves named slot props with data-attribute conversion
 - **resolveMarkSlot**: Resolves the mark component for a given token (text → Span, mark → option's Mark or global Mark)
-- **resolveOverlaySlot**: Resolves the overlay component from option/global/default
-- **resolveOptionSlot**: Resolves slot prop configs that can be either an object or a function `(baseProps) => props`
+- **resolveOverlaySlot**: Resolves the overlay component from option/global/default (internal; `OverlayController` imports it directly from `resolveSlot.ts`)
 
 ## Usage
 

@@ -10,7 +10,7 @@ This RFC is historical. Nested marks now use the core editor engine primitives i
 - React and Vue render adapter-owned token shells and slot roots.
 - `DomController` registers those structures and maps DOM selections to raw value ranges.
 - `useMark()` returns a `MarkController` for commands.
-- `useMarkInfo()` returns structural metadata (`address`, `depth`, `hasNestedMarks`, `key`).
+- `useMarkInfo()` returns structural metadata (`depth`, `hasNestedMarks`).
 
 Current authoring pattern:
 

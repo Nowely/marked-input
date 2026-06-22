@@ -3,9 +3,9 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
+type KbCtx = Pick<Store, 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
-import type {Token} from '../parsing'
+import type {Token} from '../tokens'
 import {rawRangeFromInputEvent} from './inputRange'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
@@ -49,7 +49,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	store.edit.replace(range, '')
 }
 
-export function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent): void {
+function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent): void {
 	if (store.selection.isAllSelected()) {
 		if (event.inputType === 'insertFromPaste') {
 			event.preventDefault()
@@ -69,7 +69,7 @@ export function handleBeforeInput(store: KbCtx, container: HTMLElement, event: I
 	const replacement = replacementForInput(container, event)
 	if (replacement === undefined) return
 
-	const range = rangeForInput(store, event, raw.range)
+	const range = rangeForInput(store, event, raw)
 	if (!range) return
 
 	event.preventDefault()
@@ -94,6 +94,9 @@ function rangeForInput(store: KbCtx, event: InputEvent, range: Range): Range | u
 function rangeForDelete(store: KbCtx, inputType: string, range: Range): Range | undefined {
 	if (range.start !== range.end) return range
 
+	// Fresh read: adjacency compares mark POSITIONS against the live caret
+	// position; tokens() is the reconciled tree consistent with value.current()
+	// (typing right before a mark, then deleting, must still swallow the mark).
 	const adjacentMark = adjacentMarkRange(store.tokens.current(), range.start, inputType.endsWith('Backward'))
 	if (adjacentMark) return adjacentMark
 

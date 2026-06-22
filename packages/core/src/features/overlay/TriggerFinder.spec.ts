@@ -1,34 +1,53 @@
-/* oxlint-disable no-unsafe-type-assertion */
-import {afterEach, describe, expect, it, vi} from 'vitest'
+import {afterEach, beforeAll, describe, expect, it} from 'vitest'
 
-import type {Markup} from '../parsing'
+import {Store} from '../../store/Store'
+import type {Markup} from '../tokens'
 import {TriggerFinder} from './TriggerFinder'
 
-function mockSelection(text: string, offset: number): Text {
+// Mount a real store once for the file. The span element is registered in
+// the token index so boundaryFor can resolve text nodes placed inside it.
+let store: ReturnType<typeof mountInline>['store']
+let span: HTMLSpanElement
+
+function mountInline(value: string) {
+	const s = new Store()
+	s.props.set({defaultValue: value})
+	const container = document.createElement('div')
+	const sp = document.createElement('span')
+	container.append(sp)
+	document.body.append(container)
+	s.host.container(container)
+	s.host.rendered()
+	return {store: s, container, span: sp}
+}
+
+// anchorIn creates a text node INSIDE the mounted span so that
+// boundaryFor can resolve it via the element index.
+function anchorIn(
+	text: string,
+	offset: number,
+	isCollapsed = true
+): {node: Node; offset: number; isCollapsed: boolean} {
 	const node = document.createTextNode(text)
-	document.body.appendChild(node)
-	vi.spyOn(window, 'getSelection').mockReturnValue({
-		anchorNode: node,
-		anchorOffset: offset,
-		isCollapsed: true,
-		focusNode: node,
-		focusOffset: offset,
-		rangeCount: 1,
-	} as unknown as Selection)
-	return node
+	span.appendChild(node)
+	return {node, offset, isCollapsed}
 }
 
 describe(`Utility: ${TriggerFinder.name}`, () => {
+	beforeAll(() => {
+		const mounted = mountInline('Hello @world')
+		store = mounted.store
+		span = mounted.span
+	})
+
 	afterEach(() => {
-		vi.restoreAllMocks()
-		document.body.innerHTML = ''
+		// Remove only the text nodes added by anchorIn; keep the mounted container.
+		span.replaceChildren()
 	})
 
 	describe('constructor', () => {
 		it('initialize with caret position data', () => {
-			mockSelection('Hello @world', 5)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world', 5))
 
 			expect(finder.span).toBe('Hello @world')
 			expect(finder.node.nodeType).toBe(3)
@@ -36,38 +55,35 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 		})
 
 		it('handle empty span', () => {
-			mockSelection('', 0)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('', 0))
 
 			expect(finder.span).toBe('')
 			expect(finder.dividedText).toEqual({left: '', right: ''})
 		})
 
 		it('handle position at end of span', () => {
-			const span = 'Hello @world'
-			mockSelection(span, span.length)
+			const s = 'Hello @world'
 
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn(s, s.length))
 
-			expect(finder.dividedText).toEqual({left: span, right: ''})
+			expect(finder.dividedText).toEqual({left: s, right: ''})
 		})
 
 		it('throws when no anchor node', () => {
-			vi.spyOn(window, 'getSelection').mockReturnValue({
-				anchorNode: null,
-				isCollapsed: true,
-			} as unknown as Selection)
-			expect(() => new TriggerFinder()).toThrow('Anchor node of selection is not exists!')
+			// No selection in the test environment → selectionAnchor() returns undefined → throws.
+			expect(() => new TriggerFinder(store.tokens)).toThrow('Anchor node of selection is not exists!')
 		})
 	})
 
 	describe('static find', () => {
 		it('return TriggerFinder instance when position is selected', () => {
-			mockSelection('Hello @world', 7)
+			// Text node is inside the mounted span → boundaryFor resolves correctly.
+			// The span's single text token starts at position 0, so boundaryFor(node, 12) = 12
+			// and range = {start: 12 - 6, end: 12} = {start: 6, end: 12}.
+			const anchor = anchorIn('Hello @world', 7)
 
 			const options = [{trigger: '@', markup: '@[__label__](__value__)'}]
-			const result = TriggerFinder.find(options, opt => opt.trigger)
+			const result = TriggerFinder.find(options, opt => opt.trigger, store.tokens, anchor)
 
 			expect(result).toBeInstanceOf(Object)
 			expect(result?.value).toBe('world')
@@ -76,12 +92,10 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 		})
 
 		it('return undefined when selection is not collapsed', () => {
-			vi.spyOn(window, 'getSelection').mockReturnValue({
-				isCollapsed: false,
-			} as unknown as Selection)
+			const anchor = anchorIn('Hello @world', 7, false)
 
 			const options = [{trigger: '@', markup: '@[__label__](__value__)'}]
-			const result = TriggerFinder.find(options, opt => opt.trigger)
+			const result = TriggerFinder.find(options, opt => opt.trigger, store.tokens, anchor)
 
 			expect(result).toBeUndefined()
 		})
@@ -89,39 +103,34 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 	describe('getDividedTextBy', () => {
 		it('correctly divide text by position', () => {
-			mockSelection('Hello @world', 5)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world', 5))
 			const result = finder.getDividedTextBy(7)
 
 			expect(result).toEqual({left: 'Hello @', right: 'world'})
 		})
 
 		it('handle position 0', () => {
-			mockSelection('Hello @world', 5)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world', 5))
 			const result = finder.getDividedTextBy(0)
 
 			expect(result).toEqual({left: '', right: 'Hello @world'})
 		})
 
 		it('handle position at end', () => {
-			const span = 'Hello @world'
-			mockSelection(span, 5)
+			const s = 'Hello @world'
 
-			const finder = new TriggerFinder()
-			const result = finder.getDividedTextBy(span.length)
+			const finder = new TriggerFinder(store.tokens, anchorIn(s, 5))
+			const result = finder.getDividedTextBy(s.length)
 
-			expect(result).toEqual({left: span, right: ''})
+			expect(result).toEqual({left: s, right: ''})
 		})
 	})
 
 	describe('find', () => {
 		it('find trigger match and return OverlayMatch', () => {
-			mockSelection('Hello @world test', 7)
-
-			const finder = new TriggerFinder()
+			// Text node is inside the mounted span → boundaryFor resolves correctly.
+			// boundaryFor(node, 6 + 6 = 12) = 12 → range = {start: 6, end: 12}.
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world test', 7))
 			const options = [{trigger: '@', markup: '@[__value__](__meta__)' as Markup}]
 			const result = finder.find(options, opt => opt.trigger)
 
@@ -136,9 +145,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 		})
 
 		it('return undefined when no trigger found', () => {
-			mockSelection('Hello world', 3)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello world', 3))
 			const options = [{trigger: '@', markup: '@[__value__](__meta__)' as Markup}]
 			const result = finder.find(options, opt => opt.trigger)
 
@@ -146,9 +153,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 		})
 
 		it('prioritize first matching option', () => {
-			mockSelection('Hello @world test', 7)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world test', 7))
 			const options = [
 				{trigger: '@', markup: '@[__value__](__meta__)' as Markup},
 				{trigger: '#', markup: '#[__value__](__meta__)' as Markup},
@@ -161,27 +166,21 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 	describe('matchInTextVia', () => {
 		it('return match object when trigger found', () => {
-			mockSelection('Hello @world test', 7)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world test', 7))
 			const result = finder.matchInTextVia('@')
 
 			expect(result).toEqual({word: 'world', annotation: '@world', index: 6})
 		})
 
 		it('return undefined when no left match', () => {
-			mockSelection('Hello world', 3)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello world', 3))
 			const result = finder.matchInTextVia('@')
 
 			expect(result).toBeUndefined()
 		})
 
 		it('handle custom trigger', () => {
-			mockSelection('Hello #world test', 12)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello #world test', 12))
 			const result = finder.matchInTextVia('#')
 
 			expect(result).toEqual({word: 'world', annotation: '#world', index: 6})
@@ -190,27 +189,21 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 	describe('matchRightPart', () => {
 		it('extract word from right part', () => {
-			mockSelection('Hello @world test', 7)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world test', 7))
 			const result = finder.matchRightPart()
 
 			expect(result).toEqual({word: 'world'})
 		})
 
 		it('handle no word match', () => {
-			mockSelection('Hello @world!', 6)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world!', 6))
 			const result = finder.matchRightPart()
 
 			expect(result).toEqual({word: ''})
 		})
 
 		it('extract only word characters', () => {
-			mockSelection('Hello world! test', 6)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello world! test', 6))
 			const result = finder.matchRightPart()
 
 			expect(result).toEqual({word: 'world'})
@@ -219,9 +212,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 	describe('matchLeftPart', () => {
 		it('find trigger and word before cursor', () => {
-			mockSelection('Hello @world test', 12)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world test', 12))
 			const result = finder.matchLeftPart('@')
 
 			expect(result).toEqual({
@@ -232,27 +223,21 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 		})
 
 		it('return undefined when no match', () => {
-			mockSelection('Hello world', 3)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello world', 3))
 			const result = finder.matchLeftPart('@')
 
 			expect(result).toBeUndefined()
 		})
 
 		it('handle trigger at start of text', () => {
-			mockSelection('@hi test', 3)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('@hi test', 3))
 			const result = finder.matchLeftPart('@')
 
 			expect(result).toEqual({word: 'hi', annotation: '@hi', index: 0})
 		})
 
 		it('handle empty word after trigger', () => {
-			mockSelection('@ test', 1)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('@ test', 1))
 			const result = finder.matchLeftPart('@')
 
 			expect(result).toEqual({word: '', annotation: '@', index: 0})
@@ -261,9 +246,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 	describe('makeTriggerRegex', () => {
 		it('create regex for trigger', () => {
-			mockSelection('Hello @world', 5)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world', 5))
 			const regex = finder.makeTriggerRegex('@')
 
 			expect(regex).toEqual(/@(\w*)$/)
@@ -273,9 +256,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 		})
 
 		it('escape special regex characters', () => {
-			mockSelection('Hello @world', 5)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world', 5))
 			const regex = finder.makeTriggerRegex('.*')
 
 			expect(regex.source).toBe('\\.\\*(\\w*)$')
@@ -283,9 +264,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 		})
 
 		it('handle multi-character triggers', () => {
-			mockSelection('Hello @world', 5)
-
-			const finder = new TriggerFinder()
+			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world', 5))
 			const regex = finder.makeTriggerRegex('@@')
 
 			expect(regex).toEqual(/@@(\w*)$/)
