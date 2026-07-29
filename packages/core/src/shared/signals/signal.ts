@@ -154,7 +154,7 @@ function run(e: EffectNode): void {
 		try {
 			const result = e.fn()
 			if (typeof result === 'function') {
-				e.cleanup = result as () => void
+				e.cleanup = result
 			}
 		} finally {
 			activeSub = prevSub
@@ -433,8 +433,7 @@ export function signal(opts?: {
 	const node: SignalNode<unknown> = {
 		currentValue: seed,
 		pendingValue: seed,
-		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- equalsFn is upstreamed; caller's type contract verified at the call site
-		equalsFn: opts?.equals as ((a: unknown, b: unknown) => boolean) | undefined,
+		equalsFn: opts?.equals,
 		subs: undefined,
 		subsTail: undefined,
 		flags: ReactiveFlags.Mutable,
@@ -533,14 +532,13 @@ export function computed<T>(
 		deps: undefined,
 		depsTail: undefined,
 		flags: ReactiveFlags.None,
-		getter: isWritable ? getterOrOpts.get : (getterOrOpts as (previousValue?: T) => T),
+		getter: isWritable ? getterOrOpts.get : getterOrOpts,
 		equalsFn: (isWritable ? getterOrOpts.equals : opts?.equals) ?? undefined,
 	}
 	const readFn = (computedOper as (this: ComputedNode<T>) => T).bind(node)
 
 	if (!isWritable) {
-		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Computed<T> interface but TS can't verify the call signature
-		return readFn as unknown as Computed<T>
+		return readFn
 	}
 
 	const writableComputed = function writableComputedOper(...args: [T | undefined] | []): T | boolean {
@@ -616,7 +614,7 @@ export function effect(fn: () => void | (() => void)): () => void {
 	try {
 		const result = e.fn()
 		if (typeof result === 'function') {
-			e.cleanup = result as () => void
+			e.cleanup = result
 		}
 	} finally {
 		activeSub = prevSub

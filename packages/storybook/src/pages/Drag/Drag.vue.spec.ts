@@ -1,6 +1,6 @@
 // oxlint-disable typescript-eslint/no-non-null-assertion typescript-eslint/no-unsafe-call
 import {MarkedInput} from '@markput/vue'
-import type {Markup, Option} from '@markput/vue'
+import type {Option} from '@markput/vue'
 import {composeStories} from '@storybook/vue3-vite'
 import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-vue'
@@ -31,8 +31,7 @@ const ParagraphMark = defineComponent({
 	},
 })
 
-// oxlint-disable-next-line no-unsafe-type-assertion
-const paragraphOptions: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: ParagraphMark}]
+const paragraphOptions: Option[] = [{markup: '__slot__\n\n', Mark: ParagraphMark}]
 
 const UncontrolledPlainTextDrag = defineComponent({
 	setup() {

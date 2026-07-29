@@ -1,4 +1,4 @@
-import type {Markup, Option} from '@markput/vue'
+import type {Option} from '@markput/vue'
 import {MarkedInput} from '@markput/vue'
 import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-vue'
@@ -43,8 +43,7 @@ describe('Render-count gates: block layout', () => {
 				}
 			},
 		})
-		// oxlint-disable-next-line no-unsafe-type-assertion -- raw markup literal, as in the Drag fixtures
-		const options: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: RowMark}]
+		const options: Option[] = [{markup: '__slot__\n\n', Mark: RowMark}]
 		const Fixture = defineComponent({
 			setup() {
 				return () =>
@@ -105,8 +104,7 @@ describe('Render-count gates: block layout', () => {
 				}
 			},
 		})
-		// oxlint-disable-next-line no-unsafe-type-assertion -- raw markup literal, as in the Drag fixtures
-		const options: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: RowMark}]
+		const options: Option[] = [{markup: '__slot__\n\n', Mark: RowMark}]
 		const Fixture = defineComponent({
 			setup() {
 				return () =>

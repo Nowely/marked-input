@@ -1,4 +1,3 @@
-import type {Markup} from '@markput/core'
 import {MarkedInput} from '@markput/react'
 import type {MarkProps, MarkedInputProps, Option} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
@@ -46,8 +45,7 @@ export const Markdown: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 
 const ParagraphMark = ({children}: MarkProps) => <span>{children}</span>
 
-// oxlint-disable-next-line no-unsafe-type-assertion
-const paragraphOptions: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: ParagraphMark}]
+const paragraphOptions: Option[] = [{markup: '__slot__\n\n', Mark: ParagraphMark}]
 
 export const PlainTextDrag: Story = {
 	parameters: {docs: {disable: true}, plainValue: 'bottom'},

@@ -1,4 +1,4 @@
-import type {MarkProps, Markup, Option} from '@markput/react'
+import type {MarkProps, Option} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import {composeStories} from '@storybook/react-vite'
 import {describe, expect, it, vi} from 'vitest'
@@ -25,8 +25,7 @@ const PLAIN_TEXT_VALUE =
 
 const ParagraphMark = ({children, value}: MarkProps) => <span>{children ?? value}</span>
 
-// oxlint-disable-next-line no-unsafe-type-assertion
-const paragraphOptions: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: ParagraphMark}]
+const paragraphOptions: Option[] = [{markup: '__slot__\n\n', Mark: ParagraphMark}]
 
 function UncontrolledPlainTextDrag() {
 	return (

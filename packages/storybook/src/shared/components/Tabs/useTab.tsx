@@ -10,8 +10,7 @@ export const useTab = <const T extends readonly Tab[]>(tabs: T) => {
 
 	const handleChange = (value: string) => {
 		if (tabs.some(tab => tab.value === value)) {
-			// oxlint-disable-next-line no-unsafe-type-assertion
-			setActiveTabId(value as TabValue)
+			setActiveTabId(value)
 		}
 	}
 

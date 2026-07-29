@@ -1,4 +1,4 @@
-import type {MarkProps, MarkedInputProps, Markup} from '@markput/react'
+import type {MarkProps, MarkedInputProps} from '@markput/react'
 import {MarkedInput, useOverlay} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {ComponentType} from 'react'
@@ -58,8 +58,7 @@ export const Overridden = () => {
 			onChange={(_, value) => setValue(value as unknown as string)}
 			options={[
 				{
-					// oxlint-disable-next-line no-unsafe-type-assertion
-					markup: '@[__value__](common)' as Markup,
+					markup: '@[__value__](common)',
 					mark: ({value}: {value?: string}) => ({children: value}),
 					overlay: {trigger: '@'},
 				},
@@ -81,8 +80,7 @@ export const TaggedInput: StoryObj<MarkedInputProps<TagProps>> = {
 		},
 		options: [
 			{
-				// oxlint-disable-next-line no-unsafe-type-assertion
-				markup: '@[__value__](common)' as Markup,
+				markup: '@[__value__](common)',
 				mark: ({value}: MarkProps) => ({children: value, style: {marginLeft: 0}}),
 				overlay: {trigger: '@'},
 			},
