@@ -782,7 +782,6 @@ describe('Parser', () => {
 					})
 
 					it('parses nested HTML tags', () => {
-						// oxlint-disable-next-line no-unsafe-type-assertion
 						const markups = ['<b>__slot__</b>' as Markup, '<i>__slot__</i>' as Markup]
 						const parser = new Parser(markups)
 						const input = '<b>Bold <i>italic</i> text</b>'

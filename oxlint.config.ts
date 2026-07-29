@@ -144,5 +144,7 @@ export default defineConfig({
 	options: {
 		typeAware: true,
 		typeCheck: false,
+		denyWarnings: true,
+		reportUnusedDisableDirectives: 'deny',
 	},
 })

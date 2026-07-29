@@ -50,7 +50,6 @@ export const Overridden = () => {
 	return (
 		<Input
 			as={MarkedInput}
-			// oxlint-disable-next-line no-unsafe-type-assertion
 			Mark={Tag as ComponentType<MarkProps>}
 			Overlay={Overlay}
 			value={value}

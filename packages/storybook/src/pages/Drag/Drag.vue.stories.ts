@@ -1,4 +1,3 @@
-// oxlint-disable typescript-eslint/no-unsafe-argument
 import type {MarkProps, Option} from '@markput/vue'
 import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
@@ -105,7 +104,6 @@ const markdownOptions: Option[] = [
 		markup: '~~__value__~~',
 		mark: (props: MarkProps) => ({...props, style: {textDecoration: 'line-through', opacity: 0.7}}),
 	},
-	// oxlint-disable-next-line no-unsafe-type-assertion
 ] as Option[]
 
 const DRAG_MARKDOWN = `# Welcome to **Marked Input**
@@ -210,7 +208,6 @@ const todoOptions: Option[] = [
 			style: {display: 'block', fontSize: '0.85em', color: '#888', fontStyle: 'italic'},
 		}),
 	},
-	// oxlint-disable-next-line no-unsafe-type-assertion
 ] as Option[]
 
 const TODO_VALUE = `# \u{1F4CB} Project Launch Checklist

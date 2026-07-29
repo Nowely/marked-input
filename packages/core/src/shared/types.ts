@@ -16,7 +16,6 @@ import type {Range} from './editorContracts'
  *
  * Without augmentation, `Slot` falls back to `unknown`.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface SlotRegistry {}
 
 /** Framework-provided component type. Resolves to `unknown` unless `SlotRegistry` is augmented. */

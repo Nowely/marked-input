@@ -1,4 +1,3 @@
-// oxlint-disable typescript-eslint/no-unsafe-argument
 import type {TokenPath} from '@markput/core'
 import type {Markup} from '@markput/vue'
 import {MarkedInput, useMark} from '@markput/vue'
@@ -322,7 +321,6 @@ describe('Component: MarkedInput', () => {
 				showOverlayOn: 'selectionChange',
 				options: [
 					{
-						// oxlint-disable-next-line no-unsafe-type-assertion
 						markup: '@[__value__](__meta__)' as Markup,
 						overlay: {trigger: '@', data: ['Alice']},
 					},
@@ -376,7 +374,6 @@ describe('Component: MarkedInput', () => {
 				Mark,
 				options: [
 					{
-						// oxlint-disable-next-line no-unsafe-type-assertion
 						markup: '@[__value__](test:__meta__)' as Markup,
 						overlay: {trigger: '@', data: ['one', 'two', 'three']},
 					},

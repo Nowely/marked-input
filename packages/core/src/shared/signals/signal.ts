@@ -47,14 +47,11 @@ const queued: (EffectNode | undefined)[] = []
 const {link, unlink, propagate, checkDirty, shallowPropagate} = createReactiveSystem({
 	update(node: SignalNode | ComputedNode | EventNode): boolean {
 		if ('getter' in node) {
-			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- discriminated by runtime property check
 			return updateComputed(node)
 		}
 		if ('seq' in node) {
-			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- discriminated by runtime property check
 			return updateEvent(node)
 		}
-		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- discriminated by runtime property check
 		return updateSignal(node)
 	},
 	notify(effect: EffectNode) {

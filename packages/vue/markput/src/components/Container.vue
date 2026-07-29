@@ -28,7 +28,6 @@ const containerProps = useMarkput(s => s.slots.containerProps)
 // model never publishes tokens.
 type UserRef = ((el: HTMLElement | null) => void) | Ref<HTMLElement | null>
 
-// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.container.ref is raw user input
 const containerSlot = computed(() => containerProps.value as {ref?: UserRef} & Record<string, unknown>)
 const userRef = computed<UserRef | undefined>(() => containerSlot.value.ref)
 const boundProps = computed(() => {

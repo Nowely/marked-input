@@ -182,7 +182,6 @@ describe('Feature: drag rows', () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			// Delete all rows until value is ''
-			// eslint-disable-next-line no-await-in-loop
 			for (let i = 4; i > 0; i--) {
 				await openMenuForRow(container, i)
 				await userEvent.click(getElement(page.getByText('Delete')))
@@ -239,7 +238,6 @@ describe('Feature: drag rows', () => {
 		it('result in empty value when deleting the last remaining row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
-			// eslint-disable-next-line no-await-in-loop
 			for (let i = 4; i > 0; i--) {
 				await openMenuForRow(container, i)
 				await userEvent.click(getElement(page.getByText('Delete')))

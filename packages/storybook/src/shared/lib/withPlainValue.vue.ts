@@ -13,7 +13,7 @@ function narrowGlobal(v: unknown): 'right' | 'bottom' | 'hide' {
 
 export const withPlainValue = (story: () => VNode, context: StoryContext) => {
 	// Storybook hooks — ok to call here (hookify wrapper active at decorator level)
-	/* oxlint-disable no-unsafe-member-access, no-unsafe-argument */
+	/* oxlint-disable no-unsafe-argument */
 	const [args, updateArgs] = useArgs()
 	const [globals] = useGlobals()
 

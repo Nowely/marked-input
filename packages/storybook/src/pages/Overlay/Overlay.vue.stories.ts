@@ -109,7 +109,6 @@ export const SelectableOverlay: Story = {
 		Mark,
 		Overlay: List,
 		defaultValue: 'Hello, suggest overlay by trigger @!',
-		// oxlint-disable-next-line no-unsafe-type-assertion
 		options: [{markup: '@[__value__](__meta__)' as Markup, overlay: {trigger: '@'}}],
 	},
 }

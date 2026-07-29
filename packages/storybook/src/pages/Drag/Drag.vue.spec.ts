@@ -1,4 +1,3 @@
-// oxlint-disable typescript-eslint/no-non-null-assertion typescript-eslint/no-unsafe-call
 import {MarkedInput} from '@markput/vue'
 import type {Option} from '@markput/vue'
 import {composeStories} from '@storybook/vue3-vite'
@@ -198,7 +197,6 @@ describe('Feature: drag rows', () => {
 		it('result in a single empty row when all rows are deleted', async () => {
 			const {container} = await render(PlainTextDrag)
 
-			// eslint-disable-next-line no-await-in-loop
 			for (let i = 4; i > 0; i--) {
 				await openMenuForRow(container, i)
 				await userEvent.click(getElement(page.getByText('Delete')))
@@ -255,7 +253,6 @@ describe('Feature: drag rows', () => {
 		it('result in empty value when deleting the last remaining row', async () => {
 			const {container} = await render(PlainTextDrag)
 
-			// eslint-disable-next-line no-await-in-loop
 			for (let i = 4; i > 0; i--) {
 				await openMenuForRow(container, i)
 				await userEvent.click(getElement(page.getByText('Delete')))
