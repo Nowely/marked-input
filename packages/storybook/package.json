@@ -27,10 +27,10 @@
     "@markput/react": "workspace:*",
     "@markput/vue": "workspace:*",
     "@mui/material": "^7.3.7",
-    "antd": "^6.3.4",
+    "antd": "^6.5.2",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "rsuite": "^6.1.2",
+    "rsuite": "^6.2.2",
     "vue": "catalog:"
   },
   "devDependencies": {
