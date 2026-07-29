@@ -42,7 +42,7 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "concurrently": "^9.1.2",
+    "concurrently": "^10.0.4",
     "cross-env": "^10.1.0",
     "playwright": "catalog:",
     "storybook": "catalog:",
