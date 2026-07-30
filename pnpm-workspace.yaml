@@ -4,12 +4,6 @@ packages:
 
 catalog:
     '@faker-js/faker': ^10.5.0
-    '@microsoft/api-extractor': ^7.57.7
-    '@storybook/addon-docs': ^10.5.5
-    '@storybook/addon-links': ^10.5.5
-    '@storybook/cli': ^10.5.5
-    '@storybook/react-vite': ^10.5.5
-    '@storybook/vue3-vite': ^10.5.5
     '@types/node': ^24.10.1
     '@types/react': ^19.2.17
     '@types/react-dom': ^19.2.3
@@ -23,7 +17,6 @@ catalog:
     react: ^19.2.8
     react-dom: ^19.2.8
     rolldown-plugin-dts: ^0.27.14
-    storybook: ^10.5.5
     typescript: ^6.0.3
     vite: ^8.1.5
     vitest: ^4.1.10

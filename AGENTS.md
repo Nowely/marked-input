@@ -16,7 +16,8 @@ Packages:
 - `packages/website/` (`@markput/website`): Astro/Starlight docs.
 
 Default branch: `next`. Use `pnpm` for all installs and scripts. Shared
-dependency versions live in the pnpm catalog in `pnpm-workspace.yaml`.
+dependency versions live in the pnpm catalog in `pnpm-workspace.yaml`; tooling
+used by a single package is pinned in that package's `package.json`.
 
 ## Commands
 
