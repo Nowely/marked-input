@@ -1,6 +1,5 @@
 import {MarkedInput} from '@markput/react'
 import {useCallback, useState} from 'react'
-import type {ComponentPropsWithRef} from 'react'
 
 import {CustomContainer, HTMLMark} from './components'
 import {htmlToPlainText} from './utils'
@@ -47,7 +46,7 @@ export const SingleEditableControlled = ({onValueChange}: SingleEditableControll
 				container: {
 					ref: containerRef,
 					onInput: handleInput,
-				} as ComponentPropsWithRef<'div'>,
+				},
 			}}
 		/>
 	)

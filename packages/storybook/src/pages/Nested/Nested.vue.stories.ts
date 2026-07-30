@@ -1,4 +1,3 @@
-// oxlint-disable typescript-eslint/no-explicit-any
 import type {Markup} from '@markput/vue'
 import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'

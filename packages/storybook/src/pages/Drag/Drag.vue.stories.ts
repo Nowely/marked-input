@@ -1,5 +1,4 @@
-// oxlint-disable typescript-eslint/no-unsafe-argument
-import type {MarkProps, Markup, Option} from '@markput/vue'
+import type {MarkProps, Option} from '@markput/vue'
 import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, ref} from 'vue'
@@ -38,41 +37,34 @@ const MarkdownMark = defineComponent({
 
 const markdownOptions: Option[] = [
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '# __slot__\n\n' as Markup,
+		markup: '# __slot__\n\n',
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {display: 'block', fontSize: '2em', fontWeight: 'bold', margin: '0.5em 0'},
 		}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '## __slot__\n\n' as Markup,
+		markup: '## __slot__\n\n',
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {display: 'block', fontSize: '1.5em', fontWeight: 'bold', margin: '0.4em 0'},
 		}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '### __slot__\n\n' as Markup,
+		markup: '### __slot__\n\n',
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {display: 'block', fontSize: '1.17em', fontWeight: 'bold', margin: '0.83em 0'},
 		}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '- __slot__\n\n' as Markup,
+		markup: '- __slot__\n\n',
 		mark: (props: MarkProps) => ({...props, style: {display: 'block', paddingLeft: '1em'}}),
 	},
-	// oxlint-disable-next-line no-unsafe-type-assertion
-	{markup: '**__slot__**' as Markup, mark: (props: MarkProps) => ({...props, style: {fontWeight: 'bold'}})},
-	// oxlint-disable-next-line no-unsafe-type-assertion
-	{markup: '*__slot__*' as Markup, mark: (props: MarkProps) => ({...props, style: {fontStyle: 'italic'}})},
+	{markup: '**__slot__**', mark: (props: MarkProps) => ({...props, style: {fontWeight: 'bold'}})},
+	{markup: '*__slot__*', mark: (props: MarkProps) => ({...props, style: {fontStyle: 'italic'}})},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '`__value__`' as Markup,
+		markup: '`__value__`',
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {
@@ -85,8 +77,7 @@ const markdownOptions: Option[] = [
 		}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '```__meta__\n__value__```' as Markup,
+		markup: '```__meta__\n__value__```',
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {
@@ -103,19 +94,16 @@ const markdownOptions: Option[] = [
 		}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '[__value__](__meta__)' as Markup,
+		markup: '[__value__](__meta__)',
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {color: '#0969da', textDecoration: 'underline', cursor: 'pointer'},
 		}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '~~__value__~~' as Markup,
+		markup: '~~__value__~~',
 		mark: (props: MarkProps) => ({...props, style: {textDecoration: 'line-through', opacity: 0.7}}),
 	},
-	// oxlint-disable-next-line no-unsafe-type-assertion
 ] as Option[]
 
 const DRAG_MARKDOWN = `# Welcome to **Marked Input**
@@ -171,21 +159,18 @@ const TodoMark = defineComponent({
 
 const todoOptions: Option[] = [
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '# __slot__\n\n' as Markup,
+		markup: '# __slot__\n\n',
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {display: 'block', fontSize: '1.4em', fontWeight: 'bold', margin: '0.3em 0'},
 		}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '- [ ] __slot__\n' as Markup,
+		markup: '- [ ] __slot__\n',
 		mark: (props: MarkProps) => ({...props, todo: 'pending', style: {display: 'block'}}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '- [x] __slot__\n' as Markup,
+		markup: '- [x] __slot__\n',
 		mark: (props: MarkProps) => ({
 			...props,
 			todo: 'done',
@@ -193,13 +178,11 @@ const todoOptions: Option[] = [
 		}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '\t- [ ] __slot__\n' as Markup,
+		markup: '\t- [ ] __slot__\n',
 		mark: (props: MarkProps) => ({...props, todo: 'pending', style: {display: 'block', paddingLeft: '1.5em'}}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '\t- [x] __slot__\n' as Markup,
+		markup: '\t- [x] __slot__\n',
 		mark: (props: MarkProps) => ({
 			...props,
 			todo: 'done',
@@ -207,13 +190,11 @@ const todoOptions: Option[] = [
 		}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '\t\t- [ ] __slot__\n' as Markup,
+		markup: '\t\t- [ ] __slot__\n',
 		mark: (props: MarkProps) => ({...props, todo: 'pending', style: {display: 'block', paddingLeft: '3em'}}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '\t\t- [x] __slot__\n' as Markup,
+		markup: '\t\t- [x] __slot__\n',
 		mark: (props: MarkProps) => ({
 			...props,
 			todo: 'done',
@@ -221,14 +202,12 @@ const todoOptions: Option[] = [
 		}),
 	},
 	{
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		markup: '> __slot__\n\n' as Markup,
+		markup: '> __slot__\n\n',
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {display: 'block', fontSize: '0.85em', color: '#888', fontStyle: 'italic'},
 		}),
 	},
-	// oxlint-disable-next-line no-unsafe-type-assertion
 ] as Option[]
 
 const TODO_VALUE = `# \u{1F4CB} Project Launch Checklist
@@ -266,8 +245,7 @@ const ParagraphMark = defineComponent({
 	},
 })
 
-// oxlint-disable-next-line no-unsafe-type-assertion
-const paragraphOptions: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: ParagraphMark}]
+const paragraphOptions: Option[] = [{markup: '__slot__\n\n', Mark: ParagraphMark}]
 
 export const PlainTextDrag: Story = {
 	parameters: {docs: {disable: true}},

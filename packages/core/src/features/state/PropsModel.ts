@@ -52,10 +52,9 @@ export class PropsModel {
 			() => {
 				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
 				for (const key of Object.keys(values) as (keyof typeof this)[]) {
-					if (!(key in this))
-						continue
-						// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-					;(this[key] as (v: unknown) => void)(values[key] as never)
+					if (!(key in this)) continue
+					// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
+					;(this[key] as (v: unknown) => void)(values[key])
 				}
 			},
 			{mutable: true}

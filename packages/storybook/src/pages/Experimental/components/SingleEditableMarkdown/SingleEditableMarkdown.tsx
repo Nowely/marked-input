@@ -1,7 +1,6 @@
 import type {Markup, MarkProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import {useEffect, useState} from 'react'
-import type {ComponentPropsWithRef} from 'react'
 
 import {MarkdownContainer, MarkdownMark, MarkdownText} from './components'
 import {htmlToMarkdown} from './utils'
@@ -125,7 +124,7 @@ Try editing this text with **bold**, *italic*, \`code\`, and [links](https://exa
 			slotProps={{
 				container: {
 					ref: setContainer,
-				} as ComponentPropsWithRef<'div'>,
+				},
 			}}
 			options={MARKDOWN_OPTIONS}
 		/>

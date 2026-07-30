@@ -107,8 +107,7 @@ describe('Store', () => {
 			const store = new Store()
 			// TypeScript prevents this at compile time, but guard handles JS callers
 			// oxlint-disable-next-line no-unsafe-type-assertion
-			store.props.set({nonExistentKey: 'x'} as never)
-			// Should not throw
+			expect(() => store.props.set({nonExistentKey: 'x'} as never)).not.toThrow()
 		})
 
 		it('reflects controlled value via tokens without changing internal state', () => {

@@ -1,4 +1,4 @@
-import type {MarkProps, Markup, Option} from '@markput/react'
+import type {MarkProps, Option} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import {useEffect} from 'react'
 import {describe, expect, it, vi} from 'vitest'
@@ -84,8 +84,7 @@ describe('Render-count gates: block layout', () => {
 			spanRender()
 			return <span>{value}</span>
 		}
-		// oxlint-disable-next-line no-unsafe-type-assertion -- raw markup literal, as in the Drag fixtures
-		const options: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: RowMark}]
+		const options: Option[] = [{markup: '__slot__\n\n', Mark: RowMark}]
 
 		const {container} = await render(
 			<MarkedInput
@@ -132,8 +131,7 @@ describe('Render-count gates: block layout', () => {
 			spanRender()
 			return <span>{value}</span>
 		}
-		// oxlint-disable-next-line no-unsafe-type-assertion -- raw markup literal, as in the Drag fixtures
-		const options: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: RowMark}]
+		const options: Option[] = [{markup: '__slot__\n\n', Mark: RowMark}]
 
 		const {container} = await render(
 			<MarkedInput Span={Span} options={options} defaultValue={'First row\n\n'} layout="block" draggable />

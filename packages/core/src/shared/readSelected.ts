@@ -21,7 +21,7 @@ export function readSelected(target: Selectable<unknown> | ObjectSelector): unkn
 	const out: Record<string, unknown> = {}
 	for (const k in target) {
 		const val = target[k]
-		out[k] = isReactive(val) ? (val as () => unknown)() : val
+		out[k] = isReactive(val) ? val() : val
 	}
 	return out
 }

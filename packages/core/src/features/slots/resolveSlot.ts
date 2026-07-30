@@ -61,7 +61,6 @@ export function resolveMarkSlot(
 	GlobalSpan: Slot | undefined
 ): readonly [Slot, Record<string, unknown>] {
 	if (token.type === 'text') {
-		// oxlint-disable-next-line no-unsafe-type-assertion -- `'span'` literal is widened to Slot which (unaugmented) is `unknown`
 		const fallback = (GlobalSpan ?? 'span') as Slot
 		return [fallback, GlobalSpan ? {value: token.content} : {}]
 	}

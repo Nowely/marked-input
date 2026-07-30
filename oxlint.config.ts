@@ -38,6 +38,10 @@ export default defineConfig({
 		'typescript/prefer-readonly': 'warn',
 		'typescript/prefer-find': 'warn',
 		'typescript/no-unnecessary-qualifier': 'warn',
+		// TODO(ts7): re-enable with the TS 7 migration. tsgolint judges this rule with the TS 7 checker while
+		// builds use TS 6, so it flags casts TS 6 requires (build breaks) or that drive generic inference
+		// (silent type widening, e.g. PropsModel.layout) — every finding needs manual vetting until checkers align.
+		'typescript/no-unnecessary-type-assertion': 'off',
 		'typescript/no-non-null-assertion': 'error',
 		'typescript/no-dynamic-delete': 'warn',
 		'typescript/no-unsafe-type-assertion': 'error',
@@ -69,8 +73,11 @@ export default defineConfig({
 		'vitest/valid-expect-in-promise': 'warn',
 		'vitest/require-mock-type-parameters': 'off',
 		'vitest/warn-todo': 'off',
-		'jest/valid-expect': 'off',
-		'jest/no-disabled-tests': 'off',
+		'vitest/valid-expect': 'off',
+		'vitest/no-disabled-tests': 'off',
+		'vitest/expect-expect': 'off',
+		'eslint/no-underscore-dangle': 'off',
+		'jsx_a11y/no-noninteractive-element-interactions': 'off',
 		'react-perf/jsx-no-jsx-as-prop': 'off',
 		'react-perf/jsx-no-new-array-as-prop': 'off',
 		'import/no-unassigned-import': ['warn', {allow: ['**/*.css']}],
@@ -88,6 +95,7 @@ export default defineConfig({
 				'**/*.js',
 			],
 			rules: {
+				'react/no-unstable-nested-components': 'off',
 				'typescript/no-explicit-any': 'off',
 				'typescript/no-non-null-assertion': 'off',
 				'typescript/no-unsafe-argument': 'off',
@@ -136,5 +144,7 @@ export default defineConfig({
 	options: {
 		typeAware: true,
 		typeCheck: false,
+		denyWarnings: true,
+		reportUnusedDisableDirectives: 'deny',
 	},
 })

@@ -758,8 +758,7 @@ describe('Parser', () => {
 					})
 
 					it('parses HTML tags with <__value__>__meta__</__value__> format', () => {
-						// oxlint-disable-next-line no-unsafe-type-assertion
-						const parser = new Parser(['<__value__>__meta__</__value__>' as Markup])
+						const parser = new Parser(['<__value__>__meta__</__value__>'])
 						const input = 'Check <img>photo.jpg</img> image'
 						const result = parser.parse(input)
 
@@ -771,8 +770,7 @@ describe('Parser', () => {
 					})
 
 					it('parses HTML tags with <__value__>__meta__<__value__> format', () => {
-						// oxlint-disable-next-line no-unsafe-type-assertion
-						const parser = new Parser(['<__value__>__meta__<__value__>' as Markup])
+						const parser = new Parser(['<__value__>__meta__<__value__>'])
 						const input = 'Check <img>photo.jpg<img> image'
 						const result = parser.parse(input)
 
@@ -784,7 +782,6 @@ describe('Parser', () => {
 					})
 
 					it('parses nested HTML tags', () => {
-						// oxlint-disable-next-line no-unsafe-type-assertion
 						const markups = ['<b>__slot__</b>' as Markup, '<i>__slot__</i>' as Markup]
 						const parser = new Parser(markups)
 						const input = '<b>Bold <i>italic</i> text</b>'
@@ -832,8 +829,7 @@ describe('Parser', () => {
 					})
 
 					it('parses markdown links', () => {
-						// oxlint-disable-next-line no-unsafe-type-assertion
-						const parser = new Parser(['[__value__](__meta__)' as Markup])
+						const parser = new Parser(['[__value__](__meta__)'])
 						const input = 'Check [Google](https://google.com) for search'
 						const result = parser.parse(input)
 
@@ -845,8 +841,7 @@ describe('Parser', () => {
 					})
 
 					it('parses markdown images', () => {
-						// oxlint-disable-next-line no-unsafe-type-assertion
-						const parser = new Parser(['![__value__](__meta__)' as Markup])
+						const parser = new Parser(['![__value__](__meta__)'])
 						const input = 'See ![cat](cat.jpg) image'
 						const result = parser.parse(input)
 

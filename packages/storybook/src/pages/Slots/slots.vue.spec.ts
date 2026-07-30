@@ -1,4 +1,3 @@
-// oxlint-disable typescript-eslint/no-non-null-assertion
 import {MarkedInput} from '@markput/vue'
 import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-vue'

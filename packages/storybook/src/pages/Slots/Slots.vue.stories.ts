@@ -1,4 +1,3 @@
-// oxlint-disable typescript-eslint/no-unsafe-argument
 import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, ref, reactive} from 'vue'

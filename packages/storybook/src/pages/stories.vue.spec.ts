@@ -1,4 +1,3 @@
-// oxlint-disable typescript-eslint/no-explicit-any typescript-eslint/no-non-null-assertion
 import {composeStories} from '@storybook/vue3-vite'
 import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-vue'
