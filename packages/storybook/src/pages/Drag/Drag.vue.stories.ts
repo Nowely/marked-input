@@ -3,10 +3,12 @@ import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, ref} from 'vue'
 
+import {MarkedInputStory} from '../../shared/lib/markedInput.vue'
+
 export default {
 	title: 'MarkedInput/Drag',
 	tags: ['autodocs'],
-	component: MarkedInput,
+	component: MarkedInputStory,
 	parameters: {
 		docs: {
 			description: {
@@ -15,9 +17,9 @@ export default {
 			},
 		},
 	},
-} satisfies Meta<typeof MarkedInput>
+} satisfies Meta<typeof MarkedInputStory>
 
-type Story = StoryObj<Meta<typeof MarkedInput>>
+type Story = StoryObj<Meta<typeof MarkedInputStory>>
 
 const mdContainerStyle = {maxWidth: '700px', margin: '0 auto', paddingLeft: '52px'}
 const mdEditorStyle = {minHeight: '200px', padding: '12px', border: '1px solid #e0e0e0', borderRadius: '8px'}

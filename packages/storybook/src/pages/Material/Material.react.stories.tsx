@@ -1,6 +1,6 @@
 import type {MarkProps, MarkedInputProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
-import type {ChipProps} from '@mui/material'
+import type {ChipProps, InputBaseComponentProps} from '@mui/material'
 import {Chip, Input} from '@mui/material'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {ComponentType, ChangeEvent} from 'react'
@@ -43,7 +43,8 @@ export const Overridden = () => {
 
 	return (
 		<Input
-			inputComponent={MarkedInput as ComponentType<MarkedInputProps<ChipProps>>}
+			// oxlint-disable-next-line no-unsafe-type-assertion -- MUI types inputComponent by its own props; MarkedInput's props are unrelated but forwarded verbatim via inputProps
+			inputComponent={MarkedInput as unknown as ComponentType<InputBaseComponentProps>}
 			inputProps={{
 				Mark: Chip,
 				options: [

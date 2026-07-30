@@ -2,7 +2,7 @@ import type {Markup, MarkProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import {useEffect, useState} from 'react'
 
-import {MarkdownContainer, MarkdownMark, MarkdownText} from './components'
+import {MarkdownContainer, MarkdownMark} from './components'
 import {htmlToMarkdown} from './utils'
 
 // Markdown markup patterns
@@ -119,7 +119,6 @@ Try editing this text with **bold**, *italic*, \`code\`, and [links](https://exa
 			Mark={MarkdownMark}
 			slots={{
 				container: MarkdownContainer,
-				span: MarkdownText,
 			}}
 			slotProps={{
 				container: {

@@ -396,7 +396,8 @@ describe('Feature: drag rows', () => {
 		await userEvent.click(getElement(page.getByText('Add below')))
 
 		const activeEl = getActiveElement()
-		expect(activeEl.closest('[class*="Container"]')).toBeTruthy()
+		expect(activeEl).not.toBeNull()
+		expect(activeEl?.closest('[class*="Container"]')).toBeTruthy()
 	})
 
 	it('split row at caret when pressing Enter at the beginning', async () => {

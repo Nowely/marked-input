@@ -6,6 +6,7 @@ import {useEffect, useState} from 'react'
 import {Input, Popover, Tag} from 'rsuite'
 import type {TagProps} from 'rsuite'
 
+import {MarkedInputStory} from '../../shared/lib/markedInput.react'
 import {withStyle} from '../../shared/lib/withStyle.react'
 
 export default {
@@ -49,7 +50,7 @@ export const Overridden = () => {
 
 	return (
 		<Input
-			as={MarkedInput}
+			as={MarkedInputStory}
 			Mark={Tag as ComponentType<MarkProps>}
 			Overlay={Overlay}
 			value={value}
@@ -87,16 +88,6 @@ export const TaggedInput: StoryObj<MarkedInputProps<TagProps>> = {
 		slotProps: {
 			container: {
 				onKeyDown: (e: React.KeyboardEvent) => e.key === 'Enter' && e.preventDefault(),
-			},
-			span: {
-				className: 'rs-tag rs-tag-md',
-				style: {
-					backgroundColor: 'white',
-					paddingLeft: 0,
-					paddingRight: 0,
-					whiteSpace: 'pre-wrap',
-					minWidth: 5,
-				},
 			},
 		},
 	},

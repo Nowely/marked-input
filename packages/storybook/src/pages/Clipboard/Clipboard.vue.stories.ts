@@ -2,12 +2,14 @@ import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, ref} from 'vue'
 
+import {MarkedInputStory} from '../../shared/lib/markedInput.vue'
+
 export default {
 	title: 'Clipboard',
-	component: MarkedInput,
-} satisfies Meta<typeof MarkedInput>
+	component: MarkedInputStory,
+} satisfies Meta<typeof MarkedInputStory>
 
-type Story = StoryObj<Meta<typeof MarkedInput>>
+type Story = StoryObj<Meta<typeof MarkedInputStory>>
 
 const TestMark = defineComponent({
 	props: {value: String, meta: String},

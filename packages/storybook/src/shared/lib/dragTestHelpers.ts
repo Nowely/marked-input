@@ -23,7 +23,7 @@ export function getBlocks(container: Element) {
 }
 
 export function getEditableInRow(row: HTMLElement) {
-	return row.querySelector('[contenteditable="true"]') ?? row
+	return row.querySelector<HTMLElement>('[contenteditable="true"]') ?? row
 }
 
 export async function openMenuForRow(container: Element, rowIndex: number) {

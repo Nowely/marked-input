@@ -1,14 +1,16 @@
-import {MarkedInput, useMark} from '@markput/vue'
+import {useMark} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h} from 'vue'
+
+import {MarkedInputStory} from '../../shared/lib/markedInput.vue'
 
 export default {
 	title: 'MarkedInput/Mark',
 	tags: ['autodocs'],
-	component: MarkedInput,
-} satisfies Meta<typeof MarkedInput>
+	component: MarkedInputStory,
+} satisfies Meta<typeof MarkedInputStory>
 
-type Story = StoryObj<Meta<typeof MarkedInput>>
+type Story = StoryObj<Meta<typeof MarkedInputStory>>
 
 const DynamicMark = defineComponent({
 	setup() {

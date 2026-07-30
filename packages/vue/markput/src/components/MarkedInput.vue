@@ -1,13 +1,13 @@
-<script setup lang="ts">
-import {type CoreSlots, Store} from '@markput/core'
+<script setup lang="ts" generic="TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps">
+import {type CoreOption, type CoreSlots, Store} from '@markput/core'
 import {markRaw, provide, shallowRef, toRaw, watch} from 'vue'
 
 import {STORE_KEY} from '../lib/providers/storeKey'
-import type {MarkedInputProps} from '../types'
+import type {MarkedInputProps, MarkProps, OverlayProps} from '../types'
 import Container from './Container.vue'
 import OverlayRenderer from './OverlayRenderer.vue'
 
-const props = defineProps<MarkedInputProps>()
+const props = defineProps<MarkedInputProps<TMarkProps, TOverlayProps>>()
 
 const emit = defineEmits<{
 	change: [value: string]

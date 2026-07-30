@@ -1,17 +1,22 @@
 import type {MarkProps, Markup, Option} from '@markput/vue'
-import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h} from 'vue'
 
 import Button from '../../shared/components/Button/Button.vue'
+import {asStoryComponent} from '../../shared/lib/markedInput.vue'
+
+/** Props the `Configured` story's marks produce for {@link Button}. */
+type ButtonMarkProps = {label: string; primary?: boolean; onClick?: () => void}
+
+const MarkedInputStory = asStoryComponent<ButtonMarkProps>()
 
 export default {
 	title: 'MarkedInput',
 	tags: ['autodocs'],
-	component: MarkedInput,
-} satisfies Meta<typeof MarkedInput>
+	component: MarkedInputStory,
+} satisfies Meta<typeof MarkedInputStory>
 
-type Story = StoryObj<Meta<typeof MarkedInput>>
+type Story = StoryObj<Meta<typeof MarkedInputStory>>
 
 export const Default: Story = {
 	args: {
@@ -28,7 +33,7 @@ export const Default: Story = {
 const PrimaryMarkup: Markup = '@[__value__](primary:__meta__)'
 const DefaultMarkup: Markup = '@[__value__](default:__meta__)'
 
-const configuredOptions: Option[] = [
+const configuredOptions: Option<ButtonMarkProps>[] = [
 	{
 		markup: PrimaryMarkup,
 		mark: ({value, meta}: MarkProps) => ({label: value ?? '', primary: true, onClick: () => alert(meta)}),

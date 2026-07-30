@@ -88,13 +88,12 @@ function PanelContainer({Story, args, value: valueProp, position: positionProp, 
 
 export const withPlainValue: Decorator = (Story, context) => {
 	// Only Storybook hooks at this level — no React hooks.
-	/* oxlint-disable no-unsafe-member-access */
 	const [args, updateArgs] = useArgs()
 	const [globals] = useGlobals()
 
 	const mergedArgs = {...context.args, ...args}
 	const isControlled = 'value' in mergedArgs
-	const rawPosition = narrowPosition(context.parameters?.plainValue)
+	const rawPosition = narrowPosition(context.parameters.plainValue)
 	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
 	const globalValue = narrowGlobal(globals.showPlainValue ?? 'right')
 	const showPlainValue = globalValue !== 'hide'

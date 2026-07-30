@@ -1,12 +1,13 @@
 import type {Markup} from '@markput/vue'
-import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h} from 'vue'
+
+import {MarkedInputStory} from '../../shared/lib/markedInput.vue'
 
 export default {
 	title: 'MarkedInput/Nested',
 	tags: ['autodocs'],
-	component: MarkedInput,
+	component: MarkedInputStory,
 	parameters: {
 		docs: {
 			description: {
@@ -15,9 +16,9 @@ export default {
 			},
 		},
 	},
-} satisfies Meta<typeof MarkedInput>
+} satisfies Meta<typeof MarkedInputStory>
 
-type Story = StoryObj<Meta<typeof MarkedInput>>
+type Story = StoryObj<Meta<typeof MarkedInputStory>>
 
 // ============================================================================
 // Example 1: Simple Nesting (Markdown-style)
