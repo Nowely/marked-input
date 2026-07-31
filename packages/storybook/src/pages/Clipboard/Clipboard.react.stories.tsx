@@ -3,12 +3,14 @@ import {MarkedInput} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import {useState} from 'react'
 
+import {MarkedInputStory} from '../../shared/lib/markedInput.react'
+
 export default {
 	title: 'Clipboard',
-	component: MarkedInput,
-} satisfies Meta<typeof MarkedInput>
+	component: MarkedInputStory,
+} satisfies Meta<typeof MarkedInputStory>
 
-type Story = StoryObj<typeof MarkedInput>
+type Story = StoryObj<typeof MarkedInputStory>
 
 export const Inline: Story = {
 	args: {
@@ -42,7 +44,7 @@ export const Drag: Story = {
 }
 
 /** Mark component with nested HTML producing multiple text nodes inside the mark element. */
-function NestedMark({value}: MarkProps) {
+function NestedMark({value = ''}: MarkProps) {
 	const mid = Math.ceil(value.length / 2)
 	return (
 		<mark data-testid="mark">

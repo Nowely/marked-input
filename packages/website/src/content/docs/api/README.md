@@ -18,6 +18,8 @@ title: "@markput/react"
 - [Option](/api/interfaces/option/)
 - [OverlayHandler](/api/interfaces/overlayhandler/)
 - [OverlayProps](/api/interfaces/overlayprops/)
+- [SlotProps](/api/interfaces/slotprops/)
+- [Slots](/api/interfaces/slots/)
 - [TextToken](/api/interfaces/texttoken/)
 
 ## Type Aliases

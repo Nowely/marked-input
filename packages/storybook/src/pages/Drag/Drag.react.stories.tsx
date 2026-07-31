@@ -1,8 +1,8 @@
-import {MarkedInput} from '@markput/react'
 import type {MarkProps, MarkedInputProps, Option} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {CSSProperties} from 'react'
 
+import {MarkedInputStory} from '../../shared/lib/markedInput.react'
 import {DRAG_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 import {TODO_OPTIONS, TODO_VALUE} from './components/TodoMark'
@@ -10,7 +10,7 @@ import {TODO_OPTIONS, TODO_VALUE} from './components/TodoMark'
 export default {
 	title: 'MarkedInput/Drag',
 	tags: ['autodocs'],
-	component: MarkedInput,
+	component: MarkedInputStory,
 	parameters: {
 		docs: {
 			description: {
@@ -19,9 +19,9 @@ export default {
 			},
 		},
 	},
-} satisfies Meta<typeof MarkedInput>
+} satisfies Meta<typeof MarkedInputStory>
 
-type Story = StoryObj<Meta<typeof MarkedInput>>
+type Story = StoryObj<Meta<typeof MarkedInputStory>>
 
 // ─── Markdown with block-level marks (headings + list) ────────────────────────
 

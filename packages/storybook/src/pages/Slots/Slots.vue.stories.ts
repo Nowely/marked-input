@@ -2,9 +2,11 @@ import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, ref, reactive} from 'vue'
 
+import {MarkedInputStory} from '../../shared/lib/markedInput.vue'
+
 const meta = {
 	title: 'API/Slots',
-	component: MarkedInput,
+	component: MarkedInputStory,
 	parameters: {
 		docs: {
 			description: {
@@ -14,7 +16,7 @@ const meta = {
 			},
 		},
 	},
-} satisfies Meta<typeof MarkedInput>
+} satisfies Meta<typeof MarkedInputStory>
 
 export default meta
 type Story = StoryObj<typeof meta>

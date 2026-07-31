@@ -8,7 +8,7 @@ export {useOverlay} from './src/lib/hooks/useOverlay'
 export {useMarkput} from './src/lib/hooks/useMarkput'
 
 export type {OverlayHandler} from './src/lib/hooks/useOverlay'
-export type {MarkedInputProps, Option, MarkProps, OverlayProps} from './src/types'
+export type {MarkedInputProps, Option, MarkProps, OverlayProps, Slots, SlotProps} from './src/types'
 
 // Re-export from core
 export {denote, annotate, MarkController, MarkputHandler} from '@markput/core'

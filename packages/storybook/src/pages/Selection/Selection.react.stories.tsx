@@ -1,13 +1,14 @@
 import type {MarkProps} from '@markput/react'
-import {MarkedInput} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
+
+import {MarkedInputStory} from '../../shared/lib/markedInput.react'
 
 export default {
 	title: 'Selection',
-	component: MarkedInput,
-} satisfies Meta<typeof MarkedInput>
+	component: MarkedInputStory,
+} satisfies Meta<typeof MarkedInputStory>
 
-type Story = StoryObj<typeof MarkedInput>
+type Story = StoryObj<typeof MarkedInputStory>
 
 export const Inline: Story = {
 	args: {

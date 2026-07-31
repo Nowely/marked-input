@@ -54,11 +54,11 @@ export const Configured: StoryObj<MarkedInputProps<ButtonProps>> = {
 			'For found mark used @[annotations](default:123).',
 		slotProps: {
 			container: {
-				onClick: _ => console.log('onCLick'),
-				onInput: _ => console.log('onInput'),
-				onBlur: _ => console.log('onBlur'),
-				onFocus: _ => console.log('onFocus'),
-				onKeyDown: _ => console.log('onKeyDown'),
+				onClick: () => console.log('onCLick'),
+				onInput: () => console.log('onInput'),
+				onBlur: () => console.log('onBlur'),
+				onFocus: () => console.log('onFocus'),
+				onKeyDown: () => console.log('onKeyDown'),
 			},
 		},
 	},

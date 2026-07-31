@@ -1,15 +1,17 @@
-import {MarkedInput, useOverlay} from '@markput/vue'
+import {useOverlay} from '@markput/vue'
 import type {Markup} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, type ComponentPublicInstance} from 'vue'
 
+import {MarkedInputStory} from '../../shared/lib/markedInput.vue'
+
 export default {
 	title: 'MarkedInput/Overlay',
 	tags: ['autodocs'],
-	component: MarkedInput,
-} satisfies Meta<typeof MarkedInput>
+	component: MarkedInputStory,
+} satisfies Meta<typeof MarkedInputStory>
 
-type Story = StoryObj<Meta<typeof MarkedInput>>
+type Story = StoryObj<Meta<typeof MarkedInputStory>>
 
 const Mark = defineComponent({
 	props: {value: String},

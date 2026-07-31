@@ -9,6 +9,9 @@
     "build:react": "cross-env FRAMEWORK=react storybook build -o ./dist-react",
     "build:vue": "cross-env FRAMEWORK=vue storybook build -o ./dist-vue",
     "build": "pnpm run build:react && pnpm run build:vue",
+    "typecheck": "pnpm run typecheck:react && pnpm run typecheck:vue",
+    "typecheck:react": "tsc --noEmit -p tsconfig.react.json",
+    "typecheck:vue": "vue-tsc --noEmit -p tsconfig.vue.json",
     "test": "pnpm -w exec vitest run --project react --project vue",
     "test:react": "pnpm -w exec vitest run --project react",
     "test:vue": "pnpm -w exec vitest run --project vue",
@@ -24,6 +27,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@faker-js/faker": "catalog:",
+    "@markput/core": "workspace:*",
     "@markput/react": "workspace:*",
     "@markput/vue": "workspace:*",
     "@mui/material": "^7.3.7",
@@ -34,20 +38,22 @@
     "vue": "catalog:"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "catalog:",
-    "@storybook/addon-links": "catalog:",
-    "@storybook/cli": "catalog:",
-    "@storybook/react-vite": "catalog:",
-    "@storybook/vue3-vite": "catalog:",
+    "@storybook/addon-docs": "^10.5.5",
+    "@storybook/addon-links": "^10.5.5",
+    "@storybook/react": "^10.5.5",
+    "@storybook/react-vite": "^10.5.5",
+    "@storybook/vue3-vite": "^10.5.5",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "concurrently": "^10.0.4",
     "cross-env": "^10.1.0",
     "playwright": "catalog:",
-    "storybook": "catalog:",
+    "storybook": "^10.5.5",
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vitest-browser-react": "catalog:",
-    "vitest-browser-vue": "catalog:"
+    "vitest-browser-vue": "catalog:",
+    "vue-tsc": "catalog:"
   }
 }

@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "vue"
+  },
+  "include": [
+    "**/*.vue",
+    "**/*.vue.ts",
+    "**/*.vue.spec.ts",
+    "**/*.vue.stories.ts",
+    "src/shared/lib/*.ts",
+    "vite.config.ts"
+  ],
+  "exclude": ["node_modules", "dist-react", "dist-vue", "**/*.tsx", "**/*.react.ts"]
+}
