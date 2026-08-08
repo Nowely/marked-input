@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import {effect} from '../../../shared/signals'
+import {effect, signal} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {snapshot, stripIds} from './snapshot'
@@ -10,12 +10,17 @@ import type {CommitSink, MarkNode, TextNode, TransactionResult, TreeNode, Window
 
 const parser = new Parser(['@[__value__](__meta__)'])
 
-/** Tree + verbs over the uncontrolled sink; `results` is one entry per adoption. */
+/**
+ * Tree + verbs over the uncontrolled sink; `results` is one entry per adoption and
+ * `commits` the handoff that produced it — a wrong hull window survives a right value,
+ * so a test that commits still has to see both.
+ */
 function setup(source: string, options: {readOnly?: boolean} = {}) {
 	const tree = createTokenTree(parser.parse(source))
 	const results: TransactionResult[] = []
+	const commits: {next: string; window: Window}[] = []
 	let hook: ((result: TransactionResult) => void) | undefined
-	const sink = createUncontrolledSink({
+	const uncontrolled = createUncontrolledSink({
 		tree,
 		parser: () => parser,
 		onResult: result => {
@@ -23,11 +28,17 @@ function setup(source: string, options: {readOnly?: boolean} = {}) {
 			hook?.(result)
 		},
 	})
+	const sink: CommitSink = {
+		commit(next, window) {
+			commits.push({next, window})
+			return uncontrolled.commit(next, window)
+		},
+	}
 	const tx = createTransactions({tree, readOnly: () => options.readOnly ?? false, sink})
 	const onResult = (fn: (result: TransactionResult) => void): void => {
 		hook = fn
 	}
-	return {tree, tx, results, onResult}
+	return {tree, tx, results, commits, onResult}
 }
 
 /** A sink that records the handoff instead of committing it. */
@@ -218,6 +229,47 @@ describe('transactions: tx composition', () => {
 		expect(tree.value()).toBe('heABllo')
 	})
 
+	it('tx() removes a mark and inserts at its start offset without resurrecting it', () => {
+		const {tree, tx, commits} = setup('he@[x](m)llo')
+		const mark = asMark(tree.roots()[1]) // [2,9)
+		// The range op is submitted FIRST and the zero-length op shares its start: sorting on
+		// `start` alone would leave the splice cursor at 9 and re-emit the deleted span.
+		const ok = tx.tx(() => {
+			tx.applyStructural(mark, '')
+			tx.applyRange({start: 2, end: 2, insertedLength: 0}, '!')
+		})
+		expect(ok).toBe(true)
+		expect(tree.value()).toBe('he!llo')
+		expect(tree.roots().map(node => node.kind)).toEqual(['text'])
+		expect(commits).toEqual([{next: 'he!llo', window: {start: 2, end: 9, insertedLength: 1}}])
+	})
+
+	it('tx() replaces a mark and inserts at its start offset without duplicating it', () => {
+		const {tree, tx, commits} = setup('he@[x](m)llo')
+		const mark = asMark(tree.roots()[1])
+		const ok = tx.tx(() => {
+			tx.applyStructural(mark, '@[y](n)')
+			tx.applyRange({start: 2, end: 2, insertedLength: 0}, '!')
+		})
+		expect(ok).toBe(true)
+		expect(tree.value()).toBe('he!@[y](n)llo')
+		expect(tree.roots().filter(node => node.kind === 'mark')).toHaveLength(1)
+		expect(commits).toEqual([{next: 'he!@[y](n)llo', window: {start: 2, end: 9, insertedLength: 8}}])
+	})
+
+	it('tx() commits a splice that changes nothing', () => {
+		const {tree, tx, results, commits} = setup('hello')
+		expect(
+			tx.tx(() => {
+				tx.applyRange({start: 2, end: 2, insertedLength: 0}, '')
+			})
+		).toBe(true)
+		// Pinned, not endorsed: see the no-op note in `dispatch`.
+		expect(commits).toEqual([{next: 'hello', window: {start: 2, end: 2, insertedLength: 0}}])
+		expect(results).toHaveLength(1)
+		expect(tree.value()).toBe('hello')
+	})
+
 	it('tx() rejects overlapping ops atomically', () => {
 		const {tree, tx} = setup('hello')
 		let second: boolean | undefined
@@ -325,6 +377,29 @@ describe('transactions: untracked reads', () => {
 		// wake the effect — only a direct subscription from the liveness walk could.
 		const mark = asMark(tree.roots()[1])
 		mark.children([...mark.children()])
+		expect(runs).toBe(1)
+
+		stop()
+	})
+
+	it('a signal the sink reads while committing subscribes nobody', () => {
+		const tree = createTokenTree(parser.parse('hello'))
+		const probe = signal({initial: 'a'})
+		const sink: CommitSink = {
+			commit() {
+				probe()
+				return true
+			},
+		}
+		const tx = createTransactions({tree, readOnly: () => false, sink})
+		let runs = 0
+		const stop = effect(() => {
+			runs++
+			tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'x')
+		})
+		expect(runs).toBe(1)
+
+		probe('b')
 		expect(runs).toBe(1)
 
 		stop()

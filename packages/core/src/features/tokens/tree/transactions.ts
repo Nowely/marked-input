@@ -75,7 +75,10 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 
 	const dispatch = (ops: readonly Op[]): boolean => {
 		const value = currentValue()
-		const sorted = ops.toSorted((a, b) => a.start - b.start)
+		// The `end` tie-break is load-bearing, not cosmetic: half-open disjointness admits a
+		// zero-length op at the start of a range op, and on `start` alone the range op can sort
+		// first, drive `cursor` BACKWARDS and re-emit the span it just deleted.
+		const sorted = ops.toSorted((a, b) => a.start - b.start || a.end - b.end)
 
 		let next = ''
 		let cursor = 0
@@ -85,13 +88,21 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		}
 		next += value.slice(cursor)
 
-		// Ops are disjoint and sorted, so every one of them — and therefore every length
-		// change — lies inside [start, end): the hull's inserted length is its old span
-		// plus the total delta. For a single op that reduces to `text.length`.
+		// `sorted[last].end` is the maximal end: an earlier op either starts before the last
+		// one — and half-open disjointness then holds its end at or before that op's start —
+		// or shares its start, where the tie-break already ordered the ends. So the loop
+		// copied `value[0, start)` and `value[end, …)` verbatim and everything between them is
+		// the hull's inserted text: its old span plus the total delta. For a single op that
+		// reduces to `text.length`.
 		const start = sorted[0].start
 		const end = sorted[sorted.length - 1].end
 		const window: Window = {start, end, insertedLength: end - start + (next.length - value.length)}
 
+		// A splice that changes nothing still commits: `next === value` reaches the sink and
+		// costs a parse plus an adoption. The uncontrolled sink absorbs it (adoption diffs to
+		// no change), so nothing short-circuits here; the phase that adds the CONTROLLED sink
+		// owns the decision of whether an unchanged value may still fire `onChange`. Current
+		// behavior is pinned in transactions.spec.ts.
 		dispatching = true
 		try {
 			// The dispatcher owns the no-subscription invariant for the whole commit, sink
@@ -123,9 +134,11 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		applyText(node: TextNode, localRange: {start: number; end: number}, text: string): boolean {
 			assertIdle()
 			if (!isLive(node)) return refuse()
-			// The stored range the coordinates resolve against IS the text length: adoption
-			// writes position and content from one parse token. Reading `text()` for the
-			// length would add a signal dependency and a second source of truth.
+			// The bound has to come from `position`, because that is the coordinate space the
+			// splice offsets below are built in: `text().length` would bound one space by
+			// another. They agree by construction — adoption writes a node's position and its
+			// content from one parse token, and the suffix walk moves both ends by the same
+			// delta — and reading `text()` would add a signal dependency on top.
 			const length = node.position.end - node.position.start
 			if (localRange.start < 0 || localRange.end < localRange.start || localRange.end > length) return refuse()
 			return submit({
