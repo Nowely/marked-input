@@ -24,7 +24,9 @@ describe('adopt: prefix/suffix walks', () => {
 		expect(tree.roots().map(n => n.id)).toEqual(before.map(n => n.id))
 		expect(result.structural).toBe(false)
 		expect(result.updated.map(n => n.id)).toEqual([before[2].id])
-		expect(result.shifted).toEqual([])
+		// Same node in both feeds: its content signal was written AND its end moved 12 → 13.
+		// The feeds own one datum each (D9), so neither subsumes the other.
+		expect(result.shifted.map(n => n.id)).toEqual([before[2].id])
 	})
 
 	it('suffix nodes shift positions without signal writes', () => {
@@ -102,8 +104,13 @@ describe('adopt: prefix/suffix walks', () => {
 		const shiftedMark = shift.before[1]
 		if (shiftedMark.kind !== 'mark') throw new Error('expected mark at index 1')
 		// Every in-slot node moved with the mark, and none of them is listed: a consumer
-		// refreshing cached positions from `shifted` has to walk children itself.
-		expect(shift.result.shifted.map(node => node.id)).toEqual([shift.before[2].id, shiftedMark.id])
+		// refreshing cached positions from `shifted` has to walk children itself. The
+		// leading 'a' → 'XYa' is a middle-region move, listed after the suffix entries.
+		expect(shift.result.shifted.map(node => node.id)).toEqual([
+			shift.before[2].id,
+			shiftedMark.id,
+			shift.before[0].id,
+		])
 		expect(shiftedMark.children().map(node => node.position)).toEqual([
 			{start: 5, end: 6},
 			{start: 6, end: 13},
@@ -130,14 +137,23 @@ describe('adopt: prefix/suffix walks', () => {
 		const source = 'a@[b](c)d'
 		const tree = createTokenTree(parser.parse(source))
 		const before = tree.roots()
+		// Adoption rebuilds the root list every time and signals compare by reference, so an
+		// unguarded `roots` write would wake every subscriber on a pure echo.
+		let runs = 0
+		const stop = effect(() => {
+			runs++
+			tree.roots()
+		})
 
 		const result = adopt(tree, gapWindow(source, source), parser.parse(source))
 
+		expect(runs).toBe(1)
 		expect(tree.roots().map(node => node.id)).toEqual(before.map(node => node.id))
 		expect(result.structural).toBe(false)
 		expect(result.added).toEqual([])
 		expect(result.removed).toEqual([])
 		expect(result.shifted).toEqual([])
+		stop()
 	})
 
 	it('output equals a fresh parse after any of the above', () => {
@@ -199,6 +215,67 @@ describe('adopt: middle pairing and descend', () => {
 		expect(result.updated.map(n => n.id)).toEqual([before[2].id])
 	})
 
+	it('middle-region position moves reach shifted as subtree roots', () => {
+		// The pairing arms write `position` as a plain field, so nothing else can report the
+		// move: without this entry the outer mark [0,14] → [0,15] and everything under it
+		// change position in NO feed, and the sibling case is unreachable by ancestor
+		// invalidation. Granularity is subtree roots — the covered descendants stay out.
+		const {result, before} = editAndAdopt('#[a @[b](c) d]', 3, 3, 'X')
+		const outer = before[1]
+		if (outer.kind !== 'mark') throw new Error('expected mark')
+		const [slotText, inner, trailing] = outer.children()
+		const ids = result.shifted.map(node => node.id)
+
+		expect(outer.position).toEqual({start: 0, end: 15})
+		expect(inner.position).toEqual({start: 5, end: 12})
+		expect(ids).toContain(outer.id)
+		expect(ids).not.toContain(inner.id)
+		expect(ids).not.toContain(slotText.id)
+		expect(ids).not.toContain(trailing.id)
+		expect(ids).not.toContain(before[0].id) // [0,0] — did not move, so not listed
+	})
+
+	it('rebuilds a mark whose descriptor changed at the same index', () => {
+		// `descriptor` is readonly, so a loosened pairing gate would retain the mark under its
+		// old markup and `snapshot`/`join` would re-annotate with it — the projection becomes
+		// 'ab@[]()cd', wrong markup and slot dropped, with no other symptom.
+		const {tree, result, before} = editAndAdopt('ab@[x](m)cd', 2, 9, '#[q]')
+		const mark = tree.roots()[1]
+
+		expect(mark.id).not.toBe(before[1].id)
+		expect(result.added.map(change => [change.node.id, change.path])).toEqual([[mark.id, [1]]])
+		expect(result.removed).toEqual([before[1].id])
+		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('ab#[q]cd')))
+	})
+
+	it('an in-slot keystroke writes the child content signal, not the slot children list', () => {
+		// One keystroke = one signal write. `adoptSiblings` returns a fresh array every call
+		// and signals compare by reference, so an unguarded write wakes every subscriber of
+		// an untouched slot.
+		const tree = createTokenTree(parser.parse('#[a @[b](c) d]'))
+		const mark = tree.roots()[1]
+		if (mark.kind !== 'mark') throw new Error('expected mark')
+		const child = mark.children()[0]
+		if (child.kind !== 'text') throw new Error('expected text child')
+		let listRuns = 0
+		let textRuns = 0
+		const stopList = effect(() => {
+			listRuns++
+			mark.children()
+		})
+		const stopText = effect(() => {
+			textRuns++
+			child.text()
+		})
+
+		adopt(tree, {start: 3, end: 3, insertedLength: 1}, parser.parse('#[aX @[b](c) d]'))
+
+		expect(listRuns).toBe(1)
+		expect(textRuns).toBe(2)
+		stopList()
+		stopText()
+	})
+
 	it('in-slot deletion of one of two identical child marks keeps the survivor id', () => {
 		// '#[@[a](m) @[a](m)]': outer slot children [text'', mark, text' ', mark, text''].
 		// Deleting the second child mark shrinks the count 5 → 3, and same-index pairing
@@ -215,6 +292,29 @@ describe('adopt: middle pairing and descend', () => {
 		if (after.kind !== 'mark') throw new Error('expected mark')
 		expect(after.children()[1].id).toBe(firstChildId)
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('#[@[a](m) ]')))
+	})
+
+	it('in-slot deletion of the FIRST of two identical child marks kills the wrong sibling', () => {
+		// PINS A KNOWN-IMPERFECT OUTCOME, mirroring the test above. §4.2's gap-derived
+		// slot-local window is not implemented, so the slot recursion is unbounded index
+		// pairing with no bound to refuse the wrong repeat: deleting the FIRST inner mark
+		// retains it and removes the SECOND, and ' tail' at [17,22] — entirely past
+		// window.end = 9 — is dropped with it. Output equivalence still holds, which is why
+		// nothing else catches this. Implementing the slot-local window must flip this test
+		// deliberately.
+		const tree = createTokenTree(parser.parse('#[@[a](m) @[a](m) tail]'))
+		const outer = tree.roots()[1]
+		if (outer.kind !== 'mark') throw new Error('expected mark')
+		const [, first, , second, tail] = outer.children()
+		expect(tail.position).toEqual({start: 17, end: 22})
+
+		const result = adopt(tree, {start: 2, end: 9, insertedLength: 0}, parser.parse('#[ @[a](m) tail]'))
+
+		const after = tree.roots()[1]
+		if (after.kind !== 'mark') throw new Error('expected mark')
+		expect(after.children()[1].id).toBe(first.id)
+		expect(result.removed).toEqual([second.id, tail.id])
+		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('#[ @[a](m) tail]')))
 	})
 })
 

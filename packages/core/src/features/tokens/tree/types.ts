@@ -66,7 +66,12 @@ export interface TransactionResult {
 	/** Subtree-inclusive: a removed mark contributes every descendant id too. */
 	removed: readonly Id[]
 	updated: readonly TreeNode[]
-	/** Subtree roots: descendant positions and the mark's `slot` moved with them. */
+	/**
+	 * Every node whose stored `position` moved, at subtree-root granularity: a listed node
+	 * covers its descendants, which are not listed again. Suffix-walk entries moved by one
+	 * delta, middle-region entries need not — re-read descendant positions rather than
+	 * applying the root's.
+	 */
 	shifted: readonly TreeNode[]
 	selectionBefore: {readonly start: number; readonly end: number} | undefined
 	/** Valid for PRE-adoption offsets only (spec D7). */

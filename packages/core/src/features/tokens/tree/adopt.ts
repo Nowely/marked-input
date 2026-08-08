@@ -27,43 +27,40 @@ export function adopt(tree: TokenTree, window: Window, parsed: readonly Token[])
 		const out: TreeNode[] = []
 
 		/**
-		 * Same-index pairing over one sibling list (spec §4.2 step 3): a candidate of the
-		 * same kind — marks additionally of the same descriptor — keeps its object and so
-		 * its id; anything else is rebuilt and the candidate joins `removed`. Candidates
-		 * past the end of `tokens` are removed; tokens past the end of `candidates` are
-		 * added. Pairing on the descriptor is not decoration: adopting across descriptors
-		 * would leave a node whose markup disagrees with the parse, breaking output
-		 * equivalence.
+		 * Same-index pairing over one sibling list (spec §4.2 step 3). Pairing on the
+		 * descriptor is not decoration: `descriptor` is readonly, so adopting across
+		 * descriptors would leave a node whose markup disagrees with the parse and
+		 * `snapshot` would re-annotate with the old one, breaking output equivalence.
 		 *
-		 * `offset` is the list's first index within its parent, so `added` paths stay
+		 * `baseIndex` is the list's first index within its parent, so `added` paths stay
 		 * absolute while the middle region only ever passes a sub-range of the roots.
+		 * `covered` says an ancestor already entered `shifted` (see `adoptPosition`).
 		 */
 		function adoptSiblings(
 			candidates: readonly TreeNode[],
 			tokens: readonly Token[],
-			path: readonly number[],
-			offset: number
+			parentPath: readonly number[],
+			baseIndex: number,
+			covered: boolean
 		): TreeNode[] {
 			const result: TreeNode[] = []
 			for (let index = 0; index < tokens.length; index++) {
 				const token = tokens[index]
 				const candidate = index < candidates.length ? candidates[index] : undefined
-				// The two pairing arms narrow node and token together, which is what lets
-				// adoptText/adoptMark take exact types instead of re-checking at runtime.
 				if (candidate?.kind === 'text' && token.type === 'text') {
-					adoptText(candidate, token)
+					adoptText(candidate, token, covered)
 					result.push(candidate)
 				} else if (
 					candidate?.kind === 'mark' &&
 					token.type === 'mark' &&
 					candidate.descriptor === token.descriptor
 				) {
-					adoptMark(candidate, token, [...path, offset + index])
+					adoptMark(candidate, token, [...parentPath, baseIndex + index], covered)
 					result.push(candidate)
 				} else {
 					if (candidate) collectIds(candidate, removed)
 					const node = tree.buildNode(token)
-					added.push({node, path: [...path, offset + index]})
+					added.push({node, path: [...parentPath, baseIndex + index]})
 					result.push(node)
 				}
 			}
@@ -71,13 +68,23 @@ export function adopt(tree: TokenTree, window: Window, parsed: readonly Token[])
 			return result
 		}
 
-		/** Positions are plain writes; the content signal is equality-suppressed. */
-		function adoptText(node: TextNode, token: TextToken): void {
+		/**
+		 * Positions are plain field writes, so a move leaves no signal trace and `shifted`
+		 * is the only feed that can carry it (spec D9). Granularity is subtree roots: a
+		 * listed node covers its descendants, so the returned flag suppresses their own
+		 * entries.
+		 */
+		function adoptPosition(node: TreeNode, token: Token, covered: boolean): boolean {
+			const moved = node.position.start !== token.position.start || node.position.end !== token.position.end
 			node.position.start = token.position.start
 			node.position.end = token.position.end
-			if (node.text() === token.content) return
-			node.text(token.content)
-			updated.push(node)
+			if (moved && !covered) shifted.push(node)
+			return covered || moved
+		}
+
+		function adoptText(node: TextNode, token: TextToken, covered: boolean): void {
+			adoptPosition(node, token, covered)
+			if (node.text(token.content)) updated.push(node)
 		}
 
 		/**
@@ -88,26 +95,19 @@ export function adopt(tree: TokenTree, window: Window, parsed: readonly Token[])
 		 * value/meta change. Driving the `updated` entry off the value/meta comparison
 		 * implements exactly that split, so no separate descend predicate exists here.
 		 */
-		function adoptMark(node: MarkNode, token: MarkToken, path: readonly number[]): void {
-			node.position.start = token.position.start
-			node.position.end = token.position.end
-			// Descriptor equality (the pairing gate) pins slot presence, so the parsed slot
-			// belongs to this mark; copying it also refreshes the mirror instead of leaving
-			// the retained mark with a stale one.
+		function adoptMark(node: MarkNode, token: MarkToken, nodePath: readonly number[], covered: boolean): void {
+			const childrenCovered = adoptPosition(node, token, covered)
+			// The pairing gate compared descriptors, so slot presence already agrees; the copy
+			// also refreshes the mirror a retained mark would otherwise keep stale.
 			node.slot = token.slot ? {...token.slot} : undefined
 
-			const valueChanged = node.value() !== token.value
-			const metaChanged = node.meta() !== token.meta
-			if (valueChanged) node.value(token.value)
-			if (metaChanged) node.meta(token.meta)
+			const valueChanged = node.value(token.value)
+			const metaChanged = node.meta(token.meta)
 			if (valueChanged || metaChanged) updated.push(node)
 
 			const children = node.children()
-			const next = adoptSiblings(children, token.children, path, 0)
-			// Signals compare by reference, so writing an element-wise identical array would
-			// wake every subscriber of an untouched slot on each keystroke.
-			if (next.length !== children.length || next.some((child, index) => child !== children[index]))
-				node.children(next)
+			const next = adoptSiblings(children, token.children, nodePath, 0, childrenCovered)
+			if (!sameNodes(next, children)) node.children(next)
 		}
 
 		batch(() => {
@@ -151,13 +151,22 @@ export function adopt(tree: TokenTree, window: Window, parsed: readonly Token[])
 				nextTail--
 			}
 
-			// 3. Middle: same-index pairing, recursing into slots. Best-effort continuity —
-			// a merged or unrelated token landing at the same index inherits the id, which
-			// §7.1 permits because it only gates identity OUTSIDE the window.
-			out.push(...adoptSiblings(prev.slice(p, prevTail + 1), parsed.slice(p, nextTail + 1), [], p))
+			// 3. Middle: same-index pairing, recursing into slots. At THIS level pairing is
+			// best-effort continuity — a merged or unrelated token landing at the same index
+			// inherits the id — and §7.1 permits that because it gates identity only OUTSIDE
+			// the window, which is exactly what the two walks already claimed.
+			//
+			// The slot recursion carries no such bound: §4.2's gap-derived slot-local window
+			// is deliberately NOT implemented in this phase, so in-slot pairing is unbounded
+			// index pairing. Measured cost — '#[@[a](m) @[a](m) tail]' with the FIRST inner
+			// mark deleted (window {2,9}) retains that mark and reports the SECOND one
+			// removed, dragging ' tail' at [17,22] — an id entirely past window.end — into
+			// `removed` with it (pinned in adopt.spec.ts). Diffing this file against §4.2
+			// must read that as a scoped omission, not an oversight.
+			out.push(...adoptSiblings(prev.slice(p, prevTail + 1), parsed.slice(p, nextTail + 1), [], p, false))
 
 			out.push(...suffix)
-			tree.roots(out)
+			if (!sameNodes(out, prev)) tree.roots(out)
 		})
 
 		const structural = added.length > 0 || removed.length > 0
@@ -167,6 +176,15 @@ export function adopt(tree: TokenTree, window: Window, parsed: readonly Token[])
 
 		return {structural, render, added, removed, updated, shifted, selectionBefore: undefined, map}
 	})
+}
+
+/**
+ * Adoption rebuilds every sibling list, and signals compare by reference — writing an
+ * element-wise identical list would wake every subscriber of an untouched list (`roots`
+ * included) on each keystroke.
+ */
+function sameNodes(a: readonly TreeNode[], b: readonly TreeNode[]): boolean {
+	return a.length === b.length && a.every((node, index) => node === b[index])
 }
 
 /**
