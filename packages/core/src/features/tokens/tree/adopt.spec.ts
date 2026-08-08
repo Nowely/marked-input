@@ -6,6 +6,7 @@ import {adopt} from './adopt'
 import {gapWindow} from './gapWindow'
 import {snapshot, stripIds} from './snapshot'
 import {createTokenTree} from './tree'
+import type {MarkNode, TreeNode} from './types'
 
 const parser = new Parser(['@[__value__](__meta__)', '#[__slot__]'])
 
@@ -358,5 +359,169 @@ describe('adopt: untracked reads', () => {
 
 		expect(runs).toBe(1)
 		stop()
+	})
+})
+
+/**
+ * Ported from `tokenIdentity.spec.ts` — the reconcile algorithm adoption replaces.
+ * Each case keeps the IDENTITY claim it encoded and drops the `ReconcileResult`
+ * assertions (change kinds, tree paths, `structural` routing) that die with that
+ * file. Two feed contracts differ by design and are called out where they bite:
+ *
+ * - a pure position move lands in `shifted`, not `updated` (D9 splits the feeds);
+ * - a refused mark's subtree is DIFFED, where reconcile treated it as opaque and
+ *   reported no removals at all (its own comment pinned that as a limitation).
+ */
+describe('adopt: ported reconcile fixtures', () => {
+	const asMark = (node: TreeNode): MarkNode => {
+		if (node.kind !== 'mark') throw new Error('expected mark')
+		return node
+	}
+
+	it('descends a nested slot: every id in the subtree survives an inner keystroke', () => {
+		const slotParser = new Parser(['#[__slot__]'])
+		const tree = createTokenTree(slotParser.parse('#[a #[b] c]'))
+		const outer = asMark(tree.roots()[1])
+		const [head, innerNode, tail] = outer.children()
+		const inner = asMark(innerNode)
+		const ids = [outer.id, head.id, inner.id, inner.children()[0].id, tail.id]
+
+		// insert 'X' inside the INNER slot ('b' → 'bX', absolute offset 7)
+		const result = adopt(tree, {start: 7, end: 7, insertedLength: 1}, slotParser.parse('#[a #[bX] c]'))
+
+		const outerAfter = asMark(tree.roots()[1])
+		const innerAfter = asMark(outerAfter.children()[1])
+		expect([
+			outerAfter.id,
+			outerAfter.children()[0].id,
+			innerAfter.id,
+			innerAfter.children()[0].id,
+			outerAfter.children()[2].id,
+		]).toEqual(ids)
+		expect(result.added).toEqual([])
+		expect(result.removed).toEqual([])
+		// Only the typed-into text node changed content; reconcile also listed the two
+		// marks and the shifted tail here, because it had no separate position feed.
+		expect(result.updated.map(node => node.id)).toEqual([inner.children()[0].id])
+		expect(result.shifted.map(node => node.id)).toContain(outer.id)
+		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(slotParser.parse('#[a #[bX] c]')))
+	})
+
+	it('keeps a prefix mark and its child when the edit lands past them', () => {
+		const slotParser = new Parser(['#[__slot__]'])
+		const tree = createTokenTree(slotParser.parse('#[ab]tail'))
+		const mark = asMark(tree.roots()[1])
+		const childId = mark.children()[0].id
+
+		adopt(tree, {start: 9, end: 9, insertedLength: 1}, slotParser.parse('#[ab]tailX'))
+
+		const after = asMark(tree.roots()[1])
+		expect(after).toBe(mark) // prefix walk retains the node object itself
+		expect(after.children()[0].id).toBe(childId)
+		expect(after.position).toEqual({start: 0, end: 5})
+	})
+
+	it('rebuilds a nested mark whose descriptor changed and keeps the outer id', () => {
+		// '#[a #[b] c]' → '#[a %[b] c]': same outer descriptor, same child count, aligned
+		// types, differing INNER descriptors. `descriptor` is readonly, so the inner mark
+		// cannot be retained; the outer one has nothing to refuse and keeps its id.
+		const dualParser = new Parser(['#[__slot__]', '%[__slot__]'])
+		const tree = createTokenTree(dualParser.parse('#[a #[b] c]'))
+		const outer = asMark(tree.roots()[1])
+		const [head, innerNode, tail] = outer.children()
+		const inner = asMark(innerNode)
+
+		const result = adopt(tree, {start: 4, end: 5, insertedLength: 1}, dualParser.parse('#[a %[b] c]'))
+
+		const outerAfter = asMark(tree.roots()[1])
+		expect(outerAfter.id).toBe(outer.id)
+		expect([outerAfter.children()[0].id, outerAfter.children()[2].id]).toEqual([head.id, tail.id])
+		const innerAfter = asMark(outerAfter.children()[1])
+		expect(innerAfter.id).not.toBe(inner.id)
+		expect(result.added.map(change => [change.node.id, change.path])).toEqual([[innerAfter.id, [1, 1]]])
+		// DELIBERATE contract change: reconcile reported `removed: []` here because a
+		// refused mark's subtree was opaque to it. Adoption diffs the subtree, so the
+		// vanished inner mark and its child are both reported.
+		expect(result.removed).toEqual([inner.id, inner.children()[0].id])
+		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(dualParser.parse('#[a %[b] c]')))
+	})
+
+	it('inherits the child id when a mark value changes', () => {
+		const valueSlotParser = new Parser(['@[__value__](__slot__)'])
+		const tree = createTokenTree(valueSlotParser.parse('@[v](ab)'))
+		const mark = asMark(tree.roots()[1])
+		const childId = mark.children()[0].id
+
+		const result = adopt(tree, {start: 2, end: 3, insertedLength: 1}, valueSlotParser.parse('@[w](ab)'))
+
+		const after = asMark(tree.roots()[1])
+		expect(after.id).toBe(mark.id)
+		expect(after.children()[0].id).toBe(childId) // in-slot continuity across a refusal
+		expect(after.value()).toBe('w')
+		expect([result.added, result.removed]).toEqual([[], []])
+		expect(result.updated.map(node => node.id)).toEqual([mark.id])
+		// reconcile forced `structural` for a refused descend; the routing datum is now
+		// `render` — a MarkNode in `updated` (rendered props changed).
+		expect(result.render).toBe(true)
+	})
+
+	it('inherits the child id when a mark meta changes', () => {
+		const metaSlotParser = new Parser(['#[__slot__](__meta__)'])
+		const tree = createTokenTree(metaSlotParser.parse('#[ab](m)'))
+		const mark = asMark(tree.roots()[1])
+		const childId = mark.children()[0].id
+
+		const result = adopt(tree, {start: 6, end: 7, insertedLength: 1}, metaSlotParser.parse('#[ab](n)'))
+
+		const after = asMark(tree.roots()[1])
+		expect(after.id).toBe(mark.id)
+		expect(after.children()[0].id).toBe(childId)
+		expect(after.meta()).toBe('n')
+		expect(result.updated.map(node => node.id)).toEqual([mark.id])
+		expect(result.render).toBe(true)
+	})
+
+	it('derives the window from gapWindow and keeps identity at both edges', () => {
+		// The two reconcile cases that ran WITHOUT a hint. The prepend one is the reason
+		// gapWindow clamps: findGap('he@[x]llo', 'Xhe@[x]llo') reports no right edge.
+		const valueParser = new Parser(['@[__value__]'])
+		const append = createTokenTree(valueParser.parse('he@[x]llo'))
+		const appendIds = append.roots().map(node => node.id)
+
+		adopt(append, gapWindow('he@[x]llo', 'he@[x]llo!'), valueParser.parse('he@[x]llo!'))
+
+		expect(append.roots().map(node => node.id)).toEqual(appendIds)
+		expect(append.roots()[1].position).toEqual({start: 2, end: 6})
+
+		const prepend = createTokenTree(valueParser.parse('he@[x]llo'))
+		const prependIds = prepend.roots().map(node => node.id)
+
+		const result = adopt(prepend, gapWindow('he@[x]llo', 'Xhe@[x]llo'), valueParser.parse('Xhe@[x]llo'))
+
+		expect(prepend.roots().map(node => node.id)).toEqual(prependIds)
+		expect(prepend.roots()[1].position).toEqual({start: 3, end: 7})
+		expect(result.removed).toEqual([])
+	})
+
+	it('pairs the empty text child of an empty slot on the first keystroke', () => {
+		// '#[]' keeps a zero-width slot range — empty slot != no slot — so the empty text
+		// child pairs 1:1 with the typed-into child instead of being rebuilt. This is the
+		// empty-text alternation the parser guarantees (every slot mark has >=1 text child).
+		const slotParser = new Parser(['#[__slot__]'])
+		const tree = createTokenTree(slotParser.parse('#[]'))
+		const mark = asMark(tree.roots()[1])
+		const child = mark.children()[0]
+		expect([child.position, mark.slot]).toEqual([
+			{start: 2, end: 2},
+			{content: '', start: 2, end: 2},
+		])
+
+		const result = adopt(tree, {start: 2, end: 2, insertedLength: 1}, slotParser.parse('#[a]'))
+
+		const after = asMark(tree.roots()[1])
+		expect([after.id, after.children()[0].id]).toEqual([mark.id, child.id])
+		expect([result.added, result.removed]).toEqual([[], []])
+		expect(result.updated.map(node => node.id)).toEqual([child.id])
+		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(slotParser.parse('#[a]')))
 	})
 })
