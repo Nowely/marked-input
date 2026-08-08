@@ -6,10 +6,11 @@ import {gapWindow} from './gapWindow'
 import type {Window} from './types'
 
 /**
- * Verbatim copy of the private `hintFromValues` in `../tokenIdentity.ts` (it is
- * not exported, and that file must not be touched). It is the policy `gapWindow`
- * ports, so the differential below pins the port byte-for-byte; delete this
- * reference together with `tokenIdentity.ts`.
+ * FROZEN MANUAL COPY of the private `hintFromValues` in `../tokenIdentity.ts`
+ * (it is not exported, and that file must not be touched). The differential
+ * assertions below pin `gapWindow` against THIS copy, not against the live
+ * function — drift in `tokenIdentity.ts` is invisible to CI. Delete this copy
+ * together with that file; the literal expectations outlive it.
  */
 function hintFromValues(previousValue: string, nextValue: string): Window {
 	const gap = findGap(previousValue, nextValue)
@@ -50,33 +51,38 @@ describe('gapWindow', () => {
 	it('handles full replacement', () => {
 		expect(gapWindow('abc', 'xyz')).toEqual({start: 0, end: 3, insertedLength: 3})
 	})
+	it('pins the identical-value no-op window at the end of the value', () => {
+		expect(gapWindow('abc', 'abc')).toEqual({start: 3, end: 3, insertedLength: 0})
+	})
 
-	it('matches the tokenIdentity hintFromValues policy on the fixture table', () => {
-		const cases: [string, string][] = [
-			['hello', 'heXYllo'],
-			['abcdef', 'abef'],
-			['abc', 'xyz'],
-			['bc', 'abc'],
-			['ab', 'abc'],
-			['', 'abc'],
-			['abc', ''],
-			['abc', 'abc'],
-			['aa', 'aaa'],
-			['aaa', 'aa'],
-			['x@[a]x@[a]x', 'x@[a]xx'],
+	it('derives the fixture windows and matches the frozen hintFromValues copy', () => {
+		const cases: [previous: string, next: string, expected: Window][] = [
+			['hello', 'heXYllo', {start: 2, end: 2, insertedLength: 2}],
+			['abcdef', 'abef', {start: 2, end: 4, insertedLength: 0}],
+			['abc', 'xyz', {start: 0, end: 3, insertedLength: 3}],
+			['bc', 'abc', {start: 0, end: 0, insertedLength: 1}],
+			['ab', 'abc', {start: 2, end: 2, insertedLength: 1}],
+			['', 'abc', {start: 0, end: 0, insertedLength: 3}],
+			['abc', '', {start: 0, end: 3, insertedLength: 0}],
+			['abc', 'abc', {start: 3, end: 3, insertedLength: 0}],
+			['aa', 'aaa', {start: 2, end: 2, insertedLength: 1}],
+			['aaa', 'aa', {start: 2, end: 3, insertedLength: 0}],
+			['x@[a]x@[a]x', 'x@[a]xx', {start: 6, end: 10, insertedLength: 0}],
 		]
-		for (const [previous, next] of cases) {
+		for (const [previous, next, expected] of cases) {
 			const detail = `${JSON.stringify(previous)} → ${JSON.stringify(next)}`
+			expect(gapWindow(previous, next), detail).toEqual(expected)
 			expect(gapWindow(previous, next), detail).toEqual(hintFromValues(previous, next))
 		}
 	})
 
 	it('reproduces the next value from the previous one across generated pairs', () => {
-		faker.seed(BASE_SEED)
 		for (let i = 0; i < ITERATIONS; i++) {
+			const seed = BASE_SEED + i
+			faker.seed(seed)
 			const [previous, next] = randomPair()
 			const window = gapWindow(previous, next)
-			const detail = `${JSON.stringify(previous)} → ${JSON.stringify(next)}: ${JSON.stringify(window)}`
+			const detail = `seed=${seed} ${JSON.stringify(previous)} → ${JSON.stringify(next)}: ${JSON.stringify(window)}`
 
 			expect(window.start, detail).toBeGreaterThanOrEqual(0)
 			expect(window.end, detail).toBeGreaterThanOrEqual(window.start)

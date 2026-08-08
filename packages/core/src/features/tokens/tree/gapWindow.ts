@@ -4,6 +4,10 @@ import type {Window} from './types'
 /**
  * Boundary-reset window: common prefix/suffix of the two projections.
  *
+ * Identical values give the empty window `{start: n, end: n, insertedLength: 0}`
+ * pinned at the END of the value, not at 0 — `start` of an empty window is not
+ * an edit location.
+ *
  * findGap contract (see utils/findGap.spec.ts):
  * - `left` is the first diverging index, i.e. the common prefix length;
  *   undefined when the previous value is a prefix of the next one.
