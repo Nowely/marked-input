@@ -9,3 +9,5 @@ export class KeyGenerator {
 		return this.#counter++
 	}
 }
+
+export const key = new KeyGenerator()

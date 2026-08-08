@@ -7,13 +7,9 @@ import {SelectionController} from '../features/selection'
 import {SlotsFeature} from '../features/slots'
 import {Host, PropsModel, ValueModel} from '../features/state'
 import {TokenModel} from '../features/tokens'
-import {KeyGenerator} from '../shared/classes'
 import {MarkputHandler} from './MarkputHandler'
 
 export class Store {
-	/** Overlay OPTION keying only (OverlayRenderer) — token framework keys come from tokens.keyOf (stable identity ids). */
-	readonly key = new KeyGenerator()
-
 	readonly host = new Host()
 	readonly props = new PropsModel()
 	readonly value = new ValueModel(this.props)
