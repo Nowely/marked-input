@@ -7,14 +7,13 @@ import type {Id, MarkNode, TextNode, TreeNode} from './types'
 export interface TokenTree {
 	// NOT ReturnType<typeof signal<...>> — instantiation picks the last overload
 	// (Signal<T | undefined>) and poisons every consumer with `| undefined`.
-	readonly roots: Signal<TreeNode[]>
+	readonly roots: Signal<readonly TreeNode[]>
 	readonly value: Computed<string>
-	/** Internal id allocator — shared by build and adopt so ids never collide. */
-	readonly alloc: () => Id
+	/** Allocates fresh ids from the tree-local counter; adoption builds its new nodes through it. */
 	readonly buildNode: (token: Token) => TreeNode
 }
 
-export function createTokenTree(initial: Token[]): TokenTree {
+export function createTokenTree(tokens: readonly Token[]): TokenTree {
 	let nextId = 1
 	const alloc = (): Id => nextId++
 
@@ -43,11 +42,12 @@ export function createTokenTree(initial: Token[]): TokenTree {
 		return node
 	}
 
-	const roots = signal({initial: initial.map(buildNode)})
+	// Explicit generic for the same reason as `children` above.
+	const roots = signal<readonly TreeNode[]>({initial: tokens.map(buildNode)})
 
 	const value = computed(() => joinNodes(roots()))
 
-	return {roots, value, alloc, buildNode}
+	return {roots, value, buildNode}
 }
 
 /** The string projection: mirrors parser/utils/toString over live nodes. */
@@ -60,12 +60,9 @@ export function joinNodes(nodes: readonly TreeNode[]): string {
 			continue
 		}
 
-		const children = node.children()
-		const slot = node.descriptor.hasSlot
-			? children.length > 0
-				? joinNodes(children)
-				: node.slot?.content
-			: undefined
+		// A slot mark always parses with >=1 text child, and empty-text filtering is top-level
+		// only — children are the sole slot source, never the non-reactive `slot.content`.
+		const slot = node.descriptor.hasSlot ? joinNodes(node.children()) : undefined
 
 		result += annotate(node.descriptor.markup, {value: node.value(), meta: node.meta(), slot})
 	}
