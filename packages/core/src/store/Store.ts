@@ -9,6 +9,7 @@ import {Host, PropsModel, ValueModel} from '../features/state'
 import {TokenModel} from '../features/tokens'
 import {MarkputHandler} from './MarkputHandler'
 
+//TODO rename to Markput, Core, Engine, Editor?
 export class Store {
 	readonly host = new Host()
 	readonly props = new PropsModel()
@@ -20,7 +21,6 @@ export class Store {
 	readonly selection = new SelectionController(this.host, this.tokens, this.value, this.props)
 	readonly edit = new EditController(this.value, this.selection)
 
-	readonly overlay = new OverlayController(this.host, this.props, this.value, this.selection, this.edit, this.tokens)
 	readonly keyboard = new KeyboardController(
 		this.host,
 		this.value,
@@ -29,6 +29,8 @@ export class Store {
 		this.tokens,
 		this.props
 	)
+
+	readonly overlay = new OverlayController(this.host, this.props, this.value, this.selection, this.edit, this.tokens)
 	readonly block = new BlockController(this.props, this.value, this.tokens, this.edit)
 
 	readonly clipboard = new ClipboardController(this.host, this.edit, this.selection, this.tokens)
