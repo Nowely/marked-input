@@ -30,7 +30,7 @@ export interface MarkNode {
 	readonly value: Signal<string>
 	readonly meta: Signal<string | undefined>
 	readonly children: Signal<readonly TreeNode[]>
-	/** `content` mirrors the parsed slot text, synced by adoption — snapshots and equality only, never the projection. */
+	/** `content` mirrors the parsed slot text for equality checks; projections and snapshots derive the text from children. */
 	slot: {content: string; start: number; end: number} | undefined
 	position: {start: number; end: number}
 }
