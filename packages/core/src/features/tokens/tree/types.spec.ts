@@ -37,7 +37,7 @@ describe('tree contract types', () => {
 			readonly value: Signal<string>
 			readonly meta: Signal<string | undefined>
 			readonly children: Signal<readonly TreeNode[]>
-			slot: {content: string; start: number; end: number} | undefined
+			slot: {start: number; end: number} | undefined
 			position: {start: number; end: number}
 		}>()
 		// NodeAnchor: text offsets, boundary forms, document edges — the annotation is the check

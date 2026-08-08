@@ -4,15 +4,11 @@ import type {Id, TreeNode} from './types'
 /**
  * Mirror of tokenIdentity's tokensEqualShifted over (node, parsed token).
  *
- * Two fields are deliberately NOT compared. Mark `content` is a pure function of
- * descriptor + value + meta + children, all of which are compared, so it is
- * implied. `slot.content` is dropped on purpose: that mirror is derived state the
- * projection and snapshot both ignore (children are the sole slot source) and
- * nothing resyncs it, so comparing it would refuse retentions the live tree
- * supports — a wrong decision invisible to the output-equivalence property (see
- * the stale-mirror test in adopt.spec.ts). Everything else, `slot.start/end`
- * included, is compared: they are live positions a retention must already agree
- * with, or the retained mark keeps stale ones forever.
+ * The token's text mirrors are deliberately NOT compared — mark `content` and
+ * `slot.content` are pure functions of descriptor + value + meta + children, all of
+ * which are compared, so they are implied (and the node stores neither). Everything
+ * else, `slot.start/end` included, is compared: they are live positions a retention
+ * must already agree with, or the retained mark keeps stale ones forever.
  */
 export function snapshotNodeEquals(node: TreeNode, token: Token, delta: number): boolean {
 	if (node.position.start + delta !== token.position.start) return false

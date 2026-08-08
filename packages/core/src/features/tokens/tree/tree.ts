@@ -36,7 +36,9 @@ export function createTokenTree(tokens: readonly Token[]): TokenTree {
 			// Explicit generic: inferred `Signal<TreeNode[]>` is not assignable to
 			// `Signal<readonly TreeNode[]>` (the write signature is contravariant).
 			children: signal<readonly TreeNode[]>({initial: token.children.map(buildNode)}),
-			slot: token.slot ? {...token.slot} : undefined,
+			// Field-wise, not a spread of `token.slot`: the token carries a `content` mirror
+			// the node deliberately does not keep (see `MarkNode.slot`).
+			slot: token.slot ? {start: token.slot.start, end: token.slot.end} : undefined,
 			position: {...token.position},
 		}
 		return node
@@ -61,7 +63,7 @@ export function joinNodes(nodes: readonly TreeNode[]): string {
 		}
 
 		// A slot mark always parses with >=1 text child, and empty-text filtering is top-level
-		// only — children are the sole slot source, never the non-reactive `slot.content`.
+		// only — children are the sole slot source; the node stores no slot text.
 		const slot = node.descriptor.hasSlot ? joinNodes(node.children()) : undefined
 
 		result += annotate(node.descriptor.markup, {value: node.value(), meta: node.meta(), slot})

@@ -75,7 +75,7 @@ describe('snapshot', () => {
 		expect(stripIds(snapshot(tree.roots()))).toStrictEqual(stripIds(parser.parse(source)))
 	})
 
-	it('derives content and slot mirror from live children, not the stored slot', () => {
+	it('derives token content and slot text from live children', () => {
 		const tree = createTokenTree(parser.parse('#[a]'))
 		const node = tree.roots()[1]
 		if (node.kind !== 'mark') throw new Error('expected mark at index 1')

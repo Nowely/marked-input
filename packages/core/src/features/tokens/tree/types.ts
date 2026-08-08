@@ -31,12 +31,11 @@ export interface MarkNode {
 	readonly meta: Signal<string | undefined>
 	readonly children: Signal<readonly TreeNode[]>
 	/**
-	 * `start`/`end` are live slot positions, written by adoption like `position`.
-	 * `content` is a parse-time copy that nothing resyncs and no tree code reads as
-	 * truth: projection, snapshot and adoption equality all derive slot text from
-	 * children.
+	 * Live slot positions, written by adoption like `position`. Slot TEXT is deliberately
+	 * NOT stored: projection, snapshot and adoption equality all derive it from children,
+	 * so a stored copy would be an unread mirror nothing resyncs.
 	 */
-	slot: {content: string; start: number; end: number} | undefined
+	slot: {start: number; end: number} | undefined
 	position: {start: number; end: number}
 }
 
@@ -58,6 +57,13 @@ export interface TreeChange {
  * `added` must therefore walk children itself.
  */
 export interface TransactionResult {
+	/**
+	 * Node ADD or REMOVE only. D9's prose reads "any node add/remove/move", but a pure
+	 * move must not set it: moves are plain position-field writes with their own
+	 * render-inert feed (`shifted`), and the consumers this flag routes — the view
+	 * pipeline included — would repaint for a scroll of offsets that changes nothing
+	 * they render.
+	 */
 	structural: boolean
 	/** structural OR updated contains a MarkNode — compat snapshot renderer routes on this. */
 	render: boolean
@@ -73,6 +79,18 @@ export interface TransactionResult {
 	 * applying the root's.
 	 */
 	shifted: readonly TreeNode[]
+	/**
+	 * UNIMPLEMENTED: always `undefined`, because no channel delivers it yet.
+	 *
+	 * Spec D7 makes the DISPATCHER the capturer — it must snapshot the selection range at
+	 * transaction entry, BEFORE `adopt` runs, since adoption mutates positions in place and
+	 * deriving the range afterwards double-shifts it. Today the dispatcher only calls
+	 * `CommitSink.commit(next, window)` and never sees this result, so the agreed channel is
+	 * dispatcher → `CommitSink.commit` → `adopt`: `createTransactions` takes an injected
+	 * `selection: () => Range | undefined` and reads it at entry, and both `commit` and
+	 * `adopt` gain an optional pre-adoption range parameter to carry it. Not added ahead of
+	 * that caller — it would be surface nothing fills.
+	 */
 	selectionBefore: {readonly start: number; readonly end: number} | undefined
 	/** Valid for PRE-adoption offsets only (spec D7). */
 	map(offset: number): NodeAnchor
@@ -80,5 +98,14 @@ export interface TransactionResult {
 
 /** Spec D5: transactions produce {next, window}; commit policy lives in the sink. */
 export interface CommitSink {
+	/**
+	 * Called with the tree UNMUTATED and `next` computed from its CURRENT projection, so a
+	 * sink may rely on the tree still holding the pre-edit base here; adoption, inside the
+	 * sink, is what ends that.
+	 *
+	 * Gains an optional pre-adoption selection range when D7's capture lands (see
+	 * `TransactionResult.selectionBefore`) — the controlled sink, the second implementation,
+	 * must accept the same parameter and forward it to `adopt`.
+	 */
 	commit(next: string, window: Window): boolean
 }

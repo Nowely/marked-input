@@ -19,12 +19,12 @@ function snapshotNode(node: TreeNode): Token {
 	}
 
 	const children = snapshot(node.children())
-	// Same rule as joinNodes: children are the sole slot source (a slot mark always
-	// has >=1 text child), so the stored `slot.content` is never read back here. Each
-	// child token already carries its own projection, so joining them keeps the whole
-	// walk O(N) and lets a memoizing parent reuse cached children instead of
-	// re-projecting them. The parser creates `slot` exactly when the markup has a slot
-	// gap, so one gate drives both the projected content and the slot mirror.
+	// Same rule as joinNodes: children are the sole slot source (a slot mark always has
+	// >=1 text child), and the node stores no slot text to read instead. Each child token
+	// already carries its own projection, so joining them keeps the whole walk O(N) and
+	// lets a memoizing parent reuse cached children instead of re-projecting them. The
+	// parser creates `slot` exactly when the markup has a slot gap, so one gate drives
+	// both the projected content and the token's slot text.
 	const slotText = node.descriptor.hasSlot ? children.map(child => child.content).join('') : undefined
 	const token: MarkToken = {
 		type: 'mark',
@@ -34,10 +34,16 @@ function snapshotNode(node: TreeNode): Token {
 		descriptor: node.descriptor,
 		value: node.value(),
 		meta: node.meta(),
+		// The compat Token keeps a `content` mirror the node does not: it is derived here,
+		// from the same children the projection uses.
+		//
 		// `slotText === undefined` is the type narrow, not a second runtime case:
 		// `hasSlot` holds exactly when `slot !== undefined`, so the two disjuncts always
 		// agree. Dropping it stops compiling (string | undefined into string).
-		slot: node.slot === undefined || slotText === undefined ? undefined : {...node.slot, content: slotText},
+		slot:
+			node.slot === undefined || slotText === undefined
+				? undefined
+				: {content: slotText, start: node.slot.start, end: node.slot.end},
 		children,
 	}
 	return token

@@ -97,9 +97,9 @@ export function adopt(tree: TokenTree, window: Window, parsed: readonly Token[])
 		 */
 		function adoptMark(node: MarkNode, token: MarkToken, nodePath: readonly number[], covered: boolean): void {
 			const childrenCovered = adoptPosition(node, token, covered)
-			// The pairing gate compared descriptors, so slot presence already agrees; the copy
-			// also refreshes the mirror a retained mark would otherwise keep stale.
-			node.slot = token.slot ? {...token.slot} : undefined
+			// The pairing gate compared descriptors, so slot presence already agrees; this
+			// write is what keeps the live slot positions in step with the parse.
+			node.slot = token.slot ? {start: token.slot.start, end: token.slot.end} : undefined
 
 			const valueChanged = node.value(token.value)
 			const metaChanged = node.meta(token.meta)
@@ -174,6 +174,8 @@ export function adopt(tree: TokenTree, window: Window, parsed: readonly Token[])
 
 		const map = (offset: number): NodeAnchor => untracked(() => resolveMappedAnchor(out, offset, window, delta))
 
+		// `selectionBefore` stays undefined until the dispatcher can hand the pre-adoption
+		// range down; the channel is recorded on `TransactionResult.selectionBefore`.
 		return {structural, render, added, removed, updated, shifted, selectionBefore: undefined, map}
 	})
 }

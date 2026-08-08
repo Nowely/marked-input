@@ -122,7 +122,7 @@ describe('adopt: prefix/suffix walks', () => {
 			{start: 6, end: 13},
 			{start: 13, end: 14},
 		])
-		expect(shiftedMark.slot).toEqual({content: 'b@[c](d)e', start: 5, end: 14})
+		expect(shiftedMark.slot).toEqual({start: 5, end: 14})
 
 		const drop = editAndAdopt(source, 1, 13, '')
 		const droppedMark = drop.before[1]
@@ -165,24 +165,6 @@ describe('adopt: prefix/suffix walks', () => {
 	it('output equals a fresh parse after any of the above', () => {
 		const {tree, next} = editAndAdopt('he@[x](m)llo', 2, 9, '@[y](n)')
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse(next)))
-	})
-
-	it('retains a mark whose stored slot mirror went stale', () => {
-		const tree = createTokenTree(parser.parse('#[a]x'))
-		const mark = tree.roots()[1]
-		if (mark.kind !== 'mark') throw new Error('expected mark at index 1')
-		const child = mark.children()[0]
-		if (child.kind !== 'text') throw new Error('expected text child')
-		// Stands in for a middle-region content write (spec §4.2 step 3): children carry the new
-		// slot text while the stored mirror keeps the old one. Retention must follow the
-		// children — the mirror is derived state the projection and snapshot ignore.
-		child.text('b')
-		expect(mark.slot?.content).toBe('a')
-
-		const result = adopt(tree, {start: 5, end: 5, insertedLength: 1}, parser.parse('#[b]xy'))
-
-		expect(tree.roots()[1].id).toBe(mark.id)
-		expect(result.removed).not.toContain(mark.id)
 	})
 })
 
@@ -520,7 +502,7 @@ describe('adopt: ported reconcile fixtures', () => {
 		const child = mark.children()[0]
 		expect([child.position, mark.slot]).toEqual([
 			{start: 2, end: 2},
-			{content: '', start: 2, end: 2},
+			{start: 2, end: 2},
 		])
 
 		const result = adopt(tree, {start: 2, end: 2, insertedLength: 1}, slotParser.parse('#[a]'))
