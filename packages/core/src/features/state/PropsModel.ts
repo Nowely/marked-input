@@ -48,13 +48,14 @@ export class PropsModel {
 	readonly slotProps = signal<CoreSlotProps>({readonly: true})
 
 	set(values: Partial<SignalValues<typeof this>>): void {
+		// Single unavoidable cast: SignalValues<T> verifies per-key value types at the
+		// call site, but TS can't correlate key and value inside a loop.
+		// oxlint-disable-next-line no-unsafe-type-assertion
+		const setters = this as unknown as Record<string, (v: unknown) => void>
 		batch(
 			() => {
-				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-				for (const key of Object.keys(values) as (keyof typeof this)[]) {
-					if (!(key in this)) continue
-					// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-					;(this[key] as (v: unknown) => void)(values[key])
+				for (const [key, value] of Object.entries(values)) {
+					if (key in this) setters[key](value)
 				}
 			},
 			{mutable: true}

@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import type {OverlayMatch} from '@markput/core'
+import {key, type OverlayMatch} from '@markput/core'
 import {computed, type Ref} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-import {useStore} from '../lib/hooks/useStore'
 import type {Option} from '../types'
 import Suggestions from './Suggestions/Suggestions.vue'
 
-const store = useStore()
 const matchRef = useMarkput(s => s.overlay.match) as Ref<OverlayMatch<Option> | undefined>
-const overlayKey = computed(() => (matchRef.value ? store.key.get(matchRef.value.option) : undefined))
+const overlayKey = computed(() => (matchRef.value ? key.get(matchRef.value.option) : undefined))
 const resolveOverlay = useMarkput(s => s.overlay.slot)
 
 const resolved = computed(() => {

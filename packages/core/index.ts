@@ -1,5 +1,6 @@
 // Shared exports
 export {cx, merge} from './src/shared/utils'
+export {key} from './src/shared/classes'
 export {DEFAULT_OPTIONS} from './src/shared/constants'
 export type {
 	OverlayMatch,
