@@ -30,7 +30,12 @@ export interface MarkNode {
 	readonly value: Signal<string>
 	readonly meta: Signal<string | undefined>
 	readonly children: Signal<readonly TreeNode[]>
-	/** `content` mirrors the parsed slot text for equality checks; projections and snapshots derive the text from children. */
+	/**
+	 * `start`/`end` are live slot positions, written by adoption like `position`.
+	 * `content` is a parse-time copy that nothing resyncs and no tree code reads as
+	 * truth: projection, snapshot and adoption equality all derive slot text from
+	 * children.
+	 */
 	slot: {content: string; start: number; end: number} | undefined
 	position: {start: number; end: number}
 }
@@ -44,14 +49,24 @@ export interface TreeChange {
 	readonly path: readonly number[]
 }
 
-/** Spec D9: the single change feed adoption emits. */
+/**
+ * Spec D9: the single change feed adoption emits.
+ *
+ * Granularity splits by payload type and is normative: the id-only feed is
+ * FLATTENED, the node feeds carry subtree ROOTS only (the node hands you the
+ * subtree; an id cannot). A consumer refreshing per-node state from `shifted` or
+ * `added` must therefore walk children itself.
+ */
 export interface TransactionResult {
 	structural: boolean
 	/** structural OR updated contains a MarkNode — compat snapshot renderer routes on this. */
 	render: boolean
+	/** Subtree roots: the children of a fresh mark are not listed separately. */
 	added: readonly TreeChange[]
+	/** Subtree-inclusive: a removed mark contributes every descendant id too. */
 	removed: readonly Id[]
 	updated: readonly TreeNode[]
+	/** Subtree roots: descendant positions and the mark's `slot` moved with them. */
 	shifted: readonly TreeNode[]
 	selectionBefore: {readonly start: number; readonly end: number} | undefined
 	/** Valid for PRE-adoption offsets only (spec D7). */

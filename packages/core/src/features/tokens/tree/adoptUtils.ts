@@ -4,11 +4,15 @@ import type {Id, TreeNode} from './types'
 /**
  * Mirror of tokenIdentity's tokensEqualShifted over (node, parsed token).
  *
- * No `slot.content` comparison: that mirror is derived state the projection and
- * snapshot both ignore (children are the sole slot source), so a stale mirror
- * would refuse retentions the live tree supports — a wrong decision invisible to
- * the output-equivalence property. Recursive children equality already implies
- * slot text equality.
+ * Two fields are deliberately NOT compared. Mark `content` is a pure function of
+ * descriptor + value + meta + children, all of which are compared, so it is
+ * implied. `slot.content` is dropped on purpose: that mirror is derived state the
+ * projection and snapshot both ignore (children are the sole slot source) and
+ * nothing resyncs it, so comparing it would refuse retentions the live tree
+ * supports — a wrong decision invisible to the output-equivalence property (see
+ * the stale-mirror test in adopt.spec.ts). Everything else, `slot.start/end`
+ * included, is compared: they are live positions a retention must already agree
+ * with, or the retained mark keeps stale ones forever.
  */
 export function snapshotNodeEquals(node: TreeNode, token: Token, delta: number): boolean {
 	if (node.position.start + delta !== token.position.start) return false
@@ -17,6 +21,12 @@ export function snapshotNodeEquals(node: TreeNode, token: Token, delta: number):
 	if (token.type !== 'mark') return false
 	if (node.descriptor !== token.descriptor) return false
 	if (node.value() !== token.value || node.meta() !== token.meta) return false
+	// Descriptor equality already pins slot presence (the parser fills `slot` exactly
+	// when the markup has a slot gap), so one branch covers both shapes.
+	if (node.slot && token.slot) {
+		if (node.slot.start + delta !== token.slot.start) return false
+		if (node.slot.end + delta !== token.slot.end) return false
+	}
 	const children = node.children()
 	if (children.length !== token.children.length) return false
 	return children.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
