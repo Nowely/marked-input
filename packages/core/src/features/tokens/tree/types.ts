@@ -5,9 +5,7 @@ import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 export type Id = number
 
 /** Replaced range in the PREVIOUS projection plus inserted length (spec D2). */
-export type Window = {start: number; end: number; insertedLength: number}
-
-export type TreeNode = TextNode | MarkNode
+export type Window = {readonly start: number; readonly end: number; readonly insertedLength: number}
 
 /**
  * One structure (spec D11): the same objects flow through adoption and out of
@@ -16,6 +14,8 @@ export type TreeNode = TextNode | MarkNode
  * break the round-trip invariant (documented, not runtime-policed).
  * `position`/`slot` are plain fields written only by adoption (spec D3).
  */
+export type TreeNode = TextNode | MarkNode
+
 export interface TextNode {
 	readonly kind: 'text'
 	readonly id: Id
@@ -29,7 +29,8 @@ export interface MarkNode {
 	readonly descriptor: MarkupDescriptor
 	readonly value: Signal<string>
 	readonly meta: Signal<string | undefined>
-	readonly children: Signal<TreeNode[]>
+	readonly children: Signal<readonly TreeNode[]>
+	/** `content` is the only source for a childless slot — it has no child text node to read back. */
 	slot: {content: string; start: number; end: number} | undefined
 	position: {start: number; end: number}
 }
@@ -37,16 +38,22 @@ export interface MarkNode {
 /** Spec §2.3 addressing model. Mark interiors are addressed via slot text nodes. */
 export type NodeAnchor = {node: TextNode; offset: number} | {before: TreeNode} | {after: TreeNode} | 'start' | 'end'
 
+/** One change entry: `path` indexes the tree AFTER adoption. */
+export interface TreeChange {
+	readonly node: TreeNode
+	readonly path: readonly number[]
+}
+
 /** Spec D9: the single change feed adoption emits. */
 export interface TransactionResult {
 	structural: boolean
 	/** structural OR updated contains a MarkNode — compat snapshot renderer routes on this. */
 	render: boolean
-	added: {node: TreeNode; path: number[]}[]
-	removed: Id[]
-	updated: TreeNode[]
-	shifted: TreeNode[]
-	selectionBefore: {start: number; end: number} | undefined
+	added: readonly TreeChange[]
+	removed: readonly Id[]
+	updated: readonly TreeNode[]
+	shifted: readonly TreeNode[]
+	selectionBefore: {readonly start: number; readonly end: number} | undefined
 	/** Valid for PRE-adoption offsets only (spec D7). */
 	map(offset: number): NodeAnchor
 }
