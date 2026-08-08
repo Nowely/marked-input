@@ -90,6 +90,11 @@ describe('adopt: prefix/suffix walks', () => {
 		// mark. Drop `position.start >= window.end` and the suffix walk keeps walking: the
 		// SECOND mark is byte-identical under +delta, so it is retained and the first
 		// becomes the removal — AC-3.1's repeated-content defect mirrored onto the suffix.
+		//
+		// THE ONLY GATE ON THAT BOUND. adopt.property.spec.ts states identity one-sidedly
+		// (adoption retains AT LEAST the reference runs), so a walk over-running into the
+		// window is invisible there: dropping the bound leaves all five properties green
+		// at 6000 iterations. Do not retire this fixture as "covered by the properties".
 		const source = '@[a](m)@[a](m)@[a](m)'
 		const {tree, result, before} = editAndAdopt(source, 1, 8, '')
 		expect(tree.roots()[1].id).toBe(before[1].id)
@@ -439,9 +444,11 @@ describe('adopt: ported reconcile fixtures', () => {
 		const innerAfter = asMark(outerAfter.children()[1])
 		expect(innerAfter.id).not.toBe(inner.id)
 		expect(result.added.map(change => [change.node.id, change.path])).toEqual([[innerAfter.id, [1, 1]]])
-		// DELIBERATE contract change: reconcile reported `removed: []` here because a
-		// refused mark's subtree was opaque to it. Adoption diffs the subtree, so the
-		// vanished inner mark and its child are both reported.
+		// DELIBERATE contract change: a refused mark's subtree was opaque to reconcile, so
+		// it reported no removals for one — the original descriptor-mismatch test asserted
+		// nothing about `removed` at all, and its sibling child-count refusal pinned
+		// `removed: []` with that limitation spelled out. Adoption diffs the subtree, so
+		// the vanished inner mark and its child are both reported.
 		expect(result.removed).toEqual([inner.id, inner.children()[0].id])
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(dualParser.parse('#[a %[b] c]')))
 	})

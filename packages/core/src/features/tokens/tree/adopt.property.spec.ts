@@ -124,6 +124,14 @@ const expectCoverage = (seen: Record<string, number>, floor: number): void => {
 	expect(Object.entries(seen).filter(([, count]) => count < floor)).toEqual([])
 }
 
+/**
+ * Truncated failure report that still carries scale: comparing the first ten alone
+ * makes a one-case regression and a four-hundred-case one print identically.
+ */
+const expectNoFailures = (failures: readonly string[]): void => {
+	expect({count: failures.length, first: failures.slice(0, 10)}).toEqual({count: 0, first: []})
+}
+
 const idsOf = (nodes: readonly TreeNode[], into: Id[] = []): Id[] => {
 	for (const node of nodes) {
 		into.push(node.id)
@@ -157,6 +165,12 @@ const record = (
 /**
  * Independent mirror of `snapshotNodeEquals` over two PARSED streams — the tree is
  * not involved, so the reference walks below are derived from the parser alone.
+ *
+ * The duplication IS the point — do not "de-duplicate" it onto `snapshotNodeEquals`:
+ * reusing adoption's own predicate would mirror any defect in it on both sides of
+ * the walk-positions property, and that property is what catches a prefix-bound
+ * off-by-one. Keep the two in sync by hand: a field compared in `adoptUtils.ts` and
+ * not here (or the reverse) skews the reference runs in one direction.
  */
 function tokensEqualShifted(a: Token, b: Token, delta: number): boolean {
 	if (a.type !== b.type || a.content !== b.content) return false
@@ -173,6 +187,11 @@ function tokensEqualShifted(a: Token, b: Token, delta: number): boolean {
  * `source` and `next`. These are the nodes adoption is REQUIRED to keep: the middle
  * region between them is best-effort continuity (§4.2 step 3) and is deliberately
  * not claimed here.
+ *
+ * A deliberate re-implementation of `adopt`'s two walks, not a shortcut to them:
+ * calling into `adopt.ts` would make the property restate the implementation. Keep
+ * it in sync with steps 1 and 2 there — if the shipped walks change their bounds,
+ * this must change with them or the property starts gating a contract nobody holds.
  */
 function referenceRuns(source: readonly Token[], next: readonly Token[], window: Window, delta: number) {
 	let prefix = 0
@@ -202,16 +221,24 @@ function referenceRuns(source: readonly Token[], next: readonly Token[], window:
 
 describe('adopt property: output equivalence', () => {
 	it('reproduces a fresh parse of the edited value for every generated edit', () => {
+		// This property has no conditional clause, so its floor is on the corpus instead:
+		// a generator drifting to no-op edits satisfies "output equals a fresh parse" with
+		// adoption doing nothing at all.
+		const seen = {editedValues: 0, structuralAdoptions: 0}
 		for (const c of CASES) {
 			const tree = createTokenTree(parser.parse(c.source))
-			adopt(tree, windowOf(c), parser.parse(c.next))
+			const result = adopt(tree, windowOf(c), parser.parse(c.next))
+			if (c.next !== c.source) seen.editedValues++
+			if (result.structural) seen.structuralAdoptions++
 			expect(stripIds(snapshot(tree.roots())), label(c)).toEqual(stripIds(parser.parse(c.next)))
 			expect(tree.value(), label(c)).toBe(c.next)
 		}
+		// Measured 481 edited values and 355 structural adoptions out of 500 cases.
+		expectCoverage(seen, 100)
 	})
 })
 
-describe('adopt property: identity', () => {
+describe('adopt property: feed accounting', () => {
 	/**
 	 * Every id in the resulting tree is accounted for by the feeds, every id that left
 	 * is reported, and every observable change to a surviving node reaches the feed
@@ -274,11 +301,13 @@ describe('adopt property: identity', () => {
 				}
 			}
 		}
-		expect(failures.slice(0, 10)).toEqual([])
+		expectNoFailures(failures)
 		// Measured 441 content changes, 1034 moves, 712 removals, 317 additions.
 		expectCoverage(seen, 100)
 	})
+})
 
+describe('adopt property: identity outside the window', () => {
 	/**
 	 * Identity OUTSIDE the window (spec §7.1), stated constructively.
 	 *
@@ -288,6 +317,15 @@ describe('adopt property: identity', () => {
 	 * the pair of window-bounded runs themselves, recomputed here from the parses:
 	 * prefix nodes must not move at all, suffix nodes must move by exactly delta, and
 	 * neither may be reported removed.
+	 *
+	 * ONE-SIDED, and that leaves one mutation ungated by this whole file. The claim is
+	 * that adoption retains AT LEAST the reference runs; §7.1 deliberately grants
+	 * nothing about window-overlapping nodes, so OVER-retention — a walk running past
+	 * its bound and keeping a node the window touched — is invisible to every property
+	 * here. Deleting the suffix bound (`prev[prevTail].position.start >= window.end`)
+	 * keeps all five green at 6000 iterations. Its only gate is the fixture 'deleting
+	 * across the first two of three identical marks kills the second (suffix bound)' in
+	 * adopt.spec.ts: that fixture is NOT redundant with this suite.
 	 */
 	it('keeps ids and walk positions for the nodes the prefix and suffix walks retain', () => {
 		const failures: string[] = []
@@ -336,7 +374,7 @@ describe('adopt property: identity', () => {
 				if (removed.has(was.id)) failures.push(`${label(c)} — suffix root ${sourceIndex} reported removed`)
 			})
 		}
-		expect(failures.slice(0, 10)).toEqual([])
+		expectNoFailures(failures)
 		// Measured 1039 prefix nodes and 537 suffix nodes; both runs are empty for an edit
 		// that touches the whole document, so a generator drifting that way retires this.
 		expectCoverage(seen, 100)
@@ -398,7 +436,7 @@ describe('adopt property: map', () => {
 				}
 			}
 		}
-		expect(failures.slice(0, 10)).toEqual([])
+		expectNoFailures(failures)
 		// Measured 6269 anchorable answers against 4036 markup-interior ones: the exact-
 		// position clause only bites on the former, the excluded set is the latter.
 		expectCoverage(seen, 500)
@@ -410,19 +448,22 @@ describe('adopt property: gap-vs-exact agreement', () => {
 	 * Spec §7.1: snapshot equality for ALL edits, id-level agreement only under the
 	 * constructive predicate (both windows replace and insert byte-identical spans).
 	 * The two trees have independent id allocators, so the comparable datum is the
-	 * DECISION pattern — which root index kept a pre-existing id and which got a fresh
-	 * one — captured against each tree's own pre-adoption id set.
+	 * DECISION pattern — which position kept a pre-existing id and which got a fresh
+	 * one — captured against each tree's own pre-adoption id set. The pattern walks the
+	 * WHOLE tree in document order, not just the roots: the slot recursion makes its
+	 * own retention decisions, and a divergence confined to in-slot children would
+	 * otherwise leave both root patterns identical.
 	 */
 	it('adopting through gapWindow matches adopting through the exact op window', () => {
 		const failures: string[] = []
 		let compared = 0
 		for (const c of CASES) {
 			const exact = createTokenTree(parser.parse(c.source))
-			const exactBefore = new Set(exact.roots().map(node => node.id))
+			const exactBefore = new Set(idsOf(exact.roots()))
 			adopt(exact, windowOf(c), parser.parse(c.next))
 
 			const gap = createTokenTree(parser.parse(c.source))
-			const gapBefore = new Set(gap.roots().map(node => node.id))
+			const gapBefore = new Set(idsOf(gap.roots()))
 			const derived = gapWindow(c.source, c.next)
 			adopt(gap, derived, parser.parse(c.next))
 
@@ -434,14 +475,16 @@ describe('adopt property: gap-vs-exact agreement', () => {
 			if (!sameSpans) continue
 			compared++
 			const pattern = (roots: readonly TreeNode[], born: Set<Id>): string =>
-				roots.map(node => (born.has(node.id) ? 'kept' : 'fresh')).join(',')
+				idsOf(roots)
+					.map(id => (born.has(id) ? 'kept' : 'fresh'))
+					.join(',')
 			const gapPattern = pattern(gap.roots(), gapBefore)
 			const exactPattern = pattern(exact.roots(), exactBefore)
 			if (gapPattern !== exactPattern) {
 				failures.push(`${label(c)} — gap ${gapPattern} ≠ exact ${exactPattern}`)
 			}
 		}
-		expect(failures.slice(0, 10)).toEqual([])
+		expectNoFailures(failures)
 		// The predicate holds for 451 of 500 cases; a regression that silences it would
 		// otherwise make the id-level clause above quietly vacuous.
 		expect(compared).toBeGreaterThan(ITERATIONS / 2)
