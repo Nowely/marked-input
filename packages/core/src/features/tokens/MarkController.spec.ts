@@ -94,6 +94,18 @@ describe('MarkController', () => {
 		expect(store.value.current()).not.toContain('__meta__')
 	})
 
+	it('preserves an unpatched slot when only the value changes', () => {
+		// The slot default is DERIVED at S1.6d — `joinNodes(node.children())`, because
+		// `MarkNode.slot` stores positions only. Dropping the derivation was a silent
+		// pass before this case existed (mutation-checked on both the token-backed and
+		// the node-backed implementation).
+		const {store, controller} = setup('hi @[user](inner)', '@[__value__](__slot__)')
+
+		controller.update({value: 'other'})
+
+		expect(store.value.current()).toBe('hi @[other](inner)')
+	})
+
 	it('clears slot content without leaking placeholder text', () => {
 		const {store, controller} = setup('#[nested]', '#[__slot__]')
 
@@ -104,12 +116,11 @@ describe('MarkController', () => {
 
 	it('fails closed when the mark is gone from the value', () => {
 		const {store, controller} = setup()
-		// Wholesale replacement WITHOUT a successor mark: the identity dies, the
-		// structural apply latches, and the captured address no longer resolves
-		// in the new tree — the mutation must no-op. (A replacement mark of the
-		// same descriptor in the same slot would INHERIT the identity instead —
-		// continuity the id bridge deliberately preserves; see
-		// 'same-slot replacement inherits identity — controller bridges without rendered()'.)
+		// Wholesale replacement WITHOUT a successor mark: the identity dies, so
+		// `find(id)` no longer resolves in the new tree — the mutation must no-op.
+		// (A replacement mark of the same descriptor in the same slot would INHERIT
+		// the identity instead — continuity the id bridge deliberately preserves;
+		// see 'same-slot replacement inherits identity'.)
 		store.value.current('different text')
 
 		controller.update({value: 'bad'})
@@ -198,17 +209,13 @@ describe('MarkController across text-path commits (identity bridge)', () => {
 		expect(store.value.current()).toBe('hello')
 	})
 
-	it('same-slot replacement inherits identity — the captured handle SURVIVES across the structural commit', () => {
+	it('same-slot replacement inherits identity — the captured id SURVIVES across the structural commit', () => {
 		// Structural path: the whole value is replaced wholesale, but the new
-		// value carries the SAME descriptor in the SAME slot position. Reconcile
-		// pairs the mark by index and it inherits its predecessor's id, so bind
-		// UPDATES the inherited-id node IN PLACE (it is not killed/recreated) —
-		// empirically verified: handle(inheritedId) after the commit IS the SAME
-		// object the controller captured, and it is alive once the new tree is
-		// painted and rendered() fires. So the handle-backed controller stays live
-		// ACROSS the commit WITHOUT re-derivation. (Phase 4 fail-closed semantics
-		// bite only when the handle is genuinely KILLED — the mark removed, see the
-		// dead-handle no-op case — not when its id is inherited.)
+		// value carries the SAME descriptor in the SAME slot position. Adoption
+		// pairs the mark by index and it keeps its id, so the controller's
+		// `find(id)` still lands on a live mark node ACROSS the commit WITHOUT
+		// re-derivation. (Fail-closed semantics bite only when the mark is genuinely
+		// REMOVED — see the dead-mark no-op case — not when its id is inherited.)
 		const {store, controller} = mountedSetup()
 
 		// Same descriptor (@[__value__]) in the same slot (index 0): identity inherited.
@@ -238,30 +245,27 @@ describe('MarkController across text-path commits (identity bridge)', () => {
 /**
  * MarkController live-read parity tables (spec §MarkController semantics).
  *
- * The controller is ID-BACKED: value/meta/slot/readOnly prefer LIVE reads of the
- * current token (re-resolved through the latch-gated handle), not a frozen
- * snapshot. When the live handle is unresolvable (the pending window or a dead
- * mark) READS fall back to the construction-time token — the adapter hands a
- * fresh token to fromToken every render and never re-renders after bind, so a
- * latch-gated read that flashed empty would leave the rendered mark blank.
- * WRITES never use the captured token: they resolve the live handle only and
- * fail closed mid-window. The parity table:
+ * The controller is ID-BACKED: every read and every write re-resolves
+ * `store.tokens.find(id)` against the LIVE TREE, which has no pending window, so
+ * there is no captured-token fallback to fall back TO (§4.6 item 4, S1.6d). The
+ * parity table:
  *
- *   read       | live source                          | mid-window / dead
- *   -----------|--------------------------------------|-------------------------
- *   value      | handle.token().value                 | captured token value
- *   meta       | handle.token().meta                  | captured token meta
- *   slot       | handle.token().slot?.content         | captured token slot
- *   readOnly   | store.props.readOnly()               | (always live)
- *   update()   | mutate the live mark's range         | false (fail-closed)
- *   remove()   | replace the live mark's range with ''| false (fail-closed)
+ *   read       | live source                     | mark no longer in the tree
+ *   -----------|---------------------------------|---------------------------
+ *   value      | node.value()                    | ''
+ *   meta       | node.meta()                     | undefined
+ *   slot       | joinNodes(node.children())      | undefined
+ *   readOnly   | store.props.readOnly()          | (always live)
+ *   update()   | mutate the live mark's range    | false (fail-closed)
+ *   remove()   | replace that range with ''      | false (fail-closed)
  *
- * SEMVER-MAJOR: a controller captured before a structural commit that kills its
- * handle no longer auto-bridges its WRITES — they fail closed; the adapter
+ * SEMVER-MAJOR: a controller captured before a structural commit that REMOVES its
+ * mark no longer auto-bridges its WRITES — they fail closed; the adapter
  * re-derives it from the fresh token (useMark's useMemo re-runs on the new token
- * object).
+ * object). A write during the pending window, by contrast, now SUCCEEDS (it folds
+ * into the pending structural pass) where the retired write latch refused it.
  */
-describe('MarkController live-read parity (handle-backed)', () => {
+describe('MarkController live-read parity (node-backed)', () => {
 	afterEach(() => {
 		document.body.replaceChildren()
 	})
@@ -335,50 +339,48 @@ describe('MarkController live-read parity (handle-backed)', () => {
 		expect(store.value.current()).toBe('hello')
 	})
 
-	it('update() while a structural apply awaits its bind is a fail-closed no-op returning false', () => {
+	it('update() while a structural apply awaits its bind SUCCEEDS and folds into the pending pass', () => {
 		const {store, controller} = mountedSetup()
-		// Trigger a structural commit but do NOT render() — the latch is closed.
+		// Trigger a structural commit but do NOT render() — the pending latch is closed.
 		// The fixture ADDS roots on purpose: adoption pairs roots by index, so a
 		// whole-value write that keeps the root count ('he@[x]llo' → 'different @[x]')
 		// removes nothing, takes the TEXT path and opens no pending window at all. The
 		// extra mark keeps the commit structural while the FIRST mark keeps its id, so
-		// this still tests the latch rather than a dead handle.
+		// this still exercises the window rather than a dead mark.
 		store.value.current('he@[x]llo@[y]')
-		// handle(id) fails closed mid-window, so the live read sees no mark.
+		// INVERTED at S1.6d (§4.6 item 4, SEMVER-MAJOR): the write latch is gone. The
+		// controller resolves the LIVE NODE, which has no pending window, and the write
+		// folds into the pending structural pass (the pipeline's fold guard).
 		const result = controller.update({value: 'bad'})
-		expect(result).toBe(false)
+		expect(result).toBe(true)
+		expect(store.value.current()).toBe('he@[bad]llo@[y]')
 	})
 
 	// Render-path contract: BOTH adapters call fromToken synchronously during
 	// render (react useMark inside useMemo, vue useMark inside setup), so fromToken
 	// runs in the routine pending window on every structural commit — BEFORE the
 	// freshly-painted DOM binds, and the adapter never schedules a re-render once it
-	// does. So fromToken must NOT throw there, AND reads must surface the
-	// just-handed-in token (not flash empty) while writes fail closed until the
-	// same-id handle binds. A throw here crashes the rendered component (the
-	// storybook regression this pins against).
-	it('fromToken during the pending-latch window reads the captured token and fails closed on writes, then goes live after bind', () => {
+	// does. So fromToken must NOT throw there, AND reads must surface the mark's
+	// value (not flash empty). A throw here crashes the rendered component (the
+	// storybook regression this pins against). The mid-window WRITE is pinned by the
+	// case above, which S1.6d inverted.
+	it('fromToken during the pending window reads the live node, then stays live after bind', () => {
 		const {store} = mountedSetup()
 
-		// Structural commit, NO rendered() — the latch is closed and handle(id)
-		// serves undefined for the FRESH render-tree mark. fromToken (which both
-		// adapters call synchronously during render) must build a controller on the
-		// id, not throw on the unresolvable handle. The fixture ADDS roots for the
-		// reason spelled out on the mid-window case above: a whole-value write that
-		// keeps the root count is a text-path commit and opens no pending window.
+		// Structural commit, NO rendered() — the pending latch is closed. fromToken
+		// (which both adapters call synchronously during render) must build a
+		// controller on the id. The fixture ADDS roots for the reason spelled out on
+		// the mid-window case above: a whole-value write that keeps the root count is
+		// a text-path commit and opens no pending window.
 		store.value.current('he@[x]llo@[y]')
 		const freshToken = store.tokens.renderTree().find(t => t.type === 'mark')!
 		const controller = MarkController.fromToken(store, freshToken)
 		expect(controller).toBeInstanceOf(MarkController)
 
-		// READ falls back to the construction-time token mid-window: the rendered
-		// mark shows its value immediately (the adapter hands fromToken a fresh token
-		// every render and never re-renders after bind).
+		// READ resolves the live node mid-window: the rendered mark shows its value
+		// immediately instead of flashing empty until a re-render the adapter never
+		// schedules.
 		expect(controller.value).toBe('x')
-		// WRITE stays latch-gated: no live handle resolves through the latch, so the
-		// mutation fails closed and the value is untouched.
-		expect(controller.update({value: 'bad'})).toBe(false)
-		expect(store.value.current()).toBe('he@[x]llo@[y]')
 
 		// Paint the render tree and complete the handshake — the same-id handle
 		// binds and reads/writes go live WITHOUT re-derivation.
