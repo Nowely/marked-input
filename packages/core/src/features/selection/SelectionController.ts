@@ -8,7 +8,7 @@ import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {anchorEquals} from '../tokens'
-import type {NodeAnchor, TokenHandle, TokenModel} from '../tokens'
+import type {NodeAnchor, TokenHandle, TokenModel, TransactionResult} from '../tokens'
 
 type Anchors = {anchor: NodeAnchor; head: NodeAnchor}
 
@@ -122,6 +122,26 @@ export class SelectionController {
 	 */
 	select(anchor: NodeAnchor, head: NodeAnchor = anchor): boolean {
 		return this.#anchors({anchor, head})
+	}
+
+	/**
+	 * @internal Post-adoption caret repair (spec D7, §4.5). Called by the token layer
+	 * inside the commit, after the pipeline applied — never by anything else. Together
+	 * with {@link range} this is the `SelectionPort` `TokenModel` is constructed with.
+	 *
+	 * The anchor can never dangle: `selectionBefore` is DERIVED from these same anchors
+	 * (the capture thunk is this controller's `range`), so it is defined exactly when they
+	 * are, and every adoption that could remove an anchor's node re-derives it here.
+	 * `map` resolves against the post-adoption roots and is property-proven never to
+	 * answer with a dead node (`tree/adopt.property.spec.ts`).
+	 */
+	repair(result: TransactionResult): void {
+		// Unconditional: positions move whether or not there is a selection, and `range`
+		// derives from fields no signal covers (spec D3).
+		this.#generation(this.#generation() + 1)
+		const before = result.selectionBefore
+		if (!before) return
+		this.select(result.map(before.start), result.map(before.end))
 	}
 
 	focusFirst(): void {

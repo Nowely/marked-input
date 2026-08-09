@@ -18,17 +18,19 @@ export class Store {
 	// — are REQUIRED, not stylistic: without them `tsc` fails with TS7022 ("implicitly
 	// has type 'any' because it is referenced directly or indirectly in its own
 	// initializer"). Measured: TS7022 fires only when both lack an annotation.
-	readonly tokens: TokenModel = new TokenModel(this.props, this.host, () => this.selection.range())
+	readonly tokens: TokenModel = new TokenModel(this.props, this.host, () => this.selection)
 	// NOT in the cycle — `value` depends on `tokens` only, so its annotation is
 	// ordinary style rather than a TS7022 workaround.
 	readonly value: ValueModel = new ValueModel(this.tokens)
 
 	readonly slots = new SlotsFeature(this.props)
 
-	// Built AFTER `tokens`, which is why the capture above is a thunk: it is invoked
-	// only from the boundary's `fold`, at commit/arrival time (spec D7).
+	// Built AFTER `tokens`, which is why the port above is a thunk: it is invoked only
+	// from the boundary's `fold` and `onResult`, at commit/arrival time (spec D7). The
+	// controller satisfies `SelectionPort` structurally — `range` is the capture, `repair`
+	// the post-adoption caret fix.
 	readonly selection: SelectionController = new SelectionController(this.host, this.tokens, this.value, this.props)
-	readonly edit = new EditController(this.value, this.selection)
+	readonly edit = new EditController(this.value, this.selection, this.props)
 
 	readonly keyboard = new KeyboardController(
 		this.host,

@@ -8,7 +8,7 @@ export {TokenModel} from './model/TokenModel'
 // internal: `TokenModel.anchorAt`/`offsetOf` already speak `NodeAnchor` in their
 // signatures, and `SelectionController` stores anchors and dedupes them on identity.
 // Exported here rather than deep-imported from `tree/` (plan decision, S1.6c task 8).
-export type {NodeAnchor} from './tree/types'
+export type {NodeAnchor, TransactionResult} from './tree/types'
 export {anchorEquals} from './tree/anchors'
 export type {SelectionAnchor, SelectionSnapshot} from './DomModel'
 export {TokenHandle} from './model/TokenHandle'

@@ -14,12 +14,24 @@ import {lowerReplace} from '../tree/offsetShim'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode} from '../tree/tree'
-import type {NodeAnchor, TreeNode} from '../tree/types'
+import type {NodeAnchor, TransactionResult, TreeNode} from '../tree/types'
 import {createCommitPipeline} from './commit'
 import type {TokenDelta} from './commitInput'
 import {applyEditableState} from './editableState'
 import type {TokenHandle} from './TokenHandle'
 import {fromTransaction} from './treeInput'
+
+/**
+ * The selection's two ends of the D7 protocol. A THUNK in `Store` because `tokens` is
+ * built before `selection`; invoked only at commit/arrival time, never during
+ * construction.
+ */
+export interface SelectionPort {
+	/** Pre-adoption capture (spec D7), in the TREE's coordinate space. */
+	range(): Range | undefined
+	/** Post-adoption repair (spec D7): consumes `selectionBefore` + `map`. */
+	repair(result: TransactionResult): void
+}
 
 /**
  * The value owner (spec D1, plan decision D-c): it holds THE token tree, the
@@ -264,17 +276,17 @@ export class TokenModel {
 		private readonly props: PropsModel,
 		private readonly host: Host,
 		/**
-		 * Pre-adoption selection capture (spec D7), injected because `Store` builds
-		 * `tokens` before `selection`. Invoked only from the boundary's `fold`, i.e. at
-		 * commit/arrival time — never during construction.
+		 * Both ends of the D7 selection protocol ({@link SelectionPort}), injected because
+		 * `Store` builds `tokens` before `selection`. Invoked only from the boundary's
+		 * `fold` and `onResult`, i.e. at commit/arrival time — never during construction.
 		 *
-		 * NAMED `selectionBefore`, not `selection`: this class already has a
+		 * NAMED `selectionPort`, not `selection`: this class already has a
 		 * `selection(): SelectionSnapshot | undefined` Engine SPI method. Measured with
 		 * the colliding name: TS2300 (duplicate identifier), TS2403 / TS2687 on the two
-		 * declarations, plus TS2322 where the boundary dep then binds to the DOM
-		 * snapshot reader instead of the injected thunk.
+		 * declarations, TS2532 / TS2339 at the two call sites, and TS2741 in `Store.ts`.
+		 * The task does not compile.
 		 */
-		private readonly selectionBefore: () => Range | undefined
+		private readonly selectionPort: () => SelectionPort
 	) {
 		host.onMounted(() => {
 			// Order matters: the immediate arrival seeds the pipeline (cold start is
@@ -396,7 +408,7 @@ export class TokenModel {
 		parser: () => this.#parser(),
 		isBlock: () => this.props.layout.isBlock(),
 		controlled: () => this.props.value() !== undefined,
-		selection: () => this.selectionBefore(),
+		selection: () => this.selectionPort().range(),
 		onChange: next => this.props.onChange()?.(next),
 		// Synchronous by contract (spec §4.4): `tokens.current()` must be consistent with
 		// `value.current()` the moment adoption lands, because seven call sites slice the
@@ -408,6 +420,10 @@ export class TokenModel {
 		onResult: result => {
 			this.#pipeline.apply(fromTransaction(result, this.#memo, this.#tree.roots()))
 			this.#committed(this.#tree.value())
+			// LAST, and inside the commit: the repair writes the selection the `#anchors`
+			// watch then applies, and an imperative post-edit caret (`EditController`) lands
+			// later in the same batch and wins by design (plan decision D-d).
+			this.selectionPort().repair(result)
 		},
 	})
 

@@ -10,8 +10,8 @@ function enableStructuralStore(value: string, props: Parameters<Store['props']['
 	return store
 }
 
-function mountStructuralInline(value: string) {
-	const store = enableStructuralStore(value)
+/** The DOM half of a single-text-surface mount, shared by the uncontrolled and controlled fixtures. */
+function mountInline(store: Store) {
 	const container = document.createElement('div')
 	const textSurface = document.createElement('span')
 	container.append(textSurface)
@@ -21,6 +21,10 @@ function mountStructuralInline(value: string) {
 	const textNode = textSurface.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
 	return {store, container, textSurface, textNode}
+}
+
+function mountStructuralInline(value: string) {
+	return mountInline(enableStructuralStore(value))
 }
 
 function mountStructuralInlineMark(value = 'hello @[world]') {
@@ -428,6 +432,125 @@ describe('SelectionController', () => {
 			selection.addRange(range)
 
 			expect(store.selection.readRaw()).toBeUndefined()
+			container.remove()
+		})
+	})
+
+	describe('caret repair (spec D7, AC-3.2/3.3/3.4)', () => {
+		/**
+		 * `store.value.replace` — NOT `store.edit.replace`. EditController writes the caret
+		 * itself afterwards, which would mask everything these cases assert.
+		 */
+		it('keeps node and offset when the edit is outside the anchor, and still reports the NEW offset', () => {
+			// AC-3.2 and the #generation gate in one case, hand-traced:
+			//   'ab@[x]cd' → text[0,2] mark[2,6] text[6,8]; caret 7 = {node: cd, offset: 1}.
+			//   insert 'Z' at 0 → window {0,0,1} → map(7) = 8 → anchorAt(8) → cd is now [7,9]
+			//   → {node: cd, offset: 1} — the SAME node object and the SAME local offset, so
+			//   the `#anchors` write is deduped and notifies nothing. Only the generation bump
+			//   makes range() answer 8; without it the computed returns the cached 7.
+			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+			store.selection.position(7)
+			expect(store.selection.range()).toEqual({start: 7, end: 7})
+
+			store.value.replace({start: 0, end: 0}, 'Z')
+
+			expect(store.value.current()).toBe('Zab@[x]cd')
+			expect(store.selection.range()).toEqual({start: 8, end: 8})
+			container.remove()
+		})
+
+		it('maps a caret inside the edited region to the end of the inserted text', () => {
+			// AC-3.3. Caret 7 (inside 'cd'), replace [6,8] with 'ZZZZ' → window {6,8,4} →
+			// map(7) → 6 + 4 = 10.
+			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+			store.selection.position(7)
+
+			store.value.replace({start: 6, end: 8}, 'ZZZZ')
+
+			expect(store.selection.range()).toEqual({start: 10, end: 10})
+			container.remove()
+		})
+
+		it('survives the anchor node being REMOVED by the transaction', () => {
+			// AC-3.3's second half. Whole-value write: gapWindow('ab@[x]cd','zz') = {0,8,2};
+			// adoption pairs by index, so root 0 is retained and the mark AND 'cd' — the
+			// anchor's node — are removed. map(7) → inside the window → 0 + 2 = 2.
+			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+			store.selection.position(7)
+
+			store.value.replace({start: 0, end: -1}, 'zz')
+
+			expect(store.value.current()).toBe('zz')
+			expect(store.selection.range()).toEqual({start: 2, end: 2})
+			container.remove()
+		})
+
+		it('maps a cross-node replacement spanning a mark to the end of the replacement', () => {
+			// AC-3.4. Caret 8 (document end), replace [1,7] with 'Q' → 'aQd', window {1,7,1},
+			// delta -5 → map(8) = 3.
+			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+			store.selection.position(8)
+
+			store.value.replace({start: 1, end: 7}, 'Q')
+
+			expect(store.value.current()).toBe('aQd')
+			expect(store.selection.range()).toEqual({start: 3, end: 3})
+			container.remove()
+		})
+
+		it('leaves the selection alone when there was none', () => {
+			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+			expect(store.selection.range()).toBeUndefined()
+			store.value.replace({start: 0, end: 0}, 'Z')
+			expect(store.selection.range()).toBeUndefined()
+			container.remove()
+		})
+	})
+
+	describe('controlled caret (spec AC-4.4)', () => {
+		it('repairs at the echo, once, with no optimistic move', () => {
+			// THE integration gate for plan decisions D-a AND D-e simultaneously:
+			//   left affinity answers 3 → range {2,2} after the echo;
+			//   keeping the optimistic write answers {4,4} (the captured caret is already 3).
+			const store = new Store()
+			store.props.set({value: 'hello', onChange: next => store.props.set({value: next})})
+			const {container} = mountInline(store)
+			store.selection.position(2)
+
+			store.edit.replace({start: 2, end: 2}, 'X')
+
+			expect(store.value.current()).toBe('heXllo')
+			expect(store.selection.range()).toEqual({start: 3, end: 3})
+			container.remove()
+		})
+
+		it('a rejecting parent moves no caret at all', () => {
+			const store = new Store()
+			const onChange = vi.fn()
+			store.props.set({value: 'hello', onChange})
+			const {container} = mountInline(store)
+			store.selection.position(2)
+
+			store.edit.replace({start: 2, end: 2}, 'X')
+
+			expect(onChange).toHaveBeenCalledWith('heXllo')
+			expect(store.value.current()).toBe('hello')
+			expect(store.selection.range()).toEqual({start: 2, end: 2})
+			container.remove()
+		})
+
+		it('a transforming parent still repairs, through the gap window', () => {
+			const store = new Store()
+			store.props.set({value: 'hello', onChange: next => store.props.set({value: next.toUpperCase()})})
+			const {container} = mountInline(store)
+			store.selection.position(2)
+
+			store.edit.replace({start: 2, end: 2}, 'X')
+
+			expect(store.value.current()).toBe('HEXLLO')
+			// gapWindow('hello','HEXLLO') = {0,5,6}; map(2) is inside → 0 + 6 = 6. Best effort,
+			// which is what AC-4.2/4.4 promise for a transform.
+			expect(store.selection.range()).toEqual({start: 6, end: 6})
 			container.remove()
 		})
 	})
