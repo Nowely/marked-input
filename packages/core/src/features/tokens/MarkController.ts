@@ -2,6 +2,7 @@ import type {MarkToken} from '.'
 import type {MarkPatch} from '../../shared/editorContracts'
 import type {Store} from '../../store'
 import {annotate} from './parser/utils/annotate'
+import type {MarkNode} from './tree/types'
 
 /**
  * Id-backed mark command surface. The controller holds a stable token id (not a
@@ -71,15 +72,15 @@ export class MarkController {
 	}
 
 	remove(): boolean {
-		const token = this.#resolve()
-		if (!token) return false
-		this.store.value.replace(token.position, '')
-		return true
+		const target = this.#resolve()
+		if (!target) return false
+		return this.store.tokens.applyStructural(target.node, '')
 	}
 
 	update(patch: MarkPatch): boolean {
-		const token = this.#resolve()
-		if (!token) return false
+		const target = this.#resolve()
+		if (!target) return false
+		const {token, node} = target
 
 		const value = patch.value ?? token.value
 		const meta =
@@ -90,10 +91,8 @@ export class MarkController {
 				: patch.slot?.kind === 'set'
 					? patch.slot.value
 					: token.slot?.content
-		const serialized = this.#serialize(token, {value, meta, slot})
 
-		this.store.value.replace(token.position, serialized)
-		return true
+		return this.store.tokens.applyStructural(node, this.#serialize(token, {value, meta, slot}))
 	}
 
 	#serialize(token: MarkToken, fields: {value: string; meta?: string; slot?: string}): string {
@@ -104,9 +103,23 @@ export class MarkController {
 		})
 	}
 
-	/** The live mark to mutate, or undefined in read-only mode / against a dead or mid-window handle. */
-	#resolve(): MarkToken | undefined {
+	/**
+	 * The live mark to mutate, or undefined in read-only mode / against a dead or
+	 * mid-window handle.
+	 *
+	 * TWO resolutions, deliberately: the latch-gated HANDLE is the permission check
+	 * (spec §4.6 item 4 retires that regime at S1.6d, not here — `MarkController.spec`
+	 * pins the mid-window and dead-handle failures, one of them flagged SEMVER-MAJOR),
+	 * while the tree NODE is the write target. The node's `position` is always fresh,
+	 * where the handle's is the bind generation; the latch means they cannot disagree
+	 * at write time today, so this is a correctness upgrade that only becomes
+	 * observable when S1.6d drops the gate.
+	 */
+	#resolve(): {token: MarkToken; node: MarkNode} | undefined {
 		if (this.store.props.readOnly()) return undefined
-		return this.#liveMark()
+		const token = this.#liveMark()
+		if (!token) return undefined
+		const node = this.store.tokens.find(this.id)
+		return node?.kind === 'mark' ? {token, node} : undefined
 	}
 }
