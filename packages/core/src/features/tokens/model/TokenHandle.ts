@@ -159,10 +159,27 @@ export class TokenHandle {
 		return true
 	}
 
-	/** @internal Refresh token/path after a reconcile. Inert on a dead handle. */
-	update(token: Token, path: TokenPath): void {
+	/**
+	 * @internal Refresh the BIND-GENERATION token: the content and positions that
+	 * describe what the DOM currently shows (spec D9). Written by the text branch,
+	 * which patches the surface in the same batch, and by bind. Between a
+	 * structural apply and its bind nothing writes it — that is the property every
+	 * DOM-boundary read depends on (tokens/boundary.ts resolves offsets against
+	 * `token.position`). Inert on a dead handle.
+	 */
+	refresh(token: Token): void {
 		if (this.#dead) return
 		this.#token = token
+	}
+
+	/**
+	 * @internal Refresh token AND path. Bind is the only caller: a path can only
+	 * move when a node is added or removed, and such a commit never reaches the
+	 * text branch (spec D9's `render` bit is set for both).
+	 */
+	update(token: Token, path: TokenPath): void {
+		if (this.#dead) return
+		this.refresh(token)
 		this.#path = [...path]
 	}
 

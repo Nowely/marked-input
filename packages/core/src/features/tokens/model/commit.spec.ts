@@ -5,6 +5,7 @@ import {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
 import {createIdentityTracker} from '../tokenIdentity'
 import {createCommitPipeline} from './commit'
+import {fromReconcile} from './commitInput'
 import type {TokenHandle} from './TokenHandle'
 
 /**
@@ -35,7 +36,7 @@ function createHarness() {
 	})
 	const apply = (value: string) => {
 		const result = tracker.reconcile(parser.parse(value))
-		pipeline.apply(result)
+		pipeline.apply(fromReconcile(result))
 		return result
 	}
 	const render = () => {
@@ -495,12 +496,14 @@ describe('createCommitPipeline', () => {
 			const tokens = [...pipeline.renderTree()]
 			// A `text` change whose id has no handle abandons the text branch and
 			// self-heals structurally (the conservative stale-tree guard).
-			pipeline.apply({
-				tokens,
-				structural: false,
-				changes: [{id: 99999, token: tokens[0], path: [0], kind: 'text'}],
-				removedIds: [],
-			})
+			pipeline.apply(
+				fromReconcile({
+					tokens,
+					structural: false,
+					changes: [{id: 99999, token: tokens[0], path: [0], kind: 'text'}],
+					removedIds: [],
+				})
+			)
 
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 			expect(pipeline.pending()).toBe(false)
@@ -592,7 +595,7 @@ describe('createCommitPipeline', () => {
 			})
 			const apply = (value: string) => {
 				const result = tracker.reconcile(parser.parse(value))
-				pipeline.apply(result)
+				pipeline.apply(fromReconcile(result))
 				return result
 			}
 			const render = () => {

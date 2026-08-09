@@ -93,6 +93,26 @@ describe('TokenHandle', () => {
 			expect(handle.token()).toBe(next)
 			expect(handle.path()).toEqual([2])
 		})
+
+		it('refresh() moves the token without touching the path', () => {
+			const handle = new TokenHandle(1, textToken('hello', 0), [0])
+
+			const next = textToken('hello!', 0)
+			handle.refresh(next)
+
+			expect(handle.token()).toBe(next)
+			expect(handle.path()).toEqual([0])
+		})
+
+		it('refresh() is inert on a dead handle', () => {
+			const token = textToken('hello', 0)
+			const handle = new TokenHandle(1, token, [0])
+			handle.kill()
+
+			handle.refresh(textToken('zombie', 0))
+
+			expect(handle.token()).toBe(token)
+		})
 	})
 
 	describe('element bindings', () => {

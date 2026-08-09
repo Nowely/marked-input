@@ -2,8 +2,8 @@ import type {TokenPath} from '../../../shared/editorContracts'
 import {batch, event, signal} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
-import type {ReconcileResult, TokenChangeEntry} from '../tokenIdentity'
 import {bind} from './bind'
+import type {CommitChange, CommitInput} from './commitInput'
 import type {TokenHandle} from './TokenHandle'
 
 /**
@@ -28,8 +28,8 @@ export type CommitDeps = {
 }
 
 export type CommitPipeline = {
-	/** THE entry — routes one reconcile result through the text or structural branch. */
-	apply(result: ReconcileResult): void
+	/** THE entry — routes one commit input through the text or structural branch. */
+	apply(input: CommitInput): void
 	/** Adapter signal: the renderer painted — bind the DOM and complete a pending structural apply. */
 	onRendered(): void
 	/** Structural tree; reference changes ⇔ the renderer must run. */
@@ -80,18 +80,18 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	let lastRemovedIds: readonly number[] = []
 	let committing = false
 
-	function apply(result: ReconcileResult): void {
+	function apply(input: CommitInput): void {
 		if (committing) throw new Error('TokenModel commit re-entry')
 		committing = true
 		try {
-			const {tokens, structural, changes, removedIds} = result
+			const {tokens, render, changes, removedIds} = input
 			latest = tokens
-			// Routing decided at RECONCILE time (result.structural). The one
+			// Routing decided by the producer (spec D9's `render` bit). The one
 			// commit-side override is the fold guard: while a structural apply
 			// awaits its bind the node layer is one generation stale, so EVERY
 			// apply folds into the pending structural pass (fail-closed — no
 			// half-patch against a tree the DOM never showed).
-			if (!pendingStructural && !structural) {
+			if (!pendingStructural && !render) {
 				if (commitText(changes, removedIds)) return
 				commitStructural(tokens, removedIds, true)
 				return
@@ -117,36 +117,35 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 
 	/**
 	 * Text branch: the adapter never re-renders (tree keeps its reference), so
-	 * bound elements and paths stay live. Reconcile already resolved every change
-	 * to (id, token, path) and decided routing — `result.structural` was false, so
-	 * no entry is an `add` and the tree has no removals. Two passes: resolve every
-	 * change to a live handle/surface PURELY first; ANY miss abandons the branch
-	 * before a single mutation and the caller escalates structurally.
+	 * bound elements and paths stay live. The PRODUCER resolved every change to
+	 * (id, token, patch) and decided routing — `input.render` was false, so no
+	 * node was added or removed anywhere and every path is unchanged (spec D9;
+	 * plan D-c). Two passes: resolve every change to a live handle/surface PURELY
+	 * first; ANY miss abandons the branch before a single mutation and the caller
+	 * escalates structurally.
 	 */
-	function commitText(changes: readonly TokenChangeEntry[], removedIds: readonly number[]): boolean {
-		// surface is set only for 'text'-kind entries; absent → update-only (no DOM write).
-		const updates: {handle: TokenHandle; token: Token; path: TokenPath; surface?: HTMLElement}[] = []
+	function commitText(changes: readonly CommitChange[], removedIds: readonly number[]): boolean {
+		// surface is set only for patch entries; absent → refresh-only (no DOM write).
+		const updates: {handle: TokenHandle; token: Token; surface?: HTMLElement}[] = []
 		for (const change of changes) {
 			const handle = deps.nodes.get(change.id)
-			if (change.kind === 'update') {
+			if (!change.patch) {
 				// Never bound yet (a handle materializes on the next bind) — skip, not a
 				// miss: an unrendered token has no surface to patch.
-				if (!handle) continue
-				updates.push({handle, token: change.token, path: change.path})
+				if (handle) updates.push({handle, token: change.token})
 				continue
 			}
-			// kind 'text' on the text branch is always a TEXT token (a refused-descend
-			// MARK sets result.structural, routing to commitStructural, so we are not
-			// here). Resolve its surface.
 			if (!handle) return false
 			const surface = handle.node()?.textElement
 			if (!surface) return false
-			updates.push({handle, token: change.token, path: change.path, surface})
+			updates.push({handle, token: change.token, surface})
 		}
 
 		batch(() => {
-			for (const {handle, token, path, surface} of updates) {
-				handle.update(token, path)
+			for (const {handle, token, surface} of updates) {
+				// Token only: paths cannot move on a text-routed commit, because the
+				// routing bit is set by every add and every removal.
+				handle.refresh(token)
 				if (surface && surface.textContent !== token.content) surface.textContent = token.content
 			}
 		})

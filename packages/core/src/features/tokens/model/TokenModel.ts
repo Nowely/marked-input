@@ -12,6 +12,7 @@ import {createTextToken} from '../parser/utils/createTextToken'
 import {createIdentityTracker} from '../tokenIdentity'
 import {pathEquals} from '../tokenIndex'
 import {createCommitPipeline} from './commit'
+import {fromReconcile} from './commitInput'
 import {applyEditableState} from './editableState'
 import type {TokenHandle} from './TokenHandle'
 
@@ -205,7 +206,7 @@ export class TokenModel {
 		const hint = this.value.takePendingEdit()
 		const parsed = parser ? parser.parse(value) : [createTextToken(value)]
 		const tokens = isBlock ? filterEmptyText(parsed) : parsed
-		this.#pipeline.apply(this.#identity.reconcile(tokens, hint))
+		this.#pipeline.apply(fromReconcile(this.#identity.reconcile(tokens, hint)))
 	}
 
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
