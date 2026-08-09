@@ -1,6 +1,8 @@
 import {describe, expect, it} from 'vitest'
 
 import {markToken, textToken} from '../__testing__/tokenFactories'
+import {Parser} from '../parser/Parser'
+import {createIdentityTracker} from '../tokenIdentity'
 import {fromReconcile} from './commitInput'
 
 describe('fromReconcile', () => {
@@ -42,5 +44,41 @@ describe('fromReconcile', () => {
 		// leaves the rest of the suite green — the live `changed` consumers only
 		// read `removed`.
 		expect(input.delta).toEqual({added: [3], removed: [9], updated: [1]})
+	})
+
+	describe('the subtree contract (TokenDelta)', () => {
+		// '#[ab]tail' → [text '' [0,0], mark '#[ab]' [0,5] (children: [text 'ab' [2,4]]), text 'tail' [5,9]]
+		const parser = new Parser(['#[__slot__]'])
+
+		it('flattens `added`: a born mark contributes its descendant ids too', () => {
+			// THE pinned granularity, and the one every other lowering must match:
+			// `fromTransaction` lowers `TransactionResult.added`, which carries
+			// subtree ROOTS only, so it has to walk. Roots-only here would make
+			// `foldDelta` announce the child's removal (removed IS subtree-inclusive)
+			// without ever announcing its add.
+			const tracker = createIdentityTracker()
+			tracker.reconcile(parser.parse('tail'))
+
+			const result = tracker.reconcile(parser.parse('#[ab]tail'), {start: 0, end: 0, insertedLength: 5})
+			const mark = result.tokens.find(token => token.type === 'mark')
+			if (mark?.type !== 'mark') throw new Error('expected the inserted mark in the reconciled tree')
+
+			expect(fromReconcile(result).delta.added).toEqual(
+				expect.arrayContaining([tracker.idOf(mark), tracker.idOf(mark.children[0])])
+			)
+		})
+
+		it('`removed` is subtree-inclusive on the same edit reversed — the two id feeds agree', () => {
+			const tracker = createIdentityTracker()
+			const first = tracker.reconcile(parser.parse('#[ab]tail')).tokens
+			const mark = first[1]
+			if (mark.type !== 'mark') throw new Error('expected mark')
+
+			const result = tracker.reconcile(parser.parse('tail'), {start: 0, end: 5, insertedLength: 0})
+
+			expect(fromReconcile(result).delta.removed).toEqual(
+				expect.arrayContaining([tracker.idOf(mark), tracker.idOf(mark.children[0])])
+			)
+		})
 	})
 })

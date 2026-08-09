@@ -38,15 +38,19 @@ unchanged on the text path by definition), `byElement` (WeakMap, set at bind).
 
 ## The one commit pipeline (`model/commit.ts`)
 
-Every reconciled value change flows through a single `apply(reconcileResult)`:
+Every reconciled value change flows through a single `apply(input)`. The input is
+a producer-agnostic `CommitInput` (`model/commitInput.ts`) — the live path lowers
+its `ReconcileResult` into one via `fromReconcile` — and the pipeline routes on
+the input's `render` bit, which for that lowering IS `result.structural`:
 
 ```
 value edit → full parse → reconcile (identity carry + routing decided here)
-  ├─ text path (result.structural === false AND no structural apply pending):
+  → fromReconcile → CommitInput {tokens, render, changes, delta}
+  ├─ text path (render === false AND no structural apply pending):
   │    update the listed nodes in place (token, path),
   │    conditionally patch textContent of changed text surfaces,
   │    one batch → fire changed()
-  └─ structural (result.structural === true, or folded into a pending pass):
+  └─ structural (render === true, or folded into a pending pass):
        publish renderTree (new reference) → renderer runs → onRendered() →
        bind(container, latest): one DOM+tree walk —
          create/update/kill TokenHandles, set element bindings,
@@ -79,11 +83,18 @@ value edit → full parse → reconcile (identity carry + routing decided here)
   bound surfaces and mark roots, and by the scoped `setEditable` setter when
   `readOnly`/`isUserSelecting` change (SelectionController owns the policy, the
   model owns the application). No per-commit sweep.
-- **`changed()`** fires (payloadless) in both branches only after the DOM is
-  consistent with the node layer — the model-level "commit done" signal
-  (SelectionController re-places the caret on it). Consumers re-read via
-  `current()` / `handle(id)`; removed ids come from the separate `removedIds()`
-  accessor. During a latched window only the final commit announces.
+- **`changed`** fires in both branches only after the DOM is consistent with the
+  node layer — the model-level "commit done" signal (SelectionController
+  re-places the caret on it) — carrying that commit's `{added, removed, updated}`
+  ids (`TokenDelta`: `added`/`removed` are subtree-inclusive, `updated` is per
+  node). Consumers re-read content via `current()` / `handle(id)`;
+  the removed ids now arrive WITH the event (`BlockController` prunes its
+  id-keyed store off `delta.removed`). During a latched window only the final
+  commit announces, and its payload MERGES every folded apply's delta — keeping
+  only the last one dropped the earlier removals when two structural applies
+  landed before one bind. `removedIds()` still exists as the last
+  announcement's `removed`, but no production consumer reads it; S1.6d deletes
+  it.
 
 ## Structural DOM walk (`model/bind.ts`)
 
@@ -112,8 +123,8 @@ current() // readonly Token[] — the always-fresh reconciled tree
 
 // renderer contract (adapter-only)
 renderTree: Computed<Token[]> // structural tree; reference change ⇔ renderer must run
-changed: Event<void>          // THE model-level detector; payloadless, fires after the DOM is consistent
-removedIds(): readonly number[] // ids removed (subtree included) by the last commit — the prune feed
+changed: Event<TokenDelta>    // THE model-level detector; fires after the DOM is consistent, carrying {added, removed, updated} ids
+removedIds(): readonly number[] // the last announcement's `removed`; no consumer left, deleted in S1.6d
 keyOf(token): number          // framework key (stable id); adapters pass it unbound
 
 // per-token live view
