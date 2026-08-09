@@ -102,7 +102,7 @@ describe('snapshot', () => {
 		const token = snapshot(tree.roots())[1]
 		if (node.kind !== 'mark' || token.type !== 'mark') throw new Error('expected mark at index 1')
 		expect(token.position).not.toBe(node.position)
-		expect(token.slot).not.toBe(node.slot)
+		expect(token.slot).not.toBe(node.slotRange)
 		token.position.end = 99
 		expect(node.position.end).toBe(4)
 	})

@@ -3,6 +3,7 @@ import {describe, expectTypeOf, it} from 'vitest'
 
 import type {Signal} from '../../../shared/signals'
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
+import type {Markup} from '../parser/types'
 import type {
 	CommitSink,
 	Id,
@@ -29,16 +30,20 @@ describe('tree contract types', () => {
 			readonly id: Id
 			readonly text: Signal<string>
 			position: {start: number; end: number}
+			range: () => {start: number; end: number}
 		}>()
 		expectTypeOf<MarkNode>().toMatchObjectType<{
 			readonly kind: 'mark'
 			readonly id: Id
 			readonly descriptor: MarkupDescriptor
+			readonly markup: Markup
 			readonly value: Signal<string>
 			readonly meta: Signal<string | undefined>
 			readonly children: Signal<readonly TreeNode[]>
-			slot: {start: number; end: number} | undefined
+			slotRange: {start: number; end: number} | undefined
 			position: {start: number; end: number}
+			slot: () => string | undefined
+			range: () => {start: number; end: number}
 		}>()
 		// NodeAnchor: text offsets, boundary forms, document edges — the annotation is the check
 		const start: NodeAnchor = 'start'

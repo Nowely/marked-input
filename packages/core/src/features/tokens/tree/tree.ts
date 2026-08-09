@@ -24,6 +24,7 @@ export function createTokenTree(tokens: readonly Token[]): TokenTree {
 				id: alloc(),
 				text: signal({initial: token.content}),
 				position: {...token.position},
+				range: () => ({...node.position}),
 			}
 			return node
 		}
@@ -31,15 +32,23 @@ export function createTokenTree(tokens: readonly Token[]): TokenTree {
 			kind: 'mark',
 			id: alloc(),
 			descriptor: token.descriptor,
+			// A plain field, not a getter: `descriptor` is readonly and `descriptor.markup` is
+			// immutable, so the two cannot diverge, and the node stays a plain data object the
+			// equality helpers walk without surprises.
+			markup: token.descriptor.markup,
 			value: signal({initial: token.value}),
 			meta: signal({initial: token.meta}),
 			// Explicit generic: inferred `Signal<TreeNode[]>` is not assignable to
 			// `Signal<readonly TreeNode[]>` (the write signature is contravariant).
 			children: signal<readonly TreeNode[]>({initial: token.children.map(buildNode)}),
 			// Field-wise, not a spread of `token.slot`: the token carries a `content` mirror
-			// the node deliberately does not keep (see `MarkNode.slot`).
-			slot: token.slot ? {start: token.slot.start, end: token.slot.end} : undefined,
+			// the node deliberately does not keep (see `MarkNode.slotRange`).
+			slotRange: token.slot ? {start: token.slot.start, end: token.slot.end} : undefined,
 			position: {...token.position},
+			// Same rule as joinNodes and materializeNode: a slot mark always parses with >=1
+			// text child, so children are the sole slot source.
+			slot: () => (node.descriptor.hasSlot ? joinNodes(node.children()) : undefined),
+			range: () => ({...node.position}),
 		}
 		return node
 	}

@@ -100,3 +100,47 @@ describe('siblingOf', () => {
 		expect(siblingOf(tree.roots(), tree.roots()[0].id, -1)).toBeUndefined()
 	})
 })
+describe('public node shape (spec §2.3)', () => {
+	it('exposes the markup string, not the descriptor, as the public view', () => {
+		const tree = createTokenTree(parser.parse('a@[x](m)b'))
+		const mark = tree.roots()[1]
+		if (mark.kind !== 'mark') throw new Error('expected a mark')
+		expect(mark.markup).toBe('@[__value__](__meta__)')
+		expect(mark.markup).toBe(mark.descriptor.markup)
+	})
+
+	it('derives slot() from the children, and answers undefined for a slotless markup', () => {
+		const tree = createTokenTree(parser.parse('#[in slot]@[x](m)'))
+		const withSlot = tree.roots()[1]
+		const withoutSlot = tree.roots()[3]
+		if (withSlot.kind !== 'mark' || withoutSlot.kind !== 'mark') throw new Error('expected marks')
+		expect(withSlot.slot()).toBe('in slot')
+		expect(withoutSlot.slot()).toBeUndefined()
+	})
+
+	it('slot() tracks the live children — it is a read, not a snapshot', () => {
+		const tree = createTokenTree(parser.parse('#[before]'))
+		const mark = tree.roots()[1]
+		if (mark.kind !== 'mark') throw new Error('expected a mark')
+		const child = mark.children()[0]
+		if (child.kind !== 'text') throw new Error('expected a text child')
+		child.text('after')
+		expect(mark.slot()).toBe('after')
+	})
+
+	it('range() reads the stored positions of both node kinds', () => {
+		const tree = createTokenTree(parser.parse('ab@[x](m)'))
+		const [text, mark] = tree.roots()
+		expect(text.range()).toEqual({start: 0, end: 2})
+		// '@[x](m)' is SEVEN characters: [2,9), not [2,10).
+		expect(mark.range()).toEqual({start: 2, end: 9})
+	})
+
+	it('range() returns a copy — a caller cannot write the stored position through it', () => {
+		const tree = createTokenTree(parser.parse('ab'))
+		const node = tree.roots()[0]
+		node.range().start = 99
+		expect(node.range()).toEqual({start: 0, end: 2})
+		expect(node.position).toEqual({start: 0, end: 2})
+	})
+})

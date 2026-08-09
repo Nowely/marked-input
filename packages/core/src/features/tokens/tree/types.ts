@@ -1,5 +1,6 @@
 import type {Signal} from '../../../shared/signals'
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
+import type {Markup} from '../parser/types'
 
 /** Node identity: assigned at node birth, never reused within an input instance. */
 export type Id = number
@@ -12,7 +13,7 @@ export type Window = {readonly start: number; readonly end: number; readonly ins
  * the public reads. Signal fields are the reactive read; adoption is the only
  * supported writer — direct setter calls from consumers are unsupported and
  * break the round-trip invariant (documented, not runtime-policed).
- * `position`/`slot` are plain fields written only by adoption (spec D3).
+ * `position`/`slotRange` are plain fields written only by adoption (spec D3).
  */
 export type TreeNode = TextNode | MarkNode
 
@@ -21,22 +22,38 @@ export interface TextNode {
 	readonly id: Id
 	readonly text: Signal<string>
 	position: {start: number; end: number}
+	/**
+	 * Spec §2.3's explicit derived read. NOT reactive: `position` is a plain field written
+	 * by adoption (spec D3), so a consumer that must react to a move watches `changed` or
+	 * the content signals instead. Returns a COPY — the stored record is adoption's, and
+	 * handing it out would let a caller corrupt the coordinate space every splice is
+	 * computed in.
+	 */
+	range(): {start: number; end: number}
 }
 
 export interface MarkNode {
 	readonly kind: 'mark'
 	readonly id: Id
 	readonly descriptor: MarkupDescriptor
+	/** Spec §2.3: the public view of the descriptor, which is not a public type. */
+	readonly markup: Markup
 	readonly value: Signal<string>
 	readonly meta: Signal<string | undefined>
 	readonly children: Signal<readonly TreeNode[]>
 	/**
-	 * Live slot positions, written by adoption like `position`. Slot TEXT is deliberately
-	 * NOT stored: projection, snapshot and adoption equality all derive it from children,
-	 * so a stored copy would be an unread mirror nothing resyncs.
+	 * Live slot POSITIONS, written by adoption like `position`. Named `slotRange` since
+	 * S1.7, because `slot()` is now the public read of the slot's TEXT (spec §2.3) and one
+	 * name cannot be both. Slot text is still deliberately NOT stored: projection, snapshot
+	 * and adoption equality all derive it from children, so a stored copy would be an unread
+	 * mirror nothing resyncs.
 	 */
-	slot: {start: number; end: number} | undefined
+	slotRange: {start: number; end: number} | undefined
 	position: {start: number; end: number}
+	/** Spec §2.3: the slot's TEXT, joined from the live children. `undefined` for a slotless markup. */
+	slot(): string | undefined
+	/** Spec §2.3. See {@link TextNode.range}. */
+	range(): {start: number; end: number}
 }
 
 /** Spec §2.3 addressing model. Mark interiors are addressed via slot text nodes. */

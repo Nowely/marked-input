@@ -126,7 +126,7 @@ export function adopt(
 			const childrenCovered = adoptPosition(node, token, covered)
 			// The pairing gate compared descriptors, so slot presence already agrees; this
 			// write is what keeps the live slot positions in step with the parse.
-			node.slot = token.slot ? {start: token.slot.start, end: token.slot.end} : undefined
+			node.slotRange = token.slot ? {start: token.slot.start, end: token.slot.end} : undefined
 
 			const valueChanged = node.value(token.value)
 			const metaChanged = node.meta(token.meta)

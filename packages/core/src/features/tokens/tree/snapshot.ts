@@ -46,12 +46,12 @@ export function materializeNode(node: TreeNode, children: Token[]): Token {
 		// from the same children the projection uses.
 		//
 		// `slotText === undefined` is the type narrow, not a second runtime case:
-		// `hasSlot` holds exactly when `slot !== undefined`, so the two disjuncts always
+		// `hasSlot` holds exactly when `slotRange !== undefined`, so the two disjuncts always
 		// agree. Dropping it stops compiling (string | undefined into string).
 		slot:
-			node.slot === undefined || slotText === undefined
+			node.slotRange === undefined || slotText === undefined
 				? undefined
-				: {content: slotText, start: node.slot.start, end: node.slot.end},
+				: {content: slotText, start: node.slotRange.start, end: node.slotRange.end},
 		children,
 	}
 	return token

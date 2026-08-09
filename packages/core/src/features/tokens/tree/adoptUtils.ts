@@ -20,9 +20,9 @@ export function snapshotNodeEquals(node: TreeNode, token: Token, delta: number):
 	if (node.value() !== token.value || node.meta() !== token.meta) return false
 	// Descriptor equality already pins slot presence (the parser fills `slot` exactly
 	// when the markup has a slot gap), so one branch covers both shapes.
-	if (node.slot && token.slot) {
-		if (node.slot.start + delta !== token.slot.start) return false
-		if (node.slot.end + delta !== token.slot.end) return false
+	if (node.slotRange && token.slot) {
+		if (node.slotRange.start + delta !== token.slot.start) return false
+		if (node.slotRange.end + delta !== token.slot.end) return false
 	}
 	const children = node.children()
 	if (children.length !== token.children.length) return false
@@ -34,9 +34,9 @@ export function shiftPositions(node: TreeNode, delta: number): void {
 	node.position.start += delta
 	node.position.end += delta
 	if (node.kind === 'mark') {
-		if (node.slot) {
-			node.slot.start += delta
-			node.slot.end += delta
+		if (node.slotRange) {
+			node.slotRange.start += delta
+			node.slotRange.end += delta
 		}
 		for (const child of node.children()) shiftPositions(child, delta)
 	}

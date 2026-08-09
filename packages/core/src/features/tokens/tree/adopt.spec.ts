@@ -122,7 +122,7 @@ describe('adopt: prefix/suffix walks', () => {
 			{start: 6, end: 13},
 			{start: 13, end: 14},
 		])
-		expect(shiftedMark.slot).toEqual({start: 5, end: 14})
+		expect(shiftedMark.slotRange).toEqual({start: 5, end: 14})
 
 		const drop = editAndAdopt(source, 1, 13, '')
 		const droppedMark = drop.before[1]
@@ -500,7 +500,7 @@ describe('adopt: ported reconcile fixtures', () => {
 		const tree = createTokenTree(slotParser.parse('#[]'))
 		const mark = asMark(tree.roots()[1])
 		const child = mark.children()[0]
-		expect([child.position, mark.slot]).toEqual([
+		expect([child.position, mark.slotRange]).toEqual([
 			{start: 2, end: 2},
 			{start: 2, end: 2},
 		])
