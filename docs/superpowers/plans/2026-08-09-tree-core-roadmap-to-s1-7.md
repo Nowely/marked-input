@@ -1,11 +1,21 @@
-# Tree Core — Roadmap S1.4 → S1.7 (the rest of the rewrite)
+# Tree Core — Roadmap S1.4 → S1.8 (the rest of the rewrite)
 
 **Date:** 2026-08-09 · **Branch:** `b0` · **Spec:**
 `2026-08-08-markput-s1-tree-core-v2.md` (v2.1, Reviewed)
 
-**S1.7 is the last phase.** After it, the tree core is the shipped core and
-the old surface lives behind a compat entry with a stated sunset. Remaining
-order: **S1.4 → S1.5 → S1.6a → S1.6b → S1.6c → S1.6d → S1.7.**
+**Amended 2026-08-09.** S1.7 was the last phase; the maintainer added a final
+sweep, and a 31-agent obsolescence inventory then killed the compat artifact
+outright. Remaining order: **S1.4 → S1.5 → S1.6a → S1.6b → S1.6c → S1.6d →
+S1.7 → S1.8**, with a pure-move **S1.9** for the directory regroup.
+
+The inventory's headline: **`@markput/core` is not published** (npm 404; only
+`@markput/react` and `@markput/vue` ship, at 0.14.3), so `@markput/core/compat`
+would be unreachable by users, and adapter mirrors would mean new build
+machinery in two packages for an audience that gets it deleted one phase
+later. D8 is amended — **no public compat artifact is built**; S1.7 executes
+the export table directly and S1.8 sweeps what remains. The *internal* offset
+shim keeps its own lifetime, gated on the block-rows follow-up (seven live
+whole-value call sites, no `setValue` verb, caret semantics pinned).
 
 ## Why this is a roadmap and not seven finished plans
 
@@ -38,7 +48,9 @@ path and to schedule it, without pretending to details we cannot yet know.
 | S1.4 | String boundary | plan written & verified |
 | S1.5 | View contract | roadmap only |
 | S1.6a–d | Cutover (staged) | roadmap only |
-| S1.7 | Public API v2 & compat split | roadmap only |
+| S1.7 | Public API v2 (no compat artifact) | roadmap only |
+| S1.8 | Dead-surface sweep (final) | scoped by inventory; spec §11 |
+| S1.9 | Directory regroup (pure moves) | deferred |
 
 Everything through S1.3 is **built alongside** the live pipeline: the tree
 module still has zero consumers outside its own directory, and the only
@@ -176,7 +188,7 @@ green suite catches.
 
 ---
 
-## S1.7 — Public API v2 & compat split (last)
+## S1.7 — Public API v2
 
 **Scope.** The §2.3 surface becomes the product: `MarkputApi` host, live node
 reads with always-present ids, model-centric write verbs (`mark.update`,
@@ -199,6 +211,32 @@ convention, and this is the residual type-level question. Also the final
 naming pass on the verbs; semantics are fixed, names are not.
 
 **Gate** includes the website build.
+
+---
+
+## S1.8 — Dead-surface sweep (final)
+
+Scoped by a 31-agent inventory whose candidates were then adversarially
+re-verified; **eleven were refuted as load-bearing**. Seven revertible steps:
+pre-existing cruft (incl. `parser.profile.bench.ts`, 928 lines) → root-export
+narrowing → snapshot names out of the barrels → the path layer → superseded
+modules (`ValueModel`, `MarkController`, `MarkputHandler`) → spec-file
+port-or-delete budget → documentation. Net **−2,300 to −2,600 source lines**.
+Full detail, including the trap list, is in spec §11.
+
+**The traps matter more than the list.** Things that look dead and are not:
+`utils/findGap.ts` (the NEW core imports it), `filterEmptyText` (an unported
+requirement), `readSelected`/`toMarkInfo` (they implement the hooks §2.3
+keeps), `serializeRange` (promotes a half-selected mark to full markup — must
+be ported, never replaced by a slice), `tree/snapshot.ts` (zero production
+callers, but it IS the §7.1 gate), and `Store`'s root export.
+
+**A latent bug it surfaced, now fixed in S1.6d's scope.** S1.6d deletes
+`TokenHandle.update(token, path)` — the only refresher of `#path` — while
+three production readers survive, including `blockEdit.ts:32` using
+`handle.path()[0]` as the block ROW INDEX. Handles are reused across binds,
+so deleting the writer alone would freeze the path and yield a stale row
+index in block mode. S1.6d must retire the readers with the writer.
 
 ---
 

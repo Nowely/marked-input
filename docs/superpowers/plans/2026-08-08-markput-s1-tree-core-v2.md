@@ -1,7 +1,7 @@
 # S1 Tree Core — Subsystem Design Spec
 
-**Version:** 2.1
-**Status:** Reviewed (2026-08-08)
+**Version:** 2.2
+**Status:** Reviewed (2026-08-08); amended 2026-08-09
 **Date:** 2026-08-08
 **Parent Spec:** none — self-contained; supersedes v1
 (`2026-08-08-markput-s1-tree-core-v1.md`) after the 15-agent multi-lens review
@@ -71,7 +71,8 @@ by construction.
 - **G1. Best public API.** Node-based reads (ids always present, no stored
 absolute positions in public shapes), model-centric write verbs, node-anchored
 selection, and a change event with a payload — as the primary public surface
-(§2.3). The old offset/snapshot surface moves to a compat entry with a sunset.
+(§2.3). The old offset/snapshot surface is deleted outright, not moved behind
+a compat entry — see the amended D8.
 - **G2. Kill the reconstruction layer on the internal edit path.** No stored
 edit hint, no `takePendingEdit`, no heuristic per-edit diff: the window is a
 synchronous argument from edit site to adoption. At the *controlled
@@ -88,7 +89,8 @@ global numeric range is derived. Caret survives edits via the transaction's
 position mapping.
 - **G5. Fewer mechanisms, honestly counted.** At cutover the system deletes
 six mechanisms and adds five (§4.6 checklist) while temporarily carrying the
-compat facade; after compat removal (next major) the count is net negative.
+compat facade; with D8 amended no compat facade is built, so the count is net
+negative at S1.8 rather than at an unscheduled major.
 Source line count grows at cutover (new core + compat coexist) and shrinks
 after compat removal; the deleted `tokenIdentity` spec suite (~1160 lines)
 is replaced by smaller property suites. The §4.6 checklist — not a vague
@@ -287,16 +289,35 @@ pre-adoption offsets**. Order: entry → capture → adopt → commit → repair
 covers boundary resets — numeric survival across resets is kept without
 ValueModel owning selection: the capture hook is Store-level wiring (S1.6a).
 
-**D8 — Compat with two distinct lifetimes.**
-*Public compat entry* (`@markput/core/compat` + adapter mirrors): positional
-`Token[]` snapshots and `EditController.replace(range, replacement, caretAt?)` with the `end < 0` sentinel — frozen at cutover, documented
-deprecated, **removed next major**.
-*Internal offset shim* (global range → `applyRange`): an internal mechanism
-consumed by block mode and legacy internal callers; its removal is gated on
-the §9 block-rows work, not on the compat sunset. The two are separate
-artifacts; the public sunset does not break block mode.
-During migration the existing suites run against compat (the regression net,
-AC-6.1); §5 classifies which spec files are behavioral vs deleted-internal.
+**D8 — No public compat artifact; the internal shim keeps its own lifetime.**
+*Amended 2026-08-09 after a 31-agent obsolescence inventory.* The original
+decision built `@markput/core/compat` + adapter mirrors, frozen at cutover
+and "removed next major". Three measured facts killed it:
+1. **`@markput/core` is not published** — `npm view @markput/core version`
+   → 404, while `@markput/react` and `@markput/vue` ship at 0.14.3. So
+   `@markput/core/compat` is unreachable by users; only adapter mirrors
+   would be public at all.
+2. **Those mirrors are new build machinery in two packages** — each adapter
+   has ONE vite lib entry, ONE rolldown DTS bundle (`codeSplitting: false`)
+   and a CSS `intro` hook keyed on `chunk.fileName === 'index.js'`; core's
+   `exports` map has two entries and no subpath support.
+3. **"Next major" has no date** — the repo is 0.x with
+   `bump-minor-pre-major: true`, so the sunset would be indefinite.
+Building it for an audience that cannot reach it and deleting it one phase
+later is pure cost. **The public compat artifact is NOT built.** S1.7
+executes the export-disposition table directly. Verified per symbol: the
+shapes it would have carried (`EditController.replace`, `TextToken`,
+payloadless `changed`) have zero consumers outside `packages/core`.
+*Internal offset shim* (global range → `applyRange`) — unchanged: an
+internal mechanism consumed by block mode, its removal gated on the §9
+block-rows work. Seven live whole-value sites (`BlockController.ts:35`,
+`blockEdit.ts:84,132,278`, `input.ts:37,60,129`) and no `setValue` verb in
+`tree/transactions.ts`; rewriting `block/operations.ts` to precise windows
+is a caret-semantics change with pinned behavior, not a cleanup.
+*Migration net:* during the cutover the existing suites run against the
+UNCHANGED core surface (nothing is moved behind a subpath), and §5
+classifies which spec files are behavioral vs deleted-internal. The final
+sweep is **S1.8**.
 
 **D9 — `TransactionResult` is the single change feed; one owner per datum.**
 
@@ -459,24 +480,37 @@ returns the node-backed `MarkNode` view (no captured-token fallback).
 
 | Export                                               | Disposition                                                                                          |
 | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `Store`                                              | keep — public selector surface via `useMarkput` (internal reshuffles surface to selectors; accepted) |
-| `MarkputHandler`                                     | replaced by `MarkputApi` (absorbs `focus()`)                                                         |
-| `EditController.replace`                             | compat entry                                                                                         |
-| `Token`/`TextToken`/`MarkToken` types                | compat entry (snapshots)                                                                             |
-| `TokenPath`, path utils                              | deleted (D9 paths are internal)                                                                      |
+*Corrected 2026-08-09 by the obsolescence inventory — the original table was
+written from a partial reading and four rows were wrong. Corrections marked
+**[fix]**; "compat entry" rows are gone with D8's amendment.*
+
+| Export                                               | Disposition                                                                                          |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `Store`                                              | keep — the ONLY resolution path for both adapters, which import it as a value and construct it (react `MarkedInput.tsx:2,84`; vue `MarkedInput.vue:2,16`). Neither re-exports it by name; that is not the same as unused. |
+| `MarkputHandler`                                     | replaced by `MarkputApi` (absorbs `focus()`); its `overlay` getter is consumer-free and goes with it  |
+| `EditController.replace`                             | **[fix]** deleted from the root, NOT moved to compat — 13 call sites, all inside `packages/core`, zero in any adapter/storybook/website. The class survives internally (its `caretAt` + `batch()` pairing has no v2 equivalent). |
+| `Token`/`TextToken`/`MarkToken` types                | **[fix]** names leave the four barrels; the INTERFACES stay in `parser/types.ts` — `tree/adopt.ts` and `tree/snapshot.ts` consume them permanently and parser changes are a §1.2 non-goal |
+| `TokenPath`, path utils                              | deleted (D9 paths are internal) — but see S1.6d's added scope: three production readers of `TokenHandle.path()` must retire with the writer |
 | `MarkupDescriptor`                                   | not exported; `MarkNode.markup` is the public view                                                   |
-| `signal`/`computed`/`watch`/`batch`                  | not exported from root (internal)                                                                    |
-| `annotate`/`denote`/`toString`                       | keep (string-domain utilities)                                                                       |
+| `signal`/`computed`/`watch`/`batch`                  | not exported from root (internal); `event`/`isReactive`/`Signal`/`Event` go with them                |
+| `annotate`/`denote`                                  | keep (string-domain utilities)                                                                       |
+| `toString`                                           | **[fix]** row struck — it is NOT a root export today (only `annotate`/`denote` are). Honouring the old "keep" row would ADD surface with no caller. |
 | `key` (key generator)                                | keep (adapter rendering utility)                                                                     |
-| `cx`/`merge`                                         | keep (adapter utilities)                                                                             |
+| `cx`                                                 | keep (adapter utility); **[fix]** `merge` drops — zero importers outside `packages/core`             |
 | `filterSuggestions`/`navigateSuggestions`            | keep (overlay UX helpers)                                                                            |
-| `readSelected`/`Selectable`, `toMarkInfo`/`MarkInfo` | compat entry (superseded by node reads)                                                              |
+| `readSelected`/`Selectable`                          | **[fix]** KEEP at root — they are the runtime core of `useMarkput`, which this same section explicitly keeps (react `useMarkput.ts:1,25`; vue `:1,20`), and appear in both hooks' public overload signatures. The original "compat" row contradicted the decision three paragraphs above it. |
+| `toMarkInfo`/`MarkInfo`                              | **[fix]** KEEP at root — the entire implementation of `useMarkInfo()` in both adapters, documented across five website pages. Open question S1.7 must answer: `depth = path.length - 1` has NO node-based source (`TreeNode` has no parent link), so keeping it requires a `depth` on `MarkNode` or threading it through the render context. |
+| `DEFAULT_OPTIONS`, `SlotRegistry`, `CoreSlotProps`, `Range`, `MarkPatch`, `MarkSlot`, `OverlaySlot` | **[fix]** added rows — pre-existing root exports the original table missed; all have zero importers outside `packages/core`. Drop, except `MarkPatch` pending the clear-semantics decision below. |
 
+**`MarkPatch` is a live capability, not ceremony.** Its `{kind: 'clear'}` arm
+is documented public behavior (`guides/dynamic-marks.md:59`,
+`guides/keyboard-handling.md:55`) pinned by `MarkController.spec.ts:91,100`,
+and §2.3's replacement `update({value?, meta?, slot?})` **cannot express
+clear-vs-omit**. S1.7 must either keep the discriminator, accept `null` as
+clear, or drop the capability as a documented break.
 
-**Compat entry (`@markput/core/compat` + adapter mirrors):** the table's
-compat rows plus payloadless `changed` timing. Frozen at cutover, removed
-next major (D8; the internal offset shim is a separate artifact with its own
-lifetime).
+**No compat entry is built** (D8). The rows above are executed directly
+against the root export in S1.7, and S1.8 sweeps what remains.
 
 ## 3. User Stories
 
@@ -733,7 +767,9 @@ deferring all commits, latest-wins deferred arrival, compositionend
 absorption as one transaction — design sketch preserved in the review
 record.
 - Collab/CRDT on node ids + transactions.
-- Public compat entry removal (next major).
+- Directory regrouping of `features/tokens/` into `tree/`/`dom/`/`parser/` is
+  deferred to a separate S1.9 of pure-move commits (no content edits), so it
+  does not destroy the git blame of the files S1.8 deletes from.
 - Directory regrouping of `features/tokens` into `tree/` (pure core), `dom/`
 (contenteditable adapter: bind, commit, DomModel, boundary, caret,
 textOffsets, editableState, TokenHandle), `parser/` — wanted, deliberately
@@ -880,25 +916,104 @@ bridge); `#preferredHandle`/clamp deletion; AC-3.2/3.3/3.4, AC-4.4 tests.
 **Scope:** remaining §4.6 checklist deletions (`tokenIdentity` + suite,
 hint machinery, `#token`/`update()`, write-latch/fallback, `removedIds`);
 ledger checklist review is the phase gate.
+**ADDED 2026-08-09 (inventory finding — this is a latent bug, not cleanup):**
+this phase deletes `TokenHandle.update(token, path)`, which is the ONLY
+refresher of `#path` outside the constructor, while **three production
+readers survive** — `keyboard/blockEdit.ts:32` (`handle.path()[0]` as the
+block ROW INDEX), `keyboard/arrowNav.ts:35`, `model/commit.ts:211`. Handles
+are reused across binds (`bind.ts:86-87`), so deleting the writer alone
+freezes `#path` at construction time and yields a **stale row index in block
+mode**. S1.6d must retire the three readers together with the writer (or
+re-key them on node ids); it may not ship the writer deletion alone.
 **Gate:** `pnpm test && pnpm run build && pnpm run typecheck` + checklist
-complete.
-**Review tier:** spot-check (mechanical deletions; the gate is the checklist)
+complete + no surviving reader of `TokenHandle.path()`.
+**Review tier:** full-review (upgraded from spot-check — the path readers make
+this more than mechanical)
 **Dependencies:** S1.6c
 
-### S1.7: Public API v2 & compat split
+### S1.7: Public API v2
 
-**Scope:** §2.3 exports (`MarkputApi`, verbs, readonly views, selection,
-`changed` payload); node-backed `useMark`; compat entry split per D8; export
-disposition table executed; storybook-suite migration off compat shapes +
-new US-5 stories; website docs.
-**Size estimate:** ~7 files, ~350 lines + docs
+**Scope:** §2.3 exports (`MarkputApi`, verbs, node views, selection,
+`changed` payload); node-backed `useMark`; the **export-disposition table
+executed directly against the root export** — no compat entry is built (D8
+amended); storybook-suite migration onto v2 shapes + new US-5 stories;
+website docs.
+**Three questions this phase must settle** (raised by the inventory, each
+with no zero-cost answer): `useMarkInfo().depth` has no node-based source
+(`TreeNode` has no parent link) — add `depth` to `MarkNode`, thread it
+through the render context, or keep `toMarkInfo` as-is; `MarkPatch`'s
+documented `{kind:'clear'}` capability cannot be expressed by
+`update({value?, meta?, slot?})`; and whether the adapter render loop moves
+to `input.nodes()` here — the single biggest scope lever, because it decides
+whether S1.8's snapshot-name removal is a four-line barrel edit or a rewrite
+of `MarkSlot`/`resolveMarkSlot`/`renderTree`/`keyOf` plus 12 adapter files.
+**Size estimate:** ~7 files, ~350 lines + docs (more if the render loop moves)
 **Contracts consumed:** S1.6 (final core).
 **Contracts exposed:** the §2.3 public contract — the subsystem deliverable.
 **Gate:** `pnpm test && pnpm run build && pnpm run typecheck && pnpm -F @markput/website run build`
 **Verification:** US-5 scenarios as stories using only v2 verbs; API review
-against §2.3; compat suite still green.
+against §2.3.
 **Review tier:** full-review
 **Dependencies:** S1.6a–d
+
+### S1.8: Dead-surface sweep (final)
+
+*Added 2026-08-09 at maintainer request ("after S1.7 clear deprecated and
+obsolete things"), scoped by a 31-agent obsolescence inventory whose
+candidates were adversarially re-verified — eleven were refuted as
+load-bearing and are recorded in the trap list below.*
+
+**Scope:** seven independently revertible steps, in order.
+1. **Pre-existing dead-surface sweep** (zero rewrite coupling, landable
+   independently): `src/test-utils/`, the write-only `control(ownerPath)`
+   channel and its six adapter call sites, `getComplexityForMethod`,
+   `anchorAt`'s `export`, the stale core README line, and
+   `parser.profile.bench.ts` (928 lines) + `parser.profile.json` — the
+   README and §8 name only `parser.bench.ts` as the tripwire.
+2. **Root-export narrowing** — the §2.3 "not exported" rows plus every root
+   export with zero non-core importer (`event`, `isReactive`, `Signal`,
+   `Event`, `merge`, `DEFAULT_OPTIONS`, `SlotRegistry`, `CoreSlotProps`,
+   `Range`, `MarkSlot`, `OverlaySlot`).
+3. **Snapshot names out of the four barrels** — `Token`/`TextToken`/
+   `MarkToken`, `keyOf`, `handleOf`, the `renderTree`/`current()` reads.
+   **Names only: the parser interfaces stay** (see traps).
+4. **The path layer** — `tokenIndex.ts` + spec, `TokenPath`,
+   `TokenHandle#path`, `children(ownerPath)` re-keyed on ids, six adapter
+   files, one storybook spec. Must be the next change after S1.6d.
+5. **Superseded modules** — `ValueModel` + `replaceInString`,
+   `MarkController`, `MarkputHandler`.
+6. **Spec-file disposition** — the ~2,000 lines of behavior pinned against
+   the old surface: port or delete, decided per file with a written budget,
+   not by default.
+7. **Documentation** — `features/tokens/README.md` (448 lines, states the
+   opposite of D11), ten prose sites across four website pages, regenerated
+   typedoc.
+
+**Explicitly OUT of scope:** the internal offset shim (D8 — seven live
+whole-value sites, no `setValue` verb, caret semantics pinned); the §4.6
+checklist (S1.6d owns it); the directory regrouping (separate S1.9 of pure
+moves, so it does not destroy the blame of files this phase edits).
+
+**Traps — verified load-bearing, do NOT sweep:** `utils/findGap.ts` (looks
+like `tokenIdentity`'s helper; `tree/gapWindow.ts` imports it);
+`filterEmptyText` (an UNPORTED requirement, not a leftover);
+`readSelected`/`toMarkInfo` (implement the kept hooks); `MarkPatch`'s clear
+arm (documented capability); `serializeRange` (promotes a partially-selected
+mark to full markup — must be PORTED, never replaced by a slice);
+`tree/snapshot.ts` + `joinNodes` (zero production callers, but they ARE the
+§7.1 gate); the parser `Token` interfaces; the eight-file contenteditable
+adapter (~1,300 lines of irreducible cost); `Store`'s root export (the only
+resolution path for both adapters); the named suffix-window fixture (the
+sole gate on that bound); `parser.bench.result.json` (README-referenced).
+
+**Size estimate:** net −2,300 to −2,600 source lines, ~20 files deleted,
+~35 edited — excluding the step-6 spec budget.
+**Gate:** full checks + `pnpm -F @markput/website run build`, plus:
+`grep -rni "@deprecated"` returns nothing outside fixtures, and the tail
+export statement of both adapter `dist/index.d.ts` bundles diffs against the
+pre-phase build by exactly the §2.3 table.
+**Review tier:** full-review
+**Dependencies:** S1.7 (steps 3–7); step 1 is landable at any time.
 
 ### Phase Dependency Graph
 
@@ -913,7 +1028,9 @@ S1.1 (Types & public contracts)
                 └── S1.6b (Browser flip)
                      └── S1.6c (Selection swap)
                           └── S1.6d (Deletions & ledger)
-                               └── S1.7 (Public API v2 & compat split)
+                               └── S1.7 (Public API v2)
+                                    └── S1.8 (Dead-surface sweep, final)
+                                         └── S1.9 (directory regroup, pure moves)
 ```
 
 ## 12. Acceptance Summary
