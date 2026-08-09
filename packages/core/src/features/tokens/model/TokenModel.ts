@@ -43,15 +43,31 @@ export interface SelectionPort {
  * and is delegated to here, so consumers keep this single entry point. Owns the
  * `nodes` map the pipeline mutates.
  *
- * Mechanism ledger (spec §4.6). Item 1 (the consume-once hint protocol) and item
- * 3 (the reparse-watch edit path) died with THIS cutover, not at S1.6d —
- * rewriting the write path deleted `#pendingEdit`/`takePendingEdit`, and arrivals
- * now route explicitly through the boundary. Item 5 (`#preferredHandle` + the
- * selection clamp) died with S1.6c's selection swap: the stored anchor's node is
- * the disambiguator and an anchor cannot point past it. The checklist is S1.6d's
- * review GATE, not its work list, so S1.6d VERIFIES all four and EXECUTES the
- * three still standing: 2 (`tokenIdentity` + its suites), 4 (the handle write
- * latch) and 6 (`removedIds`, which that phase deletes).
+ * Mechanism ledger (spec §4.6) — CLOSED at S1.6d. All six are gone, and where
+ * each died is the point of the record:
+ *
+ * 1. consume-once hint protocol (`#pendingEdit`/`takePendingEdit`) — S1.6a, with
+ *    the write-path rewrite.
+ * 2. heuristic per-edit diff (`tokenIdentity` + its two suites) — S1.6d.
+ * 3. reparse-watch edit path — S1.6a: arrivals route explicitly through the
+ *    boundary and no watch on the value survives in this layer.
+ * 4. handle write latch / captured-token fallback — S1.6d: `MarkController`
+ *    resolves the live node, which has no adopt→bind window.
+ * 5. `#preferredHandle` + the selection clamp — S1.6c: the stored anchor's node
+ *    is the disambiguator and an anchor cannot point past it.
+ * 6. `removedIds()` — S1.6d: the `changed` payload carries the ids instead.
+ *
+ * What deliberately SURVIVES, each with its reason:
+ * - `TokenHandle#token` — D9's read latch (plan decision D-h). Five production
+ *   readers want the BIND generation, three of them positional: `DomModel` →
+ *   `tokens/boundary.ts` (type, position, content), `commit.ts`'s divergence
+ *   detector (content), {@link setEditable} (type) and `keyboard/arrowNav.ts`
+ *   (position). Narrowing it to `{start, end}` would move the boundary layer's
+ *   type/content reads onto the live tree — a DOM-layer refactor no item asks for.
+ * - the internal offset shim ({@link replace}) — spec D8, gated on the block-rows
+ *   follow-up that would give callers a node-shaped write verb.
+ * - `ValueModel`, `MarkputHandler` and the path layer (`byPath`, `tokenIndex`) —
+ *   S1.8's directory regroup owns them.
  *
  * Layout: consumer reads → adapter SPI → engine SPI → wiring → internals.
  */
