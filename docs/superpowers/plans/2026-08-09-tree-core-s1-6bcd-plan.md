@@ -43,6 +43,15 @@ Everything below is labelled: *measured* claims carry their command or
 `file:line`, *hand-traced* claims carry the trace, and the places where no test
 can discriminate are named.
 
+**Amendment, 2026-08-09 (post-`465b8211`).** Task 3's recorded "measured blocker"
+— a Chromium cross-host selection clamp — was **re-measured and is false**; the
+task now lands tests instead of comments. See Task 3 Step 1 for the correction and
+the discriminating probe. Gate at `465b8211` with Task 3 implemented: **72 files,
+1291 passed, 0 skipped, 7 todo**, `typecheck`, `lint:check`, `format:check` clean
+(from the **72 / 1281 / 2 skipped / 13 todo** baseline: +10 passed, −2 skipped,
+−6 todo, +2 total tests). The "final state" line above predates this and was
+recorded without Task 3's diff; add the same delta to it.
+
 **Four things the executor must know before starting:**
 
 1. **The suite is NOT green at every task boundary, contrary to what the
@@ -74,8 +83,8 @@ one commit and one revert unit. S1.6c's Task 8 (the stored-form swap) and Task 9
 8 Step 8 before starting Task 8.
 
 **Task numbering.** There are **fifteen** tasks — **1–3** (S1.6b), **6–11**
-(S1.6c), **12–17** (S1.6d) — producing **twelve or thirteen** commits (S1.6b may
-legitimately land none; Tasks 8+9 may fold into one). **There is deliberately no
+(S1.6c), **12–17** (S1.6d) — producing **twelve or thirteen** commits (S1.6b lands
+exactly one, from Task 3; Tasks 8+9 may fold into one). **There is deliberately no
 Task 4 and no Task 5**: two S1.6b tasks were cut during writing once D-j
 established that S1.6b has no migration work, and the numbers were left in place
 so that every cross-reference in this document, in the commit bodies below, and
@@ -428,8 +437,11 @@ The source-resolution probe fails as required; `dist` is untracked and
 gitignored; CI never builds before `pnpm test`; exactly one storybook spec
 touches core, through an API this plan does not change; and after a full run all
 69 snapshot entries and `git status` are unchanged. **S1.6b needs no code
-change.** Its one open question — the select-all browser gap — has a measured
-blocker; see Task 3, which now lands a comment and no test.
+change.** Its one open question — the select-all browser gap — is **closed**: see
+Task 3, which lands four real tests per adapter and un-skips the Ctrl+A case. (An
+earlier draft recorded a "measured blocker" here — a Chromium cross-host selection
+clamp. That claim was re-measured and is false; Task 3 Step 1 carries the
+correction.)
 
 Three measured facts:
 
@@ -451,9 +463,9 @@ Three measured facts:
    passing").
 
 So S1.6b's honest content is: **one probe, one gate, one manual A/B smoke, and
-one timeboxed attempt at the select-all browser gap S1.6a's fix left unpinned.**
-It is sized accordingly (three tasks, one of which may legitimately produce only
-a comment). Inventing suite-migration work here would be theatre.
+the browser gate for the select-all branch S1.6a's fix left unpinned.** It is
+sized accordingly (three tasks, only the last of which produces a diff).
+Inventing suite-migration work here would be theatre.
 
 ---
 
@@ -464,9 +476,12 @@ a comment). Inventing suite-migration work here would be theatre.
 **Modify (at most):**
 
 - `packages/storybook/src/pages/Base/keyboard.react.spec.tsx` (110) and
-  `keyboard.vue.spec.ts` (102) — one `it.todo`'s comment gains the measured
-  blocker. (The plan originally allowed "becomes a test"; the attempt was made
-  and is blocked for a measured reason — Task 3 Step 1.)
+  `keyboard.vue.spec.ts` (102) — the three `it.todo`s become real tests, a fourth
+  is added to gate the S1.6a `insertParagraph` fix, and the Ctrl+A `it.skip` is
+  un-skipped with a corrected assertion (Task 3 Step 1). Each file also gains four
+  local helpers (`getFirstEditable`, `selectAll`, `dispatchPasteEvent`,
+  `dispatchBeforeInput`) — kept local rather than shared, matching the
+  `getMarkFocusTarget` duplication these two files already carry.
 
 **Do NOT touch:** anything in `packages/core`; the three stale PNGs under
 `pages/Selection/__screenshots__/` (no `toMatchScreenshot` call remains — S1.8
@@ -542,14 +557,14 @@ Step 4), `clipboard/`, `overlay/`, `block/operations.ts`, any adapter.
 | | S1.6b | S1.6c | S1.6d |
 | --- | --- | --- | --- |
 | Production read + verified | ~1,400 (adapters + storybook harness) | ~1,150 | ~1,500 |
-| Production **edited** | ~10 | ~260 | ~180 |
+| Production **edited** | 0 | ~260 | ~180 |
 | Production **net-new** | 0 | ~120 | ~45 |
-| Spec written / edited | ~40 | ~350 | ~150 |
+| Spec written / edited | ~180 (measured: +182/−18 across the two keyboard specs) | ~350 | ~150 |
 | Spec **deleted** | 0 | 0 | ~1,200 |
 
 ---
 
-## S1.6b — Browser suite flip (revert unit: Task 3's commit, if any)
+## S1.6b — Browser suite flip (revert unit: Task 3's commit)
 
 ### Task 1: prove the browser projects run the working tree, then gate
 
@@ -578,9 +593,11 @@ enough to establish the resolution rule (both use the same workspace links).
 
 Run: `pnpm run format && pnpm test && pnpm run build && pnpm run typecheck && pnpm run lint:check && pnpm run format:check`
 
-Expected (S1.6a's measured final run): **72 files, 1281 passed, 2 skipped,
-13 todo**. Record the actual numbers. A *much* lower file/test count means a
-project was filtered — say so rather than reporting green.
+Expected (S1.6a's measured final run, re-confirmed at `465b8211`): **72 files,
+1281 passed, 2 skipped, 13 todo**. This is the PRE-Task-3 baseline and stays as
+written; Task 3 moves it to 72 / 1291 / 0 skipped / 7 todo. Record the actual
+numbers. A *much* lower file/test count means a project was filtered — say so
+rather than reporting green.
 
 - [ ] **Step 3: Snapshot discipline**
 
@@ -660,57 +677,104 @@ cd - && git worktree remove ../markput-s16b-baseline
 
 ---
 
-### Task 3: the select-all browser gap (timeboxed) and the S1.6b commit
+### Task 3: the select-all browser gap and the S1.6b commit — **DONE, tests landed**
 
 **Files:** `packages/storybook/src/pages/Base/keyboard.react.spec.tsx`,
 `packages/storybook/src/pages/Base/keyboard.vue.spec.ts`.
 
 S1.6a fixed a live bug in exactly this branch (Enter with everything selected
-wiped the value) and its only gate is the core suite. The browser suites carry
-three `it.todo`s for it (`keyboard.react.spec.tsx:108-110`) and an `it.skip` for
-Ctrl+A (`:92`, "It's not working in browser mode, but works in real").
+wiped the value) and its only gate was the core suite. The browser suites carried
+three `it.todo`s for it (`keyboard.react.spec.tsx:108-110`,
+`keyboard.vue.spec.ts:100-102`) and an `it.skip` for Ctrl+A (`:92`, "It's not
+working in browser mode, but works in real").
 
-- [ ] **Step 1: The attempt was made. It FAILS, for a measured reason — do not
-      re-spend the budget**
+- [x] **Step 1: CORRECTION — the recorded blocker was WRONG. There is no clamp,
+      and the gap is now closed by four real tests per adapter**
 
-The plan's original suggestion was to sidestep Ctrl+A with
-`window.getSelection()!.setBaseAndExtent(first, 0, last, len)` over the
-container's text nodes (the pattern at
-`pages/Selection/Selection.react.spec.tsx:31`) and then drive the edit with
-`dispatchInsertText(target, text)` from `shared/lib/dragTestHelpers.ts:96`,
-reading the result back with the `pre[data-value]` helper the Drag specs use
-(`getRawValue`, `pages/Drag/Drag.react.spec.tsx:56` — the plan previously called
-it `readPlainValue`, which is not a symbol that exists).
+**An earlier draft of this task recorded a "measured blocker": that Chromium
+clamps a cross-host `setBaseAndExtent` down to the first editing host, making
+`isAllSelected()` unreachable from a browser test. That claim is FALSE. It was
+re-measured on 2026-08-09 in both browser projects and every clause of it failed:**
 
-**Measured blocker:** the Base story renders each token surface as its own
-`contenteditable="true"` host. Chromium **clamps a programmatic
-`setBaseAndExtent` that spans two separate editing hosts down to the first
-host**, so the resulting selection covers only the leading text surface,
-`isAllSelected()` is never true, and the branch S1.6a fixed is unreachable from
-a browser test. The `Selection.react.spec.tsx:31` pattern transfers only because
-that story's span is a single host. **This is the same root cause as the
-existing `it.skip` at `keyboard.react.spec.tsx:92`** ("It's not working in
-browser mode, but works in real") — real Ctrl+A is handled by the browser's own
-select-all, which is not host-clamped; a synthetic one is.
+1. **No clamp.** After
+   `setBaseAndExtent(firstHostText, 0, lastHostText, len)` over the Base story
+   (three separate `contenteditable` hosts), `anchorNode` IS the first host's text
+   node at offset 0 and `focusNode` IS the last host's text node at its end.
+   Measured on react and vue.
+2. **Real Ctrl+A works too**, in the vitest-browser harness, with no Playwright
+   escape hatch: `userEvent.click(container)` +
+   `{ControlOrMeta>}a{/ControlOrMeta}` produces exactly the same cross-host
+   selection. So the tests do not even need the programmatic form — they drive
+   the real shortcut.
+3. **`isAllSelected()` IS true and the branch IS reachable.** Discriminating
+   probe (chosen because it cannot be satisfied by any other code path): dispatch
+   `beforeinput{inputType:'insertFromPaste', dataTransfer:'PASTED'}` with **no**
+   preceding `paste` event, so only the all-selected early return can no-op it.
+   Result — full selection: value unchanged, `defaultPrevented: true`; partial
+   selection (same probe, three characters selected): value becomes
+   `'PASTEDlo @[mark](1)!'`. The branch runs.
 
-The deliverable is therefore the recorded blocker, not a test. Do **not** re-run
-the 60-minute attempt; do **not** spend the budget on the other two todos or on
-the Ctrl+A `it.skip`. If someone wants this covered, the honest paths are a real
-Playwright keypress outside the vitest-browser harness, or a core-level test of
-the same branch — both out of scope here.
+**What IS true, and is the useful part of the original finding:
+`Selection.prototype.toString()` truncates at the first editing host.** For the
+full-editor selection above it answers `'Hello '` while
+`getSelection().getRangeAt(0).toString()` answers `'Hello mark!'` —
+i.e. `container.textContent`. *That*, not a clamped selection, is why the
+`it.skip` at `keyboard.react.spec.tsx:92` failed: its assertion compares
+`getSelection()?.toString()` against `container.textContent`. The premise of that
+test was always sound; only its read was wrong.
 
-- [ ] **Step 2: Land the blocker (react + vue)**
+**How the false claim happened, so the next reader can price it:** a single
+failing assertion (`toString()` vs `textContent`) was attributed to the
+selection rather than to the serializer, and the resulting story was written into
+the plan as *measured* without a probe that could distinguish the two. A
+behavioral probe on the value — not on the selection's own string form — is what
+settles it, and is what the landed tests assert.
 
-Replace the `it.todo` line's comment in both
-`keyboard.react.spec.tsx` and `keyboard.vue.spec.ts` with the measured blocker
-above — the exact mechanism, not "flaky". An honest recorded blocker is the
-deliverable; a test that passes for the wrong reason is not.
+- [x] **Step 2: Land the tests (react + vue)**
 
-- [ ] **Step 3: Gate**
+Both keyboard specs now carry, in place of the three `it.todo`s and with the
+`it.skip` un-skipped:
 
-Run: `pnpm run format && pnpm -w exec vitest run --project react --project vue && pnpm run lint:check && pnpm run typecheck`
+| test | drive | assertion |
+| --- | --- | --- |
+| `select all text with keyboard shortcut "Ctrl+A"` (was `it.skip`) | real Ctrl+A | `getRangeAt(0).toString() === container.textContent` — the assertion the skip *meant* to make |
+| `replace all content when Ctrl+A then type` | real Ctrl+A + `userEvent.keyboard('X')` | `onChange` with `'X'` |
+| `replace all content when Ctrl+A then paste` | real Ctrl+A + a `ClipboardEvent('paste')` carrying `text/plain` | `onChange` with `'pasted @[other](2)'` (markup survives) |
+| `clear all content when Ctrl+A then delete` | real Ctrl+A + `userEvent.keyboard('{Delete}')` | `onChange` with `''` |
+| `keep all content when Ctrl+A then Enter` (**the S1.6a gate**) | real Ctrl+A + synthetic `beforeinput{insertParagraph}` | `defaultPrevented === false`, `onChange` never called, text unchanged |
 
-- [ ] **Step 4: Commit**
+The Enter case is dispatched synthetically on purpose: an untrusted `beforeinput`
+runs no default editing action, so `defaultPrevented` is an uncontaminated read
+of what the handler did. Measured with a REAL `{Enter}` instead, the model value
+is still intact (`onChange` never fires — the fix holds) but Chromium's own
+default action mangles the cross-host DOM to `"\n\nmark!"`, which would make the
+test assert the browser's behavior rather than ours.
+
+**Mutation proof — each test dies alone** (`input.ts` mutated, run, reverted):
+
+| mutation | dies |
+| --- | --- |
+| all-selected `beforeinput` branch reverted to its pre-S1.6a shape (`preventDefault()` + `replace({0,-1}, event.data ?? '')`) | **only** `keep all content when Ctrl+A then Enter`, both adapters |
+| all-selected `beforeinput` replacement → `` `${replacement}Z` `` | only `…then type` |
+| `handlePaste`'s replacement → `` `${newContent}Z` `` | only `…then paste` |
+| `handleDeleteKey`'s all-selected replacement `''` → `'Z'` | only `…then delete` |
+
+The first row is the one that matters: **pre-fix and post-fix are byte-identical
+for `insertText`, `insertFromPaste` and the delete keydown**, so the Enter case is
+the only one of the four that can gate S1.6a — which is why it exists on top of
+the three todos.
+
+**Pre-existing finding, NOT fixed here:** deleting `handleDeleteKey`'s
+all-selected branch outright (`input.ts:35-39`) breaks none of the 16 tests in
+these two files — the ordinary path below it receives the same full range and
+produces the same empty value. The branch is redundant with its fallthrough.
+Flagged for S1.6d/S1.8, out of scope for S1.6b.
+
+- [x] **Step 3: Gate**
+
+Run: `pnpm run format && pnpm test && pnpm run typecheck && pnpm run lint:check && pnpm run format:check`
+
+- [x] **Step 4: Commit**
 
 ```bash
 pnpm run format
@@ -723,16 +787,20 @@ Base.vue.spec.ts touches core at all, through store.tokens.children(path), which
 the cutover did not change. Recorded: <N files, N passed, N skipped, N todo>,
 build/typecheck/lint/format clean, no story snapshot moved. Manual A/B smoke
 against a35c41bc (pre-cutover) covered typing, overlay insert, cut/paste, block
-drag, readOnly, controlled typing and an IME parity spot-check: <result>."
+drag, readOnly, controlled typing and an IME parity spot-check: <result>.
+
+Closes the select-all browser gap S1.6a left unpinned: the three it.todos become
+real tests and the Ctrl+A it.skip is un-skipped with a corrected assertion.
+Chromium does NOT clamp a cross-host selection — what truncates is
+Selection.prototype.toString(), which stops at the first editing host; the range's
+own serialization is the honest read. A fourth test gates the S1.6a fix directly
+(insertParagraph with everything selected must not be preventDefaulted and must
+leave the value intact); it is the only one of the four that dies when the
+all-selected branch is reverted to its pre-fix shape."
 ```
 
-**Measured outcome: this commit lands, and its whole diff is two comments** (the
-`it.todo` blockers in the react and vue keyboard specs). That is the honest
-deliverable — the numbers, the A/B smoke and a recorded blocker.
-
-Do NOT manufacture a diff to avoid an empty commit. If for some reason Step 2
-produces nothing, report the numbers and say S1.6b landed no commit; a sub-phase
-with no diff is a legitimate outcome here.
+**Measured outcome: the commit lands with four real tests per adapter plus one
+un-skipped test, not two comments.** The count moves by −6 todo and −2 skipped.
 
 ---
 
@@ -2666,7 +2734,7 @@ MarkputHandler / the path layer (S1.8)."
 | D-g `path()` readers retire before the writer | **HOLDS.** |
 | D-h `TokenHandle#token` survives | **HOLDS.** |
 | D-i §4.6 item 5 executed by S1.6c | **HOLDS.** |
-| D-j S1.6b flips nothing | **HOLDS, and is now proven rather than argued.** |
+| D-j S1.6b flips nothing | **HOLDS** for the "no code change" claim, and is proven rather than argued. **Its Task 3 rider was WRONG:** the select-all browser gap was recorded as blocked by a Chromium cross-host selection clamp; there is no such clamp, the branch is reachable, and the gap is now closed by four tests per adapter plus one un-skipped test. See Task 3 Step 1. |
 
 All ten contradictions hold. Two gained corrections: **#3** (§11's S1.6d scope
 line repeats D9's losing half too, so it is a three-way contradiction) and
