@@ -237,8 +237,8 @@ describe('TokenModel shell (model/)', () => {
 
 			expect(model.handle(model.current()[2].id!)?.element()).toBe(text2)
 			expect(model.handle(999999)).toBeUndefined()
-			const paths = model.current().map(token => model.handle(token.id!)?.path())
-			expect(paths).toEqual([[0], [1], [2]])
+			const ids = model.current().map(token => model.handle(token.id!)?.id)
+			expect(ids).toEqual(model.current().map(token => token.id))
 		})
 
 		it('handle(id) bridges fresh and stale token objects by identity and rejects foreign ids', () => {

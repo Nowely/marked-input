@@ -1,4 +1,3 @@
-import type {TokenPath} from '../../../shared/editorContracts'
 import {
 	focusIfNeeded,
 	getCaretIndex,
@@ -20,9 +19,9 @@ export type ElementBindings = {
 }
 
 /**
- * The live record of one token: the BIND-GENERATION token, its tree position,
- * and its DOM bindings. The class doubles as the public handle face: plain
- * getters (`token()`/`path()`/`element()`/`alive()`) and caret commands read
+ * The live record of one token: the BIND-GENERATION token and its DOM
+ * bindings. The class doubles as the public handle face: plain
+ * getters (`token()`/`element()`/`alive()`) and caret commands read
  * this node's own fields. No per-node reactivity — the spec's win-4 trade: zero
  * production consumers subscribed to a handle's getters, so signals are pure
  * overhead here (reversible: the getters stay methods, so per-node signals can
@@ -42,20 +41,23 @@ export type ElementBindings = {
  * positions during the pending window"); the deferral of node-backing to the
  * phase that gains a caller is plan decision D-b.
  *
- * S1.6d narrows this to a plain `{start, end}` stamp: `#token` and `update()`
- * die there together with `#path`'s three remaining readers
- * (`keyboard/blockEdit.ts`, `keyboard/arrowNav.ts`, `model/commit.ts`).
+ * `#token` SURVIVES this narrowing (S1.6d, plan decision D-h): five production
+ * readers legitimately want the bind generation — `DomModel`/`tokens/boundary.ts`
+ * (type, position, content), `commit.ts`'s divergence detector (content),
+ * `TokenModel.setEditable` (type) and `keyboard/arrowNav.ts` (position). D9 keeps
+ * exactly this read latch; narrowing to `{start, end}` would move the boundary
+ * layer's type/content reads onto the live tree, which is a DOM-layer refactor no
+ * §4.6 item asks for.
  *
  * Lifetime: created when its token enters the tree (keyed by the token's
  * stable identity id), mutated in place by
- * `refresh`/`update`/`bindElements`/`unbind`, killed when the token disappears
+ * `refresh`/`bindElements`/`unbind`, killed when the token disappears
  * (stale reads stay safe, commands become no-ops, never resurrected).
  */
 export class TokenHandle {
 	#dead = false
 
 	#token: Token
-	#path: TokenPath
 	#tokenElement: HTMLElement | undefined
 	#textElement: HTMLElement | undefined
 	#rowElement: HTMLElement | undefined
@@ -63,21 +65,14 @@ export class TokenHandle {
 
 	constructor(
 		readonly id: number,
-		token: Token,
-		path: TokenPath
+		token: Token
 	) {
 		this.#token = token
-		this.#path = [...path]
 	}
 
 	/** The handle's current token. A plain read of the backing field. */
 	token(): Token {
 		return this.#token
-	}
-
-	/** The handle's current tree position (a fresh copy each read). */
-	path(): TokenPath {
-		return [...this.#path]
 	}
 
 	/** Live AND bound: not killed and currently holding a DOM element. The whole validity check a holder of this handle needs. */
@@ -187,17 +182,6 @@ export class TokenHandle {
 	refresh(token: Token): void {
 		if (this.#dead) return
 		this.#token = token
-	}
-
-	/**
-	 * @internal Refresh token AND path. Bind is the only caller: a path can only
-	 * move when a node is added or removed, and such a commit never reaches the
-	 * text branch (spec D9's `render` bit is set for both).
-	 */
-	update(token: Token, path: TokenPath): void {
-		if (this.#dead) return
-		this.refresh(token)
-		this.#path = [...path]
 	}
 
 	/** @internal Set/replace the DOM bindings (structural bind). */

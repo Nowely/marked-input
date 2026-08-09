@@ -90,7 +90,6 @@ describe('TokenModel lookups', () => {
 
 		const id = store.tokens.current()[0].id!
 		const handle = store.tokens.handle(id)
-		expect(handle?.path()).toEqual([0])
 		expect(handle?.element()).toBe(span)
 		container.remove()
 	})

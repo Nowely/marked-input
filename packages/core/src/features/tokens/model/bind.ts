@@ -83,8 +83,8 @@ export function bind(input: BindInput): BindResult {
 			// An unrendered NEW token materializes no handle; one appears when a
 			// later walk reaches it (or on demand through the model shell).
 			if (!existing && !bindings) continue
-			const handle = existing ?? new TokenHandle(id, token, path)
-			if (existing) existing.update(token, path)
+			const handle = existing ?? new TokenHandle(id, token)
+			if (existing) existing.refresh(token)
 			else nodes.set(id, handle)
 			if (!bindings) {
 				handle.unbind()

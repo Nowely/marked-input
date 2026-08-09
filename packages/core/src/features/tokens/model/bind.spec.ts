@@ -73,7 +73,6 @@ describe('bind', () => {
 			expect(handle).toBeDefined()
 			expect(nodes.get(1)).toBe(handle)
 			expect(handle?.token()).toBe(tokens[0])
-			expect(handle?.path()).toEqual([0])
 			expect(handle?.element()).toBe(span)
 			expect(handle?.node()).toEqual({tokenElement: span, textElement: span})
 			expect(result.byElement.get(span)).toBe(handle)
@@ -391,7 +390,6 @@ describe('bind', () => {
 			const result = bind(inputFor(container, [inserted, a2, b2], ids.idFor, {nodes}))
 
 			expect(result.byPath.get('2')).toBe(handleB)
-			expect(handleB.path()).toEqual([2])
 			expect(handleB.element()).toBe(spanB2)
 		})
 
@@ -455,11 +453,10 @@ describe('bind', () => {
 			expect(handleA.element()).toBeUndefined()
 			expect(handleB.element()).toBeUndefined()
 			expect(handleA.node()).toBeUndefined()
-			// Token and path stay current with the tree even while unbound.
+			// The token stays current with the tree even while unbound.
 			expect(handleA.token()).toBe(a2)
 			expect(handleA.token().content).toBe('alpha! ')
 			expect(handleB.token()).toBe(b2)
-			expect(handleB.path()).toEqual([1])
 		})
 
 		it('keeps an existing handle alive and current when its subtree goes unrendered', () => {
