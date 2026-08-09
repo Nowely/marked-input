@@ -30,6 +30,13 @@ import {fromTransaction} from './treeInput'
  * and is delegated to here, so consumers keep this single entry point. Owns the
  * `nodes` map the pipeline mutates.
  *
+ * Mechanism ledger (spec §4.6): items 1 (the consume-once hint protocol) and 3
+ * (the reparse-watch edit path) died with THIS cutover, not at S1.6d — rewriting
+ * the write path deleted `#pendingEdit`/`takePendingEdit`, and arrivals now route
+ * explicitly through the boundary. S1.6d's gate therefore has FOUR items left:
+ * 2 (`tokenIdentity` + its suites), 4 (the handle write latch), 5
+ * (`#preferredHandle` + the selection clamp) and 6 ({@link removedIds}).
+ *
  * Layout: consumer reads → adapter SPI → engine SPI → wiring → internals.
  */
 export class TokenModel {
@@ -126,6 +133,15 @@ export class TokenModel {
 	 * IS the store; {@link TokenModel.value}'s three private inputs are declared
 	 * together in the internals section below (`#seed`, `#seeded`, `#committed`).
 	 * `ValueModel` is a one-phase facade over this.
+	 *
+	 * The `#seeded` arm is load-bearing and its gate is NOT the obvious one.
+	 * Measured: reduced to `props.value() ?? this.#committed()`, the red cases are
+	 * `SelectionController.spec`'s `isAllSelected` › "returns true when range spans
+	 * the entire value" and `selectAll` › "retains range intent when the DOM has no
+	 * target yet" — both read the value on an UNMOUNTED store, where nothing has
+	 * committed yet and `#committed()` is `''`. `ValueModel.spec`'s "initializes from
+	 * defaultValue when uncontrolled" stays GREEN: it mounts first, and the mount
+	 * watch seeds the tree before the read.
 	 */
 	readonly value: Computed<string> = computed(
 		() => this.props.value() ?? (this.#seeded() ? this.#committed() : this.#seed())
@@ -242,6 +258,14 @@ export class TokenModel {
 			// ONE watch over the (value, parser, isBlock) tuple, exactly as the pre-cutover
 			// shell had: a simultaneous props change is one wave and one commit, where three
 			// separate watches would adopt (and announce) two or three times.
+			//
+			// RECORDED GAP (measured): splitting this into three watches SURVIVES the whole
+			// core suite. Nothing anywhere counts `changed` for a value+parser or
+			// value+layout change applied in ONE `props.set`, so the wave parity is
+			// unobserved — the tuple is kept because the pre-cutover shell behaved that way,
+			// not because a test would notice. A test would have to pin an announcement
+			// count for a simultaneous props change; that is a contract nobody has stated,
+			// so it is recorded rather than invented.
 			watch(
 				() => ({
 					value: this.props.value(),
@@ -254,6 +278,16 @@ export class TokenModel {
 						this.#boundary.reparse()
 						return
 					}
+					// RECORDED, NOT FIXED (measured): the IMMEDIATE run has no `previous`, so it
+					// always takes this arm — an uncontrolled edit made BEFORE mount is
+					// discarded at mount (probe: `defaultValue: 'hello'`, unmounted
+					// `replace({0,-1}, 'edited')` reads back 'edited', then mounting reads
+					// 'hello', because `#restore` is only set on the controlled edge and the
+					// re-arrival falls back to `#seed()`). No spec reaches it and no production
+					// path can: edits originate from DOM events on a mounted container, and
+					// `#ensureSeeded` exists for the specs that write to an unmounted store and
+					// never mount it. Fixing it means seeding `#restore` from uncontrolled
+					// commits too, which is S1.8's when this state moves.
 					this.#onExternalValue(next.value)
 				},
 				{immediate: true}
@@ -294,6 +328,17 @@ export class TokenModel {
 	 * One-shot: the tree holds a value. A SIGNAL, not a plain flag — {@link value}
 	 * routes on it, and a field would leave that computed permanently subscribed to
 	 * `#seed` and blind to the first commit.
+	 *
+	 * Its named gates, measured as a plain field: `Store.spec`'s `internal state
+	 * signals` › "update when written directly" and `current` › "returns written
+	 * current value" / "reacts to current changes" — the three that write an unmounted
+	 * store through `value.current(next)` and read it back. The writable computed
+	 * evaluates its getter BEFORE the set (`signal.ts`'s `writableComputed` reads
+	 * `prev` to short-circuit an equal write), which caches the `#seed` arm and its dep
+	 * set; a plain field then changes nothing the computed subscribes to, so the read
+	 * back is stale. `ValueModel.spec`'s "initializes from defaultValue when
+	 * uncontrolled" stays green for the same reason it does under the {@link value}
+	 * mutation above: mount seeds before the first read.
 	 */
 	readonly #seeded = signal({initial: false})
 	/**
@@ -367,6 +412,17 @@ export class TokenModel {
 	 * The tree's materialization point. The pre-cutover value was a lazily-initialized
 	 * signal that worked on an UNMOUNTED store; several specs still edit one, so the
 	 * write path materializes the tree on first use rather than waiting for mount.
+	 *
+	 * RECORDED, NOT WRAPPED: these reads are TRACKED, where every other read on this
+	 * write path is `untracked` (see {@link replace}, and `arrive`/`reparse` in the
+	 * boundary). Measured cost of the inconsistency — an effect that calls a write verb
+	 * on an UNSEEDED store subscribes to `props.value` and `#seeded` and re-runs once
+	 * when the parent later sets a value (1 → 2 runs); on a seeded store it subscribes
+	 * to `#seeded` alone, which never flips again (1 → 1). So the blast radius is one
+	 * spurious re-run of a reactive writer, and no production caller is reactive: edits
+	 * originate from DOM events. The fix is one `untracked` around this body; it is
+	 * deferred to S1.8, which moves this state and can gate the change instead of
+	 * shipping an untested reactivity edit inside a hardening pass.
 	 */
 	#ensureSeeded(): void {
 		if (this.#seeded()) return

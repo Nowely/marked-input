@@ -4,8 +4,8 @@ import type {TransactionResult, TreeNode} from '../tree/types'
 import type {CommitChange, CommitInput} from './commitInput'
 
 /**
- * The tree core's lowering into the one commit pipeline (spec D9), sibling to
- * `fromReconcile`. Runs inside `Boundary.onResult`, i.e. synchronously at
+ * The tree core's lowering into the one commit pipeline (spec D9), and since
+ * S1.6a its only producer. Runs inside `Boundary.onResult`, i.e. synchronously at
  * adoption — §4.4 requires `tokens.current()` to stay consistent with
  * `value.current()`, and seven live call sites slice the value by positions read
  * from the snapshot.

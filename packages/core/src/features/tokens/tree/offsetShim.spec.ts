@@ -8,6 +8,19 @@ import {createTokenTree} from './tree'
 
 const rows = new Parser(['__slot__\n\n'])
 
+/**
+ * RECORDED GAP (S1.6a hardening, measured): "pass sub-range ops through" is a DESIGN
+ * CHOICE — spec D2's exact op window — and nothing in this repo gates it. Narrowing
+ * EVERY op in the form that actually means that (splice the sub-range into the value
+ * first, then gap-derive the result) survives the entire core suite. Only the literal
+ * "drop the early return" edit goes red, and for an unrelated reason: it leaves
+ * `gapWindow(value, replacement)` comparing the whole value against a bare fragment,
+ * which breaks the two pass-through cases below (23 cases suite-wide).
+ *
+ * The first assertion that could tell the two apart is `map`'s fixed point, which
+ * moves with the window and gets its consumer at S1.6c. Until then a test here would
+ * pin the choice, not detect a defect.
+ */
 describe('lowerReplace', () => {
 	it('passes a sub-range op through as the exact op window', () => {
 		expect(lowerReplace('hello world', {start: 6, end: 11}, 'markput')).toEqual({

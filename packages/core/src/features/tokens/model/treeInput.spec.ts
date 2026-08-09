@@ -52,10 +52,11 @@ function markAndChildOf(tree: TokenTree): {markId: number; childId: number} {
  * The `seen` dedupe this block used to record is gone with the feed it guarded:
  * `changes` is built from an id-keyed map, so one entry per node is structural.
  *
- * A deliberate difference from `fromReconcile` is NOT a gap: an ADDED node gets
- * a `patch: false` entry here where reconcile emits `patch: true`. Unreachable
- * either way — `changes` is read only by `commitText`, which runs only when
- * `!render`, and an add sets `render` on both lowerings.
+ * An ADDED node gets a `patch: false` entry here. That differed from the reconcile
+ * lowering S1.6a deleted, which emitted `patch: true`, and the difference was
+ * deliberate and unobservable: `changes` is read only by `commitText`, which runs
+ * only when `!render`, and an add always sets `render`. Recorded because the entry
+ * still looks like an omission to a fresh reader.
  */
 describe('fromTransaction', () => {
 	it('routes an interior text edit to the text branch', () => {

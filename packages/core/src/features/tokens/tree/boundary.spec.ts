@@ -333,6 +333,12 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 	 * shifts it to [3,10]. Pre-adoption the reader says 2, post-adoption 3 — which is
 	 * exactly D7's "adoption mutates positions in place, deriving afterwards
 	 * double-shifts" failure, made observable.
+	 *
+	 * These cases are the ONLY gate on the channel — `selectionBefore` gains its
+	 * consumer (`SelectionController`'s repair) at S1.6c — so they were mutation-proven
+	 * rather than trusted. Measured: capturing AFTER `adopt` reddens the commit and
+	 * arrival cases; capturing only on the commit path reddens the arrival and reparse
+	 * cases; and nothing else in the core suite notices either edit.
 	 */
 	function captureSetup(
 		source: string,
@@ -441,7 +447,8 @@ describe('boundary: block mode keeps filterEmptyText (spec §1.2)', () => {
 		// [text, mark, text, mark, text] and filters to two marks, of which the FIRST
 		// has one zero-length `text` child — the node a recursive filter would eat.
 		// With 'aaa\n\nbbb\n\n' both slots are non-empty, so a recursive filterEmptyText
-		// is indistinguishable and this case survives the whole core suite.
+		// is indistinguishable and this case survives the whole core suite. With this
+		// fixture it is the SOLE killer of that mutation — measured, one red case.
 		const {tree} = blockSetup('\n\nbbb\n\n', () => true)
 		const row = tree.roots()[0]
 		if (row.kind !== 'mark') throw new Error('expected a row mark')

@@ -2,9 +2,9 @@ import type {Token} from '../parser/types'
 
 /**
  * One handle refresh the text branch performs. `patch` also writes the DOM
- * surface; without it the entry is a position-only refresh (reconcile's
- * `kind: 'update'`), which is SKIPPED rather than escalated when the id has no
- * handle yet — an unrendered token has no surface to patch.
+ * surface; without it the entry is a position-only refresh, which is SKIPPED
+ * rather than escalated when the id has no handle yet — an unrendered token has
+ * no surface to patch.
  */
 export type CommitChange = {readonly id: number; readonly token: Token; readonly patch: boolean}
 
@@ -38,11 +38,12 @@ export type TokenDelta = {
 }
 
 /**
- * What {@link CommitPipeline.apply} consumes — deliberately producer-agnostic
- * (spec §11 transition mechanics). The live path lowers a `ReconcileResult`
- * here; the tree core lowers a `TransactionResult` in `treeInput.ts`. S1.6a
- * deletes the first lowering along with `tokenIdentity`, and the pipeline never
- * learns which one ran.
+ * What {@link CommitPipeline.apply} consumes. ONE producer remains — S1.6a
+ * deleted the reconcile lowering when the tree core took the live path, leaving
+ * `treeInput.ts`'s `fromTransaction`. The type stays producer-agnostic anyway:
+ * it is the pipeline's input contract, and the pipeline never learns who filled
+ * it (spec §11's transition mechanics; the hand-built `CommitInput` in
+ * treePipeline.spec.ts exercises exactly that).
  */
 export type CommitInput = {
 	/** The tree bind projects onto the node layer and the renderer paints. */

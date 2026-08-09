@@ -114,6 +114,12 @@ export class MarkController {
 	 * where the handle's is the bind generation; the latch means they cannot disagree
 	 * at write time today, so this is a correctness upgrade that only becomes
 	 * observable when S1.6d drops the gate.
+	 *
+	 * Consequence, recorded: NO test can show the node lookup doing better than
+	 * `token.position` in this phase — the latch forbids writes in exactly the window
+	 * where the two could differ. This resolution is gated by PARITY only (the suite
+	 * agreeing with the pre-cutover behavior), and the discriminating case arrives with
+	 * S1.6d.
 	 */
 	#resolve(): {token: MarkToken; node: MarkNode} | undefined {
 		if (this.store.props.readOnly()) return undefined

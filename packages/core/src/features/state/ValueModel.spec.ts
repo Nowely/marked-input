@@ -129,6 +129,17 @@ describe('ValueModel', () => {
 	})
 
 	describe('value hinge (S1.6a)', () => {
+		// BEHAVIOR CHANGE, measured at the cutover and recorded rather than pinned:
+		// writing the value the store ALREADY holds — `store.value.current('hello')` on
+		// 'hello' — no longer calls `onChange` (pre-cutover 1 call, now 0). The facade's
+		// writable computed short-circuits an equal write, so the shim never splices and
+		// the boundary never emits. `replace()` keeps the OLD parity: a no-op splice
+		// (`replace({start: 2, end: 2}, '')`) still emits (measured 1 call), which is what
+		// boundary.spec.ts's 'emits an unchanged value in both modes' pins. The impact is
+		// spec-surface only — no production caller writes `value.current(arg)`; every
+		// editor write goes through `replace`/`EditController`. Not gated here: a test
+		// would pin the signal library's equality short-circuit, and S1.8 deletes this
+		// facade anyway.
 		it('an uncontrolled edit before control is taken is what dropping control returns to', () => {
 			// The pin for the frozen-storage arm. 'falls back to defaultValue when
 			// controlled value becomes undefined' above covers the OTHER arm (never

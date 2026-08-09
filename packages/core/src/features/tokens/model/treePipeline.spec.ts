@@ -15,34 +15,28 @@ import type {TokenHandle} from './TokenHandle'
 import {fromTransaction} from './treeInput'
 
 /**
- * The same manual adapter commit.spec.ts uses, wired to the tree core instead
- * of the identity tracker: an empty tree seeded through the boundary, edits
- * through the transaction verbs, and `onResult` lowering into the pipeline.
- * Value-only marks render their value as a bare text node, so bind never
- * descends into them.
+ * THE pipeline suite: an empty tree seeded through the boundary, edits through the
+ * transaction verbs, and `onResult` lowering into the pipeline — the same manual
+ * adapter the deleted `commit.spec.ts` used, wired to the tree core. Value-only
+ * marks render their value as a bare text node, so bind never descends into them.
  *
- * PARITY IS ASSERTED ON OBSERVABLE OUTCOMES, not on `CommitInput.changes`. The
- * two lowerings differ in that intermediate shape — `fromReconcile` maps
- * reconcile's `kind: 'add'` into a `patch: true` change while `fromTransaction`
- * emits `patch: false` for the same node — and the shape is provably not
- * contractual: `changes` is read in exactly one place (`commit.ts`'s
- * `commitText`), which runs only when `!render`, and an add sets `render` on
- * BOTH paths (reconcile via `tokenIdentity.ts:318`, adoption via
- * `adopt.ts:197-198`). Add entries are therefore unreachable in the only
- * consumer. What must match is what the pipeline DOES: the DOM, handle
- * identity/liveness AND the bind-generation token each handle holds, the
- * `changed` payload and count, the render-tree reference and the pending latch —
- * which is what every case below asserts, each mirroring a `commit.spec.ts` case
- * on the live lowering.
+ * `fromTransaction` is now the ONLY producer `commit.ts` has (S1.6a deleted the
+ * reconcile lowering and its suite), so nothing here is a parity run any more. What
+ * the cases assert is what the pipeline DOES: the DOM, handle identity/liveness AND
+ * the bind-generation token each handle holds, the `changed` payload and count, the
+ * render-tree reference and the pending latch. They deliberately do NOT assert
+ * `CommitInput.changes`, which is an intermediate shape rather than a contract:
+ * `changes` is read in exactly one place (`commit.ts`'s `commitText`), which runs
+ * only when `!render`, and an add always sets `render` (`adopt.ts:197-198`), so add
+ * entries are unreachable in the only consumer.
  *
- * COVERAGE SCOPE (settled at S1.5 Task 6, so S1.6a does not have to re-derive it).
- * `commit.ts` is ONE shared function and both lowerings hand it the same four
- * fields, so any pipeline behavior that does not read `tokens`/`render`/
- * `changes`/`delta` differently is identical by construction and needs no second
- * copy here. This file is nonetheless a SUPERSET of "cases where the lowering
- * could differ", because S1.6a deletes `fromReconcile` and `commit.spec.ts` with
- * it: every live case whose only gate is that file has been ported unless listed
- * below, even where the port is behaviorally redundant today.
+ * COVERAGE SCOPE (settled at S1.5 Task 6, kept as written). `commit.ts` is ONE
+ * shared function fed four fields, so any pipeline behavior that does not read
+ * `tokens`/`render`/`changes`/`delta` differently was identical by construction on
+ * both lowerings and needed no second copy. This file is nonetheless a SUPERSET of
+ * "cases where the lowering could differ": when S1.6a deleted `commit.spec.ts`,
+ * every live case whose only gate was that file was ported or moved here unless
+ * listed below, even where the port is behaviorally redundant.
  *
  * Deliberately NOT ported, with reasons:
  * - `commit.spec.ts:141` "touches only the changed nodes" — decorative here. It
@@ -422,11 +416,11 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(harness.splice(2, 3, 'c')).toBe(true)
 
 		expect(pipeline.pending()).toBe(false)
-		// `liveFaces` is gone with `fromReconcile` (its own note scheduled this); the
-		// measured live-path faces for '#[ab]t' → '#[cb]t' are inlined here. They are the
-		// point of the case: the tree path once answered '#[ab]' / slot 'ab', and only a
-		// side-by-side run said which was right. Re-measured against the helper
-		// immediately before deleting it.
+		// The faces below are LITERALS on purpose: they were produced by the deleted
+		// `liveFaces` helper, which ran the old lowering side by side, and were
+		// re-measured against it immediately before it was deleted. They are the point of
+		// the case — the tree path once answered '#[ab]' / slot 'ab', and only that
+		// side-by-side run said which of the two was right.
 		expect(tokenFace(markHandle.token())).toEqual({
 			type: 'mark',
 			content: '#[cb]',
@@ -523,8 +517,8 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(pipeline.byPath().get('4')?.token().position).toEqual({start: 10, end: 13})
 	})
 
-	// ═══ S1.5 Task 6: cases whose only other gate is commit.spec.ts ════════════
-	// S1.6a deletes `fromReconcile`, and `commit.spec.ts` with it. See the
+	// ═══ S1.5 Task 6: ported ahead of commit.spec.ts's deletion ════════════════
+	// These had no gate outside `commit.spec.ts`, which S1.6a deleted. See the
 	// coverage-scope note at the top for what was deliberately left unported.
 
 	it('a no-op splice still announces consistency without touching anything', () => {
@@ -780,6 +774,12 @@ describe('commit pipeline driven by the tree core', () => {
 
 	it('normal applies and renders never throw', () => {
 		// Moved from commit.spec.ts:566 — the negative twin of the divergence case.
+		//
+		// WEAK GATE, and recorded as one: no mutation in S1.6a's matrix kills this case
+		// alone, because anything that makes the happy path throw takes most of this file
+		// with it (probe: an unconditional throw in `apply`'s structural arm → 182 red
+		// cases suite-wide, this one among them). Read it as a smoke assertion carried
+		// over with its neighbours, not as a distinct guard on a mechanism.
 		const harness = createHarness()
 		mount(harness)
 
