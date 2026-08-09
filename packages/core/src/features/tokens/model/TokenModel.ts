@@ -15,7 +15,7 @@ import {lowerReplace} from '../tree/offsetShim'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf} from '../tree/tree'
-import type {MarkCommands, MarkNode, NodeAnchor, TransactionResult, TreeNode} from '../tree/types'
+import type {MarkCommands, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeNode} from '../tree/types'
 import {createCommitPipeline} from './commit'
 import type {TokenDelta} from './commitInput'
 import {applyEditableState} from './editableState'
@@ -211,6 +211,34 @@ export class TokenModel {
 	/** Spec §2.3's `input.find`: resolve a stable id to its live node. */
 	find(id: number): TreeNode | undefined {
 		return untracked(() => findNode(this.#tree.roots(), id))
+	}
+
+	/**
+	 * Spec §2.3's `input.nodes()`: the live root nodes. REACTIVE — `roots` is a signal, so a
+	 * consumer inside an effect re-runs on every structural change. Deliberately does NOT
+	 * seed, for {@link offsetOf}'s reason: it is a read, and seeding writes signals.
+	 */
+	nodes(): readonly TreeNode[] {
+		return this.#tree.roots()
+	}
+
+	/**
+	 * @internal Spec §2.3's `replaceText`: node-local coordinates (spec D5).
+	 *
+	 * RECORDED GAP (measured): dropping `#ensureSeeded()` here and on {@link tx} survives the
+	 * whole suite — every fixture reaches these verbs through a mounted store, which the mount
+	 * watch already seeded. Kept for parity with {@link replace} and {@link applyStructural},
+	 * whose gates are the unmounted-store specs.
+	 */
+	applyText(node: TextNode, range: {start: number; end: number}, text: string): boolean {
+		this.#ensureSeeded()
+		return this.#tx.applyText(node, range, text)
+	}
+
+	/** @internal Spec §2.3's `input.tx` (spec D5's composition rules). */
+	tx(fn: () => void): boolean {
+		this.#ensureSeeded()
+		return this.#tx.tx(fn)
 	}
 
 	/**

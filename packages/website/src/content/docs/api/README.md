@@ -7,7 +7,7 @@ title: "@markput/react"
 
 ## Classes
 
-- [MarkputHandler](/api/classes/markputhandler/)
+- [MarkputApi](/api/classes/markputapi/)
 
 ## Interfaces
 
@@ -35,3 +35,4 @@ title: "@markput/react"
 - [useMarkInfo](/api/functions/usemarkinfo/)
 - [useMarkput](/api/functions/usemarkput/)
 - [useOverlay](/api/functions/useoverlay/)
+- [watch](/api/functions/watch/)

@@ -7,7 +7,7 @@ import {SelectionController} from '../features/selection'
 import {SlotsFeature} from '../features/slots'
 import {Host, PropsModel, ValueModel} from '../features/state'
 import {TokenModel} from '../features/tokens'
-import {MarkputHandler} from './MarkputHandler'
+import {MarkputApi} from './MarkputApi'
 
 //TODO rename to Markput, Core, Engine, Editor?
 export class Store {
@@ -46,5 +46,5 @@ export class Store {
 
 	readonly clipboard = new ClipboardController(this.host, this.edit, this.selection, this.tokens)
 
-	readonly handler = new MarkputHandler(this.host, this.overlay, this.selection)
+	readonly api = new MarkputApi(this.host, this.props, this.tokens, this.selection)
 }

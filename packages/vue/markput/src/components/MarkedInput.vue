@@ -77,7 +77,7 @@ watch(
 	syncProps
 )
 
-defineExpose(store.value.handler)
+defineExpose(store.value.api)
 </script>
 
 <template>

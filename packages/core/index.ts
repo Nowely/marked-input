@@ -14,7 +14,8 @@ export type {
 	Slot,
 	SlotRegistry,
 } from './src/shared/types'
-export {MarkputHandler} from './src/store/MarkputHandler'
+export {MarkputApi} from './src/store/MarkputApi'
+export type {MarkInit} from './src/store/MarkputApi'
 
 // Parsing exports (modern API)
 export {annotate, denote} from './src/features/tokens'

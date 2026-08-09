@@ -155,6 +155,14 @@ export class SelectionController {
 		this.select(result.map(before.start), result.map(before.end))
 	}
 
+	/**
+	 * Spec §2.3's `input.selection()`: the STORED anchors (spec D7), not the derived numbers
+	 * — {@link range} is the numeric projection. Reactive: a tracked read.
+	 */
+	anchors(): Anchors | undefined {
+		return this.#anchors()
+	}
+
 	focusFirst(): void {
 		const handle = this.tokens.handleOf(this.tokens.current()[0])
 		if (handle && this.placeAtHandle(handle, 'start')) return

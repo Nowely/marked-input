@@ -22,38 +22,31 @@ describe('Store', () => {
 		expect(store.props.options()).toEqual(DEFAULT_OPTIONS)
 	})
 
-	describe('handler', () => {
-		it('return an object with container, overlay, and focus properties', () => {
+	// `MarkputHandler`'s `overlay` getter is NOT ported: §2.3's export table drops it as
+	// consumer-free, confirmed by grep over both adapters, the storybook and the demo apps.
+	// `MarkputApi`'s own verb matrix lives in `MarkputApi.spec.ts`; what stays here is the
+	// wiring claim — the store hands out one live host object.
+	describe('api', () => {
+		it('return an object with container and focus properties', () => {
 			const store = new Store()
-			const handler = store.handler
-			expect('container' in handler).toBe(true)
-			expect('overlay' in handler).toBe(true)
-			expect('focus' in handler).toBe(true)
+			const api = store.api
+			expect('container' in api).toBe(true)
+			expect('focus' in api).toBe(true)
 		})
 
-		it('reflect dom container via handler.container', () => {
+		it('reflect dom container via api.container', () => {
 			const store = new Store()
-			const handler = store.handler
-			expect(handler.container).toBe(null)
+			const api = store.api
+			expect(api.container).toBe(null)
 			const el = document.createElement('div')
 			store.host.container(el)
-			expect(handler.container).toBe(el)
-		})
-
-		it('reflect state.overlay via handler.overlay', () => {
-			const store = new Store()
-			const handler = store.handler
-			expect(handler.overlay).toBe(null)
-			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
-			const stub = {} as HTMLElement
-			store.overlay.element(stub)
-			expect(handler.overlay).toBe(stub)
+			expect(api.container).toBe(el)
 		})
 
 		it('expose focus as a callable function', () => {
 			const store = new Store()
-			const handler = store.handler
-			expect(typeof handler.focus).toBe('function')
+			const api = store.api
+			expect(typeof api.focus).toBe('function')
 		})
 	})
 
