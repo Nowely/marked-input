@@ -54,12 +54,17 @@ const BLOCK_PROPS: CoreProps = {
 	Mark: () => null,
 }
 
-/** The construction seam under test: the (value, props, host) triple Store wires today. */
+/**
+ * The construction seam under test: the (props, host, selectionBefore) triple Store
+ * wires. The model is built BEFORE the value facade (the token layer owns the value
+ * now) and `props.set` still runs AFTER construction, which is what makes `#seed`'s
+ * laziness pick up `defaultValue`.
+ */
 function createNew(props: CoreProps) {
 	const propsModel = new PropsModel()
-	const value = new ValueModel(propsModel)
 	const host = new Host()
-	const model: TokenModel = new TokenModel(value, propsModel, host)
+	const model: TokenModel = new TokenModel(propsModel, host, () => undefined)
+	const value = new ValueModel(model)
 	propsModel.set(props)
 	return {model, value, props: propsModel, host}
 }

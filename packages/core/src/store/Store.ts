@@ -13,12 +13,21 @@ import {MarkputHandler} from './MarkputHandler'
 export class Store {
 	readonly host = new Host()
 	readonly props = new PropsModel()
-	readonly value = new ValueModel(this.props)
-	readonly tokens = new TokenModel(this.value, this.props, this.host)
+
+	// Explicit type annotations on BOTH SIDES OF THE CYCLE — `tokens` and `selection`
+	// — are REQUIRED, not stylistic: without them `tsc` fails with TS7022 ("implicitly
+	// has type 'any' because it is referenced directly or indirectly in its own
+	// initializer"). Measured: TS7022 fires only when both lack an annotation.
+	readonly tokens: TokenModel = new TokenModel(this.props, this.host, () => this.selection.range())
+	// NOT in the cycle — `value` depends on `tokens` only, so its annotation is
+	// ordinary style rather than a TS7022 workaround.
+	readonly value: ValueModel = new ValueModel(this.tokens)
 
 	readonly slots = new SlotsFeature(this.props)
 
-	readonly selection = new SelectionController(this.host, this.tokens, this.value, this.props)
+	// Built AFTER `tokens`, which is why the capture above is a thunk: it is invoked
+	// only from the boundary's `fold`, at commit/arrival time (spec D7).
+	readonly selection: SelectionController = new SelectionController(this.host, this.tokens, this.value, this.props)
 	readonly edit = new EditController(this.value, this.selection)
 
 	readonly keyboard = new KeyboardController(

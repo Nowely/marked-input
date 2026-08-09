@@ -52,6 +52,18 @@ export function createTokenTree(tokens: readonly Token[]): TokenTree {
 	return {roots, value, buildNode}
 }
 
+/** Depth-first id lookup over live nodes (spec §2.3's `input.find`). */
+export function findNode(nodes: readonly TreeNode[], id: Id): TreeNode | undefined {
+	for (const node of nodes) {
+		if (node.id === id) return node
+		if (node.kind === 'mark') {
+			const found = findNode(node.children(), id)
+			if (found) return found
+		}
+	}
+	return undefined
+}
+
 /** The string projection: mirrors parser/utils/toString over live nodes. */
 export function joinNodes(nodes: readonly TreeNode[]): string {
 	let result = ''

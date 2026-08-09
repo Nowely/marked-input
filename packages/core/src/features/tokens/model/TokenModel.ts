@@ -1,26 +1,31 @@
-import type {DomRef, TokenPath} from '../../../shared/editorContracts'
-import {computed, watch} from '../../../shared/signals/index.js'
+import type {DomRef, Range, TokenPath} from '../../../shared/editorContracts'
+import {computed, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
-import type {ValueModel} from '../../state/ValueModel'
 import {DomModel} from '../DomModel'
 import type {SelectionSnapshot} from '../DomModel'
 import {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
-import {createTextToken} from '../parser/utils/createTextToken'
-import {filterEmptyText} from '../parser/utils/filterEmptyText'
-import {createIdentityTracker} from '../tokenIdentity'
 import {pathEquals} from '../tokenIndex'
+import {createBoundary} from '../tree/boundary'
+import {lowerReplace} from '../tree/offsetShim'
+import {createSnapshotMemo} from '../tree/snapshotMemo'
+import {createTransactions} from '../tree/transactions'
+import {createTokenTree, findNode} from '../tree/tree'
+import type {TreeNode} from '../tree/types'
 import {createCommitPipeline} from './commit'
-import {fromReconcile} from './commitInput'
 import type {TokenDelta} from './commitInput'
 import {applyEditableState} from './editableState'
 import type {TokenHandle} from './TokenHandle'
+import {fromTransaction} from './treeInput'
 
 /**
- * The thin public shell over the live node layer: parses the value, reconciles
- * token identity, and feeds the one commit pipeline. Everything DOM-related —
+ * The value owner (spec D1, plan decision D-c): it holds THE token tree, the
+ * string boundary that decides commit policy, the transaction verbs that write
+ * it, and the snapshot memo — and feeds the one commit pipeline through
+ * {@link fromTransaction}. Parsing belongs to the boundary and token identity to
+ * adoption; neither is this class's business any more. Everything DOM-related —
  * boundary math, selection reads, caret placement — lives in {@link DomModel}
  * and is delegated to here, so consumers keep this single entry point. Owns the
  * `nodes` map the pipeline mutates.
@@ -116,6 +121,48 @@ export class TokenModel {
 	// ═══ Engine SPI (in-core consumers) ═══════════════════════════════════════
 
 	/**
+	 * THE value read (spec §4.4): controlled → the props value; uncontrolled → the
+	 * last COMMITTED projection. There is no separate uncontrolled string — the tree
+	 * IS the store; {@link TokenModel.value}'s three private inputs are declared
+	 * together in the internals section below (`#seed`, `#seeded`, `#committed`).
+	 * `ValueModel` is a one-phase facade over this.
+	 */
+	readonly value: Computed<string> = computed(
+		() => this.props.value() ?? (this.#seeded() ? this.#committed() : this.#seed())
+	)
+
+	/**
+	 * @internal The internal offset shim (spec D8): a global range → `applyRange`.
+	 * THE write entry for every offset-speaking caller; `ValueModel.replace` is a
+	 * one-line delegation to it.
+	 */
+	replace(range: Range, replacement: string): boolean {
+		this.#ensureSeeded()
+		// The op must be lowered in the TREE's coordinate space — that is what
+		// `transactions.dispatch` splices. It equals `value()` whenever seeded: in
+		// controlled mode the tree holds the last arrival, and a mid-flight emission does
+		// not move it (spec D6).
+		const op = lowerReplace(
+			untracked(() => this.#tree.value()),
+			range,
+			replacement
+		)
+		if (!op) return false
+		return this.#tx.applyRange(op.window, op.text)
+	}
+
+	/** @internal Whole-node replacement (spec D5) — `MarkController`'s write path. */
+	applyStructural(target: TreeNode, replacement: string): boolean {
+		this.#ensureSeeded()
+		return this.#tx.applyStructural(target, replacement)
+	}
+
+	/** Spec §2.3's `input.find`: resolve a stable id to its live node. */
+	find(id: number): TreeNode | undefined {
+		return untracked(() => findNode(this.#tree.roots(), id))
+	}
+
+	/**
 	 * Internal: the `removed` list of the LAST announcement, derived from the
 	 * `changed` payload that superseded it. No production consumer is left — it
 	 * survives one phase for the specs that read it and is deleted with §4.6
@@ -172,22 +219,43 @@ export class TokenModel {
 	// ═══ Wiring ═══════════════════════════════════════════════════════════════
 
 	constructor(
-		private readonly value: ValueModel,
 		private readonly props: PropsModel,
-		private readonly host: Host
+		private readonly host: Host,
+		/**
+		 * Pre-adoption selection capture (spec D7), injected because `Store` builds
+		 * `tokens` before `selection`. Invoked only from the boundary's `fold`, i.e. at
+		 * commit/arrival time — never during construction.
+		 *
+		 * NAMED `selectionBefore`, not `selection`: this class already has a
+		 * `selection(): SelectionSnapshot | undefined` Engine SPI method. Measured with
+		 * the colliding name: TS2300 (duplicate identifier), TS2403 / TS2687 on the two
+		 * declarations, plus TS2322 where the boundary dep then binds to the DOM
+		 * snapshot reader instead of the injected thunk.
+		 */
+		private readonly selectionBefore: () => Range | undefined
 	) {
 		host.onMounted(() => {
-			// Order matters: the immediate reparse seeds the pipeline (cold start is
+			// Order matters: the immediate arrival seeds the pipeline (cold start is
 			// a structural pass), so the immediate onRendered right after can bind
 			// a pre-built DOM — the shell is live once the container attaches.
 			//
-			// THE reparse trigger: one watch over the (value, parser, isBlock) tuple
-			// (the spec's named tuple). The trigger reads exactly those three signals
-			// — so the watch fires on exactly the waves the old #reconciled computed
-			// recomputed on — and #reparse drains the hint + applies in the callback.
+			// ONE watch over the (value, parser, isBlock) tuple, exactly as the pre-cutover
+			// shell had: a simultaneous props change is one wave and one commit, where three
+			// separate watches would adopt (and announce) two or three times.
 			watch(
-				() => ({value: this.value.current(), parser: this.#parser(), isBlock: this.props.layout.isBlock()}),
-				({value, parser, isBlock}) => this.#reparse(value, parser, isBlock),
+				() => ({
+					value: this.props.value(),
+					parser: this.#parser(),
+					isBlock: this.props.layout.isBlock(),
+				}),
+				(next, previous) => {
+					if (previous && next.value === previous.value && this.#seeded()) {
+						// Only the tokenization changed: re-derive from the unchanged projection.
+						this.#boundary.reparse()
+						return
+					}
+					this.#onExternalValue(next.value)
+				},
 				{immediate: true}
 			)
 			watch(host.rendered, () => this.#pipeline.onRendered(), {immediate: true})
@@ -195,26 +263,6 @@ export class TokenModel {
 	}
 
 	// ─── internals ─────────────────────────────────────────────────────────────
-
-	/**
-	 * THE reparse pipeline entry (the spec's watch-callback hint flow). Driven by
-	 * the one watch over the `(value, parser, isBlock)` tuple in the constructor:
-	 * when any of the three changes, drain the consume-once edit hint, full-parse
-	 * the value (inline and block parse are both full parses — the windowed
-	 * incrementalParse is deleted; a future pre-split row parser was scoped as
-	 * Phase 7 but detached/reverted — see branch phase7-first-class-rows-wip),
-	 * filter empty texts in block mode, then reconcile and apply. The hint is a
-	 * plain field the `current` write set synchronously, so draining it HERE —
-	 * inside an `untracked` watch callback, once per wave by construction — needs
-	 * no PURITY argument (the old `#reconciled` computed drained it inside a getter,
-	 * leaning on the runtime's once-per-wave guarantee; that dependence is gone).
-	 */
-	#reparse(value: string, parser: Parser | undefined, isBlock: boolean): void {
-		const hint = this.value.takePendingEdit()
-		const parsed = parser ? parser.parse(value) : [createTextToken(value)]
-		const tokens = isBlock ? filterEmptyText(parsed) : parsed
-		this.#pipeline.apply(fromReconcile(this.#identity.reconcile(tokens, hint)))
-	}
 
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
 		const Mark = this.props.Mark()
@@ -226,7 +274,104 @@ export class TokenModel {
 		return new Parser(markups)
 	})
 
-	readonly #identity = createIdentityTracker()
+	/**
+	 * THE tree (spec D1). Paired for life with `#memo` — `fromTransaction` reads the
+	 * roots from OUTSIDE the result, so the two must describe the same tree. Both are
+	 * readonly fields of this instance, declared adjacently, never reassigned, and
+	 * `#boundary`'s `onResult` is their only caller: the pairing is guaranteed by
+	 * construction, which is why no test gates it (plan decision D-h).
+	 */
+	readonly #tree = createTokenTree([])
+	readonly #memo = createSnapshotMemo()
+
+	/**
+	 * The lazily-materialized default — the pre-cutover `ValueModel.current`'s
+	 * `initial`, kept verbatim so a `defaultValue` set after the first read stays a
+	 * no-op.
+	 */
+	readonly #seed = signal({initial: () => this.props.defaultValue() ?? ''})
+	/**
+	 * One-shot: the tree holds a value. A SIGNAL, not a plain flag — {@link value}
+	 * routes on it, and a field would leave that computed permanently subscribed to
+	 * `#seed` and blind to the first commit.
+	 */
+	readonly #seeded = signal({initial: false})
+	/**
+	 * The projection at the moment control was taken; where an uncontrolled fallback
+	 * returns to. The pre-cutover signal did this implicitly by refusing to store
+	 * while controlled, which froze its storage at the last uncontrolled write.
+	 */
+	#restore: string | undefined
+	/**
+	 * Edge detector for the uncontrolled→controlled transition. A field, not `watch`'s
+	 * `previous`, so a container swap (which tears down and rebuilds the onMounted
+	 * scope) cannot make a remount look like a fresh edge.
+	 */
+	#controlled = false
+	/**
+	 * The commit-generation marker: `join(tree)` as of the last COMPLETED commit,
+	 * written by the boundary's `onResult` AFTER `pipeline.apply`. {@link value} reads
+	 * this and never `#tree.value()` directly, because `adopt()` writes `tree.roots`
+	 * inside its own `batch` whose flush would notify value subscribers while the
+	 * token view is still stale — measured red against §4.4's consistency invariant
+	 * (`features/tokens/TokenModel.spec.ts`'s "current() is updated when value.current
+	 * fires"). Not a second store: one writer, and its content is the tree's own
+	 * projection read at that instant, so drift is unrepresentable.
+	 */
+	readonly #committed = signal({initial: ''})
+
+	readonly #boundary = createBoundary({
+		tree: this.#tree,
+		parser: () => this.#parser(),
+		isBlock: () => this.props.layout.isBlock(),
+		controlled: () => this.props.value() !== undefined,
+		selection: () => this.selectionBefore(),
+		onChange: next => this.props.onChange()?.(next),
+		// Synchronous by contract (spec §4.4): `tokens.current()` must be consistent with
+		// `value.current()` the moment adoption lands, because seven call sites slice the
+		// value by positions read from the snapshot.
+		//
+		// ORDER IS LOAD-BEARING: `#committed` is written AFTER `pipeline.apply`, and it is
+		// the only thing `value` depends on. Publishing it first (or letting `value` read
+		// `#tree.value()`) hands subscribers a new string over a stale token view.
+		onResult: result => {
+			this.#pipeline.apply(fromTransaction(result, this.#memo, this.#tree.roots()))
+			this.#committed(this.#tree.value())
+		},
+	})
+
+	readonly #tx = createTransactions({
+		tree: this.#tree,
+		readOnly: () => this.props.readOnly(),
+		sink: this.#boundary.sink,
+	})
+
+	#arrive(value: string): void {
+		this.#seeded(true)
+		this.#boundary.arrive(value)
+	}
+
+	/** One router for every external value: the props watch, and `#ensureSeeded`. */
+	#onExternalValue(value: string | undefined): void {
+		const controlled = value !== undefined
+		// Entering controlled mode freezes where an uncontrolled fallback returns to —
+		// the pre-cutover signal did this implicitly by refusing to store while
+		// controlled. The two arms are pinned separately: never-uncontrolled falls back
+		// to the seed, an uncontrolled edit first falls back to that edit.
+		if (controlled && !this.#controlled) this.#restore = this.#seeded() ? this.#tree.value() : undefined
+		this.#controlled = controlled
+		this.#arrive(value ?? this.#restore ?? this.#seed())
+	}
+
+	/**
+	 * The tree's materialization point. The pre-cutover value was a lazily-initialized
+	 * signal that worked on an UNMOUNTED store; several specs still edit one, so the
+	 * write path materializes the tree on first use rather than waiting for mount.
+	 */
+	#ensureSeeded(): void {
+		if (this.#seeded()) return
+		this.#onExternalValue(this.props.value())
+	}
 
 	/** THE live node layer, keyed by stable token id — mutated only through the pipeline. */
 	readonly #nodes = new Map<number, TokenHandle>()
@@ -234,7 +379,9 @@ export class TokenModel {
 	readonly #pipeline = createCommitPipeline({
 		container: () => this.host.container(),
 		nodes: this.#nodes,
-		idFor: token => this.#identity.idFor(token),
+		// Every snapshot token carries its node's id (`tree/snapshot.ts`), so the
+		// pipeline never has to ask an allocator.
+		idFor: token => token.id,
 		editableState: () => this.#editableState(),
 		controlElements: () => this.#controlElements(),
 		childSequenceHostsFor: path => this.#childSequenceHostsFor(path),

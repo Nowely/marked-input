@@ -338,7 +338,12 @@ describe('MarkController live-read parity (handle-backed)', () => {
 	it('update() while a structural apply awaits its bind is a fail-closed no-op returning false', () => {
 		const {store, controller} = mountedSetup()
 		// Trigger a structural commit but do NOT render() — the latch is closed.
-		store.value.current('different @[x]')
+		// The fixture ADDS roots on purpose: adoption pairs roots by index, so a
+		// whole-value write that keeps the root count ('he@[x]llo' → 'different @[x]')
+		// removes nothing, takes the TEXT path and opens no pending window at all. The
+		// extra mark keeps the commit structural while the FIRST mark keeps its id, so
+		// this still tests the latch rather than a dead handle.
+		store.value.current('he@[x]llo@[y]')
 		// handle(id) fails closed mid-window, so the live read sees no mark.
 		const result = controller.update({value: 'bad'})
 		expect(result).toBe(false)
@@ -358,8 +363,10 @@ describe('MarkController live-read parity (handle-backed)', () => {
 		// Structural commit, NO rendered() — the latch is closed and handle(id)
 		// serves undefined for the FRESH render-tree mark. fromToken (which both
 		// adapters call synchronously during render) must build a controller on the
-		// id, not throw on the unresolvable handle.
-		store.value.current('different @[x]')
+		// id, not throw on the unresolvable handle. The fixture ADDS roots for the
+		// reason spelled out on the mid-window case above: a whole-value write that
+		// keeps the root count is a text-path commit and opens no pending window.
+		store.value.current('he@[x]llo@[y]')
 		const freshToken = store.tokens.renderTree().find(t => t.type === 'mark')!
 		const controller = MarkController.fromToken(store, freshToken)
 		expect(controller).toBeInstanceOf(MarkController)
@@ -371,7 +378,7 @@ describe('MarkController live-read parity (handle-backed)', () => {
 		// WRITE stays latch-gated: no live handle resolves through the latch, so the
 		// mutation fails closed and the value is untouched.
 		expect(controller.update({value: 'bad'})).toBe(false)
-		expect(store.value.current()).toBe('different @[x]')
+		expect(store.value.current()).toBe('he@[x]llo@[y]')
 
 		// Paint the render tree and complete the handshake — the same-id handle
 		// binds and reads/writes go live WITHOUT re-derivation.
@@ -386,6 +393,6 @@ describe('MarkController live-read parity (handle-backed)', () => {
 
 		expect(controller.value).toBe('x')
 		expect(controller.update({value: 'ok'})).toBe(true)
-		expect(store.value.current()).toBe('different @[ok]')
+		expect(store.value.current()).toBe('he@[ok]llo@[y]')
 	})
 })

@@ -8,8 +8,8 @@ import type {ValueModel} from '../state'
  * and only moves the caret when the edit is accepted. Wrapped in {@link batch}
  * so subscribers observe a consistent value/selection pair on one tick.
  *
- * - `range.end < 0` is normalized to the current value length. Use
- *   `{start: 0, end: -1}` for whole-value replacements.
+ * - `range.end < 0` means "to the end of the value"; the token layer's offset
+ *   shim normalizes it. Use `{start: 0, end: -1}` for whole-value replacements.
  * - `caretAt` overrides the default post-edit caret (which is
  *   `range.start + replacement.length`). Used by sites whose desired caret
  *   is not the natural end of the replacement (e.g. block reorder).
@@ -22,9 +22,10 @@ export class EditController {
 
 	replace(range: Range, replacement: string, caretAt?: number): void {
 		batch(() => {
-			const normalized: Range = range.end < 0 ? {start: range.start, end: this.value.current().length} : range
-			if (!this.value.replace(normalized, replacement)) return
-			this.selection.position(caretAt ?? normalized.start + replacement.length)
+			// `range.end < 0` is normalized by the offset shim; the caret only ever needed
+			// `range.start`, which normalization never touched.
+			if (!this.value.replace(range, replacement)) return
+			this.selection.position(caretAt ?? range.start + replacement.length)
 		})
 	}
 }

@@ -45,11 +45,13 @@ describe('BlockController', () => {
 		// commits settle structurally and current() stays the reconciled parse).
 		store.host.container(document.createElement('div'))
 		store.value.current('alpha\n\nbeta\n\n')
-		const currentSpy = vi.spyOn(store.value, 'current')
 
 		store.block.action({type: 'delete', index: 0})
 
-		expect(currentSpy).toHaveBeenCalledWith('beta\n\n')
+		// The OUTCOME, not the write channel: `ValueModel.replace` no longer writes
+		// through `current`, it delegates to the token layer, so `value.current` is only
+		// ever read on this path.
+		expect(store.value.current()).toBe('beta\n\n')
 		expect(store.selection.range()).toEqual({start: 6, end: 6})
 	})
 

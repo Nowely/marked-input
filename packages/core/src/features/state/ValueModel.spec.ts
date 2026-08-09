@@ -127,4 +127,63 @@ describe('ValueModel', () => {
 			expect(replaceInString('hello', {start: 0, end: 6}, 'x')).toBeUndefined()
 		})
 	})
+
+	describe('value hinge (S1.6a)', () => {
+		it('an uncontrolled edit before control is taken is what dropping control returns to', () => {
+			// The pin for the frozen-storage arm. 'falls back to defaultValue when
+			// controlled value becomes undefined' above covers the OTHER arm (never
+			// uncontrolled → the seed); this one is the only test that fails if the
+			// restore point is replaced by the seed.
+			const store = new Store()
+			store.props.set({defaultValue: 'default'})
+			mount(store)
+			store.value.replace({start: 0, end: -1}, 'edited')
+			expect(store.value.current()).toBe('edited')
+
+			store.props.set({value: 'controlled'})
+			expect(store.value.current()).toBe('controlled')
+
+			store.props.set({value: undefined})
+			expect(store.value.current()).toBe('edited')
+		})
+
+		it('onChange runs AFTER the commit, with the value and the tokens already new', () => {
+			// BEHAVIOR CHANGE, measured before the cutover: onChange fired from inside the
+			// signal setter, so a handler saw value 'he@[x]llo' and tokens 'he|@[x]|llo'
+			// while being handed 'he@[x]llo!'.
+			const store = new Store()
+			const seen: {value: string; tokens: string}[] = []
+			store.props.set({
+				defaultValue: 'he@[x]llo',
+				options: [{markup: '@[__value__]'}],
+				Mark: () => null,
+				onChange: () =>
+					seen.push({
+						value: store.value.current(),
+						tokens: store.tokens
+							.current()
+							.map(t => t.content)
+							.join('|'),
+					}),
+			})
+			mount(store)
+
+			store.edit.replace({start: 9, end: 9}, '!')
+
+			expect(seen).toEqual([{value: 'he@[x]llo!', tokens: 'he|@[x]|llo!'}])
+		})
+
+		it('constructing a Store and editing immediately does not touch selection during construction', () => {
+			// Store's selection thunk closes over a field declared BELOW `tokens`. If
+			// anything called it during construction this would be a TypeError, not a
+			// failed assertion. That is the Store-level gate on the D7 channel — the
+			// discriminating tests (a capture moved after adoption) live at the boundary,
+			// which is the only layer where the TransactionResult is observable.
+			const store = new Store()
+			store.props.set({defaultValue: 'hello'})
+			expect(() => mount(store)).not.toThrow()
+			expect(() => store.edit.replace({start: 0, end: 0}, 'X')).not.toThrow()
+			expect(store.value.current()).toBe('Xhello')
+		})
+	})
 })
