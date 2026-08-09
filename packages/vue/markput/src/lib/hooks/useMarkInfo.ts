@@ -9,7 +9,7 @@ export const useMarkInfo = (): MarkInfo => {
 	const contextRef = inject(TOKEN_KEY)
 	if (!contextRef) throw new Error('Token not found. Make sure to use useMarkInfo inside a Token provider.')
 
-	const {path, token} = contextRef.value
+	const {depth, token} = contextRef.value
 	if (token.type !== 'mark') throw new Error('useMarkInfo must be called within a mark token context')
-	return toMarkInfo(token, path)
+	return toMarkInfo(token, depth)
 }

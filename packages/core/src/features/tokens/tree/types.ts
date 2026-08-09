@@ -54,6 +54,32 @@ export interface MarkNode {
 	slot(): string | undefined
 	/** Spec §2.3. See {@link TextNode.range}. */
 	range(): {start: number; end: number}
+	/** Spec §2.3. Rides a transaction (spec D5); `false` in read-only mode or off the tree. */
+	update(patch: MarkPatch): boolean
+	remove(): boolean
+}
+
+/**
+ * Spec §2.3's mark patch. Three states per optional field, expressed without a
+ * discriminator (plan decision D-b): absent/`undefined` leaves the field alone, `null`
+ * clears it, a string sets it. Replaces the `{kind:'set'|'clear'}` `OptionalMarkFieldPatch`
+ * of the pre-v2 surface — a documented break.
+ */
+export type MarkPatch = {
+	readonly value?: string
+	readonly meta?: string | null
+	readonly slot?: string | null
+}
+
+/**
+ * The write port `MarkNode.update`/`remove` ride (spec D5). Declared here rather than
+ * beside the verbs in `transactions.ts` because `types.ts` is where the tree layer's
+ * contracts live and both modules already import it. Injected as a THUNK: `TokenModel`
+ * builds `#tree` before `#tx`, the same reason `SelectionPort` is one.
+ */
+export interface MarkCommands {
+	update(node: MarkNode, patch: MarkPatch): boolean
+	remove(node: MarkNode): boolean
 }
 
 /** Spec §2.3 addressing model. Mark interiors are addressed via slot text nodes. */

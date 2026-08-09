@@ -1,4 +1,4 @@
-import {useMark} from '@markput/react'
+import {useMark, useMarkput} from '@markput/react'
 import type {MarkProps} from '@markput/react'
 import {useState} from 'react'
 
@@ -8,13 +8,15 @@ import styles from './TodoMark.module.css'
 
 const useTodo = () => {
 	const mark = useMark()
-	const [isDone, setIsDone] = useState(mark.value === 'x')
+	// `readOnly` LEFT the mark surface at S1.7 (§2.3 does not put editor state on a node).
+	const readOnly = useMarkput(s => s.props.readOnly)
+	const [isDone, setIsDone] = useState(mark.value() === 'x')
 	const toggle = () => {
 		const newDone = !isDone
 		setIsDone(newDone)
 		mark.update({value: newDone ? 'x' : ' '})
 	}
-	return {isDone, toggle, readOnly: mark.readOnly}
+	return {isDone, toggle, readOnly}
 }
 
 // ─── Mark components (one per option) ─────────────────────────────────────────

@@ -2,7 +2,7 @@ import type {Computed, Signal} from '../../../shared/signals'
 import {computed, signal} from '../../../shared/signals'
 import type {Token} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
-import type {Id, MarkNode, TextNode, TreeNode} from './types'
+import type {Id, MarkCommands, MarkNode, TextNode, TreeNode} from './types'
 
 export interface TokenTree {
 	// NOT ReturnType<typeof signal<...>> — instantiation picks the last overload
@@ -13,7 +13,16 @@ export interface TokenTree {
 	readonly buildNode: (token: Token) => TreeNode
 }
 
-export function createTokenTree(tokens: readonly Token[]): TokenTree {
+export function createTokenTree(
+	tokens: readonly Token[],
+	/**
+	 * Spec §2.3's `mark.update`/`mark.remove`. Optional because the tree is built UNWIRED in
+	 * the specs and in the §7.1 snapshot gate, where there is no transaction layer to write
+	 * through; an unwired node's verbs answer `false`, which is the same fail-closed answer a
+	 * dead node gives.
+	 */
+	commands?: () => MarkCommands | undefined
+): TokenTree {
 	let nextId = 1
 	const alloc = (): Id => nextId++
 
@@ -49,6 +58,8 @@ export function createTokenTree(tokens: readonly Token[]): TokenTree {
 			// text child, so children are the sole slot source.
 			slot: () => (node.descriptor.hasSlot ? joinNodes(node.children()) : undefined),
 			range: () => ({...node.position}),
+			update: patch => commands?.()?.update(node, patch) ?? false,
+			remove: () => commands?.()?.remove(node) ?? false,
 		}
 		return node
 	}

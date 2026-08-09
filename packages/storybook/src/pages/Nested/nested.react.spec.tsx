@@ -122,7 +122,7 @@ describe('Nested Marks Rendering', () => {
 			return (
 				<span data-testid="mark">
 					{children}
-					{!info.hasNestedMarks && mark.value}
+					{!info.hasNestedMarks && mark.value()}
 				</span>
 			)
 		}
@@ -321,7 +321,7 @@ describe('Complex Nesting Scenarios', () => {
 		const RenderingMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
 			const info = useMarkInfo()
-			return <span data-testid="rendering-mark">{info.hasNestedMarks ? children : mark.slot}</span>
+			return <span data-testid="rendering-mark">{info.hasNestedMarks ? children : mark.slot()}</span>
 		}
 
 		const markup: Markup = '@[__slot__]'

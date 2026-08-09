@@ -452,7 +452,7 @@ describe('Complex Nesting Scenarios', () => {
 				const mark = useMark()
 				const info = useMarkInfo()
 				return () =>
-					h('span', {'data-testid': 'rendering-mark'}, info.hasNestedMarks ? slots.default?.() : mark.slot)
+					h('span', {'data-testid': 'rendering-mark'}, info.hasNestedMarks ? slots.default?.() : mark.slot())
 			},
 		})
 

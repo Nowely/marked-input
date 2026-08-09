@@ -14,14 +14,6 @@ export type RawSelection = {
 	readonly direction?: 'forward' | 'backward'
 }
 
-export type OptionalMarkFieldPatch = {readonly kind: 'set'; readonly value: string} | {readonly kind: 'clear'}
-
-export type MarkPatch = {
-	readonly value?: string
-	readonly meta?: OptionalMarkFieldPatch
-	readonly slot?: OptionalMarkFieldPatch
-}
-
 export type MarkInfo = {
 	/** Nesting level: a top-level mark has depth 0. */
 	readonly depth: number
@@ -30,14 +22,13 @@ export type MarkInfo = {
 }
 
 /**
- * Build a {@link MarkInfo} snapshot for a mark token at the given render-tree path.
- * `path` is an input used to compute `depth = path.length - 1`; it is not returned.
- * Throws if `token` is not a mark token.
+ * Build a {@link MarkInfo} for a mark token at the given render depth. `depth` arrives by
+ * construction from the render loop (the parent that maps the tree knows it), which is what
+ * it always did — S1.7 only stops laundering it through a `TokenPath` whose LENGTH was the
+ * real input (plan decision D-a). That unhooks this function from the path layer S1.8
+ * deletes. Throws if `token` is not a mark token.
  */
-export function toMarkInfo(token: Token, path: TokenPath): MarkInfo {
+export function toMarkInfo(token: Token, depth: number): MarkInfo {
 	if (token.type !== 'mark') throw new Error('toMarkInfo: token is not a mark')
-	return {
-		depth: path.length - 1,
-		hasNestedMarks: token.children.some(child => child.type === 'mark'),
-	}
+	return {depth, hasNestedMarks: token.children.some(child => child.type === 'mark')}
 }

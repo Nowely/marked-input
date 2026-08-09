@@ -6,15 +6,16 @@ import type {PropsModel} from '../../state/PropsModel'
 import {DomModel} from '../DomModel'
 import type {SelectionSnapshot} from '../DomModel'
 import {Parser} from '../parser/Parser'
-import type {Token} from '../parser/types'
+import type {MarkToken, Token} from '../parser/types'
 import {pathEquals} from '../tokenIndex'
 import {anchorAt, offsetOfAnchor} from '../tree/anchors'
 import {createBoundary} from '../tree/boundary'
+import {serializeMark} from '../tree/markPatch'
 import {lowerReplace} from '../tree/offsetShim'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf} from '../tree/tree'
-import type {NodeAnchor, TransactionResult, TreeNode} from '../tree/types'
+import type {MarkCommands, MarkNode, NodeAnchor, TransactionResult, TreeNode} from '../tree/types'
 import {createCommitPipeline} from './commit'
 import type {TokenDelta} from './commitInput'
 import {applyEditableState} from './editableState'
@@ -51,8 +52,8 @@ export interface SelectionPort {
  * 2. heuristic per-edit diff (`tokenIdentity` + its two suites) — S1.6d.
  * 3. reparse-watch edit path — S1.6a: arrivals route explicitly through the
  *    boundary and no watch on the value survives in this layer.
- * 4. handle write latch / captured-token fallback — S1.6d: `MarkController`
- *    resolves the live node, which has no adopt→bind window.
+ * 4. handle write latch / captured-token fallback — S1.6d: the mark verbs
+ *    resolve the live node, which has no adopt→bind window.
  * 5. `#preferredHandle` + the selection clamp — S1.6c: the stored anchor's node
  *    is the disambiguator and an anchor cannot point past it.
  * 6. `removedIds()` — S1.6d: the `changed` payload carries the ids instead.
@@ -201,7 +202,7 @@ export class TokenModel {
 		return this.#tx.applyRange(op.window, op.text)
 	}
 
-	/** @internal Whole-node replacement (spec D5) — `MarkController`'s write path. */
+	/** @internal Whole-node replacement (spec D5) — the mark verbs' write path. */
 	applyStructural(target: TreeNode, replacement: string): boolean {
 		this.#ensureSeeded()
 		return this.#tx.applyStructural(target, replacement)
@@ -210,6 +211,26 @@ export class TokenModel {
 	/** Spec §2.3's `input.find`: resolve a stable id to its live node. */
 	find(id: number): TreeNode | undefined {
 		return untracked(() => findNode(this.#tree.roots(), id))
+	}
+
+	/**
+	 * Spec §2.3's `useMark()` resolution: the live node behind a render-tree mark token.
+	 *
+	 * STRICT, and that is measured rather than assumed: every token an adapter renders comes
+	 * from a tree published by `commitStructural`, so `find(token.id)` cannot miss. A tolerant
+	 * variant — the pre-S1.7 `MarkController` returned `''` for a mark that had left the tree
+	 * — was tried first and the whole suite stayed green either way, so the fallback would
+	 * have been an untested guard AGENTS.md tells you not to keep.
+	 *
+	 * RECORDED GAP: by the same token nothing exercises the throw, so returning a bogus node
+	 * instead of throwing also survives the suite. The error path is unfalsifiable here — it
+	 * would take a React interleaving that re-renders a mark component after its node died,
+	 * which no test can construct.
+	 */
+	markFor(token: MarkToken): MarkNode {
+		const node = token.id === undefined ? undefined : this.find(token.id)
+		if (node?.kind !== 'mark') throw new Error(`markFor: no live mark node for token #${token.id}`)
+		return node
 	}
 
 	/**
@@ -385,8 +406,18 @@ export class TokenModel {
 	 * `#boundary`'s `onResult` is their only caller: the pairing is guaranteed by
 	 * construction, which is why no test gates it (plan decision D-h).
 	 */
-	readonly #tree = createTokenTree([])
+	readonly #tree = createTokenTree([], () => this.#markCommands)
 	readonly #memo = createSnapshotMemo()
+
+	/**
+	 * Spec §2.3's mark verbs, lowered onto `applyStructural` (spec D5). Read-only and
+	 * dead-node gating live in the transaction layer, so both arms answer exactly what it
+	 * answers — the deleted `MarkController` duplicated those two checks.
+	 */
+	readonly #markCommands: MarkCommands = {
+		update: (node, patch) => this.applyStructural(node, serializeMark(node, patch)),
+		remove: node => this.applyStructural(node, ''),
+	}
 
 	/**
 	 * The lazily-materialized default — the pre-cutover `ValueModel.current`'s

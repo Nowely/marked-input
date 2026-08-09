@@ -13,7 +13,7 @@ type Story = StoryObj<typeof MarkedInput>
 
 const Mark = () => {
 	const mark = useMark()
-	return <mark>{mark.value}</mark>
+	return <mark>{mark.value()}</mark>
 }
 
 export const Dynamic: Story = {
@@ -25,7 +25,7 @@ export const Dynamic: Story = {
 
 const RemovableMark = () => {
 	const mark = useMark()
-	return <mark onClick={() => mark.remove()}>{mark.value}</mark>
+	return <mark onClick={() => mark.remove()}>{mark.value()}</mark>
 }
 
 export const Removable: Story = {
@@ -41,13 +41,13 @@ const Abbr = () => {
 
 	return (
 		<abbr
-			title={mark.meta}
+			title={mark.meta()}
 			style={{
 				outline: 'none',
 				whiteSpace: 'pre-wrap',
 			}}
 		>
-			{mark.value}
+			{mark.value()}
 		</abbr>
 	)
 }

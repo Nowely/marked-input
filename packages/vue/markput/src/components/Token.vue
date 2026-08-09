@@ -18,11 +18,12 @@ const Token = defineComponent({
 	props: {
 		token: {type: Object as PropType<TokenType>, required: true},
 		path: {type: Array as PropType<TokenPath>, required: true},
+		depth: {type: Number, required: true},
 	},
 	setup(props): () => VNode | null {
 		provide(
 			TOKEN_KEY,
-			toRef(() => ({path: props.path, token: props.token}))
+			toRef(() => ({depth: props.depth, token: props.token}))
 		)
 
 		const store = useStore()
@@ -37,7 +38,12 @@ const Token = defineComponent({
 					? () =>
 							h(markRaw(TokenChildren), {ownerPath: props.path}, () =>
 								token.children.map((child, i) =>
-									h(markRaw(Token), {key: keyOf(child), token: child, path: [...props.path, i]})
+									h(markRaw(Token), {
+										key: keyOf(child),
+										token: child,
+										path: [...props.path, i],
+										depth: props.depth + 1,
+									})
 								)
 							)
 					: undefined

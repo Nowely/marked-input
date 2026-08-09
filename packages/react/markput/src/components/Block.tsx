@@ -46,7 +46,7 @@ export const Block = memo(({token, blockIndex}: BlockProps) => {
 
 			<DragHandle token={token} blockIndex={blockIndex} />
 
-			<Token token={token} path={[blockIndex]} />
+			<Token token={token} path={[blockIndex]} depth={0} />
 
 			<DropIndicator token={token} blockIndex={blockIndex} position="after" />
 

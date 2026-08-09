@@ -7,7 +7,6 @@ title: "@markput/react"
 
 ## Classes
 
-- [MarkController](/api/classes/markcontroller/)
 - [MarkputHandler](/api/classes/markputhandler/)
 
 ## Interfaces

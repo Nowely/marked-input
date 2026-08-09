@@ -8,6 +8,7 @@ import type {
 	CommitSink,
 	Id,
 	MarkNode,
+	MarkPatch,
 	NodeAnchor,
 	TextNode,
 	TransactionResult,
@@ -44,6 +45,8 @@ describe('tree contract types', () => {
 			position: {start: number; end: number}
 			slot: () => string | undefined
 			range: () => {start: number; end: number}
+			update: (patch: MarkPatch) => boolean
+			remove: () => boolean
 		}>()
 		// NodeAnchor: text offsets, boundary forms, document edges — the annotation is the check
 		const start: NodeAnchor = 'start'

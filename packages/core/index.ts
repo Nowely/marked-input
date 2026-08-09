@@ -19,7 +19,8 @@ export {MarkputHandler} from './src/store/MarkputHandler'
 // Parsing exports (modern API)
 export {annotate, denote} from './src/features/tokens'
 export type {Markup, Token, TextToken, MarkToken} from './src/features/tokens'
-export type {TokenPath, Range, MarkPatch, MarkInfo} from './src/shared/editorContracts'
+export type {TokenPath, Range, MarkInfo} from './src/shared/editorContracts'
+export type {Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TreeNode} from './src/features/tokens'
 export {toMarkInfo} from './src/shared/editorContracts'
 export type {Selectable, ObjectSelector} from './src/shared/readSelected'
 export {readSelected} from './src/shared/readSelected'
@@ -37,6 +38,3 @@ export {filterSuggestions, navigateSuggestions} from './src/features/overlay'
 
 // Drag
 export {getAlwaysShowHandle} from './src/features/block'
-
-// Mark commands
-export {MarkController} from './src/features/tokens'

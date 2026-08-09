@@ -163,13 +163,13 @@ describe('Component: MarkedInput', () => {
 				h(
 					'abbr',
 					{
-						title: mark.meta,
+						title: mark.meta(),
 						style: {
 							outline: 'none',
 							whiteSpace: 'pre-wrap',
 						},
 					},
-					mark.value
+					mark.value()
 				)
 		},
 	})
@@ -177,7 +177,7 @@ describe('Component: MarkedInput', () => {
 	const RemovableMark = defineComponent({
 		setup() {
 			const mark = useMark()
-			return () => h('mark', {onClick: () => mark.remove()}, mark.value)
+			return () => h('mark', {onClick: () => mark.remove()}, mark.value())
 		},
 	})
 
@@ -241,7 +241,7 @@ describe('Component: MarkedInput', () => {
 		const UpdatableMark = defineComponent({
 			setup() {
 				const mark = useMark()
-				return () => h('mark', {onClick: () => mark.update({value: `${mark.value}1`})}, mark.value)
+				return () => h('mark', {onClick: () => mark.update({value: `${mark.value()}1`})}, mark.value())
 			},
 		})
 
@@ -293,7 +293,7 @@ describe('Component: MarkedInput', () => {
 		const Mark = defineComponent({
 			setup() {
 				const mark = useMark()
-				return () => h('mark', {onClick: () => mark.remove()}, mark.value)
+				return () => h('mark', {onClick: () => mark.remove()}, mark.value())
 			},
 		})
 		const {container} = await render(withProps(Default, {Mark, value: 'Hello @[world](1)', onChange}))

@@ -11,7 +11,7 @@ import {TokenChildren} from './TokenChildren'
  * since during a structural render the freshly published tree is not bound to
  * the node layer yet.
  */
-export const Token = memo(({token, path}: {token: TokenType; path: TokenPath}) => {
+export const Token = memo(({token, path, depth}: {token: TokenType; path: TokenPath; depth: number}) => {
 	const {resolveMarkSlot, keyOf, store} = useMarkput(s => ({
 		resolveMarkSlot: s.slots.mark,
 		keyOf: s.tokens.keyOf,
@@ -23,13 +23,13 @@ export const Token = memo(({token, path}: {token: TokenType; path: TokenPath}) =
 		token.type === 'mark' && token.children.length > 0 ? (
 			<TokenChildren ownerPath={path}>
 				{token.children.map((child, i) => (
-					<Token key={keyOf(child)} token={child} path={[...path, i]} />
+					<Token key={keyOf(child)} token={child} path={[...path, i]} depth={depth + 1} />
 				))}
 			</TokenChildren>
 		) : undefined
 
 	return (
-		<TokenContext value={{store, token, path}}>
+		<TokenContext value={{store, token, depth}}>
 			{children ? <Component {...props}>{children}</Component> : <Component {...props} />}
 		</TokenContext>
 	)
