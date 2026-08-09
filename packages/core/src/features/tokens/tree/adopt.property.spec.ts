@@ -428,9 +428,9 @@ describe('adopt property: map', () => {
 					failures.push(`${label(c)} — offset ${offset}: ${position} < previous ${previous}`)
 				}
 				previous = position
-				// Outside the window the mapping is a pure shift; inside it collapses to the
-				// end of the inserted text (left affinity on an empty window).
-				const want = offset <= c.start ? offset : offset >= c.end ? offset + delta : c.start + c.text.length
+				// Outside the window the mapping is a pure shift; at or inside it the offset
+				// collapses to the end of the inserted text (RIGHT affinity, plan decision D-a).
+				const want = offset < c.start ? offset : offset >= c.end ? offset + delta : c.start + c.text.length
 				if (position !== want) {
 					failures.push(`${label(c)} — offset ${offset}: ${position}, want ${want}`)
 				}

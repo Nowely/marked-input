@@ -6,7 +6,7 @@ import {adopt} from './adopt'
 import {gapWindow} from './gapWindow'
 import {snapshot, stripIds} from './snapshot'
 import {createTokenTree} from './tree'
-import type {MarkNode, TreeNode} from './types'
+import type {MarkNode, NodeAnchor, TextNode, TreeNode} from './types'
 
 const parser = new Parser(['@[__value__](__meta__)', '#[__slot__]'])
 
@@ -512,5 +512,40 @@ describe('adopt: ported reconcile fixtures', () => {
 		expect([result.added, result.removed]).toEqual([[], []])
 		expect(result.updated.map(node => node.id)).toEqual([child.id])
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(slotParser.parse('#[a]')))
+	})
+})
+const textAnchorOf = (anchor: NodeAnchor): {node: TextNode; offset: number} => {
+	if (typeof anchor === 'string' || !('node' in anchor)) throw new Error('expected a text anchor')
+	return anchor
+}
+
+describe('adopt: map affinity (spec D7, plan decision D-a)', () => {
+	it('maps a caret AT an insertion point to the end of the inserted text', () => {
+		// The whole decision in one assertion. LEFT affinity (the S1.3 shape) answered 5,
+		// which parks the caret BEFORE the character the user just typed.
+		const {result} = editAndAdopt('abcde', 5, 5, 'X')
+		const anchor = textAnchorOf(result.map(5))
+		expect(anchor.offset).toBe(6)
+		expect(anchor.node.text()).toBe('abcdeX')
+	})
+
+	it('collapses an overtyped selection: both endpoints land on the replacement end', () => {
+		// AC-3.3/3.4. Under LEFT affinity the anchor stays at 2 and the repair would
+		// restore a one-character SELECTION instead of a caret.
+		const {result} = editAndAdopt('abcde', 2, 5, 'X')
+		expect(textAnchorOf(result.map(2)).offset).toBe(3)
+		expect(textAnchorOf(result.map(5)).offset).toBe(3)
+	})
+
+	it('leaves an offset strictly before the window alone', () => {
+		const {result} = editAndAdopt('abcde', 2, 5, 'X')
+		expect(textAnchorOf(result.map(1)).offset).toBe(1)
+	})
+
+	it('a deletion is unaffected by the affinity', () => {
+		// Both biases agree here; the case exists so a future "fix" that special-cases
+		// deletions has a pin. Backspace at 5: window {4,5,0}, caret 5 → 4.
+		const {result} = editAndAdopt('abcde', 4, 5, '')
+		expect(textAnchorOf(result.map(5)).offset).toBe(4)
 	})
 })

@@ -214,12 +214,20 @@ function sameNodes(a: readonly TreeNode[], b: readonly TreeNode[]): boolean {
 }
 
 /**
- * Pre-adoption offset → post-adoption anchor (spec D7). Branch order gives an
- * insertion point (`start === end`) left affinity: the offset stays put.
+ * Pre-adoption offset → post-adoption anchor (spec D7). RIGHT affinity: an offset AT the
+ * window start moves to the end of the inserted text, so typing `X` at offset 5 of
+ * `abcde` maps a pre-edit caret 5 to 6 and an overtyped selection collapses onto the
+ * replacement (AC-3.3/3.4). Left affinity — what S1.3 shipped, when `map` had no consumer
+ * — is what a selection anchor sitting at a foreign insertion point would want; nothing
+ * in this codebase is that consumer, so there is ONE map and no affinity parameter
+ * (plan decision D-a).
+ *
+ * A pure insertion (`start === end`) takes the second branch, not the third; both compute
+ * `window.start + window.insertedLength`, so the branches agree.
  */
 function resolveMappedAnchor(roots: readonly TreeNode[], offset: number, window: Window, delta: number): NodeAnchor {
 	const mapped =
-		offset <= window.start ? offset : offset >= window.end ? offset + delta : window.start + window.insertedLength
+		offset < window.start ? offset : offset >= window.end ? offset + delta : window.start + window.insertedLength
 	return anchorAt(roots, mapped)
 }
 
