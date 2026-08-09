@@ -1,5 +1,6 @@
 import {untracked} from '../../../shared/signals'
 import type {Parser} from '../parser/Parser'
+import {filterEmptyText} from '../parser/utils/filterEmptyText'
 import {adopt, parseValue} from './adopt'
 import {gapWindow} from './gapWindow'
 import type {TokenTree} from './tree'
@@ -33,6 +34,13 @@ export function createBoundary(deps: {
 	 */
 	controlled: () => boolean
 	/**
+	 * Block mode's parse policy (spec §1.2). Read per adoption, so an `isBlock` flip is
+	 * honored by the next `reparse` without a second code path. Deferred here from S1.4
+	 * (decision D-e of that plan): the tree core applied the filter nowhere, and block
+	 * wiring is S1.6a's.
+	 */
+	isBlock?: () => boolean
+	/**
 	 * Pre-adoption selection capture (spec D7). Read once per adoption, before the
 	 * parse — see `TransactionResult.selectionBefore` for why the boundary and not the
 	 * dispatcher owns this. Store supplies `() => selection.range()` as a deferred
@@ -55,7 +63,9 @@ export function createBoundary(deps: {
 		// Capture FIRST: `adopt` writes positions in place, so a range derived after it
 		// is shifted twice (spec D7).
 		const selectionBefore = deps.selection?.()
-		const result = adopt(deps.tree, window, parseValue(deps.parser(), next), selectionBefore)
+		const parsed = parseValue(deps.parser(), next)
+		const tokens = deps.isBlock?.() === true ? filterEmptyText(parsed) : parsed
+		const result = adopt(deps.tree, window, tokens, selectionBefore)
 		// Adoption is the commit; it must not sit inside the optional call's argument,
 		// which JS skips evaluating when no listener is registered.
 		deps.onResult?.(result)
@@ -113,9 +123,6 @@ export function createBoundary(deps: {
 				// walks go inert and the middle re-derives every token from the new parse. A full
 				// window is actively worse: it sends every mapped interior offset to the document
 				// end (decision D-c, pinned through `map` in boundary.spec.ts).
-				//
-				// Parser-only by decision D-e: `isBlock` arrivals and `TokenModel#reparse`'s
-				// `filterEmptyText` belong to S1.6a, which owns block wiring.
 				const value = deps.tree.value()
 				fold(value, gapWindow(value, value))
 			})

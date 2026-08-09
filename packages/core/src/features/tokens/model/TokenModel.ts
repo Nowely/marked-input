@@ -9,6 +9,7 @@ import type {SelectionSnapshot} from '../DomModel'
 import {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
+import {filterEmptyText} from '../parser/utils/filterEmptyText'
 import {createIdentityTracker} from '../tokenIdentity'
 import {pathEquals} from '../tokenIndex'
 import {createCommitPipeline} from './commit'
@@ -291,11 +292,4 @@ type ControlRegistration = {
 type ChildSequenceRegistration = {
 	readonly ownerPath: TokenPath
 	readonly element: HTMLElement
-}
-
-function filterEmptyText(tokens: Token[]): Token[] {
-	return tokens.filter(token => {
-		if (token.type !== 'text') return true
-		return token.position.start !== token.position.end
-	})
 }

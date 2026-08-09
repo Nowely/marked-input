@@ -3,6 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {effect} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
 import {createTextToken} from '../parser/utils/createTextToken'
+import {filterEmptyText} from '../parser/utils/filterEmptyText'
 import type {Boundary} from './boundary'
 import {createBoundary} from './boundary'
 import {snapshot, stripIds} from './snapshot'
@@ -387,5 +388,85 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 		const {tx, results} = captureSetup('hello', {selection: () => undefined})
 		expect(tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'A')).toBe(true)
 		expect(results[0].selectionBefore).toBeUndefined()
+	})
+})
+
+const rowParser = new Parser(['__slot__\n\n'])
+
+/**
+ * RECORDED, NOT FIXED: the filter changes what `anchorAt` — and so `map` — can answer with
+ * in block mode. Measured on this describe's fixture (`'aaa\n\nbbb\n\n'`):
+ *
+ *   filtered roots     mark#1[0,5] mark#3[5,10]
+ *   unfiltered roots   text#1[0,0] mark#2[0,5] text#4[5,5] mark#5[5,10] text#7[10,10]
+ *   anchorAt(5)        filtered text#4@0        unfiltered text#6@0
+ *   anchorAt(10)       filtered {after: mark#3} unfiltered text#7@0
+ *
+ * The DOCUMENT END is the shape change: with no trailing empty text there is nothing to
+ * anchor into, so it answers in boundary form — §2.3's "between-row positions have no
+ * TextNode". The between-row offset 5 is NOT a shape change: both trees resolve into row 2's
+ * slot child (later-wins skips the zero-length between-row text), only the allocated id
+ * differs. `map` has no consumer until S1.6c, whose repair must accept boundary-form anchors
+ * in block mode, and S1.7's `insertMark(at)` must not assume a between-row anchor
+ * round-trips through `anchorAt`. No assertion here — a gate without a consumer would pin an
+ * accident.
+ */
+describe('boundary: block mode keeps filterEmptyText (spec §1.2)', () => {
+	function blockSetup(source: string, isBlock: () => boolean) {
+		const tree = createTokenTree(filterEmptyText(rowParser.parse(source)))
+		const boundary = createBoundary({
+			tree,
+			parser: () => rowParser,
+			isBlock,
+			controlled: () => false,
+			onChange: () => {},
+		})
+		const tx = createTransactions({tree, readOnly: () => false, sink: boundary.sink})
+		return {tree, boundary, tx}
+	}
+
+	it('adopts rows only — no empty text node between or around them', () => {
+		const {tree, tx} = blockSetup('aaa\n\nbbb\n\n', () => true)
+		expect(tree.roots().map(n => n.kind)).toEqual(['mark', 'mark'])
+
+		expect(tx.applyRange({start: 1, end: 1, insertedLength: 0}, 'X')).toBe(true)
+
+		expect(tree.roots().map(n => n.kind)).toEqual(['mark', 'mark'])
+		expect(tree.value()).toBe('aXaa\n\nbbb\n\n')
+		expect(stripIds(snapshot(tree.roots()))).toEqual(filterEmptyText(rowParser.parse('aXaa\n\nbbb\n\n')))
+	})
+
+	it('the filter is top-level only: a slot keeps its own children', () => {
+		// The EMPTY-slot row is load-bearing. Measured: `'\n\nbbb\n\n'` parses to
+		// [text, mark, text, mark, text] and filters to two marks, of which the FIRST
+		// has one zero-length `text` child — the node a recursive filter would eat.
+		// With 'aaa\n\nbbb\n\n' both slots are non-empty, so a recursive filterEmptyText
+		// is indistinguishable and this case survives the whole core suite.
+		const {tree} = blockSetup('\n\nbbb\n\n', () => true)
+		const row = tree.roots()[0]
+		if (row.kind !== 'mark') throw new Error('expected a row mark')
+		expect(row.children().map(n => n.kind)).toEqual(['text'])
+	})
+
+	it('inline mode keeps the empty texts, so the same value adopts five roots', () => {
+		const {tree} = blockSetup('aaa\n\nbbb\n\n', () => false)
+		// The tree was BUILT filtered; the first inline adoption restores the parser's
+		// alternation, which is exactly what an isBlock flip must do.
+		const boundary = createBoundary({
+			tree,
+			parser: () => rowParser,
+			isBlock: () => false,
+			controlled: () => false,
+			onChange: () => {},
+		})
+		boundary.reparse()
+		expect(tree.roots().map(n => n.kind)).toEqual(['text', 'mark', 'text', 'mark', 'text'])
+	})
+
+	it('the projection is identical either way — empty text contributes nothing to join', () => {
+		const block = blockSetup('aaa\n\nbbb\n\n', () => true)
+		const inline = blockSetup('aaa\n\nbbb\n\n', () => false)
+		inline.boundary.reparse()
+		expect(block.tree.value()).toBe(inline.tree.value())
 	})
 })
