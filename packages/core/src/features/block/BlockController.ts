@@ -35,10 +35,10 @@ export class BlockController {
 			this.edit.replace({start: 0, end: -1}, result.value, result.caret)
 		})
 
-		// The `changed` payload (spec §2.3) replaces the wave-scoped removedIds()
-		// side channel: the ids arrive WITH the event instead of from a field that
-		// is valid only for the duration of that wave, and the pipeline now merges
-		// every commit folded into one paint rather than keeping the last one.
+		// The `changed` payload (spec §2.3) replaced a wave-scoped side channel: the
+		// ids arrive WITH the event instead of from a field that was valid only for
+		// the duration of that wave, and the pipeline merges every commit folded into
+		// one paint rather than keeping the last one.
 		watch(this.tokens.changed, delta => {
 			for (const id of delta.removed) this.#stores.delete(id)
 		})

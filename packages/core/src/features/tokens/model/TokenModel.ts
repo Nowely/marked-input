@@ -240,14 +240,6 @@ export class TokenModel {
 		return untracked(() => offsetOfAnchor(this.#tree.roots(), anchor))
 	}
 
-	/**
-	 * Internal: the `removed` list of the LAST announcement, derived from the
-	 * `changed` payload that superseded it. No production consumer is left — it
-	 * survives one phase for the specs that read it and is deleted with §4.6
-	 * item 6 in S1.6d. Take the payload instead.
-	 */
-	readonly removedIds = (): readonly number[] => this.#pipeline.removedIds()
-
 	/** Resolve a DOM node to its handle, 'control' if inside a control root, or undefined if outside the container. */
 	handleAt(node: Node): TokenHandle | 'control' | undefined {
 		return this.#dom.handleAt(node)

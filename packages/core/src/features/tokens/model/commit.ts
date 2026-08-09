@@ -43,12 +43,6 @@ export type CommitPipeline = {
 	 * into the single announcement.
 	 */
 	changed: Event<TokenDelta>
-	/**
-	 * The last announced delta's removals — derived from the `changed` payload,
-	 * kept only for the specs that still read it. Deleted with §4.6 item 6 in
-	 * S1.6d; new consumers take the payload.
-	 */
-	removedIds(): readonly number[]
 	/** pendingStructural latch: true between a structural apply and its bind — id-bridged resolution fails closed. */
 	pending(): boolean
 	byPath(): ReadonlyMap<string, TokenHandle>
@@ -61,8 +55,6 @@ export type CommitPipeline = {
 const VERIFY_DOM: boolean = import.meta.env?.DEV ?? true
 
 type DeltaAccumulator = {added: Set<number>; removed: Set<number>; updated: Set<number>}
-
-const EMPTY_DELTA: TokenDelta = {added: [], removed: [], updated: []}
 
 /**
  * Compose one commit's delta into the pending window's (spec D9's fold).
@@ -117,8 +109,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// what makes that true — so the old `pendingStructural ? … : []` guard on the
 	// bind path is gone rather than duplicated.
 	const pendingDelta: DeltaAccumulator = {added: new Set(), removed: new Set(), updated: new Set()}
-	// The delta of the last announcement (read by removedIds() after changed fires).
-	let lastDelta: TokenDelta = EMPTY_DELTA
 	let committing = false
 
 	function apply(input: CommitInput): void {
@@ -192,8 +182,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		})
 		if (VERIFY_DOM) assertAligned()
 		foldDelta(pendingDelta, delta)
-		lastDelta = drainDelta(pendingDelta)
-		changed(lastDelta)
+		changed(drainDelta(pendingDelta))
 		return true
 	}
 
@@ -229,10 +218,10 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		byElement = result.byElement
 		controlRoots = result.controlRoots
 		// A re-bind with no pending structural change drains an empty accumulator.
-		lastDelta = drainDelta(pendingDelta)
+		const delta = drainDelta(pendingDelta)
 		pendingStructural = false
 		if (VERIFY_DOM) assertAligned()
-		changed(lastDelta)
+		changed(delta)
 	}
 
 	/**
@@ -258,7 +247,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		renderTree,
 		current: () => latest,
 		changed,
-		removedIds: () => lastDelta.removed,
 		pending: () => pendingStructural,
 		byPath: () => byPath,
 		byElement: element => byElement.get(element),

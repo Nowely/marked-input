@@ -790,19 +790,4 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(() => harness.splice(10, 10, '@[y]')).not.toThrow()
 		expect(() => harness.render()).not.toThrow()
 	})
-
-	it('removedIds() still answers, now off the payload', () => {
-		// Moved from commit.spec.ts:730. `removedIds()` has no production consumer
-		// left and is deleted with §4.6 item 6 in S1.6d; until then this is its gate.
-		const harness = createHarness()
-		const {pipeline} = harness
-		mount(harness)
-		const markHandle = pipeline.byPath().get('1')
-		if (!markHandle) throw new Error('expected mark handle')
-
-		harness.splice(2, 6, '')
-		harness.render()
-
-		expect(pipeline.removedIds()).toContain(markHandle.id)
-	})
 })
