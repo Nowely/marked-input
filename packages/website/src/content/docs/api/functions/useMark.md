@@ -15,4 +15,4 @@ The live mark node for the surrounding mark token context (spec §2.3).
 
 ## Returns
 
-`MarkNode`
+[`MarkNode`](/api/interfaces/marknode/)

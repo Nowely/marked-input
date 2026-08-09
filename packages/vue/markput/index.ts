@@ -16,3 +16,4 @@ export {denote, annotate, MarkputApi} from '@markput/core'
 // §2.3 event is documented but unreachable from the published packages.
 export {watch} from '@markput/core'
 export type {Markup, Token, TextToken, MarkToken} from '@markput/core'
+export type {Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TreeNode} from '@markput/core'
