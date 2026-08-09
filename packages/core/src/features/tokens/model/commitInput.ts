@@ -1,5 +1,4 @@
 import type {Token} from '../parser/types'
-import type {ReconcileResult} from '../tokenIdentity'
 
 /**
  * One handle refresh the text branch performs. `patch` also writes the DOM
@@ -26,9 +25,11 @@ export type CommitChange = {readonly id: number; readonly token: Token; readonly
  *   `removed` would announce descendant removals for ids the consumer was
  *   never told existed.
  * - `updated` — PER NODE, no subtree claim: an id is listed iff that node's own
- *   content/props changed. A refused-descend mark lists itself ALONE
- *   (`tokenIdentity.ts:154`) even though the repaint it forces covers its
- *   children — a consumer needing the subtree re-reads the tree.
+ *   content/props changed. `treeInput.ts` lowers adoption's `updated` feed
+ *   straight through, so a mark whose PROJECTION changed while its own fields did
+ *   not stays out of the list even though its handle is refreshed
+ *   (`treeInput.spec.ts`'s ANCESTOR case) — a consumer needing the subtree
+ *   re-reads the tree.
  */
 export type TokenDelta = {
 	readonly added: readonly number[]
@@ -60,36 +61,4 @@ export type CommitInput = {
 	changes: readonly CommitChange[]
 	/** What this commit did to the id space — announced (merged across a fold) as the `changed` payload. */
 	delta: TokenDelta
-}
-
-/**
- * The live path's lowering. Deleted with `tokenIdentity` at S1.6a.
- *
- * `result.structural` already IS the render bit: reconcile sets it for an add
- * (tokenIdentity.ts:318), a removal (:325) and a refused-descend MARK (:153).
- *
- * The delta's subtree contract costs nothing here: reconcile already recurses
- * both id feeds — `collectChanges` emits one `'add'` entry PER NODE of a new
- * subtree (tokenIdentity.ts:134-140) and `collectRemovedIds` the same for a
- * dead one (:143-146).
- */
-export function fromReconcile(result: ReconcileResult): CommitInput {
-	return {
-		tokens: result.tokens,
-		render: result.structural,
-		changes: result.changes.map(change => ({
-			id: change.id,
-			token: change.token,
-			patch: change.kind !== 'update',
-		})),
-		delta: {
-			// `kind: 'add'` is reconcile's only add signal, and it lands once per
-			// node of the new subtree — no walk needed to satisfy the contract.
-			// `'text'` is the content signal (a refused-descend MARK included);
-			// `'update'` is position-only and is NOT a content change.
-			added: result.changes.filter(change => change.kind === 'add').map(change => change.id),
-			removed: result.removedIds,
-			updated: result.changes.filter(change => change.kind === 'text').map(change => change.id),
-		},
-	}
 }

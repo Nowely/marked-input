@@ -5,13 +5,11 @@ import {Parser} from '../parser/Parser'
 import type {Markup, Token} from '../parser/types'
 // The S1.4 STRING boundary (`tokens/tree/boundary.ts`), not the DOM boundary
 // layer of the same filename at `tokens/boundary.ts`.
-import {createIdentityTracker} from '../tokenIdentity'
 import {createBoundary} from '../tree/boundary'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree} from '../tree/tree'
 import {createCommitPipeline} from './commit'
-import {fromReconcile} from './commitInput'
 import type {TokenDelta} from './commitInput'
 import type {TokenHandle} from './TokenHandle'
 import {fromTransaction} from './treeInput'
@@ -56,13 +54,10 @@ import {fromTransaction} from './treeInput'
  * - `commit.spec.ts:323` "pending() spans exactly the structural apply → rendered
  *   window" — asserted piecewise by the cold-start, mark-value, fold and text
  *   cases below.
- * - `commit.spec.ts:490` "a textChanged id absent from the new tree" — builds a
- *   `CommitInput` literal by hand, so it exercises no lowering at all and
- *   `fromTransaction` cannot even produce it (every id it emits came from the
- *   memo). S1.6a should MOVE that case, not duplicate it here.
- * - `commit.spec.ts:557`/`:566` (structural self-heal of corruption, "normal
- *   applies never throw") and `:730` (`removedIds()`) — zero dependence on the
- *   input; `removedIds()` is deleted outright in S1.6d (§4.6 item 6).
+ *
+ * `commit.spec.ts:490`, `:557`, `:566` and `:730` were not ports but MOVES: they
+ * have zero dependence on the lowering, so S1.6a relocated them to the bottom of
+ * this file rather than duplicating them.
  */
 // `Markup`, NOT `string`: `Parser`'s constructor takes `(Markup | undefined)[]`
 // and `Markup` is a template-literal union (parser/types.ts:63), so a
@@ -146,46 +141,6 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 }
 
 type Harness = ReturnType<typeof createHarness>
-
-/**
- * The SAME edit driven through the live lowering, reduced to what each bound
- * handle ends up holding. One case below compares against this instead of
- * against constants, deliberately: that case exists because a constant is what
- * hid the defect it gates — the tree path answered '#[ab]' where the live path
- * answered '#[cb]', and only a side-by-side run says which of the two is right.
- *
- * S1.6a deletes `fromReconcile` and this helper with it; inline the measured
- * face ('#[cb]', slot 'cb') at that point.
- */
-function liveFaces(markups: Markup[], source: string, edit: {start: number; end: number; text: string}) {
-	const tracker = createIdentityTracker()
-	const parser = new Parser(markups)
-	const container = document.createElement('div')
-	document.body.append(container)
-	const pipeline = createCommitPipeline({
-		container: () => container,
-		nodes: new Map<number, TokenHandle>(),
-		idFor: token => tracker.idFor(token),
-		editableState: () => ({editable: true, readOnly: false}),
-		controlElements: () => new Set<HTMLElement>(),
-		childSequenceHostsFor: () => [],
-		isBlock: () => false,
-	})
-	const apply = (value: string) => pipeline.apply(fromReconcile(tracker.reconcile(parser.parse(value))))
-	const paint = (tokens: readonly Token[]): HTMLElement[] =>
-		tokens.map(token => {
-			const span = document.createElement('span')
-			if (token.type === 'mark') span.append(...paint(token.children))
-			return span
-		})
-
-	apply(source)
-	container.replaceChildren(...paint(pipeline.renderTree()))
-	pipeline.onRendered()
-	apply(source.slice(0, edit.start) + edit.text + source.slice(edit.end))
-
-	return new Map([...pipeline.byPath()].map(([key, handle]) => [key, tokenFace(handle.token())]))
-}
 
 /**
  * A bind-generation token minus its id — the whole face `MarkController`'s
@@ -467,9 +422,24 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(harness.splice(2, 3, 'c')).toBe(true)
 
 		expect(pipeline.pending()).toBe(false)
-		const live = liveFaces(['#[__slot__]'], '#[ab]t', {start: 2, end: 3, text: 'c'})
-		expect(tokenFace(markHandle.token())).toEqual(live.get('1'))
-		expect(tokenFace(childHandle.token())).toEqual(live.get('1.0'))
+		// `liveFaces` is gone with `fromReconcile` (its own note scheduled this); the
+		// measured live-path faces for '#[ab]t' → '#[cb]t' are inlined here. They are the
+		// point of the case: the tree path once answered '#[ab]' / slot 'ab', and only a
+		// side-by-side run said which was right. Re-measured against the helper
+		// immediately before deleting it.
+		expect(tokenFace(markHandle.token())).toEqual({
+			type: 'mark',
+			content: '#[cb]',
+			position: {start: 0, end: 5},
+			value: '',
+			meta: undefined,
+			slot: {content: 'cb', start: 2, end: 4},
+		})
+		expect(tokenFace(childHandle.token())).toEqual({
+			type: 'text',
+			content: 'cb',
+			position: {start: 2, end: 4},
+		})
 		// The `#token` contract (TokenHandle.ts): the handle holds the generation the
 		// DOM is showing, and after a text commit that IS the published tree's object.
 		expect(markHandle.token()).toBe(pipeline.current()[1])
@@ -759,5 +729,78 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(pipeline.byElement(button)).toBeUndefined()
 		expect(pipeline.isControlRoot(button)).toBe(true)
 		expect(pipeline.isControlRoot(spans[0])).toBe(false)
+	})
+
+	// ═══ S1.6a: MOVED here when commit.spec.ts was deleted ═════════════════════
+	// These four had no other gate. They test the pipeline itself, not a lowering,
+	// so they arrive re-fixtured onto the tree harness rather than re-derived.
+
+	it('a textChanged id absent from the new tree routes structural (conservative stale-tree guard)', () => {
+		// Moved from commit.spec.ts:490 verbatim in substance: the `CommitInput` is
+		// hand-built, so no lowering runs and `fromTransaction` could not produce it
+		// (every id it emits came from the memo). Not the SOLE guard on
+		// `commit.ts:179` — mutating that `return false` to `continue` also kills the
+		// vanished-handle case above — but it is the only one that reaches the guard
+		// with a stale tree instead of a deleted handle.
+		const harness = createHarness()
+		const {pipeline} = harness
+		mount(harness)
+		const changedSpy = vi.fn()
+		watch(pipeline.changed, changedSpy)
+
+		const tokens = [...pipeline.renderTree()]
+		pipeline.apply({
+			tokens,
+			render: false,
+			changes: [{id: 99999, token: tokens[0], patch: true}],
+			delta: {added: [], removed: [], updated: []},
+		})
+
+		expect(changedSpy).toHaveBeenCalledTimes(1)
+		expect(pipeline.pending()).toBe(false)
+		expect(pipeline.renderTree()).toBe(tokens)
+		expect(pipeline.byPath().size).toBe(3)
+	})
+
+	it('the structural branch self-heals corruption instead of throwing (bind rewrites every surface)', () => {
+		// Moved from commit.spec.ts:557. NOT `harness.render()`: that
+		// `replaceChildren()`s with FRESH spans, orphaning the node corrupted below,
+		// so the heal is asserted against a detached element (measured: expected
+		// 'WRONG' to be 'he'). `onRendered()` re-binds the surfaces already there,
+		// which is the sequence the original was written against.
+		const harness = createHarness()
+		const {text1} = mount(harness)
+		text1.textContent = 'WRONG'
+
+		harness.splice(2, 6, '@[y]') // render bit set → the structural branch
+
+		expect(() => harness.pipeline.onRendered()).not.toThrow()
+		expect(text1.textContent).toBe('he')
+	})
+
+	it('normal applies and renders never throw', () => {
+		// Moved from commit.spec.ts:566 — the negative twin of the divergence case.
+		const harness = createHarness()
+		mount(harness)
+
+		expect(() => harness.splice(9, 9, '!')).not.toThrow()
+		expect(() => harness.render()).not.toThrow()
+		expect(() => harness.splice(10, 10, '@[y]')).not.toThrow()
+		expect(() => harness.render()).not.toThrow()
+	})
+
+	it('removedIds() still answers, now off the payload', () => {
+		// Moved from commit.spec.ts:730. `removedIds()` has no production consumer
+		// left and is deleted with §4.6 item 6 in S1.6d; until then this is its gate.
+		const harness = createHarness()
+		const {pipeline} = harness
+		mount(harness)
+		const markHandle = pipeline.byPath().get('1')
+		if (!markHandle) throw new Error('expected mark handle')
+
+		harness.splice(2, 6, '')
+		harness.render()
+
+		expect(pipeline.removedIds()).toContain(markHandle.id)
 	})
 })
