@@ -402,7 +402,11 @@ describe('adopt property: map', () => {
 			const roots = tree.roots()
 			const live = new Set(idsOf(roots))
 			const documentEnd = roots.length > 0 ? roots[roots.length - 1].position.end : 0
-			/** {node, offset} → node.position.start + offset; {before}/{after} → the node's start/end. */
+			/**
+			 * {node, offset} → node.position.start + offset; {before}/{after} → the node's
+			 * start/end. Deliberately NOT `offsetOfAnchor`: a property gated by the production
+			 * function it tests is circular. Do not deduplicate.
+			 */
 			const resolve = (anchor: NodeAnchor): {position: number; anchorable: boolean; node?: TreeNode} => {
 				if (anchor === 'start') return {position: 0, anchorable: true}
 				if (anchor === 'end') return {position: documentEnd, anchorable: true}

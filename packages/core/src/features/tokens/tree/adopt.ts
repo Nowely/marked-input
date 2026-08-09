@@ -3,6 +3,7 @@ import type {Parser} from '../parser/Parser'
 import type {MarkToken, TextToken, Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {collectIds, shiftPositions, snapshotNodeEquals} from './adoptUtils'
+import {anchorAt} from './anchors'
 import type {TokenTree} from './tree'
 import type {
 	Id,
@@ -229,29 +230,4 @@ function resolveMappedAnchor(roots: readonly TreeNode[], offset: number, window:
 	const mapped =
 		offset < window.start ? offset : offset >= window.end ? offset + delta : window.start + window.insertedLength
 	return anchorAt(roots, mapped)
-}
-
-/** Right-affinity resolution: the last text node (document order) containing the offset. */
-export function anchorAt(roots: readonly TreeNode[], offset: number): NodeAnchor {
-	let text: {node: TextNode; offset: number} | undefined
-	let mark: MarkNode | undefined
-	const visit = (nodes: readonly TreeNode[]): void => {
-		for (const node of nodes) {
-			// Sibling positions ascend, so the first node starting past the offset ends the
-			// scan; earlier siblings still run, which is what keeps later-wins intact.
-			if (node.position.start > offset) break
-			if (offset > node.position.end) continue
-			if (node.kind === 'text') {
-				text = {node, offset: offset - node.position.start}
-			} else {
-				mark = node
-				visit(node.children())
-			}
-		}
-	}
-	visit(roots)
-	if (text) return text
-	// A mark interior is not anchorable (spec §2.3), so a slotless mark answers with its boundary.
-	if (mark) return {after: mark}
-	return offset <= 0 ? 'start' : 'end'
 }

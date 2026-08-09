@@ -8,12 +8,13 @@ import type {SelectionSnapshot} from '../DomModel'
 import {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
 import {pathEquals} from '../tokenIndex'
+import {anchorAt, offsetOfAnchor} from '../tree/anchors'
 import {createBoundary} from '../tree/boundary'
 import {lowerReplace} from '../tree/offsetShim'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode} from '../tree/tree'
-import type {TreeNode} from '../tree/types'
+import type {NodeAnchor, TreeNode} from '../tree/types'
 import {createCommitPipeline} from './commit'
 import type {TokenDelta} from './commitInput'
 import {applyEditableState} from './editableState'
@@ -176,6 +177,29 @@ export class TokenModel {
 	/** Spec §2.3's `input.find`: resolve a stable id to its live node. */
 	find(id: number): TreeNode | undefined {
 		return untracked(() => findNode(this.#tree.roots(), id))
+	}
+
+	/**
+	 * Spec §2.3: a global offset → the node anchor at it (right affinity). THE
+	 * offset→anchor direction for the selection write path.
+	 *
+	 * Seeds for the same reason {@link replace} does (plan decision D-f): an
+	 * unmaterialized tree has no roots, so every offset would answer `'end'`. The bare
+	 * function is the module import — this method does not recurse.
+	 */
+	anchorAt(offset: number): NodeAnchor {
+		this.#ensureSeeded()
+		return untracked(() => anchorAt(this.#tree.roots(), offset))
+	}
+
+	/**
+	 * Spec §2.3's `selectionRange` half: an anchor's absolute offset in the tree's
+	 * projection. Deliberately does NOT seed — it is a READ reached from
+	 * `SelectionController.range`'s computed, and seeding inside a computed evaluation
+	 * would write signals during evaluation.
+	 */
+	offsetOf(anchor: NodeAnchor): number {
+		return untracked(() => offsetOfAnchor(this.#tree.roots(), anchor))
 	}
 
 	/**
