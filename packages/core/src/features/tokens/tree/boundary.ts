@@ -100,8 +100,8 @@ export function createBoundary(deps: {
 			// every mapped interior offset to the document end.
 			//
 			// `isBlock` arrivals and `TokenModel#reparse`'s `filterEmptyText` are deliberately
-			// out of scope here — block wiring belongs to the props layer, and the tree core
-			// applies no empty-text filter anywhere yet.
+			// out of scope here (decision D-e): both belong to S1.6a, which owns block wiring,
+			// and the tree core applies no empty-text filter anywhere yet.
 			const value = deps.tree.value()
 			fold(value, gapWindow(value, value))
 		},
