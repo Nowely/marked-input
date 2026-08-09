@@ -52,7 +52,7 @@ Markput's core owns the editor-engine primitives:
 - raw DOM selection to serialized value ranges
 - raw value edits through `store.value.replace()` / `store.value.current()`
 - caret range application to the DOM after framework renders
-- mark commands through `MarkController`
+- mark commands through the live `MarkNode` (`mark.update()` / `mark.remove()`)
 
 React and Vue render structural token shells, text surfaces, slot roots, rows, and controls, then register them with core through private refs. Features do not rely on DOM child order, public data attributes, or user-provided refs to locate tokens.
 

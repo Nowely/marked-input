@@ -344,7 +344,7 @@ const tokens = useMarkput(s => s.tokens.renderTree)
 
 ## Features
 
-11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandler` and `KeyboardController` behavior modules retain the full `Store` as an adapter boundary.
+11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputApi` — the public host object the component ref exposes — follows the same rule: it owns nothing and delegates every member to the feature that owns the state.
 
 Signal subscription order is significant: inside its constructor `onMounted` hook, `TokenModel` registers a single `watch` over the `(value, parser, isBlock)` tuple before any other consumer registers a watcher in `onMounted`. When any of the three changes, the watch callback runs the private `#reparse`, so by the time downstream listeners observe a `value.current` change, `tokens.current()` already reflects the new value.
 
@@ -442,7 +442,7 @@ See `packages/core/src/features/tokens/README.md` for the full architecture of t
 
 ### useMark
 
-Available in both React and Vue. Returns a `MarkController` for the current mark token:
+Available in both React and Vue. Returns the live `MarkNode` for the current mark token:
 
 ```typescript
 const mark = useMark()

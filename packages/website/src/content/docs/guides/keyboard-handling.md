@@ -43,7 +43,7 @@ function RemovableMention() {
     const mark = useMark()
     return (
         <button type="button" onClick={() => mark.remove()}>
-            @{mark.value}
+            @{mark.value()}
         </button>
     )
 }
@@ -53,7 +53,7 @@ To update a mark, call `mark.update()`:
 
 ```tsx
 mark.update({value: 'alice'})
-mark.update({meta: {kind: 'clear'}})
+mark.update({meta: null})
 ```
 
 The hook no longer exposes a DOM ref. Focus moves through registered token shells and text surfaces owned by the adapters.
