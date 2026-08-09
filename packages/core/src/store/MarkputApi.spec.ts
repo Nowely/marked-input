@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest'
 import type {TokenDelta} from '../features/tokens/model/commitInput'
 import type {Markup} from '../features/tokens/parser/types'
 import type {TextNode} from '../features/tokens/tree/types'
-import {watch} from '../shared/signals'
+import {effect, watch} from '../shared/signals'
 import type {MarkputApi} from './MarkputApi'
 import {Store} from './Store'
 
@@ -192,5 +192,38 @@ describe('MarkputApi (spec §2.3)', () => {
 		expect(api.container).toBe(store.host.container())
 		expect(api.container).toBeInstanceOf(HTMLElement)
 		expect(() => api.focus()).not.toThrow()
+	})
+
+	it('insertMark carries the slot through to the markup', () => {
+		// Without this the `init.slot` passthrough is unproven — measured: dropping it from
+		// `annotate` survives the whole suite.
+		const {api} = setup('ab')
+		const node = api.insertMark({node: textAt(api, 0), offset: 1}, {markup: SLOT_MARKUP, value: 'v', slot: 'inner'})
+		expect(api.value()).toBe('a#[v]{inner}b')
+		expect(node?.slot()).toBe('inner')
+	})
+
+	it("insertMark at 'caret' with a RANGED selection inserts at the selection start", () => {
+		// Discriminates `range().start` from `range().end`: every collapsed fixture agrees.
+		const {api} = setup('abcd')
+		const node = textAt(api, 0)
+		api.select({node, offset: 1}, {node, offset: 3})
+		expect(api.insertMark('caret', {markup: MARKUP, value: 'x'})?.kind).toBe('mark')
+		expect(api.value()).toBe('a@[x]()bcd')
+	})
+
+	it('nodes() is reactive — §2.3 says so, and an effect must re-run on a structural change', () => {
+		// Measured: without this, wrapping `TokenModel.nodes()` in `untracked` survives the
+		// entire suite, so the "reactive" half of §2.3's read contract is unproven.
+		const {api} = setup('hello')
+		let runs = 0
+		const stop = effect(() => {
+			api.nodes()
+			runs++
+		})
+		expect(runs).toBe(1)
+		api.setValue('a@[x](m)b')
+		expect(runs).toBe(2)
+		stop()
 	})
 })

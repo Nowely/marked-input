@@ -47,7 +47,14 @@ export class MarkputApi {
 	 * The string projection (spec D1): controlled → the props value, uncontrolled → the last
 	 * committed `join(tree)`. A delegation to {@link TokenModel.value}, and deliberately not
 	 * `join(tree)` inline — the two disagree while a controlled parent's `props.value` is
-	 * ahead of the last arrival. (Gated: swapping in `joinNodes(nodes())` fails 9 core tests.)
+	 * ahead of the last arrival, and on an UNSEEDED store, where the tree has no roots at all
+	 * but `value()` already answers the seed.
+	 *
+	 * RECORDED GAP (measured): swapping in `joinNodes(this.tokens.nodes())` survives the whole
+	 * suite (73 files, 1326 passed). Every fixture here reaches the verb through a mounted,
+	 * seeded store, and an arrival is synchronous on the props watch, so the two readings agree
+	 * at every moment a test can observe. Closing it takes an UNMOUNTED-store case, which this
+	 * spec's mounted fixture cannot express.
 	 */
 	value(): string {
 		return this.tokens.value()
