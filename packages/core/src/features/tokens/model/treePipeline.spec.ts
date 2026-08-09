@@ -444,13 +444,13 @@ describe('commit pipeline driven by the tree core', () => {
 	// Beyond the plan's case list, and both survived the first mutation run: the
 	// eight cases above all passed with `fromTransaction`'s two subtree walks
 	// removed. Each ports a `commit.spec.ts` case whose live-path behavior comes
-	// from reconcile's recursion (`collectChanges`/`collectRemovedIds` at
-	// tokenIdentity.ts:134-147), so a roots-only lowering is a real parity break.
+	// from reconcile's recursion (its `collectChanges`/`collectRemovedIds`, deleted
+	// at S1.6d), so a roots-only lowering is a real parity break.
 
 	it('a shift refreshes the descendants of a shifted mark, not just its root', () => {
 		// Ports commit.spec.ts's 'shifted suffix' case to a mark WITH children. The
-		// live path's suffix walk collects the whole subtree as `update`
-		// (tokenIdentity.ts:285-286); adoption lists subtree ROOTS in `shifted`, so
+		// live path's suffix walk collected the whole subtree as `update` (reconcile,
+		// deleted at S1.6d); adoption lists subtree ROOTS in `shifted`, so
 		// the lowering walks. 'a#[bc]d' → text 'a'[0,1], mark '#[bc]'[1,6]
 		// {child 'bc'[3,5]}, text 'd'[6,7]; prepending 'X' moves all three right by
 		// one and touches only 'a', so the mark stays out of `updated` and the

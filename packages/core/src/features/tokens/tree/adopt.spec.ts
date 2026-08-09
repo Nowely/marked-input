@@ -350,9 +350,9 @@ describe('adopt: untracked reads', () => {
 })
 
 /**
- * Ported from `tokenIdentity.spec.ts` — the reconcile algorithm adoption replaces.
- * Each case keeps the IDENTITY claim it encoded and drops the `ReconcileResult`
- * assertions (change kinds, tree paths, `structural` routing) that die with that
+ * Ported (S1.3) from the reconcile suite adoption replaces — deleted at S1.6d.
+ * Each case keeps the IDENTITY claim it encoded and drops the reconcile-result
+ * assertions (change kinds, tree paths, `structural` routing) that died with that
  * file. Two feed contracts differ by design and are called out where they bite:
  *
  * - a pure position move lands in `shifted`, not `updated` (D9 splits the feeds);

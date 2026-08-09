@@ -2,7 +2,8 @@ import type {Token} from '../parser/types'
 import type {Id, TreeNode} from './types'
 
 /**
- * Mirror of tokenIdentity's tokensEqualShifted over (node, parsed token).
+ * Shift-tolerant equality over (node, parsed token) — the retention test adoption
+ * pairs candidates with.
  *
  * The token's text mirrors are deliberately NOT compared — mark `content` and
  * `slot.content` are pure functions of descriptor + value + meta + children, all of

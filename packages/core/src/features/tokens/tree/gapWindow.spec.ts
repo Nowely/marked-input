@@ -1,27 +1,8 @@
 import {faker} from '@faker-js/faker'
 import {describe, expect, it} from 'vitest'
 
-import {findGap} from '../utils/findGap'
 import {gapWindow} from './gapWindow'
 import type {Window} from './types'
-
-/**
- * FROZEN MANUAL COPY of the private `hintFromValues` in `../tokenIdentity.ts`
- * (it is not exported, and that file must not be touched). The differential
- * assertions below pin `gapWindow` against THIS copy, not against the live
- * function — drift in `tokenIdentity.ts` is invisible to CI. Delete this copy
- * together with that file; the literal expectations outlive it.
- */
-function hintFromValues(previousValue: string, nextValue: string): Window {
-	const gap = findGap(previousValue, nextValue)
-	const prefix = gap.left ?? previousValue.length
-	const suffix = gap.right === undefined ? previousValue.length : previousValue.length - gap.right
-	const clampedSuffix = Math.min(suffix, Math.min(previousValue.length, nextValue.length) - prefix)
-	const start = prefix
-	const end = previousValue.length - clampedSuffix
-	const insertedLength = nextValue.length - clampedSuffix - start
-	return {start, end, insertedLength}
-}
 
 const BASE_SEED = 8_082_026
 /** ~200 keeps CI-tolerable runtime; bump locally for soak runs. */
@@ -55,7 +36,10 @@ describe('gapWindow', () => {
 		expect(gapWindow('abc', 'abc')).toEqual({start: 3, end: 3, insertedLength: 0})
 	})
 
-	it('derives the fixture windows and matches the frozen hintFromValues copy', () => {
+	// The literal expectations outlive the deleted differential check: they were
+	// derived from the reconcile hint this function replaced, and each one is now
+	// asserted on its own.
+	it('derives the fixture windows', () => {
 		const cases: [previous: string, next: string, expected: Window][] = [
 			['hello', 'heXYllo', {start: 2, end: 2, insertedLength: 2}],
 			['abcdef', 'abef', {start: 2, end: 4, insertedLength: 0}],
@@ -72,7 +56,6 @@ describe('gapWindow', () => {
 		for (const [previous, next, expected] of cases) {
 			const detail = `${JSON.stringify(previous)} → ${JSON.stringify(next)}`
 			expect(gapWindow(previous, next), detail).toEqual(expected)
-			expect(gapWindow(previous, next), detail).toEqual(hintFromValues(previous, next))
 		}
 	})
 
@@ -94,7 +77,6 @@ describe('gapWindow', () => {
 				next.slice(window.start, window.start + window.insertedLength) +
 				previous.slice(window.end)
 			expect(applied, detail).toBe(next)
-			expect(window, detail).toEqual(hintFromValues(previous, next))
 		}
 	})
 })

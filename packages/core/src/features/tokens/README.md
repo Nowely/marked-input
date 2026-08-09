@@ -92,9 +92,8 @@ value edit → full parse → reconcile (identity carry + routing decided here)
   id-keyed store off `delta.removed`). During a latched window only the final
   commit announces, and its payload MERGES every folded apply's delta — keeping
   only the last one dropped the earlier removals when two structural applies
-  landed before one bind. `removedIds()` still exists as the last
-  announcement's `removed`, but no production consumer reads it; S1.6d deletes
-  it.
+  landed before one bind. The wave-scoped `removedIds()` read that predated the
+  payload was deleted in S1.6d.
 
 ## Structural DOM walk (`model/bind.ts`)
 
@@ -124,7 +123,6 @@ current() // readonly Token[] — the always-fresh reconciled tree
 // renderer contract (adapter-only)
 renderTree: Computed<Token[]> // structural tree; reference change ⇔ renderer must run
 changed: Event<TokenDelta>    // THE model-level detector; fires after the DOM is consistent, carrying {added, removed, updated} ids
-removedIds(): readonly number[] // the last announcement's `removed`; no consumer left, deleted in S1.6d
 keyOf(token): number          // framework key (stable id); adapters pass it unbound
 
 // per-token live view
@@ -255,51 +253,6 @@ start/end. The handle paths fail closed against a dead or mid-window handle
 path-and-token round-trip is involved.
 
 ## Parse and identity
-
-### Identity tracker (`tokenIdentity.ts`)
-
-`createIdentityTracker()` maps each `Token` object to a stable integer id via a
-plain `id` field stamped directly on the token. `reconcile(next, hint?)` matches the new parse against the previous
-tree and returns a `ReconcileResult`:
-
-```ts
-type ReconcileResult = {
-    tokens: Token[] // the reconciled tree (ids stamped, prev objects reused)
-    structural: boolean // the renderer must run (add/remove, or a refused mark descend)
-    changes: TokenChangeEntry[] // every changed token, in tree order — the commit branch reads these
-    removedIds: number[] // ids gone from the tree (subtree included) — the prune feed
-}
-
-type TokenChangeEntry = {
-    id: number
-    token: Token
-    path: TokenPath
-    kind: 'text' | 'update' | 'add'
-}
-```
-
-The matching layer is the only incrementality — parse itself is always full.
-
-- **Prefix reuse** — top-level tokens byte-identical (full subtree, positions
-  included) and entirely before the edit window are returned `===` the previous
-  object (no `changes` entry).
-- **Suffix id-carry** — tokens after the window identical modulo a uniform
-  position shift inherit the previous id (descendants recursively) onto the new
-  object and are reported as `kind: 'update'`; zero-shift suffixes are reused by
-  reference like the prefix.
-- **Middle pairing** — same-slot tokens with the same type (and descriptor for
-  marks) inherit the old id and are reported as `kind: 'text'`; everything
-  unpaired is `kind: 'add'` (+ `structural`) or lands in `removedIds`. Same-slot
-  inheritance is best-effort continuity, not semantics — output correctness is
-  guarded by the equivalence properties (`tokenIdentity.property.spec.ts`).
-
-`idOf(token)` allocates on first sight (intended for live-tree tokens; probing
-foreign tokens permanently allocates); `idFor(token)` is the read-only peek the
-model uses for foreign-token-safe bridging.
-
-When no hint is provided the tracker derives one from the values via `findGap`;
-the reconcile produces a structural pass (`result.structural === true`, all
-`kind: 'add'`) only on the very first reconcile (no previous tree).
 
 ### `TokenChangeEntry` kinds
 

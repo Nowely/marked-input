@@ -24,15 +24,13 @@ import type {ElementBindings} from './TokenHandle'
  */
 export type BindInput = {
 	container: HTMLElement
-	/** The identity-reconciled token tree the renderer just painted. */
+	/** The id-stamped token tree the renderer just painted. */
 	tokens: readonly Token[]
 	/**
-	 * Read-only id lookup (the identity tracker's `idFor`). Bind never
-	 * allocates ids: reconcile already ensured one for every token of the tree
-	 * it emitted — both its cold-start and delta paths end in a recursive
-	 * ensureId sweep over the OUTPUT tree (tokenIdentity.ts), descendants
-	 * included. A tree token without an id is a contract violation (an
-	 * unreconciled tree was passed) and fails loud before any mutation.
+	 * Read-only id lookup. Bind never allocates ids: every snapshot token carries
+	 * its node's id (`tree/snapshot.ts`), descendants included. A tree token without
+	 * an id is a contract violation (an unsnapshotted tree was passed) and fails loud
+	 * before any mutation.
 	 */
 	idFor: (token: Token) => number | undefined
 	/** THE live node layer, keyed by token id — mutated in place. */
