@@ -1,9 +1,9 @@
 import {untracked} from '../../../shared/signals'
 import type {Parser} from '../parser/Parser'
-import {parseAndAdopt} from './adopt'
+import {adopt, parseValue} from './adopt'
 import {gapWindow} from './gapWindow'
 import type {TokenTree} from './tree'
-import type {CommitSink, TransactionResult, Window} from './types'
+import type {CommitSink, SelectionRange, TransactionResult, Window} from './types'
 
 /** The string boundary (spec §4.4): commit policy plus arrival routing. */
 export interface Boundary {
@@ -32,6 +32,14 @@ export function createBoundary(deps: {
 	 * waits for the parent's echo. Read per commit, so a mid-flight mode flip is honored.
 	 */
 	controlled: () => boolean
+	/**
+	 * Pre-adoption selection capture (spec D7). Read once per adoption, before the
+	 * parse — see `TransactionResult.selectionBefore` for why the boundary and not the
+	 * dispatcher owns this. Store supplies `() => selection.range()` as a deferred
+	 * thunk (declaration order: `tokens` is built before `selection`), so it must not
+	 * be called during construction — and it is not: only `fold` calls it.
+	 */
+	selection?: () => SelectionRange | undefined
 	onChange: (value: string) => void
 	/** The `TransactionResult` feed (spec D9); its pipeline consumer arrives with S1.5. */
 	onResult?: (result: TransactionResult) => void
@@ -43,8 +51,15 @@ export function createBoundary(deps: {
 	 */
 	let lastEmitted: Emission | undefined
 
-	const fold = (next: string, window: Window): void =>
-		parseAndAdopt(deps.tree, deps.parser(), next, window, deps.onResult)
+	const fold = (next: string, window: Window): void => {
+		// Capture FIRST: `adopt` writes positions in place, so a range derived after it
+		// is shifted twice (spec D7).
+		const selectionBefore = deps.selection?.()
+		const result = adopt(deps.tree, window, parseValue(deps.parser(), next), selectionBefore)
+		// Adoption is the commit; it must not sit inside the optional call's argument,
+		// which JS skips evaluating when no listener is registered.
+		deps.onResult?.(result)
+	}
 
 	const sink: CommitSink = {
 		commit(next, window) {

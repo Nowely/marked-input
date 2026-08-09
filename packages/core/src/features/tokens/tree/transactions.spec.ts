@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {effect, signal} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
 import {createTextToken} from '../parser/utils/createTextToken'
-import {parseAndAdopt} from './adopt'
+import {adopt, parseValue} from './adopt'
 import {snapshot, stripIds} from './snapshot'
 import {createTransactions} from './transactions'
 import type {TokenTree} from './tree'
@@ -24,7 +24,12 @@ function adoptingSink(
 ): CommitSink {
 	return {
 		commit(next, window) {
-			parseAndAdopt(tree, parser(), next, window, onResult)
+			// HOIST the adoption out of the optional call. `onResult` is optional and one case
+			// below builds `adoptingSink(tree, () => undefined)` with none, so
+			// `onResult?.(adopt(…))` skips evaluating its argument entirely and the sink never
+			// commits.
+			const result = adopt(tree, window, parseValue(parser(), next))
+			onResult?.(result)
 			return true
 		},
 	}

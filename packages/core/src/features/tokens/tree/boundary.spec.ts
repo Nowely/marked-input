@@ -8,7 +8,7 @@ import {createBoundary} from './boundary'
 import {snapshot, stripIds} from './snapshot'
 import {createTransactions} from './transactions'
 import {createTokenTree} from './tree'
-import type {NodeAnchor, TextNode, TransactionResult, TreeNode} from './types'
+import type {NodeAnchor, SelectionRange, TextNode, TransactionResult, TreeNode} from './types'
 
 const parser = new Parser(['@[__value__](__meta__)'])
 
@@ -321,5 +321,71 @@ describe('boundary: untracked arrivals', () => {
 
 		stopArrive()
 		stopReparse()
+	})
+})
+
+describe('boundary: pre-adoption selection capture (spec D7)', () => {
+	/**
+	 * The fixture is DISCRIMINATING by construction: the injected reader answers with
+	 * a position that ADOPTION ITSELF MUTATES, so a capture moved after `adopt` reads a
+	 * different number. `'ab@[x](m)cd'` puts the mark at [2,9]; inserting 'Z' at 0
+	 * shifts it to [3,10]. Pre-adoption the reader says 2, post-adoption 3 — which is
+	 * exactly D7's "adoption mutates positions in place, deriving afterwards
+	 * double-shifts" failure, made observable.
+	 */
+	function captureSetup(
+		source: string,
+		options: {controlled?: boolean; selection?: () => SelectionRange | undefined} = {}
+	) {
+		const tree = createTokenTree(parser.parse(source))
+		const results: TransactionResult[] = []
+		const boundary = createBoundary({
+			tree,
+			parser: () => parser,
+			controlled: () => options.controlled === true,
+			onChange: () => {},
+			selection:
+				options.selection ??
+				(() => {
+					const mark = tree.roots()[1]
+					return {start: mark.position.start, end: mark.position.start}
+				}),
+			onResult: result => results.push(result),
+		})
+		const tx = createTransactions({tree, readOnly: () => false, sink: boundary.sink})
+		return {tree, boundary, tx, results}
+	}
+
+	it('captures the range BEFORE the commit adoption moves the positions it reads', () => {
+		const {tree, tx, results} = captureSetup('ab@[x](m)cd')
+		expect(tree.roots()[1].position.start).toBe(2)
+
+		expect(tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'Z')).toBe(true)
+
+		expect(tree.roots()[1].position.start).toBe(3) // adoption moved it
+		expect(results[0].selectionBefore).toEqual({start: 2, end: 2}) // the capture did not
+	})
+
+	it('captures at an ARRIVAL too — the only entry the controlled path repairs from', () => {
+		const {tree, boundary, results} = captureSetup('ab@[x](m)cd', {controlled: true})
+		boundary.arrive('Zab@[x](m)cd')
+		expect(tree.roots()[1].position.start).toBe(3)
+		expect(results[0].selectionBefore).toEqual({start: 2, end: 2})
+	})
+
+	it('captures at a reparse', () => {
+		const {results, boundary} = captureSetup('ab@[x](m)cd')
+		boundary.reparse()
+		expect(results[0].selectionBefore).toEqual({start: 2, end: 2})
+	})
+
+	it('is undefined when the injected reader answers undefined', () => {
+		// NOT DISCRIMINATING: `selectionBefore` is `undefined` before the channel exists, so
+		// this passes against unmodified code too. It is a null-case regression guard, not a
+		// gate. Built on `captureSetup` (with the reader overridden) rather than the file's
+		// shared `setup`, which registers no `onResult` at all.
+		const {tx, results} = captureSetup('hello', {selection: () => undefined})
+		expect(tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'A')).toBe(true)
+		expect(results[0].selectionBefore).toBeUndefined()
 	})
 })

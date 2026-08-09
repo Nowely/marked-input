@@ -4,29 +4,25 @@ import type {MarkToken, TextToken, Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {collectIds, shiftPositions, snapshotNodeEquals} from './adoptUtils'
 import type {TokenTree} from './tree'
-import type {Id, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeChange, TreeNode, Window} from './types'
+import type {
+	Id,
+	MarkNode,
+	NodeAnchor,
+	SelectionRange,
+	TextNode,
+	TransactionResult,
+	TreeChange,
+	TreeNode,
+	Window,
+} from './types'
 
 /**
- * The write MECHANISM, distinct from the commit POLICY that decides when to run it:
- * parse a projection — the parser is the single semantic authority — and adopt the
- * result into the persistent nodes. Every writer in this layer goes through here: the
- * boundary's commits, arrivals and reparses.
- *
- * The parser-less fallback mirrors `TokenModel#reparse`: with no markups configured
- * there is no Parser instance and the whole value is one text token.
+ * Parse a projection with the configured parser. The parser-less fallback mirrors
+ * the pre-cutover `TokenModel#reparse`: with no markups configured there is no
+ * Parser instance and the whole value is one text token.
  */
-export function parseAndAdopt(
-	tree: TokenTree,
-	parser: Parser | undefined,
-	next: string,
-	window: Window,
-	onResult?: (result: TransactionResult) => void
-): void {
-	const parsed = parser ? parser.parse(next) : [createTextToken(next)]
-	// Adoption is the commit; it must not sit inside the optional call's argument,
-	// which JS skips evaluating when no listener is registered.
-	const result = adopt(tree, window, parsed)
-	onResult?.(result)
+export function parseValue(parser: Parser | undefined, value: string): Token[] {
+	return parser ? parser.parse(value) : [createTextToken(value)]
 }
 
 /**
@@ -40,7 +36,12 @@ export function parseAndAdopt(
  * touches. `map` needs its own wrapper: its reads happen at call time, which
  * may be a different (and reactive) caller.
  */
-export function adopt(tree: TokenTree, window: Window, parsed: readonly Token[]): TransactionResult {
+export function adopt(
+	tree: TokenTree,
+	window: Window,
+	parsed: readonly Token[],
+	selectionBefore?: SelectionRange
+): TransactionResult {
 	return untracked(() => {
 		const prev = tree.roots()
 		const delta = window.insertedLength - (window.end - window.start)
@@ -199,9 +200,7 @@ export function adopt(tree: TokenTree, window: Window, parsed: readonly Token[])
 
 		const map = (offset: number): NodeAnchor => untracked(() => resolveMappedAnchor(out, offset, window, delta))
 
-		// `selectionBefore` stays undefined until the dispatcher can hand the pre-adoption
-		// range down; the channel is recorded on `TransactionResult.selectionBefore`.
-		return {structural, render, added, removed, updated, shifted, selectionBefore: undefined, map}
+		return {structural, render, added, removed, updated, shifted, selectionBefore, map}
 	})
 }
 

@@ -49,6 +49,14 @@ export interface TreeChange {
 }
 
 /**
+ * A selection range in projection coordinates. Structurally identical to
+ * `shared/editorContracts`'s `Range` and deliberately re-declared on LAYERING
+ * grounds: `tree/` is the core and must not reach up into the editor contracts
+ * for a two-number record.
+ */
+export type SelectionRange = {readonly start: number; readonly end: number}
+
+/**
  * Spec D9: the single change feed adoption emits.
  *
  * Granularity splits by payload type and is normative: the id-only feed is
@@ -80,18 +88,22 @@ export interface TransactionResult {
 	 */
 	shifted: readonly TreeNode[]
 	/**
-	 * UNIMPLEMENTED: always `undefined`, because no channel delivers it yet.
+	 * The selection as it stood BEFORE this adoption (spec D7), or `undefined` when
+	 * there was none. `map(offset)` is defined only for offsets in this coordinate
+	 * space.
 	 *
-	 * Spec D7 makes the DISPATCHER the capturer — it must snapshot the selection range at
-	 * transaction entry, BEFORE `adopt` runs, since adoption mutates positions in place and
-	 * deriving the range afterwards double-shifts it. Today the dispatcher only calls
-	 * `CommitSink.commit(next, window)` and never sees this result, so the agreed channel is
-	 * dispatcher → `CommitSink.commit` → `adopt`: `createTransactions` takes an injected
-	 * `selection: () => Range | undefined` and reads it at entry, and both `commit` and
-	 * `adopt` gain an optional pre-adoption range parameter to carry it. Not added ahead of
-	 * that caller — it would be surface nothing fills.
+	 * Captured by `createBoundary`'s `fold` — the single funnel every adoption on the
+	 * live path runs through (commit, arrival, reparse) — because adoption mutates
+	 * stored positions in place and deriving the range afterwards double-shifts it.
+	 *
+	 * NOT captured by the dispatcher, which an earlier note here proposed: in
+	 * controlled mode `commit` produces no result at all (it emits and waits), so the
+	 * repair input is the range captured at the ECHO's arrival, an entry the
+	 * dispatcher never sees. Capturing at the boundary also spares `CommitSink.commit`
+	 * a third parameter that one of its two implementations would have to ignore.
+	 * Consumed by `SelectionController` at S1.6c.
 	 */
-	selectionBefore: {readonly start: number; readonly end: number} | undefined
+	selectionBefore: SelectionRange | undefined
 	/** Valid for PRE-adoption offsets only (spec D7). */
 	map(offset: number): NodeAnchor
 }
@@ -102,10 +114,6 @@ export interface CommitSink {
 	 * Called with the tree UNMUTATED and `next` computed from its CURRENT projection, so a
 	 * sink may rely on the tree still holding the pre-edit base here; adoption, inside the
 	 * sink, is what ends that.
-	 *
-	 * Gains an optional pre-adoption selection range when D7's capture lands (see
-	 * `TransactionResult.selectionBefore`) — the controlled sink, the second implementation,
-	 * must accept the same parameter and forward it to `adopt`.
 	 */
 	commit(next: string, window: Window): boolean
 }
