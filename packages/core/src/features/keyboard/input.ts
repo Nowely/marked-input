@@ -51,13 +51,21 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 
 function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent): void {
 	if (store.selection.isAllSelected()) {
+		// The `paste` listener owns this one end-to-end: it consumes the markup
+		// clipboard entry and performs the whole-value replace itself.
 		if (event.inputType === 'insertFromPaste') {
 			event.preventDefault()
 			return
 		}
+		// Same replacement policy as the ordinary path below, instead of a private
+		// `event.data ?? ''`. That shortcut treated every unhandled input type as
+		// "replace everything with the empty string", so Enter (insertParagraph) and a
+		// drop (insertFromDrop, whose payload is on dataTransfer) wiped the value; it
+		// also ignored the markup clipboard on insertReplacementText.
+		const replacement = replacementForInput(container, event)
+		if (replacement === undefined) return
 		event.preventDefault()
-		const newContent = event.inputType.startsWith('delete') ? '' : (event.data ?? '')
-		store.edit.replace({start: 0, end: -1}, newContent)
+		store.edit.replace({start: 0, end: -1}, replacement)
 		return
 	}
 

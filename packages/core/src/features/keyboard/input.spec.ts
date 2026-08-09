@@ -81,4 +81,56 @@ describe('handleBeforeInput()', () => {
 		expect(replaceRange).not.toHaveBeenCalled()
 		container.remove()
 	})
+
+	it('does not wipe the value when an unhandled input type arrives with everything selected', () => {
+		// MEASURED BUG, not a hypothesis: the all-selected branch used to compute
+		// `event.data ?? ''` for every non-delete input type, so Enter (insertParagraph,
+		// data === null) preventDefaulted and replaced the WHOLE value with ''. Measured
+		// on a mounted store with defaultValue 'hello': {value: '', prevented: true}.
+		// The ordinary (not-all-selected) path already ignores these types, because
+		// replacementForInput returns undefined for them.
+		const {store, container} = mountStructuralInline()
+		store.selection.selectAll()
+		expect(store.selection.isAllSelected()).toBe(true)
+		const event = new InputEvent('beforeinput', {inputType: 'insertParagraph', bubbles: true, cancelable: true})
+
+		container.dispatchEvent(event)
+
+		expect(store.value.current()).toBe('hello')
+		expect(event.defaultPrevented).toBe(false)
+		container.remove()
+	})
+
+	it('still replaces the whole value on insertText with everything selected', () => {
+		const {store, container} = mountStructuralInline()
+		store.selection.selectAll()
+		const event = new InputEvent('beforeinput', {
+			inputType: 'insertText',
+			data: 'a',
+			bubbles: true,
+			cancelable: true,
+		})
+
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.value.current()).toBe('a')
+		container.remove()
+	})
+
+	it('still clears the whole value on a delete input type with everything selected', () => {
+		const {store, container} = mountStructuralInline()
+		store.selection.selectAll()
+		const event = new InputEvent('beforeinput', {
+			inputType: 'deleteContentBackward',
+			bubbles: true,
+			cancelable: true,
+		})
+
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.value.current()).toBe('')
+		container.remove()
+	})
 })
