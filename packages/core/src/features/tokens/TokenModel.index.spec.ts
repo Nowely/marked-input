@@ -103,12 +103,12 @@ describe('TokenModel lookups', () => {
 		expect(store.tokens.handleAt(span)).toBeUndefined()
 	})
 
-	it('setting selection range before any commit has run does not throw', () => {
+	it('setting the selection before any commit has run does not throw', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
 		// intentionally NOT setting store.host.container() — no commit has run
 
-		expect(() => store.selection.range({start: 0, end: 0})).not.toThrow()
+		expect(() => store.selection.position(0)).not.toThrow()
 	})
 })
 

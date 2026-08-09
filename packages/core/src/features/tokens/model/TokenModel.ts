@@ -136,12 +136,14 @@ export class TokenModel {
 	 * `ValueModel` is a one-phase facade over this.
 	 *
 	 * The `#seeded` arm is load-bearing and its gate is NOT the obvious one.
-	 * Measured: reduced to `props.value() ?? this.#committed()`, the red cases are
-	 * `SelectionController.spec`'s `isAllSelected` › "returns true when range spans
-	 * the entire value" and `selectAll` › "retains range intent when the DOM has no
-	 * target yet" — both read the value on an UNMOUNTED store, where nothing has
-	 * committed yet and `#committed()` is `''`. `ValueModel.spec`'s "initializes from
-	 * defaultValue when uncontrolled" stays GREEN: it mounts first, and the mount
+	 * Measured: reduced to `props.value() ?? this.#committed()`, the red case is
+	 * `ValueModel.spec`'s "an unmounted store reads defaultValue before anything has
+	 * committed" — it reads the value on an UNMOUNTED store, where nothing has
+	 * committed yet and `#committed()` is `''`. That case exists BECAUSE S1.6c took
+	 * the gate away from two `SelectionController.spec` cases: `anchorAt` seeds (plan
+	 * decision D-f), so every store that writes a selection is now seeded and survives
+	 * the mutation. `ValueModel.spec`'s "initializes from defaultValue when
+	 * uncontrolled" stays GREEN for a different reason: it mounts first, and the mount
 	 * watch seeds the tree before the read.
 	 */
 	readonly value: Computed<string> = computed(

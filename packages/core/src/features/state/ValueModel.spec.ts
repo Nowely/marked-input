@@ -32,6 +32,16 @@ describe('ValueModel', () => {
 		expect(store.tokens.current()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
+	it('an unmounted store reads defaultValue before anything has committed', () => {
+		// THE gate on TokenModel.value's `#seeded` arm, which S1.6c took over from two
+		// SelectionController cases (they now seed the tree through `anchorAt`). Measured:
+		// reducing the getter to `props.value() ?? this.#committed()` returns '' here,
+		// because nothing has committed yet.
+		const store = new Store()
+		store.props.set({defaultValue: 'hello'})
+		expect(store.value.current()).toBe('hello')
+	})
+
 	it('initializes from defaultValue when uncontrolled', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})

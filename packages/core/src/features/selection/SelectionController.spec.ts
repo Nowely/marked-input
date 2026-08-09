@@ -89,21 +89,40 @@ describe('SelectionController', () => {
 		expect(new Store().selection.range()).toBeUndefined()
 	})
 
-	it('range write is structural-equality deduped', () => {
-		const store = new Store()
+	it('repeated placement at the same handle notifies once', () => {
+		// The stored form is anchors, so the dedupe under test is anchor IDENTITY. It is
+		// NOT what gates `anchorEquals` — `range` keeps `{equals: shallow}` whatever
+		// `#anchors` does, so dropping the anchor equality still collapses this case; the
+		// gate for that lives in the hardening task.
+		const {store, container} = mountStructuralInline('hello')
+		const handle = store.tokens.handleOf(store.tokens.current()[0])
+		if (!handle) throw new Error('Structural text token did not bind a handle')
 		const notify = vi.fn()
 		const stop = watch(store.selection.range, notify)
-		store.selection.range({start: 5, end: 5})
-		store.selection.range({start: 5, end: 5})
+		store.selection.placeAtHandle(handle, 'start')
+		store.selection.placeAtHandle(handle, 'start')
+		expect(notify).toHaveBeenCalledTimes(1)
+		stop()
+		container.remove()
+	})
+
+	it('repeated position write notifies once', () => {
+		// The writable computed short-circuits an equal write before the setter runs.
+		const store = new Store()
+		store.props.set({defaultValue: 'hello'})
+		const notify = vi.fn()
+		const stop = watch(store.selection.range, notify)
+		store.selection.position(5)
+		store.selection.position(5)
 		expect(notify).toHaveBeenCalledTimes(1)
 		stop()
 	})
 
-	it('range undefined write is no-op when already undefined', () => {
+	it('position undefined write is no-op when already undefined', () => {
 		const store = new Store()
 		const notify = vi.fn()
 		const stop = watch(store.selection.range, notify)
-		store.selection.range(undefined)
+		store.selection.position(undefined)
 		expect(notify).not.toHaveBeenCalled()
 		stop()
 	})
@@ -113,24 +132,30 @@ describe('SelectionController', () => {
 			expect(new Store().selection.position()).toBeUndefined()
 		})
 		it('returns start when collapsed', () => {
+			// `defaultValue` is load-bearing now (plan decision D-f): an anchor addresses a
+			// NODE, so offset 5 has to exist in the document for the write to resolve.
 			const store = new Store()
-			store.selection.range({start: 5, end: 5})
+			store.props.set({defaultValue: 'hello'})
+			store.selection.position(5)
 			expect(store.selection.position()).toBe(5)
 		})
 		it('write collapses range to {pos, pos}', () => {
 			const store = new Store()
+			store.props.set({defaultValue: 'hello'})
 			store.selection.position(5)
 			expect(store.selection.range()).toEqual({start: 5, end: 5})
 		})
 		it('write does not change isUserSelecting', () => {
 			const store = new Store()
+			store.props.set({defaultValue: 'hello'})
 			store.selection.isUserSelecting(true)
 			store.selection.position(5)
 			expect(store.selection.isUserSelecting()).toBe(true)
 		})
 		it('write collapses an extended range', () => {
 			const store = new Store()
-			store.selection.range({start: 2, end: 8})
+			store.props.set({defaultValue: 'hello'})
+			store.selection.selectAll()
 			store.selection.position(3)
 			expect(store.selection.range()).toEqual({start: 3, end: 3})
 		})
@@ -143,19 +168,19 @@ describe('SelectionController', () => {
 		it('returns false when range is collapsed', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
-			store.selection.range({start: 2, end: 2})
+			store.selection.position(2)
 			expect(store.selection.isAllSelected()).toBe(false)
 		})
 		it('returns false for a partial range', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
-			store.selection.range({start: 1, end: 3})
+			store.selection.select(store.tokens.anchorAt(1), store.tokens.anchorAt(3))
 			expect(store.selection.isAllSelected()).toBe(false)
 		})
 		it('returns true when range spans the entire value', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
-			store.selection.range({start: 0, end: 5})
+			store.selection.selectAll()
 			expect(store.selection.isAllSelected()).toBe(true)
 		})
 	})
@@ -257,7 +282,10 @@ describe('SelectionController', () => {
 			container.remove()
 		})
 
-		it('clamps OOB caret range and places at maxPos', () => {
+		it('resolves an out-of-range caret intent to the document end', () => {
+			// The clamp and its write-back are GONE (spec §4.6 item 5) and the assertion is
+			// unchanged: `anchorAt(999)` finds no node containing the offset, so it answers
+			// `'end'`, which resolves to the last root's end.
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
 			const container = document.createElement('div')
@@ -266,14 +294,14 @@ describe('SelectionController', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
-			store.selection.range({start: 999, end: 999})
+			store.selection.position(999)
 			store.host.rendered()
 
 			expect(store.selection.range()).toEqual({start: 5, end: 5})
 			container.remove()
 		})
 
-		it('clamps OOB selection range', () => {
+		it('resolves an out-of-range selection to the document end', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
 			const container = document.createElement('div')
@@ -282,9 +310,10 @@ describe('SelectionController', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
-			store.selection.range({start: 999, end: 1000})
+			store.selection.select(store.tokens.anchorAt(999), store.tokens.anchorAt(1000))
 			store.host.rendered()
 
+			// Both anchors are `'end'`, so the selection is collapsed rather than clamped.
 			expect(store.selection.range()).toEqual({start: 5, end: 5})
 			container.remove()
 		})

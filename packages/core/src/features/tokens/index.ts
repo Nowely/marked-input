@@ -4,6 +4,12 @@ export type {Token, TextToken, MarkToken, Markup} from './parser/types'
 export {annotate} from './parser/utils/annotate'
 export {denote} from './parser/utils/denote'
 export {TokenModel} from './model/TokenModel'
+// The addressing model is part of the token layer's cross-feature contract, not a tree
+// internal: `TokenModel.anchorAt`/`offsetOf` already speak `NodeAnchor` in their
+// signatures, and `SelectionController` stores anchors and dedupes them on identity.
+// Exported here rather than deep-imported from `tree/` (plan decision, S1.6c task 8).
+export type {NodeAnchor} from './tree/types'
+export {anchorEquals} from './tree/anchors'
 export type {SelectionAnchor, SelectionSnapshot} from './DomModel'
 export {TokenHandle} from './model/TokenHandle'
 export {MarkController} from './MarkController'
