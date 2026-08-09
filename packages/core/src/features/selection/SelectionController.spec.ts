@@ -96,8 +96,8 @@ describe('SelectionController', () => {
 	it('repeated placement at the same handle notifies once', () => {
 		// The stored form is anchors, so the dedupe under test is anchor IDENTITY. It is
 		// NOT what gates `anchorEquals` — `range` keeps `{equals: shallow}` whatever
-		// `#anchors` does, so dropping the anchor equality still collapses this case; the
-		// gate for that lives in the hardening task.
+		// `#anchors` does, so dropping the anchor equality still collapses this case. The
+		// gate for that is the next case.
 		const {store, container} = mountStructuralInline('hello')
 		const handle = store.tokens.handleOf(store.tokens.current()[0])
 		if (!handle) throw new Error('Structural text token did not bind a handle')
@@ -107,6 +107,36 @@ describe('SelectionController', () => {
 		store.selection.placeAtHandle(handle, 'start')
 		expect(notify).toHaveBeenCalledTimes(1)
 		stop()
+		container.remove()
+	})
+
+	it('repeated selectAll applies to the DOM once', () => {
+		// THE gate for `#anchors`'s custom `equals`, which the case above cannot give: two
+		// `selectAll()` calls rebuild FRESH anchor objects for the same two positions, so
+		// only value equality collapses the second apply. RANGED deliberately — `selectRange`
+		// is the ranged apply path, and the collapsed one is masked by `placeAtHandle`'s
+		// re-apply branch.
+		const {store, container} = mountStructuralInline('hello')
+		const spy = vi.spyOn(store.tokens, 'selectRange')
+		store.selection.selectAll()
+		store.selection.selectAll()
+		expect(spy).toHaveBeenCalledTimes(1)
+		spy.mockRestore()
+		container.remove()
+	})
+
+	it('places at a mark whose start equals the previous text node end, through the mark itself', () => {
+		// The gate for storing the NODE anchor instead of a numeric round-trip (spec §4.6
+		// item 5): in 'ab@[x]cd' the mark starts at 2, exactly where 'ab' ends, so a
+		// re-resolved `anchorAt(2)` — right-affine — answers the TEXT node and the caret
+		// lands in the PREVIOUS surface. `{before: mark}` cannot be confused that way.
+		const {store, container, mark} = mountStructuralInlineMark('ab@[x]cd')
+		const markHandle = store.tokens.handleOf(store.tokens.current()[1])
+		if (!markHandle) throw new Error('Mark token did not bind a handle')
+
+		expect(store.selection.placeAtHandle(markHandle, 'start')).toBe(true)
+
+		expect(document.activeElement).toBe(mark)
 		container.remove()
 	})
 
@@ -498,6 +528,21 @@ describe('SelectionController', () => {
 			container.remove()
 		})
 
+		it('repairs the caret through the EXACT edit window, not a narrowed one', () => {
+			// Gates the offset shim's whole-value-only narrowing (S1.6a mutation 6, spec D8).
+			// 'hello' + replace [0,3) with 'hey': the exact window {0,3,3} maps a caret at 1 to 3
+			// (inside → start + insertedLength). Narrowing to the shared-prefix gap window
+			// {2,3,1} maps it to 1 instead, because 1 is then strictly BEFORE the window.
+			const {store, container} = mountStructuralInline('hello')
+			store.selection.position(1)
+
+			store.value.replace({start: 0, end: 3}, 'hey')
+
+			expect(store.value.current()).toBe('heylo')
+			expect(store.selection.range()).toEqual({start: 3, end: 3})
+			container.remove()
+		})
+
 		it('leaves the selection alone when there was none', () => {
 			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
 			expect(store.selection.range()).toBeUndefined()
@@ -536,6 +581,27 @@ describe('SelectionController', () => {
 			expect(onChange).toHaveBeenCalledWith('heXllo')
 			expect(store.value.current()).toBe('hello')
 			expect(store.selection.range()).toEqual({start: 2, end: 2})
+			container.remove()
+		})
+
+		it("captures an 'end' anchor in TREE space, not against the props value", () => {
+			// The only case that separates `offsetOfAnchor('end')` (the last root's end) from a
+			// `value.current().length` read: during an ECHO's capture the tree still holds the
+			// pre-edit projection while `value.current()` is already the parent's next string.
+			// An out-of-range intent is the idiom that produces an `'end'` anchor (see the two
+			// out-of-range cases above). A DELETION is required — under an insertion the
+			// over-read and `map`'s shift saturate back onto the same document end.
+			//   correct: capture 5 → window {0,1,0} → map(5) = 4;
+			//   props-length read: capture 4 → map(4) = 3.
+			const store = new Store()
+			store.props.set({value: 'hello', onChange: next => store.props.set({value: next})})
+			const {container} = mountInline(store)
+			store.selection.position(999)
+
+			store.edit.replace({start: 0, end: 1}, '')
+
+			expect(store.value.current()).toBe('ello')
+			expect(store.selection.range()).toEqual({start: 4, end: 4})
 			container.remove()
 		})
 

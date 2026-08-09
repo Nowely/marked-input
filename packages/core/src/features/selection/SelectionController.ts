@@ -18,17 +18,27 @@ export class SelectionController {
 	 * IDENTITY — the DOM sync rebuilds anchors on every `selectionchange`, so without it
 	 * a mouse sweep would re-enter placement on every tick (the job today's
 	 * `{equals: shallow}` on the numeric range did).
+	 *
+	 * Its gate is `SelectionController.spec`'s "repeated selectAll applies to the DOM
+	 * once" — measured, and it has to be a RANGED selection: `range` keeps
+	 * `{equals: shallow}` whatever this does, so a notification count cannot see the
+	 * difference, and the collapsed path is masked by {@link placeAtHandle}'s re-apply
+	 * branch. Dropping the equality fails that one case and nothing else in the repo.
 	 */
 	readonly #anchors: Signal<Anchors | undefined> = signal<Anchors>({
 		equals: (a, b) => anchorEquals(a?.anchor, b?.anchor) && anchorEquals(a?.head, b?.head),
 	})
 
 	/**
-	 * Bumped once per adoption by the caret repair (S1.6c task 9, its only writer).
-	 * Stored positions are plain fields (spec D3), so nothing else can invalidate a
-	 * derived offset when adoption shifts them — and an anchor that survives an edit
-	 * UNCHANGED (AC-3.2) must still resolve to its new absolute offset. This is the only
-	 * reason {@link range} is not a pure computed over `#anchors`.
+	 * Bumped once per adoption by {@link repair}, its only writer. Stored positions are
+	 * plain fields (spec D3), so nothing else can invalidate a derived offset when
+	 * adoption shifts them — and an anchor that survives an edit UNCHANGED (AC-3.2) must
+	 * still resolve to its new absolute offset. This is the only reason {@link range} is
+	 * not a pure computed over `#anchors`.
+	 *
+	 * Exactly ONE case can gate it, by construction — `SelectionController.spec`'s "keeps
+	 * node and offset when the edit is outside the anchor…". Every other repair case
+	 * changes the anchor as well, so the `#anchors` write notifies on its own.
 	 */
 	readonly #generation: Signal<number> = signal({initial: 0})
 
@@ -95,7 +105,8 @@ export class SelectionController {
 			// The STORED anchors, not the derived `range` — MEASURED, not stylistic. `range`
 			// dedupes on `shallow`, so at a shared boundary `placeAtHandle` changes the anchor
 			// without changing the number and a `range` watch NEVER FIRES: the caret is simply
-			// not placed (6 browser failures across react and vue, the three focus specs).
+			// not placed (8 assertion failures across react and vue, in the three focus specs;
+			// the core suite stays green, so only `pnpm test` sees this one).
 			// Separately, `range` also moves when adoption shifts positions, and re-placing on
 			// that would fight the DOM after every commit; the post-commit re-place is the
 			// `tokens.changed` watch above, which fires only once the DOM is consistent.
@@ -162,6 +173,11 @@ export class SelectionController {
 		// The NODE is the disambiguator two tokens sharing a boundary offset need — the job
 		// the consume-once `#preferredHandle` stash did (spec §4.6 item 5). A mark has no
 		// anchorable interior (spec §2.3), so it answers with its own boundary.
+		//
+		// Re-resolving the number instead (`tokens.anchorAt(node.position.start)`) is what
+		// this replaces, and it is gated twice over: `SelectionController.spec`'s "places at
+		// a mark whose start equals the previous text node end…" plus the same 8 browser
+		// assertions the `#anchors` watch above names.
 		const anchor: NodeAnchor =
 			node.kind === 'text'
 				? // The length comes from `position`, not `text()`: that is the coordinate space
@@ -278,6 +294,12 @@ export class SelectionController {
 			// a DOM-node→TreeNode path through `handleAt`, which would have to re-implement
 			// `boundaryFor`'s container/child-sequence/mark cases. Out of scope here; recorded
 			// so it is a decision, not an oversight.
+			//
+			// THE ONE RECORDED GAP of the S1.6c hardening pass, and it is ungatable rather
+			// than merely ungated: the pending window is exactly when no bound surface answers,
+			// so a test can neither observe the disagreement nor construct it. The guard above
+			// — the round-trip's NON-IDEMPOTENCE — is a different claim and is gated, by the
+			// 8 browser assertions it names.
 			this.#anchors(
 				raw ? {anchor: this.tokens.anchorAt(raw.start), head: this.tokens.anchorAt(raw.end)} : undefined
 			)

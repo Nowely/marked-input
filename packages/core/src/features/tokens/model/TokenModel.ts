@@ -211,6 +211,13 @@ export class TokenModel {
 	 * projection. Deliberately does NOT seed — it is a READ reached from
 	 * `SelectionController.range`'s computed, and seeding inside a computed evaluation
 	 * would write signals during evaluation.
+	 *
+	 * TREE space, not {@link value}: the two disagree exactly while a controlled parent's
+	 * `props.value` is ahead of the last arrival, which is when the echo's capture runs.
+	 * Its gate is `SelectionController.spec`'s "captures an 'end' anchor in TREE space,
+	 * not against the props value", and that case has to be a DELETION — under an
+	 * insertion the over-read and `map`'s shift both saturate onto the document end and
+	 * the two readings agree by accident.
 	 */
 	offsetOf(anchor: NodeAnchor): number {
 		return untracked(() => offsetOfAnchor(this.#tree.roots(), anchor))
