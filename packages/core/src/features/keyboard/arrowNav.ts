@@ -1,7 +1,6 @@
 import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
-import {resolvePath} from '../tokens/tokenIndex'
 
 type KbCtx = Pick<Store, 'selection' | 'props' | 'tokens'>
 
@@ -32,7 +31,6 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	if (!handle || handle === 'control') return
 
 	const isFocusedOnMarkElement = active === handle.element() && !handle.hasTextSurface()
-	const path = handle.path()
 	// The handle IS the fresh read: its token carries current positions.
 	const token = handle.token()
 
@@ -46,10 +44,8 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 		if (direction === 'next' && !atEnd) return
 	}
 
-	const siblingIndex = direction === 'prev' ? path[path.length - 1] - 1 : path[path.length - 1] + 1
-	const siblingPath = [...path.slice(0, -1), siblingIndex]
-	const sibling = resolvePath(store.tokens.current(), siblingPath)
-	const siblingHandle = store.tokens.handleOf(sibling)
+	const sibling = store.tokens.siblingOf(handle.id, direction === 'prev' ? -1 : 1)
+	const siblingHandle = sibling ? store.tokens.handle(sibling.id) : undefined
 	if (!siblingHandle) return
 
 	event.preventDefault()

@@ -64,6 +64,40 @@ export function findNode(nodes: readonly TreeNode[], id: Id): TreeNode | undefin
 	return undefined
 }
 
+/** Index of the ROOT whose subtree contains `id` — the block row index, off ids instead of a handle's frozen path. */
+export function rootIndexOf(roots: readonly TreeNode[], id: Id): number | undefined {
+	for (let index = 0; index < roots.length; index++) {
+		if (containsNode(roots[index], id)) return index
+	}
+	return undefined
+}
+
+function containsNode(node: TreeNode, id: Id): boolean {
+	if (node.id === id) return true
+	return node.kind === 'mark' && node.children().some(child => containsNode(child, id))
+}
+
+/** The node's previous (-1) or next (+1) sibling within its OWN parent's child list. */
+export function siblingOf(roots: readonly TreeNode[], id: Id, direction: -1 | 1): TreeNode | undefined {
+	const found = locateSiblings(roots, id)
+	return found ? found.siblings[found.index + direction] : undefined
+}
+
+function locateSiblings(
+	nodes: readonly TreeNode[],
+	id: Id
+): {siblings: readonly TreeNode[]; index: number} | undefined {
+	for (let index = 0; index < nodes.length; index++) {
+		const node = nodes[index]
+		if (node.id === id) return {siblings: nodes, index}
+		if (node.kind === 'mark') {
+			const found = locateSiblings(node.children(), id)
+			if (found) return found
+		}
+	}
+	return undefined
+}
+
 /** The string projection: mirrors parser/utils/toString over live nodes. */
 export function joinNodes(nodes: readonly TreeNode[]): string {
 	let result = ''

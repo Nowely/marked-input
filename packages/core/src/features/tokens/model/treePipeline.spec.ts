@@ -353,10 +353,12 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(pipeline.byPath().get('2')).toBe(tail)
 	})
 
-	it('the divergence detector still throws with the path on an untouched surface', () => {
+	it('the divergence detector still throws with the NODE ID on an untouched surface', () => {
 		const harness = createHarness()
 		const {text1} = mount(harness)
 		text1.textContent = 'WRONG'
+
+		const head = harness.pipeline.byPath().get('0')
 
 		let message = ''
 		try {
@@ -365,7 +367,7 @@ describe('commit pipeline driven by the tree core', () => {
 			message = e instanceof Error ? e.message : String(e)
 		}
 		expect(message).toMatch(/TokenModel divergence/)
-		expect(message).toContain('[0]')
+		expect(message).toContain(`#${head?.id}`)
 		expect(message).toContain('"WRONG"')
 		expect(message).toContain('"he"')
 	})

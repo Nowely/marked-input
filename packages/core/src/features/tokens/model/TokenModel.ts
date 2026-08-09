@@ -13,7 +13,7 @@ import {createBoundary} from '../tree/boundary'
 import {lowerReplace} from '../tree/offsetShim'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
-import {createTokenTree, findNode} from '../tree/tree'
+import {createTokenTree, findNode, rootIndexOf, siblingOf} from '../tree/tree'
 import type {NodeAnchor, TransactionResult, TreeNode} from '../tree/types'
 import {createCommitPipeline} from './commit'
 import type {TokenDelta} from './commitInput'
@@ -194,6 +194,20 @@ export class TokenModel {
 	/** Spec §2.3's `input.find`: resolve a stable id to its live node. */
 	find(id: number): TreeNode | undefined {
 		return untracked(() => findNode(this.#tree.roots(), id))
+	}
+
+	/**
+	 * The index of the ROOT whose subtree contains `id` — the block ROW index. Off the
+	 * live tree, because a handle's `#path` is bind-generation state on an object reused
+	 * across binds and could answer from a stale generation.
+	 */
+	rootIndexOf(id: number): number | undefined {
+		return untracked(() => rootIndexOf(this.#tree.roots(), id))
+	}
+
+	/** The node's previous (-1) or next (+1) sibling within its OWN parent's child list. */
+	siblingOf(id: number, direction: -1 | 1): TreeNode | undefined {
+		return untracked(() => siblingOf(this.#tree.roots(), id, direction))
 	}
 
 	/**

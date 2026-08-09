@@ -29,7 +29,10 @@ function findActiveRow(store: KbCtx): ActiveRow | undefined {
 	if (!active) return undefined
 	const handle = store.tokens.handleAt(active)
 	if (!handle || handle === 'control') return undefined
-	const index = handle.path()[0]
+	// The ROW index off the live tree. `handle.path()` was bind-generation state on a
+	// handle that is reused across binds, so it could answer from a stale generation.
+	const index = store.tokens.rootIndexOf(handle.id)
+	if (index === undefined) return undefined
 	const row = rowHandle(store, index)
 	if (!row) return undefined
 	return {handle: row, index}

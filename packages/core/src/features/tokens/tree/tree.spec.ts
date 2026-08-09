@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest'
 
 import {Parser} from '../parser/Parser'
 import {toString} from '../parser/utils/toString'
-import {createTokenTree, joinNodes} from './tree'
+import {createTokenTree, joinNodes, rootIndexOf, siblingOf} from './tree'
 import type {TreeNode} from './types'
 
 const parser = new Parser(['@[__value__](__meta__)', '#[__slot__]'])
@@ -72,5 +72,31 @@ describe('createTokenTree', () => {
 		expect(tree.value()).toBe('hello')
 		first.text('world')
 		expect(tree.value()).toBe('world')
+	})
+})
+
+describe('rootIndexOf', () => {
+	it('answers the ROOT index for a nested node, not the node index', () => {
+		// The block row index (`keyboard/blockEdit.ts`): a caret inside a row's slot child
+		// must resolve to the ROW.
+		const tree = createTokenTree(parser.parse('a#[bc]d'))
+		const mark = tree.roots()[1]
+		if (mark.kind !== 'mark') throw new Error('expected a mark')
+		expect(rootIndexOf(tree.roots(), mark.children()[0].id)).toBe(1)
+		expect(rootIndexOf(tree.roots(), tree.roots()[2].id)).toBe(2)
+		expect(rootIndexOf(tree.roots(), 9999)).toBeUndefined()
+	})
+})
+
+describe('siblingOf', () => {
+	it('walks the node OWN sibling list, not the flattened document', () => {
+		const tree = createTokenTree(parser.parse('a#[bc]d'))
+		const mark = tree.roots()[1]
+		if (mark.kind !== 'mark') throw new Error('expected a mark')
+		expect(siblingOf(tree.roots(), mark.id, -1)).toBe(tree.roots()[0])
+		expect(siblingOf(tree.roots(), mark.id, 1)).toBe(tree.roots()[2])
+		// A slot's only child has no sibling — it must NOT escape into the roots.
+		expect(siblingOf(tree.roots(), mark.children()[0].id, 1)).toBeUndefined()
+		expect(siblingOf(tree.roots(), tree.roots()[0].id, -1)).toBeUndefined()
 	})
 })
