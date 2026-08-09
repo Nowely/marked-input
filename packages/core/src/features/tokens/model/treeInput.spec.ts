@@ -32,30 +32,29 @@ function markAndChildOf(tree: TokenTree): {markId: number; childId: number} {
 }
 
 /**
- * RECORDED GAPS (S1.5 Task 6's mutation pass). Two guards in `fromTransaction`
- * are pinned HERE and only here — nothing in treePipeline.spec.ts moves when
- * they are removed. Both survivals were measured against the full core suite,
- * and both are inert BY CONSTRUCTION at pipeline level, not merely untested:
+ * RECORDED GAP (S1.5 Task 6's mutation pass, re-measured after the
+ * `materialized()` cutover). ONE guard is pinned HERE and only here — nothing in
+ * treePipeline.spec.ts moves when it is removed — and it is inert BY
+ * CONSTRUCTION at pipeline level, not merely untested:
  *
- * - the `seen` dedupe. A node listed in both `updated` and `shifted` is pushed
- *   twice without it; the second entry is `patch: false` carrying the SAME
- *   memoized token, so `commitText` does one extra `handle.refresh` with the
- *   value it already holds and writes no DOM. Measured: 1 failure, "emits one
- *   entry per node…" below, and nothing else in 849 tests.
  * - the memo's REUSE. Disabling the cache-hit branch (cache still populated, so
  *   `tokenFor` stays correct) hands the pipeline fresh-but-equal tokens, which
  *   it cannot observe — the payoff is renderer-side object identity for block
- *   layout's `memo(Block)` (see the plan's contradiction 1). Measured: 2
- *   failures, "hands the pipeline the MEMOIZED tokens…" below and the reuse test
- *   in snapshotMemo.spec.ts, and nothing else.
+ *   layout's `memo(Block)` (see the plan's contradiction 1). Measured: 3
+ *   failures, "hands the pipeline the MEMOIZED tokens…" below plus the reuse and
+ *   `materialized()` tests in snapshotMemo.spec.ts, and nothing else in 862
+ *   tests.
  *   NOT to be confused with swapping `memo.roots(roots)` for a bare
- *   `snapshot(roots)`, which is a real break (measured: 7 failures, 4 of them at
- *   pipeline level): `changes` reads tokens back out of the memo, so skipping
- *   `roots` leaves `tokenFor` serving the previous generation.
+ *   `snapshot(roots)`, which is a real break (measured: 12 failures, 8 of them at
+ *   pipeline level): `changes` IS the memo's re-materialized set, so skipping
+ *   `roots` feeds the pipeline the previous generation.
  *
- * A third, deliberate difference from `fromReconcile` is NOT a gap: this
- * lowering emits no `changes` entry for an ADDED node. Unreachable dead data on
- * the live path — `changes` is read only by `commitText`, which runs only when
+ * The `seen` dedupe this block used to record is gone with the feed it guarded:
+ * `changes` is built from an id-keyed map, so one entry per node is structural.
+ *
+ * A deliberate difference from `fromReconcile` is NOT a gap: an ADDED node gets
+ * a `patch: false` entry here where reconcile emits `patch: true`. Unreachable
+ * either way — `changes` is read only by `commitText`, which runs only when
  * `!render`, and an add sets `render` on both lowerings.
  */
 describe('fromTransaction', () => {
@@ -83,6 +82,29 @@ describe('fromTransaction', () => {
 
 		expect(input.render).toBe(true)
 		expect(input.delta.removed).toContain(markId)
+	})
+
+	it('carries an ANCESTOR whose own fields never changed and which appears in neither feed', () => {
+		// '#[ab]t' → '#[cb]t', snapshotMemo's `sameChildren` fixture at lowering level.
+		// Deriving `changes` from `updated` + `shifted` emits nothing for the mark, so
+		// its handle keeps a `content`/`slot` the DOM no longer shows — and `render` is
+		// false, so no bind ever heals it. The memo's re-materialized set is the only
+		// feed that knows.
+		const {tree, memo} = setup('#[ab]t')
+		const {markId, childId} = markAndChildOf(tree)
+		const {result, input} = lower(tree, memo, '#[cb]t')
+
+		// The precondition, measured rather than assumed: the mark is in no feed.
+		expect(result.updated.map(node => node.id)).toEqual([childId])
+		expect(result.shifted).toEqual([])
+
+		const mark = input.changes.find(change => change.id === markId)
+		expect(mark?.token.content).toBe('#[cb]')
+		// Position-only refresh: `patch` writes the DOM surface and a mark has none
+		// (bind.ts:162). `delta.updated` stays the child ALONE — the ancestor's
+		// projection changed, its own props did not (TokenDelta's per-node rule).
+		expect(mark?.patch).toBe(false)
+		expect(input.delta.updated).toEqual([childId])
 	})
 
 	it('carries a shifted root AND its descendants, each with its own absolute positions', () => {

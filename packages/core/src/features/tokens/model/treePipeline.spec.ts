@@ -5,11 +5,13 @@ import {Parser} from '../parser/Parser'
 import type {Markup, Token} from '../parser/types'
 // The S1.4 STRING boundary (`tokens/tree/boundary.ts`), not the DOM boundary
 // layer of the same filename at `tokens/boundary.ts`.
+import {createIdentityTracker} from '../tokenIdentity'
 import {createBoundary} from '../tree/boundary'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree} from '../tree/tree'
 import {createCommitPipeline} from './commit'
+import {fromReconcile} from './commitInput'
 import type {TokenDelta} from './commitInput'
 import type {TokenHandle} from './TokenHandle'
 import {fromTransaction} from './treeInput'
@@ -24,15 +26,16 @@ import {fromTransaction} from './treeInput'
  * PARITY IS ASSERTED ON OBSERVABLE OUTCOMES, not on `CommitInput.changes`. The
  * two lowerings differ in that intermediate shape — `fromReconcile` maps
  * reconcile's `kind: 'add'` into a `patch: true` change while `fromTransaction`
- * emits no entry for an added node — and the shape is provably not contractual:
- * `changes` is read in exactly one place (`commit.ts`'s `commitText`), which
- * runs only when `!render`, and an add sets `render` on BOTH paths (reconcile
- * via `tokenIdentity.ts:318`, adoption via `adopt.ts:197-198`). Add entries are
- * therefore unreachable in the only consumer. What must match is what the
- * pipeline DOES: the DOM, handle identity/liveness, the `changed` payload and
- * count, the render-tree reference and the pending latch — which is what every
- * case below asserts, each mirroring a `commit.spec.ts` case on the live
- * lowering.
+ * emits `patch: false` for the same node — and the shape is provably not
+ * contractual: `changes` is read in exactly one place (`commit.ts`'s
+ * `commitText`), which runs only when `!render`, and an add sets `render` on
+ * BOTH paths (reconcile via `tokenIdentity.ts:318`, adoption via
+ * `adopt.ts:197-198`). Add entries are therefore unreachable in the only
+ * consumer. What must match is what the pipeline DOES: the DOM, handle
+ * identity/liveness AND the bind-generation token each handle holds, the
+ * `changed` payload and count, the render-tree reference and the pending latch —
+ * which is what every case below asserts, each mirroring a `commit.spec.ts` case
+ * on the live lowering.
  *
  * COVERAGE SCOPE (settled at S1.5 Task 6, so S1.6a does not have to re-derive it).
  * `commit.ts` is ONE shared function and both lowerings hand it the same four
@@ -53,10 +56,6 @@ import {fromTransaction} from './treeInput'
  * - `commit.spec.ts:323` "pending() spans exactly the structural apply → rendered
  *   window" — asserted piecewise by the cold-start, mark-value, fold and text
  *   cases below.
- * - `commit.spec.ts:456` "a text target without a surface escalates" — the other
- *   arm of the same `return false` in `commitText`, reached from an identical
- *   `patch: true` entry; the handle-missing arm IS ported below, and the DOM-bail
- *   precondition belongs to `bind.spec.ts` (untouched by this phase).
  * - `commit.spec.ts:490` "a textChanged id absent from the new tree" — builds a
  *   `CommitInput` literal by hand, so it exercises no lowering at all and
  *   `fromTransaction` cannot even produce it (every id it emits came from the
@@ -148,6 +147,59 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 
 type Harness = ReturnType<typeof createHarness>
 
+/**
+ * The SAME edit driven through the live lowering, reduced to what each bound
+ * handle ends up holding. One case below compares against this instead of
+ * against constants, deliberately: that case exists because a constant is what
+ * hid the defect it gates — the tree path answered '#[ab]' where the live path
+ * answered '#[cb]', and only a side-by-side run says which of the two is right.
+ *
+ * S1.6a deletes `fromReconcile` and this helper with it; inline the measured
+ * face ('#[cb]', slot 'cb') at that point.
+ */
+function liveFaces(markups: Markup[], source: string, edit: {start: number; end: number; text: string}) {
+	const tracker = createIdentityTracker()
+	const parser = new Parser(markups)
+	const container = document.createElement('div')
+	document.body.append(container)
+	const pipeline = createCommitPipeline({
+		container: () => container,
+		nodes: new Map<number, TokenHandle>(),
+		idFor: token => tracker.idFor(token),
+		editableState: () => ({editable: true, readOnly: false}),
+		controlElements: () => new Set<HTMLElement>(),
+		childSequenceHostsFor: () => [],
+		isBlock: () => false,
+	})
+	const apply = (value: string) => pipeline.apply(fromReconcile(tracker.reconcile(parser.parse(value))))
+	const paint = (tokens: readonly Token[]): HTMLElement[] =>
+		tokens.map(token => {
+			const span = document.createElement('span')
+			if (token.type === 'mark') span.append(...paint(token.children))
+			return span
+		})
+
+	apply(source)
+	container.replaceChildren(...paint(pipeline.renderTree()))
+	pipeline.onRendered()
+	apply(source.slice(0, edit.start) + edit.text + source.slice(edit.end))
+
+	return new Map([...pipeline.byPath()].map(([key, handle]) => [key, tokenFace(handle.token())]))
+}
+
+/**
+ * A bind-generation token minus its id — the whole face `MarkController`'s
+ * `value`/`meta`/`slot` getters and the DOM boundary layer read. Ids are
+ * allocated per producer (reconcile's counter vs the tree's node ids), so they
+ * are the one field the two paths may not share.
+ */
+function tokenFace(token: Token) {
+	const {content, position} = token
+	if (token.type !== 'mark') return {type: token.type, content, position}
+	const {value, meta, slot} = token
+	return {type: token.type, content, position, value, meta, slot}
+}
+
 /** 'he@[x]llo' → text 'he'[0,2], mark '@[x]'[2,6], text 'llo'[6,9]. */
 function mount(harness: Harness, value = 'he@[x]llo') {
 	harness.boundary.arrive(value)
@@ -191,9 +243,10 @@ describe('commit pipeline driven by the tree core', () => {
 		// every removal, so `!render` implies every sibling list keeps its length and
 		// order and every path is ALREADY equal — the dropped write was a no-op.
 		// Measured, not merely argued: `commitText` was instrumented to throw when the
-		// handle's bind-generation path differs from the path the new tree gives that
-		// token, and the whole core suite (849 tests) ran clean; inverting the predicate
-		// tripped it 41 times, so the probe was live rather than vacuous.
+		// path of `token` in `latest` (located by object identity) differs from
+		// `handle.path()`, and the whole core suite (862 tests) ran clean; inverting the
+		// predicate tripped it 31 times, so the probe was live rather than vacuous.
+		// Re-measured after the `materialized()` cutover, which widened `changes`.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
@@ -313,6 +366,44 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(text2.textContent).toBe('llo!')
 	})
 
+	it('a text target whose SURFACE vanished abandons the branch and keeps the node layer current', () => {
+		// Ports commit.spec.ts:456. NOT redundant with the handle-missing case above,
+		// which Task 6 had recorded as covering it: `commit.ts:179` (no handle) and
+		// `:181` (no surface) are distinct guards, and mutating `if (!surface) return
+		// false` to `continue` kills exactly this test and its live twin, nothing else.
+		const harness = createHarness()
+		const {pipeline, nodes, container} = harness
+		mount(harness)
+		const tail = pipeline.byPath().get('2')
+		if (!tail) throw new Error('expected tail handle')
+
+		// Adapter mid-render misalignment: one span vanishes, so the bind walk bails
+		// on the count mismatch — handles survive alive but UNBOUND (bind.spec
+		// semantics), which is the only way to reach `commitText` with a live handle
+		// and no surface.
+		container.lastElementChild?.remove()
+		pipeline.onRendered()
+		expect(pipeline.byPath().size).toBe(0)
+		expect(tail.element()).toBeUndefined()
+		const changedSpy = vi.fn()
+		watch(pipeline.changed, changedSpy)
+
+		expect(harness.splice(9, 9, '!')).toBe(true)
+
+		// Escalated: the immediate bind bails again on the misaligned DOM, but the
+		// node layer is refreshed from the authoritative tree.
+		expect(changedSpy).toHaveBeenCalledTimes(1)
+		expect(pipeline.pending()).toBe(false)
+		expect(tail.token().content).toBe('llo!')
+		expect(nodes.size).toBe(3)
+
+		harness.render()
+
+		expect(pipeline.byPath().size).toBe(3)
+		expect(container.children[2].textContent).toBe('llo!')
+		expect(pipeline.byPath().get('2')).toBe(tail)
+	})
+
 	it('the divergence detector still throws with the path on an untouched surface', () => {
 		const harness = createHarness()
 		const {text1} = mount(harness)
@@ -348,6 +439,40 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(pipeline.renderTree()).toBe(treeBefore)
 		expect(pipeline.pending()).toBe(false)
 		expect(childSurface.textContent).toBe('aXb')
+	})
+
+	it('a LENGTH-PRESERVING in-slot edit refreshes the ancestor mark handle too, exactly as the live path does', () => {
+		// The fixture `snapshotMemo`'s `sameChildren` exists for ('#[ab]t' →
+		// '#[cb]t'), lifted to pipeline level. The mark is in NEITHER `updated` nor
+		// `shifted` and does not move, yet its projected `content` and `slot` both
+		// change — the memo's child-reference comparison is the only thing that knows,
+		// which is why `changes` is derived from `materialized()` rather than from the
+		// transaction feeds.
+		//
+		// Nothing else in this suite catches it. The in-slot case above splices a
+		// LONGER string, so the mark lands in `shifted` and is walked; `assertAligned`
+		// is blind because bind gives a mark no `textElement` (bind.ts:162); and the
+		// text branch never re-binds, so a missed refresh persists until an unrelated
+		// structural commit. It reaches users: `MarkController` is exported from
+		// `features/tokens/index.ts` and serves its `value`/`meta`/`slot` getters off
+		// `handle.token()`.
+		const harness = createHarness(['#[__slot__]'])
+		const {pipeline} = harness
+		harness.boundary.arrive('#[ab]t')
+		harness.renderNested()
+		const markHandle = pipeline.byPath().get('1')
+		const childHandle = pipeline.byPath().get('1.0')
+		if (!markHandle || !childHandle) throw new Error('expected the mark and its slot child')
+
+		expect(harness.splice(2, 3, 'c')).toBe(true)
+
+		expect(pipeline.pending()).toBe(false)
+		const live = liveFaces(['#[__slot__]'], '#[ab]t', {start: 2, end: 3, text: 'c'})
+		expect(tokenFace(markHandle.token())).toEqual(live.get('1'))
+		expect(tokenFace(childHandle.token())).toEqual(live.get('1.0'))
+		// The `#token` contract (TokenHandle.ts): the handle holds the generation the
+		// DOM is showing, and after a text commit that IS the published tree's object.
+		expect(markHandle.token()).toBe(pipeline.current()[1])
 	})
 
 	// Beyond the plan's case list, and both survived the first mutation run: the
