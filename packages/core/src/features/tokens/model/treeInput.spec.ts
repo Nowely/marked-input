@@ -31,6 +31,33 @@ function markAndChildOf(tree: TokenTree): {markId: number; childId: number} {
 	return {markId: mark.id, childId: mark.children()[0].id}
 }
 
+/**
+ * RECORDED GAPS (S1.5 Task 6's mutation pass). Two guards in `fromTransaction`
+ * are pinned HERE and only here — nothing in treePipeline.spec.ts moves when
+ * they are removed. Both survivals were measured against the full core suite,
+ * and both are inert BY CONSTRUCTION at pipeline level, not merely untested:
+ *
+ * - the `seen` dedupe. A node listed in both `updated` and `shifted` is pushed
+ *   twice without it; the second entry is `patch: false` carrying the SAME
+ *   memoized token, so `commitText` does one extra `handle.refresh` with the
+ *   value it already holds and writes no DOM. Measured: 1 failure, "emits one
+ *   entry per node…" below, and nothing else in 849 tests.
+ * - the memo's REUSE. Disabling the cache-hit branch (cache still populated, so
+ *   `tokenFor` stays correct) hands the pipeline fresh-but-equal tokens, which
+ *   it cannot observe — the payoff is renderer-side object identity for block
+ *   layout's `memo(Block)` (see the plan's contradiction 1). Measured: 2
+ *   failures, "hands the pipeline the MEMOIZED tokens…" below and the reuse test
+ *   in snapshotMemo.spec.ts, and nothing else.
+ *   NOT to be confused with swapping `memo.roots(roots)` for a bare
+ *   `snapshot(roots)`, which is a real break (measured: 7 failures, 4 of them at
+ *   pipeline level): `changes` reads tokens back out of the memo, so skipping
+ *   `roots` leaves `tokenFor` serving the previous generation.
+ *
+ * A third, deliberate difference from `fromReconcile` is NOT a gap: this
+ * lowering emits no `changes` entry for an ADDED node. Unreachable dead data on
+ * the live path — `changes` is read only by `commitText`, which runs only when
+ * `!render`, and an add sets `render` on both lowerings.
+ */
 describe('fromTransaction', () => {
 	it('routes an interior text edit to the text branch', () => {
 		const {tree, memo} = setup('he#[x]llo')
@@ -95,6 +122,24 @@ describe('fromTransaction', () => {
 		const {input} = lower(tree, memo, 'he#[x]llo!')
 
 		expect(input.tokens[1]).toBe(before)
+	})
+
+	it('is order-insensitive: reversing `changes` yields the same node state', () => {
+		// DOCUMENTATION, NOT A DEFECT GATE. `shifted` arrives suffix-run-reversed
+		// then middle-in-document-order, and nothing depends on that: every entry
+		// is an absolute write to a distinct node, and `adopt` pushes each node at
+		// most once (the `covered` flag suppresses descendants of an entry). This
+		// test cannot fail against the current pipeline; it will fail against any
+		// future refresher that applies deltas rather than re-reading positions.
+		const {tree, memo} = setup('@[x](ab)t')
+		const {input} = lower(tree, memo, '@[xy](ab)t')
+
+		const forward = input.changes.map(change => [change.id, change.token.position] as const)
+		// `toReversed()`, not `[...changes].reverse()`: oxlint's
+		// `unicorn(no-array-reverse)` warns on the latter and `denyWarnings: true`
+		// turns that warning into a failing `lint:check` and a blocked commit.
+		const reversed = input.changes.toReversed().map(change => [change.id, change.token.position] as const)
+		expect(new Map(reversed)).toEqual(new Map(forward))
 	})
 
 	// Sibling of commitInput.spec.ts's identically named block: the two lowerings

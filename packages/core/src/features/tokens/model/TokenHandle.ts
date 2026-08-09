@@ -20,19 +20,36 @@ export type ElementBindings = {
 }
 
 /**
- * The live record of one token — the single source of truth for everything
- * currently true about it: the CURRENT parsed token, its tree position, and
- * its DOM bindings. The class doubles as the public handle face: plain getters
- * (`token()`/`path()`/`element()`/`alive()`) and caret commands read this
- * node's own fields. No per-node reactivity — the spec's win-4 trade: zero
+ * The live record of one token: the BIND-GENERATION token, its tree position,
+ * and its DOM bindings. The class doubles as the public handle face: plain
+ * getters (`token()`/`path()`/`element()`/`alive()`) and caret commands read
+ * this node's own fields. No per-node reactivity — the spec's win-4 trade: zero
  * production consumers subscribed to a handle's getters, so signals are pure
  * overhead here (reversible: the getters stay methods, so per-node signals can
  * return behind them additively).
  *
+ * `#token` is deliberately NOT "the current parsed token" — it is the generation
+ * the DOM is currently SHOWING (spec D9). Only two writers exist, `bind` and the
+ * text branch, and the text branch patches the surface in the same `batch`;
+ * between a structural apply and its bind nothing writes it at all. That is what
+ * makes every DOM-boundary read correct during the pending window: the DOM
+ * boundary layer resolves offsets as `token.position.start + local`
+ * (`tokens/boundary.ts` — not `tokens/tree/boundary.ts`), and `DomModel.ts:95`
+ * and `SelectionController.ts:78,121` read the same field. A node-backed handle
+ * answering with the LIVE tree node would resolve carets against a layout the
+ * adapter has not painted yet. Measured in
+ * `model/treePipeline.spec.ts` ("reads DOM boundaries against BIND-GENERATION
+ * positions during the pending window"); the deferral of node-backing to the
+ * phase that gains a caller is plan decision D-b.
+ *
+ * S1.6d narrows this to a plain `{start, end}` stamp: `#token` and `update()`
+ * die there together with `#path`'s three remaining readers
+ * (`keyboard/blockEdit.ts`, `keyboard/arrowNav.ts`, `model/commit.ts`).
+ *
  * Lifetime: created when its token enters the tree (keyed by the token's
- * stable identity id), mutated in place by `update`/`bindElements`/`unbind`,
- * killed when the token disappears (stale reads stay safe, commands become
- * no-ops, never resurrected).
+ * stable identity id), mutated in place by
+ * `refresh`/`update`/`bindElements`/`unbind`, killed when the token disappears
+ * (stale reads stay safe, commands become no-ops, never resurrected).
  */
 export class TokenHandle {
 	#dead = false

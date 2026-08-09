@@ -28,6 +28,22 @@ const asMark = (token: Token): MarkToken => {
 	return token
 }
 
+/**
+ * MUTATION RECORD (S1.5 Task 6). Every guard in `snapshotMemo.ts` was removed
+ * and the full core suite re-run; each line below is the measured kill, so a
+ * future edit can tell a load-bearing assertion from a decorative one:
+ *
+ * - `shifted` walked as roots only, no subtree → 4 kills (the descendant test
+ *   and the deep-equal run here, plus both descendant tests in `model/`).
+ * - `sameChildren` dropped from the cache-hit condition → 1 kill, the ancestor
+ *   test ALONE. The deep-equal run does not catch it: it contains no
+ *   length-preserving in-slot edit, so every ancestor in it is in `shifted`
+ *   anyway. Add such a step to that run if you want a second gate.
+ * - `removed` eviction skipped → 1 kill, the eviction test.
+ * - `dirty.clear()` dropped → 1 kill, and ONLY the second-edit half of the first
+ *   test (`third[4]).toBe(after[4]`). Without that half the mutation survives the
+ *   entire suite while silently disabling all reuse after the first edit.
+ */
 describe('createSnapshotMemo', () => {
 	it('reuses the token of every untouched node, and KEEPS reusing across a second edit', () => {
 		// A TAIL edit, deliberately: it is the only shape that leaves earlier roots

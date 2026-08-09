@@ -33,6 +33,37 @@ import {fromTransaction} from './treeInput'
  * count, the render-tree reference and the pending latch — which is what every
  * case below asserts, each mirroring a `commit.spec.ts` case on the live
  * lowering.
+ *
+ * COVERAGE SCOPE (settled at S1.5 Task 6, so S1.6a does not have to re-derive it).
+ * `commit.ts` is ONE shared function and both lowerings hand it the same four
+ * fields, so any pipeline behavior that does not read `tokens`/`render`/
+ * `changes`/`delta` differently is identical by construction and needs no second
+ * copy here. This file is nonetheless a SUPERSET of "cases where the lowering
+ * could differ", because S1.6a deletes `fromReconcile` and `commit.spec.ts` with
+ * it: every live case whose only gate is that file has been ported unless listed
+ * below, even where the port is behaviorally redundant today.
+ *
+ * Deliberately NOT ported, with reasons:
+ * - `commit.spec.ts:141` "touches only the changed nodes" — decorative here. It
+ *   asserts an untouched handle keeps its token OBJECT; on this path `memo.roots`
+ *   hands back the identical object whether or not a change entry was emitted, so
+ *   it passes even against a lowering that emits every node. Over-emission is
+ *   harmless for the same reason the reversal test in treeInput.spec.ts records:
+ *   every entry is an absolute write.
+ * - `commit.spec.ts:323` "pending() spans exactly the structural apply → rendered
+ *   window" — asserted piecewise by the cold-start, mark-value, fold and text
+ *   cases below.
+ * - `commit.spec.ts:456` "a text target without a surface escalates" — the other
+ *   arm of the same `return false` in `commitText`, reached from an identical
+ *   `patch: true` entry; the handle-missing arm IS ported below, and the DOM-bail
+ *   precondition belongs to `bind.spec.ts` (untouched by this phase).
+ * - `commit.spec.ts:490` "a textChanged id absent from the new tree" — builds a
+ *   `CommitInput` literal by hand, so it exercises no lowering at all and
+ *   `fromTransaction` cannot even produce it (every id it emits came from the
+ *   memo). S1.6a should MOVE that case, not duplicate it here.
+ * - `commit.spec.ts:557`/`:566` (structural self-heal of corruption, "normal
+ *   applies never throw") and `:730` (`removedIds()`) — zero dependence on the
+ *   input; `removedIds()` is deleted outright in S1.6d (§4.6 item 6).
  */
 // `Markup`, NOT `string`: `Parser`'s constructor takes `(Markup | undefined)[]`
 // and `Markup` is a template-literal union (parser/types.ts:63), so a
@@ -68,13 +99,15 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 	const tx = createTransactions({tree, readOnly: () => false, sink: boundary.sink})
 	// FLAT paint: a value-only mark renders its value as a bare text node, so
 	// bind never descends. This is the default for every case but the slot one.
-	const render = () => {
+	// `leading` paints extra non-token elements ahead of the spans — the control
+	// case needs one, and threading it here beats a second copy of the paint.
+	const render = (...leading: HTMLElement[]) => {
 		const spans = pipeline.renderTree().map(token => {
 			const span = document.createElement('span')
 			if (token.type === 'mark') span.append(document.createTextNode(token.value))
 			return span
 		})
-		container.replaceChildren(...spans)
+		container.replaceChildren(...leading, ...spans)
 		pipeline.onRendered()
 		return spans
 	}
@@ -102,6 +135,7 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		tree,
 		memo,
 		nodes,
+		controls,
 		container,
 		boundary,
 		tx,
@@ -151,6 +185,15 @@ describe('commit pipeline driven by the tree core', () => {
 	})
 
 	it('a tail text edit patches in place, keeps the render tree and announces once', () => {
+		// RECORDED GAP (plan D-c), so nobody hunts for a missing assertion: this branch
+		// calls `handle.refresh(token)` where it used to call `handle.update(token, path)`,
+		// and NO test can discriminate the two. The routing bit is set by every add and
+		// every removal, so `!render` implies every sibling list keeps its length and
+		// order and every path is ALREADY equal — the dropped write was a no-op.
+		// Measured, not merely argued: `commitText` was instrumented to throw when the
+		// handle's bind-generation path differs from the path the new tree gives that
+		// token, and the whole core suite (849 tests) ran clean; inverting the predicate
+		// tripped it 41 times, so the probe was live rather than vacuous.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
@@ -356,5 +399,240 @@ describe('commit pipeline driven by the tree core', () => {
 		harness.render()
 
 		expect(payload).toEqual({added: [], removed: [], updated: []})
+	})
+	// ═══ S1.5 Task 6: the bind-generation read (spec §11's named verification) ══
+
+	it('reads DOM boundaries against BIND-GENERATION positions during the pending window', () => {
+		// Inserting a mark at 0 moves 'llo' from [6,9] to [10,13] in the tree the
+		// instant adoption runs — but the DOM still shows the old layout until the
+		// adapter repaints. The DOM boundary layer (`tokens/boundary.ts:55`, NOT
+		// `tokens/tree/boundary.ts`) resolves every offset as
+		// `token.position.start + local`, reading exactly the datum asserted here, so a
+		// handle that answered with the LIVE node would put the caret four characters
+		// off for the whole adopt→bind window (spec D9; plan D-b).
+		const harness = createHarness()
+		const {pipeline} = harness
+		const {text2} = mount(harness)
+		expect(pipeline.byElement(text2)?.token().position).toEqual({start: 6, end: 9})
+
+		expect(harness.splice(0, 0, '@[y]')).toBe(true)
+
+		expect(pipeline.pending()).toBe(true)
+		// The tree has moved…
+		expect(pipeline.current()[4].position).toEqual({start: 10, end: 13})
+		// …the painted generation has not.
+		expect(pipeline.byElement(text2)?.token().position).toEqual({start: 6, end: 9})
+
+		harness.render()
+
+		expect(pipeline.byPath().get('4')?.token().position).toEqual({start: 10, end: 13})
+	})
+
+	// ═══ S1.5 Task 6: cases whose only other gate is commit.spec.ts ════════════
+	// S1.6a deletes `fromReconcile`, and `commit.spec.ts` with it. See the
+	// coverage-scope note at the top for what was deliberately left unported.
+
+	it('a no-op splice still announces consistency without touching anything', () => {
+		// Ports commit.spec.ts:187. `transactions.ts` commits a splice that changes
+		// nothing, adoption diffs it to empty feeds, and the lowering must produce an
+		// EMPTY text pass rather than an escalation: `render` false with no changes
+		// routes `commitText([])`, which announces and returns true.
+		const harness = createHarness()
+		const {pipeline} = harness
+		const {text2} = mount(harness)
+		const treeBefore = pipeline.renderTree()
+		const byPathBefore = pipeline.byPath()
+		let payload: TokenDelta | undefined
+		const changedSpy = vi.fn()
+		watch(pipeline.changed, delta => {
+			changedSpy()
+			payload = delta
+		})
+
+		expect(harness.splice(9, 9, '')).toBe(true)
+
+		expect(changedSpy).toHaveBeenCalledTimes(1)
+		expect(payload).toEqual({added: [], removed: [], updated: []})
+		expect(pipeline.renderTree()).toBe(treeBefore)
+		expect(pipeline.byPath()).toBe(byPathBefore)
+		expect(pipeline.pending()).toBe(false)
+		expect(text2.textContent).toBe('llo')
+	})
+
+	it('keeps the render tree reference across N text edits and breaks it exactly once per structural edit', () => {
+		// Ports commit.spec.ts:290 — D9's headline, that text edits cost the renderer
+		// nothing. Sharper on this path: the memo returns a FRESH array every apply, so
+		// the kept reference is control flow (only `commitStructural` writes
+		// `renderTree`) rather than array identity leaking through from the producer.
+		const harness = createHarness()
+		const {pipeline, container} = harness
+		mount(harness)
+		const treeSpy = vi.fn()
+		watch(pipeline.renderTree, treeSpy)
+		const changedSpy = vi.fn()
+		watch(pipeline.changed, changedSpy)
+		const treeBefore = pipeline.renderTree()
+
+		harness.splice(9, 9, '!')
+		harness.splice(10, 10, '!')
+		harness.splice(11, 11, '!')
+
+		expect(treeSpy).toHaveBeenCalledTimes(0)
+		expect(pipeline.renderTree()).toBe(treeBefore)
+		expect(changedSpy).toHaveBeenCalledTimes(3)
+		expect(container.children[2].textContent).toBe('llo!!!')
+
+		harness.splice(12, 12, '@[y]')
+
+		expect(treeSpy).toHaveBeenCalledTimes(1)
+		expect(changedSpy).toHaveBeenCalledTimes(3)
+
+		harness.render()
+
+		expect(treeSpy).toHaveBeenCalledTimes(1)
+		expect(changedSpy).toHaveBeenCalledTimes(4)
+	})
+
+	it('a re-render after a text edit re-binds the FRESH tokens, never the stale render tree', () => {
+		// Ports commit.spec.ts:204. `renderTree` keeps its reference across a text edit,
+		// so its tokens are the pre-edit generation; an unrelated adapter re-render must
+		// bind `latest` instead, or the node layer AND the patched surface regress.
+		const harness = createHarness()
+		const {pipeline} = harness
+		const {text2} = mount(harness)
+		const seen: TokenDelta[] = []
+		watch(pipeline.changed, delta => {
+			seen.push(delta)
+		})
+
+		expect(harness.splice(9, 9, '!')).toBe(true)
+		const handle = pipeline.byElement(text2)
+		expect(handle?.token().content).toBe('llo!')
+
+		pipeline.onRendered()
+
+		expect(text2.textContent).toBe('llo!')
+		expect(pipeline.byElement(text2)?.token().content).toBe('llo!')
+		expect(pipeline.byElement(text2)).toBe(handle)
+		// A re-bind with nothing pending drains an empty accumulator (commit.spec.ts:727).
+		expect(seen[1]).toEqual({added: [], removed: [], updated: []})
+	})
+
+	it('an add stays quiet until bind and announces every id of the new subtree', () => {
+		// Ports commit.spec.ts:228 onto a mark WITH a slot child, which also gives
+		// `delta.added` its only POSITIVE pipeline-level assertion — the fold case above
+		// asserts the cancellation, i.e. the empty one.
+		const harness = createHarness(['#[__slot__]'])
+		const {pipeline} = harness
+		harness.boundary.arrive('tail')
+		harness.renderNested()
+		const treeBefore = pipeline.renderTree()
+		let payload: TokenDelta | undefined
+		const changedSpy = vi.fn()
+		watch(pipeline.changed, delta => {
+			changedSpy()
+			payload = delta
+		})
+
+		expect(harness.splice(0, 0, '#[ab]')).toBe(true)
+
+		expect(pipeline.renderTree()).not.toBe(treeBefore)
+		expect(changedSpy).not.toHaveBeenCalled()
+		expect(pipeline.pending()).toBe(true)
+
+		harness.renderNested()
+
+		expect(changedSpy).toHaveBeenCalledTimes(1)
+		expect(pipeline.pending()).toBe(false)
+		const mark = pipeline.byPath().get('1')
+		const child = pipeline.byPath().get('1.0')
+		if (!mark || !child) throw new Error('expected the new mark and its slot child')
+		expect(payload?.added).toEqual(expect.arrayContaining([mark.id, child.id]))
+	})
+
+	it('merges the removals of every edit folded into one pending structural pass', () => {
+		// Ports commit.spec.ts:662, the gate on the leak Task 2 reproduced and fixed
+		// (`pendingRemovedIds = removedIds` dropped the FIRST removal, so
+		// BlockController never pruned that row's BlockStore). Kept on BOTH lowerings
+		// deliberately: the fold is the only pipeline state that spans applies, and
+		// after S1.6a this file is its only gate.
+		const harness = createHarness()
+		const {pipeline} = harness
+		harness.boundary.arrive('a@[x]b@[y]c')
+		harness.render()
+		const markX = pipeline.byPath().get('1')
+		const markY = pipeline.byPath().get('3')
+		if (!markX || !markY) throw new Error('expected both mark handles')
+		let payload: TokenDelta | undefined
+		watch(pipeline.changed, delta => {
+			payload = delta
+		})
+
+		// Two structural edits, ONE bind. '@[x]' spans [1,5]; once it is gone the value
+		// is 'ab@[y]c' and '@[y]' spans [2,6].
+		harness.splice(1, 5, '')
+		harness.splice(2, 6, '')
+		harness.render()
+
+		expect(payload?.removed).toContain(markX.id)
+		expect(payload?.removed).toContain(markY.id)
+	})
+
+	it('onRendered without a container leaves the latch closed', () => {
+		// Ports commit.spec.ts:374.
+		const harness = createHarness()
+		const {pipeline} = harness
+		const changedSpy = vi.fn()
+		watch(pipeline.changed, changedSpy)
+
+		harness.boundary.arrive('he@[x]llo')
+		harness.unmount()
+
+		expect(() => pipeline.onRendered()).not.toThrow()
+		expect(pipeline.pending()).toBe(true)
+		expect(changedSpy).not.toHaveBeenCalled()
+	})
+
+	it('a synchronous onRendered from a changed watcher fails loud', () => {
+		// Ports commit.spec.ts:525.
+		const harness = createHarness()
+		mount(harness)
+		watch(harness.pipeline.changed, () => harness.pipeline.onRendered())
+
+		harness.splice(2, 6, '@[y]')
+		expect(() => harness.render()).toThrow(/re-entry/)
+	})
+
+	it('a synchronous arrival from a changed watcher fails loud', () => {
+		// Ports commit.spec.ts:517, but through `arrive` rather than a verb, because the
+		// two guards are LAYERED and the transaction one fires first: a verb called from
+		// a `changed` watcher is still inside `dispatch`, so `transactions.assertIdle`
+		// throws 're-entrant transaction dispatch' before the pipeline is re-entered at
+		// all (gated by transactions.spec.ts:203). `arrive` is the entry point that
+		// bypasses the dispatcher — a props echo — and it is what reaches the
+		// pipeline's own guard.
+		const harness = createHarness()
+		mount(harness)
+		watch(harness.pipeline.changed, () => harness.boundary.arrive('he@[x]llo!!'))
+
+		expect(() => harness.splice(9, 9, '!')).toThrow(/re-entry/)
+	})
+
+	it('byElement resolves bound elements and isControlRoot flags control ancestry', () => {
+		// Ports commit.spec.ts:742 — the read surface the DOM layer locates on.
+		const harness = createHarness()
+		const {pipeline, controls} = harness
+		harness.boundary.arrive('he@[x]llo')
+		const button = document.createElement('button')
+		controls.add(button)
+
+		const spans = harness.render(button)
+
+		expect(pipeline.byPath().size).toBe(3)
+		expect(pipeline.byElement(spans[0])).toBe(pipeline.byPath().get('0'))
+		expect(pipeline.byElement(spans[1])).toBe(pipeline.byPath().get('1'))
+		expect(pipeline.byElement(button)).toBeUndefined()
+		expect(pipeline.isControlRoot(button)).toBe(true)
+		expect(pipeline.isControlRoot(spans[0])).toBe(false)
 	})
 })
