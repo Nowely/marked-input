@@ -43,12 +43,15 @@ export interface SelectionPort {
  * and is delegated to here, so consumers keep this single entry point. Owns the
  * `nodes` map the pipeline mutates.
  *
- * Mechanism ledger (spec §4.6): items 1 (the consume-once hint protocol) and 3
- * (the reparse-watch edit path) died with THIS cutover, not at S1.6d — rewriting
- * the write path deleted `#pendingEdit`/`takePendingEdit`, and arrivals now route
- * explicitly through the boundary. S1.6d's gate therefore has FOUR items left:
- * 2 (`tokenIdentity` + its suites), 4 (the handle write latch), 5
- * (`#preferredHandle` + the selection clamp) and 6 ({@link removedIds}).
+ * Mechanism ledger (spec §4.6). Item 1 (the consume-once hint protocol) and item
+ * 3 (the reparse-watch edit path) died with THIS cutover, not at S1.6d —
+ * rewriting the write path deleted `#pendingEdit`/`takePendingEdit`, and arrivals
+ * now route explicitly through the boundary. Item 5 (`#preferredHandle` + the
+ * selection clamp) died with S1.6c's selection swap: the stored anchor's node is
+ * the disambiguator and an anchor cannot point past it. The checklist is S1.6d's
+ * review GATE, not its work list, so S1.6d VERIFIES all four and EXECUTES the
+ * three still standing: 2 (`tokenIdentity` + its suites), 4 (the handle write
+ * latch) and 6 (`removedIds`, which that phase deletes).
  *
  * Layout: consumer reads → adapter SPI → engine SPI → wiring → internals.
  */
