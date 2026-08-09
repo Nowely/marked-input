@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
+import {effect} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
 import {createTextToken} from '../parser/utils/createTextToken'
 import type {Boundary} from './boundary'
@@ -7,6 +8,7 @@ import {createBoundary} from './boundary'
 import {snapshot, stripIds} from './snapshot'
 import {createTransactions} from './transactions'
 import {createTokenTree} from './tree'
+import type {NodeAnchor, TextNode, TransactionResult, TreeNode} from './types'
 
 const parser = new Parser(['@[__value__](__meta__)'])
 
@@ -21,6 +23,16 @@ function setup(source: string, options: {controlled?: boolean} = {}) {
 	})
 	const tx = createTransactions({tree, readOnly: () => false, sink: boundary.sink})
 	return {tree, boundary, tx, emitted}
+}
+
+const asText = (node: TreeNode): TextNode => {
+	if (node.kind !== 'text') throw new Error('expected text')
+	return node
+}
+
+const textAnchor = (anchor: NodeAnchor): {node: TextNode; offset: number} => {
+	if (typeof anchor === 'string' || !('node' in anchor)) throw new Error('expected a text anchor')
+	return anchor
 }
 
 describe('boundary: uncontrolled', () => {
@@ -91,6 +103,21 @@ describe('boundary: controlled', () => {
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('HELLOX')))
 	})
 
+	it('a transform the parent restructured keeps the tail the gap window claims', () => {
+		// This is what GATES the `value` check. Pure controlled mode, so the base still matches
+		// and the value is the only thing that can reject the record. The parent PREPENDS a
+		// mark, so the parse has two roots more than the tree and left-index pairing cannot
+		// stand in for the suffix walk: the gap window's delta (7) lets that walk claim the
+		// trailing text node, while the recorded window's stale delta (1) makes it inert and
+		// pairs 'tail' with a fresh node two indices along.
+		const {tree, boundary, tx} = setup('@[a](m)tail', {controlled: true})
+		const tailId = tree.roots()[2].id
+		tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'Z') // emits 'Z@[a](m)tail', records {0,0,1}
+		boundary.arrive('@[q](r)@[a](m)tail') // the parent prepended a mark instead
+		expect(tree.value()).toBe('@[q](r)@[a](m)tail')
+		expect(tree.roots()[4].id).toBe(tailId)
+	})
+
 	it('a rejecting parent leaves the tree untouched', () => {
 		const {tree, tx, emitted} = setup('hello', {controlled: true})
 		tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'A')
@@ -150,6 +177,43 @@ describe('boundary: interleaving', () => {
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('Ahello')))
 	})
 
+	it('an echo whose base moved keeps the repeat the gap window implies, not the recorded one', () => {
+		// This is what GATES the `base` check; the 'hello' mode-flip above cannot, because both
+		// windows converge there. Repeated content plus a prefix insert makes them disagree:
+		// the recorded window {7,14,0} points at the SECOND mark of the base, but the tree has
+		// since grown a 'z' in front, so those coordinates now name a different span.
+		let controlled = true
+		const tree = createTokenTree(parser.parse('@[a](m)@[a](m)'))
+		const boundary = createBoundary({
+			tree,
+			parser: () => parser,
+			controlled: () => controlled,
+			onChange: () => {},
+		})
+		const tx = createTransactions({tree, readOnly: () => false, sink: boundary.sink})
+		const secondMarkId = tree.roots()[3].id
+		tx.applyRange({start: 7, end: 14, insertedLength: 0}, '') // emits '@[a](m)', records window {7,14,0}
+		controlled = false
+		tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'z') // commits: the tree is 'z@[a](m)@[a](m)'
+		boundary.arrive('@[a](m)')
+		expect(tree.value()).toBe('@[a](m)')
+		expect(tree.roots()[1].id).toBe(secondMarkId)
+	})
+
+	it('a rejected emission does not re-arm the record for a later external reset', () => {
+		// This is what GATES clearing `lastEmitted` on every arrival. The parent refuses the
+		// edit and echoes the base back, so the tree returns to exactly the projection the
+		// record was spliced from — a record left armed here would match on BOTH value and
+		// base at the next arrival and adopt a much later reset through a long-dead window.
+		const {tree, boundary, tx} = setup('@[a](m)@[a](m)', {controlled: true})
+		const firstMarkId = tree.roots()[1].id
+		tx.applyRange({start: 0, end: 7, insertedLength: 0}, '') // emits '@[a](m)', records window {0,7,0}
+		boundary.arrive('@[a](m)@[a](m)') // rejected: back at the base, and the record is spent
+		boundary.arrive('@[a](m)') // an external reset, gap-derived: {7,14,0} keeps the FIRST mark
+		expect(tree.value()).toBe('@[a](m)')
+		expect(tree.roots()[1].id).toBe(firstMarkId)
+	})
+
 	it('a parent that echoes synchronously inside onChange is handled on the same path', () => {
 		// NOTE: this does NOT hit the dispatcher's re-entrancy throw — `assertIdle`
 		// guards the verbs, and `arrive` calls adoption directly. It pins that the
@@ -187,10 +251,75 @@ describe('boundary: resets', () => {
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('a@[x](m)b')))
 	})
 
+	it('reparse() maps an offset into the node that holds it, not to the document end', () => {
+		// Decision D-c's real consequence, and the only guard on the window `reparse` picks:
+		// with `gapWindow(v, v)` every offset is at or before `window.start`, so `map` is an
+		// identity. A full window `{0, n, n}` would send every interior offset to
+		// `window.start + insertedLength` — the document end — parking the caret there once
+		// S1.6c consumes `map`.
+		const tree = createTokenTree([createTextToken('a@[x](m)b')])
+		const results: TransactionResult[] = []
+		const boundary = createBoundary({
+			tree,
+			parser: () => parser,
+			controlled: () => false,
+			onChange: () => {},
+			onResult: result => results.push(result),
+		})
+		boundary.reparse()
+		expect(tree.roots().map(n => n.kind)).toEqual(['text', 'mark', 'text'])
+		const anchor = textAnchor(results[0].map(1))
+		expect(anchor.node).toBe(tree.roots()[0]) // 'a', not the trailing 'b'
+		expect(anchor.offset).toBe(1)
+	})
+
 	it('an arrival identical to the current projection is a no-op', () => {
 		const {tree, boundary} = setup('a@[x](m)b')
 		const ids = tree.roots().map(n => n.id)
 		boundary.arrive('a@[x](m)b')
 		expect(tree.roots().map(n => n.id)).toEqual(ids)
+	})
+})
+
+describe('boundary: no-op splices', () => {
+	it('emits an unchanged value in both modes', () => {
+		// Parity with the live boundary, measured: `ValueModel.current`'s set transform runs
+		// before the signal's equality short-circuit, so `replace({start: 2, end: 2}, '')`
+		// already fires `onChange('hello')` today. Suppression is a user-visible change and
+		// would belong in the dispatcher — see the no-op note in `transactions.ts`.
+		const uncontrolled = setup('hello')
+		expect(uncontrolled.tx.applyRange({start: 2, end: 2, insertedLength: 0}, '')).toBe(true)
+		expect(uncontrolled.emitted).toEqual(['hello'])
+		expect(uncontrolled.tree.value()).toBe('hello')
+
+		const controlled = setup('hello', {controlled: true})
+		expect(controlled.tx.applyRange({start: 2, end: 2, insertedLength: 0}, '')).toBe(true)
+		expect(controlled.emitted).toEqual(['hello'])
+	})
+})
+
+describe('boundary: untracked arrivals', () => {
+	it('arrive() and reparse() called inside an effect subscribe that effect to nothing', () => {
+		// S1.6a drives both from a props watch. A tracked `tree.value()` read there would
+		// subscribe the watcher to the projection the same call is about to mutate — a write
+		// loop, not merely a stale read. `value()` is deliberately left tracked.
+		const {tree, boundary} = setup('he@[x](m)llo')
+		let arrivals = 0
+		const stopArrive = effect(() => {
+			arrivals++
+			boundary.arrive('he@[x](m)llo') // identical to the projection: reads it, writes nothing
+		})
+		let reparses = 0
+		const stopReparse = effect(() => {
+			reparses++
+			boundary.reparse()
+		})
+		expect([arrivals, reparses]).toEqual([1, 1])
+
+		asText(tree.roots()[0]).text('QQQ')
+		expect([arrivals, reparses]).toEqual([1, 1])
+
+		stopArrive()
+		stopReparse()
 	})
 })

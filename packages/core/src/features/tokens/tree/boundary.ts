@@ -1,6 +1,7 @@
+import {untracked} from '../../../shared/signals'
 import type {Parser} from '../parser/Parser'
+import {parseAndAdopt} from './adopt'
 import {gapWindow} from './gapWindow'
-import {parseAndAdopt} from './transactions'
 import type {TokenTree} from './tree'
 import type {CommitSink, TransactionResult, Window} from './types'
 
@@ -69,41 +70,40 @@ export function createBoundary(deps: {
 	return {
 		sink,
 
-		/**
-		 * PENDING: this `tree.value()` read, and `reparse`'s below, are still TRACKED. The commit
-		 * path is already covered — the dispatcher wraps `sink.commit` in `untracked` — but S1.6a
-		 * wires these two entry points to a props watch, where an unwrapped read would subscribe
-		 * the watcher to the very projection it is about to mutate. The S1.4 hardening step owns
-		 * that wrapping; the asymmetry with `value()` below is unfinished, not intentional.
-		 */
 		arrive(value) {
-			// D6 is explicit: the record is consumed by the FIRST arrival, matched or not. A stale
-			// echo must not leave it armed for the next one.
-			const emission = lastEmitted
-			lastEmitted = undefined
+			// `untracked` for the same reason the dispatcher wraps `commit`: S1.6a drives both
+			// entry points from a props watch, and a tracked read here would subscribe that
+			// watcher to the very projection it is about to mutate.
+			untracked(() => {
+				// D6 is explicit: the record is consumed by the FIRST arrival, matched or not. A
+				// stale echo must not leave it armed for the next one.
+				const emission = lastEmitted
+				lastEmitted = undefined
 
-			// Anything that is not this emission's echo — a transform, a stale echo, an external
-			// value, an uncontrolled arrival — falls back to the boundary-reset window. Both
-			// branches are continuity-preserving, so the check buys identity precision rather
-			// than correctness: on repeated content the two windows disagree about which repeat
-			// survived. Gap-derivation also makes an arrival equal to the current projection an
-			// inert no-op adoption rather than a rebuild.
-			const current = deps.tree.value()
-			fold(value, echoWindow(emission, value, current) ?? gapWindow(current, value))
+				// Anything that is not this emission's echo — a transform, a stale echo, an
+				// external value, an uncontrolled arrival — falls back to the boundary-reset
+				// window. Both branches are continuity-preserving, so the check buys identity
+				// precision rather than correctness: on repeated content the two windows disagree
+				// about which repeat survived. Gap-derivation also makes an arrival equal to the
+				// current projection an inert no-op adoption rather than a rebuild.
+				const current = deps.tree.value()
+				fold(value, echoWindow(emission, value, current) ?? gapWindow(current, value))
+			})
 		},
 
 		reparse() {
-			// Parser-only, and no emission: the value does not change, only its tokenization.
-			// `gapWindow(v, v)` is enough, because adoption is equality-driven rather than
-			// window-driven — with the value unchanged both walks go inert and the middle
-			// re-derives every token from the new parse. A full window would be worse: it sends
-			// every mapped interior offset to the document end.
-			//
-			// `isBlock` arrivals and `TokenModel#reparse`'s `filterEmptyText` are deliberately
-			// out of scope here (decision D-e): both belong to S1.6a, which owns block wiring,
-			// and the tree core applies no empty-text filter anywhere yet.
-			const value = deps.tree.value()
-			fold(value, gapWindow(value, value))
+			untracked(() => {
+				// No emission: the value does not change, only its tokenization. `gapWindow(v, v)`
+				// is enough because adoption is equality-driven rather than window-driven — both
+				// walks go inert and the middle re-derives every token from the new parse. A full
+				// window is actively worse: it sends every mapped interior offset to the document
+				// end (decision D-c, pinned through `map` in boundary.spec.ts).
+				//
+				// Parser-only by decision D-e: `isBlock` arrivals and `TokenModel#reparse`'s
+				// `filterEmptyText` belong to S1.6a, which owns block wiring.
+				const value = deps.tree.value()
+				fold(value, gapWindow(value, value))
+			})
 		},
 
 		/**
@@ -112,7 +112,8 @@ export function createBoundary(deps: {
 		 * The two cases this does NOT cover — the initial seed, and the controlled→uncontrolled
 		 * fallback to `defaultValue` — are S1.6a's to handle by arriving explicitly.
 		 *
-		 * A public read, deliberately tracked: a consumer may legitimately subscribe to it.
+		 * A public read, deliberately tracked (unlike `arrive`/`reparse` above): a consumer may
+		 * legitimately subscribe to it.
 		 */
 		value: () => deps.tree.value(),
 	}
@@ -121,8 +122,15 @@ export function createBoundary(deps: {
 /**
  * The recorded splice, usable only when the arrival IS that emission's echo AND the tree
  * still holds the base it was spliced from — the window's coordinates live in that base.
- * The `base` check is what a mid-flight controlled→uncontrolled flip trips: the edit
- * commits locally, moving the tree, and the parent's echo lands afterwards.
+ *
+ * Both halves are load-bearing, and neither shows on a plain fixture, where the recorded and
+ * the gap-derived window converge. `base` is tripped by a mid-flight controlled→uncontrolled
+ * flip: the edit commits locally, moving the tree, and the parent's echo lands afterwards.
+ * `value` is tripped by a transform that changes the ROOT COUNT — a stale window carries a
+ * stale delta, so adoption's suffix walk goes inert and the tail's identity falls to
+ * left-index pairing, which is misaligned by exactly that count. Both are pinned by id
+ * assertions in boundary.spec.ts; value-level assertions cannot see either, because adoption
+ * converges to the same string through any window.
  */
 function echoWindow(emission: Emission | undefined, value: string, current: string): Window | undefined {
 	if (!emission) return undefined

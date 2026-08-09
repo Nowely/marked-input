@@ -1,8 +1,33 @@
 import {batch, untracked} from '../../../shared/signals'
+import type {Parser} from '../parser/Parser'
 import type {MarkToken, TextToken, Token} from '../parser/types'
+import {createTextToken} from '../parser/utils/createTextToken'
 import {collectIds, shiftPositions, snapshotNodeEquals} from './adoptUtils'
 import type {TokenTree} from './tree'
 import type {Id, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeChange, TreeNode, Window} from './types'
+
+/**
+ * The write MECHANISM, distinct from the commit POLICY that decides when to run it:
+ * parse a projection — the parser is the single semantic authority — and adopt the
+ * result into the persistent nodes. Every writer in this layer goes through here: the
+ * boundary's commits, arrivals and reparses.
+ *
+ * The parser-less fallback mirrors `TokenModel#reparse`: with no markups configured
+ * there is no Parser instance and the whole value is one text token.
+ */
+export function parseAndAdopt(
+	tree: TokenTree,
+	parser: Parser | undefined,
+	next: string,
+	window: Window,
+	onResult?: (result: TransactionResult) => void
+): void {
+	const parsed = parser ? parser.parse(next) : [createTextToken(next)]
+	// Adoption is the commit; it must not sit inside the optional call's argument,
+	// which JS skips evaluating when no listener is registered.
+	const result = adopt(tree, window, parsed)
+	onResult?.(result)
+}
 
 /**
  * Fold a fresh parse of the spliced projection back into the persistent nodes

@@ -1,47 +1,6 @@
 import {untracked} from '../../../shared/signals'
-import type {Parser} from '../parser/Parser'
-import {createTextToken} from '../parser/utils/createTextToken'
-import {adopt} from './adopt'
 import type {TokenTree} from './tree'
-import type {CommitSink, TextNode, TransactionResult, TreeNode, Window} from './types'
-
-/**
- * The write MECHANISM, distinct from the commit POLICY that decides when to run it:
- * parse a projection — the parser is the single semantic authority — and adopt the
- * result into the persistent nodes. Every writer in this layer goes through here: the
- * uncontrolled commit below, and the boundary's arrivals and reparses.
- *
- * The parser-less fallback mirrors `TokenModel#reparse`: with no markups configured
- * there is no Parser instance and the whole value is one text token.
- */
-export function parseAndAdopt(
-	tree: TokenTree,
-	parser: Parser | undefined,
-	next: string,
-	window: Window,
-	onResult?: (result: TransactionResult) => void
-): void {
-	const parsed = parser ? parser.parse(next) : [createTextToken(next)]
-	// Adoption is the commit; it must not sit inside the optional call's argument,
-	// which JS skips evaluating when no listener is registered.
-	const result = adopt(tree, window, parsed)
-	onResult?.(result)
-}
-
-/** Uncontrolled commit policy (spec D5): the edit is the truth, so adopt it at once. */
-export function createUncontrolledSink(deps: {
-	tree: TokenTree
-	parser: () => Parser | undefined
-	/** The `TransactionResult` feed (spec D9); its pipeline consumer arrives with S1.5. */
-	onResult?: (result: TransactionResult) => void
-}): CommitSink {
-	return {
-		commit(next, window) {
-			parseAndAdopt(deps.tree, deps.parser(), next, window, deps.onResult)
-			return true
-		},
-	}
-}
+import type {CommitSink, TextNode, TreeNode, Window} from './types'
 
 /**
  * One splice in the coordinates of the COMMITTED projection. No `insertedLength`:
@@ -112,10 +71,17 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		const window: Window = {start, end, insertedLength: end - start + (next.length - value.length)}
 
 		// A splice that changes nothing still commits: `next === value` reaches the sink and
-		// costs a parse plus an adoption. The uncontrolled sink absorbs it (adoption diffs to
-		// no change), so nothing short-circuits here; the phase that adds the CONTROLLED sink
-		// owns the decision of whether an unchanged value may still fire `onChange`. Current
-		// behavior is pinned in transactions.spec.ts.
+		// costs a parse plus an adoption, which adoption then diffs to no change.
+		//
+		// S1.4 SETTLED the question this note used to hand forward — may an unchanged value still
+		// fire `onChange`? YES, in both modes. Today's `ValueModel.current` set transform runs
+		// before the signal's equality short-circuit, so `replace({start: 2, end: 2}, '')` already
+		// emits `onChange('hello')`; the boundary keeps that parity rather than smuggling a
+		// user-visible behavior change in with the S1.6a swap. Suppression, if it is ever wanted,
+		// belongs HERE and not in a sink: the dispatcher is the only layer that can drop the wasted
+		// parse and adoption along with the emission, so a sink-level guard would buy the behavior
+		// change and none of the saving. Pinned here in transactions.spec.ts and, for the emission
+		// itself in both modes, in boundary.spec.ts.
 		dispatching = true
 		try {
 			// The dispatcher owns the no-subscription invariant for the whole commit, sink

@@ -3,35 +3,55 @@ import {describe, expect, it} from 'vitest'
 import {effect, signal} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
 import {createTextToken} from '../parser/utils/createTextToken'
+import {parseAndAdopt} from './adopt'
 import {snapshot, stripIds} from './snapshot'
-import {createTransactions, createUncontrolledSink} from './transactions'
+import {createTransactions} from './transactions'
+import type {TokenTree} from './tree'
 import {createTokenTree} from './tree'
 import type {CommitSink, MarkNode, TextNode, TransactionResult, TreeNode, Window} from './types'
 
 const parser = new Parser(['@[__value__](__meta__)'])
 
 /**
- * Tree + verbs over the uncontrolled sink; `results` is one entry per adoption and
- * `commits` the handoff that produced it — a wrong hull window survives a right value,
- * so a test that commits still has to see both.
+ * These tests exercise the DISPATCHER, so they need any sink that actually commits — the
+ * uncontrolled policy, inline: adopt the handoff and accept. The real one lives on the
+ * boundary, which this module must not depend on.
+ */
+function adoptingSink(
+	tree: TokenTree,
+	parser: () => Parser | undefined,
+	onResult?: (result: TransactionResult) => void
+): CommitSink {
+	return {
+		commit(next, window) {
+			parseAndAdopt(tree, parser(), next, window, onResult)
+			return true
+		},
+	}
+}
+
+/**
+ * Tree + verbs over an adopting sink; `results` is one entry per adoption and `commits`
+ * the handoff that produced it — a wrong hull window survives a right value, so a test
+ * that commits still has to see both.
  */
 function setup(source: string, options: {readOnly?: boolean} = {}) {
 	const tree = createTokenTree(parser.parse(source))
 	const results: TransactionResult[] = []
 	const commits: {next: string; window: Window}[] = []
 	let hook: ((result: TransactionResult) => void) | undefined
-	const uncontrolled = createUncontrolledSink({
+	const adopting = adoptingSink(
 		tree,
-		parser: () => parser,
-		onResult: result => {
+		() => parser,
+		result => {
 			results.push(result)
 			hook?.(result)
-		},
-	})
+		}
+	)
 	const sink: CommitSink = {
 		commit(next, window) {
 			commits.push({next, window})
-			return uncontrolled.commit(next, window)
+			return adopting.commit(next, window)
 		},
 	}
 	const tx = createTransactions({tree, readOnly: () => options.readOnly ?? false, sink})
@@ -341,7 +361,7 @@ describe('transactions: tx composition', () => {
 	})
 })
 
-describe('transactions: uncontrolled sink', () => {
+describe('transactions: adopting sink', () => {
 	it('the transaction result equals a fresh parse (equivalence through the verb layer)', () => {
 		const {tree, tx} = setup('he@[x](m)llo')
 		tx.applyRange({start: 2, end: 9, insertedLength: 0}, '')
@@ -350,7 +370,7 @@ describe('transactions: uncontrolled sink', () => {
 
 	it('commits the whole value as one text token when no parser is configured', () => {
 		const tree = createTokenTree([createTextToken('a@[x](m)b')])
-		const sink = createUncontrolledSink({tree, parser: () => undefined})
+		const sink = adoptingSink(tree, () => undefined)
 		const tx = createTransactions({tree, readOnly: () => false, sink})
 		expect(tx.applyRange({start: 0, end: 1, insertedLength: 0}, 'Z')).toBe(true)
 		expect(tree.roots().map(n => n.kind)).toEqual(['text'])
