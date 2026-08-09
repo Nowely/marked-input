@@ -6,11 +6,29 @@ import type {TokenTree} from './tree'
 import type {CommitSink, TextNode, TransactionResult, TreeNode, Window} from './types'
 
 /**
- * Uncontrolled commit policy (spec D5): parse the spliced projection — the parser
- * is the single semantic authority — and adopt the result into the persistent
- * nodes. The parser-less fallback mirrors `TokenModel#reparse`: with no markups
- * configured there is no Parser instance and the whole value is one text token.
+ * The write MECHANISM, distinct from the commit POLICY that decides when to run it:
+ * parse a projection — the parser is the single semantic authority — and adopt the
+ * result into the persistent nodes. Every writer in this layer goes through here: the
+ * uncontrolled commit below, and the boundary's arrivals and reparses.
+ *
+ * The parser-less fallback mirrors `TokenModel#reparse`: with no markups configured
+ * there is no Parser instance and the whole value is one text token.
  */
+export function parseAndAdopt(
+	tree: TokenTree,
+	parser: Parser | undefined,
+	next: string,
+	window: Window,
+	onResult?: (result: TransactionResult) => void
+): void {
+	const parsed = parser ? parser.parse(next) : [createTextToken(next)]
+	// Adoption is the commit; it must not sit inside the optional call's argument,
+	// which JS skips evaluating when no listener is registered.
+	const result = adopt(tree, window, parsed)
+	onResult?.(result)
+}
+
+/** Uncontrolled commit policy (spec D5): the edit is the truth, so adopt it at once. */
 export function createUncontrolledSink(deps: {
 	tree: TokenTree
 	parser: () => Parser | undefined
@@ -19,12 +37,7 @@ export function createUncontrolledSink(deps: {
 }): CommitSink {
 	return {
 		commit(next, window) {
-			const parser = deps.parser()
-			const parsed = parser ? parser.parse(next) : [createTextToken(next)]
-			// Adoption is the commit; it must not sit inside the optional call's argument,
-			// which JS skips evaluating when no listener is registered.
-			const result = adopt(deps.tree, window, parsed)
-			deps.onResult?.(result)
+			parseAndAdopt(deps.tree, deps.parser(), next, window, deps.onResult)
 			return true
 		},
 	}
