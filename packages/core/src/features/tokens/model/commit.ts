@@ -3,7 +3,7 @@ import {batch, event, signal} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
 import {bind} from './bind'
-import type {CommitChange, CommitInput} from './commitInput'
+import type {CommitChange, CommitInput, TokenDelta} from './commitInput'
 import type {TokenHandle} from './TokenHandle'
 
 /**
@@ -36,9 +36,18 @@ export type CommitPipeline = {
 	renderTree: Computed<Token[]>
 	/** THE consumer read: the latest reconciled tree — always fresh, consistent with value.current() (it is `latest`, reassigned at the top of every apply). Never latch-gated. */
 	current(): readonly Token[]
-	/** THE model-level detector: fires once per commit, only after the DOM is consistent (both branches). Payloadless — consumers re-read. */
-	changed: Event<void>
-	/** Ids removed by the LAST committed reconcile (subtree included) — the prune feed for id-keyed stores. Empty on a re-bind. */
+	/**
+	 * THE model-level detector: fires once per commit, only after the DOM is
+	 * consistent (both branches), carrying what that commit did to the id space
+	 * (spec §2.3). Every apply folded into one pending structural pass is MERGED
+	 * into the single announcement.
+	 */
+	changed: Event<TokenDelta>
+	/**
+	 * The last announced delta's removals — derived from the `changed` payload,
+	 * kept only for the specs that still read it. Deleted with §4.6 item 6 in
+	 * S1.6d; new consumers take the payload.
+	 */
 	removedIds(): readonly number[]
 	/** pendingStructural latch: true between a structural apply and its bind — id-bridged resolution fails closed. */
 	pending(): boolean
@@ -51,13 +60,42 @@ export type CommitPipeline = {
 // oxlint-disable-next-line typescript/no-unnecessary-condition -- intentional runtime guard; value depends on bundler
 const VERIFY_DOM: boolean = import.meta.env?.DEV ?? true
 
+type DeltaAccumulator = {added: Set<number>; removed: Set<number>; updated: Set<number>}
+
+const EMPTY_DELTA: TokenDelta = {added: [], removed: [], updated: []}
+
+/**
+ * Compose one commit's delta into the pending window's (spec D9's fold).
+ * Exact, because ids are never reused within an input instance: a node added
+ * and then removed before the paint never existed for a consumer, and an
+ * update to a node that then died is moot.
+ */
+function foldDelta(into: DeltaAccumulator, delta: TokenDelta): void {
+	for (const id of delta.added) into.added.add(id)
+	for (const id of delta.updated) {
+		if (!into.added.has(id)) into.updated.add(id)
+	}
+	for (const id of delta.removed) {
+		into.updated.delete(id)
+		if (!into.added.delete(id)) into.removed.add(id)
+	}
+}
+
+function drainDelta(into: DeltaAccumulator): TokenDelta {
+	const delta: TokenDelta = {added: [...into.added], removed: [...into.removed], updated: [...into.updated]}
+	into.added.clear()
+	into.removed.clear()
+	into.updated.clear()
+	return delta
+}
+
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// `renderTree` is a plain signal written ONLY by the structural branch —
 	// reference stability on the text path is direct control flow. A computed
 	// would have to derive the kept reference from the latest reconcile result,
 	// reviving the old memo-mutation-inside-a-computed pattern this pipeline deletes.
 	const renderTree = signal<Token[]>({initial: []})
-	const changed = event<void>()
+	const changed = event<TokenDelta>()
 
 	// Derived lookups over the bound nodes — replaced wholesale by bind on the
 	// structural branch, untouched on the text branch (paths are unchanged there
@@ -74,17 +112,20 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	let latest: Token[] = []
 
 	let pendingStructural = false
-	let pendingRemovedIds: readonly number[] = []
-	// Ids removed by the change currently being committed (read by removedIds()
-	// after changed fires). A re-bind with no pending change removed nothing.
-	let lastRemovedIds: readonly number[] = []
+	// Accumulates across the pending window and is drained by whichever branch
+	// announces. It is empty whenever pendingStructural is false — the drain is
+	// what makes that true — so the old `pendingStructural ? … : []` guard on the
+	// bind path is gone rather than duplicated.
+	const pendingDelta: DeltaAccumulator = {added: new Set(), removed: new Set(), updated: new Set()}
+	// The delta of the last announcement (read by removedIds() after changed fires).
+	let lastDelta: TokenDelta = EMPTY_DELTA
 	let committing = false
 
 	function apply(input: CommitInput): void {
 		if (committing) throw new Error('TokenModel commit re-entry')
 		committing = true
 		try {
-			const {tokens, render, changes, removedIds} = input
+			const {tokens, render, changes, delta} = input
 			latest = tokens
 			// Routing decided by the producer (spec D9's `render` bit). The one
 			// commit-side override is the fold guard: while a structural apply
@@ -92,11 +133,11 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			// apply folds into the pending structural pass (fail-closed — no
 			// half-patch against a tree the DOM never showed).
 			if (!pendingStructural && !render) {
-				if (commitText(changes, removedIds)) return
-				commitStructural(tokens, removedIds, true)
+				if (commitText(changes, delta)) return
+				commitStructural(tokens, delta, true)
 				return
 			}
-			commitStructural(tokens, removedIds, false)
+			commitStructural(tokens, delta, false)
 		} finally {
 			committing = false
 		}
@@ -124,7 +165,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	 * first; ANY miss abandons the branch before a single mutation and the caller
 	 * escalates structurally.
 	 */
-	function commitText(changes: readonly CommitChange[], removedIds: readonly number[]): boolean {
+	function commitText(changes: readonly CommitChange[], delta: TokenDelta): boolean {
 		// surface is set only for patch entries; absent → refresh-only (no DOM write).
 		const updates: {handle: TokenHandle; token: Token; surface?: HTMLElement}[] = []
 		for (const change of changes) {
@@ -150,8 +191,9 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			}
 		})
 		if (VERIFY_DOM) assertAligned()
-		lastRemovedIds = removedIds
-		changed()
+		foldDelta(pendingDelta, delta)
+		lastDelta = drainDelta(pendingDelta)
+		changed(lastDelta)
 		return true
 	}
 
@@ -162,8 +204,8 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	 * unchanged on that path, so the node layer recovers without waiting for the
 	 * adapter, whose later onRendered() just re-binds idempotently.
 	 */
-	function commitStructural(tokens: Token[], removedIds: readonly number[], selfHeal: boolean): void {
-		pendingRemovedIds = removedIds
+	function commitStructural(tokens: Token[], delta: TokenDelta, selfHeal: boolean): void {
+		foldDelta(pendingDelta, delta)
 		pendingStructural = true
 		renderTree(tokens)
 		if (!selfHeal) return
@@ -186,11 +228,11 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		byPath = result.byPath
 		byElement = result.byElement
 		controlRoots = result.controlRoots
-		// A re-bind with no pending structural change removed nothing.
-		lastRemovedIds = pendingStructural ? pendingRemovedIds : []
+		// A re-bind with no pending structural change drains an empty accumulator.
+		lastDelta = drainDelta(pendingDelta)
 		pendingStructural = false
 		if (VERIFY_DOM) assertAligned()
-		changed()
+		changed(lastDelta)
 	}
 
 	/**
@@ -218,7 +260,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		renderTree,
 		current: () => latest,
 		changed,
-		removedIds: () => lastRemovedIds,
+		removedIds: () => lastDelta.removed,
 		pending: () => pendingStructural,
 		byPath: () => byPath,
 		byElement: element => byElement.get(element),

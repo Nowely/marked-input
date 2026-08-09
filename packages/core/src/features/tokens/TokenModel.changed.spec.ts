@@ -42,7 +42,7 @@ describe('TokenModel changed event', () => {
 
 		// Mount binds the pre-built DOM immediately and announces the cold start,
 		// then the explicit rendered() re-binds idempotently — two announcements
-		// (the event is payloadless in Phase 2; the count is the contract).
+		// (the count is the contract here; the payload is pinned in the cases below).
 		expect(changedSpy).toHaveBeenCalledTimes(2)
 
 		const ids = store.tokens.current().map((_, i) => handleId(store, i))
@@ -63,10 +63,10 @@ describe('TokenModel changed event', () => {
 		// append '!' at the end of the trailing text: 'he@[x]llo' → 'he@[x]llo!'
 		store.edit.replace({start: 9, end: 9}, '!')
 
-		// The event is payloadless (Phase 2): one announcement per commit, and a
-		// pure text edit removes nothing.
+		// One announcement per commit, carrying the delta (spec §2.3): a pure text
+		// edit reports the edited token as updated and adds/removes nothing.
 		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(store.tokens.removedIds()).toEqual([])
+		expect(changedSpy.mock.lastCall?.[0]).toEqual({added: [], removed: [], updated: [tailId]})
 		// identity survives the edit: the same handles answer for the new tree
 		expect(handleId(store, 1)).toBe(markId)
 		expect(handleId(store, 2)).toBe(tailId)
@@ -74,6 +74,7 @@ describe('TokenModel changed event', () => {
 
 	it('edit.replace before the mark flows the precise hint: suffix tokens shifted, ids stable', () => {
 		const {store} = mountWithMark()
+		const headId = handleId(store, 0)
 		const markId = handleId(store, 1)
 		const tailId = handleId(store, 2)
 		const changedSpy = vi.fn()
@@ -82,11 +83,11 @@ describe('TokenModel changed event', () => {
 		// prepend 'X' at position 0: mark and tail shift right by 1
 		store.edit.replace({start: 0, end: 0}, 'X')
 
-		// One payloadless announcement; the suffix shift removes nothing. The old
-		// `updated` bucket's contract — the shifted mark and tail keep their ids —
-		// is exactly the handle-identity survival asserted below.
+		// One announcement; only the head's CONTENT changed. A pure position shift
+		// is not a content change, so the mark and tail are in no list — their
+		// contract (the ids survive) is the handle-identity survival asserted below.
 		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(store.tokens.removedIds()).toEqual([])
+		expect(changedSpy.mock.lastCall?.[0]).toEqual({added: [], removed: [], updated: [headId]})
 		expect(handleId(store, 1)).toBe(markId)
 		expect(handleId(store, 2)).toBe(tailId)
 	})
@@ -97,13 +98,14 @@ describe('TokenModel changed event', () => {
 	it('direct value.current set keeps identity via the findGap-derived hint and announces delta', () => {
 		const {store} = mountWithMark()
 		const markId = handleId(store, 1)
+		const tailId = handleId(store, 2)
 		const changedSpy = vi.fn()
 		watch(store.tokens.changed, changedSpy)
 
 		store.value.current('he@[x]llo!')
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(store.tokens.removedIds()).toEqual([])
+		expect(changedSpy.mock.lastCall?.[0]).toEqual({added: [], removed: [], updated: [tailId]})
 		// the mark id survived a set that carried no edit hint
 		expect(handleId(store, 1)).toBe(markId)
 	})

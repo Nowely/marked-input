@@ -13,6 +13,7 @@ import {createIdentityTracker} from '../tokenIdentity'
 import {pathEquals} from '../tokenIndex'
 import {createCommitPipeline} from './commit'
 import {fromReconcile} from './commitInput'
+import type {TokenDelta} from './commitInput'
 import {applyEditableState} from './editableState'
 import type {TokenHandle} from './TokenHandle'
 
@@ -41,8 +42,13 @@ export class TokenModel {
 		return this.#pipeline.current()
 	}
 
-	/** THE model-level detector: fires once per commit, only after the DOM is consistent. Payloadless — consumers re-read. */
-	get changed(): Event<void> {
+	/**
+	 * THE model-level detector: fires once per commit, only after the DOM is
+	 * consistent, carrying that commit's `{added, removed, updated}` ids (spec
+	 * §2.3). Applies folded into one pending structural pass announce ONE merged
+	 * delta — a consumer pruning off `removed` cannot miss a wave.
+	 */
+	get changed(): Event<TokenDelta> {
 		return this.#pipeline.changed
 	}
 
@@ -109,10 +115,10 @@ export class TokenModel {
 	// ═══ Engine SPI (in-core consumers) ═══════════════════════════════════════
 
 	/**
-	 * Internal: ids removed (subtree included) by the LAST committed reconcile —
-	 * the prune feed for consumers (BlockController) since the changed() event
-	 * carries no payload. Read inside a `changed` watch; valid only for the
-	 * duration of that wave (reassigned on every commit).
+	 * Internal: the `removed` list of the LAST announcement, derived from the
+	 * `changed` payload that superseded it. No production consumer is left — it
+	 * survives one phase for the specs that read it and is deleted with §4.6
+	 * item 6 in S1.6d. Take the payload instead.
 	 */
 	readonly removedIds = (): readonly number[] => this.#pipeline.removedIds()
 

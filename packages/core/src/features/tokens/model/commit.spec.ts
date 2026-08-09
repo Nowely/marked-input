@@ -6,6 +6,7 @@ import type {Token} from '../parser/types'
 import {createIdentityTracker} from '../tokenIdentity'
 import {createCommitPipeline} from './commit'
 import {fromReconcile} from './commitInput'
+import type {TokenDelta} from './commitInput'
 import type {TokenHandle} from './TokenHandle'
 
 /**
@@ -654,6 +655,86 @@ describe('createCommitPipeline', () => {
 			expect(childHandle.token().content).toBe('aXb')
 			expect(tailHandle.alive()).toBe(true)
 			expect(tailHandle.path()).toEqual([2])
+		})
+	})
+
+	describe('changed payload (spec §2.3) and fold merging (D9)', () => {
+		it('merges the removals of every apply folded into one pending structural pass', () => {
+			// 'a@[x]b@[y]c' → text 'a'[0,1], mark '@[x]'[1,5], text 'b'[5,6],
+			// mark '@[y]'[6,10], text 'c'[10,11] — five spans, byPath '0'..'4'.
+			const harness = createHarness()
+			const {pipeline} = harness
+			harness.apply('a@[x]b@[y]c')
+			harness.render()
+			const markX = pipeline.byPath().get('1')
+			const markY = pipeline.byPath().get('3')
+			if (!markX || !markY) throw new Error('expected both mark handles')
+			let payload: TokenDelta | undefined
+			watch(pipeline.changed, delta => {
+				payload = delta
+			})
+
+			// Two structural applies, ONE bind. The overwrite this replaces
+			// (`pendingRemovedIds = removedIds`) dropped the FIRST removal, so
+			// BlockController never pruned that row's drag state — a real leak.
+			harness.apply('ab@[y]c') // drops @[x]
+			harness.apply('abc') // drops @[y]
+			harness.render()
+
+			expect(payload?.removed).toContain(markX.id)
+			expect(payload?.removed).toContain(markY.id)
+		})
+
+		it('a node added and removed inside one pending window is announced as neither', () => {
+			const harness = createHarness()
+			const {pipeline} = harness
+			mountValue(harness)
+			let payload: TokenDelta | undefined
+			watch(pipeline.changed, delta => {
+				payload = delta
+			})
+
+			harness.apply('he@[x]llo@[y]') // adds the mark and its trailing empty text
+			const addedId = pipeline.renderTree()[3]?.id
+			harness.apply('he@[x]llo') // takes them straight back out
+			harness.render()
+
+			// Ids are never reused, so composition is exact: a consumer that never
+			// saw the node must not be told to prune it either.
+			expect(addedId).toBeDefined()
+			expect(payload?.added).not.toContain(addedId)
+			expect(payload?.removed).not.toContain(addedId)
+		})
+
+		it('announces the edited id as updated on the text branch and nothing on a bare re-bind', () => {
+			const harness = createHarness()
+			const {pipeline} = harness
+			mountValue(harness)
+			const tail = pipeline.byPath().get('2')
+			if (!tail) throw new Error('expected tail handle')
+			const seen: TokenDelta[] = []
+			watch(pipeline.changed, delta => {
+				seen.push(delta)
+			})
+
+			harness.apply('he@[x]llo!')
+			pipeline.onRendered()
+
+			expect(seen[0].updated).toContain(tail.id)
+			expect(seen[0].added).toEqual([])
+			expect(seen[0].removed).toEqual([])
+			// A re-bind with no pending change announces an empty delta.
+			expect(seen[1]).toEqual({added: [], removed: [], updated: []})
+		})
+
+		it('removedIds() still answers, now off the payload', () => {
+			const harness = createHarness()
+			const {pipeline} = harness
+			mountValue(harness)
+			const markId = pipeline.byPath().get('1')?.id
+			harness.apply('hello')
+			harness.render()
+			expect(pipeline.removedIds()).toContain(markId)
 		})
 	})
 

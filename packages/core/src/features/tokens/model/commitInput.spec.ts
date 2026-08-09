@@ -38,6 +38,9 @@ describe('fromReconcile', () => {
 			{id: 2, token: b, patch: false},
 			{id: 3, token: c, patch: true},
 		])
-		expect(input.removedIds).toEqual([9])
+		// THE gate on the delta mapping: mutating `updated` to [] in fromReconcile
+		// leaves the rest of the suite green — the live `changed` consumers only
+		// read `removed`.
+		expect(input.delta).toEqual({added: [3], removed: [9], updated: [1]})
 	})
 })

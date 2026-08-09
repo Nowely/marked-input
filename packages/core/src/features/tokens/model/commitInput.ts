@@ -10,6 +10,16 @@ import type {ReconcileResult} from '../tokenIdentity'
 export type CommitChange = {readonly id: number; readonly token: Token; readonly patch: boolean}
 
 /**
+ * The `changed` payload (spec §2.3) and the pipeline's delta carrier — one
+ * type, because they are the same three id lists. Subtree-inclusive.
+ */
+export type TokenDelta = {
+	readonly added: readonly number[]
+	readonly removed: readonly number[]
+	readonly updated: readonly number[]
+}
+
+/**
  * What {@link CommitPipeline.apply} consumes — deliberately producer-agnostic
  * (spec §11 transition mechanics). The live path lowers a `ReconcileResult`
  * here; the tree core lowers a `TransactionResult` in `treeInput.ts`. S1.6a
@@ -31,8 +41,8 @@ export type CommitInput = {
 	 * entry is an absolute write to a distinct node (see treeInput.ts).
 	 */
 	changes: readonly CommitChange[]
-	/** Ids gone from the tree, subtree-inclusive. */
-	removedIds: readonly number[]
+	/** What this commit did to the id space — announced (merged across a fold) as the `changed` payload. */
+	delta: TokenDelta
 }
 
 /**
@@ -50,6 +60,13 @@ export function fromReconcile(result: ReconcileResult): CommitInput {
 			token: change.token,
 			patch: change.kind !== 'update',
 		})),
-		removedIds: result.removedIds,
+		delta: {
+			// `kind: 'add'` is reconcile's only add signal; `'text'` is its content
+			// signal (a refused-descend MARK included); `'update'` is position-only
+			// and is NOT a content change.
+			added: result.changes.filter(change => change.kind === 'add').map(change => change.id),
+			removed: result.removedIds,
+			updated: result.changes.filter(change => change.kind === 'text').map(change => change.id),
+		},
 	}
 }
