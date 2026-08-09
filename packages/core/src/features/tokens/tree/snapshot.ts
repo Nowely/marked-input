@@ -2,12 +2,21 @@ import type {MarkToken, TextToken, Token} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
 import type {TreeNode} from './types'
 
+const NO_CHILDREN: Token[] = []
+
 /** Materialize plain Token snapshots (compat read shape). Ids included. */
 export function snapshot(nodes: readonly TreeNode[]): Token[] {
-	return nodes.map(snapshotNode)
+	return nodes.map(node => materializeNode(node, node.kind === 'mark' ? snapshot(node.children()) : NO_CHILDREN))
 }
 
-function snapshotNode(node: TreeNode): Token {
+/**
+ * One node → one Token, given its children's tokens. Split out of `snapshot` so
+ * `snapshotMemo` can feed CACHED child tokens instead of re-projecting them;
+ * `snapshot` itself stays the pure, unmemoized §7.1 output-equivalence gate — a
+ * memo inside it would gate adoption against its own cache. `children` is ignored
+ * for text nodes.
+ */
+export function materializeNode(node: TreeNode, children: Token[]): Token {
 	if (node.kind === 'text') {
 		const token: TextToken = {
 			type: 'text',
@@ -18,7 +27,6 @@ function snapshotNode(node: TreeNode): Token {
 		return token
 	}
 
-	const children = snapshot(node.children())
 	// Same rule as joinNodes: children are the sole slot source (a slot mark always has
 	// >=1 text child), and the node stores no slot text to read instead. Each child token
 	// already carries its own projection, so joining them keeps the whole walk O(N) and
