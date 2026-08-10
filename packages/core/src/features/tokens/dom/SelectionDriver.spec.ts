@@ -2,42 +2,7 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
-
-function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
-	const store = new Store()
-	store.props.set({defaultValue: value, ...props})
-	return store
-}
-
-/** The DOM half of a single-text-surface mount, shared by the uncontrolled and controlled fixtures. */
-function mountInline(store: Store) {
-	const container = document.createElement('div')
-	const textSurface = document.createElement('span')
-	container.append(textSurface)
-	document.body.append(container)
-	store.host.container(container)
-	store.host.rendered()
-	const textNode = textSurface.firstChild
-	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
-	return {store, container, textSurface, textNode}
-}
-
-function mountStructuralInline(value: string) {
-	return mountInline(enableStructuralStore(value))
-}
-
-function mountStructuralInlineMark(value = 'hello @[world]') {
-	const store = enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__value__]'}]})
-	const container = document.createElement('div')
-	const before = document.createElement('span')
-	const mark = document.createElement('mark')
-	const after = document.createElement('span')
-	container.append(before, mark, after)
-	document.body.append(container)
-	store.host.container(container)
-	store.host.rendered()
-	return {store, container, before, mark, after}
-}
+import {mountStructuralInline, mountStructuralInlineMark} from '../__testing__/mountFixtures'
 
 describe('SelectionDriver', () => {
 	it('repeated placement at the same handle notifies once', () => {

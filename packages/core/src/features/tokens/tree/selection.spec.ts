@@ -1,6 +1,7 @@
 import {describe, expect, it, vi} from 'vitest'
 
 import {Store} from '../../../store/Store'
+import {enableStructuralStore, mountInline} from '../__testing__/mountFixtures'
 import {Parser} from '../parser/Parser'
 import {anchorAt, offsetOfAnchor} from './anchors'
 import {createSelection} from './selection'
@@ -23,12 +24,6 @@ function build(source: string) {
 	return {tree, selection}
 }
 
-function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
-	const store = new Store()
-	store.props.set({defaultValue: value, ...props})
-	return store
-}
-
 /**
  * A store whose tree is built by `props.set` alone — no container, so nothing below is
  * mounted. The repair cases still need the real transaction/adoption pipeline (that is
@@ -36,19 +31,6 @@ function enableStructuralStore(value: string, props: Parameters<Store['props']['
  */
 function unmountedStoreWithMark(value: string) {
 	return enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__value__]'}]})
-}
-
-/** The DOM half of a single-text-surface mount, needed only by the controlled fixtures. */
-function mountInline(store: Store) {
-	const container = document.createElement('div')
-	const textSurface = document.createElement('span')
-	container.append(textSurface)
-	document.body.append(container)
-	store.host.container(container)
-	store.host.rendered()
-	const textNode = textSurface.firstChild
-	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
-	return {store, container, textSurface, textNode}
 }
 
 describe('createSelection', () => {

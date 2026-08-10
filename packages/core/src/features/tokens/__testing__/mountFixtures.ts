@@ -1,5 +1,52 @@
 import {Store} from '../../../store/Store'
 
+/** A store seeded from props alone: a tree, no container, so nothing below is mounted. */
+export function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
+	const store = new Store()
+	store.props.set({defaultValue: value, ...props})
+	return store
+}
+
+/**
+ * The DOM half of a single-text-surface mount: one span for the one text token the value
+ * parses to. Takes the store rather than the value, because the controlled fixtures build
+ * their own with extra props before mounting.
+ */
+export function mountInline(store: Store) {
+	const container = document.createElement('div')
+	const textSurface = document.createElement('span')
+	container.append(textSurface)
+	document.body.append(container)
+	store.host.container(container)
+	store.host.rendered()
+	const textNode = textSurface.firstChild
+	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
+	return {store, container, textSurface, textNode}
+}
+
+/** {@link mountInline} over a plain uncontrolled store. */
+export function mountStructuralInline(value: string) {
+	return mountInline(enableStructuralStore(value))
+}
+
+/**
+ * Three bare root elements — text, `<mark>`, text — for a value with one mark. Unlike
+ * {@link mountWithMark} the mark element is EMPTY, so it is the fixture for the cases that
+ * append their own presentation descendants to it.
+ */
+export function mountStructuralInlineMark(value = 'hello @[world]') {
+	const store = enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__value__]'}]})
+	const container = document.createElement('div')
+	const before = document.createElement('span')
+	const mark = document.createElement('mark')
+	const after = document.createElement('span')
+	container.append(before, mark, after)
+	document.body.append(container)
+	store.host.container(container)
+	store.host.rendered()
+	return {store, container, before, mark, after}
+}
+
 /**
  * Mounted inline fixture: text "he" [0,2], mark "@[x]" [2,6], text "llo" [6,9],
  * one span per top-level token with the mark holding a bare text child.
