@@ -5,18 +5,17 @@ export {annotate} from './parser/utils/annotate'
 export {denote} from './parser/utils/denote'
 export {TokenModel} from './seam/TokenModel'
 // The addressing model is part of the token layer's cross-feature contract, not a tree
-// internal: `TokenModel.anchorAt`/`offsetOf` already speak `NodeAnchor` in their
-// signatures, and `SelectionController` stores anchors and dedupes them on identity.
-// Exported here rather than deep-imported from `tree/` (plan decision, S1.6c task 8).
+// internal: `TokenModel.anchorAt`/`offsetOf` speak `NodeAnchor` in their signatures and
+// `edit/`, `keyboard/` and `overlay/` type on it (plan decision, S1.6c task 8). Only the
+// TYPES: the two modules that compare anchors both live inside this layer and deep-import
+// `anchorEquals` from `./anchors`, so it is not re-exported here.
 export type {Anchors, Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TransactionResult, TreeNode} from './tree/types'
-export {anchorEquals} from './tree/anchors'
-// The tree-space selection state (spec D7): stored anchors, derived range, post-adoption
-// repair. `SelectionController` composes it; `Store` still constructs the controller, so
-// the deps arrive as closures over `TokenModel`'s reads (see `SelectionDeps`).
+// The two halves of the selection (spec S2 D10): tree-space state here, DOM I/O below.
+// Anchors-not-offsets and the pre-adoption capture are S1 D7. `SelectionController`
+// composes the pair; `Store` still constructs it, which is why the deps of both are
+// closures over `TokenModel`'s reads rather than the tree itself.
 export {createSelection} from './tree/selection'
-export type {Selection, SelectionDeps} from './tree/selection'
+export type {Selection} from './tree/selection'
 export type {SelectionAnchor, SelectionSnapshot} from './dom/DomModel'
-// The selection's DOM half: listeners, caret application, the editable policy.
 export {SelectionDriver} from './dom/SelectionDriver'
-export type {SelectionDriverDeps} from './dom/SelectionDriver'
 export {TokenHandle} from './dom/TokenHandle'
