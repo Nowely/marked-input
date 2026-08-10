@@ -51,3 +51,40 @@ export function mountValue(value: string, props: Parameters<Store['props']['set'
 	store.host.rendered()
 	return {store, container, surfaces}
 }
+
+/**
+ * Mounted nested fixture: '@[a @[b] c]' — a mark [0,11] whose slot children
+ * ('a ' [2,4], the nested mark [4,8], ' c' [8,10]) hang off a registered
+ * child-sequence host, the shape an adapter renders for a `__slot__` markup.
+ * The parse brackets the mark with empty text tokens [0,0] and [11,11], so the
+ * container holds three root elements and the mark is `nodes()[1]`.
+ *
+ * The host registration is id-keyed, so it has to come AFTER `host.container`
+ * publishes a tree and BEFORE `rendered()` binds against it (the ordering
+ * `SelectionController.spec.ts`'s nested fixture documents).
+ */
+export function mountNested() {
+	const store = new Store()
+	store.props.set({
+		defaultValue: '@[a @[b] c]',
+		options: [{markup: '@[__slot__]'}],
+		Mark: () => null,
+	})
+	const container = document.createElement('div')
+	const leading = document.createElement('span')
+	const outer = document.createElement('mark')
+	const host = document.createElement('span')
+	const before = document.createElement('span')
+	const inner = document.createElement('mark')
+	const after = document.createElement('span')
+	const trailing = document.createElement('span')
+	host.style.display = 'contents'
+	host.append(before, inner, after)
+	outer.append(host)
+	container.append(leading, outer, trailing)
+	document.body.append(container)
+	store.host.container(container)
+	store.tokens.children(store.tokens.nodes()[1].id)(host)
+	store.host.rendered()
+	return {store, container, leading, outer, host, before, inner, after, trailing}
+}

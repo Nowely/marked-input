@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
-import {mountValue, mountWithMark} from '../__testing__/mountFixtures'
+import {mountNested, mountValue, mountWithMark} from '../__testing__/mountFixtures'
 
 describe('anchorFor', () => {
 	afterEach(() => {
@@ -88,5 +88,35 @@ describe('anchorFor', () => {
 		// The numeric walk has no equivalent — it answers a plausible, wrong number.
 		expect(store.tokens.anchorFor(dom1, 2)).toBeUndefined()
 		expect(store.tokens.boundaryFor(dom1, 2)).toBe(2)
+	})
+
+	it('anchors a child-sequence boundary at index 0 before the owner', () => {
+		const {store, host} = mountNested()
+		const outer = store.tokens.nodes()[1]
+		expect(store.tokens.anchorFor(host, 0)).toEqual({before: outer})
+	})
+
+	it('anchors a child-sequence boundary past the last child after the owner', () => {
+		const {store, host} = mountNested()
+		const outer = store.tokens.nodes()[1]
+		expect(store.tokens.anchorFor(host, 3)).toEqual({after: outer})
+	})
+
+	it('resolves an interior child boundary to its two neighbours by affinity', () => {
+		const {store, host} = mountNested()
+		const outer = store.tokens.nodes()[1]
+		if (outer.kind !== 'mark') throw new Error('expected a mark root')
+		const [first, second] = outer.children()
+		expect(store.tokens.anchorFor(host, 1, 'before')).toEqual({after: first})
+		expect(store.tokens.anchorFor(host, 1, 'after')).toEqual({before: second})
+	})
+
+	it('anchors a token-shell boundary to the owner by side', () => {
+		// The mark's element, not a text surface: a text token's element IS its
+		// `textElement`, so it is the text branch above that answers for one.
+		const {store, mark} = mountWithMark()
+		const markNode = store.tokens.nodes()[1]
+		expect(store.tokens.anchorFor(mark, 0)).toEqual({before: markNode})
+		expect(store.tokens.anchorFor(mark, 1)).toEqual({after: markNode})
 	})
 })

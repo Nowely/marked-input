@@ -51,8 +51,9 @@ export type AnchorContext = Pick<BoundaryContext, 'container' | 'locate'> & {
 /**
  * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree.
  *
- * PARTIAL: container and text-surface boundaries are live; child sequences and
- * mark/row boundaries land in Tasks 4-5 and answer `undefined` until then.
+ * PARTIAL: container, child-sequence, text-surface and token-shell boundaries
+ * are live; mark-presentation and row boundaries land in Task 5 and answer
+ * `undefined` until then.
  *
  * The anchor projection of the same walk that {@link rawPositionFromBoundary}
  * projects numerically. No absolute coordinate is formed anywhere on this path,
@@ -78,6 +79,13 @@ export function anchorFromBoundary(
 	const owner = ctx.find(lookup.node.handle.id)
 	if (!owner) return undefined
 
+	// ABOVE the text branch, as in the numeric walk: a token bound with both a
+	// `textElement` and a `childSequenceHost` must resolve host boundaries here or
+	// the two projections diverge.
+	if (node instanceof HTMLElement && node === lookup.node.childSequenceHost) {
+		return fromChildAnchor(ctx, node, offset, owner, affinity)
+	}
+
 	const textElement = lookup.node.textElement
 	if (textElement?.contains(node)) {
 		// bind sets `textElement` only for text tokens (bind.ts), so the narrow cannot
@@ -90,7 +98,54 @@ export function anchorFromBoundary(
 		return local <= owner.text().length ? {node: owner, offset: local} : undefined
 	}
 
+	if (node === lookup.node.tokenElement) {
+		return fromChildAnchor(ctx, lookup.node.tokenElement, offset, owner, affinity)
+	}
+
 	return undefined
+}
+
+/** The `<=0` / `>=childCount` / interior split both element branches share. */
+function fromChildAnchor(
+	ctx: AnchorContext,
+	element: HTMLElement,
+	offset: number,
+	owner: TreeNode,
+	affinity: 'before' | 'after'
+): NodeAnchor | undefined {
+	const childCount = element.childNodes.length
+	if (offset <= 0) return {before: owner}
+	if (offset >= childCount) return {after: owner}
+	return childBoundaryAnchor(ctx, element, offset, owner, affinity)
+}
+
+/** Mirrors {@link fromTokenChildBoundary}, including its inverted-affinity fallback. */
+function childBoundaryAnchor(
+	ctx: AnchorContext,
+	tokenElement: HTMLElement,
+	offset: number,
+	owner: TreeNode,
+	affinity: 'before' | 'after'
+): NodeAnchor | undefined {
+	if (owner.kind === 'text') {
+		const textElement = ctx.viewOfId(owner.id)?.textElement
+		if (!textElement || textLength(textElement) === 0) return {before: owner}
+	}
+
+	const beforeView = lookupTokenDescendant(ctx, tokenElement.childNodes.item(offset - 1))
+	const afterView = lookupTokenDescendant(ctx, tokenElement.childNodes.item(offset))
+	if (beforeView && afterView) {
+		const beforeNode = ctx.find(beforeView.handle.id)
+		const afterNode = ctx.find(afterView.handle.id)
+		if (beforeNode && afterNode) {
+			return affinity === 'before' ? {after: beforeNode} : {before: afterNode}
+		}
+	}
+
+	// INVERTED, and preserved verbatim from `fromTokenChildBoundary`'s last line:
+	// 'before' answers with the owner's START. It reads backwards; it is the
+	// behavior the pinned table gates.
+	return affinity === 'before' ? {before: owner} : {after: owner}
 }
 
 /** Mirrors {@link fromContainerBoundary}: same branches, anchors instead of positions. */
