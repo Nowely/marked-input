@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {Store} from '../../../store/Store'
+import {anchorsAt} from '../__testing__/mountFixtures'
 
 function mountInline(value: string) {
 	const store = new Store()
@@ -146,7 +147,7 @@ describe('TokenHandle', () => {
 		expect(handle.token().content).toBe('beta\n\n')
 
 		// Prepend a row through the edit controller (records the edit hint)
-		store.edit.replace({start: 0, end: 0}, 'new\n\n')
+		store.edit.replace(...anchorsAt(store, 0, 0), 'new\n\n')
 
 		// Mirror the render: insert the new row's DOM at the front
 		const rowEl = document.createElement('div')

@@ -1,7 +1,7 @@
 import {describe, expect, it, vi} from 'vitest'
 
 import {Store} from '../../../store/Store'
-import {enableStructuralStore, mountInline} from '../__testing__/mountFixtures'
+import {anchorsAt, enableStructuralStore, mountInline} from '../__testing__/mountFixtures'
 import {Parser} from '../parser/Parser'
 import {anchorAt, offsetOfAnchor} from './anchors'
 import {createSelection} from './selection'
@@ -197,7 +197,7 @@ describe('createSelection', () => {
 			const {container} = mountInline(store)
 			store.selection.position(2)
 
-			store.edit.replace({start: 2, end: 2}, 'X')
+			store.edit.replace(...anchorsAt(store, 2, 2), 'X')
 
 			expect(store.tokens.value()).toBe('heXllo')
 			expect(store.selection.range()).toEqual({start: 3, end: 3})
@@ -211,7 +211,7 @@ describe('createSelection', () => {
 			const {container} = mountInline(store)
 			store.selection.position(2)
 
-			store.edit.replace({start: 2, end: 2}, 'X')
+			store.edit.replace(...anchorsAt(store, 2, 2), 'X')
 
 			expect(onChange).toHaveBeenCalledWith('heXllo')
 			expect(store.tokens.value()).toBe('hello')
@@ -233,7 +233,7 @@ describe('createSelection', () => {
 			const {container} = mountInline(store)
 			store.selection.position(999)
 
-			store.edit.replace({start: 0, end: 1}, '')
+			store.edit.replace(...anchorsAt(store, 0, 1), '')
 
 			expect(store.tokens.value()).toBe('ello')
 			expect(store.selection.range()).toEqual({start: 4, end: 4})
@@ -246,7 +246,7 @@ describe('createSelection', () => {
 			const {container} = mountInline(store)
 			store.selection.position(2)
 
-			store.edit.replace({start: 2, end: 2}, 'X')
+			store.edit.replace(...anchorsAt(store, 2, 2), 'X')
 
 			expect(store.tokens.value()).toBe('HEXLLO')
 			// gapWindow('hello','HEXLLO') = {0,5,6}; map(2) is inside → 0 + 6 = 6. Best effort,

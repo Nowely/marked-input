@@ -10,7 +10,8 @@ import {applyEditableState} from '../dom/editableState'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import type {MarkToken, Token} from '../parser/types'
-import {anchorAt, offsetOfAnchor} from '../tree/anchors'
+import {adjacentMark, anchorAt, offsetOfAnchor} from '../tree/anchors'
+import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
 import {lowerReplace} from '../tree/offsetShim'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
@@ -64,8 +65,9 @@ export interface SelectionPort {
  *   detector (content), {@link setEditable} (type) and `keyboard/arrowNav.ts`
  *   (position). Narrowing it to `{start, end}` would move the boundary layer's
  *   type/content reads onto the live tree — a DOM-layer refactor no item asks for.
- * - the internal offset shim ({@link replace}) — spec D8, gated on the block-rows
- *   follow-up that would give callers a node-shaped write verb.
+ * - the internal offset shim ({@link replace}) — spec D8. Its production callers are gone
+ *   as of S2.5 ({@link replaceBetween} is the node-shaped write verb it was waiting for);
+ *   what is left is spec call sites, and both die at S2.6.
  *
  * Layout: consumer reads → adapter SPI → engine SPI → wiring → internals.
  */
@@ -190,9 +192,70 @@ export class TokenModel {
 	)
 
 	/**
+	 * @internal THE text write (spec S2 §4.5): a cross-node replacement addressed by
+	 * ANCHORS. The pair is normalized, so `from` after `to` is legal.
+	 *
+	 * Answers the CARET the edit's natural post-state wants — an anchor at the END of what
+	 * was inserted, resolved against the POST-splice tree — or `undefined` when the write was
+	 * refused. That is an answer and not a side effect because only this layer may form the
+	 * offset it needs (`min(from, to) + text.length`); `EditController` applies it, and
+	 * nothing above `tree/` forms a number. It is the whole reason the verb does not return a
+	 * bare boolean.
+	 *
+	 * In CONTROLLED mode the tree has NOT moved — the commit emits and waits for the echo
+	 * (spec D6) — so the anchor describes the pre-edit tree. `EditController` discards it
+	 * there and `MarkputApi.replaceRange` reads it only as a success flag.
+	 */
+	replaceBetween(from: NodeAnchor, to: NodeAnchor, text: string): NodeAnchor | undefined {
+		this.#ensureSeeded()
+		// Lowered in the TREE's coordinate space, for {@link replace}'s reason: that is what
+		// `transactions.dispatch` splices.
+		const op = untracked(() => {
+			const roots = this.#tree.roots()
+			const a = offsetOfAnchor(roots, from)
+			const b = offsetOfAnchor(roots, to)
+			const start = Math.min(a, b)
+			const end = Math.max(a, b)
+			const value = this.#tree.value()
+			// WHOLE-VALUE ops are re-derived through `gapWindow` — the offset shim's rule
+			// (spec D8), inlined here because this verb is its heir and S2.6 deletes it. A full
+			// window makes both adoption walks inert and re-pairs every row BY INDEX, moving
+			// `BlockController`'s per-row store onto the wrong row.
+			if (start === 0 && end === value.length) {
+				const window = gapWindow(value, text)
+				return {window, slice: text.slice(window.start, window.start + window.insertedLength)}
+			}
+			return {window: {start, end, insertedLength: text.length}, slice: text, caret: start + text.length}
+		})
+		if (!this.#tx.applyRange(op.window, op.slice)) return undefined
+		// `caret` is absent exactly on the whole-value arm, where the narrowed window's start
+		// is NOT the caller's: the caret is the end of the string it supplied.
+		return this.anchorAt(op.caret ?? text.length)
+	}
+
+	/**
+	 * @internal Whole-value replacement: {@link replaceBetween} over the document edges. The
+	 * `'end'` anchor is the last root's own end, so the span is the tree's own length by
+	 * construction — the property the deleted `{start: 0, end: -1}` sentinel had, and the
+	 * reason this is not `{0, value().length}` (that value is props-first in controlled mode).
+	 */
+	setValue(text: string): boolean {
+		return this.replaceBetween('start', 'end', text) !== undefined
+	}
+
+	/**
+	 * Spec S2 §4.5: the mark whose end (`-1`) or start (`+1`) coincides with `anchor`. THE
+	 * adjacency test behind the Backspace/Delete mark swallow and `insertMark`'s post-splice
+	 * lookup. The bare function is the module import — this method does not recurse.
+	 */
+	adjacentMark(anchor: NodeAnchor, direction: -1 | 1): MarkNode | undefined {
+		return untracked(() => adjacentMark(this.#tree.roots(), anchor, direction))
+	}
+
+	/**
 	 * @internal The internal offset shim (spec D8): a global range → `applyRange`.
-	 * THE write entry for every offset-speaking caller. `ValueModel` was a one-line
-	 * delegation to it until S1.8 step 5 deleted the facade.
+	 * NO production caller since S2.5 — {@link replaceBetween} took them all — and the
+	 * remaining spec call sites die with it at S2.6.
 	 */
 	replace(range: Range, replacement: string): boolean {
 		this.#ensureSeeded()

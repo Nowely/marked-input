@@ -98,7 +98,7 @@ export class OverlayController {
 		if (!match) return
 		const markup = match.option.markup
 		if (!markup) return
-		this.edit.replace(match.range, annotate(markup, {value, meta}))
+		this.edit.replaceRange(match.range, annotate(markup, {value, meta}))
 		this.match(undefined)
 	}
 

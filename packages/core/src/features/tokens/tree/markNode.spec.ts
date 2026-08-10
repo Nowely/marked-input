@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {Store} from '../../../store/Store'
+import {anchorsAt} from '../__testing__/mountFixtures'
 import type {Markup} from '../parser/types'
 import type {MarkNode} from './types'
 
@@ -181,7 +182,7 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 
 		// Preceding text edit: 'he@[x]llo' → 'XXhe@[x]llo' — text path
 		// (text token textChanged; mark + tail shifted by +2)
-		store.edit.replace({start: 0, end: 0}, 'XX')
+		store.edit.replace(...anchorsAt(store, 0, 0), 'XX')
 		expect(store.tokens.value()).toBe('XXhe@[x]llo')
 		// Sanity: reconcile replaced the TOKEN object — the captured token is stale
 		expect(store.tokens.handle(token.id!)?.token()).not.toBe(token)
@@ -196,7 +197,7 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 	it('remove() after a preceding text edit removes the shifted (correct) range', () => {
 		const {store, node} = mountedSetup()
 
-		store.edit.replace({start: 0, end: 0}, 'XX')
+		store.edit.replace(...anchorsAt(store, 0, 0), 'XX')
 		expect(store.tokens.value()).toBe('XXhe@[x]llo')
 
 		node.remove()
@@ -207,9 +208,9 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 	it('survives several consecutive text-path commits before mutating', () => {
 		const {store, node} = mountedSetup()
 
-		store.edit.replace({start: 0, end: 0}, 'X')
-		store.edit.replace({start: 1, end: 1}, 'Y')
-		store.edit.replace({start: 2, end: 2}, 'Z')
+		store.edit.replace(...anchorsAt(store, 0, 0), 'X')
+		store.edit.replace(...anchorsAt(store, 1, 1), 'Y')
+		store.edit.replace(...anchorsAt(store, 2, 2), 'Z')
 		expect(store.tokens.value()).toBe('XYZhe@[x]llo')
 
 		node.update({value: 'ok'})
@@ -221,7 +222,7 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 		const {store, token, node} = mountedSetup()
 
 		// Remove the mark entirely: structural path; the identity is gone.
-		store.edit.replace({start: 2, end: 6}, '')
+		store.edit.replace(...anchorsAt(store, 2, 6), '')
 		expect(store.tokens.value()).toBe('hello')
 
 		// Render the new tree so bind kills the removed mark's handle: the node has left
@@ -300,7 +301,7 @@ describe('MarkNode live-read parity', () => {
 		const {store, node} = mountedSetup()
 		expect(node.value()).toBe('x')
 		// Text-path edit before the mark shifts its position but not its value.
-		store.edit.replace({start: 0, end: 0}, 'XX')
+		store.edit.replace(...anchorsAt(store, 0, 0), 'XX')
 		expect(store.tokens.value()).toBe('XXhe@[x]llo')
 		// The node's value is a LIVE read of the (shifted, same-value) mark.
 		expect(node.value()).toBe('x')
@@ -355,7 +356,7 @@ describe('MarkNode live-read parity', () => {
 	it('update() against a dead node is a fail-closed no-op returning false', () => {
 		const {store, node} = mountedSetup()
 		// Structurally remove the mark and re-bind so its handle is killed.
-		store.edit.replace({start: 2, end: 6}, '')
+		store.edit.replace(...anchorsAt(store, 2, 6), '')
 		expect(store.tokens.value()).toBe('hello')
 		const container = document.querySelector('div')!
 		container.replaceChildren(document.createElement('span'))

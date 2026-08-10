@@ -22,7 +22,7 @@ export class ClipboardController {
 				if (!this.#handleCopy(e)) return
 				const raw = selection.readRaw()
 				if (!raw || raw.range.start === raw.range.end) return
-				edit.replace(raw.range, '')
+				edit.replaceRange(raw.range, '')
 			})
 		})
 	}

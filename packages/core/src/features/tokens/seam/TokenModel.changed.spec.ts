@@ -2,6 +2,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals/index.js'
 import {Store} from '../../../store/Store'
+import {anchorsAt} from '../__testing__/mountFixtures'
 
 /** Inline fixture (from TokenModel.facade.spec.ts): text 'he' [0,2], mark '@[x]' [2,6], text 'llo' [6,9]. */
 function mountWithMark(beforeMount?: (store: Store) => void) {
@@ -61,7 +62,7 @@ describe('TokenModel changed event', () => {
 		watch(store.tokens.changed, changedSpy)
 
 		// append '!' at the end of the trailing text: 'he@[x]llo' → 'he@[x]llo!'
-		store.edit.replace({start: 9, end: 9}, '!')
+		store.edit.replace(...anchorsAt(store, 9, 9), '!')
 
 		// One announcement per commit, carrying the delta (spec §2.3): a pure text
 		// edit reports the edited token as updated and adds/removes nothing.
@@ -81,7 +82,7 @@ describe('TokenModel changed event', () => {
 		watch(store.tokens.changed, changedSpy)
 
 		// prepend 'X' at position 0: mark and tail shift right by 1
-		store.edit.replace({start: 0, end: 0}, 'X')
+		store.edit.replace(...anchorsAt(store, 0, 0), 'X')
 
 		// One announcement; only the head's CONTENT changed. A pure position shift
 		// is not a content change, so the mark and tail are in no list — their
@@ -133,9 +134,9 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 
 		// Three consecutive tail text edits — the adapter never re-renders
 		// (rendered() is deliberately not called): 'llo' → 'llo!' → 'llo!!' → 'llo!!!'
-		store.edit.replace({start: 9, end: 9}, '!')
-		store.edit.replace({start: 10, end: 10}, '!')
-		store.edit.replace({start: 11, end: 11}, '!')
+		store.edit.replace(...anchorsAt(store, 9, 9), '!')
+		store.edit.replace(...anchorsAt(store, 10, 10), '!')
+		store.edit.replace(...anchorsAt(store, 11, 11), '!')
 
 		// Gate: text edit → 0 committed renderer invocations…
 		expect(treeSpy).toHaveBeenCalledTimes(0)
@@ -145,7 +146,7 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 		expect(container.children[2].textContent).toBe('llo!!!')
 
 		// One structural edit: 'he@[x]llo!!!' → 'he@[x]llo!!!@[y]' (added tokens).
-		store.edit.replace({start: 12, end: 12}, '@[y]')
+		store.edit.replace(...anchorsAt(store, 12, 12), '@[y]')
 
 		// Gate: structural edit → ≥1 renderer invocation (renderTree reference changed).
 		expect(treeSpy).toHaveBeenCalledTimes(1)

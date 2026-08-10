@@ -70,6 +70,11 @@ export class SelectionController {
 		return this.#state.anchors()
 	}
 
+	/** @internal See {@link Selection.caretAnchor} — `MarkputApi`'s `'caret'` resolution. */
+	caretAnchor(): NodeAnchor | undefined {
+		return this.#state.caretAnchor()
+	}
+
 	focusFirst(): void {
 		this.#driver.focusFirst()
 	}

@@ -50,7 +50,7 @@ function inputEvent(inputType: string, range: Range, init?: InputEventInit): Inp
 describe('handleBeforeInput()', () => {
 	it('inserts text through replaceRange using target ranges', () => {
 		const {store, container, textNode} = mountStructuralInline()
-		const replaceRange = vi.spyOn(store.edit, 'replace')
+		const replaceRange = vi.spyOn(store.edit, 'replaceRange')
 		const range = document.createRange()
 		range.setStart(textNode, 1)
 		range.setEnd(textNode, 1)

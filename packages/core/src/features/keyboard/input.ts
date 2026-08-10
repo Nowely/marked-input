@@ -40,7 +40,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	// obvious "Backspace with everything selected" case does NOT discriminate it.
 	if (store.selection.isAllSelected()) {
 		event.preventDefault()
-		store.edit.replace({start: 0, end: -1}, '')
+		store.edit.setValue('')
 		return
 	}
 
@@ -52,7 +52,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	if (!range) return
 
 	event.preventDefault()
-	store.edit.replace(range, '')
+	store.edit.replaceRange(range, '')
 }
 
 function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent): void {
@@ -71,7 +71,7 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 		const replacement = replacementForInput(container, event)
 		if (replacement === undefined) return
 		event.preventDefault()
-		store.edit.replace({start: 0, end: -1}, replacement)
+		store.edit.setValue(replacement)
 		return
 	}
 
@@ -87,7 +87,7 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 	if (!range) return
 
 	event.preventDefault()
-	store.edit.replace(range, replacement)
+	store.edit.replaceRange(range, replacement)
 }
 
 function replacementForInput(container: HTMLElement, event: InputEvent): string | undefined {
@@ -140,5 +140,5 @@ function handlePaste(store: KbCtx, container: HTMLElement, event: ClipboardEvent
 	event.preventDefault()
 	const markup = consumeMarkupPaste(container)
 	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
-	store.edit.replace({start: 0, end: -1}, newContent)
+	store.edit.setValue(newContent)
 }

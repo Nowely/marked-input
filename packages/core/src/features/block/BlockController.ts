@@ -30,7 +30,7 @@ export class BlockController {
 			// drop time.
 			const result = applyDragAction(value, this.tokens.current(), action, this.props.options())
 			if (result.value === value) return
-			this.edit.replace({start: 0, end: -1}, result.value, result.caret)
+			this.edit.setValue(result.value, result.caret)
 		})
 
 		// The `changed` payload (spec §2.3) replaced a wave-scoped side channel: the

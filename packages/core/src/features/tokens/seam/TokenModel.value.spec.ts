@@ -1,6 +1,7 @@
 import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../../store/Store'
+import {anchorsAt} from '../__testing__/mountFixtures'
 
 /**
  * Tokens publish only on a mounted store; a bare container is enough — with
@@ -181,7 +182,7 @@ describe('TokenModel value boundary', () => {
 			})
 			mount(store)
 
-			store.edit.replace({start: 9, end: 9}, '!')
+			store.edit.replace(...anchorsAt(store, 9, 9), '!')
 
 			expect(seen).toEqual([{value: 'he@[x]llo!', tokens: 'he|@[x]|llo!'}])
 		})
@@ -195,7 +196,7 @@ describe('TokenModel value boundary', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
 			expect(() => mount(store)).not.toThrow()
-			expect(() => store.edit.replace({start: 0, end: 0}, 'X')).not.toThrow()
+			expect(() => store.edit.replace(...anchorsAt(store, 0, 0), 'X')).not.toThrow()
 			expect(store.tokens.value()).toBe('Xhello')
 		})
 	})

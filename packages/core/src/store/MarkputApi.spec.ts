@@ -212,6 +212,17 @@ describe('MarkputApi (spec §2.3)', () => {
 		expect(api.value()).toBe('a@[x]()bcd')
 	})
 
+	it("insertMark at 'caret' with a BACKWARDS selection still inserts at the document-order start", () => {
+		// The only case that gates `Selection.caretAnchor`'s comparison: `anchor` is the FIXED
+		// end, so here it is the HIGH one. Taking `anchors.anchor` unconditionally inserts at 3
+		// ('abc@[x]()d') and the forward fixture above cannot tell the two apart.
+		const {api} = setup('abcd')
+		const node = textAt(api, 0)
+		api.select({node, offset: 3}, {node, offset: 1})
+		expect(api.insertMark('caret', {markup: MARKUP, value: 'x'})?.kind).toBe('mark')
+		expect(api.value()).toBe('a@[x]()bcd')
+	})
+
 	it('nodes() is reactive — §2.3 says so, and an effect must re-run on a structural change', () => {
 		// Measured: without this, wrapping `TokenModel.nodes()` in `untracked` survives the
 		// entire suite, so the "reactive" half of §2.3's read contract is unproven.

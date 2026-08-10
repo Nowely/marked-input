@@ -44,6 +44,14 @@ export type Selection = {
 	 * specs).
 	 */
 	anchors(): Anchors | undefined
+	/**
+	 * The stored selection's START in document order — what `'caret'` means to a write verb
+	 * that inserts rather than replaces (`MarkputApi.insertMark`). `anchor` is the FIXED end,
+	 * not the low one, so a backwards `select(head, anchor)` puts the start in `head`; the
+	 * comparison is the only thing that tells them apart and it is why this lives here, where
+	 * offsets are legal, instead of in the API layer.
+	 */
+	caretAnchor(): NodeAnchor | undefined
 	select(anchor: NodeAnchor, head?: NodeAnchor): boolean
 	selectNode(node: TreeNode, boundary: 'start' | 'end'): boolean
 	selectAll(): void
@@ -193,5 +201,12 @@ export function createSelection(deps: SelectionDeps): Selection {
 	 */
 	const anchors = (): Anchors | undefined => stored()
 
-	return {range, position, isAllSelected, anchors, select, selectNode, selectAll, clear, repair}
+	/** See {@link Selection.caretAnchor}. */
+	const caretAnchor = (): NodeAnchor | undefined => {
+		const current = stored()
+		if (!current) return undefined
+		return deps.offsetOf(current.anchor) <= deps.offsetOf(current.head) ? current.anchor : current.head
+	}
+
+	return {range, position, isAllSelected, anchors, caretAnchor, select, selectNode, selectAll, clear, repair}
 }

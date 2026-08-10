@@ -121,7 +121,7 @@ describe('OverlayController', () => {
 
 	describe('choose()', () => {
 		it('delegates trigger replacement to the edit coordinator', () => {
-			const replaceRange = vi.spyOn(store.edit, 'replace')
+			const replaceRange = vi.spyOn(store.edit, 'replaceRange')
 			const match: OverlayMatch = {
 				...stubMatch,
 				source: '@wo',

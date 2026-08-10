@@ -45,6 +45,30 @@ export function offsetOfAnchor(roots: readonly TreeNode[], anchor: NodeAnchor): 
 }
 
 /**
+ * The mark whose own boundary sits exactly ON `anchor`: the one ENDING there for `-1`, the
+ * one STARTING there for `+1`. NESTED-FIRST, so an inner mark wins over an enclosing one at
+ * a shared boundary — the order `keyboard/input.ts`'s token walk had before it moved here.
+ *
+ * Offsets, deliberately: adjacency IS an equality between an anchor's resolved position and
+ * a mark's stored boundary, and `tree/` is the one layer where that arithmetic is legal
+ * (spec S2 D1). Its consumers — the Backspace/Delete mark swallow and `insertMark`'s "which
+ * mark did that splice create" — name nodes on both sides.
+ */
+export function adjacentMark(roots: readonly TreeNode[], anchor: NodeAnchor, direction: -1 | 1): MarkNode | undefined {
+	const offset = offsetOfAnchor(roots, anchor)
+	const visit = (nodes: readonly TreeNode[]): MarkNode | undefined => {
+		for (const node of nodes) {
+			if (node.kind !== 'mark') continue
+			const nested = visit(node.children())
+			if (nested) return nested
+			if (direction === -1 ? node.position.end === offset : node.position.start === offset) return node
+		}
+		return undefined
+	}
+	return visit(roots)
+}
+
+/**
  * Identity of an anchor: the node OBJECT plus the local offset. This is what the stored
  * selection dedupes on — the DOM sync rebuilds anchors on every `selectionchange`, and
  * without value equality every sweep tick would re-place the caret.

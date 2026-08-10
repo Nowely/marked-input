@@ -84,7 +84,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 			const newValue = deleteDragRow(value, rows, blockIndex)
 			const previous = rows.at(Math.max(0, blockIndex - 1))
 			const pos = previous ? previous.position.end : 0
-			store.edit.replace({start: 0, end: -1}, newValue, pos)
+			store.edit.setValue(newValue, pos)
 			return
 		}
 
@@ -132,13 +132,13 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (!isTextLikeRow(token)) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 		const pos = token.position.end + newRowContent.length
-		store.edit.replace({start: 0, end: -1}, newValue, pos)
+		store.edit.setValue(newValue, pos)
 		return
 	}
 
 	const raw = store.selection.readRaw()
 	const absolutePos = raw ? raw.range.start : token.position.end
-	store.edit.replace({start: absolutePos, end: absolutePos}, newRowContent)
+	store.edit.replaceRange({start: absolutePos, end: absolutePos}, newRowContent)
 }
 
 function focusRow(store: KbCtx, token: Token, rowIndex: number, caret: 'start' | 'end'): void {
@@ -247,7 +247,7 @@ function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string)
 	if (!range) return
 
 	event.preventDefault()
-	store.edit.replace(range, replacement)
+	store.edit.replaceRange(range, replacement)
 }
 
 function rangeForBlockInput(store: KbCtx, event: InputEvent, range: Range): Range | undefined {
@@ -278,7 +278,7 @@ function mergeOrFocusNeighbor(
 	event.preventDefault()
 	if (canMergeRows(a, b)) {
 		const merged = mergeDragRows(value, rows, joinIndex)
-		store.edit.replace({start: 0, end: -1}, merged.value, merged.caret)
+		store.edit.setValue(merged.value, merged.caret)
 		return
 	}
 	focusRow(store, rows[toIndex], toIndex, caretOnFocus)

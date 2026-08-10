@@ -3,6 +3,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest'
 import {effect} from '../../shared/signals'
 import {Store} from '../../store/Store'
 import type {Token} from '../tokens'
+import {anchorsAt} from '../tokens/__testing__/mountFixtures'
 
 describe('BlockController', () => {
 	let store: Store
@@ -128,7 +129,7 @@ describe('BlockController', () => {
 
 			// Remove the mark structurally and bind the new tree — the changed
 			// event fires after the bind; its removed ids drive the prune.
-			store.edit.replace({start: 2, end: 6}, '')
+			store.edit.replace(...anchorsAt(store, 2, 6), '')
 			container.replaceChildren(document.createElement('span'))
 			store.host.rendered()
 

@@ -1,4 +1,18 @@
 import {Store} from '../../../store/Store'
+import type {NodeAnchor} from '../tree/types'
+
+/**
+ * A document offset as the anchor `EditController.replace` takes. TEST-ONLY: the production
+ * callers name nodes directly (spec S2 §4.5), but a spec whose subject is the WRITE — not
+ * the addressing — is clearer stating the offsets it means.
+ *
+ * `anchorAt` is right-affine and does NOT round-trip: an offset inside a mark's markup
+ * resolves to the mark's own boundary. Every call site below picks an offset that lies in a
+ * text node or on a root boundary, where it does.
+ */
+export function anchorsAt(store: Store, start: number, end: number = start): [NodeAnchor, NodeAnchor] {
+	return [store.tokens.anchorAt(start), store.tokens.anchorAt(end)]
+}
 
 /** A store seeded from props alone: a tree, no container, so nothing below is mounted. */
 export function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
