@@ -3,11 +3,13 @@
 The single home for the token layer, exposed as `store.tokens`. The token TREE is
 the source of truth and the value string is its projection (spec D1): a write
 lowers to a splice in the projection's coordinates, adoption folds the fresh
-parse back into the persistent nodes, and one commit pipeline with two branches
-carries the result to the DOM — text edits patch surfaces in place without
-invoking the framework renderer; structural edits publish a new tree and bind the
-freshly painted DOM. No feature flags; parse is always a full parse, and the
-structural branch always does a full DOM bind.
+parse back into the persistent nodes, and one commit pipeline carries the result
+to the DOM. It has ONE question — does the renderer need to run? Text never
+travels through it: `bind` arms one effect per bound text surface, so a text edit
+reaches the DOM straight off the node's own `text` signal, without invoking the
+framework renderer. A structural edit publishes a new tree and binds the freshly
+painted DOM. No feature flags; parse is always a full parse, and a bind is always
+a full DOM bind.
 
 **Encapsulation rule:** raw `Selection`, `Range`, and `TreeWalker` DOM APIs live
 only inside this module (`features/tokens/`). All consumers outside the module
@@ -119,15 +121,15 @@ tree core's `fromTransaction` (`seam/treeInput.ts`) is its ONLY producer:
 
 ```
 write verb → splice → parse → adopt → TransactionResult
-  → fromTransaction (memo.invalidate → memo.roots → changes + delta)
-  → CommitInput {tokens, render, changes, delta}
-  ├─ text path (render === false AND no structural apply pending):
-  │    refresh the listed handles, conditionally patch textContent of
-  │    changed text surfaces, one batch → fire changed()
-  └─ structural (render === true, or folded into a pending pass):
+  │    (adoption writes node.text → the per-surface effects write the DOM)
+  → fromTransaction (memo.invalidate → memo.roots → delta)
+  → CommitInput {tokens, render, delta}
+  ├─ render === false AND no structural apply pending:
+  │    nothing left to do to the DOM → fire changed()
+  └─ render === true, or folded into a pending pass:
        publish renderTree (new reference) → renderer runs → onRendered() →
-       bind(container, latest): one DOM+tree walk —
-         create/refresh/kill TokenHandles, set element bindings,
+       bind(container, tree.roots()): one DOM+tree walk —
+         create/kill TokenHandles, set element bindings, re-arm the text effects,
          apply contentEditable/tabindex to NEWLY BOUND surfaces and mark roots
        → fire changed()
 ```
@@ -135,29 +137,25 @@ write verb → splice → parse → adopt → TransactionResult
 - **Routing is decided by the PRODUCER**, on `result.render` — not on
   `result.structural`. The latter is add/remove only, while a mark whose value or
   meta changed renders new framework props and must reach the renderer.
-- **The change feed is the MEMO's**, not the transaction's: the set that needs an
-  entry is exactly the tokens of this snapshot that are new objects, which is what
-  `materialized()` reports. `updated` is the only PATCH signal — a node
-  re-materialized merely because it moved has no surface write to make.
-- **Escalation self-heals:** a text-path apply that cannot resolve a target
-  (missing handle, missing surface) abandons the branch before any mutation and
-  re-binds the current DOM structurally — no render needed first; the adapter's
-  later `onRendered()` re-binds idempotently.
+- **Text is not the pipeline's business (S2.7).** `bind` arms
+  `effect(() => { const t = node.text(); if (el.textContent !== t) el.textContent = t })`
+  per bound text surface; the handle owns its disposal. That is the ONE writer of
+  a text surface, which is why `bind` no longer writes `textContent` itself and
+  why the `changes` feed, `commitText` and the bind-generation `Token` are gone.
 - **`pendingStructural` latch:** between a structural apply and its bind the node
   layer is one generation stale. `handle(id)` returns `undefined` while latched
   (`pending()` is true) — id-bridged reads and mutations fail closed instead of
   acting on a tree the DOM never showed. Applies landing inside the window fold
   into the pending structural pass.
 - **bind projects the LIVE tree (`deps.roots()`), not `renderTree`:** the render
-  tree keeps its (stale) reference across text applies, and a re-render arriving
+  tree keeps its (stale) reference across text commits, and a re-render arriving
   after one — any unrelated adapter update — must re-bind the current tree, not
   regress the node layer and the DOM text to the painted generation.
 - **Editable state:** contentEditable/tabindex are applied at bind time to newly
   bound surfaces and mark roots, and by the scoped `setEditable` setter when
   `readOnly`/`isUserSelecting` change (`dom/SelectionDriver.ts` owns the policy,
   the model owns the application). No per-commit sweep.
-- **`changed`** fires in both branches only after the DOM is consistent with the
-  node layer — the model-level "commit done" signal (`dom/SelectionDriver.ts`
+- **`changed`** fires only after the DOM is consistent with the node layer — the model-level "commit done" signal (`dom/SelectionDriver.ts`
   re-places the caret on it) — carrying that commit's `{added, removed, updated}`
   ids (`TokenDelta`: `added`/`removed` are subtree-inclusive, `updated` is per
   node). Consumers re-read content via `current()` / `handle(id)`;
@@ -168,13 +166,16 @@ write verb → splice → parse → adopt → TransactionResult
 
 ## Structural DOM walk (`dom/bind.ts`)
 
-The structural branch's endpoint: zip the freshly rendered DOM with the LIVE tree
-(one iterative frame per nesting level, control elements skipped, optional
-registered child-sequence host per mark) and project the result onto the node
-map — `new TokenHandle` for new ids, `bindElements` for known ids, `kill` (and
-delete) ids absent from the tree. The whole projection commits as one
-batch, so handle watchers flush only after every node reflects the new tree and
-DOM.
+The renderer's endpoint: zip the freshly rendered DOM with the LIVE tree (one
+iterative frame per nesting level, control elements skipped, optional registered
+child-sequence host per mark) and project the result onto the node map — `new
+TokenHandle` for new ids, `bindElements` for known ids, `kill` (and delete) ids
+absent from the tree. The whole projection commits as one batch, so handle
+watchers flush only after every node reflects the new tree and DOM.
+
+`bindElements` also re-arms the surface's text effect, unconditionally: the
+re-arm's immediate first run is both the mount-time reconciliation of a surface
+the renderer left stale and the heal of one corrupted between binds.
 
 The result is `bound: ReadonlyMap<number, TokenHandle>`, **keyed by stable id**.
 It was keyed by a `TokenPath` string until S1.8; no consumer ever looked one up
@@ -188,9 +189,7 @@ A DOM-walk bail (adapter mid-render misalignment) `unbind`s instead of killing:
 the tree is authoritative, only the DOM is transiently misaligned, and the next
 successful bind re-attaches the same handles. Alignment is all-or-nothing per
 frame — a count mismatch drops that frame AND every descendant frame with it,
-because a dropped frame never enqueues its children. The id pre-pass that used to
-throw for a token without an id went with the snapshot input: a `TreeNode` always
-has one.
+because a dropped frame never enqueues its children.
 
 **Block layout:** each immediate container child is a row; a row must contain
 exactly one non-control element. Alignment is all-or-nothing — one bad row bails
@@ -292,15 +291,22 @@ The measurement / command surface of one node's DOM binding, resolved by
 
 IT HOLDS NO TOKEN since S2.7. `#token` used to carry "the generation the DOM is
 SHOWING" (spec D9) — a second representation of data the tree already owns. S2.6
-took its last positional reader, and this phase took the other two:
-`setEditable`'s type read (dead: `bind` gives a `textElement` to text nodes and to
-nothing else, so `!textElement` already means "mark") and `commit.ts`'s divergence
-detector, which sweeps the live tree and compares each bound surface against its
-node's `text()`.
+took its last positional reader; S2.7 took the other two, `setEditable`'s type
+read (dead: `bind` gives a `textElement` to text nodes and to nothing else, so
+`!textElement` already means "mark") and `commit.ts`'s divergence detector, which
+compares against the live `TextNode.text()`.
 
-No per-node reactivity **on the handle**: its getters are plain field reads. That
-is not a statement about the model — `TreeNode`'s content fields ARE signals, and
-they are what the public API subscribes to.
+What replaced it is the per-surface TEXT EFFECT `bindElements` arms: one writer
+per bound text surface, subscribed to that node's own `text` signal, writing
+conditionally (`if (el.textContent !== t)`). Its immediate first run is the
+mount-time reconciliation and the corruption heal; it is disposed and re-armed on
+every re-bind, and disposed by `unbind`/`kill`. Two writers on one surface is the
+failure mode the design exists to prevent, so `bind` no longer writes
+`textContent` itself.
+
+No per-node reactivity **on the handle's getters**: they are plain field reads.
+That is not a statement about the model — `TreeNode`'s content fields ARE signals,
+and they are what the public API (and the text effect) subscribes to.
 
 ### Reads
 
@@ -329,9 +335,10 @@ boundary), `placeCaretAtX(x, y?)`, `focus()`.
 ### Lifetime
 
 Created when its node enters the tree (keyed by the node's stable identity id),
-mutated in place by `bindElements` / `unbind`, killed when the node disappears. A
-dead handle never throws — reads answer `undefined`, commands return `false`, and
-it is never resurrected.
+mutated in place by `bindElements` / `unbind`, killed when the node disappears.
+Both `unbind` and `kill` dispose the text effect, so an unbound or dead handle
+stops writing its old element. A dead handle never throws — reads answer
+`undefined`, commands return `false`, and it is never resurrected.
 
 ## Mark commands
 

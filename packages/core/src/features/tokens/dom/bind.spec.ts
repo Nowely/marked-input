@@ -72,6 +72,27 @@ function spanWith(content: string): HTMLElement {
 	return span
 }
 
+/**
+ * A span that counts `textContent` WRITES. The one-writer property of S2.7 is
+ * otherwise invisible: two writers agree on the value, so only the write count
+ * discriminates them.
+ */
+function countingSpan(content: string): {span: HTMLElement; writes: () => number} {
+	const span = spanWith(content)
+	const descriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent')
+	if (!descriptor) throw new Error('textContent is not an accessor on Node.prototype')
+	let writes = 0
+	Object.defineProperty(span, 'textContent', {
+		configurable: true,
+		get: () => descriptor.get?.call(span),
+		set: (value: string) => {
+			writes++
+			descriptor.set?.call(span, value)
+		},
+	})
+	return {span, writes: () => writes}
+}
+
 describe('bind', () => {
 	describe('structural walk (buildIndex semantics)', () => {
 		it('binds a single inline text node to its DOM element and registers the handle', () => {
@@ -577,8 +598,10 @@ describe('bind', () => {
 		})
 	})
 
-	describe('text surface reconciliation (the absorbed sweep)', () => {
+	describe('the per-surface text effect (S2.7: ONE writer)', () => {
 		it('writes textContent of a newly bound surface the renderer left stale', () => {
+			// The effect's IMMEDIATE first run is the mount-time reconciliation the
+			// deleted `applyMountState` textContent write used to do.
 			const container = document.createElement('div')
 			const span = spanWith('')
 			container.append(span)
@@ -588,24 +611,22 @@ describe('bind', () => {
 			expect(span.textContent).toBe('hello')
 		})
 
-		it('patches a surface that stays bound across a structural commit', () => {
-			// A structural commit can ALSO carry text changes (e.g. paste replacing a mark
-			// and editing text), and the renderer only re-renders structure — a kept
-			// element's textContent would stay stale without this.
+		it('patches a surface that stays bound when the node text changes, with NO re-bind', () => {
+			// THE point of the phase: the commit pipeline no longer replays text. A live
+			// edit to the node reaches its surface through the effect alone.
 			const container = document.createElement('div')
 			const span = spanWith('hello')
 			container.append(span)
 			const {roots} = treeOf([textToken('hello', 0)])
-			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
+			bind(inputFor(container, roots))
 			textAt(roots, 0).text('hello world')
-			bind(inputFor(container, roots, {nodes}))
 
 			expect(span.textContent).toBe('hello world')
 		})
 
 		it('heals a surface corrupted between binds on the next bind', () => {
+			// The re-arm's first run is what makes the structural branch self-healing.
 			const container = document.createElement('div')
 			const span = spanWith('hello')
 			container.append(span)
@@ -665,6 +686,78 @@ describe('bind', () => {
 
 			bind(inputFor(container, roots, {nodes}))
 			expect(span.firstChild).toBe(initialTextNode)
+
+			// A no-op edit (same string) does not disturb it either: the signal does not
+			// move, so the effect does not even re-run.
+			textAt(roots, 0).text('hello')
+			expect(span.firstChild).toBe(initialTextNode)
+		})
+
+		it('writes ONCE per text change, however many times the surface was re-bound', () => {
+			// The failure mode of the phase: `bind` re-arming without disposing would
+			// leave one live effect per bind, each writing the same value in turn. Only
+			// the write COUNT tells them apart.
+			const container = document.createElement('div')
+			const {span, writes} = countingSpan('hello')
+			container.append(span)
+			const {roots} = treeOf([textToken('hello', 0)])
+			const nodes = new Map<number, TokenHandle>()
+
+			bind(inputFor(container, roots, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
+			expect(writes()).toBe(0)
+
+			textAt(roots, 0).text('hello!')
+
+			expect(writes()).toBe(1)
+			expect(span.textContent).toBe('hello!')
+		})
+
+		it('stops writing an unbound surface, however many binds armed it', () => {
+			// The effect dies with the binding: a node whose element left the DOM must
+			// not keep writing the detached one.
+			//
+			// TWO arming binds before the unbind, and that is the mutation gate: with the
+			// re-arm's `dispose` dropped, the write COUNT is still 1 (the second effect
+			// finds the surface already correct and the conditional skips it), so the
+			// leaked effect is invisible until the binding goes away and only the LAST
+			// one is disposed.
+			const container = document.createElement('div')
+			const spanA = spanWith('alpha ')
+			container.append(spanA, spanWith('beta'))
+			const {roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
+			const nodes = new Map<number, TokenHandle>()
+
+			bind(inputFor(container, roots, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
+			// Misaligned DOM: the walk bails and every handle is unbound.
+			container.replaceChildren(spanA)
+			bind(inputFor(container, roots, {nodes}))
+			expect(nodes.get(1)?.element()).toBeUndefined()
+
+			textAt(roots, 0).text('alpha!')
+
+			expect(spanA.textContent).toBe('alpha ')
+		})
+
+		it('stops writing a killed node’s surface', () => {
+			const container = document.createElement('div')
+			const spanA = spanWith('alpha ')
+			const spanB = spanWith('beta')
+			container.append(spanA, spanB)
+			const {roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
+			const nodes = new Map<number, TokenHandle>()
+
+			bind(inputFor(container, roots, {nodes}))
+			const dying = textAt(roots, 1)
+			container.replaceChildren(spanA)
+			bind(inputFor(container, roots.slice(0, 1), {nodes}))
+			expect(nodes.has(2)).toBe(false)
+
+			dying.text('gone')
+
+			expect(spanB.textContent).toBe('beta')
 		})
 	})
 })

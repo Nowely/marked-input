@@ -32,39 +32,35 @@ function markAndChildOf(tree: TokenTree): {markId: number; childId: number} {
 }
 
 /**
- * RECORDED GAP (S1.5 Task 6's mutation pass, re-measured after the
- * `materialized()` cutover). ONE guard is pinned HERE and only here — nothing in
+ * RECORDED GAP (S1.5 Task 6's mutation pass, re-measured at S2.7 when `changes`
+ * was deleted). ONE guard is pinned HERE and only here — nothing in
  * treePipeline.spec.ts moves when it is removed — and it is inert BY
  * CONSTRUCTION at pipeline level, not merely untested:
  *
  * - the memo's REUSE. Disabling the cache-hit branch (cache still populated, so
  *   `tokenFor` stays correct) hands the pipeline fresh-but-equal tokens, which
  *   it cannot observe — the payoff is renderer-side object identity for block
- *   layout's `memo(Block)` (see the plan's contradiction 1). Measured: 3
- *   failures, "hands the pipeline the MEMOIZED tokens…" below plus the reuse and
- *   `materialized()` tests in snapshotMemo.spec.ts, and nothing else in 862
- *   tests.
+ *   layout's `memo(Block)` (see the plan's contradiction 1).
  *   NOT to be confused with swapping `memo.roots(roots)` for a bare
- *   `snapshot(roots)`, which is a real break (measured: 12 failures, 8 of them at
- *   pipeline level): `changes` IS the memo's re-materialized set, so skipping
- *   `roots` feeds the pipeline the previous generation.
+ *   `snapshot(roots)`, which is a real break: `tokens` is the snapshot every
+ *   value-slicing consumer reads through `tokens.current()`, and a bare re-parse
+ *   loses the reuse that keeps `memo(Block)` from repainting every row.
  *
- * The `seen` dedupe this block used to record is gone with the feed it guarded:
- * `changes` is built from an id-keyed map, so one entry per node is structural.
- *
- * An ADDED node gets a `patch: false` entry here. That differed from the reconcile
- * lowering S1.6a deleted, which emitted `patch: true`, and the difference was
- * deliberate and unobservable: `changes` is read only by `commitText`, which runs
- * only when `!render`, and an add always sets `render`. Recorded because the entry
- * still looks like an omission to a fresh reader.
+ * Since S2.7 this lowering emits no content feed at all. `changes` existed to hand
+ * each `TokenHandle` the generation the DOM was showing; the DOM now follows the
+ * node's own `text` signal through the effect `bind` arms, so the pipeline is fed
+ * `{tokens, render, delta}` and nothing else. The cases that pinned `changes` —
+ * per-entry `patch` flags, the ancestor and shifted-descendant entries, the
+ * order-insensitivity note — are gone or moved: the ancestor case below now asserts
+ * against the SNAPSHOT, which is where a missed re-materialization is still visible.
  */
 describe('fromTransaction', () => {
-	it('routes an interior text edit to the text branch', () => {
+	it('routes an interior text edit away from the renderer', () => {
 		const {tree, memo} = setup('he#[x]llo')
 		const {input} = lower(tree, memo, 'he#[x]llo!')
 
 		expect(input.render).toBe(false)
-		expect(input.changes.filter(change => change.patch).map(change => change.token.content)).toEqual(['llo!'])
+		expect(input.tokens[2].content).toBe('llo!')
 	})
 
 	it('routes a mark value change to the RENDER branch even though nothing was added or removed', () => {
@@ -85,53 +81,44 @@ describe('fromTransaction', () => {
 		expect(input.delta.removed).toContain(markId)
 	})
 
-	it('carries an ANCESTOR whose own fields never changed and which appears in neither feed', () => {
+	it('re-materializes an ANCESTOR whose own fields never changed and which appears in neither feed', () => {
 		// '#[ab]t' → '#[cb]t', snapshotMemo's `sameChildren` fixture at lowering level.
-		// Deriving `changes` from `updated` + `shifted` emits nothing for the mark, so
-		// its handle keeps a `content`/`slot` the DOM no longer shows — and `render` is
-		// false, so no bind ever heals it. The memo's re-materialized set is the only
-		// feed that knows.
+		// The mark is in no adoption feed and does not move, yet its `content` and
+		// `slot` both changed — and `render` is false, so nothing republishes the tree
+		// afterwards. The memo's child-reference comparison is the only feed that knows,
+		// and `tokens` is where a consumer would read the stale answer.
 		const {tree, memo} = setup('#[ab]t')
-		const {markId, childId} = markAndChildOf(tree)
+		const {childId} = markAndChildOf(tree)
 		const {result, input} = lower(tree, memo, '#[cb]t')
 
 		// The precondition, measured rather than assumed: the mark is in no feed.
 		expect(result.updated.map(node => node.id)).toEqual([childId])
 		expect(result.shifted).toEqual([])
 
-		const mark = input.changes.find(change => change.id === markId)
-		expect(mark?.token.content).toBe('#[cb]')
-		// Position-only refresh: `patch` writes the DOM surface and a mark has none
-		// (bind.ts:162). `delta.updated` stays the child ALONE — the ancestor's
-		// projection changed, its own props did not (TokenDelta's per-node rule).
-		expect(mark?.patch).toBe(false)
+		expect(input.tokens[1].content).toBe('#[cb]')
+		// `delta.updated` stays the child ALONE — the ancestor's projection changed, its
+		// own props did not (TokenDelta's per-node rule).
 		expect(input.delta.updated).toEqual([childId])
 	})
 
 	it('carries a shifted root AND its descendants, each with its own absolute positions', () => {
 		// The '@[x](ab)t' fixture again: the child is in neither adoption feed and
-		// its delta differs from the root's, so a lowering that emitted only the
-		// listed nodes would leave the child's handle on stale positions.
+		// its delta differs from the root's, so a snapshot that re-materialized only
+		// the listed nodes would serve the child on stale positions.
 		const {tree, memo} = setup('@[x](ab)t')
-		const {childId} = markAndChildOf(tree)
 		const {input} = lower(tree, memo, '@[xy](ab)t')
 
-		const child = input.changes.find(change => change.id === childId)
-		expect(child).toBeDefined()
-		expect(child?.patch).toBe(false)
-		expect(child?.token.position).toEqual({start: 6, end: 8})
+		const mark = input.tokens[1]
+		expect(mark.type === 'mark' && mark.children[0].position).toEqual({start: 6, end: 8})
 	})
 
-	it('emits one entry per node when it is both updated and shifted, and it patches', () => {
+	it('lists a node once in `updated` when it is both updated and shifted', () => {
 		// Measured: an interior text edit lists the SAME node in `updated` and
 		// `shifted` (both content and position moved).
 		const {tree, memo} = setup('he#[x]llo')
 		const tailId = tree.roots()[2].id
 		const {input} = lower(tree, memo, 'he#[x]llo!')
 
-		const entries = input.changes.filter(change => change.id === tailId)
-		expect(entries).toHaveLength(1)
-		expect(entries[0].patch).toBe(true)
 		// THE gate on `delta.updated`, and on its granularity: the node moved too,
 		// but `shifted` is not a content signal and must not leak in here. Nothing
 		// else in the suite reads this list — the live `changed` consumers only read
@@ -145,24 +132,6 @@ describe('fromTransaction', () => {
 		const {input} = lower(tree, memo, 'he#[x]llo!')
 
 		expect(input.tokens[1]).toBe(before)
-	})
-
-	it('is order-insensitive: reversing `changes` yields the same node state', () => {
-		// DOCUMENTATION, NOT A DEFECT GATE. `shifted` arrives suffix-run-reversed
-		// then middle-in-document-order, and nothing depends on that: every entry
-		// is an absolute write to a distinct node, and `adopt` pushes each node at
-		// most once (the `covered` flag suppresses descendants of an entry). This
-		// test cannot fail against the current pipeline; it will fail against any
-		// future refresher that applies deltas rather than re-reading positions.
-		const {tree, memo} = setup('@[x](ab)t')
-		const {input} = lower(tree, memo, '@[xy](ab)t')
-
-		const forward = input.changes.map(change => [change.id, change.token.position] as const)
-		// `toReversed()`, not `[...changes].reverse()`: oxlint's
-		// `unicorn(no-array-reverse)` warns on the latter and `denyWarnings: true`
-		// turns that warning into a failing `lint:check` and a blocked commit.
-		const reversed = input.changes.toReversed().map(change => [change.id, change.token.position] as const)
-		expect(new Map(reversed)).toEqual(new Map(forward))
 	})
 
 	// Sibling of commitInput.spec.ts's identically named block: the two lowerings

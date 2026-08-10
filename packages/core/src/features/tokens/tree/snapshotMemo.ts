@@ -33,19 +33,6 @@ export interface SnapshotMemo {
 	invalidate(result: TransactionResult): void
 	/** The cached token for an id, or undefined (never materialized, or evicted). */
 	tokenFor(id: Id): Token | undefined
-	/**
-	 * Every id whose token the last `roots` call RE-MATERIALIZED, with that token —
-	 * i.e. exactly the tokens of that snapshot that are not the same object as in
-	 * the previous one.
-	 *
-	 * Exposed because the memo is the only place that knows the SECOND
-	 * invalidation mechanism above. `TransactionResult`'s feeds are the first
-	 * mechanism alone, so a consumer that refreshes per-node state from them
-	 * (`seam/treeInput.ts`) misses precisely the ancestors `sameChildren` exists
-	 * for. This is a live view of the memo's own map: valid until the next `roots`
-	 * call, which clears it.
-	 */
-	materialized(): ReadonlyMap<Id, Token>
 }
 
 const NO_CHILDREN: Token[] = []
@@ -53,7 +40,6 @@ const NO_CHILDREN: Token[] = []
 export function createSnapshotMemo(): SnapshotMemo {
 	const cache = new Map<Id, Token>()
 	const dirty = new Set<Id>()
-	const fresh = new Map<Id, Token>()
 
 	const materialize = (node: TreeNode): Token => {
 		const children = node.kind === 'mark' ? node.children().map(materialize) : NO_CHILDREN
@@ -61,7 +47,6 @@ export function createSnapshotMemo(): SnapshotMemo {
 		if (cached && !dirty.has(node.id) && sameChildren(cached, children)) return cached
 		const token = materializeNode(node, children)
 		cache.set(node.id, token)
-		fresh.set(node.id, token)
 		return token
 	}
 
@@ -71,9 +56,6 @@ export function createSnapshotMemo(): SnapshotMemo {
 		// node it happened to walk.
 		roots: nodes =>
 			untracked(() => {
-				// Cleared HERE, not after the walk: `materialized()` reports one
-				// generation, and the walk below is what fills it.
-				fresh.clear()
 				const tokens = nodes.map(materialize)
 				// LOAD-BEARING, and cheap to lose: without it `dirty` only ever grows,
 				// so every node the memo has ever touched re-materializes forever
@@ -93,8 +75,6 @@ export function createSnapshotMemo(): SnapshotMemo {
 		},
 
 		tokenFor: id => cache.get(id),
-
-		materialized: () => fresh,
 	}
 }
 

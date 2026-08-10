@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
-import {watch} from '../../../shared/signals/index.js'
+import {batch, watch} from '../../../shared/signals/index.js'
 import {createCommitPipeline} from '../dom/commit'
 import type {CommitPipeline} from '../dom/commit'
 import type {TokenHandle} from '../dom/TokenHandle'
@@ -23,15 +23,18 @@ import {fromTransaction} from './treeInput'
  * reconcile lowering and its suite), so nothing here is a parity run any more. What
  * the cases assert is what the pipeline DOES: the DOM, handle identity/liveness, the
  * published snapshot, the `changed` payload and count, the render-tree reference and
- * the pending latch. They deliberately do NOT assert
- * `CommitInput.changes`, which is an intermediate shape rather than a contract:
- * `changes` is read in exactly one place (`commit.ts`'s `commitText`), which runs
- * only when `!render`, and an add always sets `render` (`adopt.ts:197-198`), so add
- * entries are unreachable in the only consumer.
+ * the pending latch.
+ *
+ * S2.7 took the whole text BRANCH out of `commit.ts` — `bind` arms one effect per
+ * bound text surface, so a text-only commit reaches the DOM before the pipeline is
+ * called and `apply` is left with the divergence check and the announcement. The two
+ * cases that gated `commitText`'s misses (a vanished handle, a vanished surface) and
+ * the one that hand-built a `CommitInput.changes` entry went with it; the DOM-facing
+ * half of what they covered is now in `bind.spec.ts`'s effect suite.
  *
  * COVERAGE SCOPE (settled at S1.5 Task 6, kept as written). `commit.ts` is ONE
- * shared function fed four fields, so any pipeline behavior that does not read
- * `tokens`/`render`/`changes`/`delta` differently was identical by construction on
+ * shared function fed three fields, so any pipeline behavior that does not read
+ * `tokens`/`render`/`delta` differently was identical by construction on
  * both lowerings and needed no second copy. This file is nonetheless a SUPERSET of
  * "cases where the lowering could differ": when S1.6a deleted `commit.spec.ts`,
  * every live case whose only gate was that file was ported or moved here unless
@@ -203,6 +206,10 @@ describe('commit pipeline driven by the tree core', () => {
 	})
 
 	it('a tail text edit patches in place, keeps the render tree and announces once', () => {
+		// The DOM write is the EFFECT's, not this pipeline's: by the time `apply` runs,
+		// adoption's batch has already flushed it. What the pipeline still owes is the
+		// order — `changed` fires only once the surface is consistent — which
+		// `domAtEvent` below is the witness for.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
@@ -281,7 +288,13 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(nodes.size).toBe(1)
 	})
 
-	it('an edit landing in the pending window folds in, fail-closed', () => {
+	it('an edit landing in the pending window folds into ONE announcement', () => {
+		// The fold is an ANNOUNCEMENT guard, and since S2.7 only that. It used to gate
+		// the DOM too — `commitText` refused to run while a structural apply was
+		// unpainted, so the surface stayed on the painted generation. The per-surface
+		// effect has no such gate and writes at once, which is the behavior change of
+		// this phase: the element is still bound to the same node, so showing that
+		// node's new text is not a guess about a layout nobody painted.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
@@ -289,11 +302,12 @@ describe('commit pipeline driven by the tree core', () => {
 		watch(pipeline.changed, changedSpy)
 
 		harness.splice(2, 6, '@[y]') // render bit set → latched
-		harness.splice(9, 9, '!') // looks like a text edit against the pending tree
+		harness.splice(9, 9, '!') // a text edit against the pending tree
 
 		expect(pipeline.pending()).toBe(true)
 		expect(changedSpy).not.toHaveBeenCalled()
-		expect(text2.textContent).toBe('llo')
+		// Announcement: withheld. DOM: written through, on the surface still bound.
+		expect(text2.textContent).toBe('llo!')
 
 		harness.render()
 
@@ -301,39 +315,18 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(harness.container.children[2].textContent).toBe('llo!')
 	})
 
-	it('a text change whose handle vanished abandons the branch and self-heals through a bind', () => {
-		const harness = createHarness()
-		const {pipeline, nodes} = harness
-		const {text2} = mount(harness)
-		const tail = boundAt(pipeline, 2)
-		if (!tail) throw new Error('expected tail handle')
-		nodes.delete(tail.id)
-		const changedSpy = vi.fn()
-		watch(pipeline.changed, changedSpy)
-
-		harness.splice(9, 9, '!')
-
-		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(pipeline.pending()).toBe(false)
-		expect(pipeline.current()[2].content).toBe('llo!')
-		expect(text2.textContent).toBe('llo!')
-	})
-
-	it('a text target whose SURFACE vanished abandons the branch and keeps the node layer current', () => {
-		// Ports commit.spec.ts:456. NOT redundant with the handle-missing case above,
-		// which Task 6 had recorded as covering it: `commit.ts:179` (no handle) and
-		// `:181` (no surface) are distinct guards, and mutating `if (!surface) return
-		// false` to `continue` kills exactly this test and its live twin, nothing else.
+	it('a text edit against an UNBOUND node layer announces and recovers at the next paint', () => {
+		// What the two deleted `commitText`-miss cases guarded, restated for the one
+		// remaining path. A misaligned DOM (adapter mid-render) unbinds every handle,
+		// so the edit reaches no surface at all — there is no branch left to abandon
+		// and nothing to escalate. The commit still announces, and the next paint binds
+		// the fresh elements, whose newly armed effects write the current text.
 		const harness = createHarness()
 		const {pipeline, nodes, container} = harness
 		mount(harness)
 		const tail = boundAt(pipeline, 2)
 		if (!tail) throw new Error('expected tail handle')
 
-		// Adapter mid-render misalignment: one span vanishes, so the bind walk bails
-		// on the count mismatch — handles survive alive but UNBOUND (bind.spec
-		// semantics), which is the only way to reach `commitText` with a live handle
-		// and no surface.
 		container.lastElementChild?.remove()
 		pipeline.onRendered()
 		expect(pipeline.bound().size).toBe(0)
@@ -343,8 +336,6 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(harness.splice(9, 9, '!')).toBe(true)
 
-		// Escalated: the immediate bind bails again on the misaligned DOM, but the
-		// node layer is refreshed from the authoritative tree.
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(pipeline.pending()).toBe(false)
 		expect(pipeline.current()[2].content).toBe('llo!')
@@ -358,6 +349,10 @@ describe('commit pipeline driven by the tree core', () => {
 	})
 
 	it('the divergence detector still throws with the NODE ID on an untouched surface', () => {
+		// THE reason the detector stayed a SWEEP in S2.7 instead of folding into the
+		// per-surface effect: the corrupted node is not the node this commit touches, so
+		// its effect never re-runs and a check living inside it could not fire. The sweep
+		// compares every bound surface against its node's live `text()`.
 		const harness = createHarness()
 		const {text1} = mount(harness)
 		text1.textContent = 'WRONG'
@@ -374,6 +369,29 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(message).toContain(`#${head?.id}`)
 		expect(message).toContain('"WRONG"')
 		expect(message).toContain('"he"')
+	})
+
+	it('a BATCHED edit reaches the DOM and reports no false divergence', () => {
+		// THE regression this phase nearly shipped. `EditController.replace` wraps the
+		// whole write in `batch`, so the per-surface effects adoption queues do NOT flush
+		// until that outer batch closes — after `apply` has returned. Measured with the
+		// check called inline at the end of `apply`: every `store.edit.replace` fixture in
+		// the suite threw a false divergence (13 red cases across 4 files). The check is a
+		// `changed` SUBSCRIBER for that reason, queued behind the writers.
+		const harness = createHarness()
+		const {text2} = mount(harness)
+
+		expect(() => batch(() => void harness.splice(9, 9, '!'))).not.toThrow()
+
+		expect(text2.textContent).toBe('llo!')
+	})
+
+	it('the divergence detector still fires from inside a caller batch', () => {
+		const harness = createHarness()
+		const {text1} = mount(harness)
+		text1.textContent = 'WRONG'
+
+		expect(() => batch(() => void harness.splice(9, 9, '!'))).toThrow(/TokenModel divergence/)
 	})
 
 	it('an in-slot edit routes TEXT and patches the child surface', () => {
@@ -400,14 +418,12 @@ describe('commit pipeline driven by the tree core', () => {
 		// `snapshotMemo`'s `sameChildren` fixture ('#[ab]t' → '#[cb]t'), lifted to
 		// pipeline level. The mark is in NEITHER `updated` nor `shifted` and does not
 		// move, yet its projected `content` and `slot` both change — the memo's
-		// child-reference comparison is the only thing that knows, which is why
-		// `changes` is derived from `materialized()` rather than from the transaction
-		// feeds.
+		// child-reference comparison is the only thing that knows.
 		//
 		// Nothing else in this suite catches it. The in-slot case above splices a
-		// LONGER string, so the mark lands in `shifted` and is walked. It reaches users
-		// through `tokens.current()`, which IS the memo's output and is what every
-		// value-slicing consumer reads; `render` is false here, so no re-render
+		// LONGER string, so the mark lands in `shifted` and is walked. It reaches
+		// users through `tokens.current()`, which IS the memo's output and is what
+		// every value-slicing consumer reads; `render` is false here, so no re-render
 		// refreshes it either.
 		const harness = createHarness(['#[__slot__]'])
 		const {pipeline} = harness
@@ -438,7 +454,7 @@ describe('commit pipeline driven by the tree core', () => {
 			content: 'cb',
 			position: {start: 2, end: 4},
 		})
-		// And the DOM followed, through the text branch's own patch.
+		// And the DOM followed, through the child's own effect — no re-bind ran.
 		expect(childSurface.textContent).toBe('cb')
 	})
 
@@ -449,14 +465,12 @@ describe('commit pipeline driven by the tree core', () => {
 	// at S1.6d), so a roots-only lowering is a real parity break.
 
 	it('a shift re-materializes the descendants of a shifted mark, not just its root', () => {
-		// Ports commit.spec.ts's 'shifted suffix' case to a mark WITH children. The
-		// live path's suffix walk collected the whole subtree as `update` (reconcile,
-		// deleted at S1.6d); adoption lists subtree ROOTS in `shifted`, so
-		// the lowering walks. 'a#[bc]d' → text 'a'[0,1], mark '#[bc]'[1,6]
-		// {child 'bc'[3,5]}, text 'd'[6,7]; prepending 'X' moves all three right by
-		// one and touches only 'a', so the mark stays out of `updated` and the
-		// commit routes TEXT — the branch where a missed descendant is never healed
-		// by a bind.
+		// Ports commit.spec.ts's 'shifted suffix' case to a mark WITH children.
+		// Adoption lists subtree ROOTS in `shifted`, and a root's delta is NOT its
+		// descendants', so the memo walks the subtree itself. 'a#[bc]d' → text 'a'[0,1],
+		// mark '#[bc]'[1,6] {child 'bc'[3,5]}, text 'd'[6,7]; prepending 'X' moves all
+		// three right by one and touches only 'a', so the mark stays out of `updated`
+		// and `render` is false — no re-render republishes the tree.
 		const harness = createHarness(['#[__slot__]'])
 		const {pipeline} = harness
 		harness.boundary.arrive('a#[bc]d')
@@ -734,39 +748,16 @@ describe('commit pipeline driven by the tree core', () => {
 	// These four had no other gate. They test the pipeline itself, not a lowering,
 	// so they arrive re-fixtured onto the tree harness rather than re-derived.
 
-	it('a textChanged id absent from the new tree routes structural (conservative stale-tree guard)', () => {
-		// Moved from commit.spec.ts:490 verbatim in substance: the `CommitInput` is
-		// hand-built, so no lowering runs and `fromTransaction` could not produce it
-		// (every id it emits came from the memo). Not the SOLE guard on
-		// `commit.ts:179` — mutating that `return false` to `continue` also kills the
-		// vanished-handle case above — but it is the only one that reaches the guard
-		// with a stale tree instead of a deleted handle.
-		const harness = createHarness()
-		const {pipeline} = harness
-		mount(harness)
-		const changedSpy = vi.fn()
-		watch(pipeline.changed, changedSpy)
-
-		const tokens = [...pipeline.renderTree()]
-		pipeline.apply({
-			tokens,
-			render: false,
-			changes: [{id: 99999, token: tokens[0], patch: true}],
-			delta: {added: [], removed: [], updated: []},
-		})
-
-		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(pipeline.pending()).toBe(false)
-		expect(pipeline.renderTree()).toBe(tokens)
-		expect(pipeline.bound().size).toBe(3)
-	})
-
-	it('the structural branch self-heals corruption instead of throwing (bind rewrites every surface)', () => {
+	it('the structural branch self-heals corruption instead of throwing (bind re-arms every effect)', () => {
 		// Moved from commit.spec.ts:557. NOT `harness.render()`: that
 		// `replaceChildren()`s with FRESH spans, orphaning the node corrupted below,
 		// so the heal is asserted against a detached element (measured: expected
 		// 'WRONG' to be 'he'). `onRendered()` re-binds the surfaces already there,
 		// which is the sequence the original was written against.
+		//
+		// S2.7's version of the heal is the re-armed effect's IMMEDIATE first run,
+		// which is why `bindElements` disposes and re-creates unconditionally rather
+		// than keeping a live effect when the element is unchanged.
 		const harness = createHarness()
 		const {text1} = mount(harness)
 		text1.textContent = 'WRONG'

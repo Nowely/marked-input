@@ -1,17 +1,22 @@
-import {batch, event, signal, untracked} from '../../../shared/signals/index.js'
+import {event, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
-import type {CommitChange, CommitInput, TokenDelta} from '../seam/commitInput'
+import type {CommitInput, TokenDelta} from '../seam/commitInput'
 import type {TreeNode} from '../tree/types'
 import {bind} from './bind'
 import type {TokenHandle} from './TokenHandle'
 
 /**
- * The one commit pipeline: every reconciled value change flows through a
- * single `apply` with two branches — in-place text updates that bypass the
- * renderer, and structural passes that publish a new tree and bind the DOM
- * the renderer paints. `changed` fires in both branches only after the DOM
- * is consistent with the node layer.
+ * The one commit pipeline: every reconciled value change flows through a single
+ * `apply`. Since S2.7 it has ONE branch and one question — does the renderer need
+ * to run? Text no longer travels through here at all: `bind` arms a per-surface
+ * effect on each bound text node, so a text-only commit reaches the DOM off the
+ * node's own signal and `apply` is left with the announcement.
+ *
+ * `changed` still fires only once the DOM is consistent with the node layer, but
+ * that is now an ORDERING property of the effect queue rather than of this
+ * function's statement order: the writers are queued ahead of every `changed`
+ * subscriber, including {@link assertAligned} (see its registration below).
  */
 export type CommitDeps = {
 	/** Adapter container; null until mounted. */
@@ -34,7 +39,7 @@ export type CommitDeps = {
 }
 
 export type CommitPipeline = {
-	/** THE entry — routes one commit input through the text or structural branch. */
+	/** THE entry — one commit input, routed by its `render` bit. */
 	apply(input: CommitInput): void
 	/** Adapter signal: the renderer painted — bind the DOM and complete a pending structural apply. */
 	onRendered(): void
@@ -44,9 +49,9 @@ export type CommitPipeline = {
 	current(): readonly Token[]
 	/**
 	 * THE model-level detector: fires once per commit, only after the DOM is
-	 * consistent (both branches), carrying what that commit did to the id space
-	 * (spec §2.3). Every apply folded into one pending structural pass is MERGED
-	 * into the single announcement.
+	 * consistent, carrying what that commit did to the id space (spec §2.3). Every
+	 * apply folded into one pending structural pass is MERGED into the single
+	 * announcement.
 	 */
 	changed: Event<TokenDelta>
 	/** pendingStructural latch: true between a structural apply and its bind — id-bridged resolution fails closed. */
@@ -88,16 +93,16 @@ function drainDelta(into: DeltaAccumulator): TokenDelta {
 }
 
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
-	// `renderTree` is a plain signal written ONLY by the structural branch —
+	// `renderTree` is a plain signal written ONLY when the renderer must run —
 	// reference stability on the text path is direct control flow. A computed
 	// would have to derive the kept reference from the latest reconcile result,
 	// reviving the old memo-mutation-inside-a-computed pattern this pipeline deletes.
 	const renderTree = signal<Token[]>({initial: []})
 	const changed = event<TokenDelta>()
 
-	// Derived lookups over the bound nodes — replaced wholesale by bind on the
-	// structural branch, untouched on the text branch (no node is added or removed
-	// there by definition, so the same ids stay bound to the same elements).
+	// Derived lookups over the bound nodes — replaced wholesale by bind, untouched by a
+	// text-only commit (no node is added or removed there by definition, so the same ids
+	// stay bound to the same elements).
 	let bound: ReadonlyMap<number, TokenHandle> = new Map()
 	let byElement = new WeakMap<HTMLElement, TokenHandle>()
 	let controlRoots = new WeakSet<HTMLElement>()
@@ -107,7 +112,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	let latest: readonly Token[] = []
 
 	let pendingStructural = false
-	// Accumulates across the pending window and is drained by whichever branch
+	// Accumulates across the pending window and is drained by whichever path
 	// announces. It is empty whenever pendingStructural is false — the drain is
 	// what makes that true — so the old `pendingStructural ? … : []` guard on the
 	// bind path is gone rather than duplicated.
@@ -118,19 +123,22 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		if (committing) throw new Error('TokenModel commit re-entry')
 		committing = true
 		try {
-			const {tokens, render, changes, delta} = input
+			const {tokens, render, delta} = input
 			latest = tokens
+			foldDelta(pendingDelta, delta)
 			// Routing decided by the producer (spec D9's `render` bit). The one
-			// commit-side override is the fold guard: while a structural apply
-			// awaits its bind the node layer is one generation stale, so EVERY
-			// apply folds into the pending structural pass (fail-closed — no
-			// half-patch against a tree the DOM never showed).
-			if (!pendingStructural && !render) {
-				if (commitText(changes, delta)) return
-				commitStructural(tokens, delta, true)
+			// commit-side override is the fold guard: while a structural apply awaits
+			// its bind the node layer is one generation stale, so EVERY apply folds
+			// into the pending structural pass and announces with it (fail-closed — no
+			// consumer is told about a tree the DOM never showed).
+			if (render || pendingStructural) {
+				pendingStructural = true
+				renderTree(tokens)
 				return
 			}
-			commitStructural(tokens, delta, false)
+			// Text-only: the per-surface effects own the DOM write, so all that is left
+			// is the announcement.
+			changed(drainDelta(pendingDelta))
 		} finally {
 			committing = false
 		}
@@ -149,55 +157,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		}
 	}
 
-	/**
-	 * Text branch: the adapter never re-renders (tree keeps its reference), so
-	 * bound elements stay live. The PRODUCER resolved every change to (id, token)
-	 * and decided routing — `input.render` was false, so no node was added or
-	 * removed anywhere (spec D9). Two passes: resolve every change to a live
-	 * surface PURELY first; ANY miss abandons the branch before a single mutation
-	 * and the caller escalates structurally.
-	 */
-	function commitText(changes: readonly CommitChange[], delta: TokenDelta): boolean {
-		const updates: {surface: HTMLElement; content: string}[] = []
-		for (const change of changes) {
-			// Entries without `patch` carry no surface write: they existed to refresh a
-			// handle's token, and a handle holds none since S2.7.
-			if (!change.patch) continue
-			const handle = deps.nodes.get(change.id)
-			if (!handle) return false
-			const surface = handle.node()?.textElement
-			if (!surface) return false
-			updates.push({surface, content: change.token.content})
-		}
-
-		batch(() => {
-			for (const {surface, content} of updates) {
-				if (surface.textContent !== content) surface.textContent = content
-			}
-		})
-		if (VERIFY_DOM) assertAligned()
-		foldDelta(pendingDelta, delta)
-		changed(drainDelta(pendingDelta))
-		return true
-	}
-
-	/**
-	 * Structural branch: publish the new tree (reference change ⇔ the renderer
-	 * must run) and latch until the freshly painted DOM is bound. `selfHeal`
-	 * (the text branch escalating) also binds the CURRENT DOM right away — its structure is nominally
-	 * unchanged on that path, so the node layer recovers without waiting for the
-	 * adapter, whose later onRendered() just re-binds idempotently.
-	 */
-	function commitStructural(tokens: Token[], delta: TokenDelta, selfHeal: boolean): void {
-		foldDelta(pendingDelta, delta)
-		pendingStructural = true
-		renderTree(tokens)
-		if (!selfHeal) return
-		const container = deps.container()
-		if (container) bindAndAnnounce(container)
-	}
-
-	/** Shared endpoint of onRendered and escalation: one DOM+tree walk onto the node layer, then announce. */
+	/** The renderer painted: one DOM+tree walk onto the node layer, then announce. */
 	function bindAndAnnounce(container: HTMLElement): void {
 		const result = bind({
 			container,
@@ -214,19 +174,24 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		// A re-bind with no pending structural change drains an empty accumulator.
 		const delta = drainDelta(pendingDelta)
 		pendingStructural = false
-		if (VERIFY_DOM) assertAligned()
 		changed(delta)
 	}
 
 	/**
-	 * Divergence detector — last step of both branches. White-box rationale kept
-	 * from the old patch spec, now stated against the ONE representation: each branch
-	 * heals its own writes first (bind sweeps every bound surface, the text branch its
-	 * targets), so a throw here means the healing itself missed a write — the bug class
-	 * it guards. The expectation is read from the LIVE `TextNode.text()`, which is what
-	 * lets the handle stop carrying a `Token` of its own.
+	 * Divergence detector. White-box rationale kept from the old patch spec, now stated
+	 * against the ONE representation: every bound text surface must show its node's
+	 * CURRENT `text()`, because the per-surface effect wrote it and bind re-armed that
+	 * effect over whatever the renderer painted. A throw here means the writer itself
+	 * missed — never armed, disposed early, or outraced by a second writer — which is
+	 * the bug class it guards.
+	 *
+	 * It sweeps the whole tree rather than only the node a commit touched, and that is
+	 * the point: the S1 sweep it descends from caught 12 divergences, several of them on
+	 * surfaces the commit in flight never named. A check folded into the per-surface
+	 * effect could not see any of them — an effect that was never armed never runs.
 	 */
 	function assertAligned(): void {
+		if (!VERIFY_DOM) return
 		untracked(() => {
 			walkTree(deps.roots(), node => {
 				if (node.kind !== 'text') return
@@ -239,6 +204,19 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			})
 		})
 	}
+
+	// A `changed` SUBSCRIBER, not an inline call at the end of `apply` — MEASURED, and
+	// the one thing about this phase that a reading of the code alone gets wrong.
+	// `EditController.replace` wraps the whole write in `batch`, so the per-surface
+	// effects adoption queued do NOT flush until that outer batch closes, well after
+	// `apply` returned (probe: every `store.edit.replace` fixture threw a false
+	// divergence with the check inline). Event subscribers are queued BEHIND those
+	// effects, so a watcher here runs once every writer has finished — in the batched
+	// case and in the unbatched one alike, where adoption's own batch already flushed.
+	// Registered before any consumer's `changed` watch, which keeps the old ordering:
+	// the check runs first, and a divergence fails the commit rather than leaking into
+	// a caret re-place.
+	untracked(() => watch(changed, assertAligned))
 
 	return {
 		apply,

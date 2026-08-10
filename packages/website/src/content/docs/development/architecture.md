@@ -378,8 +378,9 @@ React/Vue render asynchronously, so initialization order matters:
 //    before any other onMounted watcher observes it.
 
 // 3. Sync contenteditable attributes (layout effect)
-//    → TokenModel's commit pipeline runs its first structural bind:
-//      walks the DOM, creates TokenHandle instances, writes contentEditable / tabIndex / textContent
+//    → TokenModel's commit pipeline runs its first bind: walks the DOM, creates
+//      TokenHandle instances, writes contentEditable / tabIndex, and arms one
+//      text effect per bound text surface (which writes its textContent)
 
 // 4. Framework emits store.host.rendered() after tokens render
 
@@ -431,7 +432,7 @@ Core owns token identity (stable ids and live handles), DOM registration, DOM→
 `TokenModel` is the thin public shell over a live-node core — `model/TokenHandle` (the per-token live binding), `model/commit` (the one commit pipeline), and `model/bind` (the DOM walk that binds freshly rendered DOM). It consolidates the DOM responsibilities that were previously split across separate ref/index/surface modules:
 
 - **Adapter ref registries** — `tokens.control()` and `tokens.children(ownerId)` register non-editable control elements and `__slot__` child-sequence hosts. The child-sequence registry is keyed by the owning mark's stable id.
-- **Live node map and commit pipeline** — one id-keyed `Map<number, TokenHandle>`, mutated only through the pipeline; every value change flows through a single `apply(input)` that takes a producer-agnostic `CommitInput` (lowered from the transaction's `TransactionResult`) and routes on that input's `render` bit to a fast text-path (DOM patch, no re-render) or a structural path (publish a new `renderTree` reference, bind freshly rendered DOM). `current()` returns the latest committed tree (consistent with `tokens.value()`), `renderTree` is the adapter-only renderer signal, and `changed` fires once per commit after the DOM is consistent, carrying that commit's `{added, removed, updated}` ids. Applies folded into one pending structural pass announce ONE **merged** delta — before that merge, two structural applies landing before a single bind dropped the first one's removals.
+- **Live node map and commit pipeline** — one id-keyed `Map<number, TokenHandle>`, mutated only through the pipeline; every value change flows through a single `apply(input)` that takes a producer-agnostic `CommitInput` (lowered from the transaction's `TransactionResult`) and routes on that input's `render` bit. Text never reaches the pipeline: `bind` arms one conditional-write effect per bound text surface, subscribed to that node's `text` signal, so a text edit repaints no component and the pipeline only announces. `render === true` publishes a new `renderTree` reference and binds the freshly rendered DOM. `current()` returns the latest committed tree (consistent with `tokens.value()`), `renderTree` is the adapter-only renderer signal, and `changed` fires once per commit after the DOM is consistent, carrying that commit's `{added, removed, updated}` ids. Applies folded into one pending structural pass announce ONE **merged** delta — before that merge, two structural applies landing before a single bind dropped the first one's removals.
 - **DOM↔model facade** — `handleAt(node)` resolves a DOM node to its handle (or `'control'`), `handle(id)` resolves a stable id to its live handle, `anchorFor(node, offset)` maps a DOM boundary to a node anchor in the live tree, `placeCaret(anchor)` / `selectRange(anchor, head)` write the caret, and `selection()` / `selectedContent()` read the live window selection. No member of this facade takes or returns an absolute document offset.
 - **Editable-state application** — `setEditable({editable, readOnly})` is called by `SelectionController` whenever `readOnly` or `isUserSelecting` changes; bind applies the same state to newly mounted surfaces.
 

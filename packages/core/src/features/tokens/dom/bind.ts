@@ -11,7 +11,7 @@ import type {ElementBindings} from './TokenHandle'
  * alignment), but instead of building throwaway records it mutates the
  * id-keyed handle map in place:
  *
- * - indexed node, known id    → `bindElements(...)`
+ * - indexed node, known id    → `bindElements(...)` (re-arming the text effect)
  * - indexed node, new id      → `new TokenHandle` + bind
  * - tree node the walk missed → `unbind()` — alive: the tree is authoritative,
  *   only the DOM is (transiently) misaligned
@@ -61,8 +61,11 @@ export function bind(input: BindInput): BindResult {
 	const {container, roots, nodes, controlElements, childSequenceHostsFor, isBlock, editable} = input
 
 	// `untracked` for the reason adoption documents: the walk below reads `children()`
-	// and `text()`, and a caller inside an effect or computed must not subscribe to
-	// every node the bind happened to touch.
+	// and the text effects read `text()`, and a caller inside an effect or computed must
+	// not subscribe to every node the bind happened to touch. It does NOT starve the
+	// per-surface effects: `effect()` installs itself as the active subscriber for its
+	// own body, so what `untracked` suppresses is only the link to an OUTER scope — which
+	// is exactly the link that would let a foreign re-run dispose them.
 	return untracked(() => {
 		// Depth-first flatten, before any mutation.
 		const tree: TreeNode[] = []
@@ -90,7 +93,7 @@ export function bind(input: BindInput): BindResult {
 					continue
 				}
 				const previous = handle.node()
-				handle.bindElements(bindings)
+				handle.bindElements(bindings, node)
 				applyMountState(node, bindings, previous, editable)
 				bound.set(node.id, handle)
 				byElement.set(bindings.tokenElement, handle)
@@ -188,16 +191,16 @@ function walkDom(
 }
 
 /**
- * Mount-time DOM state (absorbed here from the deleted per-commit sweep):
+ * Mount-time DOM state: contentEditable / tabindex, applied only to NEWLY bound
+ * elements. Elements that stay bound keep whatever the model shell's scoped
+ * editable setter last wrote — prop-change application is its job, not bind's.
  *
- * - textContent: EVERY bound text surface is reconciled to its node's text
- *   (conditional write — an untouched Text node keeps the caret stable). bind is
- *   the structural branch's endpoint, and a structural commit can also carry text
- *   changes (e.g. paste replacing a mark AND editing text); the renderer only
- *   re-renders structure, so a kept element's surface would stay stale without this.
- * - contentEditable / tabindex: applied only to NEWLY bound elements (mount).
- *   Elements that stay bound keep whatever the model shell's scoped editable
- *   setter last wrote — prop-change application is its job, not bind's.
+ * The textContent half is GONE (S2.7). `TokenHandle.bindElements` arms a per-surface
+ * effect instead, and an effect's immediate first run performs exactly the
+ * reconciliation this used to: a newly bound surface the renderer left stale, and a
+ * kept surface whose node's text moved on a structural commit, are both the effect's
+ * first comparison. Leaving both writers alive is the failure mode the phase exists to
+ * avoid.
  */
 function applyMountState(
 	node: TreeNode,
@@ -207,10 +210,6 @@ function applyMountState(
 ): void {
 	const surface = bindings.textElement
 	if (surface) {
-		if (node.kind === 'text') {
-			const text = node.text()
-			if (surface.textContent !== text) surface.textContent = text
-		}
 		// Apply editable state only to NEWLY bound text surfaces (mount); elements
 		// that stay bound keep what the model shell's scoped setter last wrote.
 		if (previous?.textElement !== surface) applyEditableState(bindings, editable)

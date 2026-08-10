@@ -29,28 +29,27 @@ const asMark = (token: Token): MarkToken => {
 }
 
 /**
- * MUTATION RECORD (S1.5 Task 6, re-measured after `materialized()` became the
- * lowering's one invalidation feed). Every guard in `snapshotMemo.ts` was removed
- * and the full core suite (862 tests) re-run; each line below is the measured
- * kill, so a future edit can tell a load-bearing assertion from a decorative one:
+ * MUTATION RECORD (S1.5 Task 6; re-measured at S2.7, when `materialized()` lost its
+ * consumer and was deleted with it — the pipeline no longer replays token content,
+ * so the memo's only reader is the published snapshot). Every guard in
+ * `snapshotMemo.ts` was removed and the full core suite re-run; each line below is
+ * the measured kill, so a future edit can tell a load-bearing assertion from a
+ * decorative one:
  *
  * - `shifted` walked as roots only, no subtree → 4 kills (the descendant test
  *   and the deep-equal run here, plus both descendant tests in `seam/`).
- * - `sameChildren` dropped from the cache-hit condition → 4 kills: the ancestor
- *   and `materialized()` tests here, plus the ancestor tests in `seam/`
- *   (`treeInput.spec.ts` and the live-path parity case in `treePipeline.spec.ts`).
- *   It was 1 before the lowering read this memo: the whole pipeline consequence
- *   of dropping it is that a mark handle keeps a token the DOM no longer shows.
- *   The deep-equal run below still does NOT catch it — it contains no
- *   length-preserving in-slot edit, so every ancestor in it is in `shifted`.
+ * - `sameChildren` dropped from the cache-hit condition → 3 kills: the ancestor
+ *   test here, plus the ancestor cases in `seam/` (`treeInput.spec.ts` and
+ *   `treePipeline.spec.ts`'s length-preserving in-slot edit). The consequence it
+ *   guards is a STALE `tokens.current()`: `render` is false for that edit, so no
+ *   re-render republishes the tree and every value-slicing consumer reads the mark's
+ *   old `content`/`slot`. The deep-equal run below still does NOT catch it — it
+ *   contains no length-preserving in-slot edit, so every ancestor in it is in
+ *   `shifted`.
  * - `removed` eviction skipped → 1 kill, the eviction test.
- * - `dirty.clear()` dropped → 2 kills: the second-edit half of the first test
- *   (`third[4]).toBe(after[4]`) and the second-edit half of the `materialized()`
- *   test. Without those halves the mutation survives the entire suite while
- *   silently disabling all reuse after the first edit.
- * - `fresh.clear()` dropped → 1 kill, again the second-edit half of the
- *   `materialized()` test: the feed goes cumulative, so every consumer refreshes
- *   every node it has ever touched, forever.
+ * - `dirty.clear()` dropped → 1 kill, the second-edit half of the first test
+ *   (`third[4]).toBe(after[4]`). Without that half the mutation survives the entire
+ *   suite while silently disabling all reuse after the first edit.
  */
 describe('createSnapshotMemo', () => {
 	it('reuses the token of every untouched node, and KEEPS reusing across a second edit', () => {
@@ -142,34 +141,5 @@ describe('createSnapshotMemo', () => {
 		const mark = asMark(first[1])
 		expect(memo.tokenFor(tree.roots()[1].id)).toBe(mark)
 		expect(memo.tokenFor(mark.children[0].id!)).toBe(mark.children[0])
-	})
-
-	it('materialized() reports exactly the ids re-materialized by the last roots(), ancestors included', () => {
-		// BOTH invalidation mechanisms in ONE answer, which is why `seam/treeInput.ts`
-		// derives its whole `changes` feed from this instead of from the transaction's:
-		// the length-preserving in-slot edit dirties only the CHILD, and the mark is
-		// here solely through `sameChildren`.
-		const {tree, memo} = setup('a#[bc]d')
-		const markNode = tree.roots()[1]
-		if (markNode.kind !== 'mark') throw new Error('expected a mark node')
-		const ids = {
-			head: tree.roots()[0].id,
-			mark: markNode.id,
-			child: markNode.children()[0].id,
-			tail: tree.roots()[2].id,
-		}
-
-		edit(tree, memo, 'a#[Zc]d')
-
-		expect(new Set(memo.materialized().keys())).toEqual(new Set([ids.child, ids.mark]))
-		expect(memo.materialized().get(ids.mark)?.content).toBe('#[Zc]')
-		expect(memo.materialized().has(ids.head)).toBe(false)
-
-		// Per GENERATION, not cumulative: a later edit that touches only the tail must
-		// not re-report the mark, or every consumer of this feed refreshes everything
-		// forever after.
-		edit(tree, memo, 'a#[Zc]dd')
-
-		expect(new Set(memo.materialized().keys())).toEqual(new Set([ids.tail]))
 	})
 })

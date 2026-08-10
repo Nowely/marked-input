@@ -1,3 +1,5 @@
+import {effect} from '../../../shared/signals/index.js'
+import type {TreeNode} from '../tree/types'
 import {
 	focusIfNeeded,
 	getCaretIndex,
@@ -33,6 +35,13 @@ export type ElementBindings = {
  * kind is readable off `textElement`) and `commit.ts`'s divergence detector, which
  * now compares the surface against the LIVE `TextNode.text()`.
  *
+ * What replaces the latch is {@link bindElements}'s text effect: one writer per
+ * surface, subscribed to that node's own `text` signal, whose immediate first run
+ * is the mount-time reconciliation `bind.applyMountState` used to do. It is
+ * disposed and re-armed on every re-bind — deliberately, and not an optimization
+ * gap: the re-arm's first run is what heals a surface corrupted between binds
+ * (gated by treePipeline.spec.ts's "the structural branch self-heals corruption").
+ *
  * Lifetime: created when its node enters the tree (keyed by the node's stable id),
  * mutated in place by `bindElements`/`unbind`, killed when the node disappears
  * (stale reads stay safe, commands become no-ops, never resurrected).
@@ -44,6 +53,7 @@ export class TokenHandle {
 	#textElement: HTMLElement | undefined
 	#rowElement: HTMLElement | undefined
 	#childSequenceHost: HTMLElement | undefined
+	#disposeText: (() => void) | undefined
 
 	constructor(readonly id: number) {}
 
@@ -143,13 +153,48 @@ export class TokenHandle {
 		return true
 	}
 
-	/** @internal Set/replace the DOM bindings (structural bind). */
-	bindElements(bindings: ElementBindings): void {
+	/**
+	 * @internal Set/replace the DOM bindings and re-arm the text effect (structural bind).
+	 * `node` is this handle's own node — an id and its node object are paired for the
+	 * node's whole life (adoption mutates nodes in place and never reuses an id), so the
+	 * caller cannot hand over a foreign one.
+	 */
+	bindElements(bindings: ElementBindings, node: TreeNode): void {
 		if (this.#dead) return
 		this.#tokenElement = bindings.tokenElement
 		this.#textElement = bindings.textElement
 		this.#rowElement = bindings.rowElement
 		this.#childSequenceHost = bindings.childSequenceHost
+		this.#armText(bindings.textElement, node)
+	}
+
+	/**
+	 * THE writer of a text surface (S2.7): the DOM mirrors `node.text()` and nothing
+	 * else touches it.
+	 *
+	 * The comparison is load-bearing, and its reason is NOT the obvious one — MEASURED
+	 * in Chromium. On an element with a single `Text` child the `textContent` setter
+	 * takes Blink's fast path (`setData` on that node, itself a no-op for an identical
+	 * string), so an unconditional write of the same string keeps both the node and the
+	 * caret. The case it actually saves is a SPLIT surface — two `Text` children, which
+	 * is what `splitText` and the browser's own editing of a contenteditable leave
+	 * behind. There the setter is a genuine replace-all: measured, writing the same
+	 * string collapses two children into one and drops the caret from 4 to 0. Gated by
+	 * bind.spec.ts's "keeps the caret when a re-bind finds the surface already correct".
+	 *
+	 * WHEN it fires is up to the caller's batching, not to this module: adoption writes
+	 * `text` inside its own batch, and a caller that wraps the whole edit in one more
+	 * (`EditController.replace` does) defers the flush to the end of THAT batch. See
+	 * `commit.ts`'s divergence-detector registration for what that costs.
+	 */
+	#armText(surface: HTMLElement | undefined, node: TreeNode): void {
+		this.#disposeText?.()
+		this.#disposeText = undefined
+		if (!surface || node.kind !== 'text') return
+		this.#disposeText = effect(() => {
+			const text = node.text()
+			if (surface.textContent !== text) surface.textContent = text
+		})
 	}
 
 	/** @internal Clear the DOM bindings (token unmounted from the DOM). */
@@ -166,6 +211,8 @@ export class TokenHandle {
 	}
 
 	#clearElements(): void {
+		this.#disposeText?.()
+		this.#disposeText = undefined
 		this.#tokenElement = undefined
 		this.#textElement = undefined
 		this.#rowElement = undefined
