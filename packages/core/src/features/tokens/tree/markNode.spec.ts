@@ -151,7 +151,7 @@ describe('MarkNode verbs', () => {
 		// (A replacement mark of the same descriptor in the same slot would INHERIT
 		// the identity instead — continuity the id bridge deliberately preserves;
 		// see 'same-slot replacement inherits identity'.)
-		store.tokens.replace({start: 0, end: -1}, 'different text')
+		store.tokens.setValue('different text')
 
 		node.update({value: 'bad'})
 		expect(store.tokens.value()).toBe('different text')
@@ -248,7 +248,7 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 		const {store, node} = mountedSetup()
 
 		// Same descriptor (@[__value__]) in the same slot (index 0): identity inherited.
-		store.tokens.replace({start: 0, end: -1}, 'different @[x]')
+		store.tokens.setValue('different @[x]')
 
 		// Paint the FULL render tree (text, value-only mark, trailing empty text)
 		// and complete the handshake — bind re-resolves the inherited-id mark in
@@ -375,7 +375,7 @@ describe('MarkNode live-read parity', () => {
 		// removes nothing, takes the TEXT path and opens no pending window at all. The
 		// extra mark keeps the commit structural while the FIRST mark keeps its id, so
 		// this still exercises the window rather than a dead mark.
-		store.tokens.replace({start: 0, end: -1}, 'he@[x]llo@[y]')
+		store.tokens.setValue('he@[x]llo@[y]')
 		// INVERTED at S1.6d (§4.6 item 4, SEMVER-MAJOR): the write latch is gone. The node
 		// is the live object, which has no pending window, and the write folds into the
 		// pending structural pass (the pipeline's fold guard).
@@ -399,7 +399,7 @@ describe('MarkNode live-read parity', () => {
 		// The fixture ADDS roots for the reason spelled out on the mid-window case above: a
 		// whole-value write that keeps the root count is a text-path commit and opens no
 		// pending window.
-		store.tokens.replace({start: 0, end: -1}, 'he@[x]llo@[y]')
+		store.tokens.setValue('he@[x]llo@[y]')
 		const freshToken = store.tokens.renderTree().find(t => t.type === 'mark')!
 		const node = markNodeOf(store, freshToken)
 

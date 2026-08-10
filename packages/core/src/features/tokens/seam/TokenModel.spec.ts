@@ -133,7 +133,7 @@ describe('TokenModel shell (seam/)', () => {
 				domAtEvent = text2.textContent
 			})
 
-			model.replace({start: 9, end: 9}, '!')
+			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '!')
 
 			expect(text2.textContent).toBe('llo!')
 			expect(domAtEvent).toBe('llo!')
@@ -142,7 +142,7 @@ describe('TokenModel shell (seam/)', () => {
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 
 			// Consume-once hint: a second edit patches through the windowed parse again.
-			model.replace({start: 10, end: 10}, '!')
+			model.replaceBetween(model.anchorAt(10), model.anchorAt(10), '!')
 			expect(text2.textContent).toBe('llo!!')
 			expect(changedSpy).toHaveBeenCalledTimes(2)
 			expect(model.renderTree()).toBe(treeBefore)
@@ -154,7 +154,7 @@ describe('TokenModel shell (seam/)', () => {
 			const changedSpy = vi.fn()
 			watch(model.changed, changedSpy)
 
-			model.replace({start: 9, end: 9}, '@[y]')
+			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '@[y]')
 
 			expect(model.renderTree()).not.toBe(treeBefore)
 			expect(model.renderTree().map(t => t.content)).toEqual(['he', '@[x]', 'llo', '@[y]', ''])
@@ -207,7 +207,7 @@ describe('TokenModel shell (seam/)', () => {
 			expect(handle?.element()).toBe(text2)
 
 			// Text path: the token OBJECT is replaced while its id survives.
-			model.replace({start: 9, end: 9}, '!')
+			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '!')
 
 			expect(model.handle(stale.id!)).toBe(handle)
 			expect(handle?.token()).not.toBe(stale)
@@ -222,7 +222,7 @@ describe('TokenModel shell (seam/)', () => {
 			const handle = model.handle(stale.id!)
 			expect(handle).toBeInstanceOf(TokenHandle)
 
-			model.replace({start: 9, end: 9}, '@[y]')
+			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '@[y]')
 
 			// The latched window: the node layer is one generation stale — the
 			// id-bridge must not hand out handles a mutation could act on.
@@ -327,7 +327,7 @@ describe('TokenModel shell (seam/)', () => {
 			expect(mark.hasAttribute('tabindex')).toBe(false)
 
 			// The next structural bind applies the stored state to NEW elements.
-			model.replace({start: 9, end: 9}, '@[y]')
+			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '@[y]')
 			const spans = render()
 			expect(spans[0].contentEditable).toBe('false')
 			expect(spans[1].hasAttribute('tabindex')).toBe(false)

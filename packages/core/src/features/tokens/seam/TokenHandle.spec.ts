@@ -84,7 +84,7 @@ describe('TokenHandle', () => {
 		const handle = store.tokens.handleAt(span)
 		if (!handle || handle === 'control') throw new Error('expected handle')
 
-		store.tokens.replace({start: 0, end: -1}, 'hello!')
+		store.tokens.setValue('hello!')
 		span.textContent = 'hello!'
 		store.host.rendered()
 
@@ -110,7 +110,7 @@ describe('TokenHandle', () => {
 		secondRow.remove()
 
 		// Update the parsed value so the token tree shrinks too
-		store.tokens.replace({start: 0, end: -1}, 'alpha\n\n')
+		store.tokens.setValue('alpha\n\n')
 
 		store.host.rendered()
 
@@ -127,7 +127,7 @@ describe('TokenHandle', () => {
 		tokenEl.textContent = 'beta'
 		rowEl.append(tokenEl)
 		container.append(rowEl)
-		store.tokens.replace({start: 0, end: -1}, 'alpha\n\nbeta\n\n')
+		store.tokens.setValue('alpha\n\nbeta\n\n')
 		store.host.rendered()
 
 		const newHandle = store.tokens.handle(store.tokens.current()[1].id!)

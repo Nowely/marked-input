@@ -74,7 +74,7 @@ describe('anchorFor', () => {
 		// Structural (a mark is added), so the commit latches for its bind instead of
 		// self-healing; no `host.rendered()` follows, so the DOM stays one generation
 		// behind. 'he' shrinks to 'h' in the same edit.
-		store.tokens.replace({start: 0, end: -1}, 'h@[x]llo@[z]')
+		store.tokens.setValue('h@[x]llo@[z]')
 		expect(dom1.data).toBe('he')
 
 		// G2: the offset is local to a node the edit did not touch, so the anchor is
@@ -94,7 +94,7 @@ describe('anchorFor', () => {
 		// D4's FIRST fail-closed arm — the id bridge misses. Handles are killed by
 		// `bind`, not by the apply (bind.ts), so a structural edit with no repaint is
 		// the only state where a node stays bound and locatable after leaving the tree.
-		store.tokens.replace({start: 0, end: -1}, 'hello')
+		store.tokens.setValue('hello')
 		expect(store.tokens.nodes().every(node => node.kind === 'text')).toBe(true)
 
 		expect(store.tokens.anchorFor(mark, 0)).toBeUndefined()
@@ -135,7 +135,7 @@ describe('anchorFor', () => {
 		// to the nearest bound ancestor, so every child of a bound element resolves to
 		// SOMETHING. Structural with no repaint, so the elements stay bound while their
 		// nodes leave the tree (the state D4's first fail-closed arm is measured in).
-		store.tokens.replace({start: 0, end: -1}, '@[q]')
+		store.tokens.setValue('@[q]')
 		const outer = store.tokens.nodes()[1]
 		if (outer.kind !== 'mark') throw new Error('expected the outer mark to survive the edit')
 		expect(outer.children()).toHaveLength(1)
@@ -194,7 +194,7 @@ describe('anchorFor', () => {
 		expect(runs).toBe(1)
 
 		// A TEXT-path edit on that very node: its `text` signal fires, nothing structural.
-		store.tokens.replace({start: 0, end: 2}, 'HEY')
+		store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(2), 'HEY')
 		const edited = store.tokens.nodes()[0]
 		if (edited.kind !== 'text') throw new Error('expected the first root to stay a text node')
 		expect(edited.text()).toBe('HEY')

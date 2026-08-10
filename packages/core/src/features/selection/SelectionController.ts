@@ -1,5 +1,5 @@
 // packages/core/src/features/selection/SelectionController.ts
-import type {Range, RawSelection} from '../../shared/editorContracts'
+import type {Range} from '../../shared/editorContracts'
 import type {Computed, Signal} from '../../shared/signals'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
@@ -40,7 +40,6 @@ export class SelectionController {
 			setEditable: options => tokens.setEditable(options),
 			placeCaret: anchor => tokens.placeCaret(anchor),
 			selectRange: (anchor, head) => tokens.selectRange(anchor, head),
-			offsetOf: anchor => tokens.offsetOf(anchor),
 			anchorFor: (node, offset, affinity) => tokens.anchorFor(node, offset, affinity),
 		})
 
@@ -86,11 +85,6 @@ export class SelectionController {
 	/** THE DOM-truth read (spec S2 D5): see {@link SelectionDriver.domAnchors}. */
 	domAnchors(): Anchors | undefined {
 		return this.#driver.domAnchors()
-	}
-
-	/** @deprecated {@link domAnchors} projected through `offsetOf`; only `ClipboardController` still needs numbers. */
-	readRaw(): RawSelection | undefined {
-		return this.#driver.readRaw()
 	}
 
 	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {

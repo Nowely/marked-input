@@ -63,7 +63,7 @@ describe('Store', () => {
 			// the mutation. Measured: 3 cases died before the port, 1 after; this line and the
 			// one in `current` › 'returns written current value' restore the other two.
 			expect(store.tokens.value()).toBe('')
-			store.tokens.replace({start: 0, end: -1}, 'hello')
+			store.tokens.setValue('hello')
 			expect(store.tokens.value()).toBe('hello')
 		})
 
@@ -84,7 +84,7 @@ describe('Store', () => {
 			})
 			effectSpy.mockClear()
 			batch(() => {
-				store.tokens.replace({start: 0, end: -1}, 'a')
+				store.tokens.setValue('a')
 				store.selection.isUserSelecting(true)
 			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
@@ -115,7 +115,7 @@ describe('Store', () => {
 
 		it('reflects controlled value via tokens without changing internal state', () => {
 			const store = new Store()
-			store.tokens.replace({start: 0, end: -1}, 'internal')
+			store.tokens.setValue('internal')
 			store.props.set({value: 'controlled'})
 			expect(store.tokens.value()).toBe('controlled')
 			store.props.set({value: undefined})
@@ -136,7 +136,7 @@ describe('Store', () => {
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			store.host.container(document.createElement('div'))
-			store.tokens.replace({start: 0, end: -1}, 'hello')
+			store.tokens.setValue('hello')
 			expect(store.tokens.current()).toMatchObject([
 				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
@@ -147,7 +147,7 @@ describe('Store', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			store.tokens.replace({start: 0, end: -1}, 'world')
+			store.tokens.setValue('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
 		})
@@ -157,7 +157,7 @@ describe('Store', () => {
 			store.host.container(document.createElement('div'))
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
-			store.tokens.replace({start: 0, end: -1}, 'world')
+			store.tokens.setValue('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.tokens.value()).toBe('hello')
 			expect(store.tokens.current()).toMatchObject([
@@ -167,7 +167,7 @@ describe('Store', () => {
 
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
-			expect(() => store.tokens.replace({start: 0, end: -1}, 'test')).not.toThrow()
+			expect(() => store.tokens.setValue('test')).not.toThrow()
 		})
 	})
 
@@ -392,14 +392,14 @@ describe('Store', () => {
 			// The read before the write is load-bearing — see `internal state signals` ›
 			// 'update when written directly' for the measurement.
 			expect(store.tokens.value()).toBe('')
-			store.tokens.replace({start: 0, end: -1}, 'cached')
+			store.tokens.setValue('cached')
 			expect(store.tokens.value()).toBe('cached')
 		})
 
 		it('reacts to current changes', () => {
 			const store = new Store()
 			expect(store.tokens.value()).toBe('')
-			store.tokens.replace({start: 0, end: -1}, 'updated')
+			store.tokens.setValue('updated')
 			expect(store.tokens.value()).toBe('updated')
 		})
 

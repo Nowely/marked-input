@@ -1,5 +1,4 @@
 import {firstHtmlChild, nodeTarget} from '../../../shared/checkers'
-import type {RawSelection} from '../../../shared/editorContracts'
 import {listen, signal, watch} from '../../../shared/signals'
 import type {Event, Signal} from '../../../shared/signals'
 import type {Host} from '../../state/Host'
@@ -27,7 +26,6 @@ export type SelectionDriverDeps = {
 	/** THE model→DOM direction: a stored anchor placed through its OWN node (spec S2 D1). */
 	placeCaret(anchor: NodeAnchor): boolean
 	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean
-	offsetOf(anchor: NodeAnchor): number
 	/** THE DOM→model direction: a live DOM boundary as an anchor in the live tree, forming no offset. */
 	anchorFor(node: Node, offset: number, affinity?: 'before' | 'after'): NodeAnchor | undefined
 }
@@ -116,33 +114,6 @@ export class SelectionDriver {
 		const anchor = this.deps.anchorFor(range.startContainer, range.startOffset, 'after')
 		const head = this.deps.anchorFor(range.endContainer, range.endOffset, 'before')
 		return anchor && head ? {anchor, head} : undefined
-	}
-
-	/**
-	 * DOM truth as absolute offsets: {@link domAnchors} projected through `offsetOf`.
-	 *
-	 * LIVE space now, not bind-generation. The old reading went through
-	 * `SelectionSnapshot.raw`, which adds a `position.start` off the handle's BIND
-	 * generation (spec S1 D9); anchors name live nodes and `offsetOf` reads live
-	 * positions, so the adopt→bind window stops being a coordinate hazard here. It also
-	 * inherits `anchorFor`'s narrower fail-closed conditions (spec S2 D4).
-	 *
-	 * NO `direction` in the answer: anchors carry none, and nothing reads it — the field
-	 * is produced by `DomModel.#rawSelectionFrom` and consumed nowhere in the repo.
-	 * `SelectionSnapshot.raw` still carries it; both die with the numeric space at S2.6.
-	 *
-	 * NO PRODUCTION CALLER since S2.5 — `keyboard/` and `ClipboardController` read
-	 * {@link domAnchors} directly, and the "answers `undefined` when the window selection is
-	 * gone" contract moved with them (its gate is `input.spec`'s "clears the whole value even
-	 * when the DOM selection is gone"). What is left is `dom/domBoundary.spec`; this and the
-	 * whole numeric space die at S2.6.
-	 */
-	readRaw(): RawSelection | undefined {
-		const anchors = this.domAnchors()
-		if (!anchors) return undefined
-		const anchor = this.deps.offsetOf(anchors.anchor)
-		const head = this.deps.offsetOf(anchors.head)
-		return {range: anchor <= head ? {start: anchor, end: head} : {start: head, end: anchor}}
 	}
 
 	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {

@@ -196,12 +196,12 @@ describe('handleBeforeInput()', () => {
 
 	/**
 	 * The keydown path had NO direct coverage before S1.8. It was flagged as redundant with its
-	 * own fallthrough — `readRaw()` on an all-selected editor answers `{0, len}`, which
-	 * `rangeForDelete` passes straight through — and the first case below does NOT discriminate
+	 * own fallthrough — the DOM read on an all-selected editor spans the whole document, which
+	 * the delete target passes straight through — and the first case below does NOT discriminate
 	 * it: deleting the branch keeps that one green. The second case does, and that is what
 	 * refutes the claim. The two paths diverge exactly when the STORED selection says
 	 * all-selected while the DOM selection is gone: the branch still preventDefaults and clears,
-	 * the fallthrough bails on `readRaw()` and lets the browser mutate contenteditable behind
+	 * the fallthrough bails on `domAnchors()` and lets the browser mutate contenteditable behind
 	 * the model's back.
 	 */
 	describe('handleDeleteKey()', () => {

@@ -120,7 +120,7 @@ describe('TokenModel.current() — the fresh reconciled read', () => {
 
 	it('current() stays fresh across a text-path edit — content tracks value.current()', () => {
 		const {store, container} = mountInline('hello')
-		store.tokens.replace({start: 5, end: 5}, '!')
+		store.tokens.replaceBetween(store.tokens.anchorAt(5), store.tokens.anchorAt(5), '!')
 		// text-path commit: renderTree keeps its reference, but current() is the
 		// reconciled latest — fresh content, consistent with the new value.
 		expect(store.tokens.value()).toBe('hello!')

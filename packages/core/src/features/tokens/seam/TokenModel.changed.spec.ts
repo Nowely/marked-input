@@ -103,7 +103,7 @@ describe('TokenModel changed event', () => {
 		const changedSpy = vi.fn()
 		watch(store.tokens.changed, changedSpy)
 
-		store.tokens.replace({start: 0, end: -1}, 'he@[x]llo!')
+		store.tokens.setValue('he@[x]llo!')
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(changedSpy.mock.lastCall?.[0]).toEqual({added: [], removed: [], updated: [tailId]})

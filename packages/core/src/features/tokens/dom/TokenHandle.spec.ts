@@ -296,7 +296,7 @@ describe('TokenHandle', () => {
 		const secondRow = container.children[1]
 		if (!(secondRow instanceof HTMLElement)) throw new Error('expected HTMLElement')
 		secondRow.remove()
-		store.tokens.replace({start: 0, end: -1}, 'alpha\n\n')
+		store.tokens.setValue('alpha\n\n')
 		store.host.rendered()
 		expect(handle.alive()).toBe(false)
 	})

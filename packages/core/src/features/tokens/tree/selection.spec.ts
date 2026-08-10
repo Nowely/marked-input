@@ -121,7 +121,7 @@ describe('createSelection', () => {
 			store.selection.position(7)
 			expect(store.selection.range()).toEqual({start: 7, end: 7})
 
-			store.tokens.replace({start: 0, end: 0}, 'Z')
+			store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(0), 'Z')
 
 			expect(store.tokens.value()).toBe('Zab@[x]cd')
 			expect(store.selection.range()).toEqual({start: 8, end: 8})
@@ -133,7 +133,7 @@ describe('createSelection', () => {
 			const store = unmountedStoreWithMark('ab@[x]cd')
 			store.selection.position(7)
 
-			store.tokens.replace({start: 6, end: 8}, 'ZZZZ')
+			store.tokens.replaceBetween(store.tokens.anchorAt(6), store.tokens.anchorAt(8), 'ZZZZ')
 
 			expect(store.selection.range()).toEqual({start: 10, end: 10})
 		})
@@ -145,7 +145,7 @@ describe('createSelection', () => {
 			const store = unmountedStoreWithMark('ab@[x]cd')
 			store.selection.position(7)
 
-			store.tokens.replace({start: 0, end: -1}, 'zz')
+			store.tokens.setValue('zz')
 
 			expect(store.tokens.value()).toBe('zz')
 			expect(store.selection.range()).toEqual({start: 2, end: 2})
@@ -157,7 +157,7 @@ describe('createSelection', () => {
 			const store = unmountedStoreWithMark('ab@[x]cd')
 			store.selection.position(8)
 
-			store.tokens.replace({start: 1, end: 7}, 'Q')
+			store.tokens.replaceBetween(store.tokens.anchorAt(1), store.tokens.anchorAt(7), 'Q')
 
 			expect(store.tokens.value()).toBe('aQd')
 			expect(store.selection.range()).toEqual({start: 3, end: 3})
@@ -171,7 +171,7 @@ describe('createSelection', () => {
 			const store = enableStructuralStore('hello')
 			store.selection.position(1)
 
-			store.tokens.replace({start: 0, end: 3}, 'hey')
+			store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(3), 'hey')
 
 			expect(store.tokens.value()).toBe('heylo')
 			expect(store.selection.range()).toEqual({start: 3, end: 3})
@@ -180,7 +180,7 @@ describe('createSelection', () => {
 		it('leaves the selection alone when there was none', () => {
 			const store = unmountedStoreWithMark('ab@[x]cd')
 			expect(store.selection.range()).toBeUndefined()
-			store.tokens.replace({start: 0, end: 0}, 'Z')
+			store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(0), 'Z')
 			expect(store.selection.range()).toBeUndefined()
 		})
 	})

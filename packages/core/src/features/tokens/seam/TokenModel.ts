@@ -1,4 +1,4 @@
-import type {DomRef, Range} from '../../../shared/editorContracts'
+import type {DomRef} from '../../../shared/editorContracts'
 import {computed, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
@@ -13,7 +13,6 @@ import type {MarkToken, Token} from '../parser/types'
 import {adjacentMark, anchorAt, offsetOfAnchor, stepAnchor} from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
-import {lowerReplace} from '../tree/offsetShim'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf, sliceNodes} from '../tree/tree'
@@ -64,9 +63,6 @@ export interface SelectionPort {
  *   and {@link setEditable} (type). S2.6 took the other three — the numeric DOM walk
  *   read type, position and content, and `keyboard/arrowNav.ts` read position — so the
  *   latch no longer carries a coordinate to anyone.
- * - the internal offset shim ({@link replace}) — spec D8. Its production callers are gone
- *   as of S2.5 ({@link replaceBetween} is the node-shaped write verb it was waiting for);
- *   what is left is spec call sites, and both die at S2.6.
  *
  * Layout: consumer reads → adapter SPI → engine SPI → wiring → internals.
  */
@@ -207,8 +203,9 @@ export class TokenModel {
 	 */
 	replaceBetween(from: NodeAnchor, to: NodeAnchor, text: string): NodeAnchor | undefined {
 		this.#ensureSeeded()
-		// Lowered in the TREE's coordinate space, for {@link replace}'s reason: that is what
-		// `transactions.dispatch` splices.
+		// Lowered in the TREE's coordinate space: that is what `transactions.dispatch`
+		// splices, and it equals {@link value} whenever seeded — in controlled mode the tree
+		// holds the last arrival, and a mid-flight emission does not move it (spec D6).
 		const op = untracked(() => {
 			const roots = this.#tree.roots()
 			const a = offsetOfAnchor(roots, from)
@@ -261,26 +258,6 @@ export class TokenModel {
 		return untracked(() => sliceNodes(this.#tree.roots(), from, to))
 	}
 
-	/**
-	 * @internal The internal offset shim (spec D8): a global range → `applyRange`.
-	 * NO production caller since S2.5 — {@link replaceBetween} took them all — and the
-	 * remaining spec call sites die with it at S2.6.
-	 */
-	replace(range: Range, replacement: string): boolean {
-		this.#ensureSeeded()
-		// The op must be lowered in the TREE's coordinate space — that is what
-		// `transactions.dispatch` splices. It equals `value()` whenever seeded: in
-		// controlled mode the tree holds the last arrival, and a mid-flight emission does
-		// not move it (spec D6).
-		const op = lowerReplace(
-			untracked(() => this.#tree.value()),
-			range,
-			replacement
-		)
-		if (!op) return false
-		return this.#tx.applyRange(op.window, op.text)
-	}
-
 	/** @internal Whole-node replacement (spec D5) — the mark verbs' write path. */
 	applyStructural(target: TreeNode, replacement: string): boolean {
 		this.#ensureSeeded()
@@ -306,8 +283,8 @@ export class TokenModel {
 	 *
 	 * RECORDED GAP (measured): dropping `#ensureSeeded()` here and on {@link tx} survives the
 	 * whole suite — every fixture reaches these verbs through a mounted store, which the mount
-	 * watch already seeded. Kept for parity with {@link replace} and {@link applyStructural},
-	 * whose gates are the unmounted-store specs.
+	 * watch already seeded. Kept for parity with {@link replaceBetween} and
+	 * {@link applyStructural}, whose gates are the unmounted-store specs.
 	 */
 	applyText(node: TextNode, range: {start: number; end: number}, text: string): boolean {
 		this.#ensureSeeded()
@@ -358,7 +335,7 @@ export class TokenModel {
 	 * Spec §2.3: a global offset → the node anchor at it (right affinity). THE
 	 * offset→anchor direction for the selection write path.
 	 *
-	 * Seeds for the same reason {@link replace} does (plan decision D-f): an
+	 * Seeds for the same reason the write verbs do (plan decision D-f): an
 	 * unmaterialized tree has no roots, so every offset would answer `'end'`. The bare
 	 * function is the module import — this method does not recurse.
 	 */
@@ -551,8 +528,8 @@ export class TokenModel {
 	 * changes nothing the computed subscribes to, so the read back is stale. Until
 	 * S1.8 step 5 that read was implicit — `ValueModel.current` was a writable computed
 	 * and `signal.ts`'s `writableComputed` evaluates its getter before the set to
-	 * short-circuit an equal write; `tokens.replace` has no such read, so two of those
-	 * cases now read the value explicitly first.
+	 * short-circuit an equal write; the token write verbs have no such read, so two of
+	 * those cases now read the value explicitly first.
 	 * `TokenModel.value.spec`'s "initializes from defaultValue when
 	 * uncontrolled" stays green for the same reason it does under the {@link value}
 	 * mutation above: mount seeds before the first read.
@@ -635,7 +612,7 @@ export class TokenModel {
 	 * write path materializes the tree on first use rather than waiting for mount.
 	 *
 	 * RECORDED, NOT WRAPPED: these reads are TRACKED, where every other read on this
-	 * write path is `untracked` (see {@link replace}, and `arrive`/`reparse` in the
+	 * write path is `untracked` (see {@link replaceBetween}, and `arrive`/`reparse` in the
 	 * boundary). Measured cost of the inconsistency — an effect that calls a write verb
 	 * on an UNSEEDED store subscribes to `props.value` and `#seeded` and re-runs once
 	 * when the parent later sets a value (1 → 2 runs); on a seeded store it subscribes

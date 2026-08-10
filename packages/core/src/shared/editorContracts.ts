@@ -7,11 +7,6 @@ export type Range = {
 	readonly end: number
 }
 
-export type RawSelection = {
-	readonly range: Range
-	readonly direction?: 'forward' | 'backward'
-}
-
 export type MarkInfo = {
 	/** Nesting level: a top-level mark has depth 0. */
 	readonly depth: number
