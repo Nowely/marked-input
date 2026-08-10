@@ -2,7 +2,6 @@ import {event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
 import type {EditController} from '../edit'
 import type {PropsModel} from '../state/PropsModel'
-import type {ValueModel} from '../state/ValueModel'
 import type {Token, TokenModel} from '../tokens'
 import {BlockStore} from './BlockStore'
 import {applyDragAction} from './operations'
@@ -20,13 +19,12 @@ export class BlockController {
 
 	constructor(
 		private readonly props: PropsModel,
-		private readonly value: ValueModel,
 		private readonly tokens: TokenModel,
 		private readonly edit: EditController
 	) {
 		watch(this.action, action => {
 			if (!this.props.layout.isBlock() || !this.props.draggable()) return
-			const value = this.value.current()
+			const value = this.tokens.value()
 			// Fresh read: drag operations slice the live value by row positions;
 			// tokens() is the reconciled tree consistent with value.current() at
 			// drop time.
@@ -35,10 +33,12 @@ export class BlockController {
 			this.edit.replace({start: 0, end: -1}, result.value, result.caret)
 		})
 
-		// changed is payloadless (Phase 2); the removed ids of the last commit
-		// come from the model's removedIds() accessor — the prune feed.
-		watch(this.tokens.changed, () => {
-			for (const id of this.tokens.removedIds()) this.#stores.delete(id)
+		// The `changed` payload (spec §2.3) replaced a wave-scoped side channel: the
+		// ids arrive WITH the event instead of from a field that was valid only for
+		// the duration of that wave, and the pipeline merges every commit folded into
+		// one paint rather than keeping the last one.
+		watch(this.tokens.changed, delta => {
+			for (const id of delta.removed) this.#stores.delete(id)
 		})
 	}
 

@@ -31,7 +31,7 @@ function TreeMark({children}: {children?: React.ReactNode}) {
 
     return (
         <span data-depth={info.depth}>
-            {info.hasNestedMarks ? children : mark.slot ?? mark.value}
+            {info.hasNestedMarks ? children : (mark.slot() ?? mark.value())}
         </span>
     )
 }
@@ -42,7 +42,7 @@ function TreeMark({children}: {children?: React.ReactNode}) {
 | `depth` | Nesting depth, where top-level marks are `0`. |
 | `hasNestedMarks` | Whether any child token is a mark. |
 
-Parent and child traversal is intentionally not exposed through `useMark()`. Core owns token addresses and validates them through the token index.
+`useMark()` walks downward through `mark.children()`; there is no parent link. Core owns node identity and resolves addresses through the live tree.
 
 ## Opaque Children
 
@@ -78,6 +78,6 @@ function SlotMark({children}: {children?: React.ReactNode}) {
     const mark = useMark()
     const info = useMarkInfo()
 
-    return <span>{info.hasNestedMarks ? children : mark.slot}</span>
+    return <span>{info.hasNestedMarks ? children : mark.slot()}</span>
 }
 ```

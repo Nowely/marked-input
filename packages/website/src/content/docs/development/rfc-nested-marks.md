@@ -9,7 +9,7 @@ This RFC is historical. Nested marks now use the core editor engine primitives i
 - `ParseController` owns token paths, token addresses, and parse generations.
 - React and Vue render adapter-owned token shells and slot roots.
 - `DomController` registers those structures and maps DOM selections to raw value ranges.
-- `useMark()` returns a `MarkController` for commands.
+- `useMark()` returns the live `MarkNode`, which carries the commands.
 - `useMarkInfo()` returns structural metadata (`depth`, `hasNestedMarks`).
 
 Current authoring pattern:
@@ -23,7 +23,7 @@ function NestedMark({children}: {children?: React.ReactNode}) {
 
     return (
         <span data-depth={info.depth}>
-            {info.hasNestedMarks ? children : mark.slot ?? mark.value}
+            {info.hasNestedMarks ? children : (mark.slot() ?? mark.value())}
         </span>
     )
 }

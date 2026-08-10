@@ -60,6 +60,43 @@ describe('Render-count gates: commit routing', () => {
 })
 
 /**
+ * Fan-out gate (the `Token` memo comparator): the gate above only pins
+ * "structural > baseline", which passes identically at 1 re-render and at N —
+ * so it cannot see the regression this one exists for. A structural edit at the
+ * HEAD re-materializes every token after it with a shifted `position` and no
+ * other change; the bound below is therefore a CONSTANT, not a relative one.
+ */
+describe('Render-count gates: structural fan-out', () => {
+	it('a structural edit at the head re-renders a constant number of marks', async () => {
+		const MARKS = 24
+		const markRender = vi.fn()
+		const Mark = ({value}: MarkProps) => {
+			markRender()
+			return <mark>{value}</mark>
+		}
+		const Span = ({value}: MarkProps) => <span>{value}</span>
+		const marks = Array.from({length: MARKS}, (_, i) => `@[m${i}](${i})`).join(' ')
+
+		await render(<MarkedInput Mark={Mark} Span={Span} defaultValue={`HEAD ${marks}`} />)
+		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
+
+		await focusAtEnd(getElement(page.getByText('HEAD ')))
+		const baseline = markRender.mock.calls.length
+		expect(baseline).toBeGreaterThanOrEqual(MARKS)
+
+		// Completing a markup BEFORE every existing mark: all MARKS of them
+		// suffix-shift into new objects carrying the same id, content, value,
+		// meta and descriptor — only `position` differs, and nothing reads it.
+		await userEvent.keyboard('@[[new](99)')
+		await expect.element(page.getByText('new')).toBeInTheDocument()
+
+		// Gate: the shifted marks do not re-render — the delta stays flat as the
+		// document grows. Without the comparator this delta is MARKS + 1.
+		expect(markRender.mock.calls.length - baseline).toBeLessThanOrEqual(5)
+	})
+})
+
+/**
  * Block-layout gate (deep reconcile, design-spec B3): every row of a
  * slot-leading markup is a MARK, so before deep reconcile a keystroke inside a
  * row was a mark-level textChanged — escalated structurally, re-rendering on

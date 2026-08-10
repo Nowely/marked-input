@@ -1,4 +1,4 @@
-import type {CoreOption, DraggableConfig, MarkputHandler, OverlayTrigger} from '@markput/core'
+import type {CoreOption, DraggableConfig, MarkputApi, OverlayTrigger} from '@markput/core'
 import {Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useImperativeHandle, useLayoutEffect, useState} from 'react'
@@ -26,8 +26,8 @@ import {OverlayRenderer} from './OverlayRenderer'
  * ```
  */
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps> {
-	/** Ref to handler */
-	ref?: Ref<MarkputHandler>
+	/** Ref to the editor API (spec §2.3) */
+	ref?: Ref<MarkputApi>
 	/** Global component used for rendering text tokens (default: built-in Span) */
 	Span?: ComponentType<MarkProps>
 	/** Global component used for rendering markups (fallback for option.Mark) */
@@ -90,7 +90,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOp
 		store.props.set(props)
 	})
 
-	useImperativeHandle(props.ref, () => store.handler, [store])
+	useImperativeHandle(props.ref, () => store.api, [store])
 
 	return (
 		<StoreContext value={store}>

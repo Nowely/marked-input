@@ -47,7 +47,7 @@ optional id: number;
 
 Defined in: [core/src/features/tokens/parser/types.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/types.ts#L25)
 
-Stable identity id, stamped by reconcile (tokenIdentity) — NOT by the parser. Absent on freshly parsed, never-reconciled trees.
+Stable identity id, stamped by the tree's snapshot (`tree/snapshot.ts`) — NOT by the parser. Absent on freshly parsed trees.
 
 ***
 

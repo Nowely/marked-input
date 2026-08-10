@@ -23,8 +23,7 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 		}
 	})
 	const alwaysShowHandle = useMemo(() => getAlwaysShowHandle(draggable), [draggable])
-	// A row's path is its block index by construction.
-	const controlRef = useMemo(() => tokens.control([blockIndex]), [tokens, blockIndex])
+	const controlRef = useMemo(() => tokens.control(), [tokens])
 
 	if (readOnly) return null
 

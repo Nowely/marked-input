@@ -3,7 +3,7 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
+type KbCtx = Pick<Store, 'selection' | 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, mergeDragRows, canMergeRows, deleteDragRow} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
@@ -29,7 +29,10 @@ function findActiveRow(store: KbCtx): ActiveRow | undefined {
 	if (!active) return undefined
 	const handle = store.tokens.handleAt(active)
 	if (!handle || handle === 'control') return undefined
-	const index = handle.path()[0]
+	// The ROW index off the live tree. `handle.path()` was bind-generation state on a
+	// handle that is reused across binds, so it could answer from a stale generation.
+	const index = store.tokens.rootIndexOf(handle.id)
+	if (index === undefined) return undefined
 	const row = rowHandle(store, index)
 	if (!row) return undefined
 	return {handle: row, index}
@@ -72,7 +75,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
-	const value = store.value.current()
+	const value = store.tokens.value()
 
 	if (event.key === KEYBOARD.BACKSPACE) {
 		const blockText = 'content' in token ? token.content : ''
@@ -122,7 +125,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 
 	const rows = store.tokens.current()
 	const token = rows[blockIndex]
-	const value = store.value.current()
+	const value = store.tokens.value()
 
 	const newRowContent = createRowContent(store.props.options())
 
@@ -254,7 +257,7 @@ function rangeForBlockInput(store: KbCtx, event: InputEvent, range: Range): Rang
 	if (event.inputType.endsWith('Backward') && range.start > 0) {
 		return {start: range.start - 1, end: range.start}
 	}
-	if (event.inputType.endsWith('Forward') && range.end < store.value.current().length) {
+	if (event.inputType.endsWith('Forward') && range.end < store.tokens.value().length) {
 		return {start: range.start, end: range.end + 1}
 	}
 	return undefined

@@ -22,66 +22,69 @@ describe('Store', () => {
 		expect(store.props.options()).toEqual(DEFAULT_OPTIONS)
 	})
 
-	describe('handler', () => {
-		it('return an object with container, overlay, and focus properties', () => {
+	// `MarkputHandler`'s `overlay` getter is NOT ported: §2.3's export table drops it as
+	// consumer-free, confirmed by grep over both adapters, the storybook and the demo apps.
+	// `MarkputApi`'s own verb matrix lives in `MarkputApi.spec.ts`; what stays here is the
+	// wiring claim — the store hands out one live host object.
+	describe('api', () => {
+		it('return an object with container and focus properties', () => {
 			const store = new Store()
-			const handler = store.handler
-			expect('container' in handler).toBe(true)
-			expect('overlay' in handler).toBe(true)
-			expect('focus' in handler).toBe(true)
+			const api = store.api
+			expect('container' in api).toBe(true)
+			expect('focus' in api).toBe(true)
 		})
 
-		it('reflect dom container via handler.container', () => {
+		it('reflect dom container via api.container', () => {
 			const store = new Store()
-			const handler = store.handler
-			expect(handler.container).toBe(null)
+			const api = store.api
+			expect(api.container).toBe(null)
 			const el = document.createElement('div')
 			store.host.container(el)
-			expect(handler.container).toBe(el)
-		})
-
-		it('reflect state.overlay via handler.overlay', () => {
-			const store = new Store()
-			const handler = store.handler
-			expect(handler.overlay).toBe(null)
-			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
-			const stub = {} as HTMLElement
-			store.overlay.element(stub)
-			expect(handler.overlay).toBe(stub)
+			expect(api.container).toBe(el)
 		})
 
 		it('expose focus as a callable function', () => {
 			const store = new Store()
-			const handler = store.handler
-			expect(typeof handler.focus).toBe('function')
+			const api = store.api
+			expect(typeof api.focus).toBe('function')
 		})
 	})
 
 	describe('internal state signals', () => {
 		it('update when written directly', () => {
 			const store = new Store()
-			store.value.current('hello')
-			expect(store.value.current()).toBe('hello')
+			// The READ BEFORE the write is load-bearing, and it stopped being implicit at S1.8
+			// step 5. `ValueModel.current` was a writable computed, and a writable computed
+			// evaluates its getter before the set to short-circuit an equal write — which is
+			// what caught `TokenModel#seeded` degrading from a signal to a plain field (the
+			// computed caches the `#seed` arm and its dep set, and a field write then notifies
+			// nothing). Writing through `tokens.replace` has no such implicit read, so without
+			// this line the computed is cold at the assertion and re-derives correctly under
+			// the mutation. Measured: 3 cases died before the port, 1 after; this line and the
+			// one in `current` › 'returns written current value' restore the other two.
+			expect(store.tokens.value()).toBe('')
+			store.tokens.replace({start: 0, end: -1}, 'hello')
+			expect(store.tokens.value()).toBe('hello')
 		})
 
 		it('leave other keys unchanged when one signal is updated', () => {
 			const store = new Store()
 			store.selection.isUserSelecting(true)
 			expect(store.selection.isUserSelecting()).toBe(true)
-			expect(store.value.current()).toBe('')
+			expect(store.tokens.value()).toBe('')
 		})
 
 		it('batch multiple internal writes so effects fire once', () => {
 			const store = new Store()
 			const effectSpy = vi.fn()
 			effect(() => {
-				store.value.current()
+				store.tokens.value()
 				store.selection.isUserSelecting()
 				effectSpy()
 			})
 			effectSpy.mockClear()
 			batch(() => {
-				store.value.current('a')
+				store.tokens.replace({start: 0, end: -1}, 'a')
 				store.selection.isUserSelecting(true)
 			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
@@ -112,11 +115,11 @@ describe('Store', () => {
 
 		it('reflects controlled value via tokens without changing internal state', () => {
 			const store = new Store()
-			store.value.current('internal')
+			store.tokens.replace({start: 0, end: -1}, 'internal')
 			store.props.set({value: 'controlled'})
-			expect(store.value.current()).toBe('controlled')
+			expect(store.tokens.value()).toBe('controlled')
 			store.props.set({value: undefined})
-			expect(store.value.current()).toBe('internal')
+			expect(store.tokens.value()).toBe('internal')
 		})
 
 		it('ignores direct signal writes on props (readonly guard)', () => {
@@ -133,18 +136,18 @@ describe('Store', () => {
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			store.host.container(document.createElement('div'))
-			store.value.current('hello')
+			store.tokens.replace({start: 0, end: -1}, 'hello')
 			expect(store.tokens.current()).toMatchObject([
 				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
-			expect(store.value.current()).toBe('hello')
+			expect(store.tokens.value()).toBe('hello')
 		})
 
 		it('calls onChange when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			store.value.current('world')
+			store.tokens.replace({start: 0, end: -1}, 'world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
 		})
@@ -154,9 +157,9 @@ describe('Store', () => {
 			store.host.container(document.createElement('div'))
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
-			store.value.current('world')
+			store.tokens.replace({start: 0, end: -1}, 'world')
 			expect(onChange).toHaveBeenCalledWith('world')
-			expect(store.value.current()).toBe('hello')
+			expect(store.tokens.value()).toBe('hello')
 			expect(store.tokens.current()).toMatchObject([
 				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
@@ -164,7 +167,7 @@ describe('Store', () => {
 
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
-			expect(() => store.value.current('test')).not.toThrow()
+			expect(() => store.tokens.replace({start: 0, end: -1}, 'test')).not.toThrow()
 		})
 	})
 
@@ -381,28 +384,31 @@ describe('Store', () => {
 	describe('current', () => {
 		it('returns empty string by default', () => {
 			const store = new Store()
-			expect(store.value.current()).toBe('')
+			expect(store.tokens.value()).toBe('')
 		})
 
 		it('returns written current value', () => {
 			const store = new Store()
-			store.value.current('cached')
-			expect(store.value.current()).toBe('cached')
+			// The read before the write is load-bearing — see `internal state signals` ›
+			// 'update when written directly' for the measurement.
+			expect(store.tokens.value()).toBe('')
+			store.tokens.replace({start: 0, end: -1}, 'cached')
+			expect(store.tokens.value()).toBe('cached')
 		})
 
 		it('reacts to current changes', () => {
 			const store = new Store()
-			expect(store.value.current()).toBe('')
-			store.value.current('updated')
-			expect(store.value.current()).toBe('updated')
+			expect(store.tokens.value()).toBe('')
+			store.tokens.replace({start: 0, end: -1}, 'updated')
+			expect(store.tokens.value()).toBe('updated')
 		})
 
-		it('reacts to props.value changes when ValueModel is enabled', () => {
+		it('reacts to props.value changes when controlled', () => {
 			const store = new Store()
 			store.props.set({value: 'initial'})
-			expect(store.value.current()).toBe('initial')
+			expect(store.tokens.value()).toBe('initial')
 			store.props.set({value: 'changed'})
-			expect(store.value.current()).toBe('changed')
+			expect(store.tokens.value()).toBe('changed')
 		})
 	})
 })

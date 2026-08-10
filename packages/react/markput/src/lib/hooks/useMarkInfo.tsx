@@ -5,7 +5,7 @@ import {useTokenContext} from '../providers/TokenContext'
 
 /** Mark metadata for the surrounding mark token context. */
 export const useMarkInfo = (): MarkInfo => {
-	const {token, path} = useTokenContext()
+	const {token, depth} = useTokenContext()
 	if (token.type !== 'mark') throw new Error('useMarkInfo must be called within a mark token context')
-	return toMarkInfo(token, path)
+	return toMarkInfo(token, depth)
 }

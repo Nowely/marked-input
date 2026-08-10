@@ -53,7 +53,7 @@ Each `<span>` is an isolated editable island. Operations that should flow across
 | **Steps**      | 1. Position caret at the beginning of a span that follows a mark<br>2. Press `Backspace` to delete the mark<br>3. Press `Cmd+Z` to undo                                           |
 | **Expected**   | The deleted mark is restored, DOM returns to previous state                                                                                                                       |
 | **Actual**     | Nothing happens. The mark is permanently gone. Cmd+Z has no effect                                                                                                                |
-| **Root cause** | Mark deletion now goes through `store.value.replaceRange()` with raw positions. Native browser undo still does not own serialized mark edits.                                      |
+| **Root cause** | Mark deletion now goes through a transaction on the token tree. Native browser undo still does not own serialized mark edits.                                      |
 | **File**       | `packages/core/src/features/keyboard/input.ts`                                                                                                                                    |
 
 ---

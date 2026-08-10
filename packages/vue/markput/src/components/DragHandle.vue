@@ -18,11 +18,10 @@ const isDragging = useMarkput(() => blockStore.state.isDragging)
 const isHovered = useMarkput(() => blockStore.state.isHovered)
 const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))
 
-// A row's path is its block index by construction.
-const panelControlRef = computed(() => store.tokens.control([props.blockIndex]))
+const panelControlRef = store.tokens.control()
 
 const setPanelRef = (el: unknown) => {
-	panelControlRef.value(el as HTMLElement | null)
+	panelControlRef(el as HTMLElement | null)
 }
 
 const setGripRef = (el: unknown) => {

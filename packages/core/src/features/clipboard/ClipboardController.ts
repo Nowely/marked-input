@@ -4,8 +4,8 @@ import type {EditController} from '../edit'
 import type {SelectionController} from '../selection/SelectionController'
 import type {Host} from '../state/Host'
 import type {TokenModel} from '../tokens'
-import {serializeRange} from '../tokens/utils/serializeRange'
 import {MARKPUT_MIME} from './pasteMarkup'
+import {serializeRange} from './serializeRange'
 
 export class ClipboardController {
 	constructor(

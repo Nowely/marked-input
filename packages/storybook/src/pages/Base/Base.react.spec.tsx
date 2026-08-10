@@ -27,7 +27,7 @@ function EchoUpdatable() {
 
 	function UpdatableMark() {
 		const mark = useMark()
-		return <mark onClick={() => mark.update({value: `${mark.value}1`})}>{mark.value}</mark>
+		return <mark onClick={() => mark.update({value: `${mark.value()}1`})}>{mark.value()}</mark>
 	}
 
 	return (
@@ -45,7 +45,7 @@ function ControlledNoEcho({onChange}: {onChange: (value: string) => void}) {
 function ControlledRemovableNoEcho({onChange}: {onChange: (value: string) => void}) {
 	function RemovableMark() {
 		const mark = useMark()
-		return <mark onClick={() => mark.remove()}>{mark.value}</mark>
+		return <mark onClick={() => mark.remove()}>{mark.value()}</mark>
 	}
 
 	return <MarkedInput Mark={RemovableMark} value="Hello @[world](1)" onChange={onChange} />

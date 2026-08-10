@@ -59,7 +59,7 @@ onUpdated(() => store.host.rendered())
 			/>
 		</template>
 		<template v-else>
-			<Token v-for="(token, index) in result.tokens" :key="result.keyOf(token)" :token="token" :path="[index]" />
+			<Token v-for="token in result.tokens" :key="result.keyOf(token)" :token="token" :depth="0" />
 		</template>
 	</component>
 </template>

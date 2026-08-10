@@ -15,7 +15,7 @@ type Story = StoryObj<Meta<typeof MarkedInputStory>>
 const DynamicMark = defineComponent({
 	setup() {
 		const mark = useMark()
-		return () => h('mark', mark.value)
+		return () => h('mark', mark.value())
 	},
 })
 
@@ -29,7 +29,7 @@ export const Dynamic: Story = {
 const RemovableMark = defineComponent({
 	setup() {
 		const mark = useMark()
-		return () => h('mark', {onClick: () => mark.remove()}, mark.value)
+		return () => h('mark', {onClick: () => mark.remove()}, mark.value())
 	},
 })
 
@@ -48,13 +48,13 @@ const Abbr = defineComponent({
 			h(
 				'abbr',
 				{
-					title: mark.meta,
+					title: mark.meta(),
 					style: {
 						outline: 'none',
 						whiteSpace: 'pre-wrap',
 					},
 				},
-				mark.value
+				mark.value()
 			)
 	},
 })

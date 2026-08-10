@@ -16,6 +16,63 @@ exports[`Component: stories > Ant stories > Story Tagged 1`] = `
 </div>"
 `;
 
+exports[`Component: stories > Api stories > Story Block 1`] = `
+"<div>
+  <div>
+    <div data-testid="block">
+      <div>
+        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+          <span></span>
+        </button>
+      </div>
+      <mark data-testid="mark" tabindex="0">a</mark>
+    </div>
+    <div data-testid="block">
+      <div>
+        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+          <span></span>
+        </button>
+      </div>
+      <mark data-testid="mark" tabindex="0">b</mark>
+    </div>
+  </div>
+  <div>
+    <button type="button" data-testid="insert-at-caret">insert at caret</button>
+    <button type="button" data-testid="edit-meta">edit meta</button>
+    <button type="button" data-testid="clear-meta">clear meta</button>
+    <button type="button" data-testid="remove-mark">remove mark</button>
+    <button type="button" data-testid="replace-span">replace span</button>
+    <button type="button" data-testid="replace-across">replace across</button>
+    <button type="button" data-testid="set-value">set value</button>
+    <button type="button" data-testid="clear-value">clear value</button>
+    <button type="button" data-testid="insert-between-rows">insert between rows</button>
+  </div>
+  <output data-testid="value">@[a](x)@[b](y)</output>
+</div>"
+`;
+
+exports[`Component: stories > Api stories > Story Default 1`] = `
+"<div>
+  <div>
+    <span contenteditable="true">hello </span>
+    <mark data-testid="mark" tabindex="0">world</mark>
+    <span contenteditable="true"> foo</span>
+  </div>
+  <div>
+    <button type="button" data-testid="insert-at-caret">insert at caret</button>
+    <button type="button" data-testid="edit-meta">edit meta</button>
+    <button type="button" data-testid="clear-meta">clear meta</button>
+    <button type="button" data-testid="remove-mark">remove mark</button>
+    <button type="button" data-testid="replace-span">replace span</button>
+    <button type="button" data-testid="replace-across">replace across</button>
+    <button type="button" data-testid="set-value">set value</button>
+    <button type="button" data-testid="clear-value">clear value</button>
+    <button type="button" data-testid="insert-between-rows">insert between rows</button>
+  </div>
+  <output data-testid="value">hello @[world](u1) foo</output>
+</div>"
+`;
+
 exports[`Component: stories > Base stories > Story Autocomplete 1`] = `
 "<div>
   <span contenteditable="true">Hello, clickable marked @world!</span>

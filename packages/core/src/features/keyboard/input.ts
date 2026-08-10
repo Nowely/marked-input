@@ -3,7 +3,7 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
+type KbCtx = Pick<Store, 'selection' | 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../tokens'
 import {rawRangeFromInputEvent} from './inputRange'
@@ -32,6 +32,12 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	if (store.props.layout.isBlock()) return
 	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
 
+	// NOT redundant with the fallthrough below, and the difference is measured rather than
+	// argued: when the STORED selection says all-selected but the live DOM selection is gone,
+	// `readRaw()` answers `undefined` and the fallthrough returns without preventing the
+	// default — letting the browser mutate contenteditable behind the model's back. Gated by
+	// `input.spec`'s 'clears the whole value even when the DOM selection is gone'; the
+	// obvious "Backspace with everything selected" case does NOT discriminate it.
 	if (store.selection.isAllSelected()) {
 		event.preventDefault()
 		store.edit.replace({start: 0, end: -1}, '')
@@ -51,13 +57,21 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 
 function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent): void {
 	if (store.selection.isAllSelected()) {
+		// The `paste` listener owns this one end-to-end: it consumes the markup
+		// clipboard entry and performs the whole-value replace itself.
 		if (event.inputType === 'insertFromPaste') {
 			event.preventDefault()
 			return
 		}
+		// Same replacement policy as the ordinary path below, instead of a private
+		// `event.data ?? ''`. That shortcut treated every unhandled input type as
+		// "replace everything with the empty string", so Enter (insertParagraph) and a
+		// drop (insertFromDrop, whose payload is on dataTransfer) wiped the value; it
+		// also ignored the markup clipboard on insertReplacementText.
+		const replacement = replacementForInput(container, event)
+		if (replacement === undefined) return
 		event.preventDefault()
-		const newContent = event.inputType.startsWith('delete') ? '' : (event.data ?? '')
-		store.edit.replace({start: 0, end: -1}, newContent)
+		store.edit.replace({start: 0, end: -1}, replacement)
 		return
 	}
 
@@ -103,7 +117,7 @@ function rangeForDelete(store: KbCtx, inputType: string, range: Range): Range | 
 	if (inputType.endsWith('Backward') && range.start > 0) {
 		return {start: range.start - 1, end: range.start}
 	}
-	if (inputType.endsWith('Forward') && range.end < store.value.current().length) {
+	if (inputType.endsWith('Forward') && range.end < store.tokens.value().length) {
 		return {start: range.start, end: range.end + 1}
 	}
 	return undefined

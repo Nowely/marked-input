@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type {Token as TokenType} from '@markput/core'
-import {computed} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
@@ -10,19 +9,18 @@ import Popup from './Popup/Popup.vue'
 
 import styles from '@markput/core/styles.module.css'
 
-const props = defineProps<{token: TokenType; blockIndex: number}>()
+const props = defineProps<{token: TokenType}>()
 
 const store = useStore()
 const blockStore = store.block.get(props.token)
 const menuOpen = useMarkput(() => blockStore.state.menuOpen)
 const menuPosition = useMarkput(() => blockStore.state.menuPosition)
 
-// A row's path is its block index by construction.
-const menuControlRef = computed(() => store.tokens.control([props.blockIndex]))
+const menuControlRef = store.tokens.control()
 
 const setMenuRef = (el: HTMLElement | null) => {
 	blockStore.attachMenu(el)
-	menuControlRef.value(el)
+	menuControlRef(el)
 }
 </script>
 

@@ -68,7 +68,7 @@ describe('handleBeforeInput()', () => {
 
 	it('ignores beforeinput from editable mark descendants', () => {
 		const {store, container, descendantText} = mountStructuralMarkWithDescendant()
-		const replaceRange = vi.spyOn(store.value, 'replace')
+		const replaceRange = vi.spyOn(store.tokens, 'replace')
 		const range = document.createRange()
 		range.setStart(descendantText, 0)
 		range.setEnd(descendantText, 0)
@@ -80,5 +80,96 @@ describe('handleBeforeInput()', () => {
 		expect(event.defaultPrevented).toBe(false)
 		expect(replaceRange).not.toHaveBeenCalled()
 		container.remove()
+	})
+
+	it('does not wipe the value when an unhandled input type arrives with everything selected', () => {
+		// MEASURED BUG, not a hypothesis: the all-selected branch used to compute
+		// `event.data ?? ''` for every non-delete input type, so Enter (insertParagraph,
+		// data === null) preventDefaulted and replaced the WHOLE value with ''. Measured
+		// on a mounted store with defaultValue 'hello': {value: '', prevented: true}.
+		// The ordinary (not-all-selected) path already ignores these types, because
+		// replacementForInput returns undefined for them.
+		const {store, container} = mountStructuralInline()
+		store.selection.selectAll()
+		expect(store.selection.isAllSelected()).toBe(true)
+		const event = new InputEvent('beforeinput', {inputType: 'insertParagraph', bubbles: true, cancelable: true})
+
+		container.dispatchEvent(event)
+
+		expect(store.tokens.value()).toBe('hello')
+		expect(event.defaultPrevented).toBe(false)
+		container.remove()
+	})
+
+	it('still replaces the whole value on insertText with everything selected', () => {
+		const {store, container} = mountStructuralInline()
+		store.selection.selectAll()
+		const event = new InputEvent('beforeinput', {
+			inputType: 'insertText',
+			data: 'a',
+			bubbles: true,
+			cancelable: true,
+		})
+
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('a')
+		container.remove()
+	})
+
+	it('still clears the whole value on a delete input type with everything selected', () => {
+		const {store, container} = mountStructuralInline()
+		store.selection.selectAll()
+		const event = new InputEvent('beforeinput', {
+			inputType: 'deleteContentBackward',
+			bubbles: true,
+			cancelable: true,
+		})
+
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('')
+		container.remove()
+	})
+
+	/**
+	 * The keydown path had NO direct coverage before S1.8. It was flagged as redundant with its
+	 * own fallthrough — `readRaw()` on an all-selected editor answers `{0, len}`, which
+	 * `rangeForDelete` passes straight through — and the first case below does NOT discriminate
+	 * it: deleting the branch keeps that one green. The second case does, and that is what
+	 * refutes the claim. The two paths diverge exactly when the STORED selection says
+	 * all-selected while the DOM selection is gone: the branch still preventDefaults and clears,
+	 * the fallthrough bails on `readRaw()` and lets the browser mutate contenteditable behind
+	 * the model's back.
+	 */
+	describe('handleDeleteKey()', () => {
+		it('clears the whole value on Backspace with everything selected', () => {
+			const {store, container} = mountStructuralInline()
+			store.selection.selectAll()
+
+			const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('')
+			container.remove()
+		})
+
+		it('clears the whole value even when the DOM selection is gone', () => {
+			// THE discriminating case (see the note above): the only one that fails when the
+			// all-selected branch is deleted.
+			const {store, container} = mountStructuralInline()
+			store.selection.selectAll()
+			window.getSelection()?.removeAllRanges()
+
+			const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('')
+			container.remove()
+		})
 	})
 })

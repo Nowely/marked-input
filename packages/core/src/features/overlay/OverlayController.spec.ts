@@ -37,7 +37,7 @@ describe('OverlayController', () => {
 			store.props.set({options: []})
 			store.props.set({options: [{overlay: {trigger: '@'}}]})
 
-			store.value.current(store.value.current() + ' ')
+			store.tokens.replace({start: 0, end: -1}, store.tokens.value() + ' ')
 
 			expect(store.overlay.match()).toBeUndefined()
 
@@ -61,7 +61,7 @@ describe('OverlayController', () => {
 
 			store.overlay.match(stubMatch)
 
-			store.value.current(store.value.current() + ' ')
+			store.tokens.replace({start: 0, end: -1}, store.tokens.value() + ' ')
 
 			expect(store.overlay.match()).toBeUndefined()
 		})
@@ -72,7 +72,7 @@ describe('OverlayController', () => {
 
 			store.overlay.match(stubMatch)
 
-			store.value.current(store.value.current() + ' ')
+			store.tokens.replace({start: 0, end: -1}, store.tokens.value() + ' ')
 
 			expect(store.overlay.match()).toBe(stubMatch)
 		})
@@ -100,7 +100,7 @@ describe('OverlayController', () => {
 			store.overlay.match(stubMatch)
 
 			store.overlay.close()
-			store.value.current(store.value.current() + ' ')
+			store.tokens.replace({start: 0, end: -1}, store.tokens.value() + ' ')
 
 			expect(store.overlay.match()).toBe(stubMatch)
 		})

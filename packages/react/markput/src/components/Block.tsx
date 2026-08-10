@@ -42,15 +42,15 @@ export const Block = memo(({token, blockIndex}: BlockProps) => {
 			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.style is raw and needs casting to CSSProperties
 			style={{opacity: isDragging ? 0.4 : 1, ...(slotProps?.style as CSSProperties | undefined)}}
 		>
-			<DropIndicator token={token} blockIndex={blockIndex} position="before" />
+			<DropIndicator token={token} position="before" />
 
 			<DragHandle token={token} blockIndex={blockIndex} />
 
-			<Token token={token} path={[blockIndex]} />
+			<Token token={token} depth={0} />
 
-			<DropIndicator token={token} blockIndex={blockIndex} position="after" />
+			<DropIndicator token={token} position="after" />
 
-			<BlockMenu token={token} blockIndex={blockIndex} />
+			<BlockMenu token={token} />
 		</Component>
 	)
 })

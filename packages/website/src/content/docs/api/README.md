@@ -7,12 +7,12 @@ title: "@markput/react"
 
 ## Classes
 
-- [MarkController](/api/classes/markcontroller/)
-- [MarkputHandler](/api/classes/markputhandler/)
+- [MarkputApi](/api/classes/markputapi/)
 
 ## Interfaces
 
 - [MarkedInputProps](/api/interfaces/markedinputprops/)
+- [MarkNode](/api/interfaces/marknode/)
 - [MarkProps](/api/interfaces/markprops/)
 - [MarkToken](/api/interfaces/marktoken/)
 - [Option](/api/interfaces/option/)
@@ -20,12 +20,17 @@ title: "@markput/react"
 - [OverlayProps](/api/interfaces/overlayprops/)
 - [SlotProps](/api/interfaces/slotprops/)
 - [Slots](/api/interfaces/slots/)
+- [TextNode](/api/interfaces/textnode/)
 - [TextToken](/api/interfaces/texttoken/)
 
 ## Type Aliases
 
+- [Id](/api/type-aliases/id/)
+- [MarkPatch](/api/type-aliases/markpatch/)
 - [Markup](/api/type-aliases/markup/)
+- [NodeAnchor](/api/type-aliases/nodeanchor/)
 - [Token](/api/type-aliases/token/)
+- [TreeNode](/api/type-aliases/treenode/)
 
 ## Functions
 
@@ -36,3 +41,4 @@ title: "@markput/react"
 - [useMarkInfo](/api/functions/usemarkinfo/)
 - [useMarkput](/api/functions/usemarkput/)
 - [useOverlay](/api/functions/useoverlay/)
+- [watch](/api/functions/watch/)

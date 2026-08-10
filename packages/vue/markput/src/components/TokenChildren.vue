@@ -1,13 +1,13 @@
 <script lang="ts">
-import type {TokenPath} from '@markput/core'
-import {defineComponent, h, onBeforeUnmount, type PropType, watch} from 'vue'
+import {defineComponent, h, onBeforeUnmount, watch} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
 
 export default defineComponent({
 	name: 'TokenChildren',
 	props: {
-		ownerPath: {type: Array as PropType<TokenPath>, required: true},
+		/** The owning mark's stable id — the key `tokens.children` registers under since S1.8. */
+		ownerId: {type: Number, required: true},
 	},
 	setup(props, {slots}) {
 		const store = useStore()
@@ -16,7 +16,7 @@ export default defineComponent({
 
 		const getChildSequenceRef = () => {
 			if (childSequenceRef) return childSequenceRef
-			childSequenceRef = store.tokens.children(props.ownerPath)
+			childSequenceRef = store.tokens.children(props.ownerId)
 			return childSequenceRef
 		}
 
@@ -26,10 +26,10 @@ export default defineComponent({
 		}
 
 		watch(
-			() => props.ownerPath.join('.'),
+			() => props.ownerId,
 			() => {
 				childSequenceRef?.(null)
-				childSequenceRef = store.tokens.children(props.ownerPath)
+				childSequenceRef = store.tokens.children(props.ownerId)
 				childSequenceRef(currentElement)
 			}
 		)

@@ -116,7 +116,7 @@ Behavior:
 - `default` and `initial` are mutually exclusive at the type level.
 - Callable `T` (e.g. `Slot`) cannot use `default`, same rule as `initial`.
 
-If you need dynamic revert behavior (e.g. "reset to whatever the current external default formula yields"), stay on `initial` and write your own `set` — that is what `ValueModel.current` does for the controlled/uncontrolled pattern below.
+If you need dynamic revert behavior (e.g. "reset to whatever the current external default formula yields"), stay on `initial` and write your own `set` — the controlled/uncontrolled pattern in the block below is the worked example.
 
 **Controlled / uncontrolled pattern.** `get` and `set` together model a value that can be either internally owned or externally driven:
 

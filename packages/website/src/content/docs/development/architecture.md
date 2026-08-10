@@ -89,16 +89,16 @@ Both framework adapters share the same component structure:
         ↓
 4. KeyboardController calls store.edit.replace() for every user edit — single-range or whole-value (whole-value writes pass {start: 0, end: -1} as the sentinel and a caretAt for the post-edit caret)
         ↓
-5. ValueModel updates uncontrolled state or notifies controlled parents
+5. The string boundary decides commit policy — uncontrolled commits straight through; controlled emits onChange and waits for the echo it spliced
         ↓
-6. TokenModel reactively reparses and reconciles — it had already subscribed to value.current; the commit pipeline routes to the text path (DOM patch, no re-render) or the structural path (publish new tree reference)
+6. Adoption folds the fresh parse back into the persistent nodes, and the commit pipeline routes to the text path (DOM patch, no re-render) or the structural path (publish new tree reference)
         ↓
 7. On the structural path: React/Vue re-renders via the framework `useMarkput()` hook (tree reference changed); on the text path, no re-render fires
         ↓
 8. SelectionController applies selection.range to the DOM after the adapter registers the new DOM
 ```
 
-All user mutations go through `store.edit.replace()`: features describe the raw range (or `{start: 0, end: -1}` for whole-value writes) plus replacement text, and the edit coordinator places the post-edit caret — either at `range.start + replacement.length` or at an explicit `caretAt` argument — inside a single batch before delegating to `store.value.replace()`. Programmatic raw mutations may still call `store.value.replace()` or `store.value.current()`. DOM-to-raw boundary mapping lives in `store.tokens` (`boundaryFor`, `selection()`); `SelectionController` re-applies `selection.range` to the DOM on `tokens.changed` (and on `range` writes). `TokenModel` owns the token parse, the live node map, and all DOM↔model operations.
+All user mutations go through `store.edit.replace()`: features describe the raw range (or `{start: 0, end: -1}` for whole-value writes) plus replacement text, and the edit coordinator places the post-edit caret — either at `range.start + replacement.length` or at an explicit `caretAt` argument — inside a single batch before delegating to `store.tokens.replace()`. Programmatic raw mutations may call `store.tokens.replace()` directly, and `store.tokens.value()` reads the current projection. DOM-to-raw boundary mapping lives in `store.tokens` (`boundaryFor`, `selection()`); `SelectionController` re-applies `selection.range` to the DOM on `tokens.changed` (and on `range` writes). `TokenModel` owns the token parse, the live node map, and all DOM↔model operations.
 
 ### Trigger Flow (Overlay Opens)
 
@@ -227,9 +227,9 @@ Re-parsing is not a store event: it is the private `TokenModel.#reparse`, driven
 
 ```typescript
 // Commit a raw value edit
-store.value.replace({start: 0, end: 5}, 'hello')
+store.tokens.replace({start: 0, end: 5}, 'hello')
 
-// Read the latest reconciled token tree
+// Read the latest committed token tree
 store.tokens.current()
 
 // Emit a drag action event
@@ -240,7 +240,7 @@ import {watch, effectScope} from '@markput/core'
 
 const dispose = effectScope(() => {
     watch(
-        store.value.current,
+        store.tokens.value,
         () => {
             console.log('Text changed')
         }
@@ -311,13 +311,13 @@ class Store {
     readonly props:     PropsModel         // framework-provided configuration
     readonly selection: SelectionController // selection range, isUserSelecting, isAllSelected
     readonly slots:     SlotsFeature       // isBlock, isDragEnabled, slot component/props, mark resolver
-    readonly value:     ValueModel         // current, replace()
     readonly edit:      EditController     // replace(range, replacement, caretAt?) — single batched write path
-    readonly tokens:    TokenModel         // parsing, live node map, DOM↔model facade, ref registries, caret/selection DOM ops
+    readonly tokens:    TokenModel         // the token tree (the value's source of truth), live node map, DOM↔model facade, ref registries, caret/selection DOM ops
     readonly overlay:   OverlayController  // match, element, slot, select, close
     readonly keyboard:  KeyboardController // input, block editing, arrow navigation
     readonly block:     BlockController    // block drag actions and operation helpers
     readonly clipboard: ClipboardController // copy/cut handling
+    readonly api:       MarkputApi         // the imperative verbs (insertMark, replaceRange, …)
 }
 ```
 
@@ -326,13 +326,13 @@ class Store {
 Internal feature state, computeds, and events live directly on `store.<name>.*`. Values and options passed from React/Vue live on `store.props` and are updated via `store.props.set()`.
 
 ```typescript
-// Read the latest reconciled token tree (readonly Token[])
+// Read the latest committed token tree (readonly Token[])
 store.tokens.current()
 
-// Accepted serialized value state is owned by ValueModel.
+// The token tree owns the value; store.tokens.value() is its string projection.
 // Route edits through raw positions.
-store.value.replace({start: 0, end: 5}, 'Hello')
-store.value.current('Hello @[World]')
+store.tokens.replace({start: 0, end: 5}, 'Hello')
+store.tokens.replace({start: 0, end: -1}, 'Hello @[World]')
 
 // Framework-provided props (MarkedInput calls store.props.set on each render)
 store.props.set({readOnly: true})
@@ -344,14 +344,13 @@ const tokens = useMarkput(s => s.tokens.renderTree)
 
 ## Features
 
-11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandler` and `KeyboardController` behavior modules retain the full `Store` as an adapter boundary.
+11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputApi` — the public host object the component ref exposes — follows the same rule: it owns nothing and delegates every member to the feature that owns the state.
 
 Signal subscription order is significant: inside its constructor `onMounted` hook, `TokenModel` registers a single `watch` over the `(value, parser, isBlock)` tuple before any other consumer registers a watcher in `onMounted`. When any of the three changes, the watch callback runs the private `#reparse`, so by the time downstream listeners observe a `value.current` change, `tokens.current()` already reflects the new value.
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
 | **Host**                      | Adapter-fed runtime state: the rendered event and the container HTMLElement |
-| **ValueModel**                | Accepted serialized value state, raw range replacement   |
 | **EditController**            | Unified user edit path: `replace(range, replacement, caretAt?)`, `{end: -1}` resolves to current value length |
 | **TokenModel**                | Parsing, live node map (id-keyed), one commit pipeline (text / structural branches), DOM↔model facade, adapter ref registries, caret/selection DOM operations — see `features/tokens/README.md` |
 | **OverlayController**         | Overlay trigger detection, position, open/close           |
@@ -373,10 +372,10 @@ React/Vue render asynchronously, so initialization order matters:
 //      It also re-fires (with auto-disposal of the previous scope) if the
 //      framework swaps to a different container.
 
-// 2. After mount, ValueModel accepts props.value/defaultValue. TokenModel's
-//    constructor watch over (value, parser, isBlock) subscribed first inside its
-//    onMounted hook, so tokens.current() reflects the new value before any other
-//    onMounted watcher observes it.
+// 2. After mount, the string boundary accepts props.value/defaultValue.
+//    TokenModel's constructor watch over (value, parser, isBlock) subscribed
+//    first inside its onMounted hook, so tokens.current() reflects the new value
+//    before any other onMounted watcher observes it.
 
 // 3. Sync contenteditable attributes (layout effect)
 //    → TokenModel's commit pipeline runs its first structural bind:
@@ -397,7 +396,7 @@ Drag mode (`drag={true}`): each token is wrapped in a `<Block>` component with:
 - `DropIndicator` — visual feedback for drop position (before/after)
 - `BlockMenu` — context menu (add, delete, duplicate)
 
-`BlockController` keeps an id-keyed `Map<number, BlockStore>` — one `BlockStore` per row, keyed by the row's stable identity id (`tokens.keyOf(token)`). A row suffix-shifted by an edit above it is a new object with an inherited id, so id keying (unlike the old token-WeakMap) preserves its drag/hover state. The map cannot self-collect, so removed ids are pruned on `tokens.changed` via `tokens.removedIds()`.
+`BlockController` keeps an id-keyed `Map<number, BlockStore>` — one `BlockStore` per row, keyed by the row's stable identity id (`tokens.keyOf(token)`). A row suffix-shifted by an edit above it is a new object with an inherited id, so id keying (unlike the old token-WeakMap) preserves its drag/hover state. The map cannot self-collect, so it prunes on `tokens.changed`, whose payload carries that commit's `{added, removed, updated}` ids with the event — `BlockController` deletes every id in `delta.removed`.
 
 Each `BlockStore` holds its UI state as a `state` record of signals:
 
@@ -431,8 +430,8 @@ Core owns token identity (stable ids and live handles), DOM registration, raw se
 
 `TokenModel` is the thin public shell over a live-node core — `model/TokenHandle` (the per-token live binding), `model/commit` (the one commit pipeline), and `model/bind` (the DOM walk that binds freshly rendered DOM). It consolidates the DOM responsibilities that were previously split across separate ref/index/surface modules:
 
-- **Adapter ref registries** — `tokens.control(path?)` and `tokens.children(ownerPath)` register non-editable control elements and `__slot__` child-sequence hosts.
-- **Live node map and commit pipeline** — one id-keyed `Map<number, TokenHandle>`, mutated only through the pipeline; every value change flows through a single `apply(reconcileResult)` that routes to a fast text-path (DOM patch, no re-render) or a structural path (publish a new `renderTree` reference, bind freshly rendered DOM). `current()` returns the latest reconciled tree (consistent with `value.current()`), `renderTree` is the adapter-only renderer signal, and `changed` fires once per commit after the DOM is consistent (with `removedIds()` as the prune feed).
+- **Adapter ref registries** — `tokens.control()` and `tokens.children(ownerId)` register non-editable control elements and `__slot__` child-sequence hosts. The child-sequence registry is keyed by the owning mark's stable id.
+- **Live node map and commit pipeline** — one id-keyed `Map<number, TokenHandle>`, mutated only through the pipeline; every value change flows through a single `apply(input)` that takes a producer-agnostic `CommitInput` (lowered from the transaction's `TransactionResult`) and routes on that input's `render` bit to a fast text-path (DOM patch, no re-render) or a structural path (publish a new `renderTree` reference, bind freshly rendered DOM). `current()` returns the latest committed tree (consistent with `tokens.value()`), `renderTree` is the adapter-only renderer signal, and `changed` fires once per commit after the DOM is consistent, carrying that commit's `{added, removed, updated}` ids. Applies folded into one pending structural pass announce ONE **merged** delta — before that merge, two structural applies landing before a single bind dropped the first one's removals.
 - **DOM↔model facade** — `handleAt(node)` resolves a DOM node to its handle (or `'control'`), `handle(id)` resolves a stable id to its live handle, `boundaryFor(node, offset)` maps a DOM boundary to an absolute raw position, `placeCaret(...)` / `selectRange(...)` write the caret, and `selection()` / `selectedContent()` read the live window selection.
 - **Editable-state application** — `setEditable({editable, readOnly})` is called by `SelectionController` whenever `readOnly` or `isUserSelecting` changes; bind applies the same state to newly mounted surfaces.
 
@@ -442,7 +441,7 @@ See `packages/core/src/features/tokens/README.md` for the full architecture of t
 
 ### useMark
 
-Available in both React and Vue. Returns a `MarkController` for the current mark token:
+Available in both React and Vue. Returns the live `MarkNode` for the current mark token:
 
 ```typescript
 const mark = useMark()

@@ -282,7 +282,9 @@ const MemoizedMark = memo<MarkProps>(
 
 ```typescript
 const MyMark: FC = () => {
-  const { value, meta } = useMark()
+  const mark = useMark()
+  const value = mark.value()
+  const meta = mark.meta()
 
   // Memoize expensive computations
   const displayName = useMemo(() => {
