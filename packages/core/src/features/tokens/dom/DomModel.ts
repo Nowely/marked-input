@@ -1,8 +1,9 @@
 import type {RawSelection} from '../../../shared/editorContracts'
 import type {Token} from '../parser/types'
+import type {Id, NodeAnchor, TreeNode} from '../tree/types'
 import {focusIfNeeded, getRect, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caret'
-import {markBoundaryAt, rawPositionFromBoundary, textTargetAt} from './domBoundary'
-import type {BoundaryContext, Lookup, TokenView} from './domBoundary'
+import {anchorFromBoundary, markBoundaryAt, rawPositionFromBoundary, textTargetAt} from './domBoundary'
+import type {AnchorContext, BoundaryContext, Lookup, TokenView} from './domBoundary'
 import type {TokenHandle} from './TokenHandle'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
@@ -34,6 +35,12 @@ export type DomModelDeps = {
 	isControlRoot(element: HTMLElement): boolean
 	/** Every currently bound live handle (NOT latch-gated — the boundary facade reads bound state as-is). */
 	boundHandles(): Iterable<TokenHandle>
+	/** The live root nodes (TokenModel.nodes()). */
+	roots(): readonly TreeNode[]
+	/** Stable id → live node (TokenModel.find) — NOT latch-gated. */
+	find(id: Id): TreeNode | undefined
+	/** Latch-gated id → handle (TokenModel.handle), for the bound-view lookup. */
+	handleById(id: Id): TokenHandle | undefined
 }
 
 /**
@@ -112,9 +119,32 @@ export class DomModel {
 		}
 	}
 
+	/**
+	 * Deliberately does NOT spread {@link #boundaryContext}: {@link AnchorContext}
+	 * picks the two DOM-side fields precisely so the bind-generation reads stay
+	 * unreachable from this path.
+	 */
+	#anchorContext(): AnchorContext {
+		return {
+			container: this.deps.container() ?? undefined,
+			locate: node => this.#locate(node),
+			roots: () => this.deps.roots(),
+			find: id => this.deps.find(id),
+			viewOfId: id => {
+				const handle = this.deps.handleById(id)
+				return handle ? this.#view(handle) : undefined
+			},
+		}
+	}
+
 	/** Map a DOM boundary (node, offset) to an absolute document position. */
 	boundaryFor(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): number | undefined {
 		return rawPositionFromBoundary(this.#boundaryContext(), node, offset, affinity)
+	}
+
+	/** Map a DOM boundary (node, offset) to a node anchor in the live tree. */
+	anchorFor(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): NodeAnchor | undefined {
+		return anchorFromBoundary(this.#anchorContext(), node, offset, affinity)
 	}
 
 	/**

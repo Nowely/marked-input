@@ -1,4 +1,5 @@
 import type {Token} from '../parser/types'
+import type {Id, NodeAnchor, TreeNode} from '../tree/types'
 import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 import type {ElementBindings, TokenHandle} from './TokenHandle'
 
@@ -22,6 +23,45 @@ export type BoundaryContext = {
 	viewOf(token: Token): TokenView | undefined
 	locate(node: Node): Lookup | undefined
 	nodes(): IterableIterator<TokenView>
+}
+
+/**
+ * What the ANCHOR projection needs: the DOM half of {@link BoundaryContext},
+ * plus a bridge from a bound handle's stable id to the LIVE node.
+ *
+ * A `Pick`, not an intersection, so the exclusion is a compile error and not a
+ * convention: `tokenOf`/`viewOf`/`tokens` all answer with the BIND GENERATION
+ * (spec S1 D9), whose positions describe what the DOM is showing rather than
+ * what the tree holds. The anchor projection never forms an absolute
+ * coordinate, so it wants identity, not coordinates (spec S2 D2/D4).
+ */
+export type AnchorContext = Pick<BoundaryContext, 'container' | 'locate'> & {
+	/** The live root nodes (TokenModel.nodes()). */
+	roots(): readonly TreeNode[]
+	/** Stable id → live node (TokenModel.find). NOT latch-gated: ids outlive the bind window. */
+	find(id: Id): TreeNode | undefined
+	/** The bound view for a live node's id, if any. */
+	viewOfId(id: Id): TokenView | undefined
+}
+
+/**
+ * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree.
+ *
+ * SKELETON: every branch lands in Tasks 2-5; until then every boundary answers
+ * `undefined`.
+ *
+ * The anchor projection of the same walk that {@link rawPositionFromBoundary}
+ * projects numerically. No absolute coordinate is formed anywhere on this path,
+ * which is why it is correct during the adopt→bind window where the numeric one
+ * is not (spec S2 D4).
+ */
+export function anchorFromBoundary(
+	_ctx: AnchorContext,
+	_node: Node,
+	_offset: number,
+	_affinity: 'before' | 'after' = 'after'
+): NodeAnchor | undefined {
+	return undefined
 }
 
 /** Map a DOM boundary (node, offset) to an absolute document position. */
@@ -115,7 +155,7 @@ function fromTokenChildBoundary(
 	return affinity === 'before' ? token.position.start : token.position.end
 }
 
-function lookupTokenDescendant(ctx: BoundaryContext, node: Node | null): TokenView | undefined {
+function lookupTokenDescendant(ctx: Pick<BoundaryContext, 'locate'>, node: Node | null): TokenView | undefined {
 	if (!node) return undefined
 	const lookup = ctx.locate(node)
 	return lookup?.kind === 'token' ? lookup.node : undefined

@@ -322,6 +322,18 @@ export class TokenModel {
 		return this.#dom.boundaryFor(node, offset, affinity)
 	}
 
+	/**
+	 * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree.
+	 *
+	 * NO PRODUCTION CALLER until S2.4 — this is a pre-cutover phase built
+	 * alongside the live path (spec §11, S2.1). `untracked` for the reason
+	 * {@link find} documents: the walk reads node text signals and an event
+	 * handler must not subscribe to them.
+	 */
+	anchorFor(node: Node, offset: number, affinity?: 'before' | 'after'): NodeAnchor | undefined {
+		return untracked(() => this.#dom.anchorFor(node, offset, affinity))
+	}
+
 	/** THE selection read: one snapshot of the live window selection (see {@link DomModel.selection}). */
 	selection(): SelectionSnapshot | undefined {
 		return this.#dom.selection()
@@ -597,6 +609,9 @@ export class TokenModel {
 		byElement: element => this.#pipeline.byElement(element),
 		isControlRoot: element => this.#pipeline.isControlRoot(element),
 		boundHandles: () => this.#pipeline.bound().values(),
+		roots: () => this.nodes(),
+		find: id => this.find(id),
+		handleById: id => this.handle(id),
 	})
 
 	// Ref registries — populated by framework ref callbacks, read by bind.
