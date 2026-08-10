@@ -66,8 +66,10 @@ export interface SelectionPort {
  *   type/content reads onto the live tree — a DOM-layer refactor no item asks for.
  * - the internal offset shim ({@link replace}) — spec D8, gated on the block-rows
  *   follow-up that would give callers a node-shaped write verb.
- * - `ValueModel`, `MarkputHandler` and the path layer (`byPath`, `tokenIndex`) —
- *   S1.8's directory regroup owns them.
+ * - `ValueModel` — a one-phase facade over {@link value} and {@link replace};
+ *   S1.8 step 5 deletes it. (`MarkputHandler` went at S1.7, and the path layer —
+ *   `byPath`, `tokenIndex` — at S1.8 step 4; the entry that named a later phase
+ *   for them was stale.)
  *
  * Layout: consumer reads → adapter SPI → engine SPI → wiring → internals.
  */
@@ -353,7 +355,7 @@ export class TokenModel {
 	 */
 	setEditable(options: {editable: boolean; readOnly: boolean}): void {
 		this.#editable = {editable: options.editable, readOnly: options.readOnly}
-		for (const handle of this.#pipeline.byPath().values()) {
+		for (const handle of this.#pipeline.bound().values()) {
 			const bindings = handle.node()
 			if (!bindings) continue
 			if (!bindings.textElement && handle.token().type !== 'mark') continue
@@ -597,7 +599,7 @@ export class TokenModel {
 		handleOf: token => this.handleOf(token),
 		byElement: element => this.#pipeline.byElement(element),
 		isControlRoot: element => this.#pipeline.isControlRoot(element),
-		boundHandles: () => this.#pipeline.byPath().values(),
+		boundHandles: () => this.#pipeline.bound().values(),
 	})
 
 	// Ref registries — populated by framework ref callbacks, read by bind.

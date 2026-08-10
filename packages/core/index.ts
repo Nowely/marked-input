@@ -45,8 +45,8 @@ export type {Selectable, ObjectSelector} from './src/shared/readSelected'
 export {toMarkInfo} from './src/shared/editorContracts'
 export type {MarkInfo} from './src/shared/editorContracts'
 
-// ═══ Snapshot render loop — S1.8 step 3 removes these WITH the render loop ════
-// Kept deliberately (plan decision D-c): 14 adapter files render `Token[]` off
-// `renderTree`, and moving that loop onto `input.nodes()` also moves `bind`/`commit`.
+// ═══ Snapshot render loop ═════════════════════════════════════════════════════
+// Kept deliberately (S1.7 decision D-c, re-affirmed at S1.8 decision D-a): 14 adapter
+// files render `Token[]` off `renderTree`, and moving that loop onto `input.nodes()`
+// also moves `bind`/`commit`. That move is its own phase (S1.10), not part of the sweep.
 export type {Token, TextToken, MarkToken} from './src/features/tokens'
-export type {TokenPath} from './src/shared/editorContracts'

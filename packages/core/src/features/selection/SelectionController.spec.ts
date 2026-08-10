@@ -2,7 +2,6 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
-import {resolvePath} from '../tokens/tokenIndex'
 
 function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
@@ -403,19 +402,20 @@ describe('SelectionController', () => {
 	describe('boundary mapping', () => {
 		it('maps registered child sequence host boundaries to nested child positions', () => {
 			const {store, container, host} = mountStructuralNestedWithChildSequence()
-			const tree = store.tokens.current()
-			const beforeToken = resolvePath(tree, [1, 0])
-			const innerToken = resolvePath(tree, [1, 1])
-			const afterToken = resolvePath(tree, [1, 2])
+			const outer = store.tokens.current()[1]
+			if (outer.type !== 'mark') throw new Error('expected the outer mark')
+			// The path layer went at S1.8 step 4; the fixture's three slot children are read
+			// straight off the mark that owns them.
+			const [beforeToken, innerToken, afterToken] = outer.children
 
-			expect(beforeToken?.position.end).toBe(9)
-			expect(innerToken?.position.start).toBe(9)
-			expect(innerToken?.position.end).toBe(18)
-			expect(afterToken?.position.start).toBe(18)
-			expect(store.tokens.boundaryFor(host, 1, 'before')).toBe(beforeToken?.position.end)
-			expect(store.tokens.boundaryFor(host, 1, 'after')).toBe(innerToken?.position.start)
-			expect(store.tokens.boundaryFor(host, 2, 'before')).toBe(innerToken?.position.end)
-			expect(store.tokens.boundaryFor(host, 2, 'after')).toBe(afterToken?.position.start)
+			expect(beforeToken.position.end).toBe(9)
+			expect(innerToken.position.start).toBe(9)
+			expect(innerToken.position.end).toBe(18)
+			expect(afterToken.position.start).toBe(18)
+			expect(store.tokens.boundaryFor(host, 1, 'before')).toBe(beforeToken.position.end)
+			expect(store.tokens.boundaryFor(host, 1, 'after')).toBe(innerToken.position.start)
+			expect(store.tokens.boundaryFor(host, 2, 'before')).toBe(innerToken.position.end)
+			expect(store.tokens.boundaryFor(host, 2, 'after')).toBe(afterToken.position.start)
 			container.remove()
 		})
 

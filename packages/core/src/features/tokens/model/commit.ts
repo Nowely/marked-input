@@ -44,7 +44,7 @@ export type CommitPipeline = {
 	changed: Event<TokenDelta>
 	/** pendingStructural latch: true between a structural apply and its bind — id-bridged resolution fails closed. */
 	pending(): boolean
-	byPath(): ReadonlyMap<string, TokenHandle>
+	bound(): ReadonlyMap<number, TokenHandle>
 	byElement(element: HTMLElement): TokenHandle | undefined
 	isControlRoot(element: HTMLElement): boolean
 }
@@ -89,9 +89,9 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	const changed = event<TokenDelta>()
 
 	// Derived lookups over the bound nodes — replaced wholesale by bind on the
-	// structural branch, untouched on the text branch (paths are unchanged there
-	// by definition).
-	let byPath: ReadonlyMap<string, TokenHandle> = new Map()
+	// structural branch, untouched on the text branch (no node is added or removed
+	// there by definition, so the same ids stay bound to the same elements).
+	let bound: ReadonlyMap<number, TokenHandle> = new Map()
 	let byElement = new WeakMap<HTMLElement, TokenHandle>()
 	let controlRoots = new WeakSet<HTMLElement>()
 
@@ -213,7 +213,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			isBlock: deps.isBlock(),
 			editable: deps.editableState(),
 		})
-		byPath = result.byPath
+		bound = result.bound
 		byElement = result.byElement
 		controlRoots = result.controlRoots
 		// A re-bind with no pending structural change drains an empty accumulator.
@@ -230,7 +230,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	 * means the healing itself missed a write — the bug class it guards.
 	 */
 	function assertAligned(): void {
-		for (const handle of byPath.values()) {
+		for (const handle of bound.values()) {
 			const surface = handle.node()?.textElement
 			if (!surface) continue
 			const expected = handle.token().content
@@ -247,7 +247,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		current: () => latest,
 		changed,
 		pending: () => pendingStructural,
-		byPath: () => byPath,
+		bound: () => bound,
 		byElement: element => byElement.get(element),
 		isControlRoot: element => controlRoots.has(element),
 	}

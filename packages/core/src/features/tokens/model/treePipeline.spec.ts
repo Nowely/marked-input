@@ -10,6 +10,7 @@ import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree} from '../tree/tree'
 import {createCommitPipeline} from './commit'
+import type {CommitPipeline} from './commit'
 import type {TokenDelta} from './commitInput'
 import type {TokenHandle} from './TokenHandle'
 import {fromTransaction} from './treeInput'
@@ -53,6 +54,26 @@ import {fromTransaction} from './treeInput'
  * have zero dependence on the lowering, so S1.6a relocated them to the bottom of
  * this file rather than duplicating them.
  */
+/**
+ * The bound handle at a tree POSITION. Replaces `pipeline.byPath().get(pathKey(path))`:
+ * S1.8 step 4 re-keyed the bind result on stable ids, so a case that names a token by
+ * where it sits in the fixture resolves the token first and looks its handle up by id.
+ */
+function boundAt(pipeline: CommitPipeline, ...path: number[]): TokenHandle | undefined {
+	let siblings: readonly Token[] = pipeline.current()
+	let token: Token | undefined
+	for (const index of path) {
+		// `.at`, not `[]`: `tsconfig` leaves `noUncheckedIndexedAccess` off, so an index read
+		// types as `Token` and the out-of-range guard — which several cases below rely on to
+		// answer `undefined` — is linted away as an impossible condition.
+		const next = siblings.at(index)
+		if (!next) return undefined
+		token = next
+		siblings = token.type === 'mark' ? token.children : []
+	}
+	return token?.id === undefined ? undefined : pipeline.bound().get(token.id)
+}
+
 // `Markup`, NOT `string`: `Parser`'s constructor takes `(Markup | undefined)[]`
 // and `Markup` is a template-literal union (parser/types.ts:63), so a
 // `string[]` default fails with TS2345. Vitest stays GREEN on that — only
@@ -177,7 +198,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const [text1, mark, text2] = harness.render()
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(pipeline.byPath().size).toBe(3)
+		expect(pipeline.bound().size).toBe(3)
 		expect(text1.textContent).toBe('he')
 		expect(mark.textContent).toBe('x')
 		expect(text2.textContent).toBe('llo')
@@ -199,10 +220,10 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
-		const tail = pipeline.byPath().get('2')
+		const tail = boundAt(pipeline, 2)
 		if (!tail) throw new Error('expected tail handle')
 		const treeBefore = pipeline.renderTree()
-		const byPathBefore = pipeline.byPath()
+		const boundBefore = pipeline.bound()
 		const changedSpy = vi.fn()
 		let domAtEvent: string | null = null
 		let payload: TokenDelta | undefined
@@ -217,7 +238,7 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(text2.textContent).toBe('llo!')
 		expect(domAtEvent).toBe('llo!')
 		expect(pipeline.renderTree()).toBe(treeBefore)
-		expect(pipeline.byPath()).toBe(byPathBefore)
+		expect(pipeline.bound()).toBe(boundBefore)
 		expect(pipeline.pending()).toBe(false)
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		// Payload parity with commit.spec.ts's live-path case: the edited node is the
@@ -230,7 +251,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {mark} = mount(harness)
-		const markHandle = pipeline.byPath().get('1')
+		const markHandle = boundAt(pipeline, 1)
 		if (!markHandle) throw new Error('expected mark handle')
 		const treeBefore = pipeline.renderTree()
 		const changedSpy = vi.fn()
@@ -248,7 +269,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		// Handle continuity across a re-render is the pinned contract (id-keyed).
-		expect(pipeline.byPath().get('1')).toBe(markHandle)
+		expect(boundAt(pipeline, 1)).toBe(markHandle)
 		expect(harness.container.children[1].textContent).toBe('y')
 	})
 
@@ -256,7 +277,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline, nodes} = harness
 		mount(harness)
-		const markHandle = pipeline.byPath().get('1')
+		const markHandle = boundAt(pipeline, 1)
 		if (!markHandle) throw new Error('expected mark handle')
 		let payload: {removed: readonly number[]} | undefined
 		watch(pipeline.changed, delta => {
@@ -278,7 +299,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
-		const tail = pipeline.byPath().get('2')
+		const tail = boundAt(pipeline, 2)
 		if (!tail) throw new Error('expected tail handle')
 		const changedSpy = vi.fn()
 		watch(pipeline.changed, changedSpy)
@@ -301,7 +322,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline, nodes} = harness
 		const {text2} = mount(harness)
-		const tail = pipeline.byPath().get('2')
+		const tail = boundAt(pipeline, 2)
 		if (!tail) throw new Error('expected tail handle')
 		nodes.delete(tail.id)
 		const changedSpy = vi.fn()
@@ -311,7 +332,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(pipeline.pending()).toBe(false)
-		expect(pipeline.byPath().get('2')?.token().content).toBe('llo!')
+		expect(boundAt(pipeline, 2)?.token().content).toBe('llo!')
 		expect(text2.textContent).toBe('llo!')
 	})
 
@@ -323,7 +344,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline, nodes, container} = harness
 		mount(harness)
-		const tail = pipeline.byPath().get('2')
+		const tail = boundAt(pipeline, 2)
 		if (!tail) throw new Error('expected tail handle')
 
 		// Adapter mid-render misalignment: one span vanishes, so the bind walk bails
@@ -332,7 +353,7 @@ describe('commit pipeline driven by the tree core', () => {
 		// and no surface.
 		container.lastElementChild?.remove()
 		pipeline.onRendered()
-		expect(pipeline.byPath().size).toBe(0)
+		expect(pipeline.bound().size).toBe(0)
 		expect(tail.element()).toBeUndefined()
 		const changedSpy = vi.fn()
 		watch(pipeline.changed, changedSpy)
@@ -348,9 +369,9 @@ describe('commit pipeline driven by the tree core', () => {
 
 		harness.render()
 
-		expect(pipeline.byPath().size).toBe(3)
+		expect(pipeline.bound().size).toBe(3)
 		expect(container.children[2].textContent).toBe('llo!')
-		expect(pipeline.byPath().get('2')).toBe(tail)
+		expect(boundAt(pipeline, 2)).toBe(tail)
 	})
 
 	it('the divergence detector still throws with the NODE ID on an untouched surface', () => {
@@ -358,7 +379,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const {text1} = mount(harness)
 		text1.textContent = 'WRONG'
 
-		const head = harness.pipeline.byPath().get('0')
+		const head = boundAt(harness.pipeline, 0)
 
 		let message = ''
 		try {
@@ -380,7 +401,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		harness.boundary.arrive('#[ab]tail')
 		harness.renderNested()
-		const childHandle = pipeline.byPath().get('1.0')
+		const childHandle = boundAt(pipeline, 1, 0)
 		const childSurface = childHandle?.node()?.textElement
 		if (!childSurface) throw new Error('expected the child surface')
 		const treeBefore = pipeline.renderTree()
@@ -411,8 +432,8 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		harness.boundary.arrive('#[ab]t')
 		harness.renderNested()
-		const markHandle = pipeline.byPath().get('1')
-		const childHandle = pipeline.byPath().get('1.0')
+		const markHandle = boundAt(pipeline, 1)
+		const childHandle = boundAt(pipeline, 1, 0)
 		if (!markHandle || !childHandle) throw new Error('expected the mark and its slot child')
 
 		expect(harness.splice(2, 3, 'c')).toBe(true)
@@ -460,14 +481,14 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		harness.boundary.arrive('a#[bc]d')
 		harness.renderNested()
-		const child = pipeline.byPath().get('1.0')
+		const child = boundAt(pipeline, 1, 0)
 		if (!child) throw new Error('expected the slot child handle')
 		expect(child.token().position).toEqual({start: 3, end: 5})
 
 		expect(harness.splice(0, 0, 'X')).toBe(true)
 
 		expect(pipeline.pending()).toBe(false)
-		expect(pipeline.byPath().get('1')?.token().position).toEqual({start: 2, end: 7})
+		expect(boundAt(pipeline, 1)?.token().position).toEqual({start: 2, end: 7})
 		expect(child.token().position).toEqual({start: 4, end: 6})
 	})
 
@@ -516,7 +537,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		harness.render()
 
-		expect(pipeline.byPath().get('4')?.token().position).toEqual({start: 10, end: 13})
+		expect(boundAt(pipeline, 4)?.token().position).toEqual({start: 10, end: 13})
 	})
 
 	// ═══ S1.5 Task 6: ported ahead of commit.spec.ts's deletion ════════════════
@@ -532,7 +553,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		const {text2} = mount(harness)
 		const treeBefore = pipeline.renderTree()
-		const byPathBefore = pipeline.byPath()
+		const boundBefore = pipeline.bound()
 		let payload: TokenDelta | undefined
 		const changedSpy = vi.fn()
 		watch(pipeline.changed, delta => {
@@ -545,7 +566,7 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(payload).toEqual({added: [], removed: [], updated: []})
 		expect(pipeline.renderTree()).toBe(treeBefore)
-		expect(pipeline.byPath()).toBe(byPathBefore)
+		expect(pipeline.bound()).toBe(boundBefore)
 		expect(pipeline.pending()).toBe(false)
 		expect(text2.textContent).toBe('llo')
 	})
@@ -635,8 +656,8 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(pipeline.pending()).toBe(false)
-		const mark = pipeline.byPath().get('1')
-		const child = pipeline.byPath().get('1.0')
+		const mark = boundAt(pipeline, 1)
+		const child = boundAt(pipeline, 1, 0)
 		if (!mark || !child) throw new Error('expected the new mark and its slot child')
 		expect(payload?.added).toEqual(expect.arrayContaining([mark.id, child.id]))
 	})
@@ -651,8 +672,8 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		harness.boundary.arrive('a@[x]b@[y]c')
 		harness.render()
-		const markX = pipeline.byPath().get('1')
-		const markY = pipeline.byPath().get('3')
+		const markX = boundAt(pipeline, 1)
+		const markY = boundAt(pipeline, 3)
 		if (!markX || !markY) throw new Error('expected both mark handles')
 		let payload: TokenDelta | undefined
 		watch(pipeline.changed, delta => {
@@ -719,9 +740,9 @@ describe('commit pipeline driven by the tree core', () => {
 
 		const spans = harness.render(button)
 
-		expect(pipeline.byPath().size).toBe(3)
-		expect(pipeline.byElement(spans[0])).toBe(pipeline.byPath().get('0'))
-		expect(pipeline.byElement(spans[1])).toBe(pipeline.byPath().get('1'))
+		expect(pipeline.bound().size).toBe(3)
+		expect(pipeline.byElement(spans[0])).toBe(boundAt(pipeline, 0))
+		expect(pipeline.byElement(spans[1])).toBe(boundAt(pipeline, 1))
 		expect(pipeline.byElement(button)).toBeUndefined()
 		expect(pipeline.isControlRoot(button)).toBe(true)
 		expect(pipeline.isControlRoot(spans[0])).toBe(false)
@@ -755,7 +776,7 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(pipeline.pending()).toBe(false)
 		expect(pipeline.renderTree()).toBe(tokens)
-		expect(pipeline.byPath().size).toBe(3)
+		expect(pipeline.bound().size).toBe(3)
 	})
 
 	it('the structural branch self-heals corruption instead of throwing (bind rewrites every surface)', () => {

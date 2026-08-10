@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {markToken, textToken} from '../__testing__/tokenFactories'
 import type {Token} from '../parser/types'
 import {bind} from './bind'
-import type {BindInput} from './bind'
+import type {BindInput, BindResult} from './bind'
 import type {TokenHandle} from './TokenHandle'
 
 /**
@@ -48,6 +48,32 @@ function inputFor(
 	}
 }
 
+/**
+ * The bound handle at a tree POSITION. Replaces `result.byPath.get(pathKey(path))`:
+ * S1.8 step 4 re-keyed the bind result on stable ids, so a case that names a token by
+ * where it sits in the fixture resolves the token first and looks its handle up by id.
+ */
+function at(
+	result: BindResult,
+	ids: ReturnType<typeof createIds>,
+	tokens: readonly Token[],
+	...path: number[]
+): TokenHandle | undefined {
+	let siblings: readonly Token[] = tokens
+	let token: Token | undefined
+	for (const index of path) {
+		// `.at`, not `[]`: `tsconfig` leaves `noUncheckedIndexedAccess` off, so an index read
+		// types as `Token` and the out-of-range guard — which several cases below rely on to
+		// answer `undefined` — is linted away as an impossible condition.
+		const next = siblings.at(index)
+		if (!next) return undefined
+		token = next
+		siblings = token.type === 'mark' ? token.children : []
+	}
+	const id = token === undefined ? undefined : ids.idFor(token)
+	return id === undefined ? undefined : result.bound.get(id)
+}
+
 function spanWith(content: string): HTMLElement {
 	const span = document.createElement('span')
 	span.textContent = content
@@ -68,7 +94,7 @@ describe('bind', () => {
 
 			const result = bind(inputFor(container, tokens, ids.idFor, {nodes}))
 
-			const handle = result.byPath.get('0')
+			const handle = at(result, ids, tokens, 0)
 			expect(handle).toBeDefined()
 			expect(nodes.get(1)).toBe(handle)
 			expect(handle?.token()).toBe(tokens[0])
@@ -90,11 +116,11 @@ describe('bind', () => {
 
 			const result = bind(inputFor(container, tokens, ids.idFor))
 
-			expect(result.byPath.get('0')?.element()).toBe(before)
-			expect(result.byPath.get('1')?.element()).toBe(mark)
-			expect(result.byPath.get('2')?.element()).toBe(after)
-			expect(result.byPath.get('1')?.node()?.textElement).toBeUndefined()
-			expect(result.byPath.get('1')?.hasTextSurface()).toBe(false)
+			expect(at(result, ids, tokens, 0)?.element()).toBe(before)
+			expect(at(result, ids, tokens, 1)?.element()).toBe(mark)
+			expect(at(result, ids, tokens, 2)?.element()).toBe(after)
+			expect(at(result, ids, tokens, 1)?.node()?.textElement).toBeUndefined()
+			expect(at(result, ids, tokens, 1)?.hasTextSurface()).toBe(false)
 		})
 
 		it('descends into nested mark children in place', () => {
@@ -110,9 +136,9 @@ describe('bind', () => {
 
 			const result = bind(inputFor(container, tokens, ids.idFor))
 
-			expect(result.byPath.get('0')?.element()).toBe(outer)
-			expect(result.byPath.get('0.0')?.element()).toBe(innerText)
-			expect(result.byPath.get('0.0')?.node()?.textElement).toBe(innerText)
+			expect(at(result, ids, tokens, 0)?.element()).toBe(outer)
+			expect(at(result, ids, tokens, 0, 0)?.element()).toBe(innerText)
+			expect(at(result, ids, tokens, 0, 0)?.node()?.textElement).toBe(innerText)
 		})
 
 		it('completes binding when a nested mark renders no child elements', () => {
@@ -127,8 +153,8 @@ describe('bind', () => {
 
 			const result = bind(inputFor(container, tokens, ids.idFor, {nodes}))
 
-			expect(result.byPath.get('0')?.element()).toBe(outer)
-			expect(result.byPath.get('0.0')).toBeUndefined()
+			expect(at(result, ids, tokens, 0)?.element()).toBe(outer)
+			expect(at(result, ids, tokens, 0, 0)).toBeUndefined()
 			// No handle is materialized for a tree token the walk never reached.
 			expect(nodes.has(2)).toBe(false)
 			expect(nodes.size).toBe(1)
@@ -150,12 +176,12 @@ describe('bind', () => {
 
 			const result = bind(inputFor(container, tokens, ids.idFor, {isBlock: true}))
 
-			expect(result.byPath.get('0')?.element()).toBe(tokenEl0)
-			expect(result.byPath.get('0')?.node()?.rowElement).toBe(row0)
-			expect(result.byPath.get('1')?.element()).toBe(tokenEl1)
-			expect(result.byPath.get('1')?.node()?.rowElement).toBe(row1)
-			expect(result.byElement.get(row0)).toBe(result.byPath.get('0'))
-			expect(result.byElement.get(row1)).toBe(result.byPath.get('1'))
+			expect(at(result, ids, tokens, 0)?.element()).toBe(tokenEl0)
+			expect(at(result, ids, tokens, 0)?.node()?.rowElement).toBe(row0)
+			expect(at(result, ids, tokens, 1)?.element()).toBe(tokenEl1)
+			expect(at(result, ids, tokens, 1)?.node()?.rowElement).toBe(row1)
+			expect(result.byElement.get(row0)).toBe(at(result, ids, tokens, 0))
+			expect(result.byElement.get(row1)).toBe(at(result, ids, tokens, 1))
 		})
 
 		it('treats block-row control children as non-tokens (preserves single-token-per-row invariant)', () => {
@@ -174,8 +200,8 @@ describe('bind', () => {
 				inputFor(container, tokens, ids.idFor, {isBlock: true, controlElements: new Set([control])})
 			)
 
-			expect(result.byPath.get('0')?.element()).toBe(tokenEl)
-			expect(result.byPath.get('0')?.node()?.rowElement).toBe(row)
+			expect(at(result, ids, tokens, 0)?.element()).toBe(tokenEl)
+			expect(at(result, ids, tokens, 0)?.node()?.rowElement).toBe(row)
 		})
 
 		it('bails block alignment when a row has more than one non-control child (fail-loud)', () => {
@@ -196,8 +222,8 @@ describe('bind', () => {
 
 			const result = bind(inputFor(container, tokens, ids.idFor, {isBlock: true, nodes}))
 
-			expect(result.byPath.get('0')).toBeUndefined()
-			expect(result.byPath.get('1')).toBeUndefined()
+			expect(at(result, ids, tokens, 0)).toBeUndefined()
+			expect(at(result, ids, tokens, 1)).toBeUndefined()
 			// All-or-nothing: nothing was indexed, so no handles materialize either.
 			expect(nodes.size).toBe(0)
 		})
@@ -214,7 +240,7 @@ describe('bind', () => {
 
 			const result = bind(inputFor(container, tokens, ids.idFor, {controlElements: new Set([control])}))
 
-			expect(result.byPath.get('0')?.element()).toBe(tokenEl)
+			expect(at(result, ids, tokens, 0)?.element()).toBe(tokenEl)
 			expect(result.byElement.get(control)).toBeUndefined()
 		})
 
@@ -232,7 +258,7 @@ describe('bind', () => {
 
 			const result = bind(inputFor(container, tokens, ids.idFor, {controlElements: new Set([control])}))
 
-			expect(result.byPath.get('0')?.element()).toBe(tokenEl)
+			expect(at(result, ids, tokens, 0)?.element()).toBe(tokenEl)
 		})
 
 		it('uses a registered child-sequence host as the parent for nested children', () => {
@@ -255,10 +281,10 @@ describe('bind', () => {
 				})
 			)
 
-			expect(result.byPath.get('0')?.node()?.childSequenceHost).toBe(host)
-			expect(result.byPath.get('0.0')?.element()).toBe(innerA)
-			expect(result.byPath.get('0.1')?.element()).toBe(innerB)
-			expect(result.byElement.get(host)).toBe(result.byPath.get('0'))
+			expect(at(result, ids, tokens, 0)?.node()?.childSequenceHost).toBe(host)
+			expect(at(result, ids, tokens, 0, 0)?.element()).toBe(innerA)
+			expect(at(result, ids, tokens, 0, 1)?.element()).toBe(innerB)
+			expect(result.byElement.get(host)).toBe(at(result, ids, tokens, 0))
 		})
 
 		it('falls back to in-place descent when child-sequence host is duplicated', () => {
@@ -279,8 +305,8 @@ describe('bind', () => {
 				})
 			)
 
-			expect(result.byPath.get('0')?.node()?.childSequenceHost).toBeUndefined()
-			expect(result.byPath.get('0.0')).toBeUndefined()
+			expect(at(result, ids, tokens, 0)?.node()?.childSequenceHost).toBeUndefined()
+			expect(at(result, ids, tokens, 0, 0)).toBeUndefined()
 		})
 
 		it('returns controlRoots including controls and their ancestors up to container', () => {
@@ -325,11 +351,11 @@ describe('bind', () => {
 				})
 			)
 
-			expect(result.byPath.get('0')?.element()).toBe(leading)
-			expect(result.byPath.get('1')?.element()).toBe(outer)
-			expect(result.byPath.get('1')?.node()?.childSequenceHost).toBeUndefined()
-			expect(result.byPath.get('2')?.element()).toBe(trailing)
-			expect(result.byPath.get('1.0')).toBeUndefined()
+			expect(at(result, ids, tokens, 0)?.element()).toBe(leading)
+			expect(at(result, ids, tokens, 1)?.element()).toBe(outer)
+			expect(at(result, ids, tokens, 1)?.node()?.childSequenceHost).toBeUndefined()
+			expect(at(result, ids, tokens, 2)?.element()).toBe(trailing)
+			expect(at(result, ids, tokens, 1, 0)).toBeUndefined()
 		})
 	})
 
@@ -356,14 +382,14 @@ describe('bind', () => {
 
 			expect(nodes.size).toBe(1)
 			expect(nodes.get(1)).toBe(handle)
-			expect(result.byPath.get('0')).toBe(handle)
+			expect(result.bound.get(1)).toBe(handle)
 			expect(result.byElement.get(renderedSpan)).toBe(handle)
 			expect(handle.token()).toBe(next)
 			expect(handle.token().content).toBe('hello!')
 			expect(handle.element()).toBe(renderedSpan)
 		})
 
-		it('rebinds when a token shifts to a new path', () => {
+		it('rebinds when a token shifts to a new position', () => {
 			const container = document.createElement('div')
 			container.append(spanWith('alpha '), spanWith('beta'))
 			const a = textToken('alpha ', 0)
@@ -376,7 +402,7 @@ describe('bind', () => {
 			const handleB = nodes.get(2)
 			if (!handleB) throw new Error('expected handle for id 2')
 
-			// A token is prepended: b keeps content, shifts position and path.
+			// A token is prepended: b keeps content and shifts position.
 			const inserted = textToken('x ', 0)
 			const a2 = textToken('alpha ', 2)
 			const b2 = textToken('beta', 8)
@@ -388,7 +414,7 @@ describe('bind', () => {
 
 			const result = bind(inputFor(container, [inserted, a2, b2], ids.idFor, {nodes}))
 
-			expect(result.byPath.get('2')).toBe(handleB)
+			expect(result.bound.get(2)).toBe(handleB)
 			expect(handleB.element()).toBe(spanB2)
 		})
 
@@ -446,7 +472,7 @@ describe('bind', () => {
 
 			const result = bind(inputFor(container, [a2, b2], ids.idFor, {nodes}))
 
-			expect(result.byPath.size).toBe(0)
+			expect(result.bound.size).toBe(0)
 			// Both handles survive in the node map — not killed, only unbound.
 			expect(nodes.size).toBe(2)
 			expect(handleA.element()).toBeUndefined()
@@ -483,8 +509,8 @@ describe('bind', () => {
 
 			const result = bind(inputFor(container, [mark2], ids.idFor, {nodes}))
 
-			expect(result.byPath.get('0')).toBeDefined()
-			expect(result.byPath.get('0.0')).toBeUndefined()
+			expect(at(result, ids, tokens, 0)).toBeDefined()
+			expect(at(result, ids, tokens, 0, 0)).toBeUndefined()
 			// The child survives in the node map — not killed, only unbound.
 			expect(nodes.has(2)).toBe(true)
 			expect(child.element()).toBeUndefined()

@@ -1,7 +1,5 @@
-import type {TokenPath} from '../../../shared/editorContracts'
 import {batch} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
-import {pathKey} from '../tokenIndex'
 import {applyEditableState} from './editableState'
 import {TokenHandle} from './TokenHandle'
 import type {ElementBindings} from './TokenHandle'
@@ -44,8 +42,14 @@ export type BindInput = {
 }
 
 /** Derived lookups over the nodes the walk actually bound (buildIndex's IndexResult, handle-valued). */
-type BindResult = {
-	byPath: ReadonlyMap<string, TokenHandle>
+export type BindResult = {
+	/**
+	 * The handles this walk bound, keyed by stable id. It was keyed by `pathKey(path)`
+	 * until S1.8 step 4; no production consumer ever looked one up by key — all three
+	 * (`assertAligned`, `setEditable`, `DomModel.boundHandles`) iterate the values — so the
+	 * path string was the last thing keeping a path layer alive inside the pipeline.
+	 */
+	bound: ReadonlyMap<number, TokenHandle>
 	byElement: WeakMap<HTMLElement, TokenHandle>
 	controlRoots: WeakSet<HTMLElement>
 }
@@ -53,31 +57,30 @@ type BindResult = {
 type Frame = {
 	tokens: readonly Token[]
 	elements: HTMLElement[]
-	basePath: TokenPath
 	rows?: ReadonlyMap<number, HTMLElement>
 }
 
-type TreeEntry = {id: number; token: Token; path: TokenPath}
+type TreeEntry = {id: number; token: Token}
 
 export function bind(input: BindInput): BindResult {
 	const {container, tokens, idFor, nodes, controlElements, childSequenceHostsFor, isBlock, editable} = input
 
-	// Pre-pass, before any mutation: flatten the tree to (id, token, path) in
-	// depth-first order. Failing here (no id) leaves the node layer untouched.
+	// Pre-pass, before any mutation: flatten the tree to (id, token) in depth-first
+	// order. Failing here (no id) leaves the node layer untouched.
 	const tree: TreeEntry[] = []
-	collectTree(tokens, [], idFor, tree)
+	collectTree(tokens, idFor, tree)
 
 	const controlRoots = computeControlRoots(container, controlElements)
-	const bound = walkDom(container, tokens, idFor, controlRoots, childSequenceHostsFor, isBlock)
+	const walked = walkDom(container, tokens, idFor, controlRoots, childSequenceHostsFor, isBlock)
 
-	const byPath = new Map<string, TokenHandle>()
+	const bound = new Map<number, TokenHandle>()
 	const byElement = new WeakMap<HTMLElement, TokenHandle>()
 
 	batch(() => {
 		const treeIds = new Set<number>()
-		for (const {id, token, path} of tree) {
+		for (const {id, token} of tree) {
 			treeIds.add(id)
-			const bindings = bound.get(token)
+			const bindings = walked.get(token)
 			const existing = nodes.get(id)
 			// An unrendered NEW token materializes no handle; one appears when a
 			// later walk reaches it (or on demand through the model shell).
@@ -92,7 +95,7 @@ export function bind(input: BindInput): BindResult {
 			const previous = handle.node()
 			handle.bindElements(bindings)
 			applyMountState(token, bindings, previous, editable)
-			byPath.set(pathKey(path), handle)
+			bound.set(id, handle)
 			byElement.set(bindings.tokenElement, handle)
 			if (bindings.rowElement) byElement.set(bindings.rowElement, handle)
 			if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
@@ -110,24 +113,18 @@ export function bind(input: BindInput): BindResult {
 		}
 	})
 
-	return {byPath, byElement, controlRoots}
+	return {bound, byElement, controlRoots}
 }
 
-function collectTree(
-	tokens: readonly Token[],
-	basePath: TokenPath,
-	idFor: (token: Token) => number | undefined,
-	out: TreeEntry[]
-): void {
-	tokens.forEach((token, i) => {
-		const path = [...basePath, i]
+function collectTree(tokens: readonly Token[], idFor: (token: Token) => number | undefined, out: TreeEntry[]): void {
+	for (const token of tokens) {
 		const id = idFor(token)
 		if (id === undefined) {
-			throw new Error(`bind: token at [${path.join(', ')}] has no id — bind requires an identity-reconciled tree`)
+			throw new Error(`bind: token "${token.content}" has no id — bind requires an identity-reconciled tree`)
 		}
-		out.push({id, token, path})
-		if (token.type === 'mark') collectTree(token.children, path, idFor, out)
-	})
+		out.push({id, token})
+		if (token.type === 'mark') collectTree(token.children, idFor, out)
+	}
 }
 
 /**
@@ -149,11 +146,10 @@ function walkDom(
 	while (stack.length > 0) {
 		const frame = stack.pop()
 		if (!frame) continue
-		const {tokens: frameTokens, elements, basePath, rows} = frame
+		const {tokens: frameTokens, elements, rows} = frame
 		if (elements.length !== frameTokens.length) continue
 
 		frameTokens.forEach((token, i) => {
-			const path = [...basePath, i]
 			const element = elements[i]
 			const hosts = childSequenceHostsFor(idFor(token))
 			const childSequenceHost = hosts.length === 1 && element.contains(hosts[0]) ? hosts[0] : undefined
@@ -167,7 +163,6 @@ function walkDom(
 			stack.push({
 				tokens: token.children,
 				elements: nonControlChildren(childSequenceHost ?? element, controlRoots),
-				basePath: path,
 			})
 		})
 	}
@@ -176,7 +171,7 @@ function walkDom(
 
 	function resolveRoot(): Frame {
 		if (!isBlock) {
-			return {tokens, elements: nonControlChildren(container, controlRoots), basePath: []}
+			return {tokens, elements: nonControlChildren(container, controlRoots)}
 		}
 		// Block layout: take all container children as candidate rows (do NOT filter rows
 		// by controlRoots — a row that contains controls is still a row). Controls are
@@ -189,11 +184,11 @@ function walkDom(
 			const row = rowEls[i]
 			const inner = nonControlChildren(row, controlRoots)
 			// Block alignment is all-or-nothing: one bad row bails the whole frame.
-			if (inner.length !== 1) return {tokens, elements: [], basePath: []}
+			if (inner.length !== 1) return {tokens, elements: []}
 			tokenEls.push(inner[0])
 			rows.set(i, row)
 		}
-		return {tokens, elements: tokenEls, basePath: [], rows}
+		return {tokens, elements: tokenEls, rows}
 	}
 }
 

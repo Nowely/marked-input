@@ -1,7 +1,5 @@
 import type {Token} from '../features/tokens'
 
-export type TokenPath = readonly number[]
-
 export type DomRef = (element: HTMLElement | null) => void
 
 export type Range = {
