@@ -14,6 +14,27 @@ export function anchorsAt(store: Store, start: number, end: number = start): [No
 	return [store.tokens.anchorAt(start), store.tokens.anchorAt(end)]
 }
 
+/** Collapse the stored selection onto a document offset — the write half of the deleted `Selection.position`. */
+export function caretAt(store: Store, offset: number): void {
+	store.selection.select(store.tokens.anchorAt(offset))
+}
+
+/**
+ * The stored selection as `{start, end}` offsets — the projection `Selection.range` was
+ * until S2.6 (spec S2 D11 deleted it: nothing outside these specs read it).
+ *
+ * A FRESH read, not a cached computed, which is the whole reason the deleted member needed
+ * a generation marker: an anchor that survives an edit unchanged still has to re-resolve
+ * against the positions adoption just moved.
+ */
+export function selectionRange(store: Store): {start: number; end: number} | undefined {
+	const anchors = store.selection.anchors()
+	if (!anchors) return undefined
+	const anchor = store.tokens.offsetOf(anchors.anchor)
+	const head = store.tokens.offsetOf(anchors.head)
+	return anchor <= head ? {start: anchor, end: head} : {start: head, end: anchor}
+}
+
 /** A store seeded from props alone: a tree, no container, so nothing below is mounted. */
 export function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()

@@ -1,7 +1,7 @@
 import {describe, expect, it, vi} from 'vitest'
 
 import {Store} from '../../../store/Store'
-import {anchorsAt, enableStructuralStore, mountInline} from '../__testing__/mountFixtures'
+import {anchorsAt, caretAt, enableStructuralStore, mountInline, selectionRange} from '../__testing__/mountFixtures'
 import {Parser} from '../parser/Parser'
 import {anchorAt, offsetOfAnchor} from './anchors'
 import {createSelection} from './selection'
@@ -24,6 +24,22 @@ function build(source: string) {
 	return {tree, selection}
 }
 
+type Harness = ReturnType<typeof build>
+
+/** Collapse the harness's selection onto a document offset (the deleted `position` write). */
+function caret({tree, selection}: Harness, offset: number): void {
+	selection.select(anchorAt(tree.roots(), offset))
+}
+
+/** The harness's stored anchors as offsets (the deleted `range` projection). */
+function rangeOf({tree, selection}: Harness): {start: number; end: number} | undefined {
+	const anchors = selection.anchors()
+	if (!anchors) return undefined
+	const anchor = offsetOfAnchor(tree.roots(), anchors.anchor)
+	const head = offsetOfAnchor(tree.roots(), anchors.head)
+	return anchor <= head ? {start: anchor, end: head} : {start: head, end: anchor}
+}
+
 /**
  * A store whose tree is built by `props.set` alone — no container, so nothing below is
  * mounted. The repair cases still need the real transaction/adoption pipeline (that is
@@ -34,56 +50,44 @@ function unmountedStoreWithMark(value: string) {
 }
 
 describe('createSelection', () => {
-	it('exposes range', () => {
-		expect(typeof build('').selection.range).toBe('function')
+	it('starts with no stored anchors', () => {
+		expect(build('').selection.anchors()).toBeUndefined()
 	})
 
-	it('range starts undefined', () => {
-		expect(build('').selection.range()).toBeUndefined()
-	})
-
-	describe('position', () => {
-		it('is undefined when range is undefined', () => {
-			expect(build('').selection.position()).toBeUndefined()
+	describe('collapsed writes', () => {
+		it('stores one anchor for both ends', () => {
+			// The offset is load-bearing (plan decision D-f): an anchor addresses a NODE, so
+			// 5 has to exist in the document for `anchorAt` to resolve to one.
+			const harness = build('hello')
+			caret(harness, 5)
+			expect(rangeOf(harness)).toEqual({start: 5, end: 5})
 		})
-		it('returns start when collapsed', () => {
-			// The value is load-bearing now (plan decision D-f): an anchor addresses a
-			// NODE, so offset 5 has to exist in the document for the write to resolve.
-			const {selection} = build('hello')
-			selection.position(5)
-			expect(selection.position()).toBe(5)
-		})
-		it('write collapses range to {pos, pos}', () => {
-			const {selection} = build('hello')
-			selection.position(5)
-			expect(selection.range()).toEqual({start: 5, end: 5})
-		})
-		it('write does not change isUserSelecting', () => {
+		it('does not change isUserSelecting', () => {
 			// The one case here that is NOT DOM-free by construction: `isUserSelecting` is the
-			// DRIVER's signal, so the claim — that a `position` write leaves it alone — only
+			// DRIVER's signal, so the claim — that a selection write leaves it alone — only
 			// exists where the two halves are composed.
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
 			store.selection.isUserSelecting(true)
-			store.selection.position(5)
+			caretAt(store, 5)
 			expect(store.selection.isUserSelecting()).toBe(true)
 		})
-		it('write collapses an extended range', () => {
-			const {selection} = build('hello')
-			selection.selectAll()
-			selection.position(3)
-			expect(selection.range()).toEqual({start: 3, end: 3})
+		it('collapses an extended selection', () => {
+			const harness = build('hello')
+			harness.selection.selectAll()
+			caret(harness, 3)
+			expect(rangeOf(harness)).toEqual({start: 3, end: 3})
 		})
 	})
 
 	describe('isAllSelected', () => {
-		it('returns false when value is empty', () => {
+		it('returns false when the value is empty', () => {
 			expect(build('').selection.isAllSelected()).toBe(false)
 		})
-		it('returns false when range is collapsed', () => {
-			const {selection} = build('hello')
-			selection.position(2)
-			expect(selection.isAllSelected()).toBe(false)
+		it('returns false when the selection is collapsed', () => {
+			const harness = build('hello')
+			caret(harness, 2)
+			expect(harness.selection.isAllSelected()).toBe(false)
 		})
 		it('returns false for a partial range', () => {
 			const {tree, selection} = build('hello')
@@ -106,36 +110,38 @@ describe('createSelection', () => {
 
 	describe('caret repair (spec S1 D7, AC-3.2/3.3/3.4)', () => {
 		/**
-		 * `store.tokens.replace` — NOT `store.edit.replace` (it was `store.value.replace`
-		 * until S1.8 step 5 deleted the facade). EditController writes the caret itself
-		 * afterwards, which would mask everything these cases assert.
+		 * `store.tokens.replaceBetween` / `setValue` — NOT `store.edit.replace`.
+		 * EditController writes the caret itself afterwards, which would mask everything
+		 * these cases assert.
 		 */
 		it('keeps node and offset when the edit is outside the anchor, and still reports the NEW offset', () => {
-			// AC-3.2 and the #generation gate in one case, hand-traced:
+			// AC-3.2, hand-traced:
 			//   'ab@[x]cd' → text[0,2] mark[2,6] text[6,8]; caret 7 = {node: cd, offset: 1}.
 			//   insert 'Z' at 0 → window {0,0,1} → map(7) = 8 → anchorAt(8) → cd is now [7,9]
 			//   → {node: cd, offset: 1} — the SAME node object and the SAME local offset, so
-			//   the `#anchors` write is deduped and notifies nothing. Only the generation bump
-			//   makes range() answer 8; without it the computed returns the cached 7.
+			//   the stored write is deduped and notifies nothing. Until S2.6 this was also the
+			//   sole gate on `repair`'s generation bump, because the derived `range` was a
+			//   CACHED computed over positions no signal covered; `selectionRange` re-reads
+			//   the anchors, which is why that marker could go.
 			const store = unmountedStoreWithMark('ab@[x]cd')
-			store.selection.position(7)
-			expect(store.selection.range()).toEqual({start: 7, end: 7})
+			caretAt(store, 7)
+			expect(selectionRange(store)).toEqual({start: 7, end: 7})
 
 			store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(0), 'Z')
 
 			expect(store.tokens.value()).toBe('Zab@[x]cd')
-			expect(store.selection.range()).toEqual({start: 8, end: 8})
+			expect(selectionRange(store)).toEqual({start: 8, end: 8})
 		})
 
 		it('maps a caret inside the edited region to the end of the inserted text', () => {
 			// AC-3.3. Caret 7 (inside 'cd'), replace [6,8] with 'ZZZZ' → window {6,8,4} →
 			// map(7) → 6 + 4 = 10.
 			const store = unmountedStoreWithMark('ab@[x]cd')
-			store.selection.position(7)
+			caretAt(store, 7)
 
 			store.tokens.replaceBetween(store.tokens.anchorAt(6), store.tokens.anchorAt(8), 'ZZZZ')
 
-			expect(store.selection.range()).toEqual({start: 10, end: 10})
+			expect(selectionRange(store)).toEqual({start: 10, end: 10})
 		})
 
 		it('survives the anchor node being REMOVED by the transaction', () => {
@@ -143,24 +149,24 @@ describe('createSelection', () => {
 			// adoption pairs by index, so root 0 is retained and the mark AND 'cd' — the
 			// anchor's node — are removed. map(7) → inside the window → 0 + 2 = 2.
 			const store = unmountedStoreWithMark('ab@[x]cd')
-			store.selection.position(7)
+			caretAt(store, 7)
 
 			store.tokens.setValue('zz')
 
 			expect(store.tokens.value()).toBe('zz')
-			expect(store.selection.range()).toEqual({start: 2, end: 2})
+			expect(selectionRange(store)).toEqual({start: 2, end: 2})
 		})
 
 		it('maps a cross-node replacement spanning a mark to the end of the replacement', () => {
 			// AC-3.4. Caret 8 (document end), replace [1,7] with 'Q' → 'aQd', window {1,7,1},
 			// delta -5 → map(8) = 3.
 			const store = unmountedStoreWithMark('ab@[x]cd')
-			store.selection.position(8)
+			caretAt(store, 8)
 
 			store.tokens.replaceBetween(store.tokens.anchorAt(1), store.tokens.anchorAt(7), 'Q')
 
 			expect(store.tokens.value()).toBe('aQd')
-			expect(store.selection.range()).toEqual({start: 3, end: 3})
+			expect(selectionRange(store)).toEqual({start: 3, end: 3})
 		})
 
 		it('repairs the caret through the EXACT edit window, not a narrowed one', () => {
@@ -169,19 +175,19 @@ describe('createSelection', () => {
 			// (inside → start + insertedLength). Narrowing to the shared-prefix gap window
 			// {2,3,1} maps it to 1 instead, because 1 is then strictly BEFORE the window.
 			const store = enableStructuralStore('hello')
-			store.selection.position(1)
+			caretAt(store, 1)
 
 			store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(3), 'hey')
 
 			expect(store.tokens.value()).toBe('heylo')
-			expect(store.selection.range()).toEqual({start: 3, end: 3})
+			expect(selectionRange(store)).toEqual({start: 3, end: 3})
 		})
 
 		it('leaves the selection alone when there was none', () => {
 			const store = unmountedStoreWithMark('ab@[x]cd')
-			expect(store.selection.range()).toBeUndefined()
+			expect(selectionRange(store)).toBeUndefined()
 			store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(0), 'Z')
-			expect(store.selection.range()).toBeUndefined()
+			expect(selectionRange(store)).toBeUndefined()
 		})
 	})
 
@@ -195,12 +201,12 @@ describe('createSelection', () => {
 			const store = new Store()
 			store.props.set({value: 'hello', onChange: next => store.props.set({value: next})})
 			const {container} = mountInline(store)
-			store.selection.position(2)
+			caretAt(store, 2)
 
 			store.edit.replace(...anchorsAt(store, 2, 2), 'X')
 
 			expect(store.tokens.value()).toBe('heXllo')
-			expect(store.selection.range()).toEqual({start: 3, end: 3})
+			expect(selectionRange(store)).toEqual({start: 3, end: 3})
 			container.remove()
 		})
 
@@ -209,13 +215,13 @@ describe('createSelection', () => {
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
 			const {container} = mountInline(store)
-			store.selection.position(2)
+			caretAt(store, 2)
 
 			store.edit.replace(...anchorsAt(store, 2, 2), 'X')
 
 			expect(onChange).toHaveBeenCalledWith('heXllo')
 			expect(store.tokens.value()).toBe('hello')
-			expect(store.selection.range()).toEqual({start: 2, end: 2})
+			expect(selectionRange(store)).toEqual({start: 2, end: 2})
 			container.remove()
 		})
 
@@ -231,12 +237,12 @@ describe('createSelection', () => {
 			const store = new Store()
 			store.props.set({value: 'hello', onChange: next => store.props.set({value: next})})
 			const {container} = mountInline(store)
-			store.selection.position(999)
+			caretAt(store, 999)
 
 			store.edit.replace(...anchorsAt(store, 0, 1), '')
 
 			expect(store.tokens.value()).toBe('ello')
-			expect(store.selection.range()).toEqual({start: 4, end: 4})
+			expect(selectionRange(store)).toEqual({start: 4, end: 4})
 			container.remove()
 		})
 
@@ -244,14 +250,14 @@ describe('createSelection', () => {
 			const store = new Store()
 			store.props.set({value: 'hello', onChange: next => store.props.set({value: next.toUpperCase()})})
 			const {container} = mountInline(store)
-			store.selection.position(2)
+			caretAt(store, 2)
 
 			store.edit.replace(...anchorsAt(store, 2, 2), 'X')
 
 			expect(store.tokens.value()).toBe('HEXLLO')
 			// gapWindow('hello','HEXLLO') = {0,5,6}; map(2) is inside → 0 + 6 = 6. Best effort,
 			// which is what AC-4.2/4.4 promise for a transform.
-			expect(store.selection.range()).toEqual({start: 6, end: 6})
+			expect(selectionRange(store)).toEqual({start: 6, end: 6})
 			container.remove()
 		})
 	})

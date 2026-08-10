@@ -1,6 +1,7 @@
 import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
+import {selectionRange} from '../tokens/__testing__/mountFixtures'
 
 function mountStructuralInline(value = 'hello') {
 	const store = new Store()
@@ -64,7 +65,7 @@ describe('handleBeforeInput()', () => {
 		expect(event.defaultPrevented).toBe(true)
 		// The DOM boundary resolves to the LIVE node, not to the number 1 (spec S2 §4.5).
 		expect(replace).toHaveBeenCalledWith({node, offset: 1}, {node, offset: 1}, 'x')
-		expect(store.selection.range()).toEqual({start: 2, end: 2})
+		expect(selectionRange(store)).toEqual({start: 2, end: 2})
 		container.remove()
 	})
 

@@ -3,7 +3,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest'
 import {effect} from '../../shared/signals'
 import {Store} from '../../store/Store'
 import type {Token} from '../tokens'
-import {anchorsAt} from '../tokens/__testing__/mountFixtures'
+import {anchorsAt, selectionRange} from '../tokens/__testing__/mountFixtures'
 
 describe('BlockController', () => {
 	let store: Store
@@ -53,7 +53,7 @@ describe('BlockController', () => {
 		// string from row positions and `edit.setValue` commits it, so the value is only
 		// ever READ on this path.
 		expect(store.tokens.value()).toBe('beta\n\n')
-		expect(store.selection.range()).toEqual({start: 6, end: 6})
+		expect(selectionRange(store)).toEqual({start: 6, end: 6})
 	})
 
 	it('writes value and caret as a single batched tick', () => {
@@ -69,7 +69,7 @@ describe('BlockController', () => {
 		let runs = 0
 		const dispose = effect(() => {
 			store.tokens.value()
-			store.selection.range()
+			selectionRange(store)
 			runs++
 		})
 		const initial = runs
@@ -90,12 +90,12 @@ describe('BlockController', () => {
 		store.host.container(document.createElement('div'))
 		store.tokens.setValue('alpha\n\nbeta\n\n')
 		const writeSpy = vi.spyOn(store.edit, 'setValue')
-		const positionSpy = vi.spyOn(store.selection, 'position')
+		const selectSpy = vi.spyOn(store.selection, 'select')
 
 		store.block.action({type: 'reorder', source: 0, target: 0})
 
 		expect(writeSpy).not.toHaveBeenCalled()
-		expect(positionSpy).not.toHaveBeenCalled()
+		expect(selectSpy).not.toHaveBeenCalled()
 	})
 
 	describe('per-row stores (identity-keyed)', () => {

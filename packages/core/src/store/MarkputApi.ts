@@ -5,7 +5,6 @@ import {annotate} from '../features/tokens'
 import type {Id, MarkNode, NodeAnchor, TextNode, TokenModel, TreeNode} from '../features/tokens'
 import type {Markup} from '../features/tokens/parser/types'
 import type {TokenDelta} from '../features/tokens/seam/commitInput'
-import type {Range} from '../shared/editorContracts'
 import type {Event} from '../shared/signals'
 
 /** Spec §2.3's `insertMark` initializer. */
@@ -130,10 +129,6 @@ export class MarkputApi {
 
 	caret(at: NodeAnchor): boolean {
 		return this.select(at)
-	}
-
-	selectionRange(): Range | undefined {
-		return this.selectionController.range()
 	}
 
 	/**

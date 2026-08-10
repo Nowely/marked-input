@@ -2,20 +2,20 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
-import {mountStructuralInline, mountStructuralInlineMark} from '../__testing__/mountFixtures'
+import {caretAt, mountStructuralInline, mountStructuralInlineMark, selectionRange} from '../__testing__/mountFixtures'
 import type {TextNode} from '../tree/types'
 
 describe('SelectionDriver', () => {
 	it('repeated placement at the same handle notifies once', () => {
-		// The stored form is anchors, so the dedupe under test is anchor IDENTITY. It is
-		// NOT what gates `anchorEquals` — `range` keeps `{equals: shallow}` whatever
-		// `#anchors` does, so dropping the anchor equality still collapses this case. The
-		// gate for that is the next case.
+		// The stored form is anchors, so the dedupe under test is anchor IDENTITY. It watches
+		// those anchors DIRECTLY since S2.6 — until then it watched the derived numeric
+		// `range`, whose own `{equals: shallow}` collapsed the second notification whatever
+		// `anchorEquals` did, which is why the case below had to exist to gate it.
 		const {store, container} = mountStructuralInline('hello')
 		const handle = store.tokens.handleOf(store.tokens.current()[0])
 		if (!handle) throw new Error('Structural text token did not bind a handle')
 		const notify = vi.fn()
-		const stop = watch(store.selection.range, notify)
+		const stop = watch(() => store.selection.anchors(), notify)
 		store.selection.placeAtHandle(handle, 'start')
 		store.selection.placeAtHandle(handle, 'start')
 		expect(notify).toHaveBeenCalledTimes(1)
@@ -24,11 +24,10 @@ describe('SelectionDriver', () => {
 	})
 
 	it('repeated selectAll applies to the DOM once', () => {
-		// THE gate for `#anchors`'s custom `equals`, which the case above cannot give: two
-		// `selectAll()` calls rebuild FRESH anchor objects for the same two positions, so
-		// only value equality collapses the second apply. RANGED deliberately — `selectRange`
-		// is the ranged apply path, and the collapsed one is masked by `placeAtHandle`'s
-		// re-apply branch.
+		// The DOM-side gate for the stored signal's custom `equals`: two `selectAll()` calls
+		// rebuild FRESH anchor objects for the same two positions, so only value equality
+		// collapses the second apply. RANGED deliberately — `selectRange` is the ranged apply
+		// path, and the collapsed one is masked by `placeAtHandle`'s re-apply branch.
 		const {store, container} = mountStructuralInline('hello')
 		const spy = vi.spyOn(store.tokens, 'selectRange')
 		store.selection.selectAll()
@@ -53,30 +52,22 @@ describe('SelectionDriver', () => {
 		container.remove()
 	})
 
-	it('repeated position write notifies once', () => {
-		// The writable computed short-circuits an equal write before the setter runs.
+	it('repeated collapsed write at the same offset notifies once', () => {
+		// `anchorAt` rebuilds a fresh `{node, offset}` object each time, so only the stored
+		// signal's value equality collapses the second write.
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
 		const notify = vi.fn()
-		const stop = watch(store.selection.range, notify)
-		store.selection.position(5)
-		store.selection.position(5)
+		const stop = watch(() => store.selection.anchors(), notify)
+		caretAt(store, 5)
+		caretAt(store, 5)
 		expect(notify).toHaveBeenCalledTimes(1)
-		stop()
-	})
-
-	it('position undefined write is no-op when already undefined', () => {
-		const store = new Store()
-		const notify = vi.fn()
-		const stop = watch(store.selection.range, notify)
-		store.selection.position(undefined)
-		expect(notify).not.toHaveBeenCalled()
 		stop()
 	})
 
 	describe('DOM → model sync', () => {
 		/** Collapse the window selection onto one DOM boundary, bypassing any placement path. */
-		const caretAt = (node: Node, offset: number): void => {
+		const putCaret = (node: Node, offset: number): void => {
 			const sel = window.getSelection()
 			if (!sel) throw new Error('no window selection')
 			sel.removeAllRanges()
@@ -103,7 +94,7 @@ describe('SelectionDriver', () => {
 			const {store, container, mark} = mountStructuralInlineMark('ab@[x]cd')
 			const markNode = store.tokens.nodes()[1]
 			store.selection.select({before: markNode})
-			caretAt(mark, 0)
+			putCaret(mark, 0)
 
 			document.dispatchEvent(new Event('selectionchange'))
 
@@ -120,7 +111,7 @@ describe('SelectionDriver', () => {
 			const {store, container, mark} = mountStructuralInlineMark('ab@[x]cd')
 			const markNode = store.tokens.nodes()[1]
 			store.selection.select({node: textRoot(store), offset: 2})
-			caretAt(mark, 0)
+			putCaret(mark, 0)
 
 			document.dispatchEvent(new Event('selectionchange'))
 
@@ -155,7 +146,7 @@ describe('SelectionDriver', () => {
 			const outside = document.createElement('div')
 			outside.append(document.createTextNode('elsewhere'))
 			document.body.append(outside)
-			caretAt(outside.firstChild!, 3)
+			putCaret(outside.firstChild!, 3)
 			before.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
 
 			expect(store.selection.anchors()).toEqual({
@@ -180,7 +171,7 @@ describe('SelectionDriver', () => {
 			store.host.rendered()
 
 			store.selection.selectAll()
-			expect(store.selection.range()).toEqual({start: 0, end: 5})
+			expect(selectionRange(store)).toEqual({start: 0, end: 5})
 			const sel = window.getSelection()
 			expect(sel?.anchorNode).toBe(span.firstChild)
 			expect(sel?.anchorOffset).toBe(0)
@@ -194,7 +185,7 @@ describe('SelectionDriver', () => {
 			// No container set → no DOM index has been committed → placement is deferred
 			// until the next render. The range signal still reflects user intent.
 			store.selection.selectAll()
-			expect(store.selection.range()).toEqual({start: 0, end: 5})
+			expect(selectionRange(store)).toEqual({start: 0, end: 5})
 		})
 	})
 
@@ -219,7 +210,7 @@ describe('SelectionDriver', () => {
 
 			store.props.set({defaultValue: 'hello'})
 			store.host.container(container)
-			store.selection.position(5)
+			caretAt(store, 5)
 
 			store.host.rendered()
 			const sel = window.getSelection()
@@ -238,7 +229,7 @@ describe('SelectionDriver', () => {
 			document.body.appendChild(container)
 			store.host.container(container)
 			store.selection.isUserSelecting(true)
-			store.selection.position(3)
+			caretAt(store, 3)
 
 			// Clear any pre-existing browser selection so we can detect non-changes.
 			window.getSelection()?.removeAllRanges()
@@ -258,9 +249,9 @@ describe('SelectionDriver', () => {
 			document.body.appendChild(container)
 			store.props.set({defaultValue: 'hello'})
 			store.host.container(container)
-			store.selection.position(3)
+			caretAt(store, 3)
 			store.host.rendered()
-			expect(store.selection.range()).toEqual({start: 3, end: 3})
+			expect(selectionRange(store)).toEqual({start: 3, end: 3})
 			container.remove()
 		})
 
@@ -276,10 +267,10 @@ describe('SelectionDriver', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
-			store.selection.position(999)
+			caretAt(store, 999)
 			store.host.rendered()
 
-			expect(store.selection.range()).toEqual({start: 5, end: 5})
+			expect(selectionRange(store)).toEqual({start: 5, end: 5})
 			container.remove()
 		})
 
@@ -296,7 +287,7 @@ describe('SelectionDriver', () => {
 			store.host.rendered()
 
 			// Both anchors are `'end'`, so the selection is collapsed rather than clamped.
-			expect(store.selection.range()).toEqual({start: 5, end: 5})
+			expect(selectionRange(store)).toEqual({start: 5, end: 5})
 			container.remove()
 		})
 	})

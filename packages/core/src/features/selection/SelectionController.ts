@@ -1,5 +1,4 @@
 // packages/core/src/features/selection/SelectionController.ts
-import type {Range} from '../../shared/editorContracts'
 import type {Computed, Signal} from '../../shared/signals'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
@@ -13,8 +12,6 @@ import type {Anchors, NodeAnchor, Selection, TokenHandle, TokenModel, Transactio
  * keeps its tree private.
  */
 export class SelectionController {
-	readonly range: Computed<Range | undefined>
-	readonly position: Signal<number | undefined>
 	readonly isAllSelected: Computed<boolean>
 	readonly isUserSelecting: Signal<boolean>
 
@@ -43,8 +40,6 @@ export class SelectionController {
 			anchorFor: (node, offset, affinity) => tokens.anchorFor(node, offset, affinity),
 		})
 
-		this.range = this.#state.range
-		this.position = this.#state.position
 		this.isAllSelected = this.#state.isAllSelected
 		this.isUserSelecting = this.#driver.isUserSelecting
 	}

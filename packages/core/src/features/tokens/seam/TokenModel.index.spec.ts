@@ -2,6 +2,7 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals/index.js'
 import {Store} from '../../../store/Store'
+import {caretAt} from '../__testing__/mountFixtures'
 import {TokenHandle} from '../dom/TokenHandle'
 
 function mountInline(value: string) {
@@ -107,7 +108,7 @@ describe('TokenModel lookups', () => {
 		store.props.set({defaultValue: 'hello'})
 		// intentionally NOT setting store.host.container() — no commit has run
 
-		expect(() => store.selection.position(0)).not.toThrow()
+		expect(() => caretAt(store, 0)).not.toThrow()
 	})
 })
 
