@@ -1,4 +1,4 @@
-import {nextText} from '../../shared/checkers'
+import {nextText} from '../../../shared/checkers'
 
 /** Firefox-only CaretPosition (absent from TypeScript DOM lib) */
 interface CaretPosition {

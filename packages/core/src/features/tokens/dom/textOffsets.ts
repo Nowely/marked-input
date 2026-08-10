@@ -1,4 +1,4 @@
-import {nextText} from '../../shared/checkers'
+import {nextText} from '../../../shared/checkers'
 
 function splitsSurrogatePair(text: string, offset: number): boolean {
 	if (offset <= 0 || offset >= text.length) return false

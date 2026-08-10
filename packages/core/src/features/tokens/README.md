@@ -15,10 +15,10 @@ go through `store.tokens` methods or `TokenHandle`.
 
 ## Two layers, and the difference matters
 
-|                                        | owns                                                  | reactive?                                                    | identity                                |
-| -------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------- |
-| `TreeNode` (`tree/types.ts`)           | the CONTENT — text, value, meta, children, positions  | yes: `text`/`value`/`meta`/`children` are signals (spec D11) | `id`, assigned at birth, never reused   |
-| `TokenHandle` (`model/TokenHandle.ts`) | the DOM BINDING and the generation the DOM is showing | no — plain field reads                                       | the same `id`, keyed in the `nodes` map |
+|                                      | owns                                                  | reactive?                                                    | identity                                |
+| ------------------------------------ | ----------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------- |
+| `TreeNode` (`tree/types.ts`)         | the CONTENT — text, value, meta, children, positions  | yes: `text`/`value`/`meta`/`children` are signals (spec D11) | `id`, assigned at birth, never reused   |
+| `TokenHandle` (`dom/TokenHandle.ts`) | the DOM BINDING and the generation the DOM is showing | no — plain field reads                                       | the same `id`, keyed in the `nodes` map |
 
 `TreeNode` is the store. `TokenHandle` is a view over one node's DOM. They share
 an id and nothing else, and the split is what makes the pending window safe.
@@ -100,7 +100,7 @@ ZERO component re-renders — gated end-to-end by the block render-count specs
 (`packages/storybook/src/pages/renderCount.react.spec.tsx` /
 `renderCount.vue.spec.ts`).
 
-## The one commit pipeline (`model/commit.ts`)
+## The one commit pipeline (`dom/commit.ts`)
 
 Every committed change flows through a single `apply(input)`. The input is a
 producer-agnostic `CommitInput` (`model/commitInput.ts`), and since S1.6a the
@@ -157,7 +157,7 @@ write verb → splice → parse → adopt → TransactionResult
   folded apply's delta — keeping only the last one dropped the earlier removals
   when two structural applies landed before one bind.
 
-## Structural DOM walk (`model/bind.ts`)
+## Structural DOM walk (`dom/bind.ts`)
 
 The structural branch's endpoint: zip the freshly rendered DOM with the committed
 tree (one iterative frame per nesting level, control elements skipped, optional
@@ -261,14 +261,14 @@ view's fresh current token (or `undefined` mid-window — the liveness gate),
 token (`handle.token()`), so DOM→token resolution is a single read with no
 path-and-identity round-trip.
 
-- `boundary.ts` — DOM `(node, offset)` → absolute position
+- `dom/domBoundary.ts` — DOM `(node, offset)` → absolute position
   (`rawPositionFromBoundary`, `textTargetAt`, `markBoundaryAt`). Vocabulary:
   `'before'`/`'after'` = affinity at token boundaries; `'start'`/`'end'` =
   placement side.
-- `caret.ts` — stateless `Range`/`Selection` mechanics (`placeAtTextOffset`,
+- `dom/caret.ts` — stateless `Range`/`Selection` mechanics (`placeAtTextOffset`,
   `placeAtChildBoundary`, `placeRangeAcrossSurfaces`, `setAtX`, `getCaretIndex`,
   `getRect`, `isOnFirstLine`, `isOnLastLine`, `focusIfNeeded`).
-- `textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
+- `dom/textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
   `textOffsetWithin`, `hasEditableAncestorBefore`).
 
 ## `TokenHandle` — the read latch
@@ -358,7 +358,7 @@ the `parser.bench.ts` tripwire.
 
 ## Divergence detector (the only flag)
 
-`VERIFY_DOM = import.meta.env?.DEV ?? true` (`model/commit.ts`) — dev/test builds
+`VERIFY_DOM = import.meta.env?.DEV ?? true` (`dom/commit.ts`) — dev/test builds
 assert after both branches that every bound text surface's `textContent` equals
 its token's `content`, throwing
 `TokenModel divergence at #<id>: DOM "…" ≠ model "…"`. Through the public API the

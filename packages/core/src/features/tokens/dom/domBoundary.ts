@@ -1,6 +1,6 @@
-import type {ElementBindings, TokenHandle} from './model/TokenHandle'
-import type {Token} from './parser/types'
+import type {Token} from '../parser/types'
 import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
+import type {ElementBindings, TokenHandle} from './TokenHandle'
 
 /** A bound token as the facade reads it: the live DOM bindings plus the handle itself. */
 export type TokenView = ElementBindings & {

@@ -1,3 +1,4 @@
+import type {Token} from '../parser/types'
 import {
 	focusIfNeeded,
 	getCaretIndex,
@@ -6,9 +7,8 @@ import {
 	placeAtChildBoundary,
 	placeAtTextOffset,
 	setAtX,
-} from '../caret'
-import type {Token} from '../parser/types'
-import {textLength} from '../textOffsets'
+} from './caret'
+import {textLength} from './textOffsets'
 
 /** DOM bindings of a live node — set by bind, cleared on unbind/kill. */
 export type ElementBindings = {
@@ -33,16 +33,16 @@ export type ElementBindings = {
  * between a structural apply and its bind nothing writes it at all. That is what
  * makes every DOM-boundary read correct during the pending window: the DOM
  * boundary layer resolves offsets as `token.position.start + local`
- * (`tokens/boundary.ts`), and `DomModel.ts:95`
+ * (`tokens/dom/domBoundary.ts`), and `DomModel.ts:95`
  * and `SelectionController.ts:78,121` read the same field. A node-backed handle
  * answering with the LIVE tree node would resolve carets against a layout the
  * adapter has not painted yet. Measured in
- * `model/treePipeline.spec.ts` ("reads DOM boundaries against BIND-GENERATION
+ * `seam/treePipeline.spec.ts` ("reads DOM boundaries against BIND-GENERATION
  * positions during the pending window"); the deferral of node-backing to the
  * phase that gains a caller is plan decision D-b.
  *
  * `#token` SURVIVES this narrowing (S1.6d, plan decision D-h): five production
- * readers legitimately want the bind generation — `DomModel`/`tokens/boundary.ts`
+ * readers legitimately want the bind generation — `DomModel`/`dom/domBoundary.ts`
  * (type, position, content), `commit.ts`'s divergence detector (content),
  * `TokenModel.setEditable` (type) and `keyboard/arrowNav.ts` (position). D9 keeps
  * exactly this read latch; narrowing to `{start, end}` would move the boundary
@@ -176,7 +176,7 @@ export class TokenHandle {
 	 * describe what the DOM currently shows (spec D9). Written by the text branch,
 	 * which patches the surface in the same batch, and by bind. Between a
 	 * structural apply and its bind nothing writes it — that is the property every
-	 * DOM-boundary read depends on (tokens/boundary.ts resolves offsets against
+	 * DOM-boundary read depends on (dom/domBoundary.ts resolves offsets against
 	 * `token.position`). Inert on a dead handle.
 	 */
 	refresh(token: Token): void {

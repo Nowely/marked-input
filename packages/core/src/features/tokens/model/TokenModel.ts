@@ -3,8 +3,11 @@ import {computed, signal, untracked, watch} from '../../../shared/signals/index.
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
-import {DomModel} from '../DomModel'
-import type {SelectionSnapshot} from '../DomModel'
+import {createCommitPipeline} from '../dom/commit'
+import {DomModel} from '../dom/DomModel'
+import type {SelectionSnapshot} from '../dom/DomModel'
+import {applyEditableState} from '../dom/editableState'
+import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import type {MarkToken, Token} from '../parser/types'
 import {anchorAt, offsetOfAnchor} from '../tree/anchors'
@@ -15,10 +18,7 @@ import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf} from '../tree/tree'
 import type {MarkCommands, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
-import {createCommitPipeline} from './commit'
 import type {TokenDelta} from './commitInput'
-import {applyEditableState} from './editableState'
-import type {TokenHandle} from './TokenHandle'
 import {fromTransaction} from './treeInput'
 
 /**
@@ -60,7 +60,7 @@ export interface SelectionPort {
  * What deliberately SURVIVES, each with its reason:
  * - `TokenHandle#token` — D9's read latch (plan decision D-h). Five production
  *   readers want the BIND generation, three of them positional: `DomModel` →
- *   `tokens/boundary.ts` (type, position, content), `commit.ts`'s divergence
+ *   `dom/domBoundary.ts` (type, position, content), `commit.ts`'s divergence
  *   detector (content), {@link setEditable} (type) and `keyboard/arrowNav.ts`
  *   (position). Narrowing it to `{start, end}` would move the boundary layer's
  *   type/content reads onto the live tree — a DOM-layer refactor no item asks for.

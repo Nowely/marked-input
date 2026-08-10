@@ -1,9 +1,9 @@
-import type {RawSelection} from '../../shared/editorContracts'
-import {markBoundaryAt, rawPositionFromBoundary, textTargetAt} from './boundary'
-import type {BoundaryContext, Lookup, TokenView} from './boundary'
+import type {RawSelection} from '../../../shared/editorContracts'
+import type {Token} from '../parser/types'
 import {focusIfNeeded, getRect, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caret'
-import type {TokenHandle} from './model/TokenHandle'
-import type {Token} from './parser/types'
+import {markBoundaryAt, rawPositionFromBoundary, textTargetAt} from './domBoundary'
+import type {BoundaryContext, Lookup, TokenView} from './domBoundary'
+import type {TokenHandle} from './TokenHandle'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
 

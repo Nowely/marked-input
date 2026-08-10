@@ -10,5 +10,5 @@ export {TokenModel} from './model/TokenModel'
 // Exported here rather than deep-imported from `tree/` (plan decision, S1.6c task 8).
 export type {Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TransactionResult, TreeNode} from './tree/types'
 export {anchorEquals} from './tree/anchors'
-export type {SelectionAnchor, SelectionSnapshot} from './DomModel'
-export {TokenHandle} from './model/TokenHandle'
+export type {SelectionAnchor, SelectionSnapshot} from './dom/DomModel'
+export {TokenHandle} from './dom/TokenHandle'

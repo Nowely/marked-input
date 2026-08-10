@@ -1,16 +1,16 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals/index.js'
+import {createCommitPipeline} from '../dom/commit'
+import type {CommitPipeline} from '../dom/commit'
+import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import type {Markup, Token} from '../parser/types'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree} from '../tree/tree'
 import {createBoundary} from '../tree/valueBoundary'
-import {createCommitPipeline} from './commit'
-import type {CommitPipeline} from './commit'
 import type {TokenDelta} from './commitInput'
-import type {TokenHandle} from './TokenHandle'
 import {fromTransaction} from './treeInput'
 
 /**
@@ -515,7 +515,7 @@ describe('commit pipeline driven by the tree core', () => {
 	it('reads DOM boundaries against BIND-GENERATION positions during the pending window', () => {
 		// Inserting a mark at 0 moves 'llo' from [6,9] to [10,13] in the tree the
 		// instant adoption runs — but the DOM still shows the old layout until the
-		// adapter repaints. The DOM boundary layer (`tokens/boundary.ts:55`) resolves every offset as
+		// adapter repaints. The DOM boundary layer (`tokens/dom/domBoundary.ts:55`) resolves every offset as
 		// `token.position.start + local`, reading exactly the datum asserted here, so a
 		// handle that answered with the LIVE node would put the caret four characters
 		// off for the whole adopt→bind window (spec D9; plan D-b).
