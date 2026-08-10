@@ -156,8 +156,12 @@ function childBoundaryAnchor(
 	}
 
 	// INVERTED, and preserved verbatim from `fromTokenChildBoundary`'s last line:
-	// 'before' answers with the owner's START. It reads backwards; it is the
-	// behavior the pinned table gates.
+	// 'before' answers with the owner's START. It reads backwards, and the pinned
+	// numeric table does NOT gate it — no probe there reaches this line. Its one gate is
+	// `domBoundary.spec`'s "falls back to the owner INVERTED when a neighbour left the
+	// tree", on the `mountNested` fixture after a structural edit that kills a child:
+	// a dead neighbour is the only way to reach here, because `locate` walks up to the
+	// nearest bound ancestor and so resolves every child of a bound element.
 	return affinity === 'before' ? {before: owner} : {after: owner}
 }
 

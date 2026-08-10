@@ -1,5 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
+import {computed} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {mountBlock, mountNested, mountValue, mountWithMark} from '../__testing__/mountFixtures'
 
@@ -116,6 +117,12 @@ describe('anchorFor', () => {
 		const {store, host} = mountNested()
 		const outer = store.tokens.nodes()[1]
 		expect(store.tokens.anchorFor(host, 3)).toEqual({after: outer})
+		// The 'before' probe is what makes this case DISCRIMINATING, and it is the only
+		// thing that does: the edge answers by SIDE and ignores affinity, while the
+		// interior path one `>=`→`>` away answers `{before: owner}` here (no child sits at
+		// index 3, so it reaches the inverted fallback). Without this line the mutation is
+		// invisible — the default 'after' affinity makes the two paths agree.
+		expect(store.tokens.anchorFor(host, 3, 'before')).toEqual({after: outer})
 	})
 
 	it('resolves an interior child boundary to its two neighbours by affinity', () => {
@@ -125,6 +132,25 @@ describe('anchorFor', () => {
 		const [first, second] = outer.children()
 		expect(store.tokens.anchorFor(host, 1, 'before')).toEqual({after: first})
 		expect(store.tokens.anchorFor(host, 1, 'after')).toEqual({before: second})
+	})
+
+	it('falls back to the owner INVERTED when a neighbour left the tree', () => {
+		const {store, host} = mountNested()
+
+		// The fallback needs an interior boundary whose two neighbours do not BOTH resolve
+		// to live nodes, and a dead neighbour is the only way to get one: `locate` walks up
+		// to the nearest bound ancestor, so every child of a bound element resolves to
+		// SOMETHING. Structural with no repaint, so the elements stay bound while their
+		// nodes leave the tree (the state D4's first fail-closed arm is measured in).
+		store.tokens.replace({start: 0, end: -1}, '@[q]')
+		const outer = store.tokens.nodes()[1]
+		if (outer.kind !== 'mark') throw new Error('expected the outer mark to survive the edit')
+		expect(outer.children()).toHaveLength(1)
+
+		// INVERTED, and this is the only case that gates it: 'before' answers with the
+		// owner's START. Reads backwards, preserved verbatim from the numeric projection.
+		expect(store.tokens.anchorFor(host, 2, 'before')).toEqual({before: outer})
+		expect(store.tokens.anchorFor(host, 2, 'after')).toEqual({after: outer})
 	})
 
 	it('anchors a token-shell boundary to the owner by side', () => {
@@ -153,6 +179,34 @@ describe('anchorFor', () => {
 		editable.append(inner)
 		mark.append(editable)
 		expect(store.tokens.anchorFor(inner, 0)).toBeUndefined()
+	})
+
+	it('does not subscribe its caller to the text it reads', () => {
+		const {store, text1} = mountWithMark()
+		const textNode = text1.firstChild
+		if (!(textNode instanceof Text)) throw new Error('expected a rendered text node')
+
+		// The walk reads `owner.text()` to bound the local offset, so a caller inside a
+		// reactive scope would subscribe to that node's text without the `untracked` at
+		// `DomModel.anchorFor`'s entry. The next phase's `sync` and `domAnchors()` call it
+		// from inside `watch` scopes, which is what makes this load-bearing rather than
+		// hygienic.
+		let runs = 0
+		const probe = computed(() => {
+			runs++
+			return store.tokens.anchorFor(textNode, 1)
+		})
+		expect(probe()).toEqual({node: store.tokens.nodes()[0], offset: 1})
+		expect(runs).toBe(1)
+
+		// A TEXT-path edit on that very node: its `text` signal fires, nothing structural.
+		store.tokens.replace({start: 0, end: 2}, 'HEY')
+		const edited = store.tokens.nodes()[0]
+		if (edited.kind !== 'text') throw new Error('expected the first root to stay a text node')
+		expect(edited.text()).toBe('HEY')
+
+		probe()
+		expect(runs).toBe(1)
 	})
 
 	it('anchors a row boundary to its owner by side', () => {
