@@ -9,7 +9,7 @@ import {Popup} from './Popup/Popup'
 
 import styles from '@markput/core/styles.module.css'
 
-export const BlockMenu = memo(({token, blockIndex}: {token: Token; blockIndex: number}) => {
+export const BlockMenu = memo(({token}: {token: Token}) => {
 	const {blockStore, menuOpen, menuPosition, tokens} = useMarkput(s => {
 		const blockStore = s.block.get(token)
 
@@ -20,8 +20,7 @@ export const BlockMenu = memo(({token, blockIndex}: {token: Token; blockIndex: n
 			tokens: s.tokens,
 		}
 	})
-	// A row's path is its block index by construction.
-	const controlRef = useMemo(() => tokens.control([blockIndex]), [tokens, blockIndex])
+	const controlRef = useMemo(() => tokens.control(), [tokens])
 
 	if (!menuOpen) return null
 

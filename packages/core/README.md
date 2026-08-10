@@ -107,8 +107,8 @@ pnpm test
 # Run tests in watch mode
 pnpm test:watch
 
-# Run benchmarks
-pnpm test:bench:watch
+# Run the parser benchmark tripwire
+pnpm bench
 ```
 
 ## License

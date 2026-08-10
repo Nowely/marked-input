@@ -134,12 +134,18 @@ export class TokenModel {
 		return token.id
 	}
 
-	/** Ref callback for a control element (e.g. overlay, drag handle). */
-	control(ownerPath?: TokenPath): DomRef {
+	/**
+	 * Ref callback for a control element (e.g. overlay, drag handle). Registration is
+	 * ELEMENT-ONLY: the sole reader is `#controlElements`, which feeds bind's
+	 * `computeControlRoots` — a walk from each control up to the container. Nothing ever
+	 * asks which token owns a control, which is why the `ownerPath` argument the six
+	 * adapter call sites used to pass was write-only and went at S1.8 step 1.
+	 */
+	control(): DomRef {
 		const key = `control:${++this.#nextControlId}`
 		return element => {
 			if (element) {
-				this.#pendingControls.set(key, {ownerPath: ownerPath ? [...ownerPath] : undefined, element})
+				this.#pendingControls.set(key, element)
 			} else {
 				this.#pendingControls.delete(key)
 			}
@@ -591,15 +597,13 @@ export class TokenModel {
 	})
 
 	// Ref registries — populated by framework ref callbacks, read by bind.
-	readonly #pendingControls = new Map<string, ControlRegistration>()
+	readonly #pendingControls = new Map<string, HTMLElement>()
 	readonly #pendingChildSequences = new Map<string, ChildSequenceRegistration>()
 	#nextControlId = 0
 	#nextChildSequenceId = 0
 
 	#controlElements(): ReadonlySet<HTMLElement> {
-		const out = new Set<HTMLElement>()
-		for (const {element} of this.#pendingControls.values()) out.add(element)
-		return out
+		return new Set(this.#pendingControls.values())
 	}
 
 	#childSequenceHostsFor(ownerPath: TokenPath): HTMLElement[] {
@@ -618,11 +622,6 @@ export class TokenModel {
 		const readOnly = this.props.readOnly()
 		return {editable: !readOnly, readOnly}
 	}
-}
-
-type ControlRegistration = {
-	readonly ownerPath?: TokenPath
-	readonly element: HTMLElement
 }
 
 type ChildSequenceRegistration = {

@@ -70,7 +70,7 @@ describe('TokenModel lookups', () => {
 		container.append(row)
 		document.body.append(container)
 		store.host.container(container)
-		store.tokens.control([0])(control)
+		store.tokens.control()(control)
 		store.host.rendered()
 
 		expect(store.tokens.handleAt(control)).toBe('control')

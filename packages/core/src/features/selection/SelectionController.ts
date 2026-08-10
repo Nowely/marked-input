@@ -229,13 +229,13 @@ export class SelectionController {
 	 * has no bound handle yet — the latch-gated `handle(id)` serves `undefined` during the
 	 * pending window, exactly as the old stash did.
 	 */
-	#placeAt(anchor: NodeAnchor): boolean {
+	#placeAt(anchor: NodeAnchor): void {
 		const target = anchorTarget(anchor)
 		if (target) {
 			const handle = this.tokens.handle(target.id)
-			if (handle?.alive() && handle.placeCaret(target.offset)) return true
+			if (handle?.alive() && handle.placeCaret(target.offset)) return
 		}
-		return this.tokens.placeCaret(this.tokens.offsetOf(anchor))
+		this.tokens.placeCaret(this.tokens.offsetOf(anchor))
 	}
 
 	#focusEmptyEditorOnClick(container: HTMLElement): void {

@@ -5,25 +5,22 @@ import {useMarkput} from '../lib/hooks/useMarkput'
 
 import styles from '@markput/core/styles.module.css'
 
-export const DropIndicator = memo(
-	({token, blockIndex, position}: {token: TokenType; blockIndex: number; position: 'before' | 'after'}) => {
-		const {dropPosition, tokens} = useMarkput(s => ({
-			dropPosition: s.block.get(token).state.dropPosition,
-			tokens: s.tokens,
-		}))
-		// A row's path is its block index by construction.
-		const controlRef = useMemo(() => tokens.control([blockIndex]), [tokens, blockIndex])
+export const DropIndicator = memo(({token, position}: {token: TokenType; position: 'before' | 'after'}) => {
+	const {dropPosition, tokens} = useMarkput(s => ({
+		dropPosition: s.block.get(token).state.dropPosition,
+		tokens: s.tokens,
+	}))
+	const controlRef = useMemo(() => tokens.control(), [tokens])
 
-		if (dropPosition !== position) return null
+	if (dropPosition !== position) return null
 
-		return (
-			<div
-				ref={controlRef}
-				className={styles.DropIndicator}
-				style={position === 'before' ? {top: -1} : {bottom: -1}}
-			/>
-		)
-	}
-)
+	return (
+		<div
+			ref={controlRef}
+			className={styles.DropIndicator}
+			style={position === 'before' ? {top: -1} : {bottom: -1}}
+		/>
+	)
+})
 
 DropIndicator.displayName = 'DropIndicator'

@@ -1,6 +1,5 @@
 // ═══ Public API v2 (spec §2.3) ════════════════════════════════════════════════
 export {MarkputApi} from './src/store/MarkputApi'
-export type {MarkInit} from './src/store/MarkputApi'
 // The ONLY resolution path for both adapters, which import it as a value and construct it.
 export {Store} from './src/store'
 export type {Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TreeNode} from './src/features/tokens'

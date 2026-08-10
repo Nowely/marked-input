@@ -48,10 +48,10 @@ const setBlockRef = (el: unknown) => {
 		:class="[styles.Block, slotProps?.className as string | undefined]"
 		:style="blockStyle"
 	>
-		<DropIndicator :token="token" :block-index="blockIndex" position="before" />
+		<DropIndicator :token="token" position="before" />
 		<DragHandle :token="token" :block-index="blockIndex" />
 		<Token :token="token" :path="[blockIndex]" :depth="0" />
-		<DropIndicator :token="token" :block-index="blockIndex" position="after" />
-		<BlockMenu :token="token" :block-index="blockIndex" />
+		<DropIndicator :token="token" position="after" />
+		<BlockMenu :token="token" />
 	</component>
 </template>
