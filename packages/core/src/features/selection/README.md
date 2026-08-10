@@ -7,7 +7,7 @@ in two modules that are documented there
 
 | what                                                                        | where                           |
 | --------------------------------------------------------------------------- | ------------------------------- |
-| stored anchors, derived `range`/`position`/`isAllSelected`, `repair`        | `tokens/tree/selection.ts`      |
+| stored anchors, derived `isAllSelected`, `repair`                           | `tokens/tree/selection.ts`      |
 | DOM listeners, caret application, the mouse-sweep flag, the editable policy | `tokens/dom/SelectionDriver.ts` |
 
 `SelectionController` composes the pair because `Store` constructs the selection
@@ -18,12 +18,12 @@ state module plus the model's DOM verbs. When `TokenModel` takes ownership
 
 ## Delegation table
 
-| member                                     | forwards to                                          |
-| ------------------------------------------ | ---------------------------------------------------- |
-| `range`, `position`, `isAllSelected`       | `Selection`'s computeds, assigned in the constructor |
-| `isUserSelecting`                          | `SelectionDriver.isUserSelecting`                    |
-| `select`, `selectAll`, `anchors`, `repair` | `Selection`                                          |
-| `focusFirst`, `readRaw`, `placeAtHandle`   | `SelectionDriver`                                    |
+| member                                      | forwards to                                         |
+| ------------------------------------------- | --------------------------------------------------- |
+| `isAllSelected`                             | `Selection`'s computed, assigned in the constructor |
+| `isUserSelecting`                           | `SelectionDriver.isUserSelecting`                   |
+| `select`, `selectAll`, `anchors`, `repair`  | `Selection`                                         |
+| `focusFirst`, `domAnchors`, `placeAtHandle` | `SelectionDriver`                                   |
 
 `anchors()` + `repair()` are the `SelectionPort` `TokenModel` is constructed
 with: the pre-adoption capture and the post-adoption application. The capture is

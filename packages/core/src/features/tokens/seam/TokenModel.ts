@@ -345,10 +345,11 @@ export class TokenModel {
 	}
 
 	/**
-	 * Spec §2.3's `selectionRange` half: an anchor's absolute offset in the tree's
-	 * projection. Deliberately does NOT seed — it is a READ reached from
-	 * `SelectionController.range`'s computed, and seeding inside a computed evaluation
-	 * would write signals during evaluation.
+	 * An anchor's absolute offset in the tree's projection — the `tree/` boundary itself
+	 * (spec S2 D1): the ONE place a coordinate is formed, and its callers are inside that
+	 * layer (`Selection.isAllSelected`, `anchors.ts`'s adjacency and step). Deliberately
+	 * does NOT seed — it is a READ reached from a computed's evaluation, and seeding writes
+	 * signals.
 	 *
 	 * TREE space, not {@link value}: the two disagree exactly while a controlled parent's
 	 * `props.value` is ahead of the last arrival, which is when the echo's capture runs.

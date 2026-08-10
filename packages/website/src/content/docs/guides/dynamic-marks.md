@@ -133,7 +133,6 @@ function Editor() {
 | `focus()` | Focus the first token. |
 | `selection()` | The stored `{anchor, head}` node anchors. Reactive. |
 | `select(anchor, head?)` / `caret(at)` | Move the selection. `false` for an anchor whose node has left the value. |
-| `selectionRange()` | The selection as `{start, end}` offsets. |
 | `changed` | Fires once per commit with `{added, removed, updated}` ids. Subscribe with `watch(api.changed, fn)`. |
 
 A node anchor is `{node, offset}` for a text node, `{before: node}` / `{after: node}` for a

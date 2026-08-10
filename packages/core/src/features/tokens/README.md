@@ -69,11 +69,6 @@ an id and nothing else, and the split is what makes the pending window safe.
   routing. Controlled mode emits and waits for the echo it spliced; uncontrolled
   commits straight through. Block mode's parse filter (`filterEmptyText`) lives
   here.
-- `offsetShim.ts` — the internal offset shim (spec D8): a global `{start, end}`
-  range → `applyRange`. `end < 0` means "to the end of the value". Whole-value
-  ops are re-derived through `gapWindow` rather than passed as `{0, length}`, so
-  the adoption walks stay effective. It exists until the block-rows follow-up
-  gives its callers node-anchored verbs.
 - `snapshot.ts` / `snapshotMemo.ts` — the compat projection. `snapshot(nodes)`
   is the pure, unmemoized §7.1 output-equivalence gate; `materializeNode` is the
   one-node step the memo reuses. `snapshotMemo` re-materializes only what the
@@ -221,11 +216,10 @@ keyOf(token): number          // framework key (stable id); adapters pass it unb
 handle(id) / handleOf(token) // id-keyed live handle, or undefined; latch-gated
 handleAt(node) // handle | 'control' | undefined for a DOM node
 
-// DOM↔model facade
-boundaryFor(node, offset, affinity?) // DOM (node, offset) → absolute position
+// DOM↔model facade — anchors in both directions (spec S2 D1); no absolute offsets
 anchorFor(node, offset, affinity?)   // DOM (node, offset) → NodeAnchor in the LIVE tree
-placeCaret(rawPosition: number) // place a collapsed caret at an absolute position
-selectRange(start, end)
+placeCaret(anchor: NodeAnchor)       // collapsed caret, through the anchor's OWN node
+selectRange(anchor, head)            // order-insensitive; normalized in DOM order
 selection(): SelectionSnapshot | undefined // THE selection read
 selectedContent(): {html; text} | undefined // selection serialized for clipboard
 
@@ -249,7 +243,7 @@ the old per-field micro-reads:
 
 ```ts
 type SelectionSnapshot = {
-    raw: RawSelection | undefined // absolute in-editor range, undefined if outside any bound token
+    range: globalThis.Range // the window selection's OWN first range, not a clone
     rect: DOMRect | undefined
     anchor: SelectionAnchor // {node, offset, isCollapsed}
     focusNode: Node | undefined
@@ -271,17 +265,19 @@ structural apply awaits its bind.
 
 ### Boundary facade internals
 
-The model builds a `BoundaryContext` per call that reads the node layer:
-`locate` walks a DOM node up to its bound handle, `tokenOf(view)` returns the
-view's fresh current token (or `undefined` mid-window — the liveness gate),
-`viewOf(token)` is the id-bridged element read. A `TokenView` carries the live
-token (`handle.token()`), so DOM→token resolution is a single read with no
-path-and-identity round-trip.
+The model builds an `AnchorContext` per call: `locate` walks a DOM node up to its
+bound handle, `roots()` and `find(id)` read the LIVE tree. Nothing in it answers
+with a `Token`, which is the point — a `Token` carries `position`, and no module
+above `tree/` may read one (spec S2 D1). The bridge from DOM to model is the
+handle's stable ID, which is generation-independent, so the walk stays correct
+inside the adopt→bind window where a positional read is not (spec S2 D4).
 
-- `dom/domBoundary.ts` — DOM `(node, offset)` → absolute position
-  (`rawPositionFromBoundary`, `textTargetAt`, `markBoundaryAt`). Vocabulary:
-  `'before'`/`'after'` = affinity at token boundaries; `'start'`/`'end'` =
-  placement side.
+- `dom/domBoundary.ts` — DOM `(node, offset)` → `NodeAnchor`
+  (`anchorFromBoundary`). Vocabulary: `'before'`/`'after'` = affinity at token
+  boundaries; `'start'`/`'end'` = placement side. Its numeric twin
+  (`rawPositionFromBoundary` and friends) was deleted at S2.6 together with the
+  equivalence property that used to gate it; every branch now names its own case
+  in `domBoundary.spec.ts`.
 - `dom/caret.ts` — stateless `Range`/`Selection` mechanics (`placeAtTextOffset`,
   `placeAtChildBoundary`, `placeRangeAcrossSurfaces`, `setAtX`, `getCaretIndex`,
   `getRect`, `isOnFirstLine`, `isOnLastLine`, `focusIfNeeded`).
@@ -296,8 +292,9 @@ The read / measurement / command surface of the DOM binding, resolved by
 `#token` is deliberately NOT "the current parsed token" — it is the generation
 the DOM is currently SHOWING (spec D9). Only two writers exist, `bind` and the
 text branch, and the text branch patches the surface in the same `batch`; between
-a structural apply and its bind nothing writes it at all. That is what makes
-every DOM-boundary read correct during the pending window: the DOM boundary layer
+a structural apply and its bind nothing writes it at all. Its two remaining
+readers want CONTENT (`commit.ts`'s divergence detector) and TYPE
+(`setEditable`); no positional reader is left after S2.6. Historically
 resolves offsets as `token.position.start + local`, and a handle answering with
 the LIVE tree node would resolve carets against a layout the adapter has not
 painted yet.
@@ -364,29 +361,32 @@ is only the composition shell over the pair, and `store.selection` is that shell
 - `tree/selection.ts` — the STATE. Stores a pair of `NodeAnchor`s (spec S1 D7),
   never offsets: a node plus a local offset is what disambiguates two tokens
   sharing a boundary position, and it survives an edit elsewhere without
-  arithmetic. `range`/`position`/`isAllSelected` are DERIVED from it; because
-  adoption writes `position` as a plain field, `range` also reads a `generation`
-  counter that `repair` bumps once per adoption. `repair(result)` APPLIES
+  arithmetic. `isAllSelected` is the ONE derivation left that needs numbers, and
+  it lives here because `tree/` is where that arithmetic is legal; the numeric
+  `range`/`position` projections and the `generation` marker they needed went at
+  S2.6 (spec S2 D11). `repair(result)` APPLIES
   `result.selectionAfter` — adoption resolves it, since only adoption sees the
   pre-mutation coordinate space. Its deps are three closures, so it works whether
   `Store` or `TokenModel` constructs it.
 - `dom/SelectionDriver.ts` — the DOM I/O. Three listeners (`focusin`/`focusout`/
   `selectionchange` sync, the empty-editor click focus, the mouse-sweep tracker)
   and three watches (`tokens.changed`, `readOnly`, `isUserSelecting`, plus the
-  stored anchors themselves). It watches the STORED anchors and not the derived
-  `range`: at a shared boundary `placeAtHandle` changes the anchor without
-  changing the number, so a `range` watch never fires and the caret is never
-  placed (measured — 8 browser assertions across three focus specs). It also owns
-  the editable POLICY; the model owns the application.
+  stored anchors themselves). It watches the STORED anchors — the derived numeric
+  `range` it once watched deduped on `shallow`, so at a shared boundary
+  `placeAtHandle` changed the anchor without changing the number and the watch
+  never fired (measured — 8 browser assertions across three focus specs). It also
+  owns the editable POLICY; the model owns the application.
 
 ## Caret placement by handle
 
-`TokenModel.placeCaret(rawPosition)` resolves the best target for an absolute
-position; per-token placement is `TokenHandle.placeCaret(offset)`, and
-`SelectionDriver.placeAtHandle(handle, boundary)` places at a handle's
-start/end. The handle paths fail closed against a dead or mid-window handle
-(`!handle.alive()` → `false`). The handle carries the stable id, so no
-path-and-token round-trip is involved.
+`TokenModel.placeCaret(anchor)` resolves the anchor's OWN node and lowers onto
+`TokenHandle.placeCaret(localOffset)`; `selectRange(anchor, head)` does the same
+for both ends and normalizes them in DOM order. The two document edges (`'start'`
+/ `'end'`) resolve against the live roots. `SelectionDriver.placeAtHandle(handle,
+boundary)` places at a handle's start/end. All of it fails closed against a dead
+or mid-window handle — where the deleted numeric form searched every bound surface
+for a position and fell back to the nearest, reading bind-generation coordinates
+for a layout the adapter had not painted.
 
 ## Parse
 

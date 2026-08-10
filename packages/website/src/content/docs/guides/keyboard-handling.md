@@ -1,36 +1,37 @@
 ---
 title: Keyboard Handling
 description: How keyboard input, deletion, overlay triggers, and caret placement flow through core.
-keywords: [keyboard, raw selection, replace, overlay, caret range]
+keywords: [keyboard, selection, node anchor, replace, overlay, caret]
 ---
 
-Markput handles text input, deletion, paste, overlay insertion, block editing, and mark commands through core-owned raw positions.
+Markput handles text input, deletion, paste, overlay insertion, block editing, and mark commands through core-owned NODE ANCHORS — a node plus a local offset, never an absolute position in the value string.
 
 ## Edit Flow
 
 1. React/Vue render adapter-owned token shells and text surfaces.
 2. The adapter registers the root with `store.host.container` and child structure through `store.tokens.control()` (for non-editable controls inside a token) and `store.tokens.children(ownerId)` (for nested `__slot__` child sequence hosts).
-3. Keyboard handlers convert the browser selection to a raw serialized range through `store.selection.readRaw()` or `store.selection.rawPositionFromBoundary()`.
-4. Edits call `store.edit.replace()`, which places the post-edit caret itself; a caller that needs a different caret passes an explicit position or writes `store.selection.position(n)`.
-5. `SelectionController` stores the selection as node anchors and applies them to the DOM after the next render. `store.selection.range()` is a read-only projection of those anchors into absolute positions.
+3. Keyboard handlers read the browser selection as a pair of node anchors through `store.selection.domAnchors()`.
+4. Edits call `store.edit.replace(from, to, text)`, which places the post-edit caret itself; a caller that needs a different caret writes `store.selection.select(anchor)`.
+5. `SelectionController` stores the selection as node anchors and applies them to the DOM after the next render, placing each anchor through its OWN node.
 
 Production code should not infer token identity from DOM child order or public data attributes.
 
 ## Text Input
 
-Inline text input uses the current raw selection:
+Inline text input uses the selection the DOM reports:
 
 ```ts
-store.edit.replace(selection.range, text)
+const anchors = store.selection.domAnchors()
+if (anchors) store.edit.replace(anchors.anchor, anchors.head, text)
 ```
 
-`store.edit.replace(range, replacement, caretAt?)` moves the caret for you — to the end of the replacement by default, or to `caretAt` when the natural end is not what the caller wants. To move the caret without editing, write `store.selection.position(n)`; `store.selection.range()` is read-only.
+`store.edit.replace(from, to, replacement)` moves the caret for you, to the end of what it inserted; the pair is normalized, so `from` after `to` is legal. To move the caret without editing, write `store.selection.select(anchor)`.
 
 Controlled editors emit `onChange` first and update the accepted value after the matching prop echo.
 
 ## Deleting Around Marks
 
-Collapsed Backspace/Delete uses raw position boundaries. If the adjacent token is a mark, core deletes the whole mark range. If the adjacent token is text, core deletes the relevant character or selected raw range.
+Collapsed Backspace/Delete asks the tree for the mark ADJACENT to the caret anchor. If there is one, core deletes the whole mark. Otherwise it steps the anchor one character and deletes that span.
 
 ## Mark Commands
 
