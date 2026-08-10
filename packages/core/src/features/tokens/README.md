@@ -1,80 +1,144 @@
 # Tokens
 
-The single home for the token layer, exposed as `store.tokens`. One source of
-truth — an id-keyed map of live token nodes (`TokenHandle`) — feeds one commit
-pipeline with two branches: text edits patch the DOM in place without invoking
-the framework renderer; structural edits publish a new tree and bind the freshly
-painted DOM. No feature flags; parse is always a full parse, and the structural
-branch always does a full DOM bind.
+The single home for the token layer, exposed as `store.tokens`. The token TREE is
+the source of truth and the value string is its projection (spec D1): a write
+lowers to a splice in the projection's coordinates, adoption folds the fresh
+parse back into the persistent nodes, and one commit pipeline with two branches
+carries the result to the DOM — text edits patch surfaces in place without
+invoking the framework renderer; structural edits publish a new tree and bind the
+freshly painted DOM. No feature flags; parse is always a full parse, and the
+structural branch always does a full DOM bind.
 
 **Encapsulation rule:** raw `Selection`, `Range`, and `TreeWalker` DOM APIs live
 only inside this module (`features/tokens/`). All consumers outside the module
 go through `store.tokens` methods or `TokenHandle`.
 
-## The live node — `TokenHandle` (`model/TokenHandle.ts`)
+## Two layers, and the difference matters
 
-One live record per token, keyed by its stable identity id. The record IS the
-public handle (`TokenHandle`): it owns the CURRENT parsed token, the tree path,
-and the DOM bindings (`tokenElement` / `textElement` / `rowElement` /
-`childSequenceHost`). There is no separate "LiveNode" entity — the live node is
-this class.
+|                                        | owns                                                  | reactive?                                                    | identity                                |
+| -------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------- |
+| `TreeNode` (`tree/types.ts`)           | the CONTENT — text, value, meta, children, positions  | yes: `text`/`value`/`meta`/`children` are signals (spec D11) | `id`, assigned at birth, never reused   |
+| `TokenHandle` (`model/TokenHandle.ts`) | the DOM BINDING and the generation the DOM is showing | no — plain field reads                                       | the same `id`, keyed in the `nodes` map |
 
-No per-node reactivity: the getters (`token()` / `path()` / `alive()` /
-`element()`) are plain field reads, not signals. Zero production consumers
-subscribe to a handle's getters, so signals would be pure overhead (reversible —
-the getters stay methods, so per-node signals could return behind them
-additively). A consumer holding a render-tree token resolves `handle(token.id)`
-and reads `handle.token()` for current content and positions; the handle's
-existence IS the validity check.
+`TreeNode` is the store. `TokenHandle` is a view over one node's DOM. They share
+an id and nothing else, and the split is what makes the pending window safe.
 
-Lifetime: created when its token enters the tree (keyed by the token's stable
-identity id), mutated in place by `update` / `bindElements` / `unbind`, killed
-when the token disappears. A dead handle never throws — stale reads return the
-last token, commands return `false`, and it is never resurrected.
+## The tree (`tree/`)
 
-Derived lookups are maintained by the pipeline, never rebuilt per keystroke:
-`nodes` (the id-keyed map itself), `byPath` (rebuilt only at bind — paths are
-unchanged on the text path by definition), `byElement` (WeakMap, set at bind).
+- `types.ts` — the node shapes. `TextNode` is `{id, text, position, range()}`;
+  `MarkNode` adds `descriptor`/`markup`/`value`/`meta`/`children`/`slotRange`
+  plus the public reads `slot()`/`range()` and the write verbs
+  `update(patch)`/`remove()`. `MarkPatch` has no discriminator: an absent field
+  is left alone, `null` clears it, a string sets it. `NodeAnchor` is the
+  addressing model — `{node, offset}`, `{before}`, `{after}`, `'start'`,
+  `'end'`.
+- `tree.ts` — `createTokenTree(tokens, commands?)`: the `roots` signal, the
+  `value` computed (the string projection, joined by `joinNodes`), and
+  `buildNode`, the only allocator of ids. `MarkNode.slot()` joins its live
+  children — slot text is never stored, so it cannot go stale.
+- `adopt.ts` — the fold. Parse the spliced projection, then walk
+  prefix / suffix / middle against the previous nodes: prefix and suffix are
+  retained byte- and position-equal and strictly OUTSIDE the edit window (the
+  window bound is load-bearing — repeating content matches past the edit
+  otherwise), the middle pairs same-index candidates and recurses into a mark
+  whose `descriptor` matches. Returns a `TransactionResult` carrying
+  `added`/`removed`/`updated`/`shifted`, the anchor `map`, and `render`.
+- `gapWindow.ts` — the boundary-reset window: the common prefix/suffix of two
+  projections, via `utils/findGap`. An empty window pins at the END of the value,
+  because `start` of an empty window is not an edit location.
+- `transactions.ts` — the write verbs (spec D5). `applyRange(window, text)` is
+  the primitive; `applyText(node, localRange, text)` and
+  `applyStructural(target, replacement)` lower node-local intent into it, and
+  `tx(fn)` buffers disjoint ops and adopts once with the hull window. Nothing
+  here mutates the tree — adoption, inside the sink, is the only writer.
+- `boundary.ts` — the string boundary (spec §4.4): commit policy plus arrival
+  routing. Controlled mode emits and waits for the echo it spliced; uncontrolled
+  commits straight through. Block mode's parse filter (`filterEmptyText`) lives
+  here.
+- `offsetShim.ts` — the internal offset shim (spec D8): a global `{start, end}`
+  range → `applyRange`. `end < 0` means "to the end of the value". Whole-value
+  ops are re-derived through `gapWindow` rather than passed as `{0, length}`, so
+  the adoption walks stay effective. It exists until the block-rows follow-up
+  gives its callers node-anchored verbs.
+- `snapshot.ts` / `snapshotMemo.ts` — the compat projection. `snapshot(nodes)`
+  is the pure, unmemoized §7.1 output-equivalence gate; `materializeNode` is the
+  one-node step the memo reuses. `snapshotMemo` re-materializes only what the
+  adoption changed, invalidating on dirty ids (walked subtree-inclusively) AND on
+  child-reference comparison — both mechanisms are load-bearing.
+- `anchors.ts` — `anchorAt(roots, offset)` (right affinity: the last text node
+  containing the offset) and its inverse `offsetOfAnchor`.
+- `markPatch.ts` — `serializeMark(node, patch)`: a patch becomes markup, with
+  the omitted fields defaulted off the node so an omitted key round-trips.
+
+## Adoption — the descend rules
+
+Pairing is same-index within one sibling list. A candidate is adopted when:
+
+1. both are text, or
+2. both are marks AND their `descriptor` is reference-equal (descriptors are
+   interned per parser instance).
+
+Anything else is a rebuild: the candidate's ids are collected into `removed` and
+a fresh node is built into `added`.
+
+An adopted mark ALWAYS recurses into its children — that recursion is what keeps
+in-slot component identity alive across a mark-level value/meta change. The
+"refused descend" of the pre-rewrite reconcile is not a separate predicate any
+more: `§4.2`'s split shows up only in what the mark itself reports. A mark whose
+`value` or `meta` changed enters `updated` (its rendered framework props are new,
+so the renderer must run); a mark whose children alone changed does not.
+
+Positions are plain field writes (spec D3), so a move leaves no signal trace.
+`shifted` is the only feed that can carry it, and its granularity is subtree
+roots — a listed node covers its descendants.
+
+**Block-typing consequence:** every row of a slot-leading block markup
+(`'__slot__\n\n'`) is a mark, so without in-slot adoption each keystroke in a row
+would be a whole-mark replacement → structural → re-render. With it the keystroke
+touches only the row's slot text node → text path → the surface is patched with
+ZERO component re-renders — gated end-to-end by the block render-count specs
+(`packages/storybook/src/pages/renderCount.react.spec.tsx` /
+`renderCount.vue.spec.ts`).
 
 ## The one commit pipeline (`model/commit.ts`)
 
-Every reconciled value change flows through a single `apply(input)`. The input is
-a producer-agnostic `CommitInput` (`model/commitInput.ts`) — the live path lowers
-its `ReconcileResult` into one via `fromReconcile` — and the pipeline routes on
-the input's `render` bit, which for that lowering IS `result.structural`:
+Every committed change flows through a single `apply(input)`. The input is a
+producer-agnostic `CommitInput` (`model/commitInput.ts`), and since S1.6a the
+tree core's `fromTransaction` (`model/treeInput.ts`) is its ONLY producer:
 
 ```
-value edit → full parse → reconcile (identity carry + routing decided here)
-  → fromReconcile → CommitInput {tokens, render, changes, delta}
+write verb → splice → parse → adopt → TransactionResult
+  → fromTransaction (memo.invalidate → memo.roots → changes + delta)
+  → CommitInput {tokens, render, changes, delta}
   ├─ text path (render === false AND no structural apply pending):
-  │    update the listed nodes in place (token, path),
-  │    conditionally patch textContent of changed text surfaces,
-  │    one batch → fire changed()
+  │    refresh the listed handles, conditionally patch textContent of
+  │    changed text surfaces, one batch → fire changed()
   └─ structural (render === true, or folded into a pending pass):
        publish renderTree (new reference) → renderer runs → onRendered() →
        bind(container, latest): one DOM+tree walk —
-         create/update/kill TokenHandles, set element bindings,
+         create/refresh/kill TokenHandles, set element bindings,
          apply contentEditable/tabindex to NEWLY BOUND surfaces and mark roots
        → fire changed()
 ```
 
-- **Routing is decided at reconcile time**, not at commit time. The text branch
-  is taken iff `result.structural` is false AND no structural apply is pending
-  (the fold guard). `result.structural` is set when a token was added or
-  removed, or a mark refused its deep-descend (mark components render
-  `value`/`meta` as framework props, so the renderer must run). See the descend
-  rules below.
+- **Routing is decided by the PRODUCER**, on `result.render` — not on
+  `result.structural`. The latter is add/remove only, while a mark whose value or
+  meta changed renders new framework props and must reach the renderer.
+- **The change feed is the MEMO's**, not the transaction's: a change entry exists
+  to hand a handle the generation the DOM now shows, so the set that needs one is
+  exactly the tokens of this snapshot that are new objects. `updated` is the only
+  PATCH signal — a node re-materialized merely because it moved has no surface
+  write to make.
 - **Escalation self-heals:** a text-path apply that cannot resolve a target
   (missing handle, missing surface) abandons the branch before any mutation and
   re-binds the current DOM structurally — no render needed first; the adapter's
   later `onRendered()` re-binds idempotently.
 - **`pendingStructural` latch:** between a structural apply and its bind the node
-  layer is one generation stale. `handle(id)` (and everything id-bridged through
-  it: `MarkController` mutations) returns `undefined`
-  while latched (`pending()` is true) — mutations fail closed instead of acting
-  on a tree the DOM never showed. Applies landing inside the window fold into
-  the pending structural pass.
-- **bind projects `latest` (the latest RECONCILED tree), not `renderTree`:** the
+  layer is one generation stale. `handle(id)` returns `undefined` while latched
+  (`pending()` is true) — id-bridged reads and mutations fail closed instead of
+  acting on a tree the DOM never showed. Applies landing inside the window fold
+  into the pending structural pass.
+- **bind projects `latest` (the latest committed tree), not `renderTree`:** the
   render tree keeps its (stale) reference across text applies, and a re-render
   arriving after one — any unrelated adapter update — must re-bind the fresh
   tokens, not regress the node layer and the DOM text to the pre-edit
@@ -88,27 +152,33 @@ value edit → full parse → reconcile (identity carry + routing decided here)
   re-places the caret on it) — carrying that commit's `{added, removed, updated}`
   ids (`TokenDelta`: `added`/`removed` are subtree-inclusive, `updated` is per
   node). Consumers re-read content via `current()` / `handle(id)`;
-  the removed ids now arrive WITH the event (`BlockController` prunes its
-  id-keyed store off `delta.removed`). During a latched window only the final
-  commit announces, and its payload MERGES every folded apply's delta — keeping
-  only the last one dropped the earlier removals when two structural applies
-  landed before one bind. The wave-scoped `removedIds()` read that predated the
-  payload was deleted in S1.6d.
+  `BlockController` prunes its id-keyed store off `delta.removed`. During a
+  latched window only the final commit announces, and its payload MERGES every
+  folded apply's delta — keeping only the last one dropped the earlier removals
+  when two structural applies landed before one bind.
 
 ## Structural DOM walk (`model/bind.ts`)
 
-The structural branch's endpoint: zip the freshly rendered DOM with the
-reconciled tree (one iterative frame per nesting level, control elements
-skipped, optional registered child-sequence host per mark) and project the
-result onto the node map — `new TokenHandle` for new ids, `update`+`bindElements`
-for known ids, `kill` (and delete) ids absent from the tree. The whole
-projection commits as one batch, so handle watchers flush only after every node
-reflects the new tree and DOM.
+The structural branch's endpoint: zip the freshly rendered DOM with the committed
+tree (one iterative frame per nesting level, control elements skipped, optional
+registered child-sequence host per mark) and project the result onto the node
+map — `new TokenHandle` for new ids, `refresh` + `bindElements` for known ids,
+`kill` (and delete) ids absent from the tree. The whole projection commits as one
+batch, so handle watchers flush only after every node reflects the new tree and
+DOM.
+
+The result is `bound: ReadonlyMap<number, TokenHandle>`, **keyed by stable id**.
+It was keyed by a `TokenPath` string until S1.8; no consumer ever looked one up
+by key — `assertAligned`, `setEditable` and `DomModel.boundHandles` all iterate
+the values — so the path string was the last thing keeping a path abstraction
+alive inside the pipeline. Child-sequence hosts register under the owning mark's
+id for the same reason: an id does not go stale when a sibling above the owner is
+added or removed mid-render.
 
 A DOM-walk bail (adapter mid-render misalignment) `unbind`s instead of killing:
 the tree is authoritative, only the DOM is transiently misaligned, and the next
 successful bind re-attaches the same handles. Bind fails loud (throws) only on a
-tree token with no id — a contract violation (an unreconciled tree was passed).
+tree token with no id — a contract violation (an unsnapshotted tree was passed).
 
 **Block layout:** each immediate container child is a row; a row must contain
 exactly one non-control element. Alignment is all-or-nothing — one bad row bails
@@ -117,16 +187,22 @@ the whole frame, failing loud when an adapter renders something unexpected.
 ## Public API — the whole surface (`model/TokenModel.ts`)
 
 ```ts
-// consumer read
-current() // readonly Token[] — the always-fresh reconciled tree
+// consumer reads
+current() // readonly Token[] — the always-fresh committed tree
+value: Computed<string> // THE value read: controlled → props, uncontrolled → the projection
+nodes() / find(id) // the live TreeNode reads (spec §2.3)
+
+// writes
+replace(range, replacement) // the internal offset shim (spec D8)
+// per-node writes are MarkNode.update / MarkNode.remove, which ride a transaction
 
 // renderer contract (adapter-only)
 renderTree: Computed<Token[]> // structural tree; reference change ⇔ renderer must run
-changed: Event<TokenDelta>    // THE model-level detector; fires after the DOM is consistent, carrying {added, removed, updated} ids
+changed: Event<TokenDelta>    // THE model-level detector; fires after the DOM is consistent
 keyOf(token): number          // framework key (stable id); adapters pass it unbound
 
 // per-token live view
-handle(id) // id-keyed live handle, or undefined; latch-gated
+handle(id) / handleOf(token) // id-keyed live handle, or undefined; latch-gated
 handleAt(node) // handle | 'control' | undefined for a DOM node
 
 // DOM↔model facade
@@ -137,7 +213,7 @@ selection(): SelectionSnapshot | undefined // THE selection read
 selectedContent(): {html; text} | undefined // selection serialized for clipboard
 
 // adapter refs
-control(ownerPath?) / children(ownerPath) // ref callbacks
+control() / children(ownerId) // ref callbacks
 ```
 
 `setEditable({editable, readOnly})` is the scoped internal setter wired from
@@ -169,12 +245,12 @@ A consumer that treats "no selection" as collapsed compares
 
 ### The fresh read
 
-`current()` is the always-fresh reconciled tree — consistent with
-`value.current()` on both commit branches (it is the pipeline's `latest`,
-reassigned every apply). `renderTree` is the RENDERER signal: it keeps its
-reference across text-path commits so subscribed adapters skip re-rendering —
-adapter-only, not consumer data. `handle(id)` maps a token id to its live handle,
-failing closed while a structural apply awaits its bind.
+`current()` is the always-fresh committed tree — consistent with `value()` on
+both commit branches (it is the pipeline's `latest`, reassigned every apply).
+`renderTree` is the RENDERER signal: it keeps its reference across text-path
+commits so subscribed adapters skip re-rendering — adapter-only, not consumer
+data. `handle(id)` maps a token id to its live handle, failing closed while a
+structural apply awaits its bind.
 
 ### Boundary facade internals
 
@@ -195,19 +271,33 @@ path-and-identity round-trip.
 - `textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
   `textOffsetWithin`, `hasEditableAncestorBefore`).
 
-## `TokenHandle` — the handle face
+## `TokenHandle` — the read latch
 
-The read / measurement / command surface of the live record described above,
-resolved by `handle(token.id)`.
+The read / measurement / command surface of the DOM binding, resolved by
+`handle(token.id)`.
+
+`#token` is deliberately NOT "the current parsed token" — it is the generation
+the DOM is currently SHOWING (spec D9). Only two writers exist, `bind` and the
+text branch, and the text branch patches the surface in the same `batch`; between
+a structural apply and its bind nothing writes it at all. That is what makes
+every DOM-boundary read correct during the pending window: the DOM boundary layer
+resolves offsets as `token.position.start + local`, and a handle answering with
+the LIVE tree node would resolve carets against a layout the adapter has not
+painted yet.
+
+No per-node reactivity **on the handle**: its getters are plain field reads. That
+is not a statement about the model — `TreeNode`'s content fields ARE signals, and
+they are what the public API subscribes to.
 
 ### Reads
 
 - `id` — the stable identity integer (the key `handle(id)` resolves by).
-- `token()` — the current parsed `Token` (fresh content and positions).
-- `path()` — the handle's current tree position (a fresh copy each read).
+- `token()` — the BIND-GENERATION `Token` (see above).
 - `alive()` — live AND bound (not killed and holding a DOM element). The whole
   validity check a holder of the handle needs.
 - `element()` — the token root `HTMLElement`, or `undefined` when unbound/dead.
+- `node()` — the `ElementBindings` record
+  (`tokenElement`/`textElement`/`rowElement`/`childSequenceHost`).
 
 There is no per-node `dirty` signal, and no event surface: a handle does not
 emit `text`/`moved`/`unmounted`. Consumers detect change through the model's
@@ -224,24 +314,30 @@ All return `false` when unbound or dead: `placeCaret(offset)` (`Infinity` → en
 on a mark without a text surface any `offset > 0` collapses to the end child
 boundary), `placeCaretAtX(x, y?)`, `focus()`.
 
-## Mark commands (`MarkController`)
+### Lifetime
 
-`MarkController.fromToken(store, token)` (the adapter hook) is ID-BACKED: it
-holds a stable token id plus the render-tree token it was built from, used only
-as a read fallback. `value` / `meta` / `slot` / `readOnly` prefer the LIVE handle
-(`store.tokens.handle(id)`, re-resolved per access), so they track text-path
-commits and the controller's own updates after re-bind without re-capture.
-During the latch-gated mid-window (hit on every render before the freshly
-painted DOM binds) the live read serves `undefined`, so reads fall back to the
-construction-time token the adapter just handed in — the rendered mark shows its
-value immediately instead of flashing empty.
+Created when its token enters the tree (keyed by the token's stable identity id),
+mutated in place by `refresh` / `bindElements` / `unbind`, killed when the token
+disappears. A dead handle never throws — stale reads return the last token,
+commands return `false`, and it is never resurrected.
 
-`update` / `remove` resolve the LIVE handle only; against a pending (mid-window)
-or dead handle, or in read-only mode, they are a fail-closed no-op returning
-`false`. A controller built before a structural commit that KILLS its handle does
-not auto-bridge — it fails closed, and the adapter re-derives the controller from
-the fresh token (each render rebuilds it from the new token object), bridging
-by the inherited id to the new live handle.
+## Mark commands
+
+The write verbs live on the NODE, not on a controller: `MarkNode.update(patch)`
+and `MarkNode.remove()` (`tree/types.ts`, implemented in `tree.ts` against the
+`MarkCommands` port). Both ride a transaction (spec D5) — `serializeMark`
+renders the patch to markup and `applyStructural` splices it — and both answer
+`false` in read-only mode or off the tree, which is the same fail-closed answer a
+dead node gives.
+
+`MarkPatch` has no discriminator: an absent (or `undefined`) field is left alone,
+`null` CLEARS it, and a string sets it. Omitted keys are defaulted off the node
+itself, so a patch that names only `value` round-trips the current `meta` and the
+current slot text.
+
+The adapter hook resolves the node by id per access, so it tracks text-path
+commits without re-capture, and the `pendingStructural` latch is what makes a
+mid-window write fail closed rather than act on a tree the DOM never showed.
 
 ## Caret placement by handle
 
@@ -252,97 +348,20 @@ start/end. The handle paths fail closed against a dead or mid-window handle
 (`!handle.alive()` → `false`). The handle carries the stable id, so no
 path-and-token round-trip is involved.
 
-## Parse and identity
+## Parse
 
-### `TokenChangeEntry` kinds
-
-`kind: 'text'` carries text-token surface changes — and a mark whose descend was
-refused (the inherited id, kept for handle continuity; the entry also sets
-`structural`). `kind: 'update'` holds position-only shifts (descendants
-recursively) and deep-descended container marks. `kind: 'add'` is a token new to
-the tree (forces `structural`); the discarded counterparts are in `removedIds`.
-
-### Deep reconcile — descend rules
-
-When the middle pairing pairs two marks (same tree slot, same descriptor), it
-attempts a deep descend (`tryDescend`) before settling for mark-level `text`;
-nested mark pairs inside a descended slot recurse the same check. ALL of the
-following must hold:
-
-1. **Same descriptor** — reference equality (descriptors are interned per parser
-   instance).
-2. **Rendered props byte-unchanged** — `value` and `meta` strictly equal. Mark
-   components receive exactly these as framework props, so equal props ⇒ the
-   renderer has nothing new to paint for the mark itself.
-3. **Both carry a slot** — the descend operates on the slot interior. Once 1+2
-   hold, the bytes outside the slot are necessarily equal (the parser captures all
-   outside-slot variation as `value`/`meta`), so this is a parser invariant rather
-   than an inline check.
-4. **Children pair 1:1** — same count, and nested mark pairs keep their
-   descriptor. Equal child count already implies an equal type sequence
-   (TreeBuilder emits a strict `text,(mark,text)*` alternation), so no per-child
-   type check is needed.
-
-The reconcile-equivalence property spec is the regression net for the conditions
-3–4 parser invariants.
-
-On descend the children are paired inside the slot window with the same
-prefix/suffix/middle logic as the top level — the window is derived from the slot
-contents themselves, independent of how sloppy the outer edit window was.
-Zero-shift matches reuse the previous OBJECT and produce no `changes` entry;
-shifted matches inherit their ids as `kind: 'update'` (descendants included);
-middle pairs recurse the descend for nested marks and report `kind: 'text'` for
-text children. The mark itself inherits its id and enters `changes` as
-`kind: 'update'` ALONE — its children report their own changes. Condition 4
-guarantees a descend never contributes an `add`/removal, so an edit fully
-absorbed by descends routes the text path.
-
-The descended mark sits in the renderer-irrelevant `update` kind even when its
-content changed; the handle layer stays honest because the pipeline refreshes
-every bound `update` node with `update(token, path)` (a never-bound id is
-skipped; its handle materializes on the next bind). The `kind` describes what the
-renderer must do; the handle refresh describes what happened to the token.
-
-**Refused descend** (any condition fails): the mark keeps the conservative
-mark-level `text` entry WITH the inherited id, and the reconcile sets
-`structural`. Reclassifying refused descends as `removed`+`add` would break
-handle identity continuity for value-edited marks (`MarkController.update` flows
-pin same-id inheritance), so the structural-escalation route stays.
-
-**Block-typing consequence:** every row of a slot-leading block markup
-(`'__slot__\n\n'`) is a mark, so without deep reconcile each keystroke in a row
-would be a mark-level `text` → structural → re-render. With descend the keystroke
-emits child `text` + mark `update` → text path → the row's slot surface is
-patched with ZERO component re-renders — gated end-to-end by the block
-render-count specs (`packages/storybook/src/pages/renderCount.react.spec.tsx` /
-`renderCount.vue.spec.ts`).
-
-### Edit-hint flow
-
-`EditController.replace` → `ValueModel.replace(range, replacement)` records a
-consume-once `{start, end, insertedLength}` hint. The model's reparse watch
-drains it per wave and hands it to the tracker; when no hint is present,
-`reconcile` reconstructs the previous and next values from the token contents
-(top-level tokens partition the value) and derives the window via `findGap`.
-
-**Controlled-mode limitation (precision, not correctness):** a parent driving
-`props.value` without a local `replace` can leave a stale hint behind; that
-degrades reconcile precision only — parse output is never affected.
-
-### Parse
-
-Inline and block parse are always a full parse. `TokenModel.#reparse` parses the
-whole value (block mode then filters empty text tokens) and hands the result to
-`reconcile`. The only incrementality is the reconcile/identity-carry layer above;
-the windowed `incrementalParse` was deleted. Full-parse cost is tracked by the
-`parser.bench.ts` tripwire.
+Inline and block parse are always a full parse. The boundary parses the whole
+spliced projection (block mode then filters empty text tokens) and hands the
+result to adoption. The only incrementality is adoption's prefix/suffix retention
+above; the windowed `incrementalParse` was deleted. Full-parse cost is tracked by
+the `parser.bench.ts` tripwire.
 
 ## Divergence detector (the only flag)
 
 `VERIFY_DOM = import.meta.env?.DEV ?? true` (`model/commit.ts`) — dev/test builds
 assert after both branches that every bound text surface's `textContent` equals
 its token's `content`, throwing
-`TokenModel divergence at [path]: DOM "…" ≠ model "…"`. Through the public API the
+`TokenModel divergence at #<id>: DOM "…" ≠ model "…"`. Through the public API the
 machinery self-heals before each check (bind sweeps every bound surface, the text
 branch writes its own targets), so the throw cases are covered white-box — the
 detector guards the case where the healing itself missed a write. Production

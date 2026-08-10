@@ -5,7 +5,7 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
 ## Components
 
 - **Store**: Main state container that manages:
-    - **Feature state** (`store.<feature>.*`) — signals owned by features: tokens, accepted serialized value, selection range, composition flags, overlay match
+    - **Feature state** (`store.<feature>.*`) — signals owned by features: the token tree, the selection range, the overlay match
     - **Host** (`store.host`) — adapter-fed runtime state: the `rendered` event and the `container` HTMLElement signal. Written by React/Vue `MarkedInput`; features read. `host.onMounted(cb)` runs `cb(container)` whenever a container is attached, auto-disposing inner subscriptions on detach and re-running with the new element on swap.
     - **Props** (`store.props`) — readonly signals written only via `store.props.set()` (value, options, readOnly, drag, slots, etc.)
     - **Computed values** (`store.<feature>.*`) — derived values: `enabled`, `parser`, `selection.position`, `containerComponent`, `containerProps`, slot resolvers
@@ -27,7 +27,9 @@ const store = new Store()
 store.props.set({value: 'Hello @[world](test)', readOnly: false})
 ```
 
-The Store is created by framework wrappers and passed to all features. Features communicate through feature-owned state/events, `store.props`, and `store.selection`. `store.value.current` is the internal accepted serialized value state owned by `ValueModel`; feature code routes edits through `store.value.replace()` or `store.value.current()` instead of mutating tokens or accepted value state directly. `ValueModel` enforces `store.props.readOnly()` for editor-originated writes through the raw value edit pipeline; external controlled `props.value` updates still replace the accepted value.
+The Store is created by framework wrappers and passed to all features. Features communicate through feature-owned state/events, `store.props`, and `store.selection`.
+
+The TOKEN LAYER owns the value: the tree is the source of truth and `store.tokens.value()` is its string projection (spec D1). Feature code routes edits through `store.edit.replace(range, text)` — which also moves the caret — or `store.tokens.replace(range, text)` for a raw range, never by mutating nodes or a mirrored value string directly. Gating lives in the transaction layer (`features/tokens/tree/transactions.ts`), so every write verb answers `store.props.readOnly()` the same way; external controlled `props.value` updates arrive through the string boundary instead and are not editor-originated.
 
 ## Readonly Props
 
