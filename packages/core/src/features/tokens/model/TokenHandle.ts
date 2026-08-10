@@ -33,7 +33,7 @@ export type ElementBindings = {
  * between a structural apply and its bind nothing writes it at all. That is what
  * makes every DOM-boundary read correct during the pending window: the DOM
  * boundary layer resolves offsets as `token.position.start + local`
- * (`tokens/boundary.ts` — not `tokens/tree/boundary.ts`), and `DomModel.ts:95`
+ * (`tokens/boundary.ts`), and `DomModel.ts:95`
  * and `SelectionController.ts:78,121` read the same field. A node-backed handle
  * answering with the LIVE tree node would resolve carets against a layout the
  * adapter has not painted yet. Measured in

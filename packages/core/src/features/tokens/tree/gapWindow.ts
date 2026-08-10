@@ -1,4 +1,4 @@
-import {findGap} from '../utils/findGap'
+import {findGap} from './findGap'
 import type {Window} from './types'
 
 /**
@@ -8,7 +8,7 @@ import type {Window} from './types'
  * pinned at the END of the value, not at 0 — `start` of an empty window is not
  * an edit location.
  *
- * findGap contract (see utils/findGap.spec.ts):
+ * findGap contract (see findGap.spec.ts):
  * - `left` is the first diverging index, i.e. the common prefix length;
  *   undefined when the previous value is a prefix of the next one.
  * - `right` is the ABSOLUTE exclusive end of the gap in the PREVIOUS value

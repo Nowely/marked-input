@@ -140,7 +140,7 @@ describe('TokenModel value boundary', () => {
 		// writing the value the store already held short-circuited before the setter and
 		// never emitted. There is no writable computed any more — every write is
 		// `tokens.replace`, which emits for a no-op splice exactly as it always did
-		// (`tree/boundary.spec.ts`'s 'emits an unchanged value in both modes'). The
+		// (`tree/valueBoundary.spec.ts`'s 'emits an unchanged value in both modes'). The
 		// divergence is gone rather than merely untested.
 		it('an uncontrolled edit before control is taken is what dropping control returns to', () => {
 			// The pin for the frozen-storage arm. 'falls back to defaultValue when

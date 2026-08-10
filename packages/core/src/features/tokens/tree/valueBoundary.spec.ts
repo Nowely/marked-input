@@ -4,12 +4,12 @@ import {effect} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {filterEmptyText} from '../parser/utils/filterEmptyText'
-import type {Boundary} from './boundary'
-import {createBoundary} from './boundary'
 import {snapshot, stripIds} from './snapshot'
 import {createTransactions} from './transactions'
 import {createTokenTree} from './tree'
 import type {NodeAnchor, SelectionRange, TextNode, TransactionResult, TreeNode} from './types'
+import type {Boundary} from './valueBoundary'
+import {createBoundary} from './valueBoundary'
 
 const parser = new Parser(['@[__value__](__meta__)'])
 

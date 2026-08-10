@@ -44,14 +44,14 @@ an id and nothing else, and the split is what makes the pending window safe.
   whose `descriptor` matches. Returns a `TransactionResult` carrying
   `added`/`removed`/`updated`/`shifted`, the anchor `map`, and `render`.
 - `gapWindow.ts` — the boundary-reset window: the common prefix/suffix of two
-  projections, via `utils/findGap`. An empty window pins at the END of the value,
+  projections, via `findGap.ts`. An empty window pins at the END of the value,
   because `start` of an empty window is not an edit location.
 - `transactions.ts` — the write verbs (spec D5). `applyRange(window, text)` is
   the primitive; `applyText(node, localRange, text)` and
   `applyStructural(target, replacement)` lower node-local intent into it, and
   `tx(fn)` buffers disjoint ops and adopts once with the hull window. Nothing
   here mutates the tree — adoption, inside the sink, is the only writer.
-- `boundary.ts` — the string boundary (spec §4.4): commit policy plus arrival
+- `valueBoundary.ts` — the string boundary (spec §4.4): commit policy plus arrival
   routing. Controlled mode emits and waits for the echo it spliced; uncontrolled
   commits straight through. Block mode's parse filter (`filterEmptyText`) lives
   here.
