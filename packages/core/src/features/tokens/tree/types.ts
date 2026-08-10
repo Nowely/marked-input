@@ -85,6 +85,15 @@ export interface MarkCommands {
 /** Spec §2.3 addressing model. Mark interiors are addressed via slot text nodes. */
 export type NodeAnchor = {node: TextNode; offset: number} | {before: TreeNode} | {after: TreeNode} | 'start' | 'end'
 
+/**
+ * A selection's two ends in tree space (spec D7): `anchor` is the fixed end, `head` the
+ * one that moves. Declared here rather than beside the state that stores it, for
+ * {@link MarkCommands}'s reason — `types.ts` is where the tree layer's contracts live, and
+ * {@link TransactionResult} speaks it, so `selection.ts` would otherwise be imported BY the
+ * file it already imports.
+ */
+export type Anchors = {anchor: NodeAnchor; head: NodeAnchor}
+
 /** One change entry: `path` indexes the tree AFTER adoption. */
 export interface TreeChange {
 	readonly node: TreeNode
@@ -147,6 +156,15 @@ export interface TransactionResult {
 	 * Consumed by `SelectionController` at S1.6c.
 	 */
 	selectionBefore: SelectionRange | undefined
+	/**
+	 * Where that selection LANDS after this adoption, or `undefined` when there was none.
+	 *
+	 * Resolved here because a consumer cannot resolve it itself: by the time it holds the
+	 * result the stored positions have already moved, and an offset formed in that
+	 * coordinate space is one {@link map} away from being shifted a SECOND time. Adoption
+	 * is the only code on the pre-mutation side of that line.
+	 */
+	selectionAfter: Anchors | undefined
 	/** Valid for PRE-adoption offsets only (spec D7). */
 	map(offset: number): NodeAnchor
 }

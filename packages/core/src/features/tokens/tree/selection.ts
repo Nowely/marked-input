@@ -3,9 +3,7 @@ import {computed, signal} from '../../../shared/signals'
 import type {Computed, Signal} from '../../../shared/signals'
 import {shallow} from '../../../shared/utils/shallow'
 import {anchorEquals} from './anchors'
-import type {NodeAnchor, TransactionResult, TreeNode} from './types'
-
-export type Anchors = {anchor: NodeAnchor; head: NodeAnchor}
+import type {Anchors, NodeAnchor, TransactionResult, TreeNode} from './types'
 
 /**
  * What the selection state reads from the tree — nothing more. CLOSURES, not the
@@ -141,9 +139,13 @@ export function createSelection(deps: SelectionDeps): Selection {
 	 * inside the commit, after the pipeline applied — never by anything else. Together
 	 * with {@link range} this is the `SelectionPort` `TokenModel` is constructed with.
 	 *
-	 * The anchor can never dangle: `selectionBefore` is DERIVED from these same anchors
-	 * (the capture thunk is this controller's `range`), so it is defined exactly when they
-	 * are, and every adoption that could remove an anchor's node re-derives it here.
+	 * An APPLICATION, not a computation: `selectionAfter` is resolved inside adoption,
+	 * which is the only code that still sees the pre-mutation coordinate space (see
+	 * {@link TransactionResult.selectionAfter}).
+	 *
+	 * The anchor it applies can never dangle: `selectionBefore` is DERIVED from these same
+	 * anchors (the capture thunk is this controller's `range`), so it is defined exactly
+	 * when they are, and every adoption that could remove an anchor's node re-derives it.
 	 * `map` resolves against the post-adoption roots and is property-proven never to
 	 * answer with a dead node (`tree/adopt.property.spec.ts`).
 	 */
@@ -151,9 +153,9 @@ export function createSelection(deps: SelectionDeps): Selection {
 		// Unconditional: positions move whether or not there is a selection, and `range`
 		// derives from fields no signal covers (spec D3).
 		generation(generation() + 1)
-		const before = result.selectionBefore
-		if (!before) return
-		select(result.map(before.start), result.map(before.end))
+		const next = result.selectionAfter
+		if (!next) return
+		select(next.anchor, next.head)
 	}
 
 	/**

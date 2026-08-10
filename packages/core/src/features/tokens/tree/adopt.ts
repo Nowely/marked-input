@@ -201,7 +201,12 @@ export function adopt(
 
 		const map = (offset: number): NodeAnchor => untracked(() => resolveMappedAnchor(out, offset, window, delta))
 
-		return {structural, render, added, removed, updated, shifted, selectionBefore, map}
+		const selectionAfter = selectionBefore && {
+			anchor: map(selectionBefore.start),
+			head: map(selectionBefore.end),
+		}
+
+		return {structural, render, added, removed, updated, shifted, selectionBefore, selectionAfter, map}
 	})
 }
 

@@ -6,7 +6,7 @@ import {adopt} from './adopt'
 import {gapWindow} from './gapWindow'
 import {snapshot, stripIds} from './snapshot'
 import {createTokenTree} from './tree'
-import type {MarkNode, NodeAnchor, TextNode, TreeNode} from './types'
+import type {Anchors, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeNode} from './types'
 
 const parser = new Parser(['@[__value__](__meta__)', '#[__slot__]'])
 
@@ -547,5 +547,24 @@ describe('adopt: map affinity (spec D7, plan decision D-a)', () => {
 		// deletions has a pin. Backspace at 5: window {4,5,0}, caret 5 → 4.
 		const {result} = editAndAdopt('abcde', 4, 5, '')
 		expect(textAnchorOf(result.map(5)).offset).toBe(4)
+	})
+})
+
+const selectionAfterOf = (result: TransactionResult): Anchors => {
+	const after = result.selectionAfter
+	if (!after) throw new Error('expected a resolved selectionAfter')
+	return after
+}
+
+describe('adopt: selectionAfter (spec D7)', () => {
+	it('resolves a caret inside the edited region to the end of the inserted text', () => {
+		// The channel's own gate, at the same affinity the `map` cases above pin: typing 'X'
+		// at 2 of 'hello' leaves the caret AFTER it (3), not before it (2) and not past it (4).
+		const tree = createTokenTree(parser.parse('hello'))
+		const result = adopt(tree, {start: 2, end: 2, insertedLength: 1}, parser.parse('heXllo'), {start: 2, end: 2})
+
+		const after = selectionAfterOf(result)
+		expect(textAnchorOf(after.anchor).offset).toBe(3)
+		expect(textAnchorOf(after.head).offset).toBe(3)
 	})
 })
