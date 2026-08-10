@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
-import {mountNested, mountValue, mountWithMark} from '../__testing__/mountFixtures'
+import {mountBlock, mountNested, mountValue, mountWithMark} from '../__testing__/mountFixtures'
 
 describe('anchorFor', () => {
 	afterEach(() => {
@@ -118,5 +118,31 @@ describe('anchorFor', () => {
 		const markNode = store.tokens.nodes()[1]
 		expect(store.tokens.anchorFor(mark, 0)).toEqual({before: markNode})
 		expect(store.tokens.anchorFor(mark, 1)).toEqual({after: markNode})
+	})
+
+	it('anchors a mark presentation descendant by affinity', () => {
+		const {store, mark} = mountWithMark()
+		const markNode = store.tokens.nodes()[1]
+		const inner = mark.firstChild
+		if (!inner) throw new Error('expected mark presentation content')
+		expect(store.tokens.anchorFor(inner, 0, 'after')).toEqual({before: markNode})
+		expect(store.tokens.anchorFor(inner, 0, 'before')).toEqual({after: markNode})
+	})
+
+	it('returns undefined inside an editable descendant of a mark', () => {
+		const {store, mark} = mountWithMark()
+		const editable = document.createElement('span')
+		editable.contentEditable = 'true'
+		const inner = document.createTextNode('z')
+		editable.append(inner)
+		mark.append(editable)
+		expect(store.tokens.anchorFor(inner, 0)).toBeUndefined()
+	})
+
+	it('anchors a row boundary to its owner by side', () => {
+		const {store, rows} = mountBlock()
+		const second = store.tokens.nodes()[1]
+		expect(store.tokens.anchorFor(rows[1], 0)).toEqual({before: second})
+		expect(store.tokens.anchorFor(rows[1], 1)).toEqual({after: second})
 	})
 })

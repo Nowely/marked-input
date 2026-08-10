@@ -88,3 +88,34 @@ export function mountNested() {
 	store.host.rendered()
 	return {store, container, leading, outer, host, before, inner, after, trailing}
 }
+
+/**
+ * Mounted block fixture (pattern from BlockController.spec.ts): mark "one\n\n"
+ * [0,5] with child text "one" [0,3], mark "two\n\n" [5,10] with child text
+ * "two" [5,8]. One row div per mark, the mark element holding one text surface;
+ * the rows are returned because they are the only handle on the row binding.
+ */
+export function mountBlock() {
+	const store = new Store()
+	store.props.set({
+		defaultValue: 'one\n\ntwo\n\n',
+		layout: 'block',
+		Mark: () => null,
+		options: [{markup: '__slot__\n\n'}],
+	})
+	const container = document.createElement('div')
+	const rows: HTMLElement[] = []
+	for (let i = 0; i < 2; i++) {
+		const row = document.createElement('div')
+		const mark = document.createElement('span')
+		const text = document.createElement('span')
+		mark.append(text)
+		row.append(mark)
+		container.append(row)
+		rows.push(row)
+	}
+	document.body.append(container)
+	store.host.container(container)
+	store.host.rendered()
+	return {store, container, rows}
+}

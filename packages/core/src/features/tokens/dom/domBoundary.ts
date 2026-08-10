@@ -51,14 +51,11 @@ export type AnchorContext = Pick<BoundaryContext, 'container' | 'locate'> & {
 /**
  * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree.
  *
- * PARTIAL: container, child-sequence, text-surface and token-shell boundaries
- * are live; mark-presentation and row boundaries land in Task 5 and answer
- * `undefined` until then.
- *
  * The anchor projection of the same walk that {@link rawPositionFromBoundary}
- * projects numerically. No absolute coordinate is formed anywhere on this path,
- * which is why it is correct during the adopt→bind window where the numeric one
- * is not (spec S2 D4).
+ * projects numerically: every branch there has its counterpart here, in the same
+ * order. No absolute coordinate is formed anywhere on this path, which is why it
+ * is correct during the adopt→bind window where the numeric one is not (spec S2
+ * D4).
  */
 export function anchorFromBoundary(
 	ctx: AnchorContext,
@@ -100,6 +97,17 @@ export function anchorFromBoundary(
 
 	if (node === lookup.node.tokenElement) {
 		return fromChildAnchor(ctx, lookup.node.tokenElement, offset, owner, affinity)
+	}
+
+	if (owner.kind === 'mark' && lookup.node.tokenElement.contains(node)) {
+		if (hasEditableAncestorBefore(node, lookup.node.tokenElement)) {
+			return undefined
+		}
+		return affinity === 'after' ? {before: owner} : {after: owner}
+	}
+
+	if (lookup.node.rowElement && node === lookup.node.rowElement) {
+		return offset <= 0 ? {before: owner} : {after: owner}
 	}
 
 	return undefined
