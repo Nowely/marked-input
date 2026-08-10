@@ -47,8 +47,8 @@ export type AnchorContext = Pick<BoundaryContext, 'container' | 'locate'> & {
 /**
  * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree.
  *
- * SKELETON: every branch lands in Tasks 2-5; until then every boundary answers
- * `undefined`.
+ * PARTIAL: container boundaries are live; child sequences and mark/row
+ * boundaries land in Tasks 4-5 and answer `undefined` until then.
  *
  * The anchor projection of the same walk that {@link rawPositionFromBoundary}
  * projects numerically. No absolute coordinate is formed anywhere on this path,
@@ -56,12 +56,28 @@ export type AnchorContext = Pick<BoundaryContext, 'container' | 'locate'> & {
  * is not (spec S2 D4).
  */
 export function anchorFromBoundary(
-	_ctx: AnchorContext,
-	_node: Node,
-	_offset: number,
-	_affinity: 'before' | 'after' = 'after'
+	ctx: AnchorContext,
+	node: Node,
+	offset: number,
+	affinity: 'before' | 'after' = 'after'
 ): NodeAnchor | undefined {
+	if (ctx.container && node === ctx.container) {
+		return fromContainerAnchor(ctx.roots(), offset, affinity)
+	}
+
 	return undefined
+}
+
+/** Mirrors {@link fromContainerBoundary}: same branches, anchors instead of positions. */
+function fromContainerAnchor(
+	roots: readonly TreeNode[],
+	offset: number,
+	affinity: 'before' | 'after'
+): NodeAnchor | undefined {
+	if (roots.length === 0) return 'start'
+	if (offset <= 0) return {before: roots[0]}
+	if (offset >= roots.length) return {after: roots[roots.length - 1]}
+	return affinity === 'before' ? {after: roots[offset - 1]} : {before: roots[offset]}
 }
 
 /** Map a DOM boundary (node, offset) to an absolute document position. */
