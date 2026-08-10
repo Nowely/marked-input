@@ -3,13 +3,13 @@ import type {Parser} from '../parser/Parser'
 import type {MarkToken, TextToken, Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {collectIds, shiftPositions, snapshotNodeEquals} from './adoptUtils'
-import {anchorAt} from './anchors'
+import {anchorAt, offsetOfAnchor} from './anchors'
 import type {TokenTree} from './tree'
 import type {
+	Anchors,
 	Id,
 	MarkNode,
 	NodeAnchor,
-	SelectionRange,
 	TextNode,
 	TransactionResult,
 	TreeChange,
@@ -41,11 +41,20 @@ export function adopt(
 	tree: TokenTree,
 	window: Window,
 	parsed: readonly Token[],
-	selectionBefore?: SelectionRange
+	selectionBefore?: Anchors
 ): TransactionResult {
 	return untracked(() => {
 		const prev = tree.roots()
 		const delta = window.insertedLength - (window.end - window.start)
+
+		// PRE-MUTATION, and that is the whole of this decision: the batch below rewrites
+		// node `position` fields in place, so an offset formed after it describes the new
+		// coordinate space and `map` would shift it a SECOND time. Gated by adopt.spec.ts's
+		// "forms the offsets BEFORE adoption rewrites the positions they read".
+		const beforeOffsets = selectionBefore && {
+			anchor: offsetOfAnchor(prev, selectionBefore.anchor),
+			head: offsetOfAnchor(prev, selectionBefore.head),
+		}
 
 		const added: TreeChange[] = []
 		const removed: Id[] = []
@@ -201,9 +210,9 @@ export function adopt(
 
 		const map = (offset: number): NodeAnchor => untracked(() => resolveMappedAnchor(out, offset, window, delta))
 
-		const selectionAfter = selectionBefore && {
-			anchor: map(selectionBefore.start),
-			head: map(selectionBefore.end),
+		const selectionAfter = beforeOffsets && {
+			anchor: map(beforeOffsets.anchor),
+			head: map(beforeOffsets.head),
 		}
 
 		return {structural, render, added, removed, updated, shifted, selectionBefore, selectionAfter, map}

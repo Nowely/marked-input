@@ -3,6 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {effect} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
 import {adopt} from './adopt'
+import {offsetOfAnchor} from './anchors'
 import {gapWindow} from './gapWindow'
 import {snapshot, stripIds} from './snapshot'
 import {createTokenTree} from './tree'
@@ -556,15 +557,41 @@ const selectionAfterOf = (result: TransactionResult): Anchors => {
 	return after
 }
 
+/** A collapsed caret in the anchor form the channel now carries. */
+const caretOn = (node: TreeNode, offset: number): Anchors => {
+	if (node.kind !== 'text') throw new Error('expected a text node')
+	const anchor: NodeAnchor = {node, offset}
+	return {anchor, head: anchor}
+}
+
 describe('adopt: selectionAfter (spec D7)', () => {
 	it('resolves a caret inside the edited region to the end of the inserted text', () => {
 		// The channel's own gate, at the same affinity the `map` cases above pin: typing 'X'
 		// at 2 of 'hello' leaves the caret AFTER it (3), not before it (2) and not past it (4).
 		const tree = createTokenTree(parser.parse('hello'))
-		const result = adopt(tree, {start: 2, end: 2, insertedLength: 1}, parser.parse('heXllo'), {start: 2, end: 2})
+		const before = caretOn(tree.roots()[0], 2)
+
+		const result = adopt(tree, {start: 2, end: 2, insertedLength: 1}, parser.parse('heXllo'), before)
 
 		const after = selectionAfterOf(result)
 		expect(textAnchorOf(after.anchor).offset).toBe(3)
 		expect(textAnchorOf(after.head).offset).toBe(3)
+	})
+
+	it('forms the offsets BEFORE adoption rewrites the positions they read', () => {
+		// THE ordering gate, and it needs an anchor whose node MOVES — the case above cannot
+		// see the hazard at all, because its node stays at 0 and so reads 2 either way.
+		//   'ab@[x](m)cd' → text[0,2] mark[2,9] text[9,11]; caret at 'cd'+0 = 9.
+		//   Insert 'Z' at 0 → window {0,0,1}: the suffix walk shifts 'cd' to [10,12].
+		//   pre-mutation:  offsetOfAnchor = 9  → map(9)  = 10 → 'cd'+0. Correct.
+		//   post-mutation: offsetOfAnchor = 10 → map(10) = 11 → 'cd'+1. Shifted twice.
+		const tree = createTokenTree(parser.parse('ab@[x](m)cd'))
+		const before = caretOn(tree.roots()[2], 0)
+
+		const result = adopt(tree, {start: 0, end: 0, insertedLength: 1}, parser.parse('Zab@[x](m)cd'), before)
+
+		const after = selectionAfterOf(result)
+		expect(offsetOfAnchor(tree.roots(), after.anchor)).toBe(10)
+		expect(offsetOfAnchor(tree.roots(), after.head)).toBe(10)
 	})
 })

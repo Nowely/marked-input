@@ -16,7 +16,7 @@ import {lowerReplace} from '../tree/offsetShim'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf} from '../tree/tree'
-import type {MarkCommands, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeNode} from '../tree/types'
+import type {Anchors, MarkCommands, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 import type {TokenDelta} from './commitInput'
 import {fromTransaction} from './treeInput'
@@ -27,9 +27,9 @@ import {fromTransaction} from './treeInput'
  * construction.
  */
 export interface SelectionPort {
-	/** Pre-adoption capture (spec D7), in the TREE's coordinate space. */
-	range(): Range | undefined
-	/** Post-adoption repair (spec D7): consumes `selectionBefore` + `map`. */
+	/** Pre-adoption capture (spec D7): the STORED anchors, which name no coordinate. */
+	anchors(): Anchors | undefined
+	/** Post-adoption repair (spec D7): applies the result's `selectionAfter`. */
 	repair(result: TransactionResult): void
 }
 
@@ -520,7 +520,7 @@ export class TokenModel {
 		parser: () => this.#parser(),
 		isBlock: () => this.props.layout.isBlock(),
 		controlled: () => this.props.value() !== undefined,
-		selection: () => this.selectionPort().range(),
+		selection: () => this.selectionPort().anchors(),
 		onChange: next => this.props.onChange()?.(next),
 		// Synchronous by contract (spec §4.4): `tokens.current()` must be consistent with
 		// `value.current()` the moment adoption lands, because seven call sites slice the

@@ -63,7 +63,7 @@ function createNew(props: CoreProps) {
 	const propsModel = new PropsModel()
 	const host = new Host()
 	// Inert port: these cases assert the value/tree seam, not the D7 caret repair.
-	const model: TokenModel = new TokenModel(propsModel, host, () => ({range: () => undefined, repair: () => {}}))
+	const model: TokenModel = new TokenModel(propsModel, host, () => ({anchors: () => undefined, repair: () => {}}))
 	propsModel.set(props)
 	return {model, props: propsModel, host}
 }

@@ -7,7 +7,7 @@ import {filterEmptyText} from '../parser/utils/filterEmptyText'
 import {snapshot, stripIds} from './snapshot'
 import {createTransactions} from './transactions'
 import {createTokenTree} from './tree'
-import type {NodeAnchor, SelectionRange, TextNode, TransactionResult, TreeNode} from './types'
+import type {Anchors, NodeAnchor, TextNode, TransactionResult, TreeNode} from './types'
 import type {Boundary} from './valueBoundary'
 import {createBoundary} from './valueBoundary'
 
@@ -327,23 +327,21 @@ describe('boundary: untracked arrivals', () => {
 
 describe('boundary: pre-adoption selection capture (spec D7)', () => {
 	/**
-	 * The fixture is DISCRIMINATING by construction: the injected reader answers with
-	 * a position that ADOPTION ITSELF MUTATES, so a capture moved after `adopt` reads a
-	 * different number. `'ab@[x](m)cd'` puts the mark at [2,9]; inserting 'Z' at 0
-	 * shifts it to [3,10]. Pre-adoption the reader says 2, post-adoption 3 — which is
-	 * exactly D7's "adoption mutates positions in place, deriving afterwards
-	 * double-shifts" failure, made observable.
+	 * What these cases gate since the channel became ANCHORS: that the capture reaches
+	 * `adopt` on ALL THREE entries — commit, arrival, reparse — and that it is the
+	 * reader's answer that lands in the result. Measured: capturing only on the commit
+	 * path reddens the arrival and reparse cases, and nothing else in the core suite
+	 * notices.
 	 *
-	 * These cases are the ONLY gate on the channel — `selectionBefore` gains its
-	 * consumer (`SelectionController`'s repair) at S1.6c — so they were mutation-proven
-	 * rather than trusted. Measured: capturing AFTER `adopt` reddens the commit and
-	 * arrival cases; capturing only on the commit path reddens the arrival and reparse
-	 * cases; and nothing else in the core suite notices either edit.
+	 * What they no longer gate is the ordering. Anchors carry no coordinate, so a capture
+	 * moved after `adopt` reads the SAME anchor — the double-shift is now decided one
+	 * layer down, where `adopt` turns anchors into offsets, and its gate moved with it to
+	 * `adopt.spec.ts`'s "forms the offsets BEFORE adoption rewrites the positions they
+	 * read". `{before: mark}` is kept over a text anchor for exactly that reason: it is
+	 * the shape whose offset adoption moves ([2,9] → [3,10] under an insert at 0), so the
+	 * fixture stays usable for an ordering assertion should one be wanted here.
 	 */
-	function captureSetup(
-		source: string,
-		options: {controlled?: boolean; selection?: () => SelectionRange | undefined} = {}
-	) {
+	function captureSetup(source: string, options: {controlled?: boolean; selection?: () => Anchors | undefined} = {}) {
 		const tree = createTokenTree(parser.parse(source))
 		const results: TransactionResult[] = []
 		const boundary = createBoundary({
@@ -354,8 +352,8 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 			selection:
 				options.selection ??
 				(() => {
-					const mark = tree.roots()[1]
-					return {start: mark.position.start, end: mark.position.start}
+					const anchor: NodeAnchor = {before: tree.roots()[1]}
+					return {anchor, head: anchor}
 				}),
 			onResult: result => results.push(result),
 		})
@@ -363,27 +361,30 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 		return {tree, boundary, tx, results}
 	}
 
-	it('captures the range BEFORE the commit adoption moves the positions it reads', () => {
+	it('captures at a COMMIT, naming a node whose position adoption then moves', () => {
 		const {tree, tx, results} = captureSetup('ab@[x](m)cd')
-		expect(tree.roots()[1].position.start).toBe(2)
+		const mark = tree.roots()[1]
+		expect(mark.position.start).toBe(2)
 
 		expect(tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'Z')).toBe(true)
 
-		expect(tree.roots()[1].position.start).toBe(3) // adoption moved it
-		expect(results[0].selectionBefore).toEqual({start: 2, end: 2}) // the capture did not
+		expect(mark.position.start).toBe(3) // adoption moved it; the anchor still names it
+		expect(results[0].selectionBefore).toEqual({anchor: {before: mark}, head: {before: mark}})
 	})
 
 	it('captures at an ARRIVAL too — the only entry the controlled path repairs from', () => {
 		const {tree, boundary, results} = captureSetup('ab@[x](m)cd', {controlled: true})
+		const mark = tree.roots()[1]
 		boundary.arrive('Zab@[x](m)cd')
-		expect(tree.roots()[1].position.start).toBe(3)
-		expect(results[0].selectionBefore).toEqual({start: 2, end: 2})
+		expect(mark.position.start).toBe(3)
+		expect(results[0].selectionBefore).toEqual({anchor: {before: mark}, head: {before: mark}})
 	})
 
 	it('captures at a reparse', () => {
-		const {results, boundary} = captureSetup('ab@[x](m)cd')
+		const {tree, results, boundary} = captureSetup('ab@[x](m)cd')
+		const mark = tree.roots()[1]
 		boundary.reparse()
-		expect(results[0].selectionBefore).toEqual({start: 2, end: 2})
+		expect(results[0].selectionBefore).toEqual({anchor: {before: mark}, head: {before: mark}})
 	})
 
 	it('is undefined when the injected reader answers undefined', () => {

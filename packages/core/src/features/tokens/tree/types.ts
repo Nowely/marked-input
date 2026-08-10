@@ -101,14 +101,6 @@ export interface TreeChange {
 }
 
 /**
- * A selection range in projection coordinates. Structurally identical to
- * `shared/editorContracts`'s `Range` and deliberately re-declared on LAYERING
- * grounds: `tree/` is the core and must not reach up into the editor contracts
- * for a two-number record.
- */
-export type SelectionRange = {readonly start: number; readonly end: number}
-
-/**
  * Spec D9: the single change feed adoption emits.
  *
  * Granularity splits by payload type and is normative: the id-only feed is
@@ -141,28 +133,26 @@ export interface TransactionResult {
 	shifted: readonly TreeNode[]
 	/**
 	 * The selection as it stood BEFORE this adoption (spec D7), or `undefined` when
-	 * there was none. `map(offset)` is defined only for offsets in this coordinate
-	 * space.
+	 * there was none — ANCHORS, so the record carries no coordinate at all and cannot
+	 * go stale when adoption moves the nodes it names.
 	 *
 	 * Captured by `createBoundary`'s `fold` — the single funnel every adoption on the
-	 * live path runs through (commit, arrival, reparse) — because adoption mutates
-	 * stored positions in place and deriving the range afterwards double-shifts it.
-	 *
-	 * NOT captured by the dispatcher, which an earlier note here proposed: in
-	 * controlled mode `commit` produces no result at all (it emits and waits), so the
-	 * repair input is the range captured at the ECHO's arrival, an entry the
-	 * dispatcher never sees. Capturing at the boundary also spares `CommitSink.commit`
-	 * a third parameter that one of its two implementations would have to ignore.
-	 * Consumed by `SelectionController` at S1.6c.
+	 * live path runs through (commit, arrival, reparse). NOT by the dispatcher, which an
+	 * earlier note here proposed: in controlled mode `commit` produces no result at all
+	 * (it emits and waits), so the repair input is the selection captured at the ECHO's
+	 * arrival, an entry the dispatcher never sees. Capturing at the boundary also spares
+	 * `CommitSink.commit` a third parameter that one of its two implementations would
+	 * have to ignore.
 	 */
-	selectionBefore: SelectionRange | undefined
+	selectionBefore: Anchors | undefined
 	/**
 	 * Where that selection LANDS after this adoption, or `undefined` when there was none.
 	 *
-	 * Resolved here because a consumer cannot resolve it itself: by the time it holds the
-	 * result the stored positions have already moved, and an offset formed in that
-	 * coordinate space is one {@link map} away from being shifted a SECOND time. Adoption
-	 * is the only code on the pre-mutation side of that line.
+	 * Resolved here because a consumer cannot resolve it itself: it would have to turn
+	 * {@link selectionBefore} into an offset to feed {@link map}, and by the time it holds
+	 * the result the stored positions have already moved — so that offset would describe
+	 * the NEW coordinate space and `map` would shift it a SECOND time. Adoption is the
+	 * only code on the pre-mutation side of that line.
 	 */
 	selectionAfter: Anchors | undefined
 	/** Valid for PRE-adoption offsets only (spec D7). */
