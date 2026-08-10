@@ -1,80 +1,26 @@
 // packages/core/src/features/selection/SelectionController.ts
 import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
 import type {Range, RawSelection} from '../../shared/editorContracts'
-import {computed, listen, signal, watch} from '../../shared/signals'
+import {listen, signal, watch} from '../../shared/signals'
 import type {Computed, Signal} from '../../shared/signals'
-import {shallow} from '../../shared/utils/shallow'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
-import {anchorEquals} from '../tokens'
-import type {NodeAnchor, TokenHandle, TokenModel, TransactionResult} from '../tokens'
-
-type Anchors = {anchor: NodeAnchor; head: NodeAnchor}
+import {anchorEquals, createSelection} from '../tokens'
+import type {Anchors, NodeAnchor, TokenHandle, TokenModel, TransactionResult} from '../tokens'
 
 export class SelectionController {
-	/**
-	 * THE stored selection (spec D7/G4): node anchors, not offsets. Equality is anchor
-	 * IDENTITY — the DOM sync rebuilds anchors on every `selectionchange`, so without it
-	 * a mouse sweep would re-enter placement on every tick (the job today's
-	 * `{equals: shallow}` on the numeric range did).
-	 *
-	 * Its gate is `SelectionController.spec`'s "repeated selectAll applies to the DOM
-	 * once" — measured, and it has to be a RANGED selection: `range` keeps
-	 * `{equals: shallow}` whatever this does, so a notification count cannot see the
-	 * difference, and the collapsed path is masked by {@link placeAtHandle}'s re-apply
-	 * branch. Dropping the equality fails that one case and nothing else in the repo.
-	 */
-	readonly #anchors: Signal<Anchors | undefined> = signal<Anchors>({
-		equals: (a, b) => anchorEquals(a?.anchor, b?.anchor) && anchorEquals(a?.head, b?.head),
+	/** The tree-space half (spec D7): the stored anchors, the derived range, the repair. */
+	readonly #state = createSelection({
+		offsetOf: anchor => this.tokens.offsetOf(anchor),
+		anchorAt: offset => this.tokens.anchorAt(offset),
+		value: () => this.tokens.value(),
 	})
 
-	/**
-	 * Bumped once per adoption by {@link repair}, its only writer. Stored positions are
-	 * plain fields (spec D3), so nothing else can invalidate a derived offset when
-	 * adoption shifts them — and an anchor that survives an edit UNCHANGED (AC-3.2) must
-	 * still resolve to its new absolute offset. This is the only reason {@link range} is
-	 * not a pure computed over `#anchors`.
-	 *
-	 * Exactly ONE case can gate it, by construction — `SelectionController.spec`'s "keeps
-	 * node and offset when the edit is outside the anchor…". Every other repair case
-	 * changes the anchor as well, so the `#anchors` write notifies on its own.
-	 */
-	readonly #generation: Signal<number> = signal({initial: 0})
+	readonly range: Computed<Range | undefined> = this.#state.range
 
-	/**
-	 * DERIVED (spec D7): the numeric range every offset-speaking consumer still reads —
-	 * {@link isAllSelected}, `OverlayController`'s trigger probe, the boundary's
-	 * pre-adoption capture. Read-only: the stored form is `#anchors`, and
-	 * {@link select}/{@link position} are the writes.
-	 */
-	readonly range: Computed<Range | undefined> = computed(
-		() => {
-			this.#generation()
-			const anchors = this.#anchors()
-			if (!anchors) return undefined
-			const anchor = this.tokens.offsetOf(anchors.anchor)
-			const head = this.tokens.offsetOf(anchors.head)
-			return anchor <= head ? {start: anchor, end: head} : {start: head, end: anchor}
-		},
-		{equals: shallow}
-	)
+	readonly position: Signal<number | undefined> = this.#state.position
 
-	readonly position = computed({
-		get: () => this.range()?.start,
-		set: value => {
-			// The undefined arm is unreachable: a writable computed short-circuits an
-			// `undefined` write before the setter runs (`shared/signals/signal.ts`'s
-			// `writableComputedOper`), which is why the pre-anchor version's clear branch was
-			// dead. Kept as a type narrow only.
-			if (value !== undefined) this.select(this.tokens.anchorAt(value))
-		},
-	})
-
-	readonly isAllSelected: Computed<boolean> = computed(() => {
-		const s = this.range()
-		const v = this.tokens.value()
-		return s?.start === 0 && s.end === v.length && v.length > 0
-	})
+	readonly isAllSelected: Computed<boolean> = this.#state.isAllSelected
 
 	readonly isUserSelecting: Signal<boolean> = signal({initial: false})
 
@@ -108,7 +54,7 @@ export class SelectionController {
 			// Separately, `range` also moves when adoption shifts positions, and re-placing on
 			// that would fight the DOM after every commit; the post-commit re-place is the
 			// `tokens.changed` watch above, which fires only once the DOM is consistent.
-			watch(this.#anchors, () => this.#applySelection())
+			watch(this.#state.stored, () => this.#applySelection())
 		})
 	}
 
@@ -119,46 +65,22 @@ export class SelectionController {
 	}
 
 	selectAll(): void {
-		// Node anchors, not the `'start'`/`'end'` edges: a later edit that grows the value
-		// must NOT keep `isAllSelected` true, and edge anchors would.
-		this.select(this.tokens.anchorAt(0), this.tokens.anchorAt(this.tokens.value().length))
+		this.#state.selectAll()
 	}
 
-	/**
-	 * @internal THE write (spec D7's stored form). {@link selectAll}, {@link position},
-	 * {@link placeAtHandle} and the DOM sync all go through it; S1.7 promotes it to
-	 * §2.3's `input.select`. Returns whether the stored selection actually changed.
-	 */
+	/** @internal See {@link Selection.select}. */
 	select(anchor: NodeAnchor, head: NodeAnchor = anchor): boolean {
-		return this.#anchors({anchor, head})
+		return this.#state.select(anchor, head)
 	}
 
-	/**
-	 * @internal Post-adoption caret repair (spec D7, §4.5). Called by the token layer
-	 * inside the commit, after the pipeline applied — never by anything else. Together
-	 * with {@link range} this is the `SelectionPort` `TokenModel` is constructed with.
-	 *
-	 * The anchor can never dangle: `selectionBefore` is DERIVED from these same anchors
-	 * (the capture thunk is this controller's `range`), so it is defined exactly when they
-	 * are, and every adoption that could remove an anchor's node re-derives it here.
-	 * `map` resolves against the post-adoption roots and is property-proven never to
-	 * answer with a dead node (`tree/adopt.property.spec.ts`).
-	 */
+	/** @internal See {@link Selection.repair} — the `SelectionPort` half `TokenModel` calls. */
 	repair(result: TransactionResult): void {
-		// Unconditional: positions move whether or not there is a selection, and `range`
-		// derives from fields no signal covers (spec D3).
-		this.#generation(this.#generation() + 1)
-		const before = result.selectionBefore
-		if (!before) return
-		this.select(result.map(before.start), result.map(before.end))
+		this.#state.repair(result)
 	}
 
-	/**
-	 * Spec §2.3's `input.selection()`: the STORED anchors (spec D7), not the derived numbers
-	 * — {@link range} is the numeric projection. Reactive: a tracked read.
-	 */
+	/** Spec §2.3's `input.selection()`: the STORED anchors (spec D7). */
 	anchors(): Anchors | undefined {
-		return this.#anchors()
+		return this.#state.anchors()
 	}
 
 	focusFirst(): void {
@@ -176,30 +98,14 @@ export class SelectionController {
 		if (!handle.alive()) return false
 		const node = this.tokens.find(handle.id)
 		if (!node) return false
-		// The NODE is the disambiguator two tokens sharing a boundary offset need — the job
-		// the consume-once `#preferredHandle` stash did (spec §4.6 item 5). A mark has no
-		// anchorable interior (spec §2.3), so it answers with its own boundary.
-		//
-		// Re-resolving the number instead (`tokens.anchorAt(node.position.start)`) is what
-		// this replaces, and it is gated twice over: `SelectionController.spec`'s "places at
-		// a mark whose start equals the previous text node end…" plus the same 8 browser
-		// assertions the `#anchors` watch above names.
-		const anchor: NodeAnchor =
-			node.kind === 'text'
-				? // The length comes from `position`, not `text()`: that is the coordinate space
-					// the anchor resolves in, and reading the signal would add a dependency.
-					{node, offset: boundary === 'end' ? node.position.end - node.position.start : 0}
-				: boundary === 'end'
-					? {after: node}
-					: {before: node}
 		// Re-apply even when the write dedupes: the DOM caret may have moved since.
-		if (!this.select(anchor)) this.#applySelection()
+		if (!this.#state.selectNode(node, boundary)) this.#applySelection()
 		return true
 	}
 
 	#applySelection(): void {
 		if (this.isUserSelecting()) return
-		const anchors = this.#anchors()
+		const anchors = this.#state.anchors()
 		if (anchors === undefined) return
 
 		// NO CLAMP (spec §4.6 item 5): an anchor cannot point past its own node, `anchorAt`
@@ -306,7 +212,7 @@ export class SelectionController {
 			// so a test can neither observe the disagreement nor construct it. The guard above
 			// — the round-trip's NON-IDEMPOTENCE — is a different claim and is gated, by the
 			// 8 browser assertions it names.
-			this.#anchors(
+			this.#state.stored(
 				raw ? {anchor: this.tokens.anchorAt(raw.start), head: this.tokens.anchorAt(raw.end)} : undefined
 			)
 		}
@@ -318,14 +224,14 @@ export class SelectionController {
 				return
 			}
 			if (at === 'control') return
-			this.#anchors(undefined)
+			this.#state.stored(undefined)
 		}
 
 		listen(container, 'focusin', e => {
 			if (this.#isPlacingCaret) return
 			const target = e.target instanceof HTMLElement ? e.target : undefined
 			if (!target) {
-				this.#anchors(undefined)
+				this.#state.stored(undefined)
 				return
 			}
 			syncIfInEditor(target)
@@ -333,7 +239,7 @@ export class SelectionController {
 
 		listen(container, 'focusout', () => {
 			queueMicrotask(() => {
-				if (!container.contains(document.activeElement)) this.#anchors(undefined)
+				if (!container.contains(document.activeElement)) this.#state.stored(undefined)
 			})
 		})
 
