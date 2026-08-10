@@ -767,6 +767,8 @@ deferring all commits, latest-wins deferred arrival, compositionend
 absorption as one transaction — design sketch preserved in the review
 record.
 - Collab/CRDT on node ids + transactions.
+- Vue slot-mark render fan-out (block rows, nesting) — measured, unfixed; see
+  the S1.10 record in §11. Not scheduled.
 - Directory regrouping of `features/tokens/` into `tree/`/`dom/`/`parser/` is
   deferred to a separate S1.9 of pure-move commits (no content edits), so it
   does not destroy the git blame of the files S1.8 deletes from.
@@ -1015,6 +1017,55 @@ pre-phase build by exactly the §2.3 table.
 **Review tier:** full-review
 **Dependencies:** S1.7 (steps 3–7); step 1 is landable at any time.
 
+### S1.10: Render loop onto live nodes — INVESTIGATED AND REJECTED (2026-08-10)
+
+*Named by S1.8's decision D-a as the phase that would move the adapter render
+loop off `Token[]` onto `input.nodes()`. Measured by a 17-agent investigation
+after S1.9 landed, and dropped. This entry is the record; it is not scheduled.*
+
+**Why rejected — the premise was false and the payoffs are already banked:**
+
+1. **It does not drag `bind`/`commit` with it.** D-a's sizing, and the comment
+   it left in `packages/core/index.ts`, said moving the loop "also moves
+   `bind`/`commit`". Verified false: `bindAndAnnounce` binds the commit
+   pipeline's private `latest` field, never `renderTree` — `dom/commit.ts`
+   says so verbatim at the `latest` declaration ("Deliberately not
+   `renderTree()`"). The two are already decoupled.
+2. **`Token` survives either way**, so the move deletes no representation. It
+   is the parser's output type and the §7.1 correctness oracle: the tree specs
+   assert `snapshot ≡ parsed` through `stripIds` in ~two dozen places.
+3. **It does not close the `MarkupDescriptor` leak.** `MarkNode` carries
+   `readonly descriptor: MarkupDescriptor` too (`tree/types.ts`).
+4. **Node-based reads already ship** with zero adapter change: `input.nodes()`,
+   `find()`, `changed`, and `useMark()` returning a live `MarkNode`.
+5. **`renderTree` has two production readers outside core** (react
+   `Container.tsx`, vue `Container.vue`) — against D-a's measured 2,481
+   production and 3,180 spec lines in the blast radius, and a net-ADD.
+
+**What survived, re-scoped:**
+
+- **React render fan-out — DONE, landed outside this phase.** The one
+  measurably wrong thing was not the representation: on a structural edit the
+  snapshot re-materializes every surviving token with only `position` changed,
+  and `memo`'s reference compare fanned that out. Fixed by a ~13-line
+  comparator in react `Token.tsx` that ignores `position`. Measured, chromium,
+  Mark/Span render invocations: inline head insert at 100 marks 101/102 → 1/2;
+  block Enter at row 0 with 100 rows 101/101 → 2/2; tail-side cases and the
+  pure-text path unchanged (1/2 and 0/0). Gated by a constant-bound case in
+  `renderCount.react.spec.tsx`, proven to fail at 25 ≤ 5 with the comparator
+  reverted.
+- **Vue slot-mark fan-out — OPEN, separate adapter task, not scheduled.** Vue
+  is immune for value-only marks (it diffs the resolved `{value, meta}` by
+  value) but fans out O(N) at the leaf for **slot** marks — block rows and
+  nesting — exactly like React did: 101 row-Mark renders at 100 rows,
+  measured. A ~15-line VNode cache was tried; it removed the internal work but
+  NOT the row-Mark count, because Vue's unstable slot closure defeats the
+  child-update check. Worth doing only if block-mode typing is reported as
+  slow.
+
+**Review tier:** none — nothing to implement.
+**Dependencies:** n/a.
+
 ### Phase Dependency Graph
 
 ```
@@ -1031,6 +1082,8 @@ S1.1 (Types & public contracts)
                                └── S1.7 (Public API v2)
                                     └── S1.8 (Dead-surface sweep, final)
                                          └── S1.9 (directory regroup, pure moves)
+                                              └── S1.10 (render loop onto nodes)
+                                                   ✗ investigated and rejected
 ```
 
 ## 12. Acceptance Summary

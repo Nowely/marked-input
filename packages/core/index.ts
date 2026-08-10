@@ -46,7 +46,14 @@ export {toMarkInfo} from './src/shared/editorContracts'
 export type {MarkInfo} from './src/shared/editorContracts'
 
 // ═══ Snapshot render loop ═════════════════════════════════════════════════════
-// Kept deliberately (S1.7 decision D-c, re-affirmed at S1.8 decision D-a): 14 adapter
-// files render `Token[]` off `renderTree`, and moving that loop onto `input.nodes()`
-// also moves `bind`/`commit`. That move is its own phase (S1.10), not part of the sweep.
+// `Token[]` is the RENDER PROJECTION. It has exactly two production readers outside core
+// — react `Container.tsx` and vue `Container.vue`, both off `renderTree`; the dozen other
+// adapter files only TYPE on the `Token` family. Moving the loop onto `input.nodes()`
+// would NOT move `bind`/`commit` with it: those already run off the commit pipeline's
+// private `latest`, deliberately never `renderTree` (`dom/commit.ts`, the `latest`
+// declaration and `bindAndAnnounce`). An earlier version of this comment claimed
+// otherwise; that claim was the premise behind phase S1.10, which was investigated and
+// REJECTED (spec §11). `Token` stays regardless of where the loop reads from: it is the
+// parser's output type (`parser/Parser.ts#parse`) and the §7.1 correctness oracle the
+// tree specs assert through (`stripIds`).
 export type {Token, TextToken, MarkToken} from './src/features/tokens'
