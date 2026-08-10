@@ -28,8 +28,8 @@ function mountInline(value: string) {
 	return {store: s, container, span: sp}
 }
 
-// anchorIn creates a text node INSIDE the mounted span so that
-// boundaryFor can resolve it via the element index.
+// anchorIn creates a text node INSIDE the mounted span so that `anchorFor` can
+// resolve it through the span's bound handle.
 function anchorIn(
 	text: string,
 	offset: number,

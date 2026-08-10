@@ -2,138 +2,7 @@ import {afterEach, describe, expect, it} from 'vitest'
 
 import {mountBlock, mountWithMark} from '../__testing__/mountFixtures'
 
-/**
- * All (node, offset) probes worth checking in a container. Node index 0 is the
- * container itself; subsequent indices follow TreeWalker (element + text) order.
- * @yields each [node, nodeIndex, offset] DOM boundary
- */
-function* probes(container: HTMLElement): Generator<[Node, number, number]> {
-	const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)
-	let index = 0
-	for (let node: Node | null = container; node; node = walker.nextNode(), index++) {
-		const max = node instanceof Text ? node.length : node.childNodes.length
-		for (let offset = 0; offset <= max; offset++) yield [node, index, offset]
-	}
-}
-
-type BoundaryTriple = [nodeIndex: number, offset: number, affinity: 'before' | 'after', position: number]
-
-/**
- * Known-good `(node, offset, affinity) → position` tables, captured from the
- * last green run of the dual-run parity spec (facade vs the since-deleted
- * `SelectionController.rawPositionFromBoundary`). Probes absent from a table
- * were `undefined` in that run and must stay `undefined`.
- *
- * HOW TO REGENERATE after a legitimate parser or DOM change:
- * 1. Build a green reference (the commit just before the change, or a
- *    passing CI run on `next`).
- * 2. In the probe loop below, temporarily collect results instead of
- *    asserting: push `[nodeIndex, offset, affinity, actual]` into an array
- *    when `actual !== undefined`, then fail the test with
- *    `expect(rows).toEqual([])` to dump the full array to the console.
- * 3. Copy the printed array as the new table body (one entry per line).
- * 4. Revert the temporary collection and verify the spec is green again.
- * Keep the regeneration in a known-good build only — a broken build's output
- * would silently pin wrong values.
- */
-const boundaryTables: Record<string, BoundaryTriple[]> = {
-	// Fixture: text "he" [0,2], mark "@[x]" [2,6], text "llo" [6,9].
-	// Node indices: 0 container, 1 span("he"), 2 #text"he", 3 mark span,
-	// 4 #text"x", 5 span("llo"), 6 #text"llo".
-	'inline with mark': [
-		[0, 0, 'before', 0],
-		[0, 0, 'after', 0],
-		[0, 1, 'before', 2],
-		[0, 1, 'after', 2],
-		[0, 2, 'before', 6],
-		[0, 2, 'after', 6],
-		[0, 3, 'before', 9],
-		[0, 3, 'after', 9],
-		[1, 0, 'before', 0],
-		[1, 0, 'after', 0],
-		[1, 1, 'before', 2],
-		[1, 1, 'after', 2],
-		[2, 0, 'before', 0],
-		[2, 0, 'after', 0],
-		[2, 1, 'before', 1],
-		[2, 1, 'after', 1],
-		[2, 2, 'before', 2],
-		[2, 2, 'after', 2],
-		[3, 0, 'before', 2],
-		[3, 0, 'after', 2],
-		[3, 1, 'before', 6],
-		[3, 1, 'after', 6],
-		[4, 0, 'before', 6],
-		[4, 0, 'after', 2],
-		[4, 1, 'before', 6],
-		[4, 1, 'after', 2],
-		[5, 0, 'before', 6],
-		[5, 0, 'after', 6],
-		[5, 1, 'before', 9],
-		[5, 1, 'after', 9],
-		[6, 0, 'before', 6],
-		[6, 0, 'after', 6],
-		[6, 1, 'before', 7],
-		[6, 1, 'after', 7],
-		[6, 2, 'before', 8],
-		[6, 2, 'after', 8],
-		[6, 3, 'before', 9],
-		[6, 3, 'after', 9],
-	],
-	// Fixture: mark "one\n\n" [0,5] (text "one" [0,3]), mark "two\n\n" [5,10]
-	// (text "two" [5,8]). Node indices: 0 container, 1 row div, 2 mark span,
-	// 3 text span, 4 #text"one", 5 row div, 6 mark span, 7 text span, 8 #text"two".
-	'block layout': [
-		[0, 0, 'before', 0],
-		[0, 0, 'after', 0],
-		[0, 1, 'before', 5],
-		[0, 1, 'after', 5],
-		[0, 2, 'before', 10],
-		[0, 2, 'after', 10],
-		[1, 0, 'before', 0],
-		[1, 0, 'after', 0],
-		[1, 1, 'before', 5],
-		[1, 1, 'after', 5],
-		[2, 0, 'before', 0],
-		[2, 0, 'after', 0],
-		[2, 1, 'before', 5],
-		[2, 1, 'after', 5],
-		[3, 0, 'before', 0],
-		[3, 0, 'after', 0],
-		[3, 1, 'before', 3],
-		[3, 1, 'after', 3],
-		[4, 0, 'before', 0],
-		[4, 0, 'after', 0],
-		[4, 1, 'before', 1],
-		[4, 1, 'after', 1],
-		[4, 2, 'before', 2],
-		[4, 2, 'after', 2],
-		[4, 3, 'before', 3],
-		[4, 3, 'after', 3],
-		[5, 0, 'before', 5],
-		[5, 0, 'after', 5],
-		[5, 1, 'before', 10],
-		[5, 1, 'after', 10],
-		[6, 0, 'before', 5],
-		[6, 0, 'after', 5],
-		[6, 1, 'before', 10],
-		[6, 1, 'after', 10],
-		[7, 0, 'before', 5],
-		[7, 0, 'after', 5],
-		[7, 1, 'before', 8],
-		[7, 1, 'after', 8],
-		[8, 0, 'before', 5],
-		[8, 0, 'after', 5],
-		[8, 1, 'before', 6],
-		[8, 1, 'after', 6],
-		[8, 2, 'before', 7],
-		[8, 2, 'after', 7],
-		[8, 3, 'before', 8],
-		[8, 3, 'after', 8],
-	],
-}
-
-describe('TokenModel facade boundary behavior (pinned from dual-run parity)', () => {
+describe('TokenModel facade selection reads', () => {
 	afterEach(() => {
 		document.body.replaceChildren()
 		window.getSelection()?.removeAllRanges()
@@ -143,68 +12,7 @@ describe('TokenModel facade boundary behavior (pinned from dual-run parity)', ()
 		['inline with mark', mountWithMark],
 		['block layout', mountBlock],
 	] as const) {
-		it(`boundaryFor matches the pinned table — ${name}`, () => {
-			const {store, container} = mount()
-			const table = boundaryTables[name]
-			// Non-vacuous guard: the pinned table must carry real expectations.
-			expect(table.length).toBeGreaterThan(0)
-			const expected = new Map(table.map(([n, o, a, pos]) => [`${n}:${o}:${a}`, pos]))
-
-			let probed = 0
-			for (const [node, nodeIndex, offset] of probes(container)) {
-				for (const affinity of ['before', 'after'] as const) {
-					probed++
-					const actual = store.tokens.boundaryFor(node, offset, affinity)
-					expect
-						.soft(actual, `${node.nodeName}#${nodeIndex}@${offset}/${affinity}`)
-						.toBe(expected.get(`${nodeIndex}:${offset}:${affinity}`))
-				}
-			}
-			// Every pinned triple must have been visited by the probe walk.
-			expect(probed).toBeGreaterThanOrEqual(table.length)
-		})
-
-		/**
-		 * S2.1's gate (spec S2 §7.2): the two projections of ONE walk must agree.
-		 * `offsetOfAnchor` is the inverse of the anchor shapes, so composing it with
-		 * the anchor projection must reproduce the numeric one for EVERY probe,
-		 * `undefined` included.
-		 *
-		 * Conditioned on a SETTLED tree, and that is not a weakening: inside the
-		 * adopt→bind window the two MUST disagree — the numeric path adds a stale
-		 * `position.start` read off a handle that is still alive, while the anchor
-		 * path stays node-local and fails closed once the id bridge misses or the
-		 * text shrinks (spec S2 D4). These fixtures mount and render synchronously,
-		 * so no window is open here; `dom/domBoundary.spec.ts` pins the divergence
-		 * separately.
-		 *
-		 * DELETED BY S2.6 together with `boundaryFor`.
-		 */
-		it(`anchorFor agrees with boundaryFor on every probe — ${name}`, () => {
-			const {store, container} = mount()
-			let probed = 0
-			let defined = 0
-			for (const [node, nodeIndex, offset] of probes(container)) {
-				for (const affinity of ['before', 'after'] as const) {
-					probed++
-					const label = `${node.nodeName}#${nodeIndex}@${offset}/${affinity}`
-					const numeric = store.tokens.boundaryFor(node, offset, affinity)
-					const anchor = store.tokens.anchorFor(node, offset, affinity)
-					if (numeric !== undefined) defined++
-					// One unconditional assertion covers both arms: `offsetOf` always
-					// answers a number, so `composed` is `undefined` exactly when the
-					// anchor projection declined.
-					const composed = anchor === undefined ? undefined : store.tokens.offsetOf(anchor)
-					expect.soft(composed, label).toBe(numeric)
-				}
-			}
-			expect(probed).toBeGreaterThan(0)
-			// Non-vacuous guard: a run where every probe answered `undefined` would
-			// pass the loop above while proving nothing.
-			expect(defined).toBeGreaterThan(0)
-		})
-
-		it(`readSelection reads the live selection as absolute positions — ${name}`, () => {
+		it(`reads the live selection as node anchors — ${name}`, () => {
 			const {store, container} = mount()
 			const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
 			if (!(firstText instanceof Text) || firstText.length === 0) throw new Error('expected a text node')
@@ -214,8 +22,15 @@ describe('TokenModel facade boundary behavior (pinned from dual-run parity)', ()
 			range.setEnd(firstText, Math.min(1, firstText.length))
 			sel?.removeAllRanges()
 			sel?.addRange(range)
-			// Both fixtures start their first text token at absolute position 0.
-			expect(store.tokens.selection()?.raw).toEqual({range: {start: 0, end: 1}, direction: 'forward'})
+
+			// Resolved through the DOM rather than named: the inline fixture opens with a
+			// ROOT text node and the block one with a mark's slot CHILD, and the anchor is
+			// local to whichever it is — which is the point (the deleted numeric read
+			// answered 0 and 1 for both only because both start the document).
+			const handle = store.tokens.handleAt(firstText)
+			if (handle === undefined || handle === 'control') throw new Error('expected a bound token')
+			const node = store.tokens.find(handle.id)
+			expect(store.selection.domAnchors()).toEqual({anchor: {node, offset: 0}, head: {node, offset: 1}})
 			expect(store.tokens.selectedContent()).toEqual({
 				html: firstText.data.slice(0, 1),
 				text: firstText.data.slice(0, 1),
@@ -336,7 +151,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 		expect(store.tokens.selection()).toBeUndefined()
 	})
 
-	it('carries raw absolute positions, anchor, focusNode, rect, and intersects', () => {
+	it('carries the window range, anchor, focusNode, rect, and intersects', () => {
 		const {store, container} = mountWithMark()
 		const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
 		if (!(firstText instanceof Text) || firstText.length < 2) throw new Error('expected the "he" text node')
@@ -349,8 +164,8 @@ describe('TokenModel selection() — the one snapshot', () => {
 
 		const snapshot = store.tokens.selection()
 		if (!snapshot) throw new Error('expected a selection snapshot')
-		// "he" is [0,2] absolute.
-		expect(snapshot.raw?.range).toEqual({start: 0, end: 2})
+		expect(snapshot.range.startOffset).toBe(0)
+		expect(snapshot.range.endOffset).toBe(2)
 		expect(snapshot.anchor.isCollapsed).toBe(false)
 		expect(snapshot.anchor.node).toBe(firstText)
 		expect(snapshot.focusNode).toBe(firstText)
@@ -388,7 +203,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 		expect(store.tokens.selection()?.range.endOffset).toBe(1)
 	})
 
-	it('anchor.isCollapsed is true and raw is a zero-width range for a caret', () => {
+	it('anchor.isCollapsed and range.collapsed both report a caret', () => {
 		const {store, container} = mountWithMark()
 		const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
 		if (!(firstText instanceof Text) || firstText.length < 1) throw new Error('expected the "he" text node')
@@ -402,6 +217,6 @@ describe('TokenModel selection() — the one snapshot', () => {
 		const snapshot = store.tokens.selection()
 		if (!snapshot) throw new Error('expected a selection snapshot')
 		expect(snapshot.anchor.isCollapsed).toBe(true)
-		expect(snapshot.raw?.range).toEqual({start: 1, end: 1})
+		expect(snapshot.range.collapsed).toBe(true)
 	})
 })

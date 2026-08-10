@@ -1,9 +1,9 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals/index.js'
-import {Store} from '../../../store/Store'
 import {Host, PropsModel} from '../../state'
 import {textToken} from '../__testing__/tokenFactories'
+import type {SelectionSnapshot} from '../dom/DomModel'
 import {TokenHandle} from '../dom/TokenHandle'
 import {TokenModel} from './TokenModel'
 
@@ -24,33 +24,21 @@ function buildInlineDom() {
 	return {container, text1, mark, text2}
 }
 
-/** Block fixture: mark 'one\n\n' [0,5] (child text 'one'), mark 'two\n\n' [5,10] (child 'two') — one row div per mark. */
-function buildBlockDom(): HTMLElement {
-	const container = document.createElement('div')
-	for (let i = 0; i < 2; i++) {
-		const row = document.createElement('div')
-		const mark = document.createElement('span')
-		const text = document.createElement('span')
-		mark.append(text)
-		row.append(mark)
-		container.append(row)
-	}
-	document.body.append(container)
-	return container
-}
-
 type CoreProps = Parameters<PropsModel['set']>[0]
+
+/**
+ * The snapshot's collapsed caret as an `anchorFor` argument list. These cases build the
+ * shell directly on the state models, so there is no `SelectionController` and no
+ * `domAnchors()` — this is the same resolution one step lower.
+ */
+function boundaryOf(snapshot: SelectionSnapshot | undefined): [Node, number] {
+	if (!snapshot) throw new Error('expected a selection snapshot')
+	return [snapshot.anchor.node, snapshot.anchor.offset]
+}
 
 const INLINE_PROPS: CoreProps = {
 	defaultValue: 'he@[x]llo',
 	options: [{markup: '@[__value__]'}],
-	Mark: () => null,
-}
-
-const BLOCK_PROPS: CoreProps = {
-	defaultValue: 'one\n\ntwo\n\n',
-	layout: 'block',
-	options: [{markup: '__slot__\n\n'}],
 	Mark: () => null,
 }
 
@@ -91,33 +79,6 @@ function mountNewInline() {
 	return {...mountNew(INLINE_PROPS, dom.container), ...dom}
 }
 
-function mountOld(props: CoreProps, container: HTMLElement): Store {
-	const store = new Store()
-	store.props.set(props)
-	store.host.container(container)
-	store.host.rendered()
-	return store
-}
-
-/**
- * Walk two structurally identical containers in lockstep, yielding every
- * (node, offset) DOM boundary of both — the old facade.spec probe grid,
- * run pairwise against both shells.
- * @yields [oldNode, newNode, offset] aligned probes
- */
-function* parallelProbes(oldRoot: HTMLElement, newRoot: HTMLElement): Generator<[Node, Node, number]> {
-	const oldWalker = document.createTreeWalker(oldRoot, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)
-	const newWalker = document.createTreeWalker(newRoot, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)
-	let oldNode: Node | null = oldRoot
-	let newNode: Node | null = newRoot
-	while (oldNode && newNode) {
-		const max = oldNode instanceof Text ? oldNode.length : oldNode.childNodes.length
-		for (let offset = 0; offset <= max; offset++) yield [oldNode, newNode, offset]
-		oldNode = oldWalker.nextNode()
-		newNode = newWalker.nextNode()
-	}
-}
-
 describe('TokenModel shell (seam/)', () => {
 	afterEach(() => {
 		document.body.replaceChildren()
@@ -152,7 +113,7 @@ describe('TokenModel shell (seam/)', () => {
 			const {model} = createNew({defaultValue: 'hello'})
 
 			expect(model.current()).toEqual([])
-			expect(model.boundaryFor(document.body, 0)).toBeUndefined()
+			expect(model.anchorFor(document.body, 0)).toBeUndefined()
 			expect(model.handleAt(document.body)).toBeUndefined()
 			expect(model.handle(0)).toBeUndefined()
 			expect(model.placeCaret('start')).toBe(false)
@@ -307,46 +268,13 @@ describe('TokenModel shell (seam/)', () => {
 		})
 	})
 
-	describe('facade parity against the old shell', () => {
-		const fixtures = [
-			{name: 'inline with mark', props: INLINE_PROPS, build: () => buildInlineDom().container},
-			{name: 'block layout', props: BLOCK_PROPS, build: buildBlockDom},
-		] as const
-
-		for (const {name, props, build} of fixtures) {
-			it(`boundaryFor agrees with the old TokenModel over the full probe grid — ${name}`, () => {
-				const oldContainer = build()
-				const store = mountOld(props, oldContainer)
-				const newContainer = build()
-				const {model} = mountNew(props, newContainer)
-
-				// Both shells must have reconciled their fixtures into identical DOM.
-				expect(newContainer.innerHTML).toBe(oldContainer.innerHTML)
-
-				let probed = 0
-				let defined = 0
-				for (const [oldNode, newNode, offset] of parallelProbes(oldContainer, newContainer)) {
-					for (const affinity of ['before', 'after'] as const) {
-						probed++
-						const expected = store.tokens.boundaryFor(oldNode, offset, affinity)
-						const actual = model.boundaryFor(newNode, offset, affinity)
-						expect.soft(actual, `${oldNode.nodeName}@${offset}/${affinity}`).toBe(expected)
-						if (expected !== undefined) defined++
-					}
-				}
-				// Non-vacuous: the grid visited real boundaries and real positions.
-				expect(probed).toBeGreaterThan(30)
-				expect(defined).toBeGreaterThan(10)
-			})
-		}
-	})
-
 	describe('placement commands and selection reads', () => {
-		it('placeCaret(raw) places inside the right surface; readSelection round-trips', () => {
-			const {model} = mountNewInline()
+		it("placeCaret places inside the anchor's own surface; the snapshot reads it back", () => {
+			const {model, text1} = mountNewInline()
 
 			expect(model.placeCaret(model.anchorAt(1))).toBe(true)
-			expect(model.selection()?.raw).toEqual({range: {start: 1, end: 1}})
+			expect(model.anchorFor(...boundaryOf(model.selection()))).toEqual({node: model.nodes()[0], offset: 1})
+			expect(model.selection()?.anchor.node).toBe(text1.firstChild)
 			const anchor = model.selection()?.anchor
 			expect(anchor?.isCollapsed).toBe(true)
 			expect(model.selection()?.rect).toBeDefined()
@@ -359,7 +287,7 @@ describe('TokenModel shell (seam/)', () => {
 			const handle = model.handle(token.id!)
 			if (!handle) throw new Error('expected handle')
 			expect(handle.placeCaret(1)).toBe(true)
-			expect(model.selection()?.raw?.range.start).toBe(7)
+			expect(model.anchorFor(...boundaryOf(model.selection()))).toEqual({node: model.nodes()[2], offset: 1})
 			// A foreign token object (never reconciled) carries no id, so it has no
 			// live handle — the stale reference is rejected at resolution, leaving
 			// nothing to place into.
@@ -371,7 +299,15 @@ describe('TokenModel shell (seam/)', () => {
 			const {model, text1} = mountNewInline()
 
 			expect(model.selectRange(model.anchorAt(0), model.anchorAt(9))).toBe(true)
-			expect(model.selection()?.raw?.range).toEqual({start: 0, end: 9})
+			const range = model.selection()?.range
+			expect(model.anchorFor(range!.startContainer, range!.startOffset, 'after')).toEqual({
+				node: model.nodes()[0],
+				offset: 0,
+			})
+			expect(model.anchorFor(range!.endContainer, range!.endOffset, 'before')).toEqual({
+				node: model.nodes()[2],
+				offset: 3,
+			})
 			expect(model.selection()?.anchor.isCollapsed).toBe(false)
 			expect(model.selection()?.intersects(text1)).toBe(true)
 			const content = model.selectedContent()

@@ -1,15 +1,7 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {computed} from '../../../shared/signals'
-import {
-	enableStructuralStore,
-	mountBlock,
-	mountNested,
-	mountStructuralInline,
-	mountStructuralInlineMark,
-	mountValue,
-	mountWithMark,
-} from '../__testing__/mountFixtures'
+import {enableStructuralStore, mountBlock, mountNested, mountValue, mountWithMark} from '../__testing__/mountFixtures'
 
 describe('anchorFor', () => {
 	afterEach(() => {
@@ -86,20 +78,17 @@ describe('anchorFor', () => {
 		expect(dom1.data).toBe('he')
 
 		// G2: the offset is local to a node the edit did not touch, so the anchor is
-		// right — while the numeric walk adds that node's stale `position.start` and
-		// answers 7 where the live document position is 6.
+		// right. The numeric walk deleted at S2.6 added that node's stale
+		// `position.start` here and answered 7, where the live document position is 6.
 		const roots = store.tokens.nodes()
 		expect(store.tokens.anchorFor(dom2, 1)).toEqual({node: roots[2], offset: 1})
 		expect(roots[2].range().start + 1).toBe(6)
-		expect(store.tokens.boundaryFor(dom2, 1)).toBe(7)
 
 		// D4's second fail-closed arm: the DOM offset outlives the text it indexes.
-		// The numeric walk has no equivalent — it answers a plausible, wrong number.
 		expect(store.tokens.anchorFor(dom1, 2)).toBeUndefined()
-		expect(store.tokens.boundaryFor(dom1, 2)).toBe(2)
 	})
 
-	it('returns undefined for a node the edit deleted, where the numeric walk still answers', () => {
+	it('returns undefined for a node the edit deleted', () => {
 		const {store, mark} = mountWithMark()
 
 		// D4's FIRST fail-closed arm — the id bridge misses. Handles are killed by
@@ -109,9 +98,6 @@ describe('anchorFor', () => {
 		expect(store.tokens.nodes().every(node => node.kind === 'text')).toBe(true)
 
 		expect(store.tokens.anchorFor(mark, 0)).toBeUndefined()
-		// The numeric walk has no equivalent: its `tokenOf` only checks that the handle
-		// is alive, so it answers the deleted mark's bind-generation start.
-		expect(store.tokens.boundaryFor(mark, 0)).toBe(2)
 	})
 
 	it('anchors a child-sequence boundary at index 0 before the owner', () => {
@@ -223,33 +209,23 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(rows[1], 0)).toEqual({before: second})
 		expect(store.tokens.anchorFor(rows[1], 1)).toEqual({after: second})
 	})
-})
 
-function mountStructuralNestedWithChildSequence(value = '@[before @[nested] after]') {
-	const store = enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__slot__]'}]})
-	const container = document.createElement('div')
-	const leading = document.createElement('span')
-	const outer = document.createElement('mark')
-	const control = document.createElement('input')
-	const host = document.createElement('span')
-	const before = document.createElement('span')
-	const inner = document.createElement('mark')
-	const after = document.createElement('span')
-	const trailing = document.createElement('span')
-	control.type = 'checkbox'
-	host.style.display = 'contents'
-	host.append(before, inner, after)
-	outer.append(control, host)
-	container.append(leading, outer, trailing)
-	document.body.append(container)
-	store.host.container(container)
-	// The registration is id-keyed since S1.8 step 4, so it has to come AFTER the mount
-	// publishes a tree: an adapter registers from the render of a token that already has
-	// an id, and a spec has to do the same.
-	store.tokens.children(store.tokens.keyOf(store.tokens.current()[1]))(host)
-	store.host.rendered()
-	return {store, container, leading, outer, control, host, before, inner, after, trailing}
-}
+	it('returns undefined inside a bound element that owns no boundary there', () => {
+		// THE final fallthrough, and reaching it takes work: `locate` resolves every node to
+		// the nearest element in `byElement`, which holds only a token element, a row and a
+		// child-sequence host (bind.ts), and each of those has its own arm above. What is
+		// left is a node under a ROW but outside that row's token element — and a row admits
+		// exactly ONE non-control element (bind.ts's all-or-nothing row alignment), so it can
+		// only be a bare Text node beside it: formatting whitespace, or a node contenteditable
+		// dropped into the row. The mark arm does not catch it because the mark's element does
+		// not contain it, and it is not the row itself.
+		const {store, rows} = mountBlock()
+		const stray = rows[1].appendChild(document.createTextNode(' '))
+
+		expect(store.tokens.handleAt(stray)).toBe(store.tokens.handle(store.tokens.nodes()[1].id))
+		expect(store.tokens.anchorFor(stray, 0)).toBeUndefined()
+	})
+})
 
 function mountStructuralBlockWithControl(value: string) {
 	const store = enableStructuralStore(value, {layout: 'block'})
@@ -271,62 +247,7 @@ function mountStructuralBlockWithControl(value: string) {
 	return {store, container, row, control, controlText, textSurface, textNode}
 }
 
-describe('boundary mapping', () => {
-	it('maps registered child sequence host boundaries to nested child positions', () => {
-		const {store, container, host} = mountStructuralNestedWithChildSequence()
-		const outer = store.tokens.current()[1]
-		if (outer.type !== 'mark') throw new Error('expected the outer mark')
-		// The path layer went at S1.8 step 4; the fixture's three slot children are read
-		// straight off the mark that owns them.
-		const [beforeToken, innerToken, afterToken] = outer.children
-
-		expect(beforeToken.position.end).toBe(9)
-		expect(innerToken.position.start).toBe(9)
-		expect(innerToken.position.end).toBe(18)
-		expect(afterToken.position.start).toBe(18)
-		expect(store.tokens.boundaryFor(host, 1, 'before')).toBe(beforeToken.position.end)
-		expect(store.tokens.boundaryFor(host, 1, 'after')).toBe(innerToken.position.start)
-		expect(store.tokens.boundaryFor(host, 2, 'before')).toBe(innerToken.position.end)
-		expect(store.tokens.boundaryFor(host, 2, 'after')).toBe(afterToken.position.start)
-		container.remove()
-	})
-
-	it('maps text-surface boundaries to raw UTF-16 positions', () => {
-		const {store, container, textNode} = mountStructuralInline('hello')
-
-		expect(store.tokens.boundaryFor(textNode, 2)).toBe(2)
-		container.remove()
-	})
-
-	it('rejects boundaries that split surrogate pairs', () => {
-		const {store, container, textNode} = mountStructuralInline('a😀b')
-
-		expect(store.tokens.boundaryFor(textNode, 2)).toBeUndefined()
-		container.remove()
-	})
-
-	it('maps token shell boundaries by affinity', () => {
-		const {store, container, textSurface} = mountStructuralInline('hello')
-
-		expect(store.tokens.boundaryFor(textSurface, 0, 'before')).toBe(0)
-		expect(store.tokens.boundaryFor(textSurface, 1, 'after')).toBe(5)
-		container.remove()
-	})
-
-	it('rejects editable boundaries inside mark presentation descendants', () => {
-		const {store, container, mark} = mountStructuralInlineMark('@[world]')
-		const descendant = document.createElement('span')
-		descendant.contentEditable = 'true'
-		descendant.textContent = 'inner'
-		mark.append(descendant)
-		const descendantText = descendant.firstChild
-		if (!(descendantText instanceof Text)) throw new Error('Mark descendant did not render a text node')
-		store.host.rendered()
-
-		expect(store.tokens.boundaryFor(descendantText, 0, 'after')).toBeUndefined()
-		container.remove()
-	})
-
+describe('anchorFor across a control', () => {
 	it('returns undefined for selections crossing controls', () => {
 		const {store, container, textNode, controlText} = mountStructuralBlockWithControl('hello')
 		const selection = window.getSelection()!
@@ -336,7 +257,8 @@ describe('boundary mapping', () => {
 		selection.removeAllRanges()
 		selection.addRange(range)
 
-		expect(store.selection.readRaw()).toBeUndefined()
+		// `locate` answers `'control'` for the end boundary, so the pair never forms.
+		expect(store.selection.domAnchors()).toBeUndefined()
 		container.remove()
 	})
 })

@@ -59,12 +59,11 @@ export interface SelectionPort {
  * 6. `removedIds()` — S1.6d: the `changed` payload carries the ids instead.
  *
  * What deliberately SURVIVES, each with its reason:
- * - `TokenHandle#token` — D9's read latch (plan decision D-h). Five production
- *   readers want the BIND generation, three of them positional: `DomModel` →
- *   `dom/domBoundary.ts` (type, position, content), `commit.ts`'s divergence
- *   detector (content), {@link setEditable} (type) and `keyboard/arrowNav.ts`
- *   (position). Narrowing it to `{start, end}` would move the boundary layer's
- *   type/content reads onto the live tree — a DOM-layer refactor no item asks for.
+ * - `TokenHandle#token` — D9's read latch (plan decision D-h). TWO production readers
+ *   are left, and NEITHER is positional: `commit.ts`'s divergence detector (content)
+ *   and {@link setEditable} (type). S2.6 took the other three — the numeric DOM walk
+ *   read type, position and content, and `keyboard/arrowNav.ts` read position — so the
+ *   latch no longer carries a coordinate to anyone.
  * - the internal offset shim ({@link replace}) — spec D8. Its production callers are gone
  *   as of S2.5 ({@link replaceBetween} is the node-shaped write verb it was waiting for);
  *   what is left is spec call sites, and both die at S2.6.
@@ -390,11 +389,6 @@ export class TokenModel {
 		return this.#dom.handleAt(node)
 	}
 
-	/** Map a DOM boundary (node, offset) to an absolute document position. */
-	boundaryFor(node: Node, offset: number, affinity?: 'before' | 'after'): number | undefined {
-		return this.#dom.boundaryFor(node, offset, affinity)
-	}
-
 	/**
 	 * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree.
 	 *
@@ -677,11 +671,8 @@ export class TokenModel {
 	// leaks.
 	readonly #dom = new DomModel({
 		container: () => this.host.container(),
-		tokens: () => this.current(),
-		handleOf: token => this.handleOf(token),
 		byElement: element => this.#pipeline.byElement(element),
 		isControlRoot: element => this.#pipeline.isControlRoot(element),
-		boundHandles: () => this.#pipeline.bound().values(),
 		roots: () => this.nodes(),
 		find: id => this.find(id),
 		handle: id => this.handle(id),

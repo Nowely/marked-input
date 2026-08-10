@@ -30,24 +30,20 @@ export type ElementBindings = {
  * `#token` is deliberately NOT "the current parsed token" — it is the generation
  * the DOM is currently SHOWING (spec D9). Only two writers exist, `bind` and the
  * text branch, and the text branch patches the surface in the same `batch`;
- * between a structural apply and its bind nothing writes it at all. That is what
- * makes every DOM-boundary read correct during the pending window: the DOM
- * boundary layer resolves offsets as `token.position.start + local`
- * (`tokens/dom/domBoundary.ts`), and `DomModel.ts:95`
- * and `SelectionController.ts:78,121` read the same field. A node-backed handle
- * answering with the LIVE tree node would resolve carets against a layout the
- * adapter has not painted yet. Measured in
- * `seam/treePipeline.spec.ts` ("reads DOM boundaries against BIND-GENERATION
- * positions during the pending window"); the deferral of node-backing to the
- * phase that gains a caller is plan decision D-b.
+ * between a structural apply and its bind nothing writes it at all. Gated in
+ * `seam/treePipeline.spec.ts` ("holds the BIND-GENERATION token during the pending
+ * window"); the deferral of node-backing to the phase that gains a caller is plan
+ * decision D-b.
  *
- * `#token` SURVIVES this narrowing (S1.6d, plan decision D-h): five production
- * readers legitimately want the bind generation — `DomModel`/`dom/domBoundary.ts`
- * (type, position, content), `commit.ts`'s divergence detector (content),
- * `TokenModel.setEditable` (type) and `keyboard/arrowNav.ts` (position). D9 keeps
- * exactly this read latch; narrowing to `{start, end}` would move the boundary
- * layer's type/content reads onto the live tree, which is a DOM-layer refactor no
- * §4.6 item asks for.
+ * NO POSITIONAL READER IS LEFT (S2.6). The latch survives for two production
+ * readers, and neither wants a coordinate: `commit.ts`'s divergence detector
+ * (content) and `TokenModel.setEditable` (type). The three that did want one are
+ * gone — the numeric DOM walk (`dom/domBoundary.ts`'s `rawPositionFromBoundary`,
+ * which added a token's stored start to every local offset) and
+ * `keyboard/arrowNav.ts` both address by node anchor now. So `position` on this
+ * object is no longer read by anything outside the specs; narrowing `#token` to
+ * `{type, content}` is the next worthwhile reduction here, and it is deliberately
+ * NOT part of a deletion phase.
  *
  * Lifetime: created when its token enters the tree (keyed by the token's
  * stable identity id), mutated in place by
@@ -172,12 +168,11 @@ export class TokenHandle {
 	}
 
 	/**
-	 * @internal Refresh the BIND-GENERATION token: the content and positions that
-	 * describe what the DOM currently shows (spec D9). Written by the text branch,
-	 * which patches the surface in the same batch, and by bind. Between a
-	 * structural apply and its bind nothing writes it — that is the property every
-	 * DOM-boundary read depends on (dom/domBoundary.ts resolves offsets against
-	 * `token.position`). Inert on a dead handle.
+	 * @internal Refresh the BIND-GENERATION token: the content and type that describe
+	 * what the DOM currently shows (spec D9). Written by the text branch, which patches
+	 * the surface in the same batch, and by bind. Between a structural apply and its
+	 * bind nothing writes it — the property `commit.ts`'s divergence detector depends
+	 * on. Inert on a dead handle.
 	 */
 	refresh(token: Token): void {
 		if (this.#dead) return

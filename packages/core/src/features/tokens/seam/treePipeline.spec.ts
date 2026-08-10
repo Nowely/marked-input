@@ -474,7 +474,7 @@ describe('commit pipeline driven by the tree core', () => {
 		// {child 'bc'[3,5]}, text 'd'[6,7]; prepending 'X' moves all three right by
 		// one and touches only 'a', so the mark stays out of `updated` and the
 		// commit routes TEXT — the branch where a missed descendant is never healed
-		// by a bind, and the DOM boundary layer reads `token.position.start`.
+		// by a bind.
 		const harness = createHarness(['#[__slot__]'])
 		const {pipeline} = harness
 		harness.boundary.arrive('a#[bc]d')
@@ -512,13 +512,15 @@ describe('commit pipeline driven by the tree core', () => {
 	})
 	// ═══ S1.5 Task 6: the bind-generation read (spec §11's named verification) ══
 
-	it('reads DOM boundaries against BIND-GENERATION positions during the pending window', () => {
+	it('holds the BIND-GENERATION token during the pending window, not the live one', () => {
 		// Inserting a mark at 0 moves 'llo' from [6,9] to [10,13] in the tree the
 		// instant adoption runs — but the DOM still shows the old layout until the
-		// adapter repaints. The DOM boundary layer (`tokens/dom/domBoundary.ts:55`) resolves every offset as
-		// `token.position.start + local`, reading exactly the datum asserted here, so a
-		// handle that answered with the LIVE node would put the caret four characters
-		// off for the whole adopt→bind window (spec D9; plan D-b).
+		// adapter repaints, and the handle must describe what is PAINTED (spec D9;
+		// plan D-b). `position` is the witness rather than the reason: S2.6 deleted the
+		// numeric DOM walk that read it, so the latch's live consumers are now
+		// `commit.ts`'s content divergence detector and `setEditable`'s type read. It
+		// stays the witness because it is the only field of the bind generation that
+		// differs from the live tree here WITHOUT the commit having to diverge.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)

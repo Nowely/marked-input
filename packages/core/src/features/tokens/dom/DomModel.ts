@@ -1,22 +1,18 @@
-import type {RawSelection} from '../../../shared/editorContracts'
 import {untracked} from '../../../shared/signals/index.js'
-import type {Token} from '../parser/types'
 import type {Id, NodeAnchor, TreeNode} from '../tree/types'
 import {getRect, placeRangeAcrossSurfaces} from './caret'
-import {anchorFromBoundary, rawPositionFromBoundary} from './domBoundary'
-import type {AnchorContext, BoundaryContext, Lookup, TokenView} from './domBoundary'
+import {anchorFromBoundary} from './domBoundary'
+import type {AnchorContext, Lookup, TokenView} from './domBoundary'
 import {textLength} from './textOffsets'
 import type {TokenHandle} from './TokenHandle'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
 
 export type SelectionSnapshot = {
-	/** Absolute in-editor positions of the selection, or undefined if it falls outside any bound token. */
-	readonly raw: RawSelection | undefined
 	/**
-	 * The window selection's first range — the SAME object {@link DomModel.selection} hands
-	 * to its raw projection, and the boundary pair the selection driver resolves through
-	 * `anchorFor`.
+	 * The window selection's first range — the boundary pair the selection driver resolves
+	 * through `anchorFor`, and since S2.6 the snapshot's only reading of WHERE the
+	 * selection is.
 	 *
 	 * NOT optional: a snapshot exists only when `rangeCount > 0`, so index 0 is always
 	 * there. `selection()?.range` still narrows to `undefined`, which is the "no DOM
@@ -44,16 +40,10 @@ export type SelectionSnapshot = {
 export type DomModelDeps = {
 	/** Adapter container; null until mounted. */
 	container(): HTMLElement | null
-	/** The always-fresh reconciled tree (TokenModel.current). */
-	tokens(): readonly Token[]
-	/** The latch-gated id bridge (TokenModel.handleOf) — fails closed mid-window. */
-	handleOf(token: Token): TokenHandle | undefined
 	/** Bound-node lookup for a rendered element. */
 	byElement(element: HTMLElement): TokenHandle | undefined
 	/** Whether an element is inside a registered control root. */
 	isControlRoot(element: HTMLElement): boolean
-	/** Every currently bound live handle (NOT latch-gated — the boundary facade reads bound state as-is). */
-	boundHandles(): Iterable<TokenHandle>
 	/** The live root nodes (TokenModel.nodes()). */
 	roots(): readonly TreeNode[]
 	/** Stable id → live node (TokenModel.find) — NOT latch-gated. */
@@ -67,10 +57,14 @@ export type DomModelDeps = {
 }
 
 /**
- * The DOM↔model facade: resolves live DOM nodes, selections, and boundaries to
- * model coordinates and places carets/ranges back. Pull-only by design — every
- * read here touches the live DOM. The model side (tree, handles, commits) lives
- * in TokenModel; this class is a stateless view over it plus `boundary`/`caret`.
+ * The DOM↔model facade: resolves live DOM nodes, selections and boundaries to NODE
+ * ANCHORS and places anchors back as carets and ranges. Pull-only by design — every
+ * read here touches the live DOM. The model side (tree, handles, commits) lives in
+ * TokenModel; this class is a stateless view over it plus `domBoundary`/`caret`.
+ *
+ * It speaks no absolute offsets in either direction as of S2.6 (spec S2 D1): the
+ * numeric walk, `boundaryFor` and `SelectionSnapshot.raw` are gone, and with them the
+ * bind-generation `Token` reads they needed.
  */
 export class DomModel {
 	constructor(private readonly deps: DomModelDeps) {}
@@ -113,40 +107,6 @@ export class DomModel {
 		return {handle, ...bindings}
 	}
 
-	*#views(): IterableIterator<TokenView> {
-		for (const handle of this.deps.boundHandles()) {
-			const view = this.#view(handle)
-			if (view) yield view
-		}
-	}
-
-	/** The view's fresh current token while its handle is live. */
-	#tokenOf(view: TokenView): Token | undefined {
-		return view.handle.alive() ? view.handle.token() : undefined
-	}
-
-	/** Id-bridged view of a current-tree token's bound node (boundary internals). */
-	#viewOf(token: Token): TokenView | undefined {
-		const handle = this.deps.handleOf(token)
-		return handle ? this.#view(handle) : undefined
-	}
-
-	#boundaryContext(): BoundaryContext {
-		return {
-			container: this.deps.container() ?? undefined,
-			tokens: this.deps.tokens(),
-			tokenOf: view => this.#tokenOf(view),
-			viewOf: token => this.#viewOf(token),
-			locate: node => this.#locate(node),
-			nodes: () => this.#views(),
-		}
-	}
-
-	/**
-	 * Deliberately does NOT spread {@link #boundaryContext}: {@link AnchorContext}
-	 * picks the two DOM-side fields precisely so the bind-generation reads stay
-	 * unreachable from this path.
-	 */
 	#anchorContext(): AnchorContext {
 		return {
 			container: this.deps.container() ?? undefined,
@@ -154,11 +114,6 @@ export class DomModel {
 			roots: () => this.deps.roots(),
 			find: id => this.deps.find(id),
 		}
-	}
-
-	/** Map a DOM boundary (node, offset) to an absolute document position. */
-	boundaryFor(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): number | undefined {
-		return rawPositionFromBoundary(this.#boundaryContext(), node, offset, affinity)
 	}
 
 	/**
@@ -175,9 +130,9 @@ export class DomModel {
 	/**
 	 * THE selection read: one snapshot of the live window selection, or
 	 * `undefined` when there is no range (the element is unfocused / nothing
-	 * selected). Subsumes the six micro-reads — `raw` is the absolute in-editor
-	 * range (undefined when the selection is outside the editor), `rect`/`anchor`/
-	 * `focusNode` reflect the raw selection, and `intersects` closes over it.
+	 * selected). Subsumes the five micro-reads — `range` is the boundary pair (the
+	 * selection driver resolves it through `anchorFor`), `rect`/`anchor`/`focusNode`
+	 * reflect the raw window selection, and `intersects` closes over it.
 	 * Whether the selection is collapsed is `anchor.isCollapsed`. A consumer that
 	 * treated "no selection" as collapsed compares
 	 * `selection()?.anchor.isCollapsed !== false`.
@@ -189,31 +144,12 @@ export class DomModel {
 		if (!anchorNode) return undefined
 		const range = sel.getRangeAt(0)
 		return {
-			raw: this.#rawSelectionFrom(sel, range),
 			range,
 			rect: getRect() ?? undefined,
 			anchor: {node: anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed},
 			focusNode: sel.focusNode ?? undefined,
 			intersects: node => sel.containsNode(node, true),
 		}
-	}
-
-	/** Absolute in-editor positions of a window selection's first range, or undefined if it maps outside any bound token. */
-	#rawSelectionFrom(selection: Selection, range: globalThis.Range): RawSelection | undefined {
-		const start = this.boundaryFor(range.startContainer, range.startOffset, 'after')
-		if (start === undefined) return undefined
-		const end = this.boundaryFor(range.endContainer, range.endOffset, 'before')
-		if (end === undefined) return undefined
-
-		const rangeValue = start <= end ? {start, end} : {start: end, end: start}
-		const direction =
-			rangeValue.start === rangeValue.end
-				? undefined
-				: selection.anchorNode === range.endContainer && selection.anchorOffset === range.endOffset
-					? 'backward'
-					: 'forward'
-
-		return direction ? {range: rangeValue, direction} : {range: rangeValue}
 	}
 
 	/** Current selection serialized for clipboard use. */
