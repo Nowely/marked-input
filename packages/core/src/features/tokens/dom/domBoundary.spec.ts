@@ -1,5 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
+import {Store} from '../../../store/Store'
 import {mountBlock, mountNested, mountValue, mountWithMark} from '../__testing__/mountFixtures'
 
 describe('anchorFor', () => {
@@ -159,5 +160,157 @@ describe('anchorFor', () => {
 		const second = store.tokens.nodes()[1]
 		expect(store.tokens.anchorFor(rows[1], 0)).toEqual({before: second})
 		expect(store.tokens.anchorFor(rows[1], 1)).toEqual({after: second})
+	})
+})
+
+function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
+	const store = new Store()
+	store.props.set({defaultValue: value, ...props})
+	return store
+}
+
+/** The DOM half of a single-text-surface mount, shared by the uncontrolled and controlled fixtures. */
+function mountInline(store: Store) {
+	const container = document.createElement('div')
+	const textSurface = document.createElement('span')
+	container.append(textSurface)
+	document.body.append(container)
+	store.host.container(container)
+	store.host.rendered()
+	const textNode = textSurface.firstChild
+	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
+	return {store, container, textSurface, textNode}
+}
+
+function mountStructuralInline(value: string) {
+	return mountInline(enableStructuralStore(value))
+}
+
+function mountStructuralInlineMark(value = 'hello @[world]') {
+	const store = enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__value__]'}]})
+	const container = document.createElement('div')
+	const before = document.createElement('span')
+	const mark = document.createElement('mark')
+	const after = document.createElement('span')
+	container.append(before, mark, after)
+	document.body.append(container)
+	store.host.container(container)
+	store.host.rendered()
+	return {store, container, before, mark, after}
+}
+
+function mountStructuralNestedWithChildSequence(value = '@[before @[nested] after]') {
+	const store = enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__slot__]'}]})
+	const container = document.createElement('div')
+	const leading = document.createElement('span')
+	const outer = document.createElement('mark')
+	const control = document.createElement('input')
+	const host = document.createElement('span')
+	const before = document.createElement('span')
+	const inner = document.createElement('mark')
+	const after = document.createElement('span')
+	const trailing = document.createElement('span')
+	control.type = 'checkbox'
+	host.style.display = 'contents'
+	host.append(before, inner, after)
+	outer.append(control, host)
+	container.append(leading, outer, trailing)
+	document.body.append(container)
+	store.host.container(container)
+	// The registration is id-keyed since S1.8 step 4, so it has to come AFTER the mount
+	// publishes a tree: an adapter registers from the render of a token that already has
+	// an id, and a spec has to do the same.
+	store.tokens.children(store.tokens.keyOf(store.tokens.current()[1]))(host)
+	store.host.rendered()
+	return {store, container, leading, outer, control, host, before, inner, after, trailing}
+}
+
+function mountStructuralBlockWithControl(value: string) {
+	const store = enableStructuralStore(value, {layout: 'block'})
+	const container = document.createElement('div')
+	const row = document.createElement('div')
+	const control = document.createElement('button')
+	const textSurface = document.createElement('span')
+	control.textContent = 'x'
+	row.append(control, textSurface)
+	container.append(row)
+	document.body.append(container)
+	store.host.container(container)
+	store.tokens.control()(control)
+	store.host.rendered()
+	const textNode = textSurface.firstChild
+	const controlText = control.firstChild
+	if (!(textNode instanceof Text)) throw new Error('Structural block text surface did not render a text node')
+	if (!(controlText instanceof Text)) throw new Error('Structural control did not render a text node')
+	return {store, container, row, control, controlText, textSurface, textNode}
+}
+
+describe('boundary mapping', () => {
+	it('maps registered child sequence host boundaries to nested child positions', () => {
+		const {store, container, host} = mountStructuralNestedWithChildSequence()
+		const outer = store.tokens.current()[1]
+		if (outer.type !== 'mark') throw new Error('expected the outer mark')
+		// The path layer went at S1.8 step 4; the fixture's three slot children are read
+		// straight off the mark that owns them.
+		const [beforeToken, innerToken, afterToken] = outer.children
+
+		expect(beforeToken.position.end).toBe(9)
+		expect(innerToken.position.start).toBe(9)
+		expect(innerToken.position.end).toBe(18)
+		expect(afterToken.position.start).toBe(18)
+		expect(store.tokens.boundaryFor(host, 1, 'before')).toBe(beforeToken.position.end)
+		expect(store.tokens.boundaryFor(host, 1, 'after')).toBe(innerToken.position.start)
+		expect(store.tokens.boundaryFor(host, 2, 'before')).toBe(innerToken.position.end)
+		expect(store.tokens.boundaryFor(host, 2, 'after')).toBe(afterToken.position.start)
+		container.remove()
+	})
+
+	it('maps text-surface boundaries to raw UTF-16 positions', () => {
+		const {store, container, textNode} = mountStructuralInline('hello')
+
+		expect(store.tokens.boundaryFor(textNode, 2)).toBe(2)
+		container.remove()
+	})
+
+	it('rejects boundaries that split surrogate pairs', () => {
+		const {store, container, textNode} = mountStructuralInline('a😀b')
+
+		expect(store.tokens.boundaryFor(textNode, 2)).toBeUndefined()
+		container.remove()
+	})
+
+	it('maps token shell boundaries by affinity', () => {
+		const {store, container, textSurface} = mountStructuralInline('hello')
+
+		expect(store.tokens.boundaryFor(textSurface, 0, 'before')).toBe(0)
+		expect(store.tokens.boundaryFor(textSurface, 1, 'after')).toBe(5)
+		container.remove()
+	})
+
+	it('rejects editable boundaries inside mark presentation descendants', () => {
+		const {store, container, mark} = mountStructuralInlineMark('@[world]')
+		const descendant = document.createElement('span')
+		descendant.contentEditable = 'true'
+		descendant.textContent = 'inner'
+		mark.append(descendant)
+		const descendantText = descendant.firstChild
+		if (!(descendantText instanceof Text)) throw new Error('Mark descendant did not render a text node')
+		store.host.rendered()
+
+		expect(store.tokens.boundaryFor(descendantText, 0, 'after')).toBeUndefined()
+		container.remove()
+	})
+
+	it('returns undefined for selections crossing controls', () => {
+		const {store, container, textNode, controlText} = mountStructuralBlockWithControl('hello')
+		const selection = window.getSelection()!
+		const range = document.createRange()
+		range.setStart(textNode, 0)
+		range.setEnd(controlText, 1)
+		selection.removeAllRanges()
+		selection.addRange(range)
+
+		expect(store.selection.readRaw()).toBeUndefined()
+		container.remove()
 	})
 })
