@@ -1,4 +1,5 @@
 import type {RawSelection} from '../../../shared/editorContracts'
+import {untracked} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
 import type {Id, NodeAnchor, TreeNode} from '../tree/types'
 import {focusIfNeeded, getRect, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caret'
@@ -142,9 +143,15 @@ export class DomModel {
 		return rawPositionFromBoundary(this.#boundaryContext(), node, offset, affinity)
 	}
 
-	/** Map a DOM boundary (node, offset) to a node anchor in the live tree. */
+	/**
+	 * Map a DOM boundary (node, offset) to a node anchor in the live tree.
+	 *
+	 * `untracked` is load-bearing HERE, at the walk's own entry: the walk reads
+	 * node `text()` and `children()` signals directly, so any caller inside a
+	 * reactive scope would otherwise subscribe to them.
+	 */
 	anchorFor(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): NodeAnchor | undefined {
-		return anchorFromBoundary(this.#anchorContext(), node, offset, affinity)
+		return untracked(() => anchorFromBoundary(this.#anchorContext(), node, offset, affinity))
 	}
 
 	/**

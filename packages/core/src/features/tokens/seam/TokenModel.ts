@@ -326,12 +326,12 @@ export class TokenModel {
 	 * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree.
 	 *
 	 * NO PRODUCTION CALLER until S2.4 — this is a pre-cutover phase built
-	 * alongside the live path (spec §11, S2.1). `untracked` for the reason
-	 * {@link find} documents: the walk reads node text signals and an event
-	 * handler must not subscribe to them.
+	 * alongside the live path (spec §11, S2.1). The subscription guard lives at
+	 * {@link DomModel.anchorFor}, the walk's own entry, so it holds for every
+	 * caller rather than only this one.
 	 */
 	anchorFor(node: Node, offset: number, affinity?: 'before' | 'after'): NodeAnchor | undefined {
-		return untracked(() => this.#dom.anchorFor(node, offset, affinity))
+		return this.#dom.anchorFor(node, offset, affinity)
 	}
 
 	/** THE selection read: one snapshot of the live window selection (see {@link DomModel.selection}). */
@@ -609,10 +609,7 @@ export class TokenModel {
 		byElement: element => this.#pipeline.byElement(element),
 		isControlRoot: element => this.#pipeline.isControlRoot(element),
 		boundHandles: () => this.#pipeline.bound().values(),
-		// `untracked` HERE, not at the caller: {@link nodes} is deliberately reactive
-		// and {@link find} self-wraps, so without this the anchor walk's subscription
-		// safety would depend on which entry point reached it.
-		roots: () => untracked(() => this.nodes()),
+		roots: () => this.nodes(),
 		find: id => this.find(id),
 		handleById: id => this.handle(id),
 	})
