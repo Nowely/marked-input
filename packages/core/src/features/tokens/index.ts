@@ -16,4 +16,7 @@ export {anchorEquals} from './tree/anchors'
 export {createSelection} from './tree/selection'
 export type {Anchors, Selection, SelectionDeps} from './tree/selection'
 export type {SelectionAnchor, SelectionSnapshot} from './dom/DomModel'
+// The selection's DOM half: listeners, caret application, the editable policy.
+export {SelectionDriver} from './dom/SelectionDriver'
+export type {SelectionDriverDeps} from './dom/SelectionDriver'
 export {TokenHandle} from './dom/TokenHandle'
