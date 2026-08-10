@@ -172,10 +172,11 @@ describe('TokenModel facade boundary behavior (pinned from dual-run parity)', ()
 		 *
 		 * Conditioned on a SETTLED tree, and that is not a weakening: inside the
 		 * adopt→bind window the two MUST disagree — the numeric path adds a stale
-		 * `position.start` and its latch-gated `tokenOf` fails closed, while the
-		 * anchor path stays node-local (spec S2 D4). These fixtures mount and render
-		 * synchronously, so no window is open here; `dom/domBoundary.spec.ts` pins
-		 * the divergence separately.
+		 * `position.start` read off a handle that is still alive, while the anchor
+		 * path stays node-local and fails closed once the id bridge misses or the
+		 * text shrinks (spec S2 D4). These fixtures mount and render synchronously,
+		 * so no window is open here; `dom/domBoundary.spec.ts` pins the divergence
+		 * separately.
 		 *
 		 * DELETED BY S2.6 together with `boundaryFor`.
 		 */

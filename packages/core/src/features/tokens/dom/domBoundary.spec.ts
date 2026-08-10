@@ -90,6 +90,21 @@ describe('anchorFor', () => {
 		expect(store.tokens.boundaryFor(dom1, 2)).toBe(2)
 	})
 
+	it('returns undefined for a node the edit deleted, where the numeric walk still answers', () => {
+		const {store, mark} = mountWithMark()
+
+		// D4's FIRST fail-closed arm — the id bridge misses. Handles are killed by
+		// `bind`, not by the apply (bind.ts), so a structural edit with no repaint is
+		// the only state where a node stays bound and locatable after leaving the tree.
+		store.tokens.replace({start: 0, end: -1}, 'hello')
+		expect(store.tokens.nodes().every(node => node.kind === 'text')).toBe(true)
+
+		expect(store.tokens.anchorFor(mark, 0)).toBeUndefined()
+		// The numeric walk has no equivalent: its `tokenOf` only checks that the handle
+		// is alive, so it answers the deleted mark's bind-generation start.
+		expect(store.tokens.boundaryFor(mark, 0)).toBe(2)
+	})
+
 	it('anchors a child-sequence boundary at index 0 before the owner', () => {
 		const {store, host} = mountNested()
 		const outer = store.tokens.nodes()[1]

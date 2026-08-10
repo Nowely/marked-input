@@ -85,8 +85,12 @@ export function anchorFromBoundary(
 
 	const textElement = lookup.node.textElement
 	if (textElement?.contains(node)) {
-		// bind sets `textElement` only for text tokens (bind.ts), so the narrow cannot
-		// fail in practice; `undefined` is the non-throwing answer per spec S2 §6.
+		// A TYPE NARROW, not a runtime guard, and unreachable by construction: `bind`
+		// sets `textElement` only for text tokens (bind.ts) and `adopt` never reuses a
+		// node across a kind change (a mismatch builds a fresh node with a fresh id,
+		// and ids are never reused), so `find` on this path can only answer that same
+		// TextNode. Load-bearing anyway — `owner.text()` below does not compile without
+		// it — and `undefined` is the non-throwing form per spec S2 §6.
 		if (owner.kind !== 'text') return undefined
 		const local = textOffsetWithin(textElement, node, offset)
 		if (local === undefined) return undefined
