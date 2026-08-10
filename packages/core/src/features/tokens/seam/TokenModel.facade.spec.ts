@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
-import {Store} from '../../store/Store'
+import {Store} from '../../../store/Store'
 
 type Mounted = {store: Store; container: HTMLElement}
 

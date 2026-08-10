@@ -1,7 +1,7 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
-import {watch} from '../../shared/signals/index.js'
-import {Store} from '../../store/Store'
+import {watch} from '../../../shared/signals/index.js'
+import {Store} from '../../../store/Store'
 
 /** Inline fixture (from TokenModel.facade.spec.ts): text 'he' [0,2], mark '@[x]' [2,6], text 'llo' [6,9]. */
 function mountWithMark(beforeMount?: (store: Store) => void) {

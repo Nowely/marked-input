@@ -118,7 +118,7 @@ function* parallelProbes(oldRoot: HTMLElement, newRoot: HTMLElement): Generator<
 	}
 }
 
-describe('TokenModel shell (model/)', () => {
+describe('TokenModel shell (seam/)', () => {
 	afterEach(() => {
 		document.body.replaceChildren()
 		window.getSelection()?.removeAllRanges()

@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
-import type {TokenDelta} from '../features/tokens/model/commitInput'
 import type {Markup} from '../features/tokens/parser/types'
+import type {TokenDelta} from '../features/tokens/seam/commitInput'
 import type {TextNode} from '../features/tokens/tree/types'
 import {effect, watch} from '../shared/signals'
 import type {MarkputApi} from './MarkputApi'

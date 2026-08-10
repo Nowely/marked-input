@@ -1,6 +1,6 @@
 import {describe, it, expect, vi} from 'vitest'
 
-import {Store} from '../../store/Store'
+import {Store} from '../../../store/Store'
 
 /**
  * Tokens publish only on a mounted store; a bare container is enough — with

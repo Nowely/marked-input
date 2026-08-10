@@ -41,7 +41,7 @@ export interface SnapshotMemo {
 	 * Exposed because the memo is the only place that knows the SECOND
 	 * invalidation mechanism above. `TransactionResult`'s feeds are the first
 	 * mechanism alone, so a consumer that refreshes per-node state from them
-	 * (`model/treeInput.ts`) misses precisely the ancestors `sameChildren` exists
+	 * (`seam/treeInput.ts`) misses precisely the ancestors `sameChildren` exists
 	 * for. This is a live view of the memo's own map: valid until the next `roots`
 	 * call, which clears it.
 	 */

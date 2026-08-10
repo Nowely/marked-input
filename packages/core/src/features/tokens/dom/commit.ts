@@ -1,7 +1,7 @@
 import {batch, event, signal} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
-import type {CommitChange, CommitInput, TokenDelta} from '../model/commitInput'
 import type {Token} from '../parser/types'
+import type {CommitChange, CommitInput, TokenDelta} from '../seam/commitInput'
 import {bind} from './bind'
 import type {TokenHandle} from './TokenHandle'
 

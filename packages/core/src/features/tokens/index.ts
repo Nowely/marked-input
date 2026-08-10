@@ -3,7 +3,7 @@
 export type {Token, TextToken, MarkToken, Markup} from './parser/types'
 export {annotate} from './parser/utils/annotate'
 export {denote} from './parser/utils/denote'
-export {TokenModel} from './model/TokenModel'
+export {TokenModel} from './seam/TokenModel'
 // The addressing model is part of the token layer's cross-feature contract, not a tree
 // internal: `TokenModel.anchorAt`/`offsetOf` already speak `NodeAnchor` in their
 // signatures, and `SelectionController` stores anchors and dedupes them on identity.

@@ -497,7 +497,7 @@ export class TokenModel {
 	 * this and never `#tree.value()` directly, because `adopt()` writes `tree.roots`
 	 * inside its own `batch` whose flush would notify value subscribers while the
 	 * token view is still stale — measured red against §4.4's consistency invariant
-	 * (`features/tokens/TokenModel.spec.ts`'s "current() is updated when value.current
+	 * (`seam/TokenModel.parse.spec.ts`'s "current() is updated when value.current
 	 * fires"). Not a second store: one writer, and its content is the tree's own
 	 * projection read at that instant, so drift is unrepresentable.
 	 */

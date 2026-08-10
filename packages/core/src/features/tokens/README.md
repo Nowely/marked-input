@@ -13,6 +13,20 @@ structural branch always does a full DOM bind.
 only inside this module (`features/tokens/`). All consumers outside the module
 go through `store.tokens` methods or `TokenHandle`.
 
+## Layout
+
+| folder    | what lives there                                                                                |
+| --------- | ----------------------------------------------------------------------------------------------- |
+| `parser/` | string → `Token[]`. Knows nothing about nodes, ids or the DOM.                                  |
+| `tree/`   | the source of truth: nodes, adoption, transactions, the string boundary, snapshots, anchors.    |
+| `dom/`    | the contenteditable adapter: bind, the commit pipeline, `TokenHandle`, caret and DOM offsets.   |
+| `seam/`   | `TokenModel` — the one object that owns a tree and a DOM and joins them, plus its commit input. |
+
+`tree/` imports nothing from `dom/` or `seam/`, and `seam/` is the only folder
+that imports both. The one upward edge is a type: `dom/commit.ts` takes its
+`CommitInput` from `seam/commitInput.ts`, the shape both sides agree on.
+`index.ts` is the only export point the rest of the package uses.
+
 ## Two layers, and the difference matters
 
 |                                      | owns                                                  | reactive?                                                    | identity                                |
@@ -103,8 +117,8 @@ ZERO component re-renders — gated end-to-end by the block render-count specs
 ## The one commit pipeline (`dom/commit.ts`)
 
 Every committed change flows through a single `apply(input)`. The input is a
-producer-agnostic `CommitInput` (`model/commitInput.ts`), and since S1.6a the
-tree core's `fromTransaction` (`model/treeInput.ts`) is its ONLY producer:
+producer-agnostic `CommitInput` (`seam/commitInput.ts`), and since S1.6a the
+tree core's `fromTransaction` (`seam/treeInput.ts`) is its ONLY producer:
 
 ```
 write verb → splice → parse → adopt → TransactionResult
@@ -184,7 +198,7 @@ tree token with no id — a contract violation (an unsnapshotted tree was passed
 exactly one non-control element. Alignment is all-or-nothing — one bad row bails
 the whole frame, failing loud when an adapter renders something unexpected.
 
-## Public API — the whole surface (`model/TokenModel.ts`)
+## Public API — the whole surface (`seam/TokenModel.ts`)
 
 ```ts
 // consumer reads

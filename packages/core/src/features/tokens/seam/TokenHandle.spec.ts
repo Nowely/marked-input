@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
-import {Store} from '../../store/Store'
+import {Store} from '../../../store/Store'
 
 function mountInline(value: string) {
 	const store = new Store()

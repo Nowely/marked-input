@@ -1,8 +1,8 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 
-import {watch} from '../../shared/signals'
-import {Store} from '../../store/Store'
-import type {Token} from './parser/types'
+import {watch} from '../../../shared/signals'
+import {Store} from '../../../store/Store'
+import type {Token} from '../parser/types'
 
 /**
  * Parse-pipeline behavior through the Store. The model publishes nothing

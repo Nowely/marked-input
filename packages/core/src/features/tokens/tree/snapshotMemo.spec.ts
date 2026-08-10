@@ -35,9 +35,9 @@ const asMark = (token: Token): MarkToken => {
  * kill, so a future edit can tell a load-bearing assertion from a decorative one:
  *
  * - `shifted` walked as roots only, no subtree → 4 kills (the descendant test
- *   and the deep-equal run here, plus both descendant tests in `model/`).
+ *   and the deep-equal run here, plus both descendant tests in `seam/`).
  * - `sameChildren` dropped from the cache-hit condition → 4 kills: the ancestor
- *   and `materialized()` tests here, plus the ancestor tests in `model/`
+ *   and `materialized()` tests here, plus the ancestor tests in `seam/`
  *   (`treeInput.spec.ts` and the live-path parity case in `treePipeline.spec.ts`).
  *   It was 1 before the lowering read this memo: the whole pipeline consequence
  *   of dropping it is that a mark handle keeps a token the DOM no longer shows.
@@ -145,7 +145,7 @@ describe('createSnapshotMemo', () => {
 	})
 
 	it('materialized() reports exactly the ids re-materialized by the last roots(), ancestors included', () => {
-		// BOTH invalidation mechanisms in ONE answer, which is why `model/treeInput.ts`
+		// BOTH invalidation mechanisms in ONE answer, which is why `seam/treeInput.ts`
 		// derives its whole `changes` feed from this instead of from the transaction's:
 		// the length-preserving in-slot edit dirties only the CHILD, and the mark is
 		// here solely through `sameChildren`.
