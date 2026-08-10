@@ -189,11 +189,13 @@ Each of these is a place where a mutation survived the whole suite. They are rec
 site in the code rather than papered over, because in every case the missing test would pin
 a choice rather than detect a defect.
 
-- `SelectionController` — the DOM→anchor sync still round-trips through absolute offsets, so
-  `readRaw` resolves against bind-generation positions while `anchorAt` resolves against live
-  ones, and the two spaces can disagree during the adopt→bind window. **Ungatable**, not
-  merely ungated: that window is exactly when no bound surface answers, so a test can neither
-  observe the disagreement nor construct it.
+- `dom/SelectionDriver.ts`'s `#trackSelection.sync` (was `SelectionController`'s, until the
+  S2.2 split) — the DOM→anchor sync still round-trips through absolute offsets, so `readRaw`
+  resolves against bind-generation positions while `anchorAt` resolves against live ones, and
+  the two spaces can disagree during the adopt→bind window. **Ungatable**, not merely ungated:
+  that window is exactly when no bound surface answers, so a test can neither observe the
+  disagreement nor construct it. S2.4 closes it by construction — `anchorFor`
+  (`dom/domBoundary.ts`) forms no absolute coordinate at all — rather than by gating it.
 - `TokenModel.markFor` — the throw is unfalsifiable. Returning a bogus node instead survives
   the suite; reaching the error path would take a React interleaving that re-renders a mark
   after its node died, which no test can construct.

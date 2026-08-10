@@ -15,7 +15,7 @@ import type {Anchors, NodeAnchor, TransactionResult, TreeNode} from './types'
 /**
  * What the selection state reads from the tree — nothing more. CLOSURES, not the
  * `TokenTree` itself: `Store` still constructs the selection and `TokenModel` holds its
- * tree privately, so the four reads are satisfied by `TokenModel`'s public surface today
+ * tree privately, so the three reads are satisfied by `TokenModel`'s public surface today
  * and re-pointed at the tree directly when ownership moves, with no change here.
  */
 export type SelectionDeps = {

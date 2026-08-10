@@ -15,12 +15,12 @@ go through `store.tokens` methods or `TokenHandle`.
 
 ## Layout
 
-| folder    | what lives there                                                                                |
-| --------- | ----------------------------------------------------------------------------------------------- |
-| `parser/` | string → `Token[]`. Knows nothing about nodes, ids or the DOM.                                  |
-| `tree/`   | the source of truth: nodes, adoption, transactions, the string boundary, snapshots, anchors.    |
-| `dom/`    | the contenteditable adapter: bind, the commit pipeline, `TokenHandle`, caret and DOM offsets.   |
-| `seam/`   | `TokenModel` — the one object that owns a tree and a DOM and joins them, plus its commit input. |
+| folder    | what lives there                                                                                                    |
+| --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `parser/` | string → `Token[]`. Knows nothing about nodes, ids or the DOM.                                                      |
+| `tree/`   | the source of truth: nodes, adoption, transactions, the string boundary, snapshots, anchors, the selection STATE.   |
+| `dom/`    | the contenteditable adapter: bind, the commit pipeline, `TokenHandle`, caret and DOM offsets, the selection DRIVER. |
+| `seam/`   | `TokenModel` — the one object that owns a tree and a DOM and joins them, plus its commit input.                     |
 
 `tree/` imports nothing from `dom/` or `seam/`, and `seam/` is the only folder
 that imports both. The one upward edge is a type: `dom/commit.ts` takes its
@@ -80,7 +80,9 @@ an id and nothing else, and the split is what makes the pending window safe.
   adoption changed, invalidating on dirty ids (walked subtree-inclusively) AND on
   child-reference comparison — both mechanisms are load-bearing.
 - `anchors.ts` — `anchorAt(roots, offset)` (right affinity: the last text node
-  containing the offset) and its inverse `offsetOfAnchor`.
+  containing the offset), its inverse `offsetOfAnchor`, and `anchorEquals`.
+- `selection.ts` — `createSelection(deps)`: the selection STATE (see below).
+  DOM-free, and unit-tested without a mounted container.
 - `markPatch.ts` — `serializeMark(node, patch)`: a patch becomes markup, with
   the omitted fields defaulted off the node so an omitted key round-trips.
 
@@ -159,10 +161,10 @@ write verb → splice → parse → adopt → TransactionResult
   generation. `latest` is reassigned at the top of every `apply`.
 - **Editable state:** contentEditable/tabindex are applied at bind time to newly
   bound surfaces and mark roots, and by the scoped `setEditable` setter when
-  `readOnly`/`isUserSelecting` change (SelectionController owns the policy, the
-  model owns the application). No per-commit sweep.
+  `readOnly`/`isUserSelecting` change (`dom/SelectionDriver.ts` owns the policy,
+  the model owns the application). No per-commit sweep.
 - **`changed`** fires in both branches only after the DOM is consistent with the
-  node layer — the model-level "commit done" signal (SelectionController
+  node layer — the model-level "commit done" signal (`dom/SelectionDriver.ts`
   re-places the caret on it) — carrying that commit's `{added, removed, updated}`
   ids (`TokenDelta`: `added`/`removed` are subtree-inclusive, `updated` is per
   node). Consumers re-read content via `current()` / `handle(id)`;
@@ -221,6 +223,7 @@ handleAt(node) // handle | 'control' | undefined for a DOM node
 
 // DOM↔model facade
 boundaryFor(node, offset, affinity?) // DOM (node, offset) → absolute position
+anchorFor(node, offset, affinity?)   // DOM (node, offset) → NodeAnchor in the LIVE tree
 placeCaret(rawPosition: number) // place a collapsed caret at an absolute position
 selectRange(start, end)
 selection(): SelectionSnapshot | undefined // THE selection read
@@ -231,8 +234,8 @@ control() / children(ownerId) // ref callbacks
 ```
 
 `setEditable({editable, readOnly})` is the scoped internal setter wired from
-SelectionController's prop watches; it is not part of the consumer-facing reading
-surface above.
+`dom/SelectionDriver.ts`'s prop watches; it is not part of the consumer-facing
+reading surface above.
 
 Nothing is published before a container mounts: `current()` is `[]` and facade
 reads fail soft. Adapters mount the container ref, re-render from the first
@@ -353,11 +356,34 @@ The adapter hook resolves the node by id per access, so it tracks text-path
 commits without re-capture, and the `pendingStructural` latch is what makes a
 mid-window write fail closed rather than act on a tree the DOM never showed.
 
+## Selection
+
+Split in two by owner (spec S2 D10); `features/selection/`'s `SelectionController`
+is only the composition shell over the pair, and `store.selection` is that shell.
+
+- `tree/selection.ts` — the STATE. Stores a pair of `NodeAnchor`s (spec S1 D7),
+  never offsets: a node plus a local offset is what disambiguates two tokens
+  sharing a boundary position, and it survives an edit elsewhere without
+  arithmetic. `range`/`position`/`isAllSelected` are DERIVED from it; because
+  adoption writes `position` as a plain field, `range` also reads a `generation`
+  counter that `repair` bumps once per adoption. `repair(result)` APPLIES
+  `result.selectionAfter` — adoption resolves it, since only adoption sees the
+  pre-mutation coordinate space. Its deps are three closures, so it works whether
+  `Store` or `TokenModel` constructs it.
+- `dom/SelectionDriver.ts` — the DOM I/O. Three listeners (`focusin`/`focusout`/
+  `selectionchange` sync, the empty-editor click focus, the mouse-sweep tracker)
+  and three watches (`tokens.changed`, `readOnly`, `isUserSelecting`, plus the
+  stored anchors themselves). It watches the STORED anchors and not the derived
+  `range`: at a shared boundary `placeAtHandle` changes the anchor without
+  changing the number, so a `range` watch never fires and the caret is never
+  placed (measured — 8 browser assertions across three focus specs). It also owns
+  the editable POLICY; the model owns the application.
+
 ## Caret placement by handle
 
 `TokenModel.placeCaret(rawPosition)` resolves the best target for an absolute
 position; per-token placement is `TokenHandle.placeCaret(offset)`, and
-`SelectionController.placeAtHandle(handle, boundary)` places at a handle's
+`SelectionDriver.placeAtHandle(handle, boundary)` places at a handle's
 start/end. The handle paths fail closed against a dead or mid-window handle
 (`!handle.alive()` → `false`). The handle carries the stable id, so no
 path-and-token round-trip is involved.
