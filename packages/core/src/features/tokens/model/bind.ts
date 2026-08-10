@@ -36,7 +36,8 @@ export type BindInput = {
 	/** THE live node layer, keyed by token id — mutated in place. */
 	nodes: Map<number, TokenHandle>
 	controlElements: ReadonlySet<HTMLElement>
-	childSequenceHostsFor: (path: TokenPath) => readonly HTMLElement[]
+	/** Registered `__slot__` hosts for one owner, resolved by the owner's stable id. */
+	childSequenceHostsFor: (ownerId: number | undefined) => readonly HTMLElement[]
 	isBlock: boolean
 	/** Mount-time editable state for newly bound surfaces and mark roots. */
 	editable: {editable: boolean; readOnly: boolean}
@@ -67,7 +68,7 @@ export function bind(input: BindInput): BindResult {
 	collectTree(tokens, [], idFor, tree)
 
 	const controlRoots = computeControlRoots(container, controlElements)
-	const bound = walkDom(container, tokens, controlRoots, childSequenceHostsFor, isBlock)
+	const bound = walkDom(container, tokens, idFor, controlRoots, childSequenceHostsFor, isBlock)
 
 	const byPath = new Map<string, TokenHandle>()
 	const byElement = new WeakMap<HTMLElement, TokenHandle>()
@@ -137,8 +138,9 @@ function collectTree(
 function walkDom(
 	container: HTMLElement,
 	tokens: readonly Token[],
+	idFor: (token: Token) => number | undefined,
 	controlRoots: WeakSet<HTMLElement>,
-	childSequenceHostsFor: (path: TokenPath) => readonly HTMLElement[],
+	childSequenceHostsFor: (ownerId: number | undefined) => readonly HTMLElement[],
 	isBlock: boolean
 ): Map<Token, ElementBindings> {
 	const bound = new Map<Token, ElementBindings>()
@@ -153,7 +155,7 @@ function walkDom(
 		frameTokens.forEach((token, i) => {
 			const path = [...basePath, i]
 			const element = elements[i]
-			const hosts = childSequenceHostsFor(path)
+			const hosts = childSequenceHostsFor(idFor(token))
 			const childSequenceHost = hosts.length === 1 && element.contains(hosts[0]) ? hosts[0] : undefined
 			bound.set(token, {
 				tokenElement: element,

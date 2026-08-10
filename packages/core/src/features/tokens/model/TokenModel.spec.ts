@@ -285,10 +285,17 @@ describe('TokenModel shell (model/)', () => {
 			wrapper.append(childSpan)
 			markEl.append(wrapper)
 			const text2 = document.createElement('span')
-			container.append(text1, markEl, text2)
 			document.body.append(container)
-			setup.model.children([1])(wrapper)
+
+			// Mount the EMPTY container, then paint, then register, then report rendered — the
+			// real adapter order, and mandatory since S1.8 step 4 made the registration
+			// id-keyed: the id only exists once the mount has published a tree. Painting
+			// before the mount instead would let the mount's immediate bind run with no host
+			// registered, mis-bind the child text token to `wrapper` and overwrite its
+			// `textContent` — destroying `childSpan` before the real bind ever sees it.
 			setup.host.container(container)
+			container.append(text1, markEl, text2)
+			setup.model.children(setup.model.keyOf(setup.model.current()[1]))(wrapper)
 			setup.host.rendered()
 
 			const mark = setup.model.current()[1]

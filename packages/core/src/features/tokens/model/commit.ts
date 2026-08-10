@@ -1,4 +1,3 @@
-import type {TokenPath} from '../../../shared/editorContracts'
 import {batch, event, signal} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
@@ -23,7 +22,7 @@ export type CommitDeps = {
 	/** Mount-time editable state for newly bound surfaces and mark roots. */
 	editableState: () => {editable: boolean; readOnly: boolean}
 	controlElements: () => ReadonlySet<HTMLElement>
-	childSequenceHostsFor: (path: TokenPath) => readonly HTMLElement[]
+	childSequenceHostsFor: (ownerId: number | undefined) => readonly HTMLElement[]
 	isBlock: () => boolean
 }
 

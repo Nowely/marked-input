@@ -1,5 +1,5 @@
 <script lang="ts">
-import type {Token as TokenType, TokenPath} from '@markput/core'
+import type {Token as TokenType} from '@markput/core'
 import {defineComponent, h, markRaw, provide, toRef, type PropType, type VNode} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -8,16 +8,14 @@ import {TOKEN_KEY} from '../lib/providers/tokenKey'
 import TokenChildren from './TokenChildren.vue'
 
 /**
- * `path` arrives by construction: the parent that maps the tree knows every
- * child's index, so no per-token lookup is needed — and none would work here,
- * since during a structural render the freshly published tree is not bound to
- * the node layer yet.
+ * `depth` arrives by construction: the parent that maps the tree knows it. The render-time
+ * `TokenPath` that used to travel alongside it went at S1.8 step 4 — its last reader was
+ * `TokenChildren`, which now registers under the owner's stable id.
  */
 const Token = defineComponent({
 	name: 'Token',
 	props: {
 		token: {type: Object as PropType<TokenType>, required: true},
-		path: {type: Array as PropType<TokenPath>, required: true},
 		depth: {type: Number, required: true},
 	},
 	setup(props): () => VNode | null {
@@ -36,12 +34,11 @@ const Token = defineComponent({
 			const children =
 				token.type === 'mark' && token.children.length > 0
 					? () =>
-							h(markRaw(TokenChildren), {ownerPath: props.path}, () =>
-								token.children.map((child, i) =>
+							h(markRaw(TokenChildren), {ownerId: keyOf(token)}, () =>
+								token.children.map(child =>
 									h(markRaw(Token), {
 										key: keyOf(child),
 										token: child,
-										path: [...props.path, i],
 										depth: props.depth + 1,
 									})
 								)

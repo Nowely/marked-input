@@ -1,4 +1,4 @@
-import type {DomRef, Range, TokenPath} from '../../../shared/editorContracts'
+import type {DomRef, Range} from '../../../shared/editorContracts'
 import {computed, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
@@ -7,7 +7,6 @@ import {DomModel} from '../DomModel'
 import type {SelectionSnapshot} from '../DomModel'
 import {Parser} from '../parser/Parser'
 import type {MarkToken, Token} from '../parser/types'
-import {pathEquals} from '../tokenIndex'
 import {anchorAt, offsetOfAnchor} from '../tree/anchors'
 import {createBoundary} from '../tree/boundary'
 import {serializeMark} from '../tree/markPatch'
@@ -152,12 +151,17 @@ export class TokenModel {
 		}
 	}
 
-	/** Ref callback for the element hosting a token's child sequence. */
-	children(ownerPath: TokenPath): DomRef {
+	/**
+	 * Ref callback for the element hosting a token's child sequence, keyed by the OWNER's
+	 * stable id (S1.8 step 4). It was keyed by `TokenPath` until then; the id is the same
+	 * thing bind already resolves per token, and it does not go stale when a sibling above
+	 * the owner is added or removed mid-render.
+	 */
+	children(ownerId: number): DomRef {
 		const key = `children:${++this.#nextChildSequenceId}`
 		return element => {
 			if (element) {
-				this.#pendingChildSequences.set(key, {ownerPath: [...ownerPath], element})
+				this.#pendingChildSequences.set(key, {ownerId, element})
 			} else {
 				this.#pendingChildSequences.delete(key)
 			}
@@ -579,7 +583,7 @@ export class TokenModel {
 		idFor: token => token.id,
 		editableState: () => this.#editableState(),
 		controlElements: () => this.#controlElements(),
-		childSequenceHostsFor: path => this.#childSequenceHostsFor(path),
+		childSequenceHostsFor: ownerId => this.#childSequenceHostsFor(ownerId),
 		isBlock: () => this.props.layout.isBlock(),
 	})
 
@@ -606,10 +610,15 @@ export class TokenModel {
 		return new Set(this.#pendingControls.values())
 	}
 
-	#childSequenceHostsFor(ownerPath: TokenPath): HTMLElement[] {
+	/**
+	 * `undefined` is a total answer, not a guard: an unregistered id and an id-less token
+	 * both match no registration, so the loop answers `[]` without a branch. Bind's id
+	 * pre-pass has already thrown for an id-less token by the time the walk asks.
+	 */
+	#childSequenceHostsFor(ownerId: number | undefined): HTMLElement[] {
 		const out: HTMLElement[] = []
 		for (const registration of this.#pendingChildSequences.values()) {
-			if (pathEquals(registration.ownerPath, ownerPath)) out.push(registration.element)
+			if (registration.ownerId === ownerId) out.push(registration.element)
 		}
 		return out
 	}
@@ -625,6 +634,6 @@ export class TokenModel {
 }
 
 type ChildSequenceRegistration = {
-	readonly ownerPath: TokenPath
+	readonly ownerId: number
 	readonly element: HTMLElement
 }

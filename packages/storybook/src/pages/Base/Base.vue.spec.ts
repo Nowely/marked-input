@@ -1,4 +1,3 @@
-import type {TokenPath} from '@markput/core'
 import type {Markup} from '@markput/vue'
 import {MarkedInput, useMark} from '@markput/vue'
 import {composeStories} from '@storybook/vue3-vite'
@@ -106,35 +105,38 @@ describe('Component: MarkedInput', () => {
 		expect(textSurface).toHaveTextContent('Design Phase')
 	})
 
-	it('refreshes child sequence registration when owner path changes', async () => {
-		const callbacks = new Map<string, ReturnType<typeof vi.fn>>()
+	it('refreshes child sequence registration when the owner id changes', async () => {
+		// Owner identity is the mark's stable id since S1.8 step 4, not its TokenPath. The
+		// re-registration contract is unchanged: the old ref is released with `null` before
+		// the new one is handed the element.
+		const callbacks = new Map<number, ReturnType<typeof vi.fn>>()
 		const store = new Store()
-		vi.spyOn(store.tokens, 'children').mockImplementation((path: TokenPath) => {
+		vi.spyOn(store.tokens, 'children').mockImplementation((ownerId: number) => {
 			const callback = vi.fn()
-			callbacks.set(path.join('.'), callback)
+			callbacks.set(ownerId, callback)
 			return callback
 		})
 		const Harness = defineComponent({
 			setup() {
 				provide(STORE_KEY, store)
-				const ownerPath = ref<TokenPath>([0])
+				const ownerId = ref(7)
 				return () =>
 					h('div', [
-						h('button', {onClick: () => (ownerPath.value = [1])}, 'move'),
-						h(TokenChildren, {ownerPath: ownerPath.value}, () => h('span', 'child')),
+						h('button', {onClick: () => (ownerId.value = 8)}, 'move'),
+						h(TokenChildren, {ownerId: ownerId.value}, () => h('span', 'child')),
 					])
 			},
 		})
 
 		await render(Harness)
-		const initialCallback = callbacks.get('0')
+		const initialCallback = callbacks.get(7)
 		expect(initialCallback).toHaveBeenCalledWith(expect.any(HTMLElement))
 
 		await userEvent.click(getElement(page.getByRole('button', {name: 'move'})))
 		await nextTick()
 
 		expect(initialCallback).toHaveBeenLastCalledWith(null)
-		expect(callbacks.get('1')).toHaveBeenCalledWith(expect.any(HTMLElement))
+		expect(callbacks.get(8)).toHaveBeenCalledWith(expect.any(HTMLElement))
 	})
 
 	it('correctly process an annotation type', async () => {

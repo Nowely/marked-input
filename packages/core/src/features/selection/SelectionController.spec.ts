@@ -58,7 +58,10 @@ function mountStructuralNestedWithChildSequence(value = '@[before @[nested] afte
 	container.append(leading, outer, trailing)
 	document.body.append(container)
 	store.host.container(container)
-	store.tokens.children([1])(host)
+	// The registration is id-keyed since S1.8 step 4, so it has to come AFTER the mount
+	// publishes a tree: an adapter registers from the render of a token that already has
+	// an id, and a spec has to do the same.
+	store.tokens.children(store.tokens.keyOf(store.tokens.current()[1]))(host)
 	store.host.rendered()
 	return {store, container, leading, outer, control, host, before, inner, after, trailing}
 }

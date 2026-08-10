@@ -50,7 +50,7 @@ const setBlockRef = (el: unknown) => {
 	>
 		<DropIndicator :token="token" position="before" />
 		<DragHandle :token="token" :block-index="blockIndex" />
-		<Token :token="token" :path="[blockIndex]" :depth="0" />
+		<Token :token="token" :depth="0" />
 		<DropIndicator :token="token" position="after" />
 		<BlockMenu :token="token" />
 	</component>

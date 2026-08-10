@@ -2,7 +2,6 @@ import {describe, expect, it} from 'vitest'
 
 import {markToken, textToken} from '../__testing__/tokenFactories'
 import type {Token} from '../parser/types'
-import {pathKey} from '../tokenIndex'
 import {bind} from './bind'
 import type {BindInput} from './bind'
 import type {TokenHandle} from './TokenHandle'
@@ -252,7 +251,7 @@ describe('bind', () => {
 
 			const result = bind(
 				inputFor(container, tokens, ids.idFor, {
-					childSequenceHostsFor: path => (pathKey(path) === '0' ? [host] : []),
+					childSequenceHostsFor: ownerId => (ownerId === ids.idFor(tokens[0]) ? [host] : []),
 				})
 			)
 
@@ -276,7 +275,7 @@ describe('bind', () => {
 
 			const result = bind(
 				inputFor(container, tokens, ids.idFor, {
-					childSequenceHostsFor: path => (pathKey(path) === '0' ? [hostA, hostB] : []),
+					childSequenceHostsFor: ownerId => (ownerId === ids.idFor(tokens[0]) ? [hostA, hostB] : []),
 				})
 			)
 
@@ -322,7 +321,7 @@ describe('bind', () => {
 
 			const result = bind(
 				inputFor(container, tokens, ids.idFor, {
-					childSequenceHostsFor: path => (pathKey(path) === '1' ? [outsideHost] : []),
+					childSequenceHostsFor: ownerId => (ownerId === ids.idFor(tokens[1]) ? [outsideHost] : []),
 				})
 			)
 
