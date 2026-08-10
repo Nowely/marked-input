@@ -45,4 +45,35 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(container, 1, 'before')).toEqual({after: roots[0]})
 		expect(store.tokens.anchorFor(container, 1, 'after')).toEqual({before: roots[1]})
 	})
+
+	it('anchors a text-surface boundary to the live node and a local offset', () => {
+		const {store, text1} = mountWithMark()
+		const roots = store.tokens.nodes()
+		const textNode = text1.firstChild
+		if (!(textNode instanceof Text)) throw new Error('expected a rendered text node')
+		expect(store.tokens.anchorFor(textNode, 1)).toEqual({node: roots[0], offset: 1})
+	})
+
+	it('anchors the second text surface with an offset local to ITS node, not the document', () => {
+		const {store, text2} = mountWithMark()
+		const roots = store.tokens.nodes()
+		const textNode = text2.firstChild
+		if (!(textNode instanceof Text)) throw new Error('expected a rendered text node')
+		// The document position here is 7; the anchor must say 1.
+		expect(store.tokens.anchorFor(textNode, 1)).toEqual({node: roots[2], offset: 1})
+	})
+
+	it('returns undefined for a boundary that splits a surrogate pair', () => {
+		const store = new Store()
+		store.props.set({defaultValue: '\u{1F600}a'})
+		const container = document.createElement('div')
+		const surface = document.createElement('span')
+		container.append(surface)
+		document.body.append(container)
+		store.host.container(container)
+		store.host.rendered()
+		const textNode = surface.firstChild
+		if (!(textNode instanceof Text)) throw new Error('expected a rendered text node')
+		expect(store.tokens.anchorFor(textNode, 1)).toBeUndefined()
+	})
 })

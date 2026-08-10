@@ -47,8 +47,8 @@ export type AnchorContext = Pick<BoundaryContext, 'container' | 'locate'> & {
 /**
  * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree.
  *
- * PARTIAL: container boundaries are live; child sequences and mark/row
- * boundaries land in Tasks 4-5 and answer `undefined` until then.
+ * PARTIAL: container and text-surface boundaries are live; child sequences and
+ * mark/row boundaries land in Tasks 4-5 and answer `undefined` until then.
  *
  * The anchor projection of the same walk that {@link rawPositionFromBoundary}
  * projects numerically. No absolute coordinate is formed anywhere on this path,
@@ -63,6 +63,27 @@ export function anchorFromBoundary(
 ): NodeAnchor | undefined {
 	if (ctx.container && node === ctx.container) {
 		return fromContainerAnchor(ctx.roots(), offset, affinity)
+	}
+
+	const lookup = ctx.locate(node)
+	if (lookup?.kind !== 'token') return undefined
+
+	// The IDENTITY bridge (spec S2 D2/D3): `handle.id` is generation-independent, so
+	// this reaches the LIVE node. Reading the handle's token here would reach the bind
+	// generation and reintroduce the coordinate space this projection exists to avoid.
+	const owner = ctx.find(lookup.node.handle.id)
+	if (!owner) return undefined
+
+	const textElement = lookup.node.textElement
+	if (textElement?.contains(node)) {
+		// bind sets `textElement` only for text tokens (bind.ts), so the narrow cannot
+		// fail in practice; `undefined` is the non-throwing answer per spec S2 §6.
+		if (owner.kind !== 'text') return undefined
+		const local = textOffsetWithin(textElement, node, offset)
+		if (local === undefined) return undefined
+		// spec S2 D4's second fail-closed condition: the offset is local to the node's
+		// own text, so it is correct even mid-window UNLESS that text shrank.
+		return local <= owner.text().length ? {node: owner, offset: local} : undefined
 	}
 
 	return undefined
