@@ -164,6 +164,45 @@ describe('TokenModel facade boundary behavior (pinned from dual-run parity)', ()
 			expect(probed).toBeGreaterThanOrEqual(table.length)
 		})
 
+		/**
+		 * S2.1's gate (spec S2 §7.2): the two projections of ONE walk must agree.
+		 * `offsetOfAnchor` is the inverse of the anchor shapes, so composing it with
+		 * the anchor projection must reproduce the numeric one for EVERY probe,
+		 * `undefined` included.
+		 *
+		 * Conditioned on a SETTLED tree, and that is not a weakening: inside the
+		 * adopt→bind window the two MUST disagree — the numeric path adds a stale
+		 * `position.start` and its latch-gated `tokenOf` fails closed, while the
+		 * anchor path stays node-local (spec S2 D4). These fixtures mount and render
+		 * synchronously, so no window is open here; `dom/domBoundary.spec.ts` pins
+		 * the divergence separately.
+		 *
+		 * DELETED BY S2.6 together with `boundaryFor`.
+		 */
+		it(`anchorFor agrees with boundaryFor on every probe — ${name}`, () => {
+			const {store, container} = mount()
+			let probed = 0
+			let defined = 0
+			for (const [node, nodeIndex, offset] of probes(container)) {
+				for (const affinity of ['before', 'after'] as const) {
+					probed++
+					const label = `${node.nodeName}#${nodeIndex}@${offset}/${affinity}`
+					const numeric = store.tokens.boundaryFor(node, offset, affinity)
+					const anchor = store.tokens.anchorFor(node, offset, affinity)
+					if (numeric !== undefined) defined++
+					// One unconditional assertion covers both arms: `offsetOf` always
+					// answers a number, so `composed` is `undefined` exactly when the
+					// anchor projection declined.
+					const composed = anchor === undefined ? undefined : store.tokens.offsetOf(anchor)
+					expect.soft(composed, label).toBe(numeric)
+				}
+			}
+			expect(probed).toBeGreaterThan(0)
+			// Non-vacuous guard: a run where every probe answered `undefined` would
+			// pass the loop above while proving nothing.
+			expect(defined).toBeGreaterThan(0)
+		})
+
 		it(`readSelection reads the live selection as absolute positions — ${name}`, () => {
 			const {store, container} = mount()
 			const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
