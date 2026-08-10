@@ -12,6 +12,23 @@ export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
 export type SelectionSnapshot = {
 	/** Absolute in-editor positions of the selection, or undefined if it falls outside any bound token. */
 	readonly raw: RawSelection | undefined
+	/**
+	 * The window selection's first range — the SAME object {@link DomModel.selection} hands
+	 * to its raw projection, and the boundary pair the selection driver resolves through
+	 * `anchorFor`.
+	 *
+	 * NOT optional: a snapshot exists only when `rangeCount > 0`, so index 0 is always
+	 * there. `selection()?.range` still narrows to `undefined`, which is the "no DOM
+	 * selection" answer its consumers need.
+	 *
+	 * The selection's OWN range, not a clone: Chromium caches one Range per selection, so
+	 * this is reference-stable and writes through to the selection. It is NOT forward-live
+	 * — MEASURED: a `setBaseAndExtent` detaches the handed-out object, which keeps its old
+	 * boundaries. Freshness comes from {@link DomModel.selection} being a pull, so a caller
+	 * must read the range in the same turn it took the snapshot. Gated by
+	 * `TokenModel.facade.spec`'s "range is the window selection's own range, not a clone".
+	 */
+	readonly range: globalThis.Range
 	/** Viewport rect of the caret/selection. */
 	readonly rect: DOMRect | undefined
 	/** Anchor node, offset, and collapsed state of the raw window selection. */
@@ -163,8 +180,10 @@ export class DomModel {
 		if (!sel || sel.rangeCount === 0) return undefined
 		const anchorNode = sel.anchorNode
 		if (!anchorNode) return undefined
+		const range = sel.getRangeAt(0)
 		return {
-			raw: this.#rawSelectionFrom(sel),
+			raw: this.#rawSelectionFrom(sel, range),
+			range,
 			rect: getRect() ?? undefined,
 			anchor: {node: anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed},
 			focusNode: sel.focusNode ?? undefined,
@@ -173,8 +192,7 @@ export class DomModel {
 	}
 
 	/** Absolute in-editor positions of a window selection's first range, or undefined if it maps outside any bound token. */
-	#rawSelectionFrom(selection: Selection): RawSelection | undefined {
-		const range = selection.getRangeAt(0)
+	#rawSelectionFrom(selection: Selection, range: globalThis.Range): RawSelection | undefined {
 		const start = this.boundaryFor(range.startContainer, range.startOffset, 'after')
 		if (start === undefined) return undefined
 		const end = this.boundaryFor(range.endContainer, range.endOffset, 'before')

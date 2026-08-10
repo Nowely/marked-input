@@ -320,6 +320,35 @@ describe('TokenModel selection() — the one snapshot', () => {
 		expect(snapshot.intersects(document.body)).toBe(true)
 	})
 
+	it("range is the window selection's own range, not a clone", () => {
+		// THE gate on `SelectionSnapshot.range`'s identity, and the precondition for
+		// `SelectionDriver.sync` resolving its boundaries. MEASURED, and narrower than
+		// "live": Chromium caches one Range per selection, so `getRangeAt(0)` is
+		// reference-stable AND writes through — but a `setBaseAndExtent` DETACHES the
+		// handed-out object (it keeps its old boundaries while a fresh `getRangeAt(0)`
+		// answers a new one). What `sync` relies on is therefore the PULL — `selection()`
+		// re-reads the window on every call — not forward liveness. Both halves below fail
+		// against a `cloneRange()`.
+		const {store, container} = mountWithMark()
+		const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
+		if (!(firstText instanceof Text) || firstText.length < 2) throw new Error('expected the "he" text node')
+		const sel = window.getSelection()!
+		sel.removeAllRanges()
+		sel.setBaseAndExtent(firstText, 0, firstText, 1)
+
+		const snapshot = store.tokens.selection()
+		if (!snapshot) throw new Error('expected a selection snapshot')
+		expect(snapshot.range).toBe(sel.getRangeAt(0))
+
+		// Write-through: a clone could not move the window selection.
+		snapshot.range.setEnd(firstText, 2)
+		expect(sel.focusOffset).toBe(2)
+
+		// The pull, which is what `sync` actually depends on.
+		sel.setBaseAndExtent(firstText, 0, firstText, 1)
+		expect(store.tokens.selection()?.range.endOffset).toBe(1)
+	})
+
 	it('anchor.isCollapsed is true and raw is a zero-width range for a caret', () => {
 		const {store, container} = mountWithMark()
 		const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
