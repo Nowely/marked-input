@@ -325,8 +325,8 @@ export class TokenModel {
 	/**
 	 * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree.
 	 *
-	 * NO PRODUCTION CALLER until S2.4 — this is a pre-cutover phase built
-	 * alongside the live path (spec S2 §11, S2.1). The subscription guard lives at
+	 * THE DOM→model direction of the selection sync (`SelectionDriver`'s `sync`), and
+	 * the only production caller. The subscription guard lives at
 	 * {@link DomModel.anchorFor}, the walk's own entry, so it holds for every
 	 * caller rather than only this one.
 	 */

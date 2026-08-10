@@ -42,7 +42,7 @@ export class SelectionController {
 			placeCaret: rawPosition => tokens.placeCaret(rawPosition),
 			selectRange: (start, end) => tokens.selectRange(start, end),
 			offsetOf: anchor => tokens.offsetOf(anchor),
-			anchorAt: offset => tokens.anchorAt(offset),
+			anchorFor: (node, offset, affinity) => tokens.anchorFor(node, offset, affinity),
 		})
 
 		this.range = this.#state.range

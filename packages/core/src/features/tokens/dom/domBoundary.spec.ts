@@ -195,9 +195,10 @@ describe('anchorFor', () => {
 
 		// The walk reads `owner.text()` to bound the local offset, so a caller inside a
 		// reactive scope would subscribe to that node's text without the `untracked` at
-		// `DomModel.anchorFor`'s entry. The next phase's `sync` and `domAnchors()` call it
-		// from inside `watch` scopes, which is what makes this load-bearing rather than
-		// hygienic.
+		// `DomModel.anchorFor`'s entry. CHECKED, and narrower than the pre-cutover note
+		// claimed: `SelectionDriver`'s `sync` reaches it from DOM event handlers, where
+		// nothing is tracking. This case is therefore the guard's only gate — not a
+		// production path — and it has to stay for the guard to mean anything.
 		let runs = 0
 		const probe = computed(() => {
 			runs++

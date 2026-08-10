@@ -3,6 +3,7 @@ import {describe, it, expect, vi} from 'vitest'
 import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {mountStructuralInline, mountStructuralInlineMark} from '../__testing__/mountFixtures'
+import type {TextNode} from '../tree/types'
 
 describe('SelectionDriver', () => {
 	it('repeated placement at the same handle notifies once', () => {
@@ -71,6 +72,99 @@ describe('SelectionDriver', () => {
 		store.selection.position(undefined)
 		expect(notify).not.toHaveBeenCalled()
 		stop()
+	})
+
+	describe('DOM → model sync', () => {
+		/** Collapse the window selection onto one DOM boundary, bypassing any placement path. */
+		const caretAt = (node: Node, offset: number): void => {
+			const sel = window.getSelection()
+			if (!sel) throw new Error('no window selection')
+			sel.removeAllRanges()
+			const range = document.createRange()
+			range.setStart(node, offset)
+			range.collapse(true)
+			sel.addRange(range)
+		}
+
+		/** The fixture's leading text root, narrowed — `{node, offset}` only accepts a TextNode. */
+		const textRoot = (store: Store): TextNode => {
+			const node = store.tokens.nodes()[0]
+			if (node.kind !== 'text') throw new Error('expected a leading text root')
+			return node
+		}
+
+		it('keeps a far-side anchor at a shared boundary across a selectionchange', () => {
+			// THE property the old numeric round-trip broke. In 'ab@[x]cd' the mark starts at
+			// 2, exactly where the text 'ab' ends, so `anchorAt(2)` — right-affine — answers
+			// the TEXT node: the previous `sync` rewrote `{before: mark}` into
+			// `{node: 'ab', offset: 2}` and the caret watch then dragged focus into the
+			// neighbouring surface. `anchorFor` reads the mark ELEMENT the DOM actually names,
+			// so the anchor comes back identical and the write dedupes.
+			const {store, container, mark} = mountStructuralInlineMark('ab@[x]cd')
+			const markNode = store.tokens.nodes()[1]
+			store.selection.select({before: markNode})
+			caretAt(mark, 0)
+
+			document.dispatchEvent(new Event('selectionchange'))
+
+			expect(store.selection.anchors()).toEqual({anchor: {before: markNode}, head: {before: markNode}})
+			container.remove()
+		})
+
+		it('rewrites the stored anchor when the caret crosses a shared boundary at the same offset', () => {
+			// THE gate on the deleted numeric-equality guard, and the behavior change of this
+			// phase. `{node: 'ab', offset: 2}` and `{before: mark}` are both absolute offset 2,
+			// so the guard's `current.start === raw.start && current.end === raw.end` short-
+			// circuited before the write and the model kept believing the caret was in the
+			// text. Re-introducing the guard turns exactly this case red.
+			const {store, container, mark} = mountStructuralInlineMark('ab@[x]cd')
+			const markNode = store.tokens.nodes()[1]
+			store.selection.select({node: textRoot(store), offset: 2})
+			caretAt(mark, 0)
+
+			document.dispatchEvent(new Event('selectionchange'))
+
+			expect(store.selection.anchors()).toEqual({anchor: {before: markNode}, head: {before: markNode}})
+			container.remove()
+		})
+
+		it('focusin with no DOM selection clears the stored anchors', () => {
+			// One of the two exits, and they are NOT interchangeable: no DOM selection is the
+			// DOM saying "nothing is selected", which the model must follow. Swapping this
+			// exit with the one below turns both cases red.
+			const {store, container, before} = mountStructuralInlineMark('ab@[x]cd')
+			store.selection.select({node: textRoot(store), offset: 1})
+			expect(store.selection.anchors()).toBeDefined()
+
+			window.getSelection()?.removeAllRanges()
+			before.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
+
+			expect(store.selection.anchors()).toBeUndefined()
+			container.remove()
+		})
+
+		it('focusin with an unresolvable boundary leaves the stored anchors standing', () => {
+			// The other exit (spec S2 D4): `anchorFor` answering `undefined` means "the DOM
+			// cannot be read here", not "nothing is selected" — the previous anchors stay and
+			// the next `selectionchange` corrects them. A boundary outside the container is the
+			// reachable form of that.
+			const {store, container, before} = mountStructuralInlineMark('ab@[x]cd')
+			const textNode = textRoot(store)
+			store.selection.select({node: textNode, offset: 1})
+
+			const outside = document.createElement('div')
+			outside.append(document.createTextNode('elsewhere'))
+			document.body.append(outside)
+			caretAt(outside.firstChild!, 3)
+			before.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
+
+			expect(store.selection.anchors()).toEqual({
+				anchor: {node: textNode, offset: 1},
+				head: {node: textNode, offset: 1},
+			})
+			outside.remove()
+			container.remove()
+		})
 	})
 
 	describe('selectAll', () => {

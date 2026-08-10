@@ -29,20 +29,25 @@ export type SelectionDeps = {
  * derivations. Anchors-not-offsets is S1 D7.
  */
 export type Selection = {
-	/**
-	 * THE stored anchors, as a SIGNAL and not just a getter: `SelectionDriver`'s watch on
-	 * this field needs something to watch, and it must be the anchors and NOT the derived
-	 * `range` — at a shared boundary `range` dedupes on `shallow` and the watch never
-	 * fires (8 browser assertions across three focus specs).
-	 */
-	readonly stored: Signal<Anchors | undefined>
 	readonly range: Computed<Range | undefined>
 	readonly position: Signal<number | undefined>
 	readonly isAllSelected: Computed<boolean>
+	/**
+	 * THE read of the stored anchors, and the only one: the writable signal behind it is
+	 * private, so every write goes through {@link Selection.select} / {@link Selection.clear}
+	 * and their "did it actually change" contract.
+	 *
+	 * WATCHABLE — a tracked read, which is what `SelectionDriver`'s caret-application watch
+	 * subscribes to. It must be the anchors and NOT the derived `range`: at a shared boundary
+	 * `range` dedupes on `shallow`, so `placeAtHandle` changes the anchor without changing
+	 * the number and a `range` watch never fires (8 browser assertions across three focus
+	 * specs).
+	 */
 	anchors(): Anchors | undefined
 	select(anchor: NodeAnchor, head?: NodeAnchor): boolean
 	selectNode(node: TreeNode, boundary: 'start' | 'end'): boolean
 	selectAll(): void
+	clear(): boolean
 	repair(result: TransactionResult): void
 }
 
@@ -126,6 +131,15 @@ export function createSelection(deps: SelectionDeps): Selection {
 	 */
 	const select = (anchor: NodeAnchor, head: NodeAnchor = anchor): boolean => stored({anchor, head})
 
+	/**
+	 * @internal THE drop. Its four callers are `SelectionDriver`'s "there is no selection
+	 * here" exits — no DOM selection, `focusin` with no target, `focusout` past the
+	 * microtask, and a boundary outside the editor. A verb rather than a `stored(undefined)`
+	 * reaching across the module boundary, so those exits obey the same "did it actually
+	 * change" contract {@link select} does.
+	 */
+	const clear = (): boolean => stored(undefined)
+
 	const selectNode = (node: TreeNode, boundary: 'start' | 'end'): boolean => {
 		// The NODE is the disambiguator two tokens sharing a boundary offset need — the job
 		// the consume-once `#preferredHandle` stash did (spec S1 §4.6 item 5). A mark has no
@@ -179,5 +193,5 @@ export function createSelection(deps: SelectionDeps): Selection {
 	 */
 	const anchors = (): Anchors | undefined => stored()
 
-	return {stored, range, position, isAllSelected, anchors, select, selectNode, selectAll, repair}
+	return {range, position, isAllSelected, anchors, select, selectNode, selectAll, clear, repair}
 }

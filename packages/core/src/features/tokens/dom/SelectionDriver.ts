@@ -28,7 +28,8 @@ export type SelectionDriverDeps = {
 	placeCaret(rawPosition: number): boolean
 	selectRange(start: number, end: number): boolean
 	offsetOf(anchor: NodeAnchor): number
-	anchorAt(offset: number): NodeAnchor
+	/** THE DOM→model direction: a live DOM boundary as an anchor in the live tree, forming no offset. */
+	anchorFor(node: Node, offset: number, affinity?: 'before' | 'after'): NodeAnchor | undefined
 }
 
 /**
@@ -69,7 +70,10 @@ export class SelectionDriver {
 			// Separately, `range` also moves when adoption shifts positions, and re-placing on
 			// that would fight the DOM after every commit; the post-commit re-place is the
 			// `tokens.changed` watch above, which fires only once the DOM is consistent.
-			watch(this.deps.selection.stored, () => this.#applySelection())
+			watch(
+				() => this.deps.selection.anchors(),
+				() => this.#applySelection()
+			)
 		})
 	}
 
@@ -182,35 +186,39 @@ export class SelectionDriver {
 	}
 
 	#trackSelection(container: HTMLElement): void {
+		/**
+		 * THE DOM→model direction, and the whole of it: the DOM's own boundaries resolved
+		 * straight into anchors in the live tree. No offset is formed anywhere on this path,
+		 * so the anchor the DOM produces IS the anchor stored and `anchorEquals` dedupes on
+		 * identity.
+		 *
+		 * That is what retired the numeric-equality guard this used to open with. The guard
+		 * existed only because `anchorAt(offsetOf(a)) !== a` at a shared boundary — `anchorAt`
+		 * is right-affine, so every deliberately far-side anchor (`{before}`, `{after}`, an
+		 * end-of-text offset) came back as a DIFFERENT anchor with the SAME number and dragged
+		 * focus onto the neighbouring text node. With no round-trip the premise is gone, and
+		 * with it the guard's cost: a caret that MOVES ACROSS a shared boundary without moving
+		 * its offset now updates the stored anchor, where the guard suppressed it.
+		 *
+		 * THE TWO EXITS DIFFER DELIBERATELY, and both are the pre-anchor behavior:
+		 * no DOM selection CLEARS; an unresolvable boundary LEAVES THE ANCHORS STANDING
+		 * (spec S2 D4 — `undefined` means "the DOM cannot be read here", and the next
+		 * `selectionchange` corrects it). Gated by `SelectionDriver.spec`'s two
+		 * "focusin …" cases, which swap red for red if the exits are swapped.
+		 */
 		const sync = (): void => {
-			const raw = this.readRaw()?.range
-			// GUARD, and it is load-bearing (measured): the DOM→anchor round-trip is NOT
-			// idempotent. `readRaw` answers an absolute offset; `anchorAt` is right-affine, so
-			// it re-resolves a shared boundary onto the LAST node containing that offset. An
-			// anchor deliberately placed on the OTHER side — every `{before}`, every `{after}`,
-			// every end-of-text anchor `placeAtHandle` stores — therefore comes back as a
-			// DIFFERENT anchor with the SAME number. Without this guard `anchorEquals` says
-			// "changed", the `#anchors` watch fires, and the async `selectionchange` drags
-			// focus back onto the neighbouring text node. Rewriting only when the NUMBER moved
-			// keeps the DOM as the authority for user-driven selection while leaving a
-			// programmatic anchor that already agrees with the DOM alone.
-			const current = this.deps.selection.range()
-			if (raw && current && current.start === raw.start && current.end === raw.end) return
-			// STILL a round-trip through absolute offsets: `readRaw` resolves the DOM against
-			// BIND-GENERATION positions (spec S1 D9) while `anchorAt` resolves against live ones,
-			// so during the adopt→bind window the two spaces can disagree. Improving that means
-			// a DOM-node→TreeNode path through `handleAt`, which would have to re-implement
-			// `boundaryFor`'s container/child-sequence/mark cases. Out of scope here; recorded
-			// so it is a decision, not an oversight.
-			//
-			// THE ONE RECORDED GAP of the S1.6c hardening pass, and it is ungatable rather
-			// than merely ungated: the pending window is exactly when no bound surface answers,
-			// so a test can neither observe the disagreement nor construct it. The guard above
-			// — the round-trip's NON-IDEMPOTENCE — is a different claim and is gated, by the
-			// 8 browser assertions it names.
-			this.deps.selection.stored(
-				raw ? {anchor: this.deps.anchorAt(raw.start), head: this.deps.anchorAt(raw.end)} : undefined
-			)
+			const range = this.deps.domSelection()?.range
+			if (!range) {
+				this.deps.selection.clear()
+				return
+			}
+			// The same affinities the numeric read uses, and a DOM Range is always
+			// document-ordered, so `anchor` is the low end and `head` the high one — the
+			// normalization `#rawSelectionFrom` did by hand.
+			const anchor = this.deps.anchorFor(range.startContainer, range.startOffset, 'after')
+			const head = this.deps.anchorFor(range.endContainer, range.endOffset, 'before')
+			if (!anchor || !head) return
+			this.deps.selection.select(anchor, head)
 		}
 
 		const syncIfInEditor = (node: Node): void => {
@@ -220,14 +228,14 @@ export class SelectionDriver {
 				return
 			}
 			if (at === 'control') return
-			this.deps.selection.stored(undefined)
+			this.deps.selection.clear()
 		}
 
 		listen(container, 'focusin', e => {
 			if (this.#isPlacingCaret) return
 			const target = e.target instanceof HTMLElement ? e.target : undefined
 			if (!target) {
-				this.deps.selection.stored(undefined)
+				this.deps.selection.clear()
 				return
 			}
 			syncIfInEditor(target)
@@ -235,7 +243,7 @@ export class SelectionDriver {
 
 		listen(container, 'focusout', () => {
 			queueMicrotask(() => {
-				if (!container.contains(document.activeElement)) this.deps.selection.stored(undefined)
+				if (!container.contains(document.activeElement)) this.deps.selection.clear()
 			})
 		})
 
