@@ -41,7 +41,7 @@ export function createBoundary(deps: {
 	 */
 	isBlock?: () => boolean
 	/**
-	 * Pre-adoption selection capture (spec D7). Read once per adoption — see
+	 * Pre-adoption selection capture (spec S1 D7). Read once per adoption — see
 	 * `TransactionResult.selectionAfter` for why the boundary and not the dispatcher
 	 * owns this. Store supplies `() => selection.anchors()` as a deferred thunk
 	 * (declaration order: `tokens` is built before `selection`), so it must not be
@@ -62,7 +62,7 @@ export function createBoundary(deps: {
 	const fold = (next: string, window: Window): void => {
 		// Read BEFORE `adopt`, which repairs the stored selection through `onResult`. The
 		// anchors themselves hold no coordinate, so it is adoption — not this call site —
-		// that owes the pre-mutation reading of their positions (spec D7).
+		// that owes the pre-mutation reading of their positions (spec S1 D7).
 		const selectionBefore = deps.selection?.()
 		const parsed = parseValue(deps.parser(), next)
 		const tokens = deps.isBlock?.() === true ? filterEmptyText(parsed) : parsed

@@ -104,7 +104,7 @@ export class SelectionDriver {
 		const anchors = this.deps.selection.anchors()
 		if (anchors === undefined) return
 
-		// NO CLAMP (spec §4.6 item 5): an anchor cannot point past its own node, `anchorAt`
+		// NO CLAMP (spec S1 §4.6 item 5): an anchor cannot point past its own node, `anchorAt`
 		// answers `'end'` for an out-of-range offset, and `TokenHandle.placeCaret` bounds
 		// the local offset to the surface it places in. There is nothing left to clamp and
 		// nothing to write back.
@@ -125,7 +125,7 @@ export class SelectionDriver {
 	 * Collapsed placement through the anchor's OWN node: the handle places a LOCAL offset
 	 * inside its own surface, so it cannot pick the wrong node at a shared boundary and it
 	 * never converts to an absolute coordinate (which would resolve against
-	 * bind-generation positions, spec D9). The raw fallback covers an anchor whose node
+	 * bind-generation positions, spec S1 D9). The raw fallback covers an anchor whose node
 	 * has no bound handle yet — the latch-gated `handle(id)` serves `undefined` during the
 	 * pending window, exactly as the old stash did.
 	 */
@@ -197,7 +197,7 @@ export class SelectionDriver {
 			const current = this.deps.selection.range()
 			if (raw && current && current.start === raw.start && current.end === raw.end) return
 			// STILL a round-trip through absolute offsets: `readRaw` resolves the DOM against
-			// BIND-GENERATION positions (spec D9) while `anchorAt` resolves against live ones,
+			// BIND-GENERATION positions (spec S1 D9) while `anchorAt` resolves against live ones,
 			// so during the adopt→bind window the two spaces can disagree. Improving that means
 			// a DOM-node→TreeNode path through `handleAt`, which would have to re-implement
 			// `boundaryFor`'s container/child-sequence/mark cases. Out of scope here; recorded

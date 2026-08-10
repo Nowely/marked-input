@@ -65,7 +65,7 @@ export class SelectionController {
 		this.#state.repair(result)
 	}
 
-	/** Spec §2.3's `input.selection()`: the STORED anchors (spec D7). */
+	/** Spec §2.3's `input.selection()`: the STORED anchors (spec S1 D7). */
 	anchors(): Anchors | undefined {
 		return this.#state.anchors()
 	}

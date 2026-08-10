@@ -128,8 +128,8 @@ export function createSelection(deps: SelectionDeps): Selection {
 
 	const selectNode = (node: TreeNode, boundary: 'start' | 'end'): boolean => {
 		// The NODE is the disambiguator two tokens sharing a boundary offset need — the job
-		// the consume-once `#preferredHandle` stash did (spec §4.6 item 5). A mark has no
-		// anchorable interior (spec §2.3), so it answers with its own boundary.
+		// the consume-once `#preferredHandle` stash did (spec S1 §4.6 item 5). A mark has no
+		// anchorable interior (spec S1 §2.3), so it answers with its own boundary.
 		//
 		// Re-resolving the number instead (`tokens.anchorAt(node.position.start)`) is what
 		// this replaces, and it is gated twice over: `dom/SelectionDriver.spec`'s "places at
@@ -147,7 +147,7 @@ export function createSelection(deps: SelectionDeps): Selection {
 	}
 
 	/**
-	 * @internal Post-adoption caret repair (spec S1 D7, §4.5). Called by the token layer
+	 * @internal Post-adoption caret repair (spec S1 D7, S1 §4.5). Called by the token layer
 	 * inside the commit, after the pipeline applied — never by anything else. Together with
 	 * {@link anchors} this is the `SelectionPort` `TokenModel` is constructed with —
 	 * `{anchors(), repair()}`, reaching this module through `SelectionController`'s

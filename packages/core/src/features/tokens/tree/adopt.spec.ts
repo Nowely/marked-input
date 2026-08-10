@@ -564,7 +564,7 @@ const caretOn = (node: TreeNode, offset: number): Anchors => {
 	return {anchor, head: anchor}
 }
 
-describe('adopt: selectionAfter (spec D7)', () => {
+describe('adopt: selectionAfter (spec S1 D7)', () => {
 	it('resolves a caret inside the edited region to the end of the inserted text', () => {
 		// The channel's own gate, at the same affinity the `map` cases above pin: typing 'X'
 		// at 2 of 'hello' leaves the caret AFTER it (3), not before it (2) and not past it (4).

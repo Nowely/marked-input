@@ -122,7 +122,7 @@ describe('createSelection', () => {
 		})
 	})
 
-	describe('caret repair (spec D7, AC-3.2/3.3/3.4)', () => {
+	describe('caret repair (spec S1 D7, AC-3.2/3.3/3.4)', () => {
 		/**
 		 * `store.tokens.replace` — NOT `store.edit.replace` (it was `store.value.replace`
 		 * until S1.8 step 5 deleted the facade). EditController writes the caret itself
@@ -182,7 +182,7 @@ describe('createSelection', () => {
 		})
 
 		it('repairs the caret through the EXACT edit window, not a narrowed one', () => {
-			// Gates the offset shim's whole-value-only narrowing (S1.6a mutation 6, spec D8).
+			// Gates the offset shim's whole-value-only narrowing (S1.6a mutation 6, spec S1 D8).
 			// 'hello' + replace [0,3) with 'hey': the exact window {0,3,3} maps a caret at 1 to 3
 			// (inside → start + insertedLength). Narrowing to the shared-prefix gap window
 			// {2,3,1} maps it to 1 instead, because 1 is then strictly BEFORE the window.
@@ -203,7 +203,7 @@ describe('createSelection', () => {
 		})
 	})
 
-	describe('controlled caret (spec AC-4.4)', () => {
+	describe('controlled caret (spec S1 AC-4.4)', () => {
 		// MOUNTED, and measured to have to be: in controlled mode the echo arrives through the
 		// host, so with no container three of these four answer the pre-edit offset instead.
 		it('repairs at the echo, once, with no optimistic move', () => {

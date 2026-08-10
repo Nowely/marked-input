@@ -73,7 +73,7 @@ describe('SelectionDriver', () => {
 	})
 
 	it('places at a mark whose start equals the previous text node end, through the mark itself', () => {
-		// The gate for storing the NODE anchor instead of a numeric round-trip (spec §4.6
+		// The gate for storing the NODE anchor instead of a numeric round-trip (spec S1 §4.6
 		// item 5): in 'ab@[x]cd' the mark starts at 2, exactly where 'ab' ends, so a
 		// re-resolved `anchorAt(2)` — right-affine — answers the TEXT node and the caret
 		// lands in the PREVIOUS surface. `{before: mark}` cannot be confused that way.
@@ -206,7 +206,7 @@ describe('SelectionDriver', () => {
 		})
 
 		it('resolves an out-of-range caret intent to the document end', () => {
-			// The clamp and its write-back are GONE (spec §4.6 item 5) and the assertion is
+			// The clamp and its write-back are GONE (spec S1 §4.6 item 5) and the assertion is
 			// unchanged: `anchorAt(999)` finds no node containing the offset, so it answers
 			// `'end'`, which resolves to the last root's end.
 			const store = new Store()

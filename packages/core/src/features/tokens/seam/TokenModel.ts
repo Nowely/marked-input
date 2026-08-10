@@ -22,14 +22,14 @@ import type {TokenDelta} from './commitInput'
 import {fromTransaction} from './treeInput'
 
 /**
- * The selection's two ends of the D7 protocol. A THUNK in `Store` because `tokens` is
+ * The selection's two ends of the S1 D7 protocol. A THUNK in `Store` because `tokens` is
  * built before `selection`; invoked only at commit/arrival time, never during
  * construction.
  */
 export interface SelectionPort {
-	/** Pre-adoption capture (spec D7): the STORED anchors, which name no coordinate. */
+	/** Pre-adoption capture (spec S1 D7): the STORED anchors, which name no coordinate. */
 	anchors(): Anchors | undefined
-	/** Post-adoption repair (spec D7): applies the result's `selectionAfter`. */
+	/** Post-adoption repair (spec S1 D7): applies the result's `selectionAfter`. */
 	repair(result: TransactionResult): void
 }
 
@@ -326,7 +326,7 @@ export class TokenModel {
 	 * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree.
 	 *
 	 * NO PRODUCTION CALLER until S2.4 — this is a pre-cutover phase built
-	 * alongside the live path (spec §11, S2.1). The subscription guard lives at
+	 * alongside the live path (spec S2 §11, S2.1). The subscription guard lives at
 	 * {@link DomModel.anchorFor}, the walk's own entry, so it holds for every
 	 * caller rather than only this one.
 	 */

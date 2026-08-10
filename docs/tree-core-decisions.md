@@ -21,6 +21,12 @@ and its siblings in the same directory.
 Around 200 comments across `packages/` cite the spec by decision or section number. The
 spec is gone from the tree, so here is the decoder. Full text at the ref above.
 
+**An UNPREFIXED ref is S1's** — `spec D7`, `spec §4.6` and the `AC-*` numbers all point
+into the table below. S2 (`docs/superpowers/plans/2026-08-10-markput-s2-core-addressing-v1.md`)
+reuses the same numbering for different decisions, so its citations carry an explicit
+`S2` (`spec S2 D10`). Where the two could be confused — a comment S2 wrote, or one it
+moved into a file it created — the S1 ref is spelled `spec S1 D7` too.
+
 | Ref    | What it says                                                                                                |
 | ------ | ----------------------------------------------------------------------------------------------------------- |
 | `D1`   | Tree is the source of truth; the string is a computed projection.                                           |

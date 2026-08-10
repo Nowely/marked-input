@@ -86,7 +86,7 @@ export interface MarkCommands {
 export type NodeAnchor = {node: TextNode; offset: number} | {before: TreeNode} | {after: TreeNode} | 'start' | 'end'
 
 /**
- * A selection's two ends in tree space (spec D7): `anchor` is the fixed end, `head` the
+ * A selection's two ends in tree space (spec S1 D7): `anchor` is the fixed end, `head` the
  * one that moves. Declared here rather than beside the state that stores it, for
  * {@link MarkCommands}'s reason — `types.ts` is where the tree layer's contracts live, and
  * {@link TransactionResult} speaks it, so `selection.ts` would otherwise be imported BY the
@@ -132,7 +132,7 @@ export interface TransactionResult {
 	 */
 	shifted: readonly TreeNode[]
 	/**
-	 * Where the pre-adoption selection LANDS after this adoption (spec D7), or `undefined`
+	 * Where the pre-adoption selection LANDS after this adoption (spec S1 D7), or `undefined`
 	 * when there was none. THE selection channel — the capture itself is `adopt`'s
 	 * `selectionBefore` parameter and is deliberately not echoed back out: it had no
 	 * reader left once `repair` moved onto this field, and a result that carries its own
@@ -153,7 +153,7 @@ export interface TransactionResult {
 	 * implementations would have to ignore.
 	 */
 	selectionAfter: Anchors | undefined
-	/** Valid for PRE-adoption offsets only (spec D7). */
+	/** Valid for PRE-adoption offsets only (spec S1 D7). */
 	map(offset: number): NodeAnchor
 }
 
