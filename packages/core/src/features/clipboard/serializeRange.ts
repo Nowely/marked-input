@@ -1,6 +1,6 @@
-import type {Range} from '../../../shared/editorContracts'
-import type {Token} from '../parser/types'
-import {toString} from '../parser/utils/toString'
+import type {Range} from '../../shared/editorContracts'
+import type {Token} from '../tokens/parser/types'
+import {toString} from '../tokens/parser/utils/toString'
 
 function trimTokensForRange(tokens: readonly Token[], range: Range): Token[] {
 	return tokens
