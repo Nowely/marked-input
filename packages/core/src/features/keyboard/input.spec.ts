@@ -48,9 +48,10 @@ function inputEvent(inputType: string, range: Range, init?: InputEventInit): Inp
 }
 
 describe('handleBeforeInput()', () => {
-	it('inserts text through replaceRange using target ranges', () => {
+	it('inserts text at the target range resolved as anchors', () => {
 		const {store, container, textNode} = mountStructuralInline()
-		const replaceRange = vi.spyOn(store.edit, 'replaceRange')
+		const replace = vi.spyOn(store.edit, 'replace')
+		const node = store.tokens.nodes()[0]
 		const range = document.createRange()
 		range.setStart(textNode, 1)
 		range.setEnd(textNode, 1)
@@ -61,14 +62,15 @@ describe('handleBeforeInput()', () => {
 		textNode.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(true)
-		expect(replaceRange).toHaveBeenCalledWith({start: 1, end: 1}, 'x')
+		// The DOM boundary resolves to the LIVE node, not to the number 1 (spec S2 §4.5).
+		expect(replace).toHaveBeenCalledWith({node, offset: 1}, {node, offset: 1}, 'x')
 		expect(store.selection.range()).toEqual({start: 2, end: 2})
 		container.remove()
 	})
 
 	it('ignores beforeinput from editable mark descendants', () => {
 		const {store, container, descendantText} = mountStructuralMarkWithDescendant()
-		const replaceRange = vi.spyOn(store.tokens, 'replace')
+		const replaceRange = vi.spyOn(store.tokens, 'replaceBetween')
 		const range = document.createRange()
 		range.setStart(descendantText, 0)
 		range.setEnd(descendantText, 0)
@@ -132,6 +134,64 @@ describe('handleBeforeInput()', () => {
 		expect(event.defaultPrevented).toBe(true)
 		expect(store.tokens.value()).toBe('')
 		container.remove()
+	})
+
+	/**
+	 * THE mark-swallow gate (spec S2 AC-4.4), and the only one outside the browser suites:
+	 * a caret sitting exactly on a mark's boundary deletes the WHOLE mark, not one character
+	 * of the neighbouring text.
+	 *
+	 * Both directions are asserted because that is what makes the case discriminate —
+	 * measured: inverting `anchorsForDelete`'s direction (`-1`/`+1` swapped) turns BOTH red,
+	 * where either one alone would only pin "some mark got deleted".
+	 */
+	describe('mark swallow', () => {
+		function mountMarkFixture() {
+			const store = new Store()
+			store.props.set({defaultValue: 'he@[x]llo', Mark: () => null, options: [{markup: '@[__value__]'}]})
+			const container = document.createElement('div')
+			const head = document.createElement('span')
+			head.append(document.createTextNode('he'))
+			const mark = document.createElement('span')
+			mark.append(document.createTextNode('x'))
+			const tail = document.createElement('span')
+			tail.append(document.createTextNode('llo'))
+			container.append(head, mark, tail)
+			document.body.append(container)
+			store.host.container(container)
+			store.host.rendered()
+			return {store, container, head, tail}
+		}
+
+		function caretAt(node: Node, offset: number) {
+			const selection = window.getSelection()
+			if (!selection) throw new Error('no window selection')
+			const range = document.createRange()
+			range.setStart(node, offset)
+			range.setEnd(node, offset)
+			selection.removeAllRanges()
+			selection.addRange(range)
+		}
+
+		it('Backspace right AFTER a mark deletes the mark', () => {
+			const {store, container, tail} = mountMarkFixture()
+			caretAt(tail.firstChild!, 0)
+
+			container.dispatchEvent(new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true}))
+
+			expect(store.tokens.value()).toBe('hello')
+			container.remove()
+		})
+
+		it('Delete right BEFORE a mark deletes the mark', () => {
+			const {store, container, head} = mountMarkFixture()
+			caretAt(head.firstChild!, 2)
+
+			container.dispatchEvent(new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true}))
+
+			expect(store.tokens.value()).toBe('hello')
+			container.remove()
+		})
 	})
 
 	/**

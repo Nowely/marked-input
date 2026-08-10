@@ -4,7 +4,7 @@ import type {Computed, Signal} from '../../shared/signals'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import {createSelection, SelectionDriver} from '../tokens'
-import type {Anchors, NodeAnchor, Selection, TokenHandle, TokenModel, TransactionResult} from '../tokens'
+import type {Anchors, NodeAnchor, Selection, TokenHandle, TokenModel, TransactionResult, TreeNode} from '../tokens'
 
 /**
  * The selection seam, and nothing more: {@link Selection} holds the tree-space state and
@@ -60,6 +60,11 @@ export class SelectionController {
 		return this.#state.select(anchor, head)
 	}
 
+	/** @internal See {@link Selection.selectNode} — the node IS the disambiguator at a shared boundary. */
+	selectNode(node: TreeNode, boundary: 'start' | 'end'): boolean {
+		return this.#state.selectNode(node, boundary)
+	}
+
 	/** @internal See {@link Selection.repair} — the `SelectionPort` half `TokenModel` calls. */
 	repair(result: TransactionResult): void {
 		this.#state.repair(result)
@@ -79,6 +84,12 @@ export class SelectionController {
 		this.#driver.focusFirst()
 	}
 
+	/** THE DOM-truth read (spec S2 D5): see {@link SelectionDriver.domAnchors}. */
+	domAnchors(): Anchors | undefined {
+		return this.#driver.domAnchors()
+	}
+
+	/** @deprecated {@link domAnchors} projected through `offsetOf`; only `ClipboardController` still needs numbers. */
 	readRaw(): RawSelection | undefined {
 		return this.#driver.readRaw()
 	}

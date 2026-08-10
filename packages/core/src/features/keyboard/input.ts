@@ -1,12 +1,12 @@
 import {KEYBOARD} from '../../shared/constants'
-import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'selection' | 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
-import type {Token} from '../tokens'
-import {rawRangeFromInputEvent} from './inputRange'
+import type {Anchors} from '../tokens'
+import {anchorEquals} from '../tokens'
+import {anchorsFromInputEvent} from './inputAnchors'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'paste', e => {
@@ -34,7 +34,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 
 	// NOT redundant with the fallthrough below, and the difference is measured rather than
 	// argued: when the STORED selection says all-selected but the live DOM selection is gone,
-	// `readRaw()` answers `undefined` and the fallthrough returns without preventing the
+	// `domAnchors()` answers `undefined` and the fallthrough returns without preventing the
 	// default — letting the browser mutate contenteditable behind the model's back. Gated by
 	// `input.spec`'s 'clears the whole value even when the DOM selection is gone'; the
 	// obvious "Backspace with everything selected" case does NOT discriminate it.
@@ -44,15 +44,15 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 		return
 	}
 
-	const raw = store.selection.readRaw()
-	if (!raw) return
+	const anchors = store.selection.domAnchors()
+	if (!anchors) return
 
 	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
-	const range = rangeForDelete(store, inputType, raw.range)
-	if (!range) return
+	const target = anchorsForDelete(store, inputType, anchors)
+	if (!target) return
 
 	event.preventDefault()
-	store.edit.replaceRange(range, '')
+	store.edit.replace(target.anchor, target.head, '')
 }
 
 function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent): void {
@@ -77,17 +77,17 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 
 	if (store.props.layout.isBlock()) return
 
-	const raw = rawRangeFromInputEvent(store, event)
-	if (!raw) return
+	const anchors = anchorsFromInputEvent(store, event)
+	if (!anchors) return
 
 	const replacement = replacementForInput(container, event)
 	if (replacement === undefined) return
 
-	const range = rangeForInput(store, event, raw)
-	if (!range) return
+	const target = anchorsForInput(store, event, anchors)
+	if (!target) return
 
 	event.preventDefault()
-	store.edit.replaceRange(range, replacement)
+	store.edit.replace(target.anchor, target.head, replacement)
 }
 
 function replacementForInput(container: HTMLElement, event: InputEvent): string | undefined {
@@ -100,38 +100,31 @@ function replacementForInput(container: HTMLElement, event: InputEvent): string 
 	return undefined
 }
 
-function rangeForInput(store: KbCtx, event: InputEvent, range: Range): Range | undefined {
-	if (!event.inputType.startsWith('delete')) return range
-	return rangeForDelete(store, event.inputType, range)
+function anchorsForInput(store: KbCtx, event: InputEvent, anchors: Anchors): Anchors | undefined {
+	if (!event.inputType.startsWith('delete')) return anchors
+	return anchorsForDelete(store, event.inputType, anchors)
 }
 
-function rangeForDelete(store: KbCtx, inputType: string, range: Range): Range | undefined {
-	if (range.start !== range.end) return range
+/**
+ * A collapsed delete EXPANDS: onto the adjacent MARK when the caret sits exactly on one of
+ * its boundaries — that is the mark swallow — else by one character in the delete's
+ * direction.
+ *
+ * Both arms resolve against the LIVE tree, so typing right before a mark and then deleting
+ * still swallows it. Gated by `input.spec`'s two "mark swallow" cases — MEASURED: inverting
+ * `direction` turns BOTH red, and either one alone would only pin "some mark got deleted".
+ * The browser suites (`Base/keyboard.{react,vue}.spec`) cover it end to end.
+ */
+function anchorsForDelete(store: KbCtx, inputType: string, anchors: Anchors): Anchors | undefined {
+	if (!anchorEquals(anchors.anchor, anchors.head)) return anchors
 
-	// Fresh read: adjacency compares mark POSITIONS against the live caret
-	// position; tokens() is the reconciled tree consistent with value.current()
-	// (typing right before a mark, then deleting, must still swallow the mark).
-	const adjacentMark = adjacentMarkRange(store.tokens.current(), range.start, inputType.endsWith('Backward'))
-	if (adjacentMark) return adjacentMark
+	const direction = inputType.endsWith('Backward') ? -1 : 1
+	const mark = store.tokens.adjacentMark(anchors.anchor, direction)
+	if (mark) return {anchor: {before: mark}, head: {after: mark}}
 
-	if (inputType.endsWith('Backward') && range.start > 0) {
-		return {start: range.start - 1, end: range.start}
-	}
-	if (inputType.endsWith('Forward') && range.end < store.tokens.value().length) {
-		return {start: range.start, end: range.end + 1}
-	}
-	return undefined
-}
-
-function adjacentMarkRange(tokens: readonly Token[], position: number, backward: boolean): Range | undefined {
-	for (const token of tokens) {
-		const nested = token.type === 'mark' ? adjacentMarkRange(token.children, position, backward) : undefined
-		if (nested) return nested
-		if (token.type === 'mark' && (backward ? token.position.end === position : token.position.start === position)) {
-			return token.position
-		}
-	}
-	return undefined
+	const stepped = store.tokens.step(anchors.anchor, direction)
+	if (!stepped) return undefined
+	return direction === -1 ? {anchor: stepped, head: anchors.head} : {anchor: anchors.anchor, head: stepped}
 }
 
 function handlePaste(store: KbCtx, container: HTMLElement, event: ClipboardEvent): void {

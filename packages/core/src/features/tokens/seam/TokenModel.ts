@@ -10,7 +10,7 @@ import {applyEditableState} from '../dom/editableState'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import type {MarkToken, Token} from '../parser/types'
-import {adjacentMark, anchorAt, offsetOfAnchor} from '../tree/anchors'
+import {adjacentMark, anchorAt, offsetOfAnchor, stepAnchor} from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
 import {lowerReplace} from '../tree/offsetShim'
@@ -250,6 +250,11 @@ export class TokenModel {
 	 */
 	adjacentMark(anchor: NodeAnchor, direction: -1 | 1): MarkNode | undefined {
 		return untracked(() => adjacentMark(this.#tree.roots(), anchor, direction))
+	}
+
+	/** Spec S2 §4.5: one character back (`-1`) or forward (`+1`). See {@link stepAnchor} for the fail-closed case. */
+	step(anchor: NodeAnchor, direction: -1 | 1): NodeAnchor | undefined {
+		return untracked(() => stepAnchor(this.#tree.roots(), anchor, direction))
 	}
 
 	/**

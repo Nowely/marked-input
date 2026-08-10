@@ -1,5 +1,4 @@
 import {KEYBOARD} from '../../shared/constants'
-import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
@@ -7,8 +6,9 @@ type KbCtx = Pick<Store, 'selection' | 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, mergeDragRows, canMergeRows, deleteDragRow} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
-import type {Token, TokenHandle} from '../tokens'
-import {rawRangeFromInputEvent} from './inputRange'
+import type {Anchors, NodeAnchor, Token, TokenHandle} from '../tokens'
+import {anchorEquals} from '../tokens'
+import {anchorsFromInputEvent} from './inputAnchors'
 
 function isTextLikeRow(token: Token): boolean {
 	if (token.type === 'text') return true
@@ -136,9 +136,16 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 		return
 	}
 
-	const raw = store.selection.readRaw()
-	const absolutePos = raw ? raw.range.start : token.position.end
-	store.edit.replaceRange({start: absolutePos, end: absolutePos}, newRowContent)
+	// The caret, or — with no readable DOM selection — the end of the row this Enter split.
+	const at = store.selection.domAnchors()?.anchor ?? afterRow(store, token)
+	if (!at) return
+	store.edit.replace(at, at, newRowContent)
+}
+
+/** The row token's live node as an `{after}` anchor: `token.position.end` without the offset. */
+function afterRow(store: KbCtx, token: Token): NodeAnchor | undefined {
+	const node = token.id === undefined ? undefined : store.tokens.find(token.id)
+	return node && {after: node}
 }
 
 function focusRow(store: KbCtx, token: Token, rowIndex: number, caret: 'start' | 'end'): void {
@@ -241,26 +248,28 @@ function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: Inp
 }
 
 function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string): void {
-	const raw = rawRangeFromInputEvent(store, event)
-	if (!raw) return
-	const range = rangeForBlockInput(store, event, raw)
-	if (!range) return
+	const anchors = anchorsFromInputEvent(store, event)
+	if (!anchors) return
+	const target = anchorsForBlockInput(store, event, anchors)
+	if (!target) return
 
 	event.preventDefault()
-	store.edit.replaceRange(range, replacement)
+	store.edit.replace(target.anchor, target.head, replacement)
 }
 
-function rangeForBlockInput(store: KbCtx, event: InputEvent, range: Range): Range | undefined {
-	if (!event.inputType.startsWith('delete')) return range
-	if (range.start !== range.end) return range
+/**
+ * No mark-swallow arm, unlike `input.ts`: every block row IS a mark, so expanding onto the
+ * adjacent one would delete a whole row on a plain Backspace. Row-level deletes are
+ * {@link handleDelete}'s, and it preventDefaults before this ever runs.
+ */
+function anchorsForBlockInput(store: KbCtx, event: InputEvent, anchors: Anchors): Anchors | undefined {
+	if (!event.inputType.startsWith('delete')) return anchors
+	if (!anchorEquals(anchors.anchor, anchors.head)) return anchors
 
-	if (event.inputType.endsWith('Backward') && range.start > 0) {
-		return {start: range.start - 1, end: range.start}
-	}
-	if (event.inputType.endsWith('Forward') && range.end < store.tokens.value().length) {
-		return {start: range.start, end: range.end + 1}
-	}
-	return undefined
+	const direction = event.inputType.endsWith('Backward') ? -1 : 1
+	const stepped = store.tokens.step(anchors.anchor, direction)
+	if (!stepped) return undefined
+	return direction === -1 ? {anchor: stepped, head: anchors.head} : {anchor: anchors.anchor, head: stepped}
 }
 
 function mergeOrFocusNeighbor(

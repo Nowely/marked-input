@@ -5,10 +5,11 @@ export {annotate} from './parser/utils/annotate'
 export {denote} from './parser/utils/denote'
 export {TokenModel} from './seam/TokenModel'
 // The addressing model is part of the token layer's cross-feature contract, not a tree
-// internal: `TokenModel.anchorAt`/`offsetOf` speak `NodeAnchor` in their signatures and
-// `edit/`, `keyboard/` and `overlay/` type on it (plan decision, S1.6c task 8). Only the
-// TYPES: the two modules that compare anchors both live inside this layer and deep-import
-// `anchorEquals` from `./anchors`, so it is not re-exported here.
+// internal: `TokenModel.anchorAt`/`replaceBetween` speak `NodeAnchor` in their signatures and
+// `edit/`, `keyboard/`, `clipboard/` and `overlay/` type on it (plan decision, S1.6c task 8).
+// `anchorEquals` joined them at S2.5, when "is this selection collapsed?" stopped being a
+// numeric comparison for the four keyboard and overlay call sites above this layer.
+export {anchorEquals} from './tree/anchors'
 export type {Anchors, Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TransactionResult, TreeNode} from './tree/types'
 // The two halves of the selection (spec S2 D10): tree-space state here, DOM I/O below.
 // Anchors-not-offsets and the pre-adoption capture are S1 D7. `SelectionController`

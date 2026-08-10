@@ -1,6 +1,8 @@
 import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
+import type {NodeAnchor, TreeNode} from '../tokens'
+import {anchorEquals} from '../tokens'
 
 type KbCtx = Pick<Store, 'selection' | 'props' | 'tokens'>
 
@@ -31,27 +33,38 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	if (!handle || handle === 'control') return
 
 	const isFocusedOnMarkElement = active === handle.element() && !handle.hasTextSurface()
-	// The handle IS the fresh read: its token carries current positions.
-	const token = handle.token()
+	const node = store.tokens.find(handle.id)
+	if (!node) return
 
 	if (!isFocusedOnMarkElement) {
-		const selection = store.selection.readRaw()
-		if (!selection || selection.range.start !== selection.range.end) return
-
-		const atStart = selection.range.start <= token.position.start
-		const atEnd = selection.range.end >= token.position.end
-		if (direction === 'prev' && !atStart) return
-		if (direction === 'next' && !atEnd) return
+		// DOM truth, and the FOLDED `undefined` is right here: "no window selection" and "a
+		// boundary this layer cannot resolve" both mean the caret's position is unknown, and
+		// the pre-S2.5 code bailed on both through the same `!selection` test. Only
+		// collapsed-ness needed splitting out, and that is `anchorEquals` — an anchor
+		// comparison, not a second `undefined`.
+		const anchors = store.selection.domAnchors()
+		if (!anchors || !anchorEquals(anchors.anchor, anchors.head)) return
+		if (!atBoundary(anchors.anchor, node, direction === 'prev' ? 'start' : 'end')) return
 	}
 
 	const sibling = store.tokens.siblingOf(handle.id, direction === 'prev' ? -1 : 1)
 	const siblingHandle = sibling ? store.tokens.handle(sibling.id) : undefined
-	if (!siblingHandle) return
+	// The latch-gated `handle(id)` plus `alive()` is the mount check `placeAtHandle` used to
+	// run for this caller; the placement itself is now the NODE's, which is what disambiguates
+	// the sibling from a neighbour sharing its boundary offset.
+	if (!sibling || !siblingHandle?.alive()) return
 
 	event.preventDefault()
-	// Handle-based placement disambiguates the sibling from any neighbouring
-	// token that shares a boundary position. Position-only placement would pick
-	// the wrong token at text↔mark boundaries. The sibling's id bridges to its
-	// live handle; placeAtHandle reads the handle's current positions.
-	store.selection.placeAtHandle(siblingHandle, direction === 'prev' ? 'end' : 'start')
+	store.selection.selectNode(sibling, direction === 'prev' ? 'end' : 'start')
+}
+
+/** Whether the caret names this node's own start/end — the node-identity form of the old `<=`/`>=` on positions. */
+function atBoundary(anchor: NodeAnchor, node: TreeNode, boundary: 'start' | 'end'): boolean {
+	if (typeof anchor === 'string') return false
+	if ('node' in anchor) {
+		if (anchor.node !== node) return false
+		return anchor.offset === (boundary === 'start' ? 0 : anchor.node.text().length)
+	}
+	if ('before' in anchor) return boundary === 'start' && anchor.before === node
+	return boundary === 'end' && anchor.after === node
 }
