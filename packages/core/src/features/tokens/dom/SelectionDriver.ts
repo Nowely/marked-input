@@ -7,7 +7,7 @@ import type {Token} from '../parser/types'
 import type {TokenDelta} from '../seam/commitInput'
 import {anchorEquals} from '../tree/anchors'
 import type {Selection} from '../tree/selection'
-import type {Id, NodeAnchor, TreeNode} from '../tree/types'
+import type {Anchors, Id, NodeAnchor, TreeNode} from '../tree/types'
 import type {SelectionSnapshot} from './DomModel'
 import type {TokenHandle} from './TokenHandle'
 
@@ -89,8 +89,65 @@ export class SelectionDriver {
 		this.deps.host.container()?.focus()
 	}
 
+	/**
+	 * DOM TRUTH as anchors (spec S2 D5): what the live window selection says right now,
+	 * resolved in the LIVE tree. The `dom*` prefix is the authority marker —
+	 * `selection.anchors()` is what the model believes, this is what the DOM says.
+	 *
+	 * `undefined` for BOTH "no window selection" and "a boundary this layer cannot
+	 * resolve". The one caller that must tell those apart is the DOM sync, which reads
+	 * the range itself and branches before calling {@link #anchorsIn}.
+	 *
+	 * Its five numeric consumers still reach it through {@link readRaw}; they move onto
+	 * anchors in S2.5, which is when this grows callers outside the class.
+	 */
+	domAnchors(): Anchors | undefined {
+		const range = this.deps.domSelection()?.range
+		return range ? this.#anchorsIn(range) : undefined
+	}
+
+	/** The two `anchorFor` calls both DOM-truth reads share; `undefined` if either end declines. */
+	#anchorsIn(range: globalThis.Range): Anchors | undefined {
+		// A DOM Range is always document-ordered, and these are the affinities the numeric
+		// read used, so `anchor` is the low end and `head` the high one.
+		const anchor = this.deps.anchorFor(range.startContainer, range.startOffset, 'after')
+		const head = this.deps.anchorFor(range.endContainer, range.endOffset, 'before')
+		return anchor && head ? {anchor, head} : undefined
+	}
+
+	/**
+	 * DOM truth as absolute offsets: {@link domAnchors} projected through `offsetOf`.
+	 *
+	 * LIVE space now, not bind-generation. The old reading went through
+	 * `SelectionSnapshot.raw`, which adds a `position.start` off the handle's BIND
+	 * generation (spec S1 D9); anchors name live nodes and `offsetOf` reads live
+	 * positions, so the adopt→bind window stops being a coordinate hazard here. It also
+	 * inherits `anchorFor`'s narrower fail-closed conditions (spec S2 D4).
+	 *
+	 * NO `direction` in the answer: anchors carry none, and nothing reads it — the field
+	 * is produced by `DomModel.#rawSelectionFrom` and consumed nowhere in the repo.
+	 * `SelectionSnapshot.raw` still carries it; both die with the numeric space at S2.6.
+	 *
+	 * Answering `undefined` when the window selection is gone is a CONTRACT, not an
+	 * accident: `keyboard/input.ts`'s `handleDeleteKey` falls through WITHOUT
+	 * `preventDefault` on it, leaving the all-selected branch as the only actor. Its gate
+	 * is `input.spec`'s "clears the whole value even when the DOM selection is gone", and
+	 * that gate is INDIRECT — MEASURED: making this answer a value when there is no
+	 * selection leaves the WHOLE repo green, because the all-selected branch masks it. The
+	 * case discriminates only once that branch is also deleted, which is exactly the
+	 * redundancy claim `input.ts` wrote it to refute.
+	 *
+	 * The NUMBERS have no unit gate either — MEASURED: shifting this by +1 leaves the 11
+	 * pinned `SelectionSnapshot.raw` assertions green (they pin `boundaryFor`, which this
+	 * no longer goes through) and turns ~30 storybook assertions red instead, across
+	 * clipboard, drag rows and keyboard focus. That browser suite is the gate.
+	 */
 	readRaw(): RawSelection | undefined {
-		return this.deps.domSelection()?.raw
+		const anchors = this.domAnchors()
+		if (!anchors) return undefined
+		const anchor = this.deps.offsetOf(anchors.anchor)
+		const head = this.deps.offsetOf(anchors.head)
+		return {range: anchor <= head ? {start: anchor, end: head} : {start: head, end: anchor}}
 	}
 
 	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {
@@ -212,13 +269,11 @@ export class SelectionDriver {
 				this.deps.selection.clear()
 				return
 			}
-			// The same affinities the numeric read uses, and a DOM Range is always
-			// document-ordered, so `anchor` is the low end and `head` the high one — the
-			// normalization `#rawSelectionFrom` did by hand.
-			const anchor = this.deps.anchorFor(range.startContainer, range.startOffset, 'after')
-			const head = this.deps.anchorFor(range.endContainer, range.endOffset, 'before')
-			if (!anchor || !head) return
-			this.deps.selection.select(anchor, head)
+			// NOT `domAnchors()`: that folds both `undefined` reasons into one, and the two
+			// exits here must stay apart. The shared half is `#anchorsIn`.
+			const anchors = this.#anchorsIn(range)
+			if (!anchors) return
+			this.deps.selection.select(anchors.anchor, anchors.head)
 		}
 
 		const syncIfInEditor = (node: Node): void => {
