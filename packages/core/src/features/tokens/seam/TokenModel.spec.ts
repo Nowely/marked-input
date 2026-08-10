@@ -155,7 +155,7 @@ describe('TokenModel shell (seam/)', () => {
 			expect(model.boundaryFor(document.body, 0)).toBeUndefined()
 			expect(model.handleAt(document.body)).toBeUndefined()
 			expect(model.handle(0)).toBeUndefined()
-			expect(model.placeCaret(0)).toBe(false)
+			expect(model.placeCaret('start')).toBe(false)
 		})
 	})
 
@@ -345,7 +345,7 @@ describe('TokenModel shell (seam/)', () => {
 		it('placeCaret(raw) places inside the right surface; readSelection round-trips', () => {
 			const {model} = mountNewInline()
 
-			expect(model.placeCaret(1)).toBe(true)
+			expect(model.placeCaret(model.anchorAt(1))).toBe(true)
 			expect(model.selection()?.raw).toEqual({range: {start: 1, end: 1}})
 			const anchor = model.selection()?.anchor
 			expect(anchor?.isCollapsed).toBe(true)
@@ -370,7 +370,7 @@ describe('TokenModel shell (seam/)', () => {
 		it('selectRange spans two text surfaces and the reads see the selection', () => {
 			const {model, text1} = mountNewInline()
 
-			expect(model.selectRange(0, 9)).toBe(true)
+			expect(model.selectRange(model.anchorAt(0), model.anchorAt(9))).toBe(true)
 			expect(model.selection()?.raw?.range).toEqual({start: 0, end: 9})
 			expect(model.selection()?.anchor.isCollapsed).toBe(false)
 			expect(model.selection()?.intersects(text1)).toBe(true)

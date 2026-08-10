@@ -21,12 +21,12 @@ export type SelectionDriverDeps = {
 	current(): readonly Token[]
 	find(id: Id): TreeNode | undefined
 	handleAt(node: Node): TokenHandle | 'control' | undefined
-	handle(id: number): TokenHandle | undefined
 	handleOf(token: Token | undefined): TokenHandle | undefined
 	domSelection(): SelectionSnapshot | undefined
 	setEditable(options: {editable: boolean; readOnly: boolean}): void
-	placeCaret(rawPosition: number): boolean
-	selectRange(start: number, end: number): boolean
+	/** THE model→DOM direction: a stored anchor placed through its OWN node (spec S2 D1). */
+	placeCaret(anchor: NodeAnchor): boolean
+	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean
 	offsetOf(anchor: NodeAnchor): number
 	/** THE DOM→model direction: a live DOM boundary as an anchor in the live tree, forming no offset. */
 	anchorFor(node: Node, offset: number, affinity?: 'before' | 'after'): NodeAnchor | undefined
@@ -166,32 +166,16 @@ export class SelectionDriver {
 		// nothing to write back.
 		this.#isPlacingCaret = true
 		try {
+			// ANCHORS on both arms, and the ranged one no longer detours through the derived
+			// numeric `range`: normalizing the pair is DOM-order work the placement owns.
 			if (anchorEquals(anchors.anchor, anchors.head)) {
-				this.#placeAt(anchors.head)
+				this.deps.placeCaret(anchors.head)
 				return
 			}
-			const range = this.deps.selection.range()
-			if (range) this.deps.selectRange(range.start, range.end)
+			this.deps.selectRange(anchors.anchor, anchors.head)
 		} finally {
 			this.#isPlacingCaret = false
 		}
-	}
-
-	/**
-	 * Collapsed placement through the anchor's OWN node: the handle places a LOCAL offset
-	 * inside its own surface, so it cannot pick the wrong node at a shared boundary and it
-	 * never converts to an absolute coordinate (which would resolve against
-	 * bind-generation positions, spec S1 D9). The raw fallback covers an anchor whose node
-	 * has no bound handle yet — the latch-gated `handle(id)` serves `undefined` during the
-	 * pending window, exactly as the old stash did.
-	 */
-	#placeAt(anchor: NodeAnchor): void {
-		const target = anchorTarget(anchor)
-		if (target) {
-			const handle = this.deps.handle(target.id)
-			if (handle?.alive() && handle.placeCaret(target.offset)) return
-		}
-		this.deps.placeCaret(this.deps.offsetOf(anchor))
 	}
 
 	#focusEmptyEditorOnClick(container: HTMLElement): void {
@@ -304,12 +288,4 @@ export class SelectionDriver {
 			syncIfInEditor(focusNode)
 		})
 	}
-}
-
-/** Id and local offset of an anchor's own node; undefined for the document edges. */
-function anchorTarget(anchor: NodeAnchor): {id: number; offset: number} | undefined {
-	if (typeof anchor === 'string') return undefined
-	if ('node' in anchor) return {id: anchor.node.id, offset: anchor.offset}
-	if ('before' in anchor) return {id: anchor.before.id, offset: 0}
-	return {id: anchor.after.id, offset: Infinity}
 }

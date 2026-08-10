@@ -417,14 +417,14 @@ export class TokenModel {
 		return this.#dom.selectedContent()
 	}
 
-	/** Place a collapsed caret at an absolute document position. */
-	placeCaret(rawPosition: number): boolean {
-		return this.#dom.placeCaret(rawPosition)
+	/** Place a collapsed caret at a node anchor (see {@link DomModel.placeCaret}). */
+	placeCaret(anchor: NodeAnchor): boolean {
+		return this.#dom.placeCaret(anchor)
 	}
 
-	/** Select [start, end]; collapses via placeCaret when equal. */
-	selectRange(start: number, end: number): boolean {
-		return this.#dom.selectRange(start, end)
+	/** Select between two node anchors, in either order (see {@link DomModel.selectRange}). */
+	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean {
+		return this.#dom.selectRange(anchor, head)
 	}
 
 	/**
@@ -684,6 +684,7 @@ export class TokenModel {
 		boundHandles: () => this.#pipeline.bound().values(),
 		roots: () => this.nodes(),
 		find: id => this.find(id),
+		handle: id => this.handle(id),
 	})
 
 	// Ref registries — populated by framework ref callbacks, read by bind.

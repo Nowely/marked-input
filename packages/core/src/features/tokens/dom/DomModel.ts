@@ -2,9 +2,10 @@ import type {RawSelection} from '../../../shared/editorContracts'
 import {untracked} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
 import type {Id, NodeAnchor, TreeNode} from '../tree/types'
-import {focusIfNeeded, getRect, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caret'
-import {anchorFromBoundary, markBoundaryAt, rawPositionFromBoundary, textTargetAt} from './domBoundary'
+import {getRect, placeRangeAcrossSurfaces} from './caret'
+import {anchorFromBoundary, rawPositionFromBoundary} from './domBoundary'
 import type {AnchorContext, BoundaryContext, Lookup, TokenView} from './domBoundary'
+import {textLength} from './textOffsets'
 import type {TokenHandle} from './TokenHandle'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
@@ -57,6 +58,12 @@ export type DomModelDeps = {
 	roots(): readonly TreeNode[]
 	/** Stable id → live node (TokenModel.find) — NOT latch-gated. */
 	find(id: Id): TreeNode | undefined
+	/**
+	 * Stable id → live handle (TokenModel.handle) — LATCH-GATED, unlike {@link find}.
+	 * The placement commands want the DOM the adapter has actually painted, so a
+	 * structural apply awaiting its bind must serve `undefined` here.
+	 */
+	handle(id: Id): TokenHandle | undefined
 }
 
 /**
@@ -221,52 +228,85 @@ export class DomModel {
 	}
 
 	/**
-	 * Place a collapsed caret at an absolute document position: the text surface
-	 * containing it, else a mark boundary exactly there, else the nearest text
-	 * surface. (Per-token placement is `TokenHandle.placeCaret`.)
+	 * Place a collapsed caret AT a node anchor, through the anchor's OWN node: the
+	 * handle places a LOCAL offset inside its own surface, so it cannot pick the
+	 * wrong node at a shared boundary and no absolute coordinate is ever formed
+	 * (spec S2 D1).
+	 *
+	 * FAILS CLOSED where the numeric predecessor guessed. That one searched every
+	 * bound surface for the position and fell back to the nearest one, which meant
+	 * reading BIND-GENERATION positions (spec S1 D9) — during a structural apply's
+	 * pending window they describe a layout the adapter has not painted. Here a node
+	 * with no live handle simply declines, and the caret is placed by the
+	 * `tokens.changed` re-apply once the bind lands.
 	 */
-	placeCaret(rawPosition: number): boolean {
-		const ctx = this.#boundaryContext()
-
-		const textTarget = textTargetAt(ctx, rawPosition)
-		if (textTarget?.node.textElement && rawPosition >= textTarget.start && rawPosition <= textTarget.end) {
-			focusIfNeeded(textTarget.node.textElement)
-			placeAtTextOffset(textTarget.node.textElement, rawPosition - textTarget.start)
-			return true
-		}
-
-		const markTarget = markBoundaryAt(ctx, rawPosition)
-		if (markTarget) {
-			focusIfNeeded(markTarget.element)
-			placeAtChildBoundary(markTarget.element, rawPosition === markTarget.position.end ? 'end' : 'start')
-			return true
-		}
-
-		if (textTarget?.node.textElement) {
-			focusIfNeeded(textTarget.node.textElement)
-			placeAtTextOffset(textTarget.node.textElement, rawPosition - textTarget.start)
-			return true
-		}
-
-		return false
+	placeCaret(anchor: NodeAnchor): boolean {
+		const target = this.#targetOf(anchor)
+		if (!target) return false
+		// NO `alive()` gate: `kill` and `unbind` both clear the DOM bindings, and
+		// `TokenHandle.placeCaret` already declines a handle without them.
+		return this.deps.handle(target.id)?.placeCaret(target.offset) === true
 	}
 
 	/**
-	 * Select [start, end]; collapses via placeCaret when equal. Order-
-	 * insensitive: the range is normalized to [lo, hi] before being forwarded
-	 * to the DOM Range API (which would throw on a reversed range).
+	 * Select between two node anchors. Order-insensitive: the pair is normalized in
+	 * DOM order before being forwarded to the Range API, which collapses rather than
+	 * spans when its end precedes its start. That normalization is the one job the
+	 * deleted numeric form did with `min`/`max`; `compareDocumentPosition` answers it
+	 * without a coordinate.
+	 *
+	 * Both ends must resolve to a TEXT SURFACE — a Range boundary inside a mark's
+	 * presentation is not a document position the model owns.
 	 */
-	selectRange(start: number, end: number): boolean {
-		if (start === end) return this.placeCaret(start)
-		const [lo, hi] = start <= end ? [start, end] : [end, start]
-		const ctx = this.#boundaryContext()
-		const startTarget = textTargetAt(ctx, lo)
-		const endTarget = textTargetAt(ctx, hi)
-		if (!startTarget?.node.textElement || !endTarget?.node.textElement) return false
-		placeRangeAcrossSurfaces(
-			{element: startTarget.node.textElement, offset: lo - startTarget.start},
-			{element: endTarget.node.textElement, offset: hi - endTarget.start}
-		)
+	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean {
+		const a = this.#surfaceAt(anchor)
+		const b = this.#surfaceAt(head)
+		if (!a || !b) return false
+		const [lo, hi] = precedes(a, b) ? [a, b] : [b, a]
+		placeRangeAcrossSurfaces(lo, hi)
 		return true
 	}
+
+	/**
+	 * The anchor's own node as an id and a LOCAL offset. `Infinity` is
+	 * `TokenHandle.placeCaret`'s "end of this surface" — the offset an `{after: node}`
+	 * anchor means without knowing the node's length.
+	 *
+	 * The two document edges resolve against the live roots rather than declining:
+	 * they are the anchors an out-of-range caret intent produces (`anchorAt` answers
+	 * `'end'`), and the numeric predecessor placed them through the position they
+	 * projected to.
+	 */
+	#targetOf(anchor: NodeAnchor): {id: Id; offset: number} | undefined {
+		if (anchor === 'start') {
+			const first = this.deps.roots().at(0)
+			return first && {id: first.id, offset: 0}
+		}
+		if (anchor === 'end') {
+			const last = this.deps.roots().at(-1)
+			return last && {id: last.id, offset: Infinity}
+		}
+		if ('node' in anchor) return {id: anchor.node.id, offset: anchor.offset}
+		if ('before' in anchor) return {id: anchor.before.id, offset: 0}
+		return {id: anchor.after.id, offset: Infinity}
+	}
+
+	/** The anchor's own text surface and the offset inside it, or `undefined` when it has none. */
+	#surfaceAt(anchor: NodeAnchor): SurfacePoint | undefined {
+		const target = this.#targetOf(anchor)
+		if (!target) return undefined
+		const element = this.deps.handle(target.id)?.node()?.textElement
+		if (!element) return undefined
+		// Resolved HERE and not left to `placeRangeAcrossSurfaces`: its walk treats a
+		// non-finite offset as "ran out of text" and answers the FIRST text node's end.
+		return {element, offset: Number.isFinite(target.offset) ? target.offset : textLength(element)}
+	}
+}
+
+type SurfacePoint = {element: HTMLElement; offset: number}
+
+/** Document order of two surface points — the DOM's own answer, formed from no coordinate. */
+function precedes(a: SurfacePoint, b: SurfacePoint): boolean {
+	if (a.element === b.element) return a.offset <= b.offset
+	return (a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
 }

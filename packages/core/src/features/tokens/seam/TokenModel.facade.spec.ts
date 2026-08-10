@@ -230,49 +230,88 @@ describe('TokenModel placement commands', () => {
 		window.getSelection()?.removeAllRanges()
 	})
 
-	it('placeCaret(raw) places inside the right surface; readSelection round-trips', () => {
+	it("placeCaret places inside the anchor's own surface", () => {
 		const {store} = mountWithMark()
-		expect(store.tokens.placeCaret(1)).toBe(true)
-		expect(store.tokens.selection()?.raw?.range).toEqual({start: 1, end: 1})
+		const at = store.tokens.anchorAt(1)
+		expect(store.tokens.placeCaret(at)).toBe(true)
+		expect(store.selection.domAnchors()).toEqual({anchor: at, head: at})
 	})
 
-	it('placeCaret at a mark/text shared boundary resolves to the text surface', () => {
-		const {store} = mountWithMark()
-		const mark = store.tokens.current().find(t => t.type === 'mark')
-		if (!mark) throw new Error('expected mark')
-		// mark [2,6]: position 6 is also the inclusive start of text "llo" [6,9].
-		// The text surface wins because textTargetAt finds "llo" before markBoundaryAt
-		// is consulted — the mark branch in #placeAtRawPosition is therefore not
-		// exercised here.
-		expect(store.tokens.placeCaret(mark.position.end)).toBe(true)
-		expect(store.tokens.selection()?.raw?.range.start).toBe(mark.position.end)
+	it('places the document-edge anchors through the first and last roots', () => {
+		// The edges name no node, so they are the one shape that has to resolve against the
+		// live roots — and they are not theoretical: `anchorAt` answers `'end'` for ANY
+		// out-of-range caret intent (spec S1 §4.6 item 5), which is what replaced the
+		// deleted selection clamp. Declining them leaves such a caret unplaced.
+		const {store, text1, text2} = mountWithMark()
+		const roots = store.tokens.nodes()
+
+		expect(store.tokens.placeCaret('end')).toBe(true)
+		expect(document.activeElement).toBe(text2)
+		expect(store.selection.domAnchors()?.anchor).toEqual({node: roots[2], offset: 3})
+
+		expect(store.tokens.placeCaret('start')).toBe(true)
+		expect(document.activeElement).toBe(text1)
+		expect(store.selection.domAnchors()?.anchor).toEqual({node: roots[0], offset: 0})
 	})
 
-	// Note: the mark-only branch of placeCaret (markBoundaryAt) is not directly
-	// reachable via a raw position in this fixture because the parser always
-	// emits an empty leading text token when a mark is first in the value (confirmed
-	// for '@[x]llo' → [{type:'text',position:{0,0}}, {type:'mark',position:{0,4}},
-	// {type:'text',position:{4,7}}]). textTargetAt therefore always matches before
-	// markBoundaryAt is tried. Per-token placement (the same underlying
-	// placeAtChildBoundary call) is covered by the
-	// 'handle.placeCaret targets the handle's token explicitly' test below.
+	it('places two anchors sharing one offset in their own surfaces', () => {
+		// The mark '@[x]' ENDS at 6 and the text 'llo' STARTS at 6: one document position,
+		// two anchors. The numeric predecessor could only answer with one of them (its
+		// nearest-text-surface search always won, which is why its mark branch was
+		// unreachable); each anchor now places through its own node.
+		const {store, mark, text2} = mountWithMark()
+		const markNode = store.tokens.nodes()[1]
+
+		expect(store.tokens.placeCaret({after: markNode})).toBe(true)
+		expect(document.activeElement).toBe(mark)
+
+		expect(store.tokens.placeCaret(store.tokens.anchorAt(6))).toBe(true)
+		expect(document.activeElement).toBe(text2)
+	})
 
 	it("handle.placeCaret targets the handle's token explicitly", () => {
 		const {store} = mountWithMark()
-		const token = store.tokens.current()[2] // text "llo" [6,9]
-		const handle = store.tokens.handle(token.id!)
+		const node = store.tokens.nodes()[2] // text "llo"
+		const handle = store.tokens.handle(node.id)
 		if (!handle) throw new Error('expected handle')
 		expect(handle.placeCaret(1)).toBe(true)
-		expect(store.tokens.selection()?.raw?.range.start).toBe(token.position.start + 1) // 6 + 1 = 7
+		expect(store.selection.domAnchors()?.anchor).toEqual({node, offset: 1})
 	})
 
-	it('selectRange spans two text surfaces', () => {
+	it('selectRange spans two text surfaces, in either anchor order', () => {
 		const {store} = mountWithMark()
-		const last = store.tokens.current().at(-1)
-		if (!last) throw new Error('expected tokens')
-		expect(store.tokens.selectRange(0, last.position.end)).toBe(true)
-		const read = store.tokens.selection()?.raw
-		expect(read?.range).toEqual({start: 0, end: last.position.end})
+		const roots = store.tokens.nodes()
+		const from = store.tokens.anchorAt(0)
+		const to = store.tokens.anchorAt(9)
+		const spanned = {anchor: {node: roots[0], offset: 0}, head: {node: roots[2], offset: 3}}
+
+		expect(store.tokens.selectRange(from, to)).toBe(true)
+		expect(store.selection.domAnchors()).toEqual(spanned)
+
+		// THE gate on the DOM-order normalization that replaced the numeric `min`/`max`:
+		// a Range whose end precedes its start COLLAPSES rather than throwing, so a
+		// reversed pair would silently select nothing.
+		window.getSelection()?.removeAllRanges()
+		expect(store.tokens.selectRange(to, from)).toBe(true)
+		expect(store.selection.domAnchors()).toEqual(spanned)
+	})
+
+	it('selects to the END of a surface the browser split into two text nodes', () => {
+		// THE gate on `#surfaceAt`'s length clamp. An `{after: node}` anchor means "the end
+		// of this surface" and carries `Infinity` as its local offset; `findTextBoundary`
+		// reads a non-finite offset as "ran out of text" and answers the FIRST text node's
+		// end, which is indistinguishable from the right answer while a surface holds ONE
+		// text node — the state every bind leaves it in. Contenteditable input splits one,
+		// which is what this fixture reproduces.
+		const {store, text2} = mountWithMark()
+		const roots = store.tokens.nodes()
+		const first = text2.firstChild
+		if (!(first instanceof Text)) throw new Error('expected the "llo" text node')
+		first.splitText(1)
+		expect(text2.childNodes).toHaveLength(2)
+
+		expect(store.tokens.selectRange(store.tokens.anchorAt(0), {after: roots[2]})).toBe(true)
+		expect(store.selection.domAnchors()?.head).toEqual({node: roots[2], offset: 3})
 	})
 
 	it('handle.placeCaret + handle.caretIndex round-trip', () => {
