@@ -1,7 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
-import {Store} from '../../../store/Store'
-import {mountWithMark} from '../__testing__/mountFixtures'
+import {mountValue, mountWithMark} from '../__testing__/mountFixtures'
 
 describe('anchorFor', () => {
 	afterEach(() => {
@@ -16,14 +15,9 @@ describe('anchorFor', () => {
 	})
 
 	it('returns start for a boundary in a rootless document', () => {
-		const store = new Store()
 		// Only block layout can be rootless: inline keeps the empty text token of an
 		// empty value, block filters it out.
-		store.props.set({defaultValue: '', layout: 'block'})
-		const container = document.createElement('div')
-		document.body.append(container)
-		store.host.container(container)
-		store.host.rendered()
+		const {store, container} = mountValue('', {layout: 'block'})
 		expect(store.tokens.anchorFor(container, 0)).toBe('start')
 	})
 
@@ -64,16 +58,35 @@ describe('anchorFor', () => {
 	})
 
 	it('returns undefined for a boundary that splits a surrogate pair', () => {
-		const store = new Store()
-		store.props.set({defaultValue: '\u{1F600}a'})
-		const container = document.createElement('div')
-		const surface = document.createElement('span')
-		container.append(surface)
-		document.body.append(container)
-		store.host.container(container)
-		store.host.rendered()
-		const textNode = surface.firstChild
+		const {store, surfaces} = mountValue('\u{1F600}a')
+		const textNode = surfaces[0].firstChild
 		if (!(textNode instanceof Text)) throw new Error('expected a rendered text node')
 		expect(store.tokens.anchorFor(textNode, 1)).toBeUndefined()
+	})
+
+	it('holds a text anchor through the adopt→bind window that goes stale numerically', () => {
+		const {store, text1, text2} = mountWithMark()
+		const dom1 = text1.firstChild
+		const dom2 = text2.firstChild
+		if (!(dom1 instanceof Text) || !(dom2 instanceof Text)) throw new Error('expected rendered text nodes')
+
+		// Structural (a mark is added), so the commit latches for its bind instead of
+		// self-healing; no `host.rendered()` follows, so the DOM stays one generation
+		// behind. 'he' shrinks to 'h' in the same edit.
+		store.tokens.replace({start: 0, end: -1}, 'h@[x]llo@[z]')
+		expect(dom1.data).toBe('he')
+
+		// G2: the offset is local to a node the edit did not touch, so the anchor is
+		// right — while the numeric walk adds that node's stale `position.start` and
+		// answers 7 where the live document position is 6.
+		const roots = store.tokens.nodes()
+		expect(store.tokens.anchorFor(dom2, 1)).toEqual({node: roots[2], offset: 1})
+		expect(roots[2].range().start + 1).toBe(6)
+		expect(store.tokens.boundaryFor(dom2, 1)).toBe(7)
+
+		// D4's second fail-closed arm: the DOM offset outlives the text it indexes.
+		// The numeric walk has no equivalent — it answers a plausible, wrong number.
+		expect(store.tokens.anchorFor(dom1, 2)).toBeUndefined()
+		expect(store.tokens.boundaryFor(dom1, 2)).toBe(2)
 	})
 })

@@ -26,3 +26,28 @@ export function mountWithMark() {
 	store.host.rendered()
 	return {store, container, text1, mark, text2}
 }
+
+/**
+ * Mounted fixture for an arbitrary value: one bare span per top-level token,
+ * the shape `bind` expects an adapter to have rendered. Sibling of
+ * {@link mountWithMark} for the cases that need a different value or props (a
+ * rootless block document, a value with an astral char).
+ *
+ * The surfaces are appended AFTER `host.container` because their count comes
+ * from the parse, which only runs once the container is set; binding happens at
+ * `rendered()`, so the DOM is complete by the time it is read.
+ */
+export function mountValue(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
+	const store = new Store()
+	store.props.set({defaultValue: value, ...props})
+	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
+	const surfaces = store.tokens.current().map(() => {
+		const surface = document.createElement('span')
+		container.append(surface)
+		return surface
+	})
+	store.host.rendered()
+	return {store, container, surfaces}
+}

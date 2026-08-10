@@ -30,10 +30,14 @@ export type BoundaryContext = {
  * plus a bridge from a bound handle's stable id to the LIVE node.
  *
  * A `Pick`, not an intersection, so the exclusion is a compile error and not a
- * convention: `tokenOf`/`viewOf`/`tokens` all answer with the BIND GENERATION
- * (spec S1 D9), whose positions describe what the DOM is showing rather than
- * what the tree holds. The anchor projection never forms an absolute
- * coordinate, so it wants identity, not coordinates (spec S2 D2/D4).
+ * convention. All three excluded members answer with `Token`s, and a `Token`
+ * carries `position` — an absolute coordinate no module above `tree/` may read
+ * (spec S2 D1). `tokenOf`/`viewOf` are excluded twice over: both are gated to
+ * the BIND GENERATION (spec S1 D9), which describes what the DOM is showing
+ * rather than what the tree holds. `tokens` is NOT — it is `current()`, fresh at
+ * the top of every apply — so coordinates alone are what rule it out. The anchor
+ * projection never forms an absolute coordinate, so it wants identity, not
+ * coordinates (spec S2 D1/D4).
  */
 export type AnchorContext = Pick<BoundaryContext, 'container' | 'locate'> & {
 	/** The live root nodes (TokenModel.nodes()). */
@@ -68,7 +72,7 @@ export function anchorFromBoundary(
 	const lookup = ctx.locate(node)
 	if (lookup?.kind !== 'token') return undefined
 
-	// The IDENTITY bridge (spec S2 D2/D3): `handle.id` is generation-independent, so
+	// The IDENTITY bridge (spec S2 D2): `handle.id` is generation-independent, so
 	// this reaches the LIVE node. Reading the handle's token here would reach the bind
 	// generation and reintroduce the coordinate space this projection exists to avoid.
 	const owner = ctx.find(lookup.node.handle.id)
@@ -90,11 +94,7 @@ export function anchorFromBoundary(
 }
 
 /** Mirrors {@link fromContainerBoundary}: same branches, anchors instead of positions. */
-function fromContainerAnchor(
-	roots: readonly TreeNode[],
-	offset: number,
-	affinity: 'before' | 'after'
-): NodeAnchor | undefined {
+function fromContainerAnchor(roots: readonly TreeNode[], offset: number, affinity: 'before' | 'after'): NodeAnchor {
 	if (roots.length === 0) return 'start'
 	if (offset <= 0) return {before: roots[0]}
 	if (offset >= roots.length) return {after: roots[roots.length - 1]}

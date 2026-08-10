@@ -609,7 +609,10 @@ export class TokenModel {
 		byElement: element => this.#pipeline.byElement(element),
 		isControlRoot: element => this.#pipeline.isControlRoot(element),
 		boundHandles: () => this.#pipeline.bound().values(),
-		roots: () => this.nodes(),
+		// `untracked` HERE, not at the caller: {@link nodes} is deliberately reactive
+		// and {@link find} self-wraps, so without this the anchor walk's subscription
+		// safety would depend on which entry point reached it.
+		roots: () => untracked(() => this.nodes()),
 		find: id => this.find(id),
 		handleById: id => this.handle(id),
 	})
