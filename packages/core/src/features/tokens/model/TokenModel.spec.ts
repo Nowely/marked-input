@@ -2,7 +2,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals/index.js'
 import {Store} from '../../../store/Store'
-import {Host, PropsModel, ValueModel} from '../../state'
+import {Host, PropsModel} from '../../state'
 import {textToken} from '../__testing__/tokenFactories'
 import {TokenHandle} from './TokenHandle'
 import {TokenModel} from './TokenModel'
@@ -56,18 +56,16 @@ const BLOCK_PROPS: CoreProps = {
 
 /**
  * The construction seam under test: the (props, host, selectionPort) triple Store
- * wires. The model is built BEFORE the value facade (the token layer owns the value
- * now) and `props.set` still runs AFTER construction, which is what makes `#seed`'s
- * laziness pick up `defaultValue`.
+ * wires. `props.set` runs AFTER construction, which is what makes `#seed`'s laziness
+ * pick up `defaultValue`.
  */
 function createNew(props: CoreProps) {
 	const propsModel = new PropsModel()
 	const host = new Host()
 	// Inert port: these cases assert the value/tree seam, not the D7 caret repair.
 	const model: TokenModel = new TokenModel(propsModel, host, () => ({range: () => undefined, repair: () => {}}))
-	const value = new ValueModel(model)
 	propsModel.set(props)
-	return {model, value, props: propsModel, host}
+	return {model, props: propsModel, host}
 }
 
 function mountNew(props: CoreProps, container: HTMLElement) {
@@ -163,7 +161,7 @@ describe('TokenModel shell (model/)', () => {
 
 	describe('renderTree and changed (renderer contract)', () => {
 		it('text edits keep the tree reference, patch the DOM in place and fire changed once after consistency', () => {
-			const {model, value, text2} = mountNewInline()
+			const {model, text2} = mountNewInline()
 			const treeBefore = model.renderTree()
 			const treeSpy = vi.fn()
 			watch(model.renderTree, treeSpy)
@@ -174,7 +172,7 @@ describe('TokenModel shell (model/)', () => {
 				domAtEvent = text2.textContent
 			})
 
-			value.replace({start: 9, end: 9}, '!')
+			model.replace({start: 9, end: 9}, '!')
 
 			expect(text2.textContent).toBe('llo!')
 			expect(domAtEvent).toBe('llo!')
@@ -183,19 +181,19 @@ describe('TokenModel shell (model/)', () => {
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 
 			// Consume-once hint: a second edit patches through the windowed parse again.
-			value.replace({start: 10, end: 10}, '!')
+			model.replace({start: 10, end: 10}, '!')
 			expect(text2.textContent).toBe('llo!!')
 			expect(changedSpy).toHaveBeenCalledTimes(2)
 			expect(model.renderTree()).toBe(treeBefore)
 		})
 
 		it('structural edits publish a new tree and stay quiet until the adapter renders', () => {
-			const {model, value, render} = mountNewInline()
+			const {model, render} = mountNewInline()
 			const treeBefore = model.renderTree()
 			const changedSpy = vi.fn()
 			watch(model.changed, changedSpy)
 
-			value.replace({start: 9, end: 9}, '@[y]')
+			model.replace({start: 9, end: 9}, '@[y]')
 
 			expect(model.renderTree()).not.toBe(treeBefore)
 			expect(model.renderTree().map(t => t.content)).toEqual(['he', '@[x]', 'llo', '@[y]', ''])
@@ -242,13 +240,13 @@ describe('TokenModel shell (model/)', () => {
 		})
 
 		it('handle(id) bridges fresh and stale token objects by identity and rejects foreign ids', () => {
-			const {model, value, text2} = mountNewInline()
+			const {model, text2} = mountNewInline()
 			const stale = model.current()[2]
 			const handle = model.handle(stale.id!)
 			expect(handle?.element()).toBe(text2)
 
 			// Text path: the token OBJECT is replaced while its id survives.
-			value.replace({start: 9, end: 9}, '!')
+			model.replace({start: 9, end: 9}, '!')
 
 			expect(model.handle(stale.id!)).toBe(handle)
 			expect(handle?.token()).not.toBe(stale)
@@ -258,12 +256,12 @@ describe('TokenModel shell (model/)', () => {
 		})
 
 		it('handle(id) fails closed while a structural apply awaits its bind, then resolves again', () => {
-			const {model, value, render} = mountNewInline()
+			const {model, render} = mountNewInline()
 			const stale = model.current()[2]
 			const handle = model.handle(stale.id!)
 			expect(handle).toBeInstanceOf(TokenHandle)
 
-			value.replace({start: 9, end: 9}, '@[y]')
+			model.replace({start: 9, end: 9}, '@[y]')
 
 			// The latched window: the node layer is one generation stale — the
 			// id-bridge must not hand out handles a mutation could act on.
@@ -383,7 +381,7 @@ describe('TokenModel shell (model/)', () => {
 
 	describe('editable state', () => {
 		it('setEditable applies contentEditable/tabindex over bound surfaces and seeds future binds', () => {
-			const {model, value, text1, mark, render} = mountNewInline()
+			const {model, text1, mark, render} = mountNewInline()
 			expect(text1.contentEditable).toBe('true')
 			expect(mark.tabIndex).toBe(0)
 
@@ -393,7 +391,7 @@ describe('TokenModel shell (model/)', () => {
 			expect(mark.hasAttribute('tabindex')).toBe(false)
 
 			// The next structural bind applies the stored state to NEW elements.
-			value.replace({start: 9, end: 9}, '@[y]')
+			model.replace({start: 9, end: 9}, '@[y]')
 			const spans = render()
 			expect(spans[0].contentEditable).toBe('false')
 			expect(spans[1].hasAttribute('tabindex')).toBe(false)

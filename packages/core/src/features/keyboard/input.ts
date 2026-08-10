@@ -3,7 +3,7 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
+type KbCtx = Pick<Store, 'selection' | 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../tokens'
 import {rawRangeFromInputEvent} from './inputRange'
@@ -111,7 +111,7 @@ function rangeForDelete(store: KbCtx, inputType: string, range: Range): Range | 
 	if (inputType.endsWith('Backward') && range.start > 0) {
 		return {start: range.start - 1, end: range.start}
 	}
-	if (inputType.endsWith('Forward') && range.end < store.value.current().length) {
+	if (inputType.endsWith('Forward') && range.end < store.tokens.value().length) {
 		return {start: range.start, end: range.end + 1}
 	}
 	return undefined

@@ -53,28 +53,28 @@ describe('Store', () => {
 	describe('internal state signals', () => {
 		it('update when written directly', () => {
 			const store = new Store()
-			store.value.current('hello')
-			expect(store.value.current()).toBe('hello')
+			store.tokens.replace({start: 0, end: -1}, 'hello')
+			expect(store.tokens.value()).toBe('hello')
 		})
 
 		it('leave other keys unchanged when one signal is updated', () => {
 			const store = new Store()
 			store.selection.isUserSelecting(true)
 			expect(store.selection.isUserSelecting()).toBe(true)
-			expect(store.value.current()).toBe('')
+			expect(store.tokens.value()).toBe('')
 		})
 
 		it('batch multiple internal writes so effects fire once', () => {
 			const store = new Store()
 			const effectSpy = vi.fn()
 			effect(() => {
-				store.value.current()
+				store.tokens.value()
 				store.selection.isUserSelecting()
 				effectSpy()
 			})
 			effectSpy.mockClear()
 			batch(() => {
-				store.value.current('a')
+				store.tokens.replace({start: 0, end: -1}, 'a')
 				store.selection.isUserSelecting(true)
 			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
@@ -105,11 +105,11 @@ describe('Store', () => {
 
 		it('reflects controlled value via tokens without changing internal state', () => {
 			const store = new Store()
-			store.value.current('internal')
+			store.tokens.replace({start: 0, end: -1}, 'internal')
 			store.props.set({value: 'controlled'})
-			expect(store.value.current()).toBe('controlled')
+			expect(store.tokens.value()).toBe('controlled')
 			store.props.set({value: undefined})
-			expect(store.value.current()).toBe('internal')
+			expect(store.tokens.value()).toBe('internal')
 		})
 
 		it('ignores direct signal writes on props (readonly guard)', () => {
@@ -126,18 +126,18 @@ describe('Store', () => {
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			store.host.container(document.createElement('div'))
-			store.value.current('hello')
+			store.tokens.replace({start: 0, end: -1}, 'hello')
 			expect(store.tokens.current()).toMatchObject([
 				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
-			expect(store.value.current()).toBe('hello')
+			expect(store.tokens.value()).toBe('hello')
 		})
 
 		it('calls onChange when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			store.value.current('world')
+			store.tokens.replace({start: 0, end: -1}, 'world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
 		})
@@ -147,9 +147,9 @@ describe('Store', () => {
 			store.host.container(document.createElement('div'))
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
-			store.value.current('world')
+			store.tokens.replace({start: 0, end: -1}, 'world')
 			expect(onChange).toHaveBeenCalledWith('world')
-			expect(store.value.current()).toBe('hello')
+			expect(store.tokens.value()).toBe('hello')
 			expect(store.tokens.current()).toMatchObject([
 				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
@@ -157,7 +157,7 @@ describe('Store', () => {
 
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
-			expect(() => store.value.current('test')).not.toThrow()
+			expect(() => store.tokens.replace({start: 0, end: -1}, 'test')).not.toThrow()
 		})
 	})
 
@@ -374,28 +374,28 @@ describe('Store', () => {
 	describe('current', () => {
 		it('returns empty string by default', () => {
 			const store = new Store()
-			expect(store.value.current()).toBe('')
+			expect(store.tokens.value()).toBe('')
 		})
 
 		it('returns written current value', () => {
 			const store = new Store()
-			store.value.current('cached')
-			expect(store.value.current()).toBe('cached')
+			store.tokens.replace({start: 0, end: -1}, 'cached')
+			expect(store.tokens.value()).toBe('cached')
 		})
 
 		it('reacts to current changes', () => {
 			const store = new Store()
-			expect(store.value.current()).toBe('')
-			store.value.current('updated')
-			expect(store.value.current()).toBe('updated')
+			expect(store.tokens.value()).toBe('')
+			store.tokens.replace({start: 0, end: -1}, 'updated')
+			expect(store.tokens.value()).toBe('updated')
 		})
 
 		it('reacts to props.value changes when ValueModel is enabled', () => {
 			const store = new Store()
 			store.props.set({value: 'initial'})
-			expect(store.value.current()).toBe('initial')
+			expect(store.tokens.value()).toBe('initial')
 			store.props.set({value: 'changed'})
-			expect(store.value.current()).toBe('changed')
+			expect(store.tokens.value()).toBe('changed')
 		})
 	})
 })

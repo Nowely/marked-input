@@ -68,7 +68,7 @@ describe('handleBeforeInput()', () => {
 
 	it('ignores beforeinput from editable mark descendants', () => {
 		const {store, container, descendantText} = mountStructuralMarkWithDescendant()
-		const replaceRange = vi.spyOn(store.value, 'replace')
+		const replaceRange = vi.spyOn(store.tokens, 'replace')
 		const range = document.createRange()
 		range.setStart(descendantText, 0)
 		range.setEnd(descendantText, 0)
@@ -96,7 +96,7 @@ describe('handleBeforeInput()', () => {
 
 		container.dispatchEvent(event)
 
-		expect(store.value.current()).toBe('hello')
+		expect(store.tokens.value()).toBe('hello')
 		expect(event.defaultPrevented).toBe(false)
 		container.remove()
 	})
@@ -114,7 +114,7 @@ describe('handleBeforeInput()', () => {
 		container.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(true)
-		expect(store.value.current()).toBe('a')
+		expect(store.tokens.value()).toBe('a')
 		container.remove()
 	})
 
@@ -130,7 +130,7 @@ describe('handleBeforeInput()', () => {
 		container.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(true)
-		expect(store.value.current()).toBe('')
+		expect(store.tokens.value()).toBe('')
 		container.remove()
 	})
 })

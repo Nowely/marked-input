@@ -74,9 +74,9 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		// costs a parse plus an adoption, which adoption then diffs to no change.
 		//
 		// S1.4 SETTLED the question this note used to hand forward — may an unchanged value still
-		// fire `onChange`? YES, in both modes. Today's `ValueModel.current` set transform runs
-		// before the signal's equality short-circuit, so `replace({start: 2, end: 2}, '')` already
-		// emits `onChange('hello')`; the boundary keeps that parity rather than smuggling a
+		// fire `onChange`? YES, in both modes. The pre-S1.6a facade's set transform ran before
+		// the signal's equality short-circuit, so `replace({start: 2, end: 2}, '')` already
+		// emitted `onChange('hello')`; the boundary keeps that parity rather than smuggling a
 		// user-visible behavior change in with the S1.6a swap. Suppression, if it is ever wanted,
 		// belongs HERE and not in a sink: the dispatcher is the only layer that can drop the wasted
 		// parse and adoption along with the emission, so a sink-level guard would buy the behavior

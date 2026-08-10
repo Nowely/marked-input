@@ -9,7 +9,6 @@ import type {OverlaySlot} from '../slots'
 import {resolveOverlaySlot} from '../slots/resolveSlot'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
-import type {ValueModel} from '../state/ValueModel'
 import type {TokenModel} from '../tokens'
 import {annotate} from '../tokens'
 import {TriggerFinder} from './TriggerFinder'
@@ -35,7 +34,6 @@ export class OverlayController {
 	constructor(
 		private readonly host: Host,
 		private readonly props: PropsModel,
-		private readonly value: ValueModel,
 		private readonly selection: SelectionController,
 		private readonly edit: EditController,
 		private readonly tokens: TokenModel
@@ -48,7 +46,7 @@ export class OverlayController {
 				this.match(undefined)
 			})
 
-			watch(this.value.current, () => {
+			watch(this.tokens.value, () => {
 				if (!hasOverlayTrigger()) return
 				const showOverlayOn = this.props.showOverlayOn()
 				const type: OverlayTrigger = 'change'
@@ -116,7 +114,7 @@ export class OverlayController {
 		if (!sel || sel.start !== sel.end) return
 
 		const cursor = sel.start
-		const value = this.value.current()
+		const value = this.tokens.value()
 		const left = value.slice(0, cursor)
 		const right = value.slice(cursor)
 		const rightWord = right.match(/^\w*/)?.[0] ?? ''

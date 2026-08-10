@@ -1,6 +1,5 @@
 import {describe, it, expect, vi} from 'vitest'
 
-import {replaceInString} from '../../shared/utils'
 import {Store} from '../../store/Store'
 
 /**
@@ -15,20 +14,27 @@ function mount(store: Store): Store {
 	return store
 }
 
-describe('ValueModel', () => {
+/**
+ * Ported from `features/state/ValueModel.spec.ts` at S1.8 step 5. The facade was a
+ * one-phase delegation to the token layer (`current` → {@link TokenModel.value},
+ * `replace` → the internal offset shim), so every behavior it pinned is the token
+ * layer's. Two cases did NOT move: they were unit tests of `replaceInString`, deleted
+ * with the helper — the shim (`tree/offsetShim.ts`) owns range validation now and
+ * `offsetShim.spec.ts`'s "rejects the ranges replaceInString rejected" is its gate.
+ */
+describe('TokenModel value boundary', () => {
 	it('exposes accepted value state', () => {
 		const store = new Store()
 
-		expect(typeof store.value.current).toBe('function')
-		expect('next' in store.value).toBe(false)
-		expect(store.value.current()).toBe('')
+		expect(typeof store.tokens.value).toBe('function')
+		expect(store.tokens.value()).toBe('')
 	})
 
 	it('initializes from controlled value on enable', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
 		mount(store)
-		expect(store.value.current()).toBe('hello')
+		expect(store.tokens.value()).toBe('hello')
 		expect(store.tokens.current()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
@@ -39,14 +45,14 @@ describe('ValueModel', () => {
 		// because nothing has committed yet.
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
-		expect(store.value.current()).toBe('hello')
+		expect(store.tokens.value()).toBe('hello')
 	})
 
 	it('initializes from defaultValue when uncontrolled', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
 		mount(store)
-		expect(store.value.current()).toBe('hello')
+		expect(store.tokens.value()).toBe('hello')
 		expect(store.tokens.current()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
@@ -56,7 +62,7 @@ describe('ValueModel', () => {
 		mount(store)
 		store.props.set({value: 'world'})
 
-		expect(store.value.current()).toBe('world')
+		expect(store.tokens.value()).toBe('world')
 		expect(store.tokens.current()).toMatchObject([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 	})
 
@@ -67,7 +73,7 @@ describe('ValueModel', () => {
 		store.props.set({value: undefined})
 
 		expect(store.props.value()).toBeUndefined()
-		expect(store.value.current()).toBe('default')
+		expect(store.tokens.value()).toBe('default')
 		expect(store.tokens.current()).toMatchObject([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
 	})
 
@@ -76,10 +82,10 @@ describe('ValueModel', () => {
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
 		mount(store)
-		store.value.current('world')
+		store.tokens.replace({start: 0, end: -1}, 'world')
 
 		expect(onChange).not.toHaveBeenCalled()
-		expect(store.value.current()).toBe('hello')
+		expect(store.tokens.value()).toBe('hello')
 		expect(store.tokens.current()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
@@ -91,7 +97,7 @@ describe('ValueModel', () => {
 		store.props.set({value: 'world'})
 
 		expect(onChange).not.toHaveBeenCalled()
-		expect(store.value.current()).toBe('world')
+		expect(store.tokens.value()).toBe('world')
 		expect(store.tokens.current()).toMatchObject([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 	})
 
@@ -99,57 +105,43 @@ describe('ValueModel', () => {
 		it('commits uncontrolled range replacement', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello world'})
-			store.value.replace({start: 6, end: 11}, 'markput')
+			store.tokens.replace({start: 6, end: 11}, 'markput')
 
-			expect(store.value.current()).toBe('hello markput')
+			expect(store.tokens.value()).toBe('hello markput')
 		})
 
 		it('rejects invalid ranges without calling onChange', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({defaultValue: 'hello', onChange})
-			store.value.replace({start: 4, end: 2}, 'x')
+			store.tokens.replace({start: 4, end: 2}, 'x')
 
 			expect(onChange).not.toHaveBeenCalled()
-			expect(store.value.current()).toBe('hello')
+			expect(store.tokens.value()).toBe('hello')
 		})
 
 		it('calls onChange and keeps old current until controlled echo', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
-			store.value.replace({start: 0, end: 5}, 'world')
+			store.tokens.replace({start: 0, end: 5}, 'world')
 
 			expect(onChange).toHaveBeenCalledWith('world')
-			expect(store.value.current()).toBe('hello')
+			expect(store.tokens.value()).toBe('hello')
 
 			store.props.set({value: 'world'})
-			expect(store.value.current()).toBe('world')
-		})
-
-		it('returns replaced string for a valid range', () => {
-			expect(replaceInString('hello world', {start: 6, end: 11}, 'markput')).toBe('hello markput')
-		})
-
-		it('returns undefined for invalid replacement ranges', () => {
-			expect(replaceInString('hello', {start: -1, end: 1}, 'x')).toBeUndefined()
-			expect(replaceInString('hello', {start: 4, end: 2}, 'x')).toBeUndefined()
-			expect(replaceInString('hello', {start: 0, end: 6}, 'x')).toBeUndefined()
+			expect(store.tokens.value()).toBe('world')
 		})
 	})
 
 	describe('value hinge (S1.6a)', () => {
-		// BEHAVIOR CHANGE, measured at the cutover and recorded rather than pinned:
-		// writing the value the store ALREADY holds — `store.value.current('hello')` on
-		// 'hello' — no longer calls `onChange` (pre-cutover 1 call, now 0). The facade's
-		// writable computed short-circuits an equal write, so the shim never splices and
-		// the boundary never emits. `replace()` keeps the OLD parity: a no-op splice
-		// (`replace({start: 2, end: 2}, '')`) still emits (measured 1 call), which is what
-		// boundary.spec.ts's 'emits an unchanged value in both modes' pins. The impact is
-		// spec-surface only — no production caller writes `value.current(arg)`; every
-		// editor write goes through `replace`/`EditController`. Not gated here: a test
-		// would pin the signal library's equality short-circuit, and S1.8 deletes this
-		// facade anyway.
+		// RESOLVED AT S1.8 step 5. The S1.6a note here recorded a behavior change that only
+		// the deleted facade could produce: `ValueModel.current` was a WRITABLE computed, so
+		// writing the value the store already held short-circuited before the setter and
+		// never emitted. There is no writable computed any more — every write is
+		// `tokens.replace`, which emits for a no-op splice exactly as it always did
+		// (`tree/boundary.spec.ts`'s 'emits an unchanged value in both modes'). The
+		// divergence is gone rather than merely untested.
 		it('an uncontrolled edit before control is taken is what dropping control returns to', () => {
 			// The pin for the frozen-storage arm. 'falls back to defaultValue when
 			// controlled value becomes undefined' above covers the OTHER arm (never
@@ -158,14 +150,14 @@ describe('ValueModel', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'default'})
 			mount(store)
-			store.value.replace({start: 0, end: -1}, 'edited')
-			expect(store.value.current()).toBe('edited')
+			store.tokens.replace({start: 0, end: -1}, 'edited')
+			expect(store.tokens.value()).toBe('edited')
 
 			store.props.set({value: 'controlled'})
-			expect(store.value.current()).toBe('controlled')
+			expect(store.tokens.value()).toBe('controlled')
 
 			store.props.set({value: undefined})
-			expect(store.value.current()).toBe('edited')
+			expect(store.tokens.value()).toBe('edited')
 		})
 
 		it('onChange runs AFTER the commit, with the value and the tokens already new', () => {
@@ -180,7 +172,7 @@ describe('ValueModel', () => {
 				Mark: () => null,
 				onChange: () =>
 					seen.push({
-						value: store.value.current(),
+						value: store.tokens.value(),
 						tokens: store.tokens
 							.current()
 							.map(t => t.content)
@@ -204,7 +196,7 @@ describe('ValueModel', () => {
 			store.props.set({defaultValue: 'hello'})
 			expect(() => mount(store)).not.toThrow()
 			expect(() => store.edit.replace({start: 0, end: 0}, 'X')).not.toThrow()
-			expect(store.value.current()).toBe('Xhello')
+			expect(store.tokens.value()).toBe('Xhello')
 		})
 	})
 })

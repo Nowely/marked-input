@@ -284,9 +284,9 @@ describe('boundary: resets', () => {
 
 describe('boundary: no-op splices', () => {
 	it('emits an unchanged value in both modes', () => {
-		// Parity with the live boundary, measured: `ValueModel.current`'s set transform runs
+		// Parity with the pre-S1.6a boundary, measured: the deleted facade's set transform ran
 		// before the signal's equality short-circuit, so `replace({start: 2, end: 2}, '')`
-		// already fires `onChange('hello')` today. Suppression is a user-visible change and
+		// already fired `onChange('hello')`. Suppression is a user-visible change and
 		// would belong in the dispatcher — see the no-op note in `transactions.ts`.
 		const uncontrolled = setup('hello')
 		expect(uncontrolled.tx.applyRange({start: 2, end: 2, insertedLength: 0}, '')).toBe(true)

@@ -6,7 +6,6 @@ import type {Computed, Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
-import type {ValueModel} from '../state/ValueModel'
 import {anchorEquals} from '../tokens'
 import type {NodeAnchor, TokenHandle, TokenModel, TransactionResult} from '../tokens'
 
@@ -73,7 +72,7 @@ export class SelectionController {
 
 	readonly isAllSelected: Computed<boolean> = computed(() => {
 		const s = this.range()
-		const v = this.value.current()
+		const v = this.tokens.value()
 		return s?.start === 0 && s.end === v.length && v.length > 0
 	})
 
@@ -84,7 +83,6 @@ export class SelectionController {
 	constructor(
 		private readonly host: Host,
 		private readonly tokens: TokenModel,
-		private readonly value: ValueModel,
 		private readonly props: PropsModel
 	) {
 		host.onMounted(container => {
@@ -123,7 +121,7 @@ export class SelectionController {
 	selectAll(): void {
 		// Node anchors, not the `'start'`/`'end'` edges: a later edit that grows the value
 		// must NOT keep `isAllSelected` true, and edge anchors would.
-		this.select(this.tokens.anchorAt(0), this.tokens.anchorAt(this.value.current().length))
+		this.select(this.tokens.anchorAt(0), this.tokens.anchorAt(this.tokens.value().length))
 	}
 
 	/**

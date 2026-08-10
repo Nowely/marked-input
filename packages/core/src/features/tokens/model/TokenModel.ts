@@ -66,10 +66,6 @@ export interface SelectionPort {
  *   type/content reads onto the live tree — a DOM-layer refactor no item asks for.
  * - the internal offset shim ({@link replace}) — spec D8, gated on the block-rows
  *   follow-up that would give callers a node-shaped write verb.
- * - `ValueModel` — a one-phase facade over {@link value} and {@link replace};
- *   S1.8 step 5 deletes it. (`MarkputHandler` went at S1.7, and the path layer —
- *   `byPath`, `tokenIndex` — at S1.8 step 4; the entry that named a later phase
- *   for them was stale.)
  *
  * Layout: consumer reads → adapter SPI → engine SPI → wiring → internals.
  */
@@ -177,16 +173,15 @@ export class TokenModel {
 	 * last COMMITTED projection. There is no separate uncontrolled string — the tree
 	 * IS the store; {@link TokenModel.value}'s three private inputs are declared
 	 * together in the internals section below (`#seed`, `#seeded`, `#committed`).
-	 * `ValueModel` is a one-phase facade over this.
 	 *
 	 * The `#seeded` arm is load-bearing and its gate is NOT the obvious one.
 	 * Measured: reduced to `props.value() ?? this.#committed()`, the red case is
-	 * `ValueModel.spec`'s "an unmounted store reads defaultValue before anything has
+	 * `TokenModel.value.spec`'s "an unmounted store reads defaultValue before anything has
 	 * committed" — it reads the value on an UNMOUNTED store, where nothing has
 	 * committed yet and `#committed()` is `''`. That case exists BECAUSE S1.6c took
 	 * the gate away from two `SelectionController.spec` cases: `anchorAt` seeds (plan
 	 * decision D-f), so every store that writes a selection is now seeded and survives
-	 * the mutation. `ValueModel.spec`'s "initializes from defaultValue when
+	 * the mutation. `TokenModel.value.spec`'s "initializes from defaultValue when
 	 * uncontrolled" stays GREEN for a different reason: it mounts first, and the mount
 	 * watch seeds the tree before the read.
 	 */
@@ -196,8 +191,8 @@ export class TokenModel {
 
 	/**
 	 * @internal The internal offset shim (spec D8): a global range → `applyRange`.
-	 * THE write entry for every offset-speaking caller; `ValueModel.replace` is a
-	 * one-line delegation to it.
+	 * THE write entry for every offset-speaking caller. `ValueModel` was a one-line
+	 * delegation to it until S1.8 step 5 deleted the facade.
 	 */
 	replace(range: Range, replacement: string): boolean {
 		this.#ensureSeeded()
@@ -460,9 +455,8 @@ export class TokenModel {
 	}
 
 	/**
-	 * The lazily-materialized default — the pre-cutover `ValueModel.current`'s
-	 * `initial`, kept verbatim so a `defaultValue` set after the first read stays a
-	 * no-op.
+	 * The lazily-materialized default — the pre-cutover value facade's `initial`, kept
+	 * verbatim so a `defaultValue` set after the first read stays a no-op.
 	 */
 	readonly #seed = signal({initial: () => this.props.defaultValue() ?? ''})
 	/**
@@ -473,11 +467,14 @@ export class TokenModel {
 	 * Its named gates, measured as a plain field: `Store.spec`'s `internal state
 	 * signals` › "update when written directly" and `current` › "returns written
 	 * current value" / "reacts to current changes" — the three that write an unmounted
-	 * store through `value.current(next)` and read it back. The writable computed
-	 * evaluates its getter BEFORE the set (`signal.ts`'s `writableComputed` reads
-	 * `prev` to short-circuit an equal write), which caches the `#seed` arm and its dep
-	 * set; a plain field then changes nothing the computed subscribes to, so the read
-	 * back is stale. `ValueModel.spec`'s "initializes from defaultValue when
+	 * store and read it back. The read BEFORE the write is what makes them
+	 * discriminate: it caches the `#seed` arm and its dep set, and a plain field then
+	 * changes nothing the computed subscribes to, so the read back is stale. Until
+	 * S1.8 step 5 that read was implicit — `ValueModel.current` was a writable computed
+	 * and `signal.ts`'s `writableComputed` evaluates its getter before the set to
+	 * short-circuit an equal write; `tokens.replace` has no such read, so two of those
+	 * cases now read the value explicitly first.
+	 * `TokenModel.value.spec`'s "initializes from defaultValue when
 	 * uncontrolled" stays green for the same reason it does under the {@link value}
 	 * mutation above: mount seeds before the first read.
 	 */

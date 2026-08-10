@@ -2,7 +2,6 @@ import {event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
 import type {EditController} from '../edit'
 import type {PropsModel} from '../state/PropsModel'
-import type {ValueModel} from '../state/ValueModel'
 import type {Token, TokenModel} from '../tokens'
 import {BlockStore} from './BlockStore'
 import {applyDragAction} from './operations'
@@ -20,13 +19,12 @@ export class BlockController {
 
 	constructor(
 		private readonly props: PropsModel,
-		private readonly value: ValueModel,
 		private readonly tokens: TokenModel,
 		private readonly edit: EditController
 	) {
 		watch(this.action, action => {
 			if (!this.props.layout.isBlock() || !this.props.draggable()) return
-			const value = this.value.current()
+			const value = this.tokens.value()
 			// Fresh read: drag operations slice the live value by row positions;
 			// tokens() is the reconciled tree consistent with value.current() at
 			// drop time.

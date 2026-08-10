@@ -471,8 +471,9 @@ describe('SelectionController', () => {
 
 	describe('caret repair (spec D7, AC-3.2/3.3/3.4)', () => {
 		/**
-		 * `store.value.replace` — NOT `store.edit.replace`. EditController writes the caret
-		 * itself afterwards, which would mask everything these cases assert.
+		 * `store.tokens.replace` — NOT `store.edit.replace` (it was `store.value.replace`
+		 * until S1.8 step 5 deleted the facade). EditController writes the caret itself
+		 * afterwards, which would mask everything these cases assert.
 		 */
 		it('keeps node and offset when the edit is outside the anchor, and still reports the NEW offset', () => {
 			// AC-3.2 and the #generation gate in one case, hand-traced:
@@ -485,9 +486,9 @@ describe('SelectionController', () => {
 			store.selection.position(7)
 			expect(store.selection.range()).toEqual({start: 7, end: 7})
 
-			store.value.replace({start: 0, end: 0}, 'Z')
+			store.tokens.replace({start: 0, end: 0}, 'Z')
 
-			expect(store.value.current()).toBe('Zab@[x]cd')
+			expect(store.tokens.value()).toBe('Zab@[x]cd')
 			expect(store.selection.range()).toEqual({start: 8, end: 8})
 			container.remove()
 		})
@@ -498,7 +499,7 @@ describe('SelectionController', () => {
 			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
 			store.selection.position(7)
 
-			store.value.replace({start: 6, end: 8}, 'ZZZZ')
+			store.tokens.replace({start: 6, end: 8}, 'ZZZZ')
 
 			expect(store.selection.range()).toEqual({start: 10, end: 10})
 			container.remove()
@@ -511,9 +512,9 @@ describe('SelectionController', () => {
 			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
 			store.selection.position(7)
 
-			store.value.replace({start: 0, end: -1}, 'zz')
+			store.tokens.replace({start: 0, end: -1}, 'zz')
 
-			expect(store.value.current()).toBe('zz')
+			expect(store.tokens.value()).toBe('zz')
 			expect(store.selection.range()).toEqual({start: 2, end: 2})
 			container.remove()
 		})
@@ -524,9 +525,9 @@ describe('SelectionController', () => {
 			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
 			store.selection.position(8)
 
-			store.value.replace({start: 1, end: 7}, 'Q')
+			store.tokens.replace({start: 1, end: 7}, 'Q')
 
-			expect(store.value.current()).toBe('aQd')
+			expect(store.tokens.value()).toBe('aQd')
 			expect(store.selection.range()).toEqual({start: 3, end: 3})
 			container.remove()
 		})
@@ -539,9 +540,9 @@ describe('SelectionController', () => {
 			const {store, container} = mountStructuralInline('hello')
 			store.selection.position(1)
 
-			store.value.replace({start: 0, end: 3}, 'hey')
+			store.tokens.replace({start: 0, end: 3}, 'hey')
 
-			expect(store.value.current()).toBe('heylo')
+			expect(store.tokens.value()).toBe('heylo')
 			expect(store.selection.range()).toEqual({start: 3, end: 3})
 			container.remove()
 		})
@@ -549,7 +550,7 @@ describe('SelectionController', () => {
 		it('leaves the selection alone when there was none', () => {
 			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
 			expect(store.selection.range()).toBeUndefined()
-			store.value.replace({start: 0, end: 0}, 'Z')
+			store.tokens.replace({start: 0, end: 0}, 'Z')
 			expect(store.selection.range()).toBeUndefined()
 			container.remove()
 		})
@@ -567,7 +568,7 @@ describe('SelectionController', () => {
 
 			store.edit.replace({start: 2, end: 2}, 'X')
 
-			expect(store.value.current()).toBe('heXllo')
+			expect(store.tokens.value()).toBe('heXllo')
 			expect(store.selection.range()).toEqual({start: 3, end: 3})
 			container.remove()
 		})
@@ -582,7 +583,7 @@ describe('SelectionController', () => {
 			store.edit.replace({start: 2, end: 2}, 'X')
 
 			expect(onChange).toHaveBeenCalledWith('heXllo')
-			expect(store.value.current()).toBe('hello')
+			expect(store.tokens.value()).toBe('hello')
 			expect(store.selection.range()).toEqual({start: 2, end: 2})
 			container.remove()
 		})
@@ -603,7 +604,7 @@ describe('SelectionController', () => {
 
 			store.edit.replace({start: 0, end: 1}, '')
 
-			expect(store.value.current()).toBe('ello')
+			expect(store.tokens.value()).toBe('ello')
 			expect(store.selection.range()).toEqual({start: 4, end: 4})
 			container.remove()
 		})
@@ -616,7 +617,7 @@ describe('SelectionController', () => {
 
 			store.edit.replace({start: 2, end: 2}, 'X')
 
-			expect(store.value.current()).toBe('HEXLLO')
+			expect(store.tokens.value()).toBe('HEXLLO')
 			// gapWindow('hello','HEXLLO') = {0,5,6}; map(2) is inside → 0 + 6 = 6. Best effort,
 			// which is what AC-4.2/4.4 promise for a transform.
 			expect(store.selection.range()).toEqual({start: 6, end: 6})

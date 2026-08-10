@@ -1,11 +1,13 @@
 import type {Range} from '../../shared/editorContracts'
 import {batch} from '../../shared/signals'
 import type {SelectionController} from '../selection/SelectionController'
-import type {PropsModel, ValueModel} from '../state'
+import type {PropsModel} from '../state'
+import type {TokenModel} from '../tokens'
 
 /**
- * Single write path for text edits — delegates gating to {@link ValueModel.replace}
- * and only moves the caret when the edit is accepted. Wrapped in {@link batch}
+ * Single write path for text edits — delegates gating to the token layer's internal
+ * offset shim ({@link TokenModel.replace}, spec D8) and only moves the caret when the
+ * edit is accepted. Wrapped in {@link batch}
  * so subscribers observe a consistent value/selection pair on one tick.
  *
  * - `range.end < 0` means "to the end of the value"; the token layer's offset
@@ -16,7 +18,7 @@ import type {PropsModel, ValueModel} from '../state'
  */
 export class EditController {
 	constructor(
-		private readonly value: ValueModel,
+		private readonly tokens: TokenModel,
 		private readonly selection: SelectionController,
 		private readonly props: PropsModel
 	) {}
@@ -25,7 +27,7 @@ export class EditController {
 		batch(() => {
 			// `range.end < 0` is normalized by the offset shim; the caret only ever needed
 			// `range.start`, which normalization never touched.
-			if (!this.value.replace(range, replacement)) return
+			if (!this.tokens.replace(range, replacement)) return
 			// Controlled mode moves no DERIVED caret here (spec D6): the tree has not changed
 			// yet, so this position would be captured as `selectionBefore` at the echo and
 			// shifted a SECOND time by `map` — measured 'hello' + 'X' at 2 landing the caret at

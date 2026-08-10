@@ -33,7 +33,7 @@ describe('TokenModel', () => {
 
 		it('updates tokens when value changes via replaceAll', () => {
 			mountWith('hello')
-			store.value.current('world')
+			store.tokens.replace({start: 0, end: -1}, 'world')
 			expect(store.tokens.current()).toMatchObject([
 				{type: 'text', content: 'world', position: {start: 0, end: 5}},
 			])
@@ -46,13 +46,13 @@ describe('TokenModel', () => {
 
 		it('mount with defaultValue initializes value current', () => {
 			mountWith('test')
-			expect(store.value.current()).toBe('test')
+			expect(store.tokens.value()).toBe('test')
 		})
 
 		it('does not parse markup when Mark is not set', () => {
 			store.props.set({options: [{markup: '@[__value__]'}]})
 			store.host.container(document.createElement('div'))
-			store.value.current('@[test]')
+			store.tokens.replace({start: 0, end: -1}, '@[test]')
 			expect(store.tokens.current()).toMatchObject([
 				{type: 'text', content: '@[test]', position: {start: 0, end: 7}},
 			])
@@ -61,7 +61,7 @@ describe('TokenModel', () => {
 		it('parses markup when Mark is set', () => {
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
 			store.host.container(document.createElement('div'))
-			store.value.current('@[test]')
+			store.tokens.replace({start: 0, end: -1}, '@[test]')
 			expect(store.tokens.current()).toEqual(expect.arrayContaining([expect.objectContaining({type: 'mark'})]))
 		})
 	})
@@ -80,7 +80,7 @@ describe('TokenModel', () => {
 		it('re-parses when Mark is added or removed', () => {
 			mountWith('first')
 			store.props.set({Mark: undefined})
-			store.value.current('second')
+			store.tokens.replace({start: 0, end: -1}, 'second')
 			store.props.set({Mark: () => null})
 			expect(store.tokens.current()).toMatchObject([
 				{type: 'text', content: 'second', position: {start: 0, end: 6}},
@@ -97,11 +97,11 @@ describe('TokenModel', () => {
 			store.props.set({Mark: () => null, defaultValue: ''})
 			store.host.container(document.createElement('div'))
 			let tokensAtChangeTime: readonly Token[] | undefined
-			const stop = watch(store.value.current, () => {
+			const stop = watch(store.tokens.value, () => {
 				tokensAtChangeTime = store.tokens.current()
 			})
 
-			store.value.current('hello')
+			store.tokens.replace({start: 0, end: -1}, 'hello')
 
 			expect(tokensAtChangeTime).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
@@ -147,7 +147,7 @@ describe('TokenModel', () => {
 			// edit BEFORE the mark: 'he@[x]llo' → 'Xhe@[x]llo' — the mark suffix-
 			// shifts into a NEW object with an INHERITED id; the framework key
 			// must not change (object-keyed counters remounted it, the defect)
-			store.value.current('Xhe@[x]llo')
+			store.tokens.replace({start: 0, end: -1}, 'Xhe@[x]llo')
 
 			const shifted = store.tokens.current()[1]
 			expect(shifted).not.toBe(mark)

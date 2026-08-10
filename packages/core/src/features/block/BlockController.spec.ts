@@ -23,9 +23,9 @@ describe('BlockController', () => {
 			// disable drag
 			store.props.set({layout: 'inline', draggable: false})
 
-			const currentSpy = vi.spyOn(store.value, 'current')
+			const replaceSpy = vi.spyOn(store.tokens, 'replace')
 			store.block.action({type: 'delete', index: 0})
-			expect(currentSpy).not.toHaveBeenCalled()
+			expect(replaceSpy).not.toHaveBeenCalled()
 		})
 	})
 
@@ -44,14 +44,13 @@ describe('BlockController', () => {
 		// Drag actions read the mounted token layer (a bare container is enough:
 		// commits settle structurally and current() stays the reconciled parse).
 		store.host.container(document.createElement('div'))
-		store.value.current('alpha\n\nbeta\n\n')
+		store.tokens.replace({start: 0, end: -1}, 'alpha\n\nbeta\n\n')
 
 		store.block.action({type: 'delete', index: 0})
 
-		// The OUTCOME, not the write channel: `ValueModel.replace` no longer writes
-		// through `current`, it delegates to the token layer, so `value.current` is only
-		// ever read on this path.
-		expect(store.value.current()).toBe('beta\n\n')
+		// The OUTCOME, not the write channel: the write goes through the token layer's
+		// offset shim, so the value is only ever READ on this path.
+		expect(store.tokens.value()).toBe('beta\n\n')
 		expect(store.selection.range()).toEqual({start: 6, end: 6})
 	})
 
@@ -63,11 +62,11 @@ describe('BlockController', () => {
 			options: [{markup: '__slot__\n\n'}],
 		})
 		store.host.container(document.createElement('div'))
-		store.value.current('alpha\n\nbeta\n\n')
+		store.tokens.replace({start: 0, end: -1}, 'alpha\n\nbeta\n\n')
 
 		let runs = 0
 		const dispose = effect(() => {
-			store.value.current()
+			store.tokens.value()
 			store.selection.range()
 			runs++
 		})
@@ -87,8 +86,8 @@ describe('BlockController', () => {
 			options: [{markup: '__slot__\n\n'}],
 		})
 		store.host.container(document.createElement('div'))
-		store.value.current('alpha\n\nbeta\n\n')
-		const replaceSpy = vi.spyOn(store.value, 'replace')
+		store.tokens.replace({start: 0, end: -1}, 'alpha\n\nbeta\n\n')
+		const replaceSpy = vi.spyOn(store.tokens, 'replace')
 		const positionSpy = vi.spyOn(store.selection, 'position')
 
 		store.block.action({type: 'reorder', source: 0, target: 0})
