@@ -53,6 +53,16 @@ describe('Store', () => {
 	describe('internal state signals', () => {
 		it('update when written directly', () => {
 			const store = new Store()
+			// The READ BEFORE the write is load-bearing, and it stopped being implicit at S1.8
+			// step 5. `ValueModel.current` was a writable computed, and a writable computed
+			// evaluates its getter before the set to short-circuit an equal write — which is
+			// what caught `TokenModel#seeded` degrading from a signal to a plain field (the
+			// computed caches the `#seed` arm and its dep set, and a field write then notifies
+			// nothing). Writing through `tokens.replace` has no such implicit read, so without
+			// this line the computed is cold at the assertion and re-derives correctly under
+			// the mutation. Measured: 3 cases died before the port, 1 after; this line and the
+			// one in `current` › 'returns written current value' restore the other two.
+			expect(store.tokens.value()).toBe('')
 			store.tokens.replace({start: 0, end: -1}, 'hello')
 			expect(store.tokens.value()).toBe('hello')
 		})
@@ -379,6 +389,9 @@ describe('Store', () => {
 
 		it('returns written current value', () => {
 			const store = new Store()
+			// The read before the write is load-bearing — see `internal state signals` ›
+			// 'update when written directly' for the measurement.
+			expect(store.tokens.value()).toBe('')
 			store.tokens.replace({start: 0, end: -1}, 'cached')
 			expect(store.tokens.value()).toBe('cached')
 		})
@@ -390,7 +403,7 @@ describe('Store', () => {
 			expect(store.tokens.value()).toBe('updated')
 		})
 
-		it('reacts to props.value changes when ValueModel is enabled', () => {
+		it('reacts to props.value changes when controlled', () => {
 			const store = new Store()
 			store.props.set({value: 'initial'})
 			expect(store.tokens.value()).toBe('initial')

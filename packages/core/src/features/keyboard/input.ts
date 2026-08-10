@@ -32,6 +32,12 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	if (store.props.layout.isBlock()) return
 	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
 
+	// NOT redundant with the fallthrough below, and the difference is measured rather than
+	// argued: when the STORED selection says all-selected but the live DOM selection is gone,
+	// `readRaw()` answers `undefined` and the fallthrough returns without preventing the
+	// default — letting the browser mutate contenteditable behind the model's back. Gated by
+	// `input.spec`'s 'clears the whole value even when the DOM selection is gone'; the
+	// obvious "Backspace with everything selected" case does NOT discriminate it.
 	if (store.selection.isAllSelected()) {
 		event.preventDefault()
 		store.edit.replace({start: 0, end: -1}, '')

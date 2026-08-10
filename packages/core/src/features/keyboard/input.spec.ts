@@ -133,4 +133,43 @@ describe('handleBeforeInput()', () => {
 		expect(store.tokens.value()).toBe('')
 		container.remove()
 	})
+
+	/**
+	 * The keydown path had NO direct coverage before S1.8. It was flagged as redundant with its
+	 * own fallthrough — `readRaw()` on an all-selected editor answers `{0, len}`, which
+	 * `rangeForDelete` passes straight through — and the first case below does NOT discriminate
+	 * it: deleting the branch keeps that one green. The second case does, and that is what
+	 * refutes the claim. The two paths diverge exactly when the STORED selection says
+	 * all-selected while the DOM selection is gone: the branch still preventDefaults and clears,
+	 * the fallthrough bails on `readRaw()` and lets the browser mutate contenteditable behind
+	 * the model's back.
+	 */
+	describe('handleDeleteKey()', () => {
+		it('clears the whole value on Backspace with everything selected', () => {
+			const {store, container} = mountStructuralInline()
+			store.selection.selectAll()
+
+			const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('')
+			container.remove()
+		})
+
+		it('clears the whole value even when the DOM selection is gone', () => {
+			// THE discriminating case (see the note above): the only one that fails when the
+			// all-selected branch is deleted.
+			const {store, container} = mountStructuralInline()
+			store.selection.selectAll()
+			window.getSelection()?.removeAllRanges()
+
+			const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('')
+			container.remove()
+		})
+	})
 })
