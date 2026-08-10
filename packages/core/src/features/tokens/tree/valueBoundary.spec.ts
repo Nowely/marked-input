@@ -333,13 +333,17 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 	 * path reddens the arrival and reparse cases, and nothing else in the core suite
 	 * notices.
 	 *
-	 * What they no longer gate is the ordering. Anchors carry no coordinate, so a capture
-	 * moved after `adopt` reads the SAME anchor — the double-shift is now decided one
-	 * layer down, where `adopt` turns anchors into offsets, and its gate moved with it to
+	 * They assert through `selectionAfter`, the result's ONLY selection field: it is
+	 * non-`undefined` exactly when a capture reached `adopt`, so it gates the three
+	 * entries just as the echoed-back capture did — and it additionally pins that the
+	 * captured anchor was resolved rather than merely carried.
+	 *
+	 * What they do NOT gate is the ordering. Anchors carry no coordinate, so a capture
+	 * moved after `adopt` reads the SAME anchor — the double-shift is decided one layer
+	 * down, where `adopt` turns anchors into offsets, and its gate lives with it in
 	 * `adopt.spec.ts`'s "forms the offsets BEFORE adoption rewrites the positions they
 	 * read". `{before: mark}` is kept over a text anchor for exactly that reason: it is
-	 * the shape whose offset adoption moves ([2,9] → [3,10] under an insert at 0), so the
-	 * fixture stays usable for an ordering assertion should one be wanted here.
+	 * the shape whose offset adoption moves ([2,9] → [3,10] under an insert at 0).
 	 */
 	function captureSetup(source: string, options: {controlled?: boolean; selection?: () => Anchors | undefined} = {}) {
 		const tree = createTokenTree(parser.parse(source))
@@ -368,8 +372,12 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 
 		expect(tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'Z')).toBe(true)
 
-		expect(mark.position.start).toBe(3) // adoption moved it; the anchor still names it
-		expect(results[0].selectionBefore).toEqual({anchor: {before: mark}, head: {before: mark}})
+		expect(mark.position.start).toBe(3) // adoption moved it; the capture named it at 2
+		const landed: Anchors = {
+			anchor: {node: asText(tree.roots()[0]), offset: 3},
+			head: {node: asText(tree.roots()[0]), offset: 3},
+		}
+		expect(results[0].selectionAfter).toEqual(landed)
 	})
 
 	it('captures at an ARRIVAL too — the only entry the controlled path repairs from', () => {
@@ -377,24 +385,33 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 		const mark = tree.roots()[1]
 		boundary.arrive('Zab@[x](m)cd')
 		expect(mark.position.start).toBe(3)
-		expect(results[0].selectionBefore).toEqual({anchor: {before: mark}, head: {before: mark}})
+		const landed: Anchors = {
+			anchor: {node: asText(tree.roots()[0]), offset: 3},
+			head: {node: asText(tree.roots()[0]), offset: 3},
+		}
+		expect(results[0].selectionAfter).toEqual(landed)
 	})
 
 	it('captures at a reparse', () => {
 		const {tree, results, boundary} = captureSetup('ab@[x](m)cd')
-		const mark = tree.roots()[1]
 		boundary.reparse()
-		expect(results[0].selectionBefore).toEqual({anchor: {before: mark}, head: {before: mark}})
+		// No edit, so the capture's offset (the mark's start, 2) maps to itself — the text
+		// node before the mark, at its end.
+		const landed: Anchors = {
+			anchor: {node: asText(tree.roots()[0]), offset: 2},
+			head: {node: asText(tree.roots()[0]), offset: 2},
+		}
+		expect(results[0].selectionAfter).toEqual(landed)
 	})
 
 	it('is undefined when the injected reader answers undefined', () => {
-		// NOT DISCRIMINATING: `selectionBefore` is `undefined` before the channel exists, so
+		// NOT DISCRIMINATING: `selectionAfter` is `undefined` before the channel exists, so
 		// this passes against unmodified code too. It is a null-case regression guard, not a
 		// gate. Built on `captureSetup` (with the reader overridden) rather than the file's
 		// shared `setup`, which registers no `onResult` at all.
 		const {tx, results} = captureSetup('hello', {selection: () => undefined})
 		expect(tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'A')).toBe(true)
-		expect(results[0].selectionBefore).toBeUndefined()
+		expect(results[0].selectionAfter).toBeUndefined()
 	})
 })
 

@@ -143,9 +143,10 @@ export function createSelection(deps: SelectionDeps): Selection {
 	 * which is the only code that still sees the pre-mutation coordinate space (see
 	 * {@link TransactionResult.selectionAfter}).
 	 *
-	 * The anchor it applies can never dangle: `selectionBefore` is DERIVED from these same
-	 * anchors (the capture thunk is this controller's `range`), so it is defined exactly
-	 * when they are, and every adoption that could remove an anchor's node re-derives it.
+	 * The anchor it applies can never dangle: adoption resolves it from the capture, and the
+	 * capture is these same anchors (the boundary's thunk is `selection.anchors()`), so it is
+	 * defined exactly when they are, and every adoption that could remove an anchor's node
+	 * re-derives it.
 	 * `map` resolves against the post-adoption roots and is property-proven never to
 	 * answer with a dead node (`tree/adopt.property.spec.ts`).
 	 */

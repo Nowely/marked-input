@@ -42,7 +42,7 @@ export function createBoundary(deps: {
 	isBlock?: () => boolean
 	/**
 	 * Pre-adoption selection capture (spec D7). Read once per adoption — see
-	 * `TransactionResult.selectionBefore` for why the boundary and not the dispatcher
+	 * `TransactionResult.selectionAfter` for why the boundary and not the dispatcher
 	 * owns this. Store supplies `() => selection.anchors()` as a deferred thunk
 	 * (declaration order: `tokens` is built before `selection`), so it must not be
 	 * called during construction — and it is not: only `fold` calls it.

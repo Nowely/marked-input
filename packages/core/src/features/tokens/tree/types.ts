@@ -132,27 +132,25 @@ export interface TransactionResult {
 	 */
 	shifted: readonly TreeNode[]
 	/**
-	 * The selection as it stood BEFORE this adoption (spec D7), or `undefined` when
-	 * there was none — ANCHORS, so the record carries no coordinate at all and cannot
-	 * go stale when adoption moves the nodes it names.
+	 * Where the pre-adoption selection LANDS after this adoption (spec D7), or `undefined`
+	 * when there was none. THE selection channel — the capture itself is `adopt`'s
+	 * `selectionBefore` parameter and is deliberately not echoed back out: it had no
+	 * reader left once `repair` moved onto this field, and a result that carries its own
+	 * input is a mirror nothing resyncs.
 	 *
-	 * Captured by `createBoundary`'s `fold` — the single funnel every adoption on the
-	 * live path runs through (commit, arrival, reparse). NOT by the dispatcher, which an
-	 * earlier note here proposed: in controlled mode `commit` produces no result at all
-	 * (it emits and waits), so the repair input is the selection captured at the ECHO's
-	 * arrival, an entry the dispatcher never sees. Capturing at the boundary also spares
-	 * `CommitSink.commit` a third parameter that one of its two implementations would
-	 * have to ignore.
-	 */
-	selectionBefore: Anchors | undefined
-	/**
-	 * Where that selection LANDS after this adoption, or `undefined` when there was none.
+	 * Resolved here because a consumer cannot resolve it itself: it would have to turn the
+	 * captured anchors into an offset to feed {@link map}, and by the time it holds the
+	 * result the stored positions have already moved — so that offset would describe the
+	 * NEW coordinate space and `map` would shift it a SECOND time. Adoption is the only
+	 * code on the pre-mutation side of that line.
 	 *
-	 * Resolved here because a consumer cannot resolve it itself: it would have to turn
-	 * {@link selectionBefore} into an offset to feed {@link map}, and by the time it holds
-	 * the result the stored positions have already moved — so that offset would describe
-	 * the NEW coordinate space and `map` would shift it a SECOND time. Adoption is the
-	 * only code on the pre-mutation side of that line.
+	 * The capture reaches `adopt` from `createBoundary`'s `fold` — the single funnel every
+	 * adoption on the live path runs through (commit, arrival, reparse). NOT from the
+	 * dispatcher, which an earlier note here proposed: in controlled mode `commit`
+	 * produces no result at all (it emits and waits), so the repair input is the selection
+	 * captured at the ECHO's arrival, an entry the dispatcher never sees. Capturing at the
+	 * boundary also spares `CommitSink.commit` a third parameter that one of its two
+	 * implementations would have to ignore.
 	 */
 	selectionAfter: Anchors | undefined
 	/** Valid for PRE-adoption offsets only (spec D7). */

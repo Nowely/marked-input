@@ -215,7 +215,7 @@ export function adopt(
 			head: map(beforeOffsets.head),
 		}
 
-		return {structural, render, added, removed, updated, shifted, selectionBefore, selectionAfter, map}
+		return {structural, render, added, removed, updated, shifted, selectionAfter, map}
 	})
 }
 
