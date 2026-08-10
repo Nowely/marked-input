@@ -98,8 +98,11 @@ export class SelectionDriver {
 	 * resolve". The one caller that must tell those apart is the DOM sync, which reads
 	 * the range itself and branches before calling {@link #anchorsIn}.
 	 *
-	 * Its five numeric consumers still reach it through {@link readRaw}; they move onto
-	 * anchors in S2.5, which is when this grows callers outside the class.
+	 * S2.5 REVIEWED the fold against the four consumers it converted (`keyboard/input.ts`,
+	 * `keyboard/arrowNav.ts`, `keyboard/blockEdit.ts`, `ClipboardController`) and kept it:
+	 * every one of them bails on both reasons alike, because both mean "the caret's position
+	 * is unknown". What they DO need apart is collapsed-ness, and that is an `anchorEquals`
+	 * comparison on the answer, not a second `undefined`.
 	 */
 	domAnchors(): Anchors | undefined {
 		const range = this.deps.domSelection()?.range
@@ -128,19 +131,11 @@ export class SelectionDriver {
 	 * is produced by `DomModel.#rawSelectionFrom` and consumed nowhere in the repo.
 	 * `SelectionSnapshot.raw` still carries it; both die with the numeric space at S2.6.
 	 *
-	 * Answering `undefined` when the window selection is gone is a CONTRACT, not an
-	 * accident: `keyboard/input.ts`'s `handleDeleteKey` falls through WITHOUT
-	 * `preventDefault` on it, leaving the all-selected branch as the only actor. Its gate
-	 * is `input.spec`'s "clears the whole value even when the DOM selection is gone", and
-	 * that gate is INDIRECT — MEASURED: making this answer a value when there is no
-	 * selection leaves the WHOLE repo green, because the all-selected branch masks it. The
-	 * case discriminates only once that branch is also deleted, which is exactly the
-	 * redundancy claim `input.ts` wrote it to refute.
-	 *
-	 * The NUMBERS have no unit gate either — MEASURED: shifting this by +1 leaves the 11
-	 * pinned `SelectionSnapshot.raw` assertions green (they pin `boundaryFor`, which this
-	 * no longer goes through) and turns ~30 storybook assertions red instead, across
-	 * clipboard, drag rows and keyboard focus. That browser suite is the gate.
+	 * NO PRODUCTION CALLER since S2.5 — `keyboard/` and `ClipboardController` read
+	 * {@link domAnchors} directly, and the "answers `undefined` when the window selection is
+	 * gone" contract moved with them (its gate is `input.spec`'s "clears the whole value even
+	 * when the DOM selection is gone"). What is left is `dom/domBoundary.spec`; this and the
+	 * whole numeric space die at S2.6.
 	 */
 	readRaw(): RawSelection | undefined {
 		const anchors = this.domAnchors()

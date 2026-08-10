@@ -10,7 +10,7 @@ import {resolveOverlaySlot} from '../slots/resolveSlot'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {TokenModel} from '../tokens'
-import {annotate} from '../tokens'
+import {anchorEquals, annotate} from '../tokens'
 import {TriggerFinder} from './TriggerFinder'
 
 export class OverlayController {
@@ -98,7 +98,7 @@ export class OverlayController {
 		if (!match) return
 		const markup = match.option.markup
 		if (!markup) return
-		this.edit.replaceRange(match.range, annotate(markup, {value, meta}))
+		this.edit.replace(match.range.anchor, match.range.head, annotate(markup, {value, meta}))
 		this.match(undefined)
 	}
 
@@ -109,14 +109,28 @@ export class OverlayController {
 		this.match(match)
 	}
 
+	/**
+	 * The model-side probe, for when `TriggerFinder` cannot read the DOM (no window selection,
+	 * or an anchor node outside the document). It slices the caret NODE's own text at the
+	 * caret's LOCAL offset, where it used to slice `value()` at an absolute cursor.
+	 *
+	 * Equivalent wherever it fired before: the regex is anchored at the caret, so it only ever
+	 * looked at characters immediately left of it, and those are in the caret's own node
+	 * unless the caret sits at its start — where the whole-value read saw a preceding mark's
+	 * markup, which ends in `]` or `)` and matches no `trigger(\w*)$`. What DID change is
+	 * `span`, now the node's text rather than the whole value; that makes it agree with
+	 * `TriggerFinder.span`, which was always the DOM text node's content.
+	 */
 	#probeTriggerFromCaretRange(): OverlayMatch | undefined {
-		const sel = this.selection.range()
-		if (!sel || sel.start !== sel.end) return
+		const anchors = this.selection.anchors()
+		if (!anchors || !anchorEquals(anchors.anchor, anchors.head)) return
+		const caret = anchors.anchor
+		// A mark boundary or a document edge has no text to probe; only a text anchor does.
+		if (typeof caret === 'string' || !('node' in caret)) return
 
-		const cursor = sel.start
-		const value = this.tokens.value()
-		const left = value.slice(0, cursor)
-		const right = value.slice(cursor)
+		const text = caret.node.text()
+		const left = text.slice(0, caret.offset)
+		const right = text.slice(caret.offset)
 		const rightWord = right.match(/^\w*/)?.[0] ?? ''
 
 		for (const option of this.props.options()) {
@@ -127,13 +141,14 @@ export class OverlayController {
 			if (!match) continue
 
 			const [sourceLeft, wordLeft] = match
-			const source = sourceLeft + rightWord
-			const start = cursor - sourceLeft.length
 			return {
 				value: wordLeft + rightWord,
-				source,
-				range: {start, end: start + source.length},
-				span: value,
+				source: sourceLeft + rightWord,
+				range: {
+					anchor: {node: caret.node, offset: caret.offset - sourceLeft.length},
+					head: {node: caret.node, offset: caret.offset + rightWord.length},
+				},
+				span: text,
 				node: this.tokens.selection()?.anchor.node ?? this.host.container() ?? document.body,
 				option,
 			}

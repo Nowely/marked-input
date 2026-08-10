@@ -2,7 +2,9 @@
 export {MarkputApi} from './src/store/MarkputApi'
 // The ONLY resolution path for both adapters, which import it as a value and construct it.
 export {Store} from './src/store'
-export type {Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TreeNode} from './src/features/tokens'
+// `Anchors` is public because `OverlayMatch.range` is one (S2.5): the overlay contract both
+// adapters carry names nodes now, so the type has to be nameable outside core.
+export type {Anchors, Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TreeNode} from './src/features/tokens'
 
 // String-domain utilities (spec §2.3: keep)
 export {annotate, denote} from './src/features/tokens'

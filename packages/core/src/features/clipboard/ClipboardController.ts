@@ -3,9 +3,9 @@ import {listen} from '../../shared/signals/index.js'
 import type {EditController} from '../edit'
 import type {SelectionController} from '../selection/SelectionController'
 import type {Host} from '../state/Host'
-import type {TokenModel} from '../tokens'
+import type {Anchors, TokenModel} from '../tokens'
+import {anchorEquals} from '../tokens'
 import {MARKPUT_MIME} from './pasteMarkup'
-import {serializeRange} from './serializeRange'
 
 export class ClipboardController {
 	constructor(
@@ -20,16 +20,23 @@ export class ClipboardController {
 			})
 			listen(container, 'cut', e => {
 				if (!this.#handleCopy(e)) return
-				const raw = selection.readRaw()
-				if (!raw || raw.range.start === raw.range.end) return
-				edit.replaceRange(raw.range, '')
+				const anchors = this.#selected()
+				if (!anchors) return
+				edit.replace(anchors.anchor, anchors.head, '')
 			})
 		})
 	}
 
+	/** The live DOM selection when it actually spans something; `undefined` for a caret or no selection. */
+	#selected(): Anchors | undefined {
+		const anchors = this.selection.domAnchors()
+		if (!anchors || anchorEquals(anchors.anchor, anchors.head)) return undefined
+		return anchors
+	}
+
 	#handleCopy(e: ClipboardEvent): boolean {
-		const raw = this.selection.readRaw()
-		if (!raw || raw.range.start === raw.range.end) return false
+		const anchors = this.#selected()
+		if (!anchors) return false
 
 		const content = this.tokens.selectedContent()
 		if (!content) return false
@@ -37,10 +44,9 @@ export class ClipboardController {
 		e.preventDefault()
 		e.clipboardData?.setData('text/plain', content.text)
 		e.clipboardData?.setData('text/html', content.html)
-		// Fresh read: the copied range came from the live selection, so the
-		// serialized tokens carry live positions — current() is the reconciled
-		// tree consistent with value.current() (copy right after typing is fresh).
-		e.clipboardData?.setData(MARKPUT_MIME, serializeRange(this.tokens.current(), raw.range))
+		// The markup entry is the LIVE tree's own projection of the copied span, so a copy
+		// right after typing is fresh by construction — there is no snapshot to fall behind.
+		e.clipboardData?.setData(MARKPUT_MIME, this.tokens.valueBetween(anchors.anchor, anchors.head))
 		return true
 	}
 }

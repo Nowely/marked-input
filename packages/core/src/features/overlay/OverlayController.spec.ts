@@ -9,7 +9,7 @@ const stubMatch: OverlayMatch = {
 	span: 'test',
 	// oxlint-disable-next-line no-unsafe-type-assertion -- test stub
 	node: {} as unknown as Node,
-	range: {start: 0, end: 1},
+	range: {anchor: 'start', head: 'start'},
 	option: {},
 }
 
@@ -121,20 +121,24 @@ describe('OverlayController', () => {
 
 	describe('choose()', () => {
 		it('delegates trigger replacement to the edit coordinator', () => {
-			const replaceRange = vi.spyOn(store.edit, 'replaceRange')
-			const match: OverlayMatch = {
-				...stubMatch,
-				source: '@wo',
-				range: {start: 6, end: 9},
-				option: {markup: '@[__value__]'},
-			}
-			store.props.set({options: []})
-			store.props.set({options: [{overlay: {trigger: '@'}}]})
+			// A store of its own: the shared fixture is seeded EMPTY (its container attaches
+			// before any defaultValue), so it has no text node to anchor into.
+			const store = new Store()
+			store.props.set({defaultValue: 'hello @wo', options: [{overlay: {trigger: '@'}}]})
+			store.host.container(document.createElement('div'))
+			const replace = vi.spyOn(store.edit, 'replace')
+			const node = store.tokens.nodes()[0]
+			if (node.kind !== 'text') throw new Error('expected a text root')
+			const range = {anchor: {node, offset: 6}, head: {node, offset: 9}}
+			const match: OverlayMatch = {...stubMatch, source: '@wo', range, option: {markup: '@[__value__]'}}
 			store.overlay.match(match)
 
 			store.overlay.choose('world')
 
-			expect(replaceRange).toHaveBeenCalledWith({start: 6, end: 9}, '@[world]')
+			// The trigger span is handed back UNINSPECTED — the anchors that came in are the
+			// anchors the write verb gets (spec S2 §4.5's `OverlayMatch.range` contract).
+			expect(replace).toHaveBeenCalledWith(range.anchor, range.head, '@[world]')
+			expect(store.tokens.value()).toBe('hello @[world]')
 			expect(store.overlay.match()).toBeUndefined()
 			store.props.set({options: []})
 		})

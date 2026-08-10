@@ -1,13 +1,20 @@
 import {afterEach, beforeAll, describe, expect, it} from 'vitest'
 
 import {Store} from '../../store/Store'
-import type {Markup} from '../tokens'
+import type {Markup, TextNode} from '../tokens'
 import {TriggerFinder} from './TriggerFinder'
 
 // Mount a real store once for the file. The span element is registered in
-// the token index so boundaryFor can resolve text nodes placed inside it.
+// the token index so anchorFor can resolve text nodes placed inside it.
 let store: ReturnType<typeof mountInline>['store']
 let span: HTMLSpanElement
+
+/** The single text root the fixture's value parses to — what every resolved anchor names. */
+function root(): TextNode {
+	const node = store.tokens.nodes()[0]
+	if (node.kind !== 'text') throw new Error('expected a text root')
+	return node
+}
 
 function mountInline(value: string) {
 	const s = new Store()
@@ -77,9 +84,8 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 	describe('static find', () => {
 		it('return TriggerFinder instance when position is selected', () => {
-			// Text node is inside the mounted span → boundaryFor resolves correctly.
-			// The span's single text token starts at position 0, so boundaryFor(node, 12) = 12
-			// and range = {start: 12 - 6, end: 12} = {start: 6, end: 12}.
+			// The text node is inside the mounted span → anchorFor resolves it to the span's own
+			// text root, at the LOCAL offsets of the match: '@world' spans [6, 12).
 			const anchor = anchorIn('Hello @world', 7)
 
 			const options = [{trigger: '@', markup: '@[__label__](__value__)'}]
@@ -88,7 +94,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toBeInstanceOf(Object)
 			expect(result?.value).toBe('world')
 			expect(result?.source).toBe('@world')
-			expect(result?.range).toEqual({start: 6, end: 12})
+			expect(result?.range).toEqual({anchor: {node: root(), offset: 6}, head: {node: root(), offset: 12}})
 		})
 
 		it('return undefined when selection is not collapsed', () => {
@@ -128,8 +134,8 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 	describe('find', () => {
 		it('find trigger match and return OverlayMatch', () => {
-			// Text node is inside the mounted span → boundaryFor resolves correctly.
-			// boundaryFor(node, 6 + 6 = 12) = 12 → range = {start: 6, end: 12}.
+			// Both ends of the match resolve through anchorFor: '@world' at [6, 12) of the
+			// mounted span's own text root.
 			const finder = new TriggerFinder(store.tokens, anchorIn('Hello @world test', 7))
 			const options = [{trigger: '@', markup: '@[__value__](__meta__)' as Markup}]
 			const result = finder.find(options, opt => opt.trigger)
@@ -137,7 +143,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({
 				value: 'world',
 				source: '@world',
-				range: {start: 6, end: 12},
+				range: {anchor: {node: root(), offset: 6}, head: {node: root(), offset: 12}},
 				span: 'Hello @world test',
 				node: expect.objectContaining({nodeType: 3}),
 				option: options[0],

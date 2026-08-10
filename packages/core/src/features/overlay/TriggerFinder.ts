@@ -1,7 +1,7 @@
 // packages/core/src/features/overlay/TriggerFinder.ts
 import {escape} from '../../shared/escape'
 import type {OverlayMatch} from '../../shared/types'
-import type {SelectionAnchor, TokenModel} from '../tokens'
+import type {Anchors, SelectionAnchor, TokenModel} from '../tokens'
 
 const wordRegex = new RegExp(/^\w*/)
 
@@ -57,7 +57,7 @@ export class TriggerFinder {
 
 			const match = this.matchInTextVia(trigger)
 			if (match) {
-				const range = this.#rawRangeForMatch(match.annotation, match.index)
+				const range = this.#anchorsForMatch(match.annotation, match.index)
 				if (!range) return undefined
 				return {
 					value: match.word,
@@ -71,10 +71,18 @@ export class TriggerFinder {
 		}
 	}
 
-	#rawRangeForMatch(source: string, index: number) {
-		const boundary = this.tokens.boundaryFor(this.node, index + source.length, 'after')
-		if (boundary === undefined) return undefined
-		return {start: boundary - source.length, end: boundary}
+	/**
+	 * The matched span as anchors in the live tree. Two `anchorFor` calls, where the numeric
+	 * version resolved ONE boundary and derived the other by subtracting `source.length` — an
+	 * assumption that the DOM text and the model text advance in lockstep across the match.
+	 * Resolving both ends drops it, and either end declining fails the whole match closed.
+	 */
+	#anchorsForMatch(source: string, index: number): Anchors | undefined {
+		const anchor = this.tokens.anchorFor(this.node, index, 'after')
+		if (!anchor) return undefined
+		const head = this.tokens.anchorFor(this.node, index + source.length, 'after')
+		if (!head) return undefined
+		return {anchor, head}
 	}
 
 	matchInTextVia(trigger: string = '@') {

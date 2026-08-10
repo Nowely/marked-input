@@ -1,4 +1,3 @@
-import type {Range} from '../../shared/editorContracts'
 import {batch} from '../../shared/signals'
 import type {SelectionController} from '../selection/SelectionController'
 import type {PropsModel} from '../state'
@@ -53,20 +52,6 @@ export class EditController {
 			if (!this.tokens.setValue(text)) return
 			if (this.props.value() !== undefined && caretOffset === undefined) return
 			this.selection.select(this.tokens.anchorAt(caretOffset ?? text.length))
-		})
-	}
-
-	/**
-	 * @deprecated TRANSITIONAL (S2.5): the call sites that still form a numeric range —
-	 * `clipboard/ClipboardController.ts` and `overlay/OverlayController.ts` — until their own
-	 * task re-addresses them. Verbatim the pre-S2.5 `replace`, so it carries no behavior of
-	 * its own; deleted with its last caller.
-	 */
-	replaceRange(range: Range, replacement: string): void {
-		batch(() => {
-			if (!this.tokens.replace(range, replacement)) return
-			if (this.props.value() !== undefined) return
-			this.selection.position(range.start + replacement.length)
 		})
 	}
 }

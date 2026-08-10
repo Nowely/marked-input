@@ -2,7 +2,8 @@ import type {Computed, Signal} from '../../../shared/signals'
 import {computed, signal} from '../../../shared/signals'
 import type {Token} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
-import type {Id, MarkCommands, MarkNode, TextNode, TreeNode} from './types'
+import {offsetOfAnchor} from './anchors'
+import type {Id, MarkCommands, MarkNode, NodeAnchor, TextNode, TreeNode} from './types'
 
 export interface TokenTree {
 	// NOT ReturnType<typeof signal<...>> — instantiation picks the last overload
@@ -116,6 +117,50 @@ function locateSiblings(
 		}
 	}
 	return undefined
+}
+
+/**
+ * The projection of the span between two anchors — {@link joinNodes} restricted to a window,
+ * and the clipboard's markup serialization (spec S2 §4.5). The pair is normalized.
+ *
+ * A partially covered TEXT node contributes its overlapping slice. A partially covered MARK
+ * contributes its WHOLE markup — `value`/`meta` have no sub-spans to cut — with its slot
+ * trimmed by the same rule, so copying half of a mark's slot yields a valid annotation.
+ *
+ * DIVERGENCE from the deleted `clipboard/serializeRange.ts`, deliberate: when the window
+ * covers a mark's markup but none of its slot children, that version emitted the mark's FULL
+ * slot text (`toString`'s `children.length > 0 ? … : token.slot?.content` fallback) while
+ * this one emits an empty slot, matching {@link joinNodes}. Unreachable from a selection —
+ * a position inside a mark's markup is not anchorable — and the old answer was an accident
+ * of the fallback, not a rule anyone stated.
+ */
+export function sliceNodes(roots: readonly TreeNode[], from: NodeAnchor, to: NodeAnchor): string {
+	const a = offsetOfAnchor(roots, from)
+	const b = offsetOfAnchor(roots, to)
+	return sliceWithin(roots, Math.min(a, b), Math.max(a, b))
+}
+
+function sliceWithin(nodes: readonly TreeNode[], start: number, end: number): string {
+	let result = ''
+
+	for (const node of nodes) {
+		// Half-open overlap: a node touching the window only at a boundary contributes nothing.
+		if (node.position.end <= start || node.position.start >= end) continue
+
+		if (node.kind === 'text') {
+			const text = node.text()
+			result += text.slice(
+				Math.max(0, start - node.position.start),
+				Math.min(text.length, end - node.position.start)
+			)
+			continue
+		}
+
+		const slot = node.descriptor.hasSlot ? sliceWithin(node.children(), start, end) : undefined
+		result += annotate(node.descriptor.markup, {value: node.value(), meta: node.meta(), slot})
+	}
+
+	return result
 }
 
 /** The string projection: mirrors parser/utils/toString over live nodes. */

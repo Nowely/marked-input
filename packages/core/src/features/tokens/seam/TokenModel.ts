@@ -16,7 +16,7 @@ import {serializeMark} from '../tree/markPatch'
 import {lowerReplace} from '../tree/offsetShim'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
-import {createTokenTree, findNode, rootIndexOf, siblingOf} from '../tree/tree'
+import {createTokenTree, findNode, rootIndexOf, siblingOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkCommands, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 import type {TokenDelta} from './commitInput'
@@ -255,6 +255,11 @@ export class TokenModel {
 	/** Spec S2 §4.5: one character back (`-1`) or forward (`+1`). See {@link stepAnchor} for the fail-closed case. */
 	step(anchor: NodeAnchor, direction: -1 | 1): NodeAnchor | undefined {
 		return untracked(() => stepAnchor(this.#tree.roots(), anchor, direction))
+	}
+
+	/** The projection of the span between two anchors — {@link value} restricted to a window (see {@link sliceNodes}). */
+	valueBetween(from: NodeAnchor, to: NodeAnchor): string {
+		return untracked(() => sliceNodes(this.#tree.roots(), from, to))
 	}
 
 	/**

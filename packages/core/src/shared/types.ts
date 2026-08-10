@@ -1,7 +1,7 @@
 import type * as CSS from 'csstype'
 
 import type {Markup} from '../features/tokens/parser/types'
-import type {Range} from './editorContracts'
+import type {Anchors} from '../features/tokens/tree/types'
 
 /**
  * Registry interface used as a module-augmentation target. Framework packages
@@ -66,14 +66,21 @@ export type OverlayMatch<TOption = CoreOption> = {
 	 */
 	source: string
 	/**
-	 * Piece of text, in which was a overlayMatch
+	 * Piece of text, in which was a overlayMatch — the caret's own text node, not the whole value
 	 */
 	span: string
 	/**
 	 * Html element, in which was a overlayMatch
 	 */
 	node: Node
-	range: Range
+	/**
+	 * The span the accepted suggestion replaces, as NODE ANCHORS (spec S2 §4.5). It was a
+	 * `{start, end}` offset pair until S2.5; both adapters pass it straight back into
+	 * `overlay.choose()` without reading it, so this is a type change and not a logic one —
+	 * verified across `packages/{react,vue}/markput/src` and `packages/storybook/src`, where
+	 * the only field any consumer touches is `match.value`.
+	 */
+	range: Anchors
 	/**
 	 * OverlayMatch's option
 	 */
