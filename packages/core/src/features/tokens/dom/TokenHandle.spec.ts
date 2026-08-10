@@ -1,7 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {Store} from '../../../store/Store'
-import {markToken, textToken} from '../__testing__/tokenFactories'
 import {TokenHandle} from './TokenHandle'
 
 function mountSurface(content: string) {
@@ -62,35 +61,11 @@ describe('TokenHandle', () => {
 	})
 
 	describe('creation', () => {
-		it('exposes id, token and content from (id, token)', () => {
-			const token = textToken('hello', 0)
-			const handle = new TokenHandle(7, token)
+		it('exposes its id and starts unbound', () => {
+			const handle = new TokenHandle(7)
 
 			expect(handle.id).toBe(7)
-			expect(handle.token()).toBe(token)
-			expect(handle.token().content).toBe('hello')
 			expect(handle.element()).toBeUndefined()
-		})
-	})
-
-	describe('refresh', () => {
-		it('moves the bind-generation token in place', () => {
-			const handle = new TokenHandle(1, textToken('hello', 0))
-
-			const next = textToken('hello!', 0)
-			handle.refresh(next)
-
-			expect(handle.token()).toBe(next)
-		})
-
-		it('refresh() is inert on a dead handle', () => {
-			const token = textToken('hello', 0)
-			const handle = new TokenHandle(1, token)
-			handle.kill()
-
-			handle.refresh(textToken('zombie', 0))
-
-			expect(handle.token()).toBe(token)
 		})
 	})
 
@@ -99,7 +74,7 @@ describe('TokenHandle', () => {
 			const {container, span} = mountSurface('hello')
 			const row = document.createElement('div')
 			const host = document.createElement('div')
-			const handle = new TokenHandle(1, textToken('hello', 0))
+			const handle = new TokenHandle(1)
 			expect(handle.node()).toBeUndefined()
 
 			handle.bindElements({tokenElement: span, textElement: span, rowElement: row, childSequenceHost: host})
@@ -127,7 +102,7 @@ describe('TokenHandle', () => {
 	describe('measurements', () => {
 		it('measures the bound text surface', () => {
 			const {span} = mountSurface('hello')
-			const handle = new TokenHandle(1, textToken('hello', 0))
+			const handle = new TokenHandle(1)
 			handle.bindElements({tokenElement: span, textElement: span})
 
 			expect(handle.hasTextSurface()).toBe(true)
@@ -155,7 +130,7 @@ describe('TokenHandle', () => {
 			container.append(row)
 			document.body.append(container)
 
-			const handle = new TokenHandle(1, markToken('m', 'hello!', 0))
+			const handle = new TokenHandle(1)
 			handle.bindElements({tokenElement: span, textElement: span, rowElement: row})
 
 			expect(handle.textLength()).toBe(6)
@@ -163,7 +138,7 @@ describe('TokenHandle', () => {
 		})
 
 		it('returns inert defaults when nothing is bound', () => {
-			const handle = new TokenHandle(1, textToken('hello', 0))
+			const handle = new TokenHandle(1)
 
 			expect(handle.hasTextSurface()).toBe(false)
 			expect(handle.textLength()).toBe(0)
@@ -176,7 +151,7 @@ describe('TokenHandle', () => {
 
 	describe('commands', () => {
 		it('no-ops false when no elements are bound', () => {
-			const handle = new TokenHandle(1, textToken('hello', 0))
+			const handle = new TokenHandle(1)
 
 			expect(handle.placeCaret(0)).toBe(false)
 			expect(handle.placeCaretAtX(10, 10)).toBe(false)
@@ -185,7 +160,7 @@ describe('TokenHandle', () => {
 
 		it('places the caret in the text surface with clamping (Infinity is end)', () => {
 			const {span} = mountSurface('hello')
-			const handle = new TokenHandle(1, textToken('hello', 0))
+			const handle = new TokenHandle(1)
 			handle.bindElements({tokenElement: span, textElement: span})
 
 			expect(handle.placeCaret(2)).toBe(true)
@@ -208,7 +183,7 @@ describe('TokenHandle', () => {
 			container.append(tokenElement)
 			document.body.append(container)
 
-			const handle = new TokenHandle(1, markToken('m', '@[m]', 0))
+			const handle = new TokenHandle(1)
 			handle.bindElements({tokenElement})
 
 			expect(handle.placeCaret(0)).toBe(true)
@@ -225,7 +200,7 @@ describe('TokenHandle', () => {
 		it('focuses the scope element', () => {
 			const {span} = mountSurface('hello')
 			span.tabIndex = 0
-			const handle = new TokenHandle(1, textToken('hello', 0))
+			const handle = new TokenHandle(1)
 			handle.bindElements({tokenElement: span, textElement: span})
 
 			expect(handle.focus()).toBe(true)
@@ -234,7 +209,7 @@ describe('TokenHandle', () => {
 
 		it('placeCaretAtX resolves a viewport point inside the scope', () => {
 			const {span} = mountSurface('hello')
-			const handle = new TokenHandle(1, textToken('hello', 0))
+			const handle = new TokenHandle(1)
 			handle.bindElements({tokenElement: span, textElement: span})
 
 			const rect = span.getBoundingClientRect()
@@ -247,8 +222,7 @@ describe('TokenHandle', () => {
 	describe('dead contract', () => {
 		it('kill freezes reads, disables commands and never resurrects', () => {
 			const {span} = mountSurface('hello')
-			const token = textToken('hello', 0)
-			const handle = new TokenHandle(5, token)
+			const handle = new TokenHandle(5)
 			handle.bindElements({tokenElement: span, textElement: span})
 			expect(handle.alive()).toBe(true)
 
@@ -257,8 +231,6 @@ describe('TokenHandle', () => {
 			expect(handle.alive()).toBe(false)
 			expect(handle.element()).toBeUndefined()
 			expect(handle.node()).toBeUndefined()
-			// Stale reads stay safe and serve the last state.
-			expect(handle.token()).toBe(token)
 
 			// Idempotent: a second kill is silent (no throw, still dead).
 			handle.kill()
@@ -272,11 +244,9 @@ describe('TokenHandle', () => {
 			expect(handle.caretIndex()).toBeUndefined()
 			expect(handle.hasTextSurface()).toBe(false)
 
-			// Never resurrected: refresh/bindElements are inert on a dead handle.
-			handle.refresh(textToken('zombie', 0))
+			// Never resurrected: bindElements is inert on a dead handle.
 			handle.bindElements({tokenElement: span, textElement: span})
 			expect(handle.alive()).toBe(false)
-			expect(handle.token()).toBe(token)
 			expect(handle.element()).toBeUndefined()
 		})
 	})

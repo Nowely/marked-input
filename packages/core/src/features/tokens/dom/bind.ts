@@ -1,41 +1,38 @@
-import {batch} from '../../../shared/signals/index.js'
-import type {Token} from '../parser/types'
+import {batch, untracked} from '../../../shared/signals/index.js'
+import type {TreeNode} from '../tree/types'
 import {applyEditableState} from './editableState'
 import {TokenHandle} from './TokenHandle'
 import type {ElementBindings} from './TokenHandle'
 
 /**
  * The structural DOM walk of the one commit pipeline: zip the freshly rendered
- * DOM with the reconciled token tree and project the result onto the live node
- * layer. Adapted from buildIndex (same frame/stack walk, same all-or-nothing
+ * DOM with the LIVE token tree and project the result onto the live node layer.
+ * Adapted from buildIndex (same frame/stack walk, same all-or-nothing
  * alignment), but instead of building throwaway records it mutates the
  * id-keyed handle map in place:
  *
- * - indexed token, known id    → `update(token, path)` + `bindElements(...)`
- * - indexed token, new id      → `new TokenHandle` + bind
- * - tree token the walk missed → `update(token, path)` + `unbind()` — alive:
- *   the tree is authoritative, only the DOM is (transiently) misaligned
- * - id absent from the tree    → `kill()` + delete from the map
+ * - indexed node, known id    → `bindElements(...)`
+ * - indexed node, new id      → `new TokenHandle` + bind
+ * - tree node the walk missed → `unbind()` — alive: the tree is authoritative,
+ *   only the DOM is (transiently) misaligned
+ * - id absent from the tree   → `kill()` + delete from the map
  *
  * The whole projection commits as ONE batch, so handle `changed` watchers
  * flush only after every node reflects the new tree and DOM.
+ *
+ * The tree side is `TreeNode`, not a snapshot generation, since S2.7: a node
+ * always has an id, so the id pre-pass throw and the `idFor` indirection both
+ * went with the snapshot's optional one.
  */
 export type BindInput = {
 	container: HTMLElement
-	/** The id-stamped token tree the renderer just painted. */
-	tokens: readonly Token[]
-	/**
-	 * Read-only id lookup. Bind never allocates ids: every snapshot token carries
-	 * its node's id (`tree/snapshot.ts`), descendants included. A tree token without
-	 * an id is a contract violation (an unsnapshotted tree was passed) and fails loud
-	 * before any mutation.
-	 */
-	idFor: (token: Token) => number | undefined
-	/** THE live node layer, keyed by token id — mutated in place. */
+	/** The live root nodes the renderer just painted. */
+	roots: readonly TreeNode[]
+	/** THE live node layer, keyed by node id — mutated in place. */
 	nodes: Map<number, TokenHandle>
 	controlElements: ReadonlySet<HTMLElement>
 	/** Registered `__slot__` hosts for one owner, resolved by the owner's stable id. */
-	childSequenceHostsFor: (ownerId: number | undefined) => readonly HTMLElement[]
+	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[]
 	isBlock: boolean
 	/** Mount-time editable state for newly bound surfaces and mark roots. */
 	editable: {editable: boolean; readOnly: boolean}
@@ -55,113 +52,111 @@ export type BindResult = {
 }
 
 type Frame = {
-	tokens: readonly Token[]
+	nodes: readonly TreeNode[]
 	elements: HTMLElement[]
 	rows?: ReadonlyMap<number, HTMLElement>
 }
 
-type TreeEntry = {id: number; token: Token}
-
 export function bind(input: BindInput): BindResult {
-	const {container, tokens, idFor, nodes, controlElements, childSequenceHostsFor, isBlock, editable} = input
+	const {container, roots, nodes, controlElements, childSequenceHostsFor, isBlock, editable} = input
 
-	// Pre-pass, before any mutation: flatten the tree to (id, token) in depth-first
-	// order. Failing here (no id) leaves the node layer untouched.
-	const tree: TreeEntry[] = []
-	collectTree(tokens, idFor, tree)
+	// `untracked` for the reason adoption documents: the walk below reads `children()`
+	// and `text()`, and a caller inside an effect or computed must not subscribe to
+	// every node the bind happened to touch.
+	return untracked(() => {
+		// Depth-first flatten, before any mutation.
+		const tree: TreeNode[] = []
+		collectTree(roots, tree)
 
-	const controlRoots = computeControlRoots(container, controlElements)
-	const walked = walkDom(container, tokens, idFor, controlRoots, childSequenceHostsFor, isBlock)
+		const controlRoots = computeControlRoots(container, controlElements)
+		const walked = walkDom(container, roots, controlRoots, childSequenceHostsFor, isBlock)
 
-	const bound = new Map<number, TokenHandle>()
-	const byElement = new WeakMap<HTMLElement, TokenHandle>()
+		const bound = new Map<number, TokenHandle>()
+		const byElement = new WeakMap<HTMLElement, TokenHandle>()
 
-	batch(() => {
-		const treeIds = new Set<number>()
-		for (const {id, token} of tree) {
-			treeIds.add(id)
-			const bindings = walked.get(token)
-			const existing = nodes.get(id)
-			// An unrendered NEW token materializes no handle; one appears when a
-			// later walk reaches it (or on demand through the model shell).
-			if (!existing && !bindings) continue
-			const handle = existing ?? new TokenHandle(id, token)
-			if (existing) existing.refresh(token)
-			else nodes.set(id, handle)
-			if (!bindings) {
-				handle.unbind()
-				continue
+		batch(() => {
+			const treeIds = new Set<number>()
+			for (const node of tree) {
+				treeIds.add(node.id)
+				const bindings = walked.get(node)
+				const existing = nodes.get(node.id)
+				// An unrendered NEW node materializes no handle; one appears when a
+				// later walk reaches it (or on demand through the model shell).
+				if (!existing && !bindings) continue
+				const handle = existing ?? new TokenHandle(node.id)
+				if (!existing) nodes.set(node.id, handle)
+				if (!bindings) {
+					handle.unbind()
+					continue
+				}
+				const previous = handle.node()
+				handle.bindElements(bindings)
+				applyMountState(node, bindings, previous, editable)
+				bound.set(node.id, handle)
+				byElement.set(bindings.tokenElement, handle)
+				if (bindings.rowElement) byElement.set(bindings.rowElement, handle)
+				if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
 			}
-			const previous = handle.node()
-			handle.bindElements(bindings)
-			applyMountState(token, bindings, previous, editable)
-			bound.set(id, handle)
-			byElement.set(bindings.tokenElement, handle)
-			if (bindings.rowElement) byElement.set(bindings.rowElement, handle)
-			if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
-		}
 
-		// Kill ONLY ids genuinely absent from the new TREE. A DOM-walk bail must
-		// not kill: the DOM is transiently misaligned (adapter mid-render) while
-		// the tree still owns those tokens — they were unbound above instead.
-		// (Deliberate divergence from the old TokenModel#syncHandles, which
-		// rebuilt #byId from byPath and so killed every handle on a bail.)
-		for (const [id, handle] of nodes) {
-			if (treeIds.has(id)) continue
-			handle.kill()
-			nodes.delete(id)
-		}
+			// Kill ONLY ids genuinely absent from the new TREE. A DOM-walk bail must
+			// not kill: the DOM is transiently misaligned (adapter mid-render) while
+			// the tree still owns those nodes — they were unbound above instead.
+			// (Deliberate divergence from the old TokenModel#syncHandles, which
+			// rebuilt #byId from byPath and so killed every handle on a bail.)
+			for (const [id, handle] of nodes) {
+				if (treeIds.has(id)) continue
+				handle.kill()
+				nodes.delete(id)
+			}
+		})
+
+		return {bound, byElement, controlRoots}
 	})
-
-	return {bound, byElement, controlRoots}
 }
 
-function collectTree(tokens: readonly Token[], idFor: (token: Token) => number | undefined, out: TreeEntry[]): void {
-	for (const token of tokens) {
-		const id = idFor(token)
-		if (id === undefined) {
-			throw new Error(`bind: token "${token.content}" has no id — bind requires an identity-reconciled tree`)
-		}
-		out.push({id, token})
-		if (token.type === 'mark') collectTree(token.children, idFor, out)
+function collectTree(nodes: readonly TreeNode[], out: TreeNode[]): void {
+	for (const node of nodes) {
+		out.push(node)
+		if (node.kind === 'mark') collectTree(node.children(), out)
 	}
 }
 
 /**
- * buildIndex's frame/stack walk, emitting element bindings per tree token
+ * buildIndex's frame/stack walk, emitting element bindings per tree node
  * instead of index records. Alignment is all-or-nothing per frame: a count
  * mismatch drops the frame and every descendant frame with it.
  */
 function walkDom(
 	container: HTMLElement,
-	tokens: readonly Token[],
-	idFor: (token: Token) => number | undefined,
+	roots: readonly TreeNode[],
 	controlRoots: WeakSet<HTMLElement>,
-	childSequenceHostsFor: (ownerId: number | undefined) => readonly HTMLElement[],
+	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[],
 	isBlock: boolean
-): Map<Token, ElementBindings> {
-	const bound = new Map<Token, ElementBindings>()
+): Map<TreeNode, ElementBindings> {
+	const bound = new Map<TreeNode, ElementBindings>()
 	const stack: Frame[] = [resolveRoot()]
 
 	while (stack.length > 0) {
 		const frame = stack.pop()
 		if (!frame) continue
-		const {tokens: frameTokens, elements, rows} = frame
-		if (elements.length !== frameTokens.length) continue
+		const {nodes: frameNodes, elements, rows} = frame
+		if (elements.length !== frameNodes.length) continue
 
-		frameTokens.forEach((token, i) => {
+		frameNodes.forEach((node, i) => {
 			const element = elements[i]
-			const hosts = childSequenceHostsFor(idFor(token))
+			const hosts = childSequenceHostsFor(node.id)
 			const childSequenceHost = hosts.length === 1 && element.contains(hosts[0]) ? hosts[0] : undefined
-			bound.set(token, {
+			bound.set(node, {
 				tokenElement: element,
-				textElement: token.type === 'text' ? element : undefined,
+				textElement: node.kind === 'text' ? element : undefined,
 				rowElement: rows?.get(i),
 				childSequenceHost,
 			})
-			if (token.type !== 'mark' || token.children.length === 0) return
+			if (node.kind !== 'mark') return
+			const children = node.children()
+			if (children.length === 0) return
 			stack.push({
-				tokens: token.children,
+				nodes: children,
 				elements: nonControlChildren(childSequenceHost ?? element, controlRoots),
 			})
 		})
@@ -171,7 +166,7 @@ function walkDom(
 
 	function resolveRoot(): Frame {
 		if (!isBlock) {
-			return {tokens, elements: nonControlChildren(container, controlRoots)}
+			return {nodes: roots, elements: nonControlChildren(container, controlRoots)}
 		}
 		// Block layout: take all container children as candidate rows (do NOT filter rows
 		// by controlRoots — a row that contains controls is still a row). Controls are
@@ -179,48 +174,50 @@ function walkDom(
 		const rowEls = elementChildren(container)
 		const tokenEls: HTMLElement[] = []
 		const rows = new Map<number, HTMLElement>()
-		const len = Math.min(tokens.length, rowEls.length)
+		const len = Math.min(roots.length, rowEls.length)
 		for (let i = 0; i < len; i++) {
 			const row = rowEls[i]
 			const inner = nonControlChildren(row, controlRoots)
 			// Block alignment is all-or-nothing: one bad row bails the whole frame.
-			if (inner.length !== 1) return {tokens, elements: []}
+			if (inner.length !== 1) return {nodes: roots, elements: []}
 			tokenEls.push(inner[0])
 			rows.set(i, row)
 		}
-		return {tokens, elements: tokenEls, rows}
+		return {nodes: roots, elements: tokenEls, rows}
 	}
 }
 
 /**
  * Mount-time DOM state (absorbed here from the deleted per-commit sweep):
  *
- * - textContent: EVERY bound text surface is reconciled to its token content
- *   (conditional write — an untouched Text node keeps the caret stable). bind
- *   is the structural branch's endpoint, and a structural commit can also
- *   carry text changes (e.g. paste replacing a mark AND editing text); the
- *   renderer only re-renders structure, so a kept element's surface would
- *   stay stale without this.
+ * - textContent: EVERY bound text surface is reconciled to its node's text
+ *   (conditional write — an untouched Text node keeps the caret stable). bind is
+ *   the structural branch's endpoint, and a structural commit can also carry text
+ *   changes (e.g. paste replacing a mark AND editing text); the renderer only
+ *   re-renders structure, so a kept element's surface would stay stale without this.
  * - contentEditable / tabindex: applied only to NEWLY bound elements (mount).
  *   Elements that stay bound keep whatever the model shell's scoped editable
  *   setter last wrote — prop-change application is its job, not bind's.
  */
 function applyMountState(
-	token: Token,
+	node: TreeNode,
 	bindings: ElementBindings,
 	previous: ElementBindings | undefined,
 	editable: {editable: boolean; readOnly: boolean}
 ): void {
 	const surface = bindings.textElement
 	if (surface) {
-		if (surface.textContent !== token.content) surface.textContent = token.content
+		if (node.kind === 'text') {
+			const text = node.text()
+			if (surface.textContent !== text) surface.textContent = text
+		}
 		// Apply editable state only to NEWLY bound text surfaces (mount); elements
 		// that stay bound keep what the model shell's scoped setter last wrote.
 		if (previous?.textElement !== surface) applyEditableState(bindings, editable)
 		return
 	}
 	// Apply tabindex only to NEWLY bound mark roots.
-	if (token.type !== 'mark' || previous?.tokenElement === bindings.tokenElement) return
+	if (node.kind !== 'mark' || previous?.tokenElement === bindings.tokenElement) return
 	applyEditableState(bindings, editable)
 }
 

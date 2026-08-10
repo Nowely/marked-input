@@ -1,4 +1,3 @@
-import type {Token} from '../parser/types'
 import {
 	focusIfNeeded,
 	getCaretIndex,
@@ -19,57 +18,34 @@ export type ElementBindings = {
 }
 
 /**
- * The live record of one token: the BIND-GENERATION token and its DOM
- * bindings. The class doubles as the public handle face: plain
- * getters (`token()`/`element()`/`alive()`) and caret commands read
- * this node's own fields. No per-node reactivity — the spec's win-4 trade: zero
- * production consumers subscribed to a handle's getters, so signals are pure
- * overhead here (reversible: the getters stay methods, so per-node signals can
+ * The live record of one node's DOM: its element bindings and the single writer
+ * that keeps its text surface in step with the tree. The class doubles as the
+ * public handle face: plain getters (`element()`/`alive()`) and caret commands
+ * read this handle's own fields. No per-node reactivity on the getters — the
+ * spec's win-4 trade: zero production consumers subscribe to them, so signals
+ * would be pure overhead (reversible: they stay methods, so per-node signals can
  * return behind them additively).
  *
- * `#token` is deliberately NOT "the current parsed token" — it is the generation
- * the DOM is currently SHOWING (spec D9). Only two writers exist, `bind` and the
- * text branch, and the text branch patches the surface in the same `batch`;
- * between a structural apply and its bind nothing writes it at all. Gated in
- * `seam/treePipeline.spec.ts` ("holds the BIND-GENERATION token during the pending
- * window"); the deferral of node-backing to the phase that gains a caller is plan
- * decision D-b.
+ * IT HOLDS NO TOKEN (S2.7). `#token` used to carry "the generation the DOM is
+ * SHOWING" — a second representation of data the tree already owns. Cut B took its
+ * last positional reader, and this phase took the other two: `setEditable`'s type
+ * read (dead — bind gives a text surface to text nodes ONLY, so a bound handle's
+ * kind is readable off `textElement`) and `commit.ts`'s divergence detector, which
+ * now compares the surface against the LIVE `TextNode.text()`.
  *
- * NO POSITIONAL READER IS LEFT (S2.6). The latch survives for two production
- * readers, and neither wants a coordinate: `commit.ts`'s divergence detector
- * (content) and `TokenModel.setEditable` (type). The three that did want one are
- * gone — the numeric DOM walk (`dom/domBoundary.ts`'s `rawPositionFromBoundary`,
- * which added a token's stored start to every local offset) and
- * `keyboard/arrowNav.ts` both address by node anchor now. So `position` on this
- * object is no longer read by anything outside the specs; narrowing `#token` to
- * `{type, content}` is the next worthwhile reduction here, and it is deliberately
- * NOT part of a deletion phase.
- *
- * Lifetime: created when its token enters the tree (keyed by the token's
- * stable identity id), mutated in place by
- * `refresh`/`bindElements`/`unbind`, killed when the token disappears
+ * Lifetime: created when its node enters the tree (keyed by the node's stable id),
+ * mutated in place by `bindElements`/`unbind`, killed when the node disappears
  * (stale reads stay safe, commands become no-ops, never resurrected).
  */
 export class TokenHandle {
 	#dead = false
 
-	#token: Token
 	#tokenElement: HTMLElement | undefined
 	#textElement: HTMLElement | undefined
 	#rowElement: HTMLElement | undefined
 	#childSequenceHost: HTMLElement | undefined
 
-	constructor(
-		readonly id: number,
-		token: Token
-	) {
-		this.#token = token
-	}
-
-	/** The handle's current token. A plain read of the backing field. */
-	token(): Token {
-		return this.#token
-	}
+	constructor(readonly id: number) {}
 
 	/** Live AND bound: not killed and currently holding a DOM element. The whole validity check a holder of this handle needs. */
 	alive(): boolean {
@@ -165,18 +141,6 @@ export class TokenHandle {
 		if (!scope) return false
 		focusIfNeeded(scope)
 		return true
-	}
-
-	/**
-	 * @internal Refresh the BIND-GENERATION token: the content and type that describe
-	 * what the DOM currently shows (spec D9). Written by the text branch, which patches
-	 * the surface in the same batch, and by bind. Between a structural apply and its
-	 * bind nothing writes it — the property `commit.ts`'s divergence detector depends
-	 * on. Inert on a dead handle.
-	 */
-	refresh(token: Token): void {
-		if (this.#dead) return
-		this.#token = token
 	}
 
 	/** @internal Set/replace the DOM bindings (structural bind). */

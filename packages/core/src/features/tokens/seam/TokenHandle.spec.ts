@@ -57,8 +57,8 @@ describe('TokenHandle', () => {
 		expect(handle).not.toBe('control')
 		if (!handle || handle === 'control') throw new Error('expected handle')
 		expect(handle.element()).toBe(span)
-		expect(handle.token().content).toBe('hello')
-		expect(handle.token().type).toBe('text')
+		expect(handle.node()?.textElement).toBe(span)
+		expect(span.textContent).toBe('hello')
 		expect(handle.alive()).toBe(true)
 	})
 
@@ -79,17 +79,17 @@ describe('TokenHandle', () => {
 		expect(handle).toBeDefined()
 	})
 
-	it('refreshes snapshots on value edit', () => {
+	it('follows its node on a value edit, with no re-render', () => {
+		// The per-surface effect is the writer: the spec does not paint the new text,
+		// the model does.
 		const {store, span} = mountInline('hello')
 		const handle = store.tokens.handleAt(span)
 		if (!handle || handle === 'control') throw new Error('expected handle')
 
 		store.tokens.setValue('hello!')
-		span.textContent = 'hello!'
-		store.host.rendered()
 
 		expect(handle.alive()).toBe(true)
-		expect(handle.token().content).toBe('hello!')
+		expect(span.textContent).toBe('hello!')
 	})
 
 	it('kills handles whose token disappears (dead-handle contract)', () => {
@@ -102,7 +102,7 @@ describe('TokenHandle', () => {
 		const handle = store.tokens.handle(store.tokens.current()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
 
-		const lastToken = handle.token()
+		const element = handle.element()
 
 		// Reduce to one row — remove the second row from the DOM
 		const secondRow = container.children[1]
@@ -116,8 +116,8 @@ describe('TokenHandle', () => {
 
 		expect(handle.alive()).toBe(false)
 		expect(handle.element()).toBeUndefined()
-		// token() still returns the last snapshot
-		expect(handle.token()).toBe(lastToken)
+		// The element it held is untouched — kill clears the binding, it does not repaint.
+		expect(element?.textContent).toBe('beta')
 		// placeCaret returns false on a dead handle
 		expect(handle.placeCaret(0)).toBe(false)
 
@@ -144,7 +144,7 @@ describe('TokenHandle', () => {
 
 		const handle = store.tokens.handle(store.tokens.current()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
-		expect(handle.token().content).toBe('beta\n\n')
+		expect(handle.element()?.textContent).toBe('beta')
 
 		// Prepend a row through the edit controller (records the edit hint)
 		store.edit.replace(...anchorsAt(store, 0, 0), 'new\n\n')
@@ -160,7 +160,7 @@ describe('TokenHandle', () => {
 
 		// The same handle object now lives at the shifted path
 		expect(handle.alive()).toBe(true)
-		expect(handle.token().content).toBe('beta\n\n')
+		expect(store.tokens.current()[2].content).toBe('beta\n\n')
 
 		// Resolving the shifted id returns the SAME handle object
 		expect(store.tokens.handle(store.tokens.current()[2].id!)).toBe(handle)

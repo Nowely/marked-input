@@ -210,8 +210,10 @@ describe('TokenModel shell (seam/)', () => {
 			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '!')
 
 			expect(model.handle(stale.id!)).toBe(handle)
-			expect(handle?.token()).not.toBe(stale)
-			expect(handle?.token().content).toBe('llo!')
+			// The token OBJECT is replaced; the handle it bridges to is not.
+			expect(model.current()[2]).not.toBe(stale)
+			expect(model.current()[2].content).toBe('llo!')
+			expect(handle?.element()?.textContent).toBe('llo!')
 			// Foreign id: no live node, so no handle.
 			expect(model.handle(999999)).toBeUndefined()
 		})

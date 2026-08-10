@@ -135,11 +135,10 @@ write verb → splice → parse → adopt → TransactionResult
 - **Routing is decided by the PRODUCER**, on `result.render` — not on
   `result.structural`. The latter is add/remove only, while a mark whose value or
   meta changed renders new framework props and must reach the renderer.
-- **The change feed is the MEMO's**, not the transaction's: a change entry exists
-  to hand a handle the generation the DOM now shows, so the set that needs one is
-  exactly the tokens of this snapshot that are new objects. `updated` is the only
-  PATCH signal — a node re-materialized merely because it moved has no surface
-  write to make.
+- **The change feed is the MEMO's**, not the transaction's: the set that needs an
+  entry is exactly the tokens of this snapshot that are new objects, which is what
+  `materialized()` reports. `updated` is the only PATCH signal — a node
+  re-materialized merely because it moved has no surface write to make.
 - **Escalation self-heals:** a text-path apply that cannot resolve a target
   (missing handle, missing surface) abandons the branch before any mutation and
   re-binds the current DOM structurally — no render needed first; the adapter's
@@ -149,11 +148,10 @@ write verb → splice → parse → adopt → TransactionResult
   (`pending()` is true) — id-bridged reads and mutations fail closed instead of
   acting on a tree the DOM never showed. Applies landing inside the window fold
   into the pending structural pass.
-- **bind projects `latest` (the latest committed tree), not `renderTree`:** the
-  render tree keeps its (stale) reference across text applies, and a re-render
-  arriving after one — any unrelated adapter update — must re-bind the fresh
-  tokens, not regress the node layer and the DOM text to the pre-edit
-  generation. `latest` is reassigned at the top of every `apply`.
+- **bind projects the LIVE tree (`deps.roots()`), not `renderTree`:** the render
+  tree keeps its (stale) reference across text applies, and a re-render arriving
+  after one — any unrelated adapter update — must re-bind the current tree, not
+  regress the node layer and the DOM text to the painted generation.
 - **Editable state:** contentEditable/tabindex are applied at bind time to newly
   bound surfaces and mark roots, and by the scoped `setEditable` setter when
   `readOnly`/`isUserSelecting` change (`dom/SelectionDriver.ts` owns the policy,
@@ -170,11 +168,11 @@ write verb → splice → parse → adopt → TransactionResult
 
 ## Structural DOM walk (`dom/bind.ts`)
 
-The structural branch's endpoint: zip the freshly rendered DOM with the committed
-tree (one iterative frame per nesting level, control elements skipped, optional
+The structural branch's endpoint: zip the freshly rendered DOM with the LIVE tree
+(one iterative frame per nesting level, control elements skipped, optional
 registered child-sequence host per mark) and project the result onto the node
-map — `new TokenHandle` for new ids, `refresh` + `bindElements` for known ids,
-`kill` (and delete) ids absent from the tree. The whole projection commits as one
+map — `new TokenHandle` for new ids, `bindElements` for known ids, `kill` (and
+delete) ids absent from the tree. The whole projection commits as one
 batch, so handle watchers flush only after every node reflects the new tree and
 DOM.
 
@@ -188,8 +186,11 @@ added or removed mid-render.
 
 A DOM-walk bail (adapter mid-render misalignment) `unbind`s instead of killing:
 the tree is authoritative, only the DOM is transiently misaligned, and the next
-successful bind re-attaches the same handles. Bind fails loud (throws) only on a
-tree token with no id — a contract violation (an unsnapshotted tree was passed).
+successful bind re-attaches the same handles. Alignment is all-or-nothing per
+frame — a count mismatch drops that frame AND every descendant frame with it,
+because a dropped frame never enqueues its children. The id pre-pass that used to
+throw for a token without an id went with the snapshot input: a `TreeNode` always
+has one.
 
 **Block layout:** each immediate container child is a row; a row must contain
 exactly one non-control element. Alignment is all-or-nothing — one bad row bails
@@ -284,20 +285,18 @@ inside the adopt→bind window where a positional read is not (spec S2 D4).
 - `dom/textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
   `textOffsetWithin`, `hasEditableAncestorBefore`).
 
-## `TokenHandle` — the read latch
+## `TokenHandle` — the DOM binding
 
-The read / measurement / command surface of the DOM binding, resolved by
-`handle(token.id)`.
+The measurement / command surface of one node's DOM binding, resolved by
+`handle(node.id)`.
 
-`#token` is deliberately NOT "the current parsed token" — it is the generation
-the DOM is currently SHOWING (spec D9). Only two writers exist, `bind` and the
-text branch, and the text branch patches the surface in the same `batch`; between
-a structural apply and its bind nothing writes it at all. Its two remaining
-readers want CONTENT (`commit.ts`'s divergence detector) and TYPE
-(`setEditable`); no positional reader is left after S2.6. Historically
-resolves offsets as `token.position.start + local`, and a handle answering with
-the LIVE tree node would resolve carets against a layout the adapter has not
-painted yet.
+IT HOLDS NO TOKEN since S2.7. `#token` used to carry "the generation the DOM is
+SHOWING" (spec D9) — a second representation of data the tree already owns. S2.6
+took its last positional reader, and this phase took the other two:
+`setEditable`'s type read (dead: `bind` gives a `textElement` to text nodes and to
+nothing else, so `!textElement` already means "mark") and `commit.ts`'s divergence
+detector, which sweeps the live tree and compares each bound surface against its
+node's `text()`.
 
 No per-node reactivity **on the handle**: its getters are plain field reads. That
 is not a statement about the model — `TreeNode`'s content fields ARE signals, and
@@ -306,7 +305,6 @@ they are what the public API subscribes to.
 ### Reads
 
 - `id` — the stable identity integer (the key `handle(id)` resolves by).
-- `token()` — the BIND-GENERATION `Token` (see above).
 - `alive()` — live AND bound (not killed and holding a DOM element). The whole
   validity check a holder of the handle needs.
 - `element()` — the token root `HTMLElement`, or `undefined` when unbound/dead.
@@ -330,10 +328,10 @@ boundary), `placeCaretAtX(x, y?)`, `focus()`.
 
 ### Lifetime
 
-Created when its token enters the tree (keyed by the token's stable identity id),
-mutated in place by `refresh` / `bindElements` / `unbind`, killed when the token
-disappears. A dead handle never throws — stale reads return the last token,
-commands return `false`, and it is never resurrected.
+Created when its node enters the tree (keyed by the node's stable identity id),
+mutated in place by `bindElements` / `unbind`, killed when the node disappears. A
+dead handle never throws — reads answer `undefined`, commands return `false`, and
+it is never resurrected.
 
 ## Mark commands
 

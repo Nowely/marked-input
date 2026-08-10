@@ -43,8 +43,8 @@ export interface SelectionPort {
  * and is delegated to here, so consumers keep this single entry point. Owns the
  * `nodes` map the pipeline mutates.
  *
- * Mechanism ledger (spec §4.6) — CLOSED at S1.6d. All six are gone, and where
- * each died is the point of the record:
+ * Mechanism ledger (spec §4.6). All seven are gone, and where each died is the point
+ * of the record:
  *
  * 1. consume-once hint protocol (`#pendingEdit`/`takePendingEdit`) — S1.6a, with
  *    the write-path rewrite.
@@ -57,12 +57,12 @@ export interface SelectionPort {
  *    is the disambiguator and an anchor cannot point past it.
  * 6. `removedIds()` — S1.6d: the `changed` payload carries the ids instead.
  *
- * What deliberately SURVIVES, each with its reason:
- * - `TokenHandle#token` — D9's read latch (plan decision D-h). TWO production readers
- *   are left, and NEITHER is positional: `commit.ts`'s divergence detector (content)
- *   and {@link setEditable} (type). S2.6 took the other three — the numeric DOM walk
- *   read type, position and content, and `keyboard/arrowNav.ts` read position — so the
- *   latch no longer carries a coordinate to anyone.
+ * 7. `TokenHandle#token` — the bind-generation latch (D9, plan decision D-h) — S2.7,
+ *    the first half of Cut A. S2.6 had already taken its three positional readers; of
+ *    the two left, {@link setEditable}'s kind test was dead (see there) and
+ *    `commit.ts`'s divergence detector now compares against the live `TextNode.text()`.
+ *    The DOM text it used to describe is written by one per-surface effect per bound
+ *    text node, armed by `bind` and owned by the handle.
  *
  * Layout: consumer reads → adapter SPI → engine SPI → wiring → internals.
  */
@@ -97,8 +97,10 @@ export class TokenModel {
 	 * over the live node layer — fails closed while a structural apply awaits its
 	 * bind (the layer is one generation stale, so a handle would let mutations act
 	 * on a tree the DOM never showed). THE identity lookup: a consumer holding a
-	 * render-tree token resolves `handle(token.id)`; the handle's `token()` carries
-	 * current content and positions, and its existence IS the validity check.
+	 * render-tree token resolves `handle(token.id)` for MEASUREMENT and CARET
+	 * commands, and the handle's existence IS the validity check. It carries no data
+	 * of its own since S2.7 — content and positions are read from the node
+	 * ({@link find}).
 	 */
 	handle(id: number): TokenHandle | undefined {
 		if (this.#pipeline.pending()) return undefined
@@ -319,8 +321,9 @@ export class TokenModel {
 
 	/**
 	 * The index of the ROOT whose subtree contains `id` — the block ROW index. Off the
-	 * live tree, because a handle's `#path` is bind-generation state on an object reused
-	 * across binds and could answer from a stale generation.
+	 * live tree, because the handle it would otherwise be read from carried a `#path`
+	 * frozen at its last bind. A handle carries no data at all since S2.7, so the tree
+	 * is not merely the fresher source, it is the only one.
 	 */
 	rootIndexOf(id: number): number | undefined {
 		return untracked(() => rootIndexOf(this.#tree.roots(), id))
@@ -404,13 +407,18 @@ export class TokenModel {
 	 * on bound text surfaces, tabindex on bound mark roots, and the seed for
 	 * future binds (replaces the old per-commit sweep). SelectionController
 	 * owns the policy: it calls this whenever readOnly or isUserSelecting changes.
+	 *
+	 * The kind test this used to make off `handle.token()` was DEAD, which is why S2.7
+	 * could delete the bind generation without replacing it: bind gives a `textElement`
+	 * to text nodes and to nothing else (bind.ts's walk), so `!textElement` already
+	 * implies a mark and the extra clause could never skip anything. Measured — deleting
+	 * it before the token read went left the whole suite green.
 	 */
 	setEditable(options: {editable: boolean; readOnly: boolean}): void {
 		this.#editable = {editable: options.editable, readOnly: options.readOnly}
 		for (const handle of this.#pipeline.bound().values()) {
 			const bindings = handle.node()
 			if (!bindings) continue
-			if (!bindings.textElement && handle.token().type !== 'mark') continue
 			applyEditableState(bindings, options)
 		}
 	}
@@ -634,9 +642,7 @@ export class TokenModel {
 	readonly #pipeline = createCommitPipeline({
 		container: () => this.host.container(),
 		nodes: this.#nodes,
-		// Every snapshot token carries its node's id (`tree/snapshot.ts`), so the
-		// pipeline never has to ask an allocator.
-		idFor: token => token.id,
+		roots: () => this.#tree.roots(),
 		editableState: () => this.#editableState(),
 		controlElements: () => this.#controlElements(),
 		childSequenceHostsFor: ownerId => this.#childSequenceHostsFor(ownerId),
@@ -666,12 +672,8 @@ export class TokenModel {
 		return new Set(this.#pendingControls.values())
 	}
 
-	/**
-	 * `undefined` is a total answer, not a guard: an unregistered id and an id-less token
-	 * both match no registration, so the loop answers `[]` without a branch. Bind's id
-	 * pre-pass has already thrown for an id-less token by the time the walk asks.
-	 */
-	#childSequenceHostsFor(ownerId: number | undefined): HTMLElement[] {
+	/** An unregistered id matches no registration, so the loop answers `[]` without a branch. */
+	#childSequenceHostsFor(ownerId: number): HTMLElement[] {
 		const out: HTMLElement[] = []
 		for (const registration of this.#pendingChildSequences.values()) {
 			if (registration.ownerId === ownerId) out.push(registration.element)

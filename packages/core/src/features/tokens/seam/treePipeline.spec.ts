@@ -21,9 +21,9 @@ import {fromTransaction} from './treeInput'
  *
  * `fromTransaction` is now the ONLY producer `commit.ts` has (S1.6a deleted the
  * reconcile lowering and its suite), so nothing here is a parity run any more. What
- * the cases assert is what the pipeline DOES: the DOM, handle identity/liveness AND
- * the bind-generation token each handle holds, the `changed` payload and count, the
- * render-tree reference and the pending latch. They deliberately do NOT assert
+ * the cases assert is what the pipeline DOES: the DOM, handle identity/liveness, the
+ * published snapshot, the `changed` payload and count, the render-tree reference and
+ * the pending latch. They deliberately do NOT assert
  * `CommitInput.changes`, which is an intermediate shape rather than a contract:
  * `changes` is read in exactly one place (`commit.ts`'s `commitText`), which runs
  * only when `!render`, and an add always sets `render` (`adopt.ts:197-198`), so add
@@ -88,9 +88,7 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 	const pipeline = createCommitPipeline({
 		container: () => mounted,
 		nodes,
-		// The tree core stamps every snapshot token with its node's id
-		// (snapshot.ts), so bind's id pre-pass can never throw on this path.
-		idFor: token => token.id,
+		roots: () => tree.roots(),
 		editableState: () => ({editable: true, readOnly: false}),
 		controlElements: () => controls,
 		childSequenceHostsFor: () => [],
@@ -205,16 +203,6 @@ describe('commit pipeline driven by the tree core', () => {
 	})
 
 	it('a tail text edit patches in place, keeps the render tree and announces once', () => {
-		// RECORDED GAP (plan D-c), so nobody hunts for a missing assertion: this branch
-		// calls `handle.refresh(token)` where it used to call `handle.update(token, path)`,
-		// and NO test can discriminate the two. The routing bit is set by every add and
-		// every removal, so `!render` implies every sibling list keeps its length and
-		// order and every path is ALREADY equal — the dropped write was a no-op.
-		// Measured, not merely argued: `commitText` was instrumented to throw when the
-		// path of `token` in `latest` (located by object identity) differs from
-		// `handle.path()`, and the whole core suite (862 tests) ran clean; inverting the
-		// predicate tripped it 31 times, so the probe was live rather than vacuous.
-		// Re-measured after the `materialized()` cutover, which widened `changes`.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
@@ -297,8 +285,6 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
-		const tail = boundAt(pipeline, 2)
-		if (!tail) throw new Error('expected tail handle')
 		const changedSpy = vi.fn()
 		watch(pipeline.changed, changedSpy)
 
@@ -307,7 +293,6 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(pipeline.pending()).toBe(true)
 		expect(changedSpy).not.toHaveBeenCalled()
-		expect(tail.token().content).toBe('llo')
 		expect(text2.textContent).toBe('llo')
 
 		harness.render()
@@ -330,7 +315,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(pipeline.pending()).toBe(false)
-		expect(boundAt(pipeline, 2)?.token().content).toBe('llo!')
+		expect(pipeline.current()[2].content).toBe('llo!')
 		expect(text2.textContent).toBe('llo!')
 	})
 
@@ -362,7 +347,7 @@ describe('commit pipeline driven by the tree core', () => {
 		// node layer is refreshed from the authoritative tree.
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(pipeline.pending()).toBe(false)
-		expect(tail.token().content).toBe('llo!')
+		expect(pipeline.current()[2].content).toBe('llo!')
 		expect(nodes.size).toBe(3)
 
 		harness.render()
@@ -411,28 +396,25 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(childSurface.textContent).toBe('aXb')
 	})
 
-	it('a LENGTH-PRESERVING in-slot edit refreshes the ancestor mark handle too, exactly as the live path does', () => {
-		// The fixture `snapshotMemo`'s `sameChildren` exists for ('#[ab]t' →
-		// '#[cb]t'), lifted to pipeline level. The mark is in NEITHER `updated` nor
-		// `shifted` and does not move, yet its projected `content` and `slot` both
-		// change — the memo's child-reference comparison is the only thing that knows,
-		// which is why `changes` is derived from `materialized()` rather than from the
-		// transaction feeds.
+	it('a LENGTH-PRESERVING in-slot edit re-materializes the ancestor mark in the published snapshot', () => {
+		// `snapshotMemo`'s `sameChildren` fixture ('#[ab]t' → '#[cb]t'), lifted to
+		// pipeline level. The mark is in NEITHER `updated` nor `shifted` and does not
+		// move, yet its projected `content` and `slot` both change — the memo's
+		// child-reference comparison is the only thing that knows, which is why
+		// `changes` is derived from `materialized()` rather than from the transaction
+		// feeds.
 		//
 		// Nothing else in this suite catches it. The in-slot case above splices a
-		// LONGER string, so the mark lands in `shifted` and is walked; `assertAligned`
-		// is blind because bind gives a mark no `textElement` (bind.ts:162); and the
-		// text branch never re-binds, so a missed refresh persists until an unrelated
-		// structural commit. It reaches users: `MarkController` is exported from
-		// `features/tokens/index.ts` and serves its `value`/`meta`/`slot` getters off
-		// `handle.token()`.
+		// LONGER string, so the mark lands in `shifted` and is walked. It reaches users
+		// through `tokens.current()`, which IS the memo's output and is what every
+		// value-slicing consumer reads; `render` is false here, so no re-render
+		// refreshes it either.
 		const harness = createHarness(['#[__slot__]'])
 		const {pipeline} = harness
 		harness.boundary.arrive('#[ab]t')
 		harness.renderNested()
-		const markHandle = boundAt(pipeline, 1)
-		const childHandle = boundAt(pipeline, 1, 0)
-		if (!markHandle || !childHandle) throw new Error('expected the mark and its slot child')
+		const childSurface = boundAt(pipeline, 1, 0)?.node()?.textElement
+		if (!childSurface) throw new Error('expected the slot child surface')
 
 		expect(harness.splice(2, 3, 'c')).toBe(true)
 
@@ -442,7 +424,8 @@ describe('commit pipeline driven by the tree core', () => {
 		// re-measured against it immediately before it was deleted. They are the point of
 		// the case — the tree path once answered '#[ab]' / slot 'ab', and only that
 		// side-by-side run said which of the two was right.
-		expect(tokenFace(markHandle.token())).toEqual({
+		const mark = pipeline.current()[1]
+		expect(tokenFace(mark)).toEqual({
 			type: 'mark',
 			content: '#[cb]',
 			position: {start: 0, end: 5},
@@ -450,14 +433,13 @@ describe('commit pipeline driven by the tree core', () => {
 			meta: undefined,
 			slot: {content: 'cb', start: 2, end: 4},
 		})
-		expect(tokenFace(childHandle.token())).toEqual({
+		expect(mark.type === 'mark' && tokenFace(mark.children[0])).toEqual({
 			type: 'text',
 			content: 'cb',
 			position: {start: 2, end: 4},
 		})
-		// The `#token` contract (TokenHandle.ts): the handle holds the generation the
-		// DOM is showing, and after a text commit that IS the published tree's object.
-		expect(markHandle.token()).toBe(pipeline.current()[1])
+		// And the DOM followed, through the text branch's own patch.
+		expect(childSurface.textContent).toBe('cb')
 	})
 
 	// Beyond the plan's case list, and both survived the first mutation run: the
@@ -466,7 +448,7 @@ describe('commit pipeline driven by the tree core', () => {
 	// from reconcile's recursion (its `collectChanges`/`collectRemovedIds`, deleted
 	// at S1.6d), so a roots-only lowering is a real parity break.
 
-	it('a shift refreshes the descendants of a shifted mark, not just its root', () => {
+	it('a shift re-materializes the descendants of a shifted mark, not just its root', () => {
 		// Ports commit.spec.ts's 'shifted suffix' case to a mark WITH children. The
 		// live path's suffix walk collected the whole subtree as `update` (reconcile,
 		// deleted at S1.6d); adoption lists subtree ROOTS in `shifted`, so
@@ -479,15 +461,15 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		harness.boundary.arrive('a#[bc]d')
 		harness.renderNested()
-		const child = boundAt(pipeline, 1, 0)
-		if (!child) throw new Error('expected the slot child handle')
-		expect(child.token().position).toEqual({start: 3, end: 5})
+		const markBefore = pipeline.current()[1]
+		expect(markBefore.type === 'mark' && markBefore.children[0].position).toEqual({start: 3, end: 5})
 
 		expect(harness.splice(0, 0, 'X')).toBe(true)
 
 		expect(pipeline.pending()).toBe(false)
-		expect(boundAt(pipeline, 1)?.token().position).toEqual({start: 2, end: 7})
-		expect(child.token().position).toEqual({start: 4, end: 6})
+		const mark = pipeline.current()[1]
+		expect(mark.position).toEqual({start: 2, end: 7})
+		expect(mark.type === 'mark' && mark.children[0].position).toEqual({start: 4, end: 6})
 	})
 
 	it('a mark born and killed inside one pending window is announced as neither, subtree included', () => {
@@ -510,33 +492,34 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(payload).toEqual({added: [], removed: [], updated: []})
 	})
-	// ═══ S1.5 Task 6: the bind-generation read (spec §11's named verification) ══
+	// ═══ S2.7: what replaced the bind-generation read ══════════════════════════
 
-	it('holds the BIND-GENERATION token during the pending window, not the live one', () => {
-		// Inserting a mark at 0 moves 'llo' from [6,9] to [10,13] in the tree the
-		// instant adoption runs — but the DOM still shows the old layout until the
-		// adapter repaints, and the handle must describe what is PAINTED (spec D9;
-		// plan D-b). `position` is the witness rather than the reason: S2.6 deleted the
-		// numeric DOM walk that read it, so the latch's live consumers are now
-		// `commit.ts`'s content divergence detector and `setEditable`'s type read. It
-		// stays the witness because it is the only field of the bind generation that
-		// differs from the live tree here WITHOUT the commit having to diverge.
+	it('keeps handles on the PAINTED elements through the pending window while the tree moves on', () => {
+		// The deleted 'holds the BIND-GENERATION token' case asserted this through
+		// `handle.token().position`. There is no second generation to read any more —
+		// the tree IS the generation — so the same property is asserted where it still
+		// exists: `current()` moves the instant adoption runs, the node layer keeps
+		// pointing at the elements the adapter actually painted, and `pending()` fails
+		// id-bridged resolution closed until the repaint binds the new layout.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
-		expect(pipeline.byElement(text2)?.token().position).toEqual({start: 6, end: 9})
+		const tail = pipeline.byElement(text2)
+		expect(pipeline.current()[2].position).toEqual({start: 6, end: 9})
 
 		expect(harness.splice(0, 0, '@[y]')).toBe(true)
 
 		expect(pipeline.pending()).toBe(true)
 		// The tree has moved…
 		expect(pipeline.current()[4].position).toEqual({start: 10, end: 13})
-		// …the painted generation has not.
-		expect(pipeline.byElement(text2)?.token().position).toEqual({start: 6, end: 9})
+		// …the painted DOM has not: the same handle still owns the same element.
+		expect(pipeline.byElement(text2)).toBe(tail)
+		expect(tail?.element()).toBe(text2)
 
 		harness.render()
 
-		expect(boundAt(pipeline, 4)?.token().position).toEqual({start: 10, end: 13})
+		expect(pipeline.pending()).toBe(false)
+		expect(boundAt(pipeline, 4)).toBe(tail)
 	})
 
 	// ═══ S1.5 Task 6: ported ahead of commit.spec.ts's deletion ════════════════
@@ -618,12 +601,12 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(harness.splice(9, 9, '!')).toBe(true)
 		const handle = pipeline.byElement(text2)
-		expect(handle?.token().content).toBe('llo!')
+		expect(text2.textContent).toBe('llo!')
 
 		pipeline.onRendered()
 
 		expect(text2.textContent).toBe('llo!')
-		expect(pipeline.byElement(text2)?.token().content).toBe('llo!')
+		expect(pipeline.current()[2].content).toBe('llo!')
 		expect(pipeline.byElement(text2)).toBe(handle)
 		// A re-bind with nothing pending drains an empty accumulator (commit.spec.ts:727).
 		expect(seen[1]).toEqual({added: [], removed: [], updated: []})

@@ -135,7 +135,7 @@ describe('TokenModel placement commands', () => {
 		if (!handle) throw new Error('expected handle')
 		expect(handle.placeCaret(2)).toBe(true)
 		expect(handle.caretIndex()).toBe(2)
-		expect(handle.textLength()).toBe(handle.token().content.length)
+		expect(handle.textLength()).toBe(store.tokens.current()[0].content.length)
 	})
 })
 

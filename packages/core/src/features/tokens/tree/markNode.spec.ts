@@ -184,8 +184,8 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 		// (text token textChanged; mark + tail shifted by +2)
 		store.edit.replace(...anchorsAt(store, 0, 0), 'XX')
 		expect(store.tokens.value()).toBe('XXhe@[x]llo')
-		// Sanity: reconcile replaced the TOKEN object — the captured token is stale
-		expect(store.tokens.handle(token.id!)?.token()).not.toBe(token)
+		// Sanity: adoption replaced the snapshot TOKEN object — the captured one is stale
+		expect(store.tokens.current().find(next => next.id === token.id)).not.toBe(token)
 
 		node.update({value: 'markput'})
 

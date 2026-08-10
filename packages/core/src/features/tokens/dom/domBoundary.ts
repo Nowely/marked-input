@@ -51,12 +51,14 @@ export function anchorFromBoundary(
 	if (lookup?.kind !== 'token') return undefined
 
 	// The IDENTITY bridge (spec S2 D2): `handle.id` is generation-independent, so
-	// this reaches the LIVE node. Reading the handle's token here would reach the bind
-	// generation and reintroduce the coordinate space this projection exists to avoid.
+	// this reaches the LIVE node. It is the only thing a handle can answer since S2.7
+	// deleted its bind-generation `Token` — which is the point, because reading a
+	// second generation here would reintroduce the coordinate space this projection
+	// exists to avoid.
 	const owner = ctx.find(lookup.node.handle.id)
 	if (!owner) return undefined
 
-	// ABOVE the text branch: a token bound with both a `textElement` and a
+	// ABOVE the text-surface branch below: a token bound with both a `textElement` and a
 	// `childSequenceHost` must resolve host boundaries here, or a host boundary on a
 	// text-bearing token would be read as a text offset.
 	if (node instanceof HTMLElement && node === lookup.node.childSequenceHost) {

@@ -1,7 +1,8 @@
-import {batch, event, signal} from '../../../shared/signals/index.js'
+import {batch, event, signal, untracked} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Token} from '../parser/types'
 import type {CommitChange, CommitInput, TokenDelta} from '../seam/commitInput'
+import type {TreeNode} from '../tree/types'
 import {bind} from './bind'
 import type {TokenHandle} from './TokenHandle'
 
@@ -15,14 +16,20 @@ import type {TokenHandle} from './TokenHandle'
 export type CommitDeps = {
 	/** Adapter container; null until mounted. */
 	container: () => HTMLElement | null
-	/** THE live node layer, keyed by token id — owned by the model shell, mutated through this pipeline. */
+	/** THE live node layer, keyed by node id — owned by the model shell, mutated through this pipeline. */
 	nodes: Map<number, TokenHandle>
-	/** Read-only id lookup (the identity tracker's idFor) — the pipeline never allocates ids. */
-	idFor: (token: Token) => number | undefined
+	/**
+	 * THE tree bind projects onto the node layer, read at bind time. Deliberately the
+	 * LIVE roots and not an input field: `renderTree` keeps its (stale) reference across
+	 * text commits, and a re-render arriving after one (any unrelated adapter update)
+	 * must re-bind the current tree, not regress the node layer to the painted
+	 * generation.
+	 */
+	roots: () => readonly TreeNode[]
 	/** Mount-time editable state for newly bound surfaces and mark roots. */
 	editableState: () => {editable: boolean; readOnly: boolean}
 	controlElements: () => ReadonlySet<HTMLElement>
-	childSequenceHostsFor: (ownerId: number | undefined) => readonly HTMLElement[]
+	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[]
 	isBlock: () => boolean
 }
 
@@ -95,12 +102,9 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	let byElement = new WeakMap<HTMLElement, TokenHandle>()
 	let controlRoots = new WeakSet<HTMLElement>()
 
-	// The latest RECONCILED tree — what bind projects onto the node layer.
-	// Deliberately not renderTree(): the render tree keeps its (stale) reference
-	// across text applies, and a re-render arriving after one (any unrelated
-	// adapter update) must re-bind the fresh tokens, not regress the node
-	// layer — and the DOM text with it — to the pre-edit generation.
-	let latest: Token[] = []
+	// The latest snapshot — what `current()` serves. NOT what bind projects: that is
+	// `deps.roots()`, the live tree.
+	let latest: readonly Token[] = []
 
 	let pendingStructural = false
 	// Accumulates across the pending window and is drained by whichever branch
@@ -147,36 +151,28 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 
 	/**
 	 * Text branch: the adapter never re-renders (tree keeps its reference), so
-	 * bound elements and paths stay live. The PRODUCER resolved every change to
-	 * (id, token, patch) and decided routing — `input.render` was false, so no
-	 * node was added or removed anywhere and every path is unchanged (spec D9;
-	 * plan D-c). Two passes: resolve every change to a live handle/surface PURELY
-	 * first; ANY miss abandons the branch before a single mutation and the caller
-	 * escalates structurally.
+	 * bound elements stay live. The PRODUCER resolved every change to (id, token)
+	 * and decided routing — `input.render` was false, so no node was added or
+	 * removed anywhere (spec D9). Two passes: resolve every change to a live
+	 * surface PURELY first; ANY miss abandons the branch before a single mutation
+	 * and the caller escalates structurally.
 	 */
 	function commitText(changes: readonly CommitChange[], delta: TokenDelta): boolean {
-		// surface is set only for patch entries; absent → refresh-only (no DOM write).
-		const updates: {handle: TokenHandle; token: Token; surface?: HTMLElement}[] = []
+		const updates: {surface: HTMLElement; content: string}[] = []
 		for (const change of changes) {
+			// Entries without `patch` carry no surface write: they existed to refresh a
+			// handle's token, and a handle holds none since S2.7.
+			if (!change.patch) continue
 			const handle = deps.nodes.get(change.id)
-			if (!change.patch) {
-				// Never bound yet (a handle materializes on the next bind) — skip, not a
-				// miss: an unrendered token has no surface to patch.
-				if (handle) updates.push({handle, token: change.token})
-				continue
-			}
 			if (!handle) return false
 			const surface = handle.node()?.textElement
 			if (!surface) return false
-			updates.push({handle, token: change.token, surface})
+			updates.push({surface, content: change.token.content})
 		}
 
 		batch(() => {
-			for (const {handle, token, surface} of updates) {
-				// Token only: paths cannot move on a text-routed commit, because the
-				// routing bit is set by every add and every removal.
-				handle.refresh(token)
-				if (surface && surface.textContent !== token.content) surface.textContent = token.content
+			for (const {surface, content} of updates) {
+				if (surface.textContent !== content) surface.textContent = content
 			}
 		})
 		if (VERIFY_DOM) assertAligned()
@@ -205,8 +201,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	function bindAndAnnounce(container: HTMLElement): void {
 		const result = bind({
 			container,
-			tokens: latest,
-			idFor: deps.idFor,
+			roots: deps.roots(),
 			nodes: deps.nodes,
 			controlElements: deps.controlElements(),
 			childSequenceHostsFor: deps.childSequenceHostsFor,
@@ -225,19 +220,24 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 
 	/**
 	 * Divergence detector — last step of both branches. White-box rationale kept
-	 * from the old patch spec: each branch heals its own writes first (bind
-	 * sweeps every bound surface, the text branch its targets), so a throw here
-	 * means the healing itself missed a write — the bug class it guards.
+	 * from the old patch spec, now stated against the ONE representation: each branch
+	 * heals its own writes first (bind sweeps every bound surface, the text branch its
+	 * targets), so a throw here means the healing itself missed a write — the bug class
+	 * it guards. The expectation is read from the LIVE `TextNode.text()`, which is what
+	 * lets the handle stop carrying a `Token` of its own.
 	 */
 	function assertAligned(): void {
-		for (const handle of bound.values()) {
-			const surface = handle.node()?.textElement
-			if (!surface) continue
-			const expected = handle.token().content
-			const actual = surface.textContent
-			if (actual === expected) continue
-			throw new Error(`TokenModel divergence at #${handle.id}: DOM "${actual}" ≠ model "${expected}"`)
-		}
+		untracked(() => {
+			walkTree(deps.roots(), node => {
+				if (node.kind !== 'text') return
+				const surface = bound.get(node.id)?.node()?.textElement
+				if (!surface) return
+				const expected = node.text()
+				const actual = surface.textContent
+				if (actual === expected) return
+				throw new Error(`TokenModel divergence at #${node.id}: DOM "${actual}" ≠ model "${expected}"`)
+			})
+		})
 	}
 
 	return {
@@ -250,5 +250,12 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		bound: () => bound,
 		byElement: element => byElement.get(element),
 		isControlRoot: element => controlRoots.has(element),
+	}
+}
+
+function walkTree(nodes: readonly TreeNode[], visit: (node: TreeNode) => void): void {
+	for (const node of nodes) {
+		visit(node)
+		if (node.kind === 'mark') walkTree(node.children(), visit)
 	}
 }
