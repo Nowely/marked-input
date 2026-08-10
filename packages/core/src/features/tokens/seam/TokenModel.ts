@@ -611,7 +611,6 @@ export class TokenModel {
 		boundHandles: () => this.#pipeline.bound().values(),
 		roots: () => this.nodes(),
 		find: id => this.find(id),
-		handleById: id => this.handle(id),
 	})
 
 	// Ref registries — populated by framework ref callbacks, read by bind.

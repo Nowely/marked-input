@@ -40,8 +40,6 @@ export type DomModelDeps = {
 	roots(): readonly TreeNode[]
 	/** Stable id → live node (TokenModel.find) — NOT latch-gated. */
 	find(id: Id): TreeNode | undefined
-	/** Latch-gated id → handle (TokenModel.handle), for the bound-view lookup. */
-	handleById(id: Id): TokenHandle | undefined
 }
 
 /**
@@ -131,10 +129,6 @@ export class DomModel {
 			locate: node => this.#locate(node),
 			roots: () => this.deps.roots(),
 			find: id => this.deps.find(id),
-			viewOfId: id => {
-				const handle = this.deps.handleById(id)
-				return handle ? this.#view(handle) : undefined
-			},
 		}
 	}
 

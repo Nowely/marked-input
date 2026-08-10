@@ -30,22 +30,21 @@ export type BoundaryContext = {
  * plus a bridge from a bound handle's stable id to the LIVE node.
  *
  * A `Pick`, not an intersection, so the exclusion is a compile error and not a
- * convention. All three excluded members answer with `Token`s, and a `Token`
- * carries `position` — an absolute coordinate no module above `tree/` may read
- * (spec S2 D1). `tokenOf`/`viewOf` are excluded twice over: both are gated to
- * the BIND GENERATION (spec S1 D9), which describes what the DOM is showing
- * rather than what the tree holds. `tokens` is NOT — it is `current()`, fresh at
- * the top of every apply — so coordinates alone are what rule it out. The anchor
- * projection never forms an absolute coordinate, so it wants identity, not
- * coordinates (spec S2 D1/D4).
+ * convention. Of the four excluded members, three answer with `Token`s and one
+ * (`nodes`) with `TokenView`s carrying a bind-generation `Token` behind
+ * `handle.token()`; either way a `Token` carries `position` — an absolute
+ * coordinate no module above `tree/` may read (spec S2 D1). `tokenOf`/`viewOf`
+ * are excluded twice over: both are gated to the BIND GENERATION (spec S1 D9),
+ * which describes what the DOM is showing rather than what the tree holds.
+ * `tokens` is NOT — it is `current()`, fresh at the top of every apply — so
+ * coordinates alone are what rule it out. The anchor projection never forms an
+ * absolute coordinate, so it wants identity, not coordinates (spec S2 D1/D4).
  */
 export type AnchorContext = Pick<BoundaryContext, 'container' | 'locate'> & {
 	/** The live root nodes (TokenModel.nodes()). */
 	roots(): readonly TreeNode[]
 	/** Stable id → live node (TokenModel.find). NOT latch-gated: ids outlive the bind window. */
 	find(id: Id): TreeNode | undefined
-	/** The bound view for a live node's id, if any. */
-	viewOfId(id: Id): TokenView | undefined
 }
 
 /**
@@ -139,11 +138,13 @@ function childBoundaryAnchor(
 	owner: TreeNode,
 	affinity: 'before' | 'after'
 ): NodeAnchor | undefined {
-	if (owner.kind === 'text') {
-		const textElement = ctx.viewOfId(owner.id)?.textElement
-		if (!textElement || textLength(textElement) === 0) return {before: owner}
-	}
-
+	// NO text-token arm here, unlike {@link fromTokenChildBoundary}: this function is
+	// unreachable with a text owner. `bind` gives a text token the SAME element as its
+	// `tokenElement` and its `textElement` (bind.ts), and `contains` is reflexive, so the
+	// text-surface branch above answers first; and `adopt` never reuses a node across a
+	// kind change, so an id bound as text resolves to a `TextNode`. The remaining door —
+	// a text token with a registered `childSequenceHost` — no adapter opens: both render
+	// `TokenChildren` only for a mark with children.
 	const beforeView = lookupTokenDescendant(ctx, tokenElement.childNodes.item(offset - 1))
 	const afterView = lookupTokenDescendant(ctx, tokenElement.childNodes.item(offset))
 	if (beforeView && afterView) {
@@ -241,6 +242,11 @@ function fromTokenChildBoundary(
 	token: Token,
 	affinity: 'before' | 'after'
 ): number | undefined {
+	// UNREACHED, and measured so: deleting this arm leaves the core suite at 900 passing,
+	// exactly as deleting its anchor-projection twin did (the twin is gone; see
+	// {@link childBoundaryAnchor} for why a text owner cannot get here at all). Kept only
+	// because this whole function dies with the numeric projection at S2.6 — do not spend a
+	// test on it, and do not preserve it when that deletion comes.
 	if (token.type === 'text') {
 		const textElement = ctx.viewOf(token)?.textElement
 		if (!textElement || textLength(textElement) === 0) return token.position.start
