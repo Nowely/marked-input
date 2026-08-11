@@ -7,7 +7,7 @@ import type {TokenTree} from '../tree/tree'
 import type {TextNode, TreeNode} from '../tree/types'
 import {bind} from './bind'
 import type {BindInput} from './bind'
-import {focusIfNeeded, getCaretIndex, placeAtTextOffset} from './caret'
+import {focusEditingHost, getCaretIndex, placeAtTextOffset} from './caret'
 import {applyEditableState} from './editableState'
 import type {TokenHandle} from './TokenHandle'
 
@@ -717,6 +717,8 @@ describe('bind', () => {
 			// replace-all: measured, `textContent = <same string>` collapses two children
 			// into one and drops the caret from 4 to 0.
 			const container = document.createElement('div')
+			// The editing host, because that is where focus sits while the browser edits.
+			container.contentEditable = 'true'
 			const span = spanWith('hello')
 			container.append(span)
 			document.body.append(container)
@@ -728,7 +730,7 @@ describe('bind', () => {
 			const only = span.firstChild
 			if (!(only instanceof Text)) throw new Error('expected one text child')
 			only.splitText(2)
-			focusIfNeeded(span)
+			focusEditingHost(span)
 			placeAtTextOffset(span, 4)
 			expect(getCaretIndex(span)).toBe(4)
 

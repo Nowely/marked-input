@@ -129,13 +129,15 @@ export function placeAtTextOffset(surface: HTMLElement, offset: number): void {
 	selection.addRange(range)
 }
 
-/** Place a collapsed caret at the start or end of an element's child list. */
-export function placeAtChildBoundary(element: HTMLElement, side: 'start' | 'end'): void {
+/**
+ * Place a collapsed caret at a child index of `parent` — the one-host coordinate for
+ * "before/after an atomic child", whose own interior holds no reachable position.
+ */
+export function placeAtParentBoundary(parent: HTMLElement, childIndex: number): void {
 	const selection = window.getSelection()
 	if (!selection) return
 	const range = document.createRange()
-	const childIndex = side === 'end' ? element.childNodes.length : 0
-	range.setStart(element, childIndex)
+	range.setStart(parent, childIndex)
 	range.collapse(true)
 	selection.removeAllRanges()
 	selection.addRange(range)
@@ -157,7 +159,13 @@ export function placeRangeAcrossSurfaces(
 	selection.addRange(range)
 }
 
-/** Focus `element` only when it is not already the active element. */
-export function focusIfNeeded(element: HTMLElement): void {
-	if (document.activeElement !== element) element.focus()
+/**
+ * Focus the element's EDITING HOST — the nearest `contenteditable=true` ancestor,
+ * itself included — unless focus already sits inside it. Under the one-host topology
+ * no token element is focusable, so focusing the element itself is a no-op; a
+ * model-initiated placement (no click preceding it) needs the host to take focus.
+ */
+export function focusEditingHost(element: HTMLElement): void {
+	const host = element.closest('[contenteditable="true"]')
+	if (host instanceof HTMLElement && !host.contains(document.activeElement)) host.focus()
 }

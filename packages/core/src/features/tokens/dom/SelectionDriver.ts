@@ -116,11 +116,19 @@ export class SelectionDriver {
 		return range ? this.#anchorsIn(range) : undefined
 	}
 
-	/** The two `anchorFor` calls both DOM-truth reads share; `undefined` if either end declines. */
+	/** The `anchorFor` reads both DOM-truth reads share; `undefined` if either end declines. */
 	#anchorsIn(range: globalThis.Range): Anchors | undefined {
 		// A DOM Range is always document-ordered, and these are the affinities the numeric
 		// read used, so `anchor` is the low end and `head` the high one.
 		const anchor = this.deps.anchorFor(range.startContainer, range.startOffset, 'after')
+		// ONE READ for a collapsed range, because the opposite affinities exist to make the
+		// ENDS of a span lean inward — read twice against a single boundary they answer two
+		// NAMES for one position and the pair stops comparing equal. That is not cosmetic:
+		// `#applySelection` would take the ranged branch for a caret, where `selectRange`
+		// declines any endpoint without a text surface. Reachable since a mark's caret became
+		// a container boundary, whose two sides are different nodes ({before: next root} vs
+		// {after: the mark}).
+		if (range.collapsed) return anchor && {anchor, head: anchor}
 		const head = this.deps.anchorFor(range.endContainer, range.endOffset, 'before')
 		return anchor && head ? {anchor, head} : undefined
 	}
@@ -236,6 +244,13 @@ export class SelectionDriver {
 		}
 
 		const syncIfInEditor = (node: Node): void => {
+			// The container IS the editor, and it owns no token: `handleAt` answers
+			// `undefined` for it, which is the "outside" verdict. Its own boundaries are
+			// where a caret before or after a top-level mark lives, so they must SYNC.
+			if (node === container) {
+				sync()
+				return
+			}
 			const at = this.deps.handleAt(node)
 			if (at && at !== 'control') {
 				sync()

@@ -1,11 +1,11 @@
 import {effect} from '../../../shared/signals/index.js'
 import type {TreeNode} from '../tree/types'
 import {
-	focusIfNeeded,
+	focusEditingHost,
 	getCaretIndex,
 	isOnFirstLine,
 	isOnLastLine,
-	placeAtChildBoundary,
+	placeAtParentBoundary,
 	placeAtTextOffset,
 	setAtX,
 } from './caret'
@@ -111,19 +111,26 @@ export class TokenHandle {
 
 	/**
 	 * Place a collapsed caret at a character offset (Infinity → end).
-	 * On tokens without a text surface any offset > 0 collapses to the 'end'
-	 * child boundary.
+	 * On tokens without a text surface any offset > 0 collapses to the boundary
+	 * AFTER the token in its parent.
 	 */
 	placeCaret(offset: number): boolean {
 		const bindings = this.#bindings
 		if (!bindings) return false
 		const {tokenElement, textElement} = bindings
 		if (!textElement) {
-			focusIfNeeded(tokenElement)
-			placeAtChildBoundary(tokenElement, offset <= 0 ? 'start' : 'end')
+			// A mark has no anchorable interior: it is atomic (ce=false), so its caret
+			// positions are the PARENT coordinates before and after it. The child-boundary
+			// predecessor placed INSIDE the mark — a position no caret can occupy, and the
+			// very one `DomModel.selectRange` has always refused as a range endpoint.
+			const parent = tokenElement.parentElement
+			if (!parent) return false
+			focusEditingHost(parent)
+			const index = Array.prototype.indexOf.call(parent.childNodes, tokenElement)
+			placeAtParentBoundary(parent, offset <= 0 ? index : index + 1)
 			return true
 		}
-		focusIfNeeded(textElement)
+		focusEditingHost(textElement)
 		const length = textLength(textElement)
 		placeAtTextOffset(textElement, Number.isFinite(offset) ? Math.max(0, Math.min(offset, length)) : length)
 		return true
@@ -137,11 +144,11 @@ export class TokenHandle {
 		return true
 	}
 
-	/** Focus this token's scope element (row in block layout). */
+	/** Focus the editing host of this token's scope element (row in block layout). */
 	focus(): boolean {
 		const scope = this.#measureScope()
 		if (!scope) return false
-		focusIfNeeded(scope)
+		focusEditingHost(scope)
 		return true
 	}
 

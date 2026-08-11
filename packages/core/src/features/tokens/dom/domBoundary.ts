@@ -23,8 +23,6 @@ export type Lookup = {readonly kind: 'control'} | {readonly kind: 'token'; reado
 export type AnchorContext = {
 	container: HTMLElement | undefined
 	locate(node: Node): Lookup | undefined
-	/** The live root nodes (TokenModel.nodes()). */
-	roots(): readonly TreeNode[]
 	/** Stable id → live node (TokenModel.find). NOT latch-gated: ids outlive the bind window. */
 	find(id: Id): TreeNode | undefined
 }
@@ -44,7 +42,7 @@ export function anchorFromBoundary(
 	affinity: 'before' | 'after' = 'after'
 ): NodeAnchor | undefined {
 	if (ctx.container && node === ctx.container) {
-		return fromContainerAnchor(ctx.roots(), offset, affinity)
+		return fromContainerAnchor(ctx, ctx.container, offset, affinity)
 	}
 
 	const lookup = ctx.locate(node)
@@ -93,7 +91,12 @@ export function anchorFromBoundary(
 	}
 
 	if (lookup.node.rowElement && node === lookup.node.rowElement) {
-		return offset <= 0 ? {before: owner} : {after: owner}
+		// AGAINST THE TOKEN'S OWN INDEX, not 0: a row also holds chrome the tree does not
+		// own (the React/Vue `Block` renderers put a drop indicator and a drag handle
+		// BEFORE the token), so the boundary that precedes the token is its child index,
+		// not the row's start.
+		const tokenIndex = Array.prototype.indexOf.call(node.childNodes, lookup.node.tokenElement)
+		return offset <= tokenIndex ? {before: owner} : {after: owner}
 	}
 
 	return undefined
@@ -148,12 +151,50 @@ function childBoundaryAnchor(
 	return affinity === 'before' ? {before: owner} : {after: owner}
 }
 
-/** The container arm: the document edges by side, the interior by affinity. */
-function fromContainerAnchor(roots: readonly TreeNode[], offset: number, affinity: 'before' | 'after'): NodeAnchor {
-	if (roots.length === 0) return 'start'
-	if (offset <= 0) return {before: roots[0]}
-	if (offset >= roots.length) return {after: roots[roots.length - 1]}
-	return affinity === 'before' ? {after: roots[offset - 1]} : {before: roots[offset]}
+/**
+ * The container arm: RAW DOM coordinates in, bound-token coordinates out. The
+ * container's children are not the roots — controls sit among them, and so do the
+ * framework's own placeholders (a Vue fragment anchors on an EMPTY TEXT NODE, `v-if` on
+ * a comment) — so the boundary resolves through its nearest TOKEN neighbours instead of
+ * indexing into `roots`. Both edges fall out of the same two scans: no neighbour on one
+ * side is what makes a boundary an edge.
+ *
+ * Neither side answering means there is no bound token in the container at all — an
+ * empty document, or a frame whose alignment `bind` bailed on — and `'start'` is the
+ * guess for both. The root-index predecessor answered `'start'` only for the first.
+ */
+function fromContainerAnchor(
+	ctx: AnchorContext,
+	container: HTMLElement,
+	offset: number,
+	affinity: 'before' | 'after'
+): NodeAnchor {
+	const after = tokenAt(ctx, container, offset, 1)
+	const before = tokenAt(ctx, container, offset - 1, -1)
+	if (before && after) return affinity === 'before' ? {after: before} : {before: after}
+	if (after) return {before: after}
+	if (before) return {after: before}
+	return 'start'
+}
+
+/**
+ * The nearest container child at or beyond `index` in `step`'s direction whose element
+ * is a bound token, as that token's LIVE node. A DEAD neighbour — still bound, its node
+ * gone from the tree — is skipped like any other non-token child rather than ending the
+ * scan: the nearest LIVE token is the answer, and stopping short would fail a boundary
+ * closed for the whole adopt→bind window after a deletion.
+ */
+function tokenAt(ctx: AnchorContext, container: HTMLElement, index: number, step: 1 | -1): TreeNode | undefined {
+	const children = container.childNodes
+	for (let i = index; i >= 0 && i < children.length; i += step) {
+		const child = children.item(i)
+		if (!(child instanceof HTMLElement)) continue
+		const lookup = ctx.locate(child)
+		if (lookup?.kind !== 'token') continue
+		const node = ctx.find(lookup.node.handle.id)
+		if (node) return node
+	}
+	return undefined
 }
 
 function lookupTokenDescendant(ctx: Pick<AnchorContext, 'locate'>, node: Node | null): TokenView | undefined {

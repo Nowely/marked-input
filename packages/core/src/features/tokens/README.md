@@ -300,8 +300,8 @@ closed — is on the members themselves in `seam/TokenModel.ts` and
 ### Boundary facade internals
 
 The model builds an `AnchorContext` per call: `locate` walks a DOM node up to its
-bound handle, `roots()` and `find(id)` read the LIVE tree. Nothing in it forms an
-absolute offset, which is the point — no module above `tree/` may. The bridge
+bound handle and `find(id)` reads the LIVE tree. Nothing in it forms an absolute
+offset, which is the point — no module above `tree/` may. The bridge
 from DOM to model is the handle's stable ID, which is generation-independent, so
 the walk stays correct inside the adopt→bind window where a positional read is
 not.
@@ -312,8 +312,8 @@ not.
   is the only projection of the walk, and every branch names its own case in
   `domBoundary.spec.ts`.
 - `dom/caret.ts` — stateless `Range`/`Selection` mechanics (`placeAtTextOffset`,
-  `placeAtChildBoundary`, `placeRangeAcrossSurfaces`, `setAtX`, `getCaretIndex`,
-  `getRect`, `isOnFirstLine`, `isOnLastLine`, `focusIfNeeded`).
+  `placeAtParentBoundary`, `placeRangeAcrossSurfaces`, `setAtX`, `getCaretIndex`,
+  `getRect`, `isOnFirstLine`, `isOnLastLine`, `focusEditingHost`).
 - `dom/textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
   `textOffsetWithin`, `hasEditableAncestorBefore`).
 

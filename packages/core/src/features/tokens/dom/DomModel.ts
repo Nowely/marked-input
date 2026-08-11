@@ -111,7 +111,6 @@ export class DomModel {
 		return {
 			container: this.deps.container() ?? undefined,
 			locate: node => this.#locate(node),
-			roots: () => this.deps.roots(),
 			find: id => this.deps.find(id),
 		}
 	}

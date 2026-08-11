@@ -2,6 +2,7 @@ import {afterEach, describe, expect, it} from 'vitest'
 
 import {computed} from '../../../shared/signals'
 import {enableStructuralStore, mountBlock, mountNested, mountValue, mountWithMark} from '../__testing__/mountFixtures'
+import {offsetOfAnchor} from '../tree/anchors'
 
 describe('anchorFor', () => {
 	afterEach(() => {
@@ -246,6 +247,140 @@ function mountStructuralBlockWithControl(value: string) {
 	if (!(controlText instanceof Text)) throw new Error('Structural control did not render a text node')
 	return {store, container, row, control, controlText, textSurface, textNode}
 }
+
+/**
+ * Block layout with a drag grip before each row's token — the shape the React and Vue
+ * `Block` renderers produce (the drop indicator and the handle precede the token).
+ */
+function mountBlockWithGrip() {
+	const store = enableStructuralStore('one\n\ntwo\n\n', {
+		layout: 'block',
+		Mark: () => null,
+		options: [{markup: '__slot__\n\n'}],
+	})
+	const container = document.createElement('div')
+	const rows: HTMLElement[] = []
+	const grips: HTMLElement[] = []
+	for (let i = 0; i < 2; i++) {
+		const row = document.createElement('div')
+		const grip = document.createElement('div')
+		const mark = document.createElement('span')
+		mark.append(document.createElement('span'))
+		row.append(grip, mark)
+		container.append(row)
+		rows.push(row)
+		grips.push(grip)
+	}
+	document.body.append(container)
+	store.host.container(container)
+	for (const grip of grips) store.tokens.control()(grip)
+	store.host.rendered()
+	return {store, container, rows}
+}
+
+/**
+ * Inline mount whose container holds chrome the tree does not own: a registered control
+ * before the roots, and the framework's own placeholders between them — an EMPTY TEXT
+ * NODE (what a Vue fragment anchors on, and the shipped Vue adapter renders one around
+ * every token list) plus a comment (`v-if`). Container children therefore do NOT index
+ * the roots: `[control, '', text1, <!---->, mark, text2, '']` against three of them.
+ */
+function mountInlineWithChrome() {
+	const store = enableStructuralStore('hello @[x] tail', {Mark: () => null, options: [{markup: '@[__value__]'}]})
+	const container = document.createElement('div')
+	const control = document.createElement('div')
+	const text1 = document.createElement('span')
+	const mark = document.createElement('mark')
+	const text2 = document.createElement('span')
+	container.append(
+		control,
+		document.createTextNode(''),
+		text1,
+		document.createComment('v-if'),
+		mark,
+		text2,
+		document.createTextNode('')
+	)
+	document.body.append(container)
+	store.host.container(container)
+	store.tokens.control()(control)
+	store.host.rendered()
+	return {store, container, control, text1, mark, text2}
+}
+
+describe('anchorFor across chrome the tree does not own', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+		window.getSelection()?.removeAllRanges()
+	})
+
+	it('reads a row boundary against the token element, not child index 0', () => {
+		// `[grip, token]`: the boundary before the token is index 1, and 2 — not 1 — is the
+		// first one past it. Reading `offset <= 0` as "before" made every real boundary in a
+		// gripped row answer the row's END.
+		const {store, rows} = mountBlockWithGrip()
+		const first = store.tokens.nodes()[0]
+
+		expect(store.tokens.anchorFor(rows[0], 0)).toEqual({before: first})
+		expect(store.tokens.anchorFor(rows[0], 1)).toEqual({before: first})
+		expect(store.tokens.anchorFor(rows[0], 2)).toEqual({after: first})
+	})
+
+	it('places a row caret at the row start, not the row end', () => {
+		// END-TO-END, and the regression the parent-coordinate write introduced: a mark row
+		// has no text surface, so `placeCaret(0)` lands on the ROW at the token's own index,
+		// which the raw-index read answered as "past the token".
+		const {store} = mountBlockWithGrip()
+		const first = store.tokens.nodes()[0]
+		const handle = store.tokens.handle(first.id)
+		if (!handle) throw new Error('expected a bound row handle')
+
+		expect(handle.placeCaret(0)).toBe(true)
+
+		expect(store.tokens.domAnchors()?.anchor).toEqual({before: first})
+	})
+
+	it('resolves a container boundary through its nearest TOKEN neighbours', () => {
+		// Seven children, three roots: no index into `roots` answers any of these.
+		const {store, container} = mountInlineWithChrome()
+		const [text1, mark, text2] = store.tokens.nodes()
+
+		expect(store.tokens.anchorFor(container, 0)).toEqual({before: text1})
+		// Past the control and the leading fragment anchor — still the document start.
+		expect(store.tokens.anchorFor(container, 2)).toEqual({before: text1})
+		expect(store.tokens.anchorFor(container, 3, 'before')).toEqual({after: text1})
+		// The comment sits at index 3, so this boundary's left neighbour is two hops away.
+		expect(store.tokens.anchorFor(container, 4, 'after')).toEqual({before: mark})
+		expect(store.tokens.anchorFor(container, 7)).toEqual({after: text2})
+	})
+
+	it('scans past a DEAD neighbour to the nearest live token', () => {
+		// Structural with no repaint, so the elements stay bound while their nodes leave the
+		// tree — the same window `anchorFor`'s deletion case uses. The boundary between the
+		// two dead elements has a live token only two hops to its left; stopping at the dead
+		// one answers `'start'`, which is a different position, not a fail-closed.
+		const {store, container} = mountWithMark()
+		store.tokens.setValue('hello')
+		const roots = store.tokens.nodes()
+
+		expect(store.tokens.anchorFor(container, 2)).toEqual({after: roots[0]})
+	})
+
+	it('places a caret after a mark at the mark end, not the document end', () => {
+		const {store} = mountInlineWithChrome()
+		const roots = store.tokens.nodes()
+		const mark = roots[1]
+
+		expect(store.tokens.placeCaret({after: mark})).toBe(true)
+
+		// The SHAPE is affinity's: the DOM boundary after the mark is read right-affine, so
+		// it answers from the next root's side. The POSITION is what the raw-index read got
+		// wrong — it ran off the end of `roots` and answered the document end.
+		const anchor = store.tokens.domAnchors()?.anchor
+		expect(anchor).toEqual({before: roots[2]})
+		expect(anchor && offsetOfAnchor(roots, anchor)).toBe(offsetOfAnchor(roots, {after: mark}))
+	})
+})
 
 describe('anchorFor across a control', () => {
 	it('returns undefined for selections crossing controls', () => {

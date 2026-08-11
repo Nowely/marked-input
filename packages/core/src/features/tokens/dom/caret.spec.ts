@@ -101,28 +101,77 @@ describe('caretDom', () => {
 		})
 	})
 
-	describe('placeAtChildBoundary', () => {
-		it('places caret at the start (childIndex 0) of an element', () => {
-			const el = document.createElement('span')
-			el.appendChild(document.createElement('b'))
-			document.body.appendChild(el)
-			caretDom.placeAtChildBoundary(el, 'start')
-			const range = window.getSelection()?.getRangeAt(0)
-			expect(range?.startContainer).toBe(el)
-			expect(range?.startOffset).toBe(0)
-			expect(range?.collapsed).toBe(true)
-			document.body.removeChild(el)
+	describe('placeAtParentBoundary', () => {
+		it('places a collapsed caret at a child index of the parent', () => {
+			const host = document.createElement('div')
+			host.contentEditable = 'true'
+			const a = document.createElement('span')
+			a.textContent = 'a'
+			const mark = document.createElement('mark')
+			mark.contentEditable = 'false'
+			host.append(a, mark)
+			document.body.append(host)
+
+			caretDom.placeAtParentBoundary(host, 1)
+
+			const sel = window.getSelection()
+			expect(sel?.anchorNode).toBe(host)
+			expect(sel?.anchorOffset).toBe(1)
+			expect(sel?.isCollapsed).toBe(true)
+			host.remove()
 		})
 
-		it('places caret at the end (childIndex = childNodes.length) of an element', () => {
+		it('places at the end of the child list', () => {
 			const el = document.createElement('span')
 			el.append(document.createElement('b'), document.createElement('i'))
-			document.body.appendChild(el)
-			caretDom.placeAtChildBoundary(el, 'end')
-			const range = window.getSelection()?.getRangeAt(0)
-			expect(range?.startContainer).toBe(el)
-			expect(range?.startOffset).toBe(2)
-			document.body.removeChild(el)
+			document.body.append(el)
+
+			caretDom.placeAtParentBoundary(el, el.childNodes.length)
+
+			expect(window.getSelection()?.anchorOffset).toBe(2)
+			el.remove()
+		})
+	})
+
+	describe('focusEditingHost', () => {
+		it('focuses the nearest contenteditable=true ancestor, not the element itself', () => {
+			const host = document.createElement('div')
+			host.contentEditable = 'true'
+			const span = document.createElement('span')
+			host.append(span)
+			document.body.append(host)
+
+			caretDom.focusEditingHost(span)
+
+			expect(document.activeElement).toBe(host)
+			host.remove()
+		})
+
+		it('does nothing when focus is already inside the host', () => {
+			const host = document.createElement('div')
+			host.contentEditable = 'true'
+			const inner = document.createElement('button')
+			const span = document.createElement('span')
+			host.append(inner, span)
+			document.body.append(host)
+			inner.focus()
+
+			caretDom.focusEditingHost(span)
+
+			expect(document.activeElement).toBe(inner)
+			host.remove()
+		})
+
+		it('does nothing when the element has no editing host', () => {
+			const plain = document.createElement('div')
+			const span = document.createElement('span')
+			plain.append(span)
+			document.body.append(plain)
+
+			caretDom.focusEditingHost(span)
+
+			expect(plain.contains(document.activeElement)).toBe(false)
+			plain.remove()
 		})
 	})
 

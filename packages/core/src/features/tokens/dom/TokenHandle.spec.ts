@@ -1,4 +1,4 @@
-import {afterEach, describe, expect, it} from 'vitest'
+import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {Store} from '../../../store/Store'
 import {markToken, textToken} from '../__testing__/tokenFactories'
@@ -18,13 +18,31 @@ function textNodeOf(content: string): TextNode {
 	return node
 }
 
+/** One bare text span inside the editing host — the one-host shape `bind` renders. */
 function mountSurface(content: string) {
 	const container = document.createElement('div')
+	container.contentEditable = 'true'
 	const span = document.createElement('span')
 	span.textContent = content
 	container.append(span)
 	document.body.append(container)
 	return {container, span}
+}
+
+/** A ce=false mark between two bare text spans, all under the one editing host. */
+function mountMark() {
+	const container = document.createElement('div')
+	container.contentEditable = 'true'
+	const before = document.createElement('span')
+	before.textContent = 'ab'
+	const mark = document.createElement('mark')
+	mark.contentEditable = 'false'
+	mark.append(document.createElement('b'))
+	const after = document.createElement('span')
+	after.textContent = 'cd'
+	container.append(before, mark, after)
+	document.body.append(container)
+	return {container, mark}
 }
 
 function mountInline(value: string) {
@@ -233,35 +251,63 @@ describe('TokenHandle', () => {
 			expect(selection?.anchorNode && span.contains(selection.anchorNode)).toBe(true)
 		})
 
-		it('collapses to child boundaries on tokens without a text surface', () => {
-			const container = document.createElement('div')
-			const tokenElement = document.createElement('span')
-			tokenElement.append(document.createElement('b'), document.createElement('i'))
-			container.append(tokenElement)
-			document.body.append(container)
-
+		it('placeCaret on a mark handle lands in the PARENT coordinate space, not inside the mark', () => {
+			// A mark is atomic (ce=false): a boundary INSIDE it is not a position the caret
+			// can occupy, so its two caret positions are the parent indices around it.
+			const {container, mark} = mountMark()
 			const handle = new TokenHandle(1)
-			handle.bindElements({tokenElement}, nodeOf(markToken('m', '@[m]', 0)))
+			handle.bindElements({tokenElement: mark}, nodeOf(markToken('m', '@[m]', 0)))
+			const index = Array.prototype.indexOf.call(container.childNodes, mark)
+
+			expect(handle.placeCaret(Infinity)).toBe(true)
+			let selection = window.getSelection()
+			expect(selection?.anchorNode).toBe(container)
+			expect(selection?.anchorOffset).toBe(index + 1)
+			expect(document.activeElement).toBe(container)
 
 			expect(handle.placeCaret(0)).toBe(true)
-			let selection = window.getSelection()
-			expect(selection?.anchorNode).toBe(tokenElement)
-			expect(selection?.anchorOffset).toBe(0)
-
-			expect(handle.placeCaret(1)).toBe(true)
 			selection = window.getSelection()
-			expect(selection?.anchorNode).toBe(tokenElement)
-			expect(selection?.anchorOffset).toBe(tokenElement.childNodes.length)
+			expect(selection?.anchorNode).toBe(container)
+			expect(selection?.anchorOffset).toBe(index)
 		})
 
-		it('focuses the scope element', () => {
-			const {span} = mountSurface('hello')
-			span.tabIndex = 0
+		it('declines when a mark has no parent to place in', () => {
+			const handle = new TokenHandle(1)
+			handle.bindElements({tokenElement: document.createElement('mark')}, nodeOf(markToken('m', '@[m]', 0)))
+
+			expect(handle.placeCaret(0)).toBe(false)
+		})
+
+		it('a model-initiated placement focuses the editing host, not the bare surface', () => {
+			// The reason `focusEditingHost` exists: a placement with no click behind it — the
+			// `api.focus()` / `placeAtHandle` / block `focusRow` path — must pull focus INTO
+			// the editor, and the old per-element focus was a no-op on a bare span.
+			//
+			// THE CALL, not just `activeElement`, and the difference is MEASURED: in a focused
+			// frame Chromium moves the focused element to the editing host a new selection
+			// lands in, so the outcome below is green even with the focus dropped — but only
+			// once something in the frame has been focused (alone, the same case is red). The
+			// host write is what makes the placement focus the editor unconditionally.
+			const {container, span} = mountSurface('hello')
+			const focused = vi.spyOn(container, 'focus')
+			const handle = new TokenHandle(1)
+			handle.bindElements({tokenElement: span, textElement: span}, textNodeOf('hello'))
+
+			expect(handle.placeCaret(2)).toBe(true)
+
+			expect(focused).toHaveBeenCalledTimes(1)
+			expect(document.activeElement).toBe(container)
+			expect(window.getSelection()?.anchorNode).toBe(span.firstChild)
+			expect(handle.caretIndex()).toBe(2)
+		})
+
+		it('focuses the editing host of the scope element', () => {
+			const {container, span} = mountSurface('hello')
 			const handle = new TokenHandle(1)
 			handle.bindElements({tokenElement: span, textElement: span}, textNodeOf('hello'))
 
 			expect(handle.focus()).toBe(true)
-			expect(document.activeElement).toBe(span)
+			expect(document.activeElement).toBe(container)
 		})
 
 		it('placeCaretAtX resolves a viewport point inside the scope', () => {

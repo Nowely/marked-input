@@ -11,6 +11,7 @@ import {
 	mountValue,
 	selectionRange,
 } from '../__testing__/mountFixtures'
+import {offsetOfAnchor} from '../tree/anchors'
 import type {TextNode} from '../tree/types'
 
 describe('SelectionDriver', () => {
@@ -63,6 +64,30 @@ describe('SelectionDriver', () => {
 		// resolves through the MARK: the numeric round-trip this case exists to reject would
 		// answer `{node: <text 'ab'>, offset: 2}` instead.
 		expect(store.tokens.domAnchors()?.anchor).toEqual({before: markNode})
+		container.remove()
+	})
+
+	it('keeps the stored anchors when the caret lands ON the container', async () => {
+		// A mark's caret is a PARENT coordinate, so for a top-level mark the anchor node is
+		// the container itself — and the container owns no token, so the `selectionchange`
+		// sync used to take its "outside the editor" exit and CLEAR the selection a tick
+		// after every such placement (the caret then survives in the DOM but no commit
+		// re-places it). The container IS the editor; it has to sync, not clear.
+		const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+		const roots = store.tokens.nodes()
+		const markNode = roots[1]
+
+		store.tokens.selection.select({after: markNode})
+		for (let i = 0; i < 3; i++) await new Promise(resolve => setTimeout(resolve, 0))
+
+		// THE MEASURED FIXPOINT, and it takes two syncs: the container boundary reads
+		// right-affine as `{before: 'cd'}`, re-placing that anchor puts the caret INSIDE
+		// 'cd' — a better place to type than a container boundary — and the second sync
+		// names it locally. Same document position throughout; what this rejects is the
+		// `undefined` the "outside the editor" exit used to store.
+		const anchors = store.tokens.selection.anchors()
+		expect(anchors).toEqual({anchor: {node: roots[2], offset: 0}, head: {node: roots[2], offset: 0}})
+		expect(anchors && offsetOfAnchor(roots, anchors.anchor)).toBe(offsetOfAnchor(roots, {after: markNode}))
 		container.remove()
 	})
 
