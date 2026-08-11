@@ -53,7 +53,14 @@ content replaced), not silently deleted.
   offset. `anchorFor` is the single DOM→model projection; `anchorAt` / `offsetOf`
   are the tree layer's own coordinate boundary and the only place a number is
   formed. `adopt` carries the selection as anchors (`selectionAfter`), resolved
-  from pre-mutation offsets inside adoption.
+  from pre-mutation offsets inside adoption. The checkable form is a grep with a
+  fixed allowlist — `tree/`, `parser/`, `block/` and `keyboard/blockEdit.ts` (the
+  whole-value rewriter) may read `.position`; adding to that list is a contract
+  change, not a convenience.
+- S2 commit wave: `TokenModel`'s `onResult` runs `pipeline.apply` → publish the
+  value → `selection.repair` inside **one `batch`**. `changed` is an event, so
+  without the batch it flushes its subscribers mid-`apply` and every consumer
+  sees the new tree against the previous generation's selection.
 - S2 representation (Cut A): **one representation** — the token tree. Both
   adapters render `TreeNode` off `tokens.nodes()`; `Token` survives only as the
   parser's output and the §7.1 test oracle. `renderEpoch` is a counter carrying
