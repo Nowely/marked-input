@@ -1,9 +1,10 @@
+import type {MarkputApi} from '@markput/core'
 import type {Option} from '@markput/vue'
 import {MarkedInput} from '@markput/vue'
 import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
-import {defineComponent, h, onMounted} from 'vue'
+import {defineComponent, h, onMounted, shallowRef} from 'vue'
 
 import {getElement} from '../shared/lib/dom'
 import {getAllRows, getEditableInRow} from '../shared/lib/dragTestHelpers'
@@ -135,6 +136,83 @@ describe('Render-count gates: block layout', () => {
 		await expect.element(page.getByText('x')).toBeInTheDocument()
 		expect(spanRender.mock.calls.length).toBe(spanBaseline)
 		expect(markRender.mock.calls.length).toBe(markBaseline)
+	})
+})
+
+/**
+ * Vue mirror of the react fan-out gate — the D8 render-count gate, an EXACT
+ * number at the size the tradeoff is stated against. See
+ * renderCount.react.spec.tsx for what each case discriminates. Vue's bridge
+ * differs (an `effect` into a `shallowRef`, and `Token.vue` has no memo
+ * comparator to begin with) so the number is not inherited from react: it is
+ * measured here separately.
+ */
+describe('Render-count gates: structural fan-out', () => {
+	const MARKS = 100
+	const document100 = `HEAD ${Array.from({length: MARKS}, (_, i) => `@[m${i}](${i})`).join(' ')}`
+
+	const spies = () => {
+		const markRender = vi.fn()
+		const Mark = defineComponent({
+			props: {value: String},
+			setup(props) {
+				return () => {
+					markRender()
+					return h('mark', {}, props.value)
+				}
+			},
+		})
+		const Span = defineComponent({
+			props: {value: String},
+			setup(props) {
+				return () => h('span', {}, props.value)
+			},
+		})
+		return {markRender, Mark, Span}
+	}
+
+	it('a head insert at 100 marks re-renders exactly the inserted mark', async () => {
+		const {markRender, Mark, Span} = spies()
+		const Fixture = defineComponent({
+			setup() {
+				return () => h(MarkedInput, {Mark, Span, defaultValue: document100})
+			},
+		})
+
+		await render(Fixture)
+		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
+
+		await focusAtEnd(getElement(page.getByText('HEAD ')))
+		const baseline = markRender.mock.calls.length
+		expect(baseline).toBeGreaterThanOrEqual(MARKS)
+
+		await userEvent.keyboard('@[[new](999)')
+		await expect.element(page.getByText('new')).toBeInTheDocument()
+
+		expect(markRender.mock.calls.length - baseline).toBe(1)
+	})
+
+	it('one mark value change at 100 marks re-renders exactly that mark', async () => {
+		const {markRender, Mark, Span} = spies()
+		const api = shallowRef<MarkputApi | null>(null)
+		const Fixture = defineComponent({
+			setup() {
+				return () => h(MarkedInput, {ref: api, Mark, Span, defaultValue: document100})
+			},
+		})
+
+		await render(Fixture)
+		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
+
+		const baseline = markRender.mock.calls.length
+		expect(baseline).toBeGreaterThanOrEqual(MARKS)
+
+		const first = api.value?.nodes().find(node => node.kind === 'mark')
+		expect(first).toBeDefined()
+		expect(first?.update({value: 'edited'})).toBe(true)
+		await expect.element(page.getByText('edited')).toBeInTheDocument()
+
+		expect(markRender.mock.calls.length - baseline).toBe(1)
 	})
 })
 
