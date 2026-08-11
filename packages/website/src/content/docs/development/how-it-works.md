@@ -48,7 +48,7 @@ This process happens automatically when you type, and the result is a fully inte
 Markput's core owns the editor-engine primitives:
 
 - token addresses and token index validation
-- adapter DOM registration through the ref registries (`store.tokens.control()` / `store.tokens.children(ownerId)`), with token-DOM lookup via `store.tokens` and `store.selection`
+- adapter DOM registration through the ref registries (`store.tokens.control()` / `store.tokens.children(ownerId)`), with token-DOM lookup via `store.tokens`
 - raw DOM selection to serialized value ranges
 - value edits through `store.edit.replace(from, to, text)` (or `store.tokens.replaceBetween()` / `setValue()`), read back with `store.tokens.value()`
 - caret range application to the DOM after framework renders

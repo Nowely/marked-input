@@ -5,14 +5,14 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
 ## Components
 
 - **Store**: Main state container that manages:
-    - **Feature state** (`store.<feature>.*`) — signals owned by features: the token tree, the selection range, the overlay match
+    - **Feature state** (`store.<feature>.*`) — signals owned by features: the token tree, the stored selection anchors, the overlay match
     - **Host** (`store.host`) — adapter-fed runtime state: the `rendered` event and the `container` HTMLElement signal. Written by React/Vue `MarkedInput`; features read. `host.onMounted(cb)` runs `cb(container)` whenever a container is attached, auto-disposing inner subscriptions on detach and re-running with the new element on swap.
     - **Props** (`store.props`) — readonly signals written only via `store.props.set()` (value, options, readOnly, drag, slots, etc.)
-    - **Computed values** (`store.<feature>.*`) — derived values: `enabled`, `parser`, `selection.isAllSelected`, `containerComponent`, `containerProps`, slot resolvers
+    - **Computed values** (`store.<feature>.*`) — derived values: `enabled`, `parser`, `tokens.selection.isAllSelected`, `containerComponent`, `containerProps`, slot resolvers
     - **Events** (`store.<feature>.<event>()`) — typed reactive events: `overlay.close`, `block.action`, and host lifecycle events
     - **DOM refs** (`store.host.container`, `store.overlay.element`) — reactive signals holding container and overlay HTMLElement references
     - **Token layer** (`store.tokens`) — parsing, live node map, DOM↔model facade, adapter ref registries, and caret/selection DOM operations. See `features/tokens/README.md` for the full contract.
-    - **Selection & Caret placement** (`store.selection`) — raw selection mapping and caret range placement
+    - **Selection & caret placement** (`store.tokens.selection` plus the model's `domAnchors()` / `focusFirst()` / `placeAtHandle()` / `isUserSelecting`) — the token layer owns both halves since S2.9; there is no `store.selection`
     - **Features** (`store.<feature>`) — all feature instances
     - **`store.props.set()`** — batch update for framework-provided prop signals (used by React/Vue `MarkedInput`)
 
@@ -27,7 +27,7 @@ const store = new Store()
 store.props.set({value: 'Hello @[world](test)', readOnly: false})
 ```
 
-The Store is created by framework wrappers and passed to all features. Features communicate through feature-owned state/events, `store.props`, and `store.selection`.
+The Store is created by framework wrappers and passed to all features. Features communicate through feature-owned state/events and `store.props`.
 
 The TOKEN LAYER owns the value: the tree is the source of truth and `store.tokens.value()` is its string projection (spec D1). Feature code routes edits through `store.edit.replace(from, to, text)` — which also moves the caret — or `store.tokens.replaceBetween()` / `setValue()`, never by mutating nodes or a mirrored value string directly. All of them address by NODE ANCHOR; no write verb above `tree/` takes an absolute offset. Gating lives in the transaction layer (`features/tokens/tree/transactions.ts`), so every write verb answers `store.props.readOnly()` the same way; external controlled `props.value` updates arrive through the string boundary instead and are not editor-originated.
 

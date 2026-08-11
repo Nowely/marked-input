@@ -41,7 +41,7 @@ function Mention() {
 
 The reads are calls, not properties: they are the node's own reactive fields, so calling one inside a reactive scope subscribes to it.
 
-The node does not expose a DOM ref. React and Vue own structural DOM and register it privately with core through `store.tokens.control()` and `store.tokens.children(ownerId)`. Keyboard focus and caret placement are handled by `store.tokens` and `store.selection`.
+The node does not expose a DOM ref. React and Vue own structural DOM and register it privately with core through `store.tokens.control()` and `store.tokens.children(ownerId)`. Keyboard focus and caret placement are handled by `store.tokens`, which owns the selection.
 
 ## Updating Marks
 

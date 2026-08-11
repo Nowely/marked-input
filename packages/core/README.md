@@ -16,17 +16,16 @@ Everything below describes the core's INTERNAL contract with those adapters.
 
 ## What the core owns
 
-| module                    | owns                                                                                                                       |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `src/features/tokens/`    | the token tree (the source of truth), the string boundary, transactions, adoption, the commit pipeline and the DOM binding |
-| `src/features/selection/` | the stored selection (node anchors) and caret repair                                                                       |
-| `src/features/keyboard/`  | `beforeinput` / keydown handling, arrow navigation, block editing                                                          |
-| `src/features/block/`     | block layout, drag and per-row UI state                                                                                    |
-| `src/features/overlay/`   | trigger matching and suggestion navigation                                                                                 |
-| `src/features/clipboard/` | copy / cut / paste serialization                                                                                           |
-| `src/features/slots/`     | slot resolution for mark and overlay components                                                                            |
-| `src/store/`              | `Store` (the wiring root) and `MarkputApi` (the imperative verbs)                                                          |
-| `src/shared/signals/`     | the reactive primitives (a vendored alien-signals core)                                                                    |
+| module                    | owns                                                                                                                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/features/tokens/`    | the token tree (the source of truth), the string boundary, transactions, adoption, the commit pipeline, the DOM binding and the SELECTION (stored node anchors plus their DOM driver) |
+| `src/features/keyboard/`  | `beforeinput` / keydown handling, arrow navigation, block editing                                                                                                                     |
+| `src/features/block/`     | block layout, drag and per-row UI state                                                                                                                                               |
+| `src/features/overlay/`   | trigger matching and suggestion navigation                                                                                                                                            |
+| `src/features/clipboard/` | copy / cut / paste serialization                                                                                                                                                      |
+| `src/features/slots/`     | slot resolution for mark and overlay components                                                                                                                                       |
+| `src/store/`              | `Store` (the wiring root) and `MarkputApi` (the imperative verbs)                                                                                                                     |
+| `src/shared/signals/`     | the reactive primitives (a vendored alien-signals core)                                                                                                                               |
 
 ## Root exports
 
@@ -38,7 +37,7 @@ deliberately narrow — anything not listed is internal and may move without not
 | `Store`                                                                                                                                   | value        | the wiring root; both adapters construct exactly one per editor                  |
 | `MarkputApi`                                                                                                                              | value        | the imperative verbs (`insertMark`, `replaceRange`, …), reachable as `store.api` |
 | `Id`, `TreeNode`, `TextNode`, `MarkNode`, `MarkPatch`, `NodeAnchor`                                                                       | types        | the live tree: the shapes of the public reads and write verbs                    |
-| `Token`, `TextToken`, `MarkToken`                                                                                                         | types        | the snapshot render loop's shapes (see the note in `index.ts`)                   |
+| `MarkToken`                                                                                                                               | type         | `denote`'s callback parameter; `Token`/`TextToken` are internal (see `index.ts`) |
 | `annotate`, `denote`, `Markup`                                                                                                            | value/type   | the string-domain utilities                                                      |
 | `cx`, `key`                                                                                                                               | values       | class-name helpers                                                               |
 | `filterSuggestions`, `navigateSuggestions`                                                                                                | values       | overlay list behavior                                                            |

@@ -10,9 +10,9 @@ Markput handles text input, deletion, paste, overlay insertion, block editing, a
 
 1. React/Vue render adapter-owned token shells and text surfaces.
 2. The adapter registers the root with `store.host.container` and child structure through `store.tokens.control()` (for non-editable controls inside a token) and `store.tokens.children(ownerId)` (for nested `__slot__` child sequence hosts).
-3. Keyboard handlers read the browser selection as a pair of node anchors through `store.selection.domAnchors()`.
-4. Edits call `store.edit.replace(from, to, text)`, which places the post-edit caret itself; a caller that needs a different caret writes `store.selection.select(anchor)`.
-5. `SelectionController` stores the selection as node anchors and applies them to the DOM after the next render, placing each anchor through its OWN node.
+3. Keyboard handlers read the browser selection as a pair of node anchors through `store.tokens.domAnchors()`.
+4. Edits call `store.edit.replace(from, to, text)`, which places the post-edit caret itself; a caller that needs a different caret writes `store.tokens.selection.select(anchor)`.
+5. `store.tokens.selection` stores the selection as node anchors and its DOM driver applies them after the next render, placing each anchor through its OWN node.
 
 Production code should not infer token identity from DOM child order or public data attributes.
 
@@ -21,11 +21,11 @@ Production code should not infer token identity from DOM child order or public d
 Inline text input uses the selection the DOM reports:
 
 ```ts
-const anchors = store.selection.domAnchors()
+const anchors = store.tokens.domAnchors()
 if (anchors) store.edit.replace(anchors.anchor, anchors.head, text)
 ```
 
-`store.edit.replace(from, to, replacement)` moves the caret for you, to the end of what it inserted; the pair is normalized, so `from` after `to` is legal. To move the caret without editing, write `store.selection.select(anchor)`.
+`store.edit.replace(from, to, replacement)` moves the caret for you, to the end of what it inserted; the pair is normalized, so `from` after `to` is legal. To move the caret without editing, write `store.tokens.selection.select(anchor)`.
 
 Controlled editors emit `onChange` first and update the accepted value after the matching prop echo.
 

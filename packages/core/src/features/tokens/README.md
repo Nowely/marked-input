@@ -22,7 +22,7 @@ go through `store.tokens` methods or `TokenHandle`.
 | `parser/` | string → `Token[]`. Knows nothing about nodes, ids or the DOM.                                                      |
 | `tree/`   | the source of truth: nodes, adoption, transactions, the string boundary, anchors, the selection STATE.              |
 | `dom/`    | the contenteditable adapter: bind, the commit pipeline, `TokenHandle`, caret and DOM offsets, the selection DRIVER. |
-| `seam/`   | `TokenModel` — the one object that owns a tree and a DOM and joins them.                                            |
+| `seam/`   | `TokenModel` — the one object that owns a tree, a DOM and the selection, and joins them.                            |
 
 `tree/` imports nothing from `dom/` or `seam/`, and `seam/` is the only folder
 that imports both. There is no upward edge left: `dom/commit.ts` takes the
@@ -82,7 +82,9 @@ an id and nothing else, and the split is what makes the pending window safe.
 - `anchors.ts` — `anchorAt(roots, offset)` (right affinity: the last text node
   containing the offset), its inverse `offsetOfAnchor`, and `anchorEquals`.
 - `selection.ts` — `createSelection(deps)`: the selection STATE (see below).
-  DOM-free, and unit-tested without a mounted container.
+  DOM-free, and unit-tested without a mounted container. Its dep bag (three
+  closures, not the tree) is what lets `TokenModel` satisfy `anchorAt` with the
+  SEEDING read rather than the bare tree walk.
 - `markPatch.ts` — `serializeMark(node, patch)`: a patch becomes markup, with
   the omitted fields defaulted off the node so an omitted key round-trips.
 
@@ -212,6 +214,7 @@ the whole frame, failing loud when an adapter renders something unexpected.
 value: Computed<string> // THE value read: controlled → props, uncontrolled → the projection
 nodes: Computed<readonly TreeNode[]> // the live roots — THE render read too (spec §2.3)
 find(id) // the live TreeNode by stable id
+selection: Selection // THE stored anchors and their derivations (see below)
 
 // writes
 replaceBetween(from, to, text) / setValue(text) / applyText(node, range, text)
@@ -230,8 +233,15 @@ handleAt(node) // handle | 'control' | undefined for a DOM node
 anchorFor(node, offset, affinity?)   // DOM (node, offset) → NodeAnchor in the LIVE tree
 placeCaret(anchor: NodeAnchor)       // collapsed caret, through the anchor's OWN node
 selectRange(anchor, head)            // order-insensitive; normalized in DOM order
-selection(): SelectionSnapshot | undefined // THE selection read
+domSelection(): SelectionSnapshot | undefined // THE raw window-selection read
 selectedContent(): {html; text} | undefined // selection serialized for clipboard
+
+// the selection driver's reads, delegated (the driver itself is private)
+domAnchors(): Anchors | undefined    // DOM TRUTH as anchors (spec S2 D5)
+focusFirst() / placeAtHandle(handle, boundary?) / isUserSelecting: Signal<boolean>
+
+// the tree layer's own coordinate boundary — the ONE place a number may be formed
+anchorAt(offset) / offsetOf(anchor)
 
 // adapter refs
 control() / children(ownerId) // ref callbacks
@@ -247,7 +257,7 @@ structural commit, and report `onRendered()`.
 
 ### The selection snapshot
 
-`selection()` returns one `SelectionSnapshot` of the live window selection, or
+`domSelection()` returns one `SelectionSnapshot` of the live window selection, or
 `undefined` when there is no range (unfocused / nothing selected). It subsumes
 the old per-field micro-reads:
 
@@ -262,7 +272,7 @@ type SelectionSnapshot = {
 ```
 
 A consumer that treats "no selection" as collapsed compares
-`selection()?.anchor.isCollapsed !== false`.
+`domSelection()?.anchor.isCollapsed !== false`.
 
 ### The fresh read
 
@@ -369,8 +379,18 @@ mid-window write fail closed rather than act on a tree the DOM never showed.
 
 ## Selection
 
-Split in two by owner (spec S2 D10); `features/selection/`'s `SelectionController`
-is only the composition shell over the pair, and `store.selection` is that shell.
+Split in two by owner (spec S2 D10) and OWNED HERE since S2.9. There is no
+`features/selection/` and no `store.selection`: `TokenModel` constructs both
+halves, publishes the state as `tokens.selection` and delegates the driver's four
+externally-needed reads (`domAnchors`, `focusFirst`, `placeAtHandle`,
+`isUserSelecting`) the same way it delegates `DomModel`'s.
+
+That closed the last construction cycle in the core. `Store` used to build the
+selection and hand this class a two-method `SelectionPort` thunk back so the
+string boundary could capture and repair through it; the cycle forced an explicit
+type annotation on two `Store` fields to keep `tsc` off TS7022. Both are gone, and
+the boundary now calls `this.selection.anchors()` / `this.selection.repair(result)`
+directly.
 
 - `tree/selection.ts` — the STATE. Stores a pair of `NodeAnchor`s (spec S1 D7),
   never offsets: a node plus a local offset is what disambiguates two tokens
@@ -380,12 +400,16 @@ is only the composition shell over the pair, and `store.selection` is that shell
   `range`/`position` projections and the `generation` marker they needed went at
   S2.6 (spec S2 D11). `repair(result)` APPLIES
   `result.selectionAfter` — adoption resolves it, since only adoption sees the
-  pre-mutation coordinate space. Its deps are three closures, so it works whether
-  `Store` or `TokenModel` constructs it.
-- `dom/SelectionDriver.ts` — the DOM I/O. Three listeners (`focusin`/`focusout`/
-  `selectionchange` sync, the empty-editor click focus, the mouse-sweep tracker)
-  and three watches (`tokens.changed`, `readOnly`, `isUserSelecting`, plus the
-  stored anchors themselves). It watches the STORED anchors — the derived numeric
+  pre-mutation coordinate space.
+- `dom/SelectionDriver.ts` — the DOM I/O, private to `TokenModel`. Three
+  listeners (`focusin`/`focusout`/`selectionchange` sync, the empty-editor click
+  focus, the mouse-sweep tracker) and four watches (`tokens.changed`, `readOnly`,
+  `isUserSelecting`, and the stored anchors themselves). BUILT IN THE CONSTRUCTOR
+  BODY, not as a field initializer: its dep bag takes `host` and `changed` as
+  VALUES, so an initializer would read a constructor parameter property (`tsc`
+  rejects it, TS2729) and `#pipeline` (which answers `undefined` silently from any
+  initializer above it). The constructor also puts its `onMounted` after the
+  model's own, which is the order `Store` produced before S2.9. It watches the STORED anchors — the derived numeric
   `range` it once watched deduped on `shallow`, so at a shared boundary
   `placeAtHandle` changed the anchor without changing the number and the watch
   never fired (measured — 8 browser assertions across three focus specs). It also
@@ -396,8 +420,8 @@ is only the composition shell over the pair, and `store.selection` is that shell
 `TokenModel.placeCaret(anchor)` resolves the anchor's OWN node and lowers onto
 `TokenHandle.placeCaret(localOffset)`; `selectRange(anchor, head)` does the same
 for both ends and normalizes them in DOM order. The two document edges (`'start'`
-/ `'end'`) resolve against the live roots. `SelectionDriver.placeAtHandle(handle,
-boundary)` places at a handle's start/end. All of it fails closed against a dead
+/ `'end'`) resolve against the live roots. `TokenModel.placeAtHandle(handle,
+boundary)` (the driver's, delegated) places at a handle's start/end. All of it fails closed against a dead
 or mid-window handle — where the deleted numeric form searched every bound surface
 for a position and fell back to the nearest, reading bind-generation coordinates
 for a layout the adapter had not painted.
