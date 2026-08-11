@@ -57,7 +57,7 @@ readonly markup: Markup;
 
 Defined in: [core/src/features/tokens/tree/types.ts:40](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L40)
 
-Spec §2.3: the public view of the descriptor, which is not a public type.
+The public view of the descriptor, which is not a public type.
 
 ***
 
@@ -77,7 +77,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:42](https://github.com/Nowel
 position: object;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:52](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L52)
+Defined in: [core/src/features/tokens/tree/types.ts:51](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L51)
 
 #### end
 
@@ -104,13 +104,12 @@ slotRange:
   | undefined;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:51](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L51)
+Defined in: [core/src/features/tokens/tree/types.ts:50](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L50)
 
-Live slot POSITIONS, written by adoption like `position`. Named `slotRange` since
-S1.7, because `slot()` is now the public read of the slot's TEXT (spec §2.3) and one
-name cannot be both. Slot text is still deliberately NOT stored: projection, snapshot
-and adoption equality all derive it from children, so a stored copy would be an unread
-mirror nothing resyncs.
+Live slot POSITIONS, written by adoption like `position`; `slot()` is the public read
+of the slot's TEXT, which is why the two carry different names. Slot text is
+deliberately NOT stored: projection, snapshot and adoption equality all derive it from
+children, so a stored copy would be an unread mirror nothing resyncs.
 
 ***
 
@@ -130,9 +129,9 @@ Defined in: [core/src/features/tokens/tree/types.ts:41](https://github.com/Nowel
 range(): object;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:56](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L56)
+Defined in: [core/src/features/tokens/tree/types.ts:55](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L55)
 
-Spec §2.3. See [TextNode.range](/api/interfaces/textnode/#range).
+See [TextNode.range](/api/interfaces/textnode/#range).
 
 #### Returns
 
@@ -158,7 +157,7 @@ start: number;
 remove(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:59](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L59)
+Defined in: [core/src/features/tokens/tree/types.ts:58](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L58)
 
 #### Returns
 
@@ -172,9 +171,9 @@ Defined in: [core/src/features/tokens/tree/types.ts:59](https://github.com/Nowel
 slot(): string | undefined;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:54](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L54)
+Defined in: [core/src/features/tokens/tree/types.ts:53](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L53)
 
-Spec §2.3: the slot's TEXT, joined from the live children. `undefined` for a slotless markup.
+The slot's TEXT, joined from the live children. `undefined` for a slotless markup.
 
 #### Returns
 
@@ -188,9 +187,9 @@ Spec §2.3: the slot's TEXT, joined from the live children. `undefined` for a sl
 update(patch): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:58](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L58)
+Defined in: [core/src/features/tokens/tree/types.ts:57](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L57)
 
-Spec §2.3. Rides a transaction (spec D5); `false` in read-only mode or off the tree.
+Rides a transaction; `false` in read-only mode or off the tree.
 
 #### Parameters
 

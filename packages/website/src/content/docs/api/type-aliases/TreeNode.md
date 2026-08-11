@@ -11,10 +11,11 @@ type TreeNode =
   | MarkNode;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:18](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L18)
+Defined in: [core/src/features/tokens/tree/types.ts:19](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L19)
 
-One structure (spec D11): the same objects flow through adoption and out of
-the public reads. Signal fields are the reactive read; adoption is the only
-supported writer — direct setter calls from consumers are unsupported and
-break the round-trip invariant (documented, not runtime-policed).
-`position`/`slotRange` are plain fields written only by adoption (spec D3).
+One structure: the same objects flow through adoption and out of the public
+reads. ADOPTION IS THE ONLY WRITER, for every mutable member — the writable
+`Signal` fields, which are also the reactive read, and the plain `position`
+and `slotRange` records alike. A consumer that calls a setter or assigns a
+position breaks the round-trip invariant. The rule is documented here rather
+than enforced by the types, so nothing stops such a write at compile time.
