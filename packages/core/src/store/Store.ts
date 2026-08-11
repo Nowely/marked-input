@@ -13,9 +13,6 @@ export class Store {
 	readonly host = new Host()
 	readonly props = new PropsModel()
 
-	// Selection included: `tokens` owns it since S2.9 (`tokens.selection` plus the DOM reads
-	// delegated beside it), so nothing here is built out of order and no field needs an
-	// explicit type annotation to keep `tsc` off TS7022.
 	readonly tokens = new TokenModel(this.props, this.host)
 
 	readonly slots = new SlotsFeature(this.props)
