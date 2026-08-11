@@ -2,78 +2,71 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {batch, watch} from '../../../shared/signals/index.js'
 import {createCommitPipeline} from '../dom/commit'
-import type {CommitPipeline} from '../dom/commit'
+import type {TokenDelta} from '../dom/commit'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
-import type {Markup, Token} from '../parser/types'
-import {createSnapshotMemo} from '../tree/snapshotMemo'
+import type {Markup} from '../parser/types'
 import {createTransactions} from '../tree/transactions'
-import {createTokenTree} from '../tree/tree'
+import {createTokenTree, joinNodes} from '../tree/tree'
 import type {TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
-import type {TokenDelta} from './commitInput'
-import {fromTransaction} from './treeInput'
 
 /**
  * THE pipeline suite: an empty tree seeded through the boundary, edits through the
- * transaction verbs, and `onResult` lowering into the pipeline — the same manual
- * adapter the deleted `commit.spec.ts` used, wired to the tree core. Value-only
- * marks render their value as a bare text node, so bind never descends into them.
+ * transaction verbs, and `onResult` handing each `TransactionResult` straight to
+ * `pipeline.apply` — the same manual adapter the deleted `commit.spec.ts` used, wired to
+ * the tree core. Value-only marks render their value as a bare text node, so bind never
+ * descends into them.
  *
- * `fromTransaction` is now the ONLY producer `commit.ts` has (S1.6a deleted the
- * reconcile lowering and its suite), so nothing here is a parity run any more. What
- * the cases assert is what the pipeline DOES: the DOM, handle identity/liveness, the
- * published snapshot, the `changed` payload and count, the render-tree reference and
- * the pending latch.
+ * What the cases assert is what the pipeline DOES: the DOM, handle identity/liveness, the
+ * `changed` payload and count, the renderer wake-up and the pending latch.
  *
- * S2.7 took the whole text BRANCH out of `commit.ts` — `bind` arms one effect per
- * bound text surface, so a text-only commit reaches the DOM before the pipeline is
- * called and `apply` is left with the divergence check and the announcement. The two
- * cases that gated `commitText`'s misses (a vanished handle, a vanished surface) and
- * the one that hand-built a `CommitInput.changes` entry went with it; the DOM-facing
- * half of what they covered is now in `bind.spec.ts`'s effect suite.
+ * S2.7 took the whole text BRANCH out of `commit.ts` — `bind` arms one effect per bound
+ * text surface, so a text-only commit reaches the DOM before the pipeline is called and
+ * `apply` is left with the divergence check and the announcement. S2.8 then took the
+ * lowering: `treeInput.ts` and the `CommitInput` it built are gone, `apply` takes the
+ * adoption result, and this file absorbed the two granularity cases that were `treeInput`
+ * SPEC's alone (see the block near the end). Everything else that suite pinned was the
+ * snapshot memo, which no longer exists.
  *
- * COVERAGE SCOPE (settled at S1.5 Task 6, kept as written). `commit.ts` is ONE
- * shared function fed three fields, so any pipeline behavior that does not read
- * `tokens`/`render`/`delta` differently was identical by construction on
- * both lowerings and needed no second copy. This file is nonetheless a SUPERSET of
- * "cases where the lowering could differ": when S1.6a deleted `commit.spec.ts`,
- * every live case whose only gate was that file was ported or moved here unless
- * listed below, even where the port is behaviorally redundant.
+ * COVERAGE SCOPE (settled at S1.5 Task 6, kept as written). When S1.6a deleted
+ * `commit.spec.ts`, every live case whose only gate was that file was ported or moved
+ * here unless listed below, even where the port is behaviorally redundant.
  *
  * Deliberately NOT ported, with reasons:
- * - `commit.spec.ts:141` "touches only the changed nodes" — decorative here. It
- *   asserts an untouched handle keeps its token OBJECT; on this path `memo.roots`
- *   hands back the identical object whether or not a change entry was emitted, so
- *   it passes even against a lowering that emits every node. Over-emission is
- *   harmless for the same reason the reversal test in treeInput.spec.ts records:
- *   every entry is an absolute write.
- * - `commit.spec.ts:323` "pending() spans exactly the structural apply → rendered
- *   window" — asserted piecewise by the cold-start, mark-value, fold and text
- *   cases below.
+ * - `commit.spec.ts:141` "touches only the changed nodes" — decorative here. It asserted
+ *   that an untouched handle kept its token OBJECT; there is one representation now and
+ *   an untouched node is the same node by construction.
+ * - `commit.spec.ts:323` "pending() spans exactly the structural apply → rendered window"
+ *   — asserted piecewise by the cold-start, mark-value, fold and text cases below.
  *
- * `commit.spec.ts:490`, `:557`, `:566` and `:730` were not ports but MOVES: they
- * have zero dependence on the lowering, so S1.6a relocated them to the bottom of
- * this file rather than duplicating them.
+ * `commit.spec.ts:490`, `:557`, `:566` and `:730` were not ports but MOVES: they have zero
+ * dependence on the lowering, so S1.6a relocated them to the bottom of this file rather
+ * than duplicating them.
  */
 /**
  * The bound handle at a tree POSITION. Replaces `pipeline.byPath().get(pathKey(path))`:
- * S1.8 step 4 re-keyed the bind result on stable ids, so a case that names a token by
- * where it sits in the fixture resolves the token first and looks its handle up by id.
+ * S1.8 step 4 re-keyed the bind result on stable ids, so a case that names a node by where
+ * it sits in the fixture resolves the node first and looks its handle up by id.
  */
-function boundAt(pipeline: CommitPipeline, ...path: number[]): TokenHandle | undefined {
-	let siblings: readonly Token[] = pipeline.current()
-	let token: Token | undefined
+function boundAt(harness: Harness, ...path: number[]): TokenHandle | undefined {
+	const node = nodeAt(harness, ...path)
+	return node && harness.pipeline.bound().get(node.id)
+}
+
+/** The live node at a tree POSITION, or `undefined` — several cases below rely on that answer. */
+function nodeAt(harness: Harness, ...path: number[]): TreeNode | undefined {
+	let siblings: readonly TreeNode[] = harness.tree.roots()
+	let node: TreeNode | undefined
 	for (const index of path) {
 		// `.at`, not `[]`: `tsconfig` leaves `noUncheckedIndexedAccess` off, so an index read
-		// types as `Token` and the out-of-range guard — which several cases below rely on to
-		// answer `undefined` — is linted away as an impossible condition.
+		// types as `TreeNode` and the out-of-range guard is linted away as impossible.
 		const next = siblings.at(index)
 		if (!next) return undefined
-		token = next
-		siblings = token.type === 'mark' ? token.children : []
+		node = next
+		siblings = node.kind === 'mark' ? node.children() : []
 	}
-	return token?.id === undefined ? undefined : pipeline.bound().get(token.id)
+	return node
 }
 
 // `Markup`, NOT `string`: `Parser`'s constructor takes `(Markup | undefined)[]`
@@ -83,7 +76,6 @@ function boundAt(pipeline: CommitPipeline, ...path: number[]): TokenHandle | und
 function createHarness(markups: Markup[] = ['@[__value__]']) {
 	const parser = new Parser(markups)
 	const tree = createTokenTree([])
-	const memo = createSnapshotMemo()
 	const nodes = new Map<number, TokenHandle>()
 	const controls = new Set<HTMLElement>()
 	const container = document.createElement('div')
@@ -103,7 +95,7 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		parser: () => parser,
 		controlled: () => false,
 		onChange: () => {},
-		onResult: result => pipeline.apply(fromTransaction(result, memo, tree.roots())),
+		onResult: result => pipeline.apply(result),
 	})
 	const tx = createTransactions({tree, readOnly: () => false, sink: boundary.sink})
 	// FLAT paint: a value-only mark renders its value as a bare text node, so
@@ -142,7 +134,6 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 	return {
 		pipeline,
 		tree,
-		memo,
 		nodes,
 		controls,
 		container,
@@ -158,16 +149,14 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 type Harness = ReturnType<typeof createHarness>
 
 /**
- * A bind-generation token minus its id — the whole face `MarkController`'s
- * `value`/`meta`/`slot` getters and the DOM boundary layer read. Ids are
- * allocated per producer (reconcile's counter vs the tree's node ids), so they
- * are the one field the two paths may not share.
+ * A node's whole observable face: its projection, its address, and — for a mark — the
+ * three fields a framework component and the DOM boundary read. It was a `tokenFace` off
+ * the deleted snapshot; the same facts live on the node.
  */
-function tokenFace(token: Token) {
-	const {content, position} = token
-	if (token.type !== 'mark') return {type: token.type, content, position}
-	const {value, meta, slot} = token
-	return {type: token.type, content, position, value, meta, slot}
+function nodeFace(node: TreeNode) {
+	const face = {kind: node.kind, content: joinNodes([node]), position: node.range()}
+	if (node.kind !== 'mark') return face
+	return {...face, value: node.value(), meta: node.meta(), slot: node.slot(), slotRange: node.slotRange}
 }
 
 /** 'he@[x]llo' → text 'he'[0,2], mark '@[x]'[2,6], text 'llo'[6,9]. */
@@ -206,7 +195,7 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(mark.tabIndex).toBe(0)
 	})
 
-	it('a tail text edit patches in place, keeps the render tree and announces once', () => {
+	it('a tail text edit patches in place, leaves the epoch standing and announces once', () => {
 		// The DOM write is the EFFECT's, not this pipeline's: by the time `apply` runs,
 		// adoption's batch has already flushed it. What the pipeline still owes is the
 		// order — `changed` fires only once the surface is consistent — which
@@ -214,7 +203,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
-		const tail = boundAt(pipeline, 2)
+		const tail = boundAt(harness, 2)
 		if (!tail) throw new Error('expected tail handle')
 		const epochBefore = pipeline.renderEpoch()
 		const boundBefore = pipeline.bound()
@@ -245,7 +234,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {mark} = mount(harness)
-		const markHandle = boundAt(pipeline, 1)
+		const markHandle = boundAt(harness, 1)
 		if (!markHandle) throw new Error('expected mark handle')
 		const epochBefore = pipeline.renderEpoch()
 		const changedSpy = vi.fn()
@@ -263,7 +252,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		// Handle continuity across a re-render is the pinned contract (id-keyed).
-		expect(boundAt(pipeline, 1)).toBe(markHandle)
+		expect(boundAt(harness, 1)).toBe(markHandle)
 		expect(harness.container.children[1].textContent).toBe('y')
 	})
 
@@ -271,7 +260,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline, nodes} = harness
 		mount(harness)
-		const markHandle = boundAt(pipeline, 1)
+		const markHandle = boundAt(harness, 1)
 		if (!markHandle) throw new Error('expected mark handle')
 		let payload: {removed: readonly number[]} | undefined
 		watch(pipeline.changed, delta => {
@@ -325,7 +314,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline, nodes, container} = harness
 		mount(harness)
-		const tail = boundAt(pipeline, 2)
+		const tail = boundAt(harness, 2)
 		if (!tail) throw new Error('expected tail handle')
 
 		container.lastElementChild?.remove()
@@ -339,14 +328,14 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(pipeline.pending()).toBe(false)
-		expect(pipeline.current()[2].content).toBe('llo!')
+		expect(joinNodes([harness.tree.roots()[2]])).toBe('llo!')
 		expect(nodes.size).toBe(3)
 
 		harness.render()
 
 		expect(pipeline.bound().size).toBe(3)
 		expect(container.children[2].textContent).toBe('llo!')
-		expect(boundAt(pipeline, 2)).toBe(tail)
+		expect(boundAt(harness, 2)).toBe(tail)
 	})
 
 	it('the divergence detector still throws with the NODE ID on an untouched surface', () => {
@@ -358,7 +347,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const {text1} = mount(harness)
 		text1.textContent = 'WRONG'
 
-		const head = boundAt(harness.pipeline, 0)
+		const head = boundAt(harness, 0)
 
 		let message = ''
 		try {
@@ -403,7 +392,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		harness.boundary.arrive('#[ab]tail')
 		harness.renderNested()
-		const childHandle = boundAt(pipeline, 1, 0)
+		const childHandle = boundAt(harness, 1, 0)
 		const childSurface = childHandle?.node()?.textElement
 		if (!childSurface) throw new Error('expected the child surface')
 		const epochBefore = pipeline.renderEpoch()
@@ -415,43 +404,38 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(childSurface.textContent).toBe('aXb')
 	})
 
-	it('a LENGTH-PRESERVING in-slot edit re-materializes the ancestor mark in the published snapshot', () => {
-		// `snapshotMemo`'s `sameChildren` fixture ('#[ab]t' → '#[cb]t'), lifted to
-		// pipeline level. The mark is in NEITHER `updated` nor `shifted` and does not
-		// move, yet its projected `content` and `slot` both change — the memo's
-		// child-reference comparison is the only thing that knows.
+	it('a LENGTH-PRESERVING in-slot edit reaches the ancestor and the DOM with no re-render', () => {
+		// `snapshotMemo`'s `sameChildren` fixture ('#[ab]t' → '#[cb]t'), and the reason
+		// that memo existed: the mark is in NEITHER `updated` nor `shifted` and does not
+		// move, yet its projection and its slot both change. Under the snapshot that took
+		// a child-reference comparison to notice; the mark now DERIVES both from its live
+		// children, so there is nothing left to invalidate — which is what this asserts.
 		//
-		// Nothing else in this suite catches it. The in-slot case above splices a
-		// LONGER string, so the mark lands in `shifted` and is walked. It reaches
-		// users through `tokens.current()`, which IS the memo's output and is what
-		// every value-slicing consumer reads; `render` is false here, so no re-render
-		// refreshes it either.
+		// Nothing else in this suite catches it: the in-slot case above splices a LONGER
+		// string, so the mark lands in `shifted`. `render` is false here, so no re-render
+		// refreshes anything either.
 		const harness = createHarness(['#[__slot__]'])
 		const {pipeline} = harness
 		harness.boundary.arrive('#[ab]t')
 		harness.renderNested()
-		const childSurface = boundAt(pipeline, 1, 0)?.node()?.textElement
+		const childSurface = boundAt(harness, 1, 0)?.node()?.textElement
 		if (!childSurface) throw new Error('expected the slot child surface')
 
 		expect(harness.splice(2, 3, 'c')).toBe(true)
 
 		expect(pipeline.pending()).toBe(false)
-		// The faces below are LITERALS on purpose: they were produced by the deleted
-		// `liveFaces` helper, which ran the old lowering side by side, and were
-		// re-measured against it immediately before it was deleted. They are the point of
-		// the case — the tree path once answered '#[ab]' / slot 'ab', and only that
-		// side-by-side run said which of the two was right.
-		const mark = pipeline.current()[1]
-		expect(tokenFace(mark)).toEqual({
-			type: 'mark',
+		// The mark's OWN fields never moved; everything below is derived from the child.
+		expect(nodeFace(nodeAt(harness, 1)!)).toEqual({
+			kind: 'mark',
 			content: '#[cb]',
 			position: {start: 0, end: 5},
 			value: '',
 			meta: undefined,
-			slot: {content: 'cb', start: 2, end: 4},
+			slot: 'cb',
+			slotRange: {start: 2, end: 4},
 		})
-		expect(mark.type === 'mark' && tokenFace(mark.children[0])).toEqual({
-			type: 'text',
+		expect(nodeFace(nodeAt(harness, 1, 0)!)).toEqual({
+			kind: 'text',
 			content: 'cb',
 			position: {start: 2, end: 4},
 		})
@@ -460,8 +444,8 @@ describe('commit pipeline driven by the tree core', () => {
 	})
 
 	// Beyond the plan's case list, and both survived the first mutation run: the
-	// eight cases above all passed with `fromTransaction`'s two subtree walks
-	// removed. Each ports a `commit.spec.ts` case whose live-path behavior comes
+	// eight cases above all passed with the lowering's two subtree walks removed
+	// (now `deltaOf`'s). Each ports a `commit.spec.ts` case whose live-path behavior comes
 	// from reconcile's recursion (its `collectChanges`/`collectRemovedIds`, deleted
 	// at S1.6d), so a roots-only lowering is a real parity break.
 
@@ -476,22 +460,20 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		harness.boundary.arrive('a#[bc]d')
 		harness.renderNested()
-		const markBefore = pipeline.current()[1]
-		expect(markBefore.type === 'mark' && markBefore.children[0].position).toEqual({start: 3, end: 5})
+		expect(nodeAt(harness, 1, 0)?.range()).toEqual({start: 3, end: 5})
 
 		expect(harness.splice(0, 0, 'X')).toBe(true)
 
 		expect(pipeline.pending()).toBe(false)
-		const mark = pipeline.current()[1]
-		expect(mark.position).toEqual({start: 2, end: 7})
-		expect(mark.type === 'mark' && mark.children[0].position).toEqual({start: 4, end: 6})
+		expect(nodeAt(harness, 1)?.range()).toEqual({start: 2, end: 7})
+		expect(nodeAt(harness, 1, 0)?.range()).toEqual({start: 4, end: 6})
 	})
 
 	it('a mark born and killed inside one pending window is announced as neither, subtree included', () => {
 		// Ports commit.spec.ts's fold-cancellation case onto a mark WITH a slot
 		// child. `foldDelta` cancels BY EXACT ID, so a roots-only `added` folded
 		// against the flattened `removed` would announce the child's removal to a
-		// consumer that was never told it existed (commitInput.ts's TokenDelta).
+		// consumer that was never told it existed (`TokenDelta`'s subtree rule).
 		const harness = createHarness(['#[__slot__]'])
 		const {pipeline} = harness
 		harness.boundary.arrive('tail')
@@ -513,20 +495,20 @@ describe('commit pipeline driven by the tree core', () => {
 		// The deleted 'holds the BIND-GENERATION token' case asserted this through
 		// `handle.token().position`. There is no second generation to read any more —
 		// the tree IS the generation — so the same property is asserted where it still
-		// exists: `current()` moves the instant adoption runs, the node layer keeps
-		// pointing at the elements the adapter actually painted, and `pending()` fails
-		// id-bridged resolution closed until the repaint binds the new layout.
+		// exists: the tree moves the instant adoption runs, the node layer keeps pointing
+		// at the elements the adapter actually painted, and `pending()` fails id-bridged
+		// resolution closed until the repaint binds the new layout.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
 		const tail = pipeline.byElement(text2)
-		expect(pipeline.current()[2].position).toEqual({start: 6, end: 9})
+		expect(nodeAt(harness, 2)?.range()).toEqual({start: 6, end: 9})
 
 		expect(harness.splice(0, 0, '@[y]')).toBe(true)
 
 		expect(pipeline.pending()).toBe(true)
 		// The tree has moved…
-		expect(pipeline.current()[4].position).toEqual({start: 10, end: 13})
+		expect(nodeAt(harness, 4)?.range()).toEqual({start: 10, end: 13})
 		// …the painted DOM has not: the same handle still owns the same element.
 		expect(pipeline.byElement(text2)).toBe(tail)
 		expect(tail?.element()).toBe(text2)
@@ -534,7 +516,7 @@ describe('commit pipeline driven by the tree core', () => {
 		harness.render()
 
 		expect(pipeline.pending()).toBe(false)
-		expect(boundAt(pipeline, 4)).toBe(tail)
+		expect(boundAt(harness, 4)).toBe(tail)
 	})
 
 	// ═══ S1.5 Task 6: ported ahead of commit.spec.ts's deletion ════════════════
@@ -568,11 +550,11 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(text2.textContent).toBe('llo')
 	})
 
-	it('keeps the render tree reference across N text edits and breaks it exactly once per structural edit', () => {
+	it('leaves the epoch standing across N text edits and bumps it exactly once per structural edit', () => {
 		// Ports commit.spec.ts:290 — D9's headline, that text edits cost the renderer
 		// nothing. Sharper on this path: the memo returns a FRESH array every apply, so
 		// the kept reference is control flow (only `commitStructural` writes
-		// `renderTree`) rather than array identity leaking through from the producer.
+		// the epoch) rather than array identity leaking through from the producer.
 		const harness = createHarness()
 		const {pipeline, container} = harness
 		mount(harness)
@@ -602,10 +584,11 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(changedSpy).toHaveBeenCalledTimes(4)
 	})
 
-	it('a re-render after a text edit re-binds the FRESH tokens, never the stale render tree', () => {
-		// Ports commit.spec.ts:204. `renderTree` keeps its reference across a text edit,
-		// so its tokens are the pre-edit generation; an unrelated adapter re-render must
-		// bind `latest` instead, or the node layer AND the patched surface regress.
+	it('a re-render after a text edit re-binds the LIVE tree', () => {
+		// Ports commit.spec.ts:204. A text edit does not wake the renderer, so an
+		// unrelated re-render arriving afterwards must bind `deps.roots()` — the live tree,
+		// which already carries the edit — or the node layer and the patched surface both
+		// regress to the painted generation.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
@@ -621,7 +604,7 @@ describe('commit pipeline driven by the tree core', () => {
 		pipeline.onRendered()
 
 		expect(text2.textContent).toBe('llo!')
-		expect(pipeline.current()[2].content).toBe('llo!')
+		expect(joinNodes([harness.tree.roots()[2]])).toBe('llo!')
 		expect(pipeline.byElement(text2)).toBe(handle)
 		// A re-bind with nothing pending drains an empty accumulator (commit.spec.ts:727).
 		expect(seen[1]).toEqual({added: [], removed: [], updated: []})
@@ -653,10 +636,56 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(pipeline.pending()).toBe(false)
-		const mark = boundAt(pipeline, 1)
-		const child = boundAt(pipeline, 1, 0)
+		const mark = boundAt(harness, 1)
+		const child = boundAt(harness, 1, 0)
 		if (!mark || !child) throw new Error('expected the new mark and its slot child')
 		expect(payload?.added).toEqual(expect.arrayContaining([mark.id, child.id]))
+	})
+
+	// ═══ `deltaOf`'s granularity (moved from the deleted treeInput.spec.ts) ══════
+	//
+	// The two cases the lowering had to itself. Everything else that suite pinned was
+	// the snapshot memo — its reuse, its cache-hit branch, its re-materialization of an
+	// ancestor — and went with it; what a consumer can still observe about those edits
+	// is asserted directly on the tree above.
+
+	it('lists a node ONCE in `updated` when it is both updated and shifted', () => {
+		// `shifted` is not a content signal and must not leak into the announcement.
+		const harness = createHarness(['#[__slot__]'])
+		const {pipeline} = harness
+		harness.boundary.arrive('he#[x]llo')
+		harness.renderNested()
+		const tailId = nodeAt(harness, 2)?.id
+		let payload: TokenDelta | undefined
+		watch(pipeline.changed, delta => {
+			payload = delta
+		})
+
+		expect(harness.splice(9, 9, '!')).toBe(true)
+
+		expect(payload).toEqual({added: [], removed: [], updated: [tailId]})
+	})
+
+	it('leaves an ANCESTOR whose own fields never changed out of `updated`', () => {
+		// '#[ab]t' → '#[cb]t': the mark's PROJECTION changes and its own props do not, so
+		// `TokenDelta`'s per-node rule keeps it out and a consumer needing the subtree
+		// re-reads the tree. Length-preserving deliberately — a longer splice would put
+		// the mark in `shifted`, which this rule is about not confusing with content.
+		const harness = createHarness(['#[__slot__]'])
+		const {pipeline} = harness
+		harness.boundary.arrive('#[ab]t')
+		harness.renderNested()
+		const childId = nodeAt(harness, 1, 0)?.id
+		let payload: TokenDelta | undefined
+		watch(pipeline.changed, delta => {
+			payload = delta
+		})
+
+		expect(harness.splice(2, 3, 'c')).toBe(true)
+
+		expect(payload).toEqual({added: [], removed: [], updated: [childId]})
+		// The precondition, measured rather than assumed: the ancestor DID change.
+		expect(joinNodes([nodeAt(harness, 1)!])).toBe('#[cb]')
 	})
 
 	it('merges the removals of every edit folded into one pending structural pass', () => {
@@ -669,8 +698,8 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		harness.boundary.arrive('a@[x]b@[y]c')
 		harness.render()
-		const markX = boundAt(pipeline, 1)
-		const markY = boundAt(pipeline, 3)
+		const markX = boundAt(harness, 1)
+		const markY = boundAt(harness, 3)
 		if (!markX || !markY) throw new Error('expected both mark handles')
 		let payload: TokenDelta | undefined
 		watch(pipeline.changed, delta => {
@@ -738,8 +767,8 @@ describe('commit pipeline driven by the tree core', () => {
 		const spans = harness.render(button)
 
 		expect(pipeline.bound().size).toBe(3)
-		expect(pipeline.byElement(spans[0])).toBe(boundAt(pipeline, 0))
-		expect(pipeline.byElement(spans[1])).toBe(boundAt(pipeline, 1))
+		expect(pipeline.byElement(spans[0])).toBe(boundAt(harness, 0))
+		expect(pipeline.byElement(spans[1])).toBe(boundAt(harness, 1))
 		expect(pipeline.byElement(button)).toBeUndefined()
 		expect(pipeline.isControlRoot(button)).toBe(true)
 		expect(pipeline.isControlRoot(spans[0])).toBe(false)

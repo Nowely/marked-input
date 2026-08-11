@@ -2,6 +2,7 @@ import {afterEach, describe, expect, it} from 'vitest'
 
 import {Store} from '../../../store/Store'
 import {anchorsAt} from '../__testing__/mountFixtures'
+import {joinNodes} from '../tree/tree'
 
 function mountInline(value: string) {
 	const store = new Store()
@@ -74,7 +75,7 @@ describe('TokenHandle', () => {
 	it('handle(id) returns the bound handle for a token id', () => {
 		const {store} = mountInline('hello')
 
-		const id = store.tokens.current()[0].id!
+		const id = store.tokens.nodes()[0].id!
 		const handle = store.tokens.handle(id)
 		expect(handle).toBeDefined()
 	})
@@ -99,7 +100,7 @@ describe('TokenHandle', () => {
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
 		// Grab the second row's handle (path [1])
-		const handle = store.tokens.handle(store.tokens.current()[1].id!)
+		const handle = store.tokens.handle(store.tokens.nodes()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
 
 		const element = handle.element()
@@ -130,7 +131,7 @@ describe('TokenHandle', () => {
 		store.tokens.setValue('alpha\n\nbeta\n\n')
 		store.host.rendered()
 
-		const newHandle = store.tokens.handle(store.tokens.current()[1].id!)
+		const newHandle = store.tokens.handle(store.tokens.nodes()[1].id!)
 		expect(newHandle).not.toBe(handle)
 	})
 
@@ -142,7 +143,7 @@ describe('TokenHandle', () => {
 		// handle object follows its token to path [2] and reports a move.
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
-		const handle = store.tokens.handle(store.tokens.current()[1].id!)
+		const handle = store.tokens.handle(store.tokens.nodes()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
 		expect(handle.element()?.textContent).toBe('beta')
 
@@ -160,10 +161,10 @@ describe('TokenHandle', () => {
 
 		// The same handle object now lives at the shifted path
 		expect(handle.alive()).toBe(true)
-		expect(store.tokens.current()[2].content).toBe('beta\n\n')
+		expect(joinNodes([store.tokens.nodes()[2]])).toBe('beta\n\n')
 
 		// Resolving the shifted id returns the SAME handle object
-		expect(store.tokens.handle(store.tokens.current()[2].id!)).toBe(handle)
+		expect(store.tokens.handle(store.tokens.nodes()[2].id!)).toBe(handle)
 	})
 
 	it('handleAt returns "control" inside control elements and undefined outside', () => {

@@ -5,6 +5,7 @@ import {Host, PropsModel} from '../../state'
 import {textToken} from '../__testing__/tokenFactories'
 import type {SelectionSnapshot} from '../dom/DomModel'
 import {TokenHandle} from '../dom/TokenHandle'
+import {joinNodes} from '../tree/tree'
 import {TokenModel} from './TokenModel'
 
 /**
@@ -116,7 +117,7 @@ describe('TokenModel shell (seam/)', () => {
 		it('facade reads fail soft before mount', () => {
 			const {model} = createNew({defaultValue: 'hello'})
 
-			expect(model.current()).toEqual([])
+			expect(model.nodes()).toEqual([])
 			expect(model.anchorFor(document.body, 0)).toBeUndefined()
 			expect(model.handleAt(document.body)).toBeUndefined()
 			expect(model.handle(0)).toBeUndefined()
@@ -195,7 +196,7 @@ describe('TokenModel shell (seam/)', () => {
 			// Walk-up: a text node inside the mark resolves to the mark's handle.
 			const markText = mark.firstChild
 			if (!markText) throw new Error('expected mark text node')
-			expect(model.handleAt(markText)).toBe(model.handle(model.current()[1].id!))
+			expect(model.handleAt(markText)).toBe(model.handle(model.nodes()[1].id!))
 			// Walk-up inside a control root resolves to 'control'.
 			expect(model.handleAt(inner)).toBe('control')
 			expect(model.handleAt(document.createElement('div'))).toBeUndefined()
@@ -204,25 +205,24 @@ describe('TokenModel shell (seam/)', () => {
 		it('handle(id) resolves by token id over the bound layer', () => {
 			const {model, text2} = mountNewInline()
 
-			expect(model.handle(model.current()[2].id!)?.element()).toBe(text2)
+			expect(model.handle(model.nodes()[2].id!)?.element()).toBe(text2)
 			expect(model.handle(999999)).toBeUndefined()
-			const ids = model.current().map(token => model.handle(token.id!)?.id)
-			expect(ids).toEqual(model.current().map(token => token.id))
+			const ids = model.nodes().map(token => model.handle(token.id!)?.id)
+			expect(ids).toEqual(model.nodes().map(token => token.id))
 		})
 
 		it('handle(id) bridges fresh and stale token objects by identity and rejects foreign ids', () => {
 			const {model, text2} = mountNewInline()
-			const stale = model.current()[2]
+			const stale = model.nodes()[2]
 			const handle = model.handle(stale.id!)
 			expect(handle?.element()).toBe(text2)
 
-			// Text path: the token OBJECT is replaced while its id survives.
+			// Text path: the node is mutated in place, and its id and object both survive.
 			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '!')
 
-			expect(model.handle(stale.id!)).toBe(handle)
-			// The token OBJECT is replaced; the handle it bridges to is not.
-			expect(model.current()[2]).not.toBe(stale)
-			expect(model.current()[2].content).toBe('llo!')
+			expect(model.handle(stale.id)).toBe(handle)
+			expect(model.nodes()[2]).toBe(stale)
+			expect(joinNodes([model.nodes()[2]])).toBe('llo!')
 			expect(handle?.element()?.textContent).toBe('llo!')
 			// Foreign id: no live node, so no handle.
 			expect(model.handle(999999)).toBeUndefined()
@@ -230,7 +230,7 @@ describe('TokenModel shell (seam/)', () => {
 
 		it('handle(id) fails closed while a structural apply awaits its bind, then resolves again', () => {
 			const {model, render} = mountNewInline()
-			const stale = model.current()[2]
+			const stale = model.nodes()[2]
 			const handle = model.handle(stale.id!)
 			expect(handle).toBeInstanceOf(TokenHandle)
 
@@ -269,14 +269,14 @@ describe('TokenModel shell (seam/)', () => {
 			setup.model.children(setup.model.nodes()[1].id)(wrapper)
 			setup.host.rendered()
 
-			const mark = setup.model.current()[1]
-			if (mark.type !== 'mark') throw new Error('expected mark')
-			expect(setup.model.handle(mark.id!)?.node()?.childSequenceHost).toBe(wrapper)
-			const child = setup.model.handle(mark.children[0].id!)
+			const mark = setup.model.nodes()[1]
+			if (mark.kind !== 'mark') throw new Error('expected mark')
+			expect(setup.model.handle(mark.id)?.node()?.childSequenceHost).toBe(wrapper)
+			const child = setup.model.handle(mark.children()[0].id)
 			expect(child?.element()).toBe(childSpan)
 			expect(childSpan.textContent).toBe('ab')
 			expect(setup.model.handleAt(childSpan)).toBe(child)
-			expect(setup.model.handle(mark.children[0].id!)).toBe(child)
+			expect(setup.model.handle(mark.children()[0].id)).toBe(child)
 		})
 	})
 
@@ -295,7 +295,7 @@ describe('TokenModel shell (seam/)', () => {
 
 		it("handle.placeCaret targets the handle's token explicitly", () => {
 			const {model} = mountNewInline()
-			const token = model.current()[2] // text 'llo' [6,9]
+			const token = model.nodes()[2] // text 'llo' [6,9]
 			const handle = model.handle(token.id!)
 			if (!handle) throw new Error('expected handle')
 			expect(handle.placeCaret(1)).toBe(true)

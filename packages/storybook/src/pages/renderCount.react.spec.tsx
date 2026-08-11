@@ -264,7 +264,7 @@ describe('Render-count gates: block layout', () => {
 
 /**
  * Remount gate (identity unification, phase 1): framework keys come from the
- * stable identity id (`tokens.keyOf`), not per-object WeakMap counters — a
+ * stable identity id (`node.id`), not per-object WeakMap counters — a
  * suffix-shifted token (NEW object after an edit before it, INHERITED id)
  * must keep its key, so React reconciles it in place instead of
  * unmount+remount (which silently drops component-local state and DOM focus).

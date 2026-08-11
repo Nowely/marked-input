@@ -4,22 +4,19 @@ import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
 import {createCommitPipeline} from '../dom/commit'
+import type {TokenDelta} from '../dom/commit'
 import {DomModel} from '../dom/DomModel'
 import type {SelectionSnapshot} from '../dom/DomModel'
 import {applyEditableState} from '../dom/editableState'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
-import type {Token} from '../parser/types'
 import {adjacentMark, anchorAt, offsetOfAnchor, stepAnchor} from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
-import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkCommands, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
-import type {TokenDelta} from './commitInput'
-import {fromTransaction} from './treeInput'
 
 /**
  * The selection's two ends of the S1 D7 protocol. A THUNK in `Store` because `tokens` is
@@ -35,15 +32,14 @@ export interface SelectionPort {
 
 /**
  * The value owner (spec D1, plan decision D-c): it holds THE token tree, the
- * string boundary that decides commit policy, the transaction verbs that write
- * it, and the snapshot memo — and feeds the one commit pipeline through
- * {@link fromTransaction}. Parsing belongs to the boundary and token identity to
- * adoption; neither is this class's business any more. Everything DOM-related —
- * boundary math, selection reads, caret placement — lives in {@link DomModel}
- * and is delegated to here, so consumers keep this single entry point. Owns the
- * `nodes` map the pipeline mutates.
+ * string boundary that decides commit policy, and the transaction verbs that write
+ * it, and feeds each adoption result straight into the one commit pipeline.
+ * Parsing belongs to the boundary and token identity to adoption; neither is this
+ * class's business any more. Everything DOM-related — boundary math, selection
+ * reads, caret placement — lives in {@link DomModel} and is delegated to here, so
+ * consumers keep this single entry point. Owns the `nodes` map the pipeline mutates.
  *
- * Mechanism ledger (spec §4.6). All seven are gone, and where each died is the point
+ * Mechanism ledger (spec §4.6). All eight are gone, and where each died is the point
  * of the record:
  *
  * 1. consume-once hint protocol (`#pendingEdit`/`takePendingEdit`) — S1.6a, with
@@ -64,23 +60,16 @@ export interface SelectionPort {
  *    The DOM text it used to describe is written by one per-surface effect per bound
  *    text node, armed by `bind` and owned by the handle.
  *
+ * 8. the compat SNAPSHOT — `current()`, the memo it was materialized through, and the
+ *    `CommitInput` it was lowered into — S2.8, the second half of Cut A. The tree is the
+ *    only representation left: both adapters render `TreeNode` off {@link nodes} and the
+ *    pipeline takes the `TransactionResult` itself. `snapshot` survives as a TEST-ONLY
+ *    oracle (`tree/__testing__/snapshot.ts`), which is the job it always did best.
+ *
  * Layout: consumer reads → adapter SPI → engine SPI → wiring → internals.
  */
 export class TokenModel {
 	// ═══ Consumer reads ═══════════════════════════════════════════════════════
-
-	/**
-	 * The compat snapshot of the latest reconciled tree, consistent with `value.current()`
-	 * (the parallel: `value.current()` is the string, `tokens.current()` is its parsed
-	 * tree). It is the pipeline's private `latest` — reassigned at the top of every apply,
-	 * fresh in the pending window too.
-	 *
-	 * NO PRODUCTION READER since S2.8 moved the render loop and `block/` onto {@link nodes};
-	 * what is left is the specs' read shape, and it goes with the snapshot layer.
-	 */
-	current(): readonly Token[] {
-		return this.#pipeline.current()
-	}
 
 	/**
 	 * THE model-level detector: fires once per commit, only after the DOM is
@@ -470,15 +459,8 @@ export class TokenModel {
 		return new Parser(markups)
 	})
 
-	/**
-	 * THE tree (spec D1). Paired for life with `#memo` — `fromTransaction` reads the
-	 * roots from OUTSIDE the result, so the two must describe the same tree. Both are
-	 * readonly fields of this instance, declared adjacently, never reassigned, and
-	 * `#boundary`'s `onResult` is their only caller: the pairing is guaranteed by
-	 * construction, which is why no test gates it (plan decision D-h).
-	 */
+	/** THE tree (spec D1), and since S2.8 the only representation of it. */
 	readonly #tree = createTokenTree([], () => this.#markCommands)
-	readonly #memo = createSnapshotMemo()
 
 	/**
 	 * Spec §2.3's mark verbs, lowered onto `applyStructural` (spec D5). Read-only and
@@ -546,15 +528,15 @@ export class TokenModel {
 		controlled: () => this.props.value() !== undefined,
 		selection: () => this.selectionPort().anchors(),
 		onChange: next => this.props.onChange()?.(next),
-		// Synchronous by contract (spec §4.4): `tokens.current()` must be consistent with
-		// `value.current()` the moment adoption lands, because seven call sites slice the
-		// value by positions read from the snapshot.
+		// Synchronous by contract (spec §4.4): the live tree must be consistent with
+		// `value.current()` the moment adoption lands, because the value-slicing call sites
+		// read positions off the nodes.
 		//
 		// ORDER IS LOAD-BEARING: `#committed` is written AFTER `pipeline.apply`, and it is
 		// the only thing `value` depends on. Publishing it first (or letting `value` read
 		// `#tree.value()`) hands subscribers a new string over a stale token view.
 		onResult: result => {
-			this.#pipeline.apply(fromTransaction(result, this.#memo, this.#tree.roots()))
+			this.#pipeline.apply(result)
 			this.#committed(this.#tree.value())
 			// LAST, and inside the commit: the repair writes the selection the `#anchors`
 			// watch then applies, and an imperative post-edit caret (`EditController`) lands

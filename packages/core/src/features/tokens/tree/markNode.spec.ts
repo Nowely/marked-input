@@ -12,9 +12,8 @@ import type {MarkNode} from './types'
  * exact equivalent of the controller's captured id: adoption keeps a node object exactly
  * when it keeps its id.
  */
-function markNodeOf(store: Store, token: {id?: number}): MarkNode {
-	if (token.id === undefined) throw new Error('token has no id')
-	const node = store.tokens.find(token.id)
+function firstMark(store: Store): MarkNode {
+	const node = store.tokens.nodes().find(root => root.kind === 'mark')
 	if (node?.kind !== 'mark') throw new Error('expected a live mark node')
 	return node
 }
@@ -30,11 +29,9 @@ function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
-	container.replaceChildren(...store.tokens.current().map(() => document.createElement('span')))
+	container.replaceChildren(...store.tokens.nodes().map(() => document.createElement('span')))
 	store.host.rendered()
-	const token = store.tokens.current().find(t => t.type === 'mark')
-	if (!token) throw new Error('expected parsed mark token')
-	return {store, token, node: markNodeOf(store, token)}
+	return {store, node: firstMark(store)}
 }
 
 /**
@@ -58,9 +55,7 @@ function mountedSetup() {
 	document.body.append(container)
 	store.host.container(container)
 	store.host.rendered()
-	const token = store.tokens.current().find(t => t.type === 'mark')
-	if (!token) throw new Error('expected parsed mark token')
-	return {store, token, node: markNodeOf(store, token)}
+	return {store, node: firstMark(store)}
 }
 
 describe('MarkNode verbs', () => {
@@ -178,14 +173,16 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 	// shifted (correct) range, not the captured one, and never no-opping.
 
 	it('update() after a preceding text edit mutates the shifted (correct) range', () => {
-		const {store, token, node} = mountedSetup()
+		const {store, node} = mountedSetup()
 
 		// Preceding text edit: 'he@[x]llo' → 'XXhe@[x]llo' — text path
-		// (text token textChanged; mark + tail shifted by +2)
+		// (text node text changed; mark + tail shifted by +2)
 		store.edit.replace(...anchorsAt(store, 0, 0), 'XX')
 		expect(store.tokens.value()).toBe('XXhe@[x]llo')
-		// Sanity: adoption replaced the snapshot TOKEN object — the captured one is stale
-		expect(store.tokens.current().find(next => next.id === token.id)).not.toBe(token)
+		// Sanity: the captured node SURVIVED the shift and moved with it — the whole reason
+		// a captured node is safe where the deleted snapshot's captured token was not.
+		expect(firstMark(store)).toBe(node)
+		expect(node.range()).toEqual({start: 4, end: 8})
 
 		node.update({value: 'markput'})
 
@@ -219,7 +216,7 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 	})
 
 	it('still fails closed once the mark is structurally removed', () => {
-		const {store, token, node} = mountedSetup()
+		const {store, node} = mountedSetup()
 
 		// Remove the mark entirely: structural path; the identity is gone.
 		store.edit.replace(...anchorsAt(store, 2, 6), '')
@@ -231,7 +228,7 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 		container.replaceChildren(document.createElement('span'))
 		store.host.rendered()
 
-		expect(store.tokens.handle(token.id!)).toBeUndefined()
+		expect(store.tokens.handle(node.id)).toBeUndefined()
 
 		node.update({value: 'bad'})
 
@@ -336,8 +333,7 @@ describe('MarkNode live-read parity', () => {
 		document.body.append(container)
 		store.host.container(container)
 		store.host.rendered()
-		const token = store.tokens.current().find(t => t.type === 'mark')!
-		const node = markNodeOf(store, token)
+		const node = firstMark(store)
 		expect(node.value()).toBe('v')
 		expect(node.meta()).toBe('m')
 		expect(node.slot()).toBeUndefined()
@@ -400,8 +396,7 @@ describe('MarkNode live-read parity', () => {
 		// whole-value write that keeps the root count is a text-path commit and opens no
 		// pending window.
 		store.tokens.setValue('he@[x]llo@[y]')
-		const freshToken = store.tokens.nodes().find(t => t.kind === 'mark')!
-		const node = markNodeOf(store, freshToken)
+		const node = firstMark(store)
 
 		// READ resolves the live node mid-window: the rendered mark shows its value
 		// immediately instead of flashing empty until a re-render the adapter never

@@ -2,10 +2,10 @@ import {describe, expect, it} from 'vitest'
 
 import {effect} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
+import {snapshot, stripIds} from './__testing__/snapshot'
 import {adopt} from './adopt'
 import {offsetOfAnchor} from './anchors'
 import {gapWindow} from './gapWindow'
-import {snapshot, stripIds} from './snapshot'
 import {createTokenTree} from './tree'
 import type {Anchors, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeNode} from './types'
 

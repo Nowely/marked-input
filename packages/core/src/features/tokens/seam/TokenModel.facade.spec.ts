@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {mountBlock, mountWithMark} from '../__testing__/mountFixtures'
+import {joinNodes} from '../tree/tree'
 
 describe('TokenModel facade selection reads', () => {
 	afterEach(() => {
@@ -131,11 +132,11 @@ describe('TokenModel placement commands', () => {
 
 	it('handle.placeCaret + handle.caretIndex round-trip', () => {
 		const {store} = mountWithMark()
-		const handle = store.tokens.handle(store.tokens.current()[0].id!)
+		const handle = store.tokens.handle(store.tokens.nodes()[0].id!)
 		if (!handle) throw new Error('expected handle')
 		expect(handle.placeCaret(2)).toBe(true)
 		expect(handle.caretIndex()).toBe(2)
-		expect(handle.textLength()).toBe(store.tokens.current()[0].content.length)
+		expect(handle.textLength()).toBe(joinNodes([store.tokens.nodes()[0]]).length)
 	})
 })
 

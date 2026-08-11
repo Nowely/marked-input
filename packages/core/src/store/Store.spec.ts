@@ -1,6 +1,6 @@
 import {describe, it, expect, vi} from 'vitest'
 
-import {markToken, nodesOf, textToken} from '../features/tokens/__testing__/tokenFactories'
+import {markToken, nodesOf, textToken, treeShape} from '../features/tokens/__testing__/tokenFactories'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {effect, batch} from '../shared/signals'
 import {Store} from './Store'
@@ -9,7 +9,7 @@ describe('Store', () => {
 	it('construct with no arguments', () => {
 		const store = new Store()
 		// The fresh read: nothing is reconciled before a container mounts.
-		expect(store.tokens.current()).toEqual([])
+		expect(treeShape(store.tokens.nodes())).toEqual([])
 		expect(store.props.readOnly()).toBe(false)
 	})
 
@@ -133,13 +133,13 @@ describe('Store', () => {
 
 	describe('value edits', () => {
 		// Tokens publish only on a mounted store; with a bare container every
-		// commit settles structurally and current() is the parse of the accepted value.
+		// commit settles structurally and the live tree is the parse of the accepted value.
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('hello')
-			expect(store.tokens.current()).toMatchObject([
-				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
+			expect(treeShape(store.tokens.nodes())).toMatchObject([
+				{kind: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
 			expect(store.tokens.value()).toBe('hello')
 		})
@@ -161,8 +161,8 @@ describe('Store', () => {
 			store.tokens.setValue('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.tokens.value()).toBe('hello')
-			expect(store.tokens.current()).toMatchObject([
-				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
+			expect(treeShape(store.tokens.nodes())).toMatchObject([
+				{kind: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
 		})
 

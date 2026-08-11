@@ -354,7 +354,7 @@ Markput uses an internal store for managing editor state:
 Store State:
 {
   value: string,              // Current text
-  tokens: Token[],            // Parsed token tree
+  tokens: TreeNode[],         // The live token tree (the source of truth)
   selection: Range,           // Cursor/selection position
   overlay: OverlayState,      // Overlay visibility & data
   focused: boolean            // Focus state

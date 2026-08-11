@@ -125,7 +125,7 @@ export function mountValue(value: string, props: Parameters<Store['props']['set'
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
-	const surfaces = store.tokens.current().map(() => {
+	const surfaces = store.tokens.nodes().map(() => {
 		const surface = document.createElement('span')
 		container.append(surface)
 		return surface

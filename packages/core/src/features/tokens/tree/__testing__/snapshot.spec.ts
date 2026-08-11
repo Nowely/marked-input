@@ -1,13 +1,13 @@
 import {faker} from '@faker-js/faker'
 import {describe, expect, it} from 'vitest'
 
-import {Parser} from '../parser/Parser'
-import type {Token} from '../parser/types'
-import {annotate} from '../parser/utils/annotate'
-import {toString} from '../parser/utils/toString'
+import {Parser} from '../../parser/Parser'
+import type {Token} from '../../parser/types'
+import {annotate} from '../../parser/utils/annotate'
+import {toString} from '../../parser/utils/toString'
+import {createTokenTree} from '../tree'
+import type {TreeNode} from '../types'
 import {snapshot, stripIds} from './snapshot'
-import {createTokenTree} from './tree'
-import type {TreeNode} from './types'
 
 const markups = ['@[__value__](__meta__)', '#[__slot__]'] as const
 const parser = new Parser([...markups])

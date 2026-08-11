@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
+import type {TokenDelta} from '../features/tokens'
 import type {Markup} from '../features/tokens/parser/types'
-import type {TokenDelta} from '../features/tokens/seam/commitInput'
 import type {TextNode} from '../features/tokens/tree/types'
 import {effect, watch} from '../shared/signals'
 import type {MarkputApi} from './MarkputApi'
@@ -26,7 +26,7 @@ function setup(value: string, opts: {controlled?: boolean; onChange?: (value: st
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
-	container.replaceChildren(...store.tokens.current().map(() => document.createElement('span')))
+	container.replaceChildren(...store.tokens.nodes().map(() => document.createElement('span')))
 	store.host.rendered()
 	return {store, api: store.api}
 }

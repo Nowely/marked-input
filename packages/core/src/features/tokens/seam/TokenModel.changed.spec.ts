@@ -27,7 +27,7 @@ function mountWithMark(beforeMount?: (store: Store) => void) {
 
 /** Stable identity of the token at a top-level index, read through its live handle. */
 function handleId(store: Store, index: number): number {
-	const handle = store.tokens.handle(store.tokens.current()[index].id!)
+	const handle = store.tokens.handle(store.tokens.nodes()[index].id!)
 	if (!handle) throw new Error(`expected a handle at [${index}]`)
 	return handle.id
 }
@@ -46,12 +46,12 @@ describe('TokenModel changed event', () => {
 		// (the count is the contract here; the payload is pinned in the cases below).
 		expect(changedSpy).toHaveBeenCalledTimes(2)
 
-		const ids = store.tokens.current().map((_, i) => handleId(store, i))
+		const ids = store.tokens.nodes().map((_, i) => handleId(store, i))
 		expect(ids).toHaveLength(3)
 		expect(new Set(ids).size).toBe(3)
 		ids.forEach(id => expect(typeof id).toBe('number'))
 		// stable across repeated reads
-		expect(store.tokens.current().map((_, i) => handleId(store, i))).toEqual(ids)
+		expect(store.tokens.nodes().map((_, i) => handleId(store, i))).toEqual(ids)
 	})
 
 	it('edit.replace fires changed once and the edited token’s handle identity survives', () => {
@@ -121,10 +121,10 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 		document.body.replaceChildren()
 	})
 
-	it('3 text edits → renderTree watcher 0 / changed 3; structural edit → renderTree watcher 1, completed by rendered()', () => {
+	it('3 text edits → renderEpoch watcher 0 / changed 3; structural edit → renderEpoch watcher 1, completed by rendered()', () => {
 		const {store, container} = mountWithMark()
 
-		// A watch on renderTree pulls the signal every flush wave; its callback only
+		// A watch on renderEpoch pulls the signal every flush wave; its callback only
 		// fires when the value differs (equality cutoff) — exactly the adapters'
 		// subscription semantics (useSyncExternalStore / shallowRef).
 		const treeSpy = vi.fn()
@@ -148,16 +148,16 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 		// One structural edit: 'he@[x]llo!!!' → 'he@[x]llo!!!@[y]' (added tokens).
 		store.edit.replace(...anchorsAt(store, 12, 12), '@[y]')
 
-		// Gate: structural edit → ≥1 renderer invocation (renderTree reference changed).
+		// Gate: structural edit → ≥1 renderer invocation (the epoch moved).
 		expect(treeSpy).toHaveBeenCalledTimes(1)
 		// The renderer owns this change: consistency is not announced yet.
 		expect(changedSpy).toHaveBeenCalledTimes(3)
 
 		// The (manual) adapter re-renders from the new tree and reports back.
 		container.replaceChildren(
-			...store.tokens.current().map(token => {
+			...store.tokens.nodes().map(node => {
 				const span = document.createElement('span')
-				if (token.type === 'mark') span.append(document.createTextNode(token.value))
+				if (node.kind === 'mark') span.append(document.createTextNode(node.value()))
 				return span
 			})
 		)

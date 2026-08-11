@@ -43,7 +43,7 @@ describe('BlockController', () => {
 			options: [{markup: '__slot__\n\n'}],
 		})
 		// Drag actions read the mounted token layer (a bare container is enough:
-		// commits settle structurally and current() stays the reconciled parse).
+		// commits settle structurally and the live tree stays the reconciled parse).
 		store.host.container(document.createElement('div'))
 		store.tokens.setValue('alpha\n\nbeta\n\n')
 

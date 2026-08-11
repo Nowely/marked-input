@@ -20,14 +20,15 @@ go through `store.tokens` methods or `TokenHandle`.
 | folder    | what lives there                                                                                                    |
 | --------- | ------------------------------------------------------------------------------------------------------------------- |
 | `parser/` | string → `Token[]`. Knows nothing about nodes, ids or the DOM.                                                      |
-| `tree/`   | the source of truth: nodes, adoption, transactions, the string boundary, snapshots, anchors, the selection STATE.   |
+| `tree/`   | the source of truth: nodes, adoption, transactions, the string boundary, anchors, the selection STATE.              |
 | `dom/`    | the contenteditable adapter: bind, the commit pipeline, `TokenHandle`, caret and DOM offsets, the selection DRIVER. |
-| `seam/`   | `TokenModel` — the one object that owns a tree and a DOM and joins them, plus its commit input.                     |
+| `seam/`   | `TokenModel` — the one object that owns a tree and a DOM and joins them.                                            |
 
 `tree/` imports nothing from `dom/` or `seam/`, and `seam/` is the only folder
-that imports both. The one upward edge is a type: `dom/commit.ts` takes its
-`CommitInput` from `seam/commitInput.ts`, the shape both sides agree on.
-`index.ts` is the only export point the rest of the package uses.
+that imports both. There is no upward edge left: `dom/commit.ts` takes the
+`TransactionResult` adoption produces, so the `CommitInput` type `seam/` used to
+own for it is gone. `index.ts` is the only export point the rest of the package
+uses.
 
 ## Two layers, and the difference matters
 
@@ -71,11 +72,13 @@ an id and nothing else, and the split is what makes the pending window safe.
   routing. Controlled mode emits and waits for the echo it spliced; uncontrolled
   commits straight through. Block mode's parse filter (`filterEmptyText`) lives
   here.
-- `snapshot.ts` / `snapshotMemo.ts` — the compat projection. `snapshot(nodes)`
-  is the pure, unmemoized §7.1 output-equivalence gate; `materializeNode` is the
-  one-node step the memo reuses. `snapshotMemo` re-materializes only what the
-  adoption changed, invalidating on dirty ids (walked subtree-inclusively) AND on
-  child-reference comparison — both mechanisms are load-bearing.
+- `__testing__/snapshot.ts` — TEST-ONLY since S2.8: `stripIds(snapshot(tree))`
+  deep-equals a fresh parse of the tree's projection, which is S1 §7.1's
+  output-equivalence ORACLE and the only check that compares the WHOLE tree
+  against the parser. It was production (the compat `Token` projection the
+  adapters rendered) and its memo went with the adapters' move onto `TreeNode`;
+  the oracle is deliberately UNMEMOIZED, because a memo inside it would gate
+  adoption against its own cache.
 - `anchors.ts` — `anchorAt(roots, offset)` (right affinity: the last text node
   containing the offset), its inverse `offsetOfAnchor`, and `anchorEquals`.
 - `selection.ts` — `createSelection(deps)`: the selection STATE (see below).
@@ -115,28 +118,35 @@ ZERO component re-renders — gated end-to-end by the block render-count specs
 
 ## The one commit pipeline (`dom/commit.ts`)
 
-Every committed change flows through a single `apply(input)`. The input is a
-producer-agnostic `CommitInput` (`seam/commitInput.ts`), and since S1.6a the
-tree core's `fromTransaction` (`seam/treeInput.ts`) is its ONLY producer:
+Every committed change flows through a single `apply(result)`, taking the
+`TransactionResult` adoption produced (the `CommitInput` that used to sit between
+them carried a snapshot nothing renders any more):
 
 ```
 write verb → splice → parse → adopt → TransactionResult
   │    (adoption writes node.text → the per-surface effects write the DOM)
-  → fromTransaction (memo.invalidate → memo.roots → delta)
-  → CommitInput {tokens, render, delta}
+  → apply(result): deltaOf(result) folded into the pending delta
   ├─ render === false AND no structural apply pending:
   │    nothing left to do to the DOM → fire changed()
   └─ render === true, or folded into a pending pass:
-       publish renderTree (new reference) → renderer runs → onRendered() →
+       bump renderEpoch → renderer runs → onRendered() →
        bind(container, tree.roots()): one DOM+tree walk —
          create/kill TokenHandles, set element bindings, re-arm the text effects,
          apply contentEditable/tabindex to NEWLY BOUND surfaces and mark roots
        → fire changed()
 ```
 
-- **Routing is decided by the PRODUCER**, on `result.render` — not on
-  `result.structural`. The latter is add/remove only, while a mark whose value or
-  meta changed renders new framework props and must reach the renderer.
+- **Routing is `result.render`** — not `result.structural`. The latter is
+  add/remove only, while a mark whose value or meta changed renders new framework
+  props and must reach the renderer.
+- **`renderEpoch` is a COUNTER, not the tree.** The adapters read `nodes()` for
+  data and each token component subscribes to its own node (spec D8), so the
+  pipeline publishes only "the renderer must run". It is not redundant with
+  `roots`, and that is measured: adoption writes `roots` only when the ROOT LIST
+  changes by reference, so a mark whose value changed and a structural change
+  INSIDE a slot both leave it equal — a container subscribed to `roots` alone
+  never re-renders for either, `rendered()` never fires and `bind` never runs.
+  Gated by "a mark value change announces changed" in both render-count specs.
 - **Text is not the pipeline's business (S2.7).** `bind` arms
   `effect(() => { const t = node.text(); if (el.textContent !== t) el.textContent = t })`
   per bound text surface; the handle owns its disposal. That is the ONE writer of
@@ -147,10 +157,10 @@ write verb → splice → parse → adopt → TransactionResult
   (`pending()` is true) — id-bridged reads and mutations fail closed instead of
   acting on a tree the DOM never showed. Applies landing inside the window fold
   into the pending structural pass.
-- **bind projects the LIVE tree (`deps.roots()`), not `renderTree`:** the render
-  tree keeps its (stale) reference across text commits, and a re-render arriving
-  after one — any unrelated adapter update — must re-bind the current tree, not
-  regress the node layer and the DOM text to the painted generation.
+- **bind projects the LIVE tree (`deps.roots()`):** a text commit does not wake
+  the renderer, so a re-render arriving afterwards — any unrelated adapter update
+  — must bind the current tree, not regress the node layer and the DOM text to
+  the painted generation.
 - **Editable state:** contentEditable/tabindex are applied at bind time to newly
   bound surfaces and mark roots, and by the scoped `setEditable` setter when
   `readOnly`/`isUserSelecting` change (`dom/SelectionDriver.ts` owns the policy,
@@ -158,7 +168,7 @@ write verb → splice → parse → adopt → TransactionResult
 - **`changed`** fires only after the DOM is consistent with the node layer — the model-level "commit done" signal (`dom/SelectionDriver.ts`
   re-places the caret on it) — carrying that commit's `{added, removed, updated}`
   ids (`TokenDelta`: `added`/`removed` are subtree-inclusive, `updated` is per
-  node). Consumers re-read content via `current()` / `handle(id)`;
+  node). Consumers re-read content via `nodes()` / `find(id)` / `handle(id)`;
   `BlockController` prunes its id-keyed store off `delta.removed`. During a
   latched window only the final commit announces, and its payload MERGES every
   folded apply's delta — keeping only the last one dropped the earlier removals
@@ -199,21 +209,21 @@ the whole frame, failing loud when an adapter renders something unexpected.
 
 ```ts
 // consumer reads
-current() // readonly Token[] — the always-fresh committed tree
 value: Computed<string> // THE value read: controlled → props, uncontrolled → the projection
-nodes() / find(id) // the live TreeNode reads (spec §2.3)
+nodes: Computed<readonly TreeNode[]> // the live roots — THE render read too (spec §2.3)
+find(id) // the live TreeNode by stable id
 
 // writes
-replace(range, replacement) // the internal offset shim (spec D8)
+replaceBetween(from, to, text) / setValue(text) / applyText(node, range, text)
 // per-node writes are MarkNode.update / MarkNode.remove, which ride a transaction
 
 // renderer contract (adapter-only)
-renderTree: Computed<Token[]> // structural tree; reference change ⇔ renderer must run
+renderEpoch: Computed<number> // bumped ⇔ the renderer must run; NOT data
 changed: Event<TokenDelta>    // THE model-level detector; fires after the DOM is consistent
-keyOf(token): number          // framework key (stable id); adapters pass it unbound
+// the framework key is `node.id` — there is no keyOf
 
-// per-token live view
-handle(id) / handleOf(token) // id-keyed live handle, or undefined; latch-gated
+// per-node live view
+handle(id) // id-keyed live handle, or undefined; latch-gated
 handleAt(node) // handle | 'control' | undefined for a DOM node
 
 // DOM↔model facade — anchors in both directions (spec S2 D1); no absolute offsets
@@ -231,7 +241,7 @@ control() / children(ownerId) // ref callbacks
 `dom/SelectionDriver.ts`'s prop watches; it is not part of the consumer-facing
 reading surface above.
 
-Nothing is published before a container mounts: `current()` is `[]` and facade
+Nothing is published before a container mounts: `nodes()` is `[]` and facade
 reads fail soft. Adapters mount the container ref, re-render from the first
 structural commit, and report `onRendered()`.
 
@@ -256,19 +266,18 @@ A consumer that treats "no selection" as collapsed compares
 
 ### The fresh read
 
-`current()` is the always-fresh committed tree — consistent with `value()` on
-both commit branches (it is the pipeline's `latest`, reassigned every apply).
-`renderTree` is the RENDERER signal: it keeps its reference across text-path
-commits so subscribed adapters skip re-rendering — adapter-only, not consumer
-data. `handle(id)` maps a token id to its live handle, failing closed while a
-structural apply awaits its bind.
+`nodes()` is the live root list, consistent with `value()` the moment adoption
+lands — and since S2.8 it is what the adapters render. `renderEpoch` is the
+RENDERER signal and carries no data: it does not move on a text-path commit, so
+subscribed adapters skip re-rendering. `handle(id)` maps a node id to its live
+handle, failing closed while a structural apply awaits its bind.
 
 ### Boundary facade internals
 
 The model builds an `AnchorContext` per call: `locate` walks a DOM node up to its
-bound handle, `roots()` and `find(id)` read the LIVE tree. Nothing in it answers
-with a `Token`, which is the point — a `Token` carries `position`, and no module
-above `tree/` may read one (spec S2 D1). The bridge from DOM to model is the
+bound handle, `roots()` and `find(id)` read the LIVE tree. Nothing in it forms an
+absolute offset, which is the point — no module above `tree/` may (spec S2 D1).
+The bridge from DOM to model is the
 handle's stable ID, which is generation-independent, so the walk stays correct
 inside the adopt→bind window where a positional read is not (spec S2 D4).
 
@@ -405,7 +414,7 @@ the `parser.bench.ts` tripwire.
 
 `VERIFY_DOM = import.meta.env?.DEV ?? true` (`dom/commit.ts`) — dev/test builds
 assert after both branches that every bound text surface's `textContent` equals
-its token's `content`, throwing
+its node's live `text()`, throwing
 `TokenModel divergence at #<id>: DOM "…" ≠ model "…"`. Through the public API the
 machinery self-heals before each check (bind sweeps every bound surface, the text
 branch writes its own targets), so the throw cases are covered white-box — the

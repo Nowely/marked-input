@@ -1,10 +1,31 @@
 import {event, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
-import type {Token} from '../parser/types'
-import type {CommitInput, TokenDelta} from '../seam/commitInput'
-import type {TreeNode} from '../tree/types'
+import type {TransactionResult, TreeNode} from '../tree/types'
 import {bind} from './bind'
 import type {TokenHandle} from './TokenHandle'
+
+/**
+ * The `changed` payload (spec §2.3) — the three id lists one commit did to the id space.
+ *
+ * Granularity is NORMATIVE and differs per field, because `foldDelta` below merges every
+ * commit inside one pending window and cancels BY EXACT ID:
+ *
+ * - `added` / `removed` — SUBTREE-INCLUSIVE: a born or dead mark contributes every
+ *   descendant id. `TransactionResult.removed` already is (types.ts), `added` carries
+ *   subtree ROOTS (a node hands you the subtree; a bare id gives a consumer nothing to
+ *   walk), so {@link deltaOf} walks it. Roots-only `added` folded against subtree-inclusive
+ *   `removed` would announce descendant removals for ids the consumer was never told
+ *   existed.
+ * - `updated` — PER NODE, no subtree claim: an id is listed iff that node's own
+ *   content/props changed. Adoption's `updated` feed lowers straight through, so a mark
+ *   whose PROJECTION changed while its own fields did not stays out; a consumer needing
+ *   the subtree re-reads the tree.
+ */
+export type TokenDelta = {
+	readonly added: readonly number[]
+	readonly removed: readonly number[]
+	readonly updated: readonly number[]
+}
 
 /**
  * The one commit pipeline: every reconciled value change flows through a single
@@ -37,8 +58,13 @@ export type CommitDeps = {
 }
 
 export type CommitPipeline = {
-	/** THE entry — one commit input, routed by its `render` bit. */
-	apply(input: CommitInput): void
+	/**
+	 * THE entry — one adoption result, routed by its own `render` bit. It takes the
+	 * `TransactionResult` directly since S2.8: the `CommitInput` that used to sit between
+	 * them carried a snapshot nothing renders any more, and the routing bit and the delta
+	 * were always adoption's answers.
+	 */
+	apply(result: TransactionResult): void
 	/** Adapter signal: the renderer painted — bind the DOM and complete a pending structural apply. */
 	onRendered(): void
 	/**
@@ -55,8 +81,6 @@ export type CommitPipeline = {
 	 * would never fire — leaving a freshly born in-slot node with no handle and no text.
 	 */
 	renderEpoch: Computed<number>
-	/** THE consumer read: the latest reconciled tree — always fresh, consistent with value.current() (it is `latest`, reassigned at the top of every apply). Never latch-gated. */
-	current(): readonly Token[]
 	/**
 	 * THE model-level detector: fires once per commit, only after the DOM is
 	 * consistent, carrying what that commit did to the id space (spec §2.3). Every
@@ -118,10 +142,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	let byElement = new WeakMap<HTMLElement, TokenHandle>()
 	let controlRoots = new WeakSet<HTMLElement>()
 
-	// The latest snapshot — what `current()` serves. NOT what bind projects: that is
-	// `deps.roots()`, the live tree.
-	let latest: readonly Token[] = []
-
 	let pendingStructural = false
 	// Accumulates across the pending window and is drained by whichever path
 	// announces. It is empty whenever pendingStructural is false — the drain is
@@ -130,19 +150,17 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	const pendingDelta: DeltaAccumulator = {added: new Set(), removed: new Set(), updated: new Set()}
 	let committing = false
 
-	function apply(input: CommitInput): void {
+	function apply(result: TransactionResult): void {
 		if (committing) throw new Error('TokenModel commit re-entry')
 		committing = true
 		try {
-			const {tokens, render, delta} = input
-			latest = tokens
-			foldDelta(pendingDelta, delta)
+			foldDelta(pendingDelta, deltaOf(result))
 			// Routing decided by the producer (spec D9's `render` bit). The one
 			// commit-side override is the fold guard: while a structural apply awaits
 			// its bind the node layer is one generation stale, so EVERY apply folds
 			// into the pending structural pass and announces with it (fail-closed — no
 			// consumer is told about a tree the DOM never showed).
-			if (render || pendingStructural) {
+			if (result.render || pendingStructural) {
 				pendingStructural = true
 				renderEpoch(++epoch)
 				return
@@ -233,12 +251,29 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		apply,
 		onRendered,
 		renderEpoch,
-		current: () => latest,
 		changed,
 		pending: () => pendingStructural,
 		bound: () => bound,
 		byElement: element => byElement.get(element),
 		isControlRoot: element => controlRoots.has(element),
+	}
+}
+
+/**
+ * One adoption result → the id-space delta it announces, at {@link TokenDelta}'s
+ * granularity. `untracked` for the reason adoption documents: the walk reads node signals,
+ * and a caller inside an effect must not subscribe to every node it happened to touch.
+ */
+function deltaOf(result: TransactionResult): TokenDelta {
+	const added: number[] = []
+	untracked(() => {
+		for (const change of result.added) walkTree([change.node], node => added.push(node.id))
+	})
+	return {
+		added,
+		// Already flattened by adoption (types.ts).
+		removed: result.removed,
+		updated: result.updated.map(node => node.id),
 	}
 }
 

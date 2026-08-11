@@ -3,6 +3,7 @@ import {describe, it, expect, vi} from 'vitest'
 import {watch} from '../../../shared/signals/index.js'
 import {Store} from '../../../store/Store'
 import {caretAt} from '../__testing__/mountFixtures'
+import {treeShape} from '../__testing__/tokenFactories'
 import {TokenHandle} from '../dom/TokenHandle'
 
 function mountInline(value: string) {
@@ -80,7 +81,7 @@ describe('TokenModel lookups', () => {
 
 	it('handle(id) returns the handle for that token id', () => {
 		const {store, container, span} = mountInline('hello')
-		const id = store.tokens.current()[0].id!
+		const id = store.tokens.nodes()[0].id!
 
 		expect(store.tokens.handle(id)?.element()).toBe(span)
 		container.remove()
@@ -89,7 +90,7 @@ describe('TokenModel lookups', () => {
 	it('handle(id) returns the bound handle for a token id', () => {
 		const {store, container, span} = mountInline('hello')
 
-		const id = store.tokens.current()[0].id!
+		const id = store.tokens.nodes()[0].id!
 		const handle = store.tokens.handle(id)
 		expect(handle?.element()).toBe(span)
 		container.remove()
@@ -112,34 +113,40 @@ describe('TokenModel lookups', () => {
 	})
 })
 
-describe('TokenModel.current() — the fresh reconciled read', () => {
+describe('TokenModel.nodes() — the fresh reconciled read', () => {
 	it('current() returns the reconciled tree, consistent with value.current()', () => {
 		const {store, container} = mountInline('hello')
-		expect(store.tokens.current()).toMatchObject([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(treeShape(store.tokens.nodes())).toMatchObject([
+			{kind: 'text', content: 'hello', position: {start: 0, end: 5}},
+		])
 		container.remove()
 	})
 
 	it('current() stays fresh across a text-path edit — content tracks value.current()', () => {
 		const {store, container} = mountInline('hello')
 		store.tokens.replaceBetween(store.tokens.anchorAt(5), store.tokens.anchorAt(5), '!')
-		// text-path commit: renderTree keeps its reference, but current() is the
+		// text-path commit: the renderer is not woken, but the live tree is the
 		// reconciled latest — fresh content, consistent with the new value.
 		expect(store.tokens.value()).toBe('hello!')
-		expect(store.tokens.current()[0]).toMatchObject({type: 'text', content: 'hello!', position: {start: 0, end: 6}})
+		expect(treeShape(store.tokens.nodes())[0]).toMatchObject({
+			kind: 'text',
+			content: 'hello!',
+			position: {start: 0, end: 6},
+		})
 		container.remove()
 	})
 
-	it('current() is [] before any commit has run', () => {
+	it('nodes() is [] before any commit has run', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
-		expect(store.tokens.current()).toEqual([])
+		expect(treeShape(store.tokens.nodes())).toEqual([])
 	})
 })
 
 describe('TokenModel.handle(id) — the id-keyed fail-closed lookup', () => {
 	it('handle(id) returns the live handle for a reconciled token id', () => {
 		const {store, container, span} = mountInline('hello')
-		const id = store.tokens.current()[0].id
+		const id = store.tokens.nodes()[0].id
 		expect(id).toBeTypeOf('number')
 		const handle = store.tokens.handle(id!)
 		expect(handle).toBeInstanceOf(TokenHandle)

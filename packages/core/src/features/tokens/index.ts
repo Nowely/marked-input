@@ -17,6 +17,7 @@ export type {Anchors, Id, MarkNode, MarkPatch, NodeAnchor, TextNode, Transaction
 // closures over `TokenModel`'s reads rather than the tree itself.
 export {createSelection} from './tree/selection'
 export type {Selection} from './tree/selection'
+export type {TokenDelta} from './dom/commit'
 export type {SelectionAnchor, SelectionSnapshot} from './dom/DomModel'
 export {SelectionDriver} from './dom/SelectionDriver'
 export {TokenHandle} from './dom/TokenHandle'

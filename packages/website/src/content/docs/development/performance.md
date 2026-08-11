@@ -572,10 +572,11 @@ function Editor() {
 ### WeakMap for Caches
 
 ```typescript
-// Cache mark data without preventing GC
-const markCache = new WeakMap<MarkToken, CachedData>()
+// Cache mark data without preventing GC. Key on the live node: `useMark()` returns
+// the same `MarkNode` object for as long as the mark keeps its id.
+const markCache = new WeakMap<MarkNode, CachedData>()
 
-function getCachedData(mark: MarkToken): CachedData {
+function getCachedData(mark: MarkNode): CachedData {
     if (markCache.has(mark)) {
         return markCache.get(mark)!
     }
