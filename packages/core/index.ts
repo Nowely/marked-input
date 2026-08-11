@@ -8,7 +8,12 @@ export type {Anchors, Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TreeNode} f
 
 // String-domain utilities (spec §2.3: keep)
 export {annotate, denote} from './src/features/tokens'
-export type {Markup} from './src/features/tokens'
+// `MarkToken` is here because `denote`'s callback parameter IS one: without the export the
+// type is not nameable outside the package, so a consumer cannot declare the callback
+// separately (inference and `Parameters<typeof denote>[1]` cover everything else). S2.8
+// dropped it with `Token`/`TextToken` and that was a public-API weakening the spec did not
+// intend; S2.9 restores this one only — see the note at the bottom of this file.
+export type {MarkToken, Markup} from './src/features/tokens'
 
 // Adapter utilities (spec §2.3: keep)
 export {cx} from './src/shared/utils'
@@ -54,7 +59,10 @@ export type {MarkInfo} from './src/shared/editorContracts'
 // output type (`parser/Parser.ts#parse`) and as the §7.1 correctness oracle the tree specs
 // assert through (`tree/__testing__/snapshot.ts`).
 //
-// COLLATERAL, and worth knowing before restoring one of them: `denote`'s callback
-// parameter is a `MarkToken`, so that type is no longer NAMEABLE from outside — inference
-// covers every call site in this repo, and `Parameters<typeof denote>[1]` covers the rest,
-// but a consumer who wants to declare the callback separately no longer can.
+// S2.9 PUT `MarkToken` BACK, and only it: `denote` is a public export whose callback
+// parameter is a `MarkToken`, so dropping the type made a shipped signature unnameable —
+// a weakening D12 did not intend. `Token` and `TextToken` stay internal, and that was
+// checked rather than assumed: neither appears in any signature reachable from this file.
+// `Token` is referenced only by `parser/`, `tree/tree.ts`, `tree/adopt.ts`,
+// `tree/adoptUtils.ts` and the test-only oracle, none of which is exported; `TextToken`
+// only by `adopt.ts` and that oracle.
