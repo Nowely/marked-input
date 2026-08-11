@@ -262,8 +262,10 @@ control() / children(ownerId) // ref callbacks
 ```
 
 `setEditable({editable, readOnly})` is the internal sweep wired from
-`dom/SelectionDriver.ts`'s prop watches; it is not part of the consumer-facing
-reading surface above. It is INERT per element under the one-host topology —
+`dom/SelectionDriver.ts`'s `isUserSelecting` watch — `readOnly` drives the
+container's own `contenteditable` and reaches this no longer. It is not part of
+the consumer-facing reading surface above. It is INERT per element under the
+one-host topology —
 nothing there varies with `readOnly`/`isUserSelecting` — and dies with the watch
 that drives it.
 
@@ -420,7 +422,8 @@ an explicit type annotation to keep `tsc` off TS7022.
   initializer above it). Building it last also puts its `onMounted` after the
   model's own. It watches the STORED anchors, never a number derived from them —
   the measurement behind that is stated at the watch. It also owns the editable
-  POLICY; the model owns the application.
+  POLICY, and writes the half of it that is one attribute — the container's
+  `contenteditable` — itself; the model owns the per-surface application.
 
 ## Caret placement by handle
 

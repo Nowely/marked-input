@@ -8,6 +8,7 @@ import type {TextNode, TreeNode} from '../tree/types'
 import {bind} from './bind'
 import type {BindInput} from './bind'
 import {focusIfNeeded, getCaretIndex, placeAtTextOffset} from './caret'
+import {applyEditableState} from './editableState'
 import type {TokenHandle} from './TokenHandle'
 
 /**
@@ -619,6 +620,30 @@ describe('bind', () => {
 
 			expect(hostB.hasAttribute('contenteditable')).toBe(false)
 			expect(chromeB.getAttribute('contenteditable')).toBe('false')
+		})
+
+		it('never writes outside the recorded root when the sweep runs on a stale binding', () => {
+			// `applyEditableState` DIRECTLY, because the failure needs a binding `bind` would
+			// never produce: a host that has left its root. The chrome walk climbs host→root,
+			// so a host outside the root never meets its stop condition and keeps freezing
+			// siblings on the way up — here as far as the detached container, and in a mounted
+			// editor as far as the document element.
+			const container = document.createElement('div')
+			const tokenElement = document.createElement('mark')
+			const outside = document.createElement('div')
+			const bystander = spanWith('not mine')
+			const strayHost = document.createElement('span')
+			outside.append(bystander, strayHost)
+			container.append(tokenElement, outside)
+
+			applyEditableState({tokenElement, childSequenceHost: strayHost})
+
+			// `bystander` is the escape witness: a sibling of the stray host, outside the
+			// recorded root, frozen by the ungated walk's FIRST step. `tokenElement` is the
+			// damage INSIDE the editor: the walk reaches the container and freezes the very
+			// mark whose sweep this is, making it atomic.
+			expect(bystander.hasAttribute('contenteditable')).toBe(false)
+			expect(tokenElement.hasAttribute('contenteditable')).toBe(false)
 		})
 
 		it('does not reapply the editable state to a surface that stays bound', () => {

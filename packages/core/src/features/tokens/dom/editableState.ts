@@ -31,6 +31,11 @@ export function applyEditableState(bindings: ElementBindings): void {
 		return
 	}
 	tokenElement.removeAttribute('contenteditable')
+	// The sweep can run on a STALE binding, and a host outside its recorded root is one:
+	// the walk would never meet its stop condition and the freeze would climb out of the
+	// editor. BEFORE the host write, not after — re-parented into another mark's chrome,
+	// that host is now that mark's to freeze, and this sweep must not thaw it.
+	if (!tokenElement.contains(childSequenceHost)) return
 	childSequenceHost.removeAttribute('contenteditable')
 	// Walk the host back up to the root, freezing every sibling of the path: those are
 	// the mark's own chrome, and chrome is not document content.

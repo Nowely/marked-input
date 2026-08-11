@@ -51,13 +51,19 @@ export class SelectionDriver {
 			// commit branches), so the caret re-place runs against live surfaces —
 			// exactly when the old per-commit index event fired.
 			watch(this.deps.changed, () => this.#applySelection())
-			// Editable POLICY stays here (readOnly + user-selection sweep gating);
-			// the model owns the application: scoped writes on bound surfaces now,
-			// and the seed for surfaces bound later.
+			// THE editing host: the container, gated only by readOnly. `immediate` is the
+			// mount write; per-token topology is bind's.
 			watch(
 				() => this.deps.readOnly(),
-				() => this.#applyEditablePolicy()
+				readOnly => {
+					const attr = readOnly ? 'false' : 'true'
+					if (container.contentEditable !== attr) container.contentEditable = attr
+				},
+				{immediate: true}
 			)
+			// What is left of the editable POLICY: the user-selection sweep gating. The
+			// model owns the application, and readOnly is the container write above —
+			// nothing below the host reads it any more.
 			watch(this.isUserSelecting, () => this.#applyEditablePolicy())
 
 			// The STORED anchors, not the derived `range` — MEASURED, not stylistic. `range`

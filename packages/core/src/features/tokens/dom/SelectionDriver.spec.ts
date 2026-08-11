@@ -1,8 +1,16 @@
-import {describe, it, expect, vi} from 'vitest'
+import {afterEach, describe, it, expect, vi} from 'vitest'
+import {userEvent} from 'vitest/browser'
 
 import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
-import {caretAt, mountStructuralInline, mountStructuralInlineMark, selectionRange} from '../__testing__/mountFixtures'
+import {
+	caretAt,
+	mountNested,
+	mountStructuralInline,
+	mountStructuralInlineMark,
+	mountValue,
+	selectionRange,
+} from '../__testing__/mountFixtures'
 import type {TextNode} from '../tree/types'
 
 describe('SelectionDriver', () => {
@@ -319,6 +327,86 @@ describe('SelectionDriver', () => {
 			store.tokens.isUserSelecting(false)
 			expect(span.contentEditable).toBe('true')
 
+			container.remove()
+		})
+	})
+
+	describe('the container as the one editing host', () => {
+		// These cases leave a FOCUSED editable container behind, so a failing assert must not
+		// carry one into the rest of the file.
+		afterEach(() => document.body.replaceChildren())
+
+		/**
+		 * A caret a real keystroke can land on. The CLICK is what resolves focus, and it is
+		 * deliberately the browser's job rather than a `container.focus()`: which element ends
+		 * up the editing host is exactly what the topology decides. The offset is then placed
+		 * through the model's own path, because a click alone lands wherever it lands.
+		 *
+		 * INTERIOR offsets only: the click's own `selectionchange` arrives asynchronously and
+		 * re-resolves whatever boundary it finds, and at a boundary offset that answer can be
+		 * the neighbouring node's.
+		 */
+		const caretInEditor = async (store: Store, target: HTMLElement, offset: number): Promise<void> => {
+			await userEvent.click(target)
+			caretAt(store, offset)
+		}
+
+		it('mounting makes the container the editing host; readOnly toggles it', () => {
+			const {store, container} = mountStructuralInline('hello')
+
+			expect(container.getAttribute('contenteditable')).toBe('true')
+
+			store.props.set({readOnly: true})
+			expect(container.getAttribute('contenteditable')).toBe('false')
+
+			store.props.set({readOnly: false})
+			expect(container.getAttribute('contenteditable')).toBe('true')
+			container.remove()
+		})
+
+		// REAL keystrokes (`userEvent` drives the browser itself), because the whole point of
+		// the flip is what Chromium does with the DOM it is given: a synthetic `beforeinput`
+		// dispatched by hand fires on a container that is no editing host just as happily,
+		// and would pin nothing.
+		//
+		// MEASURED discrimination — the four mutations that turn them red: dropping the
+		// container write (both), freezing a text surface (both), freezing the slot ROOT
+		// (the slot one), freezing the slot HOST (the slot one).
+		//
+		// The one they do NOT catch, and it is worth knowing why: putting
+		// `contenteditable=true` BACK on the slot host leaves them green. Measured, with the
+		// container editable and the host `display: contents`, Chromium leaves focus on the
+		// container and still fires `insertText` — the nested host is inert. What made it
+		// fatal at T3 was the absence of any OTHER host: focus had nowhere to go but the
+		// boxless one, and there Chromium fires nothing. The container write is what masks it.
+		// The bare slot host is therefore gated at ATTRIBUTE level instead, by `bind.spec`'s
+		// 'a slot mark leaves root and host BARE …' — that is where the property lives.
+		it('typing into a plain text span reaches the value through the container host', async () => {
+			const {store, container, surfaces} = mountValue('hello @[world] tail', {
+				options: [{markup: '@[__value__]'}],
+				Mark: () => null,
+			})
+			await caretInEditor(store, surfaces[0], 2)
+
+			await userEvent.keyboard('X')
+
+			expect(store.tokens.value()).toBe('heXllo @[world] tail')
+			// AND the caret followed the edit: the value assert alone passes even when the
+			// post-commit re-place drops it, and a caret stuck at 2 is an unusable editor.
+			expect(selectionRange(store)).toEqual({start: 3, end: 3})
+			container.remove()
+		})
+
+		it('typing into slot content reaches the value', async () => {
+			// '@[a @[b] c]' — the slot's own children hang off a registered child-sequence
+			// host, and offset 3 is inside the leading 'a ' child of that slot.
+			const {store, container, before} = mountNested()
+			await caretInEditor(store, before, 3)
+
+			await userEvent.keyboard('X')
+
+			expect(store.tokens.value()).toBe('@[aX @[b] c]')
+			expect(selectionRange(store)).toEqual({start: 4, end: 4})
 			container.remove()
 		})
 	})
