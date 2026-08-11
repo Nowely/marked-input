@@ -74,8 +74,8 @@ export type MarkPatch = {
 /**
  * The write port `MarkNode.update`/`remove` ride (spec D5). Declared here rather than
  * beside the verbs in `transactions.ts` because `types.ts` is where the tree layer's
- * contracts live and both modules already import it. Injected as a THUNK: `TokenModel`
- * builds `#tree` before `#tx`, the same reason `SelectionPort` is one.
+ * contracts live and both modules already import it. Injected as a THUNK because
+ * `TokenModel` builds `#tree` before `#tx`, and the tree's own verbs must reach them.
  */
 export interface MarkCommands {
 	update(node: MarkNode, patch: MarkPatch): boolean
@@ -85,19 +85,20 @@ export interface MarkCommands {
 /** Spec §2.3 addressing model. Mark interiors are addressed via slot text nodes. */
 export type NodeAnchor = {node: TextNode; offset: number} | {before: TreeNode} | {after: TreeNode} | 'start' | 'end'
 
+/**
+ * A selection's two ends in tree space (spec S1 D7): `anchor` is the fixed end, `head` the
+ * one that moves. Declared here rather than beside the state that stores it, for
+ * {@link MarkCommands}'s reason — `types.ts` is where the tree layer's contracts live, and
+ * {@link TransactionResult} speaks it, so `selection.ts` would otherwise be imported BY the
+ * file it already imports.
+ */
+export type Anchors = {anchor: NodeAnchor; head: NodeAnchor}
+
 /** One change entry: `path` indexes the tree AFTER adoption. */
 export interface TreeChange {
 	readonly node: TreeNode
 	readonly path: readonly number[]
 }
-
-/**
- * A selection range in projection coordinates. Structurally identical to
- * `shared/editorContracts`'s `Range` and deliberately re-declared on LAYERING
- * grounds: `tree/` is the core and must not reach up into the editor contracts
- * for a two-number record.
- */
-export type SelectionRange = {readonly start: number; readonly end: number}
 
 /**
  * Spec D9: the single change feed adoption emits.
@@ -131,23 +132,28 @@ export interface TransactionResult {
 	 */
 	shifted: readonly TreeNode[]
 	/**
-	 * The selection as it stood BEFORE this adoption (spec D7), or `undefined` when
-	 * there was none. `map(offset)` is defined only for offsets in this coordinate
-	 * space.
+	 * Where the pre-adoption selection LANDS after this adoption (spec S1 D7), or `undefined`
+	 * when there was none. THE selection channel — the capture itself is `adopt`'s
+	 * `selectionBefore` parameter and is deliberately not echoed back out: it had no
+	 * reader left once `repair` moved onto this field, and a result that carries its own
+	 * input is a mirror nothing resyncs.
 	 *
-	 * Captured by `createBoundary`'s `fold` — the single funnel every adoption on the
-	 * live path runs through (commit, arrival, reparse) — because adoption mutates
-	 * stored positions in place and deriving the range afterwards double-shifts it.
+	 * Resolved here because a consumer cannot resolve it itself: it would have to turn the
+	 * captured anchors into an offset to feed {@link map}, and by the time it holds the
+	 * result the stored positions have already moved — so that offset would describe the
+	 * NEW coordinate space and `map` would shift it a SECOND time. Adoption is the only
+	 * code on the pre-mutation side of that line.
 	 *
-	 * NOT captured by the dispatcher, which an earlier note here proposed: in
-	 * controlled mode `commit` produces no result at all (it emits and waits), so the
-	 * repair input is the range captured at the ECHO's arrival, an entry the
-	 * dispatcher never sees. Capturing at the boundary also spares `CommitSink.commit`
-	 * a third parameter that one of its two implementations would have to ignore.
-	 * Consumed by `SelectionController` at S1.6c.
+	 * The capture reaches `adopt` from `createBoundary`'s `fold` — the single funnel every
+	 * adoption on the live path runs through (commit, arrival, reparse). NOT from the
+	 * dispatcher, which an earlier note here proposed: in controlled mode `commit`
+	 * produces no result at all (it emits and waits), so the repair input is the selection
+	 * captured at the ECHO's arrival, an entry the dispatcher never sees. Capturing at the
+	 * boundary also spares `CommitSink.commit` a third parameter that one of its two
+	 * implementations would have to ignore.
 	 */
-	selectionBefore: SelectionRange | undefined
-	/** Valid for PRE-adoption offsets only (spec D7). */
+	selectionAfter: Anchors | undefined
+	/** Valid for PRE-adoption offsets only (spec S1 D7). */
 	map(offset: number): NodeAnchor
 }
 

@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {Store} from '../../../store/Store'
+import {anchorsAt} from '../__testing__/mountFixtures'
 import type {Markup} from '../parser/types'
 import type {MarkNode} from './types'
 
@@ -11,9 +12,8 @@ import type {MarkNode} from './types'
  * exact equivalent of the controller's captured id: adoption keeps a node object exactly
  * when it keeps its id.
  */
-function markNodeOf(store: Store, token: {id?: number}): MarkNode {
-	if (token.id === undefined) throw new Error('token has no id')
-	const node = store.tokens.find(token.id)
+function firstMark(store: Store): MarkNode {
+	const node = store.tokens.nodes().find(root => root.kind === 'mark')
 	if (node?.kind !== 'mark') throw new Error('expected a live mark node')
 	return node
 }
@@ -29,11 +29,9 @@ function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
-	container.replaceChildren(...store.tokens.current().map(() => document.createElement('span')))
+	container.replaceChildren(...store.tokens.nodes().map(() => document.createElement('span')))
 	store.host.rendered()
-	const token = store.tokens.current().find(t => t.type === 'mark')
-	if (!token) throw new Error('expected parsed mark token')
-	return {store, token, node: markNodeOf(store, token)}
+	return {store, node: firstMark(store)}
 }
 
 /**
@@ -57,9 +55,7 @@ function mountedSetup() {
 	document.body.append(container)
 	store.host.container(container)
 	store.host.rendered()
-	const token = store.tokens.current().find(t => t.type === 'mark')
-	if (!token) throw new Error('expected parsed mark token')
-	return {store, token, node: markNodeOf(store, token)}
+	return {store, node: firstMark(store)}
 }
 
 describe('MarkNode verbs', () => {
@@ -150,7 +146,7 @@ describe('MarkNode verbs', () => {
 		// (A replacement mark of the same descriptor in the same slot would INHERIT
 		// the identity instead — continuity the id bridge deliberately preserves;
 		// see 'same-slot replacement inherits identity'.)
-		store.tokens.replace({start: 0, end: -1}, 'different text')
+		store.tokens.setValue('different text')
 
 		node.update({value: 'bad'})
 		expect(store.tokens.value()).toBe('different text')
@@ -177,14 +173,16 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 	// shifted (correct) range, not the captured one, and never no-opping.
 
 	it('update() after a preceding text edit mutates the shifted (correct) range', () => {
-		const {store, token, node} = mountedSetup()
+		const {store, node} = mountedSetup()
 
 		// Preceding text edit: 'he@[x]llo' → 'XXhe@[x]llo' — text path
-		// (text token textChanged; mark + tail shifted by +2)
-		store.edit.replace({start: 0, end: 0}, 'XX')
+		// (text node text changed; mark + tail shifted by +2)
+		store.edit.replace(...anchorsAt(store, 0, 0), 'XX')
 		expect(store.tokens.value()).toBe('XXhe@[x]llo')
-		// Sanity: reconcile replaced the TOKEN object — the captured token is stale
-		expect(store.tokens.handle(token.id!)?.token()).not.toBe(token)
+		// Sanity: the captured node SURVIVED the shift and moved with it — the whole reason
+		// a captured node is safe where the deleted snapshot's captured token was not.
+		expect(firstMark(store)).toBe(node)
+		expect(node.range()).toEqual({start: 4, end: 8})
 
 		node.update({value: 'markput'})
 
@@ -196,7 +194,7 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 	it('remove() after a preceding text edit removes the shifted (correct) range', () => {
 		const {store, node} = mountedSetup()
 
-		store.edit.replace({start: 0, end: 0}, 'XX')
+		store.edit.replace(...anchorsAt(store, 0, 0), 'XX')
 		expect(store.tokens.value()).toBe('XXhe@[x]llo')
 
 		node.remove()
@@ -207,9 +205,9 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 	it('survives several consecutive text-path commits before mutating', () => {
 		const {store, node} = mountedSetup()
 
-		store.edit.replace({start: 0, end: 0}, 'X')
-		store.edit.replace({start: 1, end: 1}, 'Y')
-		store.edit.replace({start: 2, end: 2}, 'Z')
+		store.edit.replace(...anchorsAt(store, 0, 0), 'X')
+		store.edit.replace(...anchorsAt(store, 1, 1), 'Y')
+		store.edit.replace(...anchorsAt(store, 2, 2), 'Z')
 		expect(store.tokens.value()).toBe('XYZhe@[x]llo')
 
 		node.update({value: 'ok'})
@@ -218,10 +216,10 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 	})
 
 	it('still fails closed once the mark is structurally removed', () => {
-		const {store, token, node} = mountedSetup()
+		const {store, node} = mountedSetup()
 
 		// Remove the mark entirely: structural path; the identity is gone.
-		store.edit.replace({start: 2, end: 6}, '')
+		store.edit.replace(...anchorsAt(store, 2, 6), '')
 		expect(store.tokens.value()).toBe('hello')
 
 		// Render the new tree so bind kills the removed mark's handle: the node has left
@@ -230,7 +228,7 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 		container.replaceChildren(document.createElement('span'))
 		store.host.rendered()
 
-		expect(store.tokens.handle(token.id!)).toBeUndefined()
+		expect(store.tokens.handle(node.id)).toBeUndefined()
 
 		node.update({value: 'bad'})
 
@@ -247,16 +245,16 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 		const {store, node} = mountedSetup()
 
 		// Same descriptor (@[__value__]) in the same slot (index 0): identity inherited.
-		store.tokens.replace({start: 0, end: -1}, 'different @[x]')
+		store.tokens.setValue('different @[x]')
 
 		// Paint the FULL render tree (text, value-only mark, trailing empty text)
 		// and complete the handshake — bind re-resolves the inherited-id mark in
 		// place onto the new surface. A short-count repaint would bail the frame
 		// (all-or-nothing alignment) and leave every handle unbound.
 		const container = document.querySelector('div')!
-		const spans = store.tokens.renderTree().map(tok => {
+		const spans = store.tokens.nodes().map(node => {
 			const span = document.createElement('span')
-			if (tok.type === 'mark') span.append(document.createTextNode(tok.value))
+			if (node.kind === 'mark') span.append(document.createTextNode(node.value()))
 			return span
 		})
 		container.replaceChildren(...spans)
@@ -300,7 +298,7 @@ describe('MarkNode live-read parity', () => {
 		const {store, node} = mountedSetup()
 		expect(node.value()).toBe('x')
 		// Text-path edit before the mark shifts its position but not its value.
-		store.edit.replace({start: 0, end: 0}, 'XX')
+		store.edit.replace(...anchorsAt(store, 0, 0), 'XX')
 		expect(store.tokens.value()).toBe('XXhe@[x]llo')
 		// The node's value is a LIVE read of the (shifted, same-value) mark.
 		expect(node.value()).toBe('x')
@@ -335,8 +333,7 @@ describe('MarkNode live-read parity', () => {
 		document.body.append(container)
 		store.host.container(container)
 		store.host.rendered()
-		const token = store.tokens.current().find(t => t.type === 'mark')!
-		const node = markNodeOf(store, token)
+		const node = firstMark(store)
 		expect(node.value()).toBe('v')
 		expect(node.meta()).toBe('m')
 		expect(node.slot()).toBeUndefined()
@@ -355,7 +352,7 @@ describe('MarkNode live-read parity', () => {
 	it('update() against a dead node is a fail-closed no-op returning false', () => {
 		const {store, node} = mountedSetup()
 		// Structurally remove the mark and re-bind so its handle is killed.
-		store.edit.replace({start: 2, end: 6}, '')
+		store.edit.replace(...anchorsAt(store, 2, 6), '')
 		expect(store.tokens.value()).toBe('hello')
 		const container = document.querySelector('div')!
 		container.replaceChildren(document.createElement('span'))
@@ -374,7 +371,7 @@ describe('MarkNode live-read parity', () => {
 		// removes nothing, takes the TEXT path and opens no pending window at all. The
 		// extra mark keeps the commit structural while the FIRST mark keeps its id, so
 		// this still exercises the window rather than a dead mark.
-		store.tokens.replace({start: 0, end: -1}, 'he@[x]llo@[y]')
+		store.tokens.setValue('he@[x]llo@[y]')
 		// INVERTED at S1.6d (§4.6 item 4, SEMVER-MAJOR): the write latch is gone. The node
 		// is the live object, which has no pending window, and the write folds into the
 		// pending structural pass (the pipeline's fold guard).
@@ -398,9 +395,8 @@ describe('MarkNode live-read parity', () => {
 		// The fixture ADDS roots for the reason spelled out on the mid-window case above: a
 		// whole-value write that keeps the root count is a text-path commit and opens no
 		// pending window.
-		store.tokens.replace({start: 0, end: -1}, 'he@[x]llo@[y]')
-		const freshToken = store.tokens.renderTree().find(t => t.type === 'mark')!
-		const node = markNodeOf(store, freshToken)
+		store.tokens.setValue('he@[x]llo@[y]')
+		const node = firstMark(store)
 
 		// READ resolves the live node mid-window: the rendered mark shows its value
 		// immediately instead of flashing empty until a re-render the adapter never
@@ -410,9 +406,9 @@ describe('MarkNode live-read parity', () => {
 		// Paint the render tree and complete the handshake — the same-id handle
 		// binds and reads/writes go live WITHOUT re-derivation.
 		const container = document.querySelector('div')!
-		const spans = store.tokens.renderTree().map(tok => {
+		const spans = store.tokens.nodes().map(node => {
 			const span = document.createElement('span')
-			if (tok.type === 'mark') span.append(document.createTextNode(tok.value))
+			if (node.kind === 'mark') span.append(document.createTextNode(node.value()))
 			return span
 		})
 		container.replaceChildren(...spans)

@@ -1,15 +1,10 @@
-import type {Token} from '../features/tokens'
+import type {TreeNode} from '../features/tokens'
 
 export type DomRef = (element: HTMLElement | null) => void
 
 export type Range = {
 	readonly start: number
 	readonly end: number
-}
-
-export type RawSelection = {
-	readonly range: Range
-	readonly direction?: 'forward' | 'backward'
 }
 
 export type MarkInfo = {
@@ -20,13 +15,13 @@ export type MarkInfo = {
 }
 
 /**
- * Build a {@link MarkInfo} for a mark token at the given render depth. `depth` arrives by
+ * Build a {@link MarkInfo} for a mark node at the given render depth. `depth` arrives by
  * construction from the render loop (the parent that maps the tree knows it), which is what
  * it always did — S1.7 only stops laundering it through a `TokenPath` whose LENGTH was the
  * real input (plan decision D-a). That unhooks this function from the path layer S1.8
- * deletes. Throws if `token` is not a mark token.
+ * deletes. Throws if `node` is not a mark node.
  */
-export function toMarkInfo(token: Token, depth: number): MarkInfo {
-	if (token.type !== 'mark') throw new Error('toMarkInfo: token is not a mark')
-	return {depth, hasNestedMarks: token.children.some(child => child.type === 'mark')}
+export function toMarkInfo(node: TreeNode, depth: number): MarkInfo {
+	if (node.kind !== 'mark') throw new Error('toMarkInfo: node is not a mark')
+	return {depth, hasNestedMarks: node.children().some(child => child.kind === 'mark')}
 }

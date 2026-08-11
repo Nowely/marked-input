@@ -21,7 +21,6 @@ title: "@markput/react"
 - [SlotProps](/api/interfaces/slotprops/)
 - [Slots](/api/interfaces/slots/)
 - [TextNode](/api/interfaces/textnode/)
-- [TextToken](/api/interfaces/texttoken/)
 
 ## Type Aliases
 
@@ -29,7 +28,6 @@ title: "@markput/react"
 - [MarkPatch](/api/type-aliases/markpatch/)
 - [Markup](/api/type-aliases/markup/)
 - [NodeAnchor](/api/type-aliases/nodeanchor/)
-- [Token](/api/type-aliases/token/)
 - [TreeNode](/api/type-aliases/treenode/)
 
 ## Functions

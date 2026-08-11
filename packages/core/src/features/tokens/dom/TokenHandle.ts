@@ -1,4 +1,5 @@
-import type {Token} from '../parser/types'
+import {effect} from '../../../shared/signals/index.js'
+import type {TreeNode} from '../tree/types'
 import {
 	focusIfNeeded,
 	getCaretIndex,
@@ -19,61 +20,42 @@ export type ElementBindings = {
 }
 
 /**
- * The live record of one token: the BIND-GENERATION token and its DOM
- * bindings. The class doubles as the public handle face: plain
- * getters (`token()`/`element()`/`alive()`) and caret commands read
- * this node's own fields. No per-node reactivity — the spec's win-4 trade: zero
- * production consumers subscribed to a handle's getters, so signals are pure
- * overhead here (reversible: the getters stay methods, so per-node signals can
+ * The live record of one node's DOM: its element bindings and the single writer
+ * that keeps its text surface in step with the tree. The class doubles as the
+ * public handle face: plain getters (`element()`/`alive()`) and caret commands
+ * read this handle's own fields. No per-node reactivity on the getters — the
+ * spec's win-4 trade: zero production consumers subscribe to them, so signals
+ * would be pure overhead (reversible: they stay methods, so per-node signals can
  * return behind them additively).
  *
- * `#token` is deliberately NOT "the current parsed token" — it is the generation
- * the DOM is currently SHOWING (spec D9). Only two writers exist, `bind` and the
- * text branch, and the text branch patches the surface in the same `batch`;
- * between a structural apply and its bind nothing writes it at all. That is what
- * makes every DOM-boundary read correct during the pending window: the DOM
- * boundary layer resolves offsets as `token.position.start + local`
- * (`tokens/dom/domBoundary.ts`), and `DomModel.ts:95`
- * and `SelectionController.ts:78,121` read the same field. A node-backed handle
- * answering with the LIVE tree node would resolve carets against a layout the
- * adapter has not painted yet. Measured in
- * `seam/treePipeline.spec.ts` ("reads DOM boundaries against BIND-GENERATION
- * positions during the pending window"); the deferral of node-backing to the
- * phase that gains a caller is plan decision D-b.
+ * IT HOLDS NO TOKEN (S2.7). `#token` used to carry "the generation the DOM is
+ * SHOWING" — a second representation of data the tree already owns. Cut B took its
+ * last positional reader, and this phase took the other two: `setEditable`'s type
+ * read (dead — bind gives a text surface to text nodes ONLY, so a bound handle's
+ * kind is readable off `textElement`) and `commit.ts`'s divergence detector, which
+ * now compares the surface against the LIVE `TextNode.text()`.
  *
- * `#token` SURVIVES this narrowing (S1.6d, plan decision D-h): five production
- * readers legitimately want the bind generation — `DomModel`/`dom/domBoundary.ts`
- * (type, position, content), `commit.ts`'s divergence detector (content),
- * `TokenModel.setEditable` (type) and `keyboard/arrowNav.ts` (position). D9 keeps
- * exactly this read latch; narrowing to `{start, end}` would move the boundary
- * layer's type/content reads onto the live tree, which is a DOM-layer refactor no
- * §4.6 item asks for.
+ * What replaces the latch is {@link bindElements}'s text effect: one writer per
+ * surface, subscribed to that node's own `text` signal, whose immediate first run
+ * is the mount-time reconciliation `bind.applyMountState` used to do. It is
+ * disposed and re-armed on every re-bind — deliberately, and not an optimization
+ * gap: the re-arm's first run is what heals a surface corrupted between binds
+ * (gated by treePipeline.spec.ts's "the structural branch self-heals corruption").
  *
- * Lifetime: created when its token enters the tree (keyed by the token's
- * stable identity id), mutated in place by
- * `refresh`/`bindElements`/`unbind`, killed when the token disappears
+ * Lifetime: created when its node enters the tree (keyed by the node's stable id),
+ * mutated in place by `bindElements`/`unbind`, killed when the node disappears
  * (stale reads stay safe, commands become no-ops, never resurrected).
  */
 export class TokenHandle {
 	#dead = false
 
-	#token: Token
 	#tokenElement: HTMLElement | undefined
 	#textElement: HTMLElement | undefined
 	#rowElement: HTMLElement | undefined
 	#childSequenceHost: HTMLElement | undefined
+	#disposeText: (() => void) | undefined
 
-	constructor(
-		readonly id: number,
-		token: Token
-	) {
-		this.#token = token
-	}
-
-	/** The handle's current token. A plain read of the backing field. */
-	token(): Token {
-		return this.#token
-	}
+	constructor(readonly id: number) {}
 
 	/** Live AND bound: not killed and currently holding a DOM element. The whole validity check a holder of this handle needs. */
 	alive(): boolean {
@@ -172,25 +154,47 @@ export class TokenHandle {
 	}
 
 	/**
-	 * @internal Refresh the BIND-GENERATION token: the content and positions that
-	 * describe what the DOM currently shows (spec D9). Written by the text branch,
-	 * which patches the surface in the same batch, and by bind. Between a
-	 * structural apply and its bind nothing writes it — that is the property every
-	 * DOM-boundary read depends on (dom/domBoundary.ts resolves offsets against
-	 * `token.position`). Inert on a dead handle.
+	 * @internal Set/replace the DOM bindings and re-arm the text effect (structural bind).
+	 * `node` is this handle's own node — an id and its node object are paired for the
+	 * node's whole life (adoption mutates nodes in place and never reuses an id), so the
+	 * caller cannot hand over a foreign one.
 	 */
-	refresh(token: Token): void {
-		if (this.#dead) return
-		this.#token = token
-	}
-
-	/** @internal Set/replace the DOM bindings (structural bind). */
-	bindElements(bindings: ElementBindings): void {
+	bindElements(bindings: ElementBindings, node: TreeNode): void {
 		if (this.#dead) return
 		this.#tokenElement = bindings.tokenElement
 		this.#textElement = bindings.textElement
 		this.#rowElement = bindings.rowElement
 		this.#childSequenceHost = bindings.childSequenceHost
+		this.#armText(bindings.textElement, node)
+	}
+
+	/**
+	 * THE writer of a text surface (S2.7): the DOM mirrors `node.text()` and nothing
+	 * else touches it.
+	 *
+	 * The comparison is load-bearing, and its reason is NOT the obvious one — MEASURED
+	 * in Chromium. On an element with a single `Text` child the `textContent` setter
+	 * takes Blink's fast path (`setData` on that node, itself a no-op for an identical
+	 * string), so an unconditional write of the same string keeps both the node and the
+	 * caret. The case it actually saves is a SPLIT surface — two `Text` children, which
+	 * is what `splitText` and the browser's own editing of a contenteditable leave
+	 * behind. There the setter is a genuine replace-all: measured, writing the same
+	 * string collapses two children into one and drops the caret from 4 to 0. Gated by
+	 * bind.spec.ts's "keeps the caret when a re-bind finds the surface already correct".
+	 *
+	 * WHEN it fires is up to the caller's batching, not to this module: adoption writes
+	 * `text` inside its own batch, and a caller that wraps the whole edit in one more
+	 * (`EditController.replace` does) defers the flush to the end of THAT batch. See
+	 * `commit.ts`'s divergence-detector registration for what that costs.
+	 */
+	#armText(surface: HTMLElement | undefined, node: TreeNode): void {
+		this.#disposeText?.()
+		this.#disposeText = undefined
+		if (!surface || node.kind !== 'text') return
+		this.#disposeText = effect(() => {
+			const text = node.text()
+			if (surface.textContent !== text) surface.textContent = text
+		})
 	}
 
 	/** @internal Clear the DOM bindings (token unmounted from the DOM). */
@@ -207,6 +211,8 @@ export class TokenHandle {
 	}
 
 	#clearElements(): void {
+		this.#disposeText?.()
+		this.#disposeText = undefined
 		this.#tokenElement = undefined
 		this.#textElement = undefined
 		this.#rowElement = undefined

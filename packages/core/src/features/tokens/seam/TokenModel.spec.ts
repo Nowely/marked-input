@@ -1,10 +1,11 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals/index.js'
-import {Store} from '../../../store/Store'
 import {Host, PropsModel} from '../../state'
 import {textToken} from '../__testing__/tokenFactories'
+import type {SelectionSnapshot} from '../dom/DomModel'
 import {TokenHandle} from '../dom/TokenHandle'
+import {joinNodes} from '../tree/tree'
 import {TokenModel} from './TokenModel'
 
 /**
@@ -24,22 +25,17 @@ function buildInlineDom() {
 	return {container, text1, mark, text2}
 }
 
-/** Block fixture: mark 'one\n\n' [0,5] (child text 'one'), mark 'two\n\n' [5,10] (child 'two') — one row div per mark. */
-function buildBlockDom(): HTMLElement {
-	const container = document.createElement('div')
-	for (let i = 0; i < 2; i++) {
-		const row = document.createElement('div')
-		const mark = document.createElement('span')
-		const text = document.createElement('span')
-		mark.append(text)
-		row.append(mark)
-		container.append(row)
-	}
-	document.body.append(container)
-	return container
-}
-
 type CoreProps = Parameters<PropsModel['set']>[0]
+
+/**
+ * The snapshot's collapsed caret as an `anchorFor` argument list. These cases build the
+ * model directly on the state models rather than through `Store`, so the resolution is the
+ * same one `domAnchors()` performs, one step lower.
+ */
+function boundaryOf(snapshot: SelectionSnapshot | undefined): [Node, number] {
+	if (!snapshot) throw new Error('expected a selection snapshot')
+	return [snapshot.anchor.node, snapshot.anchor.offset]
+}
 
 const INLINE_PROPS: CoreProps = {
 	defaultValue: 'he@[x]llo',
@@ -47,23 +43,16 @@ const INLINE_PROPS: CoreProps = {
 	Mark: () => null,
 }
 
-const BLOCK_PROPS: CoreProps = {
-	defaultValue: 'one\n\ntwo\n\n',
-	layout: 'block',
-	options: [{markup: '__slot__\n\n'}],
-	Mark: () => null,
-}
-
 /**
- * The construction seam under test: the (props, host, selectionPort) triple Store
- * wires. `props.set` runs AFTER construction, which is what makes `#seed`'s laziness
- * pick up `defaultValue`.
+ * The construction seam under test: the (props, host) pair Store wires — S2.9 dropped the
+ * third argument, the `SelectionPort` thunk, when the model took ownership of the selection.
+ * `props.set` runs AFTER construction, which is what makes `#seed`'s laziness pick up
+ * `defaultValue`.
  */
 function createNew(props: CoreProps) {
 	const propsModel = new PropsModel()
 	const host = new Host()
-	// Inert port: these cases assert the value/tree seam, not the D7 caret repair.
-	const model: TokenModel = new TokenModel(propsModel, host, () => ({range: () => undefined, repair: () => {}}))
+	const model = new TokenModel(propsModel, host)
 	propsModel.set(props)
 	return {model, props: propsModel, host}
 }
@@ -72,11 +61,11 @@ function mountNew(props: CoreProps, container: HTMLElement) {
 	const setup = createNew(props)
 	setup.host.container(container)
 	setup.host.rendered()
-	/** Manual adapter for structural passes: repaint renderTree() (value-only inline markups), report rendered. */
+	/** Manual adapter for structural passes: repaint the live roots (value-only inline markups), report rendered. */
 	const render = () => {
-		const spans = setup.model.renderTree().map(token => {
+		const spans = setup.model.nodes().map(node => {
 			const span = document.createElement('span')
-			if (token.type === 'mark') span.append(document.createTextNode(token.value))
+			if (node.kind === 'mark') span.append(document.createTextNode(node.value()))
 			return span
 		})
 		container.replaceChildren(...spans)
@@ -91,33 +80,6 @@ function mountNewInline() {
 	return {...mountNew(INLINE_PROPS, dom.container), ...dom}
 }
 
-function mountOld(props: CoreProps, container: HTMLElement): Store {
-	const store = new Store()
-	store.props.set(props)
-	store.host.container(container)
-	store.host.rendered()
-	return store
-}
-
-/**
- * Walk two structurally identical containers in lockstep, yielding every
- * (node, offset) DOM boundary of both — the old facade.spec probe grid,
- * run pairwise against both shells.
- * @yields [oldNode, newNode, offset] aligned probes
- */
-function* parallelProbes(oldRoot: HTMLElement, newRoot: HTMLElement): Generator<[Node, Node, number]> {
-	const oldWalker = document.createTreeWalker(oldRoot, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)
-	const newWalker = document.createTreeWalker(newRoot, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)
-	let oldNode: Node | null = oldRoot
-	let newNode: Node | null = newRoot
-	while (oldNode && newNode) {
-		const max = oldNode instanceof Text ? oldNode.length : oldNode.childNodes.length
-		for (let offset = 0; offset <= max; offset++) yield [oldNode, newNode, offset]
-		oldNode = oldWalker.nextNode()
-		newNode = newWalker.nextNode()
-	}
-}
-
 describe('TokenModel shell (seam/)', () => {
 	afterEach(() => {
 		document.body.replaceChildren()
@@ -125,19 +87,23 @@ describe('TokenModel shell (seam/)', () => {
 	})
 
 	describe('construction seam and wiring', () => {
-		it('mounts directly on the state models: renderTree publishes the parse, changed announces the first bind', () => {
+		it('mounts directly on the state models: the parse reaches nodes(), changed announces the first bind', () => {
 			const setup = createNew(INLINE_PROPS)
 			const changedSpy = vi.fn()
 			watch(setup.model.changed, changedSpy)
-			// Renderer contract: nothing published before mount.
-			expect(setup.model.renderTree()).toEqual([])
+			// Renderer contract: no tree before mount.
+			expect(setup.model.nodes()).toEqual([])
 
 			const dom = buildInlineDom()
 			setup.host.container(dom.container)
 
 			// Mount applied the first reconcile and bound the pre-built DOM.
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(setup.model.renderTree().map(t => t.content)).toEqual(['he', '@[x]', 'llo'])
+			expect(setup.model.nodes().map(node => node.range())).toEqual([
+				{start: 0, end: 2},
+				{start: 2, end: 6},
+				{start: 6, end: 9},
+			])
 			expect(dom.text1.textContent).toBe('he')
 			expect(dom.text2.textContent).toBe('llo')
 			expect(dom.text1.contentEditable).toBe('true')
@@ -151,20 +117,20 @@ describe('TokenModel shell (seam/)', () => {
 		it('facade reads fail soft before mount', () => {
 			const {model} = createNew({defaultValue: 'hello'})
 
-			expect(model.current()).toEqual([])
-			expect(model.boundaryFor(document.body, 0)).toBeUndefined()
+			expect(model.nodes()).toEqual([])
+			expect(model.anchorFor(document.body, 0)).toBeUndefined()
 			expect(model.handleAt(document.body)).toBeUndefined()
 			expect(model.handle(0)).toBeUndefined()
-			expect(model.placeCaret(0)).toBe(false)
+			expect(model.placeCaret('start')).toBe(false)
 		})
 	})
 
-	describe('renderTree and changed (renderer contract)', () => {
-		it('text edits keep the tree reference, patch the DOM in place and fire changed once after consistency', () => {
+	describe('renderEpoch and changed (renderer contract)', () => {
+		it('text edits leave the epoch standing, patch the DOM in place and fire changed once after consistency', () => {
 			const {model, text2} = mountNewInline()
-			const treeBefore = model.renderTree()
+			const epochBefore = model.renderEpoch()
 			const treeSpy = vi.fn()
-			watch(model.renderTree, treeSpy)
+			watch(model.renderEpoch, treeSpy)
 			const changedSpy = vi.fn()
 			let domAtEvent: string | null = null
 			watch(model.changed, changeset => {
@@ -172,31 +138,37 @@ describe('TokenModel shell (seam/)', () => {
 				domAtEvent = text2.textContent
 			})
 
-			model.replace({start: 9, end: 9}, '!')
+			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '!')
 
 			expect(text2.textContent).toBe('llo!')
 			expect(domAtEvent).toBe('llo!')
-			expect(model.renderTree()).toBe(treeBefore)
+			expect(model.renderEpoch()).toBe(epochBefore)
 			expect(treeSpy).not.toHaveBeenCalled()
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 
 			// Consume-once hint: a second edit patches through the windowed parse again.
-			model.replace({start: 10, end: 10}, '!')
+			model.replaceBetween(model.anchorAt(10), model.anchorAt(10), '!')
 			expect(text2.textContent).toBe('llo!!')
 			expect(changedSpy).toHaveBeenCalledTimes(2)
-			expect(model.renderTree()).toBe(treeBefore)
+			expect(model.renderEpoch()).toBe(epochBefore)
 		})
 
-		it('structural edits publish a new tree and stay quiet until the adapter renders', () => {
+		it('structural edits bump the epoch and stay quiet until the adapter renders', () => {
 			const {model, render} = mountNewInline()
-			const treeBefore = model.renderTree()
+			const epochBefore = model.renderEpoch()
 			const changedSpy = vi.fn()
 			watch(model.changed, changedSpy)
 
-			model.replace({start: 9, end: 9}, '@[y]')
+			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '@[y]')
 
-			expect(model.renderTree()).not.toBe(treeBefore)
-			expect(model.renderTree().map(t => t.content)).toEqual(['he', '@[x]', 'llo', '@[y]', ''])
+			expect(model.renderEpoch()).not.toBe(epochBefore)
+			expect(model.nodes().map(node => node.range())).toEqual([
+				{start: 0, end: 2},
+				{start: 2, end: 6},
+				{start: 6, end: 9},
+				{start: 9, end: 13},
+				{start: 13, end: 13},
+			])
 			expect(changedSpy).not.toHaveBeenCalled()
 
 			const spans = render()
@@ -224,7 +196,7 @@ describe('TokenModel shell (seam/)', () => {
 			// Walk-up: a text node inside the mark resolves to the mark's handle.
 			const markText = mark.firstChild
 			if (!markText) throw new Error('expected mark text node')
-			expect(model.handleAt(markText)).toBe(model.handle(model.current()[1].id!))
+			expect(model.handleAt(markText)).toBe(model.handle(model.nodes()[1].id!))
 			// Walk-up inside a control root resolves to 'control'.
 			expect(model.handleAt(inner)).toBe('control')
 			expect(model.handleAt(document.createElement('div'))).toBeUndefined()
@@ -233,35 +205,36 @@ describe('TokenModel shell (seam/)', () => {
 		it('handle(id) resolves by token id over the bound layer', () => {
 			const {model, text2} = mountNewInline()
 
-			expect(model.handle(model.current()[2].id!)?.element()).toBe(text2)
+			expect(model.handle(model.nodes()[2].id!)?.element()).toBe(text2)
 			expect(model.handle(999999)).toBeUndefined()
-			const ids = model.current().map(token => model.handle(token.id!)?.id)
-			expect(ids).toEqual(model.current().map(token => token.id))
+			const ids = model.nodes().map(token => model.handle(token.id!)?.id)
+			expect(ids).toEqual(model.nodes().map(token => token.id))
 		})
 
 		it('handle(id) bridges fresh and stale token objects by identity and rejects foreign ids', () => {
 			const {model, text2} = mountNewInline()
-			const stale = model.current()[2]
+			const stale = model.nodes()[2]
 			const handle = model.handle(stale.id!)
 			expect(handle?.element()).toBe(text2)
 
-			// Text path: the token OBJECT is replaced while its id survives.
-			model.replace({start: 9, end: 9}, '!')
+			// Text path: the node is mutated in place, and its id and object both survive.
+			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '!')
 
-			expect(model.handle(stale.id!)).toBe(handle)
-			expect(handle?.token()).not.toBe(stale)
-			expect(handle?.token().content).toBe('llo!')
+			expect(model.handle(stale.id)).toBe(handle)
+			expect(model.nodes()[2]).toBe(stale)
+			expect(joinNodes([model.nodes()[2]])).toBe('llo!')
+			expect(handle?.element()?.textContent).toBe('llo!')
 			// Foreign id: no live node, so no handle.
 			expect(model.handle(999999)).toBeUndefined()
 		})
 
 		it('handle(id) fails closed while a structural apply awaits its bind, then resolves again', () => {
 			const {model, render} = mountNewInline()
-			const stale = model.current()[2]
+			const stale = model.nodes()[2]
 			const handle = model.handle(stale.id!)
 			expect(handle).toBeInstanceOf(TokenHandle)
 
-			model.replace({start: 9, end: 9}, '@[y]')
+			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '@[y]')
 
 			// The latched window: the node layer is one generation stale — the
 			// id-bridge must not hand out handles a mutation could act on.
@@ -293,73 +266,40 @@ describe('TokenModel shell (seam/)', () => {
 			// `textContent` — destroying `childSpan` before the real bind ever sees it.
 			setup.host.container(container)
 			container.append(text1, markEl, text2)
-			setup.model.children(setup.model.keyOf(setup.model.current()[1]))(wrapper)
+			setup.model.children(setup.model.nodes()[1].id)(wrapper)
 			setup.host.rendered()
 
-			const mark = setup.model.current()[1]
-			if (mark.type !== 'mark') throw new Error('expected mark')
-			expect(setup.model.handle(mark.id!)?.node()?.childSequenceHost).toBe(wrapper)
-			const child = setup.model.handle(mark.children[0].id!)
+			const mark = setup.model.nodes()[1]
+			if (mark.kind !== 'mark') throw new Error('expected mark')
+			expect(setup.model.handle(mark.id)?.node()?.childSequenceHost).toBe(wrapper)
+			const child = setup.model.handle(mark.children()[0].id)
 			expect(child?.element()).toBe(childSpan)
 			expect(childSpan.textContent).toBe('ab')
 			expect(setup.model.handleAt(childSpan)).toBe(child)
-			expect(setup.model.handle(mark.children[0].id!)).toBe(child)
+			expect(setup.model.handle(mark.children()[0].id)).toBe(child)
 		})
 	})
 
-	describe('facade parity against the old shell', () => {
-		const fixtures = [
-			{name: 'inline with mark', props: INLINE_PROPS, build: () => buildInlineDom().container},
-			{name: 'block layout', props: BLOCK_PROPS, build: buildBlockDom},
-		] as const
-
-		for (const {name, props, build} of fixtures) {
-			it(`boundaryFor agrees with the old TokenModel over the full probe grid — ${name}`, () => {
-				const oldContainer = build()
-				const store = mountOld(props, oldContainer)
-				const newContainer = build()
-				const {model} = mountNew(props, newContainer)
-
-				// Both shells must have reconciled their fixtures into identical DOM.
-				expect(newContainer.innerHTML).toBe(oldContainer.innerHTML)
-
-				let probed = 0
-				let defined = 0
-				for (const [oldNode, newNode, offset] of parallelProbes(oldContainer, newContainer)) {
-					for (const affinity of ['before', 'after'] as const) {
-						probed++
-						const expected = store.tokens.boundaryFor(oldNode, offset, affinity)
-						const actual = model.boundaryFor(newNode, offset, affinity)
-						expect.soft(actual, `${oldNode.nodeName}@${offset}/${affinity}`).toBe(expected)
-						if (expected !== undefined) defined++
-					}
-				}
-				// Non-vacuous: the grid visited real boundaries and real positions.
-				expect(probed).toBeGreaterThan(30)
-				expect(defined).toBeGreaterThan(10)
-			})
-		}
-	})
-
 	describe('placement commands and selection reads', () => {
-		it('placeCaret(raw) places inside the right surface; readSelection round-trips', () => {
-			const {model} = mountNewInline()
+		it("placeCaret places inside the anchor's own surface; the snapshot reads it back", () => {
+			const {model, text1} = mountNewInline()
 
-			expect(model.placeCaret(1)).toBe(true)
-			expect(model.selection()?.raw).toEqual({range: {start: 1, end: 1}})
-			const anchor = model.selection()?.anchor
+			expect(model.placeCaret(model.anchorAt(1))).toBe(true)
+			expect(model.anchorFor(...boundaryOf(model.domSelection()))).toEqual({node: model.nodes()[0], offset: 1})
+			expect(model.domSelection()?.anchor.node).toBe(text1.firstChild)
+			const anchor = model.domSelection()?.anchor
 			expect(anchor?.isCollapsed).toBe(true)
-			expect(model.selection()?.rect).toBeDefined()
-			expect(model.selection()?.focusNode).toBe(anchor?.node)
+			expect(model.domSelection()?.rect).toBeDefined()
+			expect(model.domSelection()?.focusNode).toBe(anchor?.node)
 		})
 
 		it("handle.placeCaret targets the handle's token explicitly", () => {
 			const {model} = mountNewInline()
-			const token = model.current()[2] // text 'llo' [6,9]
+			const token = model.nodes()[2] // text 'llo' [6,9]
 			const handle = model.handle(token.id!)
 			if (!handle) throw new Error('expected handle')
 			expect(handle.placeCaret(1)).toBe(true)
-			expect(model.selection()?.raw?.range.start).toBe(7)
+			expect(model.anchorFor(...boundaryOf(model.domSelection()))).toEqual({node: model.nodes()[2], offset: 1})
 			// A foreign token object (never reconciled) carries no id, so it has no
 			// live handle — the stale reference is rejected at resolution, leaving
 			// nothing to place into.
@@ -370,10 +310,18 @@ describe('TokenModel shell (seam/)', () => {
 		it('selectRange spans two text surfaces and the reads see the selection', () => {
 			const {model, text1} = mountNewInline()
 
-			expect(model.selectRange(0, 9)).toBe(true)
-			expect(model.selection()?.raw?.range).toEqual({start: 0, end: 9})
-			expect(model.selection()?.anchor.isCollapsed).toBe(false)
-			expect(model.selection()?.intersects(text1)).toBe(true)
+			expect(model.selectRange(model.anchorAt(0), model.anchorAt(9))).toBe(true)
+			const range = model.domSelection()?.range
+			expect(model.anchorFor(range!.startContainer, range!.startOffset, 'after')).toEqual({
+				node: model.nodes()[0],
+				offset: 0,
+			})
+			expect(model.anchorFor(range!.endContainer, range!.endOffset, 'before')).toEqual({
+				node: model.nodes()[2],
+				offset: 3,
+			})
+			expect(model.domSelection()?.anchor.isCollapsed).toBe(false)
+			expect(model.domSelection()?.intersects(text1)).toBe(true)
 			const content = model.selectedContent()
 			expect(content?.text).toContain('he')
 		})
@@ -391,7 +339,7 @@ describe('TokenModel shell (seam/)', () => {
 			expect(mark.hasAttribute('tabindex')).toBe(false)
 
 			// The next structural bind applies the stored state to NEW elements.
-			model.replace({start: 9, end: 9}, '@[y]')
+			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '@[y]')
 			const spans = render()
 			expect(spans[0].contentEditable).toBe('false')
 			expect(spans[1].hasAttribute('tabindex')).toBe(false)

@@ -2,7 +2,7 @@ import {event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
 import type {EditController} from '../edit'
 import type {PropsModel} from '../state/PropsModel'
-import type {Token, TokenModel} from '../tokens'
+import type {TokenModel, TreeNode} from '../tokens'
 import {BlockStore} from './BlockStore'
 import {applyDragAction} from './operations'
 
@@ -10,10 +10,11 @@ export class BlockController {
 	readonly action = event<DragAction>()
 
 	/**
-	 * Per-row UI-state stores keyed by stable token id: a row suffix-shifted by
-	 * an edit above it is a NEW object with an INHERITED id, so object keying
-	 * (the old WeakMap) silently reset its drag/hover state. A number-keyed Map
-	 * cannot self-collect — removed ids are pruned on the changed event below.
+	 * Per-row UI-state stores keyed by stable node id. A number-keyed Map cannot
+	 * self-collect — removed ids are pruned on the changed event below. Keying by the
+	 * row OBJECT (the pre-identity WeakMap) reset a row's drag/hover state whenever an
+	 * edit above it re-materialized the row; the live node survives such an edit, but
+	 * the id is what makes that a rule rather than an adoption detail.
 	 */
 	readonly #stores = new Map<number, BlockStore>()
 
@@ -25,12 +26,11 @@ export class BlockController {
 		watch(this.action, action => {
 			if (!this.props.layout.isBlock() || !this.props.draggable()) return
 			const value = this.tokens.value()
-			// Fresh read: drag operations slice the live value by row positions;
-			// tokens() is the reconciled tree consistent with value.current() at
-			// drop time.
-			const result = applyDragAction(value, this.tokens.current(), action, this.props.options())
+			// Fresh read: drag operations slice the live value by row positions, and the
+			// live roots are the tree those positions were written into.
+			const result = applyDragAction(value, this.tokens.nodes(), action, this.props.options())
 			if (result.value === value) return
-			this.edit.replace({start: 0, end: -1}, result.value, result.caret)
+			this.edit.setValue(result.value, result.caret)
 		})
 
 		// The `changed` payload (spec §2.3) replaced a wave-scoped side channel: the
@@ -42,9 +42,9 @@ export class BlockController {
 		})
 	}
 
-	/** Returns the per-row UI-state store for a token (keyed by its stable identity id), creating it on first access. */
-	get(token: Token): BlockStore {
-		const id = this.tokens.keyOf(token)
+	/** Returns the per-row UI-state store for a row node (keyed by its stable identity id), creating it on first access. */
+	get(node: TreeNode): BlockStore {
+		const id = node.id
 		let store = this.#stores.get(id)
 		if (!store) {
 			store = new BlockStore()

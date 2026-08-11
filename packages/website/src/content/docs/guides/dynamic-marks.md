@@ -41,7 +41,7 @@ function Mention() {
 
 The reads are calls, not properties: they are the node's own reactive fields, so calling one inside a reactive scope subscribes to it.
 
-The node does not expose a DOM ref. React and Vue own structural DOM and register it privately with core through `store.tokens.control()` and `store.tokens.children(ownerId)`. Keyboard focus and caret placement are handled by `store.tokens` and `store.selection`.
+The node does not expose a DOM ref. React and Vue own structural DOM and register it privately with core through `store.tokens.control()` and `store.tokens.children(ownerId)`. Keyboard focus and caret placement are handled by `store.tokens`, which owns the selection.
 
 ## Updating Marks
 
@@ -133,7 +133,6 @@ function Editor() {
 | `focus()` | Focus the first token. |
 | `selection()` | The stored `{anchor, head}` node anchors. Reactive. |
 | `select(anchor, head?)` / `caret(at)` | Move the selection. `false` for an anchor whose node has left the value. |
-| `selectionRange()` | The selection as `{start, end}` offsets. |
 | `changed` | Fires once per commit with `{added, removed, updated}` ids. Subscribe with `watch(api.changed, fn)`. |
 
 A node anchor is `{node, offset}` for a text node, `{before: node}` / `{after: node}` for a

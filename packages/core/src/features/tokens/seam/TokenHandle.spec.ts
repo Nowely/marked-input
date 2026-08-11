@@ -1,6 +1,8 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {Store} from '../../../store/Store'
+import {anchorsAt} from '../__testing__/mountFixtures'
+import {joinNodes} from '../tree/tree'
 
 function mountInline(value: string) {
 	const store = new Store()
@@ -56,8 +58,8 @@ describe('TokenHandle', () => {
 		expect(handle).not.toBe('control')
 		if (!handle || handle === 'control') throw new Error('expected handle')
 		expect(handle.element()).toBe(span)
-		expect(handle.token().content).toBe('hello')
-		expect(handle.token().type).toBe('text')
+		expect(handle.node()?.textElement).toBe(span)
+		expect(span.textContent).toBe('hello')
 		expect(handle.alive()).toBe(true)
 	})
 
@@ -73,22 +75,22 @@ describe('TokenHandle', () => {
 	it('handle(id) returns the bound handle for a token id', () => {
 		const {store} = mountInline('hello')
 
-		const id = store.tokens.current()[0].id!
+		const id = store.tokens.nodes()[0].id!
 		const handle = store.tokens.handle(id)
 		expect(handle).toBeDefined()
 	})
 
-	it('refreshes snapshots on value edit', () => {
+	it('follows its node on a value edit, with no re-render', () => {
+		// The per-surface effect is the writer: the spec does not paint the new text,
+		// the model does.
 		const {store, span} = mountInline('hello')
 		const handle = store.tokens.handleAt(span)
 		if (!handle || handle === 'control') throw new Error('expected handle')
 
-		store.tokens.replace({start: 0, end: -1}, 'hello!')
-		span.textContent = 'hello!'
-		store.host.rendered()
+		store.tokens.setValue('hello!')
 
 		expect(handle.alive()).toBe(true)
-		expect(handle.token().content).toBe('hello!')
+		expect(span.textContent).toBe('hello!')
 	})
 
 	it('kills handles whose token disappears (dead-handle contract)', () => {
@@ -98,10 +100,10 @@ describe('TokenHandle', () => {
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
 		// Grab the second row's handle (path [1])
-		const handle = store.tokens.handle(store.tokens.current()[1].id!)
+		const handle = store.tokens.handle(store.tokens.nodes()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
 
-		const lastToken = handle.token()
+		const element = handle.element()
 
 		// Reduce to one row — remove the second row from the DOM
 		const secondRow = container.children[1]
@@ -109,14 +111,14 @@ describe('TokenHandle', () => {
 		secondRow.remove()
 
 		// Update the parsed value so the token tree shrinks too
-		store.tokens.replace({start: 0, end: -1}, 'alpha\n\n')
+		store.tokens.setValue('alpha\n\n')
 
 		store.host.rendered()
 
 		expect(handle.alive()).toBe(false)
 		expect(handle.element()).toBeUndefined()
-		// token() still returns the last snapshot
-		expect(handle.token()).toBe(lastToken)
+		// The element it held is untouched — kill clears the binding, it does not repaint.
+		expect(element?.textContent).toBe('beta')
 		// placeCaret returns false on a dead handle
 		expect(handle.placeCaret(0)).toBe(false)
 
@@ -126,10 +128,10 @@ describe('TokenHandle', () => {
 		tokenEl.textContent = 'beta'
 		rowEl.append(tokenEl)
 		container.append(rowEl)
-		store.tokens.replace({start: 0, end: -1}, 'alpha\n\nbeta\n\n')
+		store.tokens.setValue('alpha\n\nbeta\n\n')
 		store.host.rendered()
 
-		const newHandle = store.tokens.handle(store.tokens.current()[1].id!)
+		const newHandle = store.tokens.handle(store.tokens.nodes()[1].id!)
 		expect(newHandle).not.toBe(handle)
 	})
 
@@ -141,12 +143,12 @@ describe('TokenHandle', () => {
 		// handle object follows its token to path [2] and reports a move.
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
-		const handle = store.tokens.handle(store.tokens.current()[1].id!)
+		const handle = store.tokens.handle(store.tokens.nodes()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')
-		expect(handle.token().content).toBe('beta\n\n')
+		expect(handle.element()?.textContent).toBe('beta')
 
 		// Prepend a row through the edit controller (records the edit hint)
-		store.edit.replace({start: 0, end: 0}, 'new\n\n')
+		store.edit.replace(...anchorsAt(store, 0, 0), 'new\n\n')
 
 		// Mirror the render: insert the new row's DOM at the front
 		const rowEl = document.createElement('div')
@@ -159,10 +161,10 @@ describe('TokenHandle', () => {
 
 		// The same handle object now lives at the shifted path
 		expect(handle.alive()).toBe(true)
-		expect(handle.token().content).toBe('beta\n\n')
+		expect(joinNodes([store.tokens.nodes()[2]])).toBe('beta\n\n')
 
 		// Resolving the shifted id returns the SAME handle object
-		expect(store.tokens.handle(store.tokens.current()[2].id!)).toBe(handle)
+		expect(store.tokens.handle(store.tokens.nodes()[2].id!)).toBe(handle)
 	})
 
 	it('handleAt returns "control" inside control elements and undefined outside', () => {

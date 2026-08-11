@@ -48,9 +48,9 @@ This process happens automatically when you type, and the result is a fully inte
 Markput's core owns the editor-engine primitives:
 
 - token addresses and token index validation
-- adapter DOM registration through the ref registries (`store.tokens.control()` / `store.tokens.children(ownerId)`), with token-DOM lookup via `store.tokens` and `store.selection`
+- adapter DOM registration through the ref registries (`store.tokens.control()` / `store.tokens.children(ownerId)`), with token-DOM lookup via `store.tokens`
 - raw DOM selection to serialized value ranges
-- raw value edits through `store.edit.replace()` (or `store.tokens.replace()` for a raw range), read back with `store.tokens.value()`
+- value edits through `store.edit.replace(from, to, text)` (or `store.tokens.replaceBetween()` / `setValue()`), read back with `store.tokens.value()`
 - caret range application to the DOM after framework renders
 - mark commands through the live `MarkNode` (`mark.update()` / `mark.remove()`)
 
@@ -354,7 +354,7 @@ Markput uses an internal store for managing editor state:
 Store State:
 {
   value: string,              // Current text
-  tokens: Token[],            // Parsed token tree
+  tokens: TreeNode[],         // The live token tree (the source of truth)
   selection: Range,           // Cursor/selection position
   overlay: OverlayState,      // Overlay visibility & data
   focused: boolean            // Focus state

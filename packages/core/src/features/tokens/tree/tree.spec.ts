@@ -2,8 +2,8 @@ import {describe, expect, it} from 'vitest'
 
 import {Parser} from '../parser/Parser'
 import {toString} from '../parser/utils/toString'
-import {createTokenTree, joinNodes, rootIndexOf, siblingOf} from './tree'
-import type {TreeNode} from './types'
+import {createTokenTree, joinNodes, rootIndexOf, siblingOf, sliceNodes} from './tree'
+import type {TextNode, TreeNode} from './types'
 
 const parser = new Parser(['@[__value__](__meta__)', '#[__slot__]'])
 
@@ -100,6 +100,65 @@ describe('siblingOf', () => {
 		expect(siblingOf(tree.roots(), tree.roots()[0].id, -1)).toBeUndefined()
 	})
 })
+describe('sliceNodes (the clipboard projection)', () => {
+	// 'ab@[x](m)cd': text [0,2), mark [2,9), text [9,11).
+	const source = 'ab@[x](m)cd'
+	const build = () => createTokenTree(parser.parse(source)).roots()
+	const textAt = (roots: readonly TreeNode[], index: number): TextNode => {
+		const node = roots[index]
+		if (node.kind !== 'text') throw new Error(`expected a text node at ${index}`)
+		return node
+	}
+
+	it('projects the whole document when the pair spans the document edges', () => {
+		expect(sliceNodes(build(), 'start', 'end')).toBe(source)
+	})
+
+	it('trims a partial selection spanning a mark to exact bounds', () => {
+		// EXACT bounds, and that is what makes this a gate: [1, 10) is one character INTO each
+		// text node, so widening or narrowing either end by one changes the answer
+		// ('ab@[x](m)c', 'b@[x](m)cd', '@[x](m)c'…). The mark in between is whole either way —
+		// its `value`/`meta` have no sub-spans to cut.
+		const roots = build()
+		const from = {node: textAt(roots, 0), offset: 1}
+		const to = {node: textAt(roots, 2), offset: 1}
+		expect(sliceNodes(roots, from, to)).toBe('b@[x](m)c')
+	})
+
+	it('answers the same for a REVERSED pair — the normalization is the gate', () => {
+		// `sliceNodes` normalizes, so swapping is a no-op BY DESIGN. Measured: dropping the
+		// min/max makes this case answer '' while the case above stays green, so this is the
+		// only thing that pins the normalization.
+		const roots = build()
+		const from = {node: textAt(roots, 0), offset: 1}
+		const to = {node: textAt(roots, 2), offset: 1}
+		expect(sliceNodes(roots, to, from)).toBe('b@[x](m)c')
+	})
+
+	it('excludes a node the window only touches at a boundary — both ends', () => {
+		// Half-open, and BOTH clauses need their own case: [0, 2) ends exactly where the mark
+		// STARTS (the `position.start >= end` clause), [9, 11) starts exactly where it ENDS
+		// (the `position.end <= start` one).
+		//
+		// The second assertion has to bound a MARK, not the leading text: a text node excluded
+		// by that clause would be clamped to an empty slice anyway, so relaxing `<=` to `<`
+		// survives a text-only fixture (measured). A mark has no slice to clamp — it is emitted
+		// whole or not at all.
+		const roots = build()
+		expect(sliceNodes(roots, 'start', {node: textAt(roots, 0), offset: 2})).toBe('ab')
+		expect(sliceNodes(roots, {node: textAt(roots, 2), offset: 0}, 'end')).toBe('cd')
+	})
+
+	it('trims a mark SLOT and keeps the annotation valid', () => {
+		const roots = createTokenTree(parser.parse('#[hello]')).roots()
+		const mark = roots[1]
+		if (mark.kind !== 'mark') throw new Error('expected a mark')
+		const slotText = mark.children()[0]
+		if (slotText.kind !== 'text') throw new Error('expected a slot text child')
+		expect(sliceNodes(roots, {node: slotText, offset: 0}, {node: slotText, offset: 3})).toBe('#[hel]')
+	})
+})
+
 describe('public node shape (spec §2.3)', () => {
 	it('exposes the markup string, not the descriptor, as the public view', () => {
 		const tree = createTokenTree(parser.parse('a@[x](m)b'))

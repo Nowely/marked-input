@@ -1,6 +1,6 @@
 import type {CoreOption, CoreSlotProps, CoreSlots, Slot} from '../../shared/types'
 import {convertDataAttrs} from '../../shared/utils/dataAttributes'
-import type {Token} from '../tokens'
+import type {TreeNode} from '../tokens'
 
 function resolveOptionSlot<T extends object>(optionConfig: T | ((base: T) => T) | undefined, baseProps: T): T {
 	if (optionConfig !== undefined) {
@@ -54,18 +54,23 @@ export function resolveOverlaySlot(
 	return [Component, props]
 }
 
+/**
+ * The node's framework component and props. Reads the node's signals, and its callers are
+ * render bodies — NOT reactive scopes — so nothing subscribes here; the subscription that
+ * makes a mark repaint on a value change is the token component's own (spec D8).
+ */
 export function resolveMarkSlot(
-	token: Token,
+	node: TreeNode,
 	tokenOptions: SlotOption[] | undefined,
 	GlobalMark: Slot | undefined,
 	GlobalSpan: Slot | undefined
 ): readonly [Slot, Record<string, unknown>] {
-	if (token.type === 'text') {
+	if (node.kind === 'text') {
 		const fallback = (GlobalSpan ?? 'span') as Slot
-		return [fallback, GlobalSpan ? {value: token.content} : {}]
+		return [fallback, GlobalSpan ? {value: node.text()} : {}]
 	}
-	const option = tokenOptions?.[token.descriptor.index]
-	const baseProps = {value: token.value, meta: token.meta}
+	const option = tokenOptions?.[node.descriptor.index]
+	const baseProps = {value: node.value(), meta: node.meta()}
 	const props = resolveOptionSlot(option?.mark, baseProps)
 	const Component = option?.Mark ?? GlobalMark
 	if (!Component) throw new Error('No mark component found. Provide either option.Mark or global Mark.')

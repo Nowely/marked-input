@@ -1,11 +1,8 @@
-import type {SelectionController} from '../features/selection/SelectionController'
 import type {Host} from '../features/state/Host'
 import type {PropsModel} from '../features/state/PropsModel'
 import {annotate} from '../features/tokens'
-import type {Id, MarkNode, NodeAnchor, TextNode, TokenModel, TreeNode} from '../features/tokens'
+import type {Id, MarkNode, NodeAnchor, TextNode, TokenDelta, TokenModel, TreeNode} from '../features/tokens'
 import type {Markup} from '../features/tokens/parser/types'
-import type {TokenDelta} from '../features/tokens/seam/commitInput'
-import type {Range} from '../shared/editorContracts'
 import type {Event} from '../shared/signals'
 
 /** Spec §2.3's `insertMark` initializer. */
@@ -21,22 +18,15 @@ export type MarkInit = {
  * absorbs `focus()`, drops the consumer-free `overlay` getter, and gains the live node
  * reads, the model-centric write verbs, node-anchored selection and the `changed` payload.
  *
- * It owns nothing. Every member lowers onto a state owner — the token layer for reads and
- * writes, the selection controller for anchors — so the shape of the API can move without
- * moving state (AGENTS.md's one-owner rule).
+ * It owns nothing. Every member lowers onto a state owner — the token layer, which owns the
+ * tree, the DOM binding and (since S2.9) the selection — so the shape of the API can move
+ * without moving state (AGENTS.md's one-owner rule).
  */
 export class MarkputApi {
 	constructor(
 		private readonly host: Host,
 		private readonly props: PropsModel,
-		private readonly tokens: TokenModel,
-		/**
-		 * NAMED `selectionController`, not `selection`: this class has a
-		 * `selection(): {anchor, head} | undefined` method, and TypeScript rejects a parameter
-		 * property colliding with a member (TS2300) — the same collision `TokenModel`
-		 * documents for its own `selectionPort`.
-		 */
-		private readonly selectionController: SelectionController
+		private readonly tokens: TokenModel
 	) {}
 
 	get container(): HTMLElement | null {
@@ -77,18 +67,21 @@ export class MarkputApi {
 	/**
 	 * Returns the fresh node in uncontrolled mode and `undefined` in controlled mode (spec D6:
 	 * the node exists only once the parent's echo commits — a caller re-finds it from
-	 * `changed`). The uncontrolled lookup is BY POSITION rather than through a result feed:
-	 * `applyRange` answers a boolean and the `TransactionResult` goes to the boundary, so
-	 * threading one out would touch four sites for one caller. The parse of the spliced
-	 * projection puts the mark exactly at the insertion offset (plan decision D-g).
+	 * `changed`). `'caret'` means the selection's START in document order and yields
+	 * `undefined` when there is no selection (spec §2.3).
 	 */
 	insertMark(at: NodeAnchor | 'caret', init: MarkInit): MarkNode | undefined {
-		const offset = this.#offsetOf(at)
-		if (offset === undefined) return undefined
+		const anchor = at === 'caret' ? this.tokens.selection.caretAnchor() : at
+		if (anchor === undefined || !this.#live(anchor)) return undefined
 		const text = annotate(init.markup, {value: init.value, meta: init.meta, slot: init.slot})
-		if (!this.tokens.replace({start: offset, end: offset}, text)) return undefined
+		const caret = this.tokens.replaceBetween(anchor, anchor, text)
+		if (!caret) return undefined
 		if (this.props.value() !== undefined) return undefined
-		return markStartingAt(this.tokens.nodes(), offset)
+		// A zero-width splice puts the caret at the END of the annotation, so the mark it
+		// created is the one ENDING there. That keeps the lookup POSITIONAL — a result feed
+		// would mean threading a `TransactionResult` through four sites for one caller — while
+		// leaving the arithmetic in `tree/`, which is what `markStartingAt` could not do.
+		return this.tokens.adjacentMark(caret, -1)
 	}
 
 	replaceText(target: {node: TextNode; start: number; end: number}, text: string): boolean {
@@ -97,24 +90,13 @@ export class MarkputApi {
 
 	/** Cross-node (spec D5). The pair is normalized, so `from` after `to` is legal. */
 	replaceRange(from: NodeAnchor, to: NodeAnchor, text: string): boolean {
-		const a = this.#offsetOf(from)
-		const b = this.#offsetOf(to)
-		if (a === undefined || b === undefined) return false
-		return this.tokens.replace({start: Math.min(a, b), end: Math.max(a, b)}, text)
+		if (!this.#live(from) || !this.#live(to)) return false
+		return this.tokens.replaceBetween(from, to, text) !== undefined
 	}
 
-	/**
-	 * Whole-value. Rides the internal offset shim's gap narrowing (spec D8), like every other
-	 * whole-value site — which is what the `-1` sentinel selects.
-	 *
-	 * RECORDED GAP (measured): passing `{0, this.value().length}` instead survives the whole
-	 * suite. The two take the same `lowerReplace` branch whenever the props value and the tree
-	 * projection agree, and an arrival is synchronous on the props watch, so they agree at
-	 * every observable moment. Kept as the sentinel because it is the tree's own length by
-	 * construction rather than a read of a value that is props-first in controlled mode.
-	 */
+	/** Whole-value. Rides the same gap narrowing every whole-value site does (spec D8). */
 	setValue(text: string): boolean {
-		return this.tokens.replace({start: 0, end: -1}, text)
+		return this.tokens.setValue(text)
 	}
 
 	tx(fn: () => void): boolean {
@@ -122,33 +104,22 @@ export class MarkputApi {
 	}
 
 	focus(): void {
-		this.selectionController.focusFirst()
+		this.tokens.focusFirst()
 	}
 
 	/** The STORED anchors (spec D7), not the derived numbers. Reactive. */
 	selection(): {anchor: NodeAnchor; head: NodeAnchor} | undefined {
-		return this.selectionController.anchors()
+		return this.tokens.selection.anchors()
 	}
 
 	select(anchor: NodeAnchor, head: NodeAnchor = anchor): boolean {
 		if (!this.#live(anchor) || !this.#live(head)) return false
-		this.selectionController.select(anchor, head)
+		this.tokens.selection.select(anchor, head)
 		return true
 	}
 
 	caret(at: NodeAnchor): boolean {
 		return this.select(at)
-	}
-
-	selectionRange(): Range | undefined {
-		return this.selectionController.range()
-	}
-
-	/** `'caret'` yields `undefined` when there is no selection (spec §2.3). */
-	#offsetOf(anchor: NodeAnchor | 'caret'): number | undefined {
-		if (anchor === 'caret') return this.selectionController.range()?.start
-		if (!this.#live(anchor)) return undefined
-		return this.tokens.offsetOf(anchor)
 	}
 
 	/**
@@ -162,15 +133,4 @@ export class MarkputApi {
 		const node = 'node' in anchor ? anchor.node : 'before' in anchor ? anchor.before : anchor.after
 		return this.tokens.find(node.id) === node
 	}
-}
-
-/** The mark a splice just created: the parse puts it exactly at the insertion offset. */
-function markStartingAt(nodes: readonly TreeNode[], offset: number): MarkNode | undefined {
-	for (const node of nodes) {
-		if (node.kind !== 'mark') continue
-		if (node.position.start === offset) return node
-		const found = markStartingAt(node.children(), offset)
-		if (found) return found
-	}
-	return undefined
 }

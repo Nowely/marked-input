@@ -95,10 +95,9 @@ interface OverlayHandler {
     match: {
         value: string // Typed text after trigger
         source: string // Full matched text including trigger
-        trigger: string // The trigger character
-        span: string // Text node content
+        span: string // Text of the node the match was found in
         node: Node // DOM node
-        index: number // Position in text
+        range: Anchors // The span `select()` replaces, as node anchors
         option: Option // Matched option config
     }
     ref: RefObject<HTMLElement>

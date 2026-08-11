@@ -3,11 +3,13 @@
 The single home for the token layer, exposed as `store.tokens`. The token TREE is
 the source of truth and the value string is its projection (spec D1): a write
 lowers to a splice in the projection's coordinates, adoption folds the fresh
-parse back into the persistent nodes, and one commit pipeline with two branches
-carries the result to the DOM — text edits patch surfaces in place without
-invoking the framework renderer; structural edits publish a new tree and bind the
-freshly painted DOM. No feature flags; parse is always a full parse, and the
-structural branch always does a full DOM bind.
+parse back into the persistent nodes, and one commit pipeline carries the result
+to the DOM. It has ONE question — does the renderer need to run? Text never
+travels through it: `bind` arms one effect per bound text surface, so a text edit
+reaches the DOM straight off the node's own `text` signal, without invoking the
+framework renderer. A structural edit publishes a new tree and binds the freshly
+painted DOM. No feature flags; parse is always a full parse, and a bind is always
+a full DOM bind.
 
 **Encapsulation rule:** raw `Selection`, `Range`, and `TreeWalker` DOM APIs live
 only inside this module (`features/tokens/`). All consumers outside the module
@@ -15,17 +17,18 @@ go through `store.tokens` methods or `TokenHandle`.
 
 ## Layout
 
-| folder    | what lives there                                                                                |
-| --------- | ----------------------------------------------------------------------------------------------- |
-| `parser/` | string → `Token[]`. Knows nothing about nodes, ids or the DOM.                                  |
-| `tree/`   | the source of truth: nodes, adoption, transactions, the string boundary, snapshots, anchors.    |
-| `dom/`    | the contenteditable adapter: bind, the commit pipeline, `TokenHandle`, caret and DOM offsets.   |
-| `seam/`   | `TokenModel` — the one object that owns a tree and a DOM and joins them, plus its commit input. |
+| folder    | what lives there                                                                                                    |
+| --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `parser/` | string → `Token[]`. Knows nothing about nodes, ids or the DOM.                                                      |
+| `tree/`   | the source of truth: nodes, adoption, transactions, the string boundary, anchors, the selection STATE.              |
+| `dom/`    | the contenteditable adapter: bind, the commit pipeline, `TokenHandle`, caret and DOM offsets, the selection DRIVER. |
+| `seam/`   | `TokenModel` — the one object that owns a tree, a DOM and the selection, and joins them.                            |
 
 `tree/` imports nothing from `dom/` or `seam/`, and `seam/` is the only folder
-that imports both. The one upward edge is a type: `dom/commit.ts` takes its
-`CommitInput` from `seam/commitInput.ts`, the shape both sides agree on.
-`index.ts` is the only export point the rest of the package uses.
+that imports both. There is no upward edge left: `dom/commit.ts` takes the
+`TransactionResult` adoption produces, so the `CommitInput` type `seam/` used to
+own for it is gone. `index.ts` is the only export point the rest of the package
+uses.
 
 ## Two layers, and the difference matters
 
@@ -69,18 +72,19 @@ an id and nothing else, and the split is what makes the pending window safe.
   routing. Controlled mode emits and waits for the echo it spliced; uncontrolled
   commits straight through. Block mode's parse filter (`filterEmptyText`) lives
   here.
-- `offsetShim.ts` — the internal offset shim (spec D8): a global `{start, end}`
-  range → `applyRange`. `end < 0` means "to the end of the value". Whole-value
-  ops are re-derived through `gapWindow` rather than passed as `{0, length}`, so
-  the adoption walks stay effective. It exists until the block-rows follow-up
-  gives its callers node-anchored verbs.
-- `snapshot.ts` / `snapshotMemo.ts` — the compat projection. `snapshot(nodes)`
-  is the pure, unmemoized §7.1 output-equivalence gate; `materializeNode` is the
-  one-node step the memo reuses. `snapshotMemo` re-materializes only what the
-  adoption changed, invalidating on dirty ids (walked subtree-inclusively) AND on
-  child-reference comparison — both mechanisms are load-bearing.
+- `__testing__/snapshot.ts` — TEST-ONLY since S2.8: `stripIds(snapshot(tree))`
+  deep-equals a fresh parse of the tree's projection, which is S1 §7.1's
+  output-equivalence ORACLE and the only check that compares the WHOLE tree
+  against the parser. It was production (the compat `Token` projection the
+  adapters rendered) and its memo went with the adapters' move onto `TreeNode`;
+  the oracle is deliberately UNMEMOIZED, because a memo inside it would gate
+  adoption against its own cache.
 - `anchors.ts` — `anchorAt(roots, offset)` (right affinity: the last text node
-  containing the offset) and its inverse `offsetOfAnchor`.
+  containing the offset), its inverse `offsetOfAnchor`, and `anchorEquals`.
+- `selection.ts` — `createSelection(deps)`: the selection STATE (see below).
+  DOM-free, and unit-tested without a mounted container. Its dep bag (three
+  closures, not the tree) is what lets `TokenModel` satisfy `anchorAt` with the
+  SEEDING read rather than the bare tree walk.
 - `markPatch.ts` — `serializeMark(node, patch)`: a patch becomes markup, with
   the omitted fields defaulted off the node so an omitted key round-trips.
 
@@ -116,56 +120,57 @@ ZERO component re-renders — gated end-to-end by the block render-count specs
 
 ## The one commit pipeline (`dom/commit.ts`)
 
-Every committed change flows through a single `apply(input)`. The input is a
-producer-agnostic `CommitInput` (`seam/commitInput.ts`), and since S1.6a the
-tree core's `fromTransaction` (`seam/treeInput.ts`) is its ONLY producer:
+Every committed change flows through a single `apply(result)`, taking the
+`TransactionResult` adoption produced (the `CommitInput` that used to sit between
+them carried a snapshot nothing renders any more):
 
 ```
 write verb → splice → parse → adopt → TransactionResult
-  → fromTransaction (memo.invalidate → memo.roots → changes + delta)
-  → CommitInput {tokens, render, changes, delta}
-  ├─ text path (render === false AND no structural apply pending):
-  │    refresh the listed handles, conditionally patch textContent of
-  │    changed text surfaces, one batch → fire changed()
-  └─ structural (render === true, or folded into a pending pass):
-       publish renderTree (new reference) → renderer runs → onRendered() →
-       bind(container, latest): one DOM+tree walk —
-         create/refresh/kill TokenHandles, set element bindings,
+  │    (adoption writes node.text → the per-surface effects write the DOM)
+  → apply(result): deltaOf(result) folded into the pending delta
+  ├─ render === false AND no structural apply pending:
+  │    nothing left to do to the DOM → fire changed()
+  └─ render === true, or folded into a pending pass:
+       bump renderEpoch → renderer runs → onRendered() →
+       bind(container, tree.roots()): one DOM+tree walk —
+         create/kill TokenHandles, set element bindings, re-arm the text effects,
          apply contentEditable/tabindex to NEWLY BOUND surfaces and mark roots
        → fire changed()
 ```
 
-- **Routing is decided by the PRODUCER**, on `result.render` — not on
-  `result.structural`. The latter is add/remove only, while a mark whose value or
-  meta changed renders new framework props and must reach the renderer.
-- **The change feed is the MEMO's**, not the transaction's: a change entry exists
-  to hand a handle the generation the DOM now shows, so the set that needs one is
-  exactly the tokens of this snapshot that are new objects. `updated` is the only
-  PATCH signal — a node re-materialized merely because it moved has no surface
-  write to make.
-- **Escalation self-heals:** a text-path apply that cannot resolve a target
-  (missing handle, missing surface) abandons the branch before any mutation and
-  re-binds the current DOM structurally — no render needed first; the adapter's
-  later `onRendered()` re-binds idempotently.
+- **Routing is `result.render`** — not `result.structural`. The latter is
+  add/remove only, while a mark whose value or meta changed renders new framework
+  props and must reach the renderer.
+- **`renderEpoch` is a COUNTER, not the tree.** The adapters read `nodes()` for
+  data and each token component subscribes to its own node (spec D8), so the
+  pipeline publishes only "the renderer must run". It is not redundant with
+  `roots`, and that is measured: adoption writes `roots` only when the ROOT LIST
+  changes by reference, so a mark whose value changed and a structural change
+  INSIDE a slot both leave it equal — a container subscribed to `roots` alone
+  never re-renders for either, `rendered()` never fires and `bind` never runs.
+  Gated by "a mark value change announces changed" in both render-count specs.
+- **Text is not the pipeline's business (S2.7).** `bind` arms
+  `effect(() => { const t = node.text(); if (el.textContent !== t) el.textContent = t })`
+  per bound text surface; the handle owns its disposal. That is the ONE writer of
+  a text surface, which is why `bind` no longer writes `textContent` itself and
+  why the `changes` feed, `commitText` and the bind-generation `Token` are gone.
 - **`pendingStructural` latch:** between a structural apply and its bind the node
   layer is one generation stale. `handle(id)` returns `undefined` while latched
   (`pending()` is true) — id-bridged reads and mutations fail closed instead of
   acting on a tree the DOM never showed. Applies landing inside the window fold
   into the pending structural pass.
-- **bind projects `latest` (the latest committed tree), not `renderTree`:** the
-  render tree keeps its (stale) reference across text applies, and a re-render
-  arriving after one — any unrelated adapter update — must re-bind the fresh
-  tokens, not regress the node layer and the DOM text to the pre-edit
-  generation. `latest` is reassigned at the top of every `apply`.
+- **bind projects the LIVE tree (`deps.roots()`):** a text commit does not wake
+  the renderer, so a re-render arriving afterwards — any unrelated adapter update
+  — must bind the current tree, not regress the node layer and the DOM text to
+  the painted generation.
 - **Editable state:** contentEditable/tabindex are applied at bind time to newly
   bound surfaces and mark roots, and by the scoped `setEditable` setter when
-  `readOnly`/`isUserSelecting` change (SelectionController owns the policy, the
-  model owns the application). No per-commit sweep.
-- **`changed`** fires in both branches only after the DOM is consistent with the
-  node layer — the model-level "commit done" signal (SelectionController
+  `readOnly`/`isUserSelecting` change (`dom/SelectionDriver.ts` owns the policy,
+  the model owns the application). No per-commit sweep.
+- **`changed`** fires only after the DOM is consistent with the node layer — the model-level "commit done" signal (`dom/SelectionDriver.ts`
   re-places the caret on it) — carrying that commit's `{added, removed, updated}`
   ids (`TokenDelta`: `added`/`removed` are subtree-inclusive, `updated` is per
-  node). Consumers re-read content via `current()` / `handle(id)`;
+  node). Consumers re-read content via `nodes()` / `find(id)` / `handle(id)`;
   `BlockController` prunes its id-keyed store off `delta.removed`. During a
   latched window only the final commit announces, and its payload MERGES every
   folded apply's delta — keeping only the last one dropped the earlier removals
@@ -173,13 +178,16 @@ write verb → splice → parse → adopt → TransactionResult
 
 ## Structural DOM walk (`dom/bind.ts`)
 
-The structural branch's endpoint: zip the freshly rendered DOM with the committed
-tree (one iterative frame per nesting level, control elements skipped, optional
-registered child-sequence host per mark) and project the result onto the node
-map — `new TokenHandle` for new ids, `refresh` + `bindElements` for known ids,
-`kill` (and delete) ids absent from the tree. The whole projection commits as one
-batch, so handle watchers flush only after every node reflects the new tree and
-DOM.
+The renderer's endpoint: zip the freshly rendered DOM with the LIVE tree (one
+iterative frame per nesting level, control elements skipped, optional registered
+child-sequence host per mark) and project the result onto the node map — `new
+TokenHandle` for new ids, `bindElements` for known ids, `kill` (and delete) ids
+absent from the tree. The whole projection commits as one batch, so handle
+watchers flush only after every node reflects the new tree and DOM.
+
+`bindElements` also re-arms the surface's text effect, unconditionally: the
+re-arm's immediate first run is both the mount-time reconciliation of a surface
+the renderer left stale and the heal of one corrupted between binds.
 
 The result is `bound: ReadonlyMap<number, TokenHandle>`, **keyed by stable id**.
 It was keyed by a `TokenPath` string until S1.8; no consumer ever looked one up
@@ -191,8 +199,9 @@ added or removed mid-render.
 
 A DOM-walk bail (adapter mid-render misalignment) `unbind`s instead of killing:
 the tree is authoritative, only the DOM is transiently misaligned, and the next
-successful bind re-attaches the same handles. Bind fails loud (throws) only on a
-tree token with no id — a contract violation (an unsnapshotted tree was passed).
+successful bind re-attaches the same handles. Alignment is all-or-nothing per
+frame — a count mismatch drops that frame AND every descendant frame with it,
+because a dropped frame never enqueues its children.
 
 **Block layout:** each immediate container child is a row; a row must contain
 exactly one non-control element. Alignment is all-or-nothing — one bad row bails
@@ -202,51 +211,59 @@ the whole frame, failing loud when an adapter renders something unexpected.
 
 ```ts
 // consumer reads
-current() // readonly Token[] — the always-fresh committed tree
 value: Computed<string> // THE value read: controlled → props, uncontrolled → the projection
-nodes() / find(id) // the live TreeNode reads (spec §2.3)
+nodes: Computed<readonly TreeNode[]> // the live roots — THE render read too (spec §2.3)
+find(id) // the live TreeNode by stable id
+selection: Selection // THE stored anchors and their derivations (see below)
 
 // writes
-replace(range, replacement) // the internal offset shim (spec D8)
+replaceBetween(from, to, text) / setValue(text) / applyText(node, range, text)
 // per-node writes are MarkNode.update / MarkNode.remove, which ride a transaction
 
 // renderer contract (adapter-only)
-renderTree: Computed<Token[]> // structural tree; reference change ⇔ renderer must run
+renderEpoch: Computed<number> // bumped ⇔ the renderer must run; NOT data
 changed: Event<TokenDelta>    // THE model-level detector; fires after the DOM is consistent
-keyOf(token): number          // framework key (stable id); adapters pass it unbound
+// the framework key is `node.id` — there is no keyOf
 
-// per-token live view
-handle(id) / handleOf(token) // id-keyed live handle, or undefined; latch-gated
+// per-node live view
+handle(id) // id-keyed live handle, or undefined; latch-gated
 handleAt(node) // handle | 'control' | undefined for a DOM node
 
-// DOM↔model facade
-boundaryFor(node, offset, affinity?) // DOM (node, offset) → absolute position
-placeCaret(rawPosition: number) // place a collapsed caret at an absolute position
-selectRange(start, end)
-selection(): SelectionSnapshot | undefined // THE selection read
+// DOM↔model facade — anchors in both directions (spec S2 D1); no absolute offsets
+anchorFor(node, offset, affinity?)   // DOM (node, offset) → NodeAnchor in the LIVE tree
+placeCaret(anchor: NodeAnchor)       // collapsed caret, through the anchor's OWN node
+selectRange(anchor, head)            // order-insensitive; normalized in DOM order
+domSelection(): SelectionSnapshot | undefined // THE raw window-selection read
 selectedContent(): {html; text} | undefined // selection serialized for clipboard
+
+// the selection driver's reads, delegated (the driver itself is private)
+domAnchors(): Anchors | undefined    // DOM TRUTH as anchors (spec S2 D5)
+focusFirst() / placeAtHandle(handle, boundary?) / isUserSelecting: Signal<boolean>
+
+// the tree layer's own coordinate boundary — the ONE place a number may be formed
+anchorAt(offset) / offsetOf(anchor)
 
 // adapter refs
 control() / children(ownerId) // ref callbacks
 ```
 
 `setEditable({editable, readOnly})` is the scoped internal setter wired from
-SelectionController's prop watches; it is not part of the consumer-facing reading
-surface above.
+`dom/SelectionDriver.ts`'s prop watches; it is not part of the consumer-facing
+reading surface above.
 
-Nothing is published before a container mounts: `current()` is `[]` and facade
+Nothing is published before a container mounts: `nodes()` is `[]` and facade
 reads fail soft. Adapters mount the container ref, re-render from the first
 structural commit, and report `onRendered()`.
 
 ### The selection snapshot
 
-`selection()` returns one `SelectionSnapshot` of the live window selection, or
+`domSelection()` returns one `SelectionSnapshot` of the live window selection, or
 `undefined` when there is no range (unfocused / nothing selected). It subsumes
 the old per-field micro-reads:
 
 ```ts
 type SelectionSnapshot = {
-    raw: RawSelection | undefined // absolute in-editor range, undefined if outside any bound token
+    range: globalThis.Range // the window selection's OWN first range, not a clone
     rect: DOMRect | undefined
     anchor: SelectionAnchor // {node, offset, isCollapsed}
     focusNode: Node | undefined
@@ -255,58 +272,64 @@ type SelectionSnapshot = {
 ```
 
 A consumer that treats "no selection" as collapsed compares
-`selection()?.anchor.isCollapsed !== false`.
+`domSelection()?.anchor.isCollapsed !== false`.
 
 ### The fresh read
 
-`current()` is the always-fresh committed tree — consistent with `value()` on
-both commit branches (it is the pipeline's `latest`, reassigned every apply).
-`renderTree` is the RENDERER signal: it keeps its reference across text-path
-commits so subscribed adapters skip re-rendering — adapter-only, not consumer
-data. `handle(id)` maps a token id to its live handle, failing closed while a
-structural apply awaits its bind.
+`nodes()` is the live root list, consistent with `value()` the moment adoption
+lands — and since S2.8 it is what the adapters render. `renderEpoch` is the
+RENDERER signal and carries no data: it does not move on a text-path commit, so
+subscribed adapters skip re-rendering. `handle(id)` maps a node id to its live
+handle, failing closed while a structural apply awaits its bind.
 
 ### Boundary facade internals
 
-The model builds a `BoundaryContext` per call that reads the node layer:
-`locate` walks a DOM node up to its bound handle, `tokenOf(view)` returns the
-view's fresh current token (or `undefined` mid-window — the liveness gate),
-`viewOf(token)` is the id-bridged element read. A `TokenView` carries the live
-token (`handle.token()`), so DOM→token resolution is a single read with no
-path-and-identity round-trip.
+The model builds an `AnchorContext` per call: `locate` walks a DOM node up to its
+bound handle, `roots()` and `find(id)` read the LIVE tree. Nothing in it forms an
+absolute offset, which is the point — no module above `tree/` may (spec S2 D1).
+The bridge from DOM to model is the
+handle's stable ID, which is generation-independent, so the walk stays correct
+inside the adopt→bind window where a positional read is not (spec S2 D4).
 
-- `dom/domBoundary.ts` — DOM `(node, offset)` → absolute position
-  (`rawPositionFromBoundary`, `textTargetAt`, `markBoundaryAt`). Vocabulary:
-  `'before'`/`'after'` = affinity at token boundaries; `'start'`/`'end'` =
-  placement side.
+- `dom/domBoundary.ts` — DOM `(node, offset)` → `NodeAnchor`
+  (`anchorFromBoundary`). Vocabulary: `'before'`/`'after'` = affinity at token
+  boundaries; `'start'`/`'end'` = placement side. Its numeric twin
+  (`rawPositionFromBoundary` and friends) was deleted at S2.6 together with the
+  equivalence property that used to gate it; every branch now names its own case
+  in `domBoundary.spec.ts`.
 - `dom/caret.ts` — stateless `Range`/`Selection` mechanics (`placeAtTextOffset`,
   `placeAtChildBoundary`, `placeRangeAcrossSurfaces`, `setAtX`, `getCaretIndex`,
   `getRect`, `isOnFirstLine`, `isOnLastLine`, `focusIfNeeded`).
 - `dom/textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
   `textOffsetWithin`, `hasEditableAncestorBefore`).
 
-## `TokenHandle` — the read latch
+## `TokenHandle` — the DOM binding
 
-The read / measurement / command surface of the DOM binding, resolved by
-`handle(token.id)`.
+The measurement / command surface of one node's DOM binding, resolved by
+`handle(node.id)`.
 
-`#token` is deliberately NOT "the current parsed token" — it is the generation
-the DOM is currently SHOWING (spec D9). Only two writers exist, `bind` and the
-text branch, and the text branch patches the surface in the same `batch`; between
-a structural apply and its bind nothing writes it at all. That is what makes
-every DOM-boundary read correct during the pending window: the DOM boundary layer
-resolves offsets as `token.position.start + local`, and a handle answering with
-the LIVE tree node would resolve carets against a layout the adapter has not
-painted yet.
+IT HOLDS NO TOKEN since S2.7. `#token` used to carry "the generation the DOM is
+SHOWING" (spec D9) — a second representation of data the tree already owns. S2.6
+took its last positional reader; S2.7 took the other two, `setEditable`'s type
+read (dead: `bind` gives a `textElement` to text nodes and to nothing else, so
+`!textElement` already means "mark") and `commit.ts`'s divergence detector, which
+compares against the live `TextNode.text()`.
 
-No per-node reactivity **on the handle**: its getters are plain field reads. That
-is not a statement about the model — `TreeNode`'s content fields ARE signals, and
-they are what the public API subscribes to.
+What replaced it is the per-surface TEXT EFFECT `bindElements` arms: one writer
+per bound text surface, subscribed to that node's own `text` signal, writing
+conditionally (`if (el.textContent !== t)`). Its immediate first run is the
+mount-time reconciliation and the corruption heal; it is disposed and re-armed on
+every re-bind, and disposed by `unbind`/`kill`. Two writers on one surface is the
+failure mode the design exists to prevent, so `bind` no longer writes
+`textContent` itself.
+
+No per-node reactivity **on the handle's getters**: they are plain field reads.
+That is not a statement about the model — `TreeNode`'s content fields ARE signals,
+and they are what the public API (and the text effect) subscribes to.
 
 ### Reads
 
 - `id` — the stable identity integer (the key `handle(id)` resolves by).
-- `token()` — the BIND-GENERATION `Token` (see above).
 - `alive()` — live AND bound (not killed and holding a DOM element). The whole
   validity check a holder of the handle needs.
 - `element()` — the token root `HTMLElement`, or `undefined` when unbound/dead.
@@ -330,10 +353,11 @@ boundary), `placeCaretAtX(x, y?)`, `focus()`.
 
 ### Lifetime
 
-Created when its token enters the tree (keyed by the token's stable identity id),
-mutated in place by `refresh` / `bindElements` / `unbind`, killed when the token
-disappears. A dead handle never throws — stale reads return the last token,
-commands return `false`, and it is never resurrected.
+Created when its node enters the tree (keyed by the node's stable identity id),
+mutated in place by `bindElements` / `unbind`, killed when the node disappears.
+Both `unbind` and `kill` dispose the text effect, so an unbound or dead handle
+stops writing its old element. A dead handle never throws — reads answer
+`undefined`, commands return `false`, and it is never resurrected.
 
 ## Mark commands
 
@@ -353,14 +377,54 @@ The adapter hook resolves the node by id per access, so it tracks text-path
 commits without re-capture, and the `pendingStructural` latch is what makes a
 mid-window write fail closed rather than act on a tree the DOM never showed.
 
+## Selection
+
+Split in two by owner (spec S2 D10) and OWNED HERE since S2.9. There is no
+`features/selection/` and no `store.selection`: `TokenModel` constructs both
+halves, publishes the state as `tokens.selection` and delegates the driver's four
+externally-needed reads (`domAnchors`, `focusFirst`, `placeAtHandle`,
+`isUserSelecting`) the same way it delegates `DomModel`'s.
+
+That closed the last construction cycle in the core. `Store` used to build the
+selection and hand this class a two-method `SelectionPort` thunk back so the
+string boundary could capture and repair through it; the cycle forced an explicit
+type annotation on two `Store` fields to keep `tsc` off TS7022. Both are gone, and
+the boundary now calls `this.selection.anchors()` / `this.selection.repair(result)`
+directly.
+
+- `tree/selection.ts` — the STATE. Stores a pair of `NodeAnchor`s (spec S1 D7),
+  never offsets: a node plus a local offset is what disambiguates two tokens
+  sharing a boundary position, and it survives an edit elsewhere without
+  arithmetic. `isAllSelected` is the ONE derivation left that needs numbers, and
+  it lives here because `tree/` is where that arithmetic is legal; the numeric
+  `range`/`position` projections and the `generation` marker they needed went at
+  S2.6 (spec S2 D11). `repair(result)` APPLIES
+  `result.selectionAfter` — adoption resolves it, since only adoption sees the
+  pre-mutation coordinate space.
+- `dom/SelectionDriver.ts` — the DOM I/O, private to `TokenModel`. Three
+  listeners (`focusin`/`focusout`/`selectionchange` sync, the empty-editor click
+  focus, the mouse-sweep tracker) and four watches (`tokens.changed`, `readOnly`,
+  `isUserSelecting`, and the stored anchors themselves). BUILT IN THE CONSTRUCTOR
+  BODY, not as a field initializer: its dep bag takes `host` and `changed` as
+  VALUES, so an initializer would read a constructor parameter property (`tsc`
+  rejects it, TS2729) and `#pipeline` (which answers `undefined` silently from any
+  initializer above it). The constructor also puts its `onMounted` after the
+  model's own, which is the order `Store` produced before S2.9. It watches the STORED anchors — the derived numeric
+  `range` it once watched deduped on `shallow`, so at a shared boundary
+  `placeAtHandle` changed the anchor without changing the number and the watch
+  never fired (measured — 8 browser assertions across three focus specs). It also
+  owns the editable POLICY; the model owns the application.
+
 ## Caret placement by handle
 
-`TokenModel.placeCaret(rawPosition)` resolves the best target for an absolute
-position; per-token placement is `TokenHandle.placeCaret(offset)`, and
-`SelectionController.placeAtHandle(handle, boundary)` places at a handle's
-start/end. The handle paths fail closed against a dead or mid-window handle
-(`!handle.alive()` → `false`). The handle carries the stable id, so no
-path-and-token round-trip is involved.
+`TokenModel.placeCaret(anchor)` resolves the anchor's OWN node and lowers onto
+`TokenHandle.placeCaret(localOffset)`; `selectRange(anchor, head)` does the same
+for both ends and normalizes them in DOM order. The two document edges (`'start'`
+/ `'end'`) resolve against the live roots. `TokenModel.placeAtHandle(handle,
+boundary)` (the driver's, delegated) places at a handle's start/end. All of it fails closed against a dead
+or mid-window handle — where the deleted numeric form searched every bound surface
+for a position and fell back to the nearest, reading bind-generation coordinates
+for a layout the adapter had not painted.
 
 ## Parse
 
@@ -374,7 +438,7 @@ the `parser.bench.ts` tripwire.
 
 `VERIFY_DOM = import.meta.env?.DEV ?? true` (`dom/commit.ts`) — dev/test builds
 assert after both branches that every bound text surface's `textContent` equals
-its token's `content`, throwing
+its node's live `text()`, throwing
 `TokenModel divergence at #<id>: DOM "…" ≠ model "…"`. Through the public API the
 machinery self-heals before each check (bind sweeps every bound surface, the text
 branch writes its own targets), so the throw cases are covered white-box — the

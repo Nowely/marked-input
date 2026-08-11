@@ -1,5 +1,6 @@
 import {describe, it, expect, vi} from 'vitest'
 
+import {markToken, nodesOf, textToken, treeShape} from '../features/tokens/__testing__/tokenFactories'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {effect, batch} from '../shared/signals'
 import {Store} from './Store'
@@ -8,7 +9,7 @@ describe('Store', () => {
 	it('construct with no arguments', () => {
 		const store = new Store()
 		// The fresh read: nothing is reconciled before a container mounts.
-		expect(store.tokens.current()).toEqual([])
+		expect(treeShape(store.tokens.nodes())).toEqual([])
 		expect(store.props.readOnly()).toBe(false)
 	})
 
@@ -63,14 +64,14 @@ describe('Store', () => {
 			// the mutation. Measured: 3 cases died before the port, 1 after; this line and the
 			// one in `current` › 'returns written current value' restore the other two.
 			expect(store.tokens.value()).toBe('')
-			store.tokens.replace({start: 0, end: -1}, 'hello')
+			store.tokens.setValue('hello')
 			expect(store.tokens.value()).toBe('hello')
 		})
 
 		it('leave other keys unchanged when one signal is updated', () => {
 			const store = new Store()
-			store.selection.isUserSelecting(true)
-			expect(store.selection.isUserSelecting()).toBe(true)
+			store.tokens.isUserSelecting(true)
+			expect(store.tokens.isUserSelecting()).toBe(true)
 			expect(store.tokens.value()).toBe('')
 		})
 
@@ -79,13 +80,13 @@ describe('Store', () => {
 			const effectSpy = vi.fn()
 			effect(() => {
 				store.tokens.value()
-				store.selection.isUserSelecting()
+				store.tokens.isUserSelecting()
 				effectSpy()
 			})
 			effectSpy.mockClear()
 			batch(() => {
-				store.tokens.replace({start: 0, end: -1}, 'a')
-				store.selection.isUserSelecting(true)
+				store.tokens.setValue('a')
+				store.tokens.isUserSelecting(true)
 			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
 		})
@@ -115,7 +116,7 @@ describe('Store', () => {
 
 		it('reflects controlled value via tokens without changing internal state', () => {
 			const store = new Store()
-			store.tokens.replace({start: 0, end: -1}, 'internal')
+			store.tokens.setValue('internal')
 			store.props.set({value: 'controlled'})
 			expect(store.tokens.value()).toBe('controlled')
 			store.props.set({value: undefined})
@@ -132,13 +133,13 @@ describe('Store', () => {
 
 	describe('value edits', () => {
 		// Tokens publish only on a mounted store; with a bare container every
-		// commit settles structurally and current() is the parse of the accepted value.
+		// commit settles structurally and the live tree is the parse of the accepted value.
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			store.host.container(document.createElement('div'))
-			store.tokens.replace({start: 0, end: -1}, 'hello')
-			expect(store.tokens.current()).toMatchObject([
-				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
+			store.tokens.setValue('hello')
+			expect(treeShape(store.tokens.nodes())).toMatchObject([
+				{kind: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
 			expect(store.tokens.value()).toBe('hello')
 		})
@@ -147,7 +148,7 @@ describe('Store', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			store.tokens.replace({start: 0, end: -1}, 'world')
+			store.tokens.setValue('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
 		})
@@ -157,17 +158,17 @@ describe('Store', () => {
 			store.host.container(document.createElement('div'))
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
-			store.tokens.replace({start: 0, end: -1}, 'world')
+			store.tokens.setValue('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.tokens.value()).toBe('hello')
-			expect(store.tokens.current()).toMatchObject([
-				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
+			expect(treeShape(store.tokens.nodes())).toMatchObject([
+				{kind: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
 		})
 
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
-			expect(() => store.tokens.replace({start: 0, end: -1}, 'test')).not.toThrow()
+			expect(() => store.tokens.setValue('test')).not.toThrow()
 		})
 	})
 
@@ -340,35 +341,28 @@ describe('Store', () => {
 	})
 
 	describe('computed slots', () => {
-		it('resolve mark slot for text token using span fallback', () => {
+		it('resolve mark slot for text node using span fallback', () => {
 			const store = new Store()
-			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
-			const [component, props] = store.slots.mark()(token)
+			const [node] = nodesOf([textToken('hello', 0)])
+			const [component, props] = store.slots.mark()(node)
 			expect(component).toBe('span')
 			expect(props).toEqual({})
 		})
 
-		it('pass value prop to custom Span component for text token', () => {
+		it('pass value prop to custom Span component for text node', () => {
 			const CustomSpan = () => null
 			const store = new Store()
 			store.props.set({Span: CustomSpan})
-			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
-			const [component, props] = store.slots.mark()(token)
+			const [node] = nodesOf([textToken('hello', 0)])
+			const [component, props] = store.slots.mark()(node)
 			expect(component).toBe(CustomSpan)
 			expect(props).toEqual({value: 'hello'})
 		})
 
-		it('throw for mark token without Mark component', () => {
+		it('throw for mark node without Mark component', () => {
 			const store = new Store()
-			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for test
-			const token = {
-				type: 'mark',
-				value: '@john',
-				meta: undefined,
-				descriptor: {index: 0},
-				position: {start: 0, end: 5},
-			} as any
-			expect(() => store.slots.mark()(token)).toThrow('No mark component found')
+			const [node] = nodesOf([markToken('@john', '@[@john]', 0)])
+			expect(() => store.slots.mark()(node)).toThrow('No mark component found')
 		})
 
 		it('resolve overlay from global Overlay component', () => {
@@ -392,14 +386,14 @@ describe('Store', () => {
 			// The read before the write is load-bearing — see `internal state signals` ›
 			// 'update when written directly' for the measurement.
 			expect(store.tokens.value()).toBe('')
-			store.tokens.replace({start: 0, end: -1}, 'cached')
+			store.tokens.setValue('cached')
 			expect(store.tokens.value()).toBe('cached')
 		})
 
 		it('reacts to current changes', () => {
 			const store = new Store()
 			expect(store.tokens.value()).toBe('')
-			store.tokens.replace({start: 0, end: -1}, 'updated')
+			store.tokens.setValue('updated')
 			expect(store.tokens.value()).toBe('updated')
 		})
 

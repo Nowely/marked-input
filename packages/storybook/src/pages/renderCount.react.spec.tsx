@@ -1,6 +1,8 @@
+import type {MarkputApi} from '@markput/core'
+import {watch} from '@markput/core'
 import type {MarkProps, Option} from '@markput/react'
 import {MarkedInput} from '@markput/react'
-import {useEffect} from 'react'
+import {createRef, useEffect} from 'react'
 import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
@@ -57,27 +59,70 @@ describe('Render-count gates: commit routing', () => {
 		await expect.element(page.getByText('struct')).toBeInTheDocument()
 		expect(spanRender.mock.calls.length).toBeGreaterThan(baseline)
 	})
+
+	/**
+	 * The VALUE-ONLY commit: `render` is true, `structural` is false, and it is the one
+	 * commit shape whose completion nothing else here gates. It matters because adoption
+	 * writes `roots` only when the ROOT LIST changes by reference, so this commit leaves
+	 * `tokens.nodes` equal — a container subscribed to that alone never re-renders, its
+	 * `rendered()` never fires, `bind` never runs and the pending latch never opens.
+	 * MEASURED: dropping `renderEpoch` from `Container`'s selector leaves the whole suite
+	 * green except this case, which sees zero announcements instead of one.
+	 */
+	it('a mark value change announces changed — the commit completes with no root-list move', async () => {
+		const api = createRef<MarkputApi>()
+		await render(
+			<MarkedInput
+				ref={api}
+				Mark={({value}: MarkProps) => <mark>{value}</mark>}
+				Span={({value}: MarkProps) => <span>{value}</span>}
+				defaultValue="a@[x](1)b"
+			/>
+		)
+		await expect.element(page.getByText('x')).toBeInTheDocument()
+
+		const announced: number[] = []
+		watch(api.current!.changed, delta => announced.push(delta.updated.length))
+
+		const mark = api.current?.nodes().find(node => node.kind === 'mark')
+		expect(mark?.update({value: 'y'})).toBe(true)
+		await expect.element(page.getByText('y')).toBeInTheDocument()
+
+		expect(announced).toEqual([1])
+	})
 })
 
 /**
- * Fan-out gate (the `Token` memo comparator): the gate above only pins
- * "structural > baseline", which passes identically at 1 re-render and at N —
- * so it cannot see the regression this one exists for. A structural edit at the
- * HEAD re-materializes every token after it with a shifted `position` and no
- * other change; the bound below is therefore a CONSTANT, not a relative one.
+ * THE fan-out gate, and it is an EXACT NUMBER (spec S2 D8). The gate above only
+ * pins "structural > baseline", which passes identically at 1 re-render and at
+ * N, so it cannot see the regression this one exists for.
+ *
+ * Both cases are measured at the size the D8 tradeoff is stated against — 100
+ * marks — and both assert `1`, because both edits change exactly one mark's
+ * rendered props:
+ *
+ * - a head insert re-addresses every following mark and changes nothing they
+ *   render (a `position` shift only). Under the render model this gate was
+ *   written for, that meant 101 fresh snapshot Token objects and `Token.tsx`'s
+ *   value comparator suppressing 100 of them.
+ * - a value edit on one mark changes THAT mark's props, and suffix-shifts the
+ *   99 after it — same suppression, different origin.
+ *
+ * `toBe(1)`, not a bound: a fan-out regression is exactly what a bound hides.
  */
 describe('Render-count gates: structural fan-out', () => {
-	it('a structural edit at the head re-renders a constant number of marks', async () => {
-		const MARKS = 24
+	const MARKS = 100
+	const document100 = `HEAD ${Array.from({length: MARKS}, (_, i) => `@[m${i}](${i})`).join(' ')}`
+
+	it('a head insert at 100 marks re-renders exactly the inserted mark', async () => {
 		const markRender = vi.fn()
 		const Mark = ({value}: MarkProps) => {
 			markRender()
 			return <mark>{value}</mark>
 		}
 		const Span = ({value}: MarkProps) => <span>{value}</span>
-		const marks = Array.from({length: MARKS}, (_, i) => `@[m${i}](${i})`).join(' ')
 
-		await render(<MarkedInput Mark={Mark} Span={Span} defaultValue={`HEAD ${marks}`} />)
+		await render(<MarkedInput Mark={Mark} Span={Span} defaultValue={document100} />)
 		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
 
 		await focusAtEnd(getElement(page.getByText('HEAD ')))
@@ -85,14 +130,36 @@ describe('Render-count gates: structural fan-out', () => {
 		expect(baseline).toBeGreaterThanOrEqual(MARKS)
 
 		// Completing a markup BEFORE every existing mark: all MARKS of them
-		// suffix-shift into new objects carrying the same id, content, value,
-		// meta and descriptor — only `position` differs, and nothing reads it.
-		await userEvent.keyboard('@[[new](99)')
+		// suffix-shift, and only their addressing changes.
+		await userEvent.keyboard('@[[new](999)')
 		await expect.element(page.getByText('new')).toBeInTheDocument()
 
-		// Gate: the shifted marks do not re-render — the delta stays flat as the
-		// document grows. Without the comparator this delta is MARKS + 1.
-		expect(markRender.mock.calls.length - baseline).toBeLessThanOrEqual(5)
+		expect(markRender.mock.calls.length - baseline).toBe(1)
+	})
+
+	it('one mark value change at 100 marks re-renders exactly that mark', async () => {
+		const markRender = vi.fn()
+		const Mark = ({value}: MarkProps) => {
+			markRender()
+			return <mark>{value}</mark>
+		}
+		const Span = ({value}: MarkProps) => <span>{value}</span>
+		const api = createRef<MarkputApi>()
+
+		await render(<MarkedInput ref={api} Mark={Mark} Span={Span} defaultValue={document100} />)
+		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
+
+		const baseline = markRender.mock.calls.length
+		expect(baseline).toBeGreaterThanOrEqual(MARKS)
+
+		// The FIRST mark, so the write also suffix-shifts the other 99 (the
+		// replacement is a different length): one mark's props change, 99 move.
+		const first = api.current?.nodes().find(node => node.kind === 'mark')
+		expect(first).toBeDefined()
+		expect(first?.update({value: 'edited'})).toBe(true)
+		await expect.element(page.getByText('edited')).toBeInTheDocument()
+
+		expect(markRender.mock.calls.length - baseline).toBe(1)
 	})
 })
 
@@ -197,7 +264,7 @@ describe('Render-count gates: block layout', () => {
 
 /**
  * Remount gate (identity unification, phase 1): framework keys come from the
- * stable identity id (`tokens.keyOf`), not per-object WeakMap counters — a
+ * stable identity id (`node.id`), not per-object WeakMap counters — a
  * suffix-shifted token (NEW object after an edit before it, INHERITED id)
  * must keep its key, so React reconciles it in place instead of
  * unmount+remount (which silently drops component-local state and DOM focus).

@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest'
 
-import {Store} from '../../store/Store'
+import {Store} from '../../../store/Store'
 
 function mount(value: string) {
 	const store = new Store()
@@ -25,10 +25,10 @@ describe('text surface reconciliation', () => {
 	it('flips text surfaces to contentEditable=false while selecting', () => {
 		const {store, span, container} = mount('hello')
 
-		store.selection.isUserSelecting(true)
+		store.tokens.isUserSelecting(true)
 		expect(span.contentEditable).toBe('false')
 
-		store.selection.isUserSelecting(false)
+		store.tokens.isUserSelecting(false)
 		expect(span.contentEditable).toBe('true')
 		container.remove()
 	})

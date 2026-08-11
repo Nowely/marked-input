@@ -5,7 +5,7 @@ import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
 import type {PropsModel} from '../state/PropsModel'
-import type {Token} from '../tokens'
+import type {TreeNode} from '../tokens'
 import {resolveMarkSlot, resolveSlot, resolveSlotProps} from './resolveSlot'
 import type {MarkSlot} from './types'
 
@@ -55,7 +55,7 @@ export class SlotsFeature {
 		const options = this.props.options()
 		const Mark = this.props.Mark()
 		const Span = this.props.Span()
-		return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
+		return (node: TreeNode) => resolveMarkSlot(node, options, Mark, Span)
 	})
 
 	constructor(private readonly props: PropsModel) {}

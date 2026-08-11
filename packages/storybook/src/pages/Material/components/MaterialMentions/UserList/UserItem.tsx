@@ -1,10 +1,9 @@
-import type {MarkToken} from '@markput/react'
 import {Avatar, ListItem, ListItemAvatar, ListItemButton, ListItemText} from '@mui/material'
 
 import type {SearchUser} from '../types'
 
 export interface UserItemProps {
-	onSelect: (mark: Pick<MarkToken, 'value' | 'meta'>) => void
+	onSelect: (mark: {value: string; meta?: string}) => void
 	user: SearchUser
 }
 

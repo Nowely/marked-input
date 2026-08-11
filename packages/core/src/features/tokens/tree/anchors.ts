@@ -45,6 +45,50 @@ export function offsetOfAnchor(roots: readonly TreeNode[], anchor: NodeAnchor): 
 }
 
 /**
+ * The mark whose own boundary sits exactly ON `anchor`: the one ENDING there for `-1`, the
+ * one STARTING there for `+1`. NESTED-FIRST, so an inner mark wins over an enclosing one at
+ * a shared boundary — the order `keyboard/input.ts`'s token walk had before it moved here.
+ *
+ * Offsets, deliberately: adjacency IS an equality between an anchor's resolved position and
+ * a mark's stored boundary, and `tree/` is the one layer where that arithmetic is legal
+ * (spec S2 D1). Its consumers — the Backspace/Delete mark swallow and `insertMark`'s "which
+ * mark did that splice create" — name nodes on both sides.
+ */
+export function adjacentMark(roots: readonly TreeNode[], anchor: NodeAnchor, direction: -1 | 1): MarkNode | undefined {
+	const offset = offsetOfAnchor(roots, anchor)
+	const visit = (nodes: readonly TreeNode[]): MarkNode | undefined => {
+		for (const node of nodes) {
+			if (node.kind !== 'mark') continue
+			const nested = visit(node.children())
+			if (nested) return nested
+			if (direction === -1 ? node.position.end === offset : node.position.start === offset) return node
+		}
+		return undefined
+	}
+	return visit(roots)
+}
+
+/**
+ * The single-character step in document order, or `undefined` when there is nothing to step
+ * onto. The keyboard's "delete one character" fallback, which was `{start - 1, start}` on
+ * raw offsets until S2.5.
+ *
+ * FAILS CLOSED on an unanchorable neighbour, and that is the one deliberate behavior change:
+ * a position inside a mark's MARKUP (the `{` of `#[v]{inner}`, a block row's trailing
+ * `\n\n`) is not anchorable, so {@link anchorAt} answers with the mark's own boundary
+ * instead. The old numeric step spliced that position anyway and re-parsed the mark into
+ * plain text; answering `undefined` leaves the browser default, which at the edge of a
+ * `contenteditable` surface does nothing. The round-trip check is what detects it —
+ * {@link anchorAt} is right-affine and does not invert.
+ */
+export function stepAnchor(roots: readonly TreeNode[], anchor: NodeAnchor, direction: -1 | 1): NodeAnchor | undefined {
+	const offset = offsetOfAnchor(roots, anchor) + direction
+	if (offset < 0 || offset > offsetOfAnchor(roots, 'end')) return undefined
+	const stepped = anchorAt(roots, offset)
+	return offsetOfAnchor(roots, stepped) === offset ? stepped : undefined
+}
+
+/**
  * Identity of an anchor: the node OBJECT plus the local offset. This is what the stored
  * selection dedupes on — the DOM sync rebuilds anchors on every `selectionchange`, and
  * without value equality every sweep tick would re-place the caret.

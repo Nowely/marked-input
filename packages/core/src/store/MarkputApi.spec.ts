@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
+import type {TokenDelta} from '../features/tokens'
 import type {Markup} from '../features/tokens/parser/types'
-import type {TokenDelta} from '../features/tokens/seam/commitInput'
 import type {TextNode} from '../features/tokens/tree/types'
 import {effect, watch} from '../shared/signals'
 import type {MarkputApi} from './MarkputApi'
@@ -26,7 +26,7 @@ function setup(value: string, opts: {controlled?: boolean; onChange?: (value: st
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
-	container.replaceChildren(...store.tokens.current().map(() => document.createElement('span')))
+	container.replaceChildren(...store.tokens.nodes().map(() => document.createElement('span')))
 	store.host.rendered()
 	return {store, api: store.api}
 }
@@ -163,17 +163,22 @@ describe('MarkputApi (spec §2.3)', () => {
 		expect(anchor.node).toBe(node)
 	})
 
-	it('caret places a collapsed selection that selectionRange reads back', () => {
+	it('caret places a collapsed selection that selection() reads back', () => {
+		// `selectionRange()` was the read here until S2.6 deleted it (spec S2 D11): the public
+		// surface answers with ANCHORS, and both ends of a caret are the same one.
 		const {api} = setup('hello')
-		expect(api.selectionRange()).toBeUndefined()
-		expect(api.caret({node: textAt(api, 0), offset: 3})).toBe(true)
-		expect(api.selectionRange()).toEqual({start: 3, end: 3})
+		const node = textAt(api, 0)
+		expect(api.selection()).toBeUndefined()
+		expect(api.caret({node, offset: 3})).toBe(true)
+		expect(api.selection()).toEqual({anchor: {node, offset: 3}, head: {node, offset: 3}})
 	})
 
 	it('select() spans two anchors', () => {
 		const {api} = setup('ab@[x](m)cd')
-		expect(api.select({node: textAt(api, 0), offset: 1}, {node: textAt(api, 2), offset: 1})).toBe(true)
-		expect(api.selectionRange()).toEqual({start: 1, end: 10})
+		const first = textAt(api, 0)
+		const last = textAt(api, 2)
+		expect(api.select({node: first, offset: 1}, {node: last, offset: 1})).toBe(true)
+		expect(api.selection()).toEqual({anchor: {node: first, offset: 1}, head: {node: last, offset: 1}})
 	})
 
 	it('select() rejects an anchor whose node has left the tree', () => {
@@ -184,7 +189,7 @@ describe('MarkputApi (spec §2.3)', () => {
 		api.setValue('plain')
 		expect(api.find(mark.id)).toBeUndefined()
 		expect(api.select({before: mark})).toBe(false)
-		expect(api.selectionRange()).toBeUndefined()
+		expect(api.selection()).toBeUndefined()
 	})
 
 	it('exposes the container and a callable focus', () => {
@@ -208,6 +213,17 @@ describe('MarkputApi (spec §2.3)', () => {
 		const {api} = setup('abcd')
 		const node = textAt(api, 0)
 		api.select({node, offset: 1}, {node, offset: 3})
+		expect(api.insertMark('caret', {markup: MARKUP, value: 'x'})?.kind).toBe('mark')
+		expect(api.value()).toBe('a@[x]()bcd')
+	})
+
+	it("insertMark at 'caret' with a BACKWARDS selection still inserts at the document-order start", () => {
+		// The only case that gates `Selection.caretAnchor`'s comparison: `anchor` is the FIXED
+		// end, so here it is the HIGH one. Taking `anchors.anchor` unconditionally inserts at 3
+		// ('abc@[x]()d') and the forward fixture above cannot tell the two apart.
+		const {api} = setup('abcd')
+		const node = textAt(api, 0)
+		api.select({node, offset: 3}, {node, offset: 1})
 		expect(api.insertMark('caret', {markup: MARKUP, value: 'x'})?.kind).toBe('mark')
 		expect(api.value()).toBe('a@[x]()bcd')
 	})

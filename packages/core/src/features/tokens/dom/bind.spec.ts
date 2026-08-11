@@ -2,43 +2,33 @@ import {describe, expect, it} from 'vitest'
 
 import {markToken, textToken} from '../__testing__/tokenFactories'
 import type {Token} from '../parser/types'
+import {createTokenTree} from '../tree/tree'
+import type {TokenTree} from '../tree/tree'
+import type {TextNode, TreeNode} from '../tree/types'
 import {bind} from './bind'
 import type {BindInput, BindResult} from './bind'
+import {focusIfNeeded, getCaretIndex, placeAtTextOffset} from './caret'
 import type {TokenHandle} from './TokenHandle'
 
 /**
- * Test stand-in for the identity tracker's read side: bind receives a
- * reconciled tree, where every token (descendants included) already carries
- * an id, and only ever READS ids. `set` pins an id explicitly (simulating
- * id inheritance across token-object replacement), `registerAll` fills the
- * gaps depth-first like reconcile's ensureId sweep.
+ * Fixtures are LIVE NODES since S2.7: bind projects the tree itself, so a case
+ * builds one with `createTokenTree` and edits it in place instead of minting a
+ * second token generation and pinning ids across it. `buildNode` allocates from the
+ * same tree-local counter, which is how a case inserts a node mid-suite.
+ *
+ * Ids are 1-based and depth-first (`tree.ts`'s `buildNode` allocates a mark's id
+ * before recursing), so `nodes.get(1)` is the first root exactly as it was under the
+ * deleted `createIds` stand-in.
  */
-function createIds() {
-	const ids = new WeakMap<Token, number>()
-	let next = 1
-	const registerAll = (tokens: readonly Token[]): void => {
-		for (const token of tokens) {
-			if (!ids.has(token)) ids.set(token, next++)
-			if (token.type === 'mark') registerAll(token.children)
-		}
-	}
-	return {
-		idFor: (token: Token) => ids.get(token),
-		set: (token: Token, id: number) => void ids.set(token, id),
-		registerAll,
-	}
+function treeOf(tokens: Token[]): {tree: TokenTree; roots: readonly TreeNode[]} {
+	const tree = createTokenTree(tokens)
+	return {tree, roots: tree.roots()}
 }
 
-function inputFor(
-	container: HTMLElement,
-	tokens: readonly Token[],
-	idFor: (token: Token) => number | undefined,
-	overrides: Partial<BindInput> = {}
-): BindInput {
+function inputFor(container: HTMLElement, roots: readonly TreeNode[], overrides: Partial<BindInput> = {}): BindInput {
 	return {
 		container,
-		tokens,
-		idFor,
+		roots,
 		nodes: new Map<number, TokenHandle>(),
 		controlElements: new Set<HTMLElement>(),
 		childSequenceHostsFor: () => [],
@@ -48,30 +38,32 @@ function inputFor(
 	}
 }
 
-/**
- * The bound handle at a tree POSITION. Replaces `result.byPath.get(pathKey(path))`:
- * S1.8 step 4 re-keyed the bind result on stable ids, so a case that names a token by
- * where it sits in the fixture resolves the token first and looks its handle up by id.
- */
-function at(
-	result: BindResult,
-	ids: ReturnType<typeof createIds>,
-	tokens: readonly Token[],
-	...path: number[]
-): TokenHandle | undefined {
-	let siblings: readonly Token[] = tokens
-	let token: Token | undefined
+/** The node at a tree POSITION — the bind result is keyed by stable id, so a case resolves the node first. */
+function nodeAt(roots: readonly TreeNode[], ...path: number[]): TreeNode | undefined {
+	let siblings: readonly TreeNode[] = roots
+	let node: TreeNode | undefined
 	for (const index of path) {
 		// `.at`, not `[]`: `tsconfig` leaves `noUncheckedIndexedAccess` off, so an index read
-		// types as `Token` and the out-of-range guard — which several cases below rely on to
+		// types as `TreeNode` and the out-of-range guard — which several cases below rely on to
 		// answer `undefined` — is linted away as an impossible condition.
 		const next = siblings.at(index)
 		if (!next) return undefined
-		token = next
-		siblings = token.type === 'mark' ? token.children : []
+		node = next
+		siblings = node.kind === 'mark' ? node.children() : []
 	}
-	const id = token === undefined ? undefined : ids.idFor(token)
-	return id === undefined ? undefined : result.bound.get(id)
+	return node
+}
+
+function at(result: BindResult, roots: readonly TreeNode[], ...path: number[]): TokenHandle | undefined {
+	const node = nodeAt(roots, ...path)
+	return node === undefined ? undefined : result.bound.get(node.id)
+}
+
+/** The node at a tree position as a TextNode — the fixtures below know their own shape. */
+function textAt(roots: readonly TreeNode[], ...path: number[]): TextNode {
+	const node = nodeAt(roots, ...path)
+	if (node?.kind !== 'text') throw new Error('expected a text node')
+	return node
 }
 
 function spanWith(content: string): HTMLElement {
@@ -80,24 +72,43 @@ function spanWith(content: string): HTMLElement {
 	return span
 }
 
+/**
+ * A span that counts `textContent` WRITES. The one-writer property of S2.7 is
+ * otherwise invisible: two writers agree on the value, so only the write count
+ * discriminates them.
+ */
+function countingSpan(content: string): {span: HTMLElement; writes: () => number} {
+	const span = spanWith(content)
+	const descriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent')
+	if (!descriptor) throw new Error('textContent is not an accessor on Node.prototype')
+	let writes = 0
+	Object.defineProperty(span, 'textContent', {
+		configurable: true,
+		get: () => descriptor.get?.call(span),
+		set: (value: string) => {
+			writes++
+			descriptor.set?.call(span, value)
+		},
+	})
+	return {span, writes: () => writes}
+}
+
 describe('bind', () => {
 	describe('structural walk (buildIndex semantics)', () => {
-		it('binds a single inline text token to its DOM element and registers the handle', () => {
+		it('binds a single inline text node to its DOM element and registers the handle', () => {
 			const container = document.createElement('div')
 			const span = spanWith('hello')
 			container.append(span)
 
-			const tokens: Token[] = [textToken('hello', 0)]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([textToken('hello', 0)])
 			const nodes = new Map<number, TokenHandle>()
 
-			const result = bind(inputFor(container, tokens, ids.idFor, {nodes}))
+			const result = bind(inputFor(container, roots, {nodes}))
 
-			const handle = at(result, ids, tokens, 0)
+			const handle = at(result, roots, 0)
 			expect(handle).toBeDefined()
 			expect(nodes.get(1)).toBe(handle)
-			expect(handle?.token()).toBe(tokens[0])
+			expect(handle?.id).toBe(roots[0].id)
 			expect(handle?.element()).toBe(span)
 			expect(handle?.node()).toEqual({tokenElement: span, textElement: span})
 			expect(result.byElement.get(span)).toBe(handle)
@@ -110,17 +121,15 @@ describe('bind', () => {
 			const after = document.createElement('span')
 			container.append(before, mark, after)
 
-			const tokens: Token[] = [textToken('hi ', 0), markToken('world', '@[world]', 3), textToken('!', 11)]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([textToken('hi ', 0), markToken('world', '@[world]', 3), textToken('!', 11)])
 
-			const result = bind(inputFor(container, tokens, ids.idFor))
+			const result = bind(inputFor(container, roots))
 
-			expect(at(result, ids, tokens, 0)?.element()).toBe(before)
-			expect(at(result, ids, tokens, 1)?.element()).toBe(mark)
-			expect(at(result, ids, tokens, 2)?.element()).toBe(after)
-			expect(at(result, ids, tokens, 1)?.node()?.textElement).toBeUndefined()
-			expect(at(result, ids, tokens, 1)?.hasTextSurface()).toBe(false)
+			expect(at(result, roots, 0)?.element()).toBe(before)
+			expect(at(result, roots, 1)?.element()).toBe(mark)
+			expect(at(result, roots, 2)?.element()).toBe(after)
+			expect(at(result, roots, 1)?.node()?.textElement).toBeUndefined()
+			expect(at(result, roots, 1)?.hasTextSurface()).toBe(false)
 		})
 
 		it('descends into nested mark children in place', () => {
@@ -130,15 +139,13 @@ describe('bind', () => {
 			outer.append(innerText)
 			container.append(outer)
 
-			const tokens: Token[] = [markToken('x', '@[x]', 0, [textToken('x', 0)])]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('x', 0)])])
 
-			const result = bind(inputFor(container, tokens, ids.idFor))
+			const result = bind(inputFor(container, roots))
 
-			expect(at(result, ids, tokens, 0)?.element()).toBe(outer)
-			expect(at(result, ids, tokens, 0, 0)?.element()).toBe(innerText)
-			expect(at(result, ids, tokens, 0, 0)?.node()?.textElement).toBe(innerText)
+			expect(at(result, roots, 0)?.element()).toBe(outer)
+			expect(at(result, roots, 0, 0)?.element()).toBe(innerText)
+			expect(at(result, roots, 0, 0)?.node()?.textElement).toBe(innerText)
 		})
 
 		it('completes binding when a nested mark renders no child elements', () => {
@@ -146,21 +153,19 @@ describe('bind', () => {
 			const outer = document.createElement('mark')
 			container.append(outer)
 
-			const tokens: Token[] = [markToken('x', '@[x]', 0, [textToken('a', 0)])]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('a', 0)])])
 			const nodes = new Map<number, TokenHandle>()
 
-			const result = bind(inputFor(container, tokens, ids.idFor, {nodes}))
+			const result = bind(inputFor(container, roots, {nodes}))
 
-			expect(at(result, ids, tokens, 0)?.element()).toBe(outer)
-			expect(at(result, ids, tokens, 0, 0)).toBeUndefined()
-			// No handle is materialized for a tree token the walk never reached.
+			expect(at(result, roots, 0)?.element()).toBe(outer)
+			expect(at(result, roots, 0, 0)).toBeUndefined()
+			// No handle is materialized for a tree node the walk never reached.
 			expect(nodes.has(2)).toBe(false)
 			expect(nodes.size).toBe(1)
 		})
 
-		it('peels block-layout rows and binds the single token per row', () => {
+		it('peels block-layout rows and binds the single node per row', () => {
 			const container = document.createElement('div')
 			const row0 = document.createElement('div')
 			const tokenEl0 = document.createElement('span')
@@ -170,18 +175,16 @@ describe('bind', () => {
 			row1.append(tokenEl1)
 			container.append(row0, row1)
 
-			const tokens: Token[] = [textToken('a', 0), textToken('b', 2)]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([textToken('a', 0), textToken('b', 2)])
 
-			const result = bind(inputFor(container, tokens, ids.idFor, {isBlock: true}))
+			const result = bind(inputFor(container, roots, {isBlock: true}))
 
-			expect(at(result, ids, tokens, 0)?.element()).toBe(tokenEl0)
-			expect(at(result, ids, tokens, 0)?.node()?.rowElement).toBe(row0)
-			expect(at(result, ids, tokens, 1)?.element()).toBe(tokenEl1)
-			expect(at(result, ids, tokens, 1)?.node()?.rowElement).toBe(row1)
-			expect(result.byElement.get(row0)).toBe(at(result, ids, tokens, 0))
-			expect(result.byElement.get(row1)).toBe(at(result, ids, tokens, 1))
+			expect(at(result, roots, 0)?.element()).toBe(tokenEl0)
+			expect(at(result, roots, 0)?.node()?.rowElement).toBe(row0)
+			expect(at(result, roots, 1)?.element()).toBe(tokenEl1)
+			expect(at(result, roots, 1)?.node()?.rowElement).toBe(row1)
+			expect(result.byElement.get(row0)).toBe(at(result, roots, 0))
+			expect(result.byElement.get(row1)).toBe(at(result, roots, 1))
 		})
 
 		it('treats block-row control children as non-tokens (preserves single-token-per-row invariant)', () => {
@@ -192,16 +195,12 @@ describe('bind', () => {
 			row.append(control, tokenEl)
 			container.append(row)
 
-			const tokens: Token[] = [textToken('a', 0)]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([textToken('a', 0)])
 
-			const result = bind(
-				inputFor(container, tokens, ids.idFor, {isBlock: true, controlElements: new Set([control])})
-			)
+			const result = bind(inputFor(container, roots, {isBlock: true, controlElements: new Set([control])}))
 
-			expect(at(result, ids, tokens, 0)?.element()).toBe(tokenEl)
-			expect(at(result, ids, tokens, 0)?.node()?.rowElement).toBe(row)
+			expect(at(result, roots, 0)?.element()).toBe(tokenEl)
+			expect(at(result, roots, 0)?.node()?.rowElement).toBe(row)
 		})
 
 		it('bails block alignment when a row has more than one non-control child (fail-loud)', () => {
@@ -215,32 +214,65 @@ describe('bind', () => {
 			row1.append(extra1, extra2)
 			container.append(row0, row1)
 
-			const tokens: Token[] = [textToken('a', 0), textToken('b', 2)]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([textToken('a', 0), textToken('b', 2)])
 			const nodes = new Map<number, TokenHandle>()
 
-			const result = bind(inputFor(container, tokens, ids.idFor, {isBlock: true, nodes}))
+			const result = bind(inputFor(container, roots, {isBlock: true, nodes}))
 
-			expect(at(result, ids, tokens, 0)).toBeUndefined()
-			expect(at(result, ids, tokens, 1)).toBeUndefined()
+			expect(at(result, roots, 0)).toBeUndefined()
+			expect(at(result, roots, 1)).toBeUndefined()
 			// All-or-nothing: nothing was indexed, so no handles materialize either.
 			expect(nodes.size).toBe(0)
 		})
 
-		it('skips control elements when zipping tokens with DOM children', () => {
+		it('drops a frame AND every descendant frame on a count mismatch', () => {
+			// The all-or-nothing frame bail, asserted where it can be told apart from
+			// "nothing bound at all": the ROOT frame aligns (one mark, one element) and
+			// the mark's own frame does not (two children, three elements). The mark binds;
+			// neither child does, and the grandchild inside the second child — whose own
+			// frame WOULD align on its own — is never reached, because a dropped frame
+			// never enqueues its descendants.
+			//
+			// MEASURED against the realistic competing design (zip the common prefix
+			// instead of dropping): that mutant binds child #2 AND grandchild #4 here, and
+			// is killed by 7 cases across the core suite.
+			const container = document.createElement('div')
+			const outer = document.createElement('mark')
+			const childA = document.createElement('span')
+			const childB = document.createElement('mark')
+			const grandchild = document.createElement('span')
+			childB.append(grandchild)
+			const stray = document.createElement('span')
+			outer.append(childA, childB, stray)
+			container.append(outer)
+
+			const {roots} = treeOf([
+				markToken('x', '@[x]', 0, [textToken('a', 0), markToken('y', '@[y]', 1, [textToken('b', 1)])]),
+			])
+			const nodes = new Map<number, TokenHandle>()
+
+			const result = bind(inputFor(container, roots, {nodes}))
+
+			expect(at(result, roots, 0)?.element()).toBe(outer)
+			expect(at(result, roots, 0, 0)).toBeUndefined()
+			expect(at(result, roots, 0, 1)).toBeUndefined()
+			expect(at(result, roots, 0, 1, 0)).toBeUndefined()
+			// Only the outer mark materialized a handle.
+			expect(nodes.size).toBe(1)
+			expect(result.bound.size).toBe(1)
+		})
+
+		it('skips control elements when zipping nodes with DOM children', () => {
 			const container = document.createElement('div')
 			const control = document.createElement('button')
 			const tokenEl = document.createElement('span')
 			container.append(control, tokenEl)
 
-			const tokens: Token[] = [textToken('a', 0)]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([textToken('a', 0)])
 
-			const result = bind(inputFor(container, tokens, ids.idFor, {controlElements: new Set([control])}))
+			const result = bind(inputFor(container, roots, {controlElements: new Set([control])}))
 
-			expect(at(result, ids, tokens, 0)?.element()).toBe(tokenEl)
+			expect(at(result, roots, 0)?.element()).toBe(tokenEl)
 			expect(result.byElement.get(control)).toBeUndefined()
 		})
 
@@ -252,13 +284,11 @@ describe('bind', () => {
 			const tokenEl = document.createElement('span')
 			container.append(wrapper, tokenEl)
 
-			const tokens: Token[] = [textToken('a', 0)]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([textToken('a', 0)])
 
-			const result = bind(inputFor(container, tokens, ids.idFor, {controlElements: new Set([control])}))
+			const result = bind(inputFor(container, roots, {controlElements: new Set([control])}))
 
-			expect(at(result, ids, tokens, 0)?.element()).toBe(tokenEl)
+			expect(at(result, roots, 0)?.element()).toBe(tokenEl)
 		})
 
 		it('uses a registered child-sequence host as the parent for nested children', () => {
@@ -271,20 +301,18 @@ describe('bind', () => {
 			outer.append(host)
 			container.append(outer)
 
-			const tokens: Token[] = [markToken('x', '@[x]', 0, [textToken('a', 0), textToken('b', 1)])]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('a', 0), textToken('b', 1)])])
 
 			const result = bind(
-				inputFor(container, tokens, ids.idFor, {
-					childSequenceHostsFor: ownerId => (ownerId === ids.idFor(tokens[0]) ? [host] : []),
+				inputFor(container, roots, {
+					childSequenceHostsFor: ownerId => (ownerId === roots[0].id ? [host] : []),
 				})
 			)
 
-			expect(at(result, ids, tokens, 0)?.node()?.childSequenceHost).toBe(host)
-			expect(at(result, ids, tokens, 0, 0)?.element()).toBe(innerA)
-			expect(at(result, ids, tokens, 0, 1)?.element()).toBe(innerB)
-			expect(result.byElement.get(host)).toBe(at(result, ids, tokens, 0))
+			expect(at(result, roots, 0)?.node()?.childSequenceHost).toBe(host)
+			expect(at(result, roots, 0, 0)?.element()).toBe(innerA)
+			expect(at(result, roots, 0, 1)?.element()).toBe(innerB)
+			expect(result.byElement.get(host)).toBe(at(result, roots, 0))
 		})
 
 		it('falls back to in-place descent when child-sequence host is duplicated', () => {
@@ -295,18 +323,16 @@ describe('bind', () => {
 			outer.append(hostA, hostB)
 			container.append(outer)
 
-			const tokens: Token[] = [markToken('x', '@[x]', 0, [textToken('a', 0)])]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('a', 0)])])
 
 			const result = bind(
-				inputFor(container, tokens, ids.idFor, {
-					childSequenceHostsFor: ownerId => (ownerId === ids.idFor(tokens[0]) ? [hostA, hostB] : []),
+				inputFor(container, roots, {
+					childSequenceHostsFor: ownerId => (ownerId === roots[0].id ? [hostA, hostB] : []),
 				})
 			)
 
-			expect(at(result, ids, tokens, 0)?.node()?.childSequenceHost).toBeUndefined()
-			expect(at(result, ids, tokens, 0, 0)).toBeUndefined()
+			expect(at(result, roots, 0)?.node()?.childSequenceHost).toBeUndefined()
+			expect(at(result, roots, 0, 0)).toBeUndefined()
 		})
 
 		it('returns controlRoots including controls and their ancestors up to container', () => {
@@ -317,11 +343,9 @@ describe('bind', () => {
 			wrapper.append(control)
 			container.append(wrapper, tokenEl)
 
-			const tokens: Token[] = [textToken('hi', 0)]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([textToken('hi', 0)])
 
-			const result = bind(inputFor(container, tokens, ids.idFor, {controlElements: new Set([control])}))
+			const result = bind(inputFor(container, roots, {controlElements: new Set([control])}))
 
 			expect(result.controlRoots.has(control)).toBe(true)
 			expect(result.controlRoots.has(wrapper)).toBe(true)
@@ -337,82 +361,68 @@ describe('bind', () => {
 			leading.append(outsideHost)
 			container.append(leading, outer, trailing)
 
-			const tokens: Token[] = [
+			const {roots} = treeOf([
 				textToken('a', 0),
 				markToken('x', '@[x]', 1, [textToken('b', 1)]),
 				textToken('c', 5),
-			]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			])
 
 			const result = bind(
-				inputFor(container, tokens, ids.idFor, {
-					childSequenceHostsFor: ownerId => (ownerId === ids.idFor(tokens[1]) ? [outsideHost] : []),
+				inputFor(container, roots, {
+					childSequenceHostsFor: ownerId => (ownerId === roots[1].id ? [outsideHost] : []),
 				})
 			)
 
-			expect(at(result, ids, tokens, 0)?.element()).toBe(leading)
-			expect(at(result, ids, tokens, 1)?.element()).toBe(outer)
-			expect(at(result, ids, tokens, 1)?.node()?.childSequenceHost).toBeUndefined()
-			expect(at(result, ids, tokens, 2)?.element()).toBe(trailing)
-			expect(at(result, ids, tokens, 1, 0)).toBeUndefined()
+			expect(at(result, roots, 0)?.element()).toBe(leading)
+			expect(at(result, roots, 1)?.element()).toBe(outer)
+			expect(at(result, roots, 1)?.node()?.childSequenceHost).toBeUndefined()
+			expect(at(result, roots, 2)?.element()).toBe(trailing)
+			expect(at(result, roots, 1, 0)).toBeUndefined()
 		})
 	})
 
 	describe('node map lifecycle', () => {
-		it('reuses the handle across binds, updating token and elements in place', () => {
+		it('reuses the handle across binds, updating elements in place', () => {
 			const container = document.createElement('div')
 			container.append(spanWith('hello'))
-			const first = textToken('hello', 0)
-			const ids = createIds()
-			ids.registerAll([first])
+			const {roots} = treeOf([textToken('hello', 0)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, [first], ids.idFor, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
 			const handle = nodes.get(1)
 			if (!handle) throw new Error('expected handle for id 1')
 
-			// Structural re-render: new token object (id inherited), new DOM.
-			const next = textToken('hello!', 0)
-			ids.set(next, 1)
-			const renderedSpan = spanWith('hello!')
+			// Structural re-render: the node's text moved and the adapter repainted.
+			textAt(roots, 0).text('hello!')
+			const renderedSpan = spanWith('stale')
 			container.replaceChildren(renderedSpan)
 
-			const result = bind(inputFor(container, [next], ids.idFor, {nodes}))
+			const result = bind(inputFor(container, roots, {nodes}))
 
 			expect(nodes.size).toBe(1)
 			expect(nodes.get(1)).toBe(handle)
 			expect(result.bound.get(1)).toBe(handle)
 			expect(result.byElement.get(renderedSpan)).toBe(handle)
-			expect(handle.token()).toBe(next)
-			expect(handle.token().content).toBe('hello!')
 			expect(handle.element()).toBe(renderedSpan)
+			expect(renderedSpan.textContent).toBe('hello!')
 		})
 
-		it('rebinds when a token shifts to a new position', () => {
+		it('rebinds when a node shifts to a new position', () => {
 			const container = document.createElement('div')
 			container.append(spanWith('alpha '), spanWith('beta'))
-			const a = textToken('alpha ', 0)
-			const b = textToken('beta', 6)
-			const ids = createIds()
-			ids.registerAll([a, b])
+			const {tree, roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, [a, b], ids.idFor, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
 			const handleB = nodes.get(2)
 			if (!handleB) throw new Error('expected handle for id 2')
 
-			// A token is prepended: b keeps content and shifts position.
-			const inserted = textToken('x ', 0)
-			const a2 = textToken('alpha ', 2)
-			const b2 = textToken('beta', 8)
-			ids.set(a2, 1)
-			ids.set(b2, 2)
-			ids.registerAll([inserted])
+			// A node is prepended: `beta` keeps its identity and shifts one slot right.
+			const inserted = tree.buildNode(textToken('x ', 0))
 			const spanB2 = spanWith('beta')
 			container.replaceChildren(spanWith('x '), spanWith('alpha '), spanB2)
 
-			const result = bind(inputFor(container, [inserted, a2, b2], ids.idFor, {nodes}))
+			const result = bind(inputFor(container, [inserted, ...roots], {nodes}))
 
 			expect(result.bound.get(2)).toBe(handleB)
 			expect(handleB.element()).toBe(spanB2)
@@ -422,19 +432,16 @@ describe('bind', () => {
 			const container = document.createElement('div')
 			const spanA = spanWith('alpha ')
 			container.append(spanA, spanWith('beta'))
-			const a = textToken('alpha ', 0)
-			const b = textToken('beta', 6)
-			const ids = createIds()
-			ids.registerAll([a, b])
+			const {roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, [a, b], ids.idFor, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
 			const handleA = nodes.get(1)
 			const handleB = nodes.get(2)
 			if (!handleA || !handleB) throw new Error('expected handles for both ids')
 
 			container.replaceChildren(spanA)
-			bind(inputFor(container, [a], ids.idFor, {nodes}))
+			bind(inputFor(container, roots.slice(0, 1), {nodes}))
 
 			expect(handleB.alive()).toBe(false)
 			expect(nodes.has(2)).toBe(false)
@@ -448,29 +455,22 @@ describe('bind', () => {
 			// handle whose id vanished from #byId, and on a bail #byId was empty — a
 			// transiently misaligned DOM (adapter mid-render) killed all handles.
 			// Here only ids genuinely absent from the TREE die; on a bail the nodes
-			// keep token/path (refreshed from the authoritative tree) and lose only
-			// their element bindings.
+			// keep their identity and lose only their element bindings.
 			const container = document.createElement('div')
 			container.append(spanWith('alpha '), spanWith('beta'))
-			const a = textToken('alpha ', 0)
-			const b = textToken('beta', 6)
-			const ids = createIds()
-			ids.registerAll([a, b])
+			const {roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, [a, b], ids.idFor, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
 			const handleA = nodes.get(1)
 			const handleB = nodes.get(2)
 			if (!handleA || !handleB) throw new Error('expected handles for both ids')
 
-			// New tree (text grew), but the DOM is misaligned: one element, two tokens.
-			const a2 = textToken('alpha! ', 0)
-			const b2 = textToken('beta', 7)
-			ids.set(a2, 1)
-			ids.set(b2, 2)
+			// New generation (text grew), but the DOM is misaligned: one element, two nodes.
+			textAt(roots, 0).text('alpha! ')
 			container.replaceChildren(spanWith('alpha! '))
 
-			const result = bind(inputFor(container, [a2, b2], ids.idFor, {nodes}))
+			const result = bind(inputFor(container, roots, {nodes}))
 
 			expect(result.bound.size).toBe(0)
 			// Both handles survive in the node map — not killed, only unbound.
@@ -478,10 +478,6 @@ describe('bind', () => {
 			expect(handleA.element()).toBeUndefined()
 			expect(handleB.element()).toBeUndefined()
 			expect(handleA.node()).toBeUndefined()
-			// The token stays current with the tree even while unbound.
-			expect(handleA.token()).toBe(a2)
-			expect(handleA.token().content).toBe('alpha! ')
-			expect(handleB.token()).toBe(b2)
 		})
 
 		it('keeps an existing handle alive and current when its subtree goes unrendered', () => {
@@ -489,55 +485,26 @@ describe('bind', () => {
 			const outer = document.createElement('mark')
 			outer.append(spanWith('a'))
 			container.append(outer)
-			const tokens: Token[] = [markToken('x', '@[x]', 0, [textToken('a', 0)])]
-			const ids = createIds()
-			ids.registerAll(tokens)
+			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('a', 0)])])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, tokens, ids.idFor, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
 			const child = nodes.get(2)
 			if (!child) throw new Error('expected child handle')
 			expect(child.element()).toBeDefined()
 
-			// Next render: the mark renders no child elements, but the child token
-			// is still in the tree — its handle must survive, unbound and current.
-			const childToken2 = textToken('b', 0)
-			const mark2 = markToken('x', '@[x]', 0, [childToken2])
-			ids.set(mark2, 1)
-			ids.set(childToken2, 2)
+			// Next render: the mark renders no child elements, but the child node is
+			// still in the tree — its handle must survive, unbound and alive.
+			textAt(roots, 0, 0).text('b')
 			outer.replaceChildren()
 
-			const result = bind(inputFor(container, [mark2], ids.idFor, {nodes}))
+			const result = bind(inputFor(container, roots, {nodes}))
 
-			expect(at(result, ids, tokens, 0)).toBeDefined()
-			expect(at(result, ids, tokens, 0, 0)).toBeUndefined()
+			expect(at(result, roots, 0)).toBeDefined()
+			expect(at(result, roots, 0, 0)).toBeUndefined()
 			// The child survives in the node map — not killed, only unbound.
 			expect(nodes.has(2)).toBe(true)
 			expect(child.element()).toBeUndefined()
-			expect(child.token()).toBe(childToken2)
-			expect(child.token().content).toBe('b')
-		})
-
-		it('throws before mutating anything when a tree token has no id', () => {
-			const container = document.createElement('div')
-			const span = spanWith('hello')
-			container.append(span)
-			const first = textToken('hello', 0)
-			const ids = createIds()
-			ids.registerAll([first])
-			const nodes = new Map<number, TokenHandle>()
-
-			bind(inputFor(container, [first], ids.idFor, {nodes}))
-			const handle = nodes.get(1)
-			if (!handle) throw new Error('expected handle for id 1')
-
-			const unregistered = textToken('rogue', 0)
-			expect(() => bind(inputFor(container, [unregistered], ids.idFor, {nodes}))).toThrow(/no id/)
-
-			// Pre-pass failed before any mutation: the node layer is untouched.
-			expect(nodes.size).toBe(1)
-			expect(handle.alive()).toBe(true)
-			expect(handle.element()).toBe(span)
 		})
 	})
 
@@ -546,19 +513,14 @@ describe('bind', () => {
 			const editableSpan = spanWith('a')
 			const editableContainer = document.createElement('div')
 			editableContainer.append(editableSpan)
-			const editableToken = textToken('a', 0)
 
 			const frozenSpan = spanWith('b')
 			const frozenContainer = document.createElement('div')
 			frozenContainer.append(frozenSpan)
-			const frozenToken = textToken('b', 0)
 
-			const ids = createIds()
-			ids.registerAll([editableToken, frozenToken])
-
-			bind(inputFor(editableContainer, [editableToken], ids.idFor))
+			bind(inputFor(editableContainer, treeOf([textToken('a', 0)]).roots))
 			bind(
-				inputFor(frozenContainer, [frozenToken], ids.idFor, {
+				inputFor(frozenContainer, treeOf([textToken('b', 0)]).roots, {
 					editable: {editable: false, readOnly: false},
 				})
 			)
@@ -571,20 +533,15 @@ describe('bind', () => {
 			const interactiveMark = document.createElement('mark')
 			const interactiveContainer = document.createElement('div')
 			interactiveContainer.append(interactiveMark)
-			const interactiveToken = markToken('a', '@[a]', 0)
 
 			const readOnlyMark = document.createElement('mark')
 			readOnlyMark.tabIndex = 0
 			const readOnlyContainer = document.createElement('div')
 			readOnlyContainer.append(readOnlyMark)
-			const readOnlyToken = markToken('b', '@[b]', 0)
 
-			const ids = createIds()
-			ids.registerAll([interactiveToken, readOnlyToken])
-
-			bind(inputFor(interactiveContainer, [interactiveToken], ids.idFor))
+			bind(inputFor(interactiveContainer, treeOf([markToken('a', '@[a]', 0)]).roots))
 			bind(
-				inputFor(readOnlyContainer, [readOnlyToken], ids.idFor, {
+				inputFor(readOnlyContainer, treeOf([markToken('b', '@[b]', 0)]).roots, {
 					editable: {editable: false, readOnly: true},
 				})
 			)
@@ -601,19 +558,14 @@ describe('bind', () => {
 			const editableButton = document.createElement('button')
 			const editableContainer = document.createElement('div')
 			editableContainer.append(editableButton)
-			const editableToken = markToken('a', '@[a]', 0)
 
 			const readOnlyButton = document.createElement('button')
 			const readOnlyContainer = document.createElement('div')
 			readOnlyContainer.append(readOnlyButton)
-			const readOnlyToken = markToken('b', '@[b]', 0)
 
-			const ids = createIds()
-			ids.registerAll([editableToken, readOnlyToken])
-
-			bind(inputFor(editableContainer, [editableToken], ids.idFor))
+			bind(inputFor(editableContainer, treeOf([markToken('a', '@[a]', 0)]).roots))
 			bind(
-				inputFor(readOnlyContainer, [readOnlyToken], ids.idFor, {
+				inputFor(readOnlyContainer, treeOf([markToken('b', '@[b]', 0)]).roots, {
 					editable: {editable: false, readOnly: true},
 				})
 			)
@@ -633,55 +585,91 @@ describe('bind', () => {
 			const container = document.createElement('div')
 			const span = spanWith('hello')
 			container.append(span)
-			const token = textToken('hello', 0)
-			const ids = createIds()
-			ids.registerAll([token])
+			const {roots} = treeOf([textToken('hello', 0)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, [token], ids.idFor, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
 			expect(span.contentEditable).toBe('true')
 
 			span.contentEditable = 'false'
-			bind(inputFor(container, [token], ids.idFor, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
 
 			expect(span.contentEditable).toBe('false')
 		})
 	})
 
-	describe('text surface reconciliation (the absorbed sweep)', () => {
+	describe('the per-surface text effect (S2.7: ONE writer)', () => {
 		it('writes textContent of a newly bound surface the renderer left stale', () => {
+			// The effect's IMMEDIATE first run is the mount-time reconciliation the
+			// deleted `applyMountState` textContent write used to do.
 			const container = document.createElement('div')
 			const span = spanWith('')
 			container.append(span)
-			const token = textToken('hello', 0)
-			const ids = createIds()
-			ids.registerAll([token])
 
-			bind(inputFor(container, [token], ids.idFor))
+			bind(inputFor(container, treeOf([textToken('hello', 0)]).roots))
 
 			expect(span.textContent).toBe('hello')
 		})
 
-		it('patches stale textContent of a surface that stays bound across a structural commit', () => {
-			// The structural branch endpoint must absorb the old per-commit sweep:
-			// a structural commit can ALSO carry text changes (e.g. paste replacing
-			// a mark and editing text), and the renderer only re-renders structure —
-			// a kept element's textContent would stay stale without this.
+		it('patches a surface that stays bound when the node text changes, with NO re-bind', () => {
+			// THE point of the phase: the commit pipeline no longer replays text. A live
+			// edit to the node reaches its surface through the effect alone.
 			const container = document.createElement('div')
 			const span = spanWith('hello')
 			container.append(span)
-			const first = textToken('hello', 0)
-			const ids = createIds()
-			ids.registerAll([first])
-			const nodes = new Map<number, TokenHandle>()
+			const {roots} = treeOf([textToken('hello', 0)])
 
-			bind(inputFor(container, [first], ids.idFor, {nodes}))
-
-			const next = textToken('hello world', 0)
-			ids.set(next, 1)
-			bind(inputFor(container, [next], ids.idFor, {nodes}))
+			bind(inputFor(container, roots))
+			textAt(roots, 0).text('hello world')
 
 			expect(span.textContent).toBe('hello world')
+		})
+
+		it('heals a surface corrupted between binds on the next bind', () => {
+			// The re-arm's first run is what makes the structural branch self-healing.
+			const container = document.createElement('div')
+			const span = spanWith('hello')
+			container.append(span)
+			const {roots} = treeOf([textToken('hello', 0)])
+			const nodes = new Map<number, TokenHandle>()
+
+			bind(inputFor(container, roots, {nodes}))
+			span.textContent = 'WRONG'
+			bind(inputFor(container, roots, {nodes}))
+
+			expect(span.textContent).toBe('hello')
+		})
+
+		it('keeps the caret when a re-bind finds the surface already correct (conditional write)', () => {
+			// THE caret case, and it needs a SPLIT surface — measured, because on a
+			// single-Text-child element Chromium's `textContent` setter takes a fast path
+			// (`setData` on the existing node, itself a no-op for an identical string) and
+			// the caret survives an unconditional write anyway. Two Text children is not
+			// exotic: it is what `splitText` — and what the browser's own editing of a
+			// contenteditable surface — leaves behind. There the setter is a genuine
+			// replace-all: measured, `textContent = <same string>` collapses two children
+			// into one and drops the caret from 4 to 0.
+			const container = document.createElement('div')
+			const span = spanWith('hello')
+			container.append(span)
+			document.body.append(container)
+			const {roots} = treeOf([textToken('hello', 0)])
+			const nodes = new Map<number, TokenHandle>()
+
+			bind(inputFor(container, roots, {nodes}))
+			// The browser's own editing leaves a surface split like this.
+			const only = span.firstChild
+			if (!(only instanceof Text)) throw new Error('expected one text child')
+			only.splitText(2)
+			focusIfNeeded(span)
+			placeAtTextOffset(span, 4)
+			expect(getCaretIndex(span)).toBe(4)
+
+			bind(inputFor(container, roots, {nodes}))
+
+			expect(span.childNodes).toHaveLength(2)
+			expect(getCaretIndex(span)).toBe(4)
+			document.body.replaceChildren()
 		})
 
 		it('preserves the text node when content already matches (conditional write)', () => {
@@ -690,18 +678,86 @@ describe('bind', () => {
 			span.append(document.createTextNode('hello'))
 			container.append(span)
 			const initialTextNode = span.firstChild
-			const first = textToken('hello', 0)
-			const ids = createIds()
-			ids.registerAll([first])
+			const {roots} = treeOf([textToken('hello', 0)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, [first], ids.idFor, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
 			expect(span.firstChild).toBe(initialTextNode)
 
-			const next = textToken('hello', 0)
-			ids.set(next, 1)
-			bind(inputFor(container, [next], ids.idFor, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
 			expect(span.firstChild).toBe(initialTextNode)
+
+			// A no-op edit (same string) does not disturb it either: the signal does not
+			// move, so the effect does not even re-run.
+			textAt(roots, 0).text('hello')
+			expect(span.firstChild).toBe(initialTextNode)
+		})
+
+		it('writes ONCE per text change, however many times the surface was re-bound', () => {
+			// The failure mode of the phase: `bind` re-arming without disposing would
+			// leave one live effect per bind, each writing the same value in turn. Only
+			// the write COUNT tells them apart.
+			const container = document.createElement('div')
+			const {span, writes} = countingSpan('hello')
+			container.append(span)
+			const {roots} = treeOf([textToken('hello', 0)])
+			const nodes = new Map<number, TokenHandle>()
+
+			bind(inputFor(container, roots, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
+			expect(writes()).toBe(0)
+
+			textAt(roots, 0).text('hello!')
+
+			expect(writes()).toBe(1)
+			expect(span.textContent).toBe('hello!')
+		})
+
+		it('stops writing an unbound surface, however many binds armed it', () => {
+			// The effect dies with the binding: a node whose element left the DOM must
+			// not keep writing the detached one.
+			//
+			// TWO arming binds before the unbind, and that is the mutation gate: with the
+			// re-arm's `dispose` dropped, the write COUNT is still 1 (the second effect
+			// finds the surface already correct and the conditional skips it), so the
+			// leaked effect is invisible until the binding goes away and only the LAST
+			// one is disposed.
+			const container = document.createElement('div')
+			const spanA = spanWith('alpha ')
+			container.append(spanA, spanWith('beta'))
+			const {roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
+			const nodes = new Map<number, TokenHandle>()
+
+			bind(inputFor(container, roots, {nodes}))
+			bind(inputFor(container, roots, {nodes}))
+			// Misaligned DOM: the walk bails and every handle is unbound.
+			container.replaceChildren(spanA)
+			bind(inputFor(container, roots, {nodes}))
+			expect(nodes.get(1)?.element()).toBeUndefined()
+
+			textAt(roots, 0).text('alpha!')
+
+			expect(spanA.textContent).toBe('alpha ')
+		})
+
+		it('stops writing a killed node’s surface', () => {
+			const container = document.createElement('div')
+			const spanA = spanWith('alpha ')
+			const spanB = spanWith('beta')
+			container.append(spanA, spanB)
+			const {roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
+			const nodes = new Map<number, TokenHandle>()
+
+			bind(inputFor(container, roots, {nodes}))
+			const dying = textAt(roots, 1)
+			container.replaceChildren(spanA)
+			bind(inputFor(container, roots.slice(0, 1), {nodes}))
+			expect(nodes.has(2)).toBe(false)
+
+			dying.text('gone')
+
+			expect(spanB.textContent).toBe('beta')
 		})
 	})
 })
