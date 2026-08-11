@@ -70,8 +70,9 @@ function findActiveRow(store: KbCtx, target: Node | null): ActiveRow | undefined
 		rowFromAnchor(store, store.tokens.selection.anchors()?.anchor)
 	if (selected) return selected
 
-	// N-host fallback: a mark row focused via tabindex has no DOM selection at
-	// all. Dies with the host flip.
+	// Focus fallback: mark roots carry no tabindex any more, but natively focusable
+	// chrome inside a mark (a button, an input) still takes focus without leaving any
+	// DOM selection behind, and that keypress belongs to the row around it.
 	const active = document.activeElement
 	if (!active) return undefined
 	const handle = store.tokens.handleAt(active)

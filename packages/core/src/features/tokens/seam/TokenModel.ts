@@ -97,11 +97,19 @@ export class TokenModel {
 	 * ELEMENT-ONLY: the sole reader is `#controlElements`, which feeds bind's
 	 * `computeControlRoots` — a walk from each control up to the container. Nothing ever
 	 * asks which token owns a control.
+	 *
+	 * REGISTRATION is also where the control leaves the editing host: a control is chrome,
+	 * not document content, so inside the one contenteditable container it must be atomic
+	 * or the caret and the browser's own editing walk into grips, menus and overlays. It is
+	 * written HERE and not in `bind` because controls do not mount on the commit clock — a
+	 * menu opening off a block-store signal never sees a re-bind, and would stay editable
+	 * until some unrelated commit happened to repaint.
 	 */
 	control(): DomRef {
 		const key = {}
 		return element => {
 			if (element) {
+				element.contentEditable = 'false'
 				this.#pendingControls.set(key, element)
 			} else {
 				this.#pendingControls.delete(key)
@@ -331,17 +339,16 @@ export class TokenModel {
 	}
 
 	/**
-	 * @internal Scoped editable-state application: conditional contentEditable on bound text
-	 * surfaces, tabindex on bound mark roots, and the seed for future binds.
-	 * {@link SelectionDriver} owns the policy: it calls this whenever readOnly or
-	 * isUserSelecting changes.
+	 * @internal Scoped sweep of the one-host editable topology over every bound handle.
+	 * {@link SelectionDriver} owns the policy and calls this whenever readOnly or
+	 * isUserSelecting changes — but the topology no longer varies with either state, so the
+	 * sweep only rewrites what bind already wrote. It goes with the policy watch that drives it.
 	 */
-	setEditable(options: {editable: boolean; readOnly: boolean}): void {
-		this.#editable = {editable: options.editable, readOnly: options.readOnly}
+	setEditable(_options: {editable: boolean; readOnly: boolean}): void {
 		for (const handle of this.#pipeline.bound().values()) {
 			const bindings = handle.node()
 			if (!bindings) continue
-			applyEditableState(bindings, options)
+			applyEditableState(bindings)
 		}
 	}
 
@@ -536,7 +543,6 @@ export class TokenModel {
 		container: () => this.host.container(),
 		nodes: this.#nodes,
 		roots: () => this.#tree.roots(),
-		editableState: () => this.#editableState(),
 		controlElements: () => this.#controlElements(),
 		childSequenceHostsFor: ownerId => this.#childSequenceHostsFor(ownerId),
 		isBlock: () => this.props.layout.isBlock(),
@@ -576,15 +582,6 @@ export class TokenModel {
 			if (registration.ownerId === ownerId) out.push(registration.element)
 		}
 		return out
-	}
-
-	/** Last state written by {@link setEditable}; until then derived from props at bind time. */
-	#editable: {editable: boolean; readOnly: boolean} | undefined
-
-	#editableState(): {editable: boolean; readOnly: boolean} {
-		if (this.#editable) return this.#editable
-		const readOnly = this.props.readOnly()
-		return {editable: !readOnly, readOnly}
 	}
 }
 

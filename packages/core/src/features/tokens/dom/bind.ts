@@ -34,8 +34,6 @@ export type BindInput = {
 	/** Registered `__slot__` hosts for one owner, resolved by the owner's stable id. */
 	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[]
 	isBlock: boolean
-	/** Mount-time editable state for newly bound surfaces and mark roots. */
-	editable: {editable: boolean; readOnly: boolean}
 }
 
 /**
@@ -58,7 +56,7 @@ type Frame = {
 }
 
 export function bind(input: BindInput): BindResult {
-	const {container, roots, nodes, controlElements, childSequenceHostsFor, isBlock, editable} = input
+	const {container, roots, nodes, controlElements, childSequenceHostsFor, isBlock} = input
 
 	// `untracked` for the reason adoption documents: the walk below reads `children()`
 	// and the text effects read `text()`, and a caller inside an effect or computed must
@@ -93,7 +91,7 @@ export function bind(input: BindInput): BindResult {
 				}
 				const previous = handle.node()
 				handle.bindElements(bindings, node)
-				applyMountState(node, bindings, previous, editable)
+				applyMountState(bindings, previous)
 				byElement.set(bindings.tokenElement, handle)
 				if (bindings.rowElement) byElement.set(bindings.rowElement, handle)
 				if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
@@ -189,9 +187,11 @@ function walkDom(
 }
 
 /**
- * Mount-time DOM state: contentEditable / tabindex, applied only to NEWLY bound
- * elements. Elements that stay bound keep whatever the model shell's scoped
- * editable setter last wrote — prop-change application is its job, not bind's.
+ * Mount-time DOM state: the one-host editable topology ({@link applyEditableState}).
+ * A bound TEXT SURFACE is written once, at mount, and never rewritten while it stays
+ * bound — no attribute write lands on a surface the user is typing in. A MARK ROOT
+ * re-applies whenever its slot host changes under it, because the policy the root
+ * itself gets depends on whether it has one.
  *
  * The textContent half is GONE (S2.7). `TokenHandle.bindElements` arms a per-surface
  * effect instead, and an effect's immediate first run performs exactly the
@@ -200,22 +200,20 @@ function walkDom(
  * first comparison. Leaving both writers alive is the failure mode the phase exists to
  * avoid.
  */
-function applyMountState(
-	node: TreeNode,
-	bindings: ElementBindings,
-	previous: ElementBindings | undefined,
-	editable: {editable: boolean; readOnly: boolean}
-): void {
+function applyMountState(bindings: ElementBindings, previous: ElementBindings | undefined): void {
 	const surface = bindings.textElement
 	if (surface) {
-		// Apply editable state only to NEWLY bound text surfaces (mount); elements
-		// that stay bound keep what the model shell's scoped setter last wrote.
-		if (previous?.textElement !== surface) applyEditableState(bindings, editable)
+		if (previous?.textElement !== surface) applyEditableState(bindings)
 		return
 	}
-	// Apply tabindex only to NEWLY bound mark roots.
-	if (node.kind !== 'mark' || previous?.tokenElement === bindings.tokenElement) return
-	applyEditableState(bindings, editable)
+	// A MARK ROOT — bind gives a text surface to text nodes ONLY, so the arm above is the
+	// whole text case. Newly bound, or its slot host appeared or was replaced under a root
+	// element that survived: a root that GAINS a host must lose the `ce=false` that made it
+	// atomic, or the slot it just grew is uneditable.
+	const sameRoot = previous?.tokenElement === bindings.tokenElement
+	const sameHost = previous?.childSequenceHost === bindings.childSequenceHost
+	if (sameRoot && sameHost) return
+	applyEditableState(bindings)
 }
 
 function nonControlChildren(parent: HTMLElement, controlRoots: WeakSet<HTMLElement>): HTMLElement[] {

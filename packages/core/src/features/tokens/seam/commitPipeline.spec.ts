@@ -119,7 +119,6 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		container: () => mounted,
 		nodes,
 		roots: () => tree.roots(),
-		editableState: () => ({editable: true, readOnly: false}),
 		controlElements: () => controls,
 		childSequenceHostsFor: () => [],
 		isBlock: () => false,
@@ -225,8 +224,8 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(text1.textContent).toBe('he')
 		expect(mark.textContent).toBe('x')
 		expect(text2.textContent).toBe('llo')
-		expect(text1.contentEditable).toBe('true')
-		expect(mark.tabIndex).toBe(0)
+		expect(text1.hasAttribute('contenteditable')).toBe(false)
+		expect(mark.getAttribute('contenteditable')).toBe('false')
 	})
 
 	it('a tail text edit patches in place, leaves the epoch standing and announces once', () => {

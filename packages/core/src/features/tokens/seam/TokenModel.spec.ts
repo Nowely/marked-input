@@ -106,8 +106,8 @@ describe('TokenModel shell (seam/)', () => {
 			])
 			expect(dom.text1.textContent).toBe('he')
 			expect(dom.text2.textContent).toBe('llo')
-			expect(dom.text1.contentEditable).toBe('true')
-			expect(dom.mark.tabIndex).toBe(0)
+			expect(dom.text1.hasAttribute('contenteditable')).toBe(false)
+			expect(dom.mark.getAttribute('contenteditable')).toBe('false')
 
 			// Adapter re-render: idempotent re-bind, consistency re-announced.
 			setup.host.rendered()
@@ -180,6 +180,17 @@ describe('TokenModel shell (seam/)', () => {
 	})
 
 	describe('handles', () => {
+		it('a control leaves the editing host the moment it registers, with no bind in between', () => {
+			// Controls do not mount on the commit clock — a menu opening off a block-store
+			// signal never sees a re-bind — so the atomic write belongs to registration.
+			const {model} = mountNewInline()
+			const button = document.createElement('button')
+
+			model.control()(button)
+
+			expect(button.getAttribute('contenteditable')).toBe('false')
+		})
+
 		it('handleAt is tri-state: handle for token DOM, control for registered controls, undefined outside', () => {
 			const {model, host, container, text1, mark} = mountNewInline()
 			const button = document.createElement('button')
@@ -328,7 +339,8 @@ describe('TokenModel shell (seam/)', () => {
 	})
 
 	describe('editable state', () => {
-		it('setEditable applies contentEditable/tabindex over bound surfaces and seeds future binds', () => {
+		// Mechanism deleted in the host flip; spec dies with it.
+		it.todo('setEditable applies contentEditable/tabindex over bound surfaces and seeds future binds', () => {
 			const {model, text1, mark, render} = mountNewInline()
 			expect(text1.contentEditable).toBe('true')
 			expect(mark.tabIndex).toBe(0)

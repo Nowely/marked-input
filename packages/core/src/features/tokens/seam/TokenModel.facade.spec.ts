@@ -58,15 +58,17 @@ describe('TokenModel placement commands', () => {
 		// live roots — and they are not theoretical: `anchorAt` answers `'end'` for ANY
 		// out-of-range caret intent (spec S1 §4.6 item 5), which is what replaced the
 		// deleted selection clamp. Declining them leaves such a caret unplaced.
-		const {store, text1, text2} = mountWithMark()
+		const {store} = mountWithMark()
 		const roots = store.tokens.nodes()
 
+		// `domAnchors` resolves the LIVE DOM selection, so the anchor it answers is the
+		// witness that the caret landed in that root's own surface. (The `activeElement`
+		// checks that used to sit beside it are gone with the per-token focus targets:
+		// text surfaces carry no contenteditable of their own any more.)
 		expect(store.tokens.placeCaret('end')).toBe(true)
-		expect(document.activeElement).toBe(text2)
 		expect(store.tokens.domAnchors()?.anchor).toEqual({node: roots[2], offset: 3})
 
 		expect(store.tokens.placeCaret('start')).toBe(true)
-		expect(document.activeElement).toBe(text1)
 		expect(store.tokens.domAnchors()?.anchor).toEqual({node: roots[0], offset: 0})
 	})
 
@@ -75,14 +77,18 @@ describe('TokenModel placement commands', () => {
 		// two anchors. The numeric predecessor could only answer with one of them (its
 		// nearest-text-surface search always won, which is why its mark branch was
 		// unreachable); each anchor now places through its own node.
-		const {store, mark, text2} = mountWithMark()
-		const markNode = store.tokens.nodes()[1]
+		const {store} = mountWithMark()
+		const [, markNode, text2Node] = store.tokens.nodes()
+		// WHERE THE CARET LANDED, not what took focus: no token element is a focus target
+		// under the one-host topology. A caret at a mark's child boundary sits ON the mark's
+		// own element, so the boundary resolves through that element and answers a SIDED
+		// anchor — which is what keeps this case sensitive to an after↔before inversion.
 
 		expect(store.tokens.placeCaret({after: markNode})).toBe(true)
-		expect(document.activeElement).toBe(mark)
+		expect(store.tokens.domAnchors()?.anchor).toEqual({after: markNode})
 
 		expect(store.tokens.placeCaret(store.tokens.anchorAt(6))).toBe(true)
-		expect(document.activeElement).toBe(text2)
+		expect(store.tokens.domAnchors()?.anchor).toEqual({node: text2Node, offset: 0})
 	})
 
 	it("handle.placeCaret targets the handle's token explicitly", () => {

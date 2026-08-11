@@ -42,13 +42,19 @@ describe('SelectionDriver', () => {
 		// item 5): in 'ab@[x]cd' the mark starts at 2, exactly where 'ab' ends, so a
 		// re-resolved `anchorAt(2)` — right-affine — answers the TEXT node and the caret
 		// lands in the PREVIOUS surface. `{before: mark}` cannot be confused that way.
-		const {store, container, mark} = mountStructuralInlineMark('ab@[x]cd')
-		const markHandle = store.tokens.handle(store.tokens.nodes()[1].id)
+		const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+		const markNode = store.tokens.nodes()[1]
+		const markHandle = store.tokens.handle(markNode.id)
 		if (!markHandle) throw new Error('Mark token did not bind a handle')
 
 		expect(store.tokens.placeAtHandle(markHandle, 'start')).toBe(true)
 
-		expect(document.activeElement).toBe(mark)
+		// WHERE THE CARET LANDED, not what took focus: mark roots are not tab stops under the
+		// one-host topology, so `document.activeElement` — the old witness — names the editing
+		// host rather than the token. The caret sits on the mark's own element, so the boundary
+		// resolves through the MARK: the numeric round-trip this case exists to reject would
+		// answer `{node: <text 'ab'>, offset: 2}` instead.
+		expect(store.tokens.domAnchors()?.anchor).toEqual({before: markNode})
 		container.remove()
 	})
 
@@ -293,7 +299,8 @@ describe('SelectionDriver', () => {
 	})
 
 	describe('isUserSelecting → contentEditable', () => {
-		it('flips structural text surfaces non-editable while user is selecting', () => {
+		// Mechanism deleted in the host flip; spec dies with it.
+		it.todo('flips structural text surfaces non-editable while user is selecting', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
 			const container = document.createElement('div')

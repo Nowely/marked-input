@@ -50,8 +50,6 @@ export type CommitDeps = {
 	 * binds the current tree rather than whatever generation was last painted.
 	 */
 	roots: () => readonly TreeNode[]
-	/** Mount-time editable state for newly bound surfaces and mark roots. */
-	editableState: () => {editable: boolean; readOnly: boolean}
 	controlElements: () => ReadonlySet<HTMLElement>
 	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[]
 	isBlock: () => boolean
@@ -210,7 +208,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			controlElements: deps.controlElements(),
 			childSequenceHostsFor: deps.childSequenceHostsFor,
 			isBlock: deps.isBlock(),
-			editable: deps.editableState(),
 		})
 		byElement = result.byElement
 		controlRoots = result.controlRoots
