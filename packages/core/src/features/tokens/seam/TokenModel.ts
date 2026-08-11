@@ -1,5 +1,5 @@
 import type {DomRef} from '../../../shared/editorContracts'
-import {computed, signal, untracked, watch} from '../../../shared/signals/index.js'
+import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event, Signal} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
@@ -599,14 +599,26 @@ export class TokenModel {
 		// ORDER IS LOAD-BEARING: `#committed` is written AFTER `pipeline.apply`, and it is
 		// the only thing `value` depends on. Publishing it first (or letting `value` read
 		// `#tree.value()`) hands subscribers a new string over a stale token view.
-		onResult: result => {
-			this.#pipeline.apply(result)
-			this.#committed(this.#tree.value())
-			// LAST, and inside the commit: the repair writes the selection the driver's
-			// anchors watch then applies, and an imperative post-edit caret (`EditController`)
-			// lands later in the same batch and wins by design (plan decision D-d).
-			this.selection.repair(result)
-		},
+		//
+		// ONE WAVE, and the `batch` is what makes that order OBSERVABLE rather than merely
+		// written. `changed` is an event: emitted at batch depth 0 it flushes its subscribers
+		// INSIDE `apply`, ahead of the two writes below it. Depth 0 is not the exotic case —
+		// it is the whole controlled path, where adoption is driven from the props watch and
+		// adoption's own batch has already closed by the time this runs; the uncontrolled path
+		// was covered only incidentally, by `EditController.replace` wrapping the edit.
+		// Measured on the uncovered one: typing '@' at offset 3 announced `changed` with the
+		// stored caret still at 3 while the tree already read '@' with the caret at 4, so every
+		// consumer of the announcement — the driver's caret re-place, the overlay's trigger
+		// probe — saw the new tree against the previous generation's selection.
+		onResult: result =>
+			batch(() => {
+				this.#pipeline.apply(result)
+				this.#committed(this.#tree.value())
+				// LAST, and inside the commit: the repair writes the selection the driver's
+				// anchors watch then applies, and an imperative post-edit caret (`EditController`)
+				// lands later in the same batch and wins by design (plan decision D-d).
+				this.selection.repair(result)
+			}),
 	})
 
 	readonly #tx = createTransactions({

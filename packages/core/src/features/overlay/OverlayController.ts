@@ -10,7 +10,6 @@ import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {TokenModel} from '../tokens'
 import {anchorEquals, annotate} from '../tokens'
-import {TriggerFinder} from './TriggerFinder'
 
 export class OverlayController {
 	readonly match = signal<OverlayMatch>()
@@ -44,7 +43,22 @@ export class OverlayController {
 				this.match(undefined)
 			})
 
-			watch(this.tokens.value, () => {
+			// `tokens.changed`, NOT `tokens.value` — the same post-commit clock the
+			// `selectionChange` arm below already probes on. In controlled mode `value` is
+			// `props.value()` and `??` short-circuits, so this watch was notified by the parent's
+			// echo DIRECTLY: it ran from inside adoption, before the surfaces were written and
+			// before the caret repair, and matched the trigger against the previous generation's
+			// caret. `changed` is announced once the commit is complete, which is what makes the
+			// caret and the tree agree.
+			//
+			// It fires per COMMIT where `value` fired per string change, and that is a superset,
+			// not a trade — measured on all three cases where they could differ. A controlled
+			// edit the parent never echoes: 0 and 0 (`value` IS `props.value` there, so it was
+			// already silent). A parent that transforms the value back to what it already was:
+			// 0 and 0 (the props signal short-circuits the equal write). An uncontrolled commit
+			// that leaves the string unchanged: 0 and 1 — the one case `changed` adds, and a
+			// probe is idempotent.
+			watch(this.tokens.changed, () => {
 				if (!hasOverlayTrigger()) return
 				const showOverlayOn = this.props.showOverlayOn()
 				const type: OverlayTrigger = 'change'
@@ -101,25 +115,24 @@ export class OverlayController {
 	}
 
 	#probeTrigger() {
-		const match =
-			TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.tokens) ??
-			this.#probeTriggerFromCaretRange()
-		this.match(match)
+		this.match(this.#findTrigger())
 	}
 
 	/**
-	 * The model-side probe, for when `TriggerFinder` cannot read the DOM (no window selection,
-	 * or an anchor node outside the document). It slices the caret NODE's own text at the
-	 * caret's LOCAL offset, where it used to slice `value()` at an absolute cursor.
+	 * THE probe, and it is MODEL-ONLY: the stored caret anchor plus that node's own `text()`.
+	 * It replaced a `TriggerFinder` that read `tokens.domSelection()?.anchor` (the browser
+	 * caret) and `anchor.node.textContent` (the raw surface) and fell back to this, and the
+	 * mixture is what the stale-probe bug was made of — a match assembled from one
+	 * generation's DOM and another's anchors is representable in that shape and is not in
+	 * this one. The DOM the answer still names is resolved THROUGH the matched node's own
+	 * handle, so it cannot disagree with the text that produced the match.
 	 *
-	 * Equivalent wherever it fired before: the regex is anchored at the caret, so it only ever
-	 * looked at characters immediately left of it, and those are in the caret's own node
-	 * unless the caret sits at its start — where the whole-value read saw a preceding mark's
-	 * markup, which ends in `]` or `)` and matches no `trigger(\w*)$`. What DID change is
-	 * `span`, now the node's text rather than the whole value; that makes it agree with
-	 * `TriggerFinder.span`, which was always the DOM text node's content.
+	 * It slices the caret NODE's text at the caret's LOCAL offset. The regex is anchored at
+	 * the caret, so it only ever looks at characters immediately left of it, and those are in
+	 * the caret's own node unless the caret sits at its start — where a whole-value read would
+	 * see a preceding mark's markup, which ends in `]` or `)` and matches no `trigger(\w*)$`.
 	 */
-	#probeTriggerFromCaretRange(): OverlayMatch | undefined {
+	#findTrigger(): OverlayMatch | undefined {
 		const anchors = this.tokens.selection.anchors()
 		if (!anchors || !anchorEquals(anchors.anchor, anchors.head)) return
 		const caret = anchors.anchor
@@ -147,7 +160,7 @@ export class OverlayController {
 					head: {node: caret.node, offset: caret.offset + rightWord.length},
 				},
 				span: text,
-				node: this.tokens.domSelection()?.anchor.node ?? this.host.container() ?? document.body,
+				node: this.tokens.handle(caret.node.id)?.element() ?? this.host.container() ?? document.body,
 				option,
 			}
 		}

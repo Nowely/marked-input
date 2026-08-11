@@ -1,6 +1,6 @@
 # Overlay Feature
 
-Manages the autocomplete/suggestion overlay. Detects overlay triggers using `TriggerFinder`, manages the overlay open/close lifecycle, and provides utilities for filtering suggestions and keyboard navigation.
+Manages the autocomplete/suggestion overlay. Detects overlay triggers from the token model, manages the overlay open/close lifecycle, and provides utilities for filtering suggestions and keyboard navigation.
 
 ## Components
 
@@ -20,4 +20,4 @@ const result = navigateSuggestions(action, {index: 0, total: 3})
 // Returns: {index: 1} for 'next' action
 ```
 
-The `OverlayController` is registered by the Store. It uses `TriggerFinder` from the caret feature for trigger detection.
+The `OverlayController` is registered by the Store. Trigger detection is its own model-only probe: the stored caret anchor plus that node's `text()`, run on `tokens.changed` (`showOverlayOn: 'change'`) and on `document`'s `selectionchange` (`showOverlayOn: 'selectionChange'`).
