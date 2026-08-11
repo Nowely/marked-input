@@ -21,7 +21,7 @@ export class TriggerFinder {
 		private readonly tokens: TokenModel,
 		anchor?: SelectionAnchor
 	) {
-		const resolvedAnchor = anchor ?? tokens.selection()?.anchor
+		const resolvedAnchor = anchor ?? tokens.domSelection()?.anchor
 		if (!resolvedAnchor || !document.contains(resolvedAnchor.node))
 			throw new Error('Anchor node of selection is not exists!')
 		this.node = resolvedAnchor.node
@@ -36,7 +36,7 @@ export class TriggerFinder {
 		anchor?: SelectionAnchor
 	): OverlayMatch<T> | undefined {
 		if (!options) return
-		const resolvedAnchor = anchor ?? tokens.selection()?.anchor
+		const resolvedAnchor = anchor ?? tokens.domSelection()?.anchor
 		if (!resolvedAnchor?.isCollapsed) return
 		try {
 			return new TriggerFinder(tokens, resolvedAnchor).find(options, getTrigger)

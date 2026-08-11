@@ -74,8 +74,8 @@ export type MarkPatch = {
 /**
  * The write port `MarkNode.update`/`remove` ride (spec D5). Declared here rather than
  * beside the verbs in `transactions.ts` because `types.ts` is where the tree layer's
- * contracts live and both modules already import it. Injected as a THUNK: `TokenModel`
- * builds `#tree` before `#tx`, the same reason `SelectionPort` is one.
+ * contracts live and both modules already import it. Injected as a THUNK because
+ * `TokenModel` builds `#tree` before `#tx`, and the tree's own verbs must reach them.
  */
 export interface MarkCommands {
 	update(node: MarkNode, patch: MarkPatch): boolean

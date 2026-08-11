@@ -1,4 +1,3 @@
-import type {SelectionController} from '../features/selection/SelectionController'
 import type {Host} from '../features/state/Host'
 import type {PropsModel} from '../features/state/PropsModel'
 import {annotate} from '../features/tokens'
@@ -19,22 +18,15 @@ export type MarkInit = {
  * absorbs `focus()`, drops the consumer-free `overlay` getter, and gains the live node
  * reads, the model-centric write verbs, node-anchored selection and the `changed` payload.
  *
- * It owns nothing. Every member lowers onto a state owner — the token layer for reads and
- * writes, the selection controller for anchors — so the shape of the API can move without
- * moving state (AGENTS.md's one-owner rule).
+ * It owns nothing. Every member lowers onto a state owner — the token layer, which owns the
+ * tree, the DOM binding and (since S2.9) the selection — so the shape of the API can move
+ * without moving state (AGENTS.md's one-owner rule).
  */
 export class MarkputApi {
 	constructor(
 		private readonly host: Host,
 		private readonly props: PropsModel,
-		private readonly tokens: TokenModel,
-		/**
-		 * NAMED `selectionController`, not `selection`: this class has a
-		 * `selection(): {anchor, head} | undefined` method, and TypeScript rejects a parameter
-		 * property colliding with a member (TS2300) — the same collision `TokenModel`
-		 * documents for its own `selectionPort`.
-		 */
-		private readonly selectionController: SelectionController
+		private readonly tokens: TokenModel
 	) {}
 
 	get container(): HTMLElement | null {
@@ -79,7 +71,7 @@ export class MarkputApi {
 	 * `undefined` when there is no selection (spec §2.3).
 	 */
 	insertMark(at: NodeAnchor | 'caret', init: MarkInit): MarkNode | undefined {
-		const anchor = at === 'caret' ? this.selectionController.caretAnchor() : at
+		const anchor = at === 'caret' ? this.tokens.selection.caretAnchor() : at
 		if (anchor === undefined || !this.#live(anchor)) return undefined
 		const text = annotate(init.markup, {value: init.value, meta: init.meta, slot: init.slot})
 		const caret = this.tokens.replaceBetween(anchor, anchor, text)
@@ -112,17 +104,17 @@ export class MarkputApi {
 	}
 
 	focus(): void {
-		this.selectionController.focusFirst()
+		this.tokens.focusFirst()
 	}
 
 	/** The STORED anchors (spec D7), not the derived numbers. Reactive. */
 	selection(): {anchor: NodeAnchor; head: NodeAnchor} | undefined {
-		return this.selectionController.anchors()
+		return this.tokens.selection.anchors()
 	}
 
 	select(anchor: NodeAnchor, head: NodeAnchor = anchor): boolean {
 		if (!this.#live(anchor) || !this.#live(head)) return false
-		this.selectionController.select(anchor, head)
+		this.tokens.selection.select(anchor, head)
 		return true
 	}
 

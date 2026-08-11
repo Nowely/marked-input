@@ -1,6 +1,6 @@
 import type {DomRef} from '../../../shared/editorContracts'
 import {computed, signal, untracked, watch} from '../../../shared/signals/index.js'
-import type {Computed, Event} from '../../../shared/signals/index.js'
+import type {Computed, Event, Signal} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
 import {createCommitPipeline} from '../dom/commit'
@@ -8,27 +8,18 @@ import type {TokenDelta} from '../dom/commit'
 import {DomModel} from '../dom/DomModel'
 import type {SelectionSnapshot} from '../dom/DomModel'
 import {applyEditableState} from '../dom/editableState'
+import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import {adjacentMark, anchorAt, offsetOfAnchor, stepAnchor} from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
+import {createSelection} from '../tree/selection'
+import type {Selection} from '../tree/selection'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf, sliceNodes} from '../tree/tree'
-import type {Anchors, MarkCommands, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeNode} from '../tree/types'
+import type {Anchors, MarkCommands, MarkNode, NodeAnchor, TextNode, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
-
-/**
- * The selection's two ends of the S1 D7 protocol. A THUNK in `Store` because `tokens` is
- * built before `selection`; invoked only at commit/arrival time, never during
- * construction.
- */
-export interface SelectionPort {
-	/** Pre-adoption capture (spec S1 D7): the STORED anchors, which name no coordinate. */
-	anchors(): Anchors | undefined
-	/** Post-adoption repair (spec S1 D7): applies the result's `selectionAfter`. */
-	repair(result: TransactionResult): void
-}
 
 /**
  * The value owner (spec D1, plan decision D-c): it holds THE token tree, the
@@ -38,6 +29,11 @@ export interface SelectionPort {
  * class's business any more. Everything DOM-related — boundary math, selection
  * reads, caret placement — lives in {@link DomModel} and is delegated to here, so
  * consumers keep this single entry point. Owns the `nodes` map the pipeline mutates.
+ *
+ * It also OWNS THE SELECTION since S2.9 — {@link selection} (tree-space state) plus the
+ * private {@link SelectionDriver} (its DOM I/O). `Store` used to construct both and hand
+ * this class a two-method thunk back so the boundary could reach them, and that cycle was
+ * the last thing forcing an explicit type annotation on two `Store` fields (TS7022).
  *
  * Mechanism ledger (spec §4.6). All eight are gone, and where each died is the point
  * of the record:
@@ -95,6 +91,42 @@ export class TokenModel {
 		if (this.#pipeline.pending()) return undefined
 		return this.#nodes.get(id)
 	}
+
+	/**
+	 * THE selection state (spec S2 D10): a pair of `NodeAnchor`s and their derivations,
+	 * DOM-free. Its DOM half is the private {@link SelectionDriver} declared in the internals
+	 * section, whose reads are exposed here as {@link domAnchors} / {@link focusFirst} /
+	 * {@link placeAtHandle} / {@link isUserSelecting}.
+	 *
+	 * DECLARED HERE, above `#tree`, and the declaration-order hazard the design predicted for
+	 * it was FALSIFIED rather than obeyed. The mechanism is real: probed in place, a field
+	 * initializer that reads `this.#tree` from above the internals region answers `undefined`
+	 * — silently, no throw and no type error. It does not reach this field because
+	 * {@link createSelection} takes a dep BAG, and all three entries are CLOSURES evaluated at
+	 * the first verb call, long after every initializer has run. Measured with the field
+	 * declared first in the class: 1335 passed, unchanged, and a mounted store answers
+	 * `isAllSelected` correctly. The DRIVER is the one with a real ordering constraint; see it.
+	 */
+	readonly selection: Selection = createSelection({
+		// The bag exists so these three could be closures over `TokenModel`'s public reads
+		// while `Store` still built the selection (S2.2); they are the model's own reads now,
+		// which is the whole point of it. Two of them are NOT bare tree reads and cannot
+		// become them:
+		//
+		// - {@link anchorAt} SEEDS (plan decision D-f). Substituting
+		//   `anchorAt(this.#tree.roots(), offset)` fails `tree/selection.spec`'s "returns true
+		//   when range spans the entire value" and `TokenModel.value.spec`'s companion — an
+		//   unmaterialized tree has no roots, so every offset answers `'end'`.
+		// - {@link value} is props-first, so `#tree.value()` disagrees with it exactly while a
+		//   controlled parent's value is ahead of the last arrival. RECORDED GAP (measured):
+		//   the substitution SURVIVES the whole suite — `isAllSelected` is the only consumer
+		//   and no fixture reads it mid-flight, between a controlled emission and its echo.
+		//   Kept props-first because that is what the pre-S2.9 wiring did, not because a test
+		//   would notice.
+		offsetOf: anchor => this.offsetOf(anchor),
+		anchorAt: offset => this.anchorAt(offset),
+		value: () => this.value(),
+	})
 
 	// ═══ Adapter SPI ══════════════════════════════════════════════════════════
 
@@ -155,9 +187,9 @@ export class TokenModel {
 	 * `TokenModel.value.spec`'s "an unmounted store reads defaultValue before anything has
 	 * committed" — it reads the value on an UNMOUNTED store, where nothing has
 	 * committed yet and `#committed()` is `''`. That case exists BECAUSE S1.6c took
-	 * the gate away from two `SelectionController.spec` cases: `anchorAt` seeds (plan
-	 * decision D-f), so every store that writes a selection is now seeded and survives
-	 * the mutation. `TokenModel.value.spec`'s "initializes from defaultValue when
+	 * the gate away from two selection cases (now in `tree/selection.spec`): `anchorAt`
+	 * seeds (plan decision D-f), so every store that writes a selection is now seeded and
+	 * survives the mutation. `TokenModel.value.spec`'s "initializes from defaultValue when
 	 * uncontrolled" stays GREEN for a different reason: it mounts first, and the mount
 	 * watch seeds the tree before the read.
 	 */
@@ -316,7 +348,7 @@ export class TokenModel {
 	 *
 	 * TREE space, not {@link value}: the two disagree exactly while a controlled parent's
 	 * `props.value` is ahead of the last arrival, which is when the echo's capture runs.
-	 * Its gate is `SelectionController.spec`'s "captures an 'end' anchor in TREE space,
+	 * Its gate is `tree/selection.spec`'s "captures an 'end' anchor in TREE space,
 	 * not against the props value", and that case has to be a DELETION — under an
 	 * insertion the over-read and `map`'s shift both saturate onto the document end and
 	 * the two readings agree by accident.
@@ -342,9 +374,34 @@ export class TokenModel {
 		return this.#dom.anchorFor(node, offset, affinity)
 	}
 
-	/** THE selection read: one snapshot of the live window selection (see {@link DomModel.selection}). */
-	selection(): SelectionSnapshot | undefined {
+	/**
+	 * THE raw selection read: one snapshot of the live window selection (see
+	 * {@link DomModel.selection}). Named `domSelection` since S2.9, when {@link selection}
+	 * became the stored anchors — the `dom*` prefix is the same authority marker
+	 * {@link domAnchors} carries.
+	 */
+	domSelection(): SelectionSnapshot | undefined {
 		return this.#dom.selection()
+	}
+
+	/** DOM TRUTH as anchors (spec S2 D5): see {@link SelectionDriver.domAnchors}. */
+	domAnchors(): Anchors | undefined {
+		return this.#selectionDriver.domAnchors()
+	}
+
+	/** Move focus (and the caret) into the first root token; see {@link SelectionDriver.focusFirst}. */
+	focusFirst(): void {
+		this.#selectionDriver.focusFirst()
+	}
+
+	/** Place the caret at a bound handle's start/end; see {@link SelectionDriver.placeAtHandle}. */
+	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {
+		return this.#selectionDriver.placeAtHandle(handle, boundary)
+	}
+
+	/** Mouse-sweep flag; the driver's editable policy reads it (see {@link setEditable}). */
+	get isUserSelecting(): Signal<boolean> {
+		return this.#selectionDriver.isUserSelecting
 	}
 
 	/** Current selection serialized for clipboard use. */
@@ -365,7 +422,7 @@ export class TokenModel {
 	/**
 	 * @internal Scoped editable-state application: conditional contentEditable
 	 * on bound text surfaces, tabindex on bound mark roots, and the seed for
-	 * future binds (replaces the old per-commit sweep). SelectionController
+	 * future binds (replaces the old per-commit sweep). {@link SelectionDriver}
 	 * owns the policy: it calls this whenever readOnly or isUserSelecting changes.
 	 *
 	 * The kind test this used to make off `handle.token()` was DEAD, which is why S2.7
@@ -387,19 +444,7 @@ export class TokenModel {
 
 	constructor(
 		private readonly props: PropsModel,
-		private readonly host: Host,
-		/**
-		 * Both ends of the D7 selection protocol ({@link SelectionPort}), injected because
-		 * `Store` builds `tokens` before `selection`. Invoked only from the boundary's
-		 * `fold` and `onResult`, i.e. at commit/arrival time — never during construction.
-		 *
-		 * NAMED `selectionPort`, not `selection`: this class already has a
-		 * `selection(): SelectionSnapshot | undefined` Engine SPI method. Measured with
-		 * the colliding name: TS2300 (duplicate identifier), TS2403 / TS2687 on the two
-		 * declarations, TS2532 / TS2339 at the two call sites, and TS2741 in `Store.ts`.
-		 * The task does not compile.
-		 */
-		private readonly selectionPort: () => SelectionPort
+		private readonly host: Host
 	) {
 		host.onMounted(() => {
 			// Order matters: the immediate arrival seeds the pipeline (cold start is
@@ -444,6 +489,25 @@ export class TokenModel {
 				{immediate: true}
 			)
 			watch(host.rendered, () => this.#pipeline.onRendered(), {immediate: true})
+		})
+
+		// LAST, so the driver's own `onMounted` runs after the arrival above — the order
+		// `Store` produced while it built `tokens` before the selection. See
+		// {@link TokenModel.#selectionDriver} for why this is not a field initializer.
+		this.#selectionDriver = new SelectionDriver({
+			selection: this.selection,
+			host,
+			readOnly: () => this.props.readOnly(),
+			changed: this.#pipeline.changed,
+			nodes: () => this.nodes(),
+			find: id => this.find(id),
+			handle: id => this.handle(id),
+			handleAt: node => this.handleAt(node),
+			domSelection: () => this.domSelection(),
+			setEditable: options => this.setEditable(options),
+			placeCaret: anchor => this.placeCaret(anchor),
+			selectRange: (anchor, head) => this.selectRange(anchor, head),
+			anchorFor: (node, offset, affinity) => this.anchorFor(node, offset, affinity),
 		})
 	}
 
@@ -526,7 +590,7 @@ export class TokenModel {
 		parser: () => this.#parser(),
 		isBlock: () => this.props.layout.isBlock(),
 		controlled: () => this.props.value() !== undefined,
-		selection: () => this.selectionPort().anchors(),
+		selection: () => this.selection.anchors(),
 		onChange: next => this.props.onChange()?.(next),
 		// Synchronous by contract (spec §4.4): the live tree must be consistent with
 		// `value.current()` the moment adoption lands, because the value-slicing call sites
@@ -538,10 +602,10 @@ export class TokenModel {
 		onResult: result => {
 			this.#pipeline.apply(result)
 			this.#committed(this.#tree.value())
-			// LAST, and inside the commit: the repair writes the selection the `#anchors`
-			// watch then applies, and an imperative post-edit caret (`EditController`) lands
-			// later in the same batch and wins by design (plan decision D-d).
-			this.selectionPort().repair(result)
+			// LAST, and inside the commit: the repair writes the selection the driver's
+			// anchors watch then applies, and an imperative post-edit caret (`EditController`)
+			// lands later in the same batch and wins by design (plan decision D-d).
+			this.selection.repair(result)
 		},
 	})
 
@@ -614,6 +678,21 @@ export class TokenModel {
 		find: id => this.find(id),
 		handle: id => this.handle(id),
 	})
+
+	/**
+	 * The selection's DOM half (spec S2 D10): listeners, caret application, the mouse-sweep
+	 * flag and the editable policy over {@link selection}'s state. Private — its four reads
+	 * are delegated in the engine SPI above, the same way `#dom`'s are.
+	 *
+	 * BUILT IN THE CONSTRUCTOR, not as a field initializer, and both halves of that are
+	 * measured. `SelectionDriverDeps` takes `host` and `changed` as VALUES (the driver
+	 * subscribes in its own constructor), so an initializer would read `this.host` — a
+	 * parameter property, which `tsc` rejects with TS2729 — and `this.#pipeline`, which
+	 * answers `undefined` from any initializer declared above it, silently. The constructor
+	 * body has neither problem, and it puts the driver's `onMounted` AFTER this class's own,
+	 * which is the order `Store` produced before S2.9.
+	 */
+	readonly #selectionDriver: SelectionDriver
 
 	// Ref registries — populated by framework ref callbacks, read by bind.
 	readonly #pendingControls = new Map<string, HTMLElement>()

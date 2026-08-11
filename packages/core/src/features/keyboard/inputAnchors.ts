@@ -1,7 +1,7 @@
 import type {Store} from '../../store/Store'
 import type {Anchors} from '../tokens'
 
-type KbCtx = Pick<Store, 'selection' | 'tokens'>
+type KbCtx = Pick<Store, 'tokens'>
 
 /**
  * The edit target of a `beforeinput`, as anchors in the LIVE tree: the event's own
@@ -13,7 +13,7 @@ type KbCtx = Pick<Store, 'selection' | 'tokens'>
  */
 export function anchorsFromInputEvent(store: KbCtx, event: InputEvent): Anchors | undefined {
 	const ranges = event.getTargetRanges()
-	if (ranges.length === 0) return store.selection.domAnchors()
+	if (ranges.length === 0) return store.tokens.domAnchors()
 	return anchorsFromTargetRange(store, ranges[0])
 }
 

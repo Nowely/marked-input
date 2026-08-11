@@ -1,5 +1,4 @@
 import {batch} from '../../shared/signals'
-import type {SelectionController} from '../selection/SelectionController'
 import type {PropsModel} from '../state'
 import type {NodeAnchor, TokenModel} from '../tokens'
 
@@ -11,14 +10,13 @@ import type {NodeAnchor, TokenModel} from '../tokens'
  * Addressed by NODE ANCHORS since S2.5 (spec S2 §4.5). {@link setValue}'s `caretOffset` is
  * the one absolute offset left in any core module, and D6 is why: `block/operations.ts`
  * synthesizes a complete new string from row positions and computes the caret against THAT
- * string, before it is parsed — so no node exists to name it. It is unreachable from the
- * public export, so "no export of @markput/core takes or returns an absolute offset" holds
- * without an exception.
+ * string, before it is parsed — so no node exists to name it. `MarkputApi` — the public API
+ * proper — neither takes nor returns one; this controller is reachable only through the
+ * `Store` value export, which is how an adapter resolves the core at all.
  */
 export class EditController {
 	constructor(
 		private readonly tokens: TokenModel,
-		private readonly selection: SelectionController,
 		private readonly props: PropsModel
 	) {}
 
@@ -33,7 +31,7 @@ export class EditController {
 			// 4 instead of 3. The echo's repair owns it, and a parent that never echoes now
 			// leaves the caret alone instead of moving it and having it clamped back.
 			if (this.props.value() !== undefined) return
-			this.selection.select(caret)
+			this.tokens.selection.select(caret)
 		})
 	}
 
@@ -51,7 +49,7 @@ export class EditController {
 		batch(() => {
 			if (!this.tokens.setValue(text)) return
 			if (this.props.value() !== undefined && caretOffset === undefined) return
-			this.selection.select(this.tokens.anchorAt(caretOffset ?? text.length))
+			this.tokens.selection.select(this.tokens.anchorAt(caretOffset ?? text.length))
 		})
 	}
 }

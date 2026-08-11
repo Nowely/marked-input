@@ -29,8 +29,8 @@ type CoreProps = Parameters<PropsModel['set']>[0]
 
 /**
  * The snapshot's collapsed caret as an `anchorFor` argument list. These cases build the
- * shell directly on the state models, so there is no `SelectionController` and no
- * `domAnchors()` — this is the same resolution one step lower.
+ * model directly on the state models rather than through `Store`, so the resolution is the
+ * same one `domAnchors()` performs, one step lower.
  */
 function boundaryOf(snapshot: SelectionSnapshot | undefined): [Node, number] {
 	if (!snapshot) throw new Error('expected a selection snapshot')
@@ -44,15 +44,15 @@ const INLINE_PROPS: CoreProps = {
 }
 
 /**
- * The construction seam under test: the (props, host, selectionPort) triple Store
- * wires. `props.set` runs AFTER construction, which is what makes `#seed`'s laziness
- * pick up `defaultValue`.
+ * The construction seam under test: the (props, host) pair Store wires — S2.9 dropped the
+ * third argument, the `SelectionPort` thunk, when the model took ownership of the selection.
+ * `props.set` runs AFTER construction, which is what makes `#seed`'s laziness pick up
+ * `defaultValue`.
  */
 function createNew(props: CoreProps) {
 	const propsModel = new PropsModel()
 	const host = new Host()
-	// Inert port: these cases assert the value/tree seam, not the D7 caret repair.
-	const model: TokenModel = new TokenModel(propsModel, host, () => ({anchors: () => undefined, repair: () => {}}))
+	const model = new TokenModel(propsModel, host)
 	propsModel.set(props)
 	return {model, props: propsModel, host}
 }
@@ -285,12 +285,12 @@ describe('TokenModel shell (seam/)', () => {
 			const {model, text1} = mountNewInline()
 
 			expect(model.placeCaret(model.anchorAt(1))).toBe(true)
-			expect(model.anchorFor(...boundaryOf(model.selection()))).toEqual({node: model.nodes()[0], offset: 1})
-			expect(model.selection()?.anchor.node).toBe(text1.firstChild)
-			const anchor = model.selection()?.anchor
+			expect(model.anchorFor(...boundaryOf(model.domSelection()))).toEqual({node: model.nodes()[0], offset: 1})
+			expect(model.domSelection()?.anchor.node).toBe(text1.firstChild)
+			const anchor = model.domSelection()?.anchor
 			expect(anchor?.isCollapsed).toBe(true)
-			expect(model.selection()?.rect).toBeDefined()
-			expect(model.selection()?.focusNode).toBe(anchor?.node)
+			expect(model.domSelection()?.rect).toBeDefined()
+			expect(model.domSelection()?.focusNode).toBe(anchor?.node)
 		})
 
 		it("handle.placeCaret targets the handle's token explicitly", () => {
@@ -299,7 +299,7 @@ describe('TokenModel shell (seam/)', () => {
 			const handle = model.handle(token.id!)
 			if (!handle) throw new Error('expected handle')
 			expect(handle.placeCaret(1)).toBe(true)
-			expect(model.anchorFor(...boundaryOf(model.selection()))).toEqual({node: model.nodes()[2], offset: 1})
+			expect(model.anchorFor(...boundaryOf(model.domSelection()))).toEqual({node: model.nodes()[2], offset: 1})
 			// A foreign token object (never reconciled) carries no id, so it has no
 			// live handle — the stale reference is rejected at resolution, leaving
 			// nothing to place into.
@@ -311,7 +311,7 @@ describe('TokenModel shell (seam/)', () => {
 			const {model, text1} = mountNewInline()
 
 			expect(model.selectRange(model.anchorAt(0), model.anchorAt(9))).toBe(true)
-			const range = model.selection()?.range
+			const range = model.domSelection()?.range
 			expect(model.anchorFor(range!.startContainer, range!.startOffset, 'after')).toEqual({
 				node: model.nodes()[0],
 				offset: 0,
@@ -320,8 +320,8 @@ describe('TokenModel shell (seam/)', () => {
 				node: model.nodes()[2],
 				offset: 3,
 			})
-			expect(model.selection()?.anchor.isCollapsed).toBe(false)
-			expect(model.selection()?.intersects(text1)).toBe(true)
+			expect(model.domSelection()?.anchor.isCollapsed).toBe(false)
+			expect(model.domSelection()?.intersects(text1)).toBe(true)
 			const content = model.selectedContent()
 			expect(content?.text).toContain('he')
 		})

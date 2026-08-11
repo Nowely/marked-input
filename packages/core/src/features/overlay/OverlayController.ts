@@ -4,7 +4,6 @@ import {signal, computed, event, effect, watch, listen} from '../../shared/signa
 import type {Computed} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
 import type {EditController} from '../edit'
-import type {SelectionController} from '../selection/SelectionController'
 import type {OverlaySlot} from '../slots'
 import {resolveOverlaySlot} from '../slots/resolveSlot'
 import type {Host} from '../state/Host'
@@ -26,7 +25,7 @@ export class OverlayController {
 
 	readonly position: Computed<{left: number; top: number}> = computed(() => {
 		if (!this.match()) return {left: 0, top: 0}
-		const rect = this.tokens.selection()?.rect
+		const rect = this.tokens.domSelection()?.rect
 		if (!rect) return {left: 0, top: 0}
 		return {left: rect.left, top: rect.top + rect.height + 1}
 	})
@@ -34,7 +33,6 @@ export class OverlayController {
 	constructor(
 		private readonly host: Host,
 		private readonly props: PropsModel,
-		private readonly selection: SelectionController,
 		private readonly edit: EditController,
 		private readonly tokens: TokenModel
 	) {
@@ -122,7 +120,7 @@ export class OverlayController {
 	 * `TriggerFinder.span`, which was always the DOM text node's content.
 	 */
 	#probeTriggerFromCaretRange(): OverlayMatch | undefined {
-		const anchors = this.selection.anchors()
+		const anchors = this.tokens.selection.anchors()
 		if (!anchors || !anchorEquals(anchors.anchor, anchors.head)) return
 		const caret = anchors.anchor
 		// A mark boundary or a document edge has no text to probe; only a text anchor does.
@@ -149,7 +147,7 @@ export class OverlayController {
 					head: {node: caret.node, offset: caret.offset + rightWord.length},
 				},
 				span: text,
-				node: this.tokens.selection()?.anchor.node ?? this.host.container() ?? document.body,
+				node: this.tokens.domSelection()?.anchor.node ?? this.host.container() ?? document.body,
 				option,
 			}
 		}

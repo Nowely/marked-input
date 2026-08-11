@@ -1,7 +1,6 @@
 // packages/core/src/features/clipboard/ClipboardController.ts
 import {listen} from '../../shared/signals/index.js'
 import type {EditController} from '../edit'
-import type {SelectionController} from '../selection/SelectionController'
 import type {Host} from '../state/Host'
 import type {Anchors, TokenModel} from '../tokens'
 import {anchorEquals} from '../tokens'
@@ -11,7 +10,6 @@ export class ClipboardController {
 	constructor(
 		host: Host,
 		edit: EditController,
-		private readonly selection: SelectionController,
 		private readonly tokens: TokenModel
 	) {
 		host.onMounted(container => {
@@ -29,7 +27,7 @@ export class ClipboardController {
 
 	/** The live DOM selection when it actually spans something; `undefined` for a caret or no selection. */
 	#selected(): Anchors | undefined {
-		const anchors = this.selection.domAnchors()
+		const anchors = this.tokens.domAnchors()
 		if (!anchors || anchorEquals(anchors.anchor, anchors.head)) return undefined
 		return anchors
 	}

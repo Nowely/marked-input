@@ -90,7 +90,7 @@ describe('BlockController', () => {
 		store.host.container(document.createElement('div'))
 		store.tokens.setValue('alpha\n\nbeta\n\n')
 		const writeSpy = vi.spyOn(store.edit, 'setValue')
-		const selectSpy = vi.spyOn(store.selection, 'select')
+		const selectSpy = vi.spyOn(store.tokens.selection, 'select')
 
 		store.block.action({type: 'reorder', source: 0, target: 0})
 

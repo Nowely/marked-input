@@ -4,7 +4,7 @@ import type {Store} from '../../store/Store'
 import type {NodeAnchor, TreeNode} from '../tokens'
 import {anchorEquals} from '../tokens'
 
-type KbCtx = Pick<Store, 'selection' | 'props' | 'tokens'>
+type KbCtx = Pick<Store, 'props' | 'tokens'>
 
 export function enableArrowNav(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'keydown', e => {
@@ -18,7 +18,7 @@ export function enableArrowNav(store: KbCtx, container: HTMLElement): void {
 
 		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
 			e.preventDefault()
-			store.selection.selectAll()
+			store.tokens.selection.selectAll()
 		}
 	})
 }
@@ -42,7 +42,7 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 		// the pre-S2.5 code bailed on both through the same `!selection` test. Only
 		// collapsed-ness needed splitting out, and that is `anchorEquals` — an anchor
 		// comparison, not a second `undefined`.
-		const anchors = store.selection.domAnchors()
+		const anchors = store.tokens.domAnchors()
 		if (!anchors || !anchorEquals(anchors.anchor, anchors.head)) return
 		if (!atBoundary(anchors.anchor, node, direction === 'prev' ? 'start' : 'end')) return
 	}
@@ -55,7 +55,7 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	if (!sibling || !siblingHandle?.alive()) return
 
 	event.preventDefault()
-	store.selection.selectNode(sibling, direction === 'prev' ? 'end' : 'start')
+	store.tokens.selection.selectNode(sibling, direction === 'prev' ? 'end' : 'start')
 }
 
 /** Whether the caret names this node's own start/end — the node-identity form of the old `<=`/`>=` on positions. */

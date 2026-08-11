@@ -70,8 +70,8 @@ describe('Store', () => {
 
 		it('leave other keys unchanged when one signal is updated', () => {
 			const store = new Store()
-			store.selection.isUserSelecting(true)
-			expect(store.selection.isUserSelecting()).toBe(true)
+			store.tokens.isUserSelecting(true)
+			expect(store.tokens.isUserSelecting()).toBe(true)
 			expect(store.tokens.value()).toBe('')
 		})
 
@@ -80,13 +80,13 @@ describe('Store', () => {
 			const effectSpy = vi.fn()
 			effect(() => {
 				store.tokens.value()
-				store.selection.isUserSelecting()
+				store.tokens.isUserSelecting()
 				effectSpy()
 			})
 			effectSpy.mockClear()
 			batch(() => {
 				store.tokens.setValue('a')
-				store.selection.isUserSelecting(true)
+				store.tokens.isUserSelecting(true)
 			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
 		})

@@ -47,7 +47,8 @@ describe('TokenModel value boundary', () => {
 
 	it('an unmounted store reads defaultValue before anything has committed', () => {
 		// THE gate on TokenModel.value's `#seeded` arm, which S1.6c took over from two
-		// SelectionController cases (they now seed the tree through `anchorAt`). Measured:
+		// selection cases (now in `tree/selection.spec`; they seed the tree through
+		// `anchorAt`). Measured:
 		// reducing the getter to `props.value() ?? this.#committed()` returns '' here,
 		// because nothing has committed yet.
 		const store = new Store()

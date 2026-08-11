@@ -2,7 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'selection' | 'edit' | 'tokens' | 'props'>
+type KbCtx = Pick<Store, 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, mergeDragRows, canMergeRows, deleteDragRow} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
@@ -145,7 +145,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 
 	// The caret, or — with no readable DOM selection — the end of the row this Enter
 	// split. `{after: row}` IS `row.position.end` without forming the offset.
-	const at: NodeAnchor = store.selection.domAnchors()?.anchor ?? {after: row}
+	const at: NodeAnchor = store.tokens.domAnchors()?.anchor ?? {after: row}
 	store.edit.replace(at, at, newRowContent)
 }
 
@@ -153,7 +153,7 @@ function focusRow(store: KbCtx, row: TreeNode, rowIndex: number, caret: 'start' 
 	if (row.kind === 'mark') {
 		// placeAtHandle reads the handle's current positions to disambiguate a shared boundary.
 		const handle = store.tokens.handle(row.id)
-		if (handle && store.selection.placeAtHandle(handle, caret)) return
+		if (handle && store.tokens.placeAtHandle(handle, caret)) return
 	}
 
 	const handle = rowHandle(store, rowIndex)
@@ -199,7 +199,7 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 		if (blockIndex === 0) return
 
 		event.preventDefault()
-		const caretX = store.tokens.selection()?.rect?.left ?? handle.rect()?.left ?? 0
+		const caretX = store.tokens.domSelection()?.rect?.left ?? handle.rect()?.left ?? 0
 		const prev = rowHandle(store, blockIndex - 1)
 		if (!prev) return
 		prev.focus()
@@ -210,7 +210,7 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 		if (blockIndex >= rowCount - 1) return
 
 		event.preventDefault()
-		const caretX = store.tokens.selection()?.rect?.left ?? handle.rect()?.left ?? 0
+		const caretX = store.tokens.domSelection()?.rect?.left ?? handle.rect()?.left ?? 0
 		const next = rowHandle(store, blockIndex + 1)
 		if (!next) return
 		next.focus()

@@ -93,8 +93,8 @@ describe('handleBeforeInput()', () => {
 		// The ordinary (not-all-selected) path already ignores these types, because
 		// replacementForInput returns undefined for them.
 		const {store, container} = mountStructuralInline()
-		store.selection.selectAll()
-		expect(store.selection.isAllSelected()).toBe(true)
+		store.tokens.selection.selectAll()
+		expect(store.tokens.selection.isAllSelected()).toBe(true)
 		const event = new InputEvent('beforeinput', {inputType: 'insertParagraph', bubbles: true, cancelable: true})
 
 		container.dispatchEvent(event)
@@ -106,7 +106,7 @@ describe('handleBeforeInput()', () => {
 
 	it('still replaces the whole value on insertText with everything selected', () => {
 		const {store, container} = mountStructuralInline()
-		store.selection.selectAll()
+		store.tokens.selection.selectAll()
 		const event = new InputEvent('beforeinput', {
 			inputType: 'insertText',
 			data: 'a',
@@ -123,7 +123,7 @@ describe('handleBeforeInput()', () => {
 
 	it('still clears the whole value on a delete input type with everything selected', () => {
 		const {store, container} = mountStructuralInline()
-		store.selection.selectAll()
+		store.tokens.selection.selectAll()
 		const event = new InputEvent('beforeinput', {
 			inputType: 'deleteContentBackward',
 			bubbles: true,
@@ -208,7 +208,7 @@ describe('handleBeforeInput()', () => {
 	describe('handleDeleteKey()', () => {
 		it('clears the whole value on Backspace with everything selected', () => {
 			const {store, container} = mountStructuralInline()
-			store.selection.selectAll()
+			store.tokens.selection.selectAll()
 
 			const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
 			container.dispatchEvent(event)
@@ -222,7 +222,7 @@ describe('handleBeforeInput()', () => {
 			// THE discriminating case (see the note above): the only one that fails when the
 			// all-selected branch is deleted.
 			const {store, container} = mountStructuralInline()
-			store.selection.selectAll()
+			store.tokens.selection.selectAll()
 			window.getSelection()?.removeAllRanges()
 
 			const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})

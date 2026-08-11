@@ -31,7 +31,7 @@ describe('TokenModel facade selection reads', () => {
 			const handle = store.tokens.handleAt(firstText)
 			if (handle === undefined || handle === 'control') throw new Error('expected a bound token')
 			const node = store.tokens.find(handle.id)
-			expect(store.selection.domAnchors()).toEqual({anchor: {node, offset: 0}, head: {node, offset: 1}})
+			expect(store.tokens.domAnchors()).toEqual({anchor: {node, offset: 0}, head: {node, offset: 1}})
 			expect(store.tokens.selectedContent()).toEqual({
 				html: firstText.data.slice(0, 1),
 				text: firstText.data.slice(0, 1),
@@ -50,7 +50,7 @@ describe('TokenModel placement commands', () => {
 		const {store} = mountWithMark()
 		const at = store.tokens.anchorAt(1)
 		expect(store.tokens.placeCaret(at)).toBe(true)
-		expect(store.selection.domAnchors()).toEqual({anchor: at, head: at})
+		expect(store.tokens.domAnchors()).toEqual({anchor: at, head: at})
 	})
 
 	it('places the document-edge anchors through the first and last roots', () => {
@@ -63,11 +63,11 @@ describe('TokenModel placement commands', () => {
 
 		expect(store.tokens.placeCaret('end')).toBe(true)
 		expect(document.activeElement).toBe(text2)
-		expect(store.selection.domAnchors()?.anchor).toEqual({node: roots[2], offset: 3})
+		expect(store.tokens.domAnchors()?.anchor).toEqual({node: roots[2], offset: 3})
 
 		expect(store.tokens.placeCaret('start')).toBe(true)
 		expect(document.activeElement).toBe(text1)
-		expect(store.selection.domAnchors()?.anchor).toEqual({node: roots[0], offset: 0})
+		expect(store.tokens.domAnchors()?.anchor).toEqual({node: roots[0], offset: 0})
 	})
 
 	it('places two anchors sharing one offset in their own surfaces', () => {
@@ -91,7 +91,7 @@ describe('TokenModel placement commands', () => {
 		const handle = store.tokens.handle(node.id)
 		if (!handle) throw new Error('expected handle')
 		expect(handle.placeCaret(1)).toBe(true)
-		expect(store.selection.domAnchors()?.anchor).toEqual({node, offset: 1})
+		expect(store.tokens.domAnchors()?.anchor).toEqual({node, offset: 1})
 	})
 
 	it('selectRange spans two text surfaces, in either anchor order', () => {
@@ -102,14 +102,14 @@ describe('TokenModel placement commands', () => {
 		const spanned = {anchor: {node: roots[0], offset: 0}, head: {node: roots[2], offset: 3}}
 
 		expect(store.tokens.selectRange(from, to)).toBe(true)
-		expect(store.selection.domAnchors()).toEqual(spanned)
+		expect(store.tokens.domAnchors()).toEqual(spanned)
 
 		// THE gate on the DOM-order normalization that replaced the numeric `min`/`max`:
 		// a Range whose end precedes its start COLLAPSES rather than throwing, so a
 		// reversed pair would silently select nothing.
 		window.getSelection()?.removeAllRanges()
 		expect(store.tokens.selectRange(to, from)).toBe(true)
-		expect(store.selection.domAnchors()).toEqual(spanned)
+		expect(store.tokens.domAnchors()).toEqual(spanned)
 	})
 
 	it('selects to the END of a surface the browser split into two text nodes', () => {
@@ -127,7 +127,7 @@ describe('TokenModel placement commands', () => {
 		expect(text2.childNodes).toHaveLength(2)
 
 		expect(store.tokens.selectRange(store.tokens.anchorAt(0), {after: roots[2]})).toBe(true)
-		expect(store.selection.domAnchors()?.head).toEqual({node: roots[2], offset: 3})
+		expect(store.tokens.domAnchors()?.head).toEqual({node: roots[2], offset: 3})
 	})
 
 	it('handle.placeCaret + handle.caretIndex round-trip', () => {
@@ -149,7 +149,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 	it('returns undefined when there is no range', () => {
 		const {store} = mountWithMark()
 		window.getSelection()?.removeAllRanges()
-		expect(store.tokens.selection()).toBeUndefined()
+		expect(store.tokens.domSelection()).toBeUndefined()
 	})
 
 	it('carries the window range, anchor, focusNode, rect, and intersects', () => {
@@ -163,7 +163,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 		sel.removeAllRanges()
 		sel.addRange(range)
 
-		const snapshot = store.tokens.selection()
+		const snapshot = store.tokens.domSelection()
 		if (!snapshot) throw new Error('expected a selection snapshot')
 		expect(snapshot.range.startOffset).toBe(0)
 		expect(snapshot.range.endOffset).toBe(2)
@@ -191,7 +191,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 		sel.removeAllRanges()
 		sel.setBaseAndExtent(firstText, 0, firstText, 1)
 
-		const snapshot = store.tokens.selection()
+		const snapshot = store.tokens.domSelection()
 		if (!snapshot) throw new Error('expected a selection snapshot')
 		expect(snapshot.range).toBe(sel.getRangeAt(0))
 
@@ -201,7 +201,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 
 		// The pull, which is what `sync` actually depends on.
 		sel.setBaseAndExtent(firstText, 0, firstText, 1)
-		expect(store.tokens.selection()?.range.endOffset).toBe(1)
+		expect(store.tokens.domSelection()?.range.endOffset).toBe(1)
 	})
 
 	it('anchor.isCollapsed and range.collapsed both report a caret', () => {
@@ -215,7 +215,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 		sel.removeAllRanges()
 		sel.addRange(range)
 
-		const snapshot = store.tokens.selection()
+		const snapshot = store.tokens.domSelection()
 		if (!snapshot) throw new Error('expected a selection snapshot')
 		expect(snapshot.anchor.isCollapsed).toBe(true)
 		expect(snapshot.range.collapsed).toBe(true)

@@ -258,7 +258,7 @@ describe('anchorFor across a control', () => {
 		selection.addRange(range)
 
 		// `locate` answers `'control'` for the end boundary, so the pair never forms.
-		expect(store.selection.domAnchors()).toBeUndefined()
+		expect(store.tokens.domAnchors()).toBeUndefined()
 		container.remove()
 	})
 })

@@ -2,7 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'selection' | 'edit' | 'props' | 'tokens'>
+type KbCtx = Pick<Store, 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Anchors} from '../tokens'
 import {anchorEquals} from '../tokens'
@@ -38,13 +38,13 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	// default — letting the browser mutate contenteditable behind the model's back. Gated by
 	// `input.spec`'s 'clears the whole value even when the DOM selection is gone'; the
 	// obvious "Backspace with everything selected" case does NOT discriminate it.
-	if (store.selection.isAllSelected()) {
+	if (store.tokens.selection.isAllSelected()) {
 		event.preventDefault()
 		store.edit.setValue('')
 		return
 	}
 
-	const anchors = store.selection.domAnchors()
+	const anchors = store.tokens.domAnchors()
 	if (!anchors) return
 
 	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
@@ -56,7 +56,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 }
 
 function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent): void {
-	if (store.selection.isAllSelected()) {
+	if (store.tokens.selection.isAllSelected()) {
 		// The `paste` listener owns this one end-to-end: it consumes the markup
 		// clipboard entry and performs the whole-value replace itself.
 		if (event.inputType === 'insertFromPaste') {
@@ -128,7 +128,7 @@ function anchorsForDelete(store: KbCtx, inputType: string, anchors: Anchors): An
 }
 
 function handlePaste(store: KbCtx, container: HTMLElement, event: ClipboardEvent): void {
-	if (!store.selection.isAllSelected()) return
+	if (!store.tokens.selection.isAllSelected()) return
 
 	event.preventDefault()
 	const markup = consumeMarkupPaste(container)

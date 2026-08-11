@@ -15,9 +15,9 @@ describe('SelectionDriver', () => {
 		const handle = store.tokens.handle(store.tokens.nodes()[0].id)
 		if (!handle) throw new Error('Structural text token did not bind a handle')
 		const notify = vi.fn()
-		const stop = watch(() => store.selection.anchors(), notify)
-		store.selection.placeAtHandle(handle, 'start')
-		store.selection.placeAtHandle(handle, 'start')
+		const stop = watch(() => store.tokens.selection.anchors(), notify)
+		store.tokens.placeAtHandle(handle, 'start')
+		store.tokens.placeAtHandle(handle, 'start')
 		expect(notify).toHaveBeenCalledTimes(1)
 		stop()
 		container.remove()
@@ -30,8 +30,8 @@ describe('SelectionDriver', () => {
 		// path, and the collapsed one is masked by `placeAtHandle`'s re-apply branch.
 		const {store, container} = mountStructuralInline('hello')
 		const spy = vi.spyOn(store.tokens, 'selectRange')
-		store.selection.selectAll()
-		store.selection.selectAll()
+		store.tokens.selection.selectAll()
+		store.tokens.selection.selectAll()
 		expect(spy).toHaveBeenCalledTimes(1)
 		spy.mockRestore()
 		container.remove()
@@ -46,7 +46,7 @@ describe('SelectionDriver', () => {
 		const markHandle = store.tokens.handle(store.tokens.nodes()[1].id)
 		if (!markHandle) throw new Error('Mark token did not bind a handle')
 
-		expect(store.selection.placeAtHandle(markHandle, 'start')).toBe(true)
+		expect(store.tokens.placeAtHandle(markHandle, 'start')).toBe(true)
 
 		expect(document.activeElement).toBe(mark)
 		container.remove()
@@ -58,7 +58,7 @@ describe('SelectionDriver', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
 		const notify = vi.fn()
-		const stop = watch(() => store.selection.anchors(), notify)
+		const stop = watch(() => store.tokens.selection.anchors(), notify)
 		caretAt(store, 5)
 		caretAt(store, 5)
 		expect(notify).toHaveBeenCalledTimes(1)
@@ -93,12 +93,12 @@ describe('SelectionDriver', () => {
 			// so the anchor comes back identical and the write dedupes.
 			const {store, container, mark} = mountStructuralInlineMark('ab@[x]cd')
 			const markNode = store.tokens.nodes()[1]
-			store.selection.select({before: markNode})
+			store.tokens.selection.select({before: markNode})
 			putCaret(mark, 0)
 
 			document.dispatchEvent(new Event('selectionchange'))
 
-			expect(store.selection.anchors()).toEqual({anchor: {before: markNode}, head: {before: markNode}})
+			expect(store.tokens.selection.anchors()).toEqual({anchor: {before: markNode}, head: {before: markNode}})
 			container.remove()
 		})
 
@@ -110,12 +110,12 @@ describe('SelectionDriver', () => {
 			// text. Re-introducing the guard turns exactly this case red.
 			const {store, container, mark} = mountStructuralInlineMark('ab@[x]cd')
 			const markNode = store.tokens.nodes()[1]
-			store.selection.select({node: textRoot(store), offset: 2})
+			store.tokens.selection.select({node: textRoot(store), offset: 2})
 			putCaret(mark, 0)
 
 			document.dispatchEvent(new Event('selectionchange'))
 
-			expect(store.selection.anchors()).toEqual({anchor: {before: markNode}, head: {before: markNode}})
+			expect(store.tokens.selection.anchors()).toEqual({anchor: {before: markNode}, head: {before: markNode}})
 			container.remove()
 		})
 
@@ -124,13 +124,13 @@ describe('SelectionDriver', () => {
 			// DOM saying "nothing is selected", which the model must follow. Swapping this
 			// exit with the one below turns both cases red.
 			const {store, container, before} = mountStructuralInlineMark('ab@[x]cd')
-			store.selection.select({node: textRoot(store), offset: 1})
-			expect(store.selection.anchors()).toBeDefined()
+			store.tokens.selection.select({node: textRoot(store), offset: 1})
+			expect(store.tokens.selection.anchors()).toBeDefined()
 
 			window.getSelection()?.removeAllRanges()
 			before.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
 
-			expect(store.selection.anchors()).toBeUndefined()
+			expect(store.tokens.selection.anchors()).toBeUndefined()
 			container.remove()
 		})
 
@@ -141,7 +141,7 @@ describe('SelectionDriver', () => {
 			// reachable form of that.
 			const {store, container, before} = mountStructuralInlineMark('ab@[x]cd')
 			const textNode = textRoot(store)
-			store.selection.select({node: textNode, offset: 1})
+			store.tokens.selection.select({node: textNode, offset: 1})
 
 			const outside = document.createElement('div')
 			outside.append(document.createTextNode('elsewhere'))
@@ -149,7 +149,7 @@ describe('SelectionDriver', () => {
 			putCaret(outside.firstChild!, 3)
 			before.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
 
-			expect(store.selection.anchors()).toEqual({
+			expect(store.tokens.selection.anchors()).toEqual({
 				anchor: {node: textNode, offset: 1},
 				head: {node: textNode, offset: 1},
 			})
@@ -170,7 +170,7 @@ describe('SelectionDriver', () => {
 			store.host.container(container)
 			store.host.rendered()
 
-			store.selection.selectAll()
+			store.tokens.selection.selectAll()
 			expect(selectionRange(store)).toEqual({start: 0, end: 5})
 			const sel = window.getSelection()
 			expect(sel?.anchorNode).toBe(span.firstChild)
@@ -184,7 +184,7 @@ describe('SelectionDriver', () => {
 			store.props.set({defaultValue: 'hello'})
 			// No container set → no DOM index has been committed → placement is deferred
 			// until the next render. The range signal still reflects user intent.
-			store.selection.selectAll()
+			store.tokens.selection.selectAll()
 			expect(selectionRange(store)).toEqual({start: 0, end: 5})
 		})
 	})
@@ -228,7 +228,7 @@ describe('SelectionDriver', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
-			store.selection.isUserSelecting(true)
+			store.tokens.isUserSelecting(true)
 			caretAt(store, 3)
 
 			// Clear any pre-existing browser selection so we can detect non-changes.
@@ -283,7 +283,7 @@ describe('SelectionDriver', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
-			store.selection.select(store.tokens.anchorAt(999), store.tokens.anchorAt(1000))
+			store.tokens.selection.select(store.tokens.anchorAt(999), store.tokens.anchorAt(1000))
 			store.host.rendered()
 
 			// Both anchors are `'end'`, so the selection is collapsed rather than clamped.
@@ -306,10 +306,10 @@ describe('SelectionDriver', () => {
 
 			expect(span.contentEditable).toBe('true')
 
-			store.selection.isUserSelecting(true)
+			store.tokens.isUserSelecting(true)
 			expect(span.contentEditable).toBe('false')
 
-			store.selection.isUserSelecting(false)
+			store.tokens.isUserSelecting(false)
 			expect(span.contentEditable).toBe('true')
 
 			container.remove()

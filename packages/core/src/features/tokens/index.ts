@@ -11,13 +11,10 @@ export {TokenModel} from './seam/TokenModel'
 // numeric comparison for the four keyboard and overlay call sites above this layer.
 export {anchorEquals} from './tree/anchors'
 export type {Anchors, Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TransactionResult, TreeNode} from './tree/types'
-// The two halves of the selection (spec S2 D10): tree-space state here, DOM I/O below.
-// Anchors-not-offsets and the pre-adoption capture are S1 D7. `SelectionController`
-// composes the pair; `Store` still constructs it, which is why the deps of both are
-// closures over `TokenModel`'s reads rather than the tree itself.
-export {createSelection} from './tree/selection'
+// The selection's tree-space half (spec S2 D10). Its DOM half (`dom/SelectionDriver.ts`) is
+// not exported at all since S2.9: `TokenModel` constructs it privately and delegates its
+// three reads, so nothing outside this folder names the class.
 export type {Selection} from './tree/selection'
 export type {TokenDelta} from './dom/commit'
 export type {SelectionAnchor, SelectionSnapshot} from './dom/DomModel'
-export {SelectionDriver} from './dom/SelectionDriver'
 export {TokenHandle} from './dom/TokenHandle'

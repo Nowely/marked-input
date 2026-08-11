@@ -7,9 +7,10 @@ import type {Anchors, NodeAnchor, TransactionResult, TreeNode} from './types'
 
 /**
  * What the selection state reads from the tree — nothing more. CLOSURES, not the
- * `TokenTree` itself: `Store` still constructs the selection and `TokenModel` holds its
- * tree privately, so the three reads are satisfied by `TokenModel`'s public surface today
- * and re-pointed at the tree directly when ownership moves, with no change here.
+ * `TokenTree` itself, and that outlived its original reason (`Store` built the selection
+ * while `TokenModel` kept its tree private). It is what keeps this module unit-testable
+ * over a bare `createTokenTree`, and what lets `TokenModel` satisfy `anchorAt` with the
+ * SEEDING read rather than the bare tree walk — see the bag it passes.
  */
 export type SelectionDeps = {
 	offsetOf(anchor: NodeAnchor): number
@@ -137,10 +138,10 @@ export function createSelection(deps: SelectionDeps): Selection {
 
 	/**
 	 * @internal Post-adoption caret repair (spec S1 D7, S1 §4.5). Called by the token layer
-	 * inside the commit, after the pipeline applied — never by anything else. Together with
-	 * {@link anchors} this is the `SelectionPort` `TokenModel` is constructed with —
-	 * `{anchors(), repair()}`, reaching this module through `SelectionController`'s
-	 * delegation.
+	 * inside the commit, after the pipeline applied — never by anything else. It and
+	 * {@link anchors} are the two ends of the D7 protocol; until S2.9 they reached
+	 * `TokenModel` as an injected two-method thunk, because `Store` built the selection
+	 * after the model. `TokenModel` owns both now and calls them on its own field.
 	 *
 	 * UNCONDITIONAL no more: the pre-S2.6 body also bumped a generation marker on every
 	 * adoption, because the derived numeric `range` read stored positions that no signal

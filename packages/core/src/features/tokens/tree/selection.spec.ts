@@ -11,8 +11,8 @@ const parser = new Parser(['@[__value__]'])
 
 /**
  * The unit as spec S2 AC-5.1 reads it: `createSelection` over a tree built straight from
- * the parser — no `Store`, no host, no DOM. The three closures are the ones
- * `SelectionController` supplies, resolved against the same tree the deps would see.
+ * the parser — no `Store`, no host, no DOM. The three closures are the bare tree reads
+ * `TokenModel` supplies policy-wrapped versions of, resolved against that same tree.
  */
 function build(source: string) {
 	const tree = createTokenTree(parser.parse(source))
@@ -68,9 +68,9 @@ describe('createSelection', () => {
 			// exists where the two halves are composed.
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
-			store.selection.isUserSelecting(true)
+			store.tokens.isUserSelecting(true)
 			caretAt(store, 5)
-			expect(store.selection.isUserSelecting()).toBe(true)
+			expect(store.tokens.isUserSelecting()).toBe(true)
 		})
 		it('collapses an extended selection', () => {
 			const harness = build('hello')
@@ -103,8 +103,8 @@ describe('createSelection', () => {
 			// the mutation survives.
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
-			store.selection.selectAll()
-			expect(store.selection.isAllSelected()).toBe(true)
+			store.tokens.selection.selectAll()
+			expect(store.tokens.selection.isAllSelected()).toBe(true)
 		})
 	})
 

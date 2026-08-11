@@ -16,7 +16,7 @@ export function anchorsAt(store: Store, start: number, end: number = start): [No
 
 /** Collapse the stored selection onto a document offset — the write half of the deleted `Selection.position`. */
 export function caretAt(store: Store, offset: number): void {
-	store.selection.select(store.tokens.anchorAt(offset))
+	store.tokens.selection.select(store.tokens.anchorAt(offset))
 }
 
 /**
@@ -28,7 +28,7 @@ export function caretAt(store: Store, offset: number): void {
  * against the positions adoption just moved.
  */
 export function selectionRange(store: Store): {start: number; end: number} | undefined {
-	const anchors = store.selection.anchors()
+	const anchors = store.tokens.selection.anchors()
 	if (!anchors) return undefined
 	const anchor = store.tokens.offsetOf(anchors.anchor)
 	const head = store.tokens.offsetOf(anchors.head)
@@ -142,8 +142,7 @@ export function mountValue(value: string, props: Parameters<Store['props']['set'
  * container holds three root elements and the mark is `nodes()[1]`.
  *
  * The host registration is id-keyed, so it has to come AFTER `host.container`
- * publishes a tree and BEFORE `rendered()` binds against it (the ordering
- * `SelectionController.spec.ts`'s nested fixture documents).
+ * publishes a tree and BEFORE `rendered()` binds against it.
  */
 export function mountNested() {
 	const store = new Store()
