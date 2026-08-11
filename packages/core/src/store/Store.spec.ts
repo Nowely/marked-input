@@ -2,7 +2,6 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {markToken, nodesOf, textToken, treeShape} from '../features/tokens/__testing__/tokenFactories'
 import {DEFAULT_OPTIONS} from '../shared/constants'
-import {effect, batch} from '../shared/signals'
 import {Store} from './Store'
 
 describe('Store', () => {
@@ -66,29 +65,6 @@ describe('Store', () => {
 			expect(store.tokens.value()).toBe('')
 			store.tokens.setValue('hello')
 			expect(store.tokens.value()).toBe('hello')
-		})
-
-		it('leave other keys unchanged when one signal is updated', () => {
-			const store = new Store()
-			store.tokens.isUserSelecting(true)
-			expect(store.tokens.isUserSelecting()).toBe(true)
-			expect(store.tokens.value()).toBe('')
-		})
-
-		it('batch multiple internal writes so effects fire once', () => {
-			const store = new Store()
-			const effectSpy = vi.fn()
-			effect(() => {
-				store.tokens.value()
-				store.tokens.isUserSelecting()
-				effectSpy()
-			})
-			effectSpy.mockClear()
-			batch(() => {
-				store.tokens.setValue('a')
-				store.tokens.isUserSelecting(true)
-			})
-			expect(effectSpy).toHaveBeenCalledTimes(1)
 		})
 	})
 

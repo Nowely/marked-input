@@ -12,7 +12,7 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
     - **Events** (`store.<feature>.<event>()`) — typed reactive events: `overlay.close`, `block.action`, and host lifecycle events
     - **DOM refs** (`store.host.container`, `store.overlay.element`) — reactive signals holding container and overlay HTMLElement references
     - **Token layer** (`store.tokens`) — parsing, live node map, DOM↔model facade, adapter ref registries, and caret/selection DOM operations. See `features/tokens/README.md` for the full contract.
-    - **Selection & caret placement** (`store.tokens.selection` plus the model's `domAnchors()` / `focusFirst()` / `placeAtHandle()` / `isUserSelecting`) — the token layer owns both halves since S2.9; there is no `store.selection`
+    - **Selection & caret placement** (`store.tokens.selection` plus the model's `domAnchors()` / `focusFirst()` / `placeAtHandle()`) — the token layer owns both halves since S2.9; there is no `store.selection`
     - **Features** (`store.<feature>`) — all feature instances
     - **`store.props.set()`** — batch update for framework-provided prop signals (used by React/Vue `MarkedInput`)
 

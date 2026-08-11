@@ -108,11 +108,11 @@ export function createSelection(deps: SelectionDeps): Selection {
 	const select = (anchor: NodeAnchor, head: NodeAnchor = anchor): boolean => stored({anchor, head})
 
 	/**
-	 * @internal THE drop. Its four callers are `SelectionDriver`'s "there is no selection
-	 * here" exits — no DOM selection, `focusin` with no target, `focusout` past the
-	 * microtask, and a boundary outside the editor. A verb rather than a `stored(undefined)`
-	 * reaching across the module boundary, so those exits obey the same "did it actually
-	 * change" contract {@link select} does.
+	 * @internal THE drop. Its two callers are `SelectionDriver`'s "the selection is not in
+	 * this editor" exits — `syncIfInEditor` on a boundary outside the container, and the
+	 * `focusout` microtask once focus has actually left it. A verb rather than a
+	 * `stored(undefined)` reaching across the module boundary, so those exits obey the same
+	 * "did it actually change" contract {@link select} does.
 	 */
 	const clear = (): boolean => stored(undefined)
 

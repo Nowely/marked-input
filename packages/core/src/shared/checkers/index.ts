@@ -1,1 +1,1 @@
-export {firstHtmlChild, nextText, nodeTarget} from './domGuards'
+export {nextText, nodeTarget} from './domGuards'

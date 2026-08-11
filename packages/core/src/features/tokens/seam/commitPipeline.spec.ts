@@ -51,10 +51,10 @@ import {createBoundary} from '../tree/valueBoundary'
  * imports `bind`, so every call counted here is `commit.ts`'s.
  *
  * The spy exists for ONE property, "the text path performs no re-bind", which stopped
- * being observable when `bound()` became `deps.nodes`: bind mutates that map in place, so
- * neither its identity (stable forever) nor "the same handle on the same element" (what a
- * re-bind of an unchanged node leaves behind too) can tell a skipped bind from one that
- * ran. See {@link bindCount}'s call sites.
+ * being observable when the pipeline's id-keyed read became `deps.nodes` itself: bind
+ * mutates that map in place, so neither its identity (stable forever) nor "the same handle
+ * on the same element" (what a re-bind of an unchanged node leaves behind too) can tell a
+ * skipped bind from one that ran. See {@link bindCount}'s call sites.
  */
 vi.mock('../dom/bind', async importOriginal => {
 	// `{bind: typeof bind}` rather than `typeof import('../dom/bind')`: the module has one
@@ -83,7 +83,7 @@ function boundAt(harness: Harness, ...path: number[]): TokenHandle | undefined {
 	return handle?.alive() === true ? handle : undefined
 }
 
-/** Every handle the last bind left bound — what `pipeline.bound().size` used to count. */
+/** Every handle the last bind left bound — the node layer filtered by `alive()`. */
 function boundHandles(harness: Harness): TokenHandle[] {
 	return [...harness.nodes.values()].filter(handle => handle.alive())
 }

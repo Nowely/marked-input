@@ -158,26 +158,33 @@ describe('SelectionDriver', () => {
 			container.remove()
 		})
 
-		it('focusin with no DOM selection clears the stored anchors', () => {
-			// One of the two exits, and they are NOT interchangeable: no DOM selection is the
-			// DOM saying "nothing is selected", which the model must follow. Swapping this
-			// exit with the one below turns both cases red.
-			const {store, container, before} = mountStructuralInlineMark('ab@[x]cd')
+		it('focus leaving the container clears the stored anchors', async () => {
+			// THE clear, and the only one the driver has left: focus out of the one editing
+			// host. It replaces the deleted `focusin` listener's "no DOM selection" arm — that
+			// one re-read a STALE range during the focus transition and re-applied it with a
+			// focus steal, which is why a click into an adjacent span never moved the caret.
+			// The microtask is the handler's own: `focusout` fires BEFORE `activeElement` moves.
+			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+			const outside = document.createElement('input')
+			document.body.append(outside)
 			store.tokens.selection.select({node: textRoot(store), offset: 1})
 			expect(store.tokens.selection.anchors()).toBeDefined()
 
-			window.getSelection()?.removeAllRanges()
-			before.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
+			outside.focus()
+			await Promise.resolve()
 
 			expect(store.tokens.selection.anchors()).toBeUndefined()
+			outside.remove()
 			container.remove()
 		})
 
-		it('focusin with an unresolvable boundary leaves the stored anchors standing', () => {
-			// The other exit (spec S2 D4): `anchorFor` answering `undefined` means "the DOM
+		it('a half-outside range leaves the stored anchors standing', () => {
+			// THE surviving exit (spec S2 D4): `anchorFor` answering `undefined` means "the DOM
 			// cannot be read here", not "nothing is selected" — the previous anchors stay and
-			// the next `selectionchange` corrects them. A boundary outside the container is the
-			// reachable form of that.
+			// the next `selectionchange` corrects them. Its reachable form is a RANGE with one
+			// end outside the container: the focus end is in the editor, so `syncIfInEditor`
+			// passes it through rather than taking the "outside" CLEAR, and the far end is what
+			// declines. Turning that `return` into a `clear()` turns this case red.
 			const {store, container, before} = mountStructuralInlineMark('ab@[x]cd')
 			const textNode = textRoot(store)
 			store.tokens.selection.select({node: textNode, offset: 1})
@@ -185,8 +192,10 @@ describe('SelectionDriver', () => {
 			const outside = document.createElement('div')
 			outside.append(document.createTextNode('elsewhere'))
 			document.body.append(outside)
-			putCaret(outside.firstChild!, 3)
-			before.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
+			const editorEnd = before.firstChild
+			if (!editorEnd) throw new Error('the leading surface rendered no text node')
+			window.getSelection()?.setBaseAndExtent(outside.firstChild!, 3, editorEnd, 1)
+			document.dispatchEvent(new Event('selectionchange'))
 
 			expect(store.tokens.selection.anchors()).toEqual({
 				anchor: {node: textNode, offset: 1},
@@ -229,11 +238,18 @@ describe('SelectionDriver', () => {
 	})
 
 	describe('lifecycle wiring', () => {
-		it('attaches document listeners on mount', () => {
+		it("the sweep tracker's document listeners went with the flip", () => {
+			// A NEGATIVE, and deliberately so: asserting the surviving `selectionchange`
+			// listener pins nothing, because `OverlayController` attaches one to `document`
+			// too — the positive passes with the driver's own listener deleted. What this
+			// commit changed is that mounting no longer reaches for the mouse at all.
 			const addSpy = vi.spyOn(document, 'addEventListener')
 			const store = new Store()
 			store.host.container(document.createElement('div'))
-			expect(addSpy).toHaveBeenCalledWith('mousedown', expect.any(Function), undefined)
+
+			for (const type of ['mousedown', 'mousemove', 'mouseup']) {
+				expect(addSpy).not.toHaveBeenCalledWith(type, expect.any(Function), undefined)
+			}
 			addSpy.mockRestore()
 		})
 	})
@@ -255,27 +271,6 @@ describe('SelectionDriver', () => {
 			const sel = window.getSelection()
 			expect(sel?.focusNode).toBe(span.firstChild)
 			expect(sel?.focusOffset).toBe(5)
-			container.remove()
-		})
-
-		it('skips restoration when isUserSelecting', () => {
-			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
-			const container = document.createElement('div')
-			const span = document.createElement('span')
-			span.appendChild(document.createTextNode('hello'))
-			container.appendChild(span)
-			document.body.appendChild(container)
-			store.host.container(container)
-			store.tokens.isUserSelecting(true)
-			caretAt(store, 3)
-
-			// Clear any pre-existing browser selection so we can detect non-changes.
-			window.getSelection()?.removeAllRanges()
-			store.host.rendered()
-
-			const sel = window.getSelection()
-			expect(sel?.rangeCount ?? 0).toBe(0)
 			container.remove()
 		})
 
@@ -327,31 +322,6 @@ describe('SelectionDriver', () => {
 
 			// Both anchors are `'end'`, so the selection is collapsed rather than clamped.
 			expect(selectionRange(store)).toEqual({start: 5, end: 5})
-			container.remove()
-		})
-	})
-
-	describe('isUserSelecting → contentEditable', () => {
-		// Mechanism deleted in the host flip; spec dies with it.
-		it.todo('flips structural text surfaces non-editable while user is selecting', () => {
-			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
-			const container = document.createElement('div')
-			const span = document.createElement('span')
-			span.appendChild(document.createTextNode('hello'))
-			container.appendChild(span)
-			document.body.appendChild(container)
-			store.host.container(container)
-			store.host.rendered()
-
-			expect(span.contentEditable).toBe('true')
-
-			store.tokens.isUserSelecting(true)
-			expect(span.contentEditable).toBe('false')
-
-			store.tokens.isUserSelecting(false)
-			expect(span.contentEditable).toBe('true')
-
 			container.remove()
 		})
 	})
@@ -432,26 +402,6 @@ describe('SelectionDriver', () => {
 
 			expect(store.tokens.value()).toBe('@[aX @[b] c]')
 			expect(selectionRange(store)).toEqual({start: 4, end: 4})
-			container.remove()
-		})
-	})
-
-	describe('empty-editor click handler', () => {
-		it('focuses first child on click when editor is empty', () => {
-			const store = new Store()
-			const container = document.createElement('div')
-			const span = document.createElement('span')
-			span.contentEditable = 'true'
-			container.appendChild(span)
-			document.body.appendChild(container)
-
-			store.props.set({defaultValue: ''})
-			store.host.container(container)
-			store.host.rendered()
-
-			const focusSpy = vi.spyOn(span, 'focus')
-			container.dispatchEvent(new MouseEvent('click', {bubbles: true}))
-			expect(focusSpy).toHaveBeenCalledTimes(1)
 			container.remove()
 		})
 	})

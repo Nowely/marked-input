@@ -62,16 +62,6 @@ describe('createSelection', () => {
 			caret(harness, 5)
 			expect(rangeOf(harness)).toEqual({start: 5, end: 5})
 		})
-		it('does not change isUserSelecting', () => {
-			// The one case here that is NOT DOM-free by construction: `isUserSelecting` is the
-			// DRIVER's signal, so the claim — that a selection write leaves it alone — only
-			// exists where the two halves are composed.
-			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
-			store.tokens.isUserSelecting(true)
-			caretAt(store, 5)
-			expect(store.tokens.isUserSelecting()).toBe(true)
-		})
 		it('collapses an extended selection', () => {
 			const harness = build('hello')
 			harness.selection.selectAll()

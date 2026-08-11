@@ -1,13 +1,12 @@
 import type {DomRef} from '../../../shared/editorContracts'
 import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
-import type {Computed, Event, Signal} from '../../../shared/signals/index.js'
+import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
 import {createCommitPipeline} from '../dom/commit'
 import type {TokenDelta} from '../dom/commit'
 import {DomModel} from '../dom/DomModel'
 import type {SelectionSnapshot} from '../dom/DomModel'
-import {applyEditableState} from '../dom/editableState'
 import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
@@ -65,7 +64,7 @@ export class TokenModel {
 	 * THE selection state: a pair of `NodeAnchor`s and their derivations, DOM-free. Its DOM
 	 * half is the private {@link SelectionDriver} declared in the internals section, whose
 	 * reads are exposed here as {@link domAnchors} / {@link focusFirst} /
-	 * {@link placeAtHandle} / {@link isUserSelecting}.
+	 * {@link placeAtHandle}.
 	 */
 	readonly selection: Selection = createSelection({
 		// A bag of CLOSURES, none of them read before the first verb call — the ONLY reason this
@@ -318,11 +317,6 @@ export class TokenModel {
 		return this.#selectionDriver.placeAtHandle(handle, boundary)
 	}
 
-	/** Mouse-sweep flag; the driver's editable policy reads it (see {@link setEditable}). */
-	get isUserSelecting(): Signal<boolean> {
-		return this.#selectionDriver.isUserSelecting
-	}
-
 	/** Current selection serialized for clipboard use. */
 	selectedContent(): {html: string; text: string} | undefined {
 		return this.#dom.selectedContent()
@@ -339,17 +333,22 @@ export class TokenModel {
 	}
 
 	/**
-	 * @internal Scoped sweep of the one-host editable topology over every bound handle.
-	 * {@link SelectionDriver} owns the policy and calls this whenever readOnly or
-	 * isUserSelecting changes — but the topology no longer varies with either state, so the
-	 * sweep only rewrites what bind already wrote. It goes with the policy watch that drives it.
+	 * THE manual override of the container's editable state — `editable && !readOnly`, one
+	 * attribute on the ONE editing host. No-op while unmounted.
+	 *
+	 * NOT authoritative: `props.readOnly` owns the same attribute through the driver's
+	 * `{immediate: true}` watch, so the next readOnly change (and every re-mount) overwrites
+	 * whatever was written here. It is an imperative escape hatch, not state, and core calls
+	 * it nowhere.
+	 *
+	 * `untracked` for {@link DomModel.anchorFor}'s reason: this is a COMMAND, and a caller
+	 * that happens to invoke it from a reactive scope must not subscribe that scope to the
+	 * container signal.
 	 */
-	setEditable(_options: {editable: boolean; readOnly: boolean}): void {
-		for (const handle of this.#pipeline.bound().values()) {
-			const bindings = handle.node()
-			if (!bindings) continue
-			applyEditableState(bindings)
-		}
+	setEditable(options: {editable: boolean; readOnly: boolean}): void {
+		const container = untracked(() => this.host.container())
+		if (!container) return
+		container.contentEditable = options.editable && !options.readOnly ? 'true' : 'false'
 	}
 
 	// ═══ Wiring ═══════════════════════════════════════════════════════════════
@@ -401,7 +400,6 @@ export class TokenModel {
 			handle: id => this.handle(id),
 			handleAt: node => this.handleAt(node),
 			domSelection: () => this.domSelection(),
-			setEditable: options => this.setEditable(options),
 			placeCaret: anchor => this.placeCaret(anchor),
 			selectRange: (anchor, head) => this.selectRange(anchor, head),
 			anchorFor: (node, offset, affinity) => this.anchorFor(node, offset, affinity),

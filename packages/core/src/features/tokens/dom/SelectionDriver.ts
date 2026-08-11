@@ -1,6 +1,5 @@
-import {firstHtmlChild, nodeTarget} from '../../../shared/checkers'
-import {listen, signal, watch} from '../../../shared/signals'
-import type {Event, Signal} from '../../../shared/signals'
+import {listen, watch} from '../../../shared/signals'
+import type {Event} from '../../../shared/signals'
 import type {Host} from '../../state/Host'
 import {anchorEquals} from '../tree/anchors'
 import type {Selection} from '../tree/selection'
@@ -16,13 +15,12 @@ export type SelectionDriverDeps = {
 	host: Host
 	readOnly(): boolean
 	changed: Event<TokenDelta>
-	/** The live root nodes — the row/first-token reads below, and nothing more. */
+	/** The live root nodes — {@link SelectionDriver.focusFirst}'s first-token read, and nothing more. */
 	nodes(): readonly TreeNode[]
 	find(id: Id): TreeNode | undefined
 	handle(id: Id): TokenHandle | undefined
 	handleAt(node: Node): TokenHandle | 'control' | undefined
 	domSelection(): SelectionSnapshot | undefined
-	setEditable(options: {editable: boolean; readOnly: boolean}): void
 	/** THE model→DOM direction: a stored anchor placed through its OWN node (spec S2 D1). */
 	placeCaret(anchor: NodeAnchor): boolean
 	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean
@@ -32,20 +30,14 @@ export type SelectionDriverDeps = {
 
 /**
  * The selection's DOM I/O: the listeners that read the live selection into
- * anchors, the caret application that writes them back, the mouse-sweep flag and
- * the editable policy. The stored state it applies is {@link Selection}, which is
- * DOM-free.
+ * anchors, the caret application that writes them back, and the one editing
+ * host's `contenteditable`. The stored state it applies is {@link Selection},
+ * which is DOM-free.
  */
 export class SelectionDriver {
-	readonly isUserSelecting: Signal<boolean> = signal({initial: false})
-
-	#isPlacingCaret = false
-
 	constructor(private readonly deps: SelectionDriverDeps) {
 		deps.host.onMounted(container => {
-			this.#focusEmptyEditorOnClick(container)
 			this.#trackSelection(container)
-			this.#trackUserSelecting(container)
 
 			// The model announces `changed` only after the DOM is consistent (both
 			// commit branches), so the caret re-place runs against live surfaces —
@@ -61,10 +53,6 @@ export class SelectionDriver {
 				},
 				{immediate: true}
 			)
-			// What is left of the editable POLICY: the user-selection sweep gating. The
-			// model owns the application, and readOnly is the container write above —
-			// nothing below the host reads it any more.
-			watch(this.isUserSelecting, () => this.#applyEditablePolicy())
 
 			// The STORED anchors, not the derived `range` — MEASURED, not stylistic. `range`
 			// dedupes on `shallow`, so at a shared boundary `placeAtHandle` changes the anchor
@@ -79,12 +67,6 @@ export class SelectionDriver {
 				() => this.#applySelection()
 			)
 		})
-	}
-
-	#applyEditablePolicy(): void {
-		const readOnly = this.deps.readOnly()
-		const editable = !(readOnly || this.isUserSelecting())
-		this.deps.setEditable({editable, readOnly})
 	}
 
 	focusFirst(): void {
@@ -102,8 +84,7 @@ export class SelectionDriver {
 	 * `selection.anchors()` is what the model believes, this is what the DOM says.
 	 *
 	 * `undefined` for BOTH "no window selection" and "a boundary this layer cannot
-	 * resolve". The one caller that must tell those apart is the DOM sync, which reads
-	 * the range itself and branches before calling {@link #anchorsIn}.
+	 * resolve", and no caller tells them apart.
 	 *
 	 * S2.5 REVIEWED the fold against the four consumers it converted (`keyboard/input.ts`,
 	 * `keyboard/arrowNav.ts`, `keyboard/blockEdit.ts`, `ClipboardController`) and kept it:
@@ -144,7 +125,6 @@ export class SelectionDriver {
 	}
 
 	#applySelection(): void {
-		if (this.isUserSelecting()) return
 		const anchors = this.deps.selection.anchors()
 		if (anchors === undefined) return
 
@@ -152,61 +132,19 @@ export class SelectionDriver {
 		// answers `'end'` for an out-of-range offset, and `TokenHandle.placeCaret` bounds
 		// the local offset to the surface it places in. There is nothing left to clamp and
 		// nothing to write back.
-		this.#isPlacingCaret = true
-		try {
-			// ANCHORS on both arms, and the ranged one no longer detours through the derived
-			// numeric `range`: normalizing the pair is DOM-order work the placement owns.
-			if (anchorEquals(anchors.anchor, anchors.head)) {
-				this.deps.placeCaret(anchors.head)
-				return
-			}
-			this.deps.selectRange(anchors.anchor, anchors.head)
-		} finally {
-			this.#isPlacingCaret = false
+		//
+		// No re-entry flag either: Chromium — the pinned scope — dispatches `selectionchange`
+		// on a task, never synchronously from the write, so the sync below cannot observe a
+		// half-applied placement. MEASURED across all three write forms (`addRange`,
+		// `setBaseAndExtent`, `collapse` under focus).
+		//
+		// ANCHORS on both arms, and the ranged one no longer detours through the derived
+		// numeric `range`: normalizing the pair is DOM-order work the placement owns.
+		if (anchorEquals(anchors.anchor, anchors.head)) {
+			this.deps.placeCaret(anchors.head)
+			return
 		}
-	}
-
-	#focusEmptyEditorOnClick(container: HTMLElement): void {
-		listen(container, 'click', () => {
-			// The LIVE tree, which after typing into the single empty text node already
-			// holds that keystroke — a painted generation would still read empty here and
-			// steal focus into a non-empty editor.
-			const roots = this.deps.nodes()
-			if (roots.length === 1 && roots[0].kind === 'text' && roots[0].text() === '') {
-				firstHtmlChild(container)?.focus()
-			}
-		})
-	}
-
-	#trackUserSelecting(container: HTMLElement): void {
-		let pressedAt: Node | null = null
-
-		listen(document, 'mousedown', e => {
-			pressedAt = nodeTarget(e)
-		})
-
-		listen(document, 'mousemove', e => {
-			if (pressedAt === null) return
-			const startedOutsideEditor = !container.contains(pressedAt)
-			const sweepingAcrossNodes = pressedAt !== e.target
-			const selectionIntersectsEditor = this.deps.domSelection()?.intersects(container) ?? false
-			if ((startedOutsideEditor || sweepingAcrossNodes) && selectionIntersectsEditor) {
-				this.isUserSelecting(true)
-			}
-		})
-
-		const clearIfCollapsed = (): void => {
-			if (!this.isUserSelecting()) return
-			// No selection (undefined) is treated like collapsed, matching the raw `!sel || sel.isCollapsed`.
-			if (this.deps.domSelection()?.anchor.isCollapsed !== false) this.isUserSelecting(false)
-		}
-
-		listen(document, 'mouseup', () => {
-			pressedAt = null
-			clearIfCollapsed()
-		})
-
-		listen(document, 'selectionchange', clearIfCollapsed)
+		this.deps.selectRange(anchors.anchor, anchors.head)
 	}
 
 	#trackSelection(container: HTMLElement): void {
@@ -224,21 +162,13 @@ export class SelectionDriver {
 		 * with it the guard's cost: a caret that MOVES ACROSS a shared boundary without moving
 		 * its offset now updates the stored anchor, where the guard suppressed it.
 		 *
-		 * THE TWO EXITS DIFFER DELIBERATELY, and both are the pre-anchor behavior:
-		 * no DOM selection CLEARS; an unresolvable boundary LEAVES THE ANCHORS STANDING
-		 * (spec S2 D4 — `undefined` means "the DOM cannot be read here", and the next
-		 * `selectionchange` corrects it). Gated by `SelectionDriver.spec`'s two
-		 * "focusin …" cases, which swap red for red if the exits are swapped.
+		 * ONE EXIT, and it LEAVES THE ANCHORS STANDING (spec S2 D4 — `undefined` means "the
+		 * DOM cannot be read here", and the next `selectionchange` corrects it). Gated by
+		 * `SelectionDriver.spec`'s "a half-outside range leaves the stored anchors standing".
+		 * Dropping the selection entirely is the `focusout` clear below, not this path.
 		 */
 		const sync = (): void => {
-			const range = this.deps.domSelection()?.range
-			if (!range) {
-				this.deps.selection.clear()
-				return
-			}
-			// NOT `domAnchors()`: that folds both `undefined` reasons into one, and the two
-			// exits here must stay apart. The shared half is `#anchorsIn`.
-			const anchors = this.#anchorsIn(range)
+			const anchors = this.domAnchors()
 			if (!anchors) return
 			this.deps.selection.select(anchors.anchor, anchors.head)
 		}
@@ -260,16 +190,6 @@ export class SelectionDriver {
 			this.deps.selection.clear()
 		}
 
-		listen(container, 'focusin', e => {
-			if (this.#isPlacingCaret) return
-			const target = e.target instanceof HTMLElement ? e.target : undefined
-			if (!target) {
-				this.deps.selection.clear()
-				return
-			}
-			syncIfInEditor(target)
-		})
-
 		listen(container, 'focusout', () => {
 			queueMicrotask(() => {
 				if (!container.contains(document.activeElement)) this.deps.selection.clear()
@@ -277,7 +197,6 @@ export class SelectionDriver {
 		})
 
 		listen(document, 'selectionchange', () => {
-			if (this.#isPlacingCaret) return
 			const focusNode = this.deps.domSelection()?.focusNode
 			if (!focusNode) return
 			syncIfInEditor(focusNode)

@@ -339,22 +339,28 @@ describe('TokenModel shell (seam/)', () => {
 	})
 
 	describe('editable state', () => {
-		// Mechanism deleted in the host flip; spec dies with it.
-		it.todo('setEditable applies contentEditable/tabindex over bound surfaces and seeds future binds', () => {
-			const {model, text1, mark, render} = mountNewInline()
-			expect(text1.contentEditable).toBe('true')
-			expect(mark.tabIndex).toBe(0)
+		it('setEditable writes the container host', () => {
+			// The ONE editing host is the container, so the manual override is one attribute
+			// write on it — not a sweep over bound surfaces, which carry no editability of
+			// their own. `editable && !readOnly`, so the third call is the readOnly veto.
+			const {model, container} = mountNewInline()
 
-			model.setEditable({editable: false, readOnly: true})
+			model.setEditable({editable: false, readOnly: false})
+			expect(container.getAttribute('contenteditable')).toBe('false')
 
-			expect(text1.contentEditable).toBe('false')
-			expect(mark.hasAttribute('tabindex')).toBe(false)
+			model.setEditable({editable: true, readOnly: false})
+			expect(container.getAttribute('contenteditable')).toBe('true')
 
-			// The next structural bind applies the stored state to NEW elements.
-			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '@[y]')
-			const spans = render()
-			expect(spans[0].contentEditable).toBe('false')
-			expect(spans[1].hasAttribute('tabindex')).toBe(false)
+			model.setEditable({editable: true, readOnly: true})
+			expect(container.getAttribute('contenteditable')).toBe('false')
+		})
+
+		it('setEditable is a no-op while unmounted', () => {
+			// The mount guard is the whole case: there is no host to write, and without it the
+			// write reaches `null.contentEditable` and throws.
+			const {model} = createNew(INLINE_PROPS)
+
+			expect(() => model.setEditable({editable: true, readOnly: false})).not.toThrow()
 		})
 	})
 })

@@ -199,9 +199,8 @@ the two lookups the walk itself produces. There is no id-keyed `bound` map to
 return: the id-keyed side is `deps.nodes`, THE live node layer, which bind
 mutates in place, and "this walk bound it" is `handle.alive()`, because the walk
 unbinds (never removes) a node the DOM missed and deletes only ids absent from
-the tree. Its readers go to that one map — `assertAligned` (`dom/commit.ts`)
-reads `deps.nodes` directly, and `TokenModel.setEditable` iterates the same map
-through the pipeline. Child-sequence hosts register under the owning mark's
+the tree. Its one reader goes to that map — `assertAligned` (`dom/commit.ts`)
+reads `deps.nodes` directly. Child-sequence hosts register under the owning mark's
 stable id: an id does not go stale when a sibling above the owner is added or
 removed mid-render.
 
@@ -250,7 +249,7 @@ selectedContent(): {html; text} | undefined // selection serialized for clipboar
 
 // the selection driver's reads, delegated (the driver itself is private)
 domAnchors(): Anchors | undefined    // DOM TRUTH as anchors
-focusFirst() / placeAtHandle(handle, boundary?) / isUserSelecting: Signal<boolean>
+focusFirst() / placeAtHandle(handle, boundary?)
 
 // the tree layer's own coordinate boundary — the ONE place a number may be formed.
 // Only this direction is public; its inverse is the private `#offsetOf`, whose one
@@ -261,13 +260,12 @@ anchorAt(offset)
 control() / children(ownerId) // ref callbacks
 ```
 
-`setEditable({editable, readOnly})` is the internal sweep wired from
-`dom/SelectionDriver.ts`'s `isUserSelecting` watch — `readOnly` drives the
-container's own `contenteditable` and reaches this no longer. It is not part of
-the consumer-facing reading surface above. It is INERT per element under the
-one-host topology —
-nothing there varies with `readOnly`/`isUserSelecting` — and dies with the watch
-that drives it.
+`setEditable({editable, readOnly})` is the MANUAL override of the one editing
+host: it writes `container.contentEditable` from `editable && !readOnly`, and is
+a no-op while unmounted. Nothing in core calls it — `props.readOnly` owns the
+same attribute through the driver's `{immediate: true}` watch, so the next
+readOnly change (and every re-mount) overwrites whatever it wrote. It is not part
+of the consumer-facing reading surface above.
 
 Nothing is published before a container mounts: `nodes()` is `[]` and facade
 reads fail soft. Adapters mount the container ref, re-render from the first
@@ -395,9 +393,9 @@ write fail closed rather than act on a tree the DOM never showed.
 
 Split in two by owner, and owned HERE. There is no `features/selection/` and no
 `store.selection`: `TokenModel` constructs both halves, publishes the state as
-`tokens.selection` and delegates the driver's four externally-needed reads
-(`domAnchors`, `focusFirst`, `placeAtHandle`, `isUserSelecting`) the same way it
-delegates `DomModel`'s.
+`tokens.selection` and delegates the driver's three externally-needed reads
+(`domAnchors`, `focusFirst`, `placeAtHandle`) the same way it delegates
+`DomModel`'s.
 
 There is no construction cycle around it: the string boundary calls
 `this.selection.anchors()` / `this.selection.repair(result)` directly, with no
@@ -412,18 +410,19 @@ an explicit type annotation to keep `tsc` off TS7022.
   `range`/`position` projection and no generation marker. `repair(result)`
   APPLIES `result.selectionAfter` — adoption resolves it, since only adoption
   sees the pre-mutation coordinate space.
-- `dom/SelectionDriver.ts` — the DOM I/O, private to `TokenModel`. Three
-  listeners (`focusin`/`focusout`/`selectionchange` sync, the empty-editor click
-  focus, the mouse-sweep tracker) and four watches (`tokens.changed`, `readOnly`,
-  `isUserSelecting`, and the stored anchors themselves). BUILT IN THE CONSTRUCTOR
+- `dom/SelectionDriver.ts` — the DOM I/O, private to `TokenModel`. Two listeners
+  (the document-level `selectionchange` sync, and the `focusout` clear on the
+  container) and three watches (`tokens.changed`, `readOnly`, and the stored
+  anchors themselves). BUILT IN THE CONSTRUCTOR
   BODY, not as a field initializer: its dep bag takes `host` and `changed` as
   VALUES, so an initializer would read a constructor parameter property (`tsc`
   rejects it, TS2729) and `#pipeline` (which answers `undefined` silently from any
   initializer above it). Building it last also puts its `onMounted` after the
   model's own. It watches the STORED anchors, never a number derived from them —
-  the measurement behind that is stated at the watch. It also owns the editable
-  POLICY, and writes the half of it that is one attribute — the container's
-  `contenteditable` — itself; the model owns the per-surface application.
+  the measurement behind that is stated at the watch. Its ONE attribute write is
+  the editing host itself: the container's `contenteditable`, gated by
+  `props.readOnly`. There is no per-surface editable policy left — the topology
+  below the host is bind's, applied once at mount.
 
 ## Caret placement by handle
 
