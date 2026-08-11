@@ -2,7 +2,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals/index.js'
 import {Store} from '../../../store/Store'
-import {anchorsAt} from '../__testing__/mountFixtures'
+import {anchorsAt, enableStructuralStore, mountInline} from '../__testing__/mountFixtures'
 
 /** Inline fixture (from TokenModel.facade.spec.ts): text 'he' [0,2], mark '@[x]' [2,6], text 'llo' [6,9]. */
 function mountWithMark(beforeMount?: (store: Store) => void) {
@@ -109,6 +109,40 @@ describe('TokenModel changed event', () => {
 		expect(changedSpy.mock.lastCall?.[0]).toEqual({added: [], removed: [], updated: [tailId]})
 		// the mark id survived a set that carried no edit hint
 		expect(handleId(store, 1)).toBe(markId)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// The (value, parser, isBlock) tuple watch
+// ---------------------------------------------------------------------------
+
+describe('one watch over the props tuple', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+	})
+
+	it('a simultaneous value+parser change is ONE wave: exactly one announcement', () => {
+		// MARK-FREE on purpose: a commit whose `updated` holds a mark sets the render bit, and
+		// every apply inside a pending structural pass is FOLDED into its bind's single
+		// announcement — which would hide a split. With one text token both commits announce
+		// on their own, so the count is the discriminator.
+		const {store, textSurface} = mountInline(
+			enableStructuralStore('hello', {Mark: () => null, options: [{markup: '@[__value__]'}]})
+		)
+		const textId = store.tokens.nodes()[0].id
+		const changedSpy = vi.fn()
+		watch(store.tokens.changed, changedSpy)
+
+		// props.set writes both signals inside ONE batch, and the model watches the tuple, so
+		// the pair is one arrival and one commit. Measured on a probe that split the tuple into
+		// a watch per prop: the value arrival announces, then the parser watch's reparse
+		// announces its own (empty) delta — 2 calls.
+		store.props.set({value: 'hello!', options: [{markup: '@[__value__]'}]})
+
+		expect(changedSpy).toHaveBeenCalledTimes(1)
+		expect(changedSpy.mock.lastCall?.[0]).toEqual({added: [], removed: [], updated: [textId]})
+		expect(store.tokens.value()).toBe('hello!')
+		expect(textSurface.textContent).toBe('hello!')
 	})
 })
 

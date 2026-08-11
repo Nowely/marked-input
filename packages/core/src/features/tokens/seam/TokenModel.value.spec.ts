@@ -168,6 +168,46 @@ describe('TokenModel value boundary', () => {
 			expect(store.tokens.value()).toBe('edited')
 		})
 
+		it('a container re-attach keeps the uncontrolled edit, not the defaultValue', () => {
+			// `Host.onMounted` disposes and rebuilds its scope per container, so attaching a new
+			// element re-runs the props watch's IMMEDIATE arm. That run has no `previous`, so it
+			// always takes the arrival arm — with `value === undefined` on an uncontrolled store,
+			// which is the only arm that can fall back to the seed.
+			const store = new Store()
+			store.props.set({defaultValue: 'default'})
+			mount(store)
+			store.tokens.setValue('edited')
+			expect(store.tokens.value()).toBe('edited')
+
+			mount(store)
+
+			expect(store.tokens.value()).toBe('edited')
+			expect(treeShape(store.tokens.nodes())).toMatchObject([
+				{kind: 'text', content: 'edited', position: {start: 0, end: 6}},
+			])
+		})
+
+		it('an uncontrolled edit made BEFORE mount survives the mount arrival', () => {
+			// The SECOND behavior of recording `#restore` on the uncontrolled edge, and the
+			// defect the pre-cutover code recorded in prose instead of fixing. The write seeds
+			// the tree through `#ensureSeeded` while unmounted, so mounting brings a FIRST
+			// arrival — `value === undefined`, `#seeded()` already true. Recorded on the
+			// uncontrolled edge, `#restore` is the edit by then and the arrival resolves to it;
+			// recorded only on the controlled edge it is still `undefined` here, and the
+			// arrival falls back to `#seed()` — 'default', discarding the edit.
+			const store = new Store()
+			store.props.set({defaultValue: 'default'})
+			store.tokens.setValue('edited')
+			expect(store.tokens.value()).toBe('edited')
+
+			mount(store)
+
+			expect(store.tokens.value()).toBe('edited')
+			expect(treeShape(store.tokens.nodes())).toMatchObject([
+				{kind: 'text', content: 'edited', position: {start: 0, end: 6}},
+			])
+		})
+
 		it('onChange runs AFTER the commit, with the value and the tokens already new', () => {
 			// BEHAVIOR CHANGE, measured before the cutover: onChange fired from inside the
 			// signal setter, so a handler saw value 'he@[x]llo' and tokens 'he|@[x]|llo'
