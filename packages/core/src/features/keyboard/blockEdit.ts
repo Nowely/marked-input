@@ -1,3 +1,4 @@
+import {nodeTarget} from '../../shared/checkers'
 import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
@@ -28,18 +29,48 @@ function rowHandle(store: KbCtx, rowIndex: number): TokenHandle | undefined {
 	return row && store.tokens.handle(row.id)
 }
 
-function findActiveRow(store: KbCtx): ActiveRow | undefined {
+/** Resolve a root id to its row's handle+index — the shared tail every resolution path ends in. */
+function rowOwning(store: KbCtx, id: number): ActiveRow | undefined {
+	const index = store.tokens.rootIndexOf(id)
+	if (index === undefined) return undefined
+	const row = rowHandle(store, index)
+	return row && {handle: row, index}
+}
+
+/** The anchor's own node — the tree identity every anchor form carries except the document edges. */
+function anchorOwner(anchor: NodeAnchor): TreeNode | undefined {
+	if (typeof anchor === 'string') return undefined
+	if ('node' in anchor) return anchor.node
+	if ('before' in anchor) return anchor.before
+	return anchor.after
+}
+
+function rowFromAnchor(store: KbCtx, anchor: NodeAnchor | undefined): ActiveRow | undefined {
+	if (!anchor) return undefined
+	const owner = anchorOwner(anchor)
+	return owner && rowOwning(store, owner.id)
+}
+
+function findActiveRow(store: KbCtx, target: Node | null): ActiveRow | undefined {
+	// A control (drag handle, block menu) is not a row: focusing it leaves the
+	// row's selection standing, and this keypress is not aimed at that row.
+	if (target && store.tokens.handleAt(target) === 'control') return undefined
+
+	// DOM truth first; stored anchors cover the pendingStructural window: while a
+	// structural commit awaits its bind, placeCaret fails closed and the DOM range
+	// is absent or stale until the changed watch re-applies it.
+	const selected =
+		rowFromAnchor(store, store.tokens.domAnchors()?.anchor) ??
+		rowFromAnchor(store, store.tokens.selection.anchors()?.anchor)
+	if (selected) return selected
+
+	// N-host fallback: a mark row focused via tabindex has no DOM selection at
+	// all. Dies with the host flip.
 	const active = document.activeElement
 	if (!active) return undefined
 	const handle = store.tokens.handleAt(active)
 	if (!handle || handle === 'control') return undefined
-	// The ROW index off the live tree. `handle.path()` was bind-generation state on a
-	// handle that is reused across binds, so it could answer from a stale generation.
-	const index = store.tokens.rootIndexOf(handle.id)
-	if (index === undefined) return undefined
-	const row = rowHandle(store, index)
-	if (!row) return undefined
-	return {handle: row, index}
+	return rowOwning(store, handle.id)
 }
 
 export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
@@ -69,7 +100,7 @@ export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 }
 
 function handleDelete(store: KbCtx, event: KeyboardEvent) {
-	const active = findActiveRow(store)
+	const active = findActiveRow(store, nodeTarget(event))
 	if (!active) return
 	const {handle, index: blockIndex} = active
 
@@ -124,7 +155,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
-	const active = findActiveRow(store)
+	const active = findActiveRow(store, nodeTarget(event))
 	if (!active) return
 
 	event.preventDefault()
@@ -163,7 +194,7 @@ function focusRow(store: KbCtx, row: TreeNode, rowIndex: number, caret: 'start' 
 }
 
 function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction: 'left' | 'right'): void {
-	const active = findActiveRow(store)
+	const active = findActiveRow(store, nodeTarget(event))
 	if (!active) return
 	const {handle, index: blockIndex} = active
 	const rowCount = store.tokens.nodes().length
@@ -189,7 +220,7 @@ function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction
 }
 
 function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
-	const active = findActiveRow(store)
+	const active = findActiveRow(store, nodeTarget(event))
 	if (!active) return
 	const {handle, index: blockIndex} = active
 	const rowCount = store.tokens.nodes().length
@@ -220,7 +251,7 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 }
 
 function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent) {
-	if (!findActiveRow(store)) return
+	if (!findActiveRow(store, nodeTarget(event))) return
 
 	switch (event.inputType) {
 		case 'insertText': {
