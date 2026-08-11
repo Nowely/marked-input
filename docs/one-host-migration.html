@@ -1,0 +1,1340 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>One Host — markput single-contenteditable migration</title>
+		<style>
+			:root {
+				--plane: #0d0d0d;
+				--surface: #1a1a19;
+				--surface-2: #232322;
+				--ink: #ffffff;
+				--ink-2: #c3c2b7;
+				--muted: #898781;
+				--grid: #2c2c2a;
+				--rule: #383835;
+				--border: rgba(255, 255, 255, 0.1);
+				--host: #d95926; /* contenteditable hosts (dom) */
+				--atom: #199e70; /* ce=false atomics (seam) */
+				--anchor: #3987e5; /* container / anchors (tree) */
+				--warn: #fab219;
+				--crit: #d03b3b;
+				--good: #0ca30c;
+				--mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+				--sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+			}
+			html[data-theme='light'] {
+				--plane: #f9f9f7;
+				--surface: #fcfcfb;
+				--surface-2: #f2f1ed;
+				--ink: #0b0b0b;
+				--ink-2: #52514e;
+				--muted: #898781;
+				--grid: #e1e0d9;
+				--rule: #c3c2b7;
+				--border: rgba(11, 11, 11, 0.1);
+				--host: #eb6834;
+				--atom: #1baf7a;
+				--anchor: #2a78d6;
+			}
+			* {
+				box-sizing: border-box;
+			}
+			body {
+				margin: 0;
+				background: var(--plane);
+				color: var(--ink);
+				font: 15px/1.55 var(--sans);
+				-webkit-font-smoothing: antialiased;
+			}
+			code,
+			.mono {
+				font-family: var(--mono);
+				font-size: 0.88em;
+			}
+			a {
+				color: var(--anchor);
+			}
+			.wrap {
+				max-width: 1180px;
+				margin: 0 auto;
+				padding: 28px 22px 90px;
+			}
+
+			header.hero {
+				border-bottom: 1px solid var(--border);
+				padding-bottom: 22px;
+				margin-bottom: 22px;
+				display: flex;
+				gap: 20px;
+				align-items: flex-start;
+				flex-wrap: wrap;
+			}
+			.hero h1 {
+				margin: 0 0 6px;
+				font-size: 26px;
+				letter-spacing: -0.02em;
+			}
+			.hero .sub {
+				color: var(--ink-2);
+				margin: 0;
+				max-width: 66ch;
+			}
+			.hero .spacer {
+				flex: 1;
+			}
+			.stats {
+				display: flex;
+				gap: 10px;
+				flex-wrap: wrap;
+			}
+			.stat {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				padding: 8px 12px;
+				min-width: 96px;
+			}
+			.stat b {
+				display: block;
+				font-size: 19px;
+				line-height: 1.2;
+			}
+			.stat span {
+				color: var(--muted);
+				font-size: 11px;
+				text-transform: uppercase;
+				letter-spacing: 0.06em;
+			}
+
+			.thesis {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				border-left: 3px solid var(--warn);
+				border-radius: 8px;
+				padding: 14px 16px;
+				margin: 0 0 24px;
+			}
+			.thesis h2 {
+				margin: 0 0 6px;
+				font-size: 14px;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				color: var(--warn);
+			}
+			.thesis p {
+				margin: 0 0 8px;
+				color: var(--ink-2);
+				max-width: 92ch;
+			}
+			.thesis p:last-child {
+				margin-bottom: 0;
+			}
+			.thesis strong {
+				color: var(--ink);
+			}
+
+			nav.tabs {
+				display: flex;
+				gap: 2px;
+				flex-wrap: wrap;
+				border-bottom: 1px solid var(--border);
+				margin-bottom: 24px;
+				position: sticky;
+				top: 0;
+				background: var(--plane);
+				z-index: 5;
+			}
+			nav.tabs button {
+				background: none;
+				border: 0;
+				border-bottom: 2px solid transparent;
+				color: var(--muted);
+				font: 600 13px/1 var(--sans);
+				padding: 12px 14px;
+				cursor: pointer;
+			}
+			nav.tabs button:hover {
+				color: var(--ink);
+			}
+			nav.tabs button.on {
+				color: var(--ink);
+				border-bottom-color: var(--anchor);
+			}
+			nav.tabs .toggle {
+				margin-left: auto;
+			}
+
+			section.tab {
+				display: none;
+			}
+			section.tab.on {
+				display: block;
+			}
+			h2.sect {
+				font-size: 19px;
+				margin: 28px 0 6px;
+				letter-spacing: -0.01em;
+			}
+			h3.sub {
+				font-size: 15px;
+				margin: 22px 0 6px;
+			}
+			p.note {
+				color: var(--ink-2);
+				max-width: 92ch;
+				margin: 6px 0 14px;
+			}
+			p.note strong {
+				color: var(--ink);
+			}
+
+			.badge {
+				display: inline-block;
+				font: 700 10.5px/1 var(--sans);
+				padding: 3px 7px;
+				border-radius: 999px;
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				vertical-align: 1px;
+			}
+			.b-proven {
+				background: color-mix(in srgb, var(--good) 18%, transparent);
+				color: var(--good);
+				border: 1px solid color-mix(in srgb, var(--good) 45%, transparent);
+			}
+			.b-hypo {
+				background: color-mix(in srgb, var(--warn) 16%, transparent);
+				color: var(--warn);
+				border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+			}
+			.b-new {
+				background: color-mix(in srgb, var(--crit) 16%, transparent);
+				color: var(--crit);
+				border: 1px solid color-mix(in srgb, var(--crit) 45%, transparent);
+			}
+			.b-break {
+				background: color-mix(in srgb, var(--crit) 16%, transparent);
+				color: var(--crit);
+				border: 1px solid color-mix(in srgb, var(--crit) 45%, transparent);
+			}
+
+			table.grid {
+				border-collapse: collapse;
+				width: 100%;
+				margin: 10px 0 20px;
+				font-size: 13.5px;
+			}
+			table.grid caption {
+				text-align: left;
+				color: var(--muted);
+				font-size: 12px;
+				padding-bottom: 6px;
+			}
+			table.grid th {
+				text-align: left;
+				font: 700 11px/1.3 var(--sans);
+				text-transform: uppercase;
+				letter-spacing: 0.06em;
+				color: var(--muted);
+				border-bottom: 1px solid var(--rule);
+				padding: 8px 10px;
+			}
+			table.grid td {
+				border-bottom: 1px solid var(--grid);
+				padding: 8px 10px;
+				vertical-align: top;
+			}
+			table.grid td.num {
+				font-family: var(--mono);
+				text-align: right;
+				white-space: nowrap;
+			}
+			table.grid tr.hl td {
+				background: color-mix(in srgb, var(--crit) 7%, transparent);
+			}
+			.vd {
+				font-weight: 700;
+				white-space: nowrap;
+			}
+			.vd.stands {
+				color: var(--warn);
+			}
+			.vd.worse {
+				color: var(--crit);
+			}
+			.vd.new {
+				color: var(--crit);
+			}
+			.vd.fixedish {
+				color: var(--good);
+			}
+			.vd.gone {
+				color: var(--good);
+			}
+
+			.figure {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				border-radius: 10px;
+				padding: 16px;
+				margin: 12px 0 22px;
+				overflow-x: auto;
+			}
+			.figure figcaption {
+				color: var(--muted);
+				font-size: 12px;
+				margin-top: 10px;
+				max-width: 92ch;
+			}
+
+			/* DOM shape diagrams */
+			.domrow {
+				display: flex;
+				align-items: stretch;
+				gap: 4px;
+				flex-wrap: wrap;
+				font-family: var(--mono);
+				font-size: 12.5px;
+			}
+			.el {
+				border-radius: 6px;
+				padding: 7px 9px;
+				border: 1.5px solid;
+				white-space: nowrap;
+			}
+			.el small {
+				display: block;
+				font-size: 10px;
+				opacity: 0.75;
+				font-family: var(--sans);
+				margin-top: 2px;
+			}
+			.el.host {
+				border-color: var(--host);
+				background: color-mix(in srgb, var(--host) 9%, transparent);
+			}
+			.el.atom {
+				border-color: var(--atom);
+				background: color-mix(in srgb, var(--atom) 9%, transparent);
+			}
+			.el.plain {
+				border-color: var(--rule);
+				background: var(--surface-2);
+			}
+			.container-box {
+				border: 1.5px dashed var(--anchor);
+				border-radius: 8px;
+				padding: 10px;
+			}
+			.container-box.editable {
+				border-style: solid;
+				background: color-mix(in srgb, var(--anchor) 5%, transparent);
+			}
+			.container-label {
+				font: 700 11px/1 var(--sans);
+				color: var(--anchor);
+				margin-bottom: 8px;
+				letter-spacing: 0.04em;
+			}
+			.legend {
+				display: flex;
+				gap: 16px;
+				flex-wrap: wrap;
+				margin-top: 12px;
+				font-size: 12px;
+				color: var(--ink-2);
+			}
+			.legend .key {
+				display: inline-block;
+				width: 11px;
+				height: 11px;
+				border-radius: 3px;
+				border: 1.5px solid;
+				margin-right: 5px;
+				vertical-align: -1px;
+			}
+
+			/* sequence diagram */
+			.seq {
+				font-size: 13px;
+			}
+			.seq .row {
+				display: grid;
+				grid-template-columns: 64px 190px 1fr;
+				gap: 10px;
+				padding: 7px 4px;
+				border-bottom: 1px solid var(--grid);
+				align-items: baseline;
+			}
+			.seq .row:last-child {
+				border-bottom: 0;
+			}
+			.seq .t {
+				font-family: var(--mono);
+				color: var(--muted);
+				font-size: 11.5px;
+				text-align: right;
+			}
+			.seq .who {
+				font-weight: 700;
+				white-space: nowrap;
+			}
+			.seq .who.browser {
+				color: var(--ink-2);
+			}
+			.seq .who.core {
+				color: var(--host);
+			}
+			.seq .what {
+				color: var(--ink-2);
+			}
+			.seq .what code {
+				color: var(--ink);
+			}
+			.seq .row.bad {
+				background: color-mix(in srgb, var(--crit) 7%, transparent);
+				border-radius: 6px;
+			}
+			.seq .row.bad .what strong {
+				color: var(--crit);
+			}
+
+			/* delta bars */
+			.delta {
+				font-size: 13px;
+			}
+			.delta .drow {
+				display: grid;
+				grid-template-columns: 300px 1fr 90px;
+				gap: 10px;
+				align-items: center;
+				padding: 5px 0;
+			}
+			.delta .lbl {
+				color: var(--ink-2);
+			}
+			.delta .lbl code {
+				color: var(--ink);
+			}
+			.delta .bar {
+				height: 14px;
+				border-radius: 4px;
+				position: relative;
+				background: var(--surface-2);
+				overflow: hidden;
+			}
+			.delta .bar i {
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				border-radius: 4px;
+			}
+			.delta .bar i.del {
+				background: var(--good);
+			}
+			.delta .bar i.add {
+				background: var(--host);
+			}
+			.delta .n {
+				font-family: var(--mono);
+				text-align: right;
+				font-size: 12px;
+				color: var(--ink-2);
+				white-space: nowrap;
+			}
+
+			.cols {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 18px;
+			}
+			@media (max-width: 900px) {
+				.cols {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			.callout {
+				border: 1px solid var(--border);
+				border-left: 3px solid var(--crit);
+				background: var(--surface);
+				border-radius: 8px;
+				padding: 12px 14px;
+				margin: 14px 0;
+			}
+			.callout.ok {
+				border-left-color: var(--good);
+			}
+			.callout.warn {
+				border-left-color: var(--warn);
+			}
+			.callout h4 {
+				margin: 0 0 4px;
+				font-size: 13.5px;
+			}
+			.callout p {
+				margin: 0 0 6px;
+				color: var(--ink-2);
+				font-size: 13.5px;
+				max-width: 92ch;
+			}
+			.callout p:last-child {
+				margin-bottom: 0;
+			}
+
+			pre.trace {
+				background: var(--surface-2);
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				padding: 12px 14px;
+				font: 12px/1.6 var(--mono);
+				overflow-x: auto;
+				color: var(--ink-2);
+			}
+			pre.trace b {
+				color: var(--crit);
+				font-weight: 600;
+			}
+			pre.trace i {
+				color: var(--good);
+				font-style: normal;
+			}
+
+			ol.plan {
+				counter-reset: step;
+				list-style: none;
+				padding: 0;
+				margin: 12px 0;
+			}
+			ol.plan li {
+				position: relative;
+				padding: 12px 14px 12px 52px;
+				border: 1px solid var(--border);
+				background: var(--surface);
+				border-radius: 10px;
+				margin-bottom: 10px;
+			}
+			ol.plan li::before {
+				counter-increment: step;
+				content: counter(step);
+				position: absolute;
+				left: 14px;
+				top: 12px;
+				width: 26px;
+				height: 26px;
+				border-radius: 999px;
+				background: color-mix(in srgb, var(--anchor) 16%, transparent);
+				color: var(--anchor);
+				font: 700 13px/26px var(--sans);
+				text-align: center;
+			}
+			ol.plan b {
+				display: block;
+				margin-bottom: 2px;
+			}
+			ol.plan p {
+				margin: 0;
+				color: var(--ink-2);
+				font-size: 13.5px;
+				max-width: 100ch;
+			}
+			ol.plan .tag {
+				font: 700 10px/1 var(--sans);
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				color: var(--good);
+			}
+			ol.plan .tag.brk {
+				color: var(--crit);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<header class="hero">
+				<div>
+					<h1>One host</h1>
+					<p class="sub">
+						Migrating markput from <b>N contenteditable hosts</b> (one per text token) to
+						<b>one editing host</b>, taking the block feature onto tree anchors with it. Every claim below
+						is measured — live storybook (post&#8209;#273, Chromium) or a fixture built from committed
+						snapshot DOM. Estimates are labeled.
+					</p>
+				</div>
+				<div class="spacer"></div>
+				<div class="stats">
+					<div class="stat"><b>10</b><span>defect classes measured</span></div>
+					<div class="stat"><b>1 new</b><span>critical, undocumented</span></div>
+					<div class="stat"><b>0</b><span>ZWSP fillers required</span></div>
+					<div class="stat"><b>≈−1300</b><span>lines with block (est.)</span></div>
+				</div>
+			</header>
+
+			<div class="thesis">
+				<h2>Verdict</h2>
+				<p>
+					The N-host layout is not merely awkward at boundaries —
+					<strong>its focus machinery actively fights the mouse today</strong>: clicking from one text span
+					into an adjacent one never places the caret (a stack-proven, previously undocumented defect), Tab is
+					fully dead, and a finished cross-mark drag leaves the whole editor non-editable with focus on
+					<code>BODY</code>. None of these states can exist under one host: they all require a focus
+					transition between spans, and one host has no such transition.
+				</p>
+				<p>
+					The single-host probes came back <strong>cheaper than planned</strong>: caret positions at empty
+					gaps exist natively even <em>without</em> ZWSP fillers (element-anchored), native sweep crosses
+					<code>ce=false</code> marks with no flip machinery, and delete over a cross-mark selection is
+					cancelable — guardable into <code>edit.replace</code>. The one cost that stays is IME (uncancelable)
+					and undo (dead in both worlds — the editor must own history regardless).
+				</p>
+				<p>
+					Block comes along by necessity: <code>findActiveRow</code> reads
+					<code>document.activeElement</code> (5 call sites) and dies under one host, while its cross-row
+					arrow handlers are hand-rolled caret transport that one host makes native. The framing is
+					<strong>one task: one host + block speaks tree anchors</strong> — staged as independently green
+					commits.
+				</p>
+			</div>
+
+			<nav class="tabs" id="tabs">
+				<button data-tab="today" class="on">Measured: N hosts today</button>
+				<button data-tab="onehost">Measured: one host</button>
+				<button data-tab="design">Design</button>
+				<button data-tab="breaking">Breaking changes</button>
+				<button data-tab="plan">Plan</button>
+				<button class="toggle" id="themeToggle">◐ theme</button>
+			</nav>
+
+			<!-- ============================ TAB: TODAY ============================ -->
+			<section class="tab on" data-tab="today">
+				<h2 class="sect">
+					Re-measurement of <code>inconsistencies.md</code> <span class="badge b-proven">proven</span>
+				</h2>
+				<p class="note">
+					The defect page was written against the pre-rewrite tree and never re-measured. Re-measured
+					2026&#8209;08&#8209;11 against the live storybook (<code>MarkedInput/Configured</code> and
+					<code>Default</code>), Chromium, real trusted input events. Verdicts:
+					<b>6 stand, 3 are worse than documented, 1 changed shape, 1 is new</b>. The "Works Correctly" table
+					lost an entry.
+				</p>
+
+				<table class="grid">
+					<thead>
+						<tr>
+							<th>#</th>
+							<th>Documented defect</th>
+							<th>Measured now</th>
+							<th>Verdict</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class="hl">
+							<td class="num">—</td>
+							<td><b>Not documented:</b> click across a mark into the adjacent span</td>
+							<td>
+								The caret <b>never moves</b> — the model re-applies its stored anchors and steals focus
+								back before Chromium places the clicked caret. Reproduced on every attempt, incl.
+								human-like mouse approach. Clicks landing on the <i>container</i> (line gaps) work,
+								because Chromium then places the caret <i>before</i> the focus events. Same mechanism
+								eats triple-click on a non-focused span.
+							</td>
+							<td><span class="vd new">NEW · critical</span></td>
+						</tr>
+						<tr>
+							<td class="num">3</td>
+							<td>Undo cannot restore deleted marks</td>
+							<td>
+								Confirmed — and wider:
+								<b>Cmd+Z is a no-op for every guarded edit including plain typing inside one span</b>.
+								The doc's "Works Correctly: basic undo within a span ✅" is false post-rewrite (all
+								input is <code>preventDefault()</code> + model write, so the native undo stack is
+								empty).
+							</td>
+							<td><span class="vd worse">worse</span></td>
+						</tr>
+						<tr>
+							<td class="num">4</td>
+							<td>Cross-mark delete only affects first span</td>
+							<td>
+								Now it affects <b>nothing</b>: after a cross-mark sweep the keys go to
+								<code>BODY</code> (see #10), so Backspace and typing over the selection are silently
+								dropped.
+							</td>
+							<td><span class="vd worse">worse</span></td>
+						</tr>
+						<tr>
+							<td class="num">5</td>
+							<td>Tab cycles internal elements</td>
+							<td>
+								Tab is now <b>fully dead</b>: focus reaches the mark (<code>focusin BUTTON</code> in the
+								trace) and is immediately snapped back to the span by the same steal mechanism. It
+								neither leaves the field nor cycles.
+							</td>
+							<td><span class="vd worse">changed · still broken</span></td>
+						</tr>
+						<tr>
+							<td class="num">6</td>
+							<td>Home/End trapped within span</td>
+							<td>
+								Confirmed: Home → offset 0 of the current span, End → its last offset
+								(<code>span0</code>: 0 / 26).
+							</td>
+							<td><span class="vd stands">stands</span></td>
+						</tr>
+						<tr>
+							<td class="num">7</td>
+							<td>Word navigation stuck at span boundary</td>
+							<td>Confirmed: Alt+ArrowLeft walks 12→10→6→0, then repeats do nothing.</td>
+							<td><span class="vd stands">stands</span></td>
+						</tr>
+						<tr>
+							<td class="num">8</td>
+							<td>Shift+Arrow selection can't cross marks</td>
+							<td>
+								Confirmed, milder detail: selection grows to the span end ("g&nbsp;") and sticks — no
+								focus jump to the mark (the doc's 3rd-press jump no longer happens).
+							</td>
+							<td><span class="vd stands">stands</span></td>
+						</tr>
+						<tr>
+							<td class="num">9</td>
+							<td>Triple-click selects span, not line</td>
+							<td>
+								Confirmed on the focused span (selects exactly the span). On any <i>other</i> span the
+								triple-click is consumed whole by the click steal (selection doesn't change at all).
+							</td>
+							<td><span class="vd stands">stands+</span></td>
+						</tr>
+						<tr>
+							<td class="num">10</td>
+							<td>Drag selection doesn't cross marks</td>
+							<td>
+								Mid-drag it <b>works now</b> — the <code>ce=false</code> flip does its job and the
+								highlight crosses the mark. But after mouseup
+								<b>every host stays <code>ce=false</code> and focus is on <code>BODY</code></b
+								>: the editor is dead until a click collapses the selection (<code
+									>clearIfCollapsed</code
+								>
+								never fires on a ranged selection). Select-then-type and select-then-delete are
+								impossible.
+							</td>
+							<td><span class="vd worse">new failure mode</span></td>
+						</tr>
+						<tr>
+							<td class="num">11</td>
+							<td>Focus/blur churn on span switch</td>
+							<td>
+								Confirmed: 3 in-editor clicks + 1 outside → <b>3× focusin, 4× focusout</b> on the
+								container (the story's <code>onFocus</code>/<code>onBlur</code> console shows the same
+								churn).
+							</td>
+							<td><span class="vd stands">stands</span></td>
+						</tr>
+						<tr>
+							<td class="num">12</td>
+							<td>Multi-line paste fires onInput ×5</td>
+							<td>
+								Mechanism (<code>execCommand</code>) is gone from the tree; single
+								<code>edit.replace</code> in a batch. Event count not re-measured — not billed to N
+								hosts.
+							</td>
+							<td><span class="vd gone">likely gone</span></td>
+						</tr>
+					</tbody>
+				</table>
+
+				<h3 class="sub">Anatomy of the click steal <span class="badge b-proven">stack-proven</span></h3>
+				<p class="note">
+					Instrumented run: per-element <code>focus()</code> patch + <code>Selection</code> method patches
+					with stacks, capture-phase event log. Caret stored at <code>span2:14</code>; user clicks into
+					<code>span1</code> (" suggestions…"). Timestamps are ms within the interaction.
+				</p>
+				<div class="figure">
+					<div class="seq">
+						<div class="row">
+							<span class="t">150</span><span class="who browser">Chromium</span
+							><span class="what"
+								><code>mousedown</code> on span1 — DOM selection still the old
+								<code>span2:14</code></span
+							>
+						</div>
+						<div class="row">
+							<span class="t">150</span><span class="who browser">Chromium</span
+							><span class="what"
+								><code>focusout</code> span2 → <code>focusin</code> span1 (focus first; the click's
+								caret would be placed <i>after</i> focus settles)</span
+							>
+						</div>
+						<div class="row bad">
+							<span class="t">150</span><span class="who core">core</span
+							><span class="what"
+								>focusout microtask: <code>activeElement === BODY</code> mid-transition →
+								<strong><code>selection.clear()</code></strong>
+								<span class="mono">(SelectionDriver.ts:252-256)</span></span
+							>
+						</div>
+						<div class="row bad">
+							<span class="t">150</span><span class="who core">core</span
+							><span class="what"
+								>focusin sync reads the <strong>stale</strong> DOM range (<code>span2:14</code>) →
+								<code>selection.select(old)</code> — after the clear this is a <em>change</em>, so the
+								anchors watch fires <span class="mono">(:242-250, :71-74)</span></span
+							>
+						</div>
+						<div class="row bad">
+							<span class="t">150</span><span class="who core">core</span
+							><span class="what"
+								><code>#applySelection → placeCaret → focusIfNeeded</code>:
+								<strong>span2.focus() steals focus back</strong>;
+								<code>removeAllRanges + addRange(span2:14)</code>
+								<span class="mono">(caret.ts:142, TokenHandle.ts:97)</span></span
+							>
+						</div>
+						<div class="row">
+							<span class="t">151</span><span class="who browser">Chromium</span
+							><span class="what"
+								><code>mouseup</code>; the click's own caret placement in span1 never happens</span
+							>
+						</div>
+						<div class="row">
+							<span class="t">151</span><span class="who browser">Chromium</span
+							><span class="what"
+								>one coalesced <code>selectionchange</code>: final caret <code>span2:14</code> — the
+								user's click did nothing</span
+							>
+						</div>
+					</div>
+					<figcaption>
+						Every step requires a focus transition between two editing hosts. Under one host, moving the
+						caret between text nodes changes no <code>activeElement</code>, fires no focusin/focusout, and
+						the entire chain — clear, stale sync, re-apply, steal — has no trigger. This defect is not
+						fixable by patching: the focusin sync <em>cannot know</em> whether the DOM range it reads is
+						stale, because the browser only reveals the clicked caret after focus settles.
+					</figcaption>
+				</div>
+
+				<h3 class="sub">The dead editor after a finished sweep <span class="badge b-proven">proven</span></h3>
+				<pre class="trace">
+afterDrag      = { selText: "lickable marked world!", ce: "<b>false,false</b>", active: "<b>BODY</b>" }
+Backspace ↓
+afterBackspace = { domText: <i>unchanged</i>, selText: <i>unchanged</i>, ce: "<b>false,false</b>", active: "<b>BODY</b>" }</pre>
+				<p class="note">
+					The flip (<code>isUserSelecting</code> → all hosts <code>ce=false</code>) is what lets the highlight
+					cross marks mid-drag — and it is also what kills the editor afterwards: with the pressed host frozen
+					non-editable, focus falls to <code>BODY</code>, container listeners never see another key, and
+					<code>clearIfCollapsed</code> waits for a collapse that select-then-type users never produce.
+				</p>
+			</section>
+
+			<!-- ============================ TAB: ONE HOST ============================ -->
+			<section class="tab" data-tab="onehost">
+				<h2 class="sect">Single-host probes <span class="badge b-proven">proven</span></h2>
+				<p class="note">
+					Fixture built from the committed snapshot DOM (<code
+						>packages/storybook/src/pages/__snapshots__/stories.react.spec.tsx.snap</code
+					>
+					— flat <code>&lt;span&gt;text&lt;/span&gt;&lt;mark&gt;…</code> shape, no invented chrome), served
+					over HTTP, driven with trusted events in Chromium. Scope is Chromium-only by maintainer decision
+					(2026&#8209;08&#8209;10).
+				</p>
+
+				<h3 class="sub">Empty gap between two <code>ce=false</code> marks — the parser-guaranteed case</h3>
+				<p class="note">
+					The parser guarantees empty <code>TextToken('')</code> around top-level marks, so this decides
+					whether a ZWSP filler is mandatory. <strong>It is not.</strong> The earlier "ZWSP + min-width or
+					bust" verdict came from the pre-rewrite fixture with invented <code>[ ]</code> chrome — on the
+					committed DOM shape the bare gap is reachable by both arrows and clicks:
+				</p>
+				<table class="grid">
+					<caption>
+						Caret reachability at the empty gap; 5 clicks at gap-midpoint ±2px, arrows traversing the full
+						line
+					</caption>
+					<thead>
+						<tr>
+							<th>Fixture case</th>
+							<th>Arrow stops at the gap</th>
+							<th>Click hits (5 tries)</th>
+							<th>Caret anchor produced</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>
+								<b>A — bare empty <code>&lt;span&gt;</code></b>
+							</td>
+							<td><b>1 stop</b> — <code>DIV:2</code> (container-anchored, between the marks)</td>
+							<td class="num"><b>5/5</b> → <code>gapSpan:0</code></td>
+							<td>element boundary (span / container)</td>
+						</tr>
+						<tr>
+							<td>B — ZWSP in the span</td>
+							<td>
+								2 stops — <code>gap:0</code> and <code>gap:1</code> (an extra keypress for the user)
+							</td>
+							<td class="num">5/5 → ZWSP text node</td>
+							<td>text node</td>
+						</tr>
+						<tr>
+							<td>C — ZWSP + <code>inline-block; min-width:1px</code></td>
+							<td>2 stops — same as B</td>
+							<td class="num">5/5 → ZWSP text node</td>
+							<td>text node</td>
+						</tr>
+						<tr>
+							<td>D1 — bare empty span at document edge, mark leads</td>
+							<td>reachable — <code>editor:0</code></td>
+							<td class="num">edge click → <code>editor:0</code></td>
+							<td>element boundary (container)</td>
+						</tr>
+						<tr>
+							<td>D2 — same with ZWSP</td>
+							<td>2 stops (ZWSP:1, ZWSP:0)</td>
+							<td class="num">edge click → <code>ZWSP:0</code></td>
+							<td>text node</td>
+						</tr>
+					</tbody>
+				</table>
+				<div class="callout warn">
+					<h4>Element-anchored boundaries already resolve — zero fillers ship</h4>
+					<p>
+						Bare gaps produce <b>element-anchored</b> caret positions (<code>gapSpan:0</code>,
+						<code>DIV:2</code>, <code>editor:0</code>), not text-node positions — and
+						<code>anchorFor</code> resolves all three today: <code>(gapSpan, 0)</code> via the
+						element-boundary arm (<code>textOffsets.ts:17,44-46</code>), <code>(container, k)</code> via
+						<code>fromContainerAnchor</code> →
+						<code>{before: roots[k]}</code> (<code>domBoundary.ts:46-48,152-157</code>). No ZWSP, no
+						clipboard contamination, no double arrow stop. One invariant to preserve: container child index
+						↔ root index stays 1:1, i.e. empty text tokens keep rendering their bare
+						<code>&lt;span&gt;</code> (committed behavior).
+						<span class="badge b-proven">proven by code</span>
+					</p>
+				</div>
+
+				<h3 class="sub">Native selection across atomics — no flip machinery</h3>
+				<pre class="trace">sweep across &lt;mark ce=false&gt;m&lt;/mark&gt; inside one host:
+  selText = "bcXY<i>m</i>de"   ← mark text included, selection crossed
+  active  = <i>editor</i>       ← focus never left; no ce flip, no dead state
+
+Backspace over that selection:
+  beforeinput { inputType: "deleteContentBackward", <i>cancelable: true</i>, targetRange spans the mark }</pre>
+				<p class="note">
+					The entire <code>isUserSelecting</code> sweep flip (~64 production lines + 14 spec references)
+					exists to let a drag escape the host it started in. One host has nothing to escape. And the delete
+					that is silently dropped today becomes an ordinary guarded <code>edit.replace</code> with anchors
+					spanning the mark.
+				</p>
+
+				<h3 class="sub">Native undo after guarded edits — measured in both worlds</h3>
+				<p class="note">
+					Guarded typing (preventDefault + manual DOM write, exactly the markput pipeline shape) followed by
+					Cmd+Z:
+					<b>zero events fire, nothing changes</b> — identically in the live N-host storybook and the
+					single-host fixture. Undo is an editor-owned-history problem in either topology; the migration
+					neither fixes nor worsens it. It stops being billed to N hosts.
+				</p>
+
+				<h3 class="sub">Target DOM shape</h3>
+				<div class="figure">
+					<div class="cols">
+						<div>
+							<div class="container-label">TODAY — N hosts (committed snapshot)</div>
+							<div class="container-box">
+								<div class="container-label">&lt;div&gt; — no attributes, not an editing host</div>
+								<div class="domrow">
+									<span class="el host">span ce=true<small>text token — own host</small></span>
+									<span class="el plain">mark tabindex=0<small>atomic by accident</small></span>
+									<span class="el host">span ce=true<small>own host</small></span>
+									<span class="el plain">mark tabindex=0</span>
+									<span class="el host">span ce=true<small>own host</small></span>
+								</div>
+							</div>
+						</div>
+						<div>
+							<div class="container-label">TARGET — one host</div>
+							<div class="container-box editable">
+								<div class="container-label">&lt;div contenteditable=true&gt; — THE editing host</div>
+								<div class="domrow">
+									<span class="el plain">span<small>bare — inherits editable</small></span>
+									<span class="el atom">mark ce=false<small>atomic by contract</small></span>
+									<span class="el plain">span<small>bare</small></span>
+									<span class="el atom">mark ce=false</span>
+									<span class="el plain">span<small>bare</small></span>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="legend">
+						<span
+							><i
+								class="key"
+								style="
+									border-color: var(--host);
+									background: color-mix(in srgb, var(--host) 9%, transparent);
+								"
+							></i
+							>contenteditable host</span
+						>
+						<span
+							><i
+								class="key"
+								style="
+									border-color: var(--atom);
+									background: color-mix(in srgb, var(--atom) 9%, transparent);
+								"
+							></i
+							><code>ce=false</code> atomic</span
+						>
+						<span><i class="key" style="border-color: var(--anchor)"></i>container</span>
+					</div>
+					<figcaption>
+						Slot marks stay transparent: inside a mark root, everything <em>not</em> on the path to the
+						child wrapper gets <code>ce=false</code>; the slot content itself remains editable (it holds
+						ordinary text tokens). A childless value-only mark is entirely <code>ce=false</code>. Today's
+						atomicity is a side effect of "my parent is not an editing host"; the target makes it an
+						explicit contract.
+					</figcaption>
+				</div>
+			</section>
+
+			<!-- ============================ TAB: DESIGN ============================ -->
+			<section class="tab" data-tab="design">
+				<h2 class="sect">What the migration deletes, replaces, and builds</h2>
+				<p class="note">
+					Prior art: CodeMirror 6 is exactly this target — one <code>contenteditable</code>, native selection,
+					<code>ce=false</code> widgets, atomic ranges for caret normalisation. CM5 shipped the opposite
+					design and the team abandoned it on a rewrite. ProseMirror, Slate, Quill, Lexical, TipTap: all one
+					host. Notion is the deliberate counter-example — <code>contenteditable</code> per block — and its
+					price is visible in-product: cross-block selection snaps to whole blocks, and clipboard, undo and
+					most of the keyboard are custom (observed behavior; source closed). markput is <em>cheaper</em> than
+					CM6 here: with no <code>MutationObserver</code> and every input path already
+					<code>preventDefault()</code> + <code>edit.replace()</code>, a beforeinput guard replaces the DOM
+					observer entirely.
+				</p>
+
+				<table class="grid">
+					<thead>
+						<tr>
+							<th>Mechanism</th>
+							<th>Today</th>
+							<th>Under one host</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><code>editableState.ts</code> per-span <code>ce=true</code></td>
+							<td>the only production <code>contentEditable</code> write in the workspace</td>
+							<td>
+								container-level policy: host <code>ce=true</code>, atomics <code>ce=false</code>, slot
+								path transparent
+							</td>
+							<td><span class="vd fixedish">replaced</span></td>
+						</tr>
+						<tr>
+							<td><code>isUserSelecting</code> sweep flip</td>
+							<td>~64 lines + 14 spec refs; source of the dead-editor state</td>
+							<td>nothing to escape — native sweep crosses atomics (measured)</td>
+							<td><span class="vd gone">deleted</span></td>
+						</tr>
+						<tr>
+							<td>focusin/focusout selection sync + microtask clear</td>
+							<td>source of the click steal (stack-proven)</td>
+							<td>one host = one focus boundary; sync reduces to <code>selectionchange</code> only</td>
+							<td><span class="vd gone">mostly deleted</span></td>
+						</tr>
+						<tr>
+							<td><code>arrowNav.ts</code> mark skipping</td>
+							<td>Left/Right handler moving focus between hosts</td>
+							<td>
+								caret normaliser over atomic boundaries + element-anchored gap positions (≈ CM6
+								<code>atomicRanges</code>); <b>not</b> a deletion
+							</td>
+							<td><span class="vd fixedish">replaced</span></td>
+						</tr>
+						<tr>
+							<td><code>blockEdit.ts</code> <code>findActiveRow</code> via <code>activeElement</code></td>
+							<td>5 call sites; dies under one host (activeElement = container)</td>
+							<td>
+								row = root of the selection anchor's node, via existing <code>domAnchors()</code> —
+								works under <em>both</em> topologies, can land first
+							</td>
+							<td><span class="vd fixedish">replaced</span></td>
+						</tr>
+						<tr>
+							<td><code>blockEdit.ts</code> cross-row Arrow handlers</td>
+							<td>~56 lines of manual caret transport incl. <code>placeCaretAtX</code> ±4px magic</td>
+							<td>native — one host has no boundary to hand-carry the caret across</td>
+							<td><span class="vd gone">deleted</span></td>
+						</tr>
+						<tr>
+							<td><code>block/operations.ts</code> string synthesis</td>
+							<td>
+								slices props-first <code>value()</code> by tree positions; caret from pre-edit offsets
+								clamped by <code>Math.min</code> (pinned wrong in
+								<code>BlockController.spec.ts:56</code>)
+							</td>
+							<td>
+								drag verbs as anchor-based <code>edit.replace</code>; caret is an anchor, not an
+								arithmetic guess
+							</td>
+							<td><span class="vd fixedish">replaced</span></td>
+						</tr>
+						<tr>
+							<td>beforeinput guard</td>
+							<td>—</td>
+							<td>
+								~151 lines, 47/47 cancelable cases (prior session). Does <b>not</b> cover IME (<code
+									>insertCompositionText</code
+								>
+								uncancelable — composition stays unhandled by design) or native undo (dead anyway,
+								measured)
+							</td>
+							<td><span class="vd worse">built</span></td>
+						</tr>
+					</tbody>
+				</table>
+
+				<h3 class="sub">Line delta <span class="badge b-hypo">estimates — count in place per commit</span></h3>
+				<div class="figure">
+					<div class="delta">
+						<div class="drow">
+							<span class="lbl">Sweep flip + editable policy (<code>dom/</code>)</span>
+							<div class="bar"><i class="del" style="left: 0; width: 16%"></i></div>
+							<span class="n">−64</span>
+						</div>
+						<div class="drow">
+							<span class="lbl">Focus sync / steal machinery (<code>SelectionDriver</code>)</span>
+							<div class="bar"><i class="del" style="left: 0; width: 20%"></i></div>
+							<span class="n">−80 est.</span>
+						</div>
+						<div class="drow">
+							<span class="lbl"
+								><code>blockEdit</code> cross-row arrows + <code>findActiveRow</code></span
+							>
+							<div class="bar"><i class="del" style="left: 0; width: 22%"></i></div>
+							<span class="n">−90 est.</span>
+						</div>
+						<div class="drow">
+							<span class="lbl"><code>block/operations.ts</code> string synthesis path</span>
+							<div class="bar"><i class="del" style="left: 0; width: 30%"></i></div>
+							<span class="n">−120 est.</span>
+						</div>
+						<div class="drow">
+							<span class="lbl">beforeinput guard</span>
+							<div class="bar"><i class="add" style="left: 0; width: 38%"></i></div>
+							<span class="n">+151</span>
+						</div>
+						<div class="drow">
+							<span class="lbl">Caret normaliser (replaces arrowNav)</span>
+							<div class="bar"><i class="add" style="left: 0; width: 15%"></i></div>
+							<span class="n">+60 est.</span>
+						</div>
+					</div>
+					<figcaption>
+						Green = deleted, orange = built. Direct effect of the host migration alone: −15…−110 net
+						production lines (−185…−200 gross). With the "which host am I in" machinery across
+						<code>dom/</code> and <code>keyboard/</code> and the block address-space fix: plausibly
+						−400…−600; block feature total today is 956 core + 372 adapter lines. Doing host + block
+						together ≈ <b>−1300 production lines</b>
+						(estimate). Spec/story migration on top: ~425 spec + 114 storybook selector lines.
+					</figcaption>
+				</div>
+
+				<h3 class="sub">Why block cannot stay behind</h3>
+				<p class="note">
+					The coupling is two-way. One host kills <code>findActiveRow</code> (every block keybinding routes
+					through it), so block must be touched. And block's cross-row arrow handlers are precisely the code
+					one host makes native — rebuilding them on tree anchors first would be building code destined for
+					deletion. The shared seam already exists: <code>domAnchors()</code> resolves the live DOM selection
+					to tree anchors under both topologies, and <code>blockEdit.ts:148</code> already uses it. Row
+					identity moves from <code>activeElement</code> to "root of the selection anchor" as the
+					<em>first</em> commit, green under N hosts, before any host change.
+				</p>
+			</section>
+
+			<!-- ============================ TAB: BREAKING ============================ -->
+			<section class="tab" data-tab="breaking">
+				<h2 class="sect">Breaking changes — every one explicit</h2>
+				<p class="note">
+					Published packages (<code>@markput/react</code>, <code>@markput/vue</code> at 0.14.3) have real
+					users. <code>@markput/core</code> is unpublished — its internals are fair game. Anything reachable
+					from <code>MarkputApi</code> is not cut on zero-in-repo-caller evidence.
+				</p>
+				<table class="grid">
+					<thead>
+						<tr>
+							<th>Change</th>
+							<th>Who sees it</th>
+							<th>Cost / gain</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>
+								<span class="badge b-break">break</span> DOM shape: container becomes the single
+								<code>contenteditable</code>; text spans lose their attribute; mark roots get
+								<code>ce=false</code> and lose <code>tabindex=0</code>
+							</td>
+							<td>
+								consumers with CSS/tests keyed to <code>span[contenteditable]</code> or relying on
+								focusable marks; storybook selectors (~114 lines)
+							</td>
+							<td>the entire migration — this <i>is</i> the change</td>
+						</tr>
+						<tr>
+							<td>
+								<span class="badge b-break">break</span> <code>onFocus</code>/<code>onBlur</code> via
+								<code>slotProps.container</code> fire once per real entry/exit instead of per span
+								switch
+							</td>
+							<td>consumers who (accidentally) depended on churn — 3 clicks fired 3×/4× today</td>
+							<td>defect #11 becomes the correct behavior with zero debounce code</td>
+						</tr>
+						<tr>
+							<td>
+								<span class="badge b-break">break</span> Tab leaves the field (native single-host
+								behavior); marks are no longer tab stops
+							</td>
+							<td>keyboard users; anyone relying on Tab reaching a mark</td>
+							<td>defect #5 disappears; mark focus for a11y needs its own decision later</td>
+						</tr>
+						<tr>
+							<td>
+								<span class="badge b-break">break</span> caret after a block drag-delete lands at the
+								start of the row that replaced the deleted one —
+								<code>BlockController.spec.ts:56</code> currently pins the stale-offset answer (end of
+								document / mid-word)
+							</td>
+							<td>block-mode users (behavior improves); the pinned spec flips</td>
+							<td>fixes the designed-in bug for free once drag verbs are anchor-based</td>
+						</tr>
+						<tr>
+							<td>
+								<span class="badge b-break">break</span> block keybindings route by selection, not
+								<code>activeElement</code>; grip/menu/keyboard gates unify (<code
+									>isBlock &amp;&amp; draggable</code
+								>
+								ambiguity resolved one way)
+							</td>
+							<td>
+								consumers setting <code>layout:'block'</code> with <code>draggable:false</code> — today
+								the menu opens and every action is silently swallowed
+							</td>
+							<td>one owner for "which row", instead of seven derivations</td>
+						</tr>
+						<tr>
+							<td>
+								Not a break, called out: <b>IME stays unhandled</b> (<code>insertCompositionText</code>
+								is not cancelable) and <b>undo stays dead</b> — measured identical in both topologies;
+								each needs its own future task (composition handling; editor-owned history)
+							</td>
+							<td>—</td>
+							<td>—</td>
+						</tr>
+						<tr>
+							<td>
+								Not a break, called out: scope is <b>Chromium-only</b> (maintainer decision 2026-08-10);
+								Firefox measured materially worse on gap carets and edge positions, and Safari/Firefox
+								users of the published packages exist
+							</td>
+							<td>—</td>
+							<td>—</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+
+			<!-- ============================ TAB: PLAN ============================ -->
+			<section class="tab" data-tab="plan">
+				<h2 class="sect">Staged plan — each commit green on its own</h2>
+				<ol class="plan">
+					<li>
+						<b>Row identity seam <span class="tag">green under N hosts</span></b>
+						<p>
+							<code>findActiveRow</code> → "root of the selection anchor" via existing
+							<code>domAnchors()</code> + <code>rootIndexOf</code>. Works under both topologies; lands
+							before any host change. Kills the <code>activeElement</code> dependency at all 5 call sites.
+						</p>
+					</li>
+					<li>
+						<b>Drag operations speak anchors <span class="tag brk">breaking: caret fix</span></b>
+						<p>
+							<code>operations.ts</code> string synthesis → anchor-based <code>edit.replace</code> verbs;
+							caret becomes an anchor. The <code>BlockController.spec.ts:56</code> pin flips to the
+							correct position. Address-space hazard (props-first <code>value()</code> sliced by tree
+							positions) disappears with the slicing.
+						</p>
+					</li>
+					<li>
+						<b>Host flip <span class="tag brk">breaking: DOM shape</span></b>
+						<p>
+							Container <code>ce=true</code>; editable policy (bare spans, <code>ce=false</code> atomics,
+							transparent slot path); beforeinput guard (~151 lines, 47 cases); caret normaliser replaces
+							<code>arrowNav</code> — <code>anchorFor</code> already resolves element-anchored gap
+							boundaries (verified by code reading). Delete: sweep flip, focus-sync steal machinery,
+							cross-row arrow handlers. Defects #4–#11 + the click steal die here.
+						</p>
+					</li>
+					<li>
+						<b>Gate unification <span class="tag brk">breaking: draggable semantics</span></b>
+						<p>
+							One owner for block gating (<code>isBlock</code>/<code>draggable</code>); the
+							swallowed-action state becomes impossible. The four meanings of
+							<code>isBlock()</code> reduced to layout + routing.
+						</p>
+					</li>
+					<li>
+						<b>Spec &amp; story migration</b>
+						<p>
+							~425 spec lines + 114 storybook selector lines re-pointed at the single-host DOM; the 14
+							flip spec references retire with the flip. <code>inconsistencies.md</code> rewritten from
+							this document's measurements.
+						</p>
+					</li>
+				</ol>
+				<div class="callout ok">
+					<h4>Measure-first obligations already discharged</h4>
+					<p>
+						Both probes the plan depended on ran 2026-08-11: the defect list was re-measured live (tab
+						"N&nbsp;hosts today"), and the empty-gap caret question resolved in favor of zero fillers — the
+						<code>anchorFor</code> element-boundary check passed by code reading (tab "One host"). The
+						remaining unknown before commit 3 is the intra-host drag-and-drop case, unmeasurable headlessly
+						on macOS.
+					</p>
+				</div>
+			</section>
+
+			<footer
+				style="
+					margin-top: 40px;
+					color: var(--muted);
+					font-size: 12px;
+					border-top: 1px solid var(--border);
+					padding-top: 14px;
+				"
+			>
+				Measured 2026-08-11 on branch <code>b0</code> (post-#273) · Chromium via Playwright, trusted input
+				events · fixtures from committed snapshots · estimates labeled · palette validated (dataviz six checks,
+				dark &amp; light).
+			</footer>
+		</div>
+
+		<script>
+			const tabs = document.getElementById('tabs')
+			tabs.addEventListener('click', e => {
+				const btn = e.target.closest('button[data-tab]')
+				if (!btn) return
+				for (const b of tabs.querySelectorAll('button[data-tab]')) b.classList.toggle('on', b === btn)
+				for (const s of document.querySelectorAll('section.tab'))
+					s.classList.toggle('on', s.dataset.tab === btn.dataset.tab)
+			})
+			document.getElementById('themeToggle').addEventListener('click', () => {
+				const html = document.documentElement
+				html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark'
+			})
+		</script>
+	</body>
+</html>
