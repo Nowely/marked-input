@@ -6,7 +6,7 @@ import {createTokenTree} from '../tree/tree'
 import type {TokenTree} from '../tree/tree'
 import type {TextNode, TreeNode} from '../tree/types'
 import {bind} from './bind'
-import type {BindInput, BindResult} from './bind'
+import type {BindInput} from './bind'
 import {focusIfNeeded, getCaretIndex, placeAtTextOffset} from './caret'
 import type {TokenHandle} from './TokenHandle'
 
@@ -54,9 +54,23 @@ function nodeAt(roots: readonly TreeNode[], ...path: number[]): TreeNode | undef
 	return node
 }
 
-function at(result: BindResult, roots: readonly TreeNode[], ...path: number[]): TokenHandle | undefined {
+/**
+ * `bind` plus the node map it mutated. There is no id-keyed `BindResult.bound` any more —
+ * it was a rebuilt-every-walk copy of `input.nodes` — so the cases read the map bind owns.
+ */
+function bindOf(input: BindInput) {
+	return {...bind(input), nodes: input.nodes}
+}
+
+/**
+ * The handle THIS walk bound at a tree POSITION, or `undefined`. `alive()` is what
+ * `bound.has(id)` used to be: the walk unbinds (never removes) a node the DOM missed, so a
+ * surviving-but-unbound handle answers `undefined` here exactly as it did before.
+ */
+function at(result: ReturnType<typeof bindOf>, roots: readonly TreeNode[], ...path: number[]): TokenHandle | undefined {
 	const node = nodeAt(roots, ...path)
-	return node === undefined ? undefined : result.bound.get(node.id)
+	const handle = node === undefined ? undefined : result.nodes.get(node.id)
+	return handle?.alive() === true ? handle : undefined
 }
 
 /** The node at a tree position as a TextNode — the fixtures below know their own shape. */
@@ -103,7 +117,7 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('hello', 0)])
 			const nodes = new Map<number, TokenHandle>()
 
-			const result = bind(inputFor(container, roots, {nodes}))
+			const result = bindOf(inputFor(container, roots, {nodes}))
 
 			const handle = at(result, roots, 0)
 			expect(handle).toBeDefined()
@@ -123,7 +137,7 @@ describe('bind', () => {
 
 			const {roots} = treeOf([textToken('hi ', 0), markToken('world', '@[world]', 3), textToken('!', 11)])
 
-			const result = bind(inputFor(container, roots))
+			const result = bindOf(inputFor(container, roots))
 
 			expect(at(result, roots, 0)?.element()).toBe(before)
 			expect(at(result, roots, 1)?.element()).toBe(mark)
@@ -141,7 +155,7 @@ describe('bind', () => {
 
 			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('x', 0)])])
 
-			const result = bind(inputFor(container, roots))
+			const result = bindOf(inputFor(container, roots))
 
 			expect(at(result, roots, 0)?.element()).toBe(outer)
 			expect(at(result, roots, 0, 0)?.element()).toBe(innerText)
@@ -156,7 +170,7 @@ describe('bind', () => {
 			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('a', 0)])])
 			const nodes = new Map<number, TokenHandle>()
 
-			const result = bind(inputFor(container, roots, {nodes}))
+			const result = bindOf(inputFor(container, roots, {nodes}))
 
 			expect(at(result, roots, 0)?.element()).toBe(outer)
 			expect(at(result, roots, 0, 0)).toBeUndefined()
@@ -177,7 +191,7 @@ describe('bind', () => {
 
 			const {roots} = treeOf([textToken('a', 0), textToken('b', 2)])
 
-			const result = bind(inputFor(container, roots, {isBlock: true}))
+			const result = bindOf(inputFor(container, roots, {isBlock: true}))
 
 			expect(at(result, roots, 0)?.element()).toBe(tokenEl0)
 			expect(at(result, roots, 0)?.node()?.rowElement).toBe(row0)
@@ -197,7 +211,7 @@ describe('bind', () => {
 
 			const {roots} = treeOf([textToken('a', 0)])
 
-			const result = bind(inputFor(container, roots, {isBlock: true, controlElements: new Set([control])}))
+			const result = bindOf(inputFor(container, roots, {isBlock: true, controlElements: new Set([control])}))
 
 			expect(at(result, roots, 0)?.element()).toBe(tokenEl)
 			expect(at(result, roots, 0)?.node()?.rowElement).toBe(row)
@@ -217,7 +231,7 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('a', 0), textToken('b', 2)])
 			const nodes = new Map<number, TokenHandle>()
 
-			const result = bind(inputFor(container, roots, {isBlock: true, nodes}))
+			const result = bindOf(inputFor(container, roots, {isBlock: true, nodes}))
 
 			expect(at(result, roots, 0)).toBeUndefined()
 			expect(at(result, roots, 1)).toBeUndefined()
@@ -251,15 +265,15 @@ describe('bind', () => {
 			])
 			const nodes = new Map<number, TokenHandle>()
 
-			const result = bind(inputFor(container, roots, {nodes}))
+			const result = bindOf(inputFor(container, roots, {nodes}))
 
 			expect(at(result, roots, 0)?.element()).toBe(outer)
 			expect(at(result, roots, 0, 0)).toBeUndefined()
 			expect(at(result, roots, 0, 1)).toBeUndefined()
 			expect(at(result, roots, 0, 1, 0)).toBeUndefined()
-			// Only the outer mark materialized a handle.
+			// Only the outer mark materialized a handle, and it is the only bound one.
 			expect(nodes.size).toBe(1)
-			expect(result.bound.size).toBe(1)
+			expect([...nodes.values()].filter(handle => handle.alive())).toEqual([at(result, roots, 0)])
 		})
 
 		it('skips control elements when zipping nodes with DOM children', () => {
@@ -270,7 +284,7 @@ describe('bind', () => {
 
 			const {roots} = treeOf([textToken('a', 0)])
 
-			const result = bind(inputFor(container, roots, {controlElements: new Set([control])}))
+			const result = bindOf(inputFor(container, roots, {controlElements: new Set([control])}))
 
 			expect(at(result, roots, 0)?.element()).toBe(tokenEl)
 			expect(result.byElement.get(control)).toBeUndefined()
@@ -286,7 +300,7 @@ describe('bind', () => {
 
 			const {roots} = treeOf([textToken('a', 0)])
 
-			const result = bind(inputFor(container, roots, {controlElements: new Set([control])}))
+			const result = bindOf(inputFor(container, roots, {controlElements: new Set([control])}))
 
 			expect(at(result, roots, 0)?.element()).toBe(tokenEl)
 		})
@@ -303,7 +317,7 @@ describe('bind', () => {
 
 			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('a', 0), textToken('b', 1)])])
 
-			const result = bind(
+			const result = bindOf(
 				inputFor(container, roots, {
 					childSequenceHostsFor: ownerId => (ownerId === roots[0].id ? [host] : []),
 				})
@@ -325,7 +339,7 @@ describe('bind', () => {
 
 			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('a', 0)])])
 
-			const result = bind(
+			const result = bindOf(
 				inputFor(container, roots, {
 					childSequenceHostsFor: ownerId => (ownerId === roots[0].id ? [hostA, hostB] : []),
 				})
@@ -345,7 +359,7 @@ describe('bind', () => {
 
 			const {roots} = treeOf([textToken('hi', 0)])
 
-			const result = bind(inputFor(container, roots, {controlElements: new Set([control])}))
+			const result = bindOf(inputFor(container, roots, {controlElements: new Set([control])}))
 
 			expect(result.controlRoots.has(control)).toBe(true)
 			expect(result.controlRoots.has(wrapper)).toBe(true)
@@ -367,7 +381,7 @@ describe('bind', () => {
 				textToken('c', 5),
 			])
 
-			const result = bind(
+			const result = bindOf(
 				inputFor(container, roots, {
 					childSequenceHostsFor: ownerId => (ownerId === roots[1].id ? [outsideHost] : []),
 				})
@@ -388,7 +402,7 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('hello', 0)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			const handle = nodes.get(1)
 			if (!handle) throw new Error('expected handle for id 1')
 
@@ -397,11 +411,11 @@ describe('bind', () => {
 			const renderedSpan = spanWith('stale')
 			container.replaceChildren(renderedSpan)
 
-			const result = bind(inputFor(container, roots, {nodes}))
+			const result = bindOf(inputFor(container, roots, {nodes}))
 
 			expect(nodes.size).toBe(1)
 			expect(nodes.get(1)).toBe(handle)
-			expect(result.bound.get(1)).toBe(handle)
+			expect(at(result, roots, 0)).toBe(handle)
 			expect(result.byElement.get(renderedSpan)).toBe(handle)
 			expect(handle.element()).toBe(renderedSpan)
 			expect(renderedSpan.textContent).toBe('hello!')
@@ -413,7 +427,7 @@ describe('bind', () => {
 			const {tree, roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			const handleB = nodes.get(2)
 			if (!handleB) throw new Error('expected handle for id 2')
 
@@ -422,9 +436,9 @@ describe('bind', () => {
 			const spanB2 = spanWith('beta')
 			container.replaceChildren(spanWith('x '), spanWith('alpha '), spanB2)
 
-			const result = bind(inputFor(container, [inserted, ...roots], {nodes}))
+			const result = bindOf(inputFor(container, [inserted, ...roots], {nodes}))
 
-			expect(result.bound.get(2)).toBe(handleB)
+			expect(at(result, [inserted, ...roots], 2)).toBe(handleB)
 			expect(handleB.element()).toBe(spanB2)
 		})
 
@@ -435,13 +449,13 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			const handleA = nodes.get(1)
 			const handleB = nodes.get(2)
 			if (!handleA || !handleB) throw new Error('expected handles for both ids')
 
 			container.replaceChildren(spanA)
-			bind(inputFor(container, roots.slice(0, 1), {nodes}))
+			bindOf(inputFor(container, roots.slice(0, 1), {nodes}))
 
 			expect(handleB.alive()).toBe(false)
 			expect(nodes.has(2)).toBe(false)
@@ -461,7 +475,7 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			const handleA = nodes.get(1)
 			const handleB = nodes.get(2)
 			if (!handleA || !handleB) throw new Error('expected handles for both ids')
@@ -470,9 +484,10 @@ describe('bind', () => {
 			textAt(roots, 0).text('alpha! ')
 			container.replaceChildren(spanWith('alpha! '))
 
-			const result = bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 
-			expect(result.bound.size).toBe(0)
+			// Nothing bound: the walk dropped the frame.
+			expect([...nodes.values()].some(handle => handle.alive())).toBe(false)
 			// Both handles survive in the node map — not killed, only unbound.
 			expect(nodes.size).toBe(2)
 			expect(handleA.element()).toBeUndefined()
@@ -488,7 +503,7 @@ describe('bind', () => {
 			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('a', 0)])])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			const child = nodes.get(2)
 			if (!child) throw new Error('expected child handle')
 			expect(child.element()).toBeDefined()
@@ -498,7 +513,7 @@ describe('bind', () => {
 			textAt(roots, 0, 0).text('b')
 			outer.replaceChildren()
 
-			const result = bind(inputFor(container, roots, {nodes}))
+			const result = bindOf(inputFor(container, roots, {nodes}))
 
 			expect(at(result, roots, 0)).toBeDefined()
 			expect(at(result, roots, 0, 0)).toBeUndefined()
@@ -518,8 +533,8 @@ describe('bind', () => {
 			const frozenContainer = document.createElement('div')
 			frozenContainer.append(frozenSpan)
 
-			bind(inputFor(editableContainer, treeOf([textToken('a', 0)]).roots))
-			bind(
+			bindOf(inputFor(editableContainer, treeOf([textToken('a', 0)]).roots))
+			bindOf(
 				inputFor(frozenContainer, treeOf([textToken('b', 0)]).roots, {
 					editable: {editable: false, readOnly: false},
 				})
@@ -539,8 +554,8 @@ describe('bind', () => {
 			const readOnlyContainer = document.createElement('div')
 			readOnlyContainer.append(readOnlyMark)
 
-			bind(inputFor(interactiveContainer, treeOf([markToken('a', '@[a]', 0)]).roots))
-			bind(
+			bindOf(inputFor(interactiveContainer, treeOf([markToken('a', '@[a]', 0)]).roots))
+			bindOf(
 				inputFor(readOnlyContainer, treeOf([markToken('b', '@[b]', 0)]).roots, {
 					editable: {editable: false, readOnly: true},
 				})
@@ -563,8 +578,8 @@ describe('bind', () => {
 			const readOnlyContainer = document.createElement('div')
 			readOnlyContainer.append(readOnlyButton)
 
-			bind(inputFor(editableContainer, treeOf([markToken('a', '@[a]', 0)]).roots))
-			bind(
+			bindOf(inputFor(editableContainer, treeOf([markToken('a', '@[a]', 0)]).roots))
+			bindOf(
 				inputFor(readOnlyContainer, treeOf([markToken('b', '@[b]', 0)]).roots, {
 					editable: {editable: false, readOnly: true},
 				})
@@ -588,11 +603,11 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('hello', 0)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			expect(span.contentEditable).toBe('true')
 
 			span.contentEditable = 'false'
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 
 			expect(span.contentEditable).toBe('false')
 		})
@@ -606,7 +621,7 @@ describe('bind', () => {
 			const span = spanWith('')
 			container.append(span)
 
-			bind(inputFor(container, treeOf([textToken('hello', 0)]).roots))
+			bindOf(inputFor(container, treeOf([textToken('hello', 0)]).roots))
 
 			expect(span.textContent).toBe('hello')
 		})
@@ -619,7 +634,7 @@ describe('bind', () => {
 			container.append(span)
 			const {roots} = treeOf([textToken('hello', 0)])
 
-			bind(inputFor(container, roots))
+			bindOf(inputFor(container, roots))
 			textAt(roots, 0).text('hello world')
 
 			expect(span.textContent).toBe('hello world')
@@ -633,9 +648,9 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('hello', 0)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			span.textContent = 'WRONG'
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 
 			expect(span.textContent).toBe('hello')
 		})
@@ -656,7 +671,7 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('hello', 0)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			// The browser's own editing leaves a surface split like this.
 			const only = span.firstChild
 			if (!(only instanceof Text)) throw new Error('expected one text child')
@@ -665,7 +680,7 @@ describe('bind', () => {
 			placeAtTextOffset(span, 4)
 			expect(getCaretIndex(span)).toBe(4)
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 
 			expect(span.childNodes).toHaveLength(2)
 			expect(getCaretIndex(span)).toBe(4)
@@ -681,10 +696,10 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('hello', 0)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			expect(span.firstChild).toBe(initialTextNode)
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			expect(span.firstChild).toBe(initialTextNode)
 
 			// A no-op edit (same string) does not disturb it either: the signal does not
@@ -703,9 +718,9 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('hello', 0)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
-			bind(inputFor(container, roots, {nodes}))
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			expect(writes()).toBe(0)
 
 			textAt(roots, 0).text('hello!')
@@ -729,11 +744,11 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			// Misaligned DOM: the walk bails and every handle is unbound.
 			container.replaceChildren(spanA)
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			expect(nodes.get(1)?.element()).toBeUndefined()
 
 			textAt(roots, 0).text('alpha!')
@@ -749,10 +764,10 @@ describe('bind', () => {
 			const {roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
 			const nodes = new Map<number, TokenHandle>()
 
-			bind(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes}))
 			const dying = textAt(roots, 1)
 			container.replaceChildren(spanA)
-			bind(inputFor(container, roots.slice(0, 1), {nodes}))
+			bindOf(inputFor(container, roots.slice(0, 1), {nodes}))
 			expect(nodes.has(2)).toBe(false)
 
 			dying.text('gone')

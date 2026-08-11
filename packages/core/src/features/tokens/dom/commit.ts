@@ -90,14 +90,29 @@ export type CommitPipeline = {
 	changed: Event<TokenDelta>
 	/** pendingStructural latch: true between a structural apply and its bind — id-bridged resolution fails closed. */
 	pending(): boolean
+	/**
+	 * THE live node layer, keyed by id — `deps.nodes` itself, which bind mutates in place,
+	 * not the per-bind copy this used to hand out. A handle in it is BOUND iff
+	 * `handle.alive()`: bind unbinds (never removes) a node whose element the DOM walk
+	 * missed, and deletes only ids absent from the tree.
+	 *
+	 * Its one consumer outside this module is `TokenModel.setEditable`, which already skips
+	 * every unbound handle on `node()`; the map is that model's OWN field, so the method is
+	 * a pass-through waiting to be deleted with that caller.
+	 */
 	bound(): ReadonlyMap<number, TokenHandle>
 	byElement(element: HTMLElement): TokenHandle | undefined
 	isControlRoot(element: HTMLElement): boolean
 }
 
-// Guards the divergence detector: true under Vitest + dev builds, stripped to false in production bundles; ?? true keeps it live on unknown runtimes.
-// oxlint-disable-next-line typescript/no-unnecessary-condition -- intentional runtime guard; value depends on bundler
-const VERIFY_DOM: boolean = import.meta.env?.DEV ?? true
+// Guards the divergence detector. The published bundle ships this expression VERBATIM (prepack's
+// rolldown pass overwrites Vite's substituted output), so the consumer's bundler decides the value —
+// which is why it must fail CLOSED. Vite and Vitest define `import.meta.env.DEV` true in dev/test;
+// every other host (webpack, Next, node, plain rollup) has no `import.meta.env`, so the chain
+// short-circuits to `undefined ?? false` → false and the sweep below is dead code. The former
+// `?? true` did the opposite: it shipped a throwing O(tree) sweep into consumers' production apps.
+// oxlint-disable-next-line typescript/no-unnecessary-condition -- `import.meta.env` is typed non-null by vite/client but absent at runtime off Vite
+const VERIFY_DOM: boolean = import.meta.env?.DEV ?? false
 
 type DeltaAccumulator = {added: Set<number>; removed: Set<number>; updated: Set<number>}
 
@@ -135,10 +150,10 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	const renderEpoch = signal({initial: epoch})
 	const changed = event<TokenDelta>()
 
-	// Derived lookups over the bound nodes — replaced wholesale by bind, untouched by a
+	// Element-keyed lookups over the bound nodes — replaced wholesale by bind, untouched by a
 	// text-only commit (no node is added or removed there by definition, so the same ids
-	// stay bound to the same elements).
-	let bound: ReadonlyMap<number, TokenHandle> = new Map()
+	// stay bound to the same elements). The id-keyed side is `deps.nodes`, which bind
+	// mutates in place, so there is nothing here to mirror it with.
 	let byElement = new WeakMap<HTMLElement, TokenHandle>()
 	let controlRoots = new WeakSet<HTMLElement>()
 
@@ -197,7 +212,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			isBlock: deps.isBlock(),
 			editable: deps.editableState(),
 		})
-		bound = result.bound
 		byElement = result.byElement
 		controlRoots = result.controlRoots
 		// A re-bind with no pending structural change drains an empty accumulator.
@@ -224,7 +238,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		untracked(() => {
 			walkTree(deps.roots(), node => {
 				if (node.kind !== 'text') return
-				const surface = bound.get(node.id)?.node()?.textElement
+				const surface = deps.nodes.get(node.id)?.node()?.textElement
 				if (!surface) return
 				const expected = node.text()
 				const actual = surface.textContent
@@ -253,7 +267,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		renderEpoch,
 		changed,
 		pending: () => pendingStructural,
-		bound: () => bound,
+		bound: () => deps.nodes,
 		byElement: element => byElement.get(element),
 		isControlRoot: element => controlRoots.has(element),
 	}
