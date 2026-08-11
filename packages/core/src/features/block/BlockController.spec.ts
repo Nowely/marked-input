@@ -49,11 +49,11 @@ describe('BlockController', () => {
 
 		store.block.action({type: 'delete', index: 0})
 
-		// The OUTCOME, not the write channel: `applyDragAction` synthesizes a complete new
-		// string from row positions and `edit.setValue` commits it, so the value is only
-		// ever READ on this path.
+		// The OUTCOME, not the write channel: `applyDragAction` composes a complete new
+		// string from anchor-slice reads of the tree and `edit.setValue` commits it. The
+		// caret lands at the start of the row that replaced the deleted one.
 		expect(store.tokens.value()).toBe('beta\n\n')
-		expect(selectionRange(store)).toEqual({start: 6, end: 6})
+		expect(selectionRange(store)).toEqual({start: 0, end: 0})
 	})
 
 	it('writes value and caret as a single batched tick', () => {

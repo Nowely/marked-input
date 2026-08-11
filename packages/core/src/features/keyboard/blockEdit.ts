@@ -5,11 +5,17 @@ import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
+import type {SliceRead} from '../block/operations'
 import {addDragRow, mergeDragRows, canMergeRows, deleteDragRow} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Anchors, NodeAnchor, TokenHandle, TreeNode} from '../tokens'
 import {anchorEquals} from '../tokens'
 import {anchorsFromInputEvent} from './inputAnchors'
+
+/** The tree's own string, addressed by anchors — never the props-first `value()`. */
+function sliceRead(store: KbCtx): SliceRead {
+	return (from, to) => store.tokens.valueBetween(from, to)
+}
 
 function isTextLikeRow(node: TreeNode): boolean {
 	if (node.kind === 'text') return true
@@ -104,13 +110,10 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	if (!active) return
 	const {handle, index: blockIndex} = active
 
-	// Fresh read: row positions slice value.current(); the live roots are the tree
-	// those positions were written into, so the cuts hit the right ranges.
 	const rows = store.tokens.nodes()
 	if (blockIndex >= rows.length) return
 
 	const row = rows[blockIndex]
-	const value = store.tokens.value()
 
 	if (event.key === KEYBOARD.BACKSPACE) {
 		// The ROW's own projection, which for a mark row is its whole markup — the
@@ -119,17 +122,15 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 		const blockText = store.tokens.valueBetween({before: row}, {after: row})
 		if (blockText === '') {
 			event.preventDefault()
-			const newValue = deleteDragRow(value, rows, blockIndex)
-			const previous = rows.at(Math.max(0, blockIndex - 1))
-			const pos = previous ? previous.position.end : 0
-			store.edit.setValue(newValue, pos)
+			const result = deleteDragRow(sliceRead(store), rows, blockIndex)
+			store.edit.setValue(result.value, result.caret)
 			return
 		}
 
 		const caretAtStart = (handle.caretIndex() ?? 0) === 0
 
 		if (caretAtStart && blockIndex > 0) {
-			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex - 1, 'end')
+			mergeOrFocusNeighbor(store, event, rows, blockIndex, blockIndex - 1, 'end')
 			return
 		}
 	}
@@ -140,12 +141,12 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 		const caretAtStart = caretIndex === 0
 
 		if (caretAtStart && blockIndex > 0) {
-			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex - 1, 'end')
+			mergeOrFocusNeighbor(store, event, rows, blockIndex, blockIndex - 1, 'end')
 			return
 		}
 
 		if (caretAtEnd && blockIndex < rows.length - 1) {
-			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex + 1, 'start')
+			mergeOrFocusNeighbor(store, event, rows, blockIndex, blockIndex + 1, 'start')
 			return
 		}
 	}
@@ -163,14 +164,12 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 
 	const rows = store.tokens.nodes()
 	const row = rows[blockIndex]
-	const value = store.tokens.value()
 
 	const newRowContent = createRowContent(store.props.options())
 
 	if (!isTextLikeRow(row)) {
-		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
-		const pos = row.position.end + newRowContent.length
-		store.edit.setValue(newValue, pos)
+		const result = addDragRow(sliceRead(store), rows, blockIndex, newRowContent)
+		store.edit.setValue(result.value, result.caret)
 		return
 	}
 
@@ -307,7 +306,6 @@ function mergeOrFocusNeighbor(
 	store: KbCtx,
 	event: KeyboardEvent,
 	rows: readonly TreeNode[],
-	value: string,
 	fromIndex: number,
 	toIndex: number,
 	caretOnFocus: 'start' | 'end'
@@ -315,9 +313,10 @@ function mergeOrFocusNeighbor(
 	const joinIndex = Math.max(fromIndex, toIndex)
 	const a = rows[Math.min(fromIndex, toIndex)]
 	const b = rows[joinIndex]
+	const read = sliceRead(store)
 	event.preventDefault()
-	if (canMergeRows(a, b)) {
-		const merged = mergeDragRows(value, rows, joinIndex)
+	if (canMergeRows(read, a, b)) {
+		const merged = mergeDragRows(read, rows, joinIndex)
 		store.edit.setValue(merged.value, merged.caret)
 		return
 	}

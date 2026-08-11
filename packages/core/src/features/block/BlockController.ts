@@ -2,7 +2,7 @@ import {event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
 import type {EditController} from '../edit'
 import type {PropsModel} from '../state/PropsModel'
-import type {TokenModel, TreeNode} from '../tokens'
+import type {NodeAnchor, TokenModel, TreeNode} from '../tokens'
 import {BlockStore} from './BlockStore'
 import {applyDragAction} from './operations'
 
@@ -25,11 +25,10 @@ export class BlockController {
 	) {
 		watch(this.action, action => {
 			if (!this.props.layout.isBlock() || !this.props.draggable()) return
-			const value = this.tokens.value()
-			// Fresh read: drag operations slice the live value by row positions, and the
-			// live roots are the tree those positions were written into.
-			const result = applyDragAction(value, this.tokens.nodes(), action, this.props.options())
-			if (result.value === value) return
+			// Anchor-slice reads: the tree's own string, always consistent with nodes().
+			const read = (from: NodeAnchor, to: NodeAnchor): string => this.tokens.valueBetween(from, to)
+			const result = applyDragAction(read, this.tokens.nodes(), action, this.props.options())
+			if (result === undefined) return
 			this.edit.setValue(result.value, result.caret)
 		})
 
