@@ -6,13 +6,13 @@ type KbCtx = Pick<Store, 'selection' | 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, mergeDragRows, canMergeRows, deleteDragRow} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
-import type {Anchors, NodeAnchor, Token, TokenHandle} from '../tokens'
+import type {Anchors, NodeAnchor, TokenHandle, TreeNode} from '../tokens'
 import {anchorEquals} from '../tokens'
 import {anchorsFromInputEvent} from './inputAnchors'
 
-function isTextLikeRow(token: Token): boolean {
-	if (token.type === 'text') return true
-	return token.descriptor.hasSlot && token.descriptor.segments.length === 1
+function isTextLikeRow(node: TreeNode): boolean {
+	if (node.kind === 'text') return true
+	return node.descriptor.hasSlot && node.descriptor.segments.length === 1
 }
 
 type ActiveRow = {
@@ -21,7 +21,11 @@ type ActiveRow = {
 }
 
 function rowHandle(store: KbCtx, rowIndex: number): TokenHandle | undefined {
-	return store.tokens.handleOf(store.tokens.current()[rowIndex])
+	// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as
+	// `TreeNode` and the out-of-range guard is linted away as an impossible condition.
+	// Every caller passes a non-negative index, so `.at`'s wrap-around cannot fire.
+	const row = store.tokens.nodes().at(rowIndex)
+	return row && store.tokens.handle(row.id)
 }
 
 function findActiveRow(store: KbCtx): ActiveRow | undefined {
@@ -69,16 +73,19 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	if (!active) return
 	const {handle, index: blockIndex} = active
 
-	// Fresh read: row positions slice value.current(); tokens() is the reconciled
-	// tree consistent with the value, so the cuts hit the right ranges.
-	const rows = store.tokens.current()
+	// Fresh read: row positions slice value.current(); the live roots are the tree
+	// those positions were written into, so the cuts hit the right ranges.
+	const rows = store.tokens.nodes()
 	if (blockIndex >= rows.length) return
 
-	const token = rows[blockIndex]
+	const row = rows[blockIndex]
 	const value = store.tokens.value()
 
 	if (event.key === KEYBOARD.BACKSPACE) {
-		const blockText = 'content' in token ? token.content : ''
+		// The ROW's own projection, which for a mark row is its whole markup — the
+		// `Token.content` this used to read, and NOT `node.text()`: every block row is a
+		// mark, so a text-only reading would make plain Backspace delete the row.
+		const blockText = store.tokens.valueBetween({before: row}, {after: row})
 		if (blockText === '') {
 			event.preventDefault()
 			const newValue = deleteDragRow(value, rows, blockIndex)
@@ -123,50 +130,43 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	event.preventDefault()
 	const {index: blockIndex} = active
 
-	const rows = store.tokens.current()
-	const token = rows[blockIndex]
+	const rows = store.tokens.nodes()
+	const row = rows[blockIndex]
 	const value = store.tokens.value()
 
 	const newRowContent = createRowContent(store.props.options())
 
-	if (!isTextLikeRow(token)) {
+	if (!isTextLikeRow(row)) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
-		const pos = token.position.end + newRowContent.length
+		const pos = row.position.end + newRowContent.length
 		store.edit.setValue(newValue, pos)
 		return
 	}
 
-	// The caret, or — with no readable DOM selection — the end of the row this Enter split.
-	const at = store.selection.domAnchors()?.anchor ?? afterRow(store, token)
-	if (!at) return
+	// The caret, or — with no readable DOM selection — the end of the row this Enter
+	// split. `{after: row}` IS `row.position.end` without forming the offset.
+	const at: NodeAnchor = store.selection.domAnchors()?.anchor ?? {after: row}
 	store.edit.replace(at, at, newRowContent)
 }
 
-/** The row token's live node as an `{after}` anchor: `token.position.end` without the offset. */
-function afterRow(store: KbCtx, token: Token): NodeAnchor | undefined {
-	const node = token.id === undefined ? undefined : store.tokens.find(token.id)
-	return node && {after: node}
-}
-
-function focusRow(store: KbCtx, token: Token, rowIndex: number, caret: 'start' | 'end'): void {
-	if (token.type === 'mark') {
-		// Bridge the row token by its id to its live handle; placeAtHandle reads
-		// the handle's current positions to disambiguate a shared boundary.
-		const handle = store.tokens.handleOf(token)
+function focusRow(store: KbCtx, row: TreeNode, rowIndex: number, caret: 'start' | 'end'): void {
+	if (row.kind === 'mark') {
+		// placeAtHandle reads the handle's current positions to disambiguate a shared boundary.
+		const handle = store.tokens.handle(row.id)
 		if (handle && store.selection.placeAtHandle(handle, caret)) return
 	}
 
-	const row = rowHandle(store, rowIndex)
-	if (!row) return
-	row.focus()
-	row.placeCaret(caret === 'start' ? 0 : Infinity)
+	const handle = rowHandle(store, rowIndex)
+	if (!handle) return
+	handle.focus()
+	handle.placeCaret(caret === 'start' ? 0 : Infinity)
 }
 
 function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction: 'left' | 'right'): void {
 	const active = findActiveRow(store)
 	if (!active) return
 	const {handle, index: blockIndex} = active
-	const rowCount = store.tokens.current().length
+	const rowCount = store.tokens.nodes().length
 
 	if (direction === 'left') {
 		if ((handle.caretIndex() ?? 0) !== 0) return
@@ -192,7 +192,7 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 	const active = findActiveRow(store)
 	if (!active) return
 	const {handle, index: blockIndex} = active
-	const rowCount = store.tokens.current().length
+	const rowCount = store.tokens.nodes().length
 
 	if (event.key === KEYBOARD.UP) {
 		if (!handle.caretOnFirstLine()) return
@@ -275,7 +275,7 @@ function anchorsForBlockInput(store: KbCtx, event: InputEvent, anchors: Anchors)
 function mergeOrFocusNeighbor(
 	store: KbCtx,
 	event: KeyboardEvent,
-	rows: readonly Token[],
+	rows: readonly TreeNode[],
 	value: string,
 	fromIndex: number,
 	toIndex: number,

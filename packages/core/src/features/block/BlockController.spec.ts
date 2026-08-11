@@ -2,8 +2,8 @@ import {describe, it, expect, vi, beforeEach} from 'vitest'
 
 import {effect} from '../../shared/signals'
 import {Store} from '../../store/Store'
-import type {Token} from '../tokens'
 import {anchorsAt, selectionRange} from '../tokens/__testing__/mountFixtures'
+import {nodesOf, textToken} from '../tokens/__testing__/tokenFactories'
 
 describe('BlockController', () => {
 	let store: Store
@@ -99,13 +99,16 @@ describe('BlockController', () => {
 	})
 
 	describe('per-row stores (identity-keyed)', () => {
-		it('keys stores by stable token id — a suffix-shifted row keeps its store', () => {
-			// Fabricated same-id pair: exactly the suffix-shift shape (new object,
-			// inherited id) whose drag/hover state the old object-keyed WeakMap
-			// silently reset.
-			const before: Token = {type: 'text', content: 'a', position: {start: 0, end: 1}, id: 101}
-			const shifted: Token = {type: 'text', content: 'a', position: {start: 1, end: 2}, id: 101}
-			const other: Token = {type: 'text', content: 'b', position: {start: 2, end: 3}, id: 102}
+		it('keys stores by stable node id, not by the node object', () => {
+			// Two DISTINCT node objects carrying the same id — each tree allocates from 1.
+			// That is the discriminator: object keying (the pre-identity WeakMap) hands the
+			// second one a fresh store and silently resets its drag/hover state.
+			const [before] = nodesOf([textToken('a', 0)])
+			const [shifted] = nodesOf([textToken('a', 1)])
+			const [, other] = nodesOf([textToken('a', 0), textToken('b', 1)])
+			expect(shifted).not.toBe(before)
+			expect(shifted.id).toBe(before.id)
+			expect(other.id).not.toBe(before.id)
 
 			expect(store.block.get(shifted)).toBe(store.block.get(before))
 			expect(store.block.get(other)).not.toBe(store.block.get(before))
@@ -124,9 +127,9 @@ describe('BlockController', () => {
 			document.body.append(container)
 			store.host.container(container)
 			store.host.rendered()
-			const token = store.tokens.current().find(t => t.type === 'mark')
-			if (!token) throw new Error('expected parsed mark token')
-			const blockStore = store.block.get(token)
+			const node = store.tokens.nodes().find(n => n.kind === 'mark')
+			if (!node) throw new Error('expected parsed mark node')
+			const blockStore = store.block.get(node)
 
 			// Remove the mark structurally and bind the new tree — the changed
 			// event fires after the bind; its removed ids drive the prune.
@@ -134,9 +137,9 @@ describe('BlockController', () => {
 			container.replaceChildren(document.createElement('span'))
 			store.host.rendered()
 
-			// Same captured token object, same id — but the identity is gone, so
+			// Same captured node object, same id — but the identity is gone, so
 			// a FRESH store comes back: removed rows leak no per-row UI state.
-			expect(store.block.get(token)).not.toBe(blockStore)
+			expect(store.block.get(node)).not.toBe(blockStore)
 			document.body.replaceChildren()
 		})
 	})

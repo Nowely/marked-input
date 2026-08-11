@@ -24,11 +24,9 @@ export type CommitDeps = {
 	/** THE live node layer, keyed by node id — owned by the model shell, mutated through this pipeline. */
 	nodes: Map<number, TokenHandle>
 	/**
-	 * THE tree bind projects onto the node layer, read at bind time. Deliberately the
-	 * LIVE roots and not an input field: `renderTree` keeps its (stale) reference across
-	 * text commits, and a re-render arriving after one (any unrelated adapter update)
-	 * must re-bind the current tree, not regress the node layer to the painted
-	 * generation.
+	 * THE tree bind projects onto the node layer, read at bind time — the LIVE roots, so a
+	 * re-render arriving from anywhere (any unrelated adapter update, not just a commit)
+	 * binds the current tree rather than whatever generation was last painted.
 	 */
 	roots: () => readonly TreeNode[]
 	/** Mount-time editable state for newly bound surfaces and mark roots. */
@@ -43,8 +41,20 @@ export type CommitPipeline = {
 	apply(input: CommitInput): void
 	/** Adapter signal: the renderer painted — bind the DOM and complete a pending structural apply. */
 	onRendered(): void
-	/** Structural tree; reference changes ⇔ the renderer must run. */
-	renderTree: Computed<Token[]>
+	/**
+	 * THE renderer wake-up: bumped once per commit the renderer must run for (spec D9's
+	 * `render` bit). A COUNTER and not the tree, because the tree is no longer this layer's
+	 * to publish — the adapters read `tokens.nodes()` and each token component subscribes to
+	 * its own node's signals (spec D8).
+	 *
+	 * It is NOT redundant with `roots`, and that is measured rather than assumed: adoption
+	 * writes `roots` only when the ROOT LIST changes by reference (`adopt.ts`'s
+	 * `sameNodes(out, prev)` gate), so a mark whose value changed and a structural change
+	 * INSIDE a slot both leave it reference-equal. A container subscribed to `roots` alone
+	 * would not re-render for either, and the post-render `rendered()` that drives `bind`
+	 * would never fire — leaving a freshly born in-slot node with no handle and no text.
+	 */
+	renderEpoch: Computed<number>
 	/** THE consumer read: the latest reconciled tree — always fresh, consistent with value.current() (it is `latest`, reassigned at the top of every apply). Never latch-gated. */
 	current(): readonly Token[]
 	/**
@@ -93,11 +103,12 @@ function drainDelta(into: DeltaAccumulator): TokenDelta {
 }
 
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
-	// `renderTree` is a plain signal written ONLY when the renderer must run —
-	// reference stability on the text path is direct control flow. A computed
-	// would have to derive the kept reference from the latest reconcile result,
-	// reviving the old memo-mutation-inside-a-computed pattern this pipeline deletes.
-	const renderTree = signal<Token[]>({initial: []})
+	// A COUNTER written ONLY when the renderer must run: "the text path repaints nothing"
+	// is direct control flow, not a reference-equality accident. Monotonic, so the write
+	// can never dedupe — which a re-published tree reference would, exactly on the
+	// value-only commits `roots` cannot carry.
+	let epoch = 0
+	const renderEpoch = signal({initial: epoch})
 	const changed = event<TokenDelta>()
 
 	// Derived lookups over the bound nodes — replaced wholesale by bind, untouched by a
@@ -133,7 +144,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			// consumer is told about a tree the DOM never showed).
 			if (render || pendingStructural) {
 				pendingStructural = true
-				renderTree(tokens)
+				renderEpoch(++epoch)
 				return
 			}
 			// Text-only: the per-surface effects own the DOM write, so all that is left
@@ -221,7 +232,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	return {
 		apply,
 		onRendered,
-		renderTree,
+		renderEpoch,
 		current: () => latest,
 		changed,
 		pending: () => pendingStructural,

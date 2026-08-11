@@ -60,11 +60,11 @@ function mountNew(props: CoreProps, container: HTMLElement) {
 	const setup = createNew(props)
 	setup.host.container(container)
 	setup.host.rendered()
-	/** Manual adapter for structural passes: repaint renderTree() (value-only inline markups), report rendered. */
+	/** Manual adapter for structural passes: repaint the live roots (value-only inline markups), report rendered. */
 	const render = () => {
-		const spans = setup.model.renderTree().map(token => {
+		const spans = setup.model.nodes().map(node => {
 			const span = document.createElement('span')
-			if (token.type === 'mark') span.append(document.createTextNode(token.value))
+			if (node.kind === 'mark') span.append(document.createTextNode(node.value()))
 			return span
 		})
 		container.replaceChildren(...spans)
@@ -86,19 +86,23 @@ describe('TokenModel shell (seam/)', () => {
 	})
 
 	describe('construction seam and wiring', () => {
-		it('mounts directly on the state models: renderTree publishes the parse, changed announces the first bind', () => {
+		it('mounts directly on the state models: the parse reaches nodes(), changed announces the first bind', () => {
 			const setup = createNew(INLINE_PROPS)
 			const changedSpy = vi.fn()
 			watch(setup.model.changed, changedSpy)
-			// Renderer contract: nothing published before mount.
-			expect(setup.model.renderTree()).toEqual([])
+			// Renderer contract: no tree before mount.
+			expect(setup.model.nodes()).toEqual([])
 
 			const dom = buildInlineDom()
 			setup.host.container(dom.container)
 
 			// Mount applied the first reconcile and bound the pre-built DOM.
 			expect(changedSpy).toHaveBeenCalledTimes(1)
-			expect(setup.model.renderTree().map(t => t.content)).toEqual(['he', '@[x]', 'llo'])
+			expect(setup.model.nodes().map(node => node.range())).toEqual([
+				{start: 0, end: 2},
+				{start: 2, end: 6},
+				{start: 6, end: 9},
+			])
 			expect(dom.text1.textContent).toBe('he')
 			expect(dom.text2.textContent).toBe('llo')
 			expect(dom.text1.contentEditable).toBe('true')
@@ -120,12 +124,12 @@ describe('TokenModel shell (seam/)', () => {
 		})
 	})
 
-	describe('renderTree and changed (renderer contract)', () => {
-		it('text edits keep the tree reference, patch the DOM in place and fire changed once after consistency', () => {
+	describe('renderEpoch and changed (renderer contract)', () => {
+		it('text edits leave the epoch standing, patch the DOM in place and fire changed once after consistency', () => {
 			const {model, text2} = mountNewInline()
-			const treeBefore = model.renderTree()
+			const epochBefore = model.renderEpoch()
 			const treeSpy = vi.fn()
-			watch(model.renderTree, treeSpy)
+			watch(model.renderEpoch, treeSpy)
 			const changedSpy = vi.fn()
 			let domAtEvent: string | null = null
 			watch(model.changed, changeset => {
@@ -137,7 +141,7 @@ describe('TokenModel shell (seam/)', () => {
 
 			expect(text2.textContent).toBe('llo!')
 			expect(domAtEvent).toBe('llo!')
-			expect(model.renderTree()).toBe(treeBefore)
+			expect(model.renderEpoch()).toBe(epochBefore)
 			expect(treeSpy).not.toHaveBeenCalled()
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 
@@ -145,19 +149,25 @@ describe('TokenModel shell (seam/)', () => {
 			model.replaceBetween(model.anchorAt(10), model.anchorAt(10), '!')
 			expect(text2.textContent).toBe('llo!!')
 			expect(changedSpy).toHaveBeenCalledTimes(2)
-			expect(model.renderTree()).toBe(treeBefore)
+			expect(model.renderEpoch()).toBe(epochBefore)
 		})
 
-		it('structural edits publish a new tree and stay quiet until the adapter renders', () => {
+		it('structural edits bump the epoch and stay quiet until the adapter renders', () => {
 			const {model, render} = mountNewInline()
-			const treeBefore = model.renderTree()
+			const epochBefore = model.renderEpoch()
 			const changedSpy = vi.fn()
 			watch(model.changed, changedSpy)
 
 			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '@[y]')
 
-			expect(model.renderTree()).not.toBe(treeBefore)
-			expect(model.renderTree().map(t => t.content)).toEqual(['he', '@[x]', 'llo', '@[y]', ''])
+			expect(model.renderEpoch()).not.toBe(epochBefore)
+			expect(model.nodes().map(node => node.range())).toEqual([
+				{start: 0, end: 2},
+				{start: 2, end: 6},
+				{start: 6, end: 9},
+				{start: 9, end: 13},
+				{start: 13, end: 13},
+			])
 			expect(changedSpy).not.toHaveBeenCalled()
 
 			const spans = render()
@@ -256,7 +266,7 @@ describe('TokenModel shell (seam/)', () => {
 			// `textContent` — destroying `childSpan` before the real bind ever sees it.
 			setup.host.container(container)
 			container.append(text1, markEl, text2)
-			setup.model.children(setup.model.keyOf(setup.model.current()[1]))(wrapper)
+			setup.model.children(setup.model.nodes()[1].id)(wrapper)
 			setup.host.rendered()
 
 			const mark = setup.model.current()[1]

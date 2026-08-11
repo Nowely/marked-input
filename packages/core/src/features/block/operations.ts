@@ -1,5 +1,5 @@
 import type {CoreOption, DragAction} from '../../shared/types'
-import type {MarkToken, Token} from '../tokens'
+import type {MarkNode, TreeNode} from '../tokens'
 import {createRowContent} from './createRowContent'
 
 export type DragApplyResult = {
@@ -7,14 +7,12 @@ export type DragApplyResult = {
 	readonly caret: number | undefined
 }
 
-const EMPTY_TEXT_TOKEN: Token = {type: 'text', content: '', position: {start: 0, end: 0}}
-
-function gapText(value: string, a: Token, b: Token): string {
+function gapText(value: string, a: TreeNode, b: TreeNode): string {
 	return value.substring(a.position.end, b.position.start)
 }
 
-function isSlotLeadingMark(token: Token): token is MarkToken {
-	return token.type === 'mark' && token.descriptor.hasSlot && token.descriptor.segments.length === 1
+function isSlotLeadingMark(node: TreeNode): node is MarkNode {
+	return node.kind === 'mark' && node.descriptor.hasSlot && node.descriptor.segments.length === 1
 }
 
 /**
@@ -22,14 +20,19 @@ function isSlotLeadingMark(token: Token): token is MarkToken {
  * Text rows merge when there's a gap between them.
  * Slot-leading mark rows of the same descriptor merge by removing the first mark's suffix.
  */
-export function canMergeRows(a: Token, b: Token): boolean {
-	if (a.type === 'text' && b.type === 'text' && b.position.start > a.position.end) return true
+export function canMergeRows(a: TreeNode, b: TreeNode): boolean {
+	if (a.kind === 'text' && b.kind === 'text' && b.position.start > a.position.end) return true
 	if (isSlotLeadingMark(a) && isSlotLeadingMark(b) && a.descriptor === b.descriptor) return true
 	return false
 }
 
-export function addDragRow(value: string, rows: readonly Token[], afterIndex: number, newRowContent: string): string {
-	if (value === '' || (rows.length === 1 && rows[0].type === 'text' && rows[0].content === ''))
+export function addDragRow(
+	value: string,
+	rows: readonly TreeNode[],
+	afterIndex: number,
+	newRowContent: string
+): string {
+	if (value === '' || (rows.length === 1 && rows[0].kind === 'text' && rows[0].text() === ''))
 		return newRowContent + newRowContent
 	if (afterIndex >= rows.length - 1) return value + newRowContent
 
@@ -37,7 +40,7 @@ export function addDragRow(value: string, rows: readonly Token[], afterIndex: nu
 	return value.slice(0, insertPos) + newRowContent + value.slice(insertPos)
 }
 
-export function deleteDragRow(value: string, rows: readonly Token[], index: number): string {
+export function deleteDragRow(value: string, rows: readonly TreeNode[], index: number): string {
 	if (rows.length <= 1) return ''
 
 	if (index >= rows.length - 1) {
@@ -47,7 +50,7 @@ export function deleteDragRow(value: string, rows: readonly Token[], index: numb
 	return value.slice(0, rows[index].position.start) + value.slice(rows[index + 1].position.start)
 }
 
-function duplicateDragRow(value: string, rows: Token[], index: number): string {
+function duplicateDragRow(value: string, rows: TreeNode[], index: number): string {
 	const row = rows[index]
 	const rowText = value.substring(row.position.start, row.position.end)
 
@@ -64,12 +67,12 @@ function duplicateDragRow(value: string, rows: Token[], index: number): string {
  * For slot-leading marks: removes the first mark's literal suffix, merging slot content.
  * Returns the new value and the raw-value caret position at the join point.
  */
-export function mergeDragRows(value: string, rows: readonly Token[], index: number): {value: string; caret: number} {
+export function mergeDragRows(value: string, rows: readonly TreeNode[], index: number): {value: string; caret: number} {
 	if (index <= 0 || index >= rows.length) return {value, caret: 0}
 	const prev = rows[index - 1]
 	const curr = rows[index]
 	if (isSlotLeadingMark(prev) && isSlotLeadingMark(curr)) {
-		const slotEnd = prev.slot ? prev.slot.end : prev.position.end
+		const slotEnd = prev.slotRange ? prev.slotRange.end : prev.position.end
 		return {value: value.slice(0, slotEnd) + value.slice(curr.position.start), caret: slotEnd}
 	}
 	const caret = prev.position.end
@@ -80,7 +83,7 @@ export function mergeDragRows(value: string, rows: readonly Token[], index: numb
  * Reorders rows by moving the row at `sourceIndex` to `targetIndex`.
  * Gaps between adjacent rows are extracted from the original value and preserved.
  */
-function reorderDragRows(value: string, rows: Token[], sourceIndex: number, targetIndex: number): string {
+function reorderDragRows(value: string, rows: TreeNode[], sourceIndex: number, targetIndex: number): string {
 	if (sourceIndex === targetIndex || sourceIndex === targetIndex - 1) return value
 	if (rows.length < 2) return value
 	if (sourceIndex < 0 || sourceIndex >= rows.length) return value
@@ -114,22 +117,32 @@ function reorderDragRows(value: string, rows: Token[], sourceIndex: number, targ
 
 export function applyDragAction(
 	value: string,
-	rows: readonly Token[],
+	rows: readonly TreeNode[],
 	action: DragAction,
 	options: CoreOption[]
 ): DragApplyResult {
-	const effectiveRows = action.type === 'add' && rows.length === 0 ? [EMPTY_TEXT_TOKEN] : rows
-	const newValue = transformValue(value, effectiveRows, action, options)
-	const caret = caretAfterDrag(action, effectiveRows, newValue)
+	// The EMPTY-TREE add, stated rather than threaded. Until S2.8 an `EMPTY_TEXT_TOKEN`
+	// stand-in row was spliced in here and travelled through both helpers below; a
+	// `TreeNode` has an id and a signal-backed `text`, so the same trick would mean
+	// forging a node. It was never worth one: with no row to address, both answers are
+	// constants, and these are exactly the two the sentinel produced — `addDragRow`'s
+	// empty-row arm (the row content twice, value ignored) and a caret at that row's
+	// end, 0.
+	if (action.type === 'add' && rows.length === 0) {
+		const rowContent = createRowContent(options)
+		return {value: rowContent + rowContent, caret: 0}
+	}
+	const newValue = transformValue(value, rows, action, options)
+	const caret = caretAfterDrag(action, rows, newValue)
 	return {value: newValue, caret}
 }
 
-function transformValue(value: string, rows: readonly Token[], action: DragAction, options: CoreOption[]): string {
+function transformValue(value: string, rows: readonly TreeNode[], action: DragAction, options: CoreOption[]): string {
 	switch (action.type) {
 		case 'reorder':
 			return reorderDragRows(value, [...rows], action.source, action.target)
 		case 'add':
-			return addDragRow(value, [...rows], action.afterIndex, createRowContent(options))
+			return addDragRow(value, rows, action.afterIndex, createRowContent(options))
 		case 'delete':
 			return deleteDragRow(value, rows, action.index)
 		case 'duplicate':
@@ -137,7 +150,7 @@ function transformValue(value: string, rows: readonly Token[], action: DragActio
 	}
 }
 
-function caretAfterDrag(action: DragAction, previousRows: readonly Token[], nextValue: string): number | undefined {
+function caretAfterDrag(action: DragAction, previousRows: readonly TreeNode[], nextValue: string): number | undefined {
 	switch (action.type) {
 		case 'add': {
 			const after = previousRows.at(action.afterIndex)

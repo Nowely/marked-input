@@ -1,4 +1,4 @@
-import type {MarkToken} from '@markput/react'
+import type {MarkProps} from '@markput/react'
 import {MarkedInput, useOverlay} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {RefObject} from 'react'
@@ -9,9 +9,9 @@ export default {
 	component: MarkedInput,
 }
 
-type Story = StoryObj<Meta<typeof MarkedInput<MarkToken>>>
+type Story = StoryObj<Meta<typeof MarkedInput<MarkProps>>>
 
-const Mark = (props: MarkToken) => <mark>{props.value}</mark>
+const Mark = (props: MarkProps) => <mark>{props.value}</mark>
 
 export const DefaultOverlay: Story = {
 	args: {

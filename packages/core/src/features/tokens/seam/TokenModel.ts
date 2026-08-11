@@ -9,7 +9,7 @@ import type {SelectionSnapshot} from '../dom/DomModel'
 import {applyEditableState} from '../dom/editableState'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
-import type {MarkToken, Token} from '../parser/types'
+import type {Token} from '../parser/types'
 import {adjacentMark, anchorAt, offsetOfAnchor, stepAnchor} from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
@@ -70,13 +70,13 @@ export class TokenModel {
 	// ═══ Consumer reads ═══════════════════════════════════════════════════════
 
 	/**
-	 * THE consumer read: the latest reconciled tree, always fresh and consistent
-	 * with `value.current()` (the parallel: `value.current()` is the string,
-	 * `tokens.current()` is its parsed tree). Unlike `renderTree` (the renderer
-	 * signal, which keeps its reference across text-path commits), `current()` is
-	 * the pipeline's private `latest` — reassigned at the top of every apply, fresh
-	 * in the pending window too. The boundary facade and every value-slicing
-	 * consumer read it.
+	 * The compat snapshot of the latest reconciled tree, consistent with `value.current()`
+	 * (the parallel: `value.current()` is the string, `tokens.current()` is its parsed
+	 * tree). It is the pipeline's private `latest` — reassigned at the top of every apply,
+	 * fresh in the pending window too.
+	 *
+	 * NO PRODUCTION READER since S2.8 moved the render loop and `block/` onto {@link nodes};
+	 * what is left is the specs' read shape, and it goes with the snapshot layer.
 	 */
 	current(): readonly Token[] {
 		return this.#pipeline.current()
@@ -107,27 +107,15 @@ export class TokenModel {
 		return this.#nodes.get(id)
 	}
 
-	/** The live handle for a render-tree token, or undefined (no id / mid-window / dead). */
-	handleOf(token: Token | undefined): TokenHandle | undefined {
-		return token?.id === undefined ? undefined : this.handle(token.id)
-	}
-
 	// ═══ Adapter SPI ══════════════════════════════════════════════════════════
 
-	/** Renderer contract (adapter-only): reference change ⇔ the renderer must run. NOT a consumer data read — use `current()`. */
-	get renderTree(): Computed<Token[]> {
-		return this.#pipeline.renderTree
-	}
-
 	/**
-	 * Adapter SPI: the framework key of a render-tree token — its stable identity
-	 * id. Every token an adapter renders comes from the reconciled tree, so the id
-	 * is always present (bind.ts throws loud otherwise). Arrow property: adapters
-	 * pass it around unbound.
+	 * Renderer contract (adapter-only): bumped ⇔ the renderer must run. NOT a data read —
+	 * the tree is {@link nodes}, and a mark component subscribes to its own node (spec D8).
+	 * See {@link CommitPipeline.renderEpoch} for why `nodes` alone cannot carry this.
 	 */
-	readonly keyOf = (token: Token): number => {
-		if (token.id === undefined) throw new Error('keyOf: token has no id — must come from the reconciled tree')
-		return token.id
+	get renderEpoch(): Computed<number> {
+		return this.#pipeline.renderEpoch
 	}
 
 	/**
@@ -272,13 +260,16 @@ export class TokenModel {
 	}
 
 	/**
-	 * Spec §2.3's `input.nodes()`: the live root nodes. REACTIVE — `roots` is a signal, so a
-	 * consumer inside an effect re-runs on every structural change. Deliberately does NOT
-	 * seed, for {@link offsetOf}'s reason: it is a read, and seeding writes signals.
+	 * Spec §2.3's `input.nodes()`, and since S2.8 THE render read: the live root nodes.
+	 * Deliberately does NOT seed, for {@link offsetOf}'s reason — it is a read, and seeding
+	 * writes signals.
+	 *
+	 * A `Computed` field rather than a method, which is what lets an adapter SUBSCRIBE to
+	 * it: `readSelected` calls a selector entry only when `isReactive` says so, and that
+	 * test is the bound signal/computed name — a plain method reads as data and would be
+	 * handed to the renderer uncalled.
 	 */
-	nodes(): readonly TreeNode[] {
-		return this.#tree.roots()
-	}
+	readonly nodes: Computed<readonly TreeNode[]> = computed(() => this.#tree.roots())
 
 	/**
 	 * @internal Spec §2.3's `replaceText`: node-local coordinates (spec D5).
@@ -297,26 +288,6 @@ export class TokenModel {
 	tx(fn: () => void): boolean {
 		this.#ensureSeeded()
 		return this.#tx.tx(fn)
-	}
-
-	/**
-	 * Spec §2.3's `useMark()` resolution: the live node behind a render-tree mark token.
-	 *
-	 * STRICT, and that is measured rather than assumed: every token an adapter renders comes
-	 * from a tree published by `commitStructural`, so `find(token.id)` cannot miss. A tolerant
-	 * variant — the pre-S1.7 `MarkController` returned `''` for a mark that had left the tree
-	 * — was tried first and the whole suite stayed green either way, so the fallback would
-	 * have been an untested guard AGENTS.md tells you not to keep.
-	 *
-	 * RECORDED GAP: by the same token nothing exercises the throw, so returning a bogus node
-	 * instead of throwing also survives the suite. The error path is unfalsifiable here — it
-	 * would take a React interleaving that re-renders a mark component after its node died,
-	 * which no test can construct.
-	 */
-	markFor(token: MarkToken): MarkNode {
-		const node = token.id === undefined ? undefined : this.find(token.id)
-		if (node?.kind !== 'mark') throw new Error(`markFor: no live mark node for token #${token.id}`)
-		return node
 	}
 
 	/**

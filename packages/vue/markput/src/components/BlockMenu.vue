@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {Token as TokenType} from '@markput/core'
+import type {TreeNode} from '@markput/core'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
@@ -9,10 +9,10 @@ import Popup from './Popup/Popup.vue'
 
 import styles from '@markput/core/styles.module.css'
 
-const props = defineProps<{token: TokenType}>()
+const props = defineProps<{node: TreeNode}>()
 
 const store = useStore()
-const blockStore = store.block.get(props.token)
+const blockStore = store.block.get(props.node)
 const menuOpen = useMarkput(() => blockStore.state.menuOpen)
 const menuPosition = useMarkput(() => blockStore.state.menuPosition)
 

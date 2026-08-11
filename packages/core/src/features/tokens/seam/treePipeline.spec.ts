@@ -9,6 +9,7 @@ import type {Markup, Token} from '../parser/types'
 import {createSnapshotMemo} from '../tree/snapshotMemo'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree} from '../tree/tree'
+import type {TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 import type {TokenDelta} from './commitInput'
 import {fromTransaction} from './treeInput'
@@ -110,9 +111,9 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 	// `leading` paints extra non-token elements ahead of the spans — the control
 	// case needs one, and threading it here beats a second copy of the paint.
 	const render = (...leading: HTMLElement[]) => {
-		const spans = pipeline.renderTree().map(token => {
+		const spans = tree.roots().map(node => {
 			const span = document.createElement('span')
-			if (token.type === 'mark') span.append(document.createTextNode(token.value))
+			if (node.kind === 'mark') span.append(document.createTextNode(node.value()))
 			return span
 		})
 		container.replaceChildren(...leading, ...spans)
@@ -126,13 +127,13 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 	// `container` and `pipeline.onRendered()`, neither of which a free function
 	// has.
 	const renderNested = () => {
-		const paint = (tokens: readonly Token[]): HTMLElement[] =>
-			tokens.map(token => {
+		const paint = (nodes: readonly TreeNode[]): HTMLElement[] =>
+			nodes.map(node => {
 				const span = document.createElement('span')
-				if (token.type === 'mark') span.append(...paint(token.children))
+				if (node.kind === 'mark') span.append(...paint(node.children()))
 				return span
 			})
-		const spans = paint(pipeline.renderTree())
+		const spans = paint(tree.roots())
 		container.replaceChildren(...spans)
 		pipeline.onRendered()
 		return spans
@@ -215,7 +216,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const {text2} = mount(harness)
 		const tail = boundAt(pipeline, 2)
 		if (!tail) throw new Error('expected tail handle')
-		const treeBefore = pipeline.renderTree()
+		const epochBefore = pipeline.renderEpoch()
 		const boundBefore = pipeline.bound()
 		const changedSpy = vi.fn()
 		let domAtEvent: string | null = null
@@ -230,7 +231,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(text2.textContent).toBe('llo!')
 		expect(domAtEvent).toBe('llo!')
-		expect(pipeline.renderTree()).toBe(treeBefore)
+		expect(pipeline.renderEpoch()).toBe(epochBefore)
 		expect(pipeline.bound()).toBe(boundBefore)
 		expect(pipeline.pending()).toBe(false)
 		expect(changedSpy).toHaveBeenCalledTimes(1)
@@ -246,14 +247,14 @@ describe('commit pipeline driven by the tree core', () => {
 		const {mark} = mount(harness)
 		const markHandle = boundAt(pipeline, 1)
 		if (!markHandle) throw new Error('expected mark handle')
-		const treeBefore = pipeline.renderTree()
+		const epochBefore = pipeline.renderEpoch()
 		const changedSpy = vi.fn()
 		watch(pipeline.changed, changedSpy)
 
 		// '@[x]' spans [2,6]; replacing it whole is what MarkController lowers to.
 		expect(harness.splice(2, 6, '@[y]')).toBe(true)
 
-		expect(pipeline.renderTree()).not.toBe(treeBefore)
+		expect(pipeline.renderEpoch()).not.toBe(epochBefore)
 		expect(changedSpy).not.toHaveBeenCalled()
 		expect(pipeline.pending()).toBe(true)
 		expect(markHandle.element()).toBe(mark)
@@ -405,11 +406,11 @@ describe('commit pipeline driven by the tree core', () => {
 		const childHandle = boundAt(pipeline, 1, 0)
 		const childSurface = childHandle?.node()?.textElement
 		if (!childSurface) throw new Error('expected the child surface')
-		const treeBefore = pipeline.renderTree()
+		const epochBefore = pipeline.renderEpoch()
 
 		expect(harness.splice(3, 3, 'X')).toBe(true)
 
-		expect(pipeline.renderTree()).toBe(treeBefore)
+		expect(pipeline.renderEpoch()).toBe(epochBefore)
 		expect(pipeline.pending()).toBe(false)
 		expect(childSurface.textContent).toBe('aXb')
 	})
@@ -548,7 +549,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
-		const treeBefore = pipeline.renderTree()
+		const epochBefore = pipeline.renderEpoch()
 		const boundBefore = pipeline.bound()
 		let payload: TokenDelta | undefined
 		const changedSpy = vi.fn()
@@ -561,7 +562,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(payload).toEqual({added: [], removed: [], updated: []})
-		expect(pipeline.renderTree()).toBe(treeBefore)
+		expect(pipeline.renderEpoch()).toBe(epochBefore)
 		expect(pipeline.bound()).toBe(boundBefore)
 		expect(pipeline.pending()).toBe(false)
 		expect(text2.textContent).toBe('llo')
@@ -576,17 +577,17 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline, container} = harness
 		mount(harness)
 		const treeSpy = vi.fn()
-		watch(pipeline.renderTree, treeSpy)
+		watch(pipeline.renderEpoch, treeSpy)
 		const changedSpy = vi.fn()
 		watch(pipeline.changed, changedSpy)
-		const treeBefore = pipeline.renderTree()
+		const epochBefore = pipeline.renderEpoch()
 
 		harness.splice(9, 9, '!')
 		harness.splice(10, 10, '!')
 		harness.splice(11, 11, '!')
 
 		expect(treeSpy).toHaveBeenCalledTimes(0)
-		expect(pipeline.renderTree()).toBe(treeBefore)
+		expect(pipeline.renderEpoch()).toBe(epochBefore)
 		expect(changedSpy).toHaveBeenCalledTimes(3)
 		expect(container.children[2].textContent).toBe('llo!!!')
 
@@ -634,7 +635,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		harness.boundary.arrive('tail')
 		harness.renderNested()
-		const treeBefore = pipeline.renderTree()
+		const epochBefore = pipeline.renderEpoch()
 		let payload: TokenDelta | undefined
 		const changedSpy = vi.fn()
 		watch(pipeline.changed, delta => {
@@ -644,7 +645,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(harness.splice(0, 0, '#[ab]')).toBe(true)
 
-		expect(pipeline.renderTree()).not.toBe(treeBefore)
+		expect(pipeline.renderEpoch()).not.toBe(epochBefore)
 		expect(changedSpy).not.toHaveBeenCalled()
 		expect(pipeline.pending()).toBe(true)
 

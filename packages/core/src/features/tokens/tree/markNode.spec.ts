@@ -255,9 +255,9 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 		// place onto the new surface. A short-count repaint would bail the frame
 		// (all-or-nothing alignment) and leave every handle unbound.
 		const container = document.querySelector('div')!
-		const spans = store.tokens.renderTree().map(tok => {
+		const spans = store.tokens.nodes().map(node => {
 			const span = document.createElement('span')
-			if (tok.type === 'mark') span.append(document.createTextNode(tok.value))
+			if (node.kind === 'mark') span.append(document.createTextNode(node.value()))
 			return span
 		})
 		container.replaceChildren(...spans)
@@ -400,7 +400,7 @@ describe('MarkNode live-read parity', () => {
 		// whole-value write that keeps the root count is a text-path commit and opens no
 		// pending window.
 		store.tokens.setValue('he@[x]llo@[y]')
-		const freshToken = store.tokens.renderTree().find(t => t.type === 'mark')!
+		const freshToken = store.tokens.nodes().find(t => t.kind === 'mark')!
 		const node = markNodeOf(store, freshToken)
 
 		// READ resolves the live node mid-window: the rendered mark shows its value
@@ -411,9 +411,9 @@ describe('MarkNode live-read parity', () => {
 		// Paint the render tree and complete the handshake — the same-id handle
 		// binds and reads/writes go live WITHOUT re-derivation.
 		const container = document.querySelector('div')!
-		const spans = store.tokens.renderTree().map(tok => {
+		const spans = store.tokens.nodes().map(node => {
 			const span = document.createElement('span')
-			if (tok.type === 'mark') span.append(document.createTextNode(tok.value))
+			if (node.kind === 'mark') span.append(document.createTextNode(node.value()))
 			return span
 		})
 		container.replaceChildren(...spans)

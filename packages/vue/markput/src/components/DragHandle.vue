@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {getAlwaysShowHandle} from '@markput/core'
-import type {Token as TokenType} from '@markput/core'
+import type {TreeNode} from '@markput/core'
 import {computed} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -8,12 +8,12 @@ import {useStore} from '../lib/hooks/useStore'
 
 import styles from '@markput/core/styles.module.css'
 
-const props = defineProps<{token: TokenType; blockIndex: number}>()
+const props = defineProps<{node: TreeNode; blockIndex: number}>()
 
 const store = useStore()
 const readOnly = useMarkput(s => s.props.readOnly)
 const draggable = useMarkput(s => s.props.draggable)
-const blockStore = store.block.get(props.token)
+const blockStore = store.block.get(props.node)
 const isDragging = useMarkput(() => blockStore.state.isDragging)
 const isHovered = useMarkput(() => blockStore.state.isHovered)
 const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))

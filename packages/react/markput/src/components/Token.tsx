@@ -1,4 +1,4 @@
-import type {Token as TokenType} from '@markput/core'
+import type {TreeNode} from '@markput/core'
 import {memo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -11,50 +11,52 @@ import {TokenChildren} from './TokenChildren'
  * `TokenChildren`, which now registers under the owner's stable id.
  */
 /**
- * `position` is the only field an edit BEFORE a token changes: the snapshot re-materializes
- * the surviving suffix with shifted offsets while `content`/`value`/`meta`/`descriptor` stay
- * reference-equal. Nothing downstream of here reads `position` (nor `slot`, whose offsets
- * shift with it), so `memo`'s default reference compare re-rendered every mark after the
- * caret for nothing — 101 Mark renders on a head insert at 100 marks, 1 with this.
+ * THE per-node subscription (spec S2 D8) — what replaced the snapshot value comparator.
+ *
+ * `memo`'s default reference compare already suppresses the fan-out that comparator was
+ * measured against: adoption keeps a node OBJECT exactly when it keeps its id, and an edit
+ * before a mark only moves its `position`, a plain field (S1 D3) no component reads. What
+ * reference compare cannot see is a mark whose value changed INSIDE that same object —
+ * this is what sees it.
+ *
+ * Deliberately not the shorter "call `resolveMarkSlot` inside the computed": that reads
+ * `text()` for a text node and would repaint its Span on every keystroke, which is the one
+ * thing the text path exists to avoid. These three are exactly the fields that reach a
+ * framework component.
+ *
+ * A fresh tuple per evaluation, and that is the point — the computed re-evaluates only
+ * when one of the three signals fired, so a new reference IS the notification.
  */
-const sameToken = (a: TokenType, b: TokenType): boolean => {
-	if (a === b) return true
-	if (a.id !== b.id || a.type !== b.type || a.content !== b.content) return false
-	if (a.type !== 'mark' || b.type !== 'mark') return true
+const nodeRender = (node: TreeNode) => () =>
+	node.kind === 'mark' ? [node.value(), node.meta(), node.children()] : undefined
+
+export const Token = memo(({node, depth}: {node: TreeNode; depth: number}) => {
+	const {resolveMarkSlot, store} = useMarkput(s => ({
+		resolveMarkSlot: s.slots.mark,
+		store: s,
+	}))
+	// The selector closes over THIS render's `node` and `useMarkput` never re-runs it. Safe
+	// by construction: the component is keyed by `node.id`, ids are never reused within an
+	// input instance, and a node keeps its object for exactly as long as it keeps its id —
+	// so a different node is a different key and a fresh component.
+	useMarkput(() => nodeRender(node))
+
+	const [Component, props] = resolveMarkSlot(node)
+	const childNodes = node.kind === 'mark' ? node.children() : []
+	const children =
+		childNodes.length > 0 ? (
+			<TokenChildren ownerId={node.id}>
+				{childNodes.map(child => (
+					<Token key={child.id} node={child} depth={depth + 1} />
+				))}
+			</TokenChildren>
+		) : undefined
+
 	return (
-		a.value === b.value &&
-		a.meta === b.meta &&
-		a.descriptor === b.descriptor &&
-		a.children.length === b.children.length &&
-		a.children.every((child, index) => sameToken(child, b.children[index]))
+		<TokenContext value={{store, node, depth}}>
+			{children ? <Component {...props}>{children}</Component> : <Component {...props} />}
+		</TokenContext>
 	)
-}
-
-export const Token = memo(
-	({token, depth}: {token: TokenType; depth: number}) => {
-		const {resolveMarkSlot, keyOf, store} = useMarkput(s => ({
-			resolveMarkSlot: s.slots.mark,
-			keyOf: s.tokens.keyOf,
-			store: s,
-		}))
-
-		const [Component, props] = resolveMarkSlot(token)
-		const children =
-			token.type === 'mark' && token.children.length > 0 ? (
-				<TokenChildren ownerId={keyOf(token)}>
-					{token.children.map(child => (
-						<Token key={keyOf(child)} token={child} depth={depth + 1} />
-					))}
-				</TokenChildren>
-			) : undefined
-
-		return (
-			<TokenContext value={{store, token, depth}}>
-				{children ? <Component {...props}>{children}</Component> : <Component {...props} />}
-			</TokenContext>
-		)
-	},
-	(prev, next) => prev.depth === next.depth && sameToken(prev.token, next.token)
-)
+})
 
 Token.displayName = 'Token'

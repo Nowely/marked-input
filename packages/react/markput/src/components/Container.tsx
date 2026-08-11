@@ -6,11 +6,15 @@ import {Block} from './Block'
 import {Token} from './Token'
 
 export const Container = memo(() => {
-	const {host, isBlock, tokens, keyOf, Component, props} = useMarkput(s => ({
+	const {host, isBlock, nodes, Component, props} = useMarkput(s => ({
 		host: s.host,
 		isBlock: s.props.layout.isBlock,
-		tokens: s.tokens.renderTree,
-		keyOf: s.tokens.keyOf,
+		nodes: s.tokens.nodes,
+		// SUBSCRIBED, not read. `nodes` alone under-notifies: adoption writes `roots` only
+		// when the ROOT LIST changes by reference, so a mark whose value changed and a
+		// structural change inside a slot both leave it equal — and the `rendered()` below,
+		// which is what drives `bind`, would never fire for either.
+		renderEpoch: s.tokens.renderEpoch,
 		Component: s.slots.containerComponent,
 		props: s.slots.containerProps,
 	}))
@@ -36,8 +40,8 @@ export const Container = memo(() => {
 	return (
 		<Component {...props} ref={setRef}>
 			{isBlock
-				? tokens.map((t, i) => <Block key={keyOf(t)} token={t} blockIndex={i} />)
-				: tokens.map(t => <Token key={keyOf(t)} token={t} depth={0} />)}
+				? nodes.map((n, i) => <Block key={n.id} node={n} blockIndex={i} />)
+				: nodes.map(n => <Token key={n.id} node={n} depth={0} />)}
 		</Component>
 	)
 })

@@ -47,15 +47,14 @@ export type {Selectable, ObjectSelector} from './src/shared/readSelected'
 export {toMarkInfo} from './src/shared/editorContracts'
 export type {MarkInfo} from './src/shared/editorContracts'
 
-// ═══ Snapshot render loop ═════════════════════════════════════════════════════
-// `Token[]` is the RENDER PROJECTION. It has exactly two production readers outside core
-// — react `Container.tsx` and vue `Container.vue`, both off `renderTree`; the dozen other
-// adapter files only TYPE on the `Token` family. Moving the loop onto `input.nodes()`
-// would NOT move `bind`/`commit` with it: those already run off the commit pipeline's
-// private `latest`, deliberately never `renderTree` (`dom/commit.ts`, the `latest`
-// declaration and `bindAndAnnounce`). An earlier version of this comment claimed
-// otherwise; that claim was the premise behind phase S1.10, which was investigated and
-// REJECTED (spec §11). `Token` stays regardless of where the loop reads from: it is the
-// parser's output type (`parser/Parser.ts#parse`) and the §7.1 correctness oracle the
-// tree specs assert through (`stripIds`).
-export type {Token, TextToken, MarkToken} from './src/features/tokens'
+// ═══ What `Token` stopped being ══════════════════════════════════════════════
+// `Token`/`TextToken`/`MarkToken` LEFT this file at S2.8 (spec D12). They were the render
+// projection; both adapters now render `TreeNode` straight off `tokens.nodes()`, and the
+// snapshot that materialized them is gone. `Token` survives INSIDE core as the parser's
+// output type (`parser/Parser.ts#parse`) and as the §7.1 correctness oracle the tree specs
+// assert through (`tree/__testing__/snapshot.ts`).
+//
+// COLLATERAL, and worth knowing before restoring one of them: `denote`'s callback
+// parameter is a `MarkToken`, so that type is no longer NAMEABLE from outside — inference
+// covers every call site in this repo, and `Parameters<typeof denote>[1]` covers the rest,
+// but a consumer who wants to declare the callback separately no longer can.

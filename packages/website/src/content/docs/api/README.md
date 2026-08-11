@@ -14,14 +14,12 @@ title: "@markput/react"
 - [MarkedInputProps](/api/interfaces/markedinputprops/)
 - [MarkNode](/api/interfaces/marknode/)
 - [MarkProps](/api/interfaces/markprops/)
-- [MarkToken](/api/interfaces/marktoken/)
 - [Option](/api/interfaces/option/)
 - [OverlayHandler](/api/interfaces/overlayhandler/)
 - [OverlayProps](/api/interfaces/overlayprops/)
 - [SlotProps](/api/interfaces/slotprops/)
 - [Slots](/api/interfaces/slots/)
 - [TextNode](/api/interfaces/textnode/)
-- [TextToken](/api/interfaces/texttoken/)
 
 ## Type Aliases
 
@@ -29,7 +27,6 @@ title: "@markput/react"
 - [MarkPatch](/api/type-aliases/markpatch/)
 - [Markup](/api/type-aliases/markup/)
 - [NodeAnchor](/api/type-aliases/nodeanchor/)
-- [Token](/api/type-aliases/token/)
 - [TreeNode](/api/type-aliases/treenode/)
 
 ## Functions

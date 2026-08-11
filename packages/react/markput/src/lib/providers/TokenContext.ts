@@ -1,9 +1,9 @@
-import type {Store, Token} from '@markput/core'
+import type {Store, TreeNode} from '@markput/core'
 import {createContext, useContext} from 'react'
 
 export type TokenContextValue = {
 	readonly store: Store
-	readonly token: Token
+	readonly node: TreeNode
 	/**
 	 * Nesting level, by construction from the render loop: a top-level token is 0. It
 	 * replaced the render-time `TokenPath` at S1.7 — `path.length - 1` was the only thing

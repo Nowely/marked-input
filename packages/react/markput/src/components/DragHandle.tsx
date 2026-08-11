@@ -1,5 +1,5 @@
 import {cx, getAlwaysShowHandle} from '@markput/core'
-import type {Token as TokenType} from '@markput/core'
+import type {TreeNode} from '@markput/core'
 import {memo, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -8,9 +8,9 @@ import styles from '@markput/core/styles.module.css'
 
 const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
-export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockIndex: number}) => {
+export const DragHandle = memo(({node, blockIndex}: {node: TreeNode; blockIndex: number}) => {
 	const {blockStore, action, readOnly, draggable, isDragging, isHovered, tokens} = useMarkput(s => {
-		const blockStore = s.block.get(token)
+		const blockStore = s.block.get(node)
 
 		return {
 			blockStore,

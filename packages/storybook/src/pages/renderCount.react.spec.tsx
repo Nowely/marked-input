@@ -1,4 +1,5 @@
 import type {MarkputApi} from '@markput/core'
+import {watch} from '@markput/core'
 import type {MarkProps, Option} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import {createRef, useEffect} from 'react'
@@ -57,6 +58,37 @@ describe('Render-count gates: commit routing', () => {
 		await userEvent.keyboard('@[[struct](2)')
 		await expect.element(page.getByText('struct')).toBeInTheDocument()
 		expect(spanRender.mock.calls.length).toBeGreaterThan(baseline)
+	})
+
+	/**
+	 * The VALUE-ONLY commit: `render` is true, `structural` is false, and it is the one
+	 * commit shape whose completion nothing else here gates. It matters because adoption
+	 * writes `roots` only when the ROOT LIST changes by reference, so this commit leaves
+	 * `tokens.nodes` equal — a container subscribed to that alone never re-renders, its
+	 * `rendered()` never fires, `bind` never runs and the pending latch never opens.
+	 * MEASURED: dropping `renderEpoch` from `Container`'s selector leaves the whole suite
+	 * green except this case, which sees zero announcements instead of one.
+	 */
+	it('a mark value change announces changed — the commit completes with no root-list move', async () => {
+		const api = createRef<MarkputApi>()
+		await render(
+			<MarkedInput
+				ref={api}
+				Mark={({value}: MarkProps) => <mark>{value}</mark>}
+				Span={({value}: MarkProps) => <span>{value}</span>}
+				defaultValue="a@[x](1)b"
+			/>
+		)
+		await expect.element(page.getByText('x')).toBeInTheDocument()
+
+		const announced: number[] = []
+		watch(api.current!.changed, delta => announced.push(delta.updated.length))
+
+		const mark = api.current?.nodes().find(node => node.kind === 'mark')
+		expect(mark?.update({value: 'y'})).toBe(true)
+		await expect.element(page.getByText('y')).toBeInTheDocument()
+
+		expect(announced).toEqual([1])
 	})
 })
 

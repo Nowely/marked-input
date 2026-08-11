@@ -1,10 +1,9 @@
-import type {MarkToken} from '@markput/react'
 import {Avatar, Chip} from '@mui/material'
 
 import type {User} from './types'
 import {useFetch} from './utils/useFetch'
 
-export const Mention = ({value}: MarkToken) => {
+export const Mention = ({value}: {value: string}) => {
 	const [user] = useFetch<User>(`https://api.github.com/users/${value}`, [])
 	const abbr = getAbbr(user?.name) ?? value[0]
 

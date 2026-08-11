@@ -12,7 +12,7 @@ describe('SelectionDriver', () => {
 		// `range`, whose own `{equals: shallow}` collapsed the second notification whatever
 		// `anchorEquals` did, which is why the case below had to exist to gate it.
 		const {store, container} = mountStructuralInline('hello')
-		const handle = store.tokens.handleOf(store.tokens.current()[0])
+		const handle = store.tokens.handle(store.tokens.nodes()[0].id)
 		if (!handle) throw new Error('Structural text token did not bind a handle')
 		const notify = vi.fn()
 		const stop = watch(() => store.selection.anchors(), notify)
@@ -43,7 +43,7 @@ describe('SelectionDriver', () => {
 		// re-resolved `anchorAt(2)` — right-affine — answers the TEXT node and the caret
 		// lands in the PREVIOUS surface. `{before: mark}` cannot be confused that way.
 		const {store, container, mark} = mountStructuralInlineMark('ab@[x]cd')
-		const markHandle = store.tokens.handleOf(store.tokens.current()[1])
+		const markHandle = store.tokens.handle(store.tokens.nodes()[1].id)
 		if (!markHandle) throw new Error('Mark token did not bind a handle')
 
 		expect(store.selection.placeAtHandle(markHandle, 'start')).toBe(true)

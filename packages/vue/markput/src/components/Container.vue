@@ -11,8 +11,12 @@ import Token from './Token.vue'
 const store = useStore()
 const result = useMarkput(s => ({
 	isBlock: s.props.layout.isBlock,
-	tokens: s.tokens.renderTree,
-	keyOf: s.tokens.keyOf,
+	nodes: s.tokens.nodes,
+	// SUBSCRIBED, not read. `nodes` alone under-notifies: adoption writes `roots` only when
+	// the ROOT LIST changes by reference, so a mark whose value changed and a structural
+	// change inside a slot both leave it equal — and the `rendered()` below, which is what
+	// drives `bind`, would never fire for either.
+	renderEpoch: s.tokens.renderEpoch,
 }))
 
 const containerComponent = useMarkput(s => s.slots.containerComponent)
@@ -51,15 +55,10 @@ onUpdated(() => store.host.rendered())
 <template>
 	<component :is="containerComponent" :ref="setContainerRef" v-bind="boundProps">
 		<template v-if="result.isBlock">
-			<Block
-				v-for="(token, index) in result.tokens"
-				:key="result.keyOf(token)"
-				:token="token"
-				:block-index="index"
-			/>
+			<Block v-for="(node, index) in result.nodes" :key="node.id" :node="node" :block-index="index" />
 		</template>
 		<template v-else>
-			<Token v-for="token in result.tokens" :key="result.keyOf(token)" :token="token" :depth="0" />
+			<Token v-for="node in result.nodes" :key="node.id" :node="node" :depth="0" />
 		</template>
 	</component>
 </template>

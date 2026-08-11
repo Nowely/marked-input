@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {MarkProps, MarkToken, Markup} from '@markput/vue'
+import type {MarkProps, Markup} from '@markput/vue'
 import {denote, MarkedInput} from '@markput/vue'
 import {ref, computed, h, type FunctionalComponent} from 'vue'
 
@@ -51,7 +51,7 @@ const value = ref(
 		'For found mark used @[annotations](default:123).'
 )
 
-const displayText = computed(() => denote(value.value, (mark: MarkToken) => mark.value, [PrimaryMarkup, DefaultMarkup]))
+const displayText = computed(() => denote(value.value, mark => mark.value, [PrimaryMarkup, DefaultMarkup]))
 
 function onChange(v: string) {
 	value.value = v

@@ -1,4 +1,4 @@
-import type {MarkProps, MarkToken, Markup} from '@markput/react'
+import type {MarkProps, Markup} from '@markput/react'
 import {denote, MarkedInput} from '@markput/react'
 
 import './style.css'
@@ -52,7 +52,7 @@ const App = () => {
 			'For found mark used @[annotations](default:123).'
 	)
 
-	const displayText = denote(value, (mark: MarkToken) => mark.value, [PrimaryMarkup, DefaultMarkup])
+	const displayText = denote(value, mark => mark.value, [PrimaryMarkup, DefaultMarkup])
 
 	return (
 		<>

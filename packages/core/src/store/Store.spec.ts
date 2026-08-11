@@ -1,5 +1,6 @@
 import {describe, it, expect, vi} from 'vitest'
 
+import {markToken, nodesOf, textToken} from '../features/tokens/__testing__/tokenFactories'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {effect, batch} from '../shared/signals'
 import {Store} from './Store'
@@ -340,35 +341,28 @@ describe('Store', () => {
 	})
 
 	describe('computed slots', () => {
-		it('resolve mark slot for text token using span fallback', () => {
+		it('resolve mark slot for text node using span fallback', () => {
 			const store = new Store()
-			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
-			const [component, props] = store.slots.mark()(token)
+			const [node] = nodesOf([textToken('hello', 0)])
+			const [component, props] = store.slots.mark()(node)
 			expect(component).toBe('span')
 			expect(props).toEqual({})
 		})
 
-		it('pass value prop to custom Span component for text token', () => {
+		it('pass value prop to custom Span component for text node', () => {
 			const CustomSpan = () => null
 			const store = new Store()
 			store.props.set({Span: CustomSpan})
-			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
-			const [component, props] = store.slots.mark()(token)
+			const [node] = nodesOf([textToken('hello', 0)])
+			const [component, props] = store.slots.mark()(node)
 			expect(component).toBe(CustomSpan)
 			expect(props).toEqual({value: 'hello'})
 		})
 
-		it('throw for mark token without Mark component', () => {
+		it('throw for mark node without Mark component', () => {
 			const store = new Store()
-			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for test
-			const token = {
-				type: 'mark',
-				value: '@john',
-				meta: undefined,
-				descriptor: {index: 0},
-				position: {start: 0, end: 5},
-			} as any
-			expect(() => store.slots.mark()(token)).toThrow('No mark component found')
+			const [node] = nodesOf([markToken('@john', '@[@john]', 0)])
+			expect(() => store.slots.mark()(node)).toThrow('No mark component found')
 		})
 
 		it('resolve overlay from global Overlay component', () => {

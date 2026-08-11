@@ -1,5 +1,5 @@
 import {cx} from '@markput/core'
-import type {Token} from '@markput/core'
+import type {TreeNode} from '@markput/core'
 import {memo, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -9,9 +9,9 @@ import {Popup} from './Popup/Popup'
 
 import styles from '@markput/core/styles.module.css'
 
-export const BlockMenu = memo(({token}: {token: Token}) => {
+export const BlockMenu = memo(({node}: {node: TreeNode}) => {
 	const {blockStore, menuOpen, menuPosition, tokens} = useMarkput(s => {
-		const blockStore = s.block.get(token)
+		const blockStore = s.block.get(node)
 
 		return {
 			blockStore,

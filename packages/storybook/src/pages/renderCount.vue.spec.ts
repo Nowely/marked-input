@@ -1,4 +1,5 @@
 import type {MarkputApi} from '@markput/core'
+import {watch} from '@markput/core'
 import type {Option} from '@markput/vue'
 import {MarkedInput} from '@markput/vue'
 import {describe, expect, it, vi} from 'vitest'
@@ -136,6 +137,42 @@ describe('Render-count gates: block layout', () => {
 		await expect.element(page.getByText('x')).toBeInTheDocument()
 		expect(spanRender.mock.calls.length).toBe(spanBaseline)
 		expect(markRender.mock.calls.length).toBe(markBaseline)
+	})
+})
+
+/**
+ * Vue mirror of the react value-only commit gate — see renderCount.react.spec.tsx for
+ * what it discriminates. Same wiring on this side: `Container.vue`'s selector carries
+ * `renderEpoch` for exactly this commit shape.
+ */
+describe('Render-count gates: commit routing', () => {
+	it('a mark value change announces changed — the commit completes with no root-list move', async () => {
+		const api = shallowRef<MarkputApi | null>(null)
+		const Mark = defineComponent({
+			props: {value: String},
+			setup: props => () => h('mark', {}, props.value),
+		})
+		const Span = defineComponent({
+			props: {value: String},
+			setup: props => () => h('span', {}, props.value),
+		})
+		const Fixture = defineComponent({
+			setup() {
+				return () => h(MarkedInput, {ref: api, Mark, Span, defaultValue: 'a@[x](1)b'})
+			},
+		})
+
+		await render(Fixture)
+		await expect.element(page.getByText('x')).toBeInTheDocument()
+
+		const announced: number[] = []
+		watch(api.value!.changed, delta => announced.push(delta.updated.length))
+
+		const mark = api.value?.nodes().find(node => node.kind === 'mark')
+		expect(mark?.update({value: 'y'})).toBe(true)
+		await expect.element(page.getByText('y')).toBeInTheDocument()
+
+		expect(announced).toEqual([1])
 	})
 })
 

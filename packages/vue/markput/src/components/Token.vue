@@ -1,9 +1,8 @@
 <script lang="ts">
-import type {Token as TokenType} from '@markput/core'
+import type {TreeNode} from '@markput/core'
 import {defineComponent, h, markRaw, provide, toRef, type PropType, type VNode} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-import {useStore} from '../lib/hooks/useStore'
 import {TOKEN_KEY} from '../lib/providers/tokenKey'
 import TokenChildren from './TokenChildren.vue'
 
@@ -12,33 +11,50 @@ import TokenChildren from './TokenChildren.vue'
  * `TokenPath` that used to travel alongside it went at S1.8 step 4 — its last reader was
  * `TokenChildren`, which now registers under the owner's stable id.
  */
+/**
+ * THE per-node subscription (spec S2 D8) — the same rationale as `Token.tsx`, where it is
+ * written out in full. Short version: adoption keeps a node OBJECT for as long as it keeps
+ * its id, so Vue's own prop diffing already shields a mark whose only change is a
+ * `position` move; what it cannot see is a value/meta/children change INSIDE that object.
+ *
+ * NOT `resolveMarkSlot` inside the tracked scope, which would be shorter: that reads
+ * `text()` for a text node and would repaint its Span on every keystroke.
+ */
+const nodeRender = (node: TreeNode) => () =>
+	node.kind === 'mark' ? [node.value(), node.meta(), node.children()] : undefined
+
 const Token = defineComponent({
 	name: 'Token',
 	props: {
-		token: {type: Object as PropType<TokenType>, required: true},
+		node: {type: Object as PropType<TreeNode>, required: true},
 		depth: {type: Number, required: true},
 	},
 	setup(props): () => VNode | null {
 		provide(
 			TOKEN_KEY,
-			toRef(() => ({depth: props.depth, token: props.token}))
+			toRef(() => ({depth: props.depth, node: props.node}))
 		)
 
-		const store = useStore()
-		const keyOf = store.tokens.keyOf
 		const resolveMarkSlot = useMarkput(s => s.slots.mark)
+		// Captured ONCE, as every `useMarkput` target is: safe because the component is keyed
+		// by `node.id` and a node keeps its object for exactly as long as it keeps its id.
+		const rendered = useMarkput(() => nodeRender(props.node))
 
 		return () => {
-			const token = props.token
-			const [Comp, compProps] = resolveMarkSlot.value(token)
+			// READ so Vue's render effect depends on it — this is what repaints a mark whose
+			// value changed while its node object, and therefore its props, stayed put.
+			void rendered.value
+			const node = props.node
+			const [Comp, compProps] = resolveMarkSlot.value(node)
+			const childNodes = node.kind === 'mark' ? node.children() : []
 			const children =
-				token.type === 'mark' && token.children.length > 0
+				childNodes.length > 0
 					? () =>
-							h(markRaw(TokenChildren), {ownerId: keyOf(token)}, () =>
-								token.children.map(child =>
+							h(markRaw(TokenChildren), {ownerId: node.id}, () =>
+								childNodes.map(child =>
 									h(markRaw(Token), {
-										key: keyOf(child),
-										token: child,
+										key: child.id,
+										node: child,
 										depth: props.depth + 1,
 									})
 								)

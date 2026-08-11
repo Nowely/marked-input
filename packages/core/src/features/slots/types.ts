@@ -1,8 +1,8 @@
 import type {CoreOption, Slot} from '../../shared/types'
-import type {Token} from '../tokens'
+import type {TreeNode} from '../tokens'
 
 export interface MarkSlot {
-	(): (token: Token) => readonly [Slot, Record<string, unknown>]
+	(): (node: TreeNode) => readonly [Slot, Record<string, unknown>]
 }
 
 export interface OverlaySlot {

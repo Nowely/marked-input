@@ -1,4 +1,4 @@
-import type {Token as TokenType} from '@markput/core'
+import type {TreeNode} from '@markput/core'
 import {cx} from '@markput/core'
 import type {CSSProperties} from 'react'
 import {memo} from 'react'
@@ -12,13 +12,13 @@ import {Token} from './Token'
 import styles from '@markput/core/styles.module.css'
 
 interface BlockProps {
-	token: TokenType
+	node: TreeNode
 	blockIndex: number
 }
 
-export const Block = memo(({token, blockIndex}: BlockProps) => {
+export const Block = memo(({node, blockIndex}: BlockProps) => {
 	const {blockStore, action, Component, slotProps, isDragging} = useMarkput(s => {
-		const blockStore = s.block.get(token)
+		const blockStore = s.block.get(node)
 		return {
 			blockStore,
 			action: s.block.action,
@@ -42,15 +42,15 @@ export const Block = memo(({token, blockIndex}: BlockProps) => {
 			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.style is raw and needs casting to CSSProperties
 			style={{opacity: isDragging ? 0.4 : 1, ...(slotProps?.style as CSSProperties | undefined)}}
 		>
-			<DropIndicator token={token} position="before" />
+			<DropIndicator node={node} position="before" />
 
-			<DragHandle token={token} blockIndex={blockIndex} />
+			<DragHandle node={node} blockIndex={blockIndex} />
 
-			<Token token={token} depth={0} />
+			<Token node={node} depth={0} />
 
-			<DropIndicator token={token} position="after" />
+			<DropIndicator node={node} position="after" />
 
-			<BlockMenu token={token} />
+			<BlockMenu node={node} />
 		</Component>
 	)
 })

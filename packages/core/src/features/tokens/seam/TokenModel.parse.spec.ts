@@ -137,21 +137,23 @@ describe('TokenModel', () => {
 		})
 	})
 
-	describe('keyOf (adapter SPI)', () => {
-		it('returns the stable identity id — a suffix-shifted token keeps its key', () => {
+	describe('framework identity (adapter SPI)', () => {
+		it('a suffix-shifted mark keeps its node, and therefore its key', () => {
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
 			store.host.container(document.createElement('div'))
-			const mark = store.tokens.current()[1]
-			const markKey = store.tokens.keyOf(mark)
+			const mark = store.tokens.nodes()[1]
+			const markKey = mark.id
 
-			// edit BEFORE the mark: 'he@[x]llo' → 'Xhe@[x]llo' — the mark suffix-
-			// shifts into a NEW object with an INHERITED id; the framework key
-			// must not change (object-keyed counters remounted it, the defect)
+			// edit BEFORE the mark: 'he@[x]llo' → 'Xhe@[x]llo'. The mark's OWN address moves
+			// and nothing else about it does — which is the whole reason the adapters key on
+			// `node.id` and the node itself survives (object-keyed counters remounted it, the
+			// defect; the deleted snapshot re-materialized a fresh Token here).
 			store.tokens.setValue('Xhe@[x]llo')
 
-			const shifted = store.tokens.current()[1]
-			expect(shifted).not.toBe(mark)
-			expect(store.tokens.keyOf(shifted)).toBe(markKey)
+			const shifted = store.tokens.nodes()[1]
+			expect(shifted).toBe(mark)
+			expect(shifted.id).toBe(markKey)
+			expect(shifted.range()).toEqual({start: 3, end: 7})
 		})
 	})
 })

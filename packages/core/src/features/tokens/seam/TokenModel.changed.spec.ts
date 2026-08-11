@@ -128,7 +128,7 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 		// fires when the value differs (equality cutoff) — exactly the adapters'
 		// subscription semantics (useSyncExternalStore / shallowRef).
 		const treeSpy = vi.fn()
-		watch(store.tokens.renderTree, treeSpy)
+		watch(store.tokens.renderEpoch, treeSpy)
 		const changedSpy = vi.fn()
 		watch(store.tokens.changed, changedSpy)
 

@@ -2,7 +2,6 @@ import {firstHtmlChild, nodeTarget} from '../../../shared/checkers'
 import {listen, signal, watch} from '../../../shared/signals'
 import type {Event, Signal} from '../../../shared/signals'
 import type {Host} from '../../state/Host'
-import type {Token} from '../parser/types'
 import type {TokenDelta} from '../seam/commitInput'
 import {anchorEquals} from '../tree/anchors'
 import type {Selection} from '../tree/selection'
@@ -17,10 +16,11 @@ export type SelectionDriverDeps = {
 	host: Host
 	readOnly(): boolean
 	changed: Event<TokenDelta>
-	current(): readonly Token[]
+	/** The live root nodes — the row/first-token reads below, and nothing more. */
+	nodes(): readonly TreeNode[]
 	find(id: Id): TreeNode | undefined
+	handle(id: Id): TokenHandle | undefined
 	handleAt(node: Node): TokenHandle | 'control' | undefined
-	handleOf(token: Token | undefined): TokenHandle | undefined
 	domSelection(): SelectionSnapshot | undefined
 	setEditable(options: {editable: boolean; readOnly: boolean}): void
 	/** THE model→DOM direction: a stored anchor placed through its OWN node (spec S2 D1). */
@@ -82,7 +82,10 @@ export class SelectionDriver {
 	}
 
 	focusFirst(): void {
-		const handle = this.deps.handleOf(this.deps.current()[0])
+		// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as
+		// `TreeNode` and the empty-tree guard is linted away as an impossible condition.
+		const first = this.deps.nodes().at(0)
+		const handle = first && this.deps.handle(first.id)
 		if (handle && this.placeAtHandle(handle, 'start')) return
 		this.deps.host.container()?.focus()
 	}
@@ -151,11 +154,11 @@ export class SelectionDriver {
 
 	#focusEmptyEditorOnClick(container: HTMLElement): void {
 		listen(container, 'click', () => {
-			// The fresh reconciled tree: after typing into the single empty text
-			// token, tokens() tracks value.current() (renderTree keeps its stale
-			// reference — reading it would steal focus into a non-empty editor).
-			const tokens = this.deps.current()
-			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
+			// The LIVE tree, which after typing into the single empty text node already
+			// holds that keystroke — a painted generation would still read empty here and
+			// steal focus into a non-empty editor.
+			const roots = this.deps.nodes()
+			if (roots.length === 1 && roots[0].kind === 'text' && roots[0].text() === '') {
 				firstHtmlChild(container)?.focus()
 			}
 		})
