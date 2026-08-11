@@ -26,16 +26,12 @@ describe('adopt: prefix/suffix walks', () => {
 		expect(tree.roots().map(n => n.id)).toEqual(before.map(n => n.id))
 		expect(result.structural).toBe(false)
 		expect(result.updated.map(n => n.id)).toEqual([before[2].id])
-		// Same node in both feeds: its content signal was written AND its end moved 12 → 13.
-		// The feeds own one datum each (D9), so neither subsumes the other.
-		expect(result.shifted.map(n => n.id)).toEqual([before[2].id])
 	})
 
 	it('suffix nodes shift positions without signal writes', () => {
-		const {tree, result, before} = editAndAdopt('he@[x](m)llo', 0, 0, 'AB')
+		const {tree, before} = editAndAdopt('he@[x](m)llo', 0, 0, 'AB')
 		expect(tree.roots()[1].id).toBe(before[1].id)
 		expect(tree.roots()[1].position).toEqual({start: 4, end: 11})
-		expect(result.shifted.map(n => n.id)).toContain(before[1].id)
 	})
 
 	it('deleting the second of two identical marks removes THAT mark (window bounds)', () => {
@@ -104,20 +100,15 @@ describe('adopt: prefix/suffix walks', () => {
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('@[a](m)@[a](m)')))
 	})
 
-	it('shifted lists subtree roots while removed flattens subtrees', () => {
+	it('a suffix shift moves every descendant position while removed flattens subtrees', () => {
 		const source = 'a#[b@[c](d)e]f'
 
 		const shift = editAndAdopt(source, 0, 0, 'XY')
 		const shiftedMark = shift.before[1]
 		if (shiftedMark.kind !== 'mark') throw new Error('expected mark at index 1')
-		// Every in-slot node moved with the mark, and none of them is listed: a consumer
-		// refreshing cached positions from `shifted` has to walk children itself. The
-		// leading 'a' → 'XYa' is a middle-region move, listed after the suffix entries.
-		expect(shift.result.shifted.map(node => node.id)).toEqual([
-			shift.before[2].id,
-			shiftedMark.id,
-			shift.before[0].id,
-		])
+		// The suffix walk shifts the retained mark by +2, and every node under it with it:
+		// positions are plain field writes, so a consumer that cached them must re-read the
+		// whole subtree.
 		expect(shiftedMark.children().map(node => node.position)).toEqual([
 			{start: 5, end: 6},
 			{start: 6, end: 13},
@@ -159,7 +150,6 @@ describe('adopt: prefix/suffix walks', () => {
 		expect(result.structural).toBe(false)
 		expect(result.added).toEqual([])
 		expect(result.removed).toEqual([])
-		expect(result.shifted).toEqual([])
 		stop()
 	})
 
@@ -204,24 +194,17 @@ describe('adopt: middle pairing and descend', () => {
 		expect(result.updated.map(n => n.id)).toEqual([before[2].id])
 	})
 
-	it('middle-region position moves reach shifted as subtree roots', () => {
-		// The pairing arms write `position` as a plain field, so nothing else can report the
-		// move: without this entry the outer mark [0,14] → [0,15] and everything under it
-		// change position in NO feed, and the sibling case is unreachable by ancestor
-		// invalidation. Granularity is subtree roots — the covered descendants stay out.
-		const {result, before} = editAndAdopt('#[a @[b](c) d]', 3, 3, 'X')
+	it('middle-region pairing rewrites the positions of the retained nodes', () => {
+		// The pairing arms write `position` as a plain field, and an in-slot insertion moves
+		// the retained ancestor AND the sibling that follows it: the outer mark grows
+		// [0,14] → [0,15] while the inner mark slides [4,11] → [5,12].
+		const {before} = editAndAdopt('#[a @[b](c) d]', 3, 3, 'X')
 		const outer = before[1]
 		if (outer.kind !== 'mark') throw new Error('expected mark')
-		const [slotText, inner, trailing] = outer.children()
-		const ids = result.shifted.map(node => node.id)
+		const inner = outer.children()[1]
 
 		expect(outer.position).toEqual({start: 0, end: 15})
 		expect(inner.position).toEqual({start: 5, end: 12})
-		expect(ids).toContain(outer.id)
-		expect(ids).not.toContain(inner.id)
-		expect(ids).not.toContain(slotText.id)
-		expect(ids).not.toContain(trailing.id)
-		expect(ids).not.toContain(before[0].id) // [0,0] — did not move, so not listed
 	})
 
 	it('rebuilds a mark whose descriptor changed at the same index', () => {
@@ -356,7 +339,7 @@ describe('adopt: untracked reads', () => {
  * assertions (change kinds, tree paths, `structural` routing) that died with that
  * file. Two feed contracts differ by design and are called out where they bite:
  *
- * - a pure position move lands in `shifted`, not `updated` (D9 splits the feeds);
+ * - a pure position move reaches NO feed, `updated` included (D9);
  * - a refused mark's subtree is DIFFED, where reconcile treated it as opaque and
  *   reported no removals at all (its own comment pinned that as a limitation).
  */
@@ -389,9 +372,9 @@ describe('adopt: ported reconcile fixtures', () => {
 		expect(result.added).toEqual([])
 		expect(result.removed).toEqual([])
 		// Only the typed-into text node changed content; reconcile also listed the two
-		// marks and the shifted tail here, because it had no separate position feed.
+		// marks and the moved tail here, because it reported position moves as updates.
 		expect(result.updated.map(node => node.id)).toEqual([inner.children()[0].id])
-		expect(result.shifted.map(node => node.id)).toContain(outer.id)
+		expect(outer.position).toEqual({start: 0, end: 12}) // the move itself: [0,11] → [0,12]
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(slotParser.parse('#[a #[bX] c]')))
 	})
 

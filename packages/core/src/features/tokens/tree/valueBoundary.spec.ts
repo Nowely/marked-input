@@ -58,10 +58,10 @@ describe('boundary: uncontrolled', () => {
 		expect(seen).toEqual(['Ahello'])
 	})
 
-	it('value() reports the committed projection', () => {
-		const {boundary, tx} = setup('hello')
+	it('the tree projection IS the committed value', () => {
+		const {tree, tx} = setup('hello')
 		tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'A')
-		expect(boundary.value()).toBe('Ahello')
+		expect(tree.value()).toBe('Ahello')
 	})
 })
 
@@ -88,12 +88,12 @@ describe('boundary: controlled', () => {
 		expect(tree.roots()[1].id).toBe(secondMarkId) // the survivor is the one the exact window implies
 	})
 
-	it('reports the arrived value through value()', () => {
-		const {boundary, tx} = setup('hello', {controlled: true})
+	it('the tree moves on the arrival, not on the commit', () => {
+		const {tree, boundary, tx} = setup('hello', {controlled: true})
 		tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'A')
-		expect(boundary.value()).toBe('hello')
+		expect(tree.value()).toBe('hello')
 		boundary.arrive('Ahello')
-		expect(boundary.value()).toBe('Ahello')
+		expect(tree.value()).toBe('Ahello')
 	})
 
 	it('a transforming parent still adopts, via a gap-derived window', () => {

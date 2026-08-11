@@ -13,7 +13,7 @@ type Op = {start: number; end: number; text: string}
 type Batch = {ops: Op[]; refused: boolean}
 
 /**
- * The write path (spec §4.3): verbs lower an edit to a projection splice and hand
+ * The write path: verbs lower an edit to a projection splice and hand
  * `{next, window}` to the sink. Nothing here mutates the tree — adoption, inside
  * the sink, is the only writer.
  */
@@ -38,7 +38,7 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 	/**
 	 * One refusal rule for the whole layer: the refusing call answers `false` at once,
 	 * and inside a `tx` it also poisons the batch, so a caller's intent is never half
-	 * applied (spec §6: overlapping ops reject the whole tx, no partial state).
+	 * applied: overlapping ops reject the whole tx, and no partial state survives.
 	 */
 	const refuse = (): false => {
 		if (pending) pending.refused = true
@@ -71,21 +71,16 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		const window: Window = {start, end, insertedLength: end - start + (next.length - value.length)}
 
 		// A splice that changes nothing still commits: `next === value` reaches the sink and
-		// costs a parse plus an adoption, which adoption then diffs to no change.
-		//
-		// S1.4 SETTLED the question this note used to hand forward — may an unchanged value still
-		// fire `onChange`? YES, in both modes. The pre-S1.6a facade's set transform ran before
-		// the signal's equality short-circuit, so `replace({start: 2, end: 2}, '')` already
-		// emitted `onChange('hello')`; the boundary keeps that parity rather than smuggling a
-		// user-visible behavior change in with the S1.6a swap. Suppression, if it is ever wanted,
-		// belongs HERE and not in a sink: the dispatcher is the only layer that can drop the wasted
-		// parse and adoption along with the emission, so a sink-level guard would buy the behavior
-		// change and none of the saving. Pinned here in transactions.spec.ts and, for the emission
-		// itself in both modes, in boundary.spec.ts.
+		// costs a parse plus an adoption, which adoption then diffs to no change. It also still
+		// fires `onChange`, in both modes. Suppression, if it is ever wanted, belongs HERE and not
+		// in a sink: the dispatcher is the only layer that can drop the wasted parse and adoption
+		// along with the emission, so a sink-level guard would buy the user-visible behavior change
+		// and none of the saving. Pinned here in transactions.spec.ts and, for the emission itself
+		// in both modes, in valueBoundary.spec.ts.
 		dispatching = true
 		try {
 			// The dispatcher owns the no-subscription invariant for the whole commit, sink
-			// and result consumer included — whichever sink is plugged in (D5).
+			// and result consumer included — whichever sink is plugged in.
 			return untracked(() => deps.sink.commit(next, window))
 		} finally {
 			dispatching = false
@@ -102,14 +97,14 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 	}
 
 	return {
-		/** The primitive (spec D5): a splice in the committed projection's coordinates. */
+		/** The primitive: a splice in the committed projection's coordinates. */
 		applyRange(window: Window, text: string): boolean {
 			assertIdle()
 			// `window.insertedLength` is ignored: what we are about to splice in is the truth.
 			return submit({start: window.start, end: window.end, text})
 		},
 
-		/** Node-local coordinates → global window. Single-node edits (spec D5). */
+		/** Node-local coordinates → global window. Single-node edits. */
 		applyText(node: TextNode, localRange: {start: number; end: number}, text: string): boolean {
 			assertIdle()
 			if (!isLive(node)) return refuse()
@@ -127,7 +122,7 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 			})
 		},
 
-		/** Whole-node replacement (spec D5): mark update/remove, serialized by the caller. */
+		/** Whole-node replacement: mark update/remove, serialized by the caller. */
 		applyStructural(target: TreeNode, replacement: string): boolean {
 			assertIdle()
 			if (!isLive(target)) return refuse()
@@ -135,15 +130,14 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		},
 
 		/**
-		 * Composition (spec D5): buffer the verbs, commit once, adopt once with the hull
-		 * window (identity precision inside the hull degrades to middle pairing).
+		 * Composition: buffer the verbs, commit once, adopt once with the hull window
+		 * (identity precision inside the hull degrades to middle pairing).
 		 *
-		 * Op coordinates stay in the COMMITTED projection's space rather than remapping
-		 * through the accumulated offsets D5 describes: nothing commits until the end, so
-		 * node positions — which is where `applyText`/`applyStructural` get their
-		 * coordinates — never move mid-`tx`. Remapping would silently break exactly those
-		 * verbs. Disjointness is what makes the two readings equivalent, and overlapping
-		 * ops are rejected anyway.
+		 * Op coordinates stay in the COMMITTED projection's space rather than being remapped
+		 * through accumulated offsets: nothing commits until the end, so node positions —
+		 * which is where `applyText`/`applyStructural` get their coordinates — never move
+		 * mid-`tx`. Remapping would silently break exactly those verbs. Disjointness is what
+		 * makes the two readings equivalent, and overlapping ops are rejected anyway.
 		 *
 		 * A throw out of `fn` propagates with nothing committed: the buffer only ever
 		 * held intent. An empty `tx` is a no-op success.
