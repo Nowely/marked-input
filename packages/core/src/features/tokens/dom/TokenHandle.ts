@@ -49,43 +49,35 @@ export type ElementBindings = {
 export class TokenHandle {
 	#dead = false
 
-	#tokenElement: HTMLElement | undefined
-	#textElement: HTMLElement | undefined
-	#rowElement: HTMLElement | undefined
-	#childSequenceHost: HTMLElement | undefined
+	/** THE binding record — the one bound/unbound bit this handle has. `undefined` ⇔ unbound. */
+	#bindings: ElementBindings | undefined
 	#disposeText: (() => void) | undefined
 
 	constructor(readonly id: number) {}
 
 	/** Live AND bound: not killed and currently holding a DOM element. The whole validity check a holder of this handle needs. */
 	alive(): boolean {
-		return !this.#dead && this.#tokenElement != null
+		return !this.#dead && this.#bindings != null
 	}
 
 	/** The handle's current token root element, or undefined while unbound/dead. */
 	element(): HTMLElement | undefined {
-		return this.#tokenElement
+		return this.#bindings?.tokenElement
 	}
 
 	/** @internal Current DOM bindings; undefined while unbound or dead. */
 	node(): ElementBindings | undefined {
-		const tokenElement = this.#tokenElement
-		if (!tokenElement) return undefined
-		return {
-			tokenElement,
-			textElement: this.#textElement,
-			rowElement: this.#rowElement,
-			childSequenceHost: this.#childSequenceHost,
-		}
+		return this.#bindings
 	}
 
 	/** Row in block layout, else the text surface / token root. */
 	#measureScope(): HTMLElement | undefined {
-		return this.#rowElement ?? this.#textElement ?? this.#tokenElement
+		const bindings = this.#bindings
+		return bindings?.rowElement ?? bindings?.textElement ?? bindings?.tokenElement
 	}
 
 	hasTextSurface(): boolean {
-		return this.#textElement != null
+		return this.#bindings?.textElement != null
 	}
 
 	textLength(): number {
@@ -123,9 +115,9 @@ export class TokenHandle {
 	 * child boundary.
 	 */
 	placeCaret(offset: number): boolean {
-		const tokenElement = this.#tokenElement
-		if (!tokenElement) return false
-		const textElement = this.#textElement
+		const bindings = this.#bindings
+		if (!bindings) return false
+		const {tokenElement, textElement} = bindings
 		if (!textElement) {
 			focusIfNeeded(tokenElement)
 			placeAtChildBoundary(tokenElement, offset <= 0 ? 'start' : 'end')
@@ -161,10 +153,7 @@ export class TokenHandle {
 	 */
 	bindElements(bindings: ElementBindings, node: TreeNode): void {
 		if (this.#dead) return
-		this.#tokenElement = bindings.tokenElement
-		this.#textElement = bindings.textElement
-		this.#rowElement = bindings.rowElement
-		this.#childSequenceHost = bindings.childSequenceHost
+		this.#bindings = bindings
 		this.#armText(bindings.textElement, node)
 	}
 
@@ -213,9 +202,6 @@ export class TokenHandle {
 	#clearElements(): void {
 		this.#disposeText?.()
 		this.#disposeText = undefined
-		this.#tokenElement = undefined
-		this.#textElement = undefined
-		this.#rowElement = undefined
-		this.#childSequenceHost = undefined
+		this.#bindings = undefined
 	}
 }

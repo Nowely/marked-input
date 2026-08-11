@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {batch, watch} from '../../../shared/signals/index.js'
+import {bind} from '../dom/bind'
 import {createCommitPipeline} from '../dom/commit'
 import type {TokenDelta} from '../dom/commit'
 import type {TokenHandle} from '../dom/TokenHandle'
@@ -45,13 +46,46 @@ import {createBoundary} from '../tree/valueBoundary'
  * than duplicating them.
  */
 /**
+ * `bind` is spied THROUGH — the real implementation runs, wrapped in a counter — so the
+ * cases below can assert how many times the pipeline re-bound. Nothing else in the graph
+ * imports `bind`, so every call counted here is `commit.ts`'s.
+ *
+ * The spy exists for ONE property, "the text path performs no re-bind", which stopped
+ * being observable when `bound()` became `deps.nodes`: bind mutates that map in place, so
+ * neither its identity (stable forever) nor "the same handle on the same element" (what a
+ * re-bind of an unchanged node leaves behind too) can tell a skipped bind from one that
+ * ran. See {@link bindCount}'s call sites.
+ */
+vi.mock('../dom/bind', async importOriginal => {
+	// `{bind: typeof bind}` rather than `typeof import('../dom/bind')`: the module has one
+	// value export, and an inline `import()` type is a lint error here.
+	const actual = await importOriginal<{bind: typeof bind}>()
+	return {...actual, bind: vi.fn(actual.bind)}
+})
+
+/** Re-binds since the file loaded — monotonic, so cases compare it against their own baseline. */
+function bindCount(): number {
+	return vi.mocked(bind).mock.calls.length
+}
+
+/**
  * The bound handle at a tree POSITION. Replaces `pipeline.byPath().get(pathKey(path))`:
  * S1.8 step 4 re-keyed the bind result on stable ids, so a case that names a node by where
  * it sits in the fixture resolves the node first and looks its handle up by id.
+ *
+ * It reads the NODE LAYER, filtered by `alive()`, since bind stopped returning a separate
+ * id-keyed `bound` map — a per-paint copy of exactly this. Bound ⇔ alive: the walk unbinds
+ * (never removes) a node whose element it missed, and deletes only ids gone from the tree.
  */
 function boundAt(harness: Harness, ...path: number[]): TokenHandle | undefined {
 	const node = nodeAt(harness, ...path)
-	return node && harness.pipeline.bound().get(node.id)
+	const handle = node && harness.nodes.get(node.id)
+	return handle?.alive() === true ? handle : undefined
+}
+
+/** Every handle the last bind left bound — what `pipeline.bound().size` used to count. */
+function boundHandles(harness: Harness): TokenHandle[] {
+	return [...harness.nodes.values()].filter(handle => handle.alive())
 }
 
 /** The live node at a tree POSITION, or `undefined` — several cases below rely on that answer. */
@@ -187,7 +221,7 @@ describe('commit pipeline driven by the tree core', () => {
 		const [text1, mark, text2] = harness.render()
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(pipeline.bound().size).toBe(3)
+		expect(boundHandles(harness)).toHaveLength(3)
 		expect(text1.textContent).toBe('he')
 		expect(mark.textContent).toBe('x')
 		expect(text2.textContent).toBe('llo')
@@ -206,7 +240,10 @@ describe('commit pipeline driven by the tree core', () => {
 		const tail = boundAt(harness, 2)
 		if (!tail) throw new Error('expected tail handle')
 		const epochBefore = pipeline.renderEpoch()
-		const boundBefore = pipeline.bound()
+		const bindsBefore = bindCount()
+		// The counter is LIVE: the paint inside `mount` bound, so the equality below is a
+		// measurement and not a vacuous 0 === 0.
+		expect(bindsBefore).toBeGreaterThan(0)
 		const changedSpy = vi.fn()
 		let domAtEvent: string | null = null
 		let payload: TokenDelta | undefined
@@ -221,7 +258,13 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(text2.textContent).toBe('llo!')
 		expect(domAtEvent).toBe('llo!')
 		expect(pipeline.renderEpoch()).toBe(epochBefore)
-		expect(pipeline.bound()).toBe(boundBefore)
+		// NO RE-BIND, counted rather than inferred. `bind` re-arms every text effect and
+		// re-walks the whole DOM, so a text path that called it would pay both per keystroke
+		// — and leave the two assertions under it just as green, since it would re-bind the
+		// same handle to the same element.
+		expect(bindCount()).toBe(bindsBefore)
+		expect(boundAt(harness, 2)).toBe(tail)
+		expect(tail.element()).toBe(text2)
 		expect(pipeline.pending()).toBe(false)
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		// Payload parity with commit.spec.ts's live-path case: the edited node is the
@@ -319,7 +362,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		container.lastElementChild?.remove()
 		pipeline.onRendered()
-		expect(pipeline.bound().size).toBe(0)
+		expect(boundHandles(harness)).toHaveLength(0)
 		expect(tail.element()).toBeUndefined()
 		const changedSpy = vi.fn()
 		watch(pipeline.changed, changedSpy)
@@ -333,7 +376,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		harness.render()
 
-		expect(pipeline.bound().size).toBe(3)
+		expect(boundHandles(harness)).toHaveLength(3)
 		expect(container.children[2].textContent).toBe('llo!')
 		expect(boundAt(harness, 2)).toBe(tail)
 	})
@@ -532,7 +575,9 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		const {text2} = mount(harness)
 		const epochBefore = pipeline.renderEpoch()
-		const boundBefore = pipeline.bound()
+		const tail = boundAt(harness, 2)
+		const bindsBefore = bindCount()
+		expect(bindsBefore).toBeGreaterThan(0)
 		let payload: TokenDelta | undefined
 		const changedSpy = vi.fn()
 		watch(pipeline.changed, delta => {
@@ -545,7 +590,10 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(payload).toEqual({added: [], removed: [], updated: []})
 		expect(pipeline.renderEpoch()).toBe(epochBefore)
-		expect(pipeline.bound()).toBe(boundBefore)
+		// No re-bind either, on the path where the commit changed nothing at all.
+		expect(bindCount()).toBe(bindsBefore)
+		expect(boundAt(harness, 2)).toBe(tail)
+		expect(tail?.element()).toBe(text2)
 		expect(pipeline.pending()).toBe(false)
 		expect(text2.textContent).toBe('llo')
 	})
@@ -766,7 +814,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		const spans = harness.render(button)
 
-		expect(pipeline.bound().size).toBe(3)
+		expect(boundHandles(harness)).toHaveLength(3)
 		expect(pipeline.byElement(spans[0])).toBe(boundAt(harness, 0))
 		expect(pipeline.byElement(spans[1])).toBe(boundAt(harness, 1))
 		expect(pipeline.byElement(button)).toBeUndefined()

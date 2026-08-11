@@ -48,12 +48,17 @@ and where the two could be confused — a comment S2 wrote, or one it moved into
 created — the S1 ref is spelled `spec S1 D7` too. Two S1 decisions are now RETIRED; the table
 says so and the sections below say where.
 
-**Four bare refs escaped the rule and mean S2's.** Checked by reading each, not assumed:
+**Three bare refs escaped the rule and mean S2's.** Checked by reading each, not assumed:
 `EditController.ts:39` (`spec D6` = S2's one surviving offset verb, not S1's controlled-mode
-policy), and `spec D8` at `slots/resolveSlot.ts:60`, `tokens/dom/commit.ts:74` and
-`tokens/seam/TokenModel.ts:135` — all three mean S2's per-node render subscription, not S1's
-offset shim. Every other bare `D6`/`D8`/`D9` in the tree is genuinely S1's, including
-`TokenModel.ts:228`'s `spec D8`, which is the shim rule inlined into `replaceBetween`.
+policy), and `spec D8` at `slots/resolveSlot.ts:60` and `tokens/dom/commit.ts:74` — both mean
+S2's per-node render subscription, not S1's offset shim. Every other bare `D6`/`D8`/`D9` in
+the tree is genuinely S1's, including `store/MarkputApi.ts:97`'s `spec D8`, which cites the
+shim's surviving rule — whole-value writes re-derived through `gapWindow` — implemented in
+`TokenModel.replaceBetween`, which states the rule without citing it.
+
+Line numbers here are pins as of the commit above; the citation text is the stable key, so
+grep it when a pin has drifted. `tokens/seam/TokenModel.ts` carries no spec citation at all
+any more, so the two refs into it are retired rather than renumbered.
 
 | Ref    | What it says                                                                                                                                                |
 | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -568,8 +573,9 @@ length}` for the `-1` sentinel, stopped being expressible when S2.6 deleted the 
 - **The public-invariant wording.** "No export of `@markput/core` takes or returns an
   absolute offset" is true of `MarkputApi`, which is the API proper, and NOT literally true
   of the whole export list: `Store` is a value export, so `store.edit.setValue(text,
-caretOffset?)` and `store.tokens.anchorAt` / `offsetOf` are reachable from it. The two
-  `tokens` verbs are the tree layer's own coordinate boundary and are deliberately kept;
+caretOffset?)` and `store.tokens.anchorAt` are reachable from it (`offsetOf` is private —
+  `TokenModel.#offsetOf` — and its readers are all inside `tree/`). The `tokens` verb is the
+  tree layer's own coordinate boundary and is deliberately kept;
   `EditController` is internal wiring an adapter is not meant to call. State it as
   "`MarkputApi` neither takes nor returns one", not as a claim about every export. The
   invariant is about ABSOLUTE offsets specifically: `MarkputApi.replaceText({node, start,

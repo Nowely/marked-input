@@ -38,15 +38,15 @@ export type BindInput = {
 	editable: {editable: boolean; readOnly: boolean}
 }
 
-/** Derived lookups over the nodes the walk actually bound (buildIndex's IndexResult, handle-valued). */
+/**
+ * The ELEMENT-keyed lookups of one walk (buildIndex's IndexResult, handle-valued).
+ *
+ * There is no id-keyed `bound` map any more: it was a second id→handle map rebuilt every
+ * paint, and a strict function of the first — `input.nodes` holds every live handle, and
+ * "this walk bound it" is `handle.alive()`, since the walk unbinds (never removes) a node
+ * the DOM missed and deletes only ids absent from the tree.
+ */
 export type BindResult = {
-	/**
-	 * The handles this walk bound, keyed by stable id. It was keyed by `pathKey(path)`
-	 * until S1.8 step 4; no production consumer ever looked one up by key — all three
-	 * (`assertAligned`, `setEditable`, `DomModel.boundHandles`) iterate the values — so the
-	 * path string was the last thing keeping a path layer alive inside the pipeline.
-	 */
-	bound: ReadonlyMap<number, TokenHandle>
 	byElement: WeakMap<HTMLElement, TokenHandle>
 	controlRoots: WeakSet<HTMLElement>
 }
@@ -74,7 +74,6 @@ export function bind(input: BindInput): BindResult {
 		const controlRoots = computeControlRoots(container, controlElements)
 		const walked = walkDom(container, roots, controlRoots, childSequenceHostsFor, isBlock)
 
-		const bound = new Map<number, TokenHandle>()
 		const byElement = new WeakMap<HTMLElement, TokenHandle>()
 
 		batch(() => {
@@ -95,7 +94,6 @@ export function bind(input: BindInput): BindResult {
 				const previous = handle.node()
 				handle.bindElements(bindings, node)
 				applyMountState(node, bindings, previous, editable)
-				bound.set(node.id, handle)
 				byElement.set(bindings.tokenElement, handle)
 				if (bindings.rowElement) byElement.set(bindings.rowElement, handle)
 				if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
@@ -113,7 +111,7 @@ export function bind(input: BindInput): BindResult {
 			}
 		})
 
-		return {bound, byElement, controlRoots}
+		return {byElement, controlRoots}
 	})
 }
 

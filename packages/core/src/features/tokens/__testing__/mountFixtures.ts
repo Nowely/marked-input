@@ -1,4 +1,5 @@
 import {Store} from '../../../store/Store'
+import {offsetOfAnchor} from '../tree/anchors'
 import type {NodeAnchor} from '../tree/types'
 
 /**
@@ -30,8 +31,9 @@ export function caretAt(store: Store, offset: number): void {
 export function selectionRange(store: Store): {start: number; end: number} | undefined {
 	const anchors = store.tokens.selection.anchors()
 	if (!anchors) return undefined
-	const anchor = store.tokens.offsetOf(anchors.anchor)
-	const head = store.tokens.offsetOf(anchors.head)
+	const roots = store.tokens.nodes()
+	const anchor = offsetOfAnchor(roots, anchors.anchor)
+	const head = offsetOfAnchor(roots, anchors.head)
 	return anchor <= head ? {start: anchor, end: head} : {start: head, end: anchor}
 }
 

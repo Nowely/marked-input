@@ -59,7 +59,6 @@ export function adopt(
 		const added: TreeChange[] = []
 		const removed: Id[] = []
 		const updated: TreeNode[] = []
-		const shifted: TreeNode[] = []
 		const out: TreeNode[] = []
 
 		/**
@@ -70,28 +69,26 @@ export function adopt(
 		 *
 		 * `baseIndex` is the list's first index within its parent, so `added` paths stay
 		 * absolute while the middle region only ever passes a sub-range of the roots.
-		 * `covered` says an ancestor already entered `shifted` (see `adoptPosition`).
 		 */
 		function adoptSiblings(
 			candidates: readonly TreeNode[],
 			tokens: readonly Token[],
 			parentPath: readonly number[],
-			baseIndex: number,
-			covered: boolean
+			baseIndex: number
 		): TreeNode[] {
 			const result: TreeNode[] = []
 			for (let index = 0; index < tokens.length; index++) {
 				const token = tokens[index]
 				const candidate = index < candidates.length ? candidates[index] : undefined
 				if (candidate?.kind === 'text' && token.type === 'text') {
-					adoptText(candidate, token, covered)
+					adoptText(candidate, token)
 					result.push(candidate)
 				} else if (
 					candidate?.kind === 'mark' &&
 					token.type === 'mark' &&
 					candidate.descriptor === token.descriptor
 				) {
-					adoptMark(candidate, token, [...parentPath, baseIndex + index], covered)
+					adoptMark(candidate, token, [...parentPath, baseIndex + index])
 					result.push(candidate)
 				} else {
 					if (candidate) collectIds(candidate, removed)
@@ -104,22 +101,14 @@ export function adopt(
 			return result
 		}
 
-		/**
-		 * Positions are plain field writes, so a move leaves no signal trace and `shifted`
-		 * is the only feed that can carry it (spec D9). Granularity is subtree roots: a
-		 * listed node covers its descendants, so the returned flag suppresses their own
-		 * entries.
-		 */
-		function adoptPosition(node: TreeNode, token: Token, covered: boolean): boolean {
-			const moved = node.position.start !== token.position.start || node.position.end !== token.position.end
+		/** Plain field writes (spec D3): a move leaves no signal trace and reaches no feed. */
+		function adoptPosition(node: TreeNode, token: Token): void {
 			node.position.start = token.position.start
 			node.position.end = token.position.end
-			if (moved && !covered) shifted.push(node)
-			return covered || moved
 		}
 
-		function adoptText(node: TextNode, token: TextToken, covered: boolean): void {
-			adoptPosition(node, token, covered)
+		function adoptText(node: TextNode, token: TextToken): void {
+			adoptPosition(node, token)
 			if (node.text(token.content)) updated.push(node)
 		}
 
@@ -131,8 +120,8 @@ export function adopt(
 		 * value/meta change. Driving the `updated` entry off the value/meta comparison
 		 * implements exactly that split, so no separate descend predicate exists here.
 		 */
-		function adoptMark(node: MarkNode, token: MarkToken, nodePath: readonly number[], covered: boolean): void {
-			const childrenCovered = adoptPosition(node, token, covered)
+		function adoptMark(node: MarkNode, token: MarkToken, nodePath: readonly number[]): void {
+			adoptPosition(node, token)
 			// The pairing gate compared descriptors, so slot presence already agrees; this
 			// write is what keeps the live slot positions in step with the parse.
 			node.slotRange = token.slot ? {start: token.slot.start, end: token.slot.end} : undefined
@@ -142,7 +131,7 @@ export function adopt(
 			if (valueChanged || metaChanged) updated.push(node)
 
 			const children = node.children()
-			const next = adoptSiblings(children, token.children, nodePath, 0, childrenCovered)
+			const next = adoptSiblings(children, token.children, nodePath, 0)
 			if (!sameNodes(next, children)) node.children(next)
 		}
 
@@ -178,10 +167,7 @@ export function adopt(
 				prev[prevTail].position.start >= window.end &&
 				snapshotNodeEquals(prev[prevTail], parsed[nextTail], delta)
 			) {
-				if (delta !== 0) {
-					shiftPositions(prev[prevTail], delta)
-					shifted.push(prev[prevTail])
-				}
+				if (delta !== 0) shiftPositions(prev[prevTail], delta)
 				suffix.unshift(prev[prevTail])
 				prevTail--
 				nextTail--
@@ -199,7 +185,7 @@ export function adopt(
 			// removed, dragging ' tail' at [17,22] — an id entirely past window.end — into
 			// `removed` with it (pinned in adopt.spec.ts). Diffing this file against §4.2
 			// must read that as a scoped omission, not an oversight.
-			out.push(...adoptSiblings(prev.slice(p, prevTail + 1), parsed.slice(p, nextTail + 1), [], p, false))
+			out.push(...adoptSiblings(prev.slice(p, prevTail + 1), parsed.slice(p, nextTail + 1), [], p))
 
 			out.push(...suffix)
 			if (!sameNodes(out, prev)) tree.roots(out)
@@ -215,7 +201,7 @@ export function adopt(
 			head: map(beforeOffsets.head),
 		}
 
-		return {structural, render, added, removed, updated, shifted, selectionAfter, map}
+		return {structural, render, added, removed, updated, selectionAfter, map}
 	})
 }
 

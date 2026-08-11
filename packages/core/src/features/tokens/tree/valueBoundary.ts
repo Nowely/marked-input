@@ -6,7 +6,7 @@ import {gapWindow} from './gapWindow'
 import type {TokenTree} from './tree'
 import type {Anchors, CommitSink, TransactionResult, Window} from './types'
 
-/** The string boundary (spec §4.4): commit policy plus arrival routing. */
+/** The string boundary: commit policy plus arrival routing. */
 export interface Boundary {
 	/** Hand to createTransactions. Adopts (uncontrolled) or emits (controlled). */
 	readonly sink: CommitSink
@@ -14,14 +14,12 @@ export interface Boundary {
 	arrive(value: string): void
 	/** Parser or layout changed: re-derive every token from the unchanged projection. */
 	reparse(): void
-	/** The committed projection — see D-d. */
-	value(): string
 }
 
 /**
- * The emission a controlled commit is waiting to see echoed (spec D6). `base` is the
- * projection it spliced, `window` the splice in that projection's coordinates — both
- * only usable while the tree still holds `base`, which is why `arrive` re-checks it.
+ * The emission a controlled commit is waiting to see echoed. `base` is the projection it
+ * spliced, `window` the splice in that projection's coordinates — both only usable while
+ * the tree still holds `base`, which is why `arrive` re-checks it.
  */
 type Emission = {base: string; value: string; window: Window}
 
@@ -29,27 +27,26 @@ export function createBoundary(deps: {
 	tree: TokenTree
 	parser: () => Parser | undefined
 	/**
-	 * Commit policy (spec D6): uncontrolled adopts the edit at once, controlled emits it and
-	 * waits for the parent's echo. Read per commit, so a mid-flight mode flip is honored.
+	 * Commit policy: uncontrolled adopts the edit at once, controlled emits it and waits
+	 * for the parent's echo. Read per commit, so a mid-flight mode flip is honored.
 	 */
 	controlled: () => boolean
 	/**
-	 * Block mode's parse policy (spec §1.2). Read per adoption, so an `isBlock` flip is
-	 * honored by the next `reparse` without a second code path. Deferred here from S1.4
-	 * (decision D-e of that plan): the tree core applied the filter nowhere, and block
-	 * wiring is S1.6a's.
+	 * Block mode's parse policy. Read per adoption, so an `isBlock` flip is honored by
+	 * the next `reparse` without a second code path.
 	 */
 	isBlock?: () => boolean
 	/**
-	 * Pre-adoption selection capture (spec S1 D7). Read once per adoption — see
-	 * `TransactionResult.selectionAfter` for why the boundary and not the dispatcher
-	 * owns this. Store supplies `() => selection.anchors()` as a deferred thunk
-	 * (declaration order: `tokens` is built before `selection`), so it must not be
-	 * called during construction — and it is not: only `fold` calls it.
+	 * Pre-adoption selection capture. Read once per adoption and by `fold` alone — never
+	 * during construction — see `TransactionResult.selectionAfter` for why the boundary
+	 * and not the dispatcher owns this.
 	 */
 	selection?: () => Anchors | undefined
 	onChange: (value: string) => void
-	/** The `TransactionResult` feed (spec D9); its pipeline consumer arrives with S1.5. */
+	/**
+	 * The `TransactionResult` feed. `TokenModel` drives the commit pipeline, its value
+	 * snapshot and the selection repair off it, in that order.
+	 */
 	onResult?: (result: TransactionResult) => void
 }): Boundary {
 	/**
@@ -62,7 +59,7 @@ export function createBoundary(deps: {
 	const fold = (next: string, window: Window): void => {
 		// Read BEFORE `adopt`, which repairs the stored selection through `onResult`. The
 		// anchors themselves hold no coordinate, so it is adoption — not this call site —
-		// that owes the pre-mutation reading of their positions (spec S1 D7).
+		// that owes the pre-mutation reading of their positions.
 		const selectionBefore = deps.selection?.()
 		const parsed = parseValue(deps.parser(), next)
 		const tokens = deps.isBlock?.() === true ? filterEmptyText(parsed) : parsed
@@ -76,11 +73,11 @@ export function createBoundary(deps: {
 		commit(next, window) {
 			if (deps.controlled()) {
 				// The parent owns the value: emit and wait. `tree.value()` IS the base this splice
-				// was computed from — `commit` runs with the tree unmutated (decision D-a) — and
-				// the pair is what lets the echo be adopted through its exact window.
+				// was computed from — `commit` runs with the tree unmutated — and the pair is what
+				// lets the echo be adopted through its exact window.
 				lastEmitted = {base: deps.tree.value(), value: next, window}
 				deps.onChange(next)
-				// Accepted and emitted (spec D6). A controlled verb reports success on the emission,
+				// Accepted and emitted. A controlled verb reports success on the emission,
 				// not on a commit that may never come; anything else would read as a refusal.
 				return true
 			}
@@ -97,12 +94,12 @@ export function createBoundary(deps: {
 		sink,
 
 		arrive(value) {
-			// `untracked` for the same reason the dispatcher wraps `commit`: S1.6a drives both
-			// entry points from a props watch, and a tracked read here would subscribe that
+			// `untracked` for the same reason the dispatcher wraps `commit`: `TokenModel` drives
+			// both entry points from a props watch, and a tracked read here would subscribe that
 			// watcher to the very projection it is about to mutate.
 			untracked(() => {
-				// D6 is explicit: the record is consumed by the FIRST arrival, matched or not. A
-				// stale echo must not leave it armed for the next one.
+				// The record is consumed by the FIRST arrival, matched or not: a stale echo must
+				// not leave it armed for the next one.
 				const emission = lastEmitted
 				lastEmitted = undefined
 
@@ -123,22 +120,11 @@ export function createBoundary(deps: {
 				// is enough because adoption is equality-driven rather than window-driven — both
 				// walks go inert and the middle re-derives every token from the new parse. A full
 				// window is actively worse: it sends every mapped interior offset to the document
-				// end (decision D-c, pinned through `map` in boundary.spec.ts).
+				// end (pinned through `map` in valueBoundary.spec.ts).
 				const value = deps.tree.value()
 				fold(value, gapWindow(value, value))
 			})
 		},
-
-		/**
-		 * See decision D-d: in the steady state the tree holds the ARRIVED value in controlled
-		 * mode, so the projection already IS the committed one and no separate state is needed.
-		 * The two cases this does NOT cover — the initial seed, and the controlled→uncontrolled
-		 * fallback to `defaultValue` — are S1.6a's to handle by arriving explicitly.
-		 *
-		 * A public read, deliberately tracked (unlike `arrive`/`reparse` above): a consumer may
-		 * legitimately subscribe to it.
-		 */
-		value: () => deps.tree.value(),
 	}
 }
 
@@ -152,8 +138,8 @@ export function createBoundary(deps: {
  * `value` is tripped by a transform that changes the ROOT COUNT — a stale window carries a
  * stale delta, so adoption's suffix walk goes inert and the tail's identity falls to
  * left-index pairing, which is misaligned by exactly that count. Both are pinned by id
- * assertions in boundary.spec.ts; value-level assertions cannot see either, because adoption
- * converges to the same string through any window.
+ * assertions in valueBoundary.spec.ts; value-level assertions cannot see either, because
+ * adoption converges to the same string through any window.
  */
 function echoWindow(emission: Emission | undefined, value: string, current: string): Window | undefined {
 	if (!emission) return undefined

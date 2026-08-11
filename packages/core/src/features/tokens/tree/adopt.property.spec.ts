@@ -140,24 +140,11 @@ const idsOf = (nodes: readonly TreeNode[], into: Id[] = []): Id[] => {
 	return into
 }
 
-interface Recorded {
-	/** Everything a signal write on this node could change: text, or value+meta. */
-	content: string
-	start: number
-	end: number
-	/** Ancestor ids, root first — `shifted`/`added` report subtree ROOTS (D9). */
-	ancestors: readonly Id[]
-}
-
-const record = (
-	nodes: readonly TreeNode[],
-	into = new Map<Id, Recorded>(),
-	ancestors: readonly Id[] = []
-): Map<Id, Recorded> => {
+/** Per id, everything a signal write on that node could change: text, or value+meta. */
+const record = (nodes: readonly TreeNode[], into = new Map<Id, string>()): Map<Id, string> => {
 	for (const node of nodes) {
-		const content = node.kind === 'text' ? node.text() : JSON.stringify([node.value(), node.meta()])
-		into.set(node.id, {content, start: node.position.start, end: node.position.end, ancestors})
-		if (node.kind === 'mark') record(node.children(), into, [...ancestors, node.id])
+		into.set(node.id, node.kind === 'text' ? node.text() : JSON.stringify([node.value(), node.meta()]))
+		if (node.kind === 'mark') record(node.children(), into)
 	}
 	return into
 }
@@ -247,7 +234,7 @@ describe('adopt property: feed accounting', () => {
 	 */
 	it('accounts for every id and every change through the feeds', () => {
 		const failures: string[] = []
-		const seen = {contentChanges: 0, moves: 0, removals: 0, additions: 0}
+		const seen = {contentChanges: 0, removals: 0, additions: 0}
 		for (const c of CASES) {
 			const tree = createTokenTree(parser.parse(c.source))
 			const before = record(tree.roots())
@@ -258,7 +245,6 @@ describe('adopt property: feed accounting', () => {
 			const added = new Set(idsOf(result.added.map(change => change.node)))
 			const removed = new Set(result.removed)
 			const updated = new Set(result.updated.map(node => node.id))
-			const shifted = new Set(result.shifted.map(node => node.id))
 			seen.removals += removed.size
 			seen.additions += added.size
 
@@ -276,33 +262,23 @@ describe('adopt property: feed accounting', () => {
 			for (const change of result.added) {
 				if (before.has(change.node.id)) failures.push(`${label(c)} — added id ${change.node.id} is not new`)
 			}
-			for (const id of [...updated, ...shifted]) {
+			for (const id of updated) {
 				if (!before.has(id) || !after.has(id)) failures.push(`${label(c)} — feed id ${id} did not survive`)
 			}
 
-			for (const [id, now] of after) {
+			for (const [id, content] of after) {
 				const was = before.get(id)
-				if (!was) continue
+				if (was === undefined) continue
 				// `updated` owns the signal writes: a retained node whose text (or value/meta)
 				// changed must be listed, and a node that changed nothing must not be.
-				if ((now.content !== was.content) !== updated.has(id)) {
+				if ((content !== was) !== updated.has(id)) {
 					failures.push(`${label(c)} — id ${id}: updated=${updated.has(id)} for a content change`)
 				}
-				if (now.content !== was.content) seen.contentChanges++
-				// `shifted` owns the position writes, at subtree-root granularity — an entry
-				// covers its descendants, so a moved node may answer through an ancestor.
-				const moved = now.start !== was.start || now.end !== was.end
-				const covered = shifted.has(id) || now.ancestors.some(ancestor => shifted.has(ancestor))
-				if (moved) seen.moves++
-				if (moved && !covered) failures.push(`${label(c)} — id ${id} moved with no shifted entry`)
-				if (!moved && shifted.has(id)) failures.push(`${label(c)} — shifted id ${id} did not move`)
-				if (shifted.has(id) && now.ancestors.some(ancestor => shifted.has(ancestor))) {
-					failures.push(`${label(c)} — shifted id ${id} is nested under another entry`)
-				}
+				if (content !== was) seen.contentChanges++
 			}
 		}
 		expectNoFailures(failures)
-		// Measured 441 content changes, 1034 moves, 712 removals, 317 additions.
+		// Measured 441 content changes, 712 removals, 317 additions.
 		expectCoverage(seen, 100)
 	})
 })
@@ -311,12 +287,10 @@ describe('adopt property: identity outside the window', () => {
 	/**
 	 * Identity OUTSIDE the window (spec §7.1), stated constructively.
 	 *
-	 * The plan's draft claimed `shifted` implies "sits at b.start + delta". Task 6 made
-	 * `shifted` report middle-region moves too, and those land at fresh parser
-	 * positions — so `shifted` can no longer be the selector. The honest selector is
-	 * the pair of window-bounded runs themselves, recomputed here from the parses:
-	 * prefix nodes must not move at all, suffix nodes must move by exactly delta, and
-	 * neither may be reported removed.
+	 * The selector is the pair of window-bounded runs themselves, recomputed here from the
+	 * parses: prefix nodes must not move at all, suffix nodes must move by exactly delta,
+	 * and neither may be reported removed. Nothing in the RESULT can play that role — the
+	 * middle region writes fresh parser positions no run claims, and no feed reports moves.
 	 *
 	 * ONE-SIDED, and that leaves one mutation ungated by this whole file. The claim is
 	 * that adoption retains AT LEAST the reference runs; §7.1 deliberately grants
