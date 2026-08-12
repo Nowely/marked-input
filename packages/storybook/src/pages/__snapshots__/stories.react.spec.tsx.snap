@@ -778,58 +778,6 @@ exports[`Component: stories > Dynamic stories > Story Removable 1`] = `
 </div>"
 `;
 
-exports[`Component: stories > Experimental stories > Story Controlled 1`] = `
-"<div contenteditable="true">
-  <span>Hello </span>
-  <mark data-value="John" data-meta="id:123" contenteditable="false">John</mark>
-  <span> and </span>
-  <mark data-value="World" data-meta="greeting" contenteditable="false">World</mark>
-  <span>!</span>
-</div>"
-`;
-
-exports[`Component: stories > Experimental stories > Story Markdown 1`] = `
-"<div contenteditable="true">
-  <span></span>
-  <strong data-type="heading" contenteditable="false">Welcome to Markdown Editor</strong>
-  <span>&#10;Try editing this text with </span>
-  <strong data-type="bold">
-    <span>
-      <span>bold</span>
-    </span>
-  </strong>
-  <span>, </span>
-  <em data-type="italic">
-    <span>
-      <span>italic</span>
-    </span>
-  </em>
-  <span>, </span>
-  <code data-type="code">
-    <span>
-      <span>code</span>
-    </span>
-  </code>
-  <span>, and </span>
-  <a href="links" data-type="link" data-url="links" contenteditable="false">links</a>
-  <span>.&#10;&#10;</span>
-  <span data-type="blockquote" contenteditable="false">&gt; </span>
-  <span>This is a blockquote&#10;</span>
-  <span data-type="blockquote" contenteditable="false">&gt; </span>
-  <span>You can add multiple lines&#10;&#10;- List item 1&#10;- List item 2&#10;- List item 3</span>
-</div>"
-`;
-
-exports[`Component: stories > Experimental stories > Story Uncontrolled 1`] = `
-"<div contenteditable="true">
-  <span>Hello </span>
-  <mark data-value="John" data-meta="id:123" contenteditable="false">John</mark>
-  <span> and </span>
-  <mark data-value="World" data-meta="greeting" contenteditable="false">World</mark>
-  <span>! Try editing - cursor stays in place!</span>
-</div>"
-`;
-
 exports[`Component: stories > Material stories > Story Chipped 1`] = `
 "<div contenteditable="true">
   <span>Hello beautiful the </span>
