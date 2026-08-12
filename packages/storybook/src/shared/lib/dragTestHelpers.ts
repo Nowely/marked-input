@@ -22,15 +22,6 @@ export function getBlocks(container: Element) {
 	return Array.from(host.querySelectorAll<HTMLElement>('[data-testid="block"]'))
 }
 
-/**
- * The caret target for a row. A row holds no editing host any more — its text lives in bare
- * spans that inherit editability from the container — and its non-text chrome (grip button,
- * drop indicators, menu) carries no text, so the row itself measures exactly the row's text.
- */
-export function getEditableInRow(row: HTMLElement) {
-	return row
-}
-
 export async function openMenuForRow(container: Element, rowIndex: number) {
 	const row = getAllRows(container)[rowIndex]
 	await userEvent.hover(row)

@@ -3,7 +3,7 @@ import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
 
-import {caretIsInside, editingHost, getElement} from '../../shared/lib/dom'
+import {caretIsInside, editingHost, findEditingHost, getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import {withProps} from '../../shared/lib/testUtils.vue'
 import * as BaseStories from './Base.vue.stories'
@@ -11,13 +11,6 @@ import * as BaseStories from './Base.vue.stories'
 const KEYBOARD_DEFAULT_VALUE = 'Hello @[mark](1)!'
 
 const {Default} = composeStories(BaseStories)
-
-/** The editing host itself — the container, the only element carrying `contenteditable`. */
-function getFirstEditable(container: Element): HTMLElement {
-	const editable = container.querySelector<HTMLElement>('[contenteditable="true"]')
-	if (!editable) throw new Error('Expected the editing host')
-	return editable
-}
 
 /**
  * Select-all under one host is the plain native thing: the container IS the editing host,
@@ -118,7 +111,7 @@ describe('API: keyboard', () => {
 		// BREAKING (one-host migration): marks lost `tabindex` and are no longer tab stops.
 		// Tab is the plain native "leave the editor" it is in a textarea.
 		const {container} = await render(withProps(Default, {defaultValue: KEYBOARD_DEFAULT_VALUE}))
-		const host = getFirstEditable(container)
+		const host = findEditingHost(container)
 
 		await userEvent.click(host)
 		await expect.element(host).toHaveFocus()
@@ -159,7 +152,7 @@ describe('API: keyboard', () => {
 		const {container} = await render(withProps(Default, {defaultValue: KEYBOARD_DEFAULT_VALUE, onChange}))
 
 		await selectAll(container)
-		dispatchPasteEvent(getFirstEditable(container), 'pasted @[other](2)')
+		dispatchPasteEvent(findEditingHost(container), 'pasted @[other](2)')
 
 		expect(onChange).toHaveBeenCalledWith('pasted @[other](2)')
 		await expect.element(page.getByText('other')).toBeInTheDocument()
@@ -186,7 +179,7 @@ describe('API: keyboard', () => {
 		const {container} = await render(withProps(Default, {defaultValue: KEYBOARD_DEFAULT_VALUE, onChange}))
 
 		await selectAll(container)
-		const event = dispatchBeforeInput(getFirstEditable(container), 'insertParagraph')
+		const event = dispatchBeforeInput(findEditingHost(container), 'insertParagraph')
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(onChange).toHaveBeenCalledWith('\n')

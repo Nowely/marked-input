@@ -141,8 +141,11 @@ describe('handleBeforeInput()', () => {
 			// at `text('a'):0` inside it. The character spliced before the markup ('X#[a…]').
 			//
 			// `leading` is that outside boundary in this fixture: the leading root is the empty
-			// text token at [0,0], so offset 0 is its only one. The first row is the symptom; the
-			// second is the interior control, where the two readings agree and must stay agreeing.
+			// text token at [0,0], so offset 0 is its only one. BOTH rows carry it as the target
+			// and differ only in where the CARET sits — at the slot's start, and one character
+			// into the slot's text. Neither is a control: the caret has to win in both, and both
+			// go red on the precedence revert (the second lands 'X' outside as well, not merely
+			// at the wrong offset inside).
 			const {store, container, leading, before} = mountNested()
 			const slotText = before.firstChild
 			if (!(slotText instanceof Text)) throw new Error('expected the slot text surface to be filled')
@@ -315,19 +318,83 @@ describe('handleBeforeInput()', () => {
 		container.remove()
 	})
 
-	it('inserts the dropped text at the target range', () => {
+	it('inserts the dropped text at the caret the drop moved', () => {
+		// THE SHIPPED PATH. A caret drop is COLLAPSED and Chromium moves the live selection to
+		// the drop point before firing `insertFromDrop`, so the target range and the caret name
+		// the same boundary and the collapsed arm resolves it through `domAnchors`. (Only
+		// `deleteByDrag` — the source half of a move — is ranged.)
+		const {store, container, textNode} = mountStructuralInline('ab')
+		const dataTransfer = new DataTransfer()
+		dataTransfer.setData('text/plain', 'X')
+		const event = inputEvent('insertFromDrop', selectBoundary(textNode, 1), {dataTransfer})
+
+		textNode.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('aXb')
+		container.remove()
+	})
+
+	it('inserts the dropped text from the target range when the selection cannot be read', () => {
+		// The same drop with no window selection — the fallback arm for a NON-delete input
+		// type, which the mark-swallow case cannot cover: it pins that the fallback still
+		// carries the payload and the position, not just that a delete expands correctly.
 		const {store, container, textNode} = mountStructuralInline('ab')
 		const dataTransfer = new DataTransfer()
 		dataTransfer.setData('text/plain', 'X')
 		const range = document.createRange()
 		range.setStart(textNode, 1)
-		range.setEnd(textNode, 1)
+		range.collapse(true)
+		window.getSelection()?.removeAllRanges()
 		const event = inputEvent('insertFromDrop', range, {dataTransfer})
 
 		textNode.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(store.tokens.value()).toBe('aXb')
+		container.remove()
+	})
+
+	it('ignores a RANGED live selection on a collapsed target range', () => {
+		// CONSTRUCTED, and it says so: Chromium sets the live selection to the caret the event
+		// describes, so this disagreement is not one it produces. The guard is the cheap half
+		// of the precedence rule — a collapsed event must never resolve to an extent — and
+		// without a case the whole `anchorEquals` test can be deleted with the suite green.
+		const {store, container, textNode} = mountStructuralInline('ab')
+		const selection = window.getSelection()
+		if (!selection) throw new Error('no window selection')
+		const spread = document.createRange()
+		spread.setStart(textNode, 0)
+		spread.setEnd(textNode, 2)
+		selection.removeAllRanges()
+		selection.addRange(spread)
+		const caret = document.createRange()
+		caret.setStart(textNode, 1)
+		caret.collapse(true)
+
+		textNode.dispatchEvent(inputEvent('insertText', caret, {data: 'X'}))
+
+		expect(store.tokens.value()).toBe('aXb')
+		container.remove()
+	})
+
+	it('a RANGED target range outranks the live caret', () => {
+		// The other half of the precedence contract, and it needs its own case: a ranged target
+		// carries an EXTENT the caret does not. MEASURED in Chromium on `deleteWordBackward`
+		// (Alt/Ctrl+Backspace): the target spans the whole word while the live selection is the
+		// collapsed caret at its end. Resolving the caret instead would hand `anchorsForDelete`
+		// a collapsed pair and delete ONE character (or swallow a neighbouring mark).
+		const {store, container, textNode} = mountStructuralInline('alpha beta')
+		selectBoundary(textNode, 6)
+		const word = document.createRange()
+		word.setStart(textNode, 0)
+		word.setEnd(textNode, 6)
+		const event = inputEvent('deleteWordBackward', word)
+
+		textNode.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('beta')
 		container.remove()
 	})
 
@@ -477,10 +544,34 @@ describe('handleBeforeInput()', () => {
 			// so the caret used to read as a RANGE: no swallow, an empty replace, and the
 			// keystroke lost to the guard's own `preventDefault`.
 			//
-			// The keydown path does NOT discriminate this: it resolves through
-			// `domAnchors()`, which has always collapsed the pair.
+			// This one resolves through the LIVE CARET (`selectBoundary` leaves the window
+			// selection on the same boundary, where `domAnchors` measures `{before: the gap}`),
+			// so it pins the collapse in `SelectionDriver`. The target-range collapse has its
+			// own case below. The keydown path discriminates neither: it has always read
+			// `domAnchors()`.
 			const {store, container} = mountAdjacentMarks()
 			const range = selectBoundary(container, 2)
+			const event = inputEvent('deleteContentBackward', range)
+
+			container.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('a@[m2](2)b')
+			container.remove()
+		})
+
+		it('swallows the mark from the TARGET RANGE alone when the window selection is gone', () => {
+			// THE fallback arm, and the only case that reaches it: with no window selection
+			// `domAnchors()` declines, so the collapsed target range is the sole reading — and
+			// its two affinities name that one boundary twice unless the reader collapses it.
+			// Chromium produces exactly this state on a caret event whose selection was cleared
+			// (a control took focus, a re-render dropped the range).
+			const {store, container} = mountAdjacentMarks()
+			const range = document.createRange()
+			range.setStart(container, 2)
+			range.collapse(true)
+			window.getSelection()?.removeAllRanges()
+			expect(store.tokens.domAnchors()).toBeUndefined()
 			const event = inputEvent('deleteContentBackward', range)
 
 			container.dispatchEvent(event)

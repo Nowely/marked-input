@@ -1,6 +1,7 @@
 import {nodeTarget} from '../../shared/checkers'
 import type {Store} from '../../store/Store'
 import type {Anchors} from '../tokens'
+import {anchorEquals} from '../tokens'
 
 type KbCtx = Pick<Store, 'tokens'>
 
@@ -22,8 +23,11 @@ type KbCtx = Pick<Store, 'tokens'>
  * caret is the answer.
  *
  * `domAnchors()` re-reads the LIVE selection, so it is the same authority the no-target-range
- * arm has always used; when it declines (a boundary this layer cannot resolve) the target
- * range still answers.
+ * arm has always used; when it declines — a boundary this layer cannot resolve, or no window
+ * selection at all — the target range still answers. It must also ANSWER COLLAPSED to stand in
+ * for a collapsed event: a ranged reading of a caret event would replace text the browser
+ * never named. Unproduced in Chromium, where the live selection IS the caret the event
+ * describes, and cheap enough to close by construction rather than by argument.
  *
  * A `StaticRange` is document-ordered, so `anchor` is the low end and `head` the high one —
  * the same normalization {@link SelectionDriver.domAnchors} relies on, which is why the
@@ -32,8 +36,9 @@ type KbCtx = Pick<Store, 'tokens'>
 export function anchorsFromInputEvent(store: KbCtx, event: InputEvent): Anchors | undefined {
 	const range = event.getTargetRanges().at(0)
 	if (!range) return store.tokens.domAnchors()
-	if (range.collapsed) return store.tokens.domAnchors() ?? anchorsFromTargetRange(store, range)
-	return anchorsFromTargetRange(store, range)
+	if (!range.collapsed) return anchorsFromTargetRange(store, range)
+	const live = store.tokens.domAnchors()
+	return live && anchorEquals(live.anchor, live.head) ? live : anchorsFromTargetRange(store, range)
 }
 
 /**

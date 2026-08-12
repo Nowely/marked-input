@@ -7,14 +7,7 @@ import {page, userEvent} from 'vitest/browser'
 import {defineComponent, h} from 'vue'
 
 import {caretIsInside, firstChild, getElement} from '../../shared/lib/dom'
-import {
-	dispatchPaste,
-	getAllRows,
-	getBlocks,
-	getEditableInRow,
-	openMenuForRow,
-	simulateDragRow,
-} from '../../shared/lib/dragTestHelpers'
+import {dispatchPaste, getAllRows, getBlocks, openMenuForRow, simulateDragRow} from '../../shared/lib/dragTestHelpers'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as DragStories from './Drag.vue.stories'
 
@@ -313,8 +306,8 @@ describe('Feature: drag rows', () => {
 			const {container} = await render(PlainTextDrag)
 			expect(getAllRows(container)).toHaveLength(5)
 
-			const editable = getEditableInRow(getAllRows(container)[0])
-			await focusAtEnd(editable)
+			const row = getAllRows(container)[0]
+			await focusAtEnd(row)
 			await userEvent.keyboard('{Enter}')
 
 			expect(getAllRows(container)).toHaveLength(6)
@@ -324,8 +317,8 @@ describe('Feature: drag rows', () => {
 			const {container} = await render(PlainTextDrag)
 			const originalValue = getRawValue(container)
 
-			const editable = getEditableInRow(getAllRows(container)[0])
-			await focusAtEnd(editable)
+			const row = getAllRows(container)[0]
+			await focusAtEnd(row)
 			await userEvent.keyboard('{Enter}')
 
 			const newValue = getRawValue(container)
@@ -337,8 +330,8 @@ describe('Feature: drag rows', () => {
 		it('not create a new row when pressing Shift+Enter', async () => {
 			const {container} = await render(PlainTextDrag)
 
-			const editable = getEditableInRow(getAllRows(container)[0])
-			await focusAtEnd(editable)
+			const row = getAllRows(container)[0]
+			await focusAtEnd(row)
 			await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
 
 			expect(getAllRows(container)).toHaveLength(5)
@@ -383,8 +376,8 @@ describe('Feature: drag rows', () => {
 
 		it('not delete a non-empty row on Backspace', async () => {
 			const {container} = await render(PlainTextDrag)
-			const editable = getEditableInRow(getAllRows(container)[0])
-			await focusAtEnd(editable)
+			const row = getAllRows(container)[0]
+			await focusAtEnd(row)
 			await userEvent.keyboard('{Backspace}')
 
 			expect(getAllRows(container)).toHaveLength(5)
@@ -403,8 +396,8 @@ describe('Feature: drag rows', () => {
 
 	it('split row at caret when pressing Enter at the beginning', async () => {
 		const {container} = await render(PlainTextDrag)
-		const editable = getEditableInRow(getAllRows(container)[0])
-		await focusAtStart(editable)
+		const row = getAllRows(container)[0]
+		await focusAtStart(row)
 		await userEvent.keyboard('{Enter}')
 
 		expect(getAllRows(container)).toHaveLength(6)
@@ -448,7 +441,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const {container} = await render(PlainTextDrag)
 			const rows = getAllRows(container)
 
-			await focusAtStart(getEditableInRow(rows[1]))
+			await focusAtStart(rows[1])
 			await userEvent.keyboard('{ArrowLeft}')
 
 			expect(caretIsInside(rows[0])).toBe(true)
@@ -458,7 +451,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const {container} = await render(PlainTextDrag)
 			const rows = getAllRows(container)
 
-			await focusAtEnd(getEditableInRow(rows[1]))
+			await focusAtEnd(rows[1])
 			await userEvent.keyboard('{ArrowLeft}')
 
 			expect(caretIsInside(rows[1])).toBe(true)
@@ -468,7 +461,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const {container} = await render(PlainTextDrag)
 			const rows = getAllRows(container)
 
-			await focusAtStart(getEditableInRow(rows[0]))
+			await focusAtStart(rows[0])
 			await userEvent.keyboard('{ArrowLeft}')
 
 			expect(caretIsInside(rows[0])).toBe(true)
@@ -480,7 +473,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const {container} = await render(PlainTextDrag)
 			const rows = getAllRows(container)
 
-			await focusAtEnd(getEditableInRow(rows[0]))
+			await focusAtEnd(rows[0])
 			await userEvent.keyboard('{ArrowRight}')
 
 			expect(caretIsInside(rows[1])).toBe(true)
@@ -490,7 +483,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const {container} = await render(PlainTextDrag)
 			const rows = getAllRows(container)
 
-			await focusAtStart(getEditableInRow(rows[0]))
+			await focusAtStart(rows[0])
 			await userEvent.keyboard('{ArrowRight}')
 
 			expect(caretIsInside(rows[0])).toBe(true)
@@ -501,7 +494,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const rows = getAllRows(container)
 			const last = rows[rows.length - 1]
 
-			await focusAtEnd(getEditableInRow(last))
+			await focusAtEnd(last)
 			await userEvent.keyboard('{ArrowRight}')
 
 			expect(caretIsInside(last)).toBe(true)
@@ -513,7 +506,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const {container} = await render(PlainTextDrag)
 			const rows = getAllRows(container)
 
-			await focusAtEnd(getEditableInRow(rows[0]))
+			await focusAtEnd(rows[0])
 			await userEvent.keyboard('{ArrowDown}')
 
 			expect(caretIsInside(rows[1])).toBe(true)
@@ -524,7 +517,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const rows = getAllRows(container)
 			const last = rows[rows.length - 1]
 
-			await focusAtEnd(getEditableInRow(last))
+			await focusAtEnd(last)
 			await userEvent.keyboard('{ArrowDown}')
 
 			expect(caretIsInside(last)).toBe(true)
@@ -536,7 +529,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const {container} = await render(PlainTextDrag)
 			const rows = getAllRows(container)
 
-			await focusAtStart(getEditableInRow(rows[1]))
+			await focusAtStart(rows[1])
 			await userEvent.keyboard('{ArrowUp}')
 
 			expect(caretIsInside(rows[0])).toBe(true)
@@ -546,7 +539,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const {container} = await render(PlainTextDrag)
 			const rows = getAllRows(container)
 
-			await focusAtStart(getEditableInRow(rows[0]))
+			await focusAtStart(rows[0])
 			await userEvent.keyboard('{ArrowUp}')
 
 			expect(caretIsInside(rows[0])).toBe(true)
@@ -558,7 +551,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const {container} = await render(PlainTextDrag)
 			const before = getAllRows(container).length
 
-			await focusAtStart(getEditableInRow(getAllRows(container)[1]))
+			await focusAtStart(getAllRows(container)[1])
 			await userEvent.keyboard('{Backspace}')
 
 			expect(getAllRows(container)).toHaveLength(before - 1)
@@ -569,7 +562,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				const {container} = await render(MarkdownDrag)
 				const before = getBlocks(container).length
 
-				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
+				await focusAtStart(getBlocks(container)[1])
 				await userEvent.keyboard('{Backspace}')
 
 				expect(getBlocks(container)).toHaveLength(before)
@@ -579,7 +572,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				const {container} = await render(MarkdownDrag)
 				const markBlock = getBlocks(container)[0]
 
-				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
+				await focusAtStart(getBlocks(container)[1])
 				await userEvent.keyboard('{Backspace}')
 
 				expect(caretIsInside(markBlock)).toBe(true)
@@ -589,7 +582,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('preserve content of both merged rows', async () => {
 			const {container} = await render(PlainTextDrag)
 
-			await focusAtStart(getEditableInRow(getAllRows(container)[1]))
+			await focusAtStart(getAllRows(container)[1])
 			await userEvent.keyboard('{Backspace}')
 
 			const raw = getRawValue(container)
@@ -600,7 +593,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('keep focus in the previous row after merge', async () => {
 			const {container} = await render(UncontrolledPlainTextDrag)
 
-			await focusAtStart(getEditableInRow(getAllRows(container)[1]))
+			await focusAtStart(getAllRows(container)[1])
 			await userEvent.keyboard('{Backspace}')
 
 			const currentRows = getAllRows(container)
@@ -611,7 +604,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const {container} = await render(PlainTextDrag)
 			expect(getAllRows(container)).toHaveLength(5)
 
-			await focusAtStart(getEditableInRow(getAllRows(container)[1]))
+			await focusAtStart(getAllRows(container)[1])
 			await userEvent.keyboard('{Backspace}')
 
 			expect(getAllRows(container)).toHaveLength(4)
@@ -624,7 +617,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				const {container} = await render(PlainTextDrag)
 				const before = getAllRows(container).length
 
-				await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
+				await focusAtEnd(getAllRows(container)[0])
 				await userEvent.keyboard('{Delete}')
 
 				expect(getAllRows(container)).toHaveLength(before - 1)
@@ -633,7 +626,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			it('preserve content of both merged rows', async () => {
 				const {container} = await render(PlainTextDrag)
 
-				await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
+				await focusAtEnd(getAllRows(container)[0])
 				await userEvent.keyboard('{Delete}')
 
 				const raw = getRawValue(container)
@@ -644,7 +637,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			it('keep focus in the current row after Delete merge', async () => {
 				const {container} = await render(UncontrolledPlainTextDrag)
 
-				await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
+				await focusAtEnd(getAllRows(container)[0])
 				await userEvent.keyboard('{Delete}')
 
 				const currentRows = getAllRows(container)
@@ -656,7 +649,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				const rows = getAllRows(container)
 				const last = rows[rows.length - 1]
 
-				await focusAtEnd(getEditableInRow(last))
+				await focusAtEnd(last)
 				await userEvent.keyboard('{Delete}')
 
 				expect(getAllRows(container)).toHaveLength(5)
@@ -668,7 +661,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				const {container} = await render(PlainTextDrag)
 				const before = getAllRows(container).length
 
-				await focusAtStart(getEditableInRow(getAllRows(container)[1]))
+				await focusAtStart(getAllRows(container)[1])
 				await userEvent.keyboard('{Delete}')
 
 				expect(getAllRows(container)).toHaveLength(before - 1)
@@ -677,7 +670,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			it('preserve content of both merged rows', async () => {
 				const {container} = await render(PlainTextDrag)
 
-				await focusAtStart(getEditableInRow(getAllRows(container)[1]))
+				await focusAtStart(getAllRows(container)[1])
 				await userEvent.keyboard('{Delete}')
 
 				const raw = getRawValue(container)
@@ -688,7 +681,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			it('move focus to the previous row after merge', async () => {
 				const {container} = await render(UncontrolledPlainTextDrag)
 
-				await focusAtStart(getEditableInRow(getAllRows(container)[1]))
+				await focusAtStart(getAllRows(container)[1])
 				await userEvent.keyboard('{Delete}')
 
 				const currentRows = getAllRows(container)
@@ -698,7 +691,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			it('not merge when Delete pressed at start of the first row', async () => {
 				const {container} = await render(PlainTextDrag)
 
-				await focusAtStart(getEditableInRow(getAllRows(container)[0]))
+				await focusAtStart(getAllRows(container)[0])
 				await userEvent.keyboard('{Delete}')
 
 				expect(getAllRows(container)).toHaveLength(5)
@@ -707,7 +700,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			it('place caret at the join point after merge', async () => {
 				const {container} = await render(PlainTextDrag)
 
-				await focusAtStart(getEditableInRow(getAllRows(container)[1]))
+				await focusAtStart(getAllRows(container)[1])
 				await userEvent.keyboard('{Delete}')
 
 				const raw = getRawValue(container)
@@ -720,7 +713,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				const {container} = await render(MarkdownDrag)
 				const before = getBlocks(container).length
 
-				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
+				await focusAtStart(getBlocks(container)[1])
 				await userEvent.keyboard('{Delete}')
 
 				expect(getBlocks(container)).toHaveLength(before)
@@ -730,7 +723,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				const {container} = await render(MarkdownDrag)
 				const markBlock = getBlocks(container)[0]
 
-				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
+				await focusAtStart(getBlocks(container)[1])
 				await userEvent.keyboard('{Delete}')
 
 				expect(caretIsInside(markBlock)).toBe(true)
@@ -741,7 +734,7 @@ describe('Feature: drag row keyboard navigation', () => {
 	describe('typing in rows', () => {
 		it('update raw value when typing a character at end of row', async () => {
 			const {container} = await render(PlainTextDrag)
-			await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
+			await focusAtEnd(getAllRows(container)[0])
 			await userEvent.keyboard('!')
 
 			expect(getRawValue(container)).toContain('First block of plain text!')
@@ -749,7 +742,7 @@ describe('Feature: drag row keyboard navigation', () => {
 
 		it('update raw value when deleting a character with Backspace mid-row', async () => {
 			const {container} = await render(PlainTextDrag)
-			await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
+			await focusAtEnd(getAllRows(container)[0])
 			await userEvent.keyboard('{Backspace}')
 
 			expect(getRawValue(container)).toContain('First block of plain tex')
@@ -763,7 +756,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const {container} = await render(PlainTextDrag)
 			const rows = getAllRows(container)
 
-			await focusAtEnd(getEditableInRow(rows[1]))
+			await focusAtEnd(rows[1])
 			await userEvent.keyboard('{Control>}a{/Control}')
 			await userEvent.keyboard('X')
 
@@ -789,7 +782,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('append character after last mark when typing at end of mark row', async () => {
 			const {container} = await render(MarkdownDrag)
 			const blocks = getBlocks(container)
-			await focusAtEnd(getEditableInRow(blocks[0]))
+			await focusAtEnd(blocks[0])
 			await userEvent.keyboard('!')
 
 			const block0Raw = getRawValue(container).split('\n\n')[0]
@@ -803,9 +796,9 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('update raw value when pasting text at end of a plain text row', async () => {
 			const {container} = await render(PlainTextDrag)
 			const rows = getAllRows(container)
-			const editable = getEditableInRow(rows[0])
-			await focusAtEnd(editable)
-			dispatchPaste(editable, ' pasted')
+			const row = rows[0]
+			await focusAtEnd(row)
+			dispatchPaste(row, ' pasted')
 			await expect.element(page.getByText(/First block of plain text pasted/).first()).toBeInTheDocument()
 
 			expect(getRawValue(container)).toContain('First block of plain text pasted')
@@ -814,9 +807,9 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('not affect other rows when pasting in one row', async () => {
 			const {container} = await render(PlainTextDrag)
 			const rows = getAllRows(container)
-			const editable = getEditableInRow(rows[0])
-			await focusAtEnd(editable)
-			dispatchPaste(editable, '!')
+			const row = rows[0]
+			await focusAtEnd(row)
+			dispatchPaste(row, '!')
 			await expect.element(page.getByText(/First block of plain text!/).first()).toBeInTheDocument()
 
 			const raw = getRawValue(container)
@@ -828,9 +821,9 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('update raw value when pasting text at end of a mark row', async () => {
 			const {container} = await render(MarkdownDrag)
 			const blocks = getBlocks(container)
-			const editable = getEditableInRow(blocks[0])
-			await focusAtEnd(editable)
-			dispatchPaste(editable, '!')
+			const row = blocks[0]
+			await focusAtEnd(row)
+			dispatchPaste(row, '!')
 			await expect.element(page.getByText('# Welcome to Draggable Blocks!').first()).toBeInTheDocument()
 
 			const block0Raw = getRawValue(container).split('\n\n')[0]
@@ -842,8 +835,8 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('increase row count by 1', async () => {
 			const {container} = await render(PlainTextDrag)
 
-			const editable = getEditableInRow(getAllRows(container)[0])
-			await userEvent.click(editable)
+			const row = getAllRows(container)[0]
+			await userEvent.click(row)
 			await userEvent.keyboard('{Home}')
 			await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}')
 			await userEvent.keyboard('{Enter}')
@@ -854,8 +847,8 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('put text before caret in current row', async () => {
 			const {container} = await render(PlainTextDrag)
 
-			const editable = getEditableInRow(getAllRows(container)[0])
-			await userEvent.click(editable)
+			const row = getAllRows(container)[0]
+			await userEvent.click(row)
 			await userEvent.keyboard('{Home}')
 			await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}')
 			await userEvent.keyboard('{Enter}')
@@ -868,8 +861,8 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('put text after caret in new row', async () => {
 			const {container} = await render(PlainTextDrag)
 
-			const editable = getEditableInRow(getAllRows(container)[0])
-			await userEvent.click(editable)
+			const row = getAllRows(container)[0]
+			await userEvent.click(row)
 			await userEvent.keyboard('{Home}')
 			await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}')
 			await userEvent.keyboard('{Enter}')
@@ -882,7 +875,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('insert new empty row after mark row when pressing Enter on mark', async () => {
 			const {container} = await render(MarkdownDrag)
 			const blocks = getBlocks(container)
-			await focusAtEnd(getEditableInRow(blocks[0]))
+			await focusAtEnd(blocks[0])
 			await userEvent.keyboard('{Enter}')
 
 			const raw = getRawValue(container)
