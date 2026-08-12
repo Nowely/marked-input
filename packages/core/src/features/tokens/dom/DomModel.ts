@@ -1,9 +1,9 @@
 import {untracked} from '../../../shared/signals/index.js'
 import type {Id, NodeAnchor, TreeNode} from '../tree/types'
-import {getRect, placeRangeAcrossSurfaces} from './caret'
+import {getRect, placeRangeAcrossBoundaries} from './caret'
+import type {CaretBoundary} from './caret'
 import {anchorFromBoundary} from './domBoundary'
 import type {AnchorContext, Lookup, TokenView} from './domBoundary'
-import {textLength} from './textOffsets'
 import type {TokenHandle} from './TokenHandle'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
@@ -184,21 +184,25 @@ export class DomModel {
 	}
 
 	/**
-	 * Select between two node anchors. Order-insensitive: the pair is normalized in
-	 * DOM order before being forwarded to the Range API, which collapses rather than
-	 * spans when its end precedes its start. That normalization is the one job the
-	 * deleted numeric form did with `min`/`max`; `compareDocumentPosition` answers it
-	 * without a coordinate.
+	 * Select between two node anchors. Order-insensitive: {@link placeRangeAcrossBoundaries}
+	 * normalizes the pair in DOM order, because the Range API collapses rather than spans when
+	 * its end precedes its start.
 	 *
-	 * Both ends must resolve to a TEXT SURFACE — a Range boundary inside a mark's
-	 * presentation is not a document position the model owns.
+	 * Either end may be a MARK. It could not until now — both had to resolve to a TEXT SURFACE,
+	 * on the reading that a Range boundary inside a mark's presentation is not a document
+	 * position the model owns. True of the INSIDE, but a mark's endpoints are its PARENT
+	 * coordinates (spec S2, and what `placeCaret` has answered since the one-host flip), and
+	 * refusing them silently dropped whole selections: on a block document that ends with a
+	 * mark, select-all resolved `{after: mark}`, this method declined, and the DOM selection
+	 * never moved while the STORED one said all-selected — so the next keystroke replaced a
+	 * document the user could not see was selected. Both ends now go through
+	 * {@link TokenHandle.caretBoundary}, the same answer `placeCaret` places.
 	 */
 	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean {
-		const a = this.#surfaceAt(anchor)
-		const b = this.#surfaceAt(head)
+		const a = this.#boundaryAt(anchor)
+		const b = this.#boundaryAt(head)
 		if (!a || !b) return false
-		const [lo, hi] = precedes(a, b) ? [a, b] : [b, a]
-		placeRangeAcrossSurfaces(lo, hi)
+		placeRangeAcrossBoundaries(a, b)
 		return true
 	}
 
@@ -226,22 +230,14 @@ export class DomModel {
 		return {id: anchor.after.id, offset: Infinity}
 	}
 
-	/** The anchor's own text surface and the offset inside it, or `undefined` when it has none. */
-	#surfaceAt(anchor: NodeAnchor): SurfacePoint | undefined {
+	/**
+	 * The anchor as a concrete DOM boundary, through its OWN node's handle — the one the
+	 * caret commands place. `undefined` while that handle is unbound or mid-window, which is
+	 * the same fail-closed reading {@link placeCaret} has.
+	 */
+	#boundaryAt(anchor: NodeAnchor): CaretBoundary | undefined {
 		const target = this.#targetOf(anchor)
 		if (!target) return undefined
-		const element = this.deps.handle(target.id)?.node()?.textElement
-		if (!element) return undefined
-		// Resolved HERE and not left to `placeRangeAcrossSurfaces`: its walk treats a
-		// non-finite offset as "ran out of text" and answers the FIRST text node's end.
-		return {element, offset: Number.isFinite(target.offset) ? target.offset : textLength(element)}
+		return this.deps.handle(target.id)?.caretBoundary(target.offset)
 	}
-}
-
-type SurfacePoint = {element: HTMLElement; offset: number}
-
-/** Document order of two surface points — the DOM's own answer, formed from no coordinate. */
-function precedes(a: SurfacePoint, b: SurfacePoint): boolean {
-	if (a.element === b.element) return a.offset <= b.offset
-	return (a.element.compareDocumentPosition(b.element) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
 }

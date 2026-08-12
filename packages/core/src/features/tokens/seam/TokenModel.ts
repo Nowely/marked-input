@@ -76,7 +76,7 @@ export class TokenModel {
 		// {@link value} is props-first, so `#tree.value()` disagrees with it exactly while a
 		// controlled parent's value is ahead of the last arrival.
 		offsetOf: anchor => this.#offsetOf(anchor),
-		anchorAt: offset => this.anchorAt(offset),
+		anchorAt: (offset, side) => this.anchorAt(offset, side),
 		value: () => this.value(),
 	})
 
@@ -273,9 +273,9 @@ export class TokenModel {
 	 * Seeds for the same reason the write verbs do: an unmaterialized tree has no roots, so
 	 * every offset would answer `'end'`.
 	 */
-	anchorAt(offset: number): NodeAnchor {
+	anchorAt(offset: number, side?: 'left' | 'right'): NodeAnchor {
 		this.#ensureSeeded()
-		return untracked(() => anchorAtOffset(this.#tree.roots(), offset))
+		return untracked(() => anchorAtOffset(this.#tree.roots(), offset, side))
 	}
 
 	/** Resolve a DOM node to its handle, 'control' if inside a control root, or undefined if outside the container. */

@@ -1,4 +1,3 @@
-import {nodeTarget} from '../../shared/checkers'
 import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
@@ -7,7 +6,7 @@ type KbCtx = Pick<Store, 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Anchors} from '../tokens'
 import {anchorEquals} from '../tokens'
-import {anchorsFromInputEvent, dropUnexpressedInput, isConsumerOrigin} from './beforeInput'
+import {anchorsFromInputEvent, dropUnexpressedInput, isConsumerKeyOrigin, isConsumerOrigin} from './beforeInput'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'paste', e => {
@@ -25,12 +24,21 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 	)
 
 	listen(container, 'keydown', e => {
+		// ONE consumer-origin test for the WHOLE keydown tier, matching what
+		// `handleBeforeInput` does on its own: DOM the consumer owns — a registered control
+		// root, or an explicit `contenteditable` island — handles its own keys, and the model
+		// must neither act on them nor cancel them.
+		//
+		// It used to guard the select-all branch alone, and only against controls. Both gaps
+		// ended in silent data loss through the SAME door, because the branches below key on
+		// the STORED selection rather than on where the keystroke came from: Ctrl+A inside an
+		// island hijacked select-all, and the next character — or a Backspace, through
+		// `handleDeleteKey`'s all-selected arm — replaced the whole value.
+		if (isConsumerKeyOrigin(store, container, e)) return
+
 		// Layout-independent on purpose: selecting the whole value is a model operation, and
-		// block rows are values too. A control root keeps its own select-all, though — that
-		// keystroke belongs to the consumer's chrome.
+		// block rows are values too.
 		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
-			const target = nodeTarget(e)
-			if (target && store.tokens.handleAt(target) === 'control') return
 			e.preventDefault()
 			store.tokens.selection.selectAll()
 			return

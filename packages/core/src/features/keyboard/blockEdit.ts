@@ -10,7 +10,7 @@ import {addDragRow, mergeDragRows, canMergeRows, deleteDragRow} from '../block/o
 import {consumeMarkupPaste} from '../clipboard'
 import type {Anchors, NodeAnchor, TokenHandle, TreeNode} from '../tokens'
 import {anchorEquals} from '../tokens'
-import {anchorsFromInputEvent, dropUnexpressedInput} from './beforeInput'
+import {anchorsFromInputEvent, dropUnexpressedInput, isConsumerKeyOrigin} from './beforeInput'
 
 /** The tree's own string, addressed by anchors — never the props-first `value()`. */
 function sliceRead(store: KbCtx): SliceRead {
@@ -74,6 +74,11 @@ function findActiveRow(store: KbCtx, target: Node | null): ActiveRow | undefined
 export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'keydown', e => {
 		if (!store.props.layout.isBlock()) return
+		// The same consumer-origin test `enableInput`'s keydown tier takes, and for the same
+		// reason: `findActiveRow` below excluded CONTROLS only, so Backspace or Enter inside a
+		// consumer's editable island resolved a row from the stored selection and edited (or
+		// merged) it. A control root is still excluded there, where row identity is decided.
+		if (isConsumerKeyOrigin(store, container, e)) return
 
 		// No arrow arm: one host makes cross-row caret movement native.
 		handleDelete(store, e)

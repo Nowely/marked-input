@@ -74,6 +74,22 @@ export function isConsumerOrigin(store: KbCtx, container: HTMLElement, event: In
 }
 
 /**
+ * The same verdict for a KEY event, which carries no target range: its only origin is where
+ * the key was pressed. Its own export because that difference is the whole of it — a
+ * `beforeinput` asks about where the edit would LAND, a keydown about where the user IS.
+ *
+ * The keydown tier had only half of this test (controls, and only on the select-all branch),
+ * and the missing half cost the same as it would here: the branches it guards key on the
+ * STORED selection, so a Ctrl+A inside a consumer's island took the model's select-all and
+ * the next keystroke replaced the whole value.
+ */
+export function isConsumerKeyOrigin(store: KbCtx, container: HTMLElement, event: KeyboardEvent): boolean {
+	const target = nodeTarget(event)
+	if (!target) return false
+	return store.tokens.handleAt(target) === 'control' || inExplicitEditableIsland(target, container)
+}
+
+/**
  * The `contentEditable` PROPERTY, never `isContentEditable` — the distinction is the whole
  * test, and it is what `domBoundary`'s twin walk cannot be reused for. That one stops at a
  * MARK, which is `ce=false`, so inherited editability under it can only come from an

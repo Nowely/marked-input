@@ -46,6 +46,36 @@ describe('offsetOfAnchor', () => {
 	})
 })
 
+describe('anchorAt', () => {
+	it('answers a slotless mark by the SIDE its caller asked for', () => {
+		// The fallback for an offset no text token covers. `side` is a parameter and not a
+		// rule because the two readings are both correct and both wanted: the DEFAULT (right)
+		// is what a post-edit caret repair needs — an offset landing on a mark's start belongs
+		// after whatever was just typed — while `'left'` is what a select-all seed needs, or
+		// the selection begins after the mark it should start at. Globalizing the left reading
+		// regressed controlled-mode typing; only `Selection.selectAll`'s START seed passes it.
+		const tree = createTokenTree(new Parser(['@[__value__]']).parse('@[x]'))
+		const mark = tree.roots()[1]
+		if (mark.kind !== 'mark') throw new Error('expected a mark root')
+		// Probed against the mark ALONE: the inline parse brackets it with empty text tokens
+		// covering [0,4]'s two ends, which would answer first — block layout is exactly the
+		// mode that filters those away.
+		const roots = [mark]
+
+		expect(anchorAt(roots, 0, 'left')).toEqual({before: mark})
+		expect(anchorAt(roots, 0)).toEqual({after: mark})
+		expect(anchorAt(roots, 0, 'right')).toEqual({after: mark})
+
+		// `'left'` reaches the START only: the end and the interior have no second reading.
+		expect(anchorAt(roots, 4, 'left')).toEqual({after: mark})
+		expect(anchorAt(roots, 2, 'left')).toEqual({after: mark})
+
+		// Each side still projects back to the offset it was formed from.
+		expect(offsetOfAnchor(roots, anchorAt(roots, 0, 'left'))).toBe(0)
+		expect(offsetOfAnchor(roots, anchorAt(roots, 4))).toBe(4)
+	})
+})
+
 describe('anchorEquals', () => {
 	it('compares node identity and local offset', () => {
 		const tree = build('ab@[x]cd')

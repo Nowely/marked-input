@@ -122,6 +122,25 @@ describe('TokenModel placement commands', () => {
 		expect(store.tokens.domAnchors()).toEqual(spanned)
 	})
 
+	it('selectRange accepts a MARK endpoint in parent coordinates', () => {
+		// A mark has no text surface, and both ends used to have to resolve to one — so a
+		// selection reaching a mark's own boundary was REFUSED and the DOM selection silently
+		// stayed where it was while the stored one moved. Its endpoints are the parent
+		// coordinates `placeCaret` has placed since the one-host flip; `selectRange` now reads
+		// the same answer, and Chromium spans the mixed range (text end + container index).
+		const {store, container} = mountWithMark()
+		const roots = store.tokens.nodes()
+		const mark = roots[1]
+
+		expect(store.tokens.selectRange(store.tokens.anchorAt(0), {after: mark})).toBe(true)
+
+		// The DOM really moved: the round-trip re-reads the live range, and the mark's own
+		// text ('x', the adapter's presentation) is inside the selected span.
+		expect(store.tokens.domAnchors()).toEqual({anchor: {node: roots[0], offset: 0}, head: {after: mark}})
+		expect(window.getSelection()?.toString()).toBe('hex')
+		container.remove()
+	})
+
 	it('selects to the END of a surface the browser split into two text nodes', () => {
 		// THE gate on `#surfaceAt`'s length clamp. An `{after: node}` anchor means "the end
 		// of this surface" and carries `Infinity` as its local offset; `findTextBoundary`

@@ -20,13 +20,21 @@ export function getRect(): DOMRect | null {
 }
 
 /**
+ * A concrete DOM boundary — what a `Range` endpoint and a collapsed caret both take. TWO
+ * shapes reach it and they are not interchangeable: a text surface resolves to (Text, char
+ * offset), while a MARK has no anchorable interior and resolves to its PARENT plus the child
+ * index before or after it. Naming the pair is what lets a range span one of each.
+ */
+export type CaretBoundary = {node: Node; offset: number}
+
+/**
  * Resolve a character offset within a structural text surface to a concrete
  * (Text, offset) pair. If the surface contains no Text node, append an empty
- * one and target it. Used by `placeAtTextOffset` / `placeRangeAcrossSurfaces` —
+ * one and target it. Used by `placeAtTextOffset` / `placeRangeAcrossBoundaries` —
  * needs the empty-Text fallback so freshly-mounted empty surfaces still accept
  * a caret.
  */
-function findTextBoundary(surface: HTMLElement, offset: number): {node: Text; offset: number} {
+export function findTextBoundary(surface: HTMLElement, offset: number): {node: Text; offset: number} {
 	const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
 	let remaining = Math.max(0, offset)
 	let node = nextText(walker)
@@ -40,16 +48,20 @@ function findTextBoundary(surface: HTMLElement, offset: number): {node: Text; of
 	return {node: text, offset: text.length}
 }
 
-/** Place a collapsed caret at a character offset inside a text surface. */
-export function placeAtTextOffset(surface: HTMLElement, offset: number): void {
+/** THE collapsed placement: one boundary of either shape becomes the whole selection. */
+export function collapseTo(boundary: CaretBoundary): void {
 	const selection = window.getSelection()
 	if (!selection) return
-	const {node, offset: nodeOffset} = findTextBoundary(surface, offset)
 	const range = document.createRange()
-	range.setStart(node, nodeOffset)
+	range.setStart(boundary.node, boundary.offset)
 	range.collapse(true)
 	selection.removeAllRanges()
 	selection.addRange(range)
+}
+
+/** Place a collapsed caret at a character offset inside a text surface. */
+export function placeAtTextOffset(surface: HTMLElement, offset: number): void {
+	collapseTo(findTextBoundary(surface, offset))
 }
 
 /**
@@ -57,27 +69,29 @@ export function placeAtTextOffset(surface: HTMLElement, offset: number): void {
  * "before/after an atomic child", whose own interior holds no reachable position.
  */
 export function placeAtParentBoundary(parent: HTMLElement, childIndex: number): void {
-	const selection = window.getSelection()
-	if (!selection) return
-	const range = document.createRange()
-	range.setStart(parent, childIndex)
-	range.collapse(true)
-	selection.removeAllRanges()
-	selection.addRange(range)
+	collapseTo({node: parent, offset: childIndex})
 }
 
-/** Build a (possibly non-collapsed) selection range across two text surfaces. */
-export function placeRangeAcrossSurfaces(
-	start: {element: HTMLElement; offset: number},
-	end: {element: HTMLElement; offset: number}
-): void {
+/**
+ * Build a (possibly non-collapsed) selection range between two DOM boundaries of EITHER shape
+ * — text-anchored, parent-anchored, or one of each. The mixed range is the one a document
+ * that ends (or begins) with a mark needs, and Chromium takes it: MEASURED, a range from a
+ * container child index to a text offset selects the span between them, `toString()` included.
+ *
+ * The pair is normalized in DOM order first, because `setEnd` before the start COLLAPSES the
+ * range rather than spanning backwards. `comparePoint` answers that without a coordinate:
+ * both boundaries live under the one editing host, so they are always comparable.
+ */
+export function placeRangeAcrossBoundaries(a: CaretBoundary, b: CaretBoundary): void {
 	const selection = window.getSelection()
 	if (!selection) return
-	const startBoundary = findTextBoundary(start.element, start.offset)
-	const endBoundary = findTextBoundary(end.element, end.offset)
+	const probe = document.createRange()
+	probe.setStart(a.node, a.offset)
+	probe.collapse(true)
+	const [lo, hi] = probe.comparePoint(b.node, b.offset) >= 0 ? [a, b] : [b, a]
 	const range = document.createRange()
-	range.setStart(startBoundary.node, startBoundary.offset)
-	range.setEnd(endBoundary.node, endBoundary.offset)
+	range.setStart(lo.node, lo.offset)
+	range.setEnd(hi.node, hi.offset)
 	selection.removeAllRanges()
 	selection.addRange(range)
 }

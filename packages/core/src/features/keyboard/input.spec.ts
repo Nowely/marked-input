@@ -9,6 +9,7 @@ import {
 	mountWithMark,
 	selectionRange,
 } from '../tokens/__testing__/mountFixtures'
+import {offsetOfAnchor} from '../tokens/tree/anchors'
 
 /**
  * A consumer's own editable island inside a mark — the shape the guard must neither edit
@@ -69,11 +70,79 @@ function selectBoundary(node: Node, offset: number): Range {
 	return range
 }
 
+/**
+ * {@link mountAdjacentMarks} under a CONTROLLED parent that echoes every `onChange` straight
+ * back, the way an adapter's `useState` does. The echo is what owns the caret there.
+ */
+function mountControlledAdjacentMarks() {
+	const store = new Store()
+	const echoed = {value: 'a@[m1](1)@[m2](2)b'}
+	store.props.set({
+		value: echoed.value,
+		onChange: (next: string) => {
+			echoed.value = next
+			store.props.set({value: next})
+		},
+		options: [{markup: '@[__value__](__meta__)'}],
+		Mark: () => null,
+	})
+	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
+	for (const _root of store.tokens.nodes()) container.append(document.createElement('span'))
+	store.host.rendered()
+	return {store, container, echoed}
+}
+
 /** The live caret as the browser would hand it to `getTargetRanges()` on the next keystroke. */
 function liveCaretRange(): Range {
 	const selection = window.getSelection()
 	if (!selection?.rangeCount) throw new Error('no window selection')
 	return selection.getRangeAt(0)
+}
+
+/**
+ * A BLOCK document with a MARK at one edge. Block mode filters the EMPTY text tokens a mark
+ * is bracketed with inline (`valueBoundary.ts`), so nothing covers that mark's own boundary
+ * offsets — the state the select-all defect lived in, and the reason it takes block layout to
+ * reach: the inline parse of the same value has an empty text token on each side.
+ *
+ * One `<div>` per ROOT holding exactly one token element, which is what `bind` aligns a block
+ * frame against; a mark with children gets one element per child, a markless one gets the
+ * presentation text an adapter would render.
+ */
+function mountBlockWithMarkEdge(value: string) {
+	const store = new Store()
+	store.props.set({
+		defaultValue: value,
+		layout: 'block',
+		Mark: () => null,
+		options: [{markup: '__slot__\n\n'}, {markup: '@[__value__](__meta__)'}],
+	})
+	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
+	for (const root of store.tokens.nodes()) {
+		const row = document.createElement('div')
+		const token = document.createElement('span')
+		const children = root.kind === 'mark' ? root.children() : []
+		if (root.kind === 'mark' && children.length === 0) token.append(document.createTextNode('MARK'))
+		for (const _child of children) token.append(document.createElement('span'))
+		row.append(token)
+		container.append(row)
+	}
+	store.host.rendered()
+	return {store, container}
+}
+
+/** The live DOM selection as document offsets — what the model believes is SHOWN. */
+function domSelectionRange(store: Store): {start: number; end: number} | undefined {
+	const anchors = store.tokens.domAnchors()
+	if (!anchors) return undefined
+	const roots = store.tokens.nodes()
+	const anchor = offsetOfAnchor(roots, anchors.anchor)
+	const head = offsetOfAnchor(roots, anchors.head)
+	return anchor <= head ? {start: anchor, end: head} : {start: head, end: anchor}
 }
 
 function inputEvent(inputType: string, range: Range, init?: InputEventInit): InputEvent {
@@ -105,6 +174,36 @@ describe('handleBeforeInput()', () => {
 		// The DOM boundary resolves to the LIVE node, not to the number 1 (spec S2 §4.5).
 		expect(replace).toHaveBeenCalledWith({node, offset: 1}, {node, offset: 1}, 'x')
 		expect(selectionRange(store)).toEqual({start: 2, end: 2})
+		container.remove()
+	})
+
+	it('types two characters into the gap of a CONTROLLED document, through the echo', async () => {
+		// The controlled path is a different caret owner: `EditController` moves no caret there
+		// (the tree has not changed yet), so the post-edit position comes from the ECHO's
+		// repair — `map` re-anchoring the captured selection through `anchorAt`. That makes the
+		// repair a second consumer of the mark fallback, with the OPPOSITE affinity to
+		// `selectAll`'s seed, and it is why the side is a PARAMETER: a review measured the
+		// globalized left reading landing the second character before the preceding mark
+		// ('aY@[m1](1)X@…').
+		//
+		// This case covers the controlled echo end to end; it does NOT discriminate that
+		// affinity — MEASURED: re-applying the unconditional arm leaves it green, because
+		// every offset it maps through IS covered by a text token here (the inline parse keeps
+		// the gap token, and the repair lands inside it). The affinity split is pinned where it
+		// lives, in `tree/anchors.spec.ts`.
+		const {store, container, echoed} = mountControlledAdjacentMarks()
+		selectBoundary(container, 2)
+		// The driver's sync and re-place own the caret before the first keystroke, exactly as
+		// they do between two real key events.
+		await new Promise(resolve => setTimeout(resolve, 0))
+
+		container.dispatchEvent(inputEvent('insertText', liveCaretRange(), {data: 'X'}))
+		expect(echoed.value).toBe('a@[m1](1)X@[m2](2)b')
+		await new Promise(resolve => setTimeout(resolve, 0))
+		container.dispatchEvent(inputEvent('insertText', liveCaretRange(), {data: 'Y'}))
+
+		expect(echoed.value).toBe('a@[m1](1)XY@[m2](2)b')
+		expect(store.tokens.value()).toBe('a@[m1](1)XY@[m2](2)b')
 		container.remove()
 	})
 
@@ -438,6 +537,23 @@ describe('handleBeforeInput()', () => {
 		container.remove()
 	})
 
+	it('leaves Ctrl/Cmd+A to a consumer EDITABLE ISLAND', () => {
+		// The keydown tier's half of the consumer-origin rule, and the asymmetry it closes:
+		// `handleBeforeInput` has exempted explicit islands all along, this branch exempted
+		// CONTROLS only. So Ctrl+A inside a consumer's own editable widget took the model's
+		// select-all — measured harm, because the next character then reached the
+		// all-selected branch and replaced the whole value with it.
+		const {store, container, descendantText} = mountStructuralMarkWithDescendant()
+		const event = new KeyboardEvent('keydown', {code: 'KeyA', ctrlKey: true, bubbles: true, cancelable: true})
+
+		descendantText.parentElement?.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(store.tokens.selection.isAllSelected()).toBe(false)
+		expect(store.tokens.selection.anchors()).toBeUndefined()
+		container.remove()
+	})
+
 	it('leaves Ctrl/Cmd+A to a control root', () => {
 		const {store, container, controlInput} = mountInlineWithControl()
 
@@ -578,6 +694,56 @@ describe('handleBeforeInput()', () => {
 
 			expect(event.defaultPrevented).toBe(true)
 			expect(store.tokens.value()).toBe('a@[m2](2)b')
+			container.remove()
+		})
+	})
+
+	/**
+	 * SELECT-ALL over a document whose EDGE is a mark — silent data loss until now, and it took
+	 * two roots to reach: `anchorAt`'s mark fallback ignored which SIDE the offset was on, and
+	 * `selectRange` refused an endpoint without a text surface.
+	 *
+	 * Mark-LAST lost the DOM half only: stored anchors said all-selected while the DOM
+	 * selection never moved, so the next keystroke replaced a document nothing showed as
+	 * selected. Mark-FIRST lost both: `{after: mark}` projected to the mark's END, so
+	 * `isAllSelected` was false, and the keystroke that follows a cancelled Ctrl+A edited one
+	 * character where the user expected a replacement.
+	 */
+	describe('select-all over mark-edge block documents', () => {
+		const ctrlA = () => new KeyboardEvent('keydown', {code: 'KeyA', ctrlKey: true, bubbles: true, cancelable: true})
+
+		it.each([
+			['LAST', 'plain\n\n@[m](1)'],
+			['FIRST', '@[m](1)\n\nplain\n\n'],
+		])('selects the whole document when the mark is %s', (_label, value) => {
+			const {store, container} = mountBlockWithMarkEdge(value)
+			const length = store.tokens.value().length
+
+			container.dispatchEvent(ctrlA())
+
+			expect(store.tokens.selection.isAllSelected()).toBe(true)
+			// The DOM half, and the one the stored state cannot vouch for: the live selection
+			// must SPAN the document, not merely have been asked to.
+			expect(domSelectionRange(store)).toEqual({start: 0, end: length})
+			expect(window.getSelection()?.isCollapsed).toBe(false)
+			expect(window.getSelection()?.toString()).toContain('plain')
+			container.remove()
+		})
+
+		it.each([
+			['LAST', 'plain\n\n@[m](1)'],
+			['FIRST', '@[m](1)\n\nplain\n\n'],
+		])('typing after select-all replaces the whole document (mark %s)', (_label, value) => {
+			// The intended semantics, now VISIBLE: the same keystroke did this before the fix
+			// on the mark-LAST document while the DOM showed no selection at all.
+			const {store, container} = mountBlockWithMarkEdge(value)
+
+			container.dispatchEvent(ctrlA())
+			container.dispatchEvent(
+				new InputEvent('beforeinput', {inputType: 'insertText', data: 'Z', bubbles: true, cancelable: true})
+			)
+
+			expect(store.tokens.value()).toBe('Z')
 			container.remove()
 		})
 	})
