@@ -6,7 +6,7 @@ type KbCtx = Pick<Store, 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Anchors} from '../tokens'
 import {anchorEquals} from '../tokens'
-import {anchorsFromInputEvent} from './inputAnchors'
+import {anchorsFromInputEvent, dropUnexpressedInput, isConsumerKeyOrigin, isConsumerOrigin} from './beforeInput'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'paste', e => {
@@ -24,6 +24,25 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 	)
 
 	listen(container, 'keydown', e => {
+		// ONE consumer-origin test for the WHOLE keydown tier, matching what
+		// `handleBeforeInput` does on its own: DOM the consumer owns — a registered control
+		// root, or an explicit `contenteditable` island — handles its own keys, and the model
+		// must neither act on them nor cancel them.
+		//
+		// It used to guard the select-all branch alone, and only against controls. Both gaps
+		// ended in silent data loss through the SAME door, because the branches below key on
+		// the STORED selection rather than on where the keystroke came from: Ctrl+A inside an
+		// island hijacked select-all, and the next character — or a Backspace, through
+		// `handleDeleteKey`'s all-selected arm — replaced the whole value.
+		if (isConsumerKeyOrigin(store, container, e)) return
+
+		// Layout-independent on purpose: selecting the whole value is a model operation, and
+		// block rows are values too.
+		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
+			e.preventDefault()
+			store.tokens.selection.selectAll()
+			return
+		}
 		handleDeleteKey(store, e)
 	})
 }
@@ -56,6 +75,12 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 }
 
 function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent): void {
+	// Consumer DOM is neither edited nor cancelled here, and the all-selected branch below
+	// is why this has to come FIRST: it keys on the STORED selection, not on where the
+	// event came from, so a character typed into a control's own `<input>` would replace
+	// the entire value with that character.
+	if (isConsumerOrigin(store, container, event)) return
+
 	if (store.tokens.selection.isAllSelected()) {
 		// The `paste` listener owns this one end-to-end: it consumes the markup
 		// clipboard entry and performs the whole-value replace itself.
@@ -69,22 +94,31 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 		// drop (insertFromDrop, whose payload is on dataTransfer) wiped the value; it
 		// also ignored the markup clipboard on insertReplacementText.
 		const replacement = replacementForInput(container, event)
-		if (replacement === undefined) return
+		if (replacement === undefined) {
+			dropUnexpressedInput(container, event)
+			return
+		}
 		event.preventDefault()
 		store.edit.setValue(replacement)
 		return
 	}
 
+	// Block layout's own guard is `blockEdit`'s `handleBlockBeforeInput`, which fails
+	// closed the same way this tail does.
 	if (store.props.layout.isBlock()) return
 
 	const anchors = anchorsFromInputEvent(store, event)
-	if (!anchors) return
-
 	const replacement = replacementForInput(container, event)
-	if (replacement === undefined) return
+	if (anchors === undefined || replacement === undefined) {
+		dropUnexpressedInput(container, event)
+		return
+	}
 
 	const target = anchorsForInput(store, event, anchors)
-	if (!target) return
+	if (!target) {
+		dropUnexpressedInput(container, event)
+		return
+	}
 
 	event.preventDefault()
 	store.edit.replace(target.anchor, target.head, replacement)
@@ -97,6 +131,10 @@ function replacementForInput(container: HTMLElement, event: InputEvent): string 
 		return markup ?? event.dataTransfer?.getData('text/plain') ?? event.data ?? ''
 	}
 	if (event.inputType === 'insertText') return event.data ?? ''
+	// Enter is a newline in the VALUE, not a DOM line break: the guard owns the edit, so
+	// the browser never gets to build a <div>/<br> inside the host.
+	if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') return '\n'
+	if (event.inputType === 'insertFromDrop') return event.dataTransfer?.getData('text/plain') ?? ''
 	return undefined
 }
 

@@ -1,39 +1,39 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Component: stories > Ant stories > Story Tagged 1`] = `
-"<div>
-  <span contenteditable="true">We preset five different colors. You can set color property such as </span>
-  <span tabindex="0">success</span>
-  <span contenteditable="true">, </span>
-  <span tabindex="0">processing</span>
-  <span contenteditable="true">, </span>
-  <span tabindex="0">error</span>
-  <span contenteditable="true">, </span>
-  <span tabindex="0">default</span>
-  <span contenteditable="true"> and </span>
-  <span tabindex="0">warning</span>
-  <span contenteditable="true"> to show specific status.</span>
+"<div contenteditable="true">
+  <span>We preset five different colors. You can set color property such as </span>
+  <span contenteditable="false">success</span>
+  <span>, </span>
+  <span contenteditable="false">processing</span>
+  <span>, </span>
+  <span contenteditable="false">error</span>
+  <span>, </span>
+  <span contenteditable="false">default</span>
+  <span> and </span>
+  <span contenteditable="false">warning</span>
+  <span> to show specific status.</span>
 </div>"
 `;
 
 exports[`Component: stories > Api stories > Story Block 1`] = `
 "<div>
-  <div>
+  <div contenteditable="true">
     <div data-testid="block">
-      <div>
-        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+      <div contenteditable="false">
+        <button type="button" draggable="false" aria-label="Block options">
           <span></span>
         </button>
       </div>
-      <mark data-testid="mark" tabindex="0">a</mark>
+      <mark data-testid="mark" contenteditable="false">a</mark>
     </div>
     <div data-testid="block">
-      <div>
-        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+      <div contenteditable="false">
+        <button type="button" draggable="false" aria-label="Block options">
           <span></span>
         </button>
       </div>
-      <mark data-testid="mark" tabindex="0">b</mark>
+      <mark data-testid="mark" contenteditable="false">b</mark>
     </div>
   </div>
   <div>
@@ -53,10 +53,10 @@ exports[`Component: stories > Api stories > Story Block 1`] = `
 
 exports[`Component: stories > Api stories > Story Default 1`] = `
 "<div>
-  <div>
-    <span contenteditable="true">hello </span>
-    <mark data-testid="mark" tabindex="0">world</mark>
-    <span contenteditable="true"> foo</span>
+  <div contenteditable="true">
+    <span>hello </span>
+    <mark data-testid="mark" contenteditable="false">world</mark>
+    <span> foo</span>
   </div>
   <div>
     <button type="button" data-testid="insert-at-caret">insert at caret</button>
@@ -74,23 +74,23 @@ exports[`Component: stories > Api stories > Story Default 1`] = `
 `;
 
 exports[`Component: stories > Base stories > Story Autocomplete 1`] = `
-"<div>
-  <span contenteditable="true">Hello, clickable marked @world!</span>
+"<div contenteditable="true">
+  <span>Hello, clickable marked @world!</span>
 </div>"
 `;
 
 exports[`Component: stories > Base stories > Story Configured 1`] = `
 "<div>
-  <div>
-    <span contenteditable="true">Enter the '@' for calling </span>
-    <button type="button" tabindex="0">primary</button>
-    <span contenteditable="true"> suggestions and '/' for </span>
-    <button type="button" tabindex="0">default</button>
-    <span contenteditable="true">!&#10;Mark is can be a any component with any logic. In this example it is the </span>
-    <button type="button" tabindex="0">Button</button>
-    <span contenteditable="true">: clickable primary or secondary.&#10;For found mark used </span>
-    <button type="button" tabindex="0">annotations</button>
-    <span contenteditable="true">.</span>
+  <div contenteditable="true">
+    <span>Enter the '@' for calling </span>
+    <button type="button" contenteditable="false">primary</button>
+    <span> suggestions and '/' for </span>
+    <button type="button" contenteditable="false">default</button>
+    <span>!&#10;Mark is can be a any component with any logic. In this example it is the </span>
+    <button type="button" contenteditable="false">Button</button>
+    <span>: clickable primary or secondary.&#10;For found mark used </span>
+    <button type="button" contenteditable="false">annotations</button>
+    <span>.</span>
   </div>
   <div></div>
   <div>
@@ -107,250 +107,250 @@ exports[`Component: stories > Base stories > Story Configured 1`] = `
 `;
 
 exports[`Component: stories > Base stories > Story Default 1`] = `
-"<div>
-  <span contenteditable="true">Hello, clickable marked </span>
-  <mark tabindex="0">world</mark>
-  <span contenteditable="true">!</span>
+"<div contenteditable="true">
+  <span>Hello, clickable marked </span>
+  <mark contenteditable="false">world</mark>
+  <span>!</span>
 </div>"
 `;
 
 exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
-"<div>
+"<div contenteditable="true">
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span contenteditable="true">hello&#10;</span>
+    <span>hello&#10;</span>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <mark data-testid="mark" tabindex="0">world</mark>
+    <mark data-testid="mark" contenteditable="false">world</mark>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span contenteditable="true">&#10;foo</span>
+    <span>&#10;foo</span>
   </div>
 </div>"
 `;
 
 exports[`Component: stories > Clipboard stories > Story Inline 1`] = `
-"<div>
-  <span contenteditable="true">hello </span>
-  <mark data-testid="mark" tabindex="0">world</mark>
-  <span contenteditable="true"> foo</span>
+"<div contenteditable="true">
+  <span>hello </span>
+  <mark data-testid="mark" contenteditable="false">world</mark>
+  <span> foo</span>
 </div>"
 `;
 
 exports[`Component: stories > Clipboard stories > Story NestedMarkStory 1`] = `
-"<div>
-  <span contenteditable="true">hello </span>
-  <mark data-testid="mark" tabindex="0">
+"<div contenteditable="true">
+  <span>hello </span>
+  <mark data-testid="mark" contenteditable="false">
     <strong>wor</strong>
     <em>ld</em>
   </mark>
-  <span contenteditable="true"> foo</span>
+  <span> foo</span>
 </div>"
 `;
 
 exports[`Component: stories > Clipboard stories > Story PlainText 1`] = `
-"<div>
-  <span contenteditable="true">abc</span>
+"<div contenteditable="true">
+  <span>abc</span>
 </div>"
 `;
 
 exports[`Component: stories > Drag stories > Story Markdown 1`] = `
-"<div>
+"<div contenteditable="true">
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span tabindex="0">
+    <span>
       <span>
-        <span contenteditable="true">Welcome to </span>
-        <span tabindex="0">
+        <span>Welcome to </span>
+        <span>
           <span>
-            <span contenteditable="true">Marked Input</span>
+            <span>Marked Input</span>
           </span>
         </span>
-        <span contenteditable="true"></span>
+        <span></span>
       </span>
     </span>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span contenteditable="true">A powerful library for parsing rich text with markdown formatting.&#10;&#10;</span>
+    <span>A powerful library for parsing rich text with markdown formatting.&#10;&#10;</span>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span tabindex="0">
+    <span>
       <span>
-        <span contenteditable="true">Features</span>
+        <span>Features</span>
       </span>
     </span>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span tabindex="0">
+    <span>
       <span>
-        <span contenteditable="true"></span>
-        <span tabindex="0">
+        <span></span>
+        <span>
           <span>
-            <span contenteditable="true">Bold</span>
+            <span>Bold</span>
           </span>
         </span>
-        <span contenteditable="true"> and </span>
-        <span tabindex="0">
+        <span> and </span>
+        <span>
           <span>
-            <span contenteditable="true">italic</span>
+            <span>italic</span>
           </span>
         </span>
-        <span contenteditable="true"> text support</span>
+        <span> text support</span>
       </span>
     </span>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span tabindex="0">
+    <span>
       <span>
-        <span contenteditable="true"></span>
-        <span tabindex="0">Code snippets</span>
-        <span contenteditable="true"> and </span>
-        <span tabindex="0">code blocks</span>
-        <span contenteditable="true"></span>
+        <span></span>
+        <span contenteditable="false">Code snippets</span>
+        <span> and </span>
+        <span contenteditable="false">code blocks</span>
+        <span></span>
       </span>
     </span>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span tabindex="0">
+    <span>
       <span>
-        <span contenteditable="true"></span>
-        <span tabindex="0">Strikethrough</span>
-        <span contenteditable="true"> for deleted content</span>
+        <span></span>
+        <span contenteditable="false">Strikethrough</span>
+        <span> for deleted content</span>
       </span>
     </span>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span tabindex="0">
+    <span>
       <span>
-        <span contenteditable="true">Links like </span>
-        <span tabindex="0">GitHub</span>
-        <span contenteditable="true"></span>
+        <span>Links like </span>
+        <span contenteditable="false">GitHub</span>
+        <span></span>
       </span>
     </span>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span tabindex="0">
+    <span>
       <span>
-        <span contenteditable="true">Example</span>
+        <span>Example</span>
       </span>
     </span>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span tabindex="0">const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
+    <span contenteditable="false">const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span contenteditable="true">&#10;&#10;Visit our docs for more details.</span>
+    <span>&#10;&#10;Visit our docs for more details.</span>
   </div>
 </div>"
 `;
 
 exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
 "<div>
-  <div>
+  <div contenteditable="true">
     <div data-testid="block">
-      <div>
+      <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
         </button>
       </div>
-      <span tabindex="0">
+      <span>
         <span>
-          <span contenteditable="true">Welcome to Draggable Blocks</span>
+          <span>Welcome to Draggable Blocks</span>
         </span>
       </span>
     </div>
     <div data-testid="block">
-      <div>
+      <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
         </button>
       </div>
-      <span contenteditable="true">This is the first paragraph.&#10;&#10;This is the second paragraph.&#10;&#10;</span>
+      <span>This is the first paragraph.&#10;&#10;This is the second paragraph.&#10;&#10;</span>
     </div>
     <div data-testid="block">
-      <div>
+      <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
         </button>
       </div>
-      <span tabindex="0">
+      <span>
         <span>
-          <span contenteditable="true">Features</span>
+          <span>Features</span>
         </span>
       </span>
     </div>
     <div data-testid="block">
-      <div>
+      <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
         </button>
       </div>
-      <span tabindex="0">
+      <span>
         <span>
-          <span contenteditable="true">Drag handles appear on hover</span>
+          <span>Drag handles appear on hover</span>
         </span>
       </span>
     </div>
@@ -371,64 +371,64 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
 
 exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
 "<div>
-  <div>
+  <div contenteditable="true">
     <div data-testid="block">
-      <div>
+      <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
         </button>
       </div>
-      <span tabindex="0">
+      <span>
         <span>
-          <span contenteditable="true">First block of plain text</span>
+          <span>First block of plain text</span>
         </span>
       </span>
     </div>
     <div data-testid="block">
-      <div>
+      <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
         </button>
       </div>
-      <span tabindex="0">
+      <span>
         <span>
-          <span contenteditable="true">Second block of plain text</span>
+          <span>Second block of plain text</span>
         </span>
       </span>
     </div>
     <div data-testid="block">
-      <div>
+      <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
         </button>
       </div>
-      <span tabindex="0">
+      <span>
         <span>
-          <span contenteditable="true">Third block of plain text</span>
+          <span>Third block of plain text</span>
         </span>
       </span>
     </div>
     <div data-testid="block">
-      <div>
+      <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
         </button>
       </div>
-      <span tabindex="0">
+      <span>
         <span>
-          <span contenteditable="true">Fourth block of plain text</span>
+          <span>Fourth block of plain text</span>
         </span>
       </span>
     </div>
     <div data-testid="block">
-      <div>
+      <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
         </button>
       </div>
-      <span tabindex="0">
+      <span>
         <span>
-          <span contenteditable="true">Fifth block of plain text</span>
+          <span>Fifth block of plain text</span>
         </span>
       </span>
     </div>
@@ -448,25 +448,25 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
 `;
 
 exports[`Component: stories > Drag stories > Story ReadOnlyDrag 1`] = `
-"<div>
+"<div contenteditable="false">
   <div data-testid="block">
     <span>
       <span>
-        <span contenteditable="false">Read-Only Content</span>
+        <span>Read-Only Content</span>
       </span>
     </span>
   </div>
   <div data-testid="block">
     <span>
       <span>
-        <span contenteditable="false">Section A</span>
+        <span>Section A</span>
       </span>
     </span>
   </div>
   <div data-testid="block">
     <span>
       <span>
-        <span contenteditable="false">Section B</span>
+        <span>Section B</span>
       </span>
     </span>
   </div>
@@ -476,246 +476,246 @@ exports[`Component: stories > Drag stories > Story ReadOnlyDrag 1`] = `
 exports[`Component: stories > Drag stories > Story TodoList 1`] = `
 "<div>
   <div>
-    <div>
+    <div contenteditable="true">
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <span contenteditable="true">&#10;</span>
+        <span>&#10;</span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <div tabindex="0">
-          <input type="checkbox">
+        <div>
+          <input type="checkbox" contenteditable="false">
           <span>
-            <span contenteditable="true">Design Phase</span>
+            <span>Design Phase</span>
           </span>
         </div>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <span tabindex="0">
-          <input type="checkbox">
+        <span>
+          <input type="checkbox" contenteditable="false">
           <span>
-            <span contenteditable="true">Create wireframes</span>
-          </span>
-        </span>
-      </div>
-      <div data-testid="block">
-        <div>
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
-        <span tabindex="0">
-          <input type="checkbox" checked="">
-          <span>
-            <span contenteditable="true">Define color palette</span>
+            <span>Create wireframes</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <span tabindex="0">
-          <input type="checkbox">
+        <span>
+          <input type="checkbox" checked="" contenteditable="false">
           <span>
-            <span contenteditable="true">Design component library</span>
+            <span>Define color palette</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <div tabindex="0">
-          <input type="checkbox" checked="">
+        <span>
+          <input type="checkbox" contenteditable="false">
           <span>
-            <span contenteditable="true">Research</span>
-          </span>
-        </div>
-      </div>
-      <div data-testid="block">
-        <div>
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
-        <span tabindex="0">
-          <input type="checkbox" checked="">
-          <span>
-            <span contenteditable="true">Analyze competitors</span>
+            <span>Design component library</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <span tabindex="0">
-          <input type="checkbox" checked="">
+        <div>
+          <input type="checkbox" checked="" contenteditable="false">
           <span>
-            <span contenteditable="true">User interviews</span>
+            <span>Research</span>
+          </span>
+        </div>
+      </div>
+      <div data-testid="block">
+        <div contenteditable="false">
+          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+            <span></span>
+          </button>
+        </div>
+        <span>
+          <input type="checkbox" checked="" contenteditable="false">
+          <span>
+            <span>Analyze competitors</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <span tabindex="0">
-          <input type="checkbox" checked="">
+        <span>
+          <input type="checkbox" checked="" contenteditable="false">
           <span>
-            <span contenteditable="true">Draft interview questions</span>
+            <span>User interviews</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <span tabindex="0">
-          <input type="checkbox" checked="">
+        <span>
+          <input type="checkbox" checked="" contenteditable="false">
           <span>
-            <span contenteditable="true">Schedule 5 sessions</span>
+            <span>Draft interview questions</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <div tabindex="0">
-          <input type="checkbox">
+        <span>
+          <input type="checkbox" checked="" contenteditable="false">
           <span>
-            <span contenteditable="true">Development</span>
-          </span>
-        </div>
-      </div>
-      <div data-testid="block">
-        <div>
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
-        <span tabindex="0">
-          <input type="checkbox">
-          <span>
-            <span contenteditable="true">Set up CI/CD pipeline</span>
+            <span>Schedule 5 sessions</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <span tabindex="0">
-          <input type="checkbox" checked="">
+        <div>
+          <input type="checkbox" contenteditable="false">
           <span>
-            <span contenteditable="true">Write unit tests</span>
+            <span>Development</span>
+          </span>
+        </div>
+      </div>
+      <div data-testid="block">
+        <div contenteditable="false">
+          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+            <span></span>
+          </button>
+        </div>
+        <span>
+          <input type="checkbox" contenteditable="false">
+          <span>
+            <span>Set up CI/CD pipeline</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <span tabindex="0">
-          <input type="checkbox">
+        <span>
+          <input type="checkbox" checked="" contenteditable="false">
           <span>
-            <span contenteditable="true">API integration</span>
+            <span>Write unit tests</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <span tabindex="0">
-          <input type="checkbox">
+        <span>
+          <input type="checkbox" contenteditable="false">
           <span>
-            <span contenteditable="true">Auth endpoints</span>
+            <span>API integration</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <span tabindex="0">
-          <input type="checkbox">
+        <span>
+          <input type="checkbox" contenteditable="false">
           <span>
-            <span contenteditable="true">Data sync</span>
+            <span>Auth endpoints</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <div tabindex="0">
-          <input type="checkbox">
+        <span>
+          <input type="checkbox" contenteditable="false">
           <span>
-            <span contenteditable="true">Launch</span>
-          </span>
-        </div>
-      </div>
-      <div data-testid="block">
-        <div>
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
-        <span tabindex="0">
-          <input type="checkbox">
-          <span>
-            <span contenteditable="true">Final QA pass</span>
+            <span>Data sync</span>
           </span>
         </span>
       </div>
       <div data-testid="block">
-        <div>
+        <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
-        <span tabindex="0">
-          <input type="checkbox">
+        <div>
+          <input type="checkbox" contenteditable="false">
           <span>
-            <span contenteditable="true">Deploy to production</span>
+            <span>Launch</span>
+          </span>
+        </div>
+      </div>
+      <div data-testid="block">
+        <div contenteditable="false">
+          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+            <span></span>
+          </button>
+        </div>
+        <span>
+          <input type="checkbox" contenteditable="false">
+          <span>
+            <span>Final QA pass</span>
+          </span>
+        </span>
+      </div>
+      <div data-testid="block">
+        <div contenteditable="false">
+          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+            <span></span>
+          </button>
+        </div>
+        <span>
+          <input type="checkbox" contenteditable="false">
+          <span>
+            <span>Deploy to production</span>
           </span>
         </span>
       </div>
@@ -735,22 +735,22 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
 `;
 
 exports[`Component: stories > Dynamic stories > Story Dynamic 1`] = `
-"<div>
-  <span contenteditable="true">Hello, dynamical mark </span>
-  <mark tabindex="0">world</mark>
-  <span contenteditable="true">!</span>
+"<div contenteditable="true">
+  <span>Hello, dynamical mark </span>
+  <mark contenteditable="false">world</mark>
+  <span>!</span>
 </div>"
 `;
 
 exports[`Component: stories > Dynamic stories > Story Focusable 1`] = `
 "<div>
   <div>
-    <div>
-      <span contenteditable="true">Hello, </span>
-      <abbr title="By key operations" tabindex="0">focusable</abbr>
-      <span contenteditable="true"> abbreviation </span>
-      <abbr title="Hello! Hello!" tabindex="0">world</abbr>
-      <span contenteditable="true">!</span>
+    <div contenteditable="true">
+      <span>Hello, </span>
+      <abbr title="By key operations" contenteditable="false">focusable</abbr>
+      <span> abbreviation </span>
+      <abbr title="Hello! Hello!" contenteditable="false">world</abbr>
+      <span>!</span>
     </div>
   </div>
   <div>
@@ -767,106 +767,106 @@ exports[`Component: stories > Dynamic stories > Story Focusable 1`] = `
 `;
 
 exports[`Component: stories > Dynamic stories > Story Removable 1`] = `
-"<div>
-  <span contenteditable="true">I </span>
-  <mark tabindex="0">contain</mark>
-  <span contenteditable="true"> </span>
-  <mark tabindex="0">removable</mark>
-  <span contenteditable="true"> by click </span>
-  <mark tabindex="0">marks</mark>
-  <span contenteditable="true">!</span>
+"<div contenteditable="true">
+  <span>I </span>
+  <mark contenteditable="false">contain</mark>
+  <span> </span>
+  <mark contenteditable="false">removable</mark>
+  <span> by click </span>
+  <mark contenteditable="false">marks</mark>
+  <span>!</span>
 </div>"
 `;
 
 exports[`Component: stories > Experimental stories > Story Controlled 1`] = `
 "<div contenteditable="true">
-  <span contenteditable="true">Hello </span>
-  <mark data-value="John" data-meta="id:123" tabindex="0">John</mark>
-  <span contenteditable="true"> and </span>
-  <mark data-value="World" data-meta="greeting" tabindex="0">World</mark>
-  <span contenteditable="true">!</span>
+  <span>Hello </span>
+  <mark data-value="John" data-meta="id:123" contenteditable="false">John</mark>
+  <span> and </span>
+  <mark data-value="World" data-meta="greeting" contenteditable="false">World</mark>
+  <span>!</span>
 </div>"
 `;
 
 exports[`Component: stories > Experimental stories > Story Markdown 1`] = `
 "<div contenteditable="true">
-  <span contenteditable="true"></span>
-  <strong data-type="heading" tabindex="0">Welcome to Markdown Editor</strong>
-  <span contenteditable="true">&#10;Try editing this text with </span>
-  <strong data-type="bold" tabindex="0">
+  <span></span>
+  <strong data-type="heading" contenteditable="false">Welcome to Markdown Editor</strong>
+  <span>&#10;Try editing this text with </span>
+  <strong data-type="bold">
     <span>
-      <span contenteditable="true">bold</span>
+      <span>bold</span>
     </span>
   </strong>
-  <span contenteditable="true">, </span>
-  <em data-type="italic" tabindex="0">
+  <span>, </span>
+  <em data-type="italic">
     <span>
-      <span contenteditable="true">italic</span>
+      <span>italic</span>
     </span>
   </em>
-  <span contenteditable="true">, </span>
-  <code data-type="code" tabindex="0">
+  <span>, </span>
+  <code data-type="code">
     <span>
-      <span contenteditable="true">code</span>
+      <span>code</span>
     </span>
   </code>
-  <span contenteditable="true">, and </span>
-  <a href="links" data-type="link" data-url="links" tabindex="0">links</a>
-  <span contenteditable="true">.&#10;&#10;</span>
-  <span data-type="blockquote" tabindex="0">&gt; </span>
-  <span contenteditable="true">This is a blockquote&#10;</span>
-  <span data-type="blockquote" tabindex="0">&gt; </span>
-  <span contenteditable="true">You can add multiple lines&#10;&#10;- List item 1&#10;- List item 2&#10;- List item 3</span>
+  <span>, and </span>
+  <a href="links" data-type="link" data-url="links" contenteditable="false">links</a>
+  <span>.&#10;&#10;</span>
+  <span data-type="blockquote" contenteditable="false">&gt; </span>
+  <span>This is a blockquote&#10;</span>
+  <span data-type="blockquote" contenteditable="false">&gt; </span>
+  <span>You can add multiple lines&#10;&#10;- List item 1&#10;- List item 2&#10;- List item 3</span>
 </div>"
 `;
 
 exports[`Component: stories > Experimental stories > Story Uncontrolled 1`] = `
 "<div contenteditable="true">
-  <span contenteditable="true">Hello </span>
-  <mark data-value="John" data-meta="id:123" tabindex="0">John</mark>
-  <span contenteditable="true"> and </span>
-  <mark data-value="World" data-meta="greeting" tabindex="0">World</mark>
-  <span contenteditable="true">! Try editing - cursor stays in place!</span>
+  <span>Hello </span>
+  <mark data-value="John" data-meta="id:123" contenteditable="false">John</mark>
+  <span> and </span>
+  <mark data-value="World" data-meta="greeting" contenteditable="false">World</mark>
+  <span>! Try editing - cursor stays in place!</span>
 </div>"
 `;
 
 exports[`Component: stories > Material stories > Story Chipped 1`] = `
-"<div>
-  <span contenteditable="true">Hello beautiful the </span>
-  <div tabindex="0">
+"<div contenteditable="true">
+  <span>Hello beautiful the </span>
+  <div contenteditable="false">
     <span>first</span>
   </div>
-  <span contenteditable="true"> world from the </span>
-  <div tabindex="0">
+  <span> world from the </span>
+  <div contenteditable="false">
     <span>second</span>
   </div>
-  <span contenteditable="true"> </span>
+  <span> </span>
 </div>"
 `;
 
 exports[`Component: stories > Material stories > Story Mentions 1`] = `
-"<div>
-  <span contenteditable="true">Enter the '@' for calling mention list:&#10;- Hello @Agustina and </span>
-  <div tabindex="0">
+"<div contenteditable="true">
+  <span>Enter the '@' for calling mention list:&#10;- Hello @Agustina and </span>
+  <div contenteditable="false">
     <div>R</div>
     <span>Ruslan</span>
   </div>
-  <span contenteditable="true">!</span>
+  <span>!</span>
 </div>"
 `;
 
 exports[`Component: stories > Material stories > Story Overridden 1`] = `
 "<div>
-  <div>
-    <span contenteditable="true">Hello beautiful the </span>
-    <div tabindex="0">
+  <div contenteditable="true">
+    <span>Hello beautiful the </span>
+    <div contenteditable="false">
       <span>first</span>
     </div>
-    <span contenteditable="true"> world from the </span>
-    <div tabindex="0">
+    <span> world from the </span>
+    <div contenteditable="false">
       <span>second</span>
     </div>
-    <span contenteditable="true"> </span>
+    <span> </span>
   </div>
 </div>"
 `;
@@ -876,458 +876,458 @@ exports[`Component: stories > Nested stories > Story ComplexHtmlDocument 1`] = `
   <button>Preview</button>
   <button>Write</button>
 </div>
-<div>
-  <span contenteditable="false"></span>
+<div contenteditable="false">
+  <span></span>
   <article>
     <span>
-      <span contenteditable="false">&#10;</span>
+      <span>&#10;</span>
       <header>
         <span>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <h1>
             <span>
-              <span contenteditable="false">Understanding </span>
+              <span>Understanding </span>
               <strong>
                 <span>
-                  <span contenteditable="false">Nested HTML</span>
+                  <span>Nested HTML</span>
                 </span>
               </strong>
-              <span contenteditable="false"> Structures</span>
+              <span> Structures</span>
             </span>
           </h1>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <p>
             <span>
-              <span contenteditable="false"></span>
+              <span></span>
               <small>
                 <span>
-                  <span contenteditable="false">Published on </span>
+                  <span>Published on </span>
                   <time>
                     <span>
-                      <span contenteditable="false">November 13, 2025</span>
+                      <span>November 13, 2025</span>
                     </span>
                   </time>
-                  <span contenteditable="false"></span>
+                  <span></span>
                 </span>
               </small>
-              <span contenteditable="false"></span>
+              <span></span>
             </span>
           </p>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
         </span>
       </header>
-      <span contenteditable="false">&#10;&#10;</span>
+      <span>&#10;&#10;</span>
       <section>
         <span>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <h2>
             <span>
-              <span contenteditable="false">Introduction</span>
+              <span>Introduction</span>
             </span>
           </h2>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <p>
             <span>
-              <span contenteditable="false">This is a </span>
+              <span>This is a </span>
               <em>
                 <span>
-                  <span contenteditable="false">comprehensive example</span>
+                  <span>comprehensive example</span>
                 </span>
               </em>
-              <span contenteditable="false"> of </span>
+              <span> of </span>
               <strong>
                 <span>
-                  <span contenteditable="false">nested HTML tags</span>
+                  <span>nested HTML tags</span>
                 </span>
               </strong>
-              <span contenteditable="false"> working together. The </span>
+              <span> working together. The </span>
               <code>
                 <span>
-                  <span contenteditable="false">MarkedInput</span>
+                  <span>MarkedInput</span>
                 </span>
               </code>
-              <span contenteditable="false"> library can parse and render </span>
+              <span> library can parse and render </span>
               <mark>
                 <span>
-                  <span contenteditable="false">complex HTML structures</span>
+                  <span>complex HTML structures</span>
                 </span>
               </mark>
-              <span contenteditable="false"> with multiple levels of nesting.</span>
+              <span> with multiple levels of nesting.</span>
             </span>
           </p>
-          <span contenteditable="false">&#10;&#10;</span>
+          <span>&#10;&#10;</span>
           <blockquote>
             <span>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
               <p>
                 <span>
-                  <span contenteditable="false">HTML nesting allows us to create </span>
+                  <span>HTML nesting allows us to create </span>
                   <strong>
                     <span>
-                      <span contenteditable="false">rich, semantic documents</span>
+                      <span>rich, semantic documents</span>
                     </span>
                   </strong>
-                  <span contenteditable="false"> that are both </span>
+                  <span> that are both </span>
                   <em>
                     <span>
-                      <span contenteditable="false">readable</span>
+                      <span>readable</span>
                     </span>
                   </em>
-                  <span contenteditable="false"> and </span>
+                  <span> and </span>
                   <u>
                     <span>
-                      <span contenteditable="false">well-structured</span>
+                      <span>well-structured</span>
                     </span>
                   </u>
-                  <span contenteditable="false">.</span>
+                  <span>.</span>
                 </span>
               </p>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
             </span>
           </blockquote>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
         </span>
       </section>
-      <span contenteditable="false">&#10;&#10;</span>
+      <span>&#10;&#10;</span>
       <section>
         <span>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <h2>
             <span>
-              <span contenteditable="false">Key Features</span>
+              <span>Key Features</span>
             </span>
           </h2>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <ul>
             <span>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
               <li>
                 <span>
-                  <span contenteditable="false"></span>
+                  <span></span>
                   <strong>
                     <span>
-                      <span contenteditable="false">Bold text</span>
+                      <span>Bold text</span>
                     </span>
                   </strong>
-                  <span contenteditable="false"> using </span>
+                  <span> using </span>
                   <code>
                     <span>
-                      <span contenteditable="false">&amp;lt;strong&amp;gt;</span>
+                      <span>&amp;lt;strong&amp;gt;</span>
                     </span>
                   </code>
-                  <span contenteditable="false"> or </span>
+                  <span> or </span>
                   <code>
                     <span>
-                      <span contenteditable="false">&amp;lt;b&amp;gt;</span>
+                      <span>&amp;lt;b&amp;gt;</span>
                     </span>
                   </code>
-                  <span contenteditable="false"> tags</span>
+                  <span> tags</span>
                 </span>
               </li>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
               <li>
                 <span>
-                  <span contenteditable="false"></span>
+                  <span></span>
                   <em>
                     <span>
-                      <span contenteditable="false">Italic text</span>
+                      <span>Italic text</span>
                     </span>
                   </em>
-                  <span contenteditable="false"> with </span>
+                  <span> with </span>
                   <code>
                     <span>
-                      <span contenteditable="false">&amp;lt;em&amp;gt;</span>
+                      <span>&amp;lt;em&amp;gt;</span>
                     </span>
                   </code>
-                  <span contenteditable="false"> or </span>
+                  <span> or </span>
                   <code>
                     <span>
-                      <span contenteditable="false">&amp;lt;i&amp;gt;</span>
+                      <span>&amp;lt;i&amp;gt;</span>
                     </span>
                   </code>
-                  <span contenteditable="false"> tags</span>
+                  <span> tags</span>
                 </span>
               </li>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
               <li>
                 <span>
-                  <span contenteditable="false"></span>
+                  <span></span>
                   <u>
                     <span>
-                      <span contenteditable="false">Underlined content</span>
+                      <span>Underlined content</span>
                     </span>
                   </u>
-                  <span contenteditable="false"> for emphasis</span>
+                  <span> for emphasis</span>
                 </span>
               </li>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
               <li>
                 <span>
-                  <span contenteditable="false"></span>
+                  <span></span>
                   <mark>
                     <span>
-                      <span contenteditable="false">Highlighted text</span>
+                      <span>Highlighted text</span>
                     </span>
                   </mark>
-                  <span contenteditable="false"> to draw attention</span>
+                  <span> to draw attention</span>
                 </span>
               </li>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
               <li>
                 <span>
-                  <span contenteditable="false"></span>
+                  <span></span>
                   <del>
                     <span>
-                      <span contenteditable="false">Strikethrough</span>
+                      <span>Strikethrough</span>
                     </span>
                   </del>
-                  <span contenteditable="false"> for deleted content</span>
+                  <span> for deleted content</span>
                 </span>
               </li>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
               <li>
                 <span>
-                  <span contenteditable="false"></span>
+                  <span></span>
                   <code>
                     <span>
-                      <span contenteditable="false">Inline code</span>
+                      <span>Inline code</span>
                     </span>
                   </code>
-                  <span contenteditable="false"> snippets</span>
+                  <span> snippets</span>
                 </span>
               </li>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
             </span>
           </ul>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
         </span>
       </section>
-      <span contenteditable="false">&#10;&#10;</span>
+      <span>&#10;&#10;</span>
       <section>
         <span>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <h2>
             <span>
-              <span contenteditable="false">Advanced Examples</span>
+              <span>Advanced Examples</span>
             </span>
           </h2>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <h3>
             <span>
-              <span contenteditable="false">Mathematical Notation</span>
+              <span>Mathematical Notation</span>
             </span>
           </h3>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <p>
             <span>
-              <span contenteditable="false">The formula for water is H</span>
+              <span>The formula for water is H</span>
               <sub>
                 <span>
-                  <span contenteditable="false">2</span>
+                  <span>2</span>
                 </span>
               </sub>
-              <span contenteditable="false">O, and Einstein's famous equation is E=mc</span>
+              <span>O, and Einstein's famous equation is E=mc</span>
               <sup>
                 <span>
-                  <span contenteditable="false">2</span>
+                  <span>2</span>
                 </span>
               </sup>
-              <span contenteditable="false">.</span>
+              <span>.</span>
             </span>
           </p>
-          <span contenteditable="false">&#10;&#10;</span>
+          <span>&#10;&#10;</span>
           <h3>
             <span>
-              <span contenteditable="false">Code Blocks</span>
+              <span>Code Blocks</span>
             </span>
           </h3>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <pre>
             <span>
-              <span contenteditable="false"></span>
+              <span></span>
               <code>
                 <span>
-                  <span contenteditable="false">function parseHTML(input) {&#10;  return parser.parse(input);&#10;}</span>
+                  <span>function parseHTML(input) {&#10;  return parser.parse(input);&#10;}</span>
                 </span>
               </code>
-              <span contenteditable="false"></span>
+              <span></span>
             </span>
           </pre>
-          <span contenteditable="false">&#10;&#10;</span>
+          <span>&#10;&#10;</span>
           <h3>
             <span>
-              <span contenteditable="false">Nested Lists</span>
+              <span>Nested Lists</span>
             </span>
           </h3>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <ol>
             <span>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
               <li>
                 <span>
-                  <span contenteditable="false">First level item&#10;</span>
+                  <span>First level item&#10;</span>
                   <ul>
                     <span>
-                      <span contenteditable="false">&#10;</span>
+                      <span>&#10;</span>
                       <li>
                         <span>
-                          <span contenteditable="false">Second level </span>
+                          <span>Second level </span>
                           <strong>
                             <span>
-                              <span contenteditable="false">nested</span>
+                              <span>nested</span>
                             </span>
                           </strong>
-                          <span contenteditable="false"> item</span>
+                          <span> item</span>
                         </span>
                       </li>
-                      <span contenteditable="false">&#10;</span>
+                      <span>&#10;</span>
                       <li>
                         <span>
-                          <span contenteditable="false">Another nested item with </span>
+                          <span>Another nested item with </span>
                           <em>
                             <span>
-                              <span contenteditable="false">emphasis</span>
+                              <span>emphasis</span>
                             </span>
                           </em>
-                          <span contenteditable="false"></span>
+                          <span></span>
                         </span>
                       </li>
-                      <span contenteditable="false">&#10;</span>
+                      <span>&#10;</span>
                     </span>
                   </ul>
-                  <span contenteditable="false">&#10;</span>
+                  <span>&#10;</span>
                 </span>
               </li>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
               <li>
                 <span>
-                  <span contenteditable="false">Another first level item</span>
+                  <span>Another first level item</span>
                 </span>
               </li>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
             </span>
           </ol>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
         </span>
       </section>
-      <span contenteditable="false">&#10;&#10;</span>
+      <span>&#10;&#10;</span>
       <section>
         <span>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <h2>
             <span>
-              <span contenteditable="false">Complex Nesting</span>
+              <span>Complex Nesting</span>
             </span>
           </h2>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <div>
             <span>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
               <p>
                 <span>
-                  <span contenteditable="false">Here's a </span>
+                  <span>Here's a </span>
                   <strong>
                     <span>
-                      <span contenteditable="false">complex example</span>
+                      <span>complex example</span>
                     </span>
                   </strong>
-                  <span contenteditable="false"> with </span>
+                  <span> with </span>
                   <em>
                     <span>
-                      <span contenteditable="false">multiple </span>
+                      <span>multiple </span>
                       <u>
                         <span>
-                          <span contenteditable="false">nested </span>
+                          <span>nested </span>
                           <mark>
                             <span>
-                              <span contenteditable="false">tags</span>
+                              <span>tags</span>
                             </span>
                           </mark>
-                          <span contenteditable="false"></span>
+                          <span></span>
                         </span>
                       </u>
-                      <span contenteditable="false"> inside</span>
+                      <span> inside</span>
                     </span>
                   </em>
-                  <span contenteditable="false"> each other.</span>
+                  <span> each other.</span>
                 </span>
               </p>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
               <p>
                 <span>
-                  <span contenteditable="false">You can even have </span>
+                  <span>You can even have </span>
                   <code>
                     <span>
-                      <span contenteditable="false">code with </span>
+                      <span>code with </span>
                       <strong>
                         <span>
-                          <span contenteditable="false">bold</span>
+                          <span>bold</span>
                         </span>
                       </strong>
-                      <span contenteditable="false"> inside</span>
+                      <span> inside</span>
                     </span>
                   </code>
-                  <span contenteditable="false"> or </span>
+                  <span> or </span>
                   <mark>
                     <span>
-                      <span contenteditable="false">highlighted </span>
+                      <span>highlighted </span>
                       <em>
                         <span>
-                          <span contenteditable="false">italic </span>
+                          <span>italic </span>
                           <u>
                             <span>
-                              <span contenteditable="false">underlined</span>
+                              <span>underlined</span>
                             </span>
                           </u>
-                          <span contenteditable="false"></span>
+                          <span></span>
                         </span>
                       </em>
-                      <span contenteditable="false"> text</span>
+                      <span> text</span>
                     </span>
                   </mark>
-                  <span contenteditable="false">.</span>
+                  <span>.</span>
                 </span>
               </p>
-              <span contenteditable="false">&#10;</span>
+              <span>&#10;</span>
             </span>
           </div>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
         </span>
       </section>
-      <span contenteditable="false">&#10;&#10;</span>
+      <span>&#10;&#10;</span>
       <footer>
         <span>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
           <p>
             <span>
-              <span contenteditable="false"></span>
+              <span></span>
               <small>
                 <span>
-                  <span contenteditable="false">© 2025 MarkedInput Library. Built with </span>
+                  <span>© 2025 MarkedInput Library. Built with </span>
                   <strong>
                     <span>
-                      <span contenteditable="false">React</span>
+                      <span>React</span>
                     </span>
                   </strong>
-                  <span contenteditable="false"> and </span>
+                  <span> and </span>
                   <em>
                     <span>
-                      <span contenteditable="false">TypeScript</span>
+                      <span>TypeScript</span>
                     </span>
                   </em>
-                  <span contenteditable="false">.</span>
+                  <span>.</span>
                 </span>
               </small>
-              <span contenteditable="false"></span>
+              <span></span>
             </span>
           </p>
-          <span contenteditable="false">&#10;</span>
+          <span>&#10;</span>
         </span>
       </footer>
-      <span contenteditable="false">&#10;</span>
+      <span>&#10;</span>
     </span>
   </article>
-  <span contenteditable="false"></span>
+  <span></span>
 </div>"
 `;
 
@@ -1336,339 +1336,339 @@ exports[`Component: stories > Nested stories > Story ComplexMarkdown 1`] = `
   <button>Preview</button>
   <button>Write</button>
 </div>
-<div>
-  <span contenteditable="false"></span>
+<div contenteditable="false">
+  <span></span>
   <span>
     <span>
-      <span contenteditable="false">Welcome to </span>
+      <span>Welcome to </span>
       <span>
         <span>
-          <span contenteditable="false">Marked Input</span>
+          <span>Marked Input</span>
         </span>
       </span>
-      <span contenteditable="false"></span>
+      <span></span>
     </span>
   </span>
-  <span contenteditable="false">This is a </span>
+  <span>This is a </span>
   <span>
     <span>
-      <span contenteditable="false">powerful</span>
+      <span>powerful</span>
     </span>
   </span>
-  <span contenteditable="false"> library for parsing </span>
+  <span> library for parsing </span>
   <span>
     <span>
-      <span contenteditable="false">rich text</span>
+      <span>rich text</span>
     </span>
   </span>
-  <span contenteditable="false"> with </span>
+  <span> with </span>
   <span>
     <span>
-      <span contenteditable="false">markdown</span>
+      <span>markdown</span>
     </span>
   </span>
-  <span contenteditable="false"> formatting.&#10;You can use </span>
-  <span>inline code</span>
-  <span contenteditable="false"> snippets like </span>
-  <span>const parser = new ParserV2()</span>
-  <span contenteditable="false"> in your text.&#10;&#10;</span>
+  <span> formatting.&#10;You can use </span>
+  <span contenteditable="false">inline code</span>
+  <span> snippets like </span>
+  <span contenteditable="false">const parser = new ParserV2()</span>
+  <span> in your text.&#10;&#10;</span>
   <span>
     <span>
-      <span contenteditable="false">Features</span>
+      <span>Features</span>
     </span>
   </span>
-  <span contenteditable="false">- </span>
+  <span>- </span>
   <span>
     <span>
-      <span contenteditable="false">Bold text</span>
+      <span>Bold text</span>
     </span>
   </span>
-  <span contenteditable="false"> with </span>
+  <span> with </span>
   <span>
     <span>
-      <span contenteditable="false">strong emphasis</span>
+      <span>strong emphasis</span>
     </span>
   </span>
-  <span contenteditable="false">&#10;- </span>
+  <span>&#10;- </span>
   <span>
     <span>
-      <span contenteditable="false">Italic text</span>
+      <span>Italic text</span>
     </span>
   </span>
-  <span contenteditable="false"> and </span>
+  <span> and </span>
   <span>
     <span>
-      <span contenteditable="false">emphasis</span>
+      <span>emphasis</span>
     </span>
   </span>
-  <span contenteditable="false"> support&#10;</span>
+  <span> support&#10;</span>
   <span>
     <span>
-      <span contenteditable="false"></span>
-      <span>Code snippets</span>
-      <span contenteditable="false"> and </span>
-      <span>code blocks</span>
-      <span contenteditable="false">&#10;</span>
+      <span></span>
+      <span contenteditable="false">Code snippets</span>
+      <span> and </span>
+      <span contenteditable="false">code blocks</span>
+      <span>&#10;</span>
       <span>
         <span>
-          <span contenteditable="false"></span>
-          <span>Strikethrough</span>
-          <span contenteditable="false"> for deleted content&#10;</span>
+          <span></span>
+          <span contenteditable="false">Strikethrough</span>
+          <span> for deleted content&#10;</span>
           <span>
             <span>
-              <span contenteditable="false">Links like </span>
-              <span>GitHub</span>
-              <span contenteditable="false"></span>
+              <span>Links like </span>
+              <span contenteditable="false">GitHub</span>
+              <span></span>
             </span>
           </span>
-          <span contenteditable="false"></span>
+          <span></span>
           <span>
             <span>
-              <span contenteditable="false">Example</span>
+              <span>Example</span>
             </span>
           </span>
-          <span contenteditable="false">Here's how to use it:</span>
+          <span>Here's how to use it:</span>
         </span>
       </span>
-      <span contenteditable="false"></span>
-      <span>const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
-      <span contenteditable="false"></span>
+      <span></span>
+      <span contenteditable="false">const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
+      <span></span>
     </span>
   </span>
-  <span contenteditable="false">Visit our </span>
-  <span>documentation</span>
-  <span contenteditable="false"> for more details.&#10;</span>
-  <span>This feature is deprecated</span>
-  <span contenteditable="false"> and will be removed in v3.0.</span>
+  <span>Visit our </span>
+  <span contenteditable="false">documentation</span>
+  <span> for more details.&#10;</span>
+  <span contenteditable="false">This feature is deprecated</span>
+  <span> and will be removed in v3.0.</span>
 </div>"
 `;
 
 exports[`Component: stories > Nested stories > Story HtmlLikeTags 1`] = `
-"<div>
-  <span contenteditable="true"></span>
-  <div tabindex="0">
+"<div contenteditable="true">
+  <span></span>
+  <div>
     <span>
-      <span contenteditable="true">This is a div with </span>
-      <mark tabindex="0">
+      <span>This is a div with </span>
+      <mark>
         <span>
-          <span contenteditable="true">a mark inside</span>
+          <span>a mark inside</span>
         </span>
       </mark>
-      <span contenteditable="true"> and </span>
-      <b tabindex="0">
+      <span> and </span>
+      <b>
         <span>
-          <span contenteditable="true">bold text with </span>
-          <del tabindex="0">
+          <span>bold text with </span>
+          <del>
             <span>
-              <span contenteditable="true">nested del</span>
+              <span>nested del</span>
             </span>
           </del>
-          <span contenteditable="true"></span>
+          <span></span>
         </span>
       </b>
-      <span contenteditable="true"></span>
+      <span></span>
     </span>
   </div>
-  <span contenteditable="true"></span>
+  <span></span>
 </div>"
 `;
 
 exports[`Component: stories > Nested stories > Story InteractiveNested 1`] = `
-"<div>
-  <span contenteditable="true"></span>
-  <span role="button" tabindex="0" title="Depth: 0, Nested: true">
+"<div contenteditable="true">
+  <span></span>
+  <span role="button" title="Depth: 0, Nested: true">
     <span>
-      <span contenteditable="true">Click me </span>
-      <span role="button" tabindex="0" title="Depth: 1, Nested: true">
+      <span>Click me </span>
+      <span role="button" title="Depth: 1, Nested: true">
         <span>
-          <span contenteditable="true">or me </span>
-          <span role="button" tabindex="0" title="Depth: 2, Nested: false">
+          <span>or me </span>
+          <span role="button" title="Depth: 2, Nested: false">
             <span>
-              <span contenteditable="true">or even me</span>
+              <span>or even me</span>
             </span>
           </span>
-          <span contenteditable="true"></span>
+          <span></span>
         </span>
       </span>
-      <span contenteditable="true"></span>
+      <span></span>
     </span>
   </span>
-  <span contenteditable="true"></span>
+  <span></span>
 </div>"
 `;
 
 exports[`Component: stories > Nested stories > Story MultipleLevels 1`] = `
-"<div>
-  <span contenteditable="true">Check </span>
-  <span tabindex="0">
+"<div contenteditable="true">
+  <span>Check </span>
+  <span>
     <span>
-      <span contenteditable="true">this tag with </span>
-      <span tabindex="0">
+      <span>this tag with </span>
+      <span>
         <span>
-          <span contenteditable="true">nested mention with </span>
-          <span tabindex="0">
+          <span>nested mention with </span>
+          <span>
             <span>
-              <span contenteditable="true">code</span>
+              <span>code</span>
             </span>
           </span>
-          <span contenteditable="true"></span>
+          <span></span>
         </span>
       </span>
-      <span contenteditable="true"></span>
+      <span></span>
     </span>
   </span>
-  <span contenteditable="true"> and </span>
-  <span tabindex="0">
+  <span> and </span>
+  <span>
     <span>
-      <span contenteditable="true">another </span>
-      <span tabindex="0">
+      <span>another </span>
+      <span>
         <span>
-          <span contenteditable="true">deeply nested</span>
+          <span>deeply nested</span>
         </span>
       </span>
-      <span contenteditable="true"> tag</span>
+      <span> tag</span>
     </span>
   </span>
-  <span contenteditable="true"></span>
+  <span></span>
 </div>"
 `;
 
 exports[`Component: stories > Nested stories > Story SimpleNesting 1`] = `
-"<div>
-  <span contenteditable="true">This is </span>
-  <span tabindex="0">
+"<div contenteditable="true">
+  <span>This is </span>
+  <span>
     <span>
-      <span contenteditable="true">italic text with </span>
-      <span tabindex="0">
+      <span>italic text with </span>
+      <span>
         <span>
-          <span contenteditable="true">bold</span>
+          <span>bold</span>
         </span>
       </span>
-      <span contenteditable="true"> inside</span>
+      <span> inside</span>
     </span>
   </span>
-  <span contenteditable="true"> and more text.</span>
+  <span> and more text.</span>
 </div>"
 `;
 
 exports[`Component: stories > Overlay stories > Story CustomOverlay 1`] = `
-"<div>
-  <span contenteditable="true">Hello, custom overlay by trigger @!</span>
+"<div contenteditable="true">
+  <span>Hello, custom overlay by trigger @!</span>
 </div>"
 `;
 
 exports[`Component: stories > Overlay stories > Story CustomTrigger 1`] = `
-"<div>
-  <span contenteditable="true">Hello, custom overlay by trigger /!</span>
+"<div contenteditable="true">
+  <span>Hello, custom overlay by trigger /!</span>
 </div>"
 `;
 
 exports[`Component: stories > Overlay stories > Story DefaultOverlay 1`] = `
-"<div>
-  <span contenteditable="true">Hello, default - suggestion overlay by trigger @!</span>
+"<div contenteditable="true">
+  <span>Hello, default - suggestion overlay by trigger @!</span>
 </div>"
 `;
 
 exports[`Component: stories > Overlay stories > Story PositionedOverlay 1`] = `
-"<div>
-  <span contenteditable="true">Hello, positioned overlay by trigger @!</span>
+"<div contenteditable="true">
+  <span>Hello, positioned overlay by trigger @!</span>
 </div>"
 `;
 
 exports[`Component: stories > Overlay stories > Story SelectableOverlay 1`] = `
-"<div>
-  <span contenteditable="true">Hello, suggest overlay by trigger @!</span>
+"<div contenteditable="true">
+  <span>Hello, suggest overlay by trigger @!</span>
 </div>"
 `;
 
 exports[`Component: stories > Rsuite stories > Story Overridden 1`] = `
-"<div>
-  <span contenteditable="true">Type the '@' to begin creating a </span>
-  <div data-size="md" tabindex="0">
+"<div contenteditable="true">
+  <span>Type the '@' to begin creating a </span>
+  <div data-size="md" contenteditable="false">
     <span>tag</span>
   </div>
-  <span contenteditable="true">. Then press the </span>
-  <div data-size="md" tabindex="0">
+  <span>. Then press the </span>
+  <div data-size="md" contenteditable="false">
     <span>Enter</span>
   </div>
-  <span contenteditable="true"> to finish. For example: @hello</span>
+  <span> to finish. For example: @hello</span>
 </div>"
 `;
 
 exports[`Component: stories > Rsuite stories > Story TaggedInput 1`] = `
-"<div>
-  <span contenteditable="true">Type the '@' to begin creating a </span>
-  <div data-size="md" tabindex="0">
+"<div contenteditable="true">
+  <span>Type the '@' to begin creating a </span>
+  <div data-size="md" contenteditable="false">
     <span>tag</span>
   </div>
-  <span contenteditable="true">. Then press the </span>
-  <div data-size="md" tabindex="0">
+  <span>. Then press the </span>
+  <div data-size="md" contenteditable="false">
     <span>Enter</span>
   </div>
-  <span contenteditable="true"> to finish. For example: @hello</span>
+  <span> to finish. For example: @hello</span>
 </div>"
 `;
 
 exports[`Component: stories > Selection stories > Story Drag 1`] = `
-"<div>
+"<div contenteditable="true">
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span contenteditable="true">hello&#10;</span>
+    <span>hello&#10;</span>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <mark data-testid="mark" tabindex="0">world</mark>
+    <mark data-testid="mark" contenteditable="false">world</mark>
   </div>
   <div data-testid="block">
-    <div>
+    <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
-    <span contenteditable="true">&#10;foo</span>
+    <span>&#10;foo</span>
   </div>
 </div>"
 `;
 
 exports[`Component: stories > Selection stories > Story Inline 1`] = `
-"<div>
-  <span contenteditable="true">hello </span>
-  <mark data-testid="mark" tabindex="0">world</mark>
-  <span contenteditable="true"> foo</span>
+"<div contenteditable="true">
+  <span>hello </span>
+  <mark data-testid="mark" contenteditable="false">world</mark>
+  <span> foo</span>
 </div>"
 `;
 
 exports[`Component: stories > Slots stories > Story CustomComponents 1`] = `
-"<div>
-  <span contenteditable="true">Both @[container] and @[span] are @[customized]</span>
+"<div contenteditable="true">
+  <span>Both @[container] and @[span] are @[customized]</span>
 </div>"
 `;
 
 exports[`Component: stories > Slots stories > Story DataAttributes 1`] = `
-"<div data-test-id="marked-input-demo" data-module="slots-api" data-user-id="user-123">
-  <span contenteditable="true">Use @[data] attributes for testing and tracking</span>
+"<div data-test-id="marked-input-demo" data-module="slots-api" data-user-id="user-123" contenteditable="true">
+  <span>Use @[data] attributes for testing and tracking</span>
 </div>"
 `;
 
 exports[`Component: stories > Slots stories > Story StyleMerging 1`] = `
-"<div>
-  <span contenteditable="true">Container has @[merged] styles from multiple sources</span>
+"<div contenteditable="true">
+  <span>Container has @[merged] styles from multiple sources</span>
 </div>"
 `;
 
 exports[`Component: stories > Slots stories > Story WithSlotProps 1`] = `
 "<h3>Styling &amp; Events via slotProps</h3>
 <p>Customize styling and add custom event handlers without replacing components:</p>
-<div>
-  <span contenteditable="true">Try pressing @[Enter] or clicking</span>
+<div contenteditable="true">
+  <span>Try pressing @[Enter] or clicking</span>
 </div>
 <div>
   <strong>Recent events:</strong>

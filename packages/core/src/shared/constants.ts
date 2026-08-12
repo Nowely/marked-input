@@ -4,20 +4,11 @@ import type {CoreOption} from './types'
 export const KEYBOARD = {
 	UP: 'ArrowUp',
 	DOWN: 'ArrowDown',
-	LEFT: 'ArrowLeft',
-	RIGHT: 'ArrowRight',
-	END: 'End',
-	HOME: 'Home',
-	PAGE_DOWN: 'PageDown',
-	PAGE_UP: 'PageUp',
 
 	ENTER: 'Enter',
-	TAB: 'Tab',
-	SPACE: ' ',
 
 	BACKSPACE: 'Backspace',
 	DELETE: 'Delete',
-	COMMA: ',',
 
 	ESC: 'Escape',
 } as const

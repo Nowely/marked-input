@@ -14,7 +14,7 @@ import type {Anchors, NodeAnchor, TransactionResult, TreeNode} from './types'
  */
 export type SelectionDeps = {
 	offsetOf(anchor: NodeAnchor): number
-	anchorAt(offset: number): NodeAnchor
+	anchorAt(offset: number, side?: 'left' | 'right'): NodeAnchor
 	value(): string
 }
 
@@ -97,7 +97,12 @@ export function createSelection(deps: SelectionDeps): Selection {
 	const selectAll = (): void => {
 		// Node anchors, not the `'start'`/`'end'` edges: a later edit that grows the value
 		// must NOT keep `isAllSelected` true, and edge anchors would.
-		select(deps.anchorAt(0), deps.anchorAt(deps.value().length))
+		//
+		// The START seed is the ONE caller that asks `anchorAt` for the LEFT reading, and it
+		// has to: on a document opening with a mark nothing covers offset 0 but that mark, and
+		// the default (right) reading answers its END — which is not where a select-all starts.
+		// The END seed keeps the default: `{after: lastMark}` is already the document end.
+		select(deps.anchorAt(0, 'left'), deps.anchorAt(deps.value().length))
 	}
 
 	/**
@@ -108,11 +113,11 @@ export function createSelection(deps: SelectionDeps): Selection {
 	const select = (anchor: NodeAnchor, head: NodeAnchor = anchor): boolean => stored({anchor, head})
 
 	/**
-	 * @internal THE drop. Its four callers are `SelectionDriver`'s "there is no selection
-	 * here" exits — no DOM selection, `focusin` with no target, `focusout` past the
-	 * microtask, and a boundary outside the editor. A verb rather than a `stored(undefined)`
-	 * reaching across the module boundary, so those exits obey the same "did it actually
-	 * change" contract {@link select} does.
+	 * @internal THE drop. Its two callers are `SelectionDriver`'s "the selection is not in
+	 * this editor" exits — `syncIfInEditor` on a boundary outside the container, and the
+	 * `focusout` microtask once focus has actually left it. A verb rather than a
+	 * `stored(undefined)` reaching across the module boundary, so those exits obey the same
+	 * "did it actually change" contract {@link select} does.
 	 */
 	const clear = (): boolean => stored(undefined)
 

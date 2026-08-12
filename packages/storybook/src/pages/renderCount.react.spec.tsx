@@ -8,7 +8,7 @@ import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
 import {getElement} from '../shared/lib/dom'
-import {getAllRows, getEditableInRow} from '../shared/lib/dragTestHelpers'
+import {getAllRows} from '../shared/lib/dragTestHelpers'
 import {focusAtEnd} from '../shared/lib/focus'
 
 /**
@@ -201,8 +201,8 @@ describe('Render-count gates: block layout', () => {
 		)
 		expect(getAllRows(container)).toHaveLength(2)
 
-		// The row's text surface is the slot Span — the only contenteditable in the row.
-		await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
+		// The row's text is the slot Span, bare inside the one host: the row measures it.
+		await focusAtEnd(getAllRows(container)[0])
 
 		// Baseline after mount + focus: every gate below asserts a DELTA from here.
 		const markBaseline = markRender.mock.calls.length
@@ -242,7 +242,7 @@ describe('Render-count gates: block layout', () => {
 		)
 		expect(getAllRows(container)).toHaveLength(1)
 
-		await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
+		await focusAtEnd(getAllRows(container)[0])
 
 		// Enter at the row end creates an EMPTY row with the caret inside it —
 		// structural, re-renders. The gate below is a delta from AFTER it settled.

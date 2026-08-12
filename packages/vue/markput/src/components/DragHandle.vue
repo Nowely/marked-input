@@ -42,9 +42,9 @@ const setGripRef = (el: unknown) => {
 		<button
 			:ref="setGripRef"
 			type="button"
-			draggable="true"
+			:draggable="!!draggable"
 			:class="[styles.GripButton, isDragging && styles.GripButtonDragging]"
-			aria-label="Drag to reorder or click for options"
+			:aria-label="draggable ? 'Drag to reorder or click for options' : 'Block options'"
 		>
 			<span :class="`${styles.Icon} ${styles.IconGrip}`" />
 		</button>

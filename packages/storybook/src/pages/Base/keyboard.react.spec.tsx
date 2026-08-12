@@ -3,7 +3,7 @@ import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
-import {getElement} from '../../shared/lib/dom'
+import {caretIsInside, editingHost, findEditingHost, getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as BaseStories from './Base.react.stories'
 
@@ -11,23 +11,9 @@ const KEYBOARD_DEFAULT_VALUE = 'Hello @[mark](1)!'
 
 const {Default} = composeStories(BaseStories)
 
-function getMarkFocusTarget(element: Element): HTMLElement {
-	const target = element.closest<HTMLElement>('[tabindex]')
-	if (!target) throw new Error('Expected mark token focus target')
-	return target
-}
-
-function getFirstEditable(container: Element): HTMLElement {
-	const editable = container.querySelector<HTMLElement>('[contenteditable="true"]')
-	if (!editable) throw new Error('Expected an editable text surface')
-	return editable
-}
-
 /**
- * Chromium's own select-all is NOT editing-host clamped: over an editor whose token
- * surfaces are separate `contenteditable` hosts it still anchors in the first text node
- * and focuses in the last, so `isAllSelected()` is true and the all-selected keyboard
- * branch is reachable from a browser test. Measured on both adapters.
+ * Select-all under one host is the plain native thing: the container IS the editing host,
+ * so Chromium clamps the selection to exactly the editor's contents.
  */
 async function selectAll(container: Element) {
 	await userEvent.click(container)
@@ -73,7 +59,7 @@ describe('API: keyboard', () => {
 		const headSpan = getElement(page.getByText(/Hello/))
 		await focusAtEnd(headSpan)
 		await expect.element(headSpan).toHaveTextContent('Hello')
-		await expect.element(headSpan).toHaveFocus()
+		await expect.element(editingHost(headSpan)).toHaveFocus()
 		await userEvent.keyboard('{Backspace>7/}')
 		await expect.element(page.getByText(/Hello/)).not.toBeInTheDocument()
 	})
@@ -100,26 +86,42 @@ describe('API: keyboard', () => {
 		await expect.element(page.getByText('!')).not.toBeInTheDocument()
 	})
 
-	it('support focus navigation between spans', async () => {
+	it('support caret navigation across a mark', async () => {
 		await render(<Default defaultValue={KEYBOARD_DEFAULT_VALUE} />)
 
 		const firstSpan = getElement(page.getByText(/Hello/))
 		await focusAtStart(firstSpan)
 
 		const secondSpan = getElement(page.getByText('!'))
-		const markFocusTarget = getMarkFocusTarget(getElement(page.getByText(/mark/)))
-		const firstSpanLength = firstSpan.textContent.length
-		await userEvent.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
-		await expect.element(markFocusTarget).toHaveFocus()
+		const host = editingHost(firstSpan)
+
+		// The mark is an atomic, not a stop: the walk to the end of the first span is one
+		// keystroke per character, and the mark costs exactly one more.
+		await userEvent.keyboard(`{ArrowRight>${firstSpan.textContent.length}/}`)
+		expect(caretIsInside(firstSpan)).toBe(true)
 
 		await userEvent.keyboard('{ArrowRight}')
-		await expect.element(secondSpan).toHaveFocus()
+		expect(caretIsInside(secondSpan)).toBe(true)
 
 		await userEvent.keyboard('{ArrowLeft}')
-		await expect.element(markFocusTarget).toHaveFocus()
+		expect(caretIsInside(firstSpan)).toBe(true)
 
-		await userEvent.keyboard('{ArrowLeft}')
-		await expect.element(firstSpan).toHaveFocus()
+		await expect.element(host).toHaveFocus()
+	})
+
+	it('leaves the field on Tab', async () => {
+		// BREAKING (one-host migration): marks lost `tabindex` and are no longer tab stops.
+		// Tab is the plain native "leave the editor" it is in a textarea.
+		const {container} = await render(<Default defaultValue={KEYBOARD_DEFAULT_VALUE} />)
+		const host = findEditingHost(container)
+
+		await userEvent.click(host)
+		await expect.element(host).toHaveFocus()
+
+		await userEvent.keyboard('{Tab}')
+
+		expect(host.contains(document.activeElement)).toBe(false)
+		expect(document.activeElement).not.toBe(host)
 	})
 
 	it('select all text with keyboard shortcut "Ctrl+A"', async () => {
@@ -130,10 +132,8 @@ describe('API: keyboard', () => {
 		await userEvent.click(container)
 		await userEvent.keyboard('{ControlOrMeta>}a{/ControlOrMeta}')
 
-		// `Selection.prototype.toString()` stops at the first editing host, so it answers
-		// 'Hello ' for a selection that really does span the editor; the range's own
-		// serialization is the honest read. That truncation — not a clamped selection — is
-		// what made this look broken in browser mode.
+		// One host, one editing boundary: the select-all range is exactly the editor's
+		// contents, and `Selection.toString()` no longer truncates at the first span.
 		const selection = window.getSelection()!
 		expect(selection.getRangeAt(0).toString()).toBe(container.textContent)
 	})
@@ -154,7 +154,7 @@ describe('API: keyboard', () => {
 		const {container} = await render(<Default defaultValue={KEYBOARD_DEFAULT_VALUE} onChange={onChange} />)
 
 		await selectAll(container)
-		dispatchPasteEvent(getFirstEditable(container), 'pasted @[other](2)')
+		dispatchPasteEvent(findEditingHost(container), 'pasted @[other](2)')
 
 		expect(onChange).toHaveBeenCalledWith('pasted @[other](2)')
 		await expect.element(page.getByText('other')).toBeInTheDocument()
@@ -172,19 +172,18 @@ describe('API: keyboard', () => {
 		expect(container.textContent).toBe('')
 	})
 
-	it('keep all content when Ctrl+A then Enter', async () => {
-		// The S1.6a bug, in the browser: the all-selected branch preventDefaulted EVERY
-		// input type and replaced the whole value with `event.data ?? ''`, so Enter wiped
-		// the input. insertParagraph must now fall through untouched, exactly as it does
-		// when only part of the value is selected.
+	it('replace all content with a newline when Ctrl+A then Enter', async () => {
+		// Enter is an EDIT the guard owns, not a default it forwards: under one host a
+		// forwarded insertParagraph would build a <div>/<br> in DOM the model owns. So the
+		// all-selected branch replaces the value with '\n' — the same replacement the
+		// partial-selection path inserts (core `input.spec`'s two newline pins).
 		const onChange = vi.fn()
 		const {container} = await render(<Default defaultValue={KEYBOARD_DEFAULT_VALUE} onChange={onChange} />)
 
 		await selectAll(container)
-		const event = dispatchBeforeInput(getFirstEditable(container), 'insertParagraph')
+		const event = dispatchBeforeInput(findEditingHost(container), 'insertParagraph')
 
-		expect(event.defaultPrevented).toBe(false)
-		expect(onChange).not.toHaveBeenCalled()
-		expect(container.textContent).toBe('Hello mark!')
+		expect(event.defaultPrevented).toBe(true)
+		expect(onChange).toHaveBeenCalledWith('\n')
 	})
 })

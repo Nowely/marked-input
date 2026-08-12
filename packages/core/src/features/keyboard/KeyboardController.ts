@@ -4,7 +4,6 @@ import type {EditController} from '../edit'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {TokenModel} from '../tokens'
-import {enableArrowNav} from './arrowNav'
 import {enableBlockEdit} from './blockEdit'
 import {enableInput} from './input'
 
@@ -14,7 +13,6 @@ export class KeyboardController {
 		host.onMounted(container => {
 			enableInput(ctx, container)
 			enableBlockEdit(ctx, container)
-			enableArrowNav(ctx, container)
 		})
 	}
 }

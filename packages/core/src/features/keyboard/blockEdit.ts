@@ -1,14 +1,21 @@
+import {nodeTarget} from '../../shared/checkers'
 import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
+import type {SliceRead} from '../block/operations'
 import {addDragRow, mergeDragRows, canMergeRows, deleteDragRow} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Anchors, NodeAnchor, TokenHandle, TreeNode} from '../tokens'
 import {anchorEquals} from '../tokens'
-import {anchorsFromInputEvent} from './inputAnchors'
+import {anchorsFromInputEvent, dropUnexpressedInput, isConsumerKeyOrigin} from './beforeInput'
+
+/** The tree's own string, addressed by anchors — never the props-first `value()`. */
+function sliceRead(store: KbCtx): SliceRead {
+	return (from, to) => store.tokens.valueBetween(from, to)
+}
 
 function isTextLikeRow(node: TreeNode): boolean {
 	if (node.kind === 'text') return true
@@ -28,30 +35,52 @@ function rowHandle(store: KbCtx, rowIndex: number): TokenHandle | undefined {
 	return row && store.tokens.handle(row.id)
 }
 
-function findActiveRow(store: KbCtx): ActiveRow | undefined {
-	const active = document.activeElement
-	if (!active) return undefined
-	const handle = store.tokens.handleAt(active)
-	if (!handle || handle === 'control') return undefined
-	// The ROW index off the live tree. `handle.path()` was bind-generation state on a
-	// handle that is reused across binds, so it could answer from a stale generation.
-	const index = store.tokens.rootIndexOf(handle.id)
+/** The anchor's own node — the tree identity every anchor form carries except the document edges. */
+function anchorOwner(anchor: NodeAnchor): TreeNode | undefined {
+	if (typeof anchor === 'string') return undefined
+	if ('node' in anchor) return anchor.node
+	if ('before' in anchor) return anchor.before
+	return anchor.after
+}
+
+/** The row an anchor names: the root its node belongs to, as handle + index. */
+function rowFromAnchor(store: KbCtx, anchor: NodeAnchor | undefined): ActiveRow | undefined {
+	if (!anchor) return undefined
+	const owner = anchorOwner(anchor)
+	if (!owner) return undefined
+	const index = store.tokens.rootIndexOf(owner.id)
 	if (index === undefined) return undefined
-	const row = rowHandle(store, index)
-	if (!row) return undefined
-	return {handle: row, index}
+	const handle = rowHandle(store, index)
+	return handle && {handle, index}
+}
+
+function findActiveRow(store: KbCtx, target: Node | null): ActiveRow | undefined {
+	// A control (drag handle, block menu) is not a row: focusing it leaves the
+	// row's selection standing, and this keypress is not aimed at that row.
+	if (target && store.tokens.handleAt(target) === 'control') return undefined
+
+	// THE two tiers, and the only ones: row identity is the selection's. DOM truth first;
+	// stored anchors cover the pendingStructural window, where a structural commit awaits
+	// its bind and the DOM range is absent or stale until the changed watch re-applies it.
+	// (The third tier read `document.activeElement` back when each row was its own host and
+	// focus alone could name one. Under the single host activeElement is always the
+	// container, which owns no row.)
+	return (
+		rowFromAnchor(store, store.tokens.domAnchors()?.anchor) ??
+		rowFromAnchor(store, store.tokens.selection.anchors()?.anchor)
+	)
 }
 
 export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'keydown', e => {
 		if (!store.props.layout.isBlock()) return
+		// The same consumer-origin test `enableInput`'s keydown tier takes, and for the same
+		// reason: `findActiveRow` below excluded CONTROLS only, so Backspace or Enter inside a
+		// consumer's editable island resolved a row from the stored selection and edited (or
+		// merged) it. A control root is still excluded there, where row identity is decided.
+		if (isConsumerKeyOrigin(store, container, e)) return
 
-		if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
-			handleBlockArrowLeftRight(store, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
-		} else if (e.key === KEYBOARD.UP || e.key === KEYBOARD.DOWN) {
-			handleArrowUpDown(store, e)
-		}
-
+		// No arrow arm: one host makes cross-row caret movement native.
 		handleDelete(store, e)
 		handleEnter(store, e)
 	})
@@ -69,17 +98,14 @@ export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 }
 
 function handleDelete(store: KbCtx, event: KeyboardEvent) {
-	const active = findActiveRow(store)
+	const active = findActiveRow(store, nodeTarget(event))
 	if (!active) return
 	const {handle, index: blockIndex} = active
 
-	// Fresh read: row positions slice value.current(); the live roots are the tree
-	// those positions were written into, so the cuts hit the right ranges.
 	const rows = store.tokens.nodes()
 	if (blockIndex >= rows.length) return
 
 	const row = rows[blockIndex]
-	const value = store.tokens.value()
 
 	if (event.key === KEYBOARD.BACKSPACE) {
 		// The ROW's own projection, which for a mark row is its whole markup — the
@@ -88,17 +114,15 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 		const blockText = store.tokens.valueBetween({before: row}, {after: row})
 		if (blockText === '') {
 			event.preventDefault()
-			const newValue = deleteDragRow(value, rows, blockIndex)
-			const previous = rows.at(Math.max(0, blockIndex - 1))
-			const pos = previous ? previous.position.end : 0
-			store.edit.setValue(newValue, pos)
+			const result = deleteDragRow(sliceRead(store), rows, blockIndex)
+			store.edit.setValue(result.value, result.caret)
 			return
 		}
 
 		const caretAtStart = (handle.caretIndex() ?? 0) === 0
 
 		if (caretAtStart && blockIndex > 0) {
-			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex - 1, 'end')
+			mergeOrFocusNeighbor(store, event, rows, blockIndex, blockIndex - 1, 'end')
 			return
 		}
 	}
@@ -109,12 +133,12 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 		const caretAtStart = caretIndex === 0
 
 		if (caretAtStart && blockIndex > 0) {
-			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex - 1, 'end')
+			mergeOrFocusNeighbor(store, event, rows, blockIndex, blockIndex - 1, 'end')
 			return
 		}
 
 		if (caretAtEnd && blockIndex < rows.length - 1) {
-			mergeOrFocusNeighbor(store, event, rows, value, blockIndex, blockIndex + 1, 'start')
+			mergeOrFocusNeighbor(store, event, rows, blockIndex, blockIndex + 1, 'start')
 			return
 		}
 	}
@@ -124,7 +148,27 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
-	const active = findActiveRow(store)
+	const target = nodeTarget(event)
+	// The control verdict comes FIRST for the same reason it does in `input.ts`: the arm
+	// below keys on the STORED selection, not on where the event came from, so an Enter
+	// inside consumer chrome would wipe the document. `findActiveRow` asks the same
+	// question again further down; this one is not redundant, because the arm between them
+	// never reaches it.
+	if (target && store.tokens.handleAt(target) === 'control') return
+
+	// Everything selected: Enter REPLACES the document with one fresh row — the block
+	// analogue of inline's whole-value replace. Ahead of the row lookup, which would
+	// resolve the single row the selection merely STARTS in and split that one instead,
+	// appending an empty row while keeping everything selected.
+	if (store.tokens.selection.isAllSelected()) {
+		event.preventDefault()
+		// Offset 0 is the CARET (not the value) the empty-document `add` takes in
+		// `operations.ts`: the start of the fresh row.
+		store.edit.setValue(createRowContent(store.props.options()), 0)
+		return
+	}
+
+	const active = findActiveRow(store, target)
 	if (!active) return
 
 	event.preventDefault()
@@ -132,14 +176,12 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 
 	const rows = store.tokens.nodes()
 	const row = rows[blockIndex]
-	const value = store.tokens.value()
 
 	const newRowContent = createRowContent(store.props.options())
 
 	if (!isTextLikeRow(row)) {
-		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
-		const pos = row.position.end + newRowContent.length
-		store.edit.setValue(newValue, pos)
+		const result = addDragRow(sliceRead(store), rows, blockIndex, newRowContent)
+		store.edit.setValue(result.value, result.caret)
 		return
 	}
 
@@ -156,83 +198,35 @@ function focusRow(store: KbCtx, row: TreeNode, rowIndex: number, caret: 'start' 
 		if (handle && store.tokens.placeAtHandle(handle, caret)) return
 	}
 
-	const handle = rowHandle(store, rowIndex)
-	if (!handle) return
-	handle.focus()
-	handle.placeCaret(caret === 'start' ? 0 : Infinity)
-}
-
-function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction: 'left' | 'right'): void {
-	const active = findActiveRow(store)
-	if (!active) return
-	const {handle, index: blockIndex} = active
-	const rowCount = store.tokens.nodes().length
-
-	if (direction === 'left') {
-		if ((handle.caretIndex() ?? 0) !== 0) return
-		if (blockIndex === 0) return
-		event.preventDefault()
-		const prev = rowHandle(store, blockIndex - 1)
-		if (!prev) return
-		prev.focus()
-		prev.placeCaret(Infinity)
-		return
-	}
-
-	if ((handle.caretIndex() ?? 0) !== handle.textLength()) return
-	if (blockIndex >= rowCount - 1) return
-	event.preventDefault()
-	const next = rowHandle(store, blockIndex + 1)
-	if (!next) return
-	next.focus()
-	next.placeCaret(0)
-}
-
-function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
-	const active = findActiveRow(store)
-	if (!active) return
-	const {handle, index: blockIndex} = active
-	const rowCount = store.tokens.nodes().length
-
-	if (event.key === KEYBOARD.UP) {
-		if (!handle.caretOnFirstLine()) return
-		if (blockIndex === 0) return
-
-		event.preventDefault()
-		const caretX = store.tokens.domSelection()?.rect?.left ?? handle.rect()?.left ?? 0
-		const prev = rowHandle(store, blockIndex - 1)
-		if (!prev) return
-		prev.focus()
-		const prevRect = prev.rect()
-		prev.placeCaretAtX(caretX, prevRect ? prevRect.bottom - 4 : undefined)
-	} else if (event.key === KEYBOARD.DOWN) {
-		if (!handle.caretOnLastLine()) return
-		if (blockIndex >= rowCount - 1) return
-
-		event.preventDefault()
-		const caretX = store.tokens.domSelection()?.rect?.left ?? handle.rect()?.left ?? 0
-		const next = rowHandle(store, blockIndex + 1)
-		if (!next) return
-		next.focus()
-		const nextRect = next.rect()
-		next.placeCaretAtX(caretX, nextRect ? nextRect.top + 4 : undefined)
-	}
+	// No focus call ahead of the placement: `placeCaret` focuses the editing host itself,
+	// and under one host that host is the container either way.
+	rowHandle(store, rowIndex)?.placeCaret(caret === 'start' ? 0 : Infinity)
 }
 
 function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent) {
-	if (!findActiveRow(store)) return
+	const target = nodeTarget(event)
+	// TWO verdicts, not one. A control root is consumer chrome that owns its own input, so
+	// its event passes through untouched. "No resolvable row" is the opposite: the event
+	// still targets model-owned DOM (Enter would split it into a <div> the tree never
+	// sanctioned — `handleEnter` bails on the same missing row, and `input.ts` has already
+	// returned on `isBlock`), so it fails closed like every other unexpressed edit.
+	if (target && store.tokens.handleAt(target) === 'control') return
+	if (!findActiveRow(store, target)) {
+		dropUnexpressedInput(container, event)
+		return
+	}
 
 	switch (event.inputType) {
 		case 'insertText': {
 			const data = event.data ?? ''
-			replaceBlockRange(store, event, data)
+			replaceBlockRange(store, container, event, data)
 			break
 		}
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
 			const markup = consumeMarkupPaste(container)
 			const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
-			replaceBlockRange(store, event, pasteData)
+			replaceBlockRange(store, container, event, pasteData)
 			break
 		}
 		case 'deleteContentBackward':
@@ -241,17 +235,37 @@ function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: Inp
 		case 'deleteWordForward':
 		case 'deleteSoftLineBackward':
 		case 'deleteSoftLineForward': {
-			replaceBlockRange(store, event, '')
+			replaceBlockRange(store, container, event, '')
 			break
 		}
+		// PARITY with `input.ts`'s `replacementForInput`, which the closed default below
+		// would otherwise turn into a silent drop. Shift+Enter is a newline INSIDE the row
+		// (plain Enter never reaches here — `handleEnter` cancels its keydown and splits
+		// the row instead).
+		case 'insertLineBreak': {
+			replaceBlockRange(store, container, event, '\n')
+			break
+		}
+		case 'insertFromDrop': {
+			replaceBlockRange(store, container, event, event.dataTransfer?.getData('text/plain') ?? '')
+			break
+		}
+		// FAIL CLOSED, same contract as `input.ts`: block rows live in the SAME single
+		// host, so an input type this switch cannot express would edit model-owned DOM.
+		// Enter is not among the cases because `handleEnter` already cancelled its
+		// keydown, so no `insertParagraph` reaches this at all.
+		default:
+			dropUnexpressedInput(container, event)
 	}
 }
 
-function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string): void {
+function replaceBlockRange(store: KbCtx, container: HTMLElement, event: InputEvent, replacement: string): void {
 	const anchors = anchorsFromInputEvent(store, event)
-	if (!anchors) return
-	const target = anchorsForBlockInput(store, event, anchors)
-	if (!target) return
+	const target = anchors && anchorsForBlockInput(store, event, anchors)
+	if (!target) {
+		dropUnexpressedInput(container, event)
+		return
+	}
 
 	event.preventDefault()
 	store.edit.replace(target.anchor, target.head, replacement)
@@ -276,7 +290,6 @@ function mergeOrFocusNeighbor(
 	store: KbCtx,
 	event: KeyboardEvent,
 	rows: readonly TreeNode[],
-	value: string,
 	fromIndex: number,
 	toIndex: number,
 	caretOnFocus: 'start' | 'end'
@@ -284,9 +297,10 @@ function mergeOrFocusNeighbor(
 	const joinIndex = Math.max(fromIndex, toIndex)
 	const a = rows[Math.min(fromIndex, toIndex)]
 	const b = rows[joinIndex]
+	const read = sliceRead(store)
 	event.preventDefault()
-	if (canMergeRows(a, b)) {
-		const merged = mergeDragRows(value, rows, joinIndex)
+	if (canMergeRows(read, a, b)) {
+		const merged = mergeDragRows(read, rows, joinIndex)
 		store.edit.setValue(merged.value, merged.caret)
 		return
 	}

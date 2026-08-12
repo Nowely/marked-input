@@ -34,7 +34,7 @@ export const CustomOverlay: Story = {
 	args: {
 		Mark: () => null,
 		Overlay,
-		value: 'Hello, custom overlay by trigger @!',
+		defaultValue: 'Hello, custom overlay by trigger @!',
 	},
 }
 
@@ -42,7 +42,7 @@ export const CustomTrigger: Story = {
 	args: {
 		Mark: () => null,
 		Overlay,
-		value: 'Hello, custom overlay by trigger /!',
+		defaultValue: 'Hello, custom overlay by trigger /!',
 		options: [{overlay: {trigger: '/'}}],
 	},
 }
@@ -56,7 +56,7 @@ export const PositionedOverlay: Story = {
 	args: {
 		Mark: () => null,
 		Overlay: Tooltip,
-		value: 'Hello, positioned overlay by trigger @!',
+		defaultValue: 'Hello, positioned overlay by trigger @!',
 	},
 }
 
@@ -75,7 +75,7 @@ export const SelectableOverlay: Story = {
 	args: {
 		Mark,
 		Overlay: List,
-		value: 'Hello, suggest overlay by trigger @!',
+		defaultValue: 'Hello, suggest overlay by trigger @!',
 		options: [{markup: '@[__value__](__meta__)', overlay: {trigger: '@'}}],
 	},
 }

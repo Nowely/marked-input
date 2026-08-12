@@ -58,15 +58,17 @@ describe('TokenModel placement commands', () => {
 		// live roots — and they are not theoretical: `anchorAt` answers `'end'` for ANY
 		// out-of-range caret intent (spec S1 §4.6 item 5), which is what replaced the
 		// deleted selection clamp. Declining them leaves such a caret unplaced.
-		const {store, text1, text2} = mountWithMark()
+		const {store} = mountWithMark()
 		const roots = store.tokens.nodes()
 
+		// `domAnchors` resolves the LIVE DOM selection, so the anchor it answers is the
+		// witness that the caret landed in that root's own surface. (The `activeElement`
+		// checks that used to sit beside it are gone with the per-token focus targets:
+		// text surfaces carry no contenteditable of their own any more.)
 		expect(store.tokens.placeCaret('end')).toBe(true)
-		expect(document.activeElement).toBe(text2)
 		expect(store.tokens.domAnchors()?.anchor).toEqual({node: roots[2], offset: 3})
 
 		expect(store.tokens.placeCaret('start')).toBe(true)
-		expect(document.activeElement).toBe(text1)
 		expect(store.tokens.domAnchors()?.anchor).toEqual({node: roots[0], offset: 0})
 	})
 
@@ -75,14 +77,24 @@ describe('TokenModel placement commands', () => {
 		// two anchors. The numeric predecessor could only answer with one of them (its
 		// nearest-text-surface search always won, which is why its mark branch was
 		// unreachable); each anchor now places through its own node.
-		const {store, mark, text2} = mountWithMark()
-		const markNode = store.tokens.nodes()[1]
-
+		const {store} = mountWithMark()
+		const [, markNode, text2Node] = store.tokens.nodes()
+		// WHERE THE CARET LANDED, not what took focus: no token element is a focus target
+		// under the one-host topology.
+		//
+		// `{after: mark}` places in the mark's PARENT coordinates — the mark is atomic, so a
+		// boundary inside it is no position — which here is the CONTAINER's child index 2.
+		// `domAnchors` is the COLLAPSED reader and is left-affine there, so that boundary
+		// comes back as the anchor that placed it. It answered `{before: text2Node}` until
+		// the near-edge rule landed: the same document position (6: the mark ends where 'llo'
+		// starts) spelled from the other side, and a spelling that re-placed the caret on
+		// into 'llo'. MEASURED, and still sensitive to an after↔before inversion: swapping
+		// the two branches of the mark placement answers `{before: markNode}` here.
 		expect(store.tokens.placeCaret({after: markNode})).toBe(true)
-		expect(document.activeElement).toBe(mark)
+		expect(store.tokens.domAnchors()?.anchor).toEqual({after: markNode})
 
 		expect(store.tokens.placeCaret(store.tokens.anchorAt(6))).toBe(true)
-		expect(document.activeElement).toBe(text2)
+		expect(store.tokens.domAnchors()?.anchor).toEqual({node: text2Node, offset: 0})
 	})
 
 	it("handle.placeCaret targets the handle's token explicitly", () => {
@@ -110,6 +122,25 @@ describe('TokenModel placement commands', () => {
 		window.getSelection()?.removeAllRanges()
 		expect(store.tokens.selectRange(to, from)).toBe(true)
 		expect(store.tokens.domAnchors()).toEqual(spanned)
+	})
+
+	it('selectRange accepts a MARK endpoint in parent coordinates', () => {
+		// A mark has no text surface, and both ends used to have to resolve to one — so a
+		// selection reaching a mark's own boundary was REFUSED and the DOM selection silently
+		// stayed where it was while the stored one moved. Its endpoints are the parent
+		// coordinates `placeCaret` has placed since the one-host flip; `selectRange` now reads
+		// the same answer, and Chromium spans the mixed range (text end + container index).
+		const {store, container} = mountWithMark()
+		const roots = store.tokens.nodes()
+		const mark = roots[1]
+
+		expect(store.tokens.selectRange(store.tokens.anchorAt(0), {after: mark})).toBe(true)
+
+		// The DOM really moved: the round-trip re-reads the live range, and the mark's own
+		// text ('x', the adapter's presentation) is inside the selected span.
+		expect(store.tokens.domAnchors()).toEqual({anchor: {node: roots[0], offset: 0}, head: {after: mark}})
+		expect(window.getSelection()?.toString()).toBe('hex')
+		container.remove()
 	})
 
 	it('selects to the END of a surface the browser split into two text nodes', () => {

@@ -50,8 +50,6 @@ export type CommitDeps = {
 	 * binds the current tree rather than whatever generation was last painted.
 	 */
 	roots: () => readonly TreeNode[]
-	/** Mount-time editable state for newly bound surfaces and mark roots. */
-	editableState: () => {editable: boolean; readOnly: boolean}
 	controlElements: () => ReadonlySet<HTMLElement>
 	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[]
 	isBlock: () => boolean
@@ -90,17 +88,6 @@ export type CommitPipeline = {
 	changed: Event<TokenDelta>
 	/** pendingStructural latch: true between a structural apply and its bind — id-bridged resolution fails closed. */
 	pending(): boolean
-	/**
-	 * THE live node layer, keyed by id — `deps.nodes` itself, which bind mutates in place,
-	 * not the per-bind copy this used to hand out. A handle in it is BOUND iff
-	 * `handle.alive()`: bind unbinds (never removes) a node whose element the DOM walk
-	 * missed, and deletes only ids absent from the tree.
-	 *
-	 * Its one consumer outside this module is `TokenModel.setEditable`, which already skips
-	 * every unbound handle on `node()`; the map is that model's OWN field, so the method is
-	 * a pass-through waiting to be deleted with that caller.
-	 */
-	bound(): ReadonlyMap<number, TokenHandle>
 	byElement(element: HTMLElement): TokenHandle | undefined
 	isControlRoot(element: HTMLElement): boolean
 }
@@ -210,7 +197,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			controlElements: deps.controlElements(),
 			childSequenceHostsFor: deps.childSequenceHostsFor,
 			isBlock: deps.isBlock(),
-			editable: deps.editableState(),
 		})
 		byElement = result.byElement
 		controlRoots = result.controlRoots
@@ -267,7 +253,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		renderEpoch,
 		changed,
 		pending: () => pendingStructural,
-		bound: () => deps.nodes,
 		byElement: element => byElement.get(element),
 		isControlRoot: element => controlRoots.has(element),
 	}

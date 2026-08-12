@@ -1,29 +1,54 @@
 import type {ElementBindings} from './TokenHandle'
 
 /**
- * Apply contentEditable / tabindex to a handle's bindings.
+ * One-host editable topology for a single bound token. The CONTAINER is the only
+ * editing host; nothing below it opens a second one.
  *
- * - Text surface: conditional contentEditable write (preserves the caret when
- *   the attribute already matches).
- * - Mark root (no text surface): tabindex — removed when readOnly, otherwise
- *   set to 0 only when the ATTRIBUTE is absent (natively focusable mark roots
- *   such as <button> carry tabIndex=0 as a property without the attribute;
- *   checking the attribute avoids a spurious attribute write on every call).
+ * - Text surface: BARE — no contenteditable attribute at all; it inherits
+ *   editability from the container.
+ * - Value-only mark root (no slot): `contenteditable=false` — atomic by
+ *   contract, not by accident of "my parent is not an editing host". No
+ *   tabindex either way: marks are not tab stops (Tab leaves the field
+ *   natively).
+ * - Slot mark: the root and the slot host go BARE, so slot content stays in the
+ *   ONE host, and only the CHROME around it — every element hanging off the
+ *   root→host path — becomes atomic. A nested `contenteditable=true` host is
+ *   what this policy exists to avoid: the host both adapters render is
+ *   `display: contents`, and a boxless element cannot take focus, so Chromium
+ *   accepts a caret there and then fires no `beforeinput` at all.
  *
- * Both callers — bind.ts (mount-time, newly bound only) and TokenModel.setEditable
- * (scoped sweep, all currently bound handles) — apply the same conditional-write
- * semantics and share this function.
+ * readOnly lives on the CONTAINER (the selection driver writes it), not here.
+ *
+ * ONE caller: `bind`, which records a slot host only when the token element
+ * `contains` it. The chrome walk below relies on that — it climbs host→root and
+ * has no other stop condition.
  */
-export function applyEditableState(bindings: ElementBindings, state: {editable: boolean; readOnly: boolean}): void {
+export function applyEditableState(bindings: ElementBindings): void {
 	if (bindings.textElement) {
-		const editableAttr = state.editable ? 'true' : 'false'
-		if (bindings.textElement.contentEditable !== editableAttr) {
-			bindings.textElement.contentEditable = editableAttr
-		}
+		bindings.textElement.removeAttribute('contenteditable')
 		return
 	}
-	if (state.readOnly) bindings.tokenElement.removeAttribute('tabindex')
-	// Conditional on the ATTRIBUTE, not the property: natively focusable mark
-	// roots (e.g. <button>) report tabIndex 0 without carrying the attribute.
-	else if (bindings.tokenElement.getAttribute('tabindex') !== '0') bindings.tokenElement.tabIndex = 0
+	const {tokenElement, childSequenceHost} = bindings
+	tokenElement.removeAttribute('tabindex')
+	if (!childSequenceHost) {
+		if (tokenElement.contentEditable !== 'false') tokenElement.contentEditable = 'false'
+		return
+	}
+	tokenElement.removeAttribute('contenteditable')
+	childSequenceHost.removeAttribute('contenteditable')
+	// Walk the host back up to the root, freezing every sibling of the path: those are
+	// the mark's own chrome, and chrome is not document content.
+	let onPath: HTMLElement = childSequenceHost
+	while (onPath !== tokenElement) {
+		const parent = onPath.parentElement
+		// The walk bound this host under this root, but nothing pins the DOM between that
+		// walk and this write — a host detached in between must not spin.
+		if (!parent) break
+		for (const child of parent.children) {
+			if (child !== onPath && child instanceof HTMLElement && child.contentEditable !== 'false') {
+				child.contentEditable = 'false'
+			}
+		}
+		onPath = parent
+	}
 }

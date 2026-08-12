@@ -100,7 +100,7 @@ describe('Slots API', () => {
 
 			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toBeInTheDocument()
-			await expect.element(textSpan).toHaveAttribute('contenteditable')
+			await expect.element(textSpan).not.toHaveAttribute('contenteditable')
 		})
 
 		it('use custom component from Span prop', async () => {
@@ -209,39 +209,42 @@ describe('Slots API', () => {
 		})
 	})
 
-	describe('Span contentEditable attribute', () => {
-		it('have contentEditable="true" by default on editable span', async () => {
-			await render(<MarkedInput Mark={TestMark} value="Hello world" />)
+	describe('contentEditable topology', () => {
+		it('put contentEditable="true" on the container, not on the text span', async () => {
+			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" />)
 
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			const textSpan = page.getByText('Hello world')
-			await expect.element(textSpan).toBeInTheDocument()
-			await expect.element(textSpan).toHaveAttribute('contenteditable')
+			await expect.element(containerDiv).toHaveAttribute('contenteditable', 'true')
+			await expect.element(textSpan).not.toHaveAttribute('contenteditable')
 		})
 
-		it('have contentEditable="false" when readOnly is true', async () => {
-			await render(<MarkedInput Mark={TestMark} value="Hello world" readOnly={true} />)
+		it('have contentEditable="false" on the container when readOnly is true', async () => {
+			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" readOnly={true} />)
 
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			const textSpan = page.getByText('Hello world')
-			await expect.element(textSpan).toBeInTheDocument()
-			await expect.element(textSpan).toHaveAttribute('contenteditable', 'false')
+			await expect.element(containerDiv).toHaveAttribute('contenteditable', 'false')
+			await expect.element(textSpan).not.toHaveAttribute('contenteditable')
 		})
 
-		it('maintain contentEditable on span with custom Span', async () => {
+		it('leave a custom Span bare too', async () => {
 			const CustomSpan = ({children}: MarkProps) => <span data-testid="custom-span">{children}</span>
 
 			await render(<MarkedInput Mark={TestMark} value="Hello world" Span={CustomSpan} />)
 
 			const span = page.getByTestId('custom-span')
 			await expect.element(span).toBeInTheDocument()
-			await expect.element(span).toHaveAttribute('contenteditable')
+			await expect.element(span).not.toHaveAttribute('contenteditable')
 			await expect.element(span).toHaveTextContent('Hello world')
 		})
 
-		it('set contentEditable imperatively via core controller', async () => {
-			await render(<MarkedInput Mark={TestMark} value="Hello world" />)
+		it('freeze a value-only mark root as an atomic', async () => {
+			await render(<MarkedInput Mark={TestMark} value="Hello @[world](1)" />)
 
-			const textSpan = page.getByText('Hello world')
-			await expect.element(textSpan).toHaveAttribute('contenteditable')
+			const mark = page.getByRole('mark')
+			await expect.element(mark).toHaveAttribute('contenteditable', 'false')
+			await expect.element(mark).not.toHaveAttribute('tabindex')
 		})
 	})
 
@@ -350,9 +353,10 @@ describe('Slots API', () => {
 
 			const article = container.querySelector<HTMLElement>('article')!
 			await expect.element(article).toBeInTheDocument()
+			await expect.element(article).toHaveAttribute('contenteditable', 'true')
 			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toBeInTheDocument()
-			await expect.element(textSpan).toHaveAttribute('contenteditable')
+			await expect.element(textSpan).not.toHaveAttribute('contenteditable')
 		})
 	})
 

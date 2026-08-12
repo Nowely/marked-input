@@ -7,7 +7,7 @@ import type {TokenTree} from '../tree/tree'
 import type {TextNode, TreeNode} from '../tree/types'
 import {bind} from './bind'
 import type {BindInput} from './bind'
-import {focusIfNeeded, getCaretIndex, placeAtTextOffset} from './caret'
+import {focusEditingHost, getCaretIndex, placeAtTextOffset} from './caret'
 import type {TokenHandle} from './TokenHandle'
 
 /**
@@ -33,7 +33,6 @@ function inputFor(container: HTMLElement, roots: readonly TreeNode[], overrides:
 		controlElements: new Set<HTMLElement>(),
 		childSequenceHostsFor: () => [],
 		isBlock: false,
-		editable: {editable: true, readOnly: false},
 		...overrides,
 	}
 }
@@ -523,80 +522,108 @@ describe('bind', () => {
 		})
 	})
 
-	describe('mount-time editable state', () => {
-		it('applies contentEditable to newly bound text surfaces per the editable flag', () => {
-			const editableSpan = spanWith('a')
-			const editableContainer = document.createElement('div')
-			editableContainer.append(editableSpan)
+	describe('one-host mount state', () => {
+		it('text surfaces carry NO contenteditable attribute; value-only mark roots are ce=false without tabindex', () => {
+			const container = document.createElement('div')
+			const before = spanWith('hi ')
+			// An adapter that renders the attribute itself (or a surface bound under the old
+			// policy): the text arm has to STRIP it, not merely decline to write one.
+			before.contentEditable = 'true'
+			const mark = document.createElement('mark')
+			// A mark root the previous policy left as a tab stop: the attribute must go.
+			mark.tabIndex = 0
+			const after = spanWith('!')
+			container.append(before, mark, after)
 
-			const frozenSpan = spanWith('b')
-			const frozenContainer = document.createElement('div')
-			frozenContainer.append(frozenSpan)
+			const {roots} = treeOf([textToken('hi ', 0), markToken('world', '@[world]', 3), textToken('!', 11)])
 
-			bindOf(inputFor(editableContainer, treeOf([textToken('a', 0)]).roots))
+			bindOf(inputFor(container, roots))
+
+			for (const span of [before, after]) {
+				expect(span.hasAttribute('contenteditable')).toBe(false)
+			}
+			expect(mark.getAttribute('contenteditable')).toBe('false')
+			expect(mark.hasAttribute('tabindex')).toBe(false)
+		})
+
+		it('a slot mark leaves root and host BARE and freezes only the chrome beside them', () => {
+			// The slot lives in the ONE editing host: a nested `contenteditable=true` here
+			// would be a `display: contents` host in both adapters — boxless, unfocusable,
+			// and Chromium fires no beforeinput for it. Atomicity is the chrome's, not the
+			// slot's, so the sweep walks host→root and freezes what hangs off that path.
+			const container = document.createElement('div')
+			const outer = document.createElement('mark')
+			const label = spanWith('@')
+			const wrapper = document.createElement('span')
+			const badge = spanWith('!')
+			const host = document.createElement('span')
+			const inner = spanWith('a')
+			host.append(inner)
+			wrapper.append(badge, host)
+			outer.append(label, wrapper)
+			container.append(outer)
+
+			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('a', 0)])])
+
 			bindOf(
-				inputFor(frozenContainer, treeOf([textToken('b', 0)]).roots, {
-					editable: {editable: false, readOnly: false},
+				inputFor(container, roots, {
+					childSequenceHostsFor: ownerId => (ownerId === roots[0].id ? [host] : []),
 				})
 			)
 
-			expect(editableSpan.contentEditable).toBe('true')
-			expect(frozenSpan.contentEditable).toBe('false')
+			// On the path: nothing written, so the container's editability reaches the slot.
+			expect(outer.hasAttribute('contenteditable')).toBe(false)
+			expect(wrapper.hasAttribute('contenteditable')).toBe(false)
+			expect(host.hasAttribute('contenteditable')).toBe(false)
+			expect(inner.hasAttribute('contenteditable')).toBe(false)
+			// Off the path, at every level up to the root: chrome, hence atomic.
+			expect(badge.getAttribute('contenteditable')).toBe('false')
+			expect(label.getAttribute('contenteditable')).toBe('false')
+			expect(outer.hasAttribute('tabindex')).toBe(false)
 		})
 
-		it('applies tabindex to newly bound mark roots per readOnly', () => {
-			const interactiveMark = document.createElement('mark')
-			const interactiveContainer = document.createElement('div')
-			interactiveContainer.append(interactiveMark)
+		it('a slot host that appears or is replaced under a surviving root re-applies the policy', () => {
+			// The root element survives the re-render, so the newly-bound-root check alone
+			// would skip it: a mark that GROWS a slot would keep the `ce=false` that made it
+			// atomic — a slot nobody can type in — and a replaced host would leave its new
+			// chrome unfrozen.
+			const container = document.createElement('div')
+			const outer = document.createElement('mark')
+			outer.append(document.createTextNode('x'))
+			container.append(outer)
+			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('a', 0)])])
+			const nodes = new Map<number, TokenHandle>()
+			const hostFor = (host: HTMLElement) => (ownerId: number) => (ownerId === roots[0].id ? [host] : [])
 
-			const readOnlyMark = document.createElement('mark')
-			readOnlyMark.tabIndex = 0
-			const readOnlyContainer = document.createElement('div')
-			readOnlyContainer.append(readOnlyMark)
+			// Value-only to begin with: no host, so the whole mark is atomic.
+			bindOf(inputFor(container, roots, {nodes}))
+			expect(outer.getAttribute('contenteditable')).toBe('false')
 
-			bindOf(inputFor(interactiveContainer, treeOf([markToken('a', '@[a]', 0)]).roots))
-			bindOf(
-				inputFor(readOnlyContainer, treeOf([markToken('b', '@[b]', 0)]).roots, {
-					editable: {editable: false, readOnly: true},
-				})
-			)
+			// A slot appears under the same root element.
+			const chromeA = spanWith('@')
+			const hostA = document.createElement('span')
+			hostA.append(spanWith('a'))
+			outer.replaceChildren(chromeA, hostA)
+			bindOf(inputFor(container, roots, {nodes, childSequenceHostsFor: hostFor(hostA)}))
 
-			expect(interactiveMark.tabIndex).toBe(0)
-			expect(readOnlyMark.hasAttribute('tabindex')).toBe(false)
+			expect(outer.hasAttribute('contenteditable')).toBe(false)
+			expect(hostA.hasAttribute('contenteditable')).toBe(false)
+			expect(chromeA.getAttribute('contenteditable')).toBe('false')
+
+			// …and is replaced by a fresh one, chrome and all.
+			const chromeB = spanWith('#')
+			const hostB = document.createElement('span')
+			hostB.append(spanWith('a'))
+			outer.replaceChildren(chromeB, hostB)
+			bindOf(inputFor(container, roots, {nodes, childSequenceHostsFor: hostFor(hostB)}))
+
+			expect(hostB.hasAttribute('contenteditable')).toBe(false)
+			expect(chromeB.getAttribute('contenteditable')).toBe('false')
 		})
 
-		it('applies tabindex ATTRIBUTE (not just property) to a natively focusable mark root', () => {
-			// A <button> reports tabIndex 0 without any tabindex attribute set.
-			// The fix in applyMountState must check getAttribute('tabindex'), not
-			// the .tabIndex property, to avoid skipping the write on editable mount
-			// and must removeAttribute (not set -1) on readOnly mount.
-			const editableButton = document.createElement('button')
-			const editableContainer = document.createElement('div')
-			editableContainer.append(editableButton)
-
-			const readOnlyButton = document.createElement('button')
-			const readOnlyContainer = document.createElement('div')
-			readOnlyContainer.append(readOnlyButton)
-
-			bindOf(inputFor(editableContainer, treeOf([markToken('a', '@[a]', 0)]).roots))
-			bindOf(
-				inputFor(readOnlyContainer, treeOf([markToken('b', '@[b]', 0)]).roots, {
-					editable: {editable: false, readOnly: true},
-				})
-			)
-
-			// Editable: tabindex attribute must be written so the button participates
-			// in the field's managed tab order rather than the native default.
-			expect(editableButton.getAttribute('tabindex')).toBe('0')
-			// ReadOnly: tabindex attribute must be absent — the button's native
-			// focusability is removed so focus cannot enter the mark.
-			expect(readOnlyButton.hasAttribute('tabindex')).toBe(false)
-		})
-
-		it('does not reapply contentEditable to a surface that stays bound', () => {
-			// Prop-change application is the model shell's job (scoped editable
-			// setter); bind only handles MOUNT-time state. A surface that stays
-			// bound keeps whatever the shell last wrote.
+		it('does not reapply the editable state to a surface that stays bound', () => {
+			// bind only handles MOUNT-time state, and this conditional is what keeps a
+			// live surface out of the way of an attribute write mid-edit.
 			const container = document.createElement('div')
 			const span = spanWith('hello')
 			container.append(span)
@@ -604,12 +631,12 @@ describe('bind', () => {
 			const nodes = new Map<number, TokenHandle>()
 
 			bindOf(inputFor(container, roots, {nodes}))
-			expect(span.contentEditable).toBe('true')
+			expect(span.hasAttribute('contenteditable')).toBe(false)
 
-			span.contentEditable = 'false'
+			span.contentEditable = 'true'
 			bindOf(inputFor(container, roots, {nodes}))
 
-			expect(span.contentEditable).toBe('false')
+			expect(span.getAttribute('contenteditable')).toBe('true')
 		})
 	})
 
@@ -665,6 +692,8 @@ describe('bind', () => {
 			// replace-all: measured, `textContent = <same string>` collapses two children
 			// into one and drops the caret from 4 to 0.
 			const container = document.createElement('div')
+			// The editing host, because that is where focus sits while the browser edits.
+			container.contentEditable = 'true'
 			const span = spanWith('hello')
 			container.append(span)
 			document.body.append(container)
@@ -676,7 +705,7 @@ describe('bind', () => {
 			const only = span.firstChild
 			if (!(only instanceof Text)) throw new Error('expected one text child')
 			only.splitText(2)
-			focusIfNeeded(span)
+			focusEditingHost(span)
 			placeAtTextOffset(span, 4)
 			expect(getCaretIndex(span)).toBe(4)
 

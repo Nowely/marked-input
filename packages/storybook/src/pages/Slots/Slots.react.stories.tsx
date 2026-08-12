@@ -45,7 +45,7 @@ const FancyContainer = ({ref, ...props}: React.HTMLAttributes<HTMLDivElement> & 
 export const CustomComponents: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: SimpleMark,
-		value: 'Both @[container] and @[span] are @[customized]',
+		defaultValue: 'Both @[container] and @[span] are @[customized]',
 		slots: {
 			container: FancyContainer,
 		},
@@ -105,7 +105,7 @@ function EventLogStory(args: MarkedInputProps) {
 export const WithSlotProps: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: SimpleMark,
-		value: 'Try pressing @[Enter] or clicking',
+		defaultValue: 'Try pressing @[Enter] or clicking',
 		className: 'custom-container',
 		slotProps: {
 			container: {
@@ -140,7 +140,7 @@ const StyledContainer = ({ref, ...props}: React.HTMLAttributes<HTMLDivElement> &
 export const StyleMerging: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: SimpleMark,
-		value: 'Container has @[merged] styles from multiple sources',
+		defaultValue: 'Container has @[merged] styles from multiple sources',
 		slots: {
 			container: StyledContainer,
 		},
@@ -162,7 +162,7 @@ export const StyleMerging: StoryObj<MarkedInputProps> = {
 export const DataAttributes: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: SimpleMark,
-		value: 'Use @[data] attributes for testing and tracking',
+		defaultValue: 'Use @[data] attributes for testing and tracking',
 		slotProps: {
 			container: {
 				dataTestId: 'marked-input-demo',

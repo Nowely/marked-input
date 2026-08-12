@@ -3,6 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
+import {textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd} from '../../shared/lib/focus'
 import * as Stories from './Api.react.stories'
 
@@ -52,8 +53,10 @@ describe('US-5: the editor API drives every scenario through node anchors', () =
 
 	it("inserts a mark at 'caret' from a toolbar button", async () => {
 		await render(<Default />)
-		const editable = document.querySelector<HTMLElement>('[contenteditable]')!
-		await focusAtEnd(editable)
+		// The FIRST text token, not the host: `[contenteditable]` answers the container now,
+		// and its end is the end of the document, which is a different insertion point.
+		const [head] = textSurfaces(document.querySelector<HTMLElement>('[contenteditable="true"]')!)
+		await focusAtEnd(head)
 		await userEvent.click(page.getByTestId('insert-at-caret'))
 		expect(read()).toBe('hello @[carol](u3)@[world](u1) foo')
 	})

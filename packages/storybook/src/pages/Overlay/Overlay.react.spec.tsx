@@ -6,6 +6,7 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
+import {textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
 import * as BaseStories from '../Base/Base.react.stories'
 import * as OverlayStories from './Overlay.react.stories'
@@ -13,9 +14,12 @@ import * as OverlayStories from './Overlay.react.stories'
 const {Default} = composeStories(BaseStories)
 const {DefaultOverlay} = composeStories(OverlayStories)
 
+/** The nth TEXT token surface — bare spans now, so they are addressed structurally. */
 function editableText(container: ParentNode, index = 0): HTMLElement {
-	const element = Array.from(container.querySelectorAll<HTMLElement>('span[contenteditable]')).at(index)
-	if (!element) throw new Error('Expected editable text surface')
+	const host = container.querySelector<HTMLElement>('[contenteditable="true"]')
+	if (!host) throw new Error('Expected the editing host')
+	const element = textSurfaces(host).at(index)
+	if (!element) throw new Error('Expected a text token surface')
 	return element
 }
 

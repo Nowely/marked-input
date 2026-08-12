@@ -1,17 +1,5 @@
 import {nextText} from '../../../shared/checkers'
 
-/** Firefox-only CaretPosition (absent from TypeScript DOM lib) */
-interface CaretPosition {
-	readonly offsetNode: Node
-	readonly offset: number
-}
-
-/** Non-standard document caret APIs absent from TypeScript DOM lib */
-interface DocumentWithCaretFromPoint {
-	caretRangeFromPoint?(x: number, y: number): Range | null
-	caretPositionFromPoint?(x: number, y: number): CaretPosition | null
-}
-
 export function getCaretIndex(element: HTMLElement): number {
 	const selection = window.getSelection()
 	if (!selection?.rangeCount) return 0
@@ -31,79 +19,22 @@ export function getRect(): DOMRect | null {
 	}
 }
 
-export function isOnFirstLine(element: HTMLElement): boolean {
-	const caretRect = getRect()
-	if (!caretRect || caretRect.height === 0) return true
-	const elRect = element.getBoundingClientRect()
-	return caretRect.top < elRect.top + caretRect.height + 2
-}
-
-export function isOnLastLine(element: HTMLElement): boolean {
-	const caretRect = getRect()
-	if (!caretRect || caretRect.height === 0) return true
-	const elRect = element.getBoundingClientRect()
-	return caretRect.bottom > elRect.bottom - caretRect.height - 2
-}
-
-function setAtElement(element: HTMLElement): void {
-	try {
-		const selection = window.getSelection()
-		if (!selection) return
-		const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
-		let node = nextText(walker)
-		if (!node) return
-		for (;;) {
-			const next = nextText(walker)
-			if (!next) {
-				const range = document.createRange()
-				range.setStart(node, node.length)
-				range.collapse(true)
-				selection.removeAllRanges()
-				selection.addRange(range)
-				return
-			}
-			node = next
-		}
-	} catch (e) {
-		console.error(e)
-	}
-}
-
-export function setAtX(element: HTMLElement, x: number, y?: number): void {
-	const elRect = element.getBoundingClientRect()
-	const targetY = y ?? elRect.top + elRect.height / 2
-	// oxlint-disable-next-line no-unsafe-type-assertion -- non-standard DOM APIs not in TS lib
-	const caretDoc = document as unknown as DocumentWithCaretFromPoint
-	const caretPos = caretDoc.caretRangeFromPoint?.(x, targetY) ?? caretDoc.caretPositionFromPoint?.(x, targetY)
-	if (!caretPos) return
-	const sel = window.getSelection()
-	if (!sel) return
-	let domRange: Range
-	if (caretPos instanceof Range) {
-		domRange = caretPos
-	} else if ('offsetNode' in caretPos) {
-		domRange = document.createRange()
-		domRange.setStart(caretPos.offsetNode, caretPos.offset)
-		domRange.collapse(true)
-	} else {
-		return
-	}
-	if (!element.contains(domRange.startContainer)) {
-		setAtElement(element)
-		return
-	}
-	sel.removeAllRanges()
-	sel.addRange(domRange)
-}
+/**
+ * A concrete DOM boundary — what a `Range` endpoint and a collapsed caret both take. TWO
+ * shapes reach it and they are not interchangeable: a text surface resolves to (Text, char
+ * offset), while a MARK has no anchorable interior and resolves to its PARENT plus the child
+ * index before or after it. Naming the pair is what lets a range span one of each.
+ */
+export type CaretBoundary = {node: Node; offset: number}
 
 /**
  * Resolve a character offset within a structural text surface to a concrete
  * (Text, offset) pair. If the surface contains no Text node, append an empty
- * one and target it. Used by `placeAtTextOffset` / `placeRangeAcrossSurfaces` —
+ * one and target it. Used by `placeAtTextOffset` / `placeRangeAcrossBoundaries` —
  * needs the empty-Text fallback so freshly-mounted empty surfaces still accept
  * a caret.
  */
-function findTextBoundary(surface: HTMLElement, offset: number): {node: Text; offset: number} {
+export function findTextBoundary(surface: HTMLElement, offset: number): {node: Text; offset: number} {
 	const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
 	let remaining = Math.max(0, offset)
 	let node = nextText(walker)
@@ -117,47 +48,61 @@ function findTextBoundary(surface: HTMLElement, offset: number): {node: Text; of
 	return {node: text, offset: text.length}
 }
 
+/** THE collapsed placement: one boundary of either shape becomes the whole selection. */
+export function collapseTo(boundary: CaretBoundary): void {
+	const selection = window.getSelection()
+	if (!selection) return
+	const range = document.createRange()
+	range.setStart(boundary.node, boundary.offset)
+	range.collapse(true)
+	selection.removeAllRanges()
+	selection.addRange(range)
+}
+
 /** Place a collapsed caret at a character offset inside a text surface. */
 export function placeAtTextOffset(surface: HTMLElement, offset: number): void {
+	collapseTo(findTextBoundary(surface, offset))
+}
+
+/**
+ * Place a collapsed caret at a child index of `parent` — the one-host coordinate for
+ * "before/after an atomic child", whose own interior holds no reachable position.
+ */
+export function placeAtParentBoundary(parent: HTMLElement, childIndex: number): void {
+	collapseTo({node: parent, offset: childIndex})
+}
+
+/**
+ * Build a (possibly non-collapsed) selection range between two DOM boundaries of EITHER shape
+ * — text-anchored, parent-anchored, or one of each. The mixed range is the one a document
+ * that ends (or begins) with a mark needs, and Chromium takes it: MEASURED, a range from a
+ * container child index to a text offset selects the span between them, `toString()` included.
+ *
+ * The pair is normalized in DOM order first, because `setEnd` before the start COLLAPSES the
+ * range rather than spanning backwards. `comparePoint` answers that without a coordinate:
+ * both boundaries live under the one editing host, so they are always comparable.
+ */
+export function placeRangeAcrossBoundaries(a: CaretBoundary, b: CaretBoundary): void {
 	const selection = window.getSelection()
 	if (!selection) return
-	const {node, offset: nodeOffset} = findTextBoundary(surface, offset)
+	const probe = document.createRange()
+	probe.setStart(a.node, a.offset)
+	probe.collapse(true)
+	const [lo, hi] = probe.comparePoint(b.node, b.offset) >= 0 ? [a, b] : [b, a]
 	const range = document.createRange()
-	range.setStart(node, nodeOffset)
-	range.collapse(true)
+	range.setStart(lo.node, lo.offset)
+	range.setEnd(hi.node, hi.offset)
 	selection.removeAllRanges()
 	selection.addRange(range)
 }
 
-/** Place a collapsed caret at the start or end of an element's child list. */
-export function placeAtChildBoundary(element: HTMLElement, side: 'start' | 'end'): void {
-	const selection = window.getSelection()
-	if (!selection) return
-	const range = document.createRange()
-	const childIndex = side === 'end' ? element.childNodes.length : 0
-	range.setStart(element, childIndex)
-	range.collapse(true)
-	selection.removeAllRanges()
-	selection.addRange(range)
-}
-
-/** Build a (possibly non-collapsed) selection range across two text surfaces. */
-export function placeRangeAcrossSurfaces(
-	start: {element: HTMLElement; offset: number},
-	end: {element: HTMLElement; offset: number}
-): void {
-	const selection = window.getSelection()
-	if (!selection) return
-	const startBoundary = findTextBoundary(start.element, start.offset)
-	const endBoundary = findTextBoundary(end.element, end.offset)
-	const range = document.createRange()
-	range.setStart(startBoundary.node, startBoundary.offset)
-	range.setEnd(endBoundary.node, endBoundary.offset)
-	selection.removeAllRanges()
-	selection.addRange(range)
-}
-
-/** Focus `element` only when it is not already the active element. */
-export function focusIfNeeded(element: HTMLElement): void {
-	if (document.activeElement !== element) element.focus()
+/**
+ * Focus the element's EDITING HOST — the nearest `contenteditable=true` ancestor,
+ * itself included — unless focus already sits inside it. Under the one-host topology
+ * no token element is focusable, so focusing the element itself is a no-op; a
+ * model-initiated placement (no click preceding it) needs the host to take focus.
+ */
+export function focusEditingHost(element: HTMLElement): void {
+	const host = element.closest('[contenteditable="true"]')
+	if (host instanceof HTMLElement && !host.contains(document.activeElement)) host.focus()
 }

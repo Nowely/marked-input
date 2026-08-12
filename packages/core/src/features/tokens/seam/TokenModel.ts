@@ -1,13 +1,13 @@
 import type {DomRef} from '../../../shared/editorContracts'
 import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
-import type {Computed, Event, Signal} from '../../../shared/signals/index.js'
+import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
 import {createCommitPipeline} from '../dom/commit'
 import type {TokenDelta} from '../dom/commit'
+import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
 import type {SelectionSnapshot} from '../dom/DomModel'
-import {applyEditableState} from '../dom/editableState'
 import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
@@ -65,7 +65,7 @@ export class TokenModel {
 	 * THE selection state: a pair of `NodeAnchor`s and their derivations, DOM-free. Its DOM
 	 * half is the private {@link SelectionDriver} declared in the internals section, whose
 	 * reads are exposed here as {@link domAnchors} / {@link focusFirst} /
-	 * {@link placeAtHandle} / {@link isUserSelecting}.
+	 * {@link placeAtHandle}.
 	 */
 	readonly selection: Selection = createSelection({
 		// A bag of CLOSURES, none of them read before the first verb call — the ONLY reason this
@@ -77,7 +77,7 @@ export class TokenModel {
 		// {@link value} is props-first, so `#tree.value()` disagrees with it exactly while a
 		// controlled parent's value is ahead of the last arrival.
 		offsetOf: anchor => this.#offsetOf(anchor),
-		anchorAt: offset => this.anchorAt(offset),
+		anchorAt: (offset, side) => this.anchorAt(offset, side),
 		value: () => this.value(),
 	})
 
@@ -97,11 +97,19 @@ export class TokenModel {
 	 * ELEMENT-ONLY: the sole reader is `#controlElements`, which feeds bind's
 	 * `computeControlRoots` — a walk from each control up to the container. Nothing ever
 	 * asks which token owns a control.
+	 *
+	 * REGISTRATION is also where the control leaves the editing host: a control is chrome,
+	 * not document content, so inside the one contenteditable container it must be atomic
+	 * or the caret and the browser's own editing walk into grips, menus and overlays. It is
+	 * written HERE and not in `bind` because controls do not mount on the commit clock — a
+	 * menu opening off a block-store signal never sees a re-bind, and would stay editable
+	 * until some unrelated commit happened to repaint.
 	 */
 	control(): DomRef {
 		const key = {}
 		return element => {
 			if (element) {
+				element.contentEditable = 'false'
 				this.#pendingControls.set(key, element)
 			} else {
 				this.#pendingControls.delete(key)
@@ -266,9 +274,9 @@ export class TokenModel {
 	 * Seeds for the same reason the write verbs do: an unmaterialized tree has no roots, so
 	 * every offset would answer `'end'`.
 	 */
-	anchorAt(offset: number): NodeAnchor {
+	anchorAt(offset: number, side?: 'left' | 'right'): NodeAnchor {
 		this.#ensureSeeded()
-		return untracked(() => anchorAtOffset(this.#tree.roots(), offset))
+		return untracked(() => anchorAtOffset(this.#tree.roots(), offset, side))
 	}
 
 	/** Resolve a DOM node to its handle, 'control' if inside a control root, or undefined if outside the container. */
@@ -282,7 +290,7 @@ export class TokenModel {
 	 * caller. The subscription guard lives at {@link DomModel.anchorFor}, the walk's own
 	 * entry, so it holds for every caller rather than only this one.
 	 */
-	anchorFor(node: Node, offset: number, affinity?: 'before' | 'after'): NodeAnchor | undefined {
+	anchorFor(node: Node, offset: number, affinity?: BoundaryAffinity): NodeAnchor | undefined {
 		return this.#dom.anchorFor(node, offset, affinity)
 	}
 
@@ -310,11 +318,6 @@ export class TokenModel {
 		return this.#selectionDriver.placeAtHandle(handle, boundary)
 	}
 
-	/** Mouse-sweep flag; the driver's editable policy reads it (see {@link setEditable}). */
-	get isUserSelecting(): Signal<boolean> {
-		return this.#selectionDriver.isUserSelecting
-	}
-
 	/** Current selection serialized for clipboard use. */
 	selectedContent(): {html: string; text: string} | undefined {
 		return this.#dom.selectedContent()
@@ -331,18 +334,22 @@ export class TokenModel {
 	}
 
 	/**
-	 * @internal Scoped editable-state application: conditional contentEditable on bound text
-	 * surfaces, tabindex on bound mark roots, and the seed for future binds.
-	 * {@link SelectionDriver} owns the policy: it calls this whenever readOnly or
-	 * isUserSelecting changes.
+	 * THE manual override of the container's editable state — `editable && !readOnly`, one
+	 * attribute on the ONE editing host. No-op while unmounted.
+	 *
+	 * NOT authoritative: `props.readOnly` owns the same attribute through the driver's
+	 * `{immediate: true}` watch, so the next readOnly change (and every re-mount) overwrites
+	 * whatever was written here. It is an imperative escape hatch, not state, and core calls
+	 * it nowhere.
+	 *
+	 * `untracked` for {@link DomModel.anchorFor}'s reason: this is a COMMAND, and a caller
+	 * that happens to invoke it from a reactive scope must not subscribe that scope to the
+	 * container signal.
 	 */
 	setEditable(options: {editable: boolean; readOnly: boolean}): void {
-		this.#editable = {editable: options.editable, readOnly: options.readOnly}
-		for (const handle of this.#pipeline.bound().values()) {
-			const bindings = handle.node()
-			if (!bindings) continue
-			applyEditableState(bindings, options)
-		}
+		const container = untracked(() => this.host.container())
+		if (!container) return
+		container.contentEditable = options.editable && !options.readOnly ? 'true' : 'false'
 	}
 
 	// ═══ Wiring ═══════════════════════════════════════════════════════════════
@@ -394,7 +401,6 @@ export class TokenModel {
 			handle: id => this.handle(id),
 			handleAt: node => this.handleAt(node),
 			domSelection: () => this.domSelection(),
-			setEditable: options => this.setEditable(options),
 			placeCaret: anchor => this.placeCaret(anchor),
 			selectRange: (anchor, head) => this.selectRange(anchor, head),
 			anchorFor: (node, offset, affinity) => this.anchorFor(node, offset, affinity),
@@ -536,7 +542,6 @@ export class TokenModel {
 		container: () => this.host.container(),
 		nodes: this.#nodes,
 		roots: () => this.#tree.roots(),
-		editableState: () => this.#editableState(),
 		controlElements: () => this.#controlElements(),
 		childSequenceHostsFor: ownerId => this.#childSequenceHostsFor(ownerId),
 		isBlock: () => this.props.layout.isBlock(),
@@ -576,15 +581,6 @@ export class TokenModel {
 			if (registration.ownerId === ownerId) out.push(registration.element)
 		}
 		return out
-	}
-
-	/** Last state written by {@link setEditable}; until then derived from props at bind time. */
-	#editable: {editable: boolean; readOnly: boolean} | undefined
-
-	#editableState(): {editable: boolean; readOnly: boolean} {
-		if (this.#editable) return this.#editable
-		const readOnly = this.props.readOnly()
-		return {editable: !readOnly, readOnly}
 	}
 }
 

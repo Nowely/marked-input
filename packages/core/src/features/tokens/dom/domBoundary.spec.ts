@@ -1,7 +1,15 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {computed} from '../../../shared/signals'
-import {enableStructuralStore, mountBlock, mountNested, mountValue, mountWithMark} from '../__testing__/mountFixtures'
+import {
+	enableStructuralStore,
+	mountBlock,
+	mountNested,
+	mountStructuralInlineMark,
+	mountValue,
+	mountWithMark,
+} from '../__testing__/mountFixtures'
+import {offsetOfAnchor} from '../tree/anchors'
 
 describe('anchorFor', () => {
 	afterEach(() => {
@@ -100,22 +108,34 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(mark, 0)).toBeUndefined()
 	})
 
-	it('anchors a child-sequence boundary at index 0 before the owner', () => {
+	it('anchors a child-sequence boundary at index 0 before the FIRST CHILD', () => {
+		// The slot's own start, not the owner's: the mark's boundary is one `@[` outside the
+		// content this host holds, and a caret at the host's leading edge can only mean the
+		// slot. FLIPPED from `{before: outer}` — the escape that answer bought is pinned end
+		// to end below ('X@[a @[b] c]' instead of '@[Xa @[b] c]').
 		const {store, host} = mountNested()
 		const outer = store.tokens.nodes()[1]
-		expect(store.tokens.anchorFor(host, 0)).toEqual({before: outer})
+		if (outer.kind !== 'mark') throw new Error('expected a mark root')
+		const first = outer.children()[0]
+		expect(store.tokens.anchorFor(host, 0)).toEqual({before: first})
+		// The OFFSETS are what make this discriminate: both anchors are legal shapes, and
+		// only their projections say which side of the markup the caret landed on.
+		expect(offsetOfAnchor(store.tokens.nodes(), {before: first})).toBe(outer.slotRange?.start)
 	})
 
-	it('anchors a child-sequence boundary past the last child after the owner', () => {
+	it('anchors a child-sequence boundary past the last child after the LAST CHILD', () => {
 		const {store, host} = mountNested()
 		const outer = store.tokens.nodes()[1]
-		expect(store.tokens.anchorFor(host, 3)).toEqual({after: outer})
+		if (outer.kind !== 'mark') throw new Error('expected a mark root')
+		const last = outer.children()[2]
+		expect(store.tokens.anchorFor(host, 3)).toEqual({after: last})
 		// The 'before' probe is what makes this case DISCRIMINATING, and it is the only
 		// thing that does: the edge answers by SIDE and ignores affinity, while the
 		// interior path one `>=`→`>` away answers `{before: owner}` here (no child sits at
 		// index 3, so it reaches the inverted fallback). Without this line the mutation is
 		// invisible — the default 'after' affinity makes the two paths agree.
-		expect(store.tokens.anchorFor(host, 3, 'before')).toEqual({after: outer})
+		expect(store.tokens.anchorFor(host, 3, 'before')).toEqual({after: last})
+		expect(offsetOfAnchor(store.tokens.nodes(), {after: last})).toBe(outer.slotRange?.end)
 	})
 
 	it('resolves an interior child boundary to its two neighbours by affinity', () => {
@@ -164,6 +184,38 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(inner, 0, 'before')).toEqual({after: markNode})
 	})
 
+	it('takes the NEAR edge of a mark for a boundary read with the collapsed affinity', () => {
+		// `'nearest'` is the COLLAPSED reader's affinity and the only one that reads the
+		// OFFSET. Chromium puts a click's caret at the clicked character inside the mark's own
+		// text; the model owns no position in there, so the answer has to be one of the mark's
+		// two edges — and the one the click aimed at is the near one. Four characters, so the
+		// midpoint is a real boundary and the TIE rule is visible: 2 of 4 still answers
+		// `before`.
+		const {store, mark} = mountStructuralInlineMark('ab@[wxyz]cd')
+		const inner = mark.appendChild(document.createTextNode('wxyz'))
+		const markNode = store.tokens.nodes()[1]
+
+		expect(store.tokens.anchorFor(inner, 0, 'nearest')).toEqual({before: markNode})
+		expect(store.tokens.anchorFor(inner, 1, 'nearest')).toEqual({before: markNode})
+		expect(store.tokens.anchorFor(inner, 2, 'nearest')).toEqual({before: markNode})
+		expect(store.tokens.anchorFor(inner, 3, 'nearest')).toEqual({after: markNode})
+		expect(store.tokens.anchorFor(inner, 4, 'nearest')).toEqual({after: markNode})
+	})
+
+	it('leaves the RANGED affinities offset-blind inside a mark', () => {
+		// THE semantics the near-edge rule must not reach, and the reason it needed an affinity
+		// of its own: the ranged reader leans its two ends INWARD so a drag that starts
+		// mid-mark swallows the whole mark, and one that ends mid-mark swallows it too —
+		// Chromium's own atomic behavior. An offset-aware `'after'` would answer `{after}` for
+		// the start at 3 and drop everything left of the click out of the selection.
+		const {store, mark} = mountStructuralInlineMark('ab@[wxyz]cd')
+		const inner = mark.appendChild(document.createTextNode('wxyz'))
+		const markNode = store.tokens.nodes()[1]
+
+		expect(store.tokens.anchorFor(inner, 3, 'after')).toEqual({before: markNode})
+		expect(store.tokens.anchorFor(inner, 1, 'before')).toEqual({after: markNode})
+	})
+
 	it('returns undefined inside an editable descendant of a mark', () => {
 		const {store, mark} = mountWithMark()
 		const editable = document.createElement('span')
@@ -172,6 +224,10 @@ describe('anchorFor', () => {
 		editable.append(inner)
 		mark.append(editable)
 		expect(store.tokens.anchorFor(inner, 0)).toBeUndefined()
+		// The island declines BEFORE the near-edge rule gets to measure anything: an explicit
+		// editable inside a mark owns its own caret, and a collapsed read must not drag it onto
+		// one of the mark's edges.
+		expect(store.tokens.anchorFor(inner, 0, 'nearest')).toBeUndefined()
 	})
 
 	it('does not subscribe its caller to the text it reads', () => {
@@ -246,6 +302,144 @@ function mountStructuralBlockWithControl(value: string) {
 	if (!(controlText instanceof Text)) throw new Error('Structural control did not render a text node')
 	return {store, container, row, control, controlText, textSurface, textNode}
 }
+
+/**
+ * Block layout with a drag grip before each row's token — the shape the React and Vue
+ * `Block` renderers produce (the drop indicator and the handle precede the token).
+ */
+function mountBlockWithGrip() {
+	const store = enableStructuralStore('one\n\ntwo\n\n', {
+		layout: 'block',
+		Mark: () => null,
+		options: [{markup: '__slot__\n\n'}],
+	})
+	const container = document.createElement('div')
+	const rows: HTMLElement[] = []
+	const grips: HTMLElement[] = []
+	for (let i = 0; i < 2; i++) {
+		const row = document.createElement('div')
+		const grip = document.createElement('div')
+		const mark = document.createElement('span')
+		mark.append(document.createElement('span'))
+		row.append(grip, mark)
+		container.append(row)
+		rows.push(row)
+		grips.push(grip)
+	}
+	document.body.append(container)
+	store.host.container(container)
+	for (const grip of grips) store.tokens.control()(grip)
+	store.host.rendered()
+	return {store, container, rows}
+}
+
+/**
+ * Inline mount whose container holds chrome the tree does not own: a registered control
+ * before the roots, and the framework's own placeholders between them — an EMPTY TEXT
+ * NODE (what a Vue fragment anchors on, and the shipped Vue adapter renders one around
+ * every token list) plus a comment (`v-if`). Container children therefore do NOT index
+ * the roots: `[control, '', text1, <!---->, mark, text2, '']` against three of them.
+ */
+function mountInlineWithChrome() {
+	const store = enableStructuralStore('hello @[x] tail', {Mark: () => null, options: [{markup: '@[__value__]'}]})
+	const container = document.createElement('div')
+	const control = document.createElement('div')
+	const text1 = document.createElement('span')
+	const mark = document.createElement('mark')
+	const text2 = document.createElement('span')
+	container.append(
+		control,
+		document.createTextNode(''),
+		text1,
+		document.createComment('v-if'),
+		mark,
+		text2,
+		document.createTextNode('')
+	)
+	document.body.append(container)
+	store.host.container(container)
+	store.tokens.control()(control)
+	store.host.rendered()
+	return {store, container, control, text1, mark, text2}
+}
+
+describe('anchorFor across chrome the tree does not own', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+		window.getSelection()?.removeAllRanges()
+	})
+
+	it('reads a row boundary against the token element, not child index 0', () => {
+		// `[grip, token]`: the boundary before the token is index 1, and 2 — not 1 — is the
+		// first one past it. Reading `offset <= 0` as "before" made every real boundary in a
+		// gripped row answer the row's END.
+		const {store, rows} = mountBlockWithGrip()
+		const first = store.tokens.nodes()[0]
+
+		expect(store.tokens.anchorFor(rows[0], 0)).toEqual({before: first})
+		expect(store.tokens.anchorFor(rows[0], 1)).toEqual({before: first})
+		expect(store.tokens.anchorFor(rows[0], 2)).toEqual({after: first})
+	})
+
+	it('places a row caret at the row start, not the row end', () => {
+		// END-TO-END, and the regression the parent-coordinate write introduced: a mark row
+		// has no text surface, so `placeCaret(0)` lands on the ROW at the token's own index,
+		// which the raw-index read answered as "past the token".
+		const {store} = mountBlockWithGrip()
+		const first = store.tokens.nodes()[0]
+		const handle = store.tokens.handle(first.id)
+		if (!handle) throw new Error('expected a bound row handle')
+
+		expect(handle.placeCaret(0)).toBe(true)
+
+		expect(store.tokens.domAnchors()?.anchor).toEqual({before: first})
+	})
+
+	it('resolves a container boundary through its nearest TOKEN neighbours', () => {
+		// Seven children, three roots: no index into `roots` answers any of these.
+		const {store, container} = mountInlineWithChrome()
+		const [text1, mark, text2] = store.tokens.nodes()
+
+		expect(store.tokens.anchorFor(container, 0)).toEqual({before: text1})
+		// Past the control and the leading fragment anchor — still the document start.
+		expect(store.tokens.anchorFor(container, 2)).toEqual({before: text1})
+		expect(store.tokens.anchorFor(container, 3, 'before')).toEqual({after: text1})
+		// The comment sits at index 3, so this boundary's left neighbour is two hops away.
+		expect(store.tokens.anchorFor(container, 4, 'after')).toEqual({before: mark})
+		expect(store.tokens.anchorFor(container, 7)).toEqual({after: text2})
+	})
+
+	it('scans past a DEAD neighbour to the nearest live token', () => {
+		// Structural with no repaint, so the elements stay bound while their nodes leave the
+		// tree — the same window `anchorFor`'s deletion case uses. The boundary between the
+		// two dead elements has a live token only two hops to its left; stopping at the dead
+		// one answers `'start'`, which is a different position, not a fail-closed.
+		const {store, container} = mountWithMark()
+		store.tokens.setValue('hello')
+		const roots = store.tokens.nodes()
+
+		expect(store.tokens.anchorFor(container, 2)).toEqual({after: roots[0]})
+	})
+
+	it('places a caret after a mark at the mark end, not the document end', () => {
+		const {store} = mountInlineWithChrome()
+		const roots = store.tokens.nodes()
+		const mark = roots[1]
+
+		expect(store.tokens.placeCaret({after: mark})).toBe(true)
+
+		// The SHAPE is affinity's, and `domAnchors` is the COLLAPSED reader, which is
+		// left-affine at the container arm: the boundary answers from the MARK's side, so the
+		// anchor placed comes back verbatim in ONE write. It read `{before: roots[2]}` until
+		// the near-edge rule landed — the same POSITION spelled from the other side, but a
+		// spelling that placed on into the next root's surface and cost two more writes.
+		// The POSITION is what the raw-index read got wrong — it ran off the end of `roots`
+		// and answered the document end — and it is the assertion below that proves it.
+		const anchor = store.tokens.domAnchors()?.anchor
+		expect(anchor).toEqual({after: mark})
+		expect(anchor && offsetOfAnchor(roots, anchor)).toBe(offsetOfAnchor(roots, {after: mark}))
+	})
+})
 
 describe('anchorFor across a control', () => {
 	it('returns undefined for selections crossing controls', () => {

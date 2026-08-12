@@ -42,7 +42,7 @@ const SimpleMark = ({children, style, value}: SimpleMarkProps) => <span style={s
 export const SimpleNesting: StoryObj<MarkedInputProps<SimpleMarkProps>> = {
 	args: {
 		Mark: SimpleMark,
-		value: 'This is *italic text with **bold** inside* and more text.',
+		defaultValue: 'This is *italic text with **bold** inside* and more text.',
 		options: [
 			{
 				markup: BoldMarkup,
@@ -83,7 +83,7 @@ const MultiLevelMark = ({children, style, value}: MultiLevelMarkProps) => (
 export const MultipleLevels: StoryObj<MarkedInputProps<MultiLevelMarkProps>> = {
 	args: {
 		Mark: MultiLevelMark,
-		value: 'Check #[this tag with @[nested mention with `code`]] and #[another #[deeply nested] tag]',
+		defaultValue: 'Check #[this tag with @[nested mention with `code`]] and #[another #[deeply nested] tag]',
 		options: [
 			{
 				markup: TagMarkup,
@@ -146,7 +146,8 @@ const HtmlLikeMark = ({children, value}: MarkProps) => {
 export const HtmlLikeTags: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: HtmlLikeMark,
-		value: '<div>This is a div with <mark>a mark inside</mark> and <b>bold text with <del>nested del</del></b></div>',
+		defaultValue:
+			'<div>This is a div with <mark>a mark inside</mark> and <b>bold text with <del>nested del</del></b></div>',
 		options: [{markup: HtmlMarkup}],
 	},
 }
@@ -201,7 +202,7 @@ const InteractiveMark = ({children}: MarkProps) => {
 export const InteractiveNested: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: InteractiveMark,
-		value: '@[Click me @[or me @[or even me]]]',
+		defaultValue: '@[Click me @[or me @[or even me]]]',
 		options: [{markup: '@[__slot__]'}],
 	},
 }
@@ -218,7 +219,10 @@ const MarkdownMark = ({children, value, style}: MarkdownMarkProps) => (
 	<span style={{...style, margin: '0 1px'}}>{children ?? value}</span>
 )
 
-function TabbedMarkdownView({value, onChange}: {value: string; onChange?: (v: string) => void}) {
+function TabbedMarkdownView({defaultValue}: {defaultValue: string}) {
+	// The story owns the value: the Write tab is controlled, and without a local writer its
+	// `onChange` would land nowhere and the tab would look frozen.
+	const [value, setValue] = useState(defaultValue)
 	const {Tab, activeTab} = useTab([
 		{value: 'preview', label: 'Preview'},
 		{value: 'write', label: 'Write'},
@@ -231,7 +235,7 @@ function TabbedMarkdownView({value, onChange}: {value: string; onChange?: (v: st
 			{activeTab === 'preview' ? (
 				<MarkedInput Mark={MarkdownMark} options={MarkdownOptions} value={value} readOnly={true} />
 			) : (
-				<MarkedInput options={[]} value={value} onChange={onChange} />
+				<MarkedInput options={[]} value={value} onChange={setValue} />
 			)}
 		</>
 	)
@@ -239,9 +243,9 @@ function TabbedMarkdownView({value, onChange}: {value: string; onChange?: (v: st
 
 export const ComplexMarkdown: Story = {
 	args: {
-		value: COMPLEX_MARKDOWN,
+		defaultValue: COMPLEX_MARKDOWN,
 	},
-	render: args => <TabbedMarkdownView value={args.value!} onChange={args.onChange} />,
+	render: args => <TabbedMarkdownView defaultValue={args.defaultValue!} />,
 }
 
 // ============================================================================
@@ -402,7 +406,9 @@ const HtmlDocMark = ({children, value}: MarkProps) => {
 	return <Tag style={style}>{children}</Tag>
 }
 
-function TabbedHtmlView({value, onChange}: {value: string; onChange?: (v: string) => void}) {
+function TabbedHtmlView({defaultValue}: {defaultValue: string}) {
+	// See TabbedMarkdownView: the Write tab is controlled, so the story has to own the writer.
+	const [value, setValue] = useState(defaultValue)
 	const {Tab, activeTab} = useTab([
 		{value: 'preview', label: 'Preview'},
 		{value: 'write', label: 'Write'},
@@ -421,7 +427,7 @@ function TabbedHtmlView({value, onChange}: {value: string; onChange?: (v: string
 					options={[{markup: HtmlMarkup}]}
 				/>
 			) : (
-				<MarkedInput key={activeTab} value={value} onChange={onChange} options={[]} />
+				<MarkedInput key={activeTab} value={value} onChange={setValue} options={[]} />
 			)}
 		</>
 	)
@@ -429,7 +435,7 @@ function TabbedHtmlView({value, onChange}: {value: string; onChange?: (v: string
 
 export const ComplexHtmlDocument: Story = {
 	args: {
-		value: `<article>
+		defaultValue: `<article>
 <header>
 <h1>Understanding <strong>Nested HTML</strong> Structures</h1>
 <p><small>Published on <time>November 13, 2025</time></small></p>
@@ -491,5 +497,5 @@ export const ComplexHtmlDocument: Story = {
 </footer>
 </article>`,
 	},
-	render: args => <TabbedHtmlView value={args.value!} onChange={args.onChange} />,
+	render: args => <TabbedHtmlView defaultValue={args.defaultValue!} />,
 }

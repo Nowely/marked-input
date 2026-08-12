@@ -40,9 +40,11 @@ export const DragHandle = memo(({node, blockIndex}: {node: TreeNode; blockIndex:
 					blockStore.attachGrip(el, blockIndex, {action})
 				}}
 				type="button"
-				draggable
+				// The grip is also the menu trigger, so it renders in block mode regardless;
+				// `draggable` gates only the drag affordance it carries.
+				draggable={!!draggable}
 				className={cx(styles.GripButton, isDragging && styles.GripButtonDragging)}
-				aria-label="Drag to reorder or click for options"
+				aria-label={draggable ? 'Drag to reorder or click for options' : 'Block options'}
 			>
 				<span className={iconGrip} />
 			</button>

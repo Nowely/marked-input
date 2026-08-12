@@ -1,6 +1,20 @@
 import type {Id, NodeAnchor, TreeNode} from '../tree/types'
-import {hasEditableAncestorBefore, textOffsetWithin} from './textOffsets'
+import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 import type {ElementBindings, TokenHandle} from './TokenHandle'
+
+/**
+ * Which way a boundary leans when it names no node of its own.
+ *
+ * `'before'` and `'after'` are the RANGED reader's pair: they make the two ENDS of a span
+ * lean INWARD, so a drag that starts inside a mark swallows the whole mark and one that ends
+ * inside it swallows it too — Chromium's own atomic behavior for a mark.
+ *
+ * `'nearest'` is the COLLAPSED reader's, and only it (`SelectionDriver.domAnchors`). A caret
+ * has no inside, so a boundary within a mark answers with the NEAR edge instead of a fixed
+ * one. A boundary BETWEEN two tokens has no half to be in, and there it reads LEFT-affine
+ * like `'before'` — see {@link fromContainerAnchor} for why that spelling and not the other.
+ */
+export type BoundaryAffinity = 'before' | 'after' | 'nearest'
 
 /** A bound token as the facade reads it: the live DOM bindings plus the handle itself. */
 export type TokenView = ElementBindings & {
@@ -23,8 +37,6 @@ export type Lookup = {readonly kind: 'control'} | {readonly kind: 'token'; reado
 export type AnchorContext = {
 	container: HTMLElement | undefined
 	locate(node: Node): Lookup | undefined
-	/** The live root nodes (TokenModel.nodes()). */
-	roots(): readonly TreeNode[]
 	/** Stable id → live node (TokenModel.find). NOT latch-gated: ids outlive the bind window. */
 	find(id: Id): TreeNode | undefined
 }
@@ -41,10 +53,10 @@ export function anchorFromBoundary(
 	ctx: AnchorContext,
 	node: Node,
 	offset: number,
-	affinity: 'before' | 'after' = 'after'
+	affinity: BoundaryAffinity = 'after'
 ): NodeAnchor | undefined {
 	if (ctx.container && node === ctx.container) {
-		return fromContainerAnchor(ctx.roots(), offset, affinity)
+		return fromContainerAnchor(ctx, ctx.container, offset, affinity)
 	}
 
 	const lookup = ctx.locate(node)
@@ -62,7 +74,7 @@ export function anchorFromBoundary(
 	// `childSequenceHost` must resolve host boundaries here, or a host boundary on a
 	// text-bearing token would be read as a text offset.
 	if (node instanceof HTMLElement && node === lookup.node.childSequenceHost) {
-		return fromChildAnchor(ctx, node, offset, owner, affinity)
+		return fromHostAnchor(ctx, node, offset, owner, affinity)
 	}
 
 	const textElement = lookup.node.textElement
@@ -89,28 +101,89 @@ export function anchorFromBoundary(
 		if (hasEditableAncestorBefore(node, lookup.node.tokenElement)) {
 			return undefined
 		}
+		if (affinity === 'nearest') return nearestMarkEdge(lookup.node.tokenElement, node, offset, owner)
 		return affinity === 'after' ? {before: owner} : {after: owner}
 	}
 
 	if (lookup.node.rowElement && node === lookup.node.rowElement) {
-		return offset <= 0 ? {before: owner} : {after: owner}
+		// AGAINST THE TOKEN'S OWN INDEX, not 0: a row also holds chrome the tree does not
+		// own (the React/Vue `Block` renderers put a drop indicator and a drag handle
+		// BEFORE the token), so the boundary that precedes the token is its child index,
+		// not the row's start.
+		const tokenIndex = Array.prototype.indexOf.call(node.childNodes, lookup.node.tokenElement)
+		return offset <= tokenIndex ? {before: owner} : {after: owner}
 	}
 
 	return undefined
 }
 
-/** The `<=0` / `>=childCount` / interior split both element branches share. */
+/**
+ * The mark edge a COLLAPSED caret fell nearest to — the ONE place an affinity reads the
+ * offset, and only under `'nearest'`.
+ *
+ * Chromium answers a click inside a mark with a caret at the clicked CHARACTER, and the model
+ * owns no position inside a mark's presentation, so the boundary has to name one of the
+ * mark's two edges. Naming a fixed one discards what the browser already measured: MEASURED
+ * in a browser at 20/50/65/75/85% of a mark's width, all five landed `{before}`, and clicking
+ * the right half then pressing Backspace ate the character BEFORE the mark.
+ *
+ * A TIE goes to `before` — the first half is `local * 2 <= length`, so the exact midpoint and
+ * a mark with no measurable text both answer with the mark's start, which is where a mark's
+ * own boundary begins.
+ *
+ * `textOffsetWithin` declines what it cannot measure: an ELEMENT boundary on a presentation
+ * node that is not the mark's own element (its own element is the branch above). `before` is
+ * that case's answer too — it is what every collapsed read gave before this rule existed.
+ */
+function nearestMarkEdge(element: HTMLElement, node: Node, offset: number, owner: TreeNode): NodeAnchor {
+	const local = textOffsetWithin(element, node, offset)
+	if (local === undefined) return {before: owner}
+	return local * 2 > textLength(element) ? {after: owner} : {before: owner}
+}
+
+/** The `<=0` / `>=childCount` / interior split of a token's own SHELL element. */
 function fromChildAnchor(
 	ctx: AnchorContext,
 	element: HTMLElement,
 	offset: number,
 	owner: TreeNode,
-	affinity: 'before' | 'after'
+	affinity: BoundaryAffinity
 ): NodeAnchor | undefined {
 	const childCount = element.childNodes.length
 	if (offset <= 0) return {before: owner}
 	if (offset >= childCount) return {after: owner}
 	return childBoundaryAnchor(ctx, element, offset, owner, affinity)
+}
+
+/**
+ * The SLOT HOST's boundaries, which are NOT the shell's: a host holds the owner's CHILDREN,
+ * so its edges are the slot's INTERIOR — the first child's start and the last child's end.
+ * The owner's own boundary sits outside its markup, one `@[` away, and answering with it let
+ * an edit at the edge of a slot escape the mark: MEASURED on `@[a @[b] c]` (slot [2,10]),
+ * `insertText 'X'` at host offset 0 produced `X@[a @[b] c]` and at the last edge
+ * `@[a @[b] c]X`, where the slot is the only place a caret there can mean.
+ *
+ * The owner-boundary fallback survives for the door no parse opens: every slot the parser
+ * builds holds at least one text token (`@[]` parses to one empty child at the slot start),
+ * so a childless owner here is either a text token with a registered host — no adapter
+ * renders one — or a host whose children `bind` could not align, and with no child to name,
+ * the owner's boundary is the only honest answer left.
+ */
+function fromHostAnchor(
+	ctx: AnchorContext,
+	host: HTMLElement,
+	offset: number,
+	owner: TreeNode,
+	affinity: BoundaryAffinity
+): NodeAnchor | undefined {
+	const childCount = host.childNodes.length
+	if (offset > 0 && offset < childCount) return childBoundaryAnchor(ctx, host, offset, owner, affinity)
+	const children = owner.kind === 'mark' ? owner.children() : []
+	// `.at`, not an index read: `noUncheckedIndexedAccess` is off, so the empty case would
+	// type as a `TreeNode` and the fallback below would be linted away as impossible.
+	const edge = offset <= 0 ? children.at(0) : children.at(-1)
+	if (!edge) return offset <= 0 ? {before: owner} : {after: owner}
+	return offset <= 0 ? {before: edge} : {after: edge}
 }
 
 /** The interior of {@link fromChildAnchor}, including its inverted-affinity fallback. */
@@ -119,7 +192,7 @@ function childBoundaryAnchor(
 	tokenElement: HTMLElement,
 	offset: number,
 	owner: TreeNode,
-	affinity: 'before' | 'after'
+	affinity: BoundaryAffinity
 ): NodeAnchor | undefined {
 	// UNREACHABLE with a text owner, which is why there is no text arm. `bind` gives a
 	// text token the SAME element as its `tokenElement` and its `textElement` (bind.ts),
@@ -148,12 +221,58 @@ function childBoundaryAnchor(
 	return affinity === 'before' ? {before: owner} : {after: owner}
 }
 
-/** The container arm: the document edges by side, the interior by affinity. */
-function fromContainerAnchor(roots: readonly TreeNode[], offset: number, affinity: 'before' | 'after'): NodeAnchor {
-	if (roots.length === 0) return 'start'
-	if (offset <= 0) return {before: roots[0]}
-	if (offset >= roots.length) return {after: roots[roots.length - 1]}
-	return affinity === 'before' ? {after: roots[offset - 1]} : {before: roots[offset]}
+/**
+ * The container arm: RAW DOM coordinates in, bound-token coordinates out. The
+ * container's children are not the roots — controls sit among them, and so do the
+ * framework's own placeholders (a Vue fragment anchors on an EMPTY TEXT NODE, `v-if` on
+ * a comment) — so the boundary resolves through its nearest TOKEN neighbours instead of
+ * indexing into `roots`. Both edges fall out of the same two scans: no neighbour on one
+ * side is what makes a boundary an edge.
+ *
+ * Neither side answering means there is no bound token in the container at all — an
+ * empty document, or a frame whose alignment `bind` bailed on — and `'start'` is the
+ * guess for both. The root-index predecessor answered `'start'` only for the first.
+ *
+ * `'nearest'` reads LEFT-AFFINE here, with `'before'` rather than with `'after'`. A boundary
+ * BETWEEN two tokens has no near edge — `{after: previous}` and `{before: next}` name the
+ * same document position, and the only question is which side spells it. The left spelling is
+ * the one that makes the collapsed loop a ONE-WRITE FIXPOINT: `placeCaret({after: mark})`
+ * lands exactly here, so the right spelling sent the caret on to the next token's own surface
+ * and the sync re-placed it twice more. MEASURED — those extra writes clobber Chromium's drag
+ * base, and a drag starting inside a mark then selected NOTHING.
+ */
+function fromContainerAnchor(
+	ctx: AnchorContext,
+	container: HTMLElement,
+	offset: number,
+	affinity: BoundaryAffinity
+): NodeAnchor {
+	const after = tokenAt(ctx, container, offset, 1)
+	const before = tokenAt(ctx, container, offset - 1, -1)
+	if (before && after) return affinity === 'after' ? {before: after} : {after: before}
+	if (after) return {before: after}
+	if (before) return {after: before}
+	return 'start'
+}
+
+/**
+ * The nearest container child at or beyond `index` in `step`'s direction whose element
+ * is a bound token, as that token's LIVE node. A DEAD neighbour — still bound, its node
+ * gone from the tree — is skipped like any other non-token child rather than ending the
+ * scan: the nearest LIVE token is the answer, and stopping short would fail a boundary
+ * closed for the whole adopt→bind window after a deletion.
+ */
+function tokenAt(ctx: AnchorContext, container: HTMLElement, index: number, step: 1 | -1): TreeNode | undefined {
+	const children = container.childNodes
+	for (let i = index; i >= 0 && i < children.length; i += step) {
+		const child = children.item(i)
+		if (!(child instanceof HTMLElement)) continue
+		const lookup = ctx.locate(child)
+		if (lookup?.kind !== 'token') continue
+		const node = ctx.find(lookup.node.handle.id)
+		if (node) return node
+	}
+	return undefined
 }
 
 function lookupTokenDescendant(ctx: Pick<AnchorContext, 'locate'>, node: Node | null): TokenView | undefined {

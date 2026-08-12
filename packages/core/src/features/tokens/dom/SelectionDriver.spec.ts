@@ -1,8 +1,17 @@
-import {describe, it, expect, vi} from 'vitest'
+import {afterEach, describe, it, expect, vi} from 'vitest'
+import {userEvent} from 'vitest/browser'
 
 import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
-import {caretAt, mountStructuralInline, mountStructuralInlineMark, selectionRange} from '../__testing__/mountFixtures'
+import {
+	caretAt,
+	mountNested,
+	mountStructuralInline,
+	mountStructuralInlineMark,
+	mountValue,
+	selectionRange,
+} from '../__testing__/mountFixtures'
+import {offsetOfAnchor} from '../tree/anchors'
 import type {TextNode} from '../tree/types'
 
 describe('SelectionDriver', () => {
@@ -37,18 +46,60 @@ describe('SelectionDriver', () => {
 		container.remove()
 	})
 
-	it('places at a mark whose start equals the previous text node end, through the mark itself', () => {
+	it('places at a mark whose start equals the previous text node end, at that one position', () => {
 		// The gate for storing the NODE anchor instead of a numeric round-trip (spec S1 §4.6
-		// item 5): in 'ab@[x]cd' the mark starts at 2, exactly where 'ab' ends, so a
-		// re-resolved `anchorAt(2)` — right-affine — answers the TEXT node and the caret
-		// lands in the PREVIOUS surface. `{before: mark}` cannot be confused that way.
-		const {store, container, mark} = mountStructuralInlineMark('ab@[x]cd')
-		const markHandle = store.tokens.handle(store.tokens.nodes()[1].id)
+		// item 5): in 'ab@[x]cd' the mark starts at 2, exactly where 'ab' ends — ONE position,
+		// two legal spellings.
+		const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+		const roots = store.tokens.nodes()
+		const markNode = roots[1]
+		const markHandle = store.tokens.handle(markNode.id)
 		if (!markHandle) throw new Error('Mark token did not bind a handle')
 
 		expect(store.tokens.placeAtHandle(markHandle, 'start')).toBe(true)
 
-		expect(document.activeElement).toBe(mark)
+		// WHERE THE CARET LANDED, not what took focus: mark roots are not tab stops under the
+		// one-host topology, so `document.activeElement` — the old witness — names the editing
+		// host rather than the token.
+		//
+		// THE POSITION is the assertion that carries this case, and it is the one the numeric
+		// round-trip this file exists to reject would get wrong. The SPELLING is the collapsed
+		// reader's left affinity at the container arm: it answered `{before: markNode}` until
+		// the near-edge rule landed, and now names the same boundary from the previous root's
+		// end. Both are `offsetOfAnchor` 2; nothing about a mark's atomicity depends on which
+		// side spells it, because a caret AT a mark's start is not a caret inside it.
+		const anchor = store.tokens.domAnchors()?.anchor
+		expect(anchor).toEqual({after: roots[0]})
+		expect(anchor && offsetOfAnchor(roots, anchor)).toBe(offsetOfAnchor(roots, {before: markNode}))
+		container.remove()
+	})
+
+	it('keeps the stored anchors when the caret lands ON the container', async () => {
+		// A mark's caret is a PARENT coordinate, so for a top-level mark the anchor node is
+		// the container itself — and the container owns no token, so the `selectionchange`
+		// sync used to take its "outside the editor" exit and CLEAR the selection a tick
+		// after every such placement (the caret then survives in the DOM but no commit
+		// re-places it). The container IS the editor; it has to sync, not clear.
+		const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+		const roots = store.tokens.nodes()
+		const markNode = roots[1]
+
+		store.tokens.selection.select({after: markNode})
+		for (let i = 0; i < 3; i++) await new Promise(resolve => setTimeout(resolve, 0))
+
+		// THE MEASURED FIXPOINT, and it is reached in ONE write: the collapsed reader is
+		// LEFT-affine at the container arm, so the boundary `placeCaret({after: mark})` lands
+		// on reads back as that same anchor and the sync stores it unchanged.
+		//
+		// It used to take two more: right-affine, the boundary answered `{before: 'cd'}`, and
+		// re-placing THAT put the caret inside 'cd', which the next sync named locally. Same
+		// document position at every step — the assertion below is what says so — but those
+		// extra writes clobbered Chromium's drag base, so a drag out of a mark selected
+		// nothing. What this case rejects either way is the `undefined` the "outside the
+		// editor" exit used to store.
+		const anchors = store.tokens.selection.anchors()
+		expect(anchors).toEqual({anchor: {after: markNode}, head: {after: markNode}})
+		expect(anchors && offsetOfAnchor(roots, anchors.anchor)).toBe(offsetOfAnchor(roots, {after: markNode}))
 		container.remove()
 	})
 
@@ -119,26 +170,103 @@ describe('SelectionDriver', () => {
 			container.remove()
 		})
 
-		it('focusin with no DOM selection clears the stored anchors', () => {
-			// One of the two exits, and they are NOT interchangeable: no DOM selection is the
-			// DOM saying "nothing is selected", which the model must follow. Swapping this
-			// exit with the one below turns both cases red.
-			const {store, container, before} = mountStructuralInlineMark('ab@[x]cd')
-			store.tokens.selection.select({node: textRoot(store), offset: 1})
-			expect(store.tokens.selection.anchors()).toBeDefined()
+		it('stores the NEAR edge of the mark a collapsed caret landed inside', () => {
+			// END TO END for the near-edge rule. Chromium answers a click inside a mark with a
+			// caret at the clicked CHARACTER, and the sync has to name an edge, because the model
+			// owns no position inside a mark's presentation. It named the LEFT one whatever the
+			// offset was — MEASURED in a browser at 20/50/65/75/85% of a mark's width, all five
+			// `{before}` — so clicking the right half and pressing Backspace ate the character
+			// BEFORE the mark instead of the mark.
+			const {store, container, mark} = mountStructuralInlineMark('ab@[wxyz]cd')
+			const inner = mark.appendChild(document.createTextNode('wxyz'))
+			const markNode = store.tokens.nodes()[1]
 
-			window.getSelection()?.removeAllRanges()
-			before.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
+			putCaret(inner, 1)
+			document.dispatchEvent(new Event('selectionchange'))
+			expect(store.tokens.selection.anchors()).toEqual({anchor: {before: markNode}, head: {before: markNode}})
 
-			expect(store.tokens.selection.anchors()).toBeUndefined()
+			putCaret(inner, 3)
+			document.dispatchEvent(new Event('selectionchange'))
+			expect(store.tokens.selection.anchors()).toEqual({anchor: {after: markNode}, head: {after: markNode}})
 			container.remove()
 		})
 
-		it('focusin with an unresolvable boundary leaves the stored anchors standing', () => {
-			// The other exit (spec S2 D4): `anchorFor` answering `undefined` means "the DOM
+		it('Backspace after a caret past a mark middle removes the MARK', async () => {
+			// The CONSEQUENCE, and the shape the defect was reported in: `handleDeleteKey` reads
+			// `domAnchors()` — the same collapsed read — and swallows the mark only when the
+			// caret sits on one of its boundaries. With every in-mark caret answering
+			// `{before: mark}`, the swallow missed and the step-back deleted the space before it
+			// ('hello world foo' became 'helloworld foo').
+			const {store, container, surfaces} = mountValue('hello @[world] foo', {
+				options: [{markup: '@[__value__]'}],
+				Mark: () => null,
+			})
+			// What an adapter's `Mark` would have rendered, and this bare fixture must not skip:
+			// a click needs text inside the mark element to land in.
+			const inner = surfaces[1].appendChild(document.createTextNode('world'))
+			// The CLICK is what makes the container the editing host, so the keystroke below is
+			// a real one; the caret is then put where Chromium puts it for a click past the
+			// middle of 'world'.
+			await userEvent.click(surfaces[0])
+			putCaret(inner, 4)
+			document.dispatchEvent(new Event('selectionchange'))
+
+			await userEvent.keyboard('{Backspace}')
+
+			expect(store.tokens.value()).toBe('hello  foo')
+			container.remove()
+		})
+
+		it('focus leaving the container clears the stored anchors', async () => {
+			// THE clear, and the only one the driver has left: focus out of the one editing
+			// host. It replaces the deleted `focusin` listener's "no DOM selection" arm — that
+			// one re-read a STALE range during the focus transition and re-applied it with a
+			// focus steal, which is why a click into an adjacent span never moved the caret.
+			// The microtask is the handler's own: `focusout` fires BEFORE `activeElement` moves.
+			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+			const outside = document.createElement('input')
+			document.body.append(outside)
+			store.tokens.selection.select({node: textRoot(store), offset: 1})
+			expect(store.tokens.selection.anchors()).toBeDefined()
+
+			outside.focus()
+			await Promise.resolve()
+
+			expect(store.tokens.selection.anchors()).toBeUndefined()
+			outside.remove()
+			container.remove()
+		})
+
+		it('a selectionchange that lands wholly OUTSIDE the container clears the stored anchors', () => {
+			// THE `clear()` arm of `syncIfInEditor`, and the only case that gates it: `handleAt`
+			// answers `undefined` for a node the container does not contain, which is the
+			// "outside" verdict. Distinct from the `focusout` clear ('focus leaving the
+			// container clears the stored anchors') — focus never moves here, the SELECTION
+			// does, which is what a click into surrounding page text does while the editor
+			// keeps focus. Neutering the arm to a bare `return` turns
+			// this case red; the two half-outside/undefined exits keep their anchors.
+			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+			const outside = document.createElement('div')
+			outside.append(document.createTextNode('elsewhere'))
+			document.body.append(outside)
+			store.tokens.selection.select({node: textRoot(store), offset: 1})
+			expect(store.tokens.selection.anchors()).toBeDefined()
+
+			putCaret(outside.firstChild!, 3)
+			document.dispatchEvent(new Event('selectionchange'))
+
+			expect(store.tokens.selection.anchors()).toBeUndefined()
+			outside.remove()
+			container.remove()
+		})
+
+		it('a half-outside range leaves the stored anchors standing', () => {
+			// THE surviving exit (spec S2 D4): `anchorFor` answering `undefined` means "the DOM
 			// cannot be read here", not "nothing is selected" — the previous anchors stay and
-			// the next `selectionchange` corrects them. A boundary outside the container is the
-			// reachable form of that.
+			// the next `selectionchange` corrects them. Its reachable form is a RANGE with one
+			// end outside the container: the focus end is in the editor, so `syncIfInEditor`
+			// passes it through rather than taking the "outside" CLEAR, and the far end is what
+			// declines. Turning that `return` into a `clear()` turns this case red.
 			const {store, container, before} = mountStructuralInlineMark('ab@[x]cd')
 			const textNode = textRoot(store)
 			store.tokens.selection.select({node: textNode, offset: 1})
@@ -146,8 +274,10 @@ describe('SelectionDriver', () => {
 			const outside = document.createElement('div')
 			outside.append(document.createTextNode('elsewhere'))
 			document.body.append(outside)
-			putCaret(outside.firstChild!, 3)
-			before.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
+			const editorEnd = before.firstChild
+			if (!editorEnd) throw new Error('the leading surface rendered no text node')
+			window.getSelection()?.setBaseAndExtent(outside.firstChild!, 3, editorEnd, 1)
+			document.dispatchEvent(new Event('selectionchange'))
 
 			expect(store.tokens.selection.anchors()).toEqual({
 				anchor: {node: textNode, offset: 1},
@@ -190,11 +320,18 @@ describe('SelectionDriver', () => {
 	})
 
 	describe('lifecycle wiring', () => {
-		it('attaches document listeners on mount', () => {
+		it("the sweep tracker's document listeners went with the flip", () => {
+			// A NEGATIVE, and deliberately so: asserting the surviving `selectionchange`
+			// listener pins nothing, because `OverlayController` attaches one to `document`
+			// too — the positive passes with the driver's own listener deleted. What this
+			// commit changed is that mounting no longer reaches for the mouse at all.
 			const addSpy = vi.spyOn(document, 'addEventListener')
 			const store = new Store()
 			store.host.container(document.createElement('div'))
-			expect(addSpy).toHaveBeenCalledWith('mousedown', expect.any(Function), undefined)
+
+			for (const type of ['mousedown', 'mousemove', 'mouseup']) {
+				expect(addSpy).not.toHaveBeenCalledWith(type, expect.any(Function), undefined)
+			}
 			addSpy.mockRestore()
 		})
 	})
@@ -216,27 +353,6 @@ describe('SelectionDriver', () => {
 			const sel = window.getSelection()
 			expect(sel?.focusNode).toBe(span.firstChild)
 			expect(sel?.focusOffset).toBe(5)
-			container.remove()
-		})
-
-		it('skips restoration when isUserSelecting', () => {
-			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
-			const container = document.createElement('div')
-			const span = document.createElement('span')
-			span.appendChild(document.createTextNode('hello'))
-			container.appendChild(span)
-			document.body.appendChild(container)
-			store.host.container(container)
-			store.tokens.isUserSelecting(true)
-			caretAt(store, 3)
-
-			// Clear any pre-existing browser selection so we can detect non-changes.
-			window.getSelection()?.removeAllRanges()
-			store.host.rendered()
-
-			const sel = window.getSelection()
-			expect(sel?.rangeCount ?? 0).toBe(0)
 			container.remove()
 		})
 
@@ -292,46 +408,82 @@ describe('SelectionDriver', () => {
 		})
 	})
 
-	describe('isUserSelecting → contentEditable', () => {
-		it('flips structural text surfaces non-editable while user is selecting', () => {
-			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
-			const container = document.createElement('div')
-			const span = document.createElement('span')
-			span.appendChild(document.createTextNode('hello'))
-			container.appendChild(span)
-			document.body.appendChild(container)
-			store.host.container(container)
-			store.host.rendered()
+	describe('the container as the one editing host', () => {
+		// These cases leave a FOCUSED editable container behind, so a failing assert must not
+		// carry one into the rest of the file.
+		afterEach(() => document.body.replaceChildren())
 
-			expect(span.contentEditable).toBe('true')
+		/**
+		 * A caret a real keystroke can land on. The CLICK is what resolves focus, and it is
+		 * deliberately the browser's job rather than a `container.focus()`: which element ends
+		 * up the editing host is exactly what the topology decides. The offset is then placed
+		 * through the model's own path, because a click alone lands wherever it lands.
+		 *
+		 * INTERIOR offsets only: the click's own `selectionchange` arrives asynchronously and
+		 * re-resolves whatever boundary it finds, and at a boundary offset that answer can be
+		 * the neighbouring node's.
+		 */
+		const caretInEditor = async (store: Store, target: HTMLElement, offset: number): Promise<void> => {
+			await userEvent.click(target)
+			caretAt(store, offset)
+		}
 
-			store.tokens.isUserSelecting(true)
-			expect(span.contentEditable).toBe('false')
+		it('mounting makes the container the editing host; readOnly toggles it', () => {
+			const {store, container} = mountStructuralInline('hello')
 
-			store.tokens.isUserSelecting(false)
-			expect(span.contentEditable).toBe('true')
+			expect(container.getAttribute('contenteditable')).toBe('true')
 
+			store.props.set({readOnly: true})
+			expect(container.getAttribute('contenteditable')).toBe('false')
+
+			store.props.set({readOnly: false})
+			expect(container.getAttribute('contenteditable')).toBe('true')
 			container.remove()
 		})
-	})
 
-	describe('empty-editor click handler', () => {
-		it('focuses first child on click when editor is empty', () => {
-			const store = new Store()
-			const container = document.createElement('div')
-			const span = document.createElement('span')
-			span.contentEditable = 'true'
-			container.appendChild(span)
-			document.body.appendChild(container)
+		// REAL keystrokes (`userEvent` drives the browser itself), because the whole point of
+		// the flip is what Chromium does with the DOM it is given: a synthetic `beforeinput`
+		// dispatched by hand fires on a container that is no editing host just as happily,
+		// and would pin nothing.
+		//
+		// MEASURED discrimination — the four mutations that turn them red: dropping the
+		// container write (both), freezing a text surface (both), freezing the slot ROOT
+		// (the slot one), freezing the slot HOST (the slot one).
+		//
+		// The one they do NOT catch, and it is worth knowing why: putting
+		// `contenteditable=true` BACK on the slot host leaves them green. Measured, with the
+		// container editable and the host `display: contents`, Chromium leaves focus on the
+		// container and still fires `insertText` — the nested host is inert. What made it
+		// fatal at T3 was the absence of any OTHER host: focus had nowhere to go but the
+		// boxless one, and there Chromium fires nothing. The container write is what masks it.
+		// The bare slot host is therefore gated at ATTRIBUTE level instead, by `bind.spec`'s
+		// 'a slot mark leaves root and host BARE …' — that is where the property lives.
+		it('typing into a plain text span reaches the value through the container host', async () => {
+			const {store, container, surfaces} = mountValue('hello @[world] tail', {
+				options: [{markup: '@[__value__]'}],
+				Mark: () => null,
+			})
+			await caretInEditor(store, surfaces[0], 2)
 
-			store.props.set({defaultValue: ''})
-			store.host.container(container)
-			store.host.rendered()
+			await userEvent.keyboard('X')
 
-			const focusSpy = vi.spyOn(span, 'focus')
-			container.dispatchEvent(new MouseEvent('click', {bubbles: true}))
-			expect(focusSpy).toHaveBeenCalledTimes(1)
+			expect(store.tokens.value()).toBe('heXllo @[world] tail')
+			// AND the caret followed the edit: the value assert alone passes even when the
+			// post-commit re-place drops it, and a caret stuck at 2 is an unusable editor.
+			expect(selectionRange(store)).toEqual({start: 3, end: 3})
+			container.remove()
+		})
+
+		it('typing into slot content reaches the value', async () => {
+			// '@[a @[b] c]' — the slot's own children hang off a registered child-sequence
+			// host, and offset 3 is inside the leading 'a ' child of that slot.
+			const {store, container, before} = mountNested()
+			await caretInEditor(store, before, 3)
+
+			await userEvent.keyboard('X')
+
+			expect(store.tokens.value()).toBe('@[aX @[b] c]')
+			expect(selectionRange(store)).toEqual({start: 4, end: 4})
 			container.remove()
 		})
 	})

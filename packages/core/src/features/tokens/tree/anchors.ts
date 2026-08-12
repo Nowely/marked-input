@@ -1,7 +1,17 @@
 import type {MarkNode, NodeAnchor, TextNode, TreeNode} from './types'
 
-/** Right-affinity resolution: the last text node (document order) containing the offset. */
-export function anchorAt(roots: readonly TreeNode[], offset: number): NodeAnchor {
+/**
+ * Right-affinity resolution: the last text node (document order) containing the offset.
+ *
+ * `side` reaches ONE branch — the mark fallback below — and defaults to the right affinity
+ * every caller but one wants. It is a PARAMETER and not a global rule because the two readings
+ * are both correct and both needed: a caret REPAIRED after an edit must keep leaning right (an
+ * offset that lands on a mark's start belongs after whatever was just typed), while a select-all
+ * SEED at offset 0 must name the mark's own start or the selection begins after it. Making the
+ * left reading unconditional regressed controlled-mode typing — the echo's repair re-anchors
+ * through here, so the repaired caret was yanked before the preceding mark.
+ */
+export function anchorAt(roots: readonly TreeNode[], offset: number, side: 'left' | 'right' = 'right'): NodeAnchor {
 	let text: {node: TextNode; offset: number} | undefined
 	let mark: MarkNode | undefined
 	const visit = (nodes: readonly TreeNode[]): void => {
@@ -20,8 +30,16 @@ export function anchorAt(roots: readonly TreeNode[], offset: number): NodeAnchor
 	}
 	visit(roots)
 	if (text) return text
-	// A mark interior is not anchorable (spec §2.3), so a slotless mark answers with its boundary.
-	if (mark) return {after: mark}
+	// A mark interior is not anchorable (spec §2.3), so a slotless mark answers with its
+	// boundary. `{after}` under the default: the interior and the end have no other reading,
+	// and neither does the start under right affinity.
+	//
+	// `'left'` is what a select-all seed asks for, and only its START seed: block mode filters
+	// the empty text tokens that bracket a mark (valueBoundary.ts), so on a document that OPENS
+	// with a mark NOTHING covers offset 0 but the mark itself — `{after: mark}` projects back to
+	// its END, `isAllSelected` compared that against 0 and answered false, and Ctrl+A was
+	// cancelled having done nothing.
+	if (mark) return side === 'left' && offset === mark.position.start ? {before: mark} : {after: mark}
 	return offset <= 0 ? 'start' : 'end'
 }
 

@@ -134,7 +134,7 @@ write verb → splice → parse → adopt → TransactionResult
        bump renderEpoch → renderer runs → onRendered() →
        bind(container, tree.roots()): one DOM+tree walk —
          create/kill TokenHandles, set element bindings, re-arm the text effects,
-         apply contentEditable/tabindex to NEWLY BOUND surfaces and mark roots
+         apply the one-host editable topology to NEWLY BOUND surfaces and mark roots
        → fire changed()
 ```
 
@@ -163,10 +163,15 @@ write verb → splice → parse → adopt → TransactionResult
   the renderer, so a re-render arriving afterwards — any unrelated adapter update
   — must bind the current tree, not regress the node layer and the DOM text to
   the painted generation.
-- **Editable state:** contentEditable/tabindex are applied at bind time to newly
-  bound surfaces and mark roots, and by the scoped `setEditable` setter when
-  `readOnly`/`isUserSelecting` change (`dom/SelectionDriver.ts` owns the policy,
-  the model owns the application). No per-commit sweep.
+- **Editable state:** the CONTAINER is the one editing host, and
+  `dom/editableState.ts` gives every bound token its place in it, at bind time,
+  on newly bound elements only. Text surfaces stay bare (they inherit); a
+  value-only mark root is `contenteditable=false`; a SLOT mark leaves its root
+  and its slot host bare — a nested editing host would be a `display: contents`
+  element, which cannot take focus and gets no `beforeinput` — and freezes only
+  the chrome hanging off the root→host path. Marks carry no tabindex: Tab leaves
+  the field. Controls are frozen where they REGISTER (`control()`), not here,
+  because they do not mount on the commit clock. No flags, no per-commit sweep.
 - **`changed`** fires only after the DOM is consistent with the node layer — the model-level "commit done" signal (`dom/SelectionDriver.ts`
   re-places the caret on it) — carrying that commit's `{added, removed, updated}`
   ids (`TokenDelta`: `added`/`removed` are subtree-inclusive, `updated` is per
@@ -194,9 +199,8 @@ the two lookups the walk itself produces. There is no id-keyed `bound` map to
 return: the id-keyed side is `deps.nodes`, THE live node layer, which bind
 mutates in place, and "this walk bound it" is `handle.alive()`, because the walk
 unbinds (never removes) a node the DOM missed and deletes only ids absent from
-the tree. Its readers go to that one map — `assertAligned` (`dom/commit.ts`)
-reads `deps.nodes` directly, and `TokenModel.setEditable` iterates the same map
-through the pipeline. Child-sequence hosts register under the owning mark's
+the tree. Its one reader goes to that map — `assertAligned` (`dom/commit.ts`)
+reads `deps.nodes` directly. Child-sequence hosts register under the owning mark's
 stable id: an id does not go stale when a sibling above the owner is added or
 removed mid-render.
 
@@ -245,7 +249,7 @@ selectedContent(): {html; text} | undefined // selection serialized for clipboar
 
 // the selection driver's reads, delegated (the driver itself is private)
 domAnchors(): Anchors | undefined    // DOM TRUTH as anchors
-focusFirst() / placeAtHandle(handle, boundary?) / isUserSelecting: Signal<boolean>
+focusFirst() / placeAtHandle(handle, boundary?)
 
 // the tree layer's own coordinate boundary — the ONE place a number may be formed.
 // Only this direction is public; its inverse is the private `#offsetOf`, whose one
@@ -256,9 +260,12 @@ anchorAt(offset)
 control() / children(ownerId) // ref callbacks
 ```
 
-`setEditable({editable, readOnly})` is the scoped internal setter wired from
-`dom/SelectionDriver.ts`'s prop watches; it is not part of the consumer-facing
-reading surface above.
+`setEditable({editable, readOnly})` is the MANUAL override of the one editing
+host: it writes `container.contentEditable` from `editable && !readOnly`, and is
+a no-op while unmounted. Nothing in core calls it — `props.readOnly` owns the
+same attribute through the driver's `{immediate: true}` watch, so the next
+readOnly change (and every re-mount) overwrites whatever it wrote. It is not part
+of the consumer-facing reading surface above.
 
 Nothing is published before a container mounts: `nodes()` is `[]` and facade
 reads fail soft. Adapters mount the container ref, re-render from the first
@@ -291,20 +298,29 @@ closed — is on the members themselves in `seam/TokenModel.ts` and
 ### Boundary facade internals
 
 The model builds an `AnchorContext` per call: `locate` walks a DOM node up to its
-bound handle, `roots()` and `find(id)` read the LIVE tree. Nothing in it forms an
-absolute offset, which is the point — no module above `tree/` may. The bridge
+bound handle and `find(id)` reads the LIVE tree. Nothing in it forms an absolute
+offset, which is the point — no module above `tree/` may. The bridge
 from DOM to model is the handle's stable ID, which is generation-independent, so
 the walk stays correct inside the adopt→bind window where a positional read is
 not.
 
 - `dom/domBoundary.ts` — DOM `(node, offset)` → `NodeAnchor`
-  (`anchorFromBoundary`). Vocabulary: `'before'`/`'after'` = affinity at token
-  boundaries; `'start'`/`'end'` = placement side. There is no numeric twin: this
-  is the only projection of the walk, and every branch names its own case in
-  `domBoundary.spec.ts`.
+  (`anchorFromBoundary`). Vocabulary: `'before'`/`'after'`/`'nearest'` =
+  affinity at token boundaries; `'start'`/`'end'` = placement side. The first
+  two are the RANGED reader's pair and lean a span's two ends INWARD, so a drag
+  through a mark swallows the whole mark; `'nearest'` is the COLLAPSED reader's
+  and is passed by nothing else — inside a mark it answers the NEAR edge (the
+  tie goes to `before`), because a caret has no inside and the click's own
+  offset is the only thing that says which edge was meant. Between two tokens
+  there is no near edge, and `'nearest'` reads LEFT-affine: `{after: previous}`
+  and `{before: next}` are one position, and the left spelling is the one
+  `placeCaret` reproduces in ONE write — the right one placed on into the next
+  token's surface, and those extra writes clobbered Chromium's drag base.
+  There is no numeric twin: this is the only projection of the walk, and every
+  branch names its own case in `domBoundary.spec.ts`.
 - `dom/caret.ts` — stateless `Range`/`Selection` mechanics (`placeAtTextOffset`,
-  `placeAtChildBoundary`, `placeRangeAcrossSurfaces`, `setAtX`, `getCaretIndex`,
-  `getRect`, `isOnFirstLine`, `isOnLastLine`, `focusIfNeeded`).
+  `placeAtParentBoundary`, `placeRangeAcrossSurfaces`, `getCaretIndex`,
+  `getRect`, `focusEditingHost`).
 - `dom/textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
   `textOffsetWithin`, `hasEditableAncestorBefore`).
 
@@ -347,14 +363,22 @@ emit `text`/`moved`/`unmounted`. Consumers detect change through the model's
 
 ### Measurement (over the bound elements, row scope in block layout)
 
-`hasTextSurface()`, `textLength()`, `caretIndex()`, `rect()`,
-`caretOnFirstLine()` / `caretOnLastLine()` — inert defaults when unbound.
+Three reads, all answering an inert default when the handle is unbound:
+
+- `hasTextSurface()` — whether this token bound a text surface (`false` unbound).
+- `textLength()` — the text length of the scope (`0` unbound).
+- `caretIndex()` — the caret offset within the scope, `undefined` unbound. Only
+  meaningful while the selection is inside that scope; the helper answers `0`
+  when there is no selection at all.
+
+No pixel measures: the caret moves between rows natively under the one editing
+host, so nothing here reads geometry.
 
 ### Commands
 
 All return `false` when unbound or dead: `placeCaret(offset)` (`Infinity` → end;
 on a mark without a text surface any `offset > 0` collapses to the end child
-boundary), `placeCaretAtX(x, y?)`, `focus()`.
+boundary), `focus()`.
 
 ### Lifetime
 
@@ -386,9 +410,9 @@ write fail closed rather than act on a tree the DOM never showed.
 
 Split in two by owner, and owned HERE. There is no `features/selection/` and no
 `store.selection`: `TokenModel` constructs both halves, publishes the state as
-`tokens.selection` and delegates the driver's four externally-needed reads
-(`domAnchors`, `focusFirst`, `placeAtHandle`, `isUserSelecting`) the same way it
-delegates `DomModel`'s.
+`tokens.selection` and delegates the driver's three externally-needed reads
+(`domAnchors`, `focusFirst`, `placeAtHandle`) the same way it delegates
+`DomModel`'s.
 
 There is no construction cycle around it: the string boundary calls
 `this.selection.anchors()` / `this.selection.repair(result)` directly, with no
@@ -403,17 +427,19 @@ an explicit type annotation to keep `tsc` off TS7022.
   `range`/`position` projection and no generation marker. `repair(result)`
   APPLIES `result.selectionAfter` — adoption resolves it, since only adoption
   sees the pre-mutation coordinate space.
-- `dom/SelectionDriver.ts` — the DOM I/O, private to `TokenModel`. Three
-  listeners (`focusin`/`focusout`/`selectionchange` sync, the empty-editor click
-  focus, the mouse-sweep tracker) and four watches (`tokens.changed`, `readOnly`,
-  `isUserSelecting`, and the stored anchors themselves). BUILT IN THE CONSTRUCTOR
+- `dom/SelectionDriver.ts` — the DOM I/O, private to `TokenModel`. Two listeners
+  (the document-level `selectionchange` sync, and the `focusout` clear on the
+  container) and three watches (`tokens.changed`, `readOnly`, and the stored
+  anchors themselves). BUILT IN THE CONSTRUCTOR
   BODY, not as a field initializer: its dep bag takes `host` and `changed` as
   VALUES, so an initializer would read a constructor parameter property (`tsc`
   rejects it, TS2729) and `#pipeline` (which answers `undefined` silently from any
   initializer above it). Building it last also puts its `onMounted` after the
   model's own. It watches the STORED anchors, never a number derived from them —
-  the measurement behind that is stated at the watch. It also owns the editable
-  POLICY; the model owns the application.
+  the measurement behind that is stated at the watch. Its ONE attribute write is
+  the editing host itself: the container's `contenteditable`, gated by
+  `props.readOnly`. There is no per-surface editable policy left — the topology
+  below the host is bind's, applied once at mount.
 
 ## Caret placement by handle
 

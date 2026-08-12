@@ -30,6 +30,36 @@ describe('BlockController', () => {
 		})
 	})
 
+	it('block actions apply with draggable:false (menu/keyboard actions are not drag UI)', () => {
+		store.props.set({
+			layout: 'block',
+			draggable: false,
+			Mark: () => null,
+			options: [{markup: '__slot__\n\n'}],
+		})
+		store.host.container(document.createElement('div'))
+		store.tokens.setValue('alpha\n\nbeta\n\n')
+
+		store.block.action({type: 'delete', index: 0})
+
+		expect(store.tokens.value()).toBe('beta\n\n')
+	})
+
+	it('drops reorder with draggable:false (reorder is drag-originated)', () => {
+		store.props.set({
+			layout: 'block',
+			draggable: false,
+			Mark: () => null,
+			options: [{markup: '__slot__\n\n'}],
+		})
+		store.host.container(document.createElement('div'))
+		store.tokens.setValue('alpha\n\nbeta\n\n')
+
+		store.block.action({type: 'reorder', source: 0, target: 2})
+
+		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
+	})
+
 	it('owns the drag event', () => {
 		const store = new Store()
 		expect(typeof store.block.action).toBe('function')
@@ -49,11 +79,11 @@ describe('BlockController', () => {
 
 		store.block.action({type: 'delete', index: 0})
 
-		// The OUTCOME, not the write channel: `applyDragAction` synthesizes a complete new
-		// string from row positions and `edit.setValue` commits it, so the value is only
-		// ever READ on this path.
+		// The OUTCOME, not the write channel: `applyDragAction` composes a complete new
+		// string from anchor-slice reads of the tree and `edit.setValue` commits it. The
+		// caret lands at the start of the row that replaced the deleted one.
 		expect(store.tokens.value()).toBe('beta\n\n')
-		expect(selectionRange(store)).toEqual({start: 6, end: 6})
+		expect(selectionRange(store)).toEqual({start: 0, end: 0})
 	})
 
 	it('writes value and caret as a single batched tick', () => {

@@ -10,7 +10,9 @@ Manages the block editing mode where each row/token is rendered as a separate dr
 
 ## Operations (internal)
 
-The feature uses pure functions from `operations.ts` for manipulating the raw value: `reorderDragRows`, `addDragRow`, `deleteDragRow`, `duplicateDragRow`, `mergeDragRows` (returns `{value, caret}`), `canMergeRows`.
+The pure functions in `operations.ts` never take a raw value. The document reaches them as a `SliceRead` — `(from, to) => tokens.valueBetween(from, to)` — so every read comes from the token tree itself and is consistent with the `rows` whose positions address it, which a props-first `value()` is not in controlled mode.
+
+`applyDragAction(read, rows, action, options)` serves every drag action (reorder/add/delete/duplicate). It projects the rows into per-row texts plus inter-row gaps, edits those, and composes the result, so its `{value, caret}` caret always indexes the value beside it; `undefined` means there is nothing to write. `addDragRow`, `deleteDragRow`, `mergeDragRows` and `canMergeRows` serve the keyboard feature's row edits on the same terms.
 
 ## Usage
 

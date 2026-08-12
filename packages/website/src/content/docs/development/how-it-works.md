@@ -315,10 +315,10 @@ The `useOverlay()` hook provides:
 
 ```
 <MarkedInput>
-  └── <Container> (editable div)
-      ├── <TextSpan> (plain text)
-      ├── <Mark> (your component)
-      ├── <TextSpan> (plain text)
+  └── <Container> (the one contenteditable host)
+      ├── <span> (plain text — bare, inherits editability)
+      ├── <Mark> (your component — contenteditable=false)
+      ├── <span> (plain text)
       └── <Overlay> (if triggered)
 ```
 

@@ -1,14 +1,7 @@
 import {effect} from '../../../shared/signals/index.js'
 import type {TreeNode} from '../tree/types'
-import {
-	focusIfNeeded,
-	getCaretIndex,
-	isOnFirstLine,
-	isOnLastLine,
-	placeAtChildBoundary,
-	placeAtTextOffset,
-	setAtX,
-} from './caret'
+import {collapseTo, findTextBoundary, focusEditingHost, getCaretIndex} from './caret'
+import type {CaretBoundary} from './caret'
 import {textLength} from './textOffsets'
 
 /** DOM bindings of a live node — set by bind, cleared on unbind/kill. */
@@ -95,53 +88,49 @@ export class TokenHandle {
 		return scope ? getCaretIndex(scope) : undefined
 	}
 
-	caretOnFirstLine(): boolean {
-		const scope = this.#measureScope()
-		return scope ? isOnFirstLine(scope) : true
-	}
-
-	caretOnLastLine(): boolean {
-		const scope = this.#measureScope()
-		return scope ? isOnLastLine(scope) : true
-	}
-
-	rect(): DOMRect | undefined {
-		return this.#measureScope()?.getBoundingClientRect()
-	}
-
 	/**
-	 * Place a collapsed caret at a character offset (Infinity → end).
-	 * On tokens without a text surface any offset > 0 collapses to the 'end'
-	 * child boundary.
+	 * THE DOM boundary a caret offset resolves to inside this token (Infinity → end), or
+	 * `undefined` while unbound. Both placement commands read it, which is the point: a
+	 * collapsed caret and a RANGE ENDPOINT are the same question asked twice, and answering it
+	 * in two places is what left `DomModel.selectRange` refusing the mark endpoints
+	 * `placeCaret` had accepted since the one-host flip.
+	 *
+	 * On a token without a text surface any offset > 0 answers the boundary AFTER the token in
+	 * its parent: a mark is atomic (ce=false), so its positions are the PARENT coordinates
+	 * before and after it, never a position inside.
 	 */
-	placeCaret(offset: number): boolean {
+	caretBoundary(offset: number): CaretBoundary | undefined {
 		const bindings = this.#bindings
-		if (!bindings) return false
+		if (!bindings) return undefined
 		const {tokenElement, textElement} = bindings
 		if (!textElement) {
-			focusIfNeeded(tokenElement)
-			placeAtChildBoundary(tokenElement, offset <= 0 ? 'start' : 'end')
-			return true
+			const parent = tokenElement.parentElement
+			if (!parent) return undefined
+			const index = Array.prototype.indexOf.call(parent.childNodes, tokenElement)
+			return {node: parent, offset: offset <= 0 ? index : index + 1}
 		}
-		focusIfNeeded(textElement)
 		const length = textLength(textElement)
-		placeAtTextOffset(textElement, Number.isFinite(offset) ? Math.max(0, Math.min(offset, length)) : length)
+		return findTextBoundary(textElement, Number.isFinite(offset) ? Math.max(0, Math.min(offset, length)) : length)
+	}
+
+	/** Place a collapsed caret at a character offset (Infinity → end); see {@link caretBoundary}. */
+	placeCaret(offset: number): boolean {
+		const boundary = this.caretBoundary(offset)
+		const bindings = this.#bindings
+		if (!boundary || !bindings) return false
+		// The ELEMENT, not the boundary node: a text boundary's node is a `Text`, which carries
+		// no `closest`. `caretBoundary` already declined the parentless case, so the fallback
+		// here is unreachable and only satisfies the type.
+		focusEditingHost(bindings.textElement ?? bindings.tokenElement.parentElement ?? bindings.tokenElement)
+		collapseTo(boundary)
 		return true
 	}
 
-	/** Place caret at viewport x (and optional y) within this token's scope. */
-	placeCaretAtX(x: number, y?: number): boolean {
-		const scope = this.#measureScope()
-		if (!scope) return false
-		setAtX(scope, x, y)
-		return true
-	}
-
-	/** Focus this token's scope element (row in block layout). */
+	/** Focus the editing host of this token's scope element (row in block layout). */
 	focus(): boolean {
 		const scope = this.#measureScope()
 		if (!scope) return false
-		focusIfNeeded(scope)
+		focusEditingHost(scope)
 		return true
 	}
 

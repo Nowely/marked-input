@@ -4,6 +4,8 @@ import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
 import {defineComponent, h, ref} from 'vue'
 
+import {textSurfaces} from '../../shared/lib/dom'
+
 const TestMark = defineComponent({
 	props: {value: String, children: {type: null}},
 	setup(props, {slots}) {
@@ -123,9 +125,7 @@ describe('Slots API', () => {
 
 			// (b) the host ref must also have fired — the editor publishes tokens
 			// only after the container mounts, so the value should still render.
-			await expect
-				.element(container.querySelector<HTMLElement>('span[contenteditable]')!)
-				.toHaveTextContent('Hello world')
+			await expect.element(textSurfaces(containerDiv)[0]).toHaveTextContent('Hello world')
 		})
 
 		it('compose user slotProps.container ref (function) with host ref — editor still renders', async () => {
@@ -146,24 +146,22 @@ describe('Slots API', () => {
 			const containerDiv = container.querySelector<HTMLElement>('div')!
 			expect(userRef).toHaveBeenCalledWith(containerDiv)
 
-			await expect
-				.element(container.querySelector<HTMLElement>('span[contenteditable]')!)
-				.toHaveTextContent('Hello world')
+			await expect.element(textSurfaces(containerDiv)[0]).toHaveTextContent('Hello world')
 		})
 	})
 
 	describe('Span slot', () => {
 		it('use default span component when no slot is provided', async () => {
-			const {container} = await render(MarkedInput, {
+			await render(MarkedInput, {
 				props: {
 					Mark: TestMark,
 					value: 'Hello world',
 				},
 			})
 
-			const textSpan = container.querySelector<HTMLElement>('span[contenteditable]')!
+			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toBeInTheDocument()
-			await expect.element(textSpan).toHaveTextContent('Hello world')
+			await expect.element(textSpan).not.toHaveAttribute('contenteditable')
 		})
 
 		it('use custom component from Span prop', async () => {
@@ -297,8 +295,8 @@ describe('Slots API', () => {
 		})
 	})
 
-	describe('Span contentEditable attribute', () => {
-		it('have contentEditable="true" by default on editable span', async () => {
+	describe('contentEditable topology', () => {
+		it('put contentEditable="true" on the container, not on the text span', async () => {
 			const {container} = await render(MarkedInput, {
 				props: {
 					Mark: TestMark,
@@ -306,11 +304,13 @@ describe('Slots API', () => {
 				},
 			})
 
-			const textSpan = container.querySelector<HTMLElement>('span[contenteditable="true"]')!
-			await expect.element(textSpan).toBeInTheDocument()
+			const containerDiv = container.querySelector<HTMLElement>('div')!
+			const textSpan = page.getByText('Hello world')
+			await expect.element(containerDiv).toHaveAttribute('contenteditable', 'true')
+			await expect.element(textSpan).not.toHaveAttribute('contenteditable')
 		})
 
-		it('have contentEditable="false" when readOnly is true', async () => {
+		it('have contentEditable="false" on the container when readOnly is true', async () => {
 			const {container} = await render(MarkedInput, {
 				props: {
 					Mark: TestMark,
@@ -319,11 +319,13 @@ describe('Slots API', () => {
 				},
 			})
 
-			const textSpan = container.querySelector<HTMLElement>('span[contenteditable="false"]')!
-			await expect.element(textSpan).toBeInTheDocument()
+			const containerDiv = container.querySelector<HTMLElement>('div')!
+			const textSpan = page.getByText('Hello world')
+			await expect.element(containerDiv).toHaveAttribute('contenteditable', 'false')
+			await expect.element(textSpan).not.toHaveAttribute('contenteditable')
 		})
 
-		it('maintain contentEditable on span with custom Span', async () => {
+		it('leave a custom Span bare too', async () => {
 			const CustomSpan = defineComponent({
 				setup(_, {slots}) {
 					return () => h('span', {'data-testid': 'custom-editable-span'}, slots.default?.())
@@ -335,20 +337,21 @@ describe('Slots API', () => {
 			})
 
 			const span = page.getByTestId('custom-editable-span')
-			await expect.element(span).toHaveAttribute('contenteditable', 'true')
+			await expect.element(span).not.toHaveAttribute('contenteditable')
 			await expect.element(span).toHaveTextContent('Hello world')
 		})
 
-		it('renders without the suppressContentEditableWarning prop set', async () => {
-			const {container} = await render(MarkedInput, {
+		it('freeze a value-only mark root as an atomic', async () => {
+			await render(MarkedInput, {
 				props: {
 					Mark: TestMark,
-					value: 'Hello world',
+					value: 'Hello @[world](1)',
 				},
 			})
 
-			const textSpan = container.querySelector<HTMLElement>('span[contenteditable]')!
-			await expect.element(textSpan).toBeInTheDocument()
+			const mark = page.getByRole('mark')
+			await expect.element(mark).toHaveAttribute('contenteditable', 'false')
+			await expect.element(mark).not.toHaveAttribute('tabindex')
 		})
 	})
 
@@ -462,10 +465,11 @@ describe('Slots API', () => {
 			})
 
 			const article = container.querySelector<HTMLElement>('article')!
-			const textSpan = container.querySelector<HTMLElement>('span[contenteditable]')!
-
 			await expect.element(article).toBeInTheDocument()
+			await expect.element(article).toHaveAttribute('contenteditable', 'true')
+			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toBeInTheDocument()
+			await expect.element(textSpan).not.toHaveAttribute('contenteditable')
 		})
 	})
 
