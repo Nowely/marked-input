@@ -310,8 +310,8 @@ not.
   is the only projection of the walk, and every branch names its own case in
   `domBoundary.spec.ts`.
 - `dom/caret.ts` — stateless `Range`/`Selection` mechanics (`placeAtTextOffset`,
-  `placeAtParentBoundary`, `placeRangeAcrossSurfaces`, `setAtX`, `getCaretIndex`,
-  `getRect`, `isOnFirstLine`, `isOnLastLine`, `focusEditingHost`).
+  `placeAtParentBoundary`, `placeRangeAcrossSurfaces`, `getCaretIndex`,
+  `getRect`, `focusEditingHost`).
 - `dom/textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
   `textOffsetWithin`, `hasEditableAncestorBefore`).
 
@@ -354,14 +354,16 @@ emit `text`/`moved`/`unmounted`. Consumers detect change through the model's
 
 ### Measurement (over the bound elements, row scope in block layout)
 
-`hasTextSurface()`, `textLength()`, `caretIndex()`, `rect()`,
-`caretOnFirstLine()` / `caretOnLastLine()` — inert defaults when unbound.
+`hasTextSurface()`, `textLength()`, `caretIndex()` — inert defaults when
+unbound. The pixel measures (`rect()`, `caretOnFirstLine()` /
+`caretOnLastLine()`, `placeCaretAtX()`) are gone with block's manual cross-row
+caret transport: one editing host moves the caret between rows natively.
 
 ### Commands
 
 All return `false` when unbound or dead: `placeCaret(offset)` (`Infinity` → end;
 on a mark without a text surface any `offset > 0` collapses to the end child
-boundary), `placeCaretAtX(x, y?)`, `focus()`.
+boundary), `focus()`.
 
 ### Lifetime
 

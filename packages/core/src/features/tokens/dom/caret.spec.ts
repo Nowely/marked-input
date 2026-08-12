@@ -38,22 +38,6 @@ describe('caretDom', () => {
 		})
 	})
 
-	describe('isOnFirstLine', () => {
-		it('returns true when no caret rect', () => {
-			vi.spyOn(window, 'getSelection').mockReturnValue(null)
-			const el = document.createElement('div')
-			expect(caretDom.isOnFirstLine(el)).toBe(true)
-		})
-	})
-
-	describe('isOnLastLine', () => {
-		it('returns true when no caret rect', () => {
-			vi.spyOn(window, 'getSelection').mockReturnValue(null)
-			const el = document.createElement('div')
-			expect(caretDom.isOnLastLine(el)).toBe(true)
-		})
-	})
-
 	describe('placeAtTextOffset', () => {
 		it('places caret at character offset within a single text node', () => {
 			const el = document.createElement('span')

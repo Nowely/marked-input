@@ -1,6 +1,7 @@
 import {describe, it, expect} from 'vitest'
 
 import {Store} from '../../store/Store'
+import {createRowContent} from '../block/createRowContent'
 import {mountBlock} from '../tokens/__testing__/mountFixtures'
 
 /**
@@ -13,10 +14,10 @@ describe('blockEdit row identity', () => {
 		const {store, container} = mountBlock()
 		const second = store.tokens.nodes()[1]
 		store.tokens.selection.selectNode(second, 'end')
-		// Applying the stored anchor to the DOM focuses the row (an N-host artifact:
-		// the row is a real tabindex target). Blur it so activeElement sits on
-		// <body> — the one-host shape this fix has to work under — while the
-		// underlying DOM Range stays put, live for domAnchors() to read.
+		// Applying the stored anchor focuses the EDITING HOST — the container, since no row
+		// carries a tabindex any more. Blur it so activeElement sits on <body> while the
+		// underlying DOM Range stays put, live for domAnchors() to read: row identity has
+		// no focus tier left to fall back on.
 		if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
 
 		container.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true}))
@@ -36,6 +37,59 @@ describe('blockEdit row identity', () => {
 		container.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true}))
 
 		expect(store.tokens.value()).toBe('one\n\ntwo\n\n\n\n')
+	})
+
+	it('Arrow keys in block mode are left to the browser (no preventDefault)', () => {
+		// One host makes cross-row caret movement NATIVE: the caret walks out of a row the
+		// way it walks out of any inline element, so nothing may cancel an arrow keydown.
+		// Row 0's END is where the deleted Right/Down branches fired.
+		const {store, container} = mountBlock()
+		const first = store.tokens.nodes()[0]
+		store.tokens.selection.selectNode(first, 'end')
+
+		for (const key of ['ArrowRight', 'ArrowDown']) {
+			const event = new KeyboardEvent('keydown', {key, bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+			expect(event.defaultPrevented).toBe(false)
+		}
+		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
+	})
+
+	it('Arrow keys at a row START are left to the browser too', () => {
+		// The mirror: the deleted Left/Up branches fired at offset 0 of a row with a
+		// predecessor, which the case above never reaches.
+		const {store, container} = mountBlock()
+		const second = store.tokens.nodes()[1]
+		store.tokens.selection.selectNode(second, 'start')
+
+		for (const key of ['ArrowLeft', 'ArrowUp']) {
+			const event = new KeyboardEvent('keydown', {key, bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+			expect(event.defaultPrevented).toBe(false)
+		}
+		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
+	})
+
+	it('select-all + Enter replaces everything with one fresh row', () => {
+		const {store, container} = mountBlock()
+		store.tokens.selection.selectAll()
+
+		const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe(createRowContent(store.props.options()))
+
+		// The caret is INSIDE the fresh row, not merely at document offset 0: the anchor
+		// names the row's own slot text node.
+		const row = store.tokens.nodes()[0]
+		if (row.kind !== 'mark') throw new Error('expected a mark row')
+		const slot = row.children()[0]
+		const anchor = store.tokens.selection.anchors()?.anchor
+		if (!anchor || typeof anchor === 'string' || !('node' in anchor)) throw new Error('expected a node anchor')
+		expect(anchor.node).toBe(slot)
+		expect(anchor.offset).toBe(0)
+		expect(slot.kind).toBe('text')
 	})
 
 	it('does nothing when there is no selection anywhere', () => {
@@ -176,6 +230,20 @@ describe('blockEdit control guard', () => {
 
 		expect(event.defaultPrevented).toBe(false)
 		expect(store.tokens.nodes().length).toBe(2)
+	})
+
+	it('ignores Enter targeting a control even with everything selected', () => {
+		// The all-selected arm replaces the whole document, so it must sit BEHIND the
+		// control verdict — same precedence `input.ts` gives `isConsumerOrigin`.
+		const {store, control} = mountBlockWithControl(0)
+		store.tokens.selection.selectAll()
+		control.focus()
+
+		const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true})
+		control.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
 	})
 
 	it('leaves a control root its own beforeinput even with a row selection stored', () => {

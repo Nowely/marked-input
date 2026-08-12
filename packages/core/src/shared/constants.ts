@@ -4,8 +4,6 @@ import type {CoreOption} from './types'
 export const KEYBOARD = {
 	UP: 'ArrowUp',
 	DOWN: 'ArrowDown',
-	LEFT: 'ArrowLeft',
-	RIGHT: 'ArrowRight',
 	END: 'End',
 	HOME: 'Home',
 	PAGE_DOWN: 'PageDown',

@@ -1,14 +1,6 @@
 import {effect} from '../../../shared/signals/index.js'
 import type {TreeNode} from '../tree/types'
-import {
-	focusEditingHost,
-	getCaretIndex,
-	isOnFirstLine,
-	isOnLastLine,
-	placeAtParentBoundary,
-	placeAtTextOffset,
-	setAtX,
-} from './caret'
+import {focusEditingHost, getCaretIndex, placeAtParentBoundary, placeAtTextOffset} from './caret'
 import {textLength} from './textOffsets'
 
 /** DOM bindings of a live node — set by bind, cleared on unbind/kill. */
@@ -95,20 +87,6 @@ export class TokenHandle {
 		return scope ? getCaretIndex(scope) : undefined
 	}
 
-	caretOnFirstLine(): boolean {
-		const scope = this.#measureScope()
-		return scope ? isOnFirstLine(scope) : true
-	}
-
-	caretOnLastLine(): boolean {
-		const scope = this.#measureScope()
-		return scope ? isOnLastLine(scope) : true
-	}
-
-	rect(): DOMRect | undefined {
-		return this.#measureScope()?.getBoundingClientRect()
-	}
-
 	/**
 	 * Place a collapsed caret at a character offset (Infinity → end).
 	 * On tokens without a text surface any offset > 0 collapses to the boundary
@@ -133,14 +111,6 @@ export class TokenHandle {
 		focusEditingHost(textElement)
 		const length = textLength(textElement)
 		placeAtTextOffset(textElement, Number.isFinite(offset) ? Math.max(0, Math.min(offset, length)) : length)
-		return true
-	}
-
-	/** Place caret at viewport x (and optional y) within this token's scope. */
-	placeCaretAtX(x: number, y?: number): boolean {
-		const scope = this.#measureScope()
-		if (!scope) return false
-		setAtX(scope, x, y)
 		return true
 	}
 

@@ -185,13 +185,6 @@ describe('TokenHandle', () => {
 
 			expect(handle.placeCaret(3)).toBe(true)
 			expect(handle.caretIndex()).toBe(3)
-			expect(handle.caretOnFirstLine()).toBe(true)
-			expect(handle.caretOnLastLine()).toBe(true)
-
-			const rect = handle.rect()
-			const spanRect = span.getBoundingClientRect()
-			expect(rect?.left).toBe(spanRect.left)
-			expect(rect?.width).toBe(spanRect.width)
 		})
 
 		it('prefers the row element as the measurement scope', () => {
@@ -208,8 +201,8 @@ describe('TokenHandle', () => {
 			const handle = new TokenHandle(1)
 			handle.bindElements({tokenElement: span, textElement: span, rowElement: row}, textNodeOf('hello'))
 
+			// 6, not 5: the scope is the ROW, so the sibling's text counts too.
 			expect(handle.textLength()).toBe(6)
-			expect(handle.rect()?.width).toBe(row.getBoundingClientRect().width)
 		})
 
 		it('returns inert defaults when nothing is bound', () => {
@@ -218,9 +211,6 @@ describe('TokenHandle', () => {
 			expect(handle.hasTextSurface()).toBe(false)
 			expect(handle.textLength()).toBe(0)
 			expect(handle.caretIndex()).toBeUndefined()
-			expect(handle.rect()).toBeUndefined()
-			expect(handle.caretOnFirstLine()).toBe(true)
-			expect(handle.caretOnLastLine()).toBe(true)
 		})
 	})
 
@@ -229,7 +219,6 @@ describe('TokenHandle', () => {
 			const handle = new TokenHandle(1)
 
 			expect(handle.placeCaret(0)).toBe(false)
-			expect(handle.placeCaretAtX(10, 10)).toBe(false)
 			expect(handle.focus()).toBe(false)
 		})
 
@@ -309,17 +298,6 @@ describe('TokenHandle', () => {
 			expect(handle.focus()).toBe(true)
 			expect(document.activeElement).toBe(container)
 		})
-
-		it('placeCaretAtX resolves a viewport point inside the scope', () => {
-			const {span} = mountSurface('hello')
-			const handle = new TokenHandle(1)
-			handle.bindElements({tokenElement: span, textElement: span}, textNodeOf('hello'))
-
-			const rect = span.getBoundingClientRect()
-			expect(handle.placeCaretAtX(rect.left + 2, rect.top + rect.height / 2)).toBe(true)
-			const selection = window.getSelection()
-			expect(selection?.anchorNode && span.contains(selection.anchorNode)).toBe(true)
-		})
 	})
 
 	describe('dead contract', () => {
@@ -342,7 +320,6 @@ describe('TokenHandle', () => {
 
 			// Commands no-op false, measurements collapse to their unbound defaults.
 			expect(handle.placeCaret(0)).toBe(false)
-			expect(handle.placeCaretAtX(0)).toBe(false)
 			expect(handle.focus()).toBe(false)
 			expect(handle.textLength()).toBe(0)
 			expect(handle.caretIndex()).toBeUndefined()
