@@ -37,7 +37,7 @@ export const Markdown: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 	args: {
 		Mark: MarkdownMark,
 		options: markdownOptions,
-		value: DRAG_MARKDOWN,
+		defaultValue: DRAG_MARKDOWN,
 		layout: 'block',
 		draggable: true,
 	},

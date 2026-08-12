@@ -13,7 +13,7 @@ export default {
 export const Tagged: StoryObj<MarkedInputProps<TagProps>> = {
 	args: {
 		Mark: Tag as ComponentType<TagProps>,
-		value: `We preset five different colors. You can set color property such as @(success), @(processing), @(error), @(default) and @(warning) to show specific status.`,
+		defaultValue: `We preset five different colors. You can set color property such as @(success), @(processing), @(error), @(default) and @(warning) to show specific status.`,
 		options: [
 			{
 				markup: '@(__value__)',

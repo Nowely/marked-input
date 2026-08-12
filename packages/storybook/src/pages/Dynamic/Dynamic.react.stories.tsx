@@ -19,7 +19,7 @@ const Mark = () => {
 export const Dynamic: Story = {
 	args: {
 		Mark,
-		value: 'Hello, dynamical mark @[world]( )!',
+		defaultValue: 'Hello, dynamical mark @[world]( )!',
 	},
 }
 
@@ -32,7 +32,7 @@ export const Removable: Story = {
 	parameters: {docs: {disable: true}},
 	args: {
 		Mark: RemovableMark,
-		value: 'I @[contain]( ) @[removable]( ) by click @[marks]( )!',
+		defaultValue: 'I @[contain]( ) @[removable]( ) by click @[marks]( )!',
 	},
 }
 

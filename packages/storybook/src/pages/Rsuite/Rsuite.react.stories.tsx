@@ -72,7 +72,7 @@ export const TaggedInput: StoryObj<MarkedInputProps<TagProps>> = {
 		// oxlint-disable-next-line no-unsafe-type-assertion
 		Mark: Tag as ComponentType<TagProps>,
 		Overlay,
-		value: initialState,
+		defaultValue: initialState,
 		className: 'rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag',
 		style: {
 			minHeight: 36,

@@ -24,7 +24,7 @@ const initialValue = 'Hello beautiful the @[first](outlined:1) world from the @[
 export const Chipped: StoryObj<MarkedInputProps<ChipProps>> = {
 	args: {
 		Mark: Chip as ComponentType<ChipProps>,
-		value: initialValue,
+		defaultValue: initialValue,
 		options: [
 			{
 				markup: '@[__value__](outlined:__meta__)',
