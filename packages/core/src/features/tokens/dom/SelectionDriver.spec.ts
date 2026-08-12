@@ -178,6 +178,29 @@ describe('SelectionDriver', () => {
 			container.remove()
 		})
 
+		it('a selectionchange that lands wholly OUTSIDE the container clears the stored anchors', () => {
+			// THE `clear()` arm of `syncIfInEditor`, and the only case that gates it: `handleAt`
+			// answers `undefined` for a node the container does not contain, which is the
+			// "outside" verdict. Distinct from the `focusout` clear ('focus leaving the
+			// container clears the stored anchors') — focus never moves here, the SELECTION
+			// does, which is what a click into surrounding page text does while the editor
+			// keeps focus. Neutering the arm to a bare `return` turns
+			// this case red; the two half-outside/undefined exits keep their anchors.
+			const {store, container} = mountStructuralInlineMark('ab@[x]cd')
+			const outside = document.createElement('div')
+			outside.append(document.createTextNode('elsewhere'))
+			document.body.append(outside)
+			store.tokens.selection.select({node: textRoot(store), offset: 1})
+			expect(store.tokens.selection.anchors()).toBeDefined()
+
+			putCaret(outside.firstChild!, 3)
+			document.dispatchEvent(new Event('selectionchange'))
+
+			expect(store.tokens.selection.anchors()).toBeUndefined()
+			outside.remove()
+			container.remove()
+		})
+
 		it('a half-outside range leaves the stored anchors standing', () => {
 			// THE surviving exit (spec S2 D4): `anchorFor` answering `undefined` means "the DOM
 			// cannot be read here", not "nothing is selected" — the previous anchors stay and

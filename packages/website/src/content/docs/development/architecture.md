@@ -313,7 +313,7 @@ class Store {
     readonly edit:      EditController     // replace(from, to, text) / setValue(text, caretOffset?) — single batched write path
     readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops
     readonly overlay:   OverlayController  // match, element, slot, select, close
-    readonly keyboard:  KeyboardController // input, block editing, arrow navigation
+    readonly keyboard:  KeyboardController // input handling and block editing
     readonly block:     BlockController    // block drag actions and operation helpers
     readonly clipboard: ClipboardController // copy/cut handling
     readonly api:       MarkputApi         // the imperative verbs (insertMark, replaceRange, …)
@@ -355,11 +355,11 @@ Signal subscription order is significant: inside its constructor `onMounted` hoo
 | **TokenModel**                | Parsing, the token tree, the selection (state + DOM driver), live node map (id-keyed), one commit pipeline, DOM↔model facade, adapter ref registries — see `features/tokens/README.md` |
 | **OverlayController**         | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution, mark resolver |
-| **KeyboardController**        | Text input, block editing, arrow navigation               |
+| **KeyboardController**        | Text input and block editing                             |
 | **BlockController**           | Drag-and-drop block reordering and operation helpers     |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
-`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. The selection is not a feature of its own: `store.tokens.selection` is the stored anchor pair (see below).
+`KeyboardController` internally composes two modules: `enableInput` (the `beforeinput` guard, paste, the delete keys and Ctrl/Cmd+A) and `enableBlockEdit` (row split, merge and delete in block layout). Caret navigation is the browser's: the container is the one editing host, so arrows and Home/End move natively and no core keyboard handler intercepts them. (The adapters' `Suggestions` component does claim ArrowUp/ArrowDown/Enter while the overlay is open — see `navigateSuggestions`.) The selection is not a feature of its own: `store.tokens.selection` is the stored anchor pair (see below).
 
 ## Lifecycle Timing
 
@@ -376,9 +376,10 @@ React/Vue render asynchronously, so initialization order matters:
 //    first inside its onMounted hook, so tokens.nodes() reflects the new value
 //    before any other onMounted watcher observes it.
 
-// 3. Sync contenteditable attributes (layout effect)
+// 3. Sync the one-host topology (layout effect)
 //    → TokenModel's commit pipeline runs its first bind: walks the DOM, creates
-//      TokenHandle instances, writes contentEditable / tabIndex, and arms one
+//      TokenHandle instances, applies the editable state (bare text surfaces,
+//      ce=false value marks and mark chrome, no tabindex anywhere), and arms one
 //      text effect per bound text surface (which writes its textContent)
 
 // 4. Framework emits store.host.rendered() after tokens render

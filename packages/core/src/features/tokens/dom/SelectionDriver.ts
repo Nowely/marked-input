@@ -86,12 +86,11 @@ export class SelectionDriver {
 	 * `undefined` for BOTH "no window selection" and "a boundary this layer cannot
 	 * resolve", and no caller tells them apart.
 	 *
-	 * S2.5 REVIEWED the fold against the four consumers it converted (`keyboard/input.ts`,
-	 * `keyboard/blockEdit.ts`, `ClipboardController`; `keyboard/arrowNav.ts` was the fourth,
-	 * deleted with the one-host migration) and kept it:
-	 * every one of them bails on both reasons alike, because both mean "the caret's position
-	 * is unknown". What they DO need apart is collapsed-ness, and that is an `anchorEquals`
-	 * comparison on the answer, not a second `undefined`.
+	 * S2.5 REVIEWED the fold against its consumers (`keyboard/input.ts`,
+	 * `keyboard/blockEdit.ts`, `ClipboardController`) and kept it: every one of them bails on
+	 * both reasons alike, because both mean "the caret's position is unknown". What they DO
+	 * need apart is collapsed-ness, and that is an `anchorEquals` comparison on the answer,
+	 * not a second `undefined`.
 	 */
 	domAnchors(): Anchors | undefined {
 		const range = this.deps.domSelection()?.range

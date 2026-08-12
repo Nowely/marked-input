@@ -1,39 +1,27 @@
 import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
-import {selectionRange} from '../tokens/__testing__/mountFixtures'
+import {
+	mountStructuralInline,
+	mountStructuralInlineMark,
+	mountWithMark,
+	selectionRange,
+} from '../tokens/__testing__/mountFixtures'
 
-function mountStructuralInline(value = 'hello') {
-	const store = new Store()
-	store.props.set({defaultValue: value})
-	const container = document.createElement('div')
-	const textSurface = document.createElement('span')
-	container.append(textSurface)
-	document.body.append(container)
-	store.host.container(container)
-	store.host.rendered()
-	const textNode = textSurface.firstChild
-	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
-	return {store, container, textSurface, textNode}
-}
-
+/**
+ * A consumer's own editable island inside a mark — the shape the guard must neither edit
+ * nor cancel. Built on the shared empty-mark fixture, which exists for exactly this: the
+ * island is presentation the adapter rendered, and `bind` gives a mark no text surface, so
+ * hanging it off the mark after the mount binds the same state as building it before.
+ */
 function mountStructuralMarkWithDescendant(value = '@[world]', editableSpelling = 'true') {
-	const store = new Store()
-	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: '@[__value__]'}]})
-	const container = document.createElement('div')
-	const before = document.createElement('span')
-	const mark = document.createElement('mark')
-	const after = document.createElement('span')
+	const {store, container, mark} = mountStructuralInlineMark(value)
 	const descendant = document.createElement('span')
 	// The ATTRIBUTE, in the consumer's own spelling — Chromium normalizes '' and 'TRUE'
 	// to the `contentEditable` property value 'true', which is what the guard reads.
 	descendant.setAttribute('contenteditable', editableSpelling)
 	descendant.textContent = 'inner'
 	mark.append(descendant)
-	container.append(before, mark, after)
-	document.body.append(container)
-	store.host.container(container)
-	store.host.rendered()
 	const descendantText = descendant.firstChild
 	if (!(descendantText instanceof Text)) throw new Error('Structural mark descendant did not render a text node')
 	return {store, container, descendantText}
@@ -69,7 +57,7 @@ function inputEvent(inputType: string, range: Range, init?: InputEventInit): Inp
 
 describe('handleBeforeInput()', () => {
 	it('inserts text at the target range resolved as anchors', () => {
-		const {store, container, textNode} = mountStructuralInline()
+		const {store, container, textNode} = mountStructuralInline('hello')
 		const replace = vi.spyOn(store.edit, 'replace')
 		const node = store.tokens.nodes()[0]
 		const range = document.createRange()
@@ -112,7 +100,7 @@ describe('handleBeforeInput()', () => {
 		// Enter now HAS a replacement ('\n', pinned below), so the unhandled type this
 		// case needs is one the guard cannot express at all — and under one host it is
 		// dropped rather than let through.
-		const {store, container} = mountStructuralInline()
+		const {store, container} = mountStructuralInline('hello')
 		store.tokens.selection.selectAll()
 		expect(store.tokens.selection.isAllSelected()).toBe(true)
 		const event = new InputEvent('beforeinput', {inputType: 'formatBold', bubbles: true, cancelable: true})
@@ -125,7 +113,7 @@ describe('handleBeforeInput()', () => {
 	})
 
 	it('replaces the whole value with a newline on Enter with everything selected', () => {
-		const {store, container} = mountStructuralInline()
+		const {store, container} = mountStructuralInline('hello')
 		store.tokens.selection.selectAll()
 		const event = new InputEvent('beforeinput', {inputType: 'insertParagraph', bubbles: true, cancelable: true})
 
@@ -308,7 +296,7 @@ describe('handleBeforeInput()', () => {
 	})
 
 	it('still replaces the whole value on insertText with everything selected', () => {
-		const {store, container} = mountStructuralInline()
+		const {store, container} = mountStructuralInline('hello')
 		store.tokens.selection.selectAll()
 		const event = new InputEvent('beforeinput', {
 			inputType: 'insertText',
@@ -325,7 +313,7 @@ describe('handleBeforeInput()', () => {
 	})
 
 	it('still clears the whole value on a delete input type with everything selected', () => {
-		const {store, container} = mountStructuralInline()
+		const {store, container} = mountStructuralInline('hello')
 		store.tokens.selection.selectAll()
 		const event = new InputEvent('beforeinput', {
 			inputType: 'deleteContentBackward',
@@ -350,23 +338,7 @@ describe('handleBeforeInput()', () => {
 	 * where either one alone would only pin "some mark got deleted".
 	 */
 	describe('mark swallow', () => {
-		function mountMarkFixture() {
-			const store = new Store()
-			store.props.set({defaultValue: 'he@[x]llo', Mark: () => null, options: [{markup: '@[__value__]'}]})
-			const container = document.createElement('div')
-			const head = document.createElement('span')
-			head.append(document.createTextNode('he'))
-			const mark = document.createElement('span')
-			mark.append(document.createTextNode('x'))
-			const tail = document.createElement('span')
-			tail.append(document.createTextNode('llo'))
-			container.append(head, mark, tail)
-			document.body.append(container)
-			store.host.container(container)
-			store.host.rendered()
-			return {store, container, head, tail}
-		}
-
+		/** Collapse the window selection onto one DOM boundary — the caret a delete key reads. */
 		function caretAt(node: Node, offset: number) {
 			const selection = window.getSelection()
 			if (!selection) throw new Error('no window selection')
@@ -378,8 +350,10 @@ describe('handleBeforeInput()', () => {
 		}
 
 		it('Backspace right AFTER a mark deletes the mark', () => {
-			const {store, container, tail} = mountMarkFixture()
-			caretAt(tail.firstChild!, 0)
+			// 'he@[x]llo' — the text surfaces mount empty and the per-node text effect fills
+			// them at bind, so `text2.firstChild` is the 'llo' node the caret needs.
+			const {store, container, text2} = mountWithMark()
+			caretAt(text2.firstChild!, 0)
 
 			container.dispatchEvent(new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true}))
 
@@ -388,8 +362,8 @@ describe('handleBeforeInput()', () => {
 		})
 
 		it('Delete right BEFORE a mark deletes the mark', () => {
-			const {store, container, head} = mountMarkFixture()
-			caretAt(head.firstChild!, 2)
+			const {store, container, text1} = mountWithMark()
+			caretAt(text1.firstChild!, 2)
 
 			container.dispatchEvent(new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true}))
 
@@ -410,7 +384,7 @@ describe('handleBeforeInput()', () => {
 	 */
 	describe('handleDeleteKey()', () => {
 		it('clears the whole value on Backspace with everything selected', () => {
-			const {store, container} = mountStructuralInline()
+			const {store, container} = mountStructuralInline('hello')
 			store.tokens.selection.selectAll()
 
 			const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
@@ -424,7 +398,7 @@ describe('handleBeforeInput()', () => {
 		it('clears the whole value even when the DOM selection is gone', () => {
 			// THE discriminating case (see the note above): the only one that fails when the
 			// all-selected branch is deleted.
-			const {store, container} = mountStructuralInline()
+			const {store, container} = mountStructuralInline('hello')
 			store.tokens.selection.selectAll()
 			window.getSelection()?.removeAllRanges()
 

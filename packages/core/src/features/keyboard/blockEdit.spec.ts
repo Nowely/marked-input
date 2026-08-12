@@ -164,8 +164,8 @@ describe('blockEdit beforeinput guard', () => {
 	})
 
 	it('drops an edit that resolves NO row instead of letting the browser split the host', () => {
-		// The row is unresolvable from every tier (no stored selection, no DOM range, no
-		// focused token), yet the event still targets model-owned DOM: `handleEnter` bails
+		// The row is unresolvable from both tiers (no DOM range, no stored selection), yet
+		// the event still targets model-owned DOM: `handleEnter` bails
 		// on the same missing row and `input.ts` returned on `isBlock`, so this guard is
 		// the last one standing.
 		const {store, rows} = mountBlock()

@@ -354,10 +354,16 @@ emit `text`/`moved`/`unmounted`. Consumers detect change through the model's
 
 ### Measurement (over the bound elements, row scope in block layout)
 
-`hasTextSurface()`, `textLength()`, `caretIndex()` — inert defaults when
-unbound. The pixel measures (`rect()`, `caretOnFirstLine()` /
-`caretOnLastLine()`, `placeCaretAtX()`) are gone with block's manual cross-row
-caret transport: one editing host moves the caret between rows natively.
+Three reads, all answering an inert default when the handle is unbound:
+
+- `hasTextSurface()` — whether this token bound a text surface (`false` unbound).
+- `textLength()` — the text length of the scope (`0` unbound).
+- `caretIndex()` — the caret offset within the scope, `undefined` unbound. Only
+  meaningful while the selection is inside that scope; the helper answers `0`
+  when there is no selection at all.
+
+No pixel measures: the caret moves between rows natively under the one editing
+host, so nothing here reads geometry.
 
 ### Commands
 

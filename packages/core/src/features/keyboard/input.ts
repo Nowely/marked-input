@@ -25,9 +25,9 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 	)
 
 	listen(container, 'keydown', e => {
-		// Layout-independent, unlike the arrowNav binding it came from: selecting the whole
-		// value is a model operation, and block rows are values too. A control root keeps
-		// its own select-all, though — that keystroke belongs to the consumer's chrome.
+		// Layout-independent on purpose: selecting the whole value is a model operation, and
+		// block rows are values too. A control root keeps its own select-all, though — that
+		// keystroke belongs to the consumer's chrome.
 		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
 			const target = nodeTarget(e)
 			if (target && store.tokens.handleAt(target) === 'control') return
