@@ -88,6 +88,17 @@ function editOrigin(event: InputEvent): Node | undefined {
 function anchorsFromTargetRange(store: KbCtx, range: StaticRange): Anchors | undefined {
 	const anchor = store.tokens.anchorFor(range.startContainer, range.startOffset, 'after')
 	if (!anchor) return undefined
+	// ONE READ for a collapsed target range, for {@link SelectionDriver.domAnchors}'s reason:
+	// the opposite affinities exist to make the ENDS of a span lean inward, so read twice
+	// against a SINGLE boundary they answer two NAMES for one position — `{before: the next
+	// token}` and `{after: the previous one}`. Every collapsed test downstream is
+	// `anchorEquals`, so that pair reads as a RANGE: `anchorsForDelete` skips the mark swallow
+	// and replaces the zero-length span between the two names, which deletes NOTHING after
+	// the guard has already cancelled the browser's own delete.
+	//
+	// Reachable since a caret between two atomics became a CONTAINER boundary, whose two sides
+	// are different nodes — Chromium's own delete target ranges are container-anchored there.
+	if (range.collapsed) return {anchor, head: anchor}
 	const head = store.tokens.anchorFor(range.endContainer, range.endOffset, 'before')
 	if (!head) return undefined
 	return {anchor, head}

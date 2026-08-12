@@ -4,6 +4,7 @@ import {Store} from '../../store/Store'
 import {
 	mountStructuralInline,
 	mountStructuralInlineMark,
+	mountValue,
 	mountWithMark,
 	selectionRange,
 } from '../tokens/__testing__/mountFixtures'
@@ -44,6 +45,36 @@ function mountInlineWithControl(value = 'hello') {
 	return {store, container, controlInput}
 }
 
+/**
+ * Two ADJACENT marks. The parser puts an EMPTY text token between them and every adapter
+ * renders its bare span, so the container children are [text, mark, GAP, mark, text] and the
+ * boundary between the two marks is the CONTAINER offset 2. MEASURED in Chromium (react demo
+ * app, real keys): one ArrowRight off the end of the preceding text stops exactly there, and
+ * the raw `selectionchange` reports `DIV(host):2` before the driver re-places it.
+ */
+function mountAdjacentMarks() {
+	return mountValue('a@[m1](1)@[m2](2)b', {options: [{markup: '@[__value__](__meta__)'}], Mark: () => null})
+}
+
+/** Collapse the window selection onto one DOM boundary and hand back the range it made. */
+function selectBoundary(node: Node, offset: number): Range {
+	const selection = window.getSelection()
+	if (!selection) throw new Error('no window selection')
+	const range = document.createRange()
+	range.setStart(node, offset)
+	range.collapse(true)
+	selection.removeAllRanges()
+	selection.addRange(range)
+	return range
+}
+
+/** The live caret as the browser would hand it to `getTargetRanges()` on the next keystroke. */
+function liveCaretRange(): Range {
+	const selection = window.getSelection()
+	if (!selection?.rangeCount) throw new Error('no window selection')
+	return selection.getRangeAt(0)
+}
+
 function inputEvent(inputType: string, range: Range, init?: InputEventInit): InputEvent {
 	const event = new InputEvent('beforeinput', {
 		inputType,
@@ -73,6 +104,26 @@ describe('handleBeforeInput()', () => {
 		// The DOM boundary resolves to the LIVE node, not to the number 1 (spec S2 §4.5).
 		expect(replace).toHaveBeenCalledWith({node, offset: 1}, {node, offset: 1}, 'x')
 		expect(selectionRange(store)).toEqual({start: 2, end: 2})
+		container.remove()
+	})
+
+	it('types two characters into the EMPTY token addressed by a container boundary', () => {
+		// The one-host sweep's gap case, end to end: caret at the boundary between two
+		// adjacent marks (container offset 2), then two keystrokes. Both must land in the
+		// empty token between the marks, and the second one only can if the post-commit
+		// caret names that same (now non-empty) node — its id survives adoption, which pairs
+		// it with the parsed 'X' token in the middle region.
+		const {store, container} = mountAdjacentMarks()
+		const gap = store.tokens.nodes()[2]
+		container.dispatchEvent(inputEvent('insertText', selectBoundary(container, 2), {data: 'X'}))
+		expect(store.tokens.value()).toBe('a@[m1](1)X@[m2](2)b')
+
+		// The SECOND keystroke reads the caret the commit left, exactly as the browser does.
+		container.dispatchEvent(inputEvent('insertText', liveCaretRange(), {data: 'Y'}))
+
+		expect(store.tokens.value()).toBe('a@[m1](1)XY@[m2](2)b')
+		expect(store.tokens.nodes()[2]).toBe(gap)
+		expect(selectionRange(store)).toEqual({start: 11, end: 11})
 		container.remove()
 	})
 
@@ -368,6 +419,27 @@ describe('handleBeforeInput()', () => {
 			container.dispatchEvent(new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true}))
 
 			expect(store.tokens.value()).toBe('hello')
+			container.remove()
+		})
+
+		it('swallows the mark when the delete target range is a COLLAPSED container boundary', () => {
+			// The caret between two adjacent marks is a CONTAINER boundary, and Chromium's own
+			// delete target ranges are anchored there. Read with both affinities that one
+			// boundary answers `{before: the gap token}` and `{after: the first mark}` — two
+			// names, one position — and `anchorsForDelete`'s collapsed test is `anchorEquals`,
+			// so the caret used to read as a RANGE: no swallow, an empty replace, and the
+			// keystroke lost to the guard's own `preventDefault`.
+			//
+			// The keydown path does NOT discriminate this: it resolves through
+			// `domAnchors()`, which has always collapsed the pair.
+			const {store, container} = mountAdjacentMarks()
+			const range = selectBoundary(container, 2)
+			const event = inputEvent('deleteContentBackward', range)
+
+			container.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('a@[m2](2)b')
 			container.remove()
 		})
 	})
