@@ -1,6 +1,8 @@
 import {expect} from 'vitest'
 import {userEvent} from 'vitest/browser'
 
+import {editingHost} from './dom'
+
 function setCaretPosition(element: HTMLElement, offset: number) {
 	const range = document.createRange()
 	const selection = window.getSelection()
@@ -30,10 +32,15 @@ function setCaretPosition(element: HTMLElement, offset: number) {
 	selection.addRange(range)
 }
 
+/**
+ * Focus is asserted on the EDITING HOST, not on `element`: under the single-host topology
+ * the container owns `contenteditable`, and text spans, mark roots and block rows are all
+ * plain content inside it. The caret — verified below — is what says where we are.
+ */
 export async function focusAtStart(element: HTMLElement) {
 	await userEvent.click(element)
 	setCaretPosition(element, 0)
-	await expect.element(element).toHaveFocus()
+	await expect.element(editingHost(element)).toHaveFocus()
 
 	verifyCaretPosition(element, 0)
 }
@@ -42,7 +49,7 @@ export async function focusAtEnd(element: HTMLElement) {
 	await userEvent.click(element)
 	const textLength = element.textContent.length
 	setCaretPosition(element, textLength)
-	await expect.element(element).toHaveFocus()
+	await expect.element(editingHost(element)).toHaveFocus()
 
 	verifyCaretPosition(element, textLength)
 }
@@ -50,7 +57,7 @@ export async function focusAtEnd(element: HTMLElement) {
 export async function focusAtOffset(element: HTMLElement, offset: number) {
 	await userEvent.click(element)
 	setCaretPosition(element, offset)
-	await expect.element(element).toHaveFocus()
+	await expect.element(editingHost(element)).toHaveFocus()
 
 	verifyCaretPosition(element, offset)
 }

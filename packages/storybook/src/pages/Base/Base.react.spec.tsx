@@ -6,7 +6,7 @@ import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
-import {getElement} from '../../shared/lib/dom'
+import {caretIsInside, editingHost, findEditingHost, getElement, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as DynamicStories from '../Dynamic/Dynamic.react.stories'
 import * as BaseStories from './Base.react.stories'
@@ -51,23 +51,19 @@ function ControlledRemovableNoEcho({onChange}: {onChange: (value: string) => voi
 	return <MarkedInput Mark={RemovableMark} value="Hello @[world](1)" onChange={onChange} />
 }
 
-function getMarkFocusTarget(element: Element): HTMLElement {
-	const target = element.closest<HTMLElement>('[tabindex]')
-	if (!target) throw new Error('Expected mark token focus target')
-	return target
-}
-
 describe(`Component: MarkedInput`, () => {
 	it.todo('set readOnly on selection')
 
-	it('renders default text as one editable span', async () => {
+	it('renders default text as one bare span inside the editing host', async () => {
 		const {container} = await render(<Default defaultValue="plain" />)
 		const editor = container.firstElementChild!
-		const editable = container.querySelector<HTMLElement>('span[contenteditable]')!
+		const [surface] = textSurfaces(editor)
 
+		expect(editor).toHaveAttribute('contenteditable', 'true')
 		expect(editor.children).toHaveLength(1)
-		expect(editor.firstElementChild).toBe(editable)
-		expect(editable).toHaveTextContent('plain')
+		expect(editor.firstElementChild).toBe(surface)
+		expect(surface).not.toHaveAttribute('contenteditable')
+		expect(surface).toHaveTextContent('plain')
 	})
 
 	it('renders mark roots without adapter wrappers', async () => {
@@ -79,7 +75,9 @@ describe(`Component: MarkedInput`, () => {
 
 		expect(mark.parentElement).toBe(editor)
 		expect(mark).toHaveTextContent('world')
-		expect(mark.tabIndex).toBe(0)
+		// Atomic by contract, and NOT a tab stop: Tab leaves the field.
+		expect(mark).toHaveAttribute('contenteditable', 'false')
+		expect(mark).not.toHaveAttribute('tabindex')
 	})
 
 	it('preserves option-provided children for flat mark components', async () => {
@@ -110,10 +108,14 @@ describe(`Component: MarkedInput`, () => {
 		)
 
 		await expect.element(page.getByText('Design Phase')).toBeInTheDocument()
-		const textSurface = Array.from(container.querySelectorAll<HTMLElement>('span[contenteditable]')).find(
+		const textSurface = Array.from(container.querySelectorAll<HTMLElement>('span')).find(
 			el => el.textContent === 'Design Phase'
-		)
-		expect(textSurface?.contentEditable).toBe('true')
+		)!
+		// Slot text stays in the ONE host: bare, with the container as its editing host. Only
+		// the mark's own chrome — the checkbox — is frozen non-editable.
+		expect(textSurface).not.toHaveAttribute('contenteditable')
+		expect(editingHost(textSurface)).toBe(container.firstElementChild)
+		expect(getElement(page.getByLabelText('done'))).toHaveAttribute('contenteditable', 'false')
 
 		await userEvent.click(getElement(page.getByLabelText('done')))
 
@@ -122,37 +124,47 @@ describe(`Component: MarkedInput`, () => {
 
 	it('correctly process an annotation type', async () => {
 		const {container} = await render(<Default defaultValue="" />)
-		const span = container.querySelector<HTMLElement>('span[contenteditable]')!
+		const editor = findEditingHost(container)
+		const [span] = textSurfaces(editor)
 
 		await expect.element(span).toBeInTheDocument()
 
-		await userEvent.type(span, '@[[mark](1)')
+		// Typed at the HOST: an empty text token renders a zero-size bare span, which is not
+		// a click target any more — the container is where the caret and the keys land.
+		await userEvent.type(editor, '@[[mark](1)')
 
 		await expect.element(page.getByText('@[mark](1)')).not.toBeInTheDocument()
 		await expect.element(page.getByText('mark')).toBeInTheDocument()
 	})
 
-	it('support ref focusing target', async () => {
+	it('walks the caret across mark tokens with the arrow keys', async () => {
 		const {container} = await render(<Focusable />)
-		const [firstSpan, secondSpan] = container.querySelectorAll<HTMLElement>('span[contenteditable]')
+		const editor = findEditingHost(container)
+		const [firstSpan, secondSpan, thirdSpan] = textSurfaces(editor)
 		const [firstAbbr] = container.querySelectorAll('abbr')
-		const firstAbbrFocusTarget = getMarkFocusTarget(firstAbbr)
-		const firstSpanLength = firstSpan.textContent.length
 
 		await focusAtStart(firstSpan)
-		await expect.element(firstSpan).toHaveFocus()
 
-		await userEvent.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
-		await expect.element(firstAbbrFocusTarget).toHaveFocus()
+		// Marks are atomic and NOT focus targets: crossing one is a single keystroke that
+		// moves the CARET from the position before the mark to the position after it.
+		await userEvent.keyboard(`{ArrowRight>${firstSpan.textContent.length}/}`)
+		expect(caretIsInside(firstSpan)).toBe(true)
+		expect(firstAbbr).toHaveAttribute('contenteditable', 'false')
+
+		await userEvent.keyboard('{ArrowRight}')
+		expect(caretIsInside(secondSpan)).toBe(true)
 
 		await userEvent.keyboard('{ArrowLeft}')
-		await expect.element(firstSpan).toHaveFocus()
+		expect(caretIsInside(firstSpan)).toBe(true)
+
+		await userEvent.keyboard(`{ArrowRight>${secondSpan.textContent.length + 1}/}`)
+		expect(caretIsInside(secondSpan)).toBe(true)
 
 		await userEvent.keyboard('{ArrowRight}')
-		await expect.element(firstAbbrFocusTarget).toHaveFocus()
+		expect(caretIsInside(thirdSpan)).toBe(true)
 
-		await userEvent.keyboard('{ArrowRight}')
-		await expect.element(secondSpan).toHaveFocus()
+		// Focus never moved: the container is the one host for the whole walk.
+		await expect.element(editor).toHaveFocus()
 	})
 
 	it('support remove itself', async () => {
@@ -178,7 +190,7 @@ describe(`Component: MarkedInput`, () => {
 	it('keeps controlled span input unchanged until value is echoed', async () => {
 		const onChange = vi.fn()
 		const {container} = await render(<ControlledNoEcho onChange={onChange} />)
-		const [span] = container.querySelectorAll<HTMLElement>('span[contenteditable]')
+		const [span] = textSurfaces(container.firstElementChild!)
 
 		await focusAtEnd(span)
 		await userEvent.keyboard('!')
@@ -214,7 +226,7 @@ describe(`Component: MarkedInput`, () => {
 				showOverlayOn="selectionChange"
 			/>
 		)
-		const [span] = container.querySelectorAll<HTMLElement>('span[contenteditable]')
+		const [span] = textSurfaces(container.firstElementChild!)
 
 		await focusAtEnd(span)
 		await userEvent.keyboard('{ArrowRight}')
@@ -233,7 +245,7 @@ describe(`Component: MarkedInput`, () => {
 		const span = page.getByText(/hello/i)
 		await focusAtEnd(getElement(span))
 		await userEvent.keyboard('{ArrowRight}')
-		await expect.element(span).toHaveFocus()
+		await expect.element(editingHost(getElement(span))).toHaveFocus()
 
 		await expect.element(page.getByText("I'm here!")).toBeInTheDocument()
 	})

@@ -5,7 +5,7 @@ import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
-import {firstChild, getActiveElement, getElement} from '../../shared/lib/dom'
+import {caretIsInside, firstChild, getElement} from '../../shared/lib/dom'
 import {
 	dispatchInsertText,
 	dispatchPaste,
@@ -383,9 +383,9 @@ describe('Feature: drag rows', () => {
 			await userEvent.click(getElement(page.getByText('Add below')))
 			expect(getAllRows(container)).toHaveLength(6)
 
-			// Focus the new empty row (index 1) and press Backspace
+			// Put the caret in the new empty row (index 1) and press Backspace
 			const newRow = getAllRows(container)[1]
-			newRow.focus()
+			await focusAtStart(newRow)
 			await userEvent.keyboard('{Backspace}')
 
 			expect(getAllRows(container)).toHaveLength(5)
@@ -401,14 +401,14 @@ describe('Feature: drag rows', () => {
 		})
 	})
 
-	it('focus the new empty row after Add below', async () => {
+	it('put the caret in the new empty row after Add below', async () => {
 		const {container} = await render(<UncontrolledPlainTextDrag />)
 		await openMenuForRow(container, 0)
 		await userEvent.click(getElement(page.getByText('Add below')))
 
-		const activeEl = getActiveElement()
-		expect(activeEl).not.toBeNull()
-		expect(activeEl?.closest('[class*="Container"]')).toBeTruthy()
+		// `activeElement` is the container for every row now, so row identity is a question
+		// only the selection can answer.
+		expect(caretIsInside(getAllRows(container)[1])).toBe(true)
 	})
 
 	it('split row at caret when pressing Enter at the beginning', async () => {
@@ -461,7 +461,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtStart(getEditableInRow(rows[1]))
 			await userEvent.keyboard('{ArrowLeft}')
 
-			expect(rows[0].contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(rows[0])).toBe(true)
 		})
 
 		it('not cross to previous row when caret is mid-row', async () => {
@@ -471,7 +471,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtEnd(getEditableInRow(rows[1]))
 			await userEvent.keyboard('{ArrowLeft}')
 
-			expect(rows[1].contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(rows[1])).toBe(true)
 		})
 
 		it('not cross row boundary from the first row', async () => {
@@ -481,7 +481,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtStart(getEditableInRow(rows[0]))
 			await userEvent.keyboard('{ArrowLeft}')
 
-			expect(rows[0].contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(rows[0])).toBe(true)
 		})
 	})
 
@@ -493,7 +493,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtEnd(getEditableInRow(rows[0]))
 			await userEvent.keyboard('{ArrowRight}')
 
-			expect(rows[1].contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(rows[1])).toBe(true)
 		})
 
 		it('not cross to next row when caret is mid-row', async () => {
@@ -503,7 +503,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtStart(getEditableInRow(rows[0]))
 			await userEvent.keyboard('{ArrowRight}')
 
-			expect(rows[0].contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(rows[0])).toBe(true)
 		})
 
 		it('not cross row boundary from the last row', async () => {
@@ -514,7 +514,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtEnd(getEditableInRow(last))
 			await userEvent.keyboard('{ArrowRight}')
 
-			expect(last.contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(last)).toBe(true)
 		})
 	})
 
@@ -526,7 +526,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtEnd(getEditableInRow(rows[0]))
 			await userEvent.keyboard('{ArrowDown}')
 
-			expect(rows[1].contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(rows[1])).toBe(true)
 		})
 
 		it('not cross row boundary from the last row', async () => {
@@ -537,7 +537,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtEnd(getEditableInRow(last))
 			await userEvent.keyboard('{ArrowDown}')
 
-			expect(last.contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(last)).toBe(true)
 		})
 	})
 
@@ -549,7 +549,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtStart(getEditableInRow(rows[1]))
 			await userEvent.keyboard('{ArrowUp}')
 
-			expect(rows[0].contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(rows[0])).toBe(true)
 		})
 
 		it('not cross row boundary from the first row', async () => {
@@ -559,7 +559,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtStart(getEditableInRow(rows[0]))
 			await userEvent.keyboard('{ArrowUp}')
 
-			expect(rows[0].contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(rows[0])).toBe(true)
 		})
 	})
 
@@ -592,7 +592,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await userEvent.keyboard('{Backspace}')
 
 			const currentRows = getAllRows(container)
-			expect(currentRows[0].contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(currentRows[0])).toBe(true)
 		})
 
 		it('only delete one row at a time on Backspace', async () => {
@@ -623,7 +623,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
 				await userEvent.keyboard('{Backspace}')
 
-				expect(markBlock.contains(document.activeElement)).toBe(true)
+				expect(caretIsInside(markBlock)).toBe(true)
 			})
 		})
 	})
@@ -657,7 +657,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await userEvent.keyboard('{Delete}')
 
 			const currentRows = getAllRows(container)
-			expect(currentRows[0].contains(document.activeElement)).toBe(true)
+			expect(caretIsInside(currentRows[0])).toBe(true)
 		})
 
 		it('not merge when Delete pressed at end of last row', async () => {
@@ -700,7 +700,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				await userEvent.keyboard('{Delete}')
 
 				const currentRows = getAllRows(container)
-				expect(currentRows[0].contains(document.activeElement)).toBe(true)
+				expect(caretIsInside(currentRows[0])).toBe(true)
 			})
 
 			it('not merge when Delete pressed at start of first row', async () => {
@@ -732,7 +732,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
 				await userEvent.keyboard('{Delete}')
 
-				expect(markBlock.contains(document.activeElement)).toBe(true)
+				expect(caretIsInside(markBlock)).toBe(true)
 			})
 		})
 	})
@@ -755,16 +755,18 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(getRawValue(container)).not.toContain('First block of plain text\n\n')
 		})
 
-		it('not wipe all rows when Ctrl+A in focused row then typing', async () => {
+		it('replaces the whole document when Ctrl+A in a row then typing', async () => {
+			// BREAKING (one-host migration): select-all is no longer clamped to the row it
+			// started in — rows are not editing hosts any more — so it selects the document
+			// and typing replaces all of it, exactly as in inline layout.
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 
-			getEditableInRow(rows[1]).focus()
+			await focusAtEnd(getEditableInRow(rows[1]))
 			await userEvent.keyboard('{Control>}a{/Control}')
 			await userEvent.keyboard('X')
 
-			expect(getRawValue(container)).not.toBe('X')
-			expect(getRawValue(container)).toContain('First block of plain text')
+			expect(getRawValue(container)).toBe('X')
 		})
 
 		it('ignores beforeinput inside a drag control', async () => {

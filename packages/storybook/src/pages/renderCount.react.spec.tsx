@@ -201,7 +201,7 @@ describe('Render-count gates: block layout', () => {
 		)
 		expect(getAllRows(container)).toHaveLength(2)
 
-		// The row's text surface is the slot Span — the only contenteditable in the row.
+		// The row's text is the slot Span, bare inside the one host: the row measures it.
 		await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
 
 		// Baseline after mount + focus: every gate below asserts a DELTA from here.
