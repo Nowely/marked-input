@@ -129,6 +129,36 @@ describe('handleBeforeInput()', () => {
 	})
 
 	it.each([
+		['at the slot start', 0, '@[Xa @[b] c]'],
+		['inside the slot text', 1, '@[aX @[b] c]'],
+	])(
+		'keeps a collapsed edit %s where the CARET is, not where the target range was canonicalized',
+		(_label, caretOffset, expected) => {
+			// MEASURED in the react demo app with real keys: a slot mark is bare by policy, so
+			// the position before its first slot child and the position after the preceding text
+			// are the same pixel, and Chromium canonicalizes a COLLAPSED target range to the
+			// earliest of them — `text('…Slot doc: '):12`, outside the mark, while the caret sat
+			// at `text('a'):0` inside it. The character spliced before the markup ('X#[a…]').
+			//
+			// `leading` is that outside boundary in this fixture: the leading root is the empty
+			// text token at [0,0], so offset 0 is its only one. The first row is the symptom; the
+			// second is the interior control, where the two readings agree and must stay agreeing.
+			const {store, container, leading, before} = mountNested()
+			const slotText = before.firstChild
+			if (!(slotText instanceof Text)) throw new Error('expected the slot text surface to be filled')
+			selectBoundary(slotText, caretOffset)
+			const canonicalized = document.createRange()
+			canonicalized.setStart(leading, 0)
+			canonicalized.collapse(true)
+
+			container.dispatchEvent(inputEvent('insertText', canonicalized, {data: 'X'}))
+
+			expect(store.tokens.value()).toBe(expected)
+			container.remove()
+		}
+	)
+
+	it.each([
 		['leading', 0, '@[Xa @[b] c]'],
 		['trailing', 3, '@[a @[b] cX]'],
 	])('types INTO the slot at its %s host edge', (_label, offset, expected) => {

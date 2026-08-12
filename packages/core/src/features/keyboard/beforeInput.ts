@@ -5,17 +5,35 @@ import type {Anchors} from '../tokens'
 type KbCtx = Pick<Store, 'tokens'>
 
 /**
- * The edit target of a `beforeinput`, as anchors in the LIVE tree: the event's own
- * `getTargetRanges()` when it has one, else the current DOM selection.
+ * The edit target of a `beforeinput`, as anchors in the LIVE tree.
+ *
+ * A RANGED target range wins: it carries an extent the caret does not — the span a word
+ * delete, a replacement or a drop is about — and the model has no way to re-derive it.
+ *
+ * A COLLAPSED one does NOT, and that is measured rather than stylistic: Chromium
+ * canonicalizes a collapsed target range to the EARLIEST visually equivalent position, which
+ * erases the side-of-boundary distinction the model's own caret keeps. At the leading edge of
+ * a TRANSPARENT mark — a slot mark is bare by policy (`editableState.ts`), so the position
+ * before its first slot child and the position after the preceding text are the same pixel —
+ * the caret reads `text('a'):0` INSIDE the slot while the event's target range reads
+ * `text('…Slot doc: '):12` OUTSIDE the mark. Measured in the react demo app with real keys:
+ * typing there spliced before the mark's markup (`X#[a…]`) while the caret sat inside it.
+ * Nothing separates those two positions except which one the model placed, so the model's
+ * caret is the answer.
+ *
+ * `domAnchors()` re-reads the LIVE selection, so it is the same authority the no-target-range
+ * arm has always used; when it declines (a boundary this layer cannot resolve) the target
+ * range still answers.
  *
  * A `StaticRange` is document-ordered, so `anchor` is the low end and `head` the high one —
  * the same normalization {@link SelectionDriver.domAnchors} relies on, which is why the
  * numeric version's `start <= end` swap has no counterpart here.
  */
 export function anchorsFromInputEvent(store: KbCtx, event: InputEvent): Anchors | undefined {
-	const ranges = event.getTargetRanges()
-	if (ranges.length === 0) return store.tokens.domAnchors()
-	return anchorsFromTargetRange(store, ranges[0])
+	const range = event.getTargetRanges().at(0)
+	if (!range) return store.tokens.domAnchors()
+	if (range.collapsed) return store.tokens.domAnchors() ?? anchorsFromTargetRange(store, range)
+	return anchorsFromTargetRange(store, range)
 }
 
 /**
