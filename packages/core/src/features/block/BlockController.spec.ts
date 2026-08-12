@@ -30,6 +30,36 @@ describe('BlockController', () => {
 		})
 	})
 
+	it('block actions apply with draggable:false (menu/keyboard actions are not drag UI)', () => {
+		store.props.set({
+			layout: 'block',
+			draggable: false,
+			Mark: () => null,
+			options: [{markup: '__slot__\n\n'}],
+		})
+		store.host.container(document.createElement('div'))
+		store.tokens.setValue('alpha\n\nbeta\n\n')
+
+		store.block.action({type: 'delete', index: 0})
+
+		expect(store.tokens.value()).toBe('beta\n\n')
+	})
+
+	it('drops reorder with draggable:false (reorder is drag-originated)', () => {
+		store.props.set({
+			layout: 'block',
+			draggable: false,
+			Mark: () => null,
+			options: [{markup: '__slot__\n\n'}],
+		})
+		store.host.container(document.createElement('div'))
+		store.tokens.setValue('alpha\n\nbeta\n\n')
+
+		store.block.action({type: 'reorder', source: 0, target: 2})
+
+		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
+	})
+
 	it('owns the drag event', () => {
 		const store = new Store()
 		expect(typeof store.block.action).toBe('function')

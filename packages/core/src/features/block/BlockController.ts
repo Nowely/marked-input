@@ -24,7 +24,12 @@ export class BlockController {
 		private readonly edit: EditController
 	) {
 		watch(this.action, action => {
-			if (!this.props.layout.isBlock() || !this.props.draggable()) return
+			// `draggable` gates the DRAG UI (the grip's drag affordance), not the actions:
+			// menu and keyboard row edits are block-mode features, so block mode alone admits them.
+			if (!this.props.layout.isBlock()) return
+			// Reorder is drag-originated (grip dragstart / row drop), so it stays behind
+			// `draggable`; add/duplicate/delete arrive from the menu or the keyboard.
+			if (action.type === 'reorder' && !this.props.draggable()) return
 			// Anchor-slice reads: the tree's own string, always consistent with nodes().
 			const read = (from: NodeAnchor, to: NodeAnchor): string => this.tokens.valueBetween(from, to)
 			const result = applyDragAction(read, this.tokens.nodes(), action, this.props.options())
