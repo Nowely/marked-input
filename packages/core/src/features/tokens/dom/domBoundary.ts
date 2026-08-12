@@ -1,6 +1,20 @@
 import type {Id, NodeAnchor, TreeNode} from '../tree/types'
-import {hasEditableAncestorBefore, textOffsetWithin} from './textOffsets'
+import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 import type {ElementBindings, TokenHandle} from './TokenHandle'
+
+/**
+ * Which way a boundary leans when it names no node of its own.
+ *
+ * `'before'` and `'after'` are the RANGED reader's pair: they make the two ENDS of a span
+ * lean INWARD, so a drag that starts inside a mark swallows the whole mark and one that ends
+ * inside it swallows it too — Chromium's own atomic behavior for a mark.
+ *
+ * `'nearest'` is the COLLAPSED reader's, and only it (`SelectionDriver.domAnchors`). A caret
+ * has no inside, so a boundary within a mark answers with the NEAR edge instead of a fixed
+ * one. A boundary BETWEEN two tokens has no half to be in, and there it reads LEFT-affine
+ * like `'before'` — see {@link fromContainerAnchor} for why that spelling and not the other.
+ */
+export type BoundaryAffinity = 'before' | 'after' | 'nearest'
 
 /** A bound token as the facade reads it: the live DOM bindings plus the handle itself. */
 export type TokenView = ElementBindings & {
@@ -39,7 +53,7 @@ export function anchorFromBoundary(
 	ctx: AnchorContext,
 	node: Node,
 	offset: number,
-	affinity: 'before' | 'after' = 'after'
+	affinity: BoundaryAffinity = 'after'
 ): NodeAnchor | undefined {
 	if (ctx.container && node === ctx.container) {
 		return fromContainerAnchor(ctx, ctx.container, offset, affinity)
@@ -87,6 +101,7 @@ export function anchorFromBoundary(
 		if (hasEditableAncestorBefore(node, lookup.node.tokenElement)) {
 			return undefined
 		}
+		if (affinity === 'nearest') return nearestMarkEdge(lookup.node.tokenElement, node, offset, owner)
 		return affinity === 'after' ? {before: owner} : {after: owner}
 	}
 
@@ -102,13 +117,37 @@ export function anchorFromBoundary(
 	return undefined
 }
 
+/**
+ * The mark edge a COLLAPSED caret fell nearest to — the ONE place an affinity reads the
+ * offset, and only under `'nearest'`.
+ *
+ * Chromium answers a click inside a mark with a caret at the clicked CHARACTER, and the model
+ * owns no position inside a mark's presentation, so the boundary has to name one of the
+ * mark's two edges. Naming a fixed one discards what the browser already measured: MEASURED
+ * in a browser at 20/50/65/75/85% of a mark's width, all five landed `{before}`, and clicking
+ * the right half then pressing Backspace ate the character BEFORE the mark.
+ *
+ * A TIE goes to `before` — the first half is `local * 2 <= length`, so the exact midpoint and
+ * a mark with no measurable text both answer with the mark's start, which is where a mark's
+ * own boundary begins.
+ *
+ * `textOffsetWithin` declines what it cannot measure: an ELEMENT boundary on a presentation
+ * node that is not the mark's own element (its own element is the branch above). `before` is
+ * that case's answer too — it is what every collapsed read gave before this rule existed.
+ */
+function nearestMarkEdge(element: HTMLElement, node: Node, offset: number, owner: TreeNode): NodeAnchor {
+	const local = textOffsetWithin(element, node, offset)
+	if (local === undefined) return {before: owner}
+	return local * 2 > textLength(element) ? {after: owner} : {before: owner}
+}
+
 /** The `<=0` / `>=childCount` / interior split of a token's own SHELL element. */
 function fromChildAnchor(
 	ctx: AnchorContext,
 	element: HTMLElement,
 	offset: number,
 	owner: TreeNode,
-	affinity: 'before' | 'after'
+	affinity: BoundaryAffinity
 ): NodeAnchor | undefined {
 	const childCount = element.childNodes.length
 	if (offset <= 0) return {before: owner}
@@ -135,7 +174,7 @@ function fromHostAnchor(
 	host: HTMLElement,
 	offset: number,
 	owner: TreeNode,
-	affinity: 'before' | 'after'
+	affinity: BoundaryAffinity
 ): NodeAnchor | undefined {
 	const childCount = host.childNodes.length
 	if (offset > 0 && offset < childCount) return childBoundaryAnchor(ctx, host, offset, owner, affinity)
@@ -153,7 +192,7 @@ function childBoundaryAnchor(
 	tokenElement: HTMLElement,
 	offset: number,
 	owner: TreeNode,
-	affinity: 'before' | 'after'
+	affinity: BoundaryAffinity
 ): NodeAnchor | undefined {
 	// UNREACHABLE with a text owner, which is why there is no text arm. `bind` gives a
 	// text token the SAME element as its `tokenElement` and its `textElement` (bind.ts),
@@ -193,16 +232,24 @@ function childBoundaryAnchor(
  * Neither side answering means there is no bound token in the container at all — an
  * empty document, or a frame whose alignment `bind` bailed on — and `'start'` is the
  * guess for both. The root-index predecessor answered `'start'` only for the first.
+ *
+ * `'nearest'` reads LEFT-AFFINE here, with `'before'` rather than with `'after'`. A boundary
+ * BETWEEN two tokens has no near edge — `{after: previous}` and `{before: next}` name the
+ * same document position, and the only question is which side spells it. The left spelling is
+ * the one that makes the collapsed loop a ONE-WRITE FIXPOINT: `placeCaret({after: mark})`
+ * lands exactly here, so the right spelling sent the caret on to the next token's own surface
+ * and the sync re-placed it twice more. MEASURED — those extra writes clobber Chromium's drag
+ * base, and a drag starting inside a mark then selected NOTHING.
  */
 function fromContainerAnchor(
 	ctx: AnchorContext,
 	container: HTMLElement,
 	offset: number,
-	affinity: 'before' | 'after'
+	affinity: BoundaryAffinity
 ): NodeAnchor {
 	const after = tokenAt(ctx, container, offset, 1)
 	const before = tokenAt(ctx, container, offset - 1, -1)
-	if (before && after) return affinity === 'before' ? {after: before} : {before: after}
+	if (before && after) return affinity === 'after' ? {before: after} : {after: before}
 	if (after) return {before: after}
 	if (before) return {after: before}
 	return 'start'

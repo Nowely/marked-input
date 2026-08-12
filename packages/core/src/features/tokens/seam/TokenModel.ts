@@ -5,6 +5,7 @@ import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
 import {createCommitPipeline} from '../dom/commit'
 import type {TokenDelta} from '../dom/commit'
+import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
 import type {SelectionSnapshot} from '../dom/DomModel'
 import {SelectionDriver} from '../dom/SelectionDriver'
@@ -289,7 +290,7 @@ export class TokenModel {
 	 * caller. The subscription guard lives at {@link DomModel.anchorFor}, the walk's own
 	 * entry, so it holds for every caller rather than only this one.
 	 */
-	anchorFor(node: Node, offset: number, affinity?: 'before' | 'after'): NodeAnchor | undefined {
+	anchorFor(node: Node, offset: number, affinity?: BoundaryAffinity): NodeAnchor | undefined {
 		return this.#dom.anchorFor(node, offset, affinity)
 	}
 

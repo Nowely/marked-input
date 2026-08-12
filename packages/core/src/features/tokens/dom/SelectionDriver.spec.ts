@@ -46,13 +46,13 @@ describe('SelectionDriver', () => {
 		container.remove()
 	})
 
-	it('places at a mark whose start equals the previous text node end, through the mark itself', () => {
+	it('places at a mark whose start equals the previous text node end, at that one position', () => {
 		// The gate for storing the NODE anchor instead of a numeric round-trip (spec S1 §4.6
-		// item 5): in 'ab@[x]cd' the mark starts at 2, exactly where 'ab' ends, so a
-		// re-resolved `anchorAt(2)` — right-affine — answers the TEXT node and the caret
-		// lands in the PREVIOUS surface. `{before: mark}` cannot be confused that way.
+		// item 5): in 'ab@[x]cd' the mark starts at 2, exactly where 'ab' ends — ONE position,
+		// two legal spellings.
 		const {store, container} = mountStructuralInlineMark('ab@[x]cd')
-		const markNode = store.tokens.nodes()[1]
+		const roots = store.tokens.nodes()
+		const markNode = roots[1]
 		const markHandle = store.tokens.handle(markNode.id)
 		if (!markHandle) throw new Error('Mark token did not bind a handle')
 
@@ -60,10 +60,17 @@ describe('SelectionDriver', () => {
 
 		// WHERE THE CARET LANDED, not what took focus: mark roots are not tab stops under the
 		// one-host topology, so `document.activeElement` — the old witness — names the editing
-		// host rather than the token. The caret sits on the mark's own element, so the boundary
-		// resolves through the MARK: the numeric round-trip this case exists to reject would
-		// answer `{node: <text 'ab'>, offset: 2}` instead.
-		expect(store.tokens.domAnchors()?.anchor).toEqual({before: markNode})
+		// host rather than the token.
+		//
+		// THE POSITION is the assertion that carries this case, and it is the one the numeric
+		// round-trip this file exists to reject would get wrong. The SPELLING is the collapsed
+		// reader's left affinity at the container arm: it answered `{before: markNode}` until
+		// the near-edge rule landed, and now names the same boundary from the previous root's
+		// end. Both are `offsetOfAnchor` 2; nothing about a mark's atomicity depends on which
+		// side spells it, because a caret AT a mark's start is not a caret inside it.
+		const anchor = store.tokens.domAnchors()?.anchor
+		expect(anchor).toEqual({after: roots[0]})
+		expect(anchor && offsetOfAnchor(roots, anchor)).toBe(offsetOfAnchor(roots, {before: markNode}))
 		container.remove()
 	})
 
@@ -80,13 +87,18 @@ describe('SelectionDriver', () => {
 		store.tokens.selection.select({after: markNode})
 		for (let i = 0; i < 3; i++) await new Promise(resolve => setTimeout(resolve, 0))
 
-		// THE MEASURED FIXPOINT, and it takes two syncs: the container boundary reads
-		// right-affine as `{before: 'cd'}`, re-placing that anchor puts the caret INSIDE
-		// 'cd' — a better place to type than a container boundary — and the second sync
-		// names it locally. Same document position throughout; what this rejects is the
-		// `undefined` the "outside the editor" exit used to store.
+		// THE MEASURED FIXPOINT, and it is reached in ONE write: the collapsed reader is
+		// LEFT-affine at the container arm, so the boundary `placeCaret({after: mark})` lands
+		// on reads back as that same anchor and the sync stores it unchanged.
+		//
+		// It used to take two more: right-affine, the boundary answered `{before: 'cd'}`, and
+		// re-placing THAT put the caret inside 'cd', which the next sync named locally. Same
+		// document position at every step — the assertion below is what says so — but those
+		// extra writes clobbered Chromium's drag base, so a drag out of a mark selected
+		// nothing. What this case rejects either way is the `undefined` the "outside the
+		// editor" exit used to store.
 		const anchors = store.tokens.selection.anchors()
-		expect(anchors).toEqual({anchor: {node: roots[2], offset: 0}, head: {node: roots[2], offset: 0}})
+		expect(anchors).toEqual({anchor: {after: markNode}, head: {after: markNode}})
 		expect(anchors && offsetOfAnchor(roots, anchors.anchor)).toBe(offsetOfAnchor(roots, {after: markNode}))
 		container.remove()
 	})
@@ -155,6 +167,53 @@ describe('SelectionDriver', () => {
 			document.dispatchEvent(new Event('selectionchange'))
 
 			expect(store.tokens.selection.anchors()).toEqual({anchor: {before: markNode}, head: {before: markNode}})
+			container.remove()
+		})
+
+		it('stores the NEAR edge of the mark a collapsed caret landed inside', () => {
+			// END TO END for the near-edge rule. Chromium answers a click inside a mark with a
+			// caret at the clicked CHARACTER, and the sync has to name an edge, because the model
+			// owns no position inside a mark's presentation. It named the LEFT one whatever the
+			// offset was — MEASURED in a browser at 20/50/65/75/85% of a mark's width, all five
+			// `{before}` — so clicking the right half and pressing Backspace ate the character
+			// BEFORE the mark instead of the mark.
+			const {store, container, mark} = mountStructuralInlineMark('ab@[wxyz]cd')
+			const inner = mark.appendChild(document.createTextNode('wxyz'))
+			const markNode = store.tokens.nodes()[1]
+
+			putCaret(inner, 1)
+			document.dispatchEvent(new Event('selectionchange'))
+			expect(store.tokens.selection.anchors()).toEqual({anchor: {before: markNode}, head: {before: markNode}})
+
+			putCaret(inner, 3)
+			document.dispatchEvent(new Event('selectionchange'))
+			expect(store.tokens.selection.anchors()).toEqual({anchor: {after: markNode}, head: {after: markNode}})
+			container.remove()
+		})
+
+		it('Backspace after a caret past a mark middle removes the MARK', async () => {
+			// The CONSEQUENCE, and the shape the defect was reported in: `handleDeleteKey` reads
+			// `domAnchors()` — the same collapsed read — and swallows the mark only when the
+			// caret sits on one of its boundaries. With every in-mark caret answering
+			// `{before: mark}`, the swallow missed and the step-back deleted the space before it
+			// ('hello world foo' became 'helloworld foo').
+			const {store, container, surfaces} = mountValue('hello @[world] foo', {
+				options: [{markup: '@[__value__]'}],
+				Mark: () => null,
+			})
+			// What an adapter's `Mark` would have rendered, and this bare fixture must not skip:
+			// a click needs text inside the mark element to land in.
+			const inner = surfaces[1].appendChild(document.createTextNode('world'))
+			// The CLICK is what makes the container the editing host, so the keystroke below is
+			// a real one; the caret is then put where Chromium puts it for a click past the
+			// middle of 'world'.
+			await userEvent.click(surfaces[0])
+			putCaret(inner, 4)
+			document.dispatchEvent(new Event('selectionchange'))
+
+			await userEvent.keyboard('{Backspace}')
+
+			expect(store.tokens.value()).toBe('hello  foo')
 			container.remove()
 		})
 

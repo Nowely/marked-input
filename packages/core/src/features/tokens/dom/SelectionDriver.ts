@@ -5,6 +5,7 @@ import {anchorEquals} from '../tree/anchors'
 import type {Selection} from '../tree/selection'
 import type {Anchors, Id, NodeAnchor, TreeNode} from '../tree/types'
 import type {TokenDelta} from './commit'
+import type {BoundaryAffinity} from './domBoundary'
 import type {SelectionSnapshot} from './DomModel'
 import type {TokenHandle} from './TokenHandle'
 
@@ -25,7 +26,7 @@ export type SelectionDriverDeps = {
 	placeCaret(anchor: NodeAnchor): boolean
 	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean
 	/** THE DOM→model direction: a live DOM boundary as an anchor in the live tree, forming no offset. */
-	anchorFor(node: Node, offset: number, affinity?: 'before' | 'after'): NodeAnchor | undefined
+	anchorFor(node: Node, offset: number, affinity?: BoundaryAffinity): NodeAnchor | undefined
 }
 
 /**
@@ -99,17 +100,24 @@ export class SelectionDriver {
 
 	/** The `anchorFor` reads both DOM-truth reads share; `undefined` if either end declines. */
 	#anchorsIn(range: globalThis.Range): Anchors | undefined {
-		// A DOM Range is always document-ordered, and these are the affinities the numeric
-		// read used, so `anchor` is the low end and `head` the high one.
-		const anchor = this.deps.anchorFor(range.startContainer, range.startOffset, 'after')
-		// ONE READ for a collapsed range, because the opposite affinities exist to make the
-		// ENDS of a span lean inward — read twice against a single boundary they answer two
-		// NAMES for one position and the pair stops comparing equal. That is not cosmetic:
+		// ONE READ for a collapsed range, because the ranged pair's opposite affinities exist to
+		// make the ENDS of a span lean inward — read twice against a single boundary they answer
+		// two NAMES for one position and the pair stops comparing equal. That is not cosmetic:
 		// `#applySelection` would take the ranged branch for a caret, where `selectRange`
 		// declines any endpoint without a text surface. Reachable since a mark's caret became
 		// a container boundary, whose two sides are different nodes ({before: next root} vs
 		// {after: the mark}).
-		if (range.collapsed) return anchor && {anchor, head: anchor}
+		//
+		// And `'nearest'` — the collapsed reader is the ONLY caller that passes it. A caret has
+		// no inside, so a boundary Chromium put inside a mark's text answers with the edge the
+		// click was aimed at rather than always the left one; see {@link BoundaryAffinity}.
+		if (range.collapsed) {
+			const caret = this.deps.anchorFor(range.startContainer, range.startOffset, 'nearest')
+			return caret && {anchor: caret, head: caret}
+		}
+		// A DOM Range is always document-ordered, and these are the affinities the numeric
+		// read used, so `anchor` is the low end and `head` the high one.
+		const anchor = this.deps.anchorFor(range.startContainer, range.startOffset, 'after')
 		const head = this.deps.anchorFor(range.endContainer, range.endOffset, 'before')
 		return anchor && head ? {anchor, head} : undefined
 	}

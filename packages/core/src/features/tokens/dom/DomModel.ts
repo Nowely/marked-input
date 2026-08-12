@@ -3,7 +3,7 @@ import type {Id, NodeAnchor, TreeNode} from '../tree/types'
 import {getRect, placeRangeAcrossBoundaries} from './caret'
 import type {CaretBoundary} from './caret'
 import {anchorFromBoundary} from './domBoundary'
-import type {AnchorContext, Lookup, TokenView} from './domBoundary'
+import type {AnchorContext, BoundaryAffinity, Lookup, TokenView} from './domBoundary'
 import type {TokenHandle} from './TokenHandle'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
@@ -122,7 +122,7 @@ export class DomModel {
 	 * node `text()` and `children()` signals directly, so any caller inside a
 	 * reactive scope would otherwise subscribe to them.
 	 */
-	anchorFor(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): NodeAnchor | undefined {
+	anchorFor(node: Node, offset: number, affinity: BoundaryAffinity = 'after'): NodeAnchor | undefined {
 		return untracked(() => anchorFromBoundary(this.#anchorContext(), node, offset, affinity))
 	}
 

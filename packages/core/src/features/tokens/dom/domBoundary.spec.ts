@@ -1,7 +1,14 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {computed} from '../../../shared/signals'
-import {enableStructuralStore, mountBlock, mountNested, mountValue, mountWithMark} from '../__testing__/mountFixtures'
+import {
+	enableStructuralStore,
+	mountBlock,
+	mountNested,
+	mountStructuralInlineMark,
+	mountValue,
+	mountWithMark,
+} from '../__testing__/mountFixtures'
 import {offsetOfAnchor} from '../tree/anchors'
 
 describe('anchorFor', () => {
@@ -177,6 +184,38 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(inner, 0, 'before')).toEqual({after: markNode})
 	})
 
+	it('takes the NEAR edge of a mark for a boundary read with the collapsed affinity', () => {
+		// `'nearest'` is the COLLAPSED reader's affinity and the only one that reads the
+		// OFFSET. Chromium puts a click's caret at the clicked character inside the mark's own
+		// text; the model owns no position in there, so the answer has to be one of the mark's
+		// two edges — and the one the click aimed at is the near one. Four characters, so the
+		// midpoint is a real boundary and the TIE rule is visible: 2 of 4 still answers
+		// `before`.
+		const {store, mark} = mountStructuralInlineMark('ab@[wxyz]cd')
+		const inner = mark.appendChild(document.createTextNode('wxyz'))
+		const markNode = store.tokens.nodes()[1]
+
+		expect(store.tokens.anchorFor(inner, 0, 'nearest')).toEqual({before: markNode})
+		expect(store.tokens.anchorFor(inner, 1, 'nearest')).toEqual({before: markNode})
+		expect(store.tokens.anchorFor(inner, 2, 'nearest')).toEqual({before: markNode})
+		expect(store.tokens.anchorFor(inner, 3, 'nearest')).toEqual({after: markNode})
+		expect(store.tokens.anchorFor(inner, 4, 'nearest')).toEqual({after: markNode})
+	})
+
+	it('leaves the RANGED affinities offset-blind inside a mark', () => {
+		// THE semantics the near-edge rule must not reach, and the reason it needed an affinity
+		// of its own: the ranged reader leans its two ends INWARD so a drag that starts
+		// mid-mark swallows the whole mark, and one that ends mid-mark swallows it too —
+		// Chromium's own atomic behavior. An offset-aware `'after'` would answer `{after}` for
+		// the start at 3 and drop everything left of the click out of the selection.
+		const {store, mark} = mountStructuralInlineMark('ab@[wxyz]cd')
+		const inner = mark.appendChild(document.createTextNode('wxyz'))
+		const markNode = store.tokens.nodes()[1]
+
+		expect(store.tokens.anchorFor(inner, 3, 'after')).toEqual({before: markNode})
+		expect(store.tokens.anchorFor(inner, 1, 'before')).toEqual({after: markNode})
+	})
+
 	it('returns undefined inside an editable descendant of a mark', () => {
 		const {store, mark} = mountWithMark()
 		const editable = document.createElement('span')
@@ -185,6 +224,10 @@ describe('anchorFor', () => {
 		editable.append(inner)
 		mark.append(editable)
 		expect(store.tokens.anchorFor(inner, 0)).toBeUndefined()
+		// The island declines BEFORE the near-edge rule gets to measure anything: an explicit
+		// editable inside a mark owns its own caret, and a collapsed read must not drag it onto
+		// one of the mark's edges.
+		expect(store.tokens.anchorFor(inner, 0, 'nearest')).toBeUndefined()
 	})
 
 	it('does not subscribe its caller to the text it reads', () => {
@@ -385,11 +428,15 @@ describe('anchorFor across chrome the tree does not own', () => {
 
 		expect(store.tokens.placeCaret({after: mark})).toBe(true)
 
-		// The SHAPE is affinity's: the DOM boundary after the mark is read right-affine, so
-		// it answers from the next root's side. The POSITION is what the raw-index read got
-		// wrong — it ran off the end of `roots` and answered the document end.
+		// The SHAPE is affinity's, and `domAnchors` is the COLLAPSED reader, which is
+		// left-affine at the container arm: the boundary answers from the MARK's side, so the
+		// anchor placed comes back verbatim in ONE write. It read `{before: roots[2]}` until
+		// the near-edge rule landed — the same POSITION spelled from the other side, but a
+		// spelling that placed on into the next root's surface and cost two more writes.
+		// The POSITION is what the raw-index read got wrong — it ran off the end of `roots`
+		// and answered the document end — and it is the assertion below that proves it.
 		const anchor = store.tokens.domAnchors()?.anchor
-		expect(anchor).toEqual({before: roots[2]})
+		expect(anchor).toEqual({after: mark})
 		expect(anchor && offsetOfAnchor(roots, anchor)).toBe(offsetOfAnchor(roots, {after: mark}))
 	})
 })

@@ -305,10 +305,19 @@ the walk stays correct inside the adopt→bind window where a positional read is
 not.
 
 - `dom/domBoundary.ts` — DOM `(node, offset)` → `NodeAnchor`
-  (`anchorFromBoundary`). Vocabulary: `'before'`/`'after'` = affinity at token
-  boundaries; `'start'`/`'end'` = placement side. There is no numeric twin: this
-  is the only projection of the walk, and every branch names its own case in
-  `domBoundary.spec.ts`.
+  (`anchorFromBoundary`). Vocabulary: `'before'`/`'after'`/`'nearest'` =
+  affinity at token boundaries; `'start'`/`'end'` = placement side. The first
+  two are the RANGED reader's pair and lean a span's two ends INWARD, so a drag
+  through a mark swallows the whole mark; `'nearest'` is the COLLAPSED reader's
+  and is passed by nothing else — inside a mark it answers the NEAR edge (the
+  tie goes to `before`), because a caret has no inside and the click's own
+  offset is the only thing that says which edge was meant. Between two tokens
+  there is no near edge, and `'nearest'` reads LEFT-affine: `{after: previous}`
+  and `{before: next}` are one position, and the left spelling is the one
+  `placeCaret` reproduces in ONE write — the right one placed on into the next
+  token's surface, and those extra writes clobbered Chromium's drag base.
+  There is no numeric twin: this is the only projection of the walk, and every
+  branch names its own case in `domBoundary.spec.ts`.
 - `dom/caret.ts` — stateless `Range`/`Selection` mechanics (`placeAtTextOffset`,
   `placeAtParentBoundary`, `placeRangeAcrossSurfaces`, `getCaretIndex`,
   `getRect`, `focusEditingHost`).

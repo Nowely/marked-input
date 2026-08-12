@@ -84,12 +84,14 @@ describe('TokenModel placement commands', () => {
 		//
 		// `{after: mark}` places in the mark's PARENT coordinates — the mark is atomic, so a
 		// boundary inside it is no position — which here is the CONTAINER's child index 2.
-		// The container arm reads that boundary right-affine, so the DOM answers the same
-		// document position (6: the mark ends where 'llo' starts) spelled from the other
-		// side. MEASURED, and still sensitive to an after↔before inversion: swapping the two
-		// branches of the mark placement answers `{before: markNode}` here.
+		// `domAnchors` is the COLLAPSED reader and is left-affine there, so that boundary
+		// comes back as the anchor that placed it. It answered `{before: text2Node}` until
+		// the near-edge rule landed: the same document position (6: the mark ends where 'llo'
+		// starts) spelled from the other side, and a spelling that re-placed the caret on
+		// into 'llo'. MEASURED, and still sensitive to an after↔before inversion: swapping
+		// the two branches of the mark placement answers `{before: markNode}` here.
 		expect(store.tokens.placeCaret({after: markNode})).toBe(true)
-		expect(store.tokens.domAnchors()?.anchor).toEqual({before: text2Node})
+		expect(store.tokens.domAnchors()?.anchor).toEqual({after: markNode})
 
 		expect(store.tokens.placeCaret(store.tokens.anchorAt(6))).toBe(true)
 		expect(store.tokens.domAnchors()?.anchor).toEqual({node: text2Node, offset: 0})
