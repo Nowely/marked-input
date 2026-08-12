@@ -10,7 +10,7 @@ import {addDragRow, mergeDragRows, canMergeRows, deleteDragRow} from '../block/o
 import {consumeMarkupPaste} from '../clipboard'
 import type {Anchors, NodeAnchor, TokenHandle, TreeNode} from '../tokens'
 import {anchorEquals} from '../tokens'
-import {anchorsFromInputEvent} from './inputAnchors'
+import {anchorsFromInputEvent, dropUnexpressedInput} from './beforeInput'
 
 /** The tree's own string, addressed by anchors — never the props-first `value()`. */
 function sliceRead(store: KbCtx): SliceRead {
@@ -251,19 +251,29 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 }
 
 function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent) {
-	if (!findActiveRow(store, nodeTarget(event))) return
+	const target = nodeTarget(event)
+	// TWO verdicts, not one. A control root is consumer chrome that owns its own input, so
+	// its event passes through untouched. "No resolvable row" is the opposite: the event
+	// still targets model-owned DOM (Enter would split it into a <div> the tree never
+	// sanctioned — `handleEnter` bails on the same missing row, and `input.ts` has already
+	// returned on `isBlock`), so it fails closed like every other unexpressed edit.
+	if (target && store.tokens.handleAt(target) === 'control') return
+	if (!findActiveRow(store, target)) {
+		dropUnexpressedInput(container, event)
+		return
+	}
 
 	switch (event.inputType) {
 		case 'insertText': {
 			const data = event.data ?? ''
-			replaceBlockRange(store, event, data)
+			replaceBlockRange(store, container, event, data)
 			break
 		}
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
 			const markup = consumeMarkupPaste(container)
 			const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
-			replaceBlockRange(store, event, pasteData)
+			replaceBlockRange(store, container, event, pasteData)
 			break
 		}
 		case 'deleteContentBackward':
@@ -272,17 +282,37 @@ function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: Inp
 		case 'deleteWordForward':
 		case 'deleteSoftLineBackward':
 		case 'deleteSoftLineForward': {
-			replaceBlockRange(store, event, '')
+			replaceBlockRange(store, container, event, '')
 			break
 		}
+		// PARITY with `input.ts`'s `replacementForInput`, which the closed default below
+		// would otherwise turn into a silent drop. Shift+Enter is a newline INSIDE the row
+		// (plain Enter never reaches here — `handleEnter` cancels its keydown and splits
+		// the row instead).
+		case 'insertLineBreak': {
+			replaceBlockRange(store, container, event, '\n')
+			break
+		}
+		case 'insertFromDrop': {
+			replaceBlockRange(store, container, event, event.dataTransfer?.getData('text/plain') ?? '')
+			break
+		}
+		// FAIL CLOSED, same contract as `input.ts`: block rows live in the SAME single
+		// host, so an input type this switch cannot express would edit model-owned DOM.
+		// Enter is not among the cases because `handleEnter` already cancelled its
+		// keydown, so no `insertParagraph` reaches this at all.
+		default:
+			dropUnexpressedInput(container, event)
 	}
 }
 
-function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string): void {
+function replaceBlockRange(store: KbCtx, container: HTMLElement, event: InputEvent, replacement: string): void {
 	const anchors = anchorsFromInputEvent(store, event)
-	if (!anchors) return
-	const target = anchorsForBlockInput(store, event, anchors)
-	if (!target) return
+	const target = anchors && anchorsForBlockInput(store, event, anchors)
+	if (!target) {
+		dropUnexpressedInput(container, event)
+		return
+	}
 
 	event.preventDefault()
 	store.edit.replace(target.anchor, target.head, replacement)

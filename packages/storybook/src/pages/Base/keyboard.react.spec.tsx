@@ -172,19 +172,18 @@ describe('API: keyboard', () => {
 		expect(container.textContent).toBe('')
 	})
 
-	it('keep all content when Ctrl+A then Enter', async () => {
-		// The S1.6a bug, in the browser: the all-selected branch preventDefaulted EVERY
-		// input type and replaced the whole value with `event.data ?? ''`, so Enter wiped
-		// the input. insertParagraph must now fall through untouched, exactly as it does
-		// when only part of the value is selected.
+	it('replace all content with a newline when Ctrl+A then Enter', async () => {
+		// Enter is an EDIT the guard owns, not a default it forwards: under one host a
+		// forwarded insertParagraph would build a <div>/<br> in DOM the model owns. So the
+		// all-selected branch replaces the value with '\n' — the same replacement the
+		// partial-selection path inserts (core `input.spec`'s two newline pins).
 		const onChange = vi.fn()
 		const {container} = await render(<Default defaultValue={KEYBOARD_DEFAULT_VALUE} onChange={onChange} />)
 
 		await selectAll(container)
 		const event = dispatchBeforeInput(getFirstEditable(container), 'insertParagraph')
 
-		expect(event.defaultPrevented).toBe(false)
-		expect(onChange).not.toHaveBeenCalled()
-		expect(container.textContent).toBe('Hello mark!')
+		expect(event.defaultPrevented).toBe(true)
+		expect(onChange).toHaveBeenCalledWith('\n')
 	})
 })

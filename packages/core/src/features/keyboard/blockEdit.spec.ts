@@ -49,6 +49,86 @@ describe('blockEdit row identity', () => {
 	})
 })
 
+describe('blockEdit beforeinput guard', () => {
+	it('drops an unhandled cancelable inputType instead of letting the browser edit the row', () => {
+		// Same contract as `input.ts`: block rows live in the SAME single host, so a
+		// default this switch cannot express would edit model-owned DOM.
+		const {store, container} = mountBlock()
+		const second = store.tokens.nodes()[1]
+		store.tokens.selection.selectNode(second, 'end')
+
+		const event = new InputEvent('beforeinput', {inputType: 'formatBold', bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
+	})
+
+	/** The row's own text node, with a collapsed DOM caret on it. */
+	function caretInRow(row: HTMLElement, offset: number): Node {
+		const text = row.querySelector('span > span')?.firstChild
+		if (!text) throw new Error('block row did not render a text node')
+		const selection = window.getSelection()
+		if (!selection) throw new Error('no window selection')
+		const range = document.createRange()
+		range.setStart(text, offset)
+		range.setEnd(text, offset)
+		selection.removeAllRanges()
+		selection.addRange(range)
+		return text
+	}
+
+	it('inserts a newline INSIDE the row on insertLineBreak (Shift+Enter)', () => {
+		// Parity with the inline guard: without its own case the closed default would drop
+		// Shift+Enter silently. Plain Enter never arrives — `handleEnter` cancels the keydown.
+		const {store, rows} = mountBlock()
+		const text = caretInRow(rows[0], 1)
+
+		const event = new InputEvent('beforeinput', {inputType: 'insertLineBreak', bubbles: true, cancelable: true})
+		text.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('o\nne\n\ntwo\n\n')
+	})
+
+	it('inserts the dropped text in the row on insertFromDrop', () => {
+		const {store, rows} = mountBlock()
+		const text = caretInRow(rows[0], 1)
+		const dataTransfer = new DataTransfer()
+		dataTransfer.setData('text/plain', 'X')
+
+		const event = new InputEvent('beforeinput', {
+			inputType: 'insertFromDrop',
+			dataTransfer,
+			bubbles: true,
+			cancelable: true,
+		})
+		text.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('oXne\n\ntwo\n\n')
+	})
+
+	it('drops an edit that resolves NO row instead of letting the browser split the host', () => {
+		// The row is unresolvable from every tier (no stored selection, no DOM range, no
+		// focused token), yet the event still targets model-owned DOM: `handleEnter` bails
+		// on the same missing row and `input.ts` returned on `isBlock`, so this guard is
+		// the last one standing.
+		const {store, rows} = mountBlock()
+		store.tokens.selection.clear()
+		window.getSelection()?.removeAllRanges()
+		if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+		const rowText = rows[0].querySelector('span > span')
+		if (!rowText) throw new Error('block row did not render a text surface')
+
+		const event = new InputEvent('beforeinput', {inputType: 'insertParagraph', bubbles: true, cancelable: true})
+		rowText.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
+	})
+})
+
 /**
  * A control root (drag handle, block menu button) is not a row: `SelectionDriver`
  * deliberately leaves the stored selection standing when focus lands on one
@@ -96,6 +176,25 @@ describe('blockEdit control guard', () => {
 
 		expect(event.defaultPrevented).toBe(false)
 		expect(store.tokens.nodes().length).toBe(2)
+	})
+
+	it('leaves a control root its own beforeinput even with a row selection stored', () => {
+		// The one verdict that still passes through after the guard started failing
+		// closed: consumer chrome owns its input, and the model owns none of that DOM.
+		const {store, control} = mountBlockWithControl(0)
+		const row0 = store.tokens.nodes()[0]
+		store.tokens.selection.selectNode(row0, 'end')
+
+		const event = new InputEvent('beforeinput', {
+			inputType: 'insertText',
+			data: 'x',
+			bubbles: true,
+			cancelable: true,
+		})
+		control.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
 	})
 
 	it('ignores Backspace targeting a control even with a row selection stored', () => {

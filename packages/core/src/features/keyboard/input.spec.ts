@@ -17,7 +17,7 @@ function mountStructuralInline(value = 'hello') {
 	return {store, container, textSurface, textNode}
 }
 
-function mountStructuralMarkWithDescendant(value = '@[world]') {
+function mountStructuralMarkWithDescendant(value = '@[world]', editableSpelling = 'true') {
 	const store = new Store()
 	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: '@[__value__]'}]})
 	const container = document.createElement('div')
@@ -25,7 +25,9 @@ function mountStructuralMarkWithDescendant(value = '@[world]') {
 	const mark = document.createElement('mark')
 	const after = document.createElement('span')
 	const descendant = document.createElement('span')
-	descendant.contentEditable = 'true'
+	// The ATTRIBUTE, in the consumer's own spelling — Chromium normalizes '' and 'TRUE'
+	// to the `contentEditable` property value 'true', which is what the guard reads.
+	descendant.setAttribute('contenteditable', editableSpelling)
 	descendant.textContent = 'inner'
 	mark.append(descendant)
 	container.append(before, mark, after)
@@ -35,6 +37,23 @@ function mountStructuralMarkWithDescendant(value = '@[world]') {
 	const descendantText = descendant.firstChild
 	if (!(descendantText instanceof Text)) throw new Error('Structural mark descendant did not render a text node')
 	return {store, container, descendantText}
+}
+
+/** A registered control root (block menu, custom chrome) holding its own `<input>`. */
+function mountInlineWithControl(value = 'hello') {
+	const store = new Store()
+	store.props.set({defaultValue: value})
+	const container = document.createElement('div')
+	const textSurface = document.createElement('span')
+	const control = document.createElement('div')
+	const controlInput = document.createElement('input')
+	control.append(controlInput)
+	container.append(textSurface, control)
+	document.body.append(container)
+	store.host.container(container)
+	store.tokens.control()(control)
+	store.host.rendered()
+	return {store, container, controlInput}
 }
 
 function inputEvent(inputType: string, range: Range, init?: InputEventInit): InputEvent {
@@ -90,17 +109,201 @@ describe('handleBeforeInput()', () => {
 		// `event.data ?? ''` for every non-delete input type, so Enter (insertParagraph,
 		// data === null) preventDefaulted and replaced the WHOLE value with ''. Measured
 		// on a mounted store with defaultValue 'hello': {value: '', prevented: true}.
-		// The ordinary (not-all-selected) path already ignores these types, because
-		// replacementForInput returns undefined for them.
+		// Enter now HAS a replacement ('\n', pinned below), so the unhandled type this
+		// case needs is one the guard cannot express at all — and under one host it is
+		// dropped rather than let through.
 		const {store, container} = mountStructuralInline()
 		store.tokens.selection.selectAll()
 		expect(store.tokens.selection.isAllSelected()).toBe(true)
-		const event = new InputEvent('beforeinput', {inputType: 'insertParagraph', bubbles: true, cancelable: true})
+		const event = new InputEvent('beforeinput', {inputType: 'formatBold', bubbles: true, cancelable: true})
 
 		container.dispatchEvent(event)
 
 		expect(store.tokens.value()).toBe('hello')
+		expect(event.defaultPrevented).toBe(true)
+		container.remove()
+	})
+
+	it('replaces the whole value with a newline on Enter with everything selected', () => {
+		const {store, container} = mountStructuralInline()
+		store.tokens.selection.selectAll()
+		const event = new InputEvent('beforeinput', {inputType: 'insertParagraph', bubbles: true, cancelable: true})
+
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('\n')
+		container.remove()
+	})
+
+	it('insertParagraph maps to a newline through the guard', () => {
+		const {store, container, textNode} = mountStructuralInline('ab')
+		const range = document.createRange()
+		range.setStart(textNode, 1)
+		range.setEnd(textNode, 1)
+		const event = inputEvent('insertParagraph', range)
+
+		textNode.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('a\nb')
+		container.remove()
+	})
+
+	it('insertLineBreak maps to a newline through the guard', () => {
+		const {store, container, textNode} = mountStructuralInline('ab')
+		const range = document.createRange()
+		range.setStart(textNode, 1)
+		range.setEnd(textNode, 1)
+		const event = inputEvent('insertLineBreak', range)
+
+		textNode.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('a\nb')
+		container.remove()
+	})
+
+	it('an unhandled cancelable inputType is prevented and changes nothing (fail closed)', () => {
+		// Under one host every default this guard leaves standing edits the DOM the model
+		// owns, so an input type it cannot express as an edit is dropped, not forwarded.
+		const {store, container} = mountStructuralInline('ab')
+		const event = new InputEvent('beforeinput', {inputType: 'formatBold', bubbles: true, cancelable: true})
+
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('ab')
+		container.remove()
+	})
+
+	it('fails an unhandled type closed even when it originates BELOW the container', () => {
+		// THE discriminating shape: a real beforeinput carries a target range INSIDE the
+		// host, and everything in there INHERITS `isContentEditable` from the container.
+		// An inherited-editability test therefore reads every ordinary edit as a consumer
+		// island and lets it through — the case dispatched on the container cannot see it.
+		const {store, container, textNode} = mountStructuralInline('ab')
+		const range = document.createRange()
+		range.setStart(textNode, 0)
+		range.setEnd(textNode, 2)
+		const event = inputEvent('formatBold', range)
+
+		textNode.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('ab')
+		container.remove()
+	})
+
+	it('leaves an unhandled type alone inside an EXPLICIT contenteditable island', () => {
+		// The consumer's own DOM, marked as such by an explicit attribute — the model
+		// neither owns it nor resolves boundaries in it, so cancelling would only freeze
+		// the widget.
+		const {store, container, descendantText} = mountStructuralMarkWithDescendant()
+		const range = document.createRange()
+		range.setStart(descendantText, 0)
+		range.setEnd(descendantText, 5)
+		const event = inputEvent('formatBold', range)
+
+		descendantText.dispatchEvent(event)
+
 		expect(event.defaultPrevented).toBe(false)
+		expect(store.tokens.value()).toBe('@[world]')
+		container.remove()
+	})
+
+	it.each([
+		['the empty-string spelling', ''],
+		['an upper-case spelling', 'TRUE'],
+	])('leaves an unhandled type alone inside an island written with %s', (_label, spelling) => {
+		const {store, container, descendantText} = mountStructuralMarkWithDescendant('@[world]', spelling)
+		const range = document.createRange()
+		range.setStart(descendantText, 0)
+		range.setEnd(descendantText, 5)
+		const event = inputEvent('formatBold', range)
+
+		descendantText.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(store.tokens.value()).toBe('@[world]')
+		container.remove()
+	})
+
+	it('inserts the dropped text at the target range', () => {
+		const {store, container, textNode} = mountStructuralInline('ab')
+		const dataTransfer = new DataTransfer()
+		dataTransfer.setData('text/plain', 'X')
+		const range = document.createRange()
+		range.setStart(textNode, 1)
+		range.setEnd(textNode, 1)
+		const event = inputEvent('insertFromDrop', range, {dataTransfer})
+
+		textNode.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('aXb')
+		container.remove()
+	})
+
+	it('a non-cancelable inputType passes through untouched', () => {
+		// A CHARACTERIZATION pin, and it cannot be otherwise: `preventDefault` on an
+		// uncancelable event is a no-op, so deleting the guard's `!event.cancelable` return
+		// keeps this green. That return earns its place by keeping Chromium from logging
+		// "Ignored attempt to cancel a beforeinput event with cancelable=false" on every
+		// composition keystroke — console noise no assertion here can see.
+		const {store, container} = mountStructuralInline('ab')
+		const event = new InputEvent('beforeinput', {
+			inputType: 'insertCompositionText',
+			bubbles: true,
+			cancelable: false,
+		})
+
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(store.tokens.value()).toBe('ab')
+		container.remove()
+	})
+
+	it('leaves a control root alone even when the model believes everything is selected', () => {
+		// MEASURED HARM the consumer-origin test prevents: the all-selected branch keys on
+		// the STORED selection, so a character typed into a control's own `<input>` used to
+		// replace the whole value with that character.
+		const {store, container, controlInput} = mountInlineWithControl()
+		store.tokens.selection.selectAll()
+		const event = new InputEvent('beforeinput', {
+			inputType: 'insertText',
+			data: 'z',
+			bubbles: true,
+			cancelable: true,
+		})
+
+		controlInput.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(store.tokens.value()).toBe('hello')
+		container.remove()
+	})
+
+	it('leaves Ctrl/Cmd+A to a control root', () => {
+		const {store, container, controlInput} = mountInlineWithControl()
+
+		const event = new KeyboardEvent('keydown', {code: 'KeyA', ctrlKey: true, bubbles: true, cancelable: true})
+		controlInput.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(store.tokens.selection.isAllSelected()).toBe(false)
+		container.remove()
+	})
+
+	it('Ctrl/Cmd+A selects all from the input keydown path', () => {
+		const {store, container} = mountStructuralInline('ab')
+
+		const event = new KeyboardEvent('keydown', {code: 'KeyA', ctrlKey: true, bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.selection.isAllSelected()).toBe(true)
 		container.remove()
 	})
 
