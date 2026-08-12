@@ -2,6 +2,7 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
 import {
+	mountNested,
 	mountStructuralInline,
 	mountStructuralInlineMark,
 	mountValue,
@@ -124,6 +125,22 @@ describe('handleBeforeInput()', () => {
 		expect(store.tokens.value()).toBe('a@[m1](1)XY@[m2](2)b')
 		expect(store.tokens.nodes()[2]).toBe(gap)
 		expect(selectionRange(store)).toEqual({start: 11, end: 11})
+		container.remove()
+	})
+
+	it.each([
+		['leading', 0, '@[Xa @[b] c]'],
+		['trailing', 3, '@[a @[b] cX]'],
+	])('types INTO the slot at its %s host edge', (_label, offset, expected) => {
+		// A slot host holds the mark's children, so its edges are the slot's own start and
+		// end. Answering with the OWNER's boundary put the character outside the markup
+		// ('X@[a @[b] c]' / '@[a @[b] c]X') — the slot content is editable, so the caret at
+		// that edge has exactly one meaning.
+		const {store, container, host} = mountNested()
+
+		container.dispatchEvent(inputEvent('insertText', selectBoundary(host, offset), {data: 'X'}))
+
+		expect(store.tokens.value()).toBe(expected)
 		container.remove()
 	})
 

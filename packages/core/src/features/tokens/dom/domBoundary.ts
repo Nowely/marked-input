@@ -60,7 +60,7 @@ export function anchorFromBoundary(
 	// `childSequenceHost` must resolve host boundaries here, or a host boundary on a
 	// text-bearing token would be read as a text offset.
 	if (node instanceof HTMLElement && node === lookup.node.childSequenceHost) {
-		return fromChildAnchor(ctx, node, offset, owner, affinity)
+		return fromHostAnchor(ctx, node, offset, owner, affinity)
 	}
 
 	const textElement = lookup.node.textElement
@@ -102,7 +102,7 @@ export function anchorFromBoundary(
 	return undefined
 }
 
-/** The `<=0` / `>=childCount` / interior split both element branches share. */
+/** The `<=0` / `>=childCount` / interior split of a token's own SHELL element. */
 function fromChildAnchor(
 	ctx: AnchorContext,
 	element: HTMLElement,
@@ -114,6 +114,37 @@ function fromChildAnchor(
 	if (offset <= 0) return {before: owner}
 	if (offset >= childCount) return {after: owner}
 	return childBoundaryAnchor(ctx, element, offset, owner, affinity)
+}
+
+/**
+ * The SLOT HOST's boundaries, which are NOT the shell's: a host holds the owner's CHILDREN,
+ * so its edges are the slot's INTERIOR — the first child's start and the last child's end.
+ * The owner's own boundary sits outside its markup, one `@[` away, and answering with it let
+ * an edit at the edge of a slot escape the mark: MEASURED on `@[a @[b] c]` (slot [2,10]),
+ * `insertText 'X'` at host offset 0 produced `X@[a @[b] c]` and at the last edge
+ * `@[a @[b] c]X`, where the slot is the only place a caret there can mean.
+ *
+ * The owner-boundary fallback survives for the door no parse opens: every slot the parser
+ * builds holds at least one text token (`@[]` parses to one empty child at the slot start),
+ * so a childless owner here is either a text token with a registered host — no adapter
+ * renders one — or a host whose children `bind` could not align, and with no child to name,
+ * the owner's boundary is the only honest answer left.
+ */
+function fromHostAnchor(
+	ctx: AnchorContext,
+	host: HTMLElement,
+	offset: number,
+	owner: TreeNode,
+	affinity: 'before' | 'after'
+): NodeAnchor | undefined {
+	const childCount = host.childNodes.length
+	if (offset > 0 && offset < childCount) return childBoundaryAnchor(ctx, host, offset, owner, affinity)
+	const children = owner.kind === 'mark' ? owner.children() : []
+	// `.at`, not an index read: `noUncheckedIndexedAccess` is off, so the empty case would
+	// type as a `TreeNode` and the fallback below would be linted away as impossible.
+	const edge = offset <= 0 ? children.at(0) : children.at(-1)
+	if (!edge) return offset <= 0 ? {before: owner} : {after: owner}
+	return offset <= 0 ? {before: edge} : {after: edge}
 }
 
 /** The interior of {@link fromChildAnchor}, including its inverted-affinity fallback. */

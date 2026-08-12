@@ -101,22 +101,34 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(mark, 0)).toBeUndefined()
 	})
 
-	it('anchors a child-sequence boundary at index 0 before the owner', () => {
+	it('anchors a child-sequence boundary at index 0 before the FIRST CHILD', () => {
+		// The slot's own start, not the owner's: the mark's boundary is one `@[` outside the
+		// content this host holds, and a caret at the host's leading edge can only mean the
+		// slot. FLIPPED from `{before: outer}` — the escape that answer bought is pinned end
+		// to end below ('X@[a @[b] c]' instead of '@[Xa @[b] c]').
 		const {store, host} = mountNested()
 		const outer = store.tokens.nodes()[1]
-		expect(store.tokens.anchorFor(host, 0)).toEqual({before: outer})
+		if (outer.kind !== 'mark') throw new Error('expected a mark root')
+		const first = outer.children()[0]
+		expect(store.tokens.anchorFor(host, 0)).toEqual({before: first})
+		// The OFFSETS are what make this discriminate: both anchors are legal shapes, and
+		// only their projections say which side of the markup the caret landed on.
+		expect(offsetOfAnchor(store.tokens.nodes(), {before: first})).toBe(outer.slotRange?.start)
 	})
 
-	it('anchors a child-sequence boundary past the last child after the owner', () => {
+	it('anchors a child-sequence boundary past the last child after the LAST CHILD', () => {
 		const {store, host} = mountNested()
 		const outer = store.tokens.nodes()[1]
-		expect(store.tokens.anchorFor(host, 3)).toEqual({after: outer})
+		if (outer.kind !== 'mark') throw new Error('expected a mark root')
+		const last = outer.children()[2]
+		expect(store.tokens.anchorFor(host, 3)).toEqual({after: last})
 		// The 'before' probe is what makes this case DISCRIMINATING, and it is the only
 		// thing that does: the edge answers by SIDE and ignores affinity, while the
 		// interior path one `>=`→`>` away answers `{before: owner}` here (no child sits at
 		// index 3, so it reaches the inverted fallback). Without this line the mutation is
 		// invisible — the default 'after' affinity makes the two paths agree.
-		expect(store.tokens.anchorFor(host, 3, 'before')).toEqual({after: outer})
+		expect(store.tokens.anchorFor(host, 3, 'before')).toEqual({after: last})
+		expect(offsetOfAnchor(store.tokens.nodes(), {after: last})).toBe(outer.slotRange?.end)
 	})
 
 	it('resolves an interior child boundary to its two neighbours by affinity', () => {
