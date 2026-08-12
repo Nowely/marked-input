@@ -704,6 +704,11 @@
 							<td>
 								Confirmed on the focused span (selects exactly the span). On any <i>other</i> span the
 								triple-click is consumed whole by the click steal (selection doesn't change at all).
+								<b
+									>[superseded — see the post-migration addendum: the span-boundary reading is wrong.
+									Chromium bounds paragraph selection at any inline <code>ce=false</code> atomic
+									(control-measured without markput), so one host does NOT fix it]</b
+								>
 							</td>
 							<td><span class="vd stands">stands+</span></td>
 						</tr>
@@ -830,6 +835,116 @@ afterBackspace = { domText: <i>unchanged</i>, selText: <i>unchanged</i>, ce: "<b
 
 			<!-- ============================ TAB: ONE HOST ============================ -->
 			<section class="tab" data-tab="onehost">
+				<h2 class="sect">
+					Post-migration verification (2026&#8209;08&#8209;12) <span class="badge b-proven">measured</span>
+				</h2>
+				<p class="note">
+					The migration shipped. Live sweep on the react storybook (<code>MarkedInput/Configured</code>),
+					Chromium, trusted events — <b>6 of 8 PASS</b>. Two probe claims below did NOT transfer from fixture
+					to live DOM; both are corrected here and marked <i>superseded</i> where they were originally stated.
+					History below this section is left as written.
+				</p>
+				<table class="grid">
+					<caption>
+						Live sweep of the defects this migration existed to kill
+					</caption>
+					<thead>
+						<tr>
+							<th>#</th>
+							<th>Check</th>
+							<th>Result</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="num">1</td>
+							<td>Click into each of the first three text spans in turn — caret lands where clicked</td>
+							<td><span class="vd gone">PASS</span> — the click steal is dead</td>
+						</tr>
+						<tr>
+							<td class="num">2</td>
+							<td>Sweep span 1 → across a mark → span 2, then Backspace</td>
+							<td><span class="vd gone">PASS</span> — text and mark deleted; no dead editor</td>
+						</tr>
+						<tr>
+							<td class="num">3</td>
+							<td>Tab from inside the field</td>
+							<td>
+								<span class="vd gone">PASS</span> — focus leaves. A consumer <code>&lt;button&gt;</code>
+								mark keeps its own native tab stop
+							</td>
+						</tr>
+						<tr>
+							<td class="num">4</td>
+							<td>Home / End</td>
+							<td><span class="vd gone">PASS</span> — whole visual line, across marks</td>
+						</tr>
+						<tr>
+							<td class="num">5</td>
+							<td>Alt+ArrowLeft repeatedly</td>
+							<td><span class="vd gone">PASS</span> — word-jumps across marks, never sticks</td>
+						</tr>
+						<tr class="hl">
+							<td class="num">6</td>
+							<td>Triple-click selects the visual line, not one span</td>
+							<td>
+								<span class="vd worse">FAIL</span> — <b>engine limit, not markput</b>. Chromium bounds
+								paragraph selection at ANY inline <code>ce=false</code> atomic; reproduced in a control
+								page with no markput at all (plain <code>&lt;div contenteditable&gt;</code> + bare
+								inline <code>&lt;span ce=false&gt;</code>). No DOM topology fixes it
+							</td>
+						</tr>
+						<tr>
+							<td class="num">7</td>
+							<td>Arrow Left/Right through a mark</td>
+							<td><span class="vd gone">PASS</span> — one keystroke per position, no dead stops</td>
+						</tr>
+						<tr class="hl">
+							<td class="num">8</td>
+							<td>Click between two adjacent marks — caret in the empty gap</td>
+							<td>
+								<span class="vd worse">FAIL</span> — on the LIVE DOM the bare gap span computes to
+								<b>0.0px wide</b>; 5/5 clicks land elsewhere. The gap stays <b>arrow-reachable</b> (one
+								container-anchored stop, as probed). Filler still rejected: real text contaminates
+								<code>range.toString()</code> on copy
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<div class="callout warn">
+					<h4>Two probe claims refuted by the live DOM</h4>
+					<p>
+						<b>Gap clicks — fixture vs live.</b> "5/5 clicks land on the bare gap span" was measured on a
+						static fixture whose gap span had layout. In the shipped renderer the empty
+						<code>TextToken('')</code> span has zero width, so there is no pixel to hit. Arrow reachability
+						(one stop, container-anchored) held exactly as probed, and that is what makes the position
+						usable without a filler.
+					</p>
+					<p>
+						<b>Triple-click — not this migration's to fix.</b> The N-host table recorded it as a per-span
+						block-boundary artifact. The control experiment says otherwise: paragraph selection stops at any
+						inline <code>ce=false</code> atomic in Chromium regardless of how many hosts exist. It is
+						reclassified as an engine limit and stays open.
+					</p>
+				</div>
+				<div class="callout ok">
+					<h4>Anchor-family fixes landed after the sweep</h4>
+					<p>
+						<code>cdba8215</code> — a collapsed <code>beforeinput</code> target range must resolve to ONE
+						anchor: reading both affinities against a single boundary named the same position twice, which
+						downstream read as a zero-length RANGE and deleted nothing.
+					</p>
+					<p>
+						<code>3e5af051</code> — slot-host edge boundaries anchor INSIDE the slot, so an edit at a
+						transparent mark's leading edge lands in the slot rather than before the mark's markup.
+					</p>
+					<p>
+						<code>b12149f2</code> — collapsed edits trust the model caret over the canonicalized target
+						range: Chromium canonicalizes a collapsed target range to the earliest visually equivalent
+						position, erasing the side-of-boundary distinction the model's own caret keeps.
+					</p>
+				</div>
+
 				<h2 class="sect">Single-host probes <span class="badge b-proven">proven</span></h2>
 				<p class="note">
 					Fixture built from the committed snapshot DOM (<code
@@ -846,6 +961,10 @@ afterBackspace = { domText: <i>unchanged</i>, selText: <i>unchanged</i>, ce: "<b
 					whether a ZWSP filler is mandatory. <strong>It is not.</strong> The earlier "ZWSP + min-width or
 					bust" verdict came from the pre-rewrite fixture with invented <code>[ ]</code> chrome — on the
 					committed DOM shape the bare gap is reachable by both arrows and clicks:
+					<b
+						>[superseded — see the post-migration addendum at the top of this tab: the click column does not
+						transfer to the live DOM, where the gap span is 0px wide; arrow reachability holds]</b
+					>
 				</p>
 				<table class="grid">
 					<caption>
