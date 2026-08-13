@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {snapshotHtml} from '../shared/lib/htmlSnapshot'
 
 describe('snapshotHtml', () => {
-	it('formats nested html and strips unstable attributes', () => {
+	it('formats nested html, strips unstable attributes and drops framework comments', () => {
 		const html =
 			'<div class="wrapper" style="color: red"><span contenteditable="true">Hello</span><mark tabindex="0"><strong>wor</strong><em>ld</em></mark><!--v-if--></div>'
 
@@ -14,7 +14,6 @@ describe('snapshotHtml', () => {
 			    <strong>wor</strong>
 			    <em>ld</em>
 			  </mark>
-			  <!--v-if-->
 			</div>"
 		`)
 	})

@@ -2,6 +2,8 @@ import type {StoryContext, VueRenderer} from '@storybook/vue3-vite'
 import {useArgs, useGlobals} from 'storybook/preview-api'
 import {defineComponent, h, ref} from 'vue'
 
+import PlainValuePanel from '../components/Text/PlainValuePanel.vue'
+
 function narrowPosition(v: unknown): 'right' | 'bottom' | undefined {
 	return v === 'right' || v === 'bottom' ? v : undefined
 }
@@ -45,45 +47,24 @@ export const withPlainValue = (story: () => VueRenderer['storyResult'], context:
 			const value = ref<string>(mergedArgs.value ?? '')
 
 			return () => {
+				// The layout mirrors withPlainValue.react.tsx element for element: the same story
+				// renders in both frameworks, so their HTML snapshots have to be comparable.
 				const storyNode = h(story(), {
 					value: value.value,
 					onChange: (v: string) => {
 						value.value = v
 					},
 				})
-				const preNode = h(
-					'pre',
-					{style: {padding: '8px', fontFamily: 'monospace', fontSize: '14px', margin: 0}},
-					value.value
-				)
+				const panel = h(PlainValuePanel, {value: value.value, position})
 
 				if (position === 'right') {
-					return h('div', {style: {display: 'flex', gap: '16px', height: '100%'}}, [
-						h('div', {style: {flex: 3, minWidth: 0}}, [storyNode]),
-						h('div', {style: {flex: 1, minWidth: 0}}, [
-							h(
-								'div',
-								{
-									style: {
-										fontSize: '11px',
-										fontWeight: 'bold',
-										color: '#666',
-										marginBottom: '4px',
-										textTransform: 'uppercase',
-									},
-								},
-								'Plain Value'
-							),
-							preNode,
-						]),
+					return h('div', {style: {display: 'flex', height: '100%'}}, [
+						h('div', {style: {flex: 3, minWidth: 0, overflowY: 'auto'}}, [storyNode]),
+						panel,
 					])
 				}
 
-				return h('div', {}, [
-					storyNode,
-					h('hr', {style: {margin: '8px 0', border: '1px solid #e0e0e0'}}),
-					preNode,
-				])
+				return h('div', {}, [storyNode, h('div', {class: 'pvp-divider'}), panel])
 			}
 		},
 	})

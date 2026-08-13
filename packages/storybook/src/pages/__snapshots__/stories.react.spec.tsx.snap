@@ -81,18 +81,19 @@ exports[`Component: stories > Base stories > Story Autocomplete 1`] = `
 
 exports[`Component: stories > Base stories > Story Configured 1`] = `
 "<div>
-  <div contenteditable="true">
-    <span>Enter the '@' for calling </span>
-    <button type="button" contenteditable="false">primary</button>
-    <span> suggestions and '/' for </span>
-    <button type="button" contenteditable="false">default</button>
-    <span>!&#10;Mark is can be a any component with any logic. In this example it is the </span>
-    <button type="button" contenteditable="false">Button</button>
-    <span>: clickable primary or secondary.&#10;For found mark used </span>
-    <button type="button" contenteditable="false">annotations</button>
-    <span>.</span>
+  <div>
+    <div contenteditable="true">
+      <span>Enter the '@' for calling </span>
+      <button type="button" contenteditable="false">primary</button>
+      <span> suggestions and '/' for </span>
+      <button type="button" contenteditable="false">default</button>
+      <span>!&#10;Mark is can be a any component with any logic. In this example it is the </span>
+      <button type="button" contenteditable="false">Button</button>
+      <span>: clickable primary or secondary.&#10;For found mark used </span>
+      <button type="button" contenteditable="false">annotations</button>
+      <span>.</span>
+    </div>
   </div>
-  <div></div>
   <div>
     <button>Copy</button>
     <div>

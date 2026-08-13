@@ -3,8 +3,7 @@
 exports[`Component: stories > Base stories > Story Autocomplete 1`] = `
 "<div contenteditable="true">
   <span>Hello, clickable marked @world!</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Base stories > Story Configured 1`] = `
@@ -21,11 +20,16 @@ exports[`Component: stories > Base stories > Story Configured 1`] = `
       <button type="button" contenteditable="false">annotations</button>
       <span>.</span>
     </div>
-    <!--v-if-->
   </div>
   <div>
-    <div>Plain Value</div>
-    <pre>Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!&#10;Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.&#10;For found mark used @[annotations](default:123).</pre>
+    <button>Copy</button>
+    <div>
+      <pre data-value="Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!&#10;Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.&#10;For found mark used @[annotations](default:123).">Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!&#10;Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.&#10;For found mark used @[annotations](default:123).</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>37 words · 271 chars · 3 lines</span>
+    </div>
   </div>
 </div>"
 `;
@@ -35,47 +39,36 @@ exports[`Component: stories > Base stories > Story Default 1`] = `
   <span>Hello, clickable marked </span>
   <mark contenteditable="false">world</mark>
   <span>!</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
 "<div contenteditable="true">
   <div data-testid="block">
-    <!--v-if-->
     <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
     <span>hello&#10;</span>
-    <!--v-if-->
-    <!--v-if-->
   </div>
   <div data-testid="block">
-    <!--v-if-->
     <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
     <mark data-testid="mark" contenteditable="false">world</mark>
-    <!--v-if-->
-    <!--v-if-->
   </div>
   <div data-testid="block">
-    <!--v-if-->
     <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
     <span>&#10;foo</span>
-    <!--v-if-->
-    <!--v-if-->
   </div>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Clipboard stories > Story Inline 1`] = `
@@ -83,8 +76,7 @@ exports[`Component: stories > Clipboard stories > Story Inline 1`] = `
   <span>hello </span>
   <mark data-testid="mark" contenteditable="false">world</mark>
   <span> foo</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Clipboard stories > Story NestedMarkStory 1`] = `
@@ -95,15 +87,13 @@ exports[`Component: stories > Clipboard stories > Story NestedMarkStory 1`] = `
     <em>ld</em>
   </mark>
   <span> foo</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Clipboard stories > Story PlainText 1`] = `
 "<div contenteditable="true">
   <span>abc</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Drag stories > Story Markdown 1`] = `
@@ -111,7 +101,6 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
   <div>
     <div contenteditable="true">
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -128,22 +117,16 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
             <span></span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
         <span>A powerful library for parsing rich text with markdown formatting.&#10;&#10;</span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -154,11 +137,8 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
             <span>Features</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -181,11 +161,8 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
             <span> text support</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -200,11 +177,8 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
             <span></span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -217,11 +191,8 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
             <span> for deleted content</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -234,11 +205,8 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
             <span></span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -249,37 +217,34 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
             <span>Example</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
         <span contenteditable="false">const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
         <span>&#10;&#10;Visit our docs for more details.</span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
     </div>
-    <!--v-if-->
   </div>
   <div>
-    <div>Plain Value</div>
-    <pre># Welcome to **Marked Input**&#10;&#10;A powerful library for parsing rich text with markdown formatting.&#10;&#10;## Features&#10;&#10;- **Bold** and *italic* text support&#10;&#10;- \`Code snippets\` and \`code blocks\`&#10;&#10;- ~~Strikethrough~~ for deleted content&#10;&#10;- Links like [GitHub](https://github.com)&#10;&#10;## Example&#10;&#10;\`\`\`javascript&#10;const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;\`\`\`&#10;&#10;Visit our docs for more details.</pre>
+    <button>Copy</button>
+    <div>
+      <pre data-value="# Welcome to **Marked Input**&#10;&#10;A powerful library for parsing rich text with markdown formatting.&#10;&#10;## Features&#10;&#10;- **Bold** and *italic* text support&#10;&#10;- \`Code snippets\` and \`code blocks\`&#10;&#10;- ~~Strikethrough~~ for deleted content&#10;&#10;- Links like [GitHub](https://github.com)&#10;&#10;## Example&#10;&#10;\`\`\`javascript&#10;const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;\`\`\`&#10;&#10;Visit our docs for more details."># Welcome to **Marked Input**&#10;&#10;A powerful library for parsing rich text with markdown formatting.&#10;&#10;## Features&#10;&#10;- **Bold** and *italic* text support&#10;&#10;- \`Code snippets\` and \`code blocks\`&#10;&#10;- ~~Strikethrough~~ for deleted content&#10;&#10;- Links like [GitHub](https://github.com)&#10;&#10;## Example&#10;&#10;\`\`\`javascript&#10;const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;\`\`\`&#10;&#10;Visit our docs for more details.</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>59 words · 444 chars · 22 lines</span>
+    </div>
   </div>
 </div>"
 `;
@@ -288,7 +253,6 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
 "<div>
   <div contenteditable="true">
     <div data-testid="block">
-      <!--v-if-->
       <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
@@ -299,22 +263,16 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
           <span>Welcome to Draggable Blocks</span>
         </span>
       </span>
-      <!--v-if-->
-      <!--v-if-->
     </div>
     <div data-testid="block">
-      <!--v-if-->
       <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
         </button>
       </div>
       <span>This is the first paragraph.&#10;&#10;This is the second paragraph.&#10;&#10;</span>
-      <!--v-if-->
-      <!--v-if-->
     </div>
     <div data-testid="block">
-      <!--v-if-->
       <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
@@ -325,11 +283,8 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
           <span>Features</span>
         </span>
       </span>
-      <!--v-if-->
-      <!--v-if-->
     </div>
     <div data-testid="block">
-      <!--v-if-->
       <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
@@ -340,11 +295,8 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
           <span>Drag handles appear on hover</span>
         </span>
       </span>
-      <!--v-if-->
-      <!--v-if-->
     </div>
   </div>
-  <!--v-if-->
   <pre># Welcome to Draggable Blocks&#10;&#10;This is the first paragraph.&#10;&#10;This is the second paragraph.&#10;&#10;## Features&#10;&#10;- Drag handles appear on hover&#10;&#10;</pre>
 </div>"
 `;
@@ -353,7 +305,6 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
 "<div>
   <div contenteditable="true">
     <div data-testid="block">
-      <!--v-if-->
       <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
@@ -364,11 +315,8 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
           <span>First block of plain text</span>
         </span>
       </span>
-      <!--v-if-->
-      <!--v-if-->
     </div>
     <div data-testid="block">
-      <!--v-if-->
       <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
@@ -379,11 +327,8 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
           <span>Second block of plain text</span>
         </span>
       </span>
-      <!--v-if-->
-      <!--v-if-->
     </div>
     <div data-testid="block">
-      <!--v-if-->
       <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
@@ -394,11 +339,8 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
           <span>Third block of plain text</span>
         </span>
       </span>
-      <!--v-if-->
-      <!--v-if-->
     </div>
     <div data-testid="block">
-      <!--v-if-->
       <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
@@ -409,11 +351,8 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
           <span>Fourth block of plain text</span>
         </span>
       </span>
-      <!--v-if-->
-      <!--v-if-->
     </div>
     <div data-testid="block">
-      <!--v-if-->
       <div contenteditable="false">
         <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
           <span></span>
@@ -424,11 +363,8 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
           <span>Fifth block of plain text</span>
         </span>
       </span>
-      <!--v-if-->
-      <!--v-if-->
     </div>
   </div>
-  <!--v-if-->
   <pre>First block of plain text&#10;&#10;Second block of plain text&#10;&#10;Third block of plain text&#10;&#10;Fourth block of plain text&#10;&#10;Fifth block of plain text&#10;&#10;</pre>
 </div>"
 `;
@@ -436,40 +372,27 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
 exports[`Component: stories > Drag stories > Story ReadOnlyDrag 1`] = `
 "<div contenteditable="false">
   <div data-testid="block">
-    <!--v-if-->
-    <!--v-if-->
     <span>
       <span>
         <span>Read-Only Content</span>
       </span>
     </span>
-    <!--v-if-->
-    <!--v-if-->
   </div>
   <div data-testid="block">
-    <!--v-if-->
-    <!--v-if-->
     <span>
       <span>
         <span>Section A</span>
       </span>
     </span>
-    <!--v-if-->
-    <!--v-if-->
   </div>
   <div data-testid="block">
-    <!--v-if-->
-    <!--v-if-->
     <span>
       <span>
         <span>Section B</span>
       </span>
     </span>
-    <!--v-if-->
-    <!--v-if-->
   </div>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
@@ -477,23 +400,18 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
   <div>
     <div contenteditable="true">
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
         <span>
-          <!---->
           <span>
             <span>📋 Project Launch Checklist</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -505,11 +423,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Design Phase</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -521,11 +436,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Create wireframes</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -537,11 +449,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Define color palette</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -553,11 +462,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Design component library</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -569,11 +475,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Research</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -585,11 +488,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Analyze competitors</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -601,11 +501,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>User interviews</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -617,11 +514,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Draft interview questions</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -633,11 +527,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Schedule 5 sessions</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -649,11 +540,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Development</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -665,11 +553,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Set up CI/CD pipeline</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -681,11 +566,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Write unit tests</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -697,11 +579,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>API integration</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -713,11 +592,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Auth endpoints</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -729,11 +605,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Data sync</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -745,11 +618,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Launch</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -761,11 +631,8 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Final QA pass</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
@@ -777,31 +644,30 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
             <span>Deploy to production</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
       <div data-testid="block">
-        <!--v-if-->
         <div contenteditable="false">
           <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
             <span></span>
           </button>
         </div>
         <span>
-          <!---->
           <span>
             <span>☐ = pending  ☑ = done</span>
           </span>
         </span>
-        <!--v-if-->
-        <!--v-if-->
       </div>
     </div>
-    <!--v-if-->
   </div>
   <div>
-    <div>Plain Value</div>
-    <pre># 📋 Project Launch Checklist&#10;&#10;- [ ] Design Phase&#10;	- [ ] Create wireframes&#10;	- [x] Define color palette&#10;	- [ ] Design component library&#10;- [x] Research&#10;	- [x] Analyze competitors&#10;	- [x] User interviews&#10;		- [x] Draft interview questions&#10;		- [x] Schedule 5 sessions&#10;- [ ] Development&#10;	- [ ] Set up CI/CD pipeline&#10;	- [x] Write unit tests&#10;	- [ ] API integration&#10;		- [ ] Auth endpoints&#10;		- [ ] Data sync&#10;- [ ] Launch&#10;	- [ ] Final QA pass&#10;	- [ ] Deploy to production&#10;&gt; ☐ = pending  ☑ = done&#10;&#10;</pre>
+    <button>Copy</button>
+    <div>
+      <pre data-value="# 📋 Project Launch Checklist&#10;&#10;- [ ] Design Phase&#10;	- [ ] Create wireframes&#10;	- [x] Define color palette&#10;	- [ ] Design component library&#10;- [x] Research&#10;	- [x] Analyze competitors&#10;	- [x] User interviews&#10;		- [x] Draft interview questions&#10;		- [x] Schedule 5 sessions&#10;- [ ] Development&#10;	- [ ] Set up CI/CD pipeline&#10;	- [x] Write unit tests&#10;	- [ ] API integration&#10;		- [ ] Auth endpoints&#10;		- [ ] Data sync&#10;- [ ] Launch&#10;	- [ ] Final QA pass&#10;	- [ ] Deploy to production&#10;&gt; ☐ = pending  ☑ = done&#10;&#10;"># 📋 Project Launch Checklist&#10;&#10;- [ ] Design Phase&#10;	- [ ] Create wireframes&#10;	- [x] Define color palette&#10;	- [ ] Design component library&#10;- [x] Research&#10;	- [x] Analyze competitors&#10;	- [x] User interviews&#10;		- [x] Draft interview questions&#10;		- [x] Schedule 5 sessions&#10;- [ ] Development&#10;	- [ ] Set up CI/CD pipeline&#10;	- [x] Write unit tests&#10;	- [ ] API integration&#10;		- [ ] Auth endpoints&#10;		- [ ] Data sync&#10;- [ ] Launch&#10;	- [ ] Final QA pass&#10;	- [ ] Deploy to production&#10;&gt; ☐ = pending  ☑ = done&#10;&#10;</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>101 words · 484 chars · 23 lines</span>
+    </div>
   </div>
 </div>"
 `;
@@ -809,10 +675,9 @@ exports[`Component: stories > Drag stories > Story TodoListDrag 1`] = `
 exports[`Component: stories > Dynamic stories > Story Dynamic 1`] = `
 "<div contenteditable="true">
   <span>Hello, dynamical mark </span>
-  <mark meta=" " value="world" contenteditable="false">world</mark>
+  <mark contenteditable="false">world</mark>
   <span>!</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Dynamic stories > Story Focusable 1`] = `
@@ -820,16 +685,21 @@ exports[`Component: stories > Dynamic stories > Story Focusable 1`] = `
   <div>
     <div contenteditable="true">
       <span>Hello, </span>
-      <abbr title="By key operations" meta="By key operations" value="focusable" contenteditable="false">focusable</abbr>
+      <abbr title="By key operations" contenteditable="false">focusable</abbr>
       <span> abbreviation </span>
-      <abbr title="Hello! Hello!" meta="Hello! Hello!" value="world" contenteditable="false">world</abbr>
+      <abbr title="Hello! Hello!" contenteditable="false">world</abbr>
       <span>!</span>
     </div>
-    <!--v-if-->
   </div>
   <div>
-    <div>Plain Value</div>
-    <pre>Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!</pre>
+    <button>Copy</button>
+    <div>
+      <pre data-value="Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!">Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>7 words · 76 chars · 1 lines</span>
+    </div>
   </div>
 </div>"
 `;
@@ -837,14 +707,13 @@ exports[`Component: stories > Dynamic stories > Story Focusable 1`] = `
 exports[`Component: stories > Dynamic stories > Story Removable 1`] = `
 "<div contenteditable="true">
   <span>I </span>
-  <mark meta=" " value="contain" contenteditable="false">contain</mark>
+  <mark contenteditable="false">contain</mark>
   <span> </span>
-  <mark meta=" " value="removable" contenteditable="false">removable</mark>
+  <mark contenteditable="false">removable</mark>
   <span> by click </span>
-  <mark meta=" " value="marks" contenteditable="false">marks</mark>
+  <mark contenteditable="false">marks</mark>
   <span>!</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Nested stories > Story HtmlLikeTags 1`] = `
@@ -877,11 +746,16 @@ exports[`Component: stories > Nested stories > Story HtmlLikeTags 1`] = `
       </div>
       <span></span>
     </div>
-    <!--v-if-->
   </div>
   <div>
-    <div>Plain Value</div>
-    <pre>&lt;div&gt;This is a div with &lt;mark&gt;a mark inside&lt;/mark&gt; and &lt;b&gt;bold text with &lt;del&gt;nested del&lt;/del&gt;&lt;/b&gt;&lt;/div&gt;</pre>
+    <button>Copy</button>
+    <div>
+      <pre data-value="&lt;div&gt;This is a div with &lt;mark&gt;a mark inside&lt;/mark&gt; and &lt;b&gt;bold text with &lt;del&gt;nested del&lt;/del&gt;&lt;/b&gt;&lt;/div&gt;">&lt;div&gt;This is a div with &lt;mark&gt;a mark inside&lt;/mark&gt; and &lt;b&gt;bold text with &lt;del&gt;nested del&lt;/del&gt;&lt;/b&gt;&lt;/div&gt;</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>14 words · 104 chars · 1 lines</span>
+    </div>
   </div>
 </div>"
 `;
@@ -922,11 +796,16 @@ exports[`Component: stories > Nested stories > Story MultipleLevels 1`] = `
       </span>
       <span></span>
     </div>
-    <!--v-if-->
   </div>
   <div>
-    <div>Plain Value</div>
-    <pre>Check #[this tag with @[nested mention with \`code\`]] and #[another #[deeply nested] tag]</pre>
+    <button>Copy</button>
+    <div>
+      <pre data-value="Check #[this tag with @[nested mention with \`code\`]] and #[another #[deeply nested] tag]">Check #[this tag with @[nested mention with \`code\`]] and #[another #[deeply nested] tag]</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>13 words · 88 chars · 1 lines</span>
+    </div>
   </div>
 </div>"
 `;
@@ -949,11 +828,16 @@ exports[`Component: stories > Nested stories > Story SimpleNesting 1`] = `
       </span>
       <span> and more text.</span>
     </div>
-    <!--v-if-->
   </div>
   <div>
-    <div>Plain Value</div>
-    <pre>This is *italic text with **bold** inside* and more text.</pre>
+    <button>Copy</button>
+    <div>
+      <pre data-value="This is *italic text with **bold** inside* and more text.">This is *italic text with **bold** inside* and more text.</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>10 words · 57 chars · 1 lines</span>
+    </div>
   </div>
 </div>"
 `;
@@ -961,75 +845,60 @@ exports[`Component: stories > Nested stories > Story SimpleNesting 1`] = `
 exports[`Component: stories > Overlay stories > Story CustomOverlay 1`] = `
 "<div contenteditable="true">
   <span>Hello, custom overlay by trigger @!</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Overlay stories > Story CustomTrigger 1`] = `
 "<div contenteditable="true">
   <span>Hello, custom overlay by trigger /!</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Overlay stories > Story DefaultOverlay 1`] = `
 "<div contenteditable="true">
   <span>Hello, default - suggestion overlay by trigger @!</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Overlay stories > Story PositionedOverlay 1`] = `
 "<div contenteditable="true">
   <span>Hello, positioned overlay by trigger @!</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Overlay stories > Story SelectableOverlay 1`] = `
 "<div contenteditable="true">
   <span>Hello, suggest overlay by trigger @!</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Selection stories > Story Drag 1`] = `
 "<div contenteditable="true">
   <div data-testid="block">
-    <!--v-if-->
     <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
     <span>hello&#10;</span>
-    <!--v-if-->
-    <!--v-if-->
   </div>
   <div data-testid="block">
-    <!--v-if-->
     <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
     <mark data-testid="mark" contenteditable="false">world</mark>
-    <!--v-if-->
-    <!--v-if-->
   </div>
   <div data-testid="block">
-    <!--v-if-->
     <div contenteditable="false">
       <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
         <span></span>
       </button>
     </div>
     <span>&#10;foo</span>
-    <!--v-if-->
-    <!--v-if-->
   </div>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Selection stories > Story Inline 1`] = `
@@ -1037,8 +906,7 @@ exports[`Component: stories > Selection stories > Story Inline 1`] = `
   <span>hello </span>
   <mark data-testid="mark" contenteditable="false">world</mark>
   <span> foo</span>
-</div>
-<!--v-if-->"
+</div>"
 `;
 
 exports[`Component: stories > Slots stories > Story DataAttributes 1`] = `
@@ -1047,11 +915,16 @@ exports[`Component: stories > Slots stories > Story DataAttributes 1`] = `
     <div data-test-id="marked-input-demo" data-module="slots-api" data-user-id="user-123" contenteditable="true">
       <span>Use @[data] attributes for testing and tracking</span>
     </div>
-    <!--v-if-->
   </div>
   <div>
-    <div>Plain Value</div>
-    <pre>Use @[data] attributes for testing and tracking</pre>
+    <button>Copy</button>
+    <div>
+      <pre data-value="Use @[data] attributes for testing and tracking">Use @[data] attributes for testing and tracking</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>7 words · 47 chars · 1 lines</span>
+    </div>
   </div>
 </div>"
 `;
@@ -1062,11 +935,16 @@ exports[`Component: stories > Slots stories > Story StyleMerging 1`] = `
     <div contenteditable="true">
       <span>Container has @[merged] styles from multiple sources</span>
     </div>
-    <!--v-if-->
   </div>
   <div>
-    <div>Plain Value</div>
-    <pre>Container has @[merged] styles from multiple sources</pre>
+    <button>Copy</button>
+    <div>
+      <pre data-value="Container has @[merged] styles from multiple sources">Container has @[merged] styles from multiple sources</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>7 words · 52 chars · 1 lines</span>
+    </div>
   </div>
 </div>"
 `;
@@ -1077,7 +955,6 @@ exports[`Component: stories > Slots stories > Story WithSlotProps 1`] = `
 <div contenteditable="true">
   <span></span>
 </div>
-<!--v-if-->
 <div>
   <strong>Recent events:</strong>
   <p>No events yet</p>

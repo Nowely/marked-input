@@ -58,7 +58,7 @@ export const Configured = story<ButtonMarkProps>({
 		value: CONFIGURED_VALUE,
 		slotProps: {container: {...sharedContainerHandlers, ...fixtures.containerSlotProps}},
 	},
-	parameters: {plainValue: fixtures.plainValue},
+	parameters: {plainValue: 'right'},
 })
 
 export const Autocomplete = story({

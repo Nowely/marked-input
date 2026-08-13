@@ -15,7 +15,6 @@ export const fixtures = {
 	containerSlotProps: {
 		onKeyDown: () => console.log('onKeyDown'),
 	},
-	plainValue: 'bottom',
 }
 
 /** Spec fixtures: mark components the shared spec mounts through story args. */
