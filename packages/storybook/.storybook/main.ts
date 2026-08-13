@@ -11,12 +11,22 @@ const storyTest = /(?<!\.d)\.(story|stories)(\.(react|vue))?\.(m?[jt]sx?)$/
 
 const baseExtensions = ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json']
 
-/** Storybook builds with its own Vite config, so the framework-suffix resolution used by
- * vitest (`resolve.extensions`) has to be re-applied here. */
+/**
+ * Storybook builds with its own Vite config, so the framework-suffix resolution used by vitest
+ * (`resolve.extensions`) has to be re-applied here.
+ *
+ * `cacheDir` is per framework for a separate reason: Storybook keys its cache on the config
+ * DIRECTORY, which is the same for both instances because the framework is chosen by env var.
+ * Sharing it makes `pnpm run dev` — which starts both at once — have each server re-optimize
+ * over the other's dependency bundle, and the second one never finishes loading.
+ */
 const withFrameworkResolution = (framework: 'react' | 'vue') => async (config: InlineConfig) => {
 	const {mergeConfig} = await import('vite')
 	const extensions = framework === 'react' ? ['.react.tsx', '.react.ts'] : ['.vue.ts', '.vue.tsx']
-	return mergeConfig(config, {resolve: {extensions: [...extensions, ...baseExtensions]}})
+	return mergeConfig(config, {
+		cacheDir: `node_modules/.cache/sb-vite-${framework}`,
+		resolve: {extensions: [...extensions, ...baseExtensions]},
+	})
 }
 
 const shared = {
