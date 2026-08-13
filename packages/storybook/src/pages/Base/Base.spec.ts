@@ -2,10 +2,10 @@ import type {Markup} from '@markput/core'
 import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {caretIsInside, editingHost, getElement, textSurfaces} from '../../shared/lib/dom'
+import {caretIsInside, editingHost, findEditingHost, getElement, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import {composePage, mount, mountEcho} from '../../shared/lib/page'
-import {marks, Overlay} from './Base.fixtures'
+import {DroppedReadOnly, marks, Overlay} from './Base.fixtures'
 import * as BaseStories from './Base.stories'
 
 const {Default} = composePage(BaseStories)
@@ -220,6 +220,19 @@ describe('Component: MarkedInput', () => {
 		await expect.element(page.getByText('one')).not.toBeInTheDocument()
 		await expect.element(page.getByText('two')).not.toBeInTheDocument()
 		await expect.element(page.getByText('three')).not.toBeInTheDocument()
+	})
+
+	it('reverts a prop to its default when the caller stops passing it', async () => {
+		// The adapter owes core a FULL sync on every render: `readOnly` that disappears between
+		// renders must revert to its default, not keep the value it last had.
+		const {host} = await mount(DroppedReadOnly)
+		expect(host).toHaveAttribute('contenteditable', 'false')
+
+		await userEvent.click(getElement(page.getByText('unlock')))
+
+		// Re-read rather than reuse `host`: React patches the same element, Vue's `v-if` swaps in
+		// a new one. What both must agree on is that the editor is editable again.
+		expect(findEditingHost(document.body)).toHaveAttribute('contenteditable', 'true')
 	})
 
 	it.todo('be selectable')

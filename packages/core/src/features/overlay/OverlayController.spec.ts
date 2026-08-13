@@ -17,7 +17,7 @@ function storeWithCaret(value: string, offset: number, controlled = false) {
 		options: [{overlay: {trigger: '@'}}],
 		onChange: controlled
 			? (next: string) => {
-					queueMicrotask(() => store.props.set({value: next}))
+					queueMicrotask(() => store.props.update({value: next}))
 				}
 			: undefined,
 	})
@@ -57,14 +57,14 @@ describe('OverlayController', () => {
 	describe('activation via overlay trigger', () => {
 		it('probes overlay trigger on change when showOverlayOn includes change', () => {
 			// Reset to empty first so watch sees a false->true transition
-			store.props.set({options: []})
-			store.props.set({options: [{overlay: {trigger: '@'}}]})
+			store.props.update({options: []})
+			store.props.update({options: [{overlay: {trigger: '@'}}]})
 
 			store.tokens.setValue(store.tokens.value() + ' ')
 
 			expect(store.overlay.match()).toBeUndefined()
 
-			store.props.set({options: []})
+			store.props.update({options: []})
 		})
 
 		it('FINDS the trigger the commit just typed, uncontrolled', () => {
@@ -97,8 +97,8 @@ describe('OverlayController', () => {
 		})
 
 		it('clear match when close is emitted', () => {
-			store.props.set({options: []})
-			store.props.set({options: [{overlay: {trigger: '@'}}]})
+			store.props.update({options: []})
+			store.props.update({options: [{overlay: {trigger: '@'}}]})
 
 			store.overlay.match(stubMatch)
 
@@ -108,8 +108,8 @@ describe('OverlayController', () => {
 		})
 
 		it('react to change event when showOverlayOn includes change', () => {
-			store.props.set({options: [], showOverlayOn: 'change'})
-			store.props.set({options: [{overlay: {trigger: '@'}}]})
+			store.props.update({options: [], showOverlayOn: 'change'})
+			store.props.update({options: [{overlay: {trigger: '@'}}]})
 
 			store.overlay.match(stubMatch)
 
@@ -129,8 +129,8 @@ describe('OverlayController', () => {
 		})
 
 		it('not react to change event when showOverlayOn does not include change', () => {
-			store.props.set({options: [], showOverlayOn: 'selectionChange'})
-			store.props.set({options: [{overlay: {trigger: '@'}}]})
+			store.props.update({options: [], showOverlayOn: 'selectionChange'})
+			store.props.update({options: [{overlay: {trigger: '@'}}]})
 
 			store.overlay.match(stubMatch)
 
@@ -140,10 +140,10 @@ describe('OverlayController', () => {
 		})
 
 		it('be idempotent — setting options twice does not double-subscribe', () => {
-			store.props.set({options: []})
-			store.props.set({options: [{overlay: {trigger: '@'}}]})
+			store.props.update({options: []})
+			store.props.update({options: [{overlay: {trigger: '@'}}]})
 			// second set is a no-op (already has overlay trigger)
-			store.props.set({options: [{overlay: {trigger: '@'}}]})
+			store.props.update({options: [{overlay: {trigger: '@'}}]})
 
 			store.overlay.match(stubMatch)
 
@@ -155,9 +155,9 @@ describe('OverlayController', () => {
 
 	describe('deactivation', () => {
 		it('stop reacting to events after removing overlay trigger', () => {
-			store.props.set({options: []})
-			store.props.set({options: [{overlay: {trigger: '@'}}]})
-			store.props.set({options: []})
+			store.props.update({options: []})
+			store.props.update({options: [{overlay: {trigger: '@'}}]})
+			store.props.update({options: []})
 
 			store.overlay.match(stubMatch)
 
@@ -168,10 +168,10 @@ describe('OverlayController', () => {
 		})
 
 		it('allow re-enabling after removing overlay trigger', () => {
-			store.props.set({options: []})
-			store.props.set({options: [{overlay: {trigger: '@'}}]})
-			store.props.set({options: []})
-			store.props.set({options: [{overlay: {trigger: '@'}}]})
+			store.props.update({options: []})
+			store.props.update({options: [{overlay: {trigger: '@'}}]})
+			store.props.update({options: []})
+			store.props.update({options: [{overlay: {trigger: '@'}}]})
 
 			store.overlay.match(stubMatch)
 
@@ -202,7 +202,7 @@ describe('OverlayController', () => {
 			expect(replace).toHaveBeenCalledWith(range.anchor, range.head, '@[world]')
 			expect(store.tokens.value()).toBe('hello @[world]')
 			expect(store.overlay.match()).toBeUndefined()
-			store.props.set({options: []})
+			store.props.update({options: []})
 		})
 	})
 })

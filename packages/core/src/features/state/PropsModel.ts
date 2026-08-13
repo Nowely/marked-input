@@ -12,10 +12,10 @@ import type {
 } from '../../shared/types'
 import {shallow} from '../../shared/utils/shallow'
 
-// Framework adapters spread *every* prop into `set({...})`, including ones the
-// user did not provide. Default-bearing props use `default: T` so that an
-// incoming `undefined` reverts the signal to its declared default instead of
-// clobbering it.
+// Two ways in, and the names carry the difference. `set` writes EVERY declared prop, which is
+// what an adapter owes on each render: a prop the caller dropped arrives as `undefined` and
+// reverts to its declared default. `update` is a PATCH — it writes the keys it is given and
+// leaves the rest alone.
 
 export class PropsModel {
 	readonly value = signal<string>({readonly: true})
@@ -47,10 +47,32 @@ export class PropsModel {
 	readonly slots = signal<CoreSlots>({readonly: true})
 	readonly slotProps = signal<CoreSlotProps>({readonly: true})
 
+	/**
+	 * The adapter's full sync, called on every render: every declared prop takes its incoming
+	 * value, so one the caller stopped passing arrives as `undefined` and a default-bearing
+	 * signal reverts to its declared default.
+	 *
+	 * Reading the key list off `values` instead would leave a dropped prop stuck at the last
+	 * value it was given — React reproduced exactly that, where `readOnly={true}` in one branch
+	 * of a tabbed story and no `readOnly` in the other kept the editor read-only for good.
+	 */
 	set(values: Partial<SignalValues<typeof this>>): void {
 		// Single unavoidable cast: SignalValues<T> verifies per-key value types at the
 		// call site, but TS can't correlate key and value inside a loop.
 		// oxlint-disable-next-line no-unsafe-type-assertion
+		const setters = this as unknown as Record<string, (v: unknown) => void>
+		const incoming: Record<string, unknown> = values
+		batch(
+			() => {
+				for (const key of Object.keys(this)) setters[key](incoming[key])
+			},
+			{mutable: true}
+		)
+	}
+
+	/** A PATCH: writes the keys present in `values` and leaves every other prop untouched. */
+	update(values: Partial<SignalValues<typeof this>>): void {
+		// oxlint-disable-next-line no-unsafe-type-assertion -- same reason as `set`
 		const setters = this as unknown as Record<string, (v: unknown) => void>
 		batch(
 			() => {

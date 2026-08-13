@@ -1,5 +1,5 @@
-import {useMark} from '@markput/vue'
-import {defineComponent} from 'vue'
+import {MarkedInput, useMark} from '@markput/vue'
+import {defineComponent, ref} from 'vue'
 
 import Button from '../../shared/components/Button/Button.vue'
 
@@ -62,3 +62,22 @@ export const marks = {
 }
 
 export const Overlay = defineComponent({template: `<span>I'm here!</span>`})
+
+/**
+ * A harness whose `readOnly` prop DISAPPEARS rather than turning false — the shape a tabbed
+ * story has, and the one that used to leave the editor read-only for good.
+ */
+export const DroppedReadOnly = defineComponent({
+	components: {MarkedInput},
+	setup() {
+		const locked = ref(true)
+		return {locked, unlock: () => (locked.value = false), Mark: marks.Value}
+	},
+	template: `
+		<div>
+			<button @click="unlock">unlock</button>
+			<MarkedInput v-if="locked" :Mark="Mark" defaultValue="hello @[x](1)" :readOnly="true" />
+			<MarkedInput v-else :Mark="Mark" defaultValue="hello @[x](1)" />
+		</div>
+	`,
+})

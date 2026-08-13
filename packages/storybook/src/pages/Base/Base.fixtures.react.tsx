@@ -1,5 +1,6 @@
 import type {MarkProps} from '@markput/react'
-import {useMark} from '@markput/react'
+import {MarkedInput, useMark} from '@markput/react'
+import {useState} from 'react'
 
 import {Button} from '../../shared/components/Button'
 
@@ -48,3 +49,23 @@ export const marks = {
 }
 
 export const Overlay = () => <span>I'm here!</span>
+
+/**
+ * A harness whose `readOnly` prop DISAPPEARS rather than turning false — the shape a tabbed
+ * story has, and the one that used to leave the editor read-only for good.
+ */
+export const DroppedReadOnly = () => {
+	const [locked, setLocked] = useState(true)
+	const Mark = ({value}: MarkProps) => <mark>{value}</mark>
+
+	return (
+		<>
+			<button onClick={() => setLocked(false)}>unlock</button>
+			{locked ? (
+				<MarkedInput Mark={Mark} defaultValue="hello @[x](1)" readOnly={true} />
+			) : (
+				<MarkedInput Mark={Mark} defaultValue="hello @[x](1)" />
+			)}
+		</>
+	)
+}
