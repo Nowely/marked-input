@@ -102,6 +102,27 @@ describe('API: Overlay and Triggers', () => {
 	 * behaviours that differed between the adapters — cannot both satisfy it. The guard below
 	 * fails loudly if a future default value stops separating them.
 	 */
+	/**
+	 * The option's own config — `trigger`, `data` — is handed to the overlay component as props.
+	 * A component that reads everything from `useOverlay()` declares none of them, and Vue then
+	 * spills undeclared props onto its root element as attributes, where React simply drops
+	 * them. Nothing depends on the attributes, but the two adapters must render the same DOM.
+	 */
+	it('keeps the option config off the overlay element', async () => {
+		const {host} = await mount(Default, {defaultValue: 'Hello ', options: LABELLED_ITEM})
+		const [surface] = textSurfaces(host)
+
+		await focusAtEnd(surface)
+		await userEvent.keyboard('@')
+
+		const item = page.getByText('Item')
+		await expect.element(item).toBeInTheDocument()
+
+		const overlay = overlayBox(getElement(item))
+		expect(overlay.getAttribute('trigger')).toBeNull()
+		expect(overlay.getAttribute('data')).toBeNull()
+	})
+
 	it('anchor the overlay at the caret, not at the editor edge', async () => {
 		const {host} = await mount(Default, {defaultValue: 'Hello ', options: LABELLED_ITEM})
 		const [surface] = textSurfaces(host)

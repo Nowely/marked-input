@@ -8,6 +8,11 @@ import List from '../Popup/List.vue'
 import ListItem from '../Popup/ListItem.vue'
 import Popup from '../Popup/Popup.vue'
 
+// The option's config (`trigger`, `data`, …) arrives as props from `OverlayRenderer`, and this
+// component declares none of them because it reads everything through `useOverlay()`. Vue would
+// spill every undeclared prop onto the root element as an attribute; React drops them.
+defineOptions({inheritAttrs: false})
+
 const store = useStore()
 const {match, select, style: overlayStyle, ref: overlayRef} = useOverlay()
 const active = ref(NaN)
