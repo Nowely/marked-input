@@ -1,7 +1,5 @@
 import {setProjectAnnotations} from '@storybook/react-vite'
 
-import {withPlainValue} from './src/shared/lib/withPlainValue.react'
+import annotations from './.storybook/annotations.react'
 
-setProjectAnnotations({
-	decorators: [withPlainValue],
-})
+setProjectAnnotations(annotations)

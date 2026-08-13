@@ -9,8 +9,8 @@ import {defineComponent, h, ref} from 'vue'
 import {textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
 import {withProps} from '../../shared/lib/testUtils.vue'
-import * as BaseStories from '../Base/Base.vue.stories'
-import * as OverlayStories from './Overlay.vue.stories'
+import * as BaseStories from '../Base/Base.stories'
+import * as OverlayStories from './Overlay.stories'
 
 const {Default} = composeStories(BaseStories)
 const {DefaultOverlay} = composeStories(OverlayStories)

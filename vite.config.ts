@@ -20,8 +20,7 @@ export default defineConfig({
 				'**/*.bench.ts',
 				'**/*.spec.ts',
 				'**/*.spec.tsx',
-				'**/*.stories.ts',
-				'**/*.stories.tsx',
+				'**/*.stories.*',
 				'**/dist/**',
 				'**/index.ts',
 				'**/__testing__/**',
@@ -44,12 +43,19 @@ export default defineConfig({
 			}),
 			defineProject({
 				plugins: [react()],
-				resolve: {dedupe: ['react', 'react-dom']},
+				resolve: {
+					dedupe: ['react', 'react-dom'],
+					extensions: ['.react.tsx', '.react.ts', '.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
+				},
 				test: {
 					name: 'react',
 					globals: true,
 					setupFiles: ['./packages/storybook/vitest.setup.react.ts'],
-					include: ['packages/storybook/src/pages/**/*.react.spec.tsx'],
+					include: [
+						'packages/storybook/src/pages/**/*.react.spec.tsx',
+						'packages/storybook/src/pages/**/*.spec.ts',
+					],
+					exclude: ['**/node_modules/**', 'packages/storybook/src/pages/**/*.vue.spec.ts'],
 					browser: {
 						...browserBase,
 						instances: [{browser: 'chromium' as const}],
@@ -58,12 +64,22 @@ export default defineConfig({
 			}),
 			defineProject({
 				plugins: [vue()],
-				resolve: {dedupe: ['vue']},
+				resolve: {
+					dedupe: ['vue'],
+					// The runtime-compiler build, the same alias `@storybook/vue3-vite` injects: page
+					// fixtures declare vue components with `template:` strings. Without it the specs
+					// depend on `@vue/test-utils` happening to pull the compiler in.
+					alias: {vue: 'vue/dist/vue.esm-bundler.js'},
+					extensions: ['.vue.ts', '.vue.tsx', '.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
+				},
 				test: {
 					name: 'vue',
 					globals: true,
 					setupFiles: ['./packages/storybook/vitest.setup.vue.ts'],
-					include: ['packages/storybook/src/pages/**/*.vue.spec.ts'],
+					include: [
+						'packages/storybook/src/pages/**/*.vue.spec.ts',
+						'packages/storybook/src/pages/**/*.spec.ts',
+					],
 					browser: {
 						...browserBase,
 						instances: [{browser: 'chromium' as const}],

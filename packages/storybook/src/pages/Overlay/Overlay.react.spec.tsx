@@ -8,8 +8,8 @@ import {page, userEvent} from 'vitest/browser'
 
 import {textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
-import * as BaseStories from '../Base/Base.react.stories'
-import * as OverlayStories from './Overlay.react.stories'
+import * as BaseStories from '../Base/Base.stories'
+import * as OverlayStories from './Overlay.stories'
 
 const {Default} = composeStories(BaseStories)
 const {DefaultOverlay} = composeStories(OverlayStories)

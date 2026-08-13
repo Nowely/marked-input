@@ -121,9 +121,16 @@ behavior change under "internal cleanup".
   `it('returns undefined when token missing')`.
 - Parser tests use `toMatchInlineSnapshot()` with `tokensToDebugTree()`.
 - Use `@faker-js/faker` for generated test data.
-- Storybook files live in `packages/storybook/src/pages/` as
-  `*.react.stories.tsx`, `*.react.spec.tsx`, `*.vue.stories.ts`, or
-  `*.vue.spec.ts`.
+- Storybook files live in `packages/storybook/src/pages/`. A framework segment
+  always goes LAST, before the extension: `*.stories.react.tsx`,
+  `*.stories.vue.ts`, `*.react.spec.tsx`, `*.vue.spec.ts`. The old order
+  (`*.react.stories.tsx`) is matched by no glob and will not be indexed.
+- A page that has been migrated to the shared-spec harness is framework-free:
+  `<Page>.stories.ts` + `<Page>.spec.ts` (both run by both projects) plus
+  `<Page>.fixtures.react.tsx` / `<Page>.fixtures.vue.ts`. See
+  `docs/superpowers/specs/2026-08-12-cross-framework-specs-design.md`; the
+  indexer rules in it are not optional.
+- A story file exports stories and nothing else — every named export is indexed.
 - Browser tests use real Vitest Browser Mode with Playwright. Reuse shared
   helpers from `packages/storybook/src/shared/lib/`.
 

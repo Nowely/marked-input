@@ -6,7 +6,7 @@ import {page} from 'vitest/browser'
 import {defineComponent, h} from 'vue'
 
 import {textSurfaces} from '../../shared/lib/dom'
-import * as Stories from './Clipboard.vue.stories'
+import * as Stories from './Clipboard.stories'
 
 const {Inline, PlainText, Drag, NestedMarkStory} = composeStories(Stories)
 

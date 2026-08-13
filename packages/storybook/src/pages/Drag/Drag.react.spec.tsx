@@ -15,7 +15,7 @@ import {
 	simulateDragRow,
 } from '../../shared/lib/dragTestHelpers'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
-import * as DragStories from './Drag.react.stories'
+import * as DragStories from './Drag.stories'
 
 const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag, TodoList} = composeStories(DragStories)
 

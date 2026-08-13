@@ -4,7 +4,7 @@ import {render} from 'vitest-browser-vue'
 
 import {snapshotHtml} from '../shared/lib/htmlSnapshot'
 
-const storiesModules = import.meta.glob('./**/*.vue.stories.ts', {eager: true})
+const storiesModules = import.meta.glob(['./**/*.stories.vue.ts', './**/*.stories.ts'], {eager: true})
 
 const storiesByCategory = new Map<string, Record<string, any>>()
 

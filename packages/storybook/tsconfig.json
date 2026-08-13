@@ -1,5 +1,14 @@
 {
+  // EDITOR ONLY. `pnpm run typecheck` uses tsconfig.react.json and tsconfig.vue.json, one program
+  // per framework. An editor picks a single config per file, and the shared files
+  // (`*.stories.ts`, `*.spec.ts`, `shared/lib/*`) belong to both — so this config resolves the
+  // framework seam react-first and falls back to vue, purely so go-to-definition and
+  // "cannot find module" behave. It merges both adapters into one program and therefore
+  // reports pre-existing augmentation noise (TS2717/TS2604) that neither real project has.
   "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "moduleSuffixes": [".react", ".vue", ""]
+  },
   "include": ["**/*.ts", "**/*.tsx", "**/*.vue", ".storybook/**/*.ts"],
   "exclude": ["node_modules", "dist-react", "dist-vue"]
 }

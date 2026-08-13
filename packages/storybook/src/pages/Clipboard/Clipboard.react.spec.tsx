@@ -6,7 +6,7 @@ import {render} from 'vitest-browser-react'
 import {page} from 'vitest/browser'
 
 import {textSurfaces} from '../../shared/lib/dom'
-import * as Stories from './Clipboard.react.stories'
+import * as Stories from './Clipboard.stories'
 
 const {Inline, PlainText, Drag, NestedMarkStory} = composeStories(Stories)
 

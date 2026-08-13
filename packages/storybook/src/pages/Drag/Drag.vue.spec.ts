@@ -9,7 +9,7 @@ import {defineComponent, h} from 'vue'
 import {caretIsInside, firstChild, getElement} from '../../shared/lib/dom'
 import {dispatchPaste, getAllRows, getBlocks, openMenuForRow, simulateDragRow} from '../../shared/lib/dragTestHelpers'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
-import * as DragStories from './Drag.vue.stories'
+import * as DragStories from './Drag.stories'
 
 const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag, TodoListDrag} = composeStories(DragStories)
 

@@ -1,6 +1,5 @@
-import type {StoryContext} from '@storybook/vue3-vite'
+import type {StoryContext, VueRenderer} from '@storybook/vue3-vite'
 import {useArgs, useGlobals} from 'storybook/preview-api'
-import type {VNode} from 'vue'
 import {defineComponent, h, ref} from 'vue'
 
 function narrowPosition(v: unknown): 'right' | 'bottom' | undefined {
@@ -11,7 +10,10 @@ function narrowGlobal(v: unknown): 'right' | 'bottom' | 'hide' {
 	return v === 'right' || v === 'bottom' || v === 'hide' ? v : 'right'
 }
 
-export const withPlainValue = (story: () => VNode, context: StoryContext) => {
+// `VueRenderer['storyResult']`, not `VNode`: a decorated story may also be a component
+// options object, and the narrower annotation makes this decorator unassignable to `Decorator`,
+// which only surfaced once the preview started being typechecked.
+export const withPlainValue = (story: () => VueRenderer['storyResult'], context: StoryContext) => {
 	// Storybook hooks — ok to call here (hookify wrapper active at decorator level)
 	/* oxlint-disable no-unsafe-argument */
 	const [args, updateArgs] = useArgs()

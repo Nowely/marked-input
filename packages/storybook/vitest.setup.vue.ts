@@ -1,7 +1,5 @@
 import {setProjectAnnotations} from '@storybook/vue3-vite'
 
-import {withPlainValue} from './src/shared/lib/withPlainValue.vue'
+import annotations from './.storybook/annotations.vue'
 
-setProjectAnnotations({
-	decorators: [withPlainValue],
-})
+setProjectAnnotations(annotations)
