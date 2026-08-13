@@ -1,93 +1,64 @@
-import type {MarkProps} from '@markput/react'
-import {MarkedInput} from '@markput/react'
-import {composeStories} from '@storybook/react-vite'
-import {useState} from 'react'
+import type {Markup} from '@markput/core'
 import {describe, expect, it} from 'vitest'
-import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
 import {textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
+import {composePage, mount} from '../../shared/lib/page'
 import * as BaseStories from '../Base/Base.stories'
+import {EchoingParent} from './Overlay.fixtures'
 import * as OverlayStories from './Overlay.stories'
 
-const {Default} = composeStories(BaseStories)
-const {DefaultOverlay} = composeStories(OverlayStories)
+const {Default} = composePage(BaseStories)
+const {DefaultOverlay} = composePage(OverlayStories)
 
-/** The nth TEXT token surface — bare spans now, so they are addressed structurally. */
-function editableText(container: ParentNode, index = 0): HTMLElement {
-	const host = container.querySelector<HTMLElement>('[contenteditable="true"]')
-	if (!host) throw new Error('Expected the editing host')
-	const element = textSurfaces(host).at(index)
-	if (!element) throw new Error('Expected a text token surface')
-	return element
-}
+const LABELLED_ITEM = [
+	{
+		markup: '@[__label__](__value__)' as Markup,
+		overlay: {
+			trigger: '@',
+			data: ['Item'],
+		},
+	},
+]
 
-const SUGGESTIONS = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth']
-
-/**
- * The shape the `Configured` story has and no other overlay spec did: CONTROLLED, with a
- * parent that echoes `onChange` straight back into `value`, and `showOverlayOn` left at its
- * default (`'change'`). Every other overlay case here is uncontrolled, which is the working
- * path — the trigger probe used to read one generation stale only under this wiring.
- */
-function EchoingParent() {
-	const [value, setValue] = useState('calling ')
-	return (
-		<MarkedInput
-			Mark={({value: label}: MarkProps) => <mark>{label}</mark>}
-			value={value}
-			onChange={setValue}
-			options={[
-				{
-					markup: '@[__value__](__meta__)',
-					overlay: {trigger: '@', data: SUGGESTIONS},
-				},
-			]}
-		/>
-	)
-}
+const VALUED_ITEM = [
+	{
+		markup: '@[__value__](__meta__)' as Markup,
+		overlay: {
+			trigger: '@',
+			data: ['Item'],
+		},
+	},
+]
 
 describe('API: Overlay and Triggers', () => {
 	it('work with empty options array', async () => {
-		const {container} = await render(<DefaultOverlay options={[]} />)
+		const {host} = await mount(DefaultOverlay, {options: []})
+		const [surface] = textSurfaces(host)
 
-		const element = editableText(container)
-		await focusAtEnd(element)
+		await focusAtEnd(surface)
 		await userEvent.keyboard('abc')
 
-		await expect.element(page.getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
+		await expect.element(page.getByText(DefaultOverlay.args.defaultValue! + 'abc')).toBeInTheDocument()
 	})
 
 	it('typed with default values of options', async () => {
-		const {container} = await render(<DefaultOverlay />)
+		const {host} = await mount(DefaultOverlay)
+		const [surface] = textSurfaces(host)
 
-		const element = editableText(container)
-		await focusAtEnd(element)
+		await focusAtEnd(surface)
 		await userEvent.keyboard('abc')
 
-		await expect.element(page.getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
+		await expect.element(page.getByText(DefaultOverlay.args.defaultValue! + 'abc')).toBeInTheDocument()
 	})
 
 	it('appear a overlay component by trigger', async () => {
-		const {container} = await render(
-			<Default
-				defaultValue="Hello "
-				options={[
-					{
-						markup: '@[__label__](__value__)',
-						overlay: {
-							trigger: '@',
-							data: ['Item'],
-						},
-					},
-				]}
-			/>
-		)
+		const {host} = await mount(Default, {defaultValue: 'Hello ', options: LABELLED_ITEM})
 
 		// Focus and type the trigger character to show overlay
-		const element = editableText(container)
-		await focusAtEnd(element)
+		const [surface] = textSurfaces(host)
+		await focusAtEnd(surface)
 		await userEvent.keyboard('@')
 
 		// Overlay should appear with the data item
@@ -95,23 +66,10 @@ describe('API: Overlay and Triggers', () => {
 	})
 
 	it('reopen overlay after closing', async () => {
-		const {container} = await render(
-			<Default
-				defaultValue="Hello "
-				options={[
-					{
-						markup: '@[__label__](__value__)',
-						overlay: {
-							trigger: '@',
-							data: ['Item'],
-						},
-					},
-				]}
-			/>
-		)
+		const {host} = await mount(Default, {defaultValue: 'Hello ', options: LABELLED_ITEM})
+		const [surface] = textSurfaces(host)
 
-		const element = editableText(container)
-		await focusAtEnd(element)
+		await focusAtEnd(surface)
 
 		// Open overlay
 		await userEvent.keyboard('@')
@@ -126,11 +84,16 @@ describe('API: Overlay and Triggers', () => {
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
 	})
 
+	/**
+	 * `EchoingParent` is CONTROLLED and echoes `onChange` straight back into `value`. Every
+	 * other overlay case here is uncontrolled, which is the working path — the trigger probe
+	 * used to read one generation stale only under this wiring.
+	 */
 	it('probe the trigger against the current generation when controlled and echoed', async () => {
-		const {container} = await render(<EchoingParent />)
+		const {host} = await mount(EchoingParent)
+		const [surface] = textSurfaces(host)
 
-		const element = editableText(container)
-		await focusAtEnd(element)
+		await focusAtEnd(surface)
 
 		// 1. The trigger itself opens the overlay, unfiltered.
 		await userEvent.keyboard('@')
@@ -153,23 +116,10 @@ describe('API: Overlay and Triggers', () => {
 	})
 
 	it('convert selection to mark token, not raw annotation', async () => {
-		const {container} = await render(
-			<Default
-				defaultValue="Hello "
-				options={[
-					{
-						markup: '@[__value__](__meta__)',
-						overlay: {
-							trigger: '@',
-							data: ['Item'],
-						},
-					},
-				]}
-			/>
-		)
+		const {host} = await mount(Default, {defaultValue: 'Hello ', options: VALUED_ITEM})
+		const [surface] = textSurfaces(host)
 
-		const element = editableText(container)
-		await focusAtEnd(element)
+		await focusAtEnd(surface)
 		await userEvent.keyboard('@')
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
 
@@ -184,23 +134,12 @@ describe('API: Overlay and Triggers', () => {
 		// Use a value with existing marks so the new mark is inserted in the MIDDLE.
 		// This distinguishes "focus after mark" (childIndex + 2) from "focus at tail".
 		// After parse: [span("Start "), mark("A"), span(" mid "), mark("B"), span(" end")]
-		const {container} = await render(
-			<Default
-				defaultValue="Start @[A](0) mid @[B](0) end"
-				options={[
-					{
-						markup: '@[__value__](__meta__)',
-						overlay: {
-							trigger: '@',
-							data: ['Item'],
-						},
-					},
-				]}
-			/>
-		)
+		const {host} = await mount(Default, {
+			defaultValue: 'Start @[A](0) mid @[B](0) end',
+			options: VALUED_ITEM,
+		})
+		const [, middleSpan] = textSurfaces(host)
 
-		const editableContainer = container.querySelector<HTMLElement>('div')!
-		const middleSpan = editableText(container, 1)
 		await focusAtEnd(middleSpan)
 		await userEvent.keyboard('@')
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
@@ -211,6 +150,6 @@ describe('API: Overlay and Triggers', () => {
 		// After re-parse: [span("Start "), mark("A"), span(" mid "), mark("Item"), span(""), mark("B"), span(" end")]
 		// Focus should be on span("") at childIndex + 2 = 4, NOT tail at index 6.
 		// Caret position: "Start " (6) + "A" (1) + " mid " (5) + "Item" (4) = 16
-		verifyCaretPosition(editableContainer, 16)
+		verifyCaretPosition(host, 16)
 	})
 })
