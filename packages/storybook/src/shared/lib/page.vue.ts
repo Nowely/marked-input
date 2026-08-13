@@ -70,6 +70,16 @@ export async function mountEcho(
 	return {host: findEditingHost(container), value: () => value.value}
 }
 
+/**
+ * The markup a story renders, root included — what the story sweep snapshots. Unlike
+ * {@link mount} this keeps the render root rather than the editing host, because a story
+ * decorator's wrapper is part of what the snapshot pins.
+ */
+export async function renderStoryHtml(Story: StoryComponent): Promise<string> {
+	const {container} = await render(Story)
+	return container.innerHTML
+}
+
 /** Mounts the component itself, for the pages whose specs never go through a story. */
 export async function mountComponent(args: Partial<PageArgs> = {}): Promise<Mounted> {
 	const Wrapper = defineComponent({
