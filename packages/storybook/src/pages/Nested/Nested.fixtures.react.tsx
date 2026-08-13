@@ -1,9 +1,14 @@
 // oxlint-disable jsx_a11y/prefer-tag-over-role -- a nested mark shell can contain interactive children
 import type {CSSProperties} from '@markput/core'
 import type {MarkProps} from '@markput/react'
-import {useMark, useMarkInfo} from '@markput/react'
+import {MarkedInput, useMark, useMarkInfo} from '@markput/react'
 import type {ElementType} from 'react'
 import {useState} from 'react'
+
+import {useTab} from '../../shared/components/Tabs'
+import type {PageArgs} from '../../shared/lib/stories'
+import {HTML_TAG_STYLES} from './HtmlTagStyles'
+import {markdownOptions} from './MarkdownOptions'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -17,6 +22,69 @@ import {useState} from 'react'
  * and the story's `mark` mappers pass it straight through.
  */
 export type StyledMarkProps = MarkProps & {style?: CSSProperties}
+
+/** `ComplexMarkdown`'s mark: the markdown preset hands it the `style` of whichever markup matched. */
+const MarkdownMark = ({children, value, style}: StyledMarkProps) => (
+	<span style={{...style, margin: '0 1px'}}>{children ?? value}</span>
+)
+
+/** `ComplexHtmlDocument`'s mark: this markup's VALUE is the tag name, so the mark IS that element. */
+const HtmlDocMark = ({children, value}: MarkProps) => {
+	const tagName = value?.toLowerCase() ?? 'span'
+	// oxlint-disable-next-line no-unsafe-type-assertion -- this mark's VALUE is the tag name
+	const Tag = tagName as ElementType
+	const style = HTML_TAG_STYLES[tagName] ?? {}
+
+	return <Tag style={style}>{children}</Tag>
+}
+
+const TABS = [
+	{value: 'preview', label: 'Preview'},
+	{value: 'write', label: 'Write'},
+] as const
+
+/**
+ * `ComplexMarkdown`'s harness. The harness owns the value: the Write tab is controlled, and
+ * without a local writer its `onChange` would land nowhere and the tab would look frozen.
+ *
+ * The two tabs are two different editors — the preview one is read-only and rendered through
+ * the markdown preset, the write one is a plain field over the same string — which is why the
+ * options are not simply forwarded from the story's args.
+ */
+function TabbedMarkdown({defaultValue}: PageArgs) {
+	const [value, setValue] = useState(defaultValue)
+	const {Tab, activeTab} = useTab(TABS)
+
+	return (
+		<>
+			<Tab />
+
+			{activeTab === 'preview' ? (
+				<MarkedInput Mark={MarkdownMark} options={markdownOptions} value={value} readOnly={true} />
+			) : (
+				<MarkedInput options={[]} value={value} onChange={setValue} />
+			)}
+		</>
+	)
+}
+
+/** See {@link TabbedMarkdown}: the Write tab is controlled, so the harness has to own the writer. */
+function TabbedHtml({defaultValue, options}: PageArgs) {
+	const [value, setValue] = useState(defaultValue)
+	const {Tab, activeTab} = useTab(TABS)
+
+	return (
+		<>
+			<Tab />
+
+			{activeTab === 'preview' ? (
+				<MarkedInput key={activeTab} Mark={HtmlDocMark} value={value} readOnly={true} options={options} />
+			) : (
+				<MarkedInput key={activeTab} value={value} onChange={setValue} options={[]} />
+			)}
+		</>
+	)
+}
 
 export const fixtures = {
 	/** The panel sits under the editor here; the vue fixtures put it beside it. */
@@ -69,6 +137,8 @@ export const fixtures = {
 			</span>
 		)
 	},
+	renderTabbedMarkdown: (args: PageArgs) => <TabbedMarkdown {...args} />,
+	renderTabbedHtml: (args: PageArgs) => <TabbedHtml {...args} />,
 }
 
 /**
