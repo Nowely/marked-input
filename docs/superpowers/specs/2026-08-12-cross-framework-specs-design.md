@@ -255,11 +255,15 @@ the snapshot sweep with only an "obsolete snapshots" note.
   `no-unsafe-return`. Spec, story and fixtures files are immune only because
   `oxlint.config.ts` disables those rules for them. Elsewhere — inside `shared/lib` — import
   the exact sibling (`./stories.react`), not the seam name.
-- **Snapshots.** One shared spec file runs in two projects and would write to one `.snap`.
-  No shared spec may use `toMatchInlineSnapshot`, and a shared spec that needs file
-  snapshots requires a per-project `resolveSnapshotPath`. Not needed yet: the snapshot
-  suites (`stories.*.spec`, `htmlSnapshot.react.spec`) stay per framework because they are
-  built on framework-specific `import.meta.glob` patterns.
+- **Snapshots.** One shared spec file runs in two projects and writes to ONE `.snap`, which is
+  a feature: `stories.spec.ts` sweeps the framework-free story files and any DOM divergence
+  between the adapters is a failing snapshot. `stories.react.spec.tsx` keeps its own file for
+  the four react-only pages, because its `import.meta.glob` pattern is framework-specific.
+  What a shared spec may not do is pin a value that legitimately DIFFERS per framework — two
+  projects would then fight over the same key. `htmlSnapshot.spec.ts` is shared and uses
+  `toMatchInlineSnapshot` safely for exactly that reason: it unit-tests a pure string
+  function, so both projects compute the same answer. A shared snapshot that genuinely must
+  differ needs a per-project `resolveSnapshotPath`; nothing needs one yet.
 
 ## Known gaps
 
@@ -305,9 +309,17 @@ extension-resolved form (`./Base.stories`) in the same commit.
 
 ## State
 
-All twelve pages are migrated. The nine that exist in both frameworks are four files each; the
+All twelve pages are migrated. The eight that exist in both frameworks are four files each; the
 four react-only pages (`Ant`, `Api`, `Material`, `Rsuite`) keep a single `*.stories.react.tsx`
 and are swept by `stories.react.spec.tsx`.
+
+The cross-page suites that live at `src/pages/` are shared too. `renderCount.spec.ts` holds
+both adapters to one set of render-count gates through `renderCount.fixtures.*`, whose
+factories hand the spec a component AND its counter so no framework spy reaches the shared
+file — that pair had drifted to 7 tests against 6, the missing one being the inline
+commit-routing gate. `htmlSnapshot.spec.ts` unit-tests a pure string helper and is
+framework-free outright. What remains framework-specific is two files, both for react-only
+subjects: `stories.react.spec.tsx` and `Api.react.spec.tsx`.
 
 Two pages briefly needed a fifth file — a `<Page>.stories.react.tsx` carrying stories that only
 made sense in React, under the same `title`, which builds and indexes correctly. Both are gone:
@@ -326,6 +338,7 @@ Base's, Drag reads Nested's `MarkdownOptions`) come after the page they read.
 | tests | 1 395 | 1 421 |
 | story snapshots shared by both frameworks | 0 identical of 27 | 32 identical of 32, in one file |
 | pages with two story files | 8 | 0 |
+| framework-specific spec files | 24 of 24 | 2 of 14 |
 
 The test count rose because a test that existed in one framework now runs in both: every
 drifted pair was reconciled to the stronger version, keeping every assertion either side had.

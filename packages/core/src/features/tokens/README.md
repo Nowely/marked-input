@@ -116,8 +116,8 @@ every adopt, so a position left stale is a deep-equal mismatch.
 would be a whole-mark replacement → structural → re-render. With it the keystroke
 touches only the row's slot text node → text path → the surface is patched with
 ZERO component re-renders — gated end-to-end by the block render-count specs
-(`packages/storybook/src/pages/renderCount.react.spec.tsx` /
-`renderCount.vue.spec.ts`).
+(`packages/storybook/src/pages/renderCount.spec.ts`, one file held against both
+adapters).
 
 ## The one commit pipeline (`dom/commit.ts`)
 
