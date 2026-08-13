@@ -1,441 +1,24 @@
-// oxlint-disable jsx_a11y/prefer-tag-over-role -- nested mark shells can contain interactive children
-import type {MarkProps, MarkedInputProps, Markup} from '@markput/react'
-import {MarkedInput, useMarkInfo} from '@markput/react'
-import type {Meta, StoryObj} from '@storybook/react-vite'
-import type {CSSProperties} from 'react'
+import type {CSSProperties, Markup} from '@markput/core'
+import type {MarkProps} from '@markput/react'
+import {MarkedInput} from '@markput/react'
+import type {ElementType} from 'react'
 import {useState} from 'react'
 
 import {useTab} from '../../shared/components/Tabs'
 import {COMPLEX_MARKDOWN} from '../../shared/lib/sampleTexts'
-import {markdownOptions as MarkdownOptions} from './MarkdownOptions'
+import {component, story, type PageMeta} from '../../shared/lib/stories'
+import {markdownOptions} from './MarkdownOptions'
 
-const meta = {
-	title: 'MarkedInput/Nested',
-	tags: ['autodocs'],
-	component: MarkedInput,
-	parameters: {
-		docs: {
-			description: {
-				component:
-					'Examples demonstrating nested marks support with ParserV2. Nested marks allow creating rich, hierarchical text structures.',
-			},
-		},
-	},
-} satisfies Meta<typeof MarkedInput>
-
-export default meta
-type Story = StoryObj<typeof meta>
-
-// ============================================================================
-// Example 1: Simple Nesting (Markdown-style)
-// ============================================================================
-
-const BoldMarkup: Markup = '**__slot__**'
-const ItalicMarkup: Markup = '*__slot__*'
-
-interface SimpleMarkProps extends MarkProps {
-	style?: CSSProperties
-}
-
-const SimpleMark = ({children, style, value}: SimpleMarkProps) => <span style={style}>{children ?? value}</span>
-
-export const SimpleNesting: StoryObj<MarkedInputProps<SimpleMarkProps>> = {
-	args: {
-		Mark: SimpleMark,
-		defaultValue: 'This is *italic text with **bold** inside* and more text.',
-		options: [
-			{
-				markup: BoldMarkup,
-				mark: ({value, children}: MarkProps) => ({
-					value,
-					children,
-					style: {fontWeight: 'bold'},
-				}),
-			},
-			{
-				markup: ItalicMarkup,
-				mark: ({value, children}: MarkProps) => ({
-					value,
-					children,
-					style: {fontStyle: 'italic'},
-				}),
-			},
-		],
-	},
-}
-
-// ============================================================================
-// Example 2: Multiple Nesting Levels
-// ============================================================================
-
-const TagMarkup: Markup = '#[__slot__]'
-const MentionMarkup: Markup = '@[__slot__]'
-const CodeMarkup: Markup = '`__slot__`'
-
-interface MultiLevelMarkProps extends MarkProps {
-	style?: CSSProperties
-}
-
-const MultiLevelMark = ({children, style, value}: MultiLevelMarkProps) => (
-	<span style={{...style, margin: '0 2px'}}>{children ?? value}</span>
-)
-
-export const MultipleLevels: StoryObj<MarkedInputProps<MultiLevelMarkProps>> = {
-	args: {
-		Mark: MultiLevelMark,
-		defaultValue: 'Check #[this tag with @[nested mention with `code`]] and #[another #[deeply nested] tag]',
-		options: [
-			{
-				markup: TagMarkup,
-				mark: ({value, children}: MarkProps) => ({
-					value,
-					children,
-					style: {
-						backgroundColor: '#e7f3ff',
-						border: '1px solid #2196f3',
-						color: '#1976d2',
-						padding: '2px 6px',
-						borderRadius: '4px',
-					},
-				}),
-			},
-			{
-				markup: MentionMarkup,
-				mark: ({value, children}: MarkProps) => ({
-					value,
-					children,
-					style: {
-						backgroundColor: '#fff3e0',
-						border: '1px solid #ff9800',
-						color: '#f57c00',
-						padding: '2px 6px',
-						borderRadius: '4px',
-					},
-				}),
-			},
-			{
-				markup: CodeMarkup,
-				mark: ({value, children}: MarkProps) => ({
-					value,
-					children,
-					style: {
-						backgroundColor: '#f3e5f5',
-						border: '1px solid #9c27b0',
-						color: '#7b1fa2',
-						padding: '2px 6px',
-						borderRadius: '4px',
-					},
-				}),
-			},
-		],
-	},
-}
-
-// ============================================================================
-// Example 3: HTML-like Tags
-// ============================================================================
+/**
+ * The react-only half of this page. `Nested.stories.ts` carries the four cross-framework
+ * stories and the same `title`, so the two files land on one docs entry here and the vue
+ * instance never sees this one: both documents below render through `shared/components/Tabs`,
+ * which is a React component.
+ */
 
 const HtmlMarkup: Markup = '<__value__>__slot__</__value__>'
 
-const HtmlLikeMark = ({children, value}: MarkProps) => {
-	// oxlint-disable-next-line no-unsafe-type-assertion
-	const Tag = value! as React.ElementType
-	return <Tag>{children}</Tag>
-}
-
-export const HtmlLikeTags: StoryObj<MarkedInputProps> = {
-	args: {
-		Mark: HtmlLikeMark,
-		defaultValue:
-			'<div>This is a div with <mark>a mark inside</mark> and <b>bold text with <del>nested del</del></b></div>',
-		options: [{markup: HtmlMarkup}],
-	},
-}
-
-// ============================================================================
-// Example 4: Interactive Nested Marks with Tree Navigation
-// ============================================================================
-
-const InteractiveMark = ({children}: MarkProps) => {
-	const mark = useMarkInfo()
-	const [isHighlighted, setIsHighlighted] = useState(false)
-	const handleAction = () => {
-		console.log('Mark clicked:', {
-			depth: mark.depth,
-			hasNestedMarks: mark.hasNestedMarks,
-		})
-	}
-
-	return (
-		<span
-			role="button"
-			tabIndex={0}
-			onClick={e => {
-				e.stopPropagation()
-				handleAction()
-			}}
-			onKeyDown={e => {
-				if (e.key !== 'Enter' && e.key !== ' ') return
-				e.preventDefault()
-				e.stopPropagation()
-				handleAction()
-			}}
-			onMouseEnter={() => setIsHighlighted(true)}
-			onMouseLeave={() => setIsHighlighted(false)}
-			style={{
-				display: 'inline-block',
-				padding: '4px 8px',
-				margin: '2px',
-				border: isHighlighted ? '2px solid #2196f3' : '1px solid #ccc',
-				borderRadius: '4px',
-				backgroundColor: isHighlighted ? '#e3f2fd' : '#f5f5f5',
-				cursor: 'pointer',
-				transition: 'all 0.2s',
-			}}
-			title={`Depth: ${mark.depth}, Nested: ${mark.hasNestedMarks}`}
-		>
-			{children}
-		</span>
-	)
-}
-
-export const InteractiveNested: StoryObj<MarkedInputProps> = {
-	args: {
-		Mark: InteractiveMark,
-		defaultValue: '@[Click me @[or me @[or even me]]]',
-		options: [{markup: '@[__slot__]'}],
-	},
-}
-
-// ============================================================================
-// Example 6: Complex Markdown Document
-// ============================================================================
-
-interface MarkdownMarkProps extends MarkProps {
-	style?: CSSProperties
-}
-
-const MarkdownMark = ({children, value, style}: MarkdownMarkProps) => (
-	<span style={{...style, margin: '0 1px'}}>{children ?? value}</span>
-)
-
-function TabbedMarkdownView({defaultValue}: {defaultValue: string}) {
-	// The story owns the value: the Write tab is controlled, and without a local writer its
-	// `onChange` would land nowhere and the tab would look frozen.
-	const [value, setValue] = useState(defaultValue)
-	const {Tab, activeTab} = useTab([
-		{value: 'preview', label: 'Preview'},
-		{value: 'write', label: 'Write'},
-	])
-
-	return (
-		<>
-			<Tab />
-
-			{activeTab === 'preview' ? (
-				<MarkedInput Mark={MarkdownMark} options={MarkdownOptions} value={value} readOnly={true} />
-			) : (
-				<MarkedInput options={[]} value={value} onChange={setValue} />
-			)}
-		</>
-	)
-}
-
-export const ComplexMarkdown: Story = {
-	args: {
-		defaultValue: COMPLEX_MARKDOWN,
-	},
-	render: args => <TabbedMarkdownView defaultValue={args.defaultValue!} />,
-}
-
-// ============================================================================
-// Example 7: Complex HTML Document
-// ============================================================================
-
-const HtmlDocMark = ({children, value}: MarkProps) => {
-	const tagName = value?.toLowerCase() ?? 'span'
-
-	const tagStyles: Record<string, React.CSSProperties> = {
-		div: {
-			display: 'block',
-			padding: '10px',
-			margin: '5px 0',
-			border: '1px solid #e0e0e0',
-			borderRadius: '4px',
-			backgroundColor: '#fafafa',
-		},
-		p: {
-			display: 'block',
-			margin: '8px 0',
-			lineHeight: '1.6',
-		},
-		h1: {
-			display: 'block',
-			fontSize: '2em',
-			fontWeight: 'bold',
-			margin: '0.67em 0',
-		},
-		h2: {
-			display: 'block',
-			fontSize: '1.5em',
-			fontWeight: 'bold',
-			margin: '0.75em 0',
-		},
-		h3: {
-			display: 'block',
-			fontSize: '1.17em',
-			fontWeight: 'bold',
-			margin: '0.83em 0',
-		},
-		strong: {
-			fontWeight: 'bold',
-		},
-		b: {
-			fontWeight: 'bold',
-		},
-		em: {
-			fontStyle: 'italic',
-		},
-		i: {
-			fontStyle: 'italic',
-		},
-		u: {
-			textDecoration: 'underline',
-		},
-		mark: {
-			backgroundColor: '#ffeb3b',
-			padding: '2px 4px',
-		},
-		del: {
-			textDecoration: 'line-through',
-			opacity: 0.7,
-		},
-		code: {
-			fontFamily: 'monospace',
-			backgroundColor: '#f5f5f5',
-			padding: '2px 6px',
-			borderRadius: '3px',
-			fontSize: '0.9em',
-		},
-		pre: {
-			display: 'block',
-			fontFamily: 'monospace',
-			backgroundColor: '#f5f5f5',
-			padding: '12px',
-			borderRadius: '4px',
-			overflow: 'auto',
-			margin: '8px 0',
-		},
-		blockquote: {
-			display: 'block',
-			borderLeft: '4px solid #ccc',
-			paddingLeft: '16px',
-			margin: '8px 0',
-			fontStyle: 'italic',
-			color: '#666',
-		},
-		ul: {
-			display: 'block',
-			listStyleType: 'disc',
-			paddingLeft: '40px',
-			margin: '8px 0',
-		},
-		ol: {
-			display: 'block',
-			listStyleType: 'decimal',
-			paddingLeft: '40px',
-			margin: '8px 0',
-		},
-		li: {
-			display: 'list-item',
-			margin: '4px 0',
-		},
-		a: {
-			color: '#1976d2',
-			textDecoration: 'underline',
-			cursor: 'pointer',
-		},
-		span: {
-			display: 'inline',
-		},
-		article: {
-			display: 'block',
-			padding: '20px',
-			backgroundColor: '#fff',
-			border: '1px solid #ddd',
-			borderRadius: '8px',
-			margin: '10px 0',
-		},
-		section: {
-			display: 'block',
-			margin: '15px 0',
-		},
-		header: {
-			display: 'block',
-			padding: '10px',
-			backgroundColor: '#f0f0f0',
-			borderBottom: '2px solid #ddd',
-			marginBottom: '10px',
-		},
-		footer: {
-			display: 'block',
-			padding: '10px',
-			backgroundColor: '#f0f0f0',
-			borderTop: '2px solid #ddd',
-			marginTop: '10px',
-			fontSize: '0.9em',
-			color: '#666',
-		},
-		small: {
-			fontSize: '0.8em',
-		},
-		sub: {
-			fontSize: '0.8em',
-			verticalAlign: 'sub',
-		},
-		sup: {
-			fontSize: '0.8em',
-			verticalAlign: 'super',
-		},
-	}
-
-	// oxlint-disable-next-line no-unsafe-type-assertion
-	const Tag = tagName as React.ElementType
-	const style = tagStyles[tagName] ?? {}
-
-	return <Tag style={style}>{children}</Tag>
-}
-
-function TabbedHtmlView({defaultValue}: {defaultValue: string}) {
-	// See TabbedMarkdownView: the Write tab is controlled, so the story has to own the writer.
-	const [value, setValue] = useState(defaultValue)
-	const {Tab, activeTab} = useTab([
-		{value: 'preview', label: 'Preview'},
-		{value: 'write', label: 'Write'},
-	])
-
-	return (
-		<>
-			<Tab />
-
-			{activeTab === 'preview' ? (
-				<MarkedInput
-					key={activeTab}
-					Mark={HtmlDocMark}
-					value={value}
-					readOnly={true}
-					options={[{markup: HtmlMarkup}]}
-				/>
-			) : (
-				<MarkedInput key={activeTab} value={value} onChange={setValue} options={[]} />
-			)}
-		</>
-	)
-}
-
-export const ComplexHtmlDocument: Story = {
-	args: {
-		defaultValue: `<article>
+const HTML_DOCUMENT = `<article>
 <header>
 <h1>Understanding <strong>Nested HTML</strong> Structures</h1>
 <p><small>Published on <time>November 13, 2025</time></small></p>
@@ -495,7 +78,234 @@ export const ComplexHtmlDocument: Story = {
 <footer>
 <p><small>© 2025 MarkedInput Library. Built with <strong>React</strong> and <em>TypeScript</em>.</small></p>
 </footer>
-</article>`,
-	},
-	render: args => <TabbedHtmlView defaultValue={args.defaultValue!} />,
+</article>`
+
+interface MarkdownMarkProps extends MarkProps {
+	style?: CSSProperties
 }
+
+const MarkdownMark = ({children, value, style}: MarkdownMarkProps) => (
+	<span style={{...style, margin: '0 1px'}}>{children ?? value}</span>
+)
+
+function TabbedMarkdownView({defaultValue}: {defaultValue: string}) {
+	// The story owns the value: the Write tab is controlled, and without a local writer its
+	// `onChange` would land nowhere and the tab would look frozen.
+	const [value, setValue] = useState(defaultValue)
+	const {Tab, activeTab} = useTab([
+		{value: 'preview', label: 'Preview'},
+		{value: 'write', label: 'Write'},
+	])
+
+	return (
+		<>
+			<Tab />
+
+			{activeTab === 'preview' ? (
+				<MarkedInput Mark={MarkdownMark} options={markdownOptions} value={value} readOnly={true} />
+			) : (
+				<MarkedInput options={[]} value={value} onChange={setValue} />
+			)}
+		</>
+	)
+}
+
+const HTML_TAG_STYLES: Record<string, CSSProperties> = {
+	div: {
+		display: 'block',
+		padding: '10px',
+		margin: '5px 0',
+		border: '1px solid #e0e0e0',
+		borderRadius: '4px',
+		backgroundColor: '#fafafa',
+	},
+	p: {
+		display: 'block',
+		margin: '8px 0',
+		lineHeight: '1.6',
+	},
+	h1: {
+		display: 'block',
+		fontSize: '2em',
+		fontWeight: 'bold',
+		margin: '0.67em 0',
+	},
+	h2: {
+		display: 'block',
+		fontSize: '1.5em',
+		fontWeight: 'bold',
+		margin: '0.75em 0',
+	},
+	h3: {
+		display: 'block',
+		fontSize: '1.17em',
+		fontWeight: 'bold',
+		margin: '0.83em 0',
+	},
+	strong: {
+		fontWeight: 'bold',
+	},
+	b: {
+		fontWeight: 'bold',
+	},
+	em: {
+		fontStyle: 'italic',
+	},
+	i: {
+		fontStyle: 'italic',
+	},
+	u: {
+		textDecoration: 'underline',
+	},
+	mark: {
+		backgroundColor: '#ffeb3b',
+		padding: '2px 4px',
+	},
+	del: {
+		textDecoration: 'line-through',
+		opacity: 0.7,
+	},
+	code: {
+		fontFamily: 'monospace',
+		backgroundColor: '#f5f5f5',
+		padding: '2px 6px',
+		borderRadius: '3px',
+		fontSize: '0.9em',
+	},
+	pre: {
+		display: 'block',
+		fontFamily: 'monospace',
+		backgroundColor: '#f5f5f5',
+		padding: '12px',
+		borderRadius: '4px',
+		overflow: 'auto',
+		margin: '8px 0',
+	},
+	blockquote: {
+		display: 'block',
+		borderLeft: '4px solid #ccc',
+		paddingLeft: '16px',
+		margin: '8px 0',
+		fontStyle: 'italic',
+		color: '#666',
+	},
+	ul: {
+		display: 'block',
+		listStyleType: 'disc',
+		paddingLeft: '40px',
+		margin: '8px 0',
+	},
+	ol: {
+		display: 'block',
+		listStyleType: 'decimal',
+		paddingLeft: '40px',
+		margin: '8px 0',
+	},
+	li: {
+		display: 'list-item',
+		margin: '4px 0',
+	},
+	a: {
+		color: '#1976d2',
+		textDecoration: 'underline',
+		cursor: 'pointer',
+	},
+	span: {
+		display: 'inline',
+	},
+	article: {
+		display: 'block',
+		padding: '20px',
+		backgroundColor: '#fff',
+		border: '1px solid #ddd',
+		borderRadius: '8px',
+		margin: '10px 0',
+	},
+	section: {
+		display: 'block',
+		margin: '15px 0',
+	},
+	header: {
+		display: 'block',
+		padding: '10px',
+		backgroundColor: '#f0f0f0',
+		borderBottom: '2px solid #ddd',
+		marginBottom: '10px',
+	},
+	footer: {
+		display: 'block',
+		padding: '10px',
+		backgroundColor: '#f0f0f0',
+		borderTop: '2px solid #ddd',
+		marginTop: '10px',
+		fontSize: '0.9em',
+		color: '#666',
+	},
+	small: {
+		fontSize: '0.8em',
+	},
+	sub: {
+		fontSize: '0.8em',
+		verticalAlign: 'sub',
+	},
+	sup: {
+		fontSize: '0.8em',
+		verticalAlign: 'super',
+	},
+}
+
+const HtmlDocMark = ({children, value}: MarkProps) => {
+	const tagName = value?.toLowerCase() ?? 'span'
+	// oxlint-disable-next-line no-unsafe-type-assertion -- this mark's VALUE is the tag name
+	const Tag = tagName as ElementType
+	const style = HTML_TAG_STYLES[tagName] ?? {}
+
+	return <Tag style={style}>{children}</Tag>
+}
+
+function TabbedHtmlView({defaultValue}: {defaultValue: string}) {
+	// See TabbedMarkdownView: the Write tab is controlled, so the story has to own the writer.
+	const [value, setValue] = useState(defaultValue)
+	const {Tab, activeTab} = useTab([
+		{value: 'preview', label: 'Preview'},
+		{value: 'write', label: 'Write'},
+	])
+
+	return (
+		<>
+			<Tab />
+
+			{activeTab === 'preview' ? (
+				<MarkedInput
+					key={activeTab}
+					Mark={HtmlDocMark}
+					value={value}
+					readOnly={true}
+					options={[{markup: HtmlMarkup}]}
+				/>
+			) : (
+				<MarkedInput key={activeTab} value={value} onChange={setValue} options={[]} />
+			)}
+		</>
+	)
+}
+
+/**
+ * Every named export of a CSF file is indexed as a story, so this file exports stories and
+ * nothing else — page constants stay module-private.
+ */
+export default {
+	title: 'MarkedInput/Nested',
+	tags: ['autodocs'],
+	component,
+} satisfies PageMeta
+
+export const ComplexMarkdown = story({
+	args: {defaultValue: COMPLEX_MARKDOWN},
+	render: args => <TabbedMarkdownView defaultValue={args.defaultValue!} />,
+})
+
+export const ComplexHtmlDocument = story({
+	args: {defaultValue: HTML_DOCUMENT},
+	render: args => <TabbedHtmlView defaultValue={args.defaultValue!} />,
+})

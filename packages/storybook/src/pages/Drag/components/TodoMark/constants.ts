@@ -1,10 +1,19 @@
-import type {Option} from '@markput/react'
+import type {Markup} from '@markput/core'
 
 import {TodoIndent1Mark, TodoItemMark} from './TodoMark'
 
-export const TODO_OPTIONS: Option[] = [
-	{markup: '- [__value__] __slot__\n', Mark: TodoItemMark},
-	{markup: '\t- [__value__] __slot__\n', Mark: TodoIndent1Mark},
+/**
+ * Framework-free: the two markups are typed against core's `Markup`, and `./TodoMark`
+ * resolves to `TodoMark.react.tsx` or `TodoMark.vue.ts` per project. The array is left
+ * un-annotated on purpose — the framework `Option` type it has to satisfy is the story
+ * file's, and that file is compiled once per project.
+ */
+const ITEM_MARKUP: Markup = '- [__value__] __slot__\n'
+const INDENT_MARKUP: Markup = '\t- [__value__] __slot__\n'
+
+export const TODO_OPTIONS = [
+	{markup: ITEM_MARKUP, Mark: TodoItemMark},
+	{markup: INDENT_MARKUP, Mark: TodoIndent1Mark},
 ]
 
 export const TODO_VALUE = `

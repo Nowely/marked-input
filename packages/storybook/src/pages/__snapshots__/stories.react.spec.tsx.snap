@@ -309,141 +309,115 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
 `;
 
 exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
-"<div>
-  <div contenteditable="true">
-    <div data-testid="block">
-      <div contenteditable="false">
-        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-          <span></span>
-        </button>
-      </div>
+"<div contenteditable="true">
+  <div data-testid="block">
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
+    </div>
+    <span>
       <span>
-        <span>
-          <span>Welcome to Draggable Blocks</span>
-        </span>
+        <span>Welcome to Draggable Blocks</span>
       </span>
-    </div>
-    <div data-testid="block">
-      <div contenteditable="false">
-        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-          <span></span>
-        </button>
-      </div>
-      <span>This is the first paragraph.&#10;&#10;This is the second paragraph.&#10;&#10;</span>
-    </div>
-    <div data-testid="block">
-      <div contenteditable="false">
-        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-          <span></span>
-        </button>
-      </div>
-      <span>
-        <span>
-          <span>Features</span>
-        </span>
-      </span>
-    </div>
-    <div data-testid="block">
-      <div contenteditable="false">
-        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-          <span></span>
-        </button>
-      </div>
-      <span>
-        <span>
-          <span>Drag handles appear on hover</span>
-        </span>
-      </span>
-    </div>
+    </span>
   </div>
-  <div></div>
-  <div>
-    <button>Copy</button>
-    <div>
-      <pre data-value="# Welcome to Draggable Blocks&#10;&#10;This is the first paragraph.&#10;&#10;This is the second paragraph.&#10;&#10;## Features&#10;&#10;- Drag handles appear on hover&#10;&#10;"># Welcome to Draggable Blocks&#10;&#10;This is the first paragraph.&#10;&#10;This is the second paragraph.&#10;&#10;## Features&#10;&#10;- Drag handles appear on hover&#10;&#10;</pre>
+  <div data-testid="block">
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
     </div>
-    <div>
-      <span>Plain text</span>
-      <span>23 words · 137 chars · 11 lines</span>
+    <span>This is the first paragraph.&#10;&#10;This is the second paragraph.&#10;&#10;</span>
+  </div>
+  <div data-testid="block">
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
     </div>
+    <span>
+      <span>
+        <span>Features</span>
+      </span>
+    </span>
+  </div>
+  <div data-testid="block">
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
+    </div>
+    <span>
+      <span>
+        <span>Drag handles appear on hover</span>
+      </span>
+    </span>
   </div>
 </div>"
 `;
 
 exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
-"<div>
-  <div contenteditable="true">
-    <div data-testid="block">
-      <div contenteditable="false">
-        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-          <span></span>
-        </button>
-      </div>
-      <span>
-        <span>
-          <span>First block of plain text</span>
-        </span>
-      </span>
+"<div contenteditable="true">
+  <div data-testid="block">
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
     </div>
-    <div data-testid="block">
-      <div contenteditable="false">
-        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-          <span></span>
-        </button>
-      </div>
+    <span>
       <span>
-        <span>
-          <span>Second block of plain text</span>
-        </span>
+        <span>First block of plain text</span>
       </span>
-    </div>
-    <div data-testid="block">
-      <div contenteditable="false">
-        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-          <span></span>
-        </button>
-      </div>
-      <span>
-        <span>
-          <span>Third block of plain text</span>
-        </span>
-      </span>
-    </div>
-    <div data-testid="block">
-      <div contenteditable="false">
-        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-          <span></span>
-        </button>
-      </div>
-      <span>
-        <span>
-          <span>Fourth block of plain text</span>
-        </span>
-      </span>
-    </div>
-    <div data-testid="block">
-      <div contenteditable="false">
-        <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-          <span></span>
-        </button>
-      </div>
-      <span>
-        <span>
-          <span>Fifth block of plain text</span>
-        </span>
-      </span>
-    </div>
+    </span>
   </div>
-  <div></div>
-  <div>
-    <button>Copy</button>
-    <div>
-      <pre data-value="First block of plain text&#10;&#10;Second block of plain text&#10;&#10;Third block of plain text&#10;&#10;Fourth block of plain text&#10;&#10;Fifth block of plain text&#10;&#10;">First block of plain text&#10;&#10;Second block of plain text&#10;&#10;Third block of plain text&#10;&#10;Fourth block of plain text&#10;&#10;Fifth block of plain text&#10;&#10;</pre>
+  <div data-testid="block">
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
     </div>
-    <div>
-      <span>Plain text</span>
-      <span>25 words · 137 chars · 11 lines</span>
+    <span>
+      <span>
+        <span>Second block of plain text</span>
+      </span>
+    </span>
+  </div>
+  <div data-testid="block">
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
     </div>
+    <span>
+      <span>
+        <span>Third block of plain text</span>
+      </span>
+    </span>
+  </div>
+  <div data-testid="block">
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
+    </div>
+    <span>
+      <span>
+        <span>Fourth block of plain text</span>
+      </span>
+    </span>
+  </div>
+  <div data-testid="block">
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
+    </div>
+    <span>
+      <span>
+        <span>Fifth block of plain text</span>
+      </span>
+    </span>
   </div>
 </div>"
 `;
@@ -1393,32 +1367,46 @@ exports[`Component: stories > Nested stories > Story ComplexMarkdown 1`] = `
 `;
 
 exports[`Component: stories > Nested stories > Story HtmlLikeTags 1`] = `
-"<div contenteditable="true">
-  <span></span>
+"<div>
   <div>
-    <span>
-      <span>This is a div with </span>
-      <mark>
+    <div contenteditable="true">
+      <span></span>
+      <div>
         <span>
-          <span>a mark inside</span>
-        </span>
-      </mark>
-      <span> and </span>
-      <b>
-        <span>
-          <span>bold text with </span>
-          <del>
+          <span>This is a div with </span>
+          <mark>
             <span>
-              <span>nested del</span>
+              <span>a mark inside</span>
             </span>
-          </del>
+          </mark>
+          <span> and </span>
+          <b>
+            <span>
+              <span>bold text with </span>
+              <del>
+                <span>
+                  <span>nested del</span>
+                </span>
+              </del>
+              <span></span>
+            </span>
+          </b>
           <span></span>
         </span>
-      </b>
+      </div>
       <span></span>
-    </span>
+    </div>
   </div>
-  <span></span>
+  <div>
+    <button>Copy</button>
+    <div>
+      <pre data-value="&lt;div&gt;This is a div with &lt;mark&gt;a mark inside&lt;/mark&gt; and &lt;b&gt;bold text with &lt;del&gt;nested del&lt;/del&gt;&lt;/b&gt;&lt;/div&gt;">&lt;div&gt;This is a div with &lt;mark&gt;a mark inside&lt;/mark&gt; and &lt;b&gt;bold text with &lt;del&gt;nested del&lt;/del&gt;&lt;/b&gt;&lt;/div&gt;</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>14 words · 104 chars · 1 lines</span>
+    </div>
+  </div>
 </div>"
 `;
 
@@ -1447,56 +1435,84 @@ exports[`Component: stories > Nested stories > Story InteractiveNested 1`] = `
 `;
 
 exports[`Component: stories > Nested stories > Story MultipleLevels 1`] = `
-"<div contenteditable="true">
-  <span>Check </span>
-  <span>
-    <span>
-      <span>this tag with </span>
+"<div>
+  <div>
+    <div contenteditable="true">
+      <span>Check </span>
       <span>
         <span>
-          <span>nested mention with </span>
+          <span>this tag with </span>
           <span>
             <span>
-              <span>code</span>
+              <span>nested mention with </span>
+              <span>
+                <span>
+                  <span>code</span>
+                </span>
+              </span>
+              <span></span>
             </span>
           </span>
           <span></span>
         </span>
       </span>
-      <span></span>
-    </span>
-  </span>
-  <span> and </span>
-  <span>
-    <span>
-      <span>another </span>
+      <span> and </span>
       <span>
         <span>
-          <span>deeply nested</span>
+          <span>another </span>
+          <span>
+            <span>
+              <span>deeply nested</span>
+            </span>
+          </span>
+          <span> tag</span>
         </span>
       </span>
-      <span> tag</span>
-    </span>
-  </span>
-  <span></span>
+      <span></span>
+    </div>
+  </div>
+  <div>
+    <button>Copy</button>
+    <div>
+      <pre data-value="Check #[this tag with @[nested mention with \`code\`]] and #[another #[deeply nested] tag]">Check #[this tag with @[nested mention with \`code\`]] and #[another #[deeply nested] tag]</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>13 words · 88 chars · 1 lines</span>
+    </div>
+  </div>
 </div>"
 `;
 
 exports[`Component: stories > Nested stories > Story SimpleNesting 1`] = `
-"<div contenteditable="true">
-  <span>This is </span>
-  <span>
-    <span>
-      <span>italic text with </span>
+"<div>
+  <div>
+    <div contenteditable="true">
+      <span>This is </span>
       <span>
         <span>
-          <span>bold</span>
+          <span>italic text with </span>
+          <span>
+            <span>
+              <span>bold</span>
+            </span>
+          </span>
+          <span> inside</span>
         </span>
       </span>
-      <span> inside</span>
-    </span>
-  </span>
-  <span> and more text.</span>
+      <span> and more text.</span>
+    </div>
+  </div>
+  <div>
+    <button>Copy</button>
+    <div>
+      <pre data-value="This is *italic text with **bold** inside* and more text.">This is *italic text with **bold** inside* and more text.</pre>
+    </div>
+    <div>
+      <span>Plain text</span>
+      <span>10 words · 57 chars · 1 lines</span>
+    </div>
+  </div>
 </div>"
 `;
 
