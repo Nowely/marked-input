@@ -4,13 +4,20 @@ import {page, userEvent} from 'vitest/browser'
 
 import {textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
-import {composePage, mount} from '../../shared/lib/page'
+import {composePage, mount, mountEcho} from '../../shared/lib/page'
 import * as BaseStories from '../Base/Base.stories'
-import {EchoingParent} from './Overlay.fixtures'
+import {fixtures} from './Overlay.fixtures'
 import * as OverlayStories from './Overlay.stories'
 
 const {Default} = composePage(BaseStories)
 const {DefaultOverlay} = composePage(OverlayStories)
+
+const ECHO_OPTIONS = [
+	{
+		markup: '@[__value__](__meta__)' as Markup,
+		overlay: {trigger: '@', data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth']},
+	},
+]
 
 const LABELLED_ITEM = [
 	{
@@ -85,12 +92,16 @@ describe('API: Overlay and Triggers', () => {
 	})
 
 	/**
-	 * `EchoingParent` is CONTROLLED and echoes `onChange` straight back into `value`. Every
-	 * other overlay case here is uncontrolled, which is the working path — the trigger probe
-	 * used to read one generation stale only under this wiring.
+	 * CONTROLLED, echoing `onChange` straight back into `value`. Every other overlay case here
+	 * is uncontrolled, which is the working path — the trigger probe used to read one
+	 * generation stale only under this wiring.
 	 */
 	it('probe the trigger against the current generation when controlled and echoed', async () => {
-		const {host} = await mount(EchoingParent)
+		const {host} = await mountEcho(Default, {
+			value: 'calling ',
+			Mark: fixtures.Mark,
+			options: ECHO_OPTIONS,
+		})
 		const [surface] = textSurfaces(host)
 
 		await focusAtEnd(surface)

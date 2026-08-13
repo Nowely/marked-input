@@ -37,17 +37,27 @@ export async function mount(Story: StoryComponent, args: Partial<PageArgs> = {})
 	return {host: findEditingHost(container)}
 }
 
-/** Mounts a story as a controlled field that echoes `onChange` back into `value`. */
+/**
+ * Mounts a story's ARGS as a controlled field that echoes `onChange` back into `value`.
+ *
+ * The component, not the story: `@storybook/vue3` wraps a composed story in
+ * `(...args) => h(composedStory(...args))`, and `composedStory()` returns a NEW component
+ * object per call — so every echoed change gives the vnode a different type and Vue remounts
+ * the editor, losing focus, caret and any open overlay. Mounting `component` directly keeps
+ * the element identity across updates (React is unaffected, but does the same for symmetry).
+ */
 export async function mountEcho(
 	Story: StoryComponent,
 	{value: initial, ...args}: EchoOptions & Partial<PageArgs>
 ): Promise<Echoed> {
 	assertEchoable(Story)
 	const value = ref(initial)
+	const storyArgs = Story.args ?? {}
 
 	const Echo = defineComponent({
 		setup: () => () =>
-			h(Story, {
+			h(component, {
+				...storyArgs,
 				...args,
 				value: value.value,
 				onChange: (next: string) => {

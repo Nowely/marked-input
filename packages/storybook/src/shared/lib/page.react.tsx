@@ -31,19 +31,28 @@ export async function mount(Story: StoryComponent, args: Partial<PageArgs> = {})
 	return {host: findEditingHost(container)}
 }
 
-/** Mounts a story as a controlled field that echoes `onChange` back into `value`. */
+/**
+ * Mounts a story's ARGS as a controlled field that echoes `onChange` back into `value`.
+ *
+ * The component, not the story: `@storybook/vue3` re-creates a composed story's component on
+ * every render, so echoing through it remounts the editor and loses focus, caret and any open
+ * overlay. React does not have that problem, but both seams mount the component so a shared
+ * spec means the same thing in both projects. Decorators therefore do not run here — which is
+ * what {@link assertEchoable} guards.
+ */
 export async function mountEcho(
 	Story: StoryComponent,
 	{value: initial, ...args}: EchoOptions & Partial<PageArgs>
 ): Promise<Echoed> {
 	assertEchoable(Story)
 	const latest = {current: initial}
+	const storyArgs = Story.args ?? {}
 
 	function Echo() {
 		const [value, setValue] = useState(initial)
 		latest.current = value
 
-		return <Story {...args} value={value} onChange={setValue} />
+		return <Component {...storyArgs} {...args} value={value} onChange={setValue} />
 	}
 
 	const {container} = await render(<Echo />)

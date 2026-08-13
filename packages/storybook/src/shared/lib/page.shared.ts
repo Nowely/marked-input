@@ -26,6 +26,7 @@ export interface EchoOptions {
 
 /** The part of a composed story the seam reads. */
 export interface StoryAnnotations {
+	args?: Record<string, unknown>
 	parameters?: {plainValue?: unknown}
 }
 
@@ -37,6 +38,9 @@ export interface StoryAnnotations {
  * Deliberately wider than the hazard: the decorator only hijacks `onChange` for a CONTROLLED
  * story whose position narrows to 'right' | 'bottom', but a story that opts into the panel at
  * all has no business being driven by the harness.
+ *
+ * It also covers the second reason `mountEcho` mounts the component rather than the story:
+ * decorators do not run there, so a story that needs one cannot be echoed.
  */
 export function assertEchoable(story: StoryAnnotations, name = 'story'): void {
 	if (story.parameters?.plainValue === undefined) return

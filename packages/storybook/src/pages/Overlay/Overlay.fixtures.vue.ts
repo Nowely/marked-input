@@ -1,6 +1,5 @@
-import type {Option} from '@markput/vue'
-import {MarkedInput, useOverlay} from '@markput/vue'
-import {defineComponent, ref} from 'vue'
+import {useOverlay} from '@markput/vue'
+import {defineComponent} from 'vue'
 
 const Mark = defineComponent({
 	props: {value: String},
@@ -50,32 +49,3 @@ export const fixtures = {
 			'</ul>',
 	}),
 }
-
-const SUGGESTIONS = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth']
-
-const ECHO_OPTIONS: Option[] = [{markup: '@[__value__](__meta__)', overlay: {trigger: '@', data: SUGGESTIONS}}]
-
-/**
- * Spec fixture: the shape the `Configured` story has and no other overlay case does —
- * CONTROLLED, with a parent that echoes `onChange` straight back into `value`, and
- * `showOverlayOn` left at its default (`'change'`).
- *
- * It owns its state instead of going through the seam's `mountEcho`, because a vue composed
- * story REMOUNTS the editor on every echoed arg change: the host detaches, focus is lost and
- * the overlay state resets, which is exactly what this case asserts survives.
- */
-export const EchoingParent = defineComponent({
-	components: {MarkedInput},
-	setup() {
-		const value = ref('calling ')
-		return {
-			mark: Mark,
-			options: ECHO_OPTIONS,
-			value,
-			echo: (next: string) => {
-				value.value = next
-			},
-		}
-	},
-	template: '<MarkedInput :Mark="mark" :value="value" :options="options" @change="echo" />',
-})
