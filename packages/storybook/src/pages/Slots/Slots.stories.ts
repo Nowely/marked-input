@@ -1,6 +1,7 @@
 import {component, story, type PageMeta} from '../../shared/lib/stories'
 import {fixtures} from './Slots.fixtures'
 
+const CUSTOM_COMPONENTS_VALUE = 'Both @[container] and @[span] are @[customized]'
 const WITH_SLOT_PROPS_VALUE = 'Try pressing @[Enter] or clicking'
 const STYLE_MERGING_VALUE = 'Container has @[merged] styles from multiple sources'
 const DATA_ATTRIBUTES_VALUE = 'Use @[data] attributes for testing and tracking'
@@ -54,14 +55,23 @@ export const WithSlotProps = story({
  * `slots.container` renders an empty editor under the Vue adapter, so a shared story cannot use
  * one. `CustomComponents` keeps that demo, React-only — reproducer in `Slots.stories.react.tsx`.
  */
+/**
+ * Using slots to completely replace the container component.
+ * This is useful when you need full control over the component structure.
+ */
+export const CustomComponents = story({
+	args: {
+		Mark: fixtures.SimpleMark,
+		defaultValue: CUSTOM_COMPONENTS_VALUE,
+		slots: {container: fixtures.FancyContainer},
+	},
+})
+
 export const StyleMerging = story({
 	args: {
 		Mark: fixtures.SimpleMark,
 		defaultValue: STYLE_MERGING_VALUE,
-		style: {
-			background: '#e3f2fd',
-			borderRadius: '8px',
-		},
+		slots: {container: fixtures.StyledContainer},
 		slotProps: {
 			container: {
 				style: {

@@ -897,6 +897,12 @@ exports[`Component: stories > Selection stories > Story Inline 1`] = `
 </div>"
 `;
 
+exports[`Component: stories > Slots stories > Story CustomComponents 1`] = `
+"<div contenteditable="true">
+  <span>Both @[container] and @[span] are @[customized]</span>
+</div>"
+`;
+
 exports[`Component: stories > Slots stories > Story DataAttributes 1`] = `
 "<div data-test-id="marked-input-demo" data-module="slots-api" data-user-id="user-123" contenteditable="true">
   <span>Use @[data] attributes for testing and tracking</span>

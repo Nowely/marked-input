@@ -33,6 +33,11 @@ const FancyContainer = ({ref, ...props}: DivProps) => (
 	/>
 )
 
+/** `StyleMerging`'s container: its own styles merge with whatever `slotProps.container` passes. */
+const StyledContainer = ({ref, ...props}: DivProps) => (
+	<div {...props} ref={ref} style={{...props.style, background: '#e3f2fd', borderRadius: '8px'}} />
+)
+
 /**
  * `WithSlotProps`' harness. It MERGES its handlers into the story's own `slotProps` rather than
  * hardcoding the whole bag, so the story keeps owning the presentational half.
@@ -84,6 +89,7 @@ export const fixtures = {
 	SimpleMark,
 	/** Only `Slots.stories.react.tsx` reads this; the Vue catalog has no counterpart. */
 	FancyContainer,
+	StyledContainer,
 	renderEventLog: (args: PageArgs) => <EventLog {...args} />,
 }
 

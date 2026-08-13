@@ -79,8 +79,27 @@ const EventLog = defineComponent({
  * component never updates and the DOM is never bound). `CustomComponents` is therefore
  * React-only; see `Slots.stories.react.tsx` for the reproducer.
  */
+/** `slots.container` replacing the container outright. */
+const FancyContainer = defineComponent({
+	template: `
+		<div
+			style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1)"
+		><slot /></div>
+	`,
+})
+
+/**
+ * `StyleMerging`'s container. Vue merges a fallthrough `style` attribute with the component's
+ * own, which is what the story demonstrates.
+ */
+const StyledContainer = defineComponent({
+	template: '<div style="background: #e3f2fd; border-radius: 8px"><slot /></div>',
+})
+
 export const fixtures = {
 	SimpleMark,
+	FancyContainer,
+	StyledContainer,
 	/**
 	 * `render: () => EventLog` would DROP the args — the returned component is mounted with no
 	 * props, so the editor rendered empty. Binding the closure's `args` is what carries them.

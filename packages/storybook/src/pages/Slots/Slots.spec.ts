@@ -312,5 +312,15 @@ describe('Slots API', () => {
 
 			await expect.element(page.getByTestId('custom-container')).toBeInTheDocument()
 		})
+
+		it('render the value inside a component container', async () => {
+			const {host} = await mountComponent({
+				Mark: marks.Children,
+				value: VALUE,
+				slots: {container: containers.Testid},
+			})
+
+			expect(host.textContent).toBe(VALUE)
+		})
 	})
 })
