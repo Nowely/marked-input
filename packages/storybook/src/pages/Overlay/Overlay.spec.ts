@@ -2,7 +2,7 @@ import type {Markup} from '@markput/core'
 import {describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {textSurfaces} from '../../shared/lib/dom'
+import {getElement, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
 import {composePage, mount, mountEcho} from '../../shared/lib/page'
 import * as BaseStories from '../Base/Base.stories'
@@ -39,6 +39,24 @@ const VALUED_ITEM = [
 	},
 ]
 
+/**
+ * The overlay BOX around a rendered suggestion — the positioned ancestor, found by the one
+ * property that defines it (`position: fixed`) rather than by a CSS-module class name or by
+ * counting parents, so it survives markup changes in either adapter.
+ */
+function overlayBox(inner: HTMLElement): HTMLElement {
+	for (let element: HTMLElement | null = inner; element; element = element.parentElement) {
+		if (getComputedStyle(element).position === 'fixed') return element
+	}
+	throw new Error('Expected a fixed-positioned overlay ancestor')
+}
+
+function caretRect(): DOMRect {
+	const selection = window.getSelection()
+	if (!selection?.rangeCount) throw new Error('Expected a caret')
+	return selection.getRangeAt(0).getBoundingClientRect()
+}
+
 describe('API: Overlay and Triggers', () => {
 	it('work with empty options array', async () => {
 		const {host} = await mount(DefaultOverlay, {options: []})
@@ -70,6 +88,40 @@ describe('API: Overlay and Triggers', () => {
 
 		// Overlay should appear with the data item
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
+	})
+
+	/**
+	 * The anchor is measured, not inspected: `left`/`top` on the box against the live caret
+	 * rect — the same `getSelection().getRangeAt(0).getBoundingClientRect()` core positions
+	 * from. Asserting the inline style instead would pass on a Vue popup that carries
+	 * `left: 66` and paints at the host's edge, because a unitless length is dropped by the
+	 * CSSOM, which is exactly the defect this pins.
+	 *
+	 * The typed text before the trigger is what gives the assertion teeth: it puts the caret
+	 * ~50px in, so "anchored at the caret" and "anchored at the editor's left edge" — the two
+	 * behaviours that differed between the adapters — cannot both satisfy it. The guard below
+	 * fails loudly if a future default value stops separating them.
+	 */
+	it('anchor the overlay at the caret, not at the editor edge', async () => {
+		const {host} = await mount(Default, {defaultValue: 'Hello ', options: LABELLED_ITEM})
+		const [surface] = textSurfaces(host)
+
+		await focusAtEnd(surface)
+		await userEvent.keyboard('@')
+
+		const item = page.getByText('Item')
+		await expect.element(item).toBeInTheDocument()
+
+		const caret = caretRect()
+		const overlay = overlayBox(getElement(item)).getBoundingClientRect()
+		const hostLeft = host.getBoundingClientRect().left
+
+		expect(caret.left - hostLeft, 'the caret must be far enough in to tell the two anchors apart').toBeGreaterThan(
+			8
+		)
+		expect(overlay.left).toBeCloseTo(caret.left, 0)
+		expect(overlay.top).toBeGreaterThanOrEqual(caret.bottom)
+		expect(overlay.top).toBeLessThanOrEqual(caret.bottom + 4)
 	})
 
 	it('reopen overlay after closing', async () => {

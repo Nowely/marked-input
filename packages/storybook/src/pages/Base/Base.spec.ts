@@ -3,12 +3,12 @@ import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {caretIsInside, editingHost, findEditingHost, getElement, textSurfaces} from '../../shared/lib/dom'
-import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
+import {focusAtEnd, focusAtOffset, focusAtStart} from '../../shared/lib/focus'
 import {composePage, mount, mountEcho} from '../../shared/lib/page'
 import {DroppedReadOnly, marks, Overlay} from './Base.fixtures'
 import * as BaseStories from './Base.stories'
 
-const {Default} = composePage(BaseStories)
+const {Configured, Default} = composePage(BaseStories)
 
 const EDITABLE_MARK_VALUE = 'Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!'
 const REMOVABLE_MARK_VALUE = 'I @[contain]( ) @[removable]( ) by click @[marks]( )!'
@@ -220,6 +220,26 @@ describe('Component: MarkedInput', () => {
 		await expect.element(page.getByText('one')).not.toBeInTheDocument()
 		await expect.element(page.getByText('two')).not.toBeInTheDocument()
 		await expect.element(page.getByText('three')).not.toBeInTheDocument()
+	})
+
+	it('edits a story whose value the plain-value panel owns', async () => {
+		// `Configured` is controlled and opts into the panel, so `withPlainValue` owns its
+		// `value`/`onChange`. The decorated story must still edit like any other: the editor
+		// patches in place — a remount would drop the content, the caret and the focus — and
+		// the panel tracks the new value.
+		const {host} = await mount(Configured)
+		const [firstSpan] = textSurfaces(host)
+
+		await focusAtOffset(firstSpan, 5)
+		await userEvent.keyboard('X')
+
+		expect(host).toHaveTextContent(/^EnterX the/)
+		expect(findEditingHost(document.body)).toBe(host)
+		await expect.element(host).toHaveFocus()
+		expect(caretIsInside(textSurfaces(host)[0])).toBe(true)
+
+		const panel = document.querySelector('pre[data-value]')
+		expect(panel?.getAttribute('data-value')).toContain("EnterX the '@' for calling @[primary](primary:4)")
 	})
 
 	it('reverts a prop to its default when the caller stops passing it', async () => {

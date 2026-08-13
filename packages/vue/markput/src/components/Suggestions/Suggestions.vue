@@ -12,6 +12,13 @@ const store = useStore()
 const {match, select, style: overlayStyle, ref: overlayRef} = useOverlay()
 const active = ref(NaN)
 
+// `overlayStyle` carries the caret position as bare numbers, the framework-free shape core
+// computes. React's DOM layer appends `px` to a numeric `left`/`top`; Vue assigns the number
+// to `style.left` verbatim, the CSSOM rejects the unitless length, and the `position: fixed`
+// popup falls back to its static position at the host's left edge. The unit belongs to the
+// binding, as in `BlockMenu.vue`.
+const popupStyle = computed(() => ({left: `${overlayStyle.value.left}px`, top: `${overlayStyle.value.top}px`}))
+
 const data = computed(() => match.value?.option.overlay?.data || [])
 const filtered = computed(() => {
 	const search = match.value?.value ?? ''
@@ -56,7 +63,7 @@ function setOverlayRef(el: HTMLElement | null) {
 </script>
 
 <template>
-	<Popup v-if="filtered.length" :style="overlayStyle" :attach-ref="setOverlayRef">
+	<Popup v-if="filtered.length" :style="popupStyle" :attach-ref="setOverlayRef">
 		<List>
 			<ListItem
 				v-for="(suggestion, index) in filtered"
