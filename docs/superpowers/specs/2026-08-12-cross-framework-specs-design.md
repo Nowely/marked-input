@@ -1,6 +1,6 @@
 # One Spec Per Page Across Frameworks
 
-Status: validated on the `Base` page (branch `b0-own-factory`), not merged.
+Status: shipped on `b0`. Every page that exists in both frameworks is migrated.
 
 ## Problem
 
@@ -56,7 +56,7 @@ Shared once, under `src/shared/lib/`:
 | File | Contains |
 | --- | --- |
 | `stories.react.ts` / `stories.vue.ts` | `component`, `PageMeta`, `Story<T>`, `story<T>(input)` |
-| `page.react.tsx` / `page.vue.ts` | `composePage`, `mount`, `mountEcho`, `mountComponent`, `mountApi` |
+| `page.react.tsx` / `page.vue.ts` | `composePage`, `mount`, `mountEcho`, `mountComponent`, `mountApi`, `renderStoryHtml` |
 | `page.shared.ts` | The seam's framework-free types and `assertEchoable` |
 
 ### Resolution: no aliases
@@ -77,21 +77,53 @@ implementation of the seam.
 ### The seam
 
 ```ts
-createPage(storiesModule) → {
-  stories,                                  // composeStories(module) — decorators preserved
-  mount(Story, args?)      → {container, editor}
-  mountEcho(Story, {value, mirror?, ...args}) → {container, editor, value()}
-}
+composePage(storiesModule)                       // composeStories — decorators preserved
+mount(Story, args?)              → {host}
+mountEcho(Story, {value, ...args}) → {host, value()}
+mountComponent(args?)            → {host}        // pages whose specs never go through a story
+mountApi(args?)                  → {host, api()}
+renderStoryHtml(Story)           → string        // the render root, for the snapshot sweep
 ```
 
-`mount` renders a composed story with overridden args; `editor` is `findEditingHost(container)`,
-so a story decorator wrapping the editor in a panel does not break the lookup. `mountEcho`
-is the stateful harness: it echoes `onChange` back into `value`, and with `mirror: true`
-renders a `<pre>` of the current value next to the editor.
+`host` is `findEditingHost(container)`, not the render root, so a story decorator wrapping the
+editor in a panel does not break the lookup. `renderStoryHtml` is the one exception — the
+snapshot sweep pins the wrapper too, so it keeps the root.
+
+`args` is typed `Partial<PageArgs>` per framework, so a wrong key fails both compilers. Vue's
+`PageArgs` deliberately does not narrow `Mark`: a mark may declare no props and read its value
+through `useMark()`, which `Component<T>` rejects against a concrete `T`.
+
+`mountEcho` mounts the COMPONENT with the story's args rather than the story itself.
+`@storybook/vue3` composes a story as `(...args) => h(composedStory(...args))` and
+`composedStory()` builds a new component object per call, so echoing through it remounts the
+editor and loses focus, caret and any open overlay. Decorators therefore do not run there,
+which {@link assertEchoable} guards by refusing any story carrying `parameters.plainValue`.
 
 `composeStories` is kept deliberately: `vitest.setup.*.ts` register `withPlainValue` through
-`setProjectAnnotations`, so composed stories carry the same decorators as in the Storybook
-UI. Bypassing it would change the DOM of any story with a `plainValue` parameter.
+`setProjectAnnotations`, so composed stories carry the same decorators as in the Storybook UI.
+Bypassing it would change the DOM of any story with a `plainValue` parameter.
+
+### One snapshot, not two
+
+`stories.spec.ts` sweeps every framework-free story file and writes ONE snapshot that both
+projects compare against. That is the enforcement mechanism this whole design exists for: the
+two adapters must render the same story identically, and a divergence fails here instead of
+sitting unnoticed in two files nobody diffs. `stories.react.spec.tsx` sweeps what is left —
+the react-only pages.
+
+Getting the two frameworks to agree took four changes, each removed at its source:
+
+- `htmlSnapshot` drops framework comments. Vue leaves `<!--v-if-->` where a conditional is
+  false, React leaves nothing.
+- `plainValue` is one value written literally in the story file, not a per-framework fixture.
+- `withPlainValue.vue` renders the same `PlainValuePanel` markup React does, instead of a
+  hand-rolled `<div>` + `<pre>`.
+- Vue marks reading through `useMark()` carry `inheritAttrs: false`. Vue puts every undeclared
+  prop on the root element, so they rendered `<mark meta=" " value="contain">` where React
+  renders a bare `<mark>`.
+
+Updating with `-u` writes from whichever project runs first, so run ONE project at a time when
+a snapshot legitimately moves.
 
 ### The story file
 
@@ -184,13 +216,19 @@ written as a plain object literal.
    `/(?<!\.d)\.(story|stories)(\.(react|vue))?\.(m?[jt]sx?)$/`, `viteFinal` adding
    `resolve.extensions`, and one glob per instance:
    `['**/*.stories.react.tsx', '**/*.stories.ts']` and `['**/*.stories.vue.ts', '**/*.stories.ts']`.
-5. `stories.react.spec.tsx` / `stories.vue.spec.ts` — the same two-entry `import.meta.glob`.
+5. `stories.spec.ts` globs `./**/*.stories.ts` — the framework-free story files, which is
+   exactly the set both frameworks have — and writes ONE snapshot both projects compare
+   against. `stories.react.spec.tsx` globs `./**/*.stories.react.tsx` for the react-only pages.
 6. `.storybook/preview.ts` — one line, `export {default} from './annotations'`, which resolves
    per instance. The annotations live in `annotations.base.ts` + `annotations.react.ts` +
    `annotations.vue.ts`, and the vitest setup files import the framework one directly instead
    of re-listing decorators.
 7. `oxlint.config.ts` — the spec/story override list gains `**/*.stories.vue.ts`,
    `**/*.fixtures.react.tsx`, `**/*.fixtures.vue.ts`.
+8. `.storybook/main.ts` — a per-framework `cacheDir` in the same `viteFinal`. Storybook keys its
+   cache on the config DIRECTORY, which is shared here because the framework comes from an env
+   var, so `pnpm run dev` had both servers re-optimizing over each other's dependency bundle and
+   the second one never finished loading.
 
 ### File naming
 
@@ -225,11 +263,11 @@ the snapshot sweep with only an "obsolete snapshots" note.
 
 ## Known gaps
 
-- **Mount args are checked, `Mark` in vue is not.** `mount`/`mountEcho`/`mountComponent`/
-  `mountApi` take `Partial<PageArgs>`, so a wrong arg key fails both compilers. Vue's
-  `PageArgs` deliberately does NOT narrow `Mark`: a mark may declare no props and read its
-  value through `useMark()`, and `Component<T>` rejects such a component against a concrete
-  `T`. The narrowing stays in the `Story` type, where every mark comes from the page fixtures.
+- **The docs Source panel is gone for framework-suffixed story files.** `@storybook/csf-plugin`
+  hardcodes `/(?<!\.d)\.(story|stories)\.[tj]sx?$/`, which `Drag.stories.react.tsx` does not
+  match, so those files are never enriched with `originalSource`. The framework-free
+  `*.stories.ts` files are unaffected. Costs a ~25-line local plugin built on
+  `storybook/internal/csf-tools` to fix; left alone because autodocs are not in use.
 - **The seam exports one `component`.** Pages whose meta points elsewhere — `Api` uses a local
   `Playground` harness, and `Ant` / `Material` / `Rsuite` are the same category — cannot use
   `PageMeta` / `component` as they stand. They are react-only today, so nothing breaks; a
@@ -242,9 +280,9 @@ the snapshot sweep with only an "obsolete snapshots" note.
   `Failed to import test file .../vitest.setup.<fw>.ts — SyntaxError`, taking every file in that
   project with it. Observed on plain `b0` before any of this work, so it is pre-existing;
   a re-run is green. Worth its own investigation, not a blocker here.
-- **`slotProps.container` handler names are unchecked** in both designs: the adapters type the
-  bag as `Record<string, unknown>`, so `onKeyDwn` compiles. React logs a dev error at runtime;
-  Vue binds a dead listener and says nothing.
+- **`slotProps.container` handler names are unchecked**: the adapters type the bag as
+  `Record<string, unknown>`, so `onKeyDwn` compiles. React logs a dev error at runtime; Vue
+  binds a dead listener and says nothing.
 
 ## Verification protocol
 
@@ -254,7 +292,9 @@ Each page migration must prove it changed no behavior:
    store test names and statuses.
 2. After: the same run; the multiset of `fullName + status` must be identical. A shared test
    appears twice (once per project), a framework-only test once.
-3. Story snapshots pass without `-u`.
+3. Story snapshots pass without `-u`. They are ONE file for the shared pages, so a divergence
+   between the frameworks fails here; when a snapshot legitimately moves, run one project at a
+   time, because `-u` writes from whichever runs first.
 4. `tsc -p tsconfig.react.json` and `vue-tsc -p tsconfig.vue.json` are clean.
 5. `pnpm -F @markput/storybook run build` builds both instances and indexes the page's
    stories in `dist-*/index.json`.
@@ -263,49 +303,72 @@ Each page migration must prove it changed no behavior:
 Renaming a story file breaks every spec importing it: repoint those imports to the
 extension-resolved form (`./Base.stories`) in the same commit.
 
-## Migration scope and order
+## State
 
-`Base` is done. Remaining pages, smallest first so the fixtures catalog grows gradually:
+All twelve pages are migrated. The nine that exist in both frameworks are four files each; the
+four react-only pages (`Ant`, `Api`, `Material`, `Rsuite`) keep a single `*.stories.react.tsx`
+and are swept by `stories.react.spec.tsx`.
 
-1. `Selection` (21/25 lines)
-2. `Base/MarkputApi` (24/18)
-3. `Base/keyboard` (188/186)
-4. `Overlay` (215/245)
-5. `renderCount` (303/300)
-6. `Nested` (380/543)
-7. `Slots` (415/556)
-8. `Clipboard` (783/756)
-9. `Drag` (892/884)
+Two pages briefly needed a fifth file — a `<Page>.stories.react.tsx` carrying stories that only
+made sense in React, under the same `title`, which builds and indexes correctly. Both are gone:
+`Slots.CustomComponents` came back once the Vue container defect was fixed, and Nested's two
+tabbed documents came back once `Tabs` got a Vue twin. The shape is documented because the next
+genuinely one-sided story will want it.
 
-Then a drift-reconciliation pass: each of the ten differences found on `b0` becomes either a
-shared test or an explicitly framework-only one with a stated reason.
+Order mattered while migrating: pages whose specs import another page's stories (Overlay reads
+Base's, Drag reads Nested's `MarkdownOptions`) come after the page they read.
 
-Story files migrate with their page. React-only pages (`Ant`, `Api`, `Material`, `Rsuite`)
-keep one framework and need no shared args module.
+## Results
 
-Out of scope: `stories.*.spec`, `htmlSnapshot.react.spec`, and `renderCount` semantics; the
-`withPlainValue` decorator; the `onFocus`/`onFocusin` API divergence itself (the migration
-records it, it does not fix it).
-
-## Results on `Base`
-
-| | baseline `b0` | after |
+| | before | after |
 | --- | --- | --- |
-| react + vue tests | 451 (445 passed, 6 todo) | 453 — the two extra are one new regression test running in both projects |
-| story snapshots | — | unchanged |
-| files defining the page's stories | 4 (`args` + two shims + none) | 1 |
-| files for the whole page | 6 | 4 (+1 vue-only spec) |
+| specs + stories | 3 705 + 1 425 react, 3 961 + 992 vue | one set, framework-free |
+| tests | 1 395 | 1 421 |
+| story snapshots shared by both frameworks | 0 identical of 27 | 32 identical of 32, in one file |
+| pages with two story files | 8 | 0 |
+
+The test count rose because a test that existed in one framework now runs in both: every
+drifted pair was reconciled to the stronger version, keeping every assertion either side had.
+Where the two specs tested different mechanisms — typing through a synthesized `insertText`
+versus a real keypress — both survive as separate shared tests.
 
 `pnpm test`, `pnpm run typecheck`, `pnpm run lint:check`, `pnpm run format:check`,
-`pnpm run build`, and both Storybook builds pass. Both instances index the page's four
-entries from the single `Base.stories.ts`.
+`pnpm run build` and both Storybook builds pass.
 
-Two real bugs surfaced along the way, both from making something typecheck that never had:
+### What the merge found
 
-- `MarkputApi` used a native `#private` field, which Vue's `defineExpose` Proxy cannot reach —
-  `insertMark`, `replaceRange`, `select` and `caret` all threw through a Vue ref. Fixed in core.
-- `withPlainValue.vue` annotated its story parameter as `VNode`, which is narrower than the
-  decorator contract. Invisible until the preview entered a tsconfig program.
+Every one of these was invisible while each framework had its own tests and its own snapshot.
+Five are product defects, all fixed:
+
+- `MarkputApi` used a native `#private` field, which Vue's `defineExpose` Proxy cannot reach:
+  `insertMark`, `replaceRange`, `select` and `caret` all threw through a Vue ref.
+- `slots.container` given a COMPONENT rendered an empty editor. `Container.vue` announced
+  `host.rendered()` from its own `onUpdated`, but a component container puts the tokens in a
+  slot, which the CHILD's render effect evaluates — so the parent never updated and core's bind
+  pass never ran.
+- A prop the caller stopped passing kept its last value: `PropsModel.set` read its key list off
+  the incoming object. `set` is now the adapter's full sync and the patch behaviour lives in
+  `update`. React's tabbed story, which drops `readOnly` rather than setting it false, had a
+  permanently frozen Write tab because of it.
+- The Vue suggestion popup opened at the editor's left edge. Core hands out bare numbers,
+  React's DOM appends `px` to numeric `left`/`top`, Vue assigns them verbatim and the CSSOM
+  drops the unitless value.
+- The Vue popup spilled the option's own config onto its root element — `trigger="@"
+  data="one,two,three,four"` — because a component that reads everything through `useOverlay()`
+  declares no props and Vue passes undeclared ones through as attributes. React drops them.
+- Every Vue story with a plain-value panel was uneditable, for three compounding reasons in
+  `withPlainValue.vue`: a functional story component only receives `class`/`style`/`on*` by
+  fallthrough so `value` was dropped, `story()` rebuilt the component per render so the editor
+  remounted, and nothing ever wrote to `context.args`, which is the only thing the mounted
+  story renders from.
+
+Two more were in the harness rather than the product: `mountEcho` remounted the Vue editor for
+the same reason as the decorator, and the two Storybook instances shared one Vite cache
+directory, so `pnpm run dev` left the second one loading forever.
+
+Two typing defects surfaced simply by putting files under a compiler that had never seen them:
+`withPlainValue.vue` annotated its story parameter as `VNode`, narrower than the decorator
+contract, and the preview was in no tsconfig program at all.
 
 ## Rejected: CSF factories
 
