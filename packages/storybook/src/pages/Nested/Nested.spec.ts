@@ -1,9 +1,11 @@
 import type {Markup} from '@markput/core'
 import {beforeEach, describe, expect, it} from 'vitest'
-import {page} from 'vitest/browser'
+import {page, userEvent} from 'vitest/browser'
 
-import {mountComponent} from '../../shared/lib/page'
+import {findEditingHost, getElement} from '../../shared/lib/dom'
+import {composePage, mount, mountComponent} from '../../shared/lib/page'
 import {capture, marks} from './Nested.fixtures'
+import * as NestedStories from './Nested.stories'
 
 /**
  * The page's marks are configured per test rather than through a story: every case here builds
@@ -261,5 +263,24 @@ describe('Edge Cases', () => {
 
 		// Renders something rather than crashing.
 		await expect.element(host).toBeInTheDocument()
+	})
+})
+
+describe('Tabbed documents', () => {
+	const {ComplexMarkdown, ComplexHtmlDocument} = composePage(NestedStories)
+
+	// The Preview tab is read-only and the Write tab drops the prop rather than setting it
+	// false. That is the shape that used to leave the editor read-only for good, because an
+	// absent prop never reached its setter.
+	it.each([
+		['ComplexMarkdown', ComplexMarkdown],
+		['ComplexHtmlDocument', ComplexHtmlDocument],
+	])('%s switches to an editable Write tab', async (_name, Story) => {
+		await mount(Story)
+		expect(findEditingHost(document.body)).toHaveAttribute('contenteditable', 'false')
+
+		await userEvent.click(getElement(page.getByText('Write')))
+
+		expect(findEditingHost(document.body)).toHaveAttribute('contenteditable', 'true')
 	})
 })
