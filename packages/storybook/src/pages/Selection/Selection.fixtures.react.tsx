@@ -7,7 +7,7 @@ import type {ReactNode} from 'react'
  * project if this file drifts.
  */
 export const fixtures = {
-	Testid: ({value}: MarkProps) => <mark data-testid="mark">{value}</mark>,
+	Value: ({value}: MarkProps) => <mark>{value}</mark>,
 }
 
 /** Spec fixture: the adapter-owned text surface the cross-select spec configures. */

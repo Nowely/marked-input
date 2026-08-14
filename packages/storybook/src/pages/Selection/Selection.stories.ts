@@ -14,9 +14,9 @@ export default {
 } satisfies PageMeta
 
 export const Inline = story({
-	args: {Mark: fixtures.Testid, defaultValue: INLINE_VALUE},
+	args: {Mark: fixtures.Value, defaultValue: INLINE_VALUE},
 })
 
 export const Drag = story({
-	args: {layout: 'block', draggable: true, Mark: fixtures.Testid, defaultValue: BLOCK_VALUE},
+	args: {layout: 'block', draggable: true, Mark: fixtures.Value, defaultValue: BLOCK_VALUE},
 })

@@ -24,7 +24,7 @@ export const marks = {
 	Testid: ({value}: MarkProps) => <mark data-testid="mark">{value}</mark>,
 	Children: ({children}: MarkProps) => <mark data-testid="mark">{children}</mark>,
 	Todo: ({children}: MarkProps) => (
-		<span data-testid="todo-mark">
+		<span>
 			<input type="checkbox" aria-label="done" />
 			{children}
 		</span>

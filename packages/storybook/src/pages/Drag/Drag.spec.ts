@@ -24,7 +24,7 @@ const MARKDOWN_DRAG_VALUE =
  * `Drag.stories.ts`.
  */
 const CONTROLLED_ARGS = {
-	Mark: marks.Testid,
+	Mark: marks.Value,
 	value: 'hello @[world](1)\n\nfoo',
 	layout: 'block',
 	draggable: true,

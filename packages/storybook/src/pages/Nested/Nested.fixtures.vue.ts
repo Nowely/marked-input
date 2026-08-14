@@ -260,8 +260,7 @@ export const marks = {
 	Rendering: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
 		setup: () => ({mark: useMark(), info: useMarkInfo()}),
-		template:
-			'<span data-testid="rendering-mark"><slot v-if="info.hasNestedMarks" /><template v-else>{{ mark.slot() }}</template></span>',
+		template: '<span><slot v-if="info.hasNestedMarks" /><template v-else>{{ mark.slot() }}</template></span>',
 	}),
 	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
 	Testid: defineComponent({

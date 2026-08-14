@@ -33,5 +33,5 @@ export const fixtures = {
 
 /** Spec fixtures: mark components the shared spec mounts through `mountComponent`. */
 export const marks = {
-	Testid: ({value}: MarkProps) => <mark data-testid="mark">{value}</mark>,
+	Value: ({value}: MarkProps) => <mark>{value}</mark>,
 }

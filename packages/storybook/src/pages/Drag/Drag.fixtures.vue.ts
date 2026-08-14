@@ -38,8 +38,8 @@ export const fixtures = {
 
 /** Spec fixtures: mark components the shared spec mounts through `mountComponent`. */
 export const marks = {
-	Testid: defineComponent({
+	Value: defineComponent({
 		props: {value: String, meta: String},
-		template: '<mark data-testid="mark">{{ value }}</mark>',
+		template: '<mark>{{ value }}</mark>',
 	}),
 }

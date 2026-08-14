@@ -44,7 +44,7 @@ export const marks = {
 		template: '<mark data-testid="mark"><slot>{{ children }}</slot></mark>',
 	}),
 	Todo: defineComponent({
-		template: '<span data-testid="todo-mark"><input type="checkbox" aria-label="done" /><slot /></span>',
+		template: '<span><input type="checkbox" aria-label="done" /><slot /></span>',
 	}),
 	Focusable: defineComponent({
 		setup: () => ({mark: useMark()}),

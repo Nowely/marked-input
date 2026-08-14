@@ -10,11 +10,11 @@ import {defineComponent} from 'vue'
  * next to their React counterparts. The trade is that a template string is not typechecked.
  */
 export const fixtures = {
-	Testid: defineComponent({
+	Value: defineComponent({
 		// `meta` is declared but never read: core hands every mark `{value, meta}`, and an
 		// undeclared prop falls through onto the root element as `meta="1"`.
 		props: {value: String, meta: String},
-		template: '<mark data-testid="mark">{{ value }}</mark>',
+		template: '<mark>{{ value }}</mark>',
 	}),
 }
 
