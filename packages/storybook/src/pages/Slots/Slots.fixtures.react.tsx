@@ -17,7 +17,7 @@ const SimpleMark = ({children}: MarkProps) => (
 	<mark style={{backgroundColor: '#ffd700', padding: '2px 4px', borderRadius: '3px'}}>{children}</mark>
 )
 
-/** `slots.container` replacing the container outright — React-only, see `Slots.stories.react.tsx`. */
+/** `slots.container` replacing the container outright. */
 const FancyContainer = ({ref, ...props}: DivProps) => (
 	<div
 		{...props}
@@ -87,7 +87,6 @@ function EventLog({slotProps, ...args}: PageArgs) {
 
 export const fixtures = {
 	SimpleMark,
-	/** Only `Slots.stories.react.tsx` reads this; the Vue catalog has no counterpart. */
 	FancyContainer,
 	StyledContainer,
 	renderEventLog: (args: PageArgs) => <EventLog {...args} />,

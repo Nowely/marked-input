@@ -72,13 +72,6 @@ const EventLog = defineComponent({
 	`,
 })
 
-/**
- * No `FancyContainer` counterpart: `slots.container` = a COMPONENT renders an EMPTY editor under
- * this adapter (`Container.vue` re-announces `host.rendered()` from its own `onUpdated`, but the
- * token list lives in the container's SLOT, which the CHILD's render effect evaluates — so this
- * component never updates and the DOM is never bound). `CustomComponents` is therefore
- * React-only; see `Slots.stories.react.tsx` for the reproducer.
- */
 /** `slots.container` replacing the container outright. */
 const FancyContainer = defineComponent({
 	template: `
