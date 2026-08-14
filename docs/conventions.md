@@ -10,8 +10,8 @@ instead of scanning prior specs.
   (e.g. S1.6a).
 - Design decisions: `D{n}` — title + rationale + _Tradeoff:_ line.
 - User stories: `US-{n}`; acceptance criteria: `AC-{story}.{criterion}`.
-- Spec files: `docs/superpowers/plans/YYYY-MM-DD-markput-s{n}-{name}-v{ver}.md`.
-- Review records: `docs/superpowers/reviews/YYYY-MM-DD-{topic}-review.md`.
+- Spec files: `docs/scratch/plans/YYYY-MM-DD-markput-s{n}-{name}-v{ver}.md`.
+- Review records: `docs/scratch/reviews/YYYY-MM-DD-{topic}-review.md`.
 
 ## Document Structure
 
@@ -39,7 +39,7 @@ content replaced), not silently deleted.
   (independently committable, every task green) → execution after sign-off.
 - Large specs get a multi-agent review (lenses + adversarial verification of
   major findings) before user review; the record goes to
-  `docs/superpowers/reviews/`.
+  `docs/scratch/reviews/`.
 
 ## Established Contracts
 

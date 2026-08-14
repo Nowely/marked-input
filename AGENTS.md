@@ -65,7 +65,7 @@ behavior change under "internal cleanup".
   code or dispatching implementers.
 - Capture the agreed design as a reviewed spec, then a checkbox implementation
   plan of independently committable tasks. (This repo keeps both under
-  `docs/superpowers/`.)
+  `docs/scratch/`.)
 - Keep every task and commit green: typecheck and tests pass at each boundary,
   with no caller left referencing a removed or renamed symbol. Prefer a series
   of small, independently revertible changes over one big-bang change, and keep
@@ -176,3 +176,21 @@ behavior, or settled architecture changes.
 - Keep each PR's title and body matched to its actual diff and current scope.
   When scope shifts, update them rather than letting them go stale, and split
   unrelated work into a separate PR.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as markdown files under `docs/scratch/<feature>/` in this repo. See
+`docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles, unchanged: `needs-triage`, `needs-info`,
+`ready-for-agent`, `ready-for-human`, `wontfix`. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See
+`docs/agents/domain.md`.
