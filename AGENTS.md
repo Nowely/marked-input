@@ -194,3 +194,9 @@ The five canonical roles, unchanged: `needs-triage`, `needs-info`,
 
 Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See
 `docs/agents/domain.md`.
+
+### Spec conventions
+
+Spec and plan structure, phase design, and the subsystem code register live in
+`docs/conventions.md` — the file the subsystem-design-spec skill loads instead
+of scanning prior specs.

@@ -6,4 +6,4 @@ One file per item under `issues/`, each carrying a `Status:` line. Read by statu
 
 Within `ready-for-agent` the items are independent of each other and numbered smallest first.
 
-Context for every item: PR #274 moved the editor to a single `contenteditable` host and block onto tree anchors. `docs/adr/0002-one-host-migration.html` holds the design and the post-migration measurements; `packages/website/src/content/docs/development/inconsistencies.md` holds the behaviour differences from a native field.
+Context for every item: PR #274 moved the editor to a single `contenteditable` host and block onto tree anchors. `docs/adr/0002-one-host-migration.md` holds the design and the post-migration measurements; `packages/website/src/content/docs/development/inconsistencies.md` holds the behaviour differences from a native field.

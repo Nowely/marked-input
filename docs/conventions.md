@@ -10,8 +10,12 @@ instead of scanning prior specs.
   (e.g. S1.6a).
 - Design decisions: `D{n}` — title + rationale + _Tradeoff:_ line.
 - User stories: `US-{n}`; acceptance criteria: `AC-{story}.{criterion}`.
-- Spec files: `docs/scratch/plans/YYYY-MM-DD-markput-s{n}-{name}-v{ver}.md`.
+- Spec files: `docs/scratch/plans/YYYY-MM-DD-markput-s{n}-{name}-v{ver}.md` for a
+  numbered subsystem spec; `docs/scratch/plans/YYYY-MM-DD-{topic}.md` for a
+  design doc that is not one.
 - Review records: `docs/scratch/reviews/YYYY-MM-DD-{topic}-review.md`.
+- Visual explorations: `docs/scratch/design/{topic}.html`. HTML only where the
+  rendering is the content; anything prose-shaped is markdown.
 
 ## Document Structure
 
