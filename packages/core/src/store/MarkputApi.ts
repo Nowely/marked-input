@@ -72,7 +72,7 @@ export class MarkputApi {
 	 */
 	insertMark(at: NodeAnchor | 'caret', init: MarkInit): MarkNode | undefined {
 		const anchor = at === 'caret' ? this.tokens.selection.caretAnchor() : at
-		if (anchor === undefined || !this.#live(anchor)) return undefined
+		if (anchor === undefined || !this.live(anchor)) return undefined
 		const text = annotate(init.markup, {value: init.value, meta: init.meta, slot: init.slot})
 		const caret = this.tokens.replaceBetween(anchor, anchor, text)
 		if (!caret) return undefined
@@ -90,7 +90,7 @@ export class MarkputApi {
 
 	/** Cross-node (spec D5). The pair is normalized, so `from` after `to` is legal. */
 	replaceRange(from: NodeAnchor, to: NodeAnchor, text: string): boolean {
-		if (!this.#live(from) || !this.#live(to)) return false
+		if (!this.live(from) || !this.live(to)) return false
 		return this.tokens.replaceBetween(from, to, text) !== undefined
 	}
 
@@ -113,7 +113,7 @@ export class MarkputApi {
 	}
 
 	select(anchor: NodeAnchor, head: NodeAnchor = anchor): boolean {
-		if (!this.#live(anchor) || !this.#live(head)) return false
+		if (!this.live(anchor) || !this.live(head)) return false
 		this.tokens.selection.select(anchor, head)
 		return true
 	}
@@ -127,8 +127,13 @@ export class MarkputApi {
 	 * resolved (plan decision D-f): its stored `position` is whatever adoption last wrote
 	 * before the node left the tree, so resolving it would splice at an arbitrary offset. The
 	 * document edges are always live.
+	 *
+	 * TypeScript-private, NOT `#private`: this class is handed to consumers through the
+	 * adapters, and Vue's `defineExpose` wraps it in a Proxy. A native private field is
+	 * branded to the instance, so every method reaching one through the proxy throws
+	 * `Receiver must be an instance of class MarkputApi`.
 	 */
-	#live(anchor: NodeAnchor): boolean {
+	private live(anchor: NodeAnchor): boolean {
 		if (typeof anchor === 'string') return true
 		const node = 'node' in anchor ? anchor.node : 'before' in anchor ? anchor.before : anchor.after
 		return this.tokens.find(node.id) === node

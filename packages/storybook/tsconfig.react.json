@@ -1,14 +1,8 @@
 {
   "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "moduleSuffixes": [".react", ""]
+  },
   "include": ["**/*.ts", "**/*.tsx", ".storybook/**/*.ts"],
-  "exclude": [
-    "node_modules",
-    "dist-react",
-    "dist-vue",
-    "**/*.vue",
-    "**/*.vue.ts",
-    "**/*.vue.spec.ts",
-    "**/*.vue.stories.ts",
-    ".storybook/preview.ts"
-  ]
+  "exclude": ["node_modules", "dist-react", "dist-vue", "**/*.vue", "**/*.vue.ts", "**/*.vue.spec.ts"]
 }

@@ -1,0 +1,71 @@
+import type {MarkProps} from '@markput/react'
+import {MarkedInput, useMark} from '@markput/react'
+import {useState} from 'react'
+
+import {Button} from '../../shared/components/Button'
+
+/**
+ * Story fixtures: the framework half of this page's stories. There is no shared interface to
+ * `satisfies` — `Base.stories.ts` is the contract, and it fails to compile under either
+ * project if this file drifts.
+ */
+export const fixtures = {
+	Alerting: (props: MarkProps) => <mark onClick={_ => alert(props.meta)}>{props.value}</mark>,
+	Button,
+	/** React takes `onKeyDown`; Vue takes `onKeydown`. The other four are named identically. */
+	containerSlotProps: {
+		onKeyDown: () => console.log('onKeyDown'),
+	},
+}
+
+/** Spec fixtures: mark components the shared spec mounts through story args. */
+export const marks = {
+	Value: ({value}: MarkProps) => <mark>{value}</mark>,
+	Testid: ({value}: MarkProps) => <mark data-testid="mark">{value}</mark>,
+	Children: ({children}: MarkProps) => <mark data-testid="mark">{children}</mark>,
+	Todo: ({children}: MarkProps) => (
+		<span data-testid="todo-mark">
+			<input type="checkbox" aria-label="done" />
+			{children}
+		</span>
+	),
+	Focusable: () => {
+		const mark = useMark()
+		return (
+			<abbr title={mark.meta()} style={{outline: 'none', whiteSpace: 'pre-wrap'}}>
+				{mark.value()}
+			</abbr>
+		)
+	},
+	Removable: () => {
+		const mark = useMark()
+		return <mark onClick={() => mark.remove()}>{mark.value()}</mark>
+	},
+	Updatable: () => {
+		const mark = useMark()
+		return <mark onClick={() => mark.update({value: `${mark.value()}1`})}>{mark.value()}</mark>
+	},
+	Empty: () => null,
+}
+
+export const Overlay = () => <span>I'm here!</span>
+
+/**
+ * A harness whose `readOnly` prop DISAPPEARS rather than turning false — the shape a tabbed
+ * story has, and the one that used to leave the editor read-only for good.
+ */
+export const DroppedReadOnly = () => {
+	const [locked, setLocked] = useState(true)
+	const Mark = ({value}: MarkProps) => <mark>{value}</mark>
+
+	return (
+		<>
+			<button onClick={() => setLocked(false)}>unlock</button>
+			{locked ? (
+				<MarkedInput Mark={Mark} defaultValue="hello @[x](1)" readOnly={true} />
+			) : (
+				<MarkedInput Mark={Mark} defaultValue="hello @[x](1)" />
+			)}
+		</>
+	)
+}

@@ -81,7 +81,7 @@ function mountControlledAdjacentMarks() {
 		value: echoed.value,
 		onChange: (next: string) => {
 			echoed.value = next
-			store.props.set({value: next})
+			store.props.update({value: next})
 		},
 		options: [{markup: '@[__value__](__meta__)'}],
 		Mark: () => null,

@@ -414,7 +414,7 @@ S2.8 did the move anyway, for a different reason — one representation instead 
 that comparator is gone with it: both adapters render `TreeNode`, each token component
 subscribes to its OWN node, and reference compare does the rest, because adoption keeps a
 node object for as long as it keeps its id. The render-count bound is now an exact number in
-both frameworks (`renderCount.react.spec.tsx` / `renderCount.vue.spec.ts`): 1 Mark render
+both frameworks (`renderCount.spec.ts`, one file run as both projects): 1 Mark render
 for a head insert at 100 marks, 1 for a single mark's value change. `Token` survived exactly
 as S1 predicted — as the parser's output type and the §7.1 oracle.
 
@@ -553,10 +553,11 @@ length}` for the `-1` sentinel, stopped being expressible when S2.6 deleted the 
   resolved `{value, meta}` by value — but fans out O(N) at the leaf for _slot_ marks, which
   means block rows and nesting: 101 row-Mark renders at 100 rows, measured. React's fix does
   not transfer; a ~15-line VNode cache was tried and removed the internal work but not the
-  row-Mark count, because Vue's unstable slot closure defeats the child-update check. There
-  is deliberately no structural fan-out gate in `renderCount.vue.spec.ts` — the React file
-  has one and the Vue file does not, which is the asymmetry to look for. Adapter-sized work,
-  worth doing only if block-mode typing is reported as slow.
+  row-Mark count, because Vue's unstable slot closure defeats the child-update check.
+  Nothing gates it: `renderCount.spec.ts`'s fan-out cases are measured on VALUE-only marks,
+  where both adapters hit 1, and its block cases assert deltas at two rows rather than a
+  count at a hundred. Adapter-sized work, worth doing only if block-mode typing is reported
+  as slow.
 - **`insertMark('caret')` after blur.** The selection driver clears the stored anchors on
   `focusout`, so the verb rejects whenever focus has left the editor — which is every toolbar
   button that does not suppress its own mousedown.

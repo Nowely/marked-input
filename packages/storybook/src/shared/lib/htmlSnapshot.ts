@@ -25,8 +25,11 @@ function formatNode(node: ChildNode, depth: number): string[] {
 		return [`${indent(depth)}${serializeText(node.data)}`]
 	}
 
+	// Framework bookkeeping, not rendered content: Vue leaves `<!--v-if-->` and `<!---->`
+	// placeholders where a conditional or an empty fragment sits, React leaves nothing. Keeping
+	// them would make the two frameworks' snapshots differ over something no user can see.
 	if (node instanceof Comment) {
-		return [`${indent(depth)}<!--${node.data}-->`]
+		return []
 	}
 
 	if (node instanceof Element) {

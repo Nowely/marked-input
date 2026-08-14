@@ -4,8 +4,10 @@ import {render} from 'vitest-browser-react'
 
 import {snapshotHtml} from '../shared/lib/htmlSnapshot'
 
+/** The React-only pages. Everything both frameworks have is swept by the shared `stories.spec.ts`. */
+
 // Automatically import all stories files
-const storiesModules = import.meta.glob('./**/*.react.stories.tsx', {eager: true})
+const storiesModules = import.meta.glob('./**/*.stories.react.tsx', {eager: true})
 
 // Group stories by category
 const storiesByCategory = new Map<string, Record<string, any>>()

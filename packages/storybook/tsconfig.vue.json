@@ -2,13 +2,17 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "jsx": "preserve",
-    "jsxImportSource": "vue"
+    "jsxImportSource": "vue",
+    "moduleSuffixes": [".vue", ""]
   },
   "include": [
     "**/*.vue",
     "**/*.vue.ts",
     "**/*.vue.spec.ts",
-    "**/*.vue.stories.ts",
+    "src/pages/**/*.spec.ts",
+    "src/pages/**/*.stories.ts",
+    ".storybook/**/*.vue.ts",
+    ".storybook/preview.ts",
     "src/shared/lib/*.ts",
     "vite.config.ts"
   ],

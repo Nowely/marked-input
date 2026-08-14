@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, onUpdated} from 'vue'
+import {computed, nextTick, onMounted, onUpdated, watch} from 'vue'
 import type {Ref} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -49,7 +49,31 @@ const setContainerRef = (el: unknown) => {
 }
 
 onMounted(() => store.host.rendered())
-onUpdated(() => store.host.rendered())
+
+// `onUpdated` covers a container rendered as an ELEMENT: the tokens are this component's own
+// children, so a commit re-renders it. When `slots.container` is a COMPONENT the tokens compile
+// into a slot function, which the CHILD's render effect evaluates — the reactive read never
+// reaches this component, it never updates, `rendered()` never fires again and core's bind pass
+// never runs, leaving the editor empty.
+//
+// The watcher below subscribes in its own effect, so it fires either way, and `nextTick` waits
+// for the child's update to reach the DOM. It announces only when `onUpdated` did not, so the
+// element path keeps emitting exactly one `rendered()` per commit.
+let announcedEpoch = -1
+
+onUpdated(() => {
+	announcedEpoch = result.value.renderEpoch
+	store.host.rendered()
+})
+
+watch(
+	() => result.value.renderEpoch,
+	async epoch => {
+		await nextTick()
+		if (announcedEpoch === epoch) return
+		store.host.rendered()
+	}
+)
 </script>
 
 <template>

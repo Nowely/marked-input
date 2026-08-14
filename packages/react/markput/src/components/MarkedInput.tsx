@@ -87,6 +87,8 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOp
 	})
 
 	useLayoutEffect(() => {
+		// `sync`, not `set`: React hands us only the props the caller wrote, so a prop that was
+		// dropped between renders has to revert to its default rather than keep its last value.
 		store.props.set(props)
 	})
 

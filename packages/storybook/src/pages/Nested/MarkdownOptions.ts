@@ -1,5 +1,10 @@
-import type {MarkProps, Markup, Option} from '@markput/react'
-import type {CSSProperties} from 'react'
+import type {CSSProperties, Markup} from '@markput/core'
+
+/**
+ * Framework-free by contract: this preset is shared by the react-only `Nested` stories and by
+ * `Drag`, so a react type here would keep it out of any vue or cross-framework story. `Markup`
+ * and `CSSProperties` both come from core, which is what the adapters re-export anyway.
+ */
 
 /**
  * Preset configuration for a single markdown markup
@@ -100,11 +105,16 @@ export const defaultMarkdownTheme: Record<string, MarkupPreset> = {
 	},
 }
 
-function buildMarkdownOptions(theme: Record<string, MarkupPreset>): Option[] {
+/**
+ * The mark mapper stays generic in its props: each adapter has its own `MarkProps` (react's
+ * `children` is a `ReactNode`, vue's a `VNodeChild`), and a generic pass-through is the one
+ * shape that instantiates to either without naming a framework.
+ */
+function buildMarkdownOptions(theme: Record<string, MarkupPreset>) {
 	return Object.values(theme).map((preset: MarkupPreset) => {
 		return {
 			markup: preset.markup,
-			mark: (props: MarkProps) => ({...props, style: preset.style}),
+			mark: <TProps extends object>(props: TProps) => ({...props, style: preset.style}),
 		}
 	})
 }
@@ -119,5 +129,4 @@ export const markdownOptions = buildMarkdownOptions(defaultMarkdownTheme)
  * Use in drag mode so inline marks (bold, italic, code, link, strikethrough)
  * are not each split into their own draggable row.
  */
-// oxlint-disable-next-line no-unsafe-type-assertion
-export const blockLevelMarkdownOptions = markdownOptions.filter(opt => (opt.markup as string).includes('\n\n'))
+export const blockLevelMarkdownOptions = markdownOptions.filter(opt => opt.markup.includes('\n\n'))

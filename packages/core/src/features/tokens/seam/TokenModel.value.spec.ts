@@ -37,7 +37,7 @@ describe('TokenModel value boundary', () => {
 
 	it('initializes from controlled value on enable', () => {
 		const store = new Store()
-		store.props.set({value: 'hello'})
+		store.props.update({value: 'hello'})
 		mount(store)
 		expect(store.tokens.value()).toBe('hello')
 		expect(treeShape(store.tokens.nodes())).toMatchObject([
@@ -68,9 +68,9 @@ describe('TokenModel value boundary', () => {
 
 	it('controlled prop echo commits current and tokens', () => {
 		const store = new Store()
-		store.props.set({value: 'hello'})
+		store.props.update({value: 'hello'})
 		mount(store)
-		store.props.set({value: 'world'})
+		store.props.update({value: 'world'})
 
 		expect(store.tokens.value()).toBe('world')
 		expect(treeShape(store.tokens.nodes())).toMatchObject([
@@ -80,9 +80,9 @@ describe('TokenModel value boundary', () => {
 
 	it('falls back to defaultValue when controlled value becomes undefined', () => {
 		const store = new Store()
-		store.props.set({value: 'hello', defaultValue: 'default'})
+		store.props.update({value: 'hello', defaultValue: 'default'})
 		mount(store)
-		store.props.set({value: undefined})
+		store.props.update({value: undefined})
 
 		expect(store.props.value()).toBeUndefined()
 		expect(store.tokens.value()).toBe('default')
@@ -108,9 +108,9 @@ describe('TokenModel value boundary', () => {
 	it('readOnly allows controlled prop updates to replace accepted value', () => {
 		const store = new Store()
 		const onChange = vi.fn()
-		store.props.set({value: 'hello', readOnly: true, onChange})
+		store.props.update({value: 'hello', readOnly: true, onChange})
 		mount(store)
-		store.props.set({value: 'world'})
+		store.props.update({value: 'world'})
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.tokens.value()).toBe('world')
@@ -131,13 +131,13 @@ describe('TokenModel value boundary', () => {
 		it('calls onChange and keeps old current until controlled echo', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			store.props.set({value: 'hello', onChange})
+			store.props.update({value: 'hello', onChange})
 			store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(5), 'world')
 
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.tokens.value()).toBe('hello')
 
-			store.props.set({value: 'world'})
+			store.props.update({value: 'world'})
 			expect(store.tokens.value()).toBe('world')
 		})
 	})
@@ -161,10 +161,10 @@ describe('TokenModel value boundary', () => {
 			store.tokens.setValue('edited')
 			expect(store.tokens.value()).toBe('edited')
 
-			store.props.set({value: 'controlled'})
+			store.props.update({value: 'controlled'})
 			expect(store.tokens.value()).toBe('controlled')
 
-			store.props.set({value: undefined})
+			store.props.update({value: undefined})
 			expect(store.tokens.value()).toBe('edited')
 		})
 

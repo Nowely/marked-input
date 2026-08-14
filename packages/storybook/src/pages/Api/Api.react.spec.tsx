@@ -5,7 +5,7 @@ import {page, userEvent} from 'vitest/browser'
 
 import {textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd} from '../../shared/lib/focus'
-import * as Stories from './Api.react.stories'
+import * as Stories from './Api.stories'
 
 const {Default, Block} = composeStories(Stories)
 
