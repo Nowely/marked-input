@@ -16,12 +16,9 @@ Issues and specs for this repo live as markdown files in `docs/scratch/`.
 - A directory that is a standing queue rather than one feature carries a
   `README.md` in place of `spec.md`, and may collect its closed items in a
   single `issues/closed.md` rather than one file each
-
-## Reviewed specs and plans
-
-`docs/scratch/` is also where the reviewed design specs and implementation plans
-that AGENTS.md gates code changes on live — see `docs/conventions.md` for their
-file naming (`docs/scratch/plans/`, `docs/scratch/reviews/`). One home, not two.
+- Everything here is markdown, with one exception: a visual exploration whose
+  rendering IS the content (SVG, a rendered layout) stays HTML under
+  `docs/scratch/design/`
 
 ## When a skill says "publish to the issue tracker"
 

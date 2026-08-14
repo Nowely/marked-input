@@ -59,13 +59,6 @@ behavior change under "internal cleanup".
 
 ## Workflow
 
-- Agree the design before changing code. Propose designs, alternatives, and
-  trade-offs freely — the gate is on implementing, not on suggesting. When asked
-  to design or plan, deliver that artifact and wait for sign-off before editing
-  code or dispatching implementers.
-- Capture the agreed design as a reviewed spec, then a checkbox implementation
-  plan of independently committable tasks. (This repo keeps both under
-  `docs/scratch/`.)
 - Keep every task and commit green: typecheck and tests pass at each boundary,
   with no caller left referencing a removed or renamed symbol. Prefer a series
   of small, independently revertible changes over one big-bang change, and keep
@@ -73,9 +66,8 @@ behavior change under "internal cleanup".
 - Make structural changes (moves, renames, splits) pure: relocate code without
   changing behavior, so the diff is a clean move. Do any behavior change as a
   separate, explicit step.
-- Keep a spec and its plan consistent — reconcile them to one source of truth
-  before coding. Keep self-reviews honest: list open blockers instead of
-  declaring everything resolved.
+- Keep self-reviews honest: list open blockers instead of declaring everything
+  resolved.
 
 ## Engineering Defaults
 
@@ -194,9 +186,3 @@ The five canonical roles, unchanged: `needs-triage`, `needs-info`,
 
 Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See
 `docs/agents/domain.md`.
-
-### Spec conventions
-
-Spec and plan structure, phase design, and the subsystem code register live in
-`docs/conventions.md` — the file the subsystem-design-spec skill loads instead
-of scanning prior specs.

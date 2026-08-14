@@ -1,7 +1,7 @@
 # Established Contracts
 
-Contracts that later work is expected to hold to. Lifted verbatim from
-`docs/conventions.md`, which now covers only how a spec is written.
+Contracts that later work is expected to hold to. Lifted verbatim from the
+repo's former `docs/conventions.md`, which has since been retired.
 
 - S1 public API: spec v2 §2.3 (`MarkputApi`, `TreeNode = TextNode | MarkNode`
   one structure, `NodeAnchor`, verbs over `applyRange`, `changed` payload).
