@@ -218,8 +218,9 @@ describe('Complex Nesting Scenarios', () => {
 			options: [{markup: SLOT_MARKUP}],
 		})
 
+		// Exactly three: the outer mark, the one nested in it, and the flat one beside it.
 		const found = page.getByTestId('mark').all()
-		expect(found.length).toBeGreaterThanOrEqual(3)
+		expect(found).toHaveLength(3)
 	})
 
 	it('render nested structure when Mark component renders children', async () => {
@@ -261,8 +262,9 @@ describe('Edge Cases', () => {
 			options: [{markup: SLOT_MARKUP}],
 		})
 
-		// Renders something rather than crashing.
-		await expect.element(host).toBeInTheDocument()
+		// Neither markup closes, so nothing is a mark: the whole value stays literal text.
+		expect(host.textContent).toBe('@[unclosed @[nested')
+		expect(host.querySelector('[data-testid="mark"]')).toBeNull()
 	})
 })
 

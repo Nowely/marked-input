@@ -92,7 +92,7 @@ function shapeOf(fragment: HTMLElement): [string, string][] {
 }
 
 describe('Clipboard: copy', () => {
-	it('partial text selection should set markput MIME with trimmed text', async () => {
+	it('set the markput MIME to the trimmed text for a partial text selection', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -109,7 +109,7 @@ describe('Clipboard: copy', () => {
 		expect(clipboardData.getData('text/html')).toBe('ll')
 	})
 
-	it('full text token selection should set markput MIME', async () => {
+	it('set the markput MIME for a full text token selection', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -126,7 +126,7 @@ describe('Clipboard: copy', () => {
 		expect(clipboardData.getData('text/html')).toBe('hello ')
 	})
 
-	it('partial mark selection should set markput MIME with full mark expanded', async () => {
+	it('expand a partially selected mark to its whole markup', async () => {
 		const {host} = await mount(Inline)
 		const mark = host.querySelector('mark')!
 
@@ -144,7 +144,7 @@ describe('Clipboard: copy', () => {
 		expect(clipboardData.getData('text/html')).toBe('orl')
 	})
 
-	it('full mark selection should set markput MIME with complete markup', async () => {
+	it('set the markput MIME to the complete markup for a full mark selection', async () => {
 		const {host} = await mount(Inline)
 		const mark = host.querySelector('mark')!
 
@@ -161,7 +161,7 @@ describe('Clipboard: copy', () => {
 		expect(clipboardData.getData('text/html')).toBe('world')
 	})
 
-	it('cross-token partial selection should set markput MIME with trimmed text and full mark', async () => {
+	it('trim the boundary text and keep the mark whole across tokens', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -189,7 +189,7 @@ describe('Clipboard: copy', () => {
 		expect(fragment.querySelector('mark')!.getAttribute('contenteditable')).toBe('false')
 	})
 
-	it('cross-token partial selection paste should reconstruct mark with surrounding text', async () => {
+	it('reconstruct a mark with its surrounding text when pasting a cross-token selection', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -215,7 +215,7 @@ describe('Clipboard: copy', () => {
 		expect(host.textContent).toBe('hello world foolo world f')
 	})
 
-	it('full multi-token selection should set markput MIME', async () => {
+	it('set the markput MIME for a full multi-token selection', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -234,7 +234,7 @@ describe('Clipboard: copy', () => {
 		])
 	})
 
-	it('selecting text + mark via drag should set markput MIME', async () => {
+	it('set the markput MIME for a text-plus-mark selection made by dragging', async () => {
 		const {host} = await mount(Inline)
 
 		// Simulate a browser drag selection that spans from "hello " through the mark "world".
@@ -260,7 +260,7 @@ describe('Clipboard: copy', () => {
 		])
 	})
 
-	it('copy-paste round-trip: select all, copy, paste into plain text should reconstruct marks', async () => {
+	it('reconstruct marks on a select-all copy pasted into a plain-text editor', async () => {
 		// Step 1: Render source editor with a mark
 		const {host: sourceHost} = await mount(Inline)
 
@@ -305,7 +305,7 @@ describe('Clipboard: paste', () => {
 		window.getSelection()?.removeAllRanges()
 	})
 
-	it('pasting markput data should reconstruct the mark in plain text', async () => {
+	it('reconstruct the mark when markput data is pasted into plain text', async () => {
 		// Start with plain text — no marks at all
 		const {host} = await mount(PlainText)
 		expect(host.querySelector('mark')).toBeNull()
@@ -328,7 +328,7 @@ describe('Clipboard: paste', () => {
 		expect(markAfter.textContent).toBe('world')
 	})
 
-	it('pasting markput data into uncontrolled editor should reconstruct the mark', async () => {
+	it('reconstruct the mark when markput data is pasted into an uncontrolled editor', async () => {
 		// The Inline story is uncontrolled (defaultValue, no onChange) and already has a mark
 		const {host} = await mount(Inline)
 		expect(host.querySelectorAll('mark').length).toBe(1)
@@ -356,7 +356,7 @@ describe('Clipboard: paste', () => {
 		expect(marksLocator.nth(1).element().textContent).toBe('test')
 	})
 
-	it('pasting markup over a selection within a span should replace the selection', async () => {
+	it('replace the selection when markup is pasted over a span selection', async () => {
 		const {host} = await mount(PlainText)
 
 		const span = textSurfaces(host)[0]
@@ -397,7 +397,7 @@ describe('Clipboard: paste', () => {
 		expect(host.textContent).toBe('hello world foo')
 	})
 
-	it('caret should land immediately after pasted mark', async () => {
+	it('land the caret immediately after a pasted mark', async () => {
 		const {host} = await mount(Inline)
 		const mark = host.querySelector('mark')!
 		const spans = textSurfaces(host)
@@ -425,7 +425,7 @@ describe('Clipboard: paste', () => {
 		expect(sel.anchorOffset).toBe(0)
 	})
 
-	it('pasting markput data in drag mode should reconstruct the mark in a block', async () => {
+	it('reconstruct the mark inside a block when markput data is pasted in drag mode', async () => {
 		// Drag story: layout 'block', defaultValue "hello\n@[world](1)\nfoo".
 		// Each line is a separate draggable block; the container is the one editing host.
 		const {host} = await mount(Drag)
@@ -460,7 +460,7 @@ describe('Clipboard: nested marks', () => {
 		window.getSelection()?.removeAllRanges()
 	})
 
-	it('partial selection within nested mark children should copy correct text', async () => {
+	it('copy the covered text for a partial selection inside nested mark children', async () => {
 		const {host} = await mount(NestedMarkStory)
 		const mark = host.querySelector('mark')!
 
@@ -488,7 +488,7 @@ describe('Clipboard: nested marks', () => {
 		])
 	})
 
-	it('paste into nested mark should use cumulative offsets', async () => {
+	it('use cumulative offsets when pasting into a nested mark', async () => {
 		const {host} = await mount(NestedMarkStory)
 		const mark = host.querySelector('mark')!
 
@@ -538,7 +538,7 @@ describe('Clipboard: cut', () => {
 		expect(host.textContent).toBe(before)
 	})
 
-	it('cut partial text should write to clipboard and remove selection', async () => {
+	it('write the clipboard and remove the selection when cutting partial text', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -571,7 +571,7 @@ describe('Clipboard: cut', () => {
 		expect(host.textContent).toBe('hello world foo')
 	})
 
-	it('cut across tokens should write trimmed markup and remove selection', async () => {
+	it('write trimmed markup and remove the selection when cutting across tokens', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -587,7 +587,7 @@ describe('Clipboard: cut', () => {
 		await expect.element(page.getByText('helo')).toBeInTheDocument()
 	})
 
-	it('cut full mark should remove the mark', async () => {
+	it('remove the mark when cutting it whole', async () => {
 		const {host} = await mount(Inline)
 		const mark = host.querySelector('mark')!
 
@@ -603,7 +603,7 @@ describe('Clipboard: cut', () => {
 		expect(host.textContent).toBe('hello  foo')
 	})
 
-	it('cut all content should clear the editor', async () => {
+	it('clear the editor when cutting all content', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 

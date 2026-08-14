@@ -16,7 +16,7 @@ describe('computed', () => {
 		expect(doubled()).toBe(2)
 	})
 
-	it('Signal should not have a .use() method', () => {
+	it('does not give a Signal a .use() method', () => {
 		const s = signal<number>({initial: 1})
 		// @ts-expect-error -- .use() must not exist on Signal after this refactor
 		expect(typeof s.use).toBe('undefined')
