@@ -5,7 +5,7 @@ import {useRef, useState} from 'react'
 
 const MARKUP: Markup = '@[__value__](__meta__)'
 
-const Mark = ({value}: MarkProps) => <mark data-testid="mark">{value}</mark>
+const Mark = ({value}: MarkProps) => <mark>{value}</mark>
 
 /**
  * US-5 driven entirely through the §2.3 host object: every button is a `MarkputApi` verb
@@ -49,47 +49,43 @@ const Playground = ({layout, initial}: {layout: 'inline' | 'block'; initial: str
 				 */}
 				<button
 					type="button"
-					data-testid="insert-at-caret"
 					onMouseDown={e => e.preventDefault()}
 					onClick={() => api.current?.insertMark('caret', {markup: MARKUP, value: 'carol', meta: 'u3'})}
 				>
 					insert at caret
 				</button>
-				<button type="button" data-testid="edit-meta" onClick={() => markAt(1).update({meta: 'edited'})}>
+				<button type="button" onClick={() => markAt(1).update({meta: 'edited'})}>
 					edit meta
 				</button>
-				<button type="button" data-testid="clear-meta" onClick={() => markAt(1).update({meta: null})}>
+				<button type="button" onClick={() => markAt(1).update({meta: null})}>
 					clear meta
 				</button>
-				<button type="button" data-testid="remove-mark" onClick={() => markAt(1).remove()}>
+				<button type="button" onClick={() => markAt(1).remove()}>
 					remove mark
 				</button>
 				<button
 					type="button"
-					data-testid="replace-span"
 					onClick={() => api.current?.replaceText({node: textAt(0), start: 0, end: 5}, 'Howdy')}
 				>
 					replace span
 				</button>
 				<button
 					type="button"
-					data-testid="replace-across"
 					onClick={() =>
 						api.current?.replaceRange({node: textAt(0), offset: 6}, {after: markAt(1)}, 'nobody')
 					}
 				>
 					replace across
 				</button>
-				<button type="button" data-testid="set-value" onClick={() => api.current?.setValue('reset @[all](u9)')}>
+				<button type="button" onClick={() => api.current?.setValue('reset @[all](u9)')}>
 					set value
 				</button>
 				{/* `input.clear()` is not a second verb — §2.3 defines it AS setValue('') (plan decision D-e). */}
-				<button type="button" data-testid="clear-value" onClick={() => api.current?.setValue('')}>
+				<button type="button" onClick={() => api.current?.setValue('')}>
 					clear value
 				</button>
 				<button
 					type="button"
-					data-testid="insert-between-rows"
 					onClick={() =>
 						api.current?.insertMark({after: markAt(0)}, {markup: MARKUP, value: 'row', meta: 'r'})
 					}
@@ -97,7 +93,7 @@ const Playground = ({layout, initial}: {layout: 'inline' | 'block'; initial: str
 					insert between rows
 				</button>
 			</div>
-			<output data-testid="value">{value}</output>
+			<output aria-label="value">{value}</output>
 		</div>
 	)
 }
