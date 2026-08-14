@@ -6,6 +6,7 @@ How the engineering skills should consume this repo's domain documentation when 
 
 - **`CONTEXT.md`** at the repo root.
 - **`docs/adr/`** — read ADRs that touch the area you're about to work in. Also check `packages/<pkg>/docs/adr/` for package-scoped decisions.
+- **`packages/website/src/content/docs/development/`** — the current-state architecture docs. `docs/adr/` records why a decision was taken and what it cost; these describe how the system works today. When they disagree, the code decides and the stale one gets fixed.
 
 If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
 
