@@ -28,8 +28,9 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "typecheck": "pnpm -r run typecheck",
-    "clean": "git clean -xdf",
-    "clean:dry": "git clean -xdn",
+    "git:clean": "git clean -xdf",
+    "git:clean:dry": "git clean -xdn",
+    "git:restart": "git fetch --prune origin && git fetch origin next:next && git switch -C \"$(git branch --show-current)\" next && git push --force-with-lease -u origin HEAD",
     "preinstall": "npx only-allow pnpm",
     "publish": "pnpm -F @markput/react run publish",
     "prepare": "husky"
