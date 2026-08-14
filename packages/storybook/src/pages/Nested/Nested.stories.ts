@@ -1,8 +1,8 @@
 import type {Markup} from '@markput/core'
 
+import type {StyledMarkProps} from '../../shared/lib/marks'
 import {COMPLEX_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {component, story, type PageMeta} from '../../shared/lib/stories'
-import type {StyledMarkProps} from './Nested.fixtures'
 import {fixtures} from './Nested.fixtures'
 
 const BoldMarkup: Markup = '**__slot__**'

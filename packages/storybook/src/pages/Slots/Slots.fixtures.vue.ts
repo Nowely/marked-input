@@ -2,6 +2,7 @@ import {MarkedInput} from '@markput/vue'
 import type {PropType, Ref} from 'vue'
 import {computed, defineComponent, reactive, ref} from 'vue'
 
+import {defineMark} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 
 /**
@@ -9,16 +10,11 @@ import type {PageArgs} from '../../shared/lib/stories'
  * `satisfies` — `Slots.stories.ts` is the contract, and it fails to compile under either
  * project if this file drifts.
  *
- * Components are written with `template:` rather than `h()`, matching their React counterparts.
- * `value`/`meta` are declared even where nothing reads them: an undeclared prop falls through
- * onto the root element as an attribute, which no React fixture does.
+ * Hand-written components are written with `template:` rather than `h()`, matching their React
+ * counterparts. The containers below deliberately declare no props: `slots.container` is fed
+ * by attribute fallthrough here where React destructures `{ref, ...props}` by hand, and that
+ * difference is what the `StyleMerging` story demonstrates.
  */
-
-const SimpleMark = defineComponent({
-	props: {value: String, meta: String},
-	template:
-		'<mark style="background-color: #ffd700; padding: 2px 4px; border-radius: 3px"><slot>{{ value }}</slot></mark>',
-})
 
 /**
  * `WithSlotProps`' harness. It MERGES its handlers into the story's own `slotProps` rather than
@@ -90,7 +86,11 @@ const StyledContainer = defineComponent({
 })
 
 export const fixtures = {
-	SimpleMark,
+	SimpleMark: defineMark({
+		tag: 'mark',
+		content: 'children',
+		style: {backgroundColor: '#ffd700', padding: '2px 4px', borderRadius: '3px'},
+	}),
 	FancyContainer,
 	StyledContainer,
 	/**
@@ -107,10 +107,7 @@ export const fixtures = {
 
 /** Spec fixture: the mark the shared spec mounts everywhere. */
 export const marks = {
-	Children: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		template: '<mark><slot>{{ children }}</slot></mark>',
-	}),
+	Children: defineMark({tag: 'mark', content: 'children'}),
 }
 
 /** Spec fixtures: `slots.container` replacements. */
@@ -119,32 +116,22 @@ export const containers = {
 	Plain: defineComponent({template: '<div><slot /></div>'}),
 }
 
-/** Spec fixtures: `Span` replacements. */
+/**
+ * Spec fixtures: `Span` replacements. Each keeps the `content` it has today: core is THE writer
+ * of a text surface and mirrors the token's text into it whatever the component rendered, so
+ * levelling them all to one `content` would be DOM-neutral but hide that.
+ */
 export const spans = {
-	Testid: defineComponent({
-		props: {value: String},
-		template: '<span data-testid="custom-span">{{ value }}</span>',
+	Testid: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'custom-span'}}),
+	Classy: defineMark({tag: 'span', content: 'value', class: 'custom-span-class'}),
+	Styled: defineMark({tag: 'span', content: 'value', style: {fontWeight: 'bold', fontSize: '16px'}}),
+	SpanProp: defineMark({
+		tag: 'span',
+		content: 'value',
+		attrs: {'data-testid': 'custom-span', 'data-span-prop': 'span'},
 	}),
-	Classy: defineComponent({
-		props: {value: String},
-		template: '<span class="custom-span-class">{{ value }}</span>',
-	}),
-	Styled: defineComponent({
-		props: {value: String},
-		template: '<span style="font-weight: bold; font-size: 16px">{{ value }}</span>',
-	}),
-	SpanProp: defineComponent({
-		props: {value: String},
-		template: '<span data-testid="custom-span" data-span-prop="span">{{ value }}</span>',
-	}),
-	Children: defineComponent({
-		props: {children: {type: null}},
-		template: '<span data-testid="custom-editable-span"><slot>{{ children }}</slot></span>',
-	}),
-	TextTestid: defineComponent({
-		props: {value: String},
-		template: '<span data-testid="text-span">{{ value }}</span>',
-	}),
+	Children: defineMark({tag: 'span', content: 'children', attrs: {'data-testid': 'custom-editable-span'}}),
+	TextTestid: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'text-span'}}),
 }
 
 /**

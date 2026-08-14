@@ -2,6 +2,7 @@ import {useMark} from '@markput/react'
 import type {Decorator} from '@storybook/react'
 
 import {useCaretInfo} from '../../shared/hooks/useCaretInfo.react'
+import {Focusable, Removable} from '../../shared/lib/marks'
 
 /** Debug aid with no Vue counterpart: a tooltip on `document.body`, outside the story container. */
 const withCaretInfo: Decorator = Story => {
@@ -15,24 +16,15 @@ const withCaretInfo: Decorator = Story => {
  * project if this file drifts.
  *
  * Every mark here is prop-less and reads through `useMark()`, which is what the page is about.
+ * Two of the three are the ones the `Base` page mounts as well, so they live in the seam.
  */
 export const fixtures = {
 	Dynamic: () => {
 		const mark = useMark()
 		return <mark>{mark.value()}</mark>
 	},
-	Removable: () => {
-		const mark = useMark()
-		return <mark onClick={() => mark.remove()}>{mark.value()}</mark>
-	},
-	Focusable: () => {
-		const mark = useMark()
-		return (
-			<abbr title={mark.meta()} style={{outline: 'none', whiteSpace: 'pre-wrap'}}>
-				{mark.value()}
-			</abbr>
-		)
-	},
+	Removable,
+	Focusable,
 	/** Only the react instance hides these stories from its docs page. */
 	hiddenFromDocs: {docs: {disable: true}},
 	caretInfo: [withCaretInfo],

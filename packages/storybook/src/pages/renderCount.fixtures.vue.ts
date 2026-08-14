@@ -1,6 +1,8 @@
 import type {Option} from '@markput/vue'
 import {defineComponent, h, onMounted} from 'vue'
 
+import {defineMark} from '../shared/lib/marks'
+
 /**
  * Spec fixtures: the framework half of `renderCount.spec.ts`. Every factory hands back the
  * component AND its reader, so the shared spec never touches a framework spy.
@@ -14,18 +16,11 @@ import {defineComponent, h, onMounted} from 'vue'
  * mark root as an attribute, which no React fixture does.
  */
 
-const Mark = defineComponent({
-	props: {value: String, meta: String},
-	setup: props => () => h('mark', {}, props.value),
-})
-
-const Span = defineComponent({
-	props: {value: String, meta: String},
-	setup: props => () => h('span', {}, props.value),
-})
-
 /** The renderers a gate does not measure — present so the editor has something to draw. */
-export const plain = {Mark, Span}
+export const plain = {
+	Mark: defineMark({tag: 'mark', content: 'value'}),
+	Span: defineMark({tag: 'span', content: 'value'}),
+}
 
 export const counters = {
 	/** A `Mark` counting its render invocations. */

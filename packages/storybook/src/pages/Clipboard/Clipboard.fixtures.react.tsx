@@ -2,13 +2,15 @@ import type {MarkProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 
+import {defineMark} from '../../shared/lib/marks'
+
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
  * `satisfies` — `Clipboard.stories.ts` is the contract, and it fails to compile under either
  * project if this file drifts.
  */
 
-const Mark = ({value}: MarkProps) => <mark>{value}</mark>
+const Mark = defineMark({tag: 'mark', content: 'value'})
 
 /** Nested HTML inside the mark element, so one mark holds MORE than one text node. */
 const NestedMark = ({value = ''}: MarkProps) => {

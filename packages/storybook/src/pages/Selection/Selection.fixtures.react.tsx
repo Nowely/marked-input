@@ -1,5 +1,4 @@
-import type {MarkProps} from '@markput/react'
-import type {ReactNode} from 'react'
+import {defineMark} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -7,8 +6,8 @@ import type {ReactNode} from 'react'
  * project if this file drifts.
  */
 export const fixtures = {
-	Value: ({value}: MarkProps) => <mark>{value}</mark>,
+	Value: defineMark({tag: 'mark', content: 'value'}),
 }
 
 /** Spec fixture: the adapter-owned text surface the cross-select spec configures. */
-export const Span = ({children}: {children?: ReactNode}) => <strong>{children}</strong>
+export const Span = defineMark({tag: 'strong', content: 'children'})

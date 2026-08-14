@@ -1,5 +1,6 @@
 import {DRAG_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {component, story, type PageMeta} from '../../shared/lib/stories'
+import {markdownOptions} from '../Nested/MarkdownOptions'
 import {TODO_OPTIONS, TODO_VALUE} from './components/TodoMark'
 import {fixtures} from './Drag.fixtures'
 
@@ -32,7 +33,7 @@ export default {
 export const Markdown = story({
 	args: {
 		Mark: fixtures.MarkdownMark,
-		options: fixtures.markdownOptions,
+		options: markdownOptions,
 		defaultValue: DRAG_MARKDOWN,
 		layout: 'block',
 		draggable: true,
@@ -67,7 +68,7 @@ export const MarkdownDrag = story({
 	parameters: {docs: {disable: true}},
 	args: {
 		Mark: fixtures.MarkdownMark,
-		options: fixtures.markdownOptions,
+		options: markdownOptions,
 		defaultValue: MARKDOWN_DRAG_VALUE,
 		layout: 'block',
 		draggable: true,

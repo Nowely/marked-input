@@ -2,15 +2,17 @@ import {MarkedInput, useMark} from '@markput/vue'
 import {defineComponent, ref} from 'vue'
 
 import Button from '../../shared/components/Button/Button.vue'
+import {defineMark, Empty, Focusable, Removable} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
  * `satisfies` — `Base.stories.ts` is the contract, and it fails to compile under either
  * project if this file drifts.
  *
- * Components are written with `template:` rather than `h()`: `@storybook/vue3-vite` aliases
- * `vue` to the runtime-compiler build for exactly this, and it keeps these fixtures readable
- * next to their React counterparts. The trade is that a template string is not typechecked.
+ * Hand-written components are written with `template:` rather than `h()`: `@storybook/vue3-vite`
+ * aliases `vue` to the runtime-compiler build for exactly this, and it keeps these fixtures
+ * readable next to their React counterparts. The trade is that a template string is not
+ * typechecked.
  */
 export const fixtures = {
 	Alerting: defineComponent({
@@ -38,36 +40,20 @@ export const fixtures = {
  * that reads through `useMark()`, through the slot, or through only part of the pair needs it.
  */
 export const marks = {
-	Value: defineComponent({
-		inheritAttrs: false,
-		props: {value: String},
-		template: '<mark>{{ value }}</mark>',
-	}),
-	Children: defineComponent({
-		inheritAttrs: false,
-		props: {children: {type: null}},
-		template: '<mark><slot>{{ children }}</slot></mark>',
-	}),
+	Value: defineMark({tag: 'mark', content: 'value'}),
+	Children: defineMark({tag: 'mark', content: 'children'}),
 	Todo: defineComponent({
 		inheritAttrs: false,
 		template: '<span><input type="checkbox" aria-label="done" /><slot /></span>',
 	}),
-	Focusable: defineComponent({
-		inheritAttrs: false,
-		setup: () => ({mark: useMark()}),
-		template: '<abbr :title="mark.meta()" style="outline: none; white-space: pre-wrap">{{ mark.value() }}</abbr>',
-	}),
-	Removable: defineComponent({
-		inheritAttrs: false,
-		setup: () => ({mark: useMark()}),
-		template: '<mark @click="mark.remove()">{{ mark.value() }}</mark>',
-	}),
+	Focusable,
+	Removable,
 	Updatable: defineComponent({
 		inheritAttrs: false,
 		setup: () => ({mark: useMark()}),
 		template: '<mark @click="mark.update({value: `${mark.value()}1`})">{{ mark.value() }}</mark>',
 	}),
-	Empty: defineComponent({template: ''}),
+	Empty,
 }
 
 export const Overlay = defineComponent({template: `<span>I'm here!</span>`})

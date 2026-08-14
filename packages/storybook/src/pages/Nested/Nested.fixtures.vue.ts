@@ -1,9 +1,8 @@
-import type {CSSProperties} from '@markput/core'
-import type {MarkProps} from '@markput/vue'
 import {MarkedInput, useMark, useMarkInfo} from '@markput/vue'
 import {computed, defineComponent, ref} from 'vue'
 
 import {useTab} from '../../shared/components/Tabs'
+import {defineMark} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 import {HTML_TAG_STYLES} from './HtmlTagStyles'
 import {markdownOptions} from './MarkdownOptions'
@@ -13,24 +12,14 @@ import {markdownOptions} from './MarkdownOptions'
  * `satisfies` — `Nested.stories.ts` is the contract, and it fails to compile under either
  * project if this file drifts.
  *
- * Components are written with `template:` rather than `h()`, matching their React counterparts.
- * Every mark declares `value`/`meta`/`children` even when it reads none of them: an undeclared
- * prop falls through onto the mark root as an attribute, which no React fixture does, and the
- * two frameworks' DOM would stop matching.
+ * Hand-written components are written with `template:` rather than `h()`, matching their React
+ * counterparts. Each declares `value`/`meta`/`children` even when it reads none of them: an
+ * undeclared prop falls through onto the mark root as an attribute, which no React fixture
+ * does, and the two frameworks' DOM would stop matching.
  */
-
-/**
- * The mark props this page's styled stories map to. Declared here rather than in the story
- * file because `children` is a framework type: vue's is a `VNodeChild`, react's a `ReactNode`,
- * and the story's `mark` mappers pass it straight through.
- */
-export type StyledMarkProps = MarkProps & {style?: CSSProperties}
 
 /** `ComplexMarkdown`'s mark: the markdown preset hands it the `style` of whichever markup matched. */
-const MarkdownMark = defineComponent({
-	props: {value: String, meta: String, children: {type: null}, style: {type: Object}},
-	template: `<span :style="[style, {margin: '0 1px'}]"><slot>{{ value }}</slot></span>`,
-})
+const MarkdownMark = defineMark({tag: 'span', content: 'childrenOrValue', style: {margin: '0 1px'}})
 
 /** `ComplexHtmlDocument`'s mark: this markup's VALUE is the tag name, so the mark IS that element. */
 const HtmlDocMark = defineComponent({
@@ -116,14 +105,8 @@ const TabbedHtml = defineComponent({
 
 export const fixtures = {
 	/** The panel sits beside the editor here; the react fixtures put it underneath. */
-	SimpleMark: defineComponent({
-		props: {value: String, meta: String, children: {type: null}, style: {type: Object}},
-		template: '<span :style="style"><slot>{{ value }}</slot></span>',
-	}),
-	MultiLevelMark: defineComponent({
-		props: {value: String, meta: String, children: {type: null}, style: {type: Object}},
-		template: `<span :style="[style, {margin: '0 2px'}]"><slot>{{ value }}</slot></span>`,
-	}),
+	SimpleMark: defineMark({tag: 'span', content: 'childrenOrValue'}),
+	MultiLevelMark: defineMark({tag: 'span', content: 'childrenOrValue', style: {margin: '0 2px'}}),
 	HtmlLikeMark: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
 		template: `<component :is="value || 'span'"><slot /></component>`,
@@ -239,18 +222,9 @@ export const marks = {
 		template: '<span :data-has-children="info.hasNestedMarks"><slot /></span>',
 	}),
 	/** Renders only `value`: the backward-compatibility marks predate nesting. */
-	Flat: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		template: '<span data-testid="flat-mark">{{ value }}</span>',
-	}),
-	Plain: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		template: '<mark><slot /></mark>',
-	}),
-	Bare: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		template: '<span><slot /></span>',
-	}),
+	Flat: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'flat-mark'}}),
+	Plain: defineMark({tag: 'mark', content: 'children'}),
+	Bare: defineMark({tag: 'span', content: 'children'}),
 	Mixed: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
 		setup: () => ({info: useMarkInfo()}),
@@ -263,8 +237,5 @@ export const marks = {
 		template: '<span><slot v-if="info.hasNestedMarks" /><template v-else>{{ mark.slot() }}</template></span>',
 	}),
 	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
-	MarkRoot: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		template: '<mark><slot>{{ value }}</slot></mark>',
-	}),
+	MarkRoot: defineMark({tag: 'mark', content: 'childrenOrValue'}),
 }
