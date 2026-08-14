@@ -29,28 +29,41 @@ export const fixtures = {
 	},
 }
 
-/** Spec fixtures: mark components the shared spec mounts through story args. */
+/**
+ * Spec fixtures: mark components the shared spec mounts through story args.
+ *
+ * `inheritAttrs: false` is what keeps the rendered DOM equal to React's. Core hands every mark
+ * `{value, meta}`; Vue puts every prop a component does not declare onto its root element, so
+ * they would land there as attributes — `<mark meta="1">` against React's `<mark>`. Every mark
+ * that reads through `useMark()`, through the slot, or through only part of the pair needs it.
+ */
 export const marks = {
 	Value: defineComponent({
+		inheritAttrs: false,
 		props: {value: String},
 		template: '<mark>{{ value }}</mark>',
 	}),
 	Children: defineComponent({
+		inheritAttrs: false,
 		props: {children: {type: null}},
 		template: '<mark><slot>{{ children }}</slot></mark>',
 	}),
 	Todo: defineComponent({
+		inheritAttrs: false,
 		template: '<span><input type="checkbox" aria-label="done" /><slot /></span>',
 	}),
 	Focusable: defineComponent({
+		inheritAttrs: false,
 		setup: () => ({mark: useMark()}),
 		template: '<abbr :title="mark.meta()" style="outline: none; white-space: pre-wrap">{{ mark.value() }}</abbr>',
 	}),
 	Removable: defineComponent({
+		inheritAttrs: false,
 		setup: () => ({mark: useMark()}),
 		template: '<mark @click="mark.remove()">{{ mark.value() }}</mark>',
 	}),
 	Updatable: defineComponent({
+		inheritAttrs: false,
 		setup: () => ({mark: useMark()}),
 		template: '<mark @click="mark.update({value: `${mark.value()}1`})">{{ mark.value() }}</mark>',
 	}),
