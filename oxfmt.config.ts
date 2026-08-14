@@ -44,7 +44,7 @@ export default defineConfig({
 		'coverage/',
 		'packages/website/.vercel/',
 		'packages/website/src/content/docs/',
-		'docs/superpowers/**/*.md',
+		'docs/scratch/**/*.md',
 		'node_modules/',
 	],
 })

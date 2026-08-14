@@ -11,3 +11,5 @@ package-lock.json
 .claude/worktrees/
 # Playwright MCP session dumps
 .playwright-mcp/
+# Skills that hardcode .scratch/ instead of reading docs/agents/issue-tracker.md
+.scratch/

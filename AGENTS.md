@@ -35,8 +35,9 @@ used by a single package is pinned in that package's `package.json`.
 
 This file is an operating guide, not the architecture source of truth. Before
 changing core behavior, feature boundaries, token rendering, DOM mapping, caret
-recovery, or adapter wiring, read the relevant code and the current docs under
-`packages/website/src/content/docs/development/`.
+recovery, or adapter wiring, read the relevant code, the glossary in
+`CONTEXT.md`, the decision records under `docs/adr/`, and the current docs
+under `packages/website/src/content/docs/development/`.
 
 The core architecture is actively evolving. Do not preserve stale patterns just
 because they appear in older docs or comments. If code, tests, and docs
@@ -59,13 +60,6 @@ behavior change under "internal cleanup".
 
 ## Workflow
 
-- Agree the design before changing code. Propose designs, alternatives, and
-  trade-offs freely — the gate is on implementing, not on suggesting. When asked
-  to design or plan, deliver that artifact and wait for sign-off before editing
-  code or dispatching implementers.
-- Capture the agreed design as a reviewed spec, then a checkbox implementation
-  plan of independently committable tasks. (This repo keeps both under
-  `docs/superpowers/`.)
 - Keep every task and commit green: typecheck and tests pass at each boundary,
   with no caller left referencing a removed or renamed symbol. Prefer a series
   of small, independently revertible changes over one big-bang change, and keep
@@ -73,9 +67,8 @@ behavior change under "internal cleanup".
 - Make structural changes (moves, renames, splits) pure: relocate code without
   changing behavior, so the diff is a clean move. Do any behavior change as a
   separate, explicit step.
-- Keep a spec and its plan consistent — reconcile them to one source of truth
-  before coding. Keep self-reviews honest: list open blockers instead of
-  declaring everything resolved.
+- Keep self-reviews honest: list open blockers instead of declaring everything
+  resolved.
 
 ## Engineering Defaults
 
@@ -176,3 +169,21 @@ behavior, or settled architecture changes.
 - Keep each PR's title and body matched to its actual diff and current scope.
   When scope shifts, update them rather than letting them go stale, and split
   unrelated work into a separate PR.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as markdown files under `docs/scratch/<feature>/` in this repo. See
+`docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles, unchanged: `needs-triage`, `needs-info`,
+`ready-for-agent`, `ready-for-human`, `wontfix`. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See
+`docs/agents/domain.md`.
