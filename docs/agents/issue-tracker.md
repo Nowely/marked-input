@@ -2,6 +2,10 @@
 
 Issues and specs for this repo live as markdown files in `docs/scratch/`.
 
+`to-tickets` and `ask-matt` name `.scratch/…` literally instead of reading this
+file. Where a skill says `.scratch/<x>`, read and write `docs/scratch/<x>`.
+Never create `.scratch/` — it is ignored, so anything written there is lost.
+
 ## Conventions
 
 - One feature per directory: `docs/scratch/<feature-slug>/`
