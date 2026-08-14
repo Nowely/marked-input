@@ -1,11 +1,15 @@
 import {describe, expect, it} from 'vitest'
 
 import {Parser} from '../parser/Parser'
-import {anchorAt, anchorEquals, offsetOfAnchor} from './anchors'
+import {adjacentMark, anchorAt, anchorEquals, offsetOfAnchor, stepAnchor} from './anchors'
 import {createTokenTree} from './tree'
 
 const parser = new Parser(['@[__value__]'])
 const build = (source: string) => createTokenTree(parser.parse(source))
+
+/** Nesting needs a slot to nest INTO, and a shared boundary needs a mark flush with a row's edge. */
+const nestedParser = new Parser(['#[__slot__]', '@[__value__]'])
+const rowParser = new Parser(['__slot__\n\n'])
 
 describe('offsetOfAnchor', () => {
 	it('resolves a text anchor through its node position', () => {
@@ -113,5 +117,102 @@ describe('anchorEquals', () => {
 		expect(anchorEquals('start', 'end')).toBe(false)
 		expect(anchorEquals(undefined, undefined)).toBe(true)
 		expect(anchorEquals(undefined, 'start')).toBe(false)
+	})
+})
+
+describe('adjacentMark', () => {
+	it('names the mark ENDING on the offset for -1 and the one STARTING there for +1', () => {
+		const tree = build('ab@[x]cd') // text[0,2] mark[2,6] text[6,8]
+		const roots = tree.roots()
+		const [ab, mark, cd] = roots
+		if (ab.kind !== 'text' || cd.kind !== 'text') throw new Error('expected text')
+
+		expect(adjacentMark(roots, {node: cd, offset: 0}, -1)).toBe(mark)
+		expect(adjacentMark(roots, {node: ab, offset: 2}, 1)).toBe(mark)
+		// The SAME two offsets read the other way: 6 opens no mark and 2 closes none, which is
+		// what makes Backspace and Delete swallow on opposite sides of one mark.
+		expect(adjacentMark(roots, {node: cd, offset: 0}, 1)).toBeUndefined()
+		expect(adjacentMark(roots, {node: ab, offset: 2}, -1)).toBeUndefined()
+
+		// The boundary anchor forms resolve through offsetOfAnchor, same two answers.
+		expect(adjacentMark(roots, {after: mark}, -1)).toBe(mark)
+		expect(adjacentMark(roots, {before: mark}, 1)).toBe(mark)
+	})
+
+	it('answers undefined when no mark boundary sits on the offset', () => {
+		const tree = build('ab@[x]cd')
+		const roots = tree.roots()
+		const ab = roots[0]
+		if (ab.kind !== 'text') throw new Error('expected text')
+		expect(adjacentMark(roots, {node: ab, offset: 1}, -1)).toBeUndefined()
+		expect(adjacentMark(roots, {node: ab, offset: 1}, 1)).toBeUndefined()
+	})
+
+	it('reaches a mark nested in a slot', () => {
+		// The swallow's real shape: the caret sits after a mark INSIDE a slot, where the
+		// enclosing mark's own end is one `]` further on and answers nothing.
+		const tree = createTokenTree(nestedParser.parse('#[y@[x]]'))
+		// text[0,0] mark#[0,8]{ text"y"[2,3] mark@[3,7] text[7,7] } text[8,8]
+		const roots = tree.roots()
+		const outer = roots[1]
+		if (outer.kind !== 'mark') throw new Error('expected a mark root')
+		const inner = outer.children()[1]
+		expect(adjacentMark(roots, {after: inner}, -1)).toBe(inner)
+		expect(adjacentMark(roots, {after: outer}, -1)).toBe(outer)
+	})
+
+	it('prefers the INNER mark over the one enclosing it at a shared boundary', () => {
+		// ASSEMBLED, not parsed: a shared boundary needs a nested mark flush with its parent's
+		// edge, and every markup the parser can open puts its own text between the two — the one
+		// shape that would not, a slot-first markup whose slot OPENS with a mark, is dropped by
+		// the parser today (`'@[x]\n\n'` under `'__slot__\n\n'` yields the mention plus literal
+		// text, no row). Nested-first is normative regardless, and the tree layer accepts the
+		// shape, so it is built from parsed tokens rather than left unpinned.
+		const row = rowParser.parse('a\n\n')[1]
+		const mention = parser.parse('@[x]')[1]
+		if (row.type !== 'mark' || mention.type !== 'mark') throw new Error('expected marks')
+		mention.position = {start: 0, end: 4}
+		row.children = [mention]
+		row.slot = {content: '@[x]', start: 0, end: 4}
+		row.position = {start: 0, end: 6}
+
+		const roots = createTokenTree([row]).roots()
+		const outer = roots[0]
+		if (outer.kind !== 'mark') throw new Error('expected a mark root')
+		const inner = outer.children()[0]
+		expect(outer.position.start).toBe(inner.position.start)
+		expect(adjacentMark(roots, 'start', 1)).toBe(inner)
+	})
+})
+
+describe('stepAnchor', () => {
+	it('steps one character forward and back inside a text token', () => {
+		const tree = build('ab@[x]cd') // text[0,2] mark[2,6] text[6,8]
+		const roots = tree.roots()
+		const [ab, , cd] = roots
+		if (ab.kind !== 'text' || cd.kind !== 'text') throw new Error('expected text')
+		expect(stepAnchor(roots, {node: ab, offset: 0}, 1)).toEqual({node: ab, offset: 1})
+		expect(stepAnchor(roots, {node: cd, offset: 1}, -1)).toEqual({node: cd, offset: 0})
+		expect(stepAnchor(roots, 'end', -1)).toEqual({node: cd, offset: 1})
+	})
+
+	it('answers undefined at both document edges', () => {
+		const tree = build('ab@[x]cd')
+		expect(stepAnchor(tree.roots(), 'start', -1)).toBeUndefined()
+		expect(stepAnchor(tree.roots(), 'end', 1)).toBeUndefined()
+	})
+
+	it("answers undefined rather than a wrong anchor when the step lands in a mark's markup", () => {
+		// FAILS CLOSED. Offsets 3 and 5 are inside `@[x]`'s markup, which is not anchorable, so
+		// anchorAt hands back the mark's own END — three characters off the step in one direction
+		// and one in the other. The old numeric step spliced that position anyway and re-parsed
+		// the mark into plain text; the round-trip check is what detects the mismatch.
+		const tree = build('ab@[x]cd')
+		const roots = tree.roots()
+		const [ab, mark, cd] = roots
+		if (ab.kind !== 'text' || cd.kind !== 'text') throw new Error('expected text')
+		expect(anchorAt(roots, 3)).toEqual({after: mark})
+		expect(stepAnchor(roots, {node: ab, offset: 2}, 1)).toBeUndefined()
+		expect(stepAnchor(roots, {node: cd, offset: 0}, -1)).toBeUndefined()
 	})
 })

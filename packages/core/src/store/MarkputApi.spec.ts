@@ -208,11 +208,15 @@ describe('MarkputApi (spec §2.3)', () => {
 		expect(api.container?.contains(range?.startContainer ?? null)).toBe(true)
 
 		// The stored anchors, not the DOM's: `focus()` goes through the selection driver, so
-		// the model must agree that the caret sits at offset 0 of the FIRST token.
+		// the model must agree that the caret sits at offset 0 of the FIRST token. A TEXT
+		// anchor specifically — a boundary form would mean it landed beside the token.
 		const selection = api.selection()
-		expect(selection?.anchor.offset).toBe(0)
-		expect(selection?.anchor.node.id).toBe(api.nodes()[0].id)
-		expect(selection?.head).toEqual(selection?.anchor)
+		if (!selection) throw new Error('expected a stored selection')
+		const {anchor} = selection
+		if (typeof anchor === 'string' || !('node' in anchor)) throw new Error('expected a text anchor')
+		expect(anchor.offset).toBe(0)
+		expect(anchor.node.id).toBe(api.nodes()[0].id)
+		expect(selection.head).toEqual(anchor)
 	})
 
 	it('insertMark carries the slot through to the markup', () => {

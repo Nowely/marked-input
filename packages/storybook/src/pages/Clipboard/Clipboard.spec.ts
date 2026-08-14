@@ -74,6 +74,23 @@ function allTextNodes(el: Element): Text[] {
 	return result
 }
 
+/**
+ * The `text/html` entry parsed back into a detached element. Anything the frameworks render
+ * is asserted THROUGH this and never as a raw string: the entry is framework-rendered
+ * `innerHTML`, so React and Vue are free to differ in attribute order and in attributes no
+ * assertion here names.
+ */
+function parseHtml(html: string): HTMLElement {
+	const holder = document.createElement('div')
+	holder.innerHTML = html
+	return holder
+}
+
+/** The element children of a parsed `text/html` entry, as `[tagName, textContent]` pairs. */
+function shapeOf(fragment: HTMLElement): [string, string][] {
+	return Array.from(fragment.children).map((child): [string, string] => [child.tagName, child.textContent])
+}
+
 describe('Clipboard: copy', () => {
 	it('partial text selection should set markput MIME with trimmed text', async () => {
 		const {host} = await mount(Inline)
@@ -87,6 +104,9 @@ describe('Clipboard: copy', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('ll')
 		expect(clipboardData.getData('text/plain')).toBe('ll')
+		// Both ends sit in ONE text node, so the clone carries no element and the entry is
+		// exact in either framework.
+		expect(clipboardData.getData('text/html')).toBe('ll')
 	})
 
 	it('full text token selection should set markput MIME', async () => {
@@ -101,6 +121,9 @@ describe('Clipboard: copy', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('hello ')
 		expect(clipboardData.getData('text/plain')).toBe('hello ')
+		// The span is covered by its text node, not by the range, so the surface itself is
+		// still not cloned.
+		expect(clipboardData.getData('text/html')).toBe('hello ')
 	})
 
 	it('partial mark selection should set markput MIME with full mark expanded', async () => {
@@ -116,6 +139,9 @@ describe('Clipboard: copy', () => {
 		// Partial mark selection → full mark is always expanded in markup
 		expect(clipboardData.getData('application/x-markput')).toBe('@[world](1)')
 		expect(clipboardData.getData('text/plain')).toBe('orl')
+		// text/html follows the VISUAL selection, so it does NOT expand the mark the way the
+		// markput entry does.
+		expect(clipboardData.getData('text/html')).toBe('orl')
 	})
 
 	it('full mark selection should set markput MIME with complete markup', async () => {
@@ -130,6 +156,9 @@ describe('Clipboard: copy', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('@[world](1)')
 		expect(clipboardData.getData('text/plain')).toBe('world')
+		// The range ends INSIDE the mark's text node, so the `<mark>` element is outside it and
+		// the entry is the bare text — the whole mark reaches the clipboard only via markput.
+		expect(clipboardData.getData('text/html')).toBe('world')
 	})
 
 	it('cross-token partial selection should set markput MIME with trimmed text and full mark', async () => {
@@ -146,6 +175,18 @@ describe('Clipboard: copy', () => {
 		// Boundary text tokens trimmed, mark always expanded
 		expect(clipboardData.getData('application/x-markput')).toBe('lo @[world](1) fo')
 		expect(clipboardData.getData('text/plain')).toBe('lo world fo')
+
+		// Here the mark element IS inside the range: partial surfaces clone as trimmed spans
+		// around a whole mark.
+		const fragment = parseHtml(clipboardData.getData('text/html'))
+		expect(shapeOf(fragment)).toEqual([
+			['SPAN', 'lo '],
+			['MARK', 'world'],
+			['SPAN', ' fo'],
+		])
+		// Written by core's editable state rather than by either adapter, so it is the one
+		// attribute both frameworks are bound to carry.
+		expect(fragment.querySelector('mark')!.getAttribute('contenteditable')).toBe('false')
 	})
 
 	it('cross-token partial selection paste should reconstruct mark with surrounding text', async () => {
@@ -186,6 +227,11 @@ describe('Clipboard: copy', () => {
 		const clipboardData = dispatchClipboard('copy', host)
 
 		expect(clipboardData.getData('application/x-markput')).toBe('hello @[world](1) foo')
+		expect(shapeOf(parseHtml(clipboardData.getData('text/html')))).toEqual([
+			['SPAN', 'hello '],
+			['MARK', 'world'],
+			['SPAN', ' foo'],
+		])
 	})
 
 	it('selecting text + mark via drag should set markput MIME', async () => {
@@ -207,6 +253,11 @@ describe('Clipboard: copy', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('hello @[world](1)')
 		expect(clipboardData.getData('text/plain')).toBe('hello world')
+		// The mark ends the selection, so nothing trails it in the clone either.
+		expect(shapeOf(parseHtml(clipboardData.getData('text/html')))).toEqual([
+			['SPAN', 'hello '],
+			['MARK', 'world'],
+		])
 	})
 
 	it('copy-paste round-trip: select all, copy, paste into plain text should reconstruct marks', async () => {
@@ -429,6 +480,12 @@ describe('Clipboard: nested marks', () => {
 		expect(clipboardData.getData('application/x-markput')).toBe('@[world](1)')
 		// Plain text is the visual selection: "wor"[2:] + "ld"[:1] = "rl"
 		expect(clipboardData.getData('text/plain')).toBe('rl')
+		// The mark's own children are inside the range, so the entry keeps the fixture's markup
+		// — the proof text/html is cloned DOM and not a re-render of the markup entry.
+		expect(shapeOf(parseHtml(clipboardData.getData('text/html')))).toEqual([
+			['STRONG', 'r'],
+			['EM', 'l'],
+		])
 	})
 
 	it('paste into nested mark should use cumulative offsets', async () => {
