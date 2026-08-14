@@ -41,7 +41,7 @@ _Avoid_: data, payload, attributes, props
 ### Addressing
 
 **Anchor**:
-A position in the document, named relative to a node rather than as a number. Anchors are the only way to name a position outside the tree layer.
+A position in the document, named relative to a node rather than as a number. Anchors are the only way to name a position above `tree/`; `parser/`, `block/` and `keyboard/blockEdit.ts` are the allowlisted exceptions, and adding to that list is a contract change ([ADR-0003](docs/adr/0003-one-address-space.md)).
 _Avoid_: offset, index, position, caret position, coordinate
 
 ### The editable surface
@@ -91,3 +91,4 @@ _Avoid_: internal, self-managed, local
 
 - **"token" meant both the parser's output and the runtime unit.** Resolved: the runtime unit is a **Node**; **Token** is parser-local. `TokenModel`, `TokenHandle` and `features/tokens/` are named after the narrower term and predate the resolution — the names are not the language.
 - **"host" meant the element, the class owning it, and the DOM spec's concept.** Resolved: the element is the **Container**, the class is the **Host**. Where browser behaviour is under discussion, "editing host" is quoted as the spec's term, not used as ours.
+- **"block" meant both the layout and the row it lays out.** Resolved: the mode is **Block layout**, the unit is a **Row**. The API keeps the wider word by contract — `slots.block` and `slotProps.block` are the published names for the row wrapper, and `BlockStore`, `BlockController`, `blockIndex` and `isBlock` follow them. The names are not the language; none of them is a rename target.
