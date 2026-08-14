@@ -192,7 +192,7 @@ describe('Complex Nesting Scenarios', () => {
 	it('handle adjacent nested marks', async () => {
 		await mountComponent({Mark: marks.Plain, value: '@[first]@[second]', options: [{markup: SLOT_MARKUP}]})
 
-		const found = page.getByTestId('mark').all()
+		const found = page.getByRole('mark').all()
 		expect(found).toHaveLength(2)
 	})
 
@@ -219,7 +219,7 @@ describe('Complex Nesting Scenarios', () => {
 		})
 
 		// Exactly three: the outer mark, the one nested in it, and the flat one beside it.
-		const found = page.getByTestId('mark').all()
+		const found = page.getByRole('mark').all()
 		expect(found).toHaveLength(3)
 	})
 
@@ -264,7 +264,7 @@ describe('Edge Cases', () => {
 
 		// Neither markup closes, so nothing is a mark: the whole value stays literal text.
 		expect(host.textContent).toBe('@[unclosed @[nested')
-		expect(host.querySelector('[data-testid="mark"]')).toBeNull()
+		expect(host.querySelector('mark')).toBeNull()
 	})
 })
 

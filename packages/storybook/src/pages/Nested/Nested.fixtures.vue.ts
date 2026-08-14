@@ -217,7 +217,7 @@ export const marks = {
 			if (info.depth === 0 && info.hasNestedMarks) capture.rootChildren = slots.default != null
 			return {}
 		},
-		template: '<span data-testid="mark"><slot /></span>',
+		template: '<span><slot /></span>',
 	}),
 	RootInfo: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
@@ -245,7 +245,7 @@ export const marks = {
 	}),
 	Plain: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
-		template: '<span data-testid="mark"><slot /></span>',
+		template: '<mark><slot /></mark>',
 	}),
 	Bare: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
@@ -254,7 +254,7 @@ export const marks = {
 	Mixed: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
 		setup: () => ({info: useMarkInfo()}),
-		template: '<span data-testid="mark" :data-has-children="info.hasNestedMarks"><slot /></span>',
+		template: '<mark :data-has-children="info.hasNestedMarks"><slot /></mark>',
 	}),
 	/** Renders the slot itself when there is nothing nested to render. */
 	Rendering: defineComponent({

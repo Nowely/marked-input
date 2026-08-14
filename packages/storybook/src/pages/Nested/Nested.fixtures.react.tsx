@@ -173,7 +173,7 @@ export const marks = {
 	Capturing: ({children}: MarkProps) => {
 		const info = useMarkInfo()
 		if (info.depth === 0 && info.hasNestedMarks) capture.rootChildren = children != null
-		return <span data-testid="mark">{children}</span>
+		return <span>{children}</span>
 	},
 	RootInfo: ({children}: MarkProps) => {
 		const info = useMarkInfo()
@@ -190,15 +190,11 @@ export const marks = {
 	},
 	/** Renders only `value`: the backward-compatibility marks predate nesting. */
 	Flat: ({value}: MarkProps) => <span data-testid="flat-mark">{value}</span>,
-	Plain: ({children}: MarkProps) => <span data-testid="mark">{children}</span>,
+	Plain: ({children}: MarkProps) => <mark>{children}</mark>,
 	Bare: ({children}: MarkProps) => <span>{children}</span>,
 	Mixed: ({children}: MarkProps) => {
 		const info = useMarkInfo()
-		return (
-			<span data-testid="mark" data-has-children={info.hasNestedMarks}>
-				{children}
-			</span>
-		)
+		return <mark data-has-children={info.hasNestedMarks}>{children}</mark>
 	},
 	/** Renders the slot itself when there is nothing nested to render. */
 	Rendering: ({children}: MarkProps) => {
