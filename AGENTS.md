@@ -127,8 +127,8 @@ behavior change under "internal cleanup".
   (`*.react.stories.tsx`) is matched by no glob and will not be indexed.
 - A page that has been migrated to the shared-spec harness is framework-free:
   `<Page>.stories.ts` + `<Page>.spec.ts` (both run by both projects) plus
-  `<Page>.fixtures.react.tsx` / `<Page>.fixtures.vue.ts`. See
-  `docs/superpowers/specs/2026-08-12-cross-framework-specs-design.md`; the
+  `<Page>.fixtures.react.tsx` / `<Page>.fixtures.vue.ts`. The design spec was
+  removed from the tree once the work landed; it is in PR #276, and the CSF
   indexer rules in it are not optional.
 - A story file exports stories and nothing else — every named export is indexed.
 - Browser tests use real Vitest Browser Mode with Playwright. Reuse shared
