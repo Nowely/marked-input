@@ -35,9 +35,9 @@ used by a single package is pinned in that package's `package.json`.
 
 This file is an operating guide, not the architecture source of truth. Before
 changing core behavior, feature boundaries, token rendering, DOM mapping, caret
-recovery, or adapter wiring, read the relevant code, the decision records under
-`docs/adr/`, and the current docs under
-`packages/website/src/content/docs/development/`.
+recovery, or adapter wiring, read the relevant code, the glossary in
+`CONTEXT.md`, the decision records under `docs/adr/`, and the current docs
+under `packages/website/src/content/docs/development/`.
 
 The core architecture is actively evolving. Do not preserve stale patterns just
 because they appear in older docs or comments. If code, tests, and docs

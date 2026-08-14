@@ -5,7 +5,7 @@ How the engineering skills should consume this repo's domain documentation when 
 ## Before exploring, read these
 
 - **`CONTEXT.md`** at the repo root.
-- **`docs/adr/`** — read ADRs that touch the area you're about to work in. Also check `packages/<pkg>/docs/adr/` for package-scoped decisions.
+- **`docs/adr/`** — read ADRs that touch the area you're about to work in.
 - **`packages/website/src/content/docs/development/`** — the current-state architecture docs. `docs/adr/` records why a decision was taken and what it cost; these describe how the system works today. When they disagree, the code decides and the stale one gets fixed.
 - **`docs/records/`** — the long-form evidence an ADR was decided on: measurements, probe tables, traces, subsystem maps. Read one only when the ADR's summary is not enough; they are dated snapshots and are not maintained against the current tree.
 
@@ -31,7 +31,7 @@ This repo is single-context: one root `CONTEXT.md`, no `CONTEXT-MAP.md`. Despite
     └── website/
 ```
 
-An ADR is short by design — the shape is a title and one to three sentences saying what was decided and why, per the `/domain-modeling` skill's format. When a decision rests on measurements too large to inline, they go to `docs/records/` and the ADR links them.
+An ADR is short by design. The shape the existing six use: a title that states the decision, one paragraph of what was decided and why, a second paragraph of accepted costs when the decision cost something, and a link to `docs/records/` when it rests on measurements too large to inline. The `/domain-modeling` skill's format asks for one to three sentences — take that as the floor, not the ceiling, and drop any section that would be padding.
 
 ## Use the glossary's vocabulary
 
