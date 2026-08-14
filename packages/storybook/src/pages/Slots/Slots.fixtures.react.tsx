@@ -1,8 +1,8 @@
-import type {MarkProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import type {HTMLAttributes, KeyboardEvent, Ref} from 'react'
 import {useState} from 'react'
 
+import {defineMark} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 
 /**
@@ -13,11 +13,7 @@ import type {PageArgs} from '../../shared/lib/stories'
 
 type DivProps = HTMLAttributes<HTMLDivElement> & {ref?: Ref<HTMLDivElement>}
 
-const SimpleMark = ({children}: MarkProps) => (
-	<mark style={{backgroundColor: '#ffd700', padding: '2px 4px', borderRadius: '3px'}}>{children}</mark>
-)
-
-/** `slots.container` replacing the container outright — React-only, see `Slots.stories.react.tsx`. */
+/** `slots.container` replacing the container outright. */
 const FancyContainer = ({ref, ...props}: DivProps) => (
 	<div
 		{...props}
@@ -86,8 +82,11 @@ function EventLog({slotProps, ...args}: PageArgs) {
 }
 
 export const fixtures = {
-	SimpleMark,
-	/** Only `Slots.stories.react.tsx` reads this; the Vue catalog has no counterpart. */
+	SimpleMark: defineMark({
+		tag: 'mark',
+		content: 'children',
+		style: {backgroundColor: '#ffd700', padding: '2px 4px', borderRadius: '3px'},
+	}),
 	FancyContainer,
 	StyledContainer,
 	renderEventLog: (args: PageArgs) => <EventLog {...args} />,
@@ -95,7 +94,7 @@ export const fixtures = {
 
 /** Spec fixture: the mark the shared spec mounts everywhere. */
 export const marks = {
-	Children: ({children}: MarkProps) => <mark>{children}</mark>,
+	Children: defineMark({tag: 'mark', content: 'children'}),
 }
 
 /** Spec fixtures: `slots.container` replacements. */
@@ -104,18 +103,22 @@ export const containers = {
 	Plain: ({ref, ...props}: DivProps) => <div {...props} ref={ref} />,
 }
 
-/** Spec fixtures: `Span` replacements. */
+/**
+ * Spec fixtures: `Span` replacements. Each keeps the `content` it has today: core is THE writer
+ * of a text surface and mirrors the token's text into it whatever the component rendered, so
+ * levelling them all to one `content` would be DOM-neutral but hide that.
+ */
 export const spans = {
-	Testid: ({value}: MarkProps) => <span data-testid="custom-span">{value}</span>,
-	Classy: ({value}: MarkProps) => <span className="custom-span-class">{value}</span>,
-	Styled: ({value}: MarkProps) => <span style={{fontWeight: 'bold', fontSize: '16px'}}>{value}</span>,
-	SpanProp: ({value}: MarkProps) => (
-		<span data-testid="custom-span" data-span-prop="span">
-			{value}
-		</span>
-	),
-	Children: ({children}: MarkProps) => <span data-testid="custom-editable-span">{children}</span>,
-	TextTestid: ({value}: MarkProps) => <span data-testid="text-span">{value}</span>,
+	Testid: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'custom-span'}}),
+	Classy: defineMark({tag: 'span', content: 'value', class: 'custom-span-class'}),
+	Styled: defineMark({tag: 'span', content: 'value', style: {fontWeight: 'bold', fontSize: '16px'}}),
+	SpanProp: defineMark({
+		tag: 'span',
+		content: 'value',
+		attrs: {'data-testid': 'custom-span', 'data-span-prop': 'span'},
+	}),
+	Children: defineMark({tag: 'span', content: 'children', attrs: {'data-testid': 'custom-editable-span'}}),
+	TextTestid: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'text-span'}}),
 }
 
 /**

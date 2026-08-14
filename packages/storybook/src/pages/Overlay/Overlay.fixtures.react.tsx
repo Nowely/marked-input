@@ -1,7 +1,6 @@
-import type {MarkProps} from '@markput/react'
 import {useOverlay} from '@markput/react'
 
-const Mark = ({value}: MarkProps) => <mark>{value}</mark>
+import {defineMark, Empty} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -9,9 +8,9 @@ const Mark = ({value}: MarkProps) => <mark>{value}</mark>
  * project if this file drifts.
  */
 export const fixtures = {
-	Mark,
+	Mark: defineMark({tag: 'mark', content: 'value'}),
 	/** The three overlay-only stories render no mark: the overlay itself is what they show. */
-	Empty: () => null,
+	Empty,
 	Overlay: () => <h1>I am the overlay</h1>,
 	Tooltip: () => {
 		const {style} = useOverlay()

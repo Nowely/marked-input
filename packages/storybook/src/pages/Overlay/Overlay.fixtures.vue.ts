@@ -1,27 +1,22 @@
 import {useOverlay} from '@markput/vue'
 import {defineComponent} from 'vue'
 
-const Mark = defineComponent({
-	props: {value: String},
-	template: '<mark>{{ value }}</mark>',
-})
+import {defineMark, Empty} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
  * `satisfies` — `Overlay.stories.ts` is the contract, and it fails to compile under either
  * project if this file drifts.
  *
- * Components are written with `template:` rather than `h()`: `@storybook/vue3-vite` aliases
- * `vue` to the runtime-compiler build for exactly this, and it keeps these fixtures readable
- * next to their React counterparts. The trade is that a template string is not typechecked.
+ * Hand-written components are written with `template:` rather than `h()`: `@storybook/vue3-vite`
+ * aliases `vue` to the runtime-compiler build for exactly this, and it keeps these fixtures
+ * readable next to their React counterparts. The trade is that a template string is not
+ * typechecked.
  */
 export const fixtures = {
-	Mark,
+	Mark: defineMark({tag: 'mark', content: 'value'}),
 	/** The three overlay-only stories render no mark: the overlay itself is what they show. */
-	Empty: defineComponent({
-		props: {value: String},
-		template: '',
-	}),
+	Empty,
 	Overlay: defineComponent({template: '<h1>I am the overlay</h1>'}),
 	Tooltip: defineComponent({
 		// The computed is returned at the TOP level so `proxyRefs` unwraps it for the template;

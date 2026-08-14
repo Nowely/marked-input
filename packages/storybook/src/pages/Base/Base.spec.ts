@@ -28,8 +28,8 @@ describe('Component: MarkedInput', () => {
 	})
 
 	it('renders mark roots without adapter wrappers', async () => {
-		const {host} = await mount(Default, {Mark: marks.Testid, defaultValue: 'hello @[world](1)'})
-		const mark = host.querySelector<HTMLElement>('mark[data-testid="mark"]')!
+		const {host} = await mount(Default, {Mark: marks.Value, defaultValue: 'hello @[world](1)'})
+		const mark = host.querySelector('mark')!
 
 		expect(mark.parentElement).toBe(host)
 		expect(mark).toHaveTextContent('world')
@@ -45,7 +45,7 @@ describe('Component: MarkedInput', () => {
 			options: [{markup, mark: ({value}: {value?: string}) => ({children: value})}],
 			defaultValue: 'hello @(world)',
 		})
-		const mark = host.querySelector<HTMLElement>('mark[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 
 		expect(mark).toHaveTextContent('world')
 	})

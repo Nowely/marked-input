@@ -1,11 +1,11 @@
 // oxlint-disable jsx_a11y/prefer-tag-over-role -- a nested mark shell can contain interactive children
-import type {CSSProperties} from '@markput/core'
 import type {MarkProps} from '@markput/react'
 import {MarkedInput, useMark, useMarkInfo} from '@markput/react'
 import type {ElementType} from 'react'
 import {useState} from 'react'
 
 import {useTab} from '../../shared/components/Tabs'
+import {defineMark} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 import {HTML_TAG_STYLES} from './HtmlTagStyles'
 import {markdownOptions} from './MarkdownOptions'
@@ -16,17 +16,8 @@ import {markdownOptions} from './MarkdownOptions'
  * project if this file drifts.
  */
 
-/**
- * The mark props this page's styled stories map to. Declared here rather than in the story
- * file because `children` is a framework type: react's is a `ReactNode`, vue's a `VNodeChild`,
- * and the story's `mark` mappers pass it straight through.
- */
-export type StyledMarkProps = MarkProps & {style?: CSSProperties}
-
 /** `ComplexMarkdown`'s mark: the markdown preset hands it the `style` of whichever markup matched. */
-const MarkdownMark = ({children, value, style}: StyledMarkProps) => (
-	<span style={{...style, margin: '0 1px'}}>{children ?? value}</span>
-)
+const MarkdownMark = defineMark({tag: 'span', content: 'childrenOrValue', style: {margin: '0 1px'}})
 
 /** `ComplexHtmlDocument`'s mark: this markup's VALUE is the tag name, so the mark IS that element. */
 const HtmlDocMark = ({children, value}: MarkProps) => {
@@ -88,10 +79,8 @@ function TabbedHtml({defaultValue, options}: PageArgs) {
 
 export const fixtures = {
 	/** The panel sits under the editor here; the vue fixtures put it beside it. */
-	SimpleMark: ({children, style, value}: StyledMarkProps) => <span style={style}>{children ?? value}</span>,
-	MultiLevelMark: ({children, style, value}: StyledMarkProps) => (
-		<span style={{...style, margin: '0 2px'}}>{children ?? value}</span>
-	),
+	SimpleMark: defineMark({tag: 'span', content: 'childrenOrValue'}),
+	MultiLevelMark: defineMark({tag: 'span', content: 'childrenOrValue', style: {margin: '0 2px'}}),
 	HtmlLikeMark: ({children, value}: MarkProps) => {
 		// oxlint-disable-next-line no-unsafe-type-assertion -- this mark's VALUE is the tag name
 		const Tag = (value ?? 'span') as ElementType
@@ -173,7 +162,7 @@ export const marks = {
 	Capturing: ({children}: MarkProps) => {
 		const info = useMarkInfo()
 		if (info.depth === 0 && info.hasNestedMarks) capture.rootChildren = children != null
-		return <span data-testid="mark">{children}</span>
+		return <span>{children}</span>
 	},
 	RootInfo: ({children}: MarkProps) => {
 		const info = useMarkInfo()
@@ -189,23 +178,19 @@ export const marks = {
 		return <span data-has-children={info.hasNestedMarks}>{children}</span>
 	},
 	/** Renders only `value`: the backward-compatibility marks predate nesting. */
-	Flat: ({value}: MarkProps) => <span data-testid="flat-mark">{value}</span>,
-	Plain: ({children}: MarkProps) => <span data-testid="mark">{children}</span>,
-	Bare: ({children}: MarkProps) => <span>{children}</span>,
+	Flat: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'flat-mark'}}),
+	Plain: defineMark({tag: 'mark', content: 'children'}),
+	Bare: defineMark({tag: 'span', content: 'children'}),
 	Mixed: ({children}: MarkProps) => {
 		const info = useMarkInfo()
-		return (
-			<span data-testid="mark" data-has-children={info.hasNestedMarks}>
-				{children}
-			</span>
-		)
+		return <mark data-has-children={info.hasNestedMarks}>{children}</mark>
 	},
 	/** Renders the slot itself when there is nothing nested to render. */
 	Rendering: ({children}: MarkProps) => {
 		const mark = useMark()
 		const info = useMarkInfo()
-		return <span data-testid="rendering-mark">{info.hasNestedMarks ? children : mark.slot()}</span>
+		return <span>{info.hasNestedMarks ? children : mark.slot()}</span>
 	},
 	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
-	Testid: ({children, value}: MarkProps) => <mark data-testid="mark">{children ?? value}</mark>,
+	MarkRoot: defineMark({tag: 'mark', content: 'childrenOrValue'}),
 }

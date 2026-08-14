@@ -44,16 +44,6 @@ describe('OverlayController', () => {
 		store.host.container(document.createElement('div'))
 	})
 
-	describe('ownership', () => {
-		it('owns match, element (DOM ref), slot (computed), choose, close', () => {
-			expect(typeof store.overlay.match).toBe('function')
-			expect(typeof store.overlay.element).toBe('function')
-			expect(typeof store.overlay.slot).toBe('function')
-			expect(typeof store.overlay.choose).toBe('function')
-			expect(typeof store.overlay.close).toBe('function')
-		})
-	})
-
 	describe('activation via overlay trigger', () => {
 		it('probes overlay trigger on change when showOverlayOn includes change', () => {
 			// Reset to empty first so watch sees a false->true transition

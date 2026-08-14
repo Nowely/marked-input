@@ -19,35 +19,35 @@ exports[`Component: stories > Ant stories > Story Tagged 1`] = `
 exports[`Component: stories > Api stories > Story Block 1`] = `
 "<div>
   <div contenteditable="true">
-    <div data-testid="block">
+    <div>
       <div contenteditable="false">
         <button type="button" draggable="false" aria-label="Block options">
           <span></span>
         </button>
       </div>
-      <mark data-testid="mark" contenteditable="false">a</mark>
+      <mark contenteditable="false">a</mark>
     </div>
-    <div data-testid="block">
+    <div>
       <div contenteditable="false">
         <button type="button" draggable="false" aria-label="Block options">
           <span></span>
         </button>
       </div>
-      <mark data-testid="mark" contenteditable="false">b</mark>
+      <mark contenteditable="false">b</mark>
     </div>
   </div>
   <div>
-    <button type="button" data-testid="insert-at-caret">insert at caret</button>
-    <button type="button" data-testid="edit-meta">edit meta</button>
-    <button type="button" data-testid="clear-meta">clear meta</button>
-    <button type="button" data-testid="remove-mark">remove mark</button>
-    <button type="button" data-testid="replace-span">replace span</button>
-    <button type="button" data-testid="replace-across">replace across</button>
-    <button type="button" data-testid="set-value">set value</button>
-    <button type="button" data-testid="clear-value">clear value</button>
-    <button type="button" data-testid="insert-between-rows">insert between rows</button>
+    <button type="button">insert at caret</button>
+    <button type="button">edit meta</button>
+    <button type="button">clear meta</button>
+    <button type="button">remove mark</button>
+    <button type="button">replace span</button>
+    <button type="button">replace across</button>
+    <button type="button">set value</button>
+    <button type="button">clear value</button>
+    <button type="button">insert between rows</button>
   </div>
-  <output data-testid="value">@[a](x)@[b](y)</output>
+  <output aria-label="value">@[a](x)@[b](y)</output>
 </div>"
 `;
 
@@ -55,21 +55,21 @@ exports[`Component: stories > Api stories > Story Default 1`] = `
 "<div>
   <div contenteditable="true">
     <span>hello </span>
-    <mark data-testid="mark" contenteditable="false">world</mark>
+    <mark contenteditable="false">world</mark>
     <span> foo</span>
   </div>
   <div>
-    <button type="button" data-testid="insert-at-caret">insert at caret</button>
-    <button type="button" data-testid="edit-meta">edit meta</button>
-    <button type="button" data-testid="clear-meta">clear meta</button>
-    <button type="button" data-testid="remove-mark">remove mark</button>
-    <button type="button" data-testid="replace-span">replace span</button>
-    <button type="button" data-testid="replace-across">replace across</button>
-    <button type="button" data-testid="set-value">set value</button>
-    <button type="button" data-testid="clear-value">clear value</button>
-    <button type="button" data-testid="insert-between-rows">insert between rows</button>
+    <button type="button">insert at caret</button>
+    <button type="button">edit meta</button>
+    <button type="button">clear meta</button>
+    <button type="button">remove mark</button>
+    <button type="button">replace span</button>
+    <button type="button">replace across</button>
+    <button type="button">set value</button>
+    <button type="button">clear value</button>
+    <button type="button">insert between rows</button>
   </div>
-  <output data-testid="value">hello @[world](u1) foo</output>
+  <output aria-label="value">hello @[world](u1) foo</output>
 </div>"
 `;
 

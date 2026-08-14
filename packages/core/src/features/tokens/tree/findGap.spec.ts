@@ -14,7 +14,7 @@ const HelloI = `${Hello}${I}`
 const IHello = `${I}${Hello}`
 
 describe(`findGap`, () => {
-	it('work on equal', () => expect(findGap(Hello, Hello)).toMatchObject({}))
+	it('work on equal', () => expect(findGap(Hello, Hello)).toStrictEqual({}))
 	it('work on insert for empty', () => expect(findGap('', Hello)).toMatchObject({left: undefined, right: undefined}))
 	it('work on remove from empty', () => expect(findGap(Hello, '')).toMatchObject({left: 0, right: Hello.length}))
 

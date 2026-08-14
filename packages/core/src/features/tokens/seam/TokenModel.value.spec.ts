@@ -247,4 +247,110 @@ describe('TokenModel value boundary', () => {
 			expect(store.tokens.value()).toBe('Xhello')
 		})
 	})
+
+	/**
+	 * The clipboard's markup entry (`ClipboardController`'s markput MIME) and the block rows'
+	 * text read (`keyboard/blockEdit.ts`). `block/operations.spec` stubs the read with a plain
+	 * `doc.slice`, so the delegation to `tree/sliceNodes` — and the anchor resolution in front
+	 * of it — is pinned only here.
+	 */
+	describe('valueBetween()', () => {
+		// The browser `Clipboard.spec`'s own fixture value, so the answers below are the unit
+		// side of its end-to-end assertions.
+		const INLINE = 'hello @[world](1) foo'
+
+		const inlineStore = (): Store => {
+			const store = new Store()
+			store.props.set({
+				defaultValue: INLINE,
+				options: [{markup: '@[__value__](__meta__)'}],
+				Mark: () => null,
+			})
+			return mount(store)
+		}
+
+		it('slices within a single text token', () => {
+			const store = inlineStore()
+			// The layout every offset literal in this block is read off.
+			expect(treeShape(store.tokens.nodes())).toMatchObject([
+				{kind: 'text', content: 'hello ', position: {start: 0, end: 6}},
+				{kind: 'mark', content: '@[world](1)', position: {start: 6, end: 17}},
+				{kind: 'text', content: ' foo', position: {start: 17, end: 21}},
+			])
+
+			expect(store.tokens.valueBetween(...anchorsAt(store, 2, 4))).toBe('ll')
+		})
+
+		it('trims the boundary text tokens and keeps the mark whole', () => {
+			// `Clipboard.spec`'s 'cross-token partial selection … trimmed text and full mark'.
+			// [3, 20) cuts one character into each text token, and the mark between them is
+			// emitted whole either way — its `value`/`meta` have no sub-spans to cut.
+			const store = inlineStore()
+			expect(store.tokens.valueBetween(...anchorsAt(store, 3, 20))).toBe('lo @[world](1) fo')
+		})
+
+		it('expands to the whole mark when an end lands inside its markup', () => {
+			// The expansion is the ANCHOR's here, not the slice's: offset 10 sits inside
+			// `@[world](1)`, which is not anchorable, so `anchorAt` answers the mark's own end
+			// (17). A window touching a SLOTLESS mark is therefore always mark-aligned by the
+			// time `sliceNodes` sees it.
+			const store = inlineStore()
+			expect(store.tokens.valueBetween(...anchorsAt(store, 3, 10))).toBe('lo @[world](1)')
+		})
+
+		it('answers exactly the markup for a window on the mark boundaries', () => {
+			const store = inlineStore()
+			const mark = store.tokens.nodes()[1]
+			// `{before}`/`{after}` is the form `blockEdit` reads a row with; the offsets are the
+			// same window through `anchorAt`.
+			expect(store.tokens.valueBetween({before: mark}, {after: mark})).toBe('@[world](1)')
+			expect(store.tokens.valueBetween(...anchorsAt(store, 6, 17))).toBe('@[world](1)')
+		})
+
+		it('answers empty for a collapsed pair', () => {
+			// Three different guards: offset 3 is INSIDE a text token, so only the slice clamp
+			// answers ''; 6 and 17 are the mark's own edges, where each half of the half-open
+			// overlap test is the one thing keeping the whole markup out.
+			const store = inlineStore()
+			expect(store.tokens.valueBetween(...anchorsAt(store, 3))).toBe('')
+			expect(store.tokens.valueBetween(...anchorsAt(store, 6))).toBe('')
+			expect(store.tokens.valueBetween(...anchorsAt(store, 17))).toBe('')
+		})
+
+		it('reads the same window from a reversed pair', () => {
+			// A selection carries `anchor`/`head` in the order the USER dragged, so a
+			// right-to-left selection hands the pair over backwards. `ClipboardController`
+			// passes them straight through, which is what makes the normalisation load-bearing.
+			const store = inlineStore()
+			expect(store.tokens.valueBetween(...anchorsAt(store, 20, 3))).toBe('lo @[world](1) fo')
+			expect(store.tokens.valueBetween('end', 'start')).toBe(INLINE)
+		})
+
+		it('projects the whole document between the edges', () => {
+			const store = inlineStore()
+			expect(store.tokens.valueBetween('start', 'end')).toBe(INLINE)
+			expect(store.tokens.valueBetween('start', 'end')).toBe(store.tokens.value())
+		})
+
+		it('trims a SLOT mark to the covered part of its nested content', () => {
+			// The only partially covered mark reachable through anchors: a slot's children are
+			// anchorable, so a window can end inside the mark. The mark still contributes its
+			// whole markup with the slot cut — half a slot copies as a valid annotation, not as
+			// a truncated one.
+			const store = new Store()
+			store.props.set({
+				defaultValue: 'a#[hello]b',
+				options: [{markup: '#[__slot__]'}],
+				Mark: () => null,
+			})
+			mount(store)
+			expect(treeShape(store.tokens.nodes())).toMatchObject([
+				{kind: 'text', content: 'a', position: {start: 0, end: 1}},
+				{kind: 'mark', content: '#[hello]', position: {start: 1, end: 9}},
+				{kind: 'text', content: 'b', position: {start: 9, end: 10}},
+			])
+
+			expect(store.tokens.valueBetween(...anchorsAt(store, 3, 6))).toBe('#[hel]')
+		})
+	})
 })

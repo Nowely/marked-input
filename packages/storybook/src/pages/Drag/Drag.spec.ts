@@ -2,8 +2,8 @@ import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {caretIsInside, childrenOf, firstChild, getElement} from '../../shared/lib/dom'
-import {dispatchInsertText, dispatchPaste} from '../../shared/lib/dragTestHelpers'
-import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
+import {focusAtEnd, focusAtStart, verifyCaretPosition} from '../../shared/lib/focus'
+import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
 import {composePage, mount, mountComponent, mountEcho} from '../../shared/lib/page'
 import {marks} from './Drag.fixtures'
 import * as DragStories from './Drag.stories'
@@ -24,7 +24,7 @@ const MARKDOWN_DRAG_VALUE =
  * `Drag.stories.ts`.
  */
 const CONTROLLED_ARGS = {
-	Mark: marks.Testid,
+	Mark: marks.Value,
 	value: 'hello @[world](1)\n\nfoo',
 	layout: 'block',
 	draggable: true,
@@ -35,13 +35,9 @@ const GRIP = {name: 'Drag to reorder or click for options'} as const
 
 /**
  * The rows of a block layout. Under the single-host topology the editing host IS the row
- * container, so a row is one of its element children — `shared/lib/dragTestHelpers` still
- * takes the render root and walks down to that same element.
+ * container, so a row is one of its element children.
  */
 const rowsOf = (host: HTMLElement) => childrenOf(host)
-
-/** The block rows specifically, for the assertions that must not count a non-block child. */
-const blocksOf = (host: HTMLElement) => Array.from(host.querySelectorAll<HTMLElement>('[data-testid="block"]'))
 
 /** Hovers a row, then clicks its grip — the only way the block menu opens. */
 async function openMenuForRow(host: HTMLElement, rowIndex: number) {
@@ -183,20 +179,26 @@ describe('Feature: drag rows', () => {
 			expect(rows[2].textContent).toContain('foo')
 		})
 
-		it('increase row count by 1 when adding below middle row', async () => {
-			const {host} = await mount(PlainTextDrag)
+		it('insert the empty row below the middle row and leave the rest in place', async () => {
+			const {host, value} = await echoPlainText()
 			await openMenuForRow(host, 2)
 			await userEvent.click(getElement(page.getByText('Add below')))
 
 			expect(rowsOf(host)).toHaveLength(6)
+			await expect
+				.poll(value)
+				.toBe(
+					'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\n\n\nFourth block of plain text\n\nFifth block of plain text\n\n'
+				)
 		})
 
-		it('increase row count by 1 when adding below last row', async () => {
-			const {host} = await mount(PlainTextDrag)
+		it('append the empty row when adding below the last row', async () => {
+			const {host, value} = await echoPlainText()
 			await openMenuForRow(host, 4)
 			await userEvent.click(getElement(page.getByText('Add below')))
 
 			expect(rowsOf(host)).toHaveLength(6)
+			await expect.poll(value).toBe(PLAIN_TEXT_VALUE + '\n\n')
 		})
 
 		it('insert an empty row between the target and next row', async () => {
@@ -214,29 +216,32 @@ describe('Feature: drag rows', () => {
 
 			expect(value().endsWith('\n\n\n\n\n\n')).toBe(false)
 		})
-
-		it('leave no rows and an empty value when every row is deleted', async () => {
-			const {host, value} = await echoPlainText()
-
-			for (let i = 4; i > 0; i--) {
-				await openMenuForRow(host, i)
-				await userEvent.click(getElement(page.getByText('Delete')))
-			}
-			await openMenuForRow(host, 0)
-			await userEvent.click(getElement(page.getByText('Delete')))
-
-			await expect.poll(value).toBe('')
-			expect(rowsOf(host)).toHaveLength(0)
-		})
 	})
 
 	describe('delete row', () => {
-		it('decrease count by 1 when deleting middle row', async () => {
+		it('drop the middle row with its separator and leave the rest in place', async () => {
+			const {host, value} = await echoPlainText()
+			await openMenuForRow(host, 2)
+			await userEvent.click(getElement(page.getByText('Delete')))
+
+			expect(rowsOf(host)).toHaveLength(4)
+			await expect
+				.poll(value)
+				.toBe(
+					'First block of plain text\n\nSecond block of plain text\n\nFourth block of plain text\n\nFifth block of plain text\n\n'
+				)
+		})
+
+		it('drop the row straight out of the DOM when uncontrolled', async () => {
+			// The other delete cases all drive a CONTROLLED field, where the row leaves only
+			// once the echo lands. Uncontrolled the editor owns the value, so nothing echoes
+			// and the DOM has to be right on its own.
 			const {host} = await mount(PlainTextDrag)
 			await openMenuForRow(host, 2)
 			await userEvent.click(getElement(page.getByText('Delete')))
 
 			expect(rowsOf(host)).toHaveLength(4)
+			expect(host.textContent).not.toContain('Third block of plain text')
 		})
 
 		it('keeps controlled row unchanged after deleting until value is echoed', async () => {
@@ -286,6 +291,7 @@ describe('Feature: drag rows', () => {
 			await userEvent.click(getElement(page.getByText('Delete')))
 
 			await expect.poll(value).toBe('')
+			expect(rowsOf(host)).toHaveLength(0)
 		})
 	})
 
@@ -320,12 +326,13 @@ describe('Feature: drag rows', () => {
 			await expect.poll(() => value().match(/First block of plain text/g)).toHaveLength(2)
 		})
 
-		it('increase count by 1 when duplicating last row', async () => {
-			const {host} = await mount(PlainTextDrag)
+		it('place the copy of the last row directly after it', async () => {
+			const {host, value} = await echoPlainText()
 			await openMenuForRow(host, 4)
 			await userEvent.click(getElement(page.getByText('Duplicate')))
 
 			expect(rowsOf(host)).toHaveLength(6)
+			await expect.poll(value).toBe(PLAIN_TEXT_VALUE + 'Fifth block of plain text\n\n')
 		})
 	})
 
@@ -434,8 +441,11 @@ describe('Feature: drag rows', () => {
 		await userEvent.click(getElement(page.getByText('Add below')))
 
 		// `activeElement` is the container for every row now, so row identity is a question
-		// only the selection can answer.
+		// only the selection can answer. The offset needs that row check above it: a caret
+		// left behind in row 0 measures 0 against row 1 too, because a range whose end
+		// precedes its start collapses to empty.
 		expect(caretIsInside(rowsOf(host)[1])).toBe(true)
+		verifyCaretPosition(rowsOf(host)[1], 0)
 	})
 
 	it('split row at caret when pressing Enter at the beginning', async () => {
@@ -487,7 +497,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtStart(rows[1])
 			await userEvent.keyboard('{ArrowLeft}')
 
-			expect(caretIsInside(rows[0])).toBe(true)
+			verifyCaretPosition(rows[0], 'First block of plain text'.length)
 		})
 
 		it('not cross to previous row when caret is mid-row', async () => {
@@ -497,7 +507,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtEnd(rows[1])
 			await userEvent.keyboard('{ArrowLeft}')
 
-			expect(caretIsInside(rows[1])).toBe(true)
+			verifyCaretPosition(rows[1], 'Second block of plain text'.length - 1)
 		})
 
 		it('not cross row boundary from the first row', async () => {
@@ -507,7 +517,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtStart(rows[0])
 			await userEvent.keyboard('{ArrowLeft}')
 
-			expect(caretIsInside(rows[0])).toBe(true)
+			verifyCaretPosition(rows[0], 0)
 		})
 	})
 
@@ -519,7 +529,10 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtEnd(rows[0])
 			await userEvent.keyboard('{ArrowRight}')
 
+			// Offset 0 alone cannot fail here: a caret still in row 0 collapses row 1's
+			// range to empty, so the row check carries the crossing claim.
 			expect(caretIsInside(rows[1])).toBe(true)
+			verifyCaretPosition(rows[1], 0)
 		})
 
 		it('not cross to next row when caret is mid-row', async () => {
@@ -529,7 +542,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtStart(rows[0])
 			await userEvent.keyboard('{ArrowRight}')
 
-			expect(caretIsInside(rows[0])).toBe(true)
+			verifyCaretPosition(rows[0], 1)
 		})
 
 		it('not cross row boundary from the last row', async () => {
@@ -540,7 +553,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtEnd(last)
 			await userEvent.keyboard('{ArrowRight}')
 
-			expect(caretIsInside(last)).toBe(true)
+			verifyCaretPosition(last, 'Fifth block of plain text'.length)
 		})
 	})
 
@@ -552,6 +565,8 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtEnd(rows[0])
 			await userEvent.keyboard('{ArrowDown}')
 
+			// Row identity is the whole claim: a vertical move lands on the x of the caret
+			// it started from, so the column depends on font metrics, not on a fixed offset.
 			expect(caretIsInside(rows[1])).toBe(true)
 		})
 
@@ -563,7 +578,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtEnd(last)
 			await userEvent.keyboard('{ArrowDown}')
 
-			expect(caretIsInside(last)).toBe(true)
+			verifyCaretPosition(last, 'Fifth block of plain text'.length)
 		})
 	})
 
@@ -575,7 +590,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtStart(rows[1])
 			await userEvent.keyboard('{ArrowUp}')
 
-			expect(caretIsInside(rows[0])).toBe(true)
+			verifyCaretPosition(rows[0], 0)
 		})
 
 		it('not cross row boundary from the first row', async () => {
@@ -585,7 +600,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtStart(rows[0])
 			await userEvent.keyboard('{ArrowUp}')
 
-			expect(caretIsInside(rows[0])).toBe(true)
+			verifyCaretPosition(rows[0], 0)
 		})
 	})
 
@@ -616,35 +631,25 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtStart(rowsOf(host)[1])
 			await userEvent.keyboard('{Backspace}')
 
-			expect(caretIsInside(rowsOf(host)[0])).toBe(true)
-		})
-
-		it('only delete one row at a time on Backspace', async () => {
-			const {host} = await mount(PlainTextDrag)
-			expect(rowsOf(host)).toHaveLength(5)
-
-			await focusAtStart(rowsOf(host)[1])
-			await userEvent.keyboard('{Backspace}')
-
-			expect(rowsOf(host)).toHaveLength(4)
+			verifyCaretPosition(rowsOf(host)[0], 'First block of plain text'.length)
 		})
 
 		describe('Backspace at start of text row after a mark row (navigate-only in drag mode)', () => {
 			it('NOT reduce row count when Backspace at start of text row after mark row', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const before = blocksOf(host).length
+				const before = rowsOf(host).length
 
-				await focusAtStart(blocksOf(host)[1])
+				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Backspace}')
 
-				expect(blocksOf(host)).toHaveLength(before)
+				expect(rowsOf(host)).toHaveLength(before)
 			})
 
 			it('move focus to the mark row on Backspace at mark boundary', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const markBlock = blocksOf(host)[0]
+				const markBlock = rowsOf(host)[0]
 
-				await focusAtStart(blocksOf(host)[1])
+				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Backspace}')
 
 				expect(caretIsInside(markBlock)).toBe(true)
@@ -680,7 +685,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				await focusAtEnd(rowsOf(host)[0])
 				await userEvent.keyboard('{Delete}')
 
-				expect(caretIsInside(rowsOf(host)[0])).toBe(true)
+				verifyCaretPosition(rowsOf(host)[0], 'First block of plain text'.length)
 			})
 
 			it('not merge when Delete pressed at end of last row', async () => {
@@ -722,7 +727,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Delete}')
 
-				expect(caretIsInside(rowsOf(host)[0])).toBe(true)
+				verifyCaretPosition(rowsOf(host)[0], 'First block of plain text'.length)
 			})
 
 			it('not merge when Delete pressed at start of first row', async () => {
@@ -748,19 +753,19 @@ describe('Feature: drag row keyboard navigation', () => {
 		describe('Delete at mark→text boundary (navigate-only in drag mode)', () => {
 			it('NOT reduce row count when Delete at start of text row after mark row', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const before = blocksOf(host).length
+				const before = rowsOf(host).length
 
-				await focusAtStart(blocksOf(host)[1])
+				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Delete}')
 
-				expect(blocksOf(host)).toHaveLength(before)
+				expect(rowsOf(host)).toHaveLength(before)
 			})
 
 			it('move focus to mark row on Delete at mark boundary', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const markBlock = blocksOf(host)[0]
+				const markBlock = rowsOf(host)[0]
 
-				await focusAtStart(blocksOf(host)[1])
+				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Delete}')
 
 				expect(caretIsInside(markBlock)).toBe(true)
@@ -819,7 +824,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		 */
 		it('append character after last mark when typing at end of mark row', async () => {
 			const {host, value} = await echoMarkdown()
-			await focusAtEnd(blocksOf(host)[0])
+			await focusAtEnd(rowsOf(host)[0])
 			await userEvent.keyboard('!')
 
 			await expect.element(page.getByText('Welcome to Draggable Blocks!').first()).toBeInTheDocument()
@@ -864,7 +869,7 @@ describe('Feature: drag row keyboard navigation', () => {
 
 		it('update raw value when pasting text at end of a mark row', async () => {
 			const {host, value} = await echoMarkdown()
-			const row = blocksOf(host)[0]
+			const row = rowsOf(host)[0]
 			await focusAtEnd(row)
 			dispatchPaste(row, '!')
 
@@ -912,7 +917,7 @@ describe('Feature: drag row keyboard navigation', () => {
 
 		it('insert new empty row after mark row when pressing Enter on mark', async () => {
 			const {host, value} = await echoMarkdown()
-			await focusAtEnd(blocksOf(host)[0])
+			await focusAtEnd(rowsOf(host)[0])
 			await userEvent.keyboard('{Enter}')
 
 			await expect.poll(value).toContain('# Welcome to Draggable Blocks\n\n')

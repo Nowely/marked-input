@@ -278,13 +278,15 @@ describe('Slots API', () => {
 		it('handle empty value', async () => {
 			const {host} = await mountComponent({Mark: marks.Children, value: ''})
 
-			await expect.element(host).toBeInTheDocument()
+			// One empty text surface, not zero: the empty document still parses to a text token.
+			expect(host.textContent).toBe('')
+			expect(textSurfaces(host)).toHaveLength(1)
 		})
 
 		it('handle undefined slotProps gracefully', async () => {
 			const {host} = await mountComponent({Mark: marks.Children, value: VALUE, slotProps: undefined})
 
-			await expect.element(host).toBeInTheDocument()
+			expect(host.textContent).toBe(VALUE)
 		})
 
 		it('handle empty className in slotProps', async () => {
@@ -294,7 +296,9 @@ describe('Slots API', () => {
 				slotProps: {container: {className: ''}},
 			})
 
-			await expect.element(host).toBeInTheDocument()
+			// The empty string is dropped rather than joined in, so the core class stands alone.
+			expect(Array.from(host.classList)).toHaveLength(1)
+			expect(host.textContent).toBe(VALUE)
 		})
 
 		it('handle multiple marked values with custom Span', async () => {

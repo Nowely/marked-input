@@ -60,11 +60,6 @@ describe('BlockController', () => {
 		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
 	})
 
-	it('owns the drag event', () => {
-		const store = new Store()
-		expect(typeof store.block.action).toBe('function')
-	})
-
 	it('commits drag edits through the live token read and writes caret.selection', () => {
 		store.props.set({
 			layout: 'block',

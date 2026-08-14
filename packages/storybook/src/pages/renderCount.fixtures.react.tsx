@@ -1,6 +1,8 @@
 import type {MarkProps, Option} from '@markput/react'
 import {useEffect} from 'react'
 
+import {defineMark} from '../shared/lib/marks'
+
 /**
  * Spec fixtures: the framework half of `renderCount.spec.ts`. Every factory hands back the
  * component AND its reader, so the shared spec never touches a framework spy.
@@ -10,11 +12,11 @@ import {useEffect} from 'react'
  * those — counting anywhere else would measure the subscription instead of the render.
  */
 
-const Mark = ({value}: MarkProps) => <mark>{value}</mark>
-const Span = ({value}: MarkProps) => <span>{value}</span>
-
 /** The renderers a gate does not measure — present so the editor has something to draw. */
-export const plain = {Mark, Span}
+export const plain = {
+	Mark: defineMark({tag: 'mark', content: 'value'}),
+	Span: defineMark({tag: 'span', content: 'value'}),
+}
 
 export const counters = {
 	/** A `Mark` counting its render invocations. */

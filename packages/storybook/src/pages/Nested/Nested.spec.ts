@@ -102,12 +102,12 @@ describe('Nested Marks Rendering', () => {
 
 	it('renders nested token roots without slot-root wrappers', async () => {
 		const {host} = await mountComponent({
-			Mark: marks.Testid,
+			Mark: marks.MarkRoot,
 			defaultValue: '@[before @[nested] after]',
 			options: [{markup: SLOT_MARKUP}],
 		})
-		const outer = host.querySelector<HTMLElement>('mark[data-testid="mark"]')!
-		const inner = host.querySelectorAll<HTMLElement>('mark[data-testid="mark"]')[1]
+		const outer = host.querySelector('mark')!
+		const inner = host.querySelectorAll('mark')[1]
 		const childSequenceHost = outer.firstElementChild
 		if (!(childSequenceHost instanceof HTMLElement)) throw new Error('Expected child sequence host')
 
@@ -192,7 +192,7 @@ describe('Complex Nesting Scenarios', () => {
 	it('handle adjacent nested marks', async () => {
 		await mountComponent({Mark: marks.Plain, value: '@[first]@[second]', options: [{markup: SLOT_MARKUP}]})
 
-		const found = page.getByTestId('mark').all()
+		const found = page.getByRole('mark').all()
 		expect(found).toHaveLength(2)
 	})
 
@@ -218,8 +218,9 @@ describe('Complex Nesting Scenarios', () => {
 			options: [{markup: SLOT_MARKUP}],
 		})
 
-		const found = page.getByTestId('mark').all()
-		expect(found.length).toBeGreaterThanOrEqual(3)
+		// Exactly three: the outer mark, the one nested in it, and the flat one beside it.
+		const found = page.getByRole('mark').all()
+		expect(found).toHaveLength(3)
 	})
 
 	it('render nested structure when Mark component renders children', async () => {
@@ -261,8 +262,9 @@ describe('Edge Cases', () => {
 			options: [{markup: SLOT_MARKUP}],
 		})
 
-		// Renders something rather than crashing.
-		await expect.element(host).toBeInTheDocument()
+		// Neither markup closes, so nothing is a mark: the whole value stays literal text.
+		expect(host.textContent).toBe('@[unclosed @[nested')
+		expect(host.querySelector('mark')).toBeNull()
 	})
 })
 

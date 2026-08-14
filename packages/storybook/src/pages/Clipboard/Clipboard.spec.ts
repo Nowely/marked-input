@@ -1,7 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {page} from 'vitest/browser'
 
-import {textSurfaces} from '../../shared/lib/dom'
+import {childrenOf, textSurfaces} from '../../shared/lib/dom'
 import {composePage, mount} from '../../shared/lib/page'
 import * as ClipboardStories from './Clipboard.stories'
 
@@ -74,8 +74,25 @@ function allTextNodes(el: Element): Text[] {
 	return result
 }
 
+/**
+ * The `text/html` entry parsed back into a detached element. Anything the frameworks render
+ * is asserted THROUGH this and never as a raw string: the entry is framework-rendered
+ * `innerHTML`, so React and Vue are free to differ in attribute order and in attributes no
+ * assertion here names.
+ */
+function parseHtml(html: string): HTMLElement {
+	const holder = document.createElement('div')
+	holder.innerHTML = html
+	return holder
+}
+
+/** The element children of a parsed `text/html` entry, as `[tagName, textContent]` pairs. */
+function shapeOf(fragment: HTMLElement): [string, string][] {
+	return Array.from(fragment.children).map((child): [string, string] => [child.tagName, child.textContent])
+}
+
 describe('Clipboard: copy', () => {
-	it('partial text selection should set markput MIME with trimmed text', async () => {
+	it('set the markput MIME to the trimmed text for a partial text selection', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -87,9 +104,12 @@ describe('Clipboard: copy', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('ll')
 		expect(clipboardData.getData('text/plain')).toBe('ll')
+		// Both ends sit in ONE text node, so the clone carries no element and the entry is
+		// exact in either framework.
+		expect(clipboardData.getData('text/html')).toBe('ll')
 	})
 
-	it('full text token selection should set markput MIME', async () => {
+	it('set the markput MIME for a full text token selection', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -101,11 +121,14 @@ describe('Clipboard: copy', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('hello ')
 		expect(clipboardData.getData('text/plain')).toBe('hello ')
+		// The span is covered by its text node, not by the range, so the surface itself is
+		// still not cloned.
+		expect(clipboardData.getData('text/html')).toBe('hello ')
 	})
 
-	it('partial mark selection should set markput MIME with full mark expanded', async () => {
+	it('expand a partially selected mark to its whole markup', async () => {
 		const {host} = await mount(Inline)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 
 		// Select "orl" from the mark text "world"
 		const textNode = firstTextNode(mark)!
@@ -116,11 +139,14 @@ describe('Clipboard: copy', () => {
 		// Partial mark selection → full mark is always expanded in markup
 		expect(clipboardData.getData('application/x-markput')).toBe('@[world](1)')
 		expect(clipboardData.getData('text/plain')).toBe('orl')
+		// text/html follows the VISUAL selection, so it does NOT expand the mark the way the
+		// markput entry does.
+		expect(clipboardData.getData('text/html')).toBe('orl')
 	})
 
-	it('full mark selection should set markput MIME with complete markup', async () => {
+	it('set the markput MIME to the complete markup for a full mark selection', async () => {
 		const {host} = await mount(Inline)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 
 		// Select the entire mark
 		const textNode = firstTextNode(mark)!
@@ -130,9 +156,12 @@ describe('Clipboard: copy', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('@[world](1)')
 		expect(clipboardData.getData('text/plain')).toBe('world')
+		// The range ends INSIDE the mark's text node, so the `<mark>` element is outside it and
+		// the entry is the bare text — the whole mark reaches the clipboard only via markput.
+		expect(clipboardData.getData('text/html')).toBe('world')
 	})
 
-	it('cross-token partial selection should set markput MIME with trimmed text and full mark', async () => {
+	it('trim the boundary text and keep the mark whole across tokens', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -146,9 +175,21 @@ describe('Clipboard: copy', () => {
 		// Boundary text tokens trimmed, mark always expanded
 		expect(clipboardData.getData('application/x-markput')).toBe('lo @[world](1) fo')
 		expect(clipboardData.getData('text/plain')).toBe('lo world fo')
+
+		// Here the mark element IS inside the range: partial surfaces clone as trimmed spans
+		// around a whole mark.
+		const fragment = parseHtml(clipboardData.getData('text/html'))
+		expect(shapeOf(fragment)).toEqual([
+			['SPAN', 'lo '],
+			['MARK', 'world'],
+			['SPAN', ' fo'],
+		])
+		// Written by core's editable state rather than by either adapter, so it is the one
+		// attribute both frameworks are bound to carry.
+		expect(fragment.querySelector('mark')!.getAttribute('contenteditable')).toBe('false')
 	})
 
-	it('cross-token partial selection paste should reconstruct mark with surrounding text', async () => {
+	it('reconstruct a mark with its surrounding text when pasting a cross-token selection', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -169,12 +210,12 @@ describe('Clipboard: copy', () => {
 
 		pasteAt(host, clipboardData, lastText, lastText.length)
 
-		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
-		expect(host.querySelectorAll('[data-testid="mark"]').length).toBe(2)
+		await expect.element(page.getByRole('mark').nth(1)).toBeInTheDocument()
+		expect(host.querySelectorAll('mark').length).toBe(2)
 		expect(host.textContent).toBe('hello world foolo world f')
 	})
 
-	it('full multi-token selection should set markput MIME', async () => {
+	it('set the markput MIME for a full multi-token selection', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -186,9 +227,14 @@ describe('Clipboard: copy', () => {
 		const clipboardData = dispatchClipboard('copy', host)
 
 		expect(clipboardData.getData('application/x-markput')).toBe('hello @[world](1) foo')
+		expect(shapeOf(parseHtml(clipboardData.getData('text/html')))).toEqual([
+			['SPAN', 'hello '],
+			['MARK', 'world'],
+			['SPAN', ' foo'],
+		])
 	})
 
-	it('selecting text + mark via drag should set markput MIME', async () => {
+	it('set the markput MIME for a text-plus-mark selection made by dragging', async () => {
 		const {host} = await mount(Inline)
 
 		// Simulate a browser drag selection that spans from "hello " through the mark "world".
@@ -207,9 +253,14 @@ describe('Clipboard: copy', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('hello @[world](1)')
 		expect(clipboardData.getData('text/plain')).toBe('hello world')
+		// The mark ends the selection, so nothing trails it in the clone either.
+		expect(shapeOf(parseHtml(clipboardData.getData('text/html')))).toEqual([
+			['SPAN', 'hello '],
+			['MARK', 'world'],
+		])
 	})
 
-	it('copy-paste round-trip: select all, copy, paste into plain text should reconstruct marks', async () => {
+	it('reconstruct marks on a select-all copy pasted into a plain-text editor', async () => {
 		// Step 1: Render source editor with a mark
 		const {host: sourceHost} = await mount(Inline)
 
@@ -226,7 +277,7 @@ describe('Clipboard: copy', () => {
 
 		// Step 2: Render target editor (plain text, no marks)
 		const {host: targetHost} = await mount(PlainText)
-		expect(targetHost.querySelector('[data-testid="mark"]')).toBeNull()
+		expect(targetHost.querySelector('mark')).toBeNull()
 
 		const targetSpan = textSurfaces(targetHost)[0]
 		targetHost.focus()
@@ -242,7 +293,7 @@ describe('Clipboard: copy', () => {
 		pasteClipboard.setData('application/x-markput', markput)
 		pasteAt(targetHost, pasteClipboard, targetTextNode, 0)
 
-		const markAfter = await page.elementLocator(targetHost).getByTestId('mark').findElement()
+		const markAfter = await page.elementLocator(targetHost).getByRole('mark').findElement()
 		expect(markAfter.textContent).toBe('world')
 	})
 })
@@ -254,10 +305,10 @@ describe('Clipboard: paste', () => {
 		window.getSelection()?.removeAllRanges()
 	})
 
-	it('pasting markput data should reconstruct the mark in plain text', async () => {
+	it('reconstruct the mark when markput data is pasted into plain text', async () => {
 		// Start with plain text — no marks at all
 		const {host} = await mount(PlainText)
-		expect(host.querySelector('[data-testid="mark"]')).toBeNull()
+		expect(host.querySelector('mark')).toBeNull()
 
 		const span = textSurfaces(host)[0]
 		host.focus()
@@ -273,14 +324,14 @@ describe('Clipboard: paste', () => {
 		pasteClipboard.setData('application/x-markput', 'hello @[world](1) foo')
 		pasteAt(host, pasteClipboard, textNode, 0)
 
-		const markAfter = await page.elementLocator(host).getByTestId('mark').findElement()
+		const markAfter = await page.elementLocator(host).getByRole('mark').findElement()
 		expect(markAfter.textContent).toBe('world')
 	})
 
-	it('pasting markput data into uncontrolled editor should reconstruct the mark', async () => {
+	it('reconstruct the mark when markput data is pasted into an uncontrolled editor', async () => {
 		// The Inline story is uncontrolled (defaultValue, no onChange) and already has a mark
 		const {host} = await mount(Inline)
-		expect(host.querySelectorAll('[data-testid="mark"]').length).toBe(1)
+		expect(host.querySelectorAll('mark').length).toBe(1)
 
 		// Focus the last span " foo" and place caret at end
 		const spans = textSurfaces(host)
@@ -298,14 +349,14 @@ describe('Clipboard: paste', () => {
 		pasteClipboard.setData('application/x-markput', '@[test](2)')
 		pasteAt(host, pasteClipboard, textNode, textNode.length)
 
-		await expect.element(page.elementLocator(host).getByTestId('mark').first()).toBeInTheDocument()
-		const marksLocator = page.elementLocator(host).getByTestId('mark')
+		await expect.element(page.elementLocator(host).getByRole('mark').first()).toBeInTheDocument()
+		const marksLocator = page.elementLocator(host).getByRole('mark')
 		expect(marksLocator.length).toBe(2)
 		expect(marksLocator.nth(0).element().textContent).toBe('world')
 		expect(marksLocator.nth(1).element().textContent).toBe('test')
 	})
 
-	it('pasting markup over a selection within a span should replace the selection', async () => {
+	it('replace the selection when markup is pasted over a span selection', async () => {
 		const {host} = await mount(PlainText)
 
 		const span = textSurfaces(host)[0]
@@ -321,7 +372,7 @@ describe('Clipboard: paste', () => {
 		pasteClipboard.setData('application/x-markput', '@[world](1)')
 		pasteAt(host, pasteClipboard, textNode, 1, textNode, 2)
 
-		const mark = await page.elementLocator(host).getByTestId('mark').findElement()
+		const mark = await page.elementLocator(host).getByRole('mark').findElement()
 		expect(mark.textContent).toBe('world')
 		expect(host.textContent).toBe('aworldc')
 	})
@@ -346,9 +397,9 @@ describe('Clipboard: paste', () => {
 		expect(host.textContent).toBe('hello world foo')
 	})
 
-	it('caret should land immediately after pasted mark', async () => {
+	it('land the caret immediately after a pasted mark', async () => {
 		const {host} = await mount(Inline)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 		const spans = textSurfaces(host)
 		const lastSpan = spans[spans.length - 1]
 		const lastText = firstTextNode(lastSpan)! // " foo"
@@ -366,22 +417,22 @@ describe('Clipboard: paste', () => {
 
 		pasteAt(host, copied, lastText, 1)
 
-		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
-		expect(host.querySelectorAll('[data-testid="mark"]').length).toBe(2)
+		await expect.element(page.getByRole('mark').nth(1)).toBeInTheDocument()
+		expect(host.querySelectorAll('mark').length).toBe(2)
 		const sel = window.getSelection()!
 		expect(sel.isCollapsed).toBe(true)
 		expect(sel.anchorNode?.textContent).toBe('foo')
 		expect(sel.anchorOffset).toBe(0)
 	})
 
-	it('pasting markput data in drag mode should reconstruct the mark in a block', async () => {
+	it('reconstruct the mark inside a block when markput data is pasted in drag mode', async () => {
 		// Drag story: layout 'block', defaultValue "hello\n@[world](1)\nfoo".
 		// Each line is a separate draggable block; the container is the one editing host.
 		const {host} = await mount(Drag)
-		expect(host.querySelectorAll('[data-testid="mark"]').length).toBe(1)
+		expect(host.querySelectorAll('mark').length).toBe(1)
 
 		// Focus the first block ("hello") and place caret at end
-		const blocks = Array.from(host.querySelectorAll<HTMLElement>('[data-testid="block"]'))
+		const blocks = childrenOf(host)
 		expect(blocks.length).toBeGreaterThan(0)
 		const firstBlock = blocks[0]
 		host.focus()
@@ -397,8 +448,8 @@ describe('Clipboard: paste', () => {
 		pasteClipboard.setData('application/x-markput', '@[test](99)')
 		pasteAt(host, pasteClipboard, firstBlockText, firstBlockText.length)
 
-		await expect.element(page.getByTestId('mark').first()).toBeInTheDocument()
-		const marksLocator = page.getByTestId('mark')
+		await expect.element(page.getByRole('mark').first()).toBeInTheDocument()
+		const marksLocator = page.getByRole('mark')
 		expect(marksLocator.length).toBe(2)
 		expect(marksLocator.nth(0).element().textContent).toBe('test')
 	})
@@ -409,9 +460,9 @@ describe('Clipboard: nested marks', () => {
 		window.getSelection()?.removeAllRanges()
 	})
 
-	it('partial selection within nested mark children should copy correct text', async () => {
+	it('copy the covered text for a partial selection inside nested mark children', async () => {
 		const {host} = await mount(NestedMarkStory)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 
 		// NestedMark renders: <mark><strong>wor</strong><em>ld</em></mark>
 		// Two text nodes: "wor" and "ld"
@@ -429,11 +480,17 @@ describe('Clipboard: nested marks', () => {
 		expect(clipboardData.getData('application/x-markput')).toBe('@[world](1)')
 		// Plain text is the visual selection: "wor"[2:] + "ld"[:1] = "rl"
 		expect(clipboardData.getData('text/plain')).toBe('rl')
+		// The mark's own children are inside the range, so the entry keeps the fixture's markup
+		// — the proof text/html is cloned DOM and not a re-render of the markup entry.
+		expect(shapeOf(parseHtml(clipboardData.getData('text/html')))).toEqual([
+			['STRONG', 'r'],
+			['EM', 'l'],
+		])
 	})
 
-	it('paste into nested mark should use cumulative offsets', async () => {
+	it('use cumulative offsets when pasting into a nested mark', async () => {
 		const {host} = await mount(NestedMarkStory)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 
 		// Copy the full mark first
 		const markTextNodes = allTextNodes(mark)
@@ -452,8 +509,8 @@ describe('Clipboard: nested marks', () => {
 
 		pasteAt(host, copied, lastText, 1)
 
-		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
-		expect(host.querySelectorAll('[data-testid="mark"]').length).toBe(2)
+		await expect.element(page.getByRole('mark').nth(1)).toBeInTheDocument()
+		expect(host.querySelectorAll('mark').length).toBe(2)
 		expect(host.textContent).toBe('hello world worldfoo')
 	})
 })
@@ -481,7 +538,7 @@ describe('Clipboard: cut', () => {
 		expect(host.textContent).toBe(before)
 	})
 
-	it('cut partial text should write to clipboard and remove selection', async () => {
+	it('write the clipboard and remove the selection when cutting partial text', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -494,7 +551,7 @@ describe('Clipboard: cut', () => {
 		expect(clipboardData.getData('application/x-markput')).toBe('ll')
 		expect(clipboardData.getData('text/plain')).toBe('ll')
 
-		await expect.element(page.getByTestId('mark')).toBeInTheDocument()
+		await expect.element(page.getByRole('mark')).toBeInTheDocument()
 		expect(host.textContent).toBe('heo world foo')
 	})
 
@@ -514,7 +571,7 @@ describe('Clipboard: cut', () => {
 		expect(host.textContent).toBe('hello world foo')
 	})
 
-	it('cut across tokens should write trimmed markup and remove selection', async () => {
+	it('write trimmed markup and remove the selection when cutting across tokens', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -530,9 +587,9 @@ describe('Clipboard: cut', () => {
 		await expect.element(page.getByText('helo')).toBeInTheDocument()
 	})
 
-	it('cut full mark should remove the mark', async () => {
+	it('remove the mark when cutting it whole', async () => {
 		const {host} = await mount(Inline)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 
 		// Select the entire mark
 		const textNode = firstTextNode(mark)!
@@ -542,11 +599,11 @@ describe('Clipboard: cut', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('@[world](1)')
 
-		await expect.element(page.getByTestId('mark')).not.toBeInTheDocument()
+		await expect.element(page.getByRole('mark')).not.toBeInTheDocument()
 		expect(host.textContent).toBe('hello  foo')
 	})
 
-	it('cut all content should clear the editor', async () => {
+	it('clear the editor when cutting all content', async () => {
 		const {host} = await mount(Inline)
 		const spans = textSurfaces(host)
 
@@ -559,6 +616,6 @@ describe('Clipboard: cut', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('hello @[world](1) foo')
 
-		await expect.element(page.getByTestId('mark')).not.toBeInTheDocument()
+		await expect.element(page.getByRole('mark')).not.toBeInTheDocument()
 	})
 })

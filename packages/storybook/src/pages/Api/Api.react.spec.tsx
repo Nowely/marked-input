@@ -3,51 +3,51 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
-import {textSurfaces} from '../../shared/lib/dom'
+import {childrenOf, findEditingHost, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd} from '../../shared/lib/focus'
 import * as Stories from './Api.stories'
 
 const {Default, Block} = composeStories(Stories)
 
-const read = () => page.getByTestId('value').element().textContent
+const read = () => page.getByLabelText('value').element().textContent
 
 describe('US-5: the editor API drives every scenario through node anchors', () => {
 	it('edits a mark meta in place', async () => {
 		await render(<Default />)
-		await userEvent.click(page.getByTestId('edit-meta'))
+		await userEvent.click(page.getByRole('button', {name: 'edit meta'}))
 		expect(read()).toBe('hello @[world](edited) foo')
 	})
 
 	it('clears a mark meta with a null patch', async () => {
 		// `null` is the clear (plan decision D-b): an omitted key would leave 'u1' alone.
 		await render(<Default />)
-		await userEvent.click(page.getByTestId('clear-meta'))
+		await userEvent.click(page.getByRole('button', {name: 'clear meta'}))
 		expect(read()).toBe('hello @[world]() foo')
 	})
 
 	it('removes a mark', async () => {
 		await render(<Default />)
-		await userEvent.click(page.getByTestId('remove-mark'))
+		await userEvent.click(page.getByRole('button', {name: 'remove mark'}))
 		expect(read()).toBe('hello  foo')
 	})
 
 	it('replaces a span inside one text node', async () => {
 		await render(<Default />)
-		await userEvent.click(page.getByTestId('replace-span'))
+		await userEvent.click(page.getByRole('button', {name: 'replace span'}))
 		expect(read()).toBe('Howdy @[world](u1) foo')
 	})
 
 	it('replaces a range that spans a mark', async () => {
 		await render(<Default />)
-		await userEvent.click(page.getByTestId('replace-across'))
+		await userEvent.click(page.getByRole('button', {name: 'replace across'}))
 		expect(read()).toBe('hello nobody foo')
 	})
 
 	it("sets the whole value and clears it with setValue('')", async () => {
 		await render(<Default />)
-		await userEvent.click(page.getByTestId('set-value'))
+		await userEvent.click(page.getByRole('button', {name: 'set value'}))
 		expect(read()).toBe('reset @[all](u9)')
-		await userEvent.click(page.getByTestId('clear-value'))
+		await userEvent.click(page.getByRole('button', {name: 'clear value'}))
 		expect(read()).toBe('')
 	})
 
@@ -55,16 +55,16 @@ describe('US-5: the editor API drives every scenario through node anchors', () =
 		await render(<Default />)
 		// The FIRST text token, not the host: `[contenteditable]` answers the container now,
 		// and its end is the end of the document, which is a different insertion point.
-		const [head] = textSurfaces(document.querySelector<HTMLElement>('[contenteditable="true"]')!)
+		const [head] = textSurfaces(findEditingHost(document.body))
 		await focusAtEnd(head)
-		await userEvent.click(page.getByTestId('insert-at-caret'))
+		await userEvent.click(page.getByRole('button', {name: 'insert at caret'}))
 		expect(read()).toBe('hello @[carol](u3)@[world](u1) foo')
 	})
 
 	it('inserts a mark between block rows', async () => {
 		await render(<Block />)
-		expect(page.getByTestId('block').elements()).toHaveLength(2)
-		await userEvent.click(page.getByTestId('insert-between-rows'))
+		expect(childrenOf(findEditingHost(document.body))).toHaveLength(2)
+		await userEvent.click(page.getByRole('button', {name: 'insert between rows'}))
 		// BETWEEN the two rows, not appended: `{after: rows[0]}` is the only addressing form
 		// for a between-row position, because block mode filters the empty text tokens that
 		// would otherwise sit there (spec §2.3's NodeAnchor paragraph).

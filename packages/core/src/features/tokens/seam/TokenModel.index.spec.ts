@@ -19,11 +19,6 @@ function mountInline(value: string) {
 }
 
 describe('TokenModel lookups', () => {
-	it('exposes the changed event', () => {
-		const store = new Store()
-		expect(typeof store.tokens.changed).toBe('function')
-	})
-
 	it('fires changed after rendered()', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hi'})

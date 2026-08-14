@@ -1,20 +1,19 @@
 import {MarkedInput} from '@markput/vue'
 import {computed, defineComponent, ref} from 'vue'
 
+import {defineMark} from '../../shared/lib/marks'
+
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
  * `satisfies` — `Clipboard.stories.ts` is the contract, and it fails to compile under either
  * project if this file drifts.
  *
- * Components are written with `template:` rather than `h()`, matching their React counterparts.
- * `meta` is declared even though nothing reads it: an undeclared prop falls through onto the
- * mark root as an attribute, which no React fixture does.
+ * Hand-written components are written with `template:` rather than `h()`, matching their React
+ * counterparts. `meta` is declared even though nothing reads it: an undeclared prop falls
+ * through onto the mark root as an attribute, which no React fixture does.
  */
 
-const Mark = defineComponent({
-	props: {value: String, meta: String},
-	template: '<mark data-testid="mark">{{ value }}</mark>',
-})
+const Mark = defineMark({tag: 'mark', content: 'value'})
 
 /** Nested HTML inside the mark element, so one mark holds MORE than one text node. */
 const NestedMark = defineComponent({
@@ -26,7 +25,7 @@ const NestedMark = defineComponent({
 			tail: computed(() => props.value.slice(mid.value)),
 		}
 	},
-	template: '<mark data-testid="mark"><strong>{{ head }}</strong><em>{{ tail }}</em></mark>',
+	template: '<mark><strong>{{ head }}</strong><em>{{ tail }}</em></mark>',
 })
 
 /** The `PlainText` story's harness: a controlled editor whose value starts markless. */

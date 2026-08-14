@@ -48,16 +48,8 @@ export const WithSlotProps = story({
 })
 
 /**
- * Edge case: style merging when the top-level `style` prop and `slotProps.container.style`
- * both contribute. Core merges them onto the one container, `slotProps` last.
- *
- * NOT through `slots.container`, which is what React demonstrated before: a COMPONENT in
- * `slots.container` renders an empty editor under the Vue adapter, so a shared story cannot use
- * one. `CustomComponents` keeps that demo, React-only — reproducer in `Slots.stories.react.tsx`.
- */
-/**
- * Using slots to completely replace the container component.
- * This is useful when you need full control over the component structure.
+ * `slots.container` replacing the container component outright, for when a consumer needs full
+ * control over the structure the editor mounts into.
  */
 export const CustomComponents = story({
 	args: {
@@ -67,6 +59,10 @@ export const CustomComponents = story({
 	},
 })
 
+/**
+ * Edge case: style merging when the top-level `style` prop and `slotProps.container.style` both
+ * contribute. Core merges them onto the one container, `slotProps` last.
+ */
 export const StyleMerging = story({
 	args: {
 		Mark: fixtures.SimpleMark,
