@@ -35,13 +35,9 @@ export const marks = {
 		props: {value: String},
 		template: '<mark>{{ value }}</mark>',
 	}),
-	Testid: defineComponent({
-		props: {value: String},
-		template: '<mark data-testid="mark">{{ value }}</mark>',
-	}),
 	Children: defineComponent({
 		props: {children: {type: null}},
-		template: '<mark data-testid="mark"><slot>{{ children }}</slot></mark>',
+		template: '<mark><slot>{{ children }}</slot></mark>',
 	}),
 	Todo: defineComponent({
 		template: '<span><input type="checkbox" aria-label="done" /><slot /></span>',

@@ -8,13 +8,13 @@ import {useState} from 'react'
  * project if this file drifts.
  */
 
-const Mark = ({value}: MarkProps) => <mark data-testid="mark">{value}</mark>
+const Mark = ({value}: MarkProps) => <mark>{value}</mark>
 
 /** Nested HTML inside the mark element, so one mark holds MORE than one text node. */
 const NestedMark = ({value = ''}: MarkProps) => {
 	const mid = Math.ceil(value.length / 2)
 	return (
-		<mark data-testid="mark">
+		<mark>
 			<strong>{value.slice(0, mid)}</strong>
 			<em>{value.slice(mid)}</em>
 		</mark>

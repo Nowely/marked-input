@@ -58,7 +58,7 @@ exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
         <span></span>
       </button>
     </div>
-    <mark data-testid="mark" contenteditable="false">world</mark>
+    <mark contenteditable="false">world</mark>
   </div>
   <div data-testid="block">
     <div contenteditable="false">
@@ -74,7 +74,7 @@ exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
 exports[`Component: stories > Clipboard stories > Story Inline 1`] = `
 "<div contenteditable="true">
   <span>hello </span>
-  <mark data-testid="mark" contenteditable="false">world</mark>
+  <mark contenteditable="false">world</mark>
   <span> foo</span>
 </div>"
 `;
@@ -82,7 +82,7 @@ exports[`Component: stories > Clipboard stories > Story Inline 1`] = `
 exports[`Component: stories > Clipboard stories > Story NestedMarkStory 1`] = `
 "<div contenteditable="true">
   <span>hello </span>
-  <mark data-testid="mark" contenteditable="false">
+  <mark contenteditable="false">
     <strong>wor</strong>
     <em>ld</em>
   </mark>

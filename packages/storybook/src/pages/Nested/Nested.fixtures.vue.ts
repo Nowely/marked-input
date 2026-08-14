@@ -263,8 +263,8 @@ export const marks = {
 		template: '<span><slot v-if="info.hasNestedMarks" /><template v-else>{{ mark.slot() }}</template></span>',
 	}),
 	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
-	Testid: defineComponent({
+	MarkRoot: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
-		template: '<mark data-testid="mark"><slot>{{ value }}</slot></mark>',
+		template: '<mark><slot>{{ value }}</slot></mark>',
 	}),
 }

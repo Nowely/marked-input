@@ -13,7 +13,7 @@ import {computed, defineComponent, ref} from 'vue'
 
 const Mark = defineComponent({
 	props: {value: String, meta: String},
-	template: '<mark data-testid="mark">{{ value }}</mark>',
+	template: '<mark>{{ value }}</mark>',
 })
 
 /** Nested HTML inside the mark element, so one mark holds MORE than one text node. */
@@ -26,7 +26,7 @@ const NestedMark = defineComponent({
 			tail: computed(() => props.value.slice(mid.value)),
 		}
 	},
-	template: '<mark data-testid="mark"><strong>{{ head }}</strong><em>{{ tail }}</em></mark>',
+	template: '<mark><strong>{{ head }}</strong><em>{{ tail }}</em></mark>',
 })
 
 /** The `PlainText` story's harness: a controlled editor whose value starts markless. */

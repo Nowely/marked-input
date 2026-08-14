@@ -102,12 +102,12 @@ describe('Nested Marks Rendering', () => {
 
 	it('renders nested token roots without slot-root wrappers', async () => {
 		const {host} = await mountComponent({
-			Mark: marks.Testid,
+			Mark: marks.MarkRoot,
 			defaultValue: '@[before @[nested] after]',
 			options: [{markup: SLOT_MARKUP}],
 		})
-		const outer = host.querySelector<HTMLElement>('mark[data-testid="mark"]')!
-		const inner = host.querySelectorAll<HTMLElement>('mark[data-testid="mark"]')[1]
+		const outer = host.querySelector('mark')!
+		const inner = host.querySelectorAll('mark')[1]
 		const childSequenceHost = outer.firstElementChild
 		if (!(childSequenceHost instanceof HTMLElement)) throw new Error('Expected child sequence host')
 

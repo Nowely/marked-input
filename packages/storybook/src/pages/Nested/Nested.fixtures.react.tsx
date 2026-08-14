@@ -207,5 +207,5 @@ export const marks = {
 		return <span>{info.hasNestedMarks ? children : mark.slot()}</span>
 	},
 	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
-	Testid: ({children, value}: MarkProps) => <mark data-testid="mark">{children ?? value}</mark>,
+	MarkRoot: ({children, value}: MarkProps) => <mark>{children ?? value}</mark>,
 }

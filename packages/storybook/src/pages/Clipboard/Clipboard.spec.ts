@@ -128,7 +128,7 @@ describe('Clipboard: copy', () => {
 
 	it('partial mark selection should set markput MIME with full mark expanded', async () => {
 		const {host} = await mount(Inline)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 
 		// Select "orl" from the mark text "world"
 		const textNode = firstTextNode(mark)!
@@ -146,7 +146,7 @@ describe('Clipboard: copy', () => {
 
 	it('full mark selection should set markput MIME with complete markup', async () => {
 		const {host} = await mount(Inline)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 
 		// Select the entire mark
 		const textNode = firstTextNode(mark)!
@@ -210,8 +210,8 @@ describe('Clipboard: copy', () => {
 
 		pasteAt(host, clipboardData, lastText, lastText.length)
 
-		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
-		expect(host.querySelectorAll('[data-testid="mark"]').length).toBe(2)
+		await expect.element(page.getByRole('mark').nth(1)).toBeInTheDocument()
+		expect(host.querySelectorAll('mark').length).toBe(2)
 		expect(host.textContent).toBe('hello world foolo world f')
 	})
 
@@ -277,7 +277,7 @@ describe('Clipboard: copy', () => {
 
 		// Step 2: Render target editor (plain text, no marks)
 		const {host: targetHost} = await mount(PlainText)
-		expect(targetHost.querySelector('[data-testid="mark"]')).toBeNull()
+		expect(targetHost.querySelector('mark')).toBeNull()
 
 		const targetSpan = textSurfaces(targetHost)[0]
 		targetHost.focus()
@@ -293,7 +293,7 @@ describe('Clipboard: copy', () => {
 		pasteClipboard.setData('application/x-markput', markput)
 		pasteAt(targetHost, pasteClipboard, targetTextNode, 0)
 
-		const markAfter = await page.elementLocator(targetHost).getByTestId('mark').findElement()
+		const markAfter = await page.elementLocator(targetHost).getByRole('mark').findElement()
 		expect(markAfter.textContent).toBe('world')
 	})
 })
@@ -308,7 +308,7 @@ describe('Clipboard: paste', () => {
 	it('pasting markput data should reconstruct the mark in plain text', async () => {
 		// Start with plain text — no marks at all
 		const {host} = await mount(PlainText)
-		expect(host.querySelector('[data-testid="mark"]')).toBeNull()
+		expect(host.querySelector('mark')).toBeNull()
 
 		const span = textSurfaces(host)[0]
 		host.focus()
@@ -324,14 +324,14 @@ describe('Clipboard: paste', () => {
 		pasteClipboard.setData('application/x-markput', 'hello @[world](1) foo')
 		pasteAt(host, pasteClipboard, textNode, 0)
 
-		const markAfter = await page.elementLocator(host).getByTestId('mark').findElement()
+		const markAfter = await page.elementLocator(host).getByRole('mark').findElement()
 		expect(markAfter.textContent).toBe('world')
 	})
 
 	it('pasting markput data into uncontrolled editor should reconstruct the mark', async () => {
 		// The Inline story is uncontrolled (defaultValue, no onChange) and already has a mark
 		const {host} = await mount(Inline)
-		expect(host.querySelectorAll('[data-testid="mark"]').length).toBe(1)
+		expect(host.querySelectorAll('mark').length).toBe(1)
 
 		// Focus the last span " foo" and place caret at end
 		const spans = textSurfaces(host)
@@ -349,8 +349,8 @@ describe('Clipboard: paste', () => {
 		pasteClipboard.setData('application/x-markput', '@[test](2)')
 		pasteAt(host, pasteClipboard, textNode, textNode.length)
 
-		await expect.element(page.elementLocator(host).getByTestId('mark').first()).toBeInTheDocument()
-		const marksLocator = page.elementLocator(host).getByTestId('mark')
+		await expect.element(page.elementLocator(host).getByRole('mark').first()).toBeInTheDocument()
+		const marksLocator = page.elementLocator(host).getByRole('mark')
 		expect(marksLocator.length).toBe(2)
 		expect(marksLocator.nth(0).element().textContent).toBe('world')
 		expect(marksLocator.nth(1).element().textContent).toBe('test')
@@ -372,7 +372,7 @@ describe('Clipboard: paste', () => {
 		pasteClipboard.setData('application/x-markput', '@[world](1)')
 		pasteAt(host, pasteClipboard, textNode, 1, textNode, 2)
 
-		const mark = await page.elementLocator(host).getByTestId('mark').findElement()
+		const mark = await page.elementLocator(host).getByRole('mark').findElement()
 		expect(mark.textContent).toBe('world')
 		expect(host.textContent).toBe('aworldc')
 	})
@@ -399,7 +399,7 @@ describe('Clipboard: paste', () => {
 
 	it('caret should land immediately after pasted mark', async () => {
 		const {host} = await mount(Inline)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 		const spans = textSurfaces(host)
 		const lastSpan = spans[spans.length - 1]
 		const lastText = firstTextNode(lastSpan)! // " foo"
@@ -417,8 +417,8 @@ describe('Clipboard: paste', () => {
 
 		pasteAt(host, copied, lastText, 1)
 
-		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
-		expect(host.querySelectorAll('[data-testid="mark"]').length).toBe(2)
+		await expect.element(page.getByRole('mark').nth(1)).toBeInTheDocument()
+		expect(host.querySelectorAll('mark').length).toBe(2)
 		const sel = window.getSelection()!
 		expect(sel.isCollapsed).toBe(true)
 		expect(sel.anchorNode?.textContent).toBe('foo')
@@ -429,7 +429,7 @@ describe('Clipboard: paste', () => {
 		// Drag story: layout 'block', defaultValue "hello\n@[world](1)\nfoo".
 		// Each line is a separate draggable block; the container is the one editing host.
 		const {host} = await mount(Drag)
-		expect(host.querySelectorAll('[data-testid="mark"]').length).toBe(1)
+		expect(host.querySelectorAll('mark').length).toBe(1)
 
 		// Focus the first block ("hello") and place caret at end
 		const blocks = Array.from(host.querySelectorAll<HTMLElement>('[data-testid="block"]'))
@@ -448,8 +448,8 @@ describe('Clipboard: paste', () => {
 		pasteClipboard.setData('application/x-markput', '@[test](99)')
 		pasteAt(host, pasteClipboard, firstBlockText, firstBlockText.length)
 
-		await expect.element(page.getByTestId('mark').first()).toBeInTheDocument()
-		const marksLocator = page.getByTestId('mark')
+		await expect.element(page.getByRole('mark').first()).toBeInTheDocument()
+		const marksLocator = page.getByRole('mark')
 		expect(marksLocator.length).toBe(2)
 		expect(marksLocator.nth(0).element().textContent).toBe('test')
 	})
@@ -462,7 +462,7 @@ describe('Clipboard: nested marks', () => {
 
 	it('partial selection within nested mark children should copy correct text', async () => {
 		const {host} = await mount(NestedMarkStory)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 
 		// NestedMark renders: <mark><strong>wor</strong><em>ld</em></mark>
 		// Two text nodes: "wor" and "ld"
@@ -490,7 +490,7 @@ describe('Clipboard: nested marks', () => {
 
 	it('paste into nested mark should use cumulative offsets', async () => {
 		const {host} = await mount(NestedMarkStory)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 
 		// Copy the full mark first
 		const markTextNodes = allTextNodes(mark)
@@ -509,8 +509,8 @@ describe('Clipboard: nested marks', () => {
 
 		pasteAt(host, copied, lastText, 1)
 
-		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
-		expect(host.querySelectorAll('[data-testid="mark"]').length).toBe(2)
+		await expect.element(page.getByRole('mark').nth(1)).toBeInTheDocument()
+		expect(host.querySelectorAll('mark').length).toBe(2)
 		expect(host.textContent).toBe('hello world worldfoo')
 	})
 })
@@ -551,7 +551,7 @@ describe('Clipboard: cut', () => {
 		expect(clipboardData.getData('application/x-markput')).toBe('ll')
 		expect(clipboardData.getData('text/plain')).toBe('ll')
 
-		await expect.element(page.getByTestId('mark')).toBeInTheDocument()
+		await expect.element(page.getByRole('mark')).toBeInTheDocument()
 		expect(host.textContent).toBe('heo world foo')
 	})
 
@@ -589,7 +589,7 @@ describe('Clipboard: cut', () => {
 
 	it('cut full mark should remove the mark', async () => {
 		const {host} = await mount(Inline)
-		const mark = host.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const mark = host.querySelector('mark')!
 
 		// Select the entire mark
 		const textNode = firstTextNode(mark)!
@@ -599,7 +599,7 @@ describe('Clipboard: cut', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('@[world](1)')
 
-		await expect.element(page.getByTestId('mark')).not.toBeInTheDocument()
+		await expect.element(page.getByRole('mark')).not.toBeInTheDocument()
 		expect(host.textContent).toBe('hello  foo')
 	})
 
@@ -616,6 +616,6 @@ describe('Clipboard: cut', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('hello @[world](1) foo')
 
-		await expect.element(page.getByTestId('mark')).not.toBeInTheDocument()
+		await expect.element(page.getByRole('mark')).not.toBeInTheDocument()
 	})
 })
