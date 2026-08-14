@@ -4,11 +4,6 @@ import {signal, watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 describe('Host', () => {
-	it('exposes the rendered event', () => {
-		const store = new Store()
-		expect(typeof store.host.rendered).toBe('function')
-	})
-
 	it('exposes a container signal initialised to null', () => {
 		const store = new Store()
 		expect(store.host.container()).toBeNull()

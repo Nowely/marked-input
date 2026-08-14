@@ -4,12 +4,6 @@ import {Store} from '../../store/Store'
 import {anchorsAt, caretAt, selectionRange} from '../tokens/__testing__/mountFixtures'
 
 describe('EditController', () => {
-	it('exposes replace on the store', () => {
-		const store = new Store()
-
-		expect(typeof store.edit.replace).toBe('function')
-	})
-
 	it('replaces value and places caret after replacement', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello world'})

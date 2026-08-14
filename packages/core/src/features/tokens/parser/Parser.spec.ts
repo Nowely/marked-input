@@ -664,15 +664,12 @@ describe('Parser', () => {
 				`)
 			})
 
-			it('handle incomplete markup gracefully', () => {
-				const inputs = ['@[incomplete', '#[', '**[']
-
-				inputs.forEach(input => {
-					const result = parser.parse(input)
-					// Basic validation that result exists
-					expect(result).toBeDefined()
-					expect(Array.isArray(result)).toBe(true)
-				})
+			it('leaves incomplete markup as text', () => {
+				expect(tokensToDebugTree(parser.parse('@[incomplete'))).toMatchInlineSnapshot(
+					`"0: TEXT "@[incomplete" [0-12]"`
+				)
+				expect(tokensToDebugTree(parser.parse('#['))).toMatchInlineSnapshot(`"0: TEXT "#[" [0-2]"`)
+				expect(tokensToDebugTree(parser.parse('**['))).toMatchInlineSnapshot(`"0: TEXT "**[" [0-3]"`)
 			})
 
 			describe('generated markup patterns', () => {

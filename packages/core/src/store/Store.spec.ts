@@ -27,13 +27,6 @@ describe('Store', () => {
 	// `MarkputApi`'s own verb matrix lives in `MarkputApi.spec.ts`; what stays here is the
 	// wiring claim — the store hands out one live host object.
 	describe('api', () => {
-		it('return an object with container and focus properties', () => {
-			const store = new Store()
-			const api = store.api
-			expect('container' in api).toBe(true)
-			expect('focus' in api).toBe(true)
-		})
-
 		it('reflect dom container via api.container', () => {
 			const store = new Store()
 			const api = store.api
@@ -41,12 +34,6 @@ describe('Store', () => {
 			const el = document.createElement('div')
 			store.host.container(el)
 			expect(api.container).toBe(el)
-		})
-
-		it('expose focus as a callable function', () => {
-			const store = new Store()
-			const api = store.api
-			expect(typeof api.focus).toBe('function')
 		})
 	})
 
