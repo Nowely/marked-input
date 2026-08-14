@@ -1,6 +1,6 @@
 # TokenModel — core architecture
 
-**Historical record.** Generated from the working tree at commit `7f374f33`; every claim was traceable to `packages/core/src/features/tokens/` at that point. Parts have since been superseded — the one-host migration (`0002`) closed cost centre 2, and S2 addressing (`0001`) closed the offset half of cost centre 1. Read it for how the value owner is put together, not as a current-state report. The original rendered document is at `git show f384c5e6:docs/adr/0003-tokenmodel-architecture.html`.
+**Historical record.** Generated from the working tree at commit `7f374f33`; every claim was traceable to `packages/core/src/features/tokens/` at that point. Parts have since been superseded — the one-host migration closed cost centre 2, and S2 addressing closed the offset half of cost centre 1. Read it for how the value owner is put together, not as a current-state report. The original rendered document is at `git show f384c5e6:docs/adr/0003-tokenmodel-architecture.html`.
 
 TokenModel is the value owner of markput's core: it holds the token tree, the string boundary that decides commit policy, the transaction verbs that write it, the selection, and the one commit pipeline that puts the result in the DOM. 593 lines, 30 public members, 8 collaborators, 4 write verbs.
 
@@ -469,7 +469,7 @@ Downstream: `blockEdit` keys five call sites off `document.activeElement`; `DomM
 
 _Source: dom/editableState.ts · dom/DomModel.ts · keyboard/blockEdit.ts_
 
-This one was taken: see `0002-one-host-migration.md`.
+This one was taken: see `one-host-migration.md` and `docs/adr/0002-one-contenteditable-host.md`.
 
 ### 3 · The published bundle is not the built bundle
 

@@ -73,7 +73,7 @@ The parser guarantees an empty `TextToken('')` between two adjacent marks, rende
 - **Arrow-reachable:** one caret stop, container-anchored between the two marks. `anchorFor` resolves it.
 - **Not mouse-reachable:** on the live DOM that span computes to **0.0px wide**, so there is no pixel to click — clicks
   at the gap midpoint land on a neighbouring mark instead. (The design doc's "5/5 clicks land on the gap span" came from
-  a static fixture and does not transfer; see the addendum in `docs/adr/0002-one-host-migration.md`.)
+  a static fixture and does not transfer; see the addendum in `docs/records/one-host-migration.md`.)
 
 A ZWSP or min-width filler remains **rejected**: a filler is real text in the DOM, so it contaminates `range.toString()`
 on every copy, and it costs a second arrow stop at every gap. Reach the gap with an arrow key.
