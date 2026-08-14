@@ -2,8 +2,8 @@ import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {caretIsInside, childrenOf, firstChild, getElement} from '../../shared/lib/dom'
-import {dispatchInsertText, dispatchPaste} from '../../shared/lib/dragTestHelpers'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
+import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
 import {composePage, mount, mountComponent, mountEcho} from '../../shared/lib/page'
 import {marks} from './Drag.fixtures'
 import * as DragStories from './Drag.stories'
@@ -35,8 +35,7 @@ const GRIP = {name: 'Drag to reorder or click for options'} as const
 
 /**
  * The rows of a block layout. Under the single-host topology the editing host IS the row
- * container, so a row is one of its element children — `shared/lib/dragTestHelpers` still
- * takes the render root and walks down to that same element.
+ * container, so a row is one of its element children.
  */
 const rowsOf = (host: HTMLElement) => childrenOf(host)
 
