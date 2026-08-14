@@ -35,7 +35,6 @@ export const Block = memo(({node, blockIndex}: BlockProps) => {
 	return (
 		<Component
 			ref={setBlockRef}
-			data-testid="block"
 			{...slotProps}
 			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.className is raw and needs casting to string
 			className={cx(styles.Block, slotProps?.className as string | undefined)}

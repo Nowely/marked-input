@@ -19,7 +19,7 @@ exports[`Component: stories > Ant stories > Story Tagged 1`] = `
 exports[`Component: stories > Api stories > Story Block 1`] = `
 "<div>
   <div contenteditable="true">
-    <div data-testid="block">
+    <div>
       <div contenteditable="false">
         <button type="button" draggable="false" aria-label="Block options">
           <span></span>
@@ -27,7 +27,7 @@ exports[`Component: stories > Api stories > Story Block 1`] = `
       </div>
       <mark contenteditable="false">a</mark>
     </div>
-    <div data-testid="block">
+    <div>
       <div contenteditable="false">
         <button type="button" draggable="false" aria-label="Block options">
           <span></span>

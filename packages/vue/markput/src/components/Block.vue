@@ -43,7 +43,6 @@ const setBlockRef = (el: unknown) => {
 	<component
 		:is="blockComponent"
 		:ref="setBlockRef"
-		data-testid="block"
 		v-bind="otherSlotProps"
 		:class="[styles.Block, slotProps?.className as string | undefined]"
 		:style="blockStyle"

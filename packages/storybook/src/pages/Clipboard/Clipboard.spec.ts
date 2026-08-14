@@ -1,7 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {page} from 'vitest/browser'
 
-import {textSurfaces} from '../../shared/lib/dom'
+import {childrenOf, textSurfaces} from '../../shared/lib/dom'
 import {composePage, mount} from '../../shared/lib/page'
 import * as ClipboardStories from './Clipboard.stories'
 
@@ -432,7 +432,7 @@ describe('Clipboard: paste', () => {
 		expect(host.querySelectorAll('mark').length).toBe(1)
 
 		// Focus the first block ("hello") and place caret at end
-		const blocks = Array.from(host.querySelectorAll<HTMLElement>('[data-testid="block"]'))
+		const blocks = childrenOf(host)
 		expect(blocks.length).toBeGreaterThan(0)
 		const firstBlock = blocks[0]
 		host.focus()

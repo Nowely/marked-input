@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
-import {findEditingHost, textSurfaces} from '../../shared/lib/dom'
+import {childrenOf, findEditingHost, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd} from '../../shared/lib/focus'
 import * as Stories from './Api.stories'
 
@@ -63,7 +63,7 @@ describe('US-5: the editor API drives every scenario through node anchors', () =
 
 	it('inserts a mark between block rows', async () => {
 		await render(<Block />)
-		expect(page.getByTestId('block').elements()).toHaveLength(2)
+		expect(childrenOf(findEditingHost(document.body))).toHaveLength(2)
 		await userEvent.click(page.getByRole('button', {name: 'insert between rows'}))
 		// BETWEEN the two rows, not appended: `{after: rows[0]}` is the only addressing form
 		// for a between-row position, because block mode filters the empty text tokens that

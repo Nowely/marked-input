@@ -39,9 +39,6 @@ const GRIP = {name: 'Drag to reorder or click for options'} as const
  */
 const rowsOf = (host: HTMLElement) => childrenOf(host)
 
-/** The block rows specifically, for the assertions that must not count a non-block child. */
-const blocksOf = (host: HTMLElement) => Array.from(host.querySelectorAll<HTMLElement>('[data-testid="block"]'))
-
 /** Hovers a row, then clicks its grip — the only way the block menu opens. */
 async function openMenuForRow(host: HTMLElement, rowIndex: number) {
 	const row = rowsOf(host)[rowIndex]
@@ -631,19 +628,19 @@ describe('Feature: drag row keyboard navigation', () => {
 		describe('Backspace at start of text row after a mark row (navigate-only in drag mode)', () => {
 			it('NOT reduce row count when Backspace at start of text row after mark row', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const before = blocksOf(host).length
+				const before = rowsOf(host).length
 
-				await focusAtStart(blocksOf(host)[1])
+				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Backspace}')
 
-				expect(blocksOf(host)).toHaveLength(before)
+				expect(rowsOf(host)).toHaveLength(before)
 			})
 
 			it('move focus to the mark row on Backspace at mark boundary', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const markBlock = blocksOf(host)[0]
+				const markBlock = rowsOf(host)[0]
 
-				await focusAtStart(blocksOf(host)[1])
+				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Backspace}')
 
 				expect(caretIsInside(markBlock)).toBe(true)
@@ -747,19 +744,19 @@ describe('Feature: drag row keyboard navigation', () => {
 		describe('Delete at mark→text boundary (navigate-only in drag mode)', () => {
 			it('NOT reduce row count when Delete at start of text row after mark row', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const before = blocksOf(host).length
+				const before = rowsOf(host).length
 
-				await focusAtStart(blocksOf(host)[1])
+				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Delete}')
 
-				expect(blocksOf(host)).toHaveLength(before)
+				expect(rowsOf(host)).toHaveLength(before)
 			})
 
 			it('move focus to mark row on Delete at mark boundary', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const markBlock = blocksOf(host)[0]
+				const markBlock = rowsOf(host)[0]
 
-				await focusAtStart(blocksOf(host)[1])
+				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Delete}')
 
 				expect(caretIsInside(markBlock)).toBe(true)
@@ -818,7 +815,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		 */
 		it('append character after last mark when typing at end of mark row', async () => {
 			const {host, value} = await echoMarkdown()
-			await focusAtEnd(blocksOf(host)[0])
+			await focusAtEnd(rowsOf(host)[0])
 			await userEvent.keyboard('!')
 
 			await expect.element(page.getByText('Welcome to Draggable Blocks!').first()).toBeInTheDocument()
@@ -863,7 +860,7 @@ describe('Feature: drag row keyboard navigation', () => {
 
 		it('update raw value when pasting text at end of a mark row', async () => {
 			const {host, value} = await echoMarkdown()
-			const row = blocksOf(host)[0]
+			const row = rowsOf(host)[0]
 			await focusAtEnd(row)
 			dispatchPaste(row, '!')
 
@@ -911,7 +908,7 @@ describe('Feature: drag row keyboard navigation', () => {
 
 		it('insert new empty row after mark row when pressing Enter on mark', async () => {
 			const {host, value} = await echoMarkdown()
-			await focusAtEnd(blocksOf(host)[0])
+			await focusAtEnd(rowsOf(host)[0])
 			await userEvent.keyboard('{Enter}')
 
 			await expect.poll(value).toContain('# Welcome to Draggable Blocks\n\n')
