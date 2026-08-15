@@ -105,28 +105,10 @@ export const fixtures = {
 }
 
 /**
- * Spec fixtures: `slots.container` replacements. `Custom` is a `<section>` so the spec can tell
- * it from the default `<div>` by its tag — the container IS the editing host, so no id is needed
- * to find it.
+ * Spec fixture: the `slots.container` replacement. A `<section>` so the spec can tell it from the
+ * default `<div>` by its tag — the container IS the editing host, so no id is needed to find it.
  */
-export const containers = {
-	Custom: defineComponent({template: '<section><slot /></section>'}),
-	Plain: defineComponent({template: '<div><slot /></div>'}),
-}
-
-/**
- * Spec fixtures: `Span` replacements, each differing only in its decoration. What a span puts
- * inside itself is not a knob any of them turn: core is THE writer of a text surface and mirrors
- * the token's text into it whatever the component rendered.
- */
-export const spans = {
-	/** A `<b>`, not a `<span>`: the tag alone proves the supplied component replaced the default. */
-	Custom: defineMark({tag: 'b'}),
-	Classy: defineMark({tag: 'span', class: 'custom-span-class'}),
-	Styled: defineMark({tag: 'span', style: {fontWeight: 'bold', fontSize: '16px'}}),
-	/** Carries an attribute of its own, which the both-slots case asserts survives. */
-	SpanProp: defineMark({tag: 'b', attrs: {'data-span-prop': 'span'}}),
-}
+export const CustomContainer = defineComponent({template: '<section><slot /></section>'})
 
 /**
  * The `slotProps.container` keys the two adapters spell differently. React's synthetic

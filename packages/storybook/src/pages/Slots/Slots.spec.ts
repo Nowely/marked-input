@@ -2,11 +2,14 @@ import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {textSurfaces} from '../../shared/lib/dom'
-import {Mark} from '../../shared/lib/marks'
+import {defineMark, Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
-import {containerRef, containers, eventProps, outerClass, spans} from './Slots.fixtures'
+import {containerRef, CustomContainer, eventProps, outerClass} from './Slots.fixtures'
 
 const VALUE = 'Hello world'
+
+/** A `<b>`, not a `<span>`: the tag alone proves the supplied component replaced the default. */
+const CustomSpan = defineMark({tag: 'b'})
 
 describe('Slots API', () => {
 	describe('Container slot', () => {
@@ -18,7 +21,7 @@ describe('Slots API', () => {
 		})
 
 		it('use custom component from slots.container', async () => {
-			const {host} = await mountComponent({value: VALUE, slots: {container: containers.Custom}})
+			const {host} = await mountComponent({value: VALUE, slots: {container: CustomContainer}})
 
 			expect(host.tagName).toBe('SECTION')
 		})
@@ -95,19 +98,22 @@ describe('Slots API', () => {
 		})
 
 		it('use custom component from Span prop', async () => {
-			const {host} = await mountComponent({value: VALUE, Span: spans.Custom})
+			const {host} = await mountComponent({value: VALUE, Span: CustomSpan})
 
 			expect(host.querySelector('b')).not.toBeNull()
 		})
 
 		it('apply custom className via custom Span component', async () => {
-			await mountComponent({value: VALUE, Span: spans.Classy})
+			await mountComponent({value: VALUE, Span: defineMark({tag: 'span', class: 'custom-span-class'})})
 
 			await expect.element(page.getByText(VALUE)).toHaveClass('custom-span-class')
 		})
 
 		it('apply custom style via custom Span component', async () => {
-			await mountComponent({value: VALUE, Span: spans.Styled})
+			await mountComponent({
+				value: VALUE,
+				Span: defineMark({tag: 'span', style: {fontWeight: 'bold', fontSize: '16px'}}),
+			})
 
 			await expect.element(page.getByText(VALUE)).toHaveStyle({fontWeight: 'bold', fontSize: '16px'})
 		})
@@ -117,8 +123,8 @@ describe('Slots API', () => {
 		it('allow overriding both container and Span simultaneously', async () => {
 			const {host} = await mountComponent({
 				value: VALUE,
-				Span: spans.SpanProp,
-				slots: {container: containers.Custom},
+				Span: defineMark({tag: 'b', attrs: {'data-span-prop': 'span'}}),
+				slots: {container: CustomContainer},
 				slotProps: {container: {dataContainerProp: 'container'}},
 			})
 
@@ -137,7 +143,7 @@ describe('Slots API', () => {
 			// Also a compile-time test: it fails both typechecks if the slot types drift.
 			const {host} = await mountComponent({
 				value: 'Hello',
-				slots: {container: containers.Plain},
+				slots: {container: CustomContainer},
 				slotProps: {container: {[eventProps.keyDown]: () => {}, className: 'test'}},
 			})
 
@@ -172,7 +178,7 @@ describe('Slots API', () => {
 		})
 
 		it('leave a custom Span bare too', async () => {
-			const {host} = await mountComponent({value: VALUE, Span: spans.Custom})
+			const {host} = await mountComponent({value: VALUE, Span: CustomSpan})
 			const span = host.querySelector('b')
 
 			expect(span).not.toBeNull()
@@ -240,7 +246,7 @@ describe('Slots API', () => {
 				...outerClass('outer-class'),
 				value: VALUE,
 				style: {color: 'red'},
-				slots: {container: containers.Custom},
+				slots: {container: CustomContainer},
 				slotProps: {container: {className: 'inner-class', style: {backgroundColor: 'blue'}}},
 			})
 
@@ -292,14 +298,14 @@ describe('Slots API', () => {
 			const {host} = await mountComponent({
 				Mark,
 				value: '@[hello] world @[test]',
-				Span: spans.Custom,
+				Span: CustomSpan,
 			})
 
 			expect(host.querySelectorAll('b').length).toBeGreaterThan(0)
 		})
 
 		it('preserve slot functionality when no slotProps provided', async () => {
-			const {host} = await mountComponent({value: VALUE, slots: {container: containers.Custom}})
+			const {host} = await mountComponent({value: VALUE, slots: {container: CustomContainer}})
 
 			expect(host.tagName).toBe('SECTION')
 		})
@@ -307,7 +313,7 @@ describe('Slots API', () => {
 		it('render the value inside a component container', async () => {
 			const {host} = await mountComponent({
 				value: VALUE,
-				slots: {container: containers.Custom},
+				slots: {container: CustomContainer},
 			})
 
 			expect(host.textContent).toBe(VALUE)
