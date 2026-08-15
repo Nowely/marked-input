@@ -6,7 +6,7 @@ import type {CSSProperties} from '@markput/core'
  */
 
 /**
- * One generated mark: the element it IS plus its static decoration.
+ * One generated mark: the element it IS, its static decoration, and one hook on rendering.
  *
  * What goes INSIDE is not a choice. A generated mark renders `children ?? value`: `children` is
  * the nested-token slot in both adapters — react's JSX children, vue's default slot — falling
@@ -21,6 +21,12 @@ export interface MarkSpec {
 	class?: string
 	/** Merged OVER an incoming `style` prop, which is the order the markdown preset needs. */
 	style?: CSSProperties
-	/** Written verbatim, so keys are attribute-spelled: `data-testid`, not `dataTestId`. */
+	/** Written verbatim, so keys are attribute-spelled: `data-custom`, not `dataCustom`. */
 	attrs?: Record<string, string>
+	/**
+	 * Called once per RENDER INVOCATION. Each seam places the call where that is true for its
+	 * framework, which is the whole subject of the render-count gates — see {@link countRenders}
+	 * in either seam file. Unset everywhere else.
+	 */
+	onRender?: () => void
 }

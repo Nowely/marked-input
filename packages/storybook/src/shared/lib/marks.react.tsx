@@ -21,11 +21,24 @@ export type StyledMarkProps = MarkProps & {style?: CSSProperties}
  * a second child element, a tag derived from the value — stays hand-written on its page.
  */
 export function defineMark(spec: MarkSpec): ComponentType<StyledMarkProps> {
-	const {tag, class: className, style: ownStyle, attrs} = spec
+	const {tag, class: className, style: ownStyle, attrs, onRender} = spec
 
 	return function Mark({children, value, style}: StyledMarkProps) {
+		onRender?.()
 		return createElement(tag, {className, style: {...style, ...ownStyle}, ...attrs}, children ?? value)
 	}
+}
+
+/**
+ * A generated mark that counts its render invocations, and the reader for the count.
+ *
+ * The counter fires from the component BODY, which is where one call means one render:
+ * `useSyncExternalStore` calls `getSnapshot` without committing, and a body counter cannot see
+ * those — counting anywhere else would measure the subscription instead of the render.
+ */
+export function countRenders(spec: MarkSpec = {tag: 'mark'}) {
+	let renders = 0
+	return [defineMark({...spec, onRender: () => renders++}), () => renders] as const
 }
 
 /**

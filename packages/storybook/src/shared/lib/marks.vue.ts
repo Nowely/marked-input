@@ -37,7 +37,7 @@ type MarkChildren = string | VNodeArrayChildren | undefined
  * a second child element, a tag derived from the value — stays hand-written on its page.
  */
 export function defineMark(spec: MarkSpec) {
-	const {tag, class: className, style: ownStyle, attrs} = spec
+	const {tag, class: className, style: ownStyle, attrs, onRender} = spec
 
 	return defineComponent({
 		inheritAttrs: false,
@@ -45,6 +45,7 @@ export function defineMark(spec: MarkSpec) {
 		setup:
 			(props, {slots}) =>
 			() => {
+				onRender?.()
 				// Read inside the render function, not in `setup`: a mark's children change in place.
 				const children: MarkChildren = props.children
 
@@ -55,6 +56,18 @@ export function defineMark(spec: MarkSpec) {
 				)
 			},
 	})
+}
+
+/**
+ * A generated mark that counts its render invocations, and the reader for the count.
+ *
+ * The counter fires from the render function `setup` RETURNS, which is where one call means one
+ * render. `setup` itself runs once per mounted instance, so counting there would measure mounts
+ * instead — which is what `markMounts` in `renderCount.fixtures.*` does deliberately.
+ */
+export function countRenders(spec: MarkSpec = {tag: 'mark'}) {
+	let renders = 0
+	return [defineMark({...spec, onRender: () => renders++}), () => renders] as const
 }
 
 /**
