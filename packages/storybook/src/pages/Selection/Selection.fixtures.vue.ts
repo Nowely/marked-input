@@ -6,8 +6,8 @@ import {defineMark} from '../../shared/lib/marks'
  * project if this file drifts.
  */
 export const fixtures = {
-	Value: defineMark({tag: 'mark', content: 'value'}),
+	Value: defineMark({tag: 'mark'}),
 }
 
 /** Spec fixture: the adapter-owned text surface the cross-select spec configures. */
-export const Span = defineMark({tag: 'strong', content: 'children'})
+export const Span = defineMark({tag: 'strong'})

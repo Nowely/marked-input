@@ -21,12 +21,10 @@ export type StyledMarkProps = MarkProps & {style?: CSSProperties}
  * a second child element, a tag derived from the value — stays hand-written on its page.
  */
 export function defineMark(spec: MarkSpec): ComponentType<StyledMarkProps> {
-	const {tag, content, class: className, style: ownStyle, attrs} = spec
+	const {tag, class: className, style: ownStyle, attrs} = spec
 
 	return function Mark({children, value, style}: StyledMarkProps) {
-		const inside = content === 'value' ? value : (children ?? (content === 'childrenOrValue' ? value : undefined))
-
-		return createElement(tag, {className, style: {...style, ...ownStyle}, ...attrs}, inside)
+		return createElement(tag, {className, style: {...style, ...ownStyle}, ...attrs}, children ?? value)
 	}
 }
 

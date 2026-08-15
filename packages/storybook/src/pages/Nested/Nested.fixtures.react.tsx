@@ -17,7 +17,7 @@ import {markdownOptions} from './MarkdownOptions'
  */
 
 /** `ComplexMarkdown`'s mark: the markdown preset hands it the `style` of whichever markup matched. */
-const MarkdownMark = defineMark({tag: 'span', content: 'childrenOrValue', style: {margin: '0 1px'}})
+const MarkdownMark = defineMark({tag: 'span', style: {margin: '0 1px'}})
 
 /** `ComplexHtmlDocument`'s mark: this markup's VALUE is the tag name, so the mark IS that element. */
 const HtmlDocMark = ({children, value}: MarkProps) => {
@@ -79,8 +79,8 @@ function TabbedHtml({defaultValue, options}: PageArgs) {
 
 export const fixtures = {
 	/** The panel sits under the editor here; the vue fixtures put it beside it. */
-	SimpleMark: defineMark({tag: 'span', content: 'childrenOrValue'}),
-	MultiLevelMark: defineMark({tag: 'span', content: 'childrenOrValue', style: {margin: '0 2px'}}),
+	SimpleMark: defineMark({tag: 'span'}),
+	MultiLevelMark: defineMark({tag: 'span', style: {margin: '0 2px'}}),
 	HtmlLikeMark: ({children, value}: MarkProps) => {
 		// oxlint-disable-next-line no-unsafe-type-assertion -- this mark's VALUE is the tag name
 		const Tag = (value ?? 'span') as ElementType
@@ -177,10 +177,10 @@ export const marks = {
 		const info = useMarkInfo()
 		return <span data-has-children={info.hasNestedMarks}>{children}</span>
 	},
-	/** Renders only `value`: the backward-compatibility marks predate nesting. */
-	Flat: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'flat-mark'}}),
-	Plain: defineMark({tag: 'mark', content: 'children'}),
-	Bare: defineMark({tag: 'span', content: 'children'}),
+	/** The backward-compatibility mark: mounted on `__value__` markups, which predate nesting. */
+	Flat: defineMark({tag: 'span', attrs: {'data-testid': 'flat-mark'}}),
+	Plain: defineMark({tag: 'mark'}),
+	Bare: defineMark({tag: 'span'}),
 	Mixed: ({children}: MarkProps) => {
 		const info = useMarkInfo()
 		return <mark data-has-children={info.hasNestedMarks}>{children}</mark>
@@ -192,5 +192,5 @@ export const marks = {
 		return <span>{info.hasNestedMarks ? children : mark.slot()}</span>
 	},
 	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
-	MarkRoot: defineMark({tag: 'mark', content: 'childrenOrValue'}),
+	MarkRoot: defineMark({tag: 'mark'}),
 }

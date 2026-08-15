@@ -1,11 +1,11 @@
 import type {CSSProperties} from '@markput/core'
 import type {MarkProps} from '@markput/vue'
 import {useMark} from '@markput/vue'
-import type {SetupContext, VNodeArrayChildren} from 'vue'
+import type {VNodeArrayChildren} from 'vue'
 import {defineComponent, h} from 'vue'
 
 // The exact sibling, not the seam name: oxlint does not honour `moduleSuffixes`.
-import type {MarkContent, MarkSpec} from './marks.shared'
+import type {MarkSpec} from './marks.shared'
 
 /**
  * The framework seam for fixture marks. `marks.react.tsx` and `marks.vue.ts` expose the same
@@ -29,32 +29,31 @@ export type StyledMarkProps = MarkProps & {style?: CSSProperties}
  */
 const MARK_PROPS = {value: String, meta: String, children: {type: null}, style: {type: Object}}
 
+/** `MARK_PROPS.children` is declared `type: null`, so vue infers `any` and the read needs narrowing. */
 type MarkChildren = string | VNodeArrayChildren | undefined
-
-function contentOf(
-	content: MarkContent,
-	slots: SetupContext['slots'],
-	props: {value?: string; children?: MarkChildren}
-): MarkChildren {
-	if (content === 'value') return props.value
-	const nested = slots.default?.() ?? props.children
-	return nested ?? (content === 'childrenOrValue' ? props.value : undefined)
-}
 
 /**
  * A mark that is one element plus static decoration. Anything past that — a hook, a handler,
  * a second child element, a tag derived from the value — stays hand-written on its page.
  */
 export function defineMark(spec: MarkSpec) {
-	const {tag, content, class: className, style: ownStyle, attrs} = spec
+	const {tag, class: className, style: ownStyle, attrs} = spec
 
 	return defineComponent({
 		inheritAttrs: false,
 		props: MARK_PROPS,
 		setup:
 			(props, {slots}) =>
-			() =>
-				h(tag, {class: className, style: [props.style, ownStyle], ...attrs}, contentOf(content, slots, props)),
+			() => {
+				// Read inside the render function, not in `setup`: a mark's children change in place.
+				const children: MarkChildren = props.children
+
+				return h(
+					tag,
+					{class: className, style: [props.style, ownStyle], ...attrs},
+					slots.default?.() ?? children ?? props.value
+				)
+			},
 	})
 }
 

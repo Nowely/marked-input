@@ -8,19 +8,19 @@ import {defineMark} from '../../shared/lib/marks'
  * project if this file drifts.
  */
 
-const ParagraphMark = defineMark({tag: 'span', content: 'childrenOrValue'})
+const ParagraphMark = defineMark({tag: 'span'})
 
 /** One block-level markup, so a plain-text document is split into one draggable row per paragraph. */
 const paragraphOptions: Option[] = [{markup: '__slot__\n\n', Mark: ParagraphMark}]
 
 export const fixtures = {
 	/** The markdown options hand every mark the `style` of whichever markup matched. */
-	MarkdownMark: defineMark({tag: 'span', content: 'childrenOrValue', style: {margin: '0 1px'}}),
+	MarkdownMark: defineMark({tag: 'span', style: {margin: '0 1px'}}),
 	ParagraphMark,
 	paragraphOptions,
 }
 
 /** Spec fixtures: mark components the shared spec mounts through `mountComponent`. */
 export const marks = {
-	Value: defineMark({tag: 'mark', content: 'value'}),
+	Value: defineMark({tag: 'mark'}),
 }

@@ -19,7 +19,7 @@ import {markdownOptions} from './MarkdownOptions'
  */
 
 /** `ComplexMarkdown`'s mark: the markdown preset hands it the `style` of whichever markup matched. */
-const MarkdownMark = defineMark({tag: 'span', content: 'childrenOrValue', style: {margin: '0 1px'}})
+const MarkdownMark = defineMark({tag: 'span', style: {margin: '0 1px'}})
 
 /** `ComplexHtmlDocument`'s mark: this markup's VALUE is the tag name, so the mark IS that element. */
 const HtmlDocMark = defineComponent({
@@ -105,8 +105,8 @@ const TabbedHtml = defineComponent({
 
 export const fixtures = {
 	/** The panel sits beside the editor here; the react fixtures put it underneath. */
-	SimpleMark: defineMark({tag: 'span', content: 'childrenOrValue'}),
-	MultiLevelMark: defineMark({tag: 'span', content: 'childrenOrValue', style: {margin: '0 2px'}}),
+	SimpleMark: defineMark({tag: 'span'}),
+	MultiLevelMark: defineMark({tag: 'span', style: {margin: '0 2px'}}),
 	HtmlLikeMark: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
 		template: `<component :is="value || 'span'"><slot /></component>`,
@@ -221,10 +221,10 @@ export const marks = {
 		setup: () => ({info: useMarkInfo()}),
 		template: '<span :data-has-children="info.hasNestedMarks"><slot /></span>',
 	}),
-	/** Renders only `value`: the backward-compatibility marks predate nesting. */
-	Flat: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'flat-mark'}}),
-	Plain: defineMark({tag: 'mark', content: 'children'}),
-	Bare: defineMark({tag: 'span', content: 'children'}),
+	/** The backward-compatibility mark: mounted on `__value__` markups, which predate nesting. */
+	Flat: defineMark({tag: 'span', attrs: {'data-testid': 'flat-mark'}}),
+	Plain: defineMark({tag: 'mark'}),
+	Bare: defineMark({tag: 'span'}),
 	Mixed: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
 		setup: () => ({info: useMarkInfo()}),
@@ -237,5 +237,5 @@ export const marks = {
 		template: '<span><slot v-if="info.hasNestedMarks" /><template v-else>{{ mark.slot() }}</template></span>',
 	}),
 	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
-	MarkRoot: defineMark({tag: 'mark', content: 'childrenOrValue'}),
+	MarkRoot: defineMark({tag: 'mark'}),
 }

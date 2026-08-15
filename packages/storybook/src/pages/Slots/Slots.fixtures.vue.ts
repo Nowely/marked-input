@@ -88,7 +88,6 @@ const StyledContainer = defineComponent({
 export const fixtures = {
 	SimpleMark: defineMark({
 		tag: 'mark',
-		content: 'children',
 		style: {backgroundColor: '#ffd700', padding: '2px 4px', borderRadius: '3px'},
 	}),
 	FancyContainer,
@@ -107,7 +106,7 @@ export const fixtures = {
 
 /** Spec fixture: the mark the shared spec mounts everywhere. */
 export const marks = {
-	Children: defineMark({tag: 'mark', content: 'children'}),
+	Children: defineMark({tag: 'mark'}),
 }
 
 /** Spec fixtures: `slots.container` replacements. */
@@ -117,21 +116,20 @@ export const containers = {
 }
 
 /**
- * Spec fixtures: `Span` replacements. Each keeps the `content` it has today: core is THE writer
- * of a text surface and mirrors the token's text into it whatever the component rendered, so
- * levelling them all to one `content` would be DOM-neutral but hide that.
+ * Spec fixtures: `Span` replacements, each differing only in its decoration. What a span puts
+ * inside itself is not a knob any of them turn: core is THE writer of a text surface and mirrors
+ * the token's text into it whatever the component rendered.
  */
 export const spans = {
-	Testid: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'custom-span'}}),
-	Classy: defineMark({tag: 'span', content: 'value', class: 'custom-span-class'}),
-	Styled: defineMark({tag: 'span', content: 'value', style: {fontWeight: 'bold', fontSize: '16px'}}),
+	Testid: defineMark({tag: 'span', attrs: {'data-testid': 'custom-span'}}),
+	Classy: defineMark({tag: 'span', class: 'custom-span-class'}),
+	Styled: defineMark({tag: 'span', style: {fontWeight: 'bold', fontSize: '16px'}}),
 	SpanProp: defineMark({
 		tag: 'span',
-		content: 'value',
 		attrs: {'data-testid': 'custom-span', 'data-span-prop': 'span'},
 	}),
-	Children: defineMark({tag: 'span', content: 'children', attrs: {'data-testid': 'custom-editable-span'}}),
-	TextTestid: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'text-span'}}),
+	Children: defineMark({tag: 'span', attrs: {'data-testid': 'custom-editable-span'}}),
+	TextTestid: defineMark({tag: 'span', attrs: {'data-testid': 'text-span'}}),
 }
 
 /**

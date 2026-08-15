@@ -21,8 +21,8 @@ export const fixtures = {
 
 /** Spec fixtures: mark components the shared spec mounts through story args. */
 export const marks = {
-	Value: defineMark({tag: 'mark', content: 'value'}),
-	Children: defineMark({tag: 'mark', content: 'children'}),
+	Value: defineMark({tag: 'mark'}),
+	Children: defineMark({tag: 'mark'}),
 	Todo: ({children}: MarkProps) => (
 		<span>
 			<input type="checkbox" aria-label="done" />

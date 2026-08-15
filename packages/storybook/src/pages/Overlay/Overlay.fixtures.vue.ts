@@ -14,7 +14,7 @@ import {defineMark, Empty} from '../../shared/lib/marks'
  * typechecked.
  */
 export const fixtures = {
-	Mark: defineMark({tag: 'mark', content: 'value'}),
+	Mark: defineMark({tag: 'mark'}),
 	/** The three overlay-only stories render no mark: the overlay itself is what they show. */
 	Empty,
 	Overlay: defineComponent({template: '<h1>I am the overlay</h1>'}),

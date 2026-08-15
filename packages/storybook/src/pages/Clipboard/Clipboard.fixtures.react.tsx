@@ -10,7 +10,7 @@ import {defineMark} from '../../shared/lib/marks'
  * project if this file drifts.
  */
 
-const Mark = defineMark({tag: 'mark', content: 'value'})
+const Mark = defineMark({tag: 'mark'})
 
 /** Nested HTML inside the mark element, so one mark holds MORE than one text node. */
 const NestedMark = ({value = ''}: MarkProps) => {

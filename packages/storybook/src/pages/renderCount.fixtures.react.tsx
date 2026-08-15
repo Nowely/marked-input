@@ -14,8 +14,8 @@ import {defineMark} from '../shared/lib/marks'
 
 /** The renderers a gate does not measure — present so the editor has something to draw. */
 export const plain = {
-	Mark: defineMark({tag: 'mark', content: 'value'}),
-	Span: defineMark({tag: 'span', content: 'value'}),
+	Mark: defineMark({tag: 'mark'}),
+	Span: defineMark({tag: 'span'}),
 }
 
 export const counters = {

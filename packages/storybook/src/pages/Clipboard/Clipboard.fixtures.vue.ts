@@ -13,7 +13,7 @@ import {defineMark} from '../../shared/lib/marks'
  * through onto the mark root as an attribute, which no React fixture does.
  */
 
-const Mark = defineMark({tag: 'mark', content: 'value'})
+const Mark = defineMark({tag: 'mark'})
 
 /** Nested HTML inside the mark element, so one mark holds MORE than one text node. */
 const NestedMark = defineComponent({

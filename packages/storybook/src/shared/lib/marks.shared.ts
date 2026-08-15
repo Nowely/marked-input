@@ -6,19 +6,18 @@ import type {CSSProperties} from '@markput/core'
  */
 
 /**
- * What a generated mark puts inside its element. `children` is the nested-token slot in both
- * adapters — react's JSX children, vue's default slot — falling back to the `children` an
- * option's `mark` mapper produced, which is the only other source: `resolveMarkSlot` passes
- * `value` and `meta` and nothing else. `childrenOrValue` is for a mark that has to serve both
- * a `__slot__` and a `__value__` markup: a value-only markup gets no slot at all.
+ * One generated mark: the element it IS plus its static decoration.
+ *
+ * What goes INSIDE is not a choice. A generated mark renders `children ?? value`: `children` is
+ * the nested-token slot in both adapters — react's JSX children, vue's default slot — falling
+ * back to the `children` an option's `mark` mapper produced, which is the only other source
+ * since `resolveMarkSlot` passes `value` and `meta` and nothing else. A value-only markup gets
+ * no slot at all, so the fallback IS the value. A mark that needs to drop one of the two is
+ * hand-written on its page.
  */
-export type MarkContent = 'value' | 'children' | 'childrenOrValue'
-
-/** One generated mark: the element it IS, what goes inside it, and its static decoration. */
 export interface MarkSpec {
 	/** The element the mark IS. Required: a call site that does not say is a call site that lies. */
 	tag: string
-	content: MarkContent
 	class?: string
 	/** Merged OVER an incoming `style` prop, which is the order the markdown preset needs. */
 	style?: CSSProperties
