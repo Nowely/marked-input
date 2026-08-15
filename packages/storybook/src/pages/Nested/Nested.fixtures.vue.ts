@@ -171,12 +171,6 @@ export const fixtures = {
 		}),
 }
 
-/**
- * What the capturing marks record. A mark can only report a hook's value by writing it
- * somewhere the spec can read, and the spec resets these before each mount.
- */
-export const capture = {rootChildren: false, rootHasNestedMarks: false}
-
 /** Spec fixtures: mark components the shared spec mounts through component args. */
 export const marks = {
 	/**
@@ -187,19 +181,6 @@ export const marks = {
 		props: {value: String, meta: String, children: {type: null}},
 		setup: () => ({info: useMarkInfo()}),
 		template: '<span :data-depth="info.depth" :data-has-children="info.hasNestedMarks"><slot /></span>',
-	}),
-	/** Reports the root mark's hook readings into {@link capture}, which the spec reads back. */
-	Capture: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		setup(_props, {slots}) {
-			const info = useMarkInfo()
-			if (info.depth === 0) {
-				capture.rootHasNestedMarks = info.hasNestedMarks
-				if (info.hasNestedMarks) capture.rootChildren = slots.default != null
-			}
-			return {}
-		},
-		template: '<span><slot /></span>',
 	}),
 	/** Renders the slot itself when there is nothing nested to render. */
 	Rendering: defineComponent({

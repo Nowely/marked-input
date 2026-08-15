@@ -1,11 +1,11 @@
 import type {Markup} from '@markput/core'
-import {beforeEach, describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {findEditingHost, getElement} from '../../shared/lib/dom'
 import {defineMark, Mark, Span} from '../../shared/lib/marks'
 import {composePage, mount, mountComponent} from '../../shared/lib/page'
-import {capture, marks} from './Nested.fixtures'
+import {marks} from './Nested.fixtures'
 import * as NestedStories from './Nested.stories'
 
 /**
@@ -26,11 +26,6 @@ const markAtDepth = (host: Element, depth: number) => {
 	if (!mark) throw new Error(`No mark at depth ${depth}`)
 	return mark
 }
-
-beforeEach(() => {
-	capture.rootChildren = false
-	capture.rootHasNestedMarks = false
-})
 
 describe('Nested Marks Rendering', () => {
 	it('render simple nested marks', async () => {
@@ -91,9 +86,9 @@ describe('Nested Marks Rendering', () => {
 		expect(depthsOf(host)).toHaveLength(2)
 	})
 
-	it('pass children to Mark component for nested content', async () => {
+	it('renders the text on both sides of a nested mark', async () => {
 		const {host} = await mountComponent({
-			Mark: marks.Capture,
+			Mark: marks.Info,
 			value: '@[before @[nested] after]',
 			options: [{markup: SLOT_MARKUP}],
 		})
@@ -101,8 +96,6 @@ describe('Nested Marks Rendering', () => {
 		expect(host.textContent).toContain('before')
 		expect(host.textContent).toContain('after')
 		expect(host.textContent).toContain('nested')
-		// The root mark has nested marks, so it is the one that must have received children.
-		expect(capture.rootChildren).toBe(true)
 	})
 
 	it('renders nested token roots without slot-root wrappers', async () => {
@@ -154,14 +147,16 @@ describe('Nested Marks Tree Navigation', () => {
 		expect(hasChildrenValues).toEqual(['true', 'false'])
 	})
 
-	it('provide nested mark information', async () => {
-		await mountComponent({
-			Mark: marks.Capture,
+	it('provide hasChildren information with more than one nested mark', async () => {
+		const {host} = await mountComponent({
+			Mark: marks.Info,
 			value: '@[parent @[child1] text @[child2]]',
 			options: [{markup: SLOT_MARKUP}],
 		})
 
-		expect(capture.rootHasNestedMarks).toBe(true)
+		const elements = Array.from(host.querySelectorAll('[data-has-children]'))
+
+		expect(elements.map(el => el.getAttribute('data-has-children'))).toEqual(['true', 'false', 'false'])
 	})
 })
 

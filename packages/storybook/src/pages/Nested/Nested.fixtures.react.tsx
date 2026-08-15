@@ -128,12 +128,6 @@ export const fixtures = {
 	renderTabbedHtml: (args: PageArgs) => <TabbedHtml {...args} />,
 }
 
-/**
- * What the capturing marks record. A mark can only report a hook's value by writing it
- * somewhere the spec can read, and the spec resets these before each mount.
- */
-export const capture = {rootChildren: false, rootHasNestedMarks: false}
-
 /** Spec fixtures: mark components the shared spec mounts through component args. */
 export const marks = {
 	/**
@@ -147,15 +141,6 @@ export const marks = {
 				{children}
 			</span>
 		)
-	},
-	/** Reports the root mark's hook readings into {@link capture}, which the spec reads back. */
-	Capture: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		if (info.depth === 0) {
-			capture.rootHasNestedMarks = info.hasNestedMarks
-			if (info.hasNestedMarks) capture.rootChildren = children != null
-		}
-		return <span>{children}</span>
 	},
 	/** Renders the slot itself when there is nothing nested to render. */
 	Rendering: ({children}: MarkProps) => {
