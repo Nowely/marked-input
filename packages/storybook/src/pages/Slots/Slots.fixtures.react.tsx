@@ -91,9 +91,13 @@ export const fixtures = {
 	renderEventLog: (args: PageArgs) => <EventLog {...args} />,
 }
 
-/** Spec fixtures: `slots.container` replacements. */
+/**
+ * Spec fixtures: `slots.container` replacements. `Custom` is a `<section>` so the spec can tell
+ * it from the default `<div>` by its tag — the container IS the editing host, so no id is needed
+ * to find it.
+ */
 export const containers = {
-	Testid: ({ref, ...props}: DivProps) => <div {...props} ref={ref} data-testid="custom-container" />,
+	Custom: ({ref, ...props}: DivProps) => <section {...props} ref={ref} />,
 	Plain: ({ref, ...props}: DivProps) => <div {...props} ref={ref} />,
 }
 
@@ -103,15 +107,12 @@ export const containers = {
  * the token's text into it whatever the component rendered.
  */
 export const spans = {
-	Testid: defineMark({tag: 'span', attrs: {'data-testid': 'custom-span'}}),
+	/** A `<b>`, not a `<span>`: the tag alone proves the supplied component replaced the default. */
+	Custom: defineMark({tag: 'b'}),
 	Classy: defineMark({tag: 'span', class: 'custom-span-class'}),
 	Styled: defineMark({tag: 'span', style: {fontWeight: 'bold', fontSize: '16px'}}),
-	SpanProp: defineMark({
-		tag: 'span',
-		attrs: {'data-testid': 'custom-span', 'data-span-prop': 'span'},
-	}),
-	Children: defineMark({tag: 'span', attrs: {'data-testid': 'custom-editable-span'}}),
-	TextTestid: defineMark({tag: 'span', attrs: {'data-testid': 'text-span'}}),
+	/** Carries an attribute of its own, which the both-slots case asserts survives. */
+	SpanProp: defineMark({tag: 'b', attrs: {'data-span-prop': 'span'}}),
 }
 
 /**

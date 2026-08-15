@@ -136,23 +136,14 @@ export const capture = {rootChildren: false, rootHasNestedMarks: false}
 
 /** Spec fixtures: mark components the shared spec mounts through component args. */
 export const marks = {
+	/**
+	 * Reports both `useMarkInfo()` readings as attributes, which is how the spec finds a mark AND
+	 * asserts on it: `[data-depth="1"]` identifies without a test-only id.
+	 */
 	Info: ({children}: MarkProps) => {
 		const info = useMarkInfo()
 		return (
-			<span
-				data-testid={`mark-depth-${info.depth}`}
-				data-depth={info.depth}
-				data-has-children={info.hasNestedMarks}
-			>
-				{children}
-			</span>
-		)
-	},
-	/** Names itself by depth, so one component covers two markups in the same value. */
-	Tagged: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		return (
-			<span data-testid={info.depth === 0 ? 'tag-mark' : 'mention-mark'} data-depth={info.depth}>
+			<span data-depth={info.depth} data-has-children={info.hasNestedMarks}>
 				{children}
 			</span>
 		)
@@ -166,8 +157,6 @@ export const marks = {
 		}
 		return <span>{children}</span>
 	},
-	/** The backward-compatibility mark: mounted on `__value__` markups, which predate nesting. */
-	Flat: defineMark({tag: 'span', attrs: {'data-testid': 'flat-mark'}}),
 	/** Renders the slot itself when there is nothing nested to render. */
 	Rendering: ({children}: MarkProps) => {
 		const mark = useMark()

@@ -18,9 +18,9 @@ describe('Slots API', () => {
 		})
 
 		it('use custom component from slots.container', async () => {
-			await mountComponent({value: VALUE, slots: {container: containers.Testid}})
+			const {host} = await mountComponent({value: VALUE, slots: {container: containers.Custom}})
 
-			await expect.element(page.getByTestId('custom-container')).toBeInTheDocument()
+			expect(host.tagName).toBe('SECTION')
 		})
 
 		it('pass slotProps.container to the container component', async () => {
@@ -95,9 +95,9 @@ describe('Slots API', () => {
 		})
 
 		it('use custom component from Span prop', async () => {
-			await mountComponent({value: VALUE, Span: spans.Testid})
+			const {host} = await mountComponent({value: VALUE, Span: spans.Custom})
 
-			await expect.element(page.getByTestId('custom-span')).toBeInTheDocument()
+			expect(host.querySelector('b')).not.toBeNull()
 		})
 
 		it('apply custom className via custom Span component', async () => {
@@ -115,21 +115,20 @@ describe('Slots API', () => {
 
 	describe('Both slots', () => {
 		it('allow overriding both container and Span simultaneously', async () => {
-			await mountComponent({
+			const {host} = await mountComponent({
 				value: VALUE,
 				Span: spans.SpanProp,
-				slots: {container: containers.Testid},
+				slots: {container: containers.Custom},
 				slotProps: {container: {dataContainerProp: 'container'}},
 			})
 
-			const container = page.getByTestId('custom-container')
-			const span = page.getByTestId('custom-span')
+			const span = host.querySelector('b')
 
-			await expect.element(container).toBeInTheDocument()
-			await expect.element(container).toHaveAttribute('data-container-prop', 'container')
+			expect(host.tagName).toBe('SECTION')
+			await expect.element(host).toHaveAttribute('data-container-prop', 'container')
 
-			await expect.element(span).toBeInTheDocument()
-			await expect.element(span).toHaveAttribute('data-span-prop', 'span')
+			expect(span).not.toBeNull()
+			expect(span).toHaveAttribute('data-span-prop', 'span')
 		})
 	})
 
@@ -173,12 +172,12 @@ describe('Slots API', () => {
 		})
 
 		it('leave a custom Span bare too', async () => {
-			await mountComponent({value: VALUE, Span: spans.Children})
+			const {host} = await mountComponent({value: VALUE, Span: spans.Custom})
+			const span = host.querySelector('b')
 
-			const span = page.getByTestId('custom-editable-span')
-			await expect.element(span).toBeInTheDocument()
-			await expect.element(span).not.toHaveAttribute('contenteditable')
-			await expect.element(span).toHaveTextContent(VALUE)
+			expect(span).not.toBeNull()
+			expect(span).not.toHaveAttribute('contenteditable')
+			expect(span).toHaveTextContent(VALUE)
 		})
 
 		it('freeze a value-only mark root as an atomic', async () => {
@@ -237,18 +236,18 @@ describe('Slots API', () => {
 
 	describe('Custom slot components', () => {
 		it('pass all required props to custom container slot', async () => {
-			await mountComponent({
+			const {host} = await mountComponent({
 				...outerClass('outer-class'),
 				value: VALUE,
 				style: {color: 'red'},
-				slots: {container: containers.Testid},
+				slots: {container: containers.Custom},
 				slotProps: {container: {className: 'inner-class', style: {backgroundColor: 'blue'}}},
 			})
 
-			const container = page.getByTestId('custom-container')
-			await expect.element(container).toHaveClass('outer-class')
-			await expect.element(container).toHaveClass('inner-class')
-			await expect.element(container).toHaveStyle({color: 'rgb(255, 0, 0)', backgroundColor: 'rgb(0, 0, 255)'})
+			expect(host.tagName).toBe('SECTION')
+			await expect.element(host).toHaveClass('outer-class')
+			await expect.element(host).toHaveClass('inner-class')
+			await expect.element(host).toHaveStyle({color: 'rgb(255, 0, 0)', backgroundColor: 'rgb(0, 0, 255)'})
 		})
 
 		it('allow native HTML elements as container slot', async () => {
@@ -293,22 +292,22 @@ describe('Slots API', () => {
 			const {host} = await mountComponent({
 				Mark,
 				value: '@[hello] world @[test]',
-				Span: spans.TextTestid,
+				Span: spans.Custom,
 			})
 
-			expect(host.querySelectorAll('[data-testid="text-span"]').length).toBeGreaterThan(0)
+			expect(host.querySelectorAll('b').length).toBeGreaterThan(0)
 		})
 
 		it('preserve slot functionality when no slotProps provided', async () => {
-			await mountComponent({value: VALUE, slots: {container: containers.Testid}})
+			const {host} = await mountComponent({value: VALUE, slots: {container: containers.Custom}})
 
-			await expect.element(page.getByTestId('custom-container')).toBeInTheDocument()
+			expect(host.tagName).toBe('SECTION')
 		})
 
 		it('render the value inside a component container', async () => {
 			const {host} = await mountComponent({
 				value: VALUE,
-				slots: {container: containers.Testid},
+				slots: {container: containers.Custom},
 			})
 
 			expect(host.textContent).toBe(VALUE)

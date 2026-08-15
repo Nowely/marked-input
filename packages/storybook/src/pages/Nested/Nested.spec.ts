@@ -17,6 +17,16 @@ const TAG_MARKUP: Markup = '#[__slot__]'
 const VALUE_MARKUP: Markup = '@[__value__]'
 const VALUE_META_MARKUP: Markup = '@[__value__](__meta__)'
 
+/** Every `Info` mark's depth, in document order — the identity the spec used to read off a testid. */
+const depthsOf = (host: Element) =>
+	Array.from(host.querySelectorAll('[data-depth]')).map(el => el.getAttribute('data-depth'))
+
+const markAtDepth = (host: Element, depth: number) => {
+	const mark = host.querySelector(`[data-depth="${depth}"]`)
+	if (!mark) throw new Error(`No mark at depth ${depth}`)
+	return mark
+}
+
 beforeEach(() => {
 	capture.rootChildren = false
 	capture.rootHasNestedMarks = false
@@ -24,46 +34,40 @@ beforeEach(() => {
 
 describe('Nested Marks Rendering', () => {
 	it('render simple nested marks', async () => {
-		await mountComponent({Mark: marks.Info, value: '@[outer @[inner]]', options: [{markup: SLOT_MARKUP}]})
+		const {host} = await mountComponent({
+			Mark: marks.Info,
+			value: '@[outer @[inner]]',
+			options: [{markup: SLOT_MARKUP}],
+		})
 
-		const outerMark = page.getByTestId('mark-depth-0')
-		const innerMark = page.getByTestId('mark-depth-1')
-
-		await expect.element(outerMark).toBeInTheDocument()
-		await expect.element(innerMark).toBeInTheDocument()
-		expect(outerMark.element().getAttribute('data-has-children')).toBe('true')
-		expect(innerMark.element().getAttribute('data-has-children')).toBe('false')
+		expect(depthsOf(host)).toEqual(['0', '1'])
+		expect(markAtDepth(host, 0).getAttribute('data-has-children')).toBe('true')
+		expect(markAtDepth(host, 1).getAttribute('data-has-children')).toBe('false')
 	})
 
 	it('render multiple nesting levels', async () => {
-		await mountComponent({
+		const {host} = await mountComponent({
 			Mark: marks.Info,
 			value: '@[level0 @[level1 @[level2]]]',
 			options: [{markup: SLOT_MARKUP}],
 		})
 
-		await expect.element(page.getByTestId('mark-depth-0')).toBeInTheDocument()
-		await expect.element(page.getByTestId('mark-depth-1')).toBeInTheDocument()
-		await expect.element(page.getByTestId('mark-depth-2')).toBeInTheDocument()
+		expect(depthsOf(host)).toEqual(['0', '1', '2'])
 	})
 
 	it('render multiple nested marks at same level', async () => {
-		await mountComponent({
+		const {host} = await mountComponent({
 			Mark: marks.Info,
 			value: '@[outer @[first] and @[second]]',
 			options: [{markup: SLOT_MARKUP}],
 		})
 
-		const outerMark = page.getByTestId('mark-depth-0')
-		const nestedMarks = page.getByTestId('mark-depth-1').all()
-
-		await expect.element(outerMark).toBeInTheDocument()
-		expect(nestedMarks).toHaveLength(2)
+		expect(depthsOf(host)).toEqual(['0', '1', '1'])
 	})
 
 	it('render different markup types nested', async () => {
-		await mountComponent({
-			Mark: marks.Tagged,
+		const {host} = await mountComponent({
+			Mark: marks.Info,
 			value: '#[tag with @[mention]]',
 			options: [
 				{markup: TAG_MARKUP, overlay: {trigger: '#'}},
@@ -71,20 +75,16 @@ describe('Nested Marks Rendering', () => {
 			],
 		})
 
-		const tagMark = page.getByTestId('tag-mark')
-		const mentionMark = page.getByTestId('mention-mark')
-
-		await expect.element(tagMark).toBeInTheDocument()
-		await expect.element(mentionMark).toBeInTheDocument()
-		expect(tagMark.element().getAttribute('data-depth')).toBe('0')
-		expect(mentionMark.element().getAttribute('data-depth')).toBe('1')
+		// Two markups, one nested in the other. This does NOT prove the two were told apart:
+		// the mark reports its DEPTH, not which option matched, so a fixture that reads the
+		// option index is what that assertion would need.
+		expect(depthsOf(host)).toEqual(['0', '1'])
 	})
 
 	it('handle empty nested marks', async () => {
-		await mountComponent({Mark: marks.Info, value: '@[@[]]', options: [{markup: SLOT_MARKUP}]})
+		const {host} = await mountComponent({Mark: marks.Info, value: '@[@[]]', options: [{markup: SLOT_MARKUP}]})
 
-		const found = page.getByTestId(/mark-depth-/).all()
-		expect(found).toHaveLength(2)
+		expect(depthsOf(host)).toHaveLength(2)
 	})
 
 	it('pass children to Mark component for nested content', async () => {
@@ -163,27 +163,27 @@ describe('Nested Marks Tree Navigation', () => {
 
 describe('Backward Compatibility', () => {
 	it('work with flat marks (no nesting)', async () => {
-		await mountComponent({Mark: marks.Flat, value: '@[test](meta)', options: [{markup: VALUE_META_MARKUP}]})
+		await mountComponent({Mark, value: '@[test](meta)', options: [{markup: VALUE_META_MARKUP}]})
 
-		const mark = page.getByTestId('flat-mark')
+		const mark = page.getByRole('mark')
 		await expect.element(mark).toBeInTheDocument()
 		expect(mark.element().textContent).toBe('test')
 	})
 
 	it('ignore children prop in flat marks', async () => {
-		await mountComponent({Mark: marks.Flat, value: '@[test]', options: [{markup: VALUE_MARKUP}]})
+		await mountComponent({Mark, value: '@[test]', options: [{markup: VALUE_MARKUP}]})
 
-		const mark = page.getByTestId('flat-mark')
+		const mark = page.getByRole('mark')
 		await expect.element(mark).toBeInTheDocument()
 		expect(mark.element().textContent).toBe('test')
 	})
 
 	it('not parse nested content in __value__ placeholders', async () => {
-		await mountComponent({Mark: marks.Flat, value: '@[text with @[nested]]', options: [{markup: VALUE_MARKUP}]})
+		await mountComponent({Mark, value: '@[text with @[nested]]', options: [{markup: VALUE_MARKUP}]})
 
 		// Only one mark: `__value__` does not support nesting, so the inner `@[nested]` stays
 		// plain text inside the value.
-		const found = page.getByTestId('flat-mark').all()
+		const found = page.getByRole('mark').all()
 		expect(found).toHaveLength(1)
 		expect(found[0].element().textContent).toContain('text with @[nested]')
 	})
