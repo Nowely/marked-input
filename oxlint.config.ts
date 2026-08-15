@@ -31,6 +31,13 @@ export default defineConfig({
 		'eslint/no-throw-literal': 'warn',
 		'eslint/no-await-in-loop': 'off',
 		'eslint/object-shorthand': 'error',
+		// The suite identifies elements by role, tag, text and asserted attributes. A test-only id
+		// is the query of last resort and every one of them turned out to be another query spelled
+		// twice. Property-only form, so it also covers a locator-scoped `within(el).getByTestId`.
+		'eslint/no-restricted-properties': [
+			'error',
+			{property: 'getByTestId', message: 'Identify by role, tag or text — not a test-only id.'},
+		],
 		'typescript/consistent-type-imports': 'error',
 		'typescript/consistent-type-exports': 'error',
 		'typescript/no-explicit-any': 'error',
