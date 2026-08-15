@@ -5,7 +5,7 @@ import type {ElementType} from 'react'
 import {useState} from 'react'
 
 import {useTab} from '../../shared/components/Tabs'
-import {defineMark, Mark, Span} from '../../shared/lib/marks'
+import {defineMark} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 import {HTML_TAG_STYLES} from './HtmlTagStyles'
 import {markdownOptions} from './MarkdownOptions'
@@ -78,8 +78,6 @@ function TabbedHtml({defaultValue, options}: PageArgs) {
 }
 
 export const fixtures = {
-	/** The panel sits under the editor here; the vue fixtures put it beside it. */
-	SimpleMark: Span,
 	MultiLevelMark: defineMark({tag: 'span', style: {margin: '0 2px'}}),
 	HtmlLikeMark: ({children, value}: MarkProps) => {
 		// oxlint-disable-next-line no-unsafe-type-assertion -- this mark's VALUE is the tag name
@@ -159,38 +157,21 @@ export const marks = {
 			</span>
 		)
 	},
-	Capturing: ({children}: MarkProps) => {
+	/** Reports the root mark's hook readings into {@link capture}, which the spec reads back. */
+	Capture: ({children}: MarkProps) => {
 		const info = useMarkInfo()
-		if (info.depth === 0 && info.hasNestedMarks) capture.rootChildren = children != null
+		if (info.depth === 0) {
+			capture.rootHasNestedMarks = info.hasNestedMarks
+			if (info.hasNestedMarks) capture.rootChildren = children != null
+		}
 		return <span>{children}</span>
-	},
-	RootInfo: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		if (info.depth === 0) capture.rootHasNestedMarks = info.hasNestedMarks
-		return <span>{children}</span>
-	},
-	Depth: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		return <span data-depth={info.depth}>{children}</span>
-	},
-	HasChildren: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		return <span data-has-children={info.hasNestedMarks}>{children}</span>
 	},
 	/** The backward-compatibility mark: mounted on `__value__` markups, which predate nesting. */
 	Flat: defineMark({tag: 'span', attrs: {'data-testid': 'flat-mark'}}),
-	Plain: Mark,
-	Bare: Span,
-	Mixed: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		return <mark data-has-children={info.hasNestedMarks}>{children}</mark>
-	},
 	/** Renders the slot itself when there is nothing nested to render. */
 	Rendering: ({children}: MarkProps) => {
 		const mark = useMark()
 		const info = useMarkInfo()
 		return <span>{info.hasNestedMarks ? children : mark.slot()}</span>
 	},
-	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
-	MarkRoot: Mark,
 }

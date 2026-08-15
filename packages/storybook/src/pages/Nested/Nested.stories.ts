@@ -1,6 +1,7 @@
 import type {Markup} from '@markput/core'
 
 import type {StyledMarkProps} from '../../shared/lib/marks'
+import {Span} from '../../shared/lib/marks'
 import {COMPLEX_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {component, story, type PageMeta} from '../../shared/lib/stories'
 import {fixtures} from './Nested.fixtures'
@@ -105,7 +106,7 @@ export default {
 
 export const SimpleNesting = story<StyledMarkProps>({
 	args: {
-		Mark: fixtures.SimpleMark,
+		Mark: Span,
 		value: SIMPLE_VALUE,
 		options: [
 			{markup: BoldMarkup, mark: ({value, children}) => ({value, children, style: {fontWeight: 'bold'}})},

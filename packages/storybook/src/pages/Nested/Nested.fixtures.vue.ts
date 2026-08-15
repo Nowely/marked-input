@@ -2,7 +2,7 @@ import {MarkedInput, useMark, useMarkInfo} from '@markput/vue'
 import {computed, defineComponent, ref} from 'vue'
 
 import {useTab} from '../../shared/components/Tabs'
-import {defineMark, Mark, Span} from '../../shared/lib/marks'
+import {defineMark} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 import {HTML_TAG_STYLES} from './HtmlTagStyles'
 import {markdownOptions} from './MarkdownOptions'
@@ -104,8 +104,6 @@ const TabbedHtml = defineComponent({
 })
 
 export const fixtures = {
-	/** The panel sits beside the editor here; the react fixtures put it underneath. */
-	SimpleMark: Span,
 	MultiLevelMark: defineMark({tag: 'span', style: {margin: '0 2px'}}),
 	HtmlLikeMark: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
@@ -193,49 +191,25 @@ export const marks = {
 		setup: () => ({info: useMarkInfo()}),
 		template: `<span :data-testid="info.depth === 0 ? 'tag-mark' : 'mention-mark'" :data-depth="info.depth"><slot /></span>`,
 	}),
-	Capturing: defineComponent({
+	/** Reports the root mark's hook readings into {@link capture}, which the spec reads back. */
+	Capture: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
 		setup(_props, {slots}) {
 			const info = useMarkInfo()
-			if (info.depth === 0 && info.hasNestedMarks) capture.rootChildren = slots.default != null
+			if (info.depth === 0) {
+				capture.rootHasNestedMarks = info.hasNestedMarks
+				if (info.hasNestedMarks) capture.rootChildren = slots.default != null
+			}
 			return {}
 		},
 		template: '<span><slot /></span>',
-	}),
-	RootInfo: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		setup() {
-			const info = useMarkInfo()
-			if (info.depth === 0) capture.rootHasNestedMarks = info.hasNestedMarks
-			return {}
-		},
-		template: '<span><slot /></span>',
-	}),
-	Depth: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		setup: () => ({info: useMarkInfo()}),
-		template: '<span :data-depth="info.depth"><slot /></span>',
-	}),
-	HasChildren: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		setup: () => ({info: useMarkInfo()}),
-		template: '<span :data-has-children="info.hasNestedMarks"><slot /></span>',
 	}),
 	/** The backward-compatibility mark: mounted on `__value__` markups, which predate nesting. */
 	Flat: defineMark({tag: 'span', attrs: {'data-testid': 'flat-mark'}}),
-	Plain: Mark,
-	Bare: Span,
-	Mixed: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		setup: () => ({info: useMarkInfo()}),
-		template: '<mark :data-has-children="info.hasNestedMarks"><slot /></mark>',
-	}),
 	/** Renders the slot itself when there is nothing nested to render. */
 	Rendering: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
 		setup: () => ({mark: useMark(), info: useMarkInfo()}),
 		template: '<span><slot v-if="info.hasNestedMarks" /><template v-else>{{ mark.slot() }}</template></span>',
 	}),
-	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
-	MarkRoot: Mark,
 }

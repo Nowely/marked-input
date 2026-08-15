@@ -3,6 +3,7 @@ import {beforeEach, describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {findEditingHost, getElement} from '../../shared/lib/dom'
+import {Mark, Span} from '../../shared/lib/marks'
 import {composePage, mount, mountComponent} from '../../shared/lib/page'
 import {capture, marks} from './Nested.fixtures'
 import * as NestedStories from './Nested.stories'
@@ -88,7 +89,7 @@ describe('Nested Marks Rendering', () => {
 
 	it('pass children to Mark component for nested content', async () => {
 		const {host} = await mountComponent({
-			Mark: marks.Capturing,
+			Mark: marks.Capture,
 			value: '@[before @[nested] after]',
 			options: [{markup: SLOT_MARKUP}],
 		})
@@ -102,7 +103,7 @@ describe('Nested Marks Rendering', () => {
 
 	it('renders nested token roots without slot-root wrappers', async () => {
 		const {host} = await mountComponent({
-			Mark: marks.MarkRoot,
+			Mark,
 			defaultValue: '@[before @[nested] after]',
 			options: [{markup: SLOT_MARKUP}],
 		})
@@ -126,7 +127,7 @@ describe('Nested Marks Rendering', () => {
 describe('Nested Marks Tree Navigation', () => {
 	it('provide correct depth information', async () => {
 		const {host} = await mountComponent({
-			Mark: marks.Depth,
+			Mark: marks.Info,
 			value: '@[d0 @[d1 @[d2]]]',
 			options: [{markup: SLOT_MARKUP}],
 		})
@@ -138,7 +139,7 @@ describe('Nested Marks Tree Navigation', () => {
 
 	it('provide hasChildren information', async () => {
 		const {host} = await mountComponent({
-			Mark: marks.HasChildren,
+			Mark: marks.Info,
 			value: '@[parent @[child]]',
 			options: [{markup: SLOT_MARKUP}],
 		})
@@ -151,7 +152,7 @@ describe('Nested Marks Tree Navigation', () => {
 
 	it('provide nested mark information', async () => {
 		await mountComponent({
-			Mark: marks.RootInfo,
+			Mark: marks.Capture,
 			value: '@[parent @[child1] text @[child2]]',
 			options: [{markup: SLOT_MARKUP}],
 		})
@@ -190,7 +191,7 @@ describe('Backward Compatibility', () => {
 
 describe('Complex Nesting Scenarios', () => {
 	it('handle adjacent nested marks', async () => {
-		await mountComponent({Mark: marks.Plain, value: '@[first]@[second]', options: [{markup: SLOT_MARKUP}]})
+		await mountComponent({Mark, value: '@[first]@[second]', options: [{markup: SLOT_MARKUP}]})
 
 		const found = page.getByRole('mark').all()
 		expect(found).toHaveLength(2)
@@ -198,7 +199,7 @@ describe('Complex Nesting Scenarios', () => {
 
 	it('handle deeply nested structure', async () => {
 		const {host} = await mountComponent({
-			Mark: marks.Depth,
+			Mark: marks.Info,
 			value: '@[@[@[@[@[deep]]]]]',
 			options: [{markup: SLOT_MARKUP}],
 		})
@@ -213,7 +214,7 @@ describe('Complex Nesting Scenarios', () => {
 
 	it('handle mixed nested and flat marks', async () => {
 		await mountComponent({
-			Mark: marks.Mixed,
+			Mark,
 			value: '@[nested @[child]] @[another]',
 			options: [{markup: SLOT_MARKUP}],
 		})
@@ -240,14 +241,14 @@ describe('Complex Nesting Scenarios', () => {
 
 describe('Edge Cases', () => {
 	it('handle empty input', async () => {
-		const {host} = await mountComponent({Mark: marks.Bare, value: '', options: [{markup: SLOT_MARKUP}]})
+		const {host} = await mountComponent({Mark: Span, value: '', options: [{markup: SLOT_MARKUP}]})
 
 		expect(host.textContent).toBe('')
 	})
 
 	it('handle input with no marks', async () => {
 		const {host} = await mountComponent({
-			Mark: marks.Bare,
+			Mark: Span,
 			value: 'Just plain text',
 			options: [{markup: SLOT_MARKUP}],
 		})
@@ -257,7 +258,7 @@ describe('Edge Cases', () => {
 
 	it('handle malformed nested marks gracefully', async () => {
 		const {host} = await mountComponent({
-			Mark: marks.Plain,
+			Mark,
 			value: '@[unclosed @[nested',
 			options: [{markup: SLOT_MARKUP}],
 		})
