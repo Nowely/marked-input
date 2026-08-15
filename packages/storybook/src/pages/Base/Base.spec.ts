@@ -4,14 +4,17 @@ import {page, userEvent} from 'vitest/browser'
 
 import {caretIsInside, editingHost, findEditingHost, getElement, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtOffset, focusAtStart} from '../../shared/lib/focus'
-import {Empty, Focusable, Mark, Removable} from '../../shared/lib/marks'
-import {composePage, mount, mountEcho} from '../../shared/lib/page'
-import {DroppedReadOnly, marks, Overlay} from './Base.fixtures'
+import {defineMark, Empty, Focusable, Mark, Removable} from '../../shared/lib/marks'
+import {composePage, mount, mountComponent, mountEcho} from '../../shared/lib/page'
+import {marks, Overlay} from './Base.fixtures'
 import * as BaseStories from './Base.stories'
 
 const {Configured, Default} = composePage(BaseStories)
 
 const EDITABLE_MARK_VALUE = 'Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!'
+/** Appends to its own value on click, through the node the mark context carries. */
+const Updatable = defineMark({tag: 'mark', on: {click: ({mark}) => mark.update({value: `${mark.value()}1`})}})
+
 const REMOVABLE_MARK_VALUE = 'I @[contain]( ) @[removable]( ) by click @[marks]( )!'
 
 describe('Component: MarkedInput', () => {
@@ -130,7 +133,7 @@ describe('Component: MarkedInput', () => {
 	})
 
 	it('support mark controller updates', async () => {
-		const {value} = await mountEcho(Default, {Mark: marks.Updatable, value: EDITABLE_MARK_VALUE})
+		const {value} = await mountEcho(Default, {Mark: Updatable, value: EDITABLE_MARK_VALUE})
 
 		await userEvent.click(page.getByText('world').first())
 
@@ -246,14 +249,13 @@ describe('Component: MarkedInput', () => {
 	it('reverts a prop to its default when the caller stops passing it', async () => {
 		// The adapter owes core a FULL sync on every render: `readOnly` that disappears between
 		// renders must revert to its default, not keep the value it last had.
-		const {host} = await mount(DroppedReadOnly)
+		const {host, rerender} = await mountComponent({Mark, defaultValue: 'hello @[x](1)', readOnly: true})
 		expect(host).toHaveAttribute('contenteditable', 'false')
 
-		await userEvent.click(getElement(page.getByText('unlock')))
+		// The same mount with `readOnly` simply ABSENT — the shape a tabbed story has.
+		const unlocked = await rerender({Mark, defaultValue: 'hello @[x](1)'})
 
-		// Re-read rather than reuse `host`: React patches the same element, Vue's `v-if` swaps in
-		// a new one. What both must agree on is that the editor is editable again.
-		expect(findEditingHost(document.body)).toHaveAttribute('contenteditable', 'true')
+		expect(unlocked).toHaveAttribute('contenteditable', 'true')
 	})
 
 	it.todo('be selectable')

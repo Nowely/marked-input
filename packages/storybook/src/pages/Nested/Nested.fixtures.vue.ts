@@ -107,10 +107,8 @@ const TabbedHtml = defineComponent({
 
 export const fixtures = {
 	MultiLevelMark: defineMark({tag: 'span', style: {margin: '0 2px'}}),
-	HtmlLikeMark: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		template: `<component :is="value || 'span'"><slot /></component>`,
-	}),
+	/** This markup's VALUE is the tag name, so the mark IS that element. */
+	HtmlLikeMark: defineMark({tag: ({value}) => value ?? 'span'}),
 	/** The page's only `useMarkInfo()` story in either framework. The highlight is `:hover`. */
 	InteractiveMark: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
@@ -167,10 +165,9 @@ export const marks = {
 	 * Reports both `useMarkInfo()` readings as attributes, which is how the spec finds a mark AND
 	 * asserts on it: `[data-depth="1"]` identifies without a test-only id.
 	 */
-	Info: defineComponent({
-		props: {value: String, meta: String, children: {type: null}},
-		setup: () => ({info: useMarkInfo()}),
-		template: '<span :data-depth="info.depth" :data-has-children="info.hasNestedMarks"><slot /></span>',
+	Info: defineMark({
+		tag: 'span',
+		attrs: ({info}) => ({'data-depth': String(info.depth), 'data-has-children': String(info.hasNestedMarks)}),
 	}),
 	/** Renders the slot itself when there is nothing nested to render. */
 	Rendering: defineComponent({

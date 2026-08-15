@@ -1,11 +1,11 @@
 import type {CSSProperties} from '@markput/core'
 import type {MarkProps} from '@markput/vue'
-import {useMark} from '@markput/vue'
+import {useMark, useMarkInfo} from '@markput/vue'
 import type {VNodeArrayChildren} from 'vue'
 import {defineComponent, h} from 'vue'
 
 // The exact sibling, not the seam name: oxlint does not honour `moduleSuffixes`.
-import type {MarkSpec} from './marks.shared'
+import type {MarkContext, MarkSpec} from './marks.shared'
 
 /**
  * The framework seam for fixture marks. `marks.react.tsx` and `marks.vue.ts` expose the same
@@ -33,28 +33,64 @@ const MARK_PROPS = {value: String, meta: String, children: {type: null}, style: 
 type MarkChildren = string | VNodeArrayChildren | undefined
 
 /**
- * A mark that is one element plus static decoration. Anything past that — a hook, a handler,
- * a second child element, a tag derived from the value — stays hand-written on its page.
+ * A mark that is one element, its decoration, and at most a click. Anything past that — a second
+ * child element, a nested component, a hook this seam does not pass on — stays hand-written.
+ *
+ * Two components, picked at DEFINITION time rather than one that branches per render. Both hooks
+ * throw on a text token and a generated mark also serves as a `Span`, so the branch keeps them
+ * out of the marks that never asked for them — and keeps this seam's shape equal to React's,
+ * where the same split is what makes the hook calls unconditional.
  */
 export function defineMark(spec: MarkSpec) {
-	const {tag, class: className, style: ownStyle, attrs, onRender} = spec
+	const {tag, class: className, style: ownStyle, attrs, on, onRender} = spec
+	const click = on?.click
+
+	if (typeof tag !== 'function' && typeof attrs !== 'function' && !click) {
+		return defineComponent({
+			inheritAttrs: false,
+			props: MARK_PROPS,
+			setup:
+				(props, {slots}) =>
+				() => {
+					onRender?.()
+					// Read inside the render function, not in `setup`: a mark's children change in place.
+					const children: MarkChildren = props.children
+
+					return h(
+						tag,
+						{class: className, style: [props.style, ownStyle], ...attrs},
+						slots.default?.() ?? children ?? props.value
+					)
+				},
+		})
+	}
 
 	return defineComponent({
 		inheritAttrs: false,
 		props: MARK_PROPS,
-		setup:
-			(props, {slots}) =>
-			() => {
+		setup(props, {slots}) {
+			// Resolved once, as `useMark`'s own doc requires: a node keeps its object for exactly
+			// as long as it keeps its id, and a new id means a new key and a fresh component.
+			const mark = useMark()
+			const info = useMarkInfo()
+
+			return () => {
 				onRender?.()
-				// Read inside the render function, not in `setup`: a mark's children change in place.
 				const children: MarkChildren = props.children
+				const context: MarkContext = {value: props.value, meta: props.meta, info, mark}
 
 				return h(
-					tag,
-					{class: className, style: [props.style, ownStyle], ...attrs},
+					typeof tag === 'function' ? tag(context) : tag,
+					{
+						class: className,
+						style: [props.style, ownStyle],
+						...(typeof attrs === 'function' ? attrs(context) : attrs),
+						onClick: click && (() => click(context)),
+					},
 					slots.default?.() ?? children ?? props.value
 				)
-			},
+			}
+		},
 	})
 }
 
@@ -79,17 +115,14 @@ export const Mark = defineMark({tag: 'mark'})
 /** The same in a `<span>` — a block row's mark, a bare nested shell, an unstyled `Span` slot. */
 export const Span = defineMark({tag: 'span'})
 
-/** The `useMark()` marks the `Base` and `Dynamic` pages both mount, identical on both today. */
-export const Removable = defineComponent<MarkProps>({
-	inheritAttrs: false,
-	setup: () => ({mark: useMark()}),
-	template: '<mark @click="mark.remove()">{{ mark.value() }}</mark>',
-})
+/** The marks the `Base` and `Dynamic` pages both mount. */
+export const Removable = defineMark({tag: 'mark', on: {click: ({mark}) => mark.remove()}})
 
-export const Focusable = defineComponent<MarkProps>({
-	inheritAttrs: false,
-	setup: () => ({mark: useMark()}),
-	template: '<abbr :title="mark.meta()" style="outline: none; white-space: pre-wrap">{{ mark.value() }}</abbr>',
+export const Focusable = defineMark({
+	tag: 'abbr',
+	style: {outline: 'none', whiteSpace: 'pre-wrap'},
+	// `{}`, not `{title: ''}`: an empty string renders `title=""` where React drops the attribute.
+	attrs: ({meta}): Record<string, string> => (meta === undefined ? {} : {title: meta}),
 })
 
 /**

@@ -10,6 +10,15 @@ export interface Mounted {
 	host: HTMLElement
 }
 
+/**
+ * A mount that can be re-rendered with a WHOLE new arg bag, so a prop the caller stops passing
+ * actually disappears rather than keeping its last value. Returns the editing host afresh: a
+ * re-render may or may not patch the same element, and no spec should have to know which.
+ */
+export interface Remountable extends Mounted {
+	rerender: (args: Record<string, unknown>) => Promise<HTMLElement>
+}
+
 export interface Echoed extends Mounted {
 	/** The last value the harness echoed back. */
 	value: () => string

@@ -81,11 +81,8 @@ function TabbedHtml({defaultValue, options}: PageArgs) {
 
 export const fixtures = {
 	MultiLevelMark: defineMark({tag: 'span', style: {margin: '0 2px'}}),
-	HtmlLikeMark: ({children, value}: MarkProps) => {
-		// oxlint-disable-next-line no-unsafe-type-assertion -- this mark's VALUE is the tag name
-		const Tag = (value ?? 'span') as ElementType
-		return <Tag>{children}</Tag>
-	},
+	/** This markup's VALUE is the tag name, so the mark IS that element. */
+	HtmlLikeMark: defineMark({tag: ({value}) => value ?? 'span'}),
 	/** The page's only `useMarkInfo()` story in either framework. The highlight is `:hover`. */
 	InteractiveMark: ({children}: MarkProps) => {
 		const info = useMarkInfo()
@@ -124,14 +121,10 @@ export const marks = {
 	 * Reports both `useMarkInfo()` readings as attributes, which is how the spec finds a mark AND
 	 * asserts on it: `[data-depth="1"]` identifies without a test-only id.
 	 */
-	Info: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		return (
-			<span data-depth={info.depth} data-has-children={info.hasNestedMarks}>
-				{children}
-			</span>
-		)
-	},
+	Info: defineMark({
+		tag: 'span',
+		attrs: ({info}) => ({'data-depth': String(info.depth), 'data-has-children': String(info.hasNestedMarks)}),
+	}),
 	/** Renders the slot itself when there is nothing nested to render. */
 	Rendering: ({children}: MarkProps) => {
 		const mark = useMark()

@@ -1,11 +1,11 @@
 import type {CSSProperties} from '@markput/core'
 import type {MarkProps} from '@markput/react'
-import {useMark} from '@markput/react'
+import {useMark, useMarkInfo} from '@markput/react'
 import type {ComponentType} from 'react'
 import {createElement} from 'react'
 
 // The exact sibling, not the seam name: oxlint does not honour `moduleSuffixes`.
-import type {MarkSpec} from './marks.shared'
+import type {MarkContext, MarkSpec} from './marks.shared'
 
 /**
  * The framework seam for fixture marks. `marks.react.tsx` and `marks.vue.ts` expose the same
@@ -17,15 +17,39 @@ import type {MarkSpec} from './marks.shared'
 export type StyledMarkProps = MarkProps & {style?: CSSProperties}
 
 /**
- * A mark that is one element plus static decoration. Anything past that — a hook, a handler,
- * a second child element, a tag derived from the value — stays hand-written on its page.
+ * A mark that is one element, its decoration, and at most a click. Anything past that — a second
+ * child element, a nested component, a hook this seam does not pass on — stays hand-written.
+ *
+ * Two component functions, picked at DEFINITION time rather than one that branches per render.
+ * `useMark()` and `useMarkInfo()` both throw on a text token, and a generated mark also serves as
+ * a `Span`; taking the branch here keeps every hook call unconditional inside its own component
+ * and keeps the hooks out of the marks that never asked for them.
  */
 export function defineMark(spec: MarkSpec): ComponentType<StyledMarkProps> {
-	const {tag, class: className, style: ownStyle, attrs, onRender} = spec
+	const {tag, class: className, style: ownStyle, attrs, on, onRender} = spec
+	const click = on?.click
 
-	return function Mark({children, value, style}: StyledMarkProps) {
+	if (typeof tag !== 'function' && typeof attrs !== 'function' && !click) {
+		return function Mark({children, value, style}: StyledMarkProps) {
+			onRender?.()
+			return createElement(tag, {className, style: {...style, ...ownStyle}, ...attrs}, children ?? value)
+		}
+	}
+
+	return function ComputedMark({children, value, meta, style}: StyledMarkProps) {
 		onRender?.()
-		return createElement(tag, {className, style: {...style, ...ownStyle}, ...attrs}, children ?? value)
+		const context: MarkContext = {value, meta, info: useMarkInfo(), mark: useMark()}
+
+		return createElement(
+			typeof tag === 'function' ? tag(context) : tag,
+			{
+				className,
+				style: {...style, ...ownStyle},
+				...(typeof attrs === 'function' ? attrs(context) : attrs),
+				onClick: click && (() => click(context)),
+			},
+			children ?? value
+		)
 	}
 }
 
@@ -50,20 +74,15 @@ export const Mark = defineMark({tag: 'mark'})
 /** The same in a `<span>` — a block row's mark, a bare nested shell, an unstyled `Span` slot. */
 export const Span = defineMark({tag: 'span'})
 
-/** The `useMark()` marks the `Base` and `Dynamic` pages both mount, identical on both today. */
-export const Removable: ComponentType<MarkProps> = () => {
-	const mark = useMark()
-	return <mark onClick={() => mark.remove()}>{mark.value()}</mark>
-}
+/** The marks the `Base` and `Dynamic` pages both mount. */
+export const Removable = defineMark({tag: 'mark', on: {click: ({mark}) => mark.remove()}})
 
-export const Focusable: ComponentType<MarkProps> = () => {
-	const mark = useMark()
-	return (
-		<abbr title={mark.meta()} style={{outline: 'none', whiteSpace: 'pre-wrap'}}>
-			{mark.value()}
-		</abbr>
-	)
-}
+export const Focusable = defineMark({
+	tag: 'abbr',
+	style: {outline: 'none', whiteSpace: 'pre-wrap'},
+	// `{}`, not `{title: ''}`: an empty string renders `title=""` where React drops the attribute.
+	attrs: ({meta}): Record<string, string> => (meta === undefined ? {} : {title: meta}),
+})
 
 /** A mark that renders nothing, for the stories whose subject is the overlay. */
 export const Empty: ComponentType<MarkProps> = () => null

@@ -1,11 +1,15 @@
 import type {Markup} from '@markput/core'
 
 import {containerSlotProps} from '../../shared/lib/framework'
+import {defineMark} from '../../shared/lib/marks'
 import {component, story, type PageMeta} from '../../shared/lib/stories'
 import {fixtures} from './Base.fixtures'
 
 /** Props the `Configured` story's marks produce for the shared `Button`. */
 type ButtonMarkProps = {label: string; primary?: boolean; onClick?: () => void}
+
+/** Alerts its `meta` on click — the page's headline story is a mark that DOES something. */
+const Alerting = defineMark({tag: 'mark', on: {click: ({meta}) => alert(meta)}})
 
 const DEFAULT_VALUE = 'Hello, clickable marked @[world](Hello! Hello!)!'
 
@@ -38,7 +42,7 @@ export default {
 } satisfies PageMeta
 
 export const Default = story({
-	args: {Mark: fixtures.Alerting, defaultValue: DEFAULT_VALUE},
+	args: {Mark: Alerting, defaultValue: DEFAULT_VALUE},
 })
 
 export const Configured = story<ButtonMarkProps>({
