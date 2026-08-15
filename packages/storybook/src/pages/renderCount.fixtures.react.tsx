@@ -1,7 +1,7 @@
 import type {MarkProps, Option} from '@markput/react'
 import {useEffect} from 'react'
 
-import {defineMark} from '../shared/lib/marks'
+import {Mark, Span} from '../shared/lib/marks'
 
 /**
  * Spec fixtures: the framework half of `renderCount.spec.ts`. Every factory hands back the
@@ -14,8 +14,8 @@ import {defineMark} from '../shared/lib/marks'
 
 /** The renderers a gate does not measure — present so the editor has something to draw. */
 export const plain = {
-	Mark: defineMark({tag: 'mark'}),
-	Span: defineMark({tag: 'span'}),
+	Mark,
+	Span,
 }
 
 export const counters = {

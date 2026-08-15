@@ -5,7 +5,7 @@ import type {ElementType} from 'react'
 import {useState} from 'react'
 
 import {useTab} from '../../shared/components/Tabs'
-import {defineMark} from '../../shared/lib/marks'
+import {defineMark, Mark, Span} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 import {HTML_TAG_STYLES} from './HtmlTagStyles'
 import {markdownOptions} from './MarkdownOptions'
@@ -79,7 +79,7 @@ function TabbedHtml({defaultValue, options}: PageArgs) {
 
 export const fixtures = {
 	/** The panel sits under the editor here; the vue fixtures put it beside it. */
-	SimpleMark: defineMark({tag: 'span'}),
+	SimpleMark: Span,
 	MultiLevelMark: defineMark({tag: 'span', style: {margin: '0 2px'}}),
 	HtmlLikeMark: ({children, value}: MarkProps) => {
 		// oxlint-disable-next-line no-unsafe-type-assertion -- this mark's VALUE is the tag name
@@ -179,8 +179,8 @@ export const marks = {
 	},
 	/** The backward-compatibility mark: mounted on `__value__` markups, which predate nesting. */
 	Flat: defineMark({tag: 'span', attrs: {'data-testid': 'flat-mark'}}),
-	Plain: defineMark({tag: 'mark'}),
-	Bare: defineMark({tag: 'span'}),
+	Plain: Mark,
+	Bare: Span,
 	Mixed: ({children}: MarkProps) => {
 		const info = useMarkInfo()
 		return <mark data-has-children={info.hasNestedMarks}>{children}</mark>
@@ -192,5 +192,5 @@ export const marks = {
 		return <span>{info.hasNestedMarks ? children : mark.slot()}</span>
 	},
 	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
-	MarkRoot: defineMark({tag: 'mark'}),
+	MarkRoot: Mark,
 }

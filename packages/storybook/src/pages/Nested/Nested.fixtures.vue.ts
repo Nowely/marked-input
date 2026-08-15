@@ -2,7 +2,7 @@ import {MarkedInput, useMark, useMarkInfo} from '@markput/vue'
 import {computed, defineComponent, ref} from 'vue'
 
 import {useTab} from '../../shared/components/Tabs'
-import {defineMark} from '../../shared/lib/marks'
+import {defineMark, Mark, Span} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 import {HTML_TAG_STYLES} from './HtmlTagStyles'
 import {markdownOptions} from './MarkdownOptions'
@@ -105,7 +105,7 @@ const TabbedHtml = defineComponent({
 
 export const fixtures = {
 	/** The panel sits beside the editor here; the react fixtures put it underneath. */
-	SimpleMark: defineMark({tag: 'span'}),
+	SimpleMark: Span,
 	MultiLevelMark: defineMark({tag: 'span', style: {margin: '0 2px'}}),
 	HtmlLikeMark: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
@@ -223,8 +223,8 @@ export const marks = {
 	}),
 	/** The backward-compatibility mark: mounted on `__value__` markups, which predate nesting. */
 	Flat: defineMark({tag: 'span', attrs: {'data-testid': 'flat-mark'}}),
-	Plain: defineMark({tag: 'mark'}),
-	Bare: defineMark({tag: 'span'}),
+	Plain: Mark,
+	Bare: Span,
 	Mixed: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
 		setup: () => ({info: useMarkInfo()}),
@@ -237,5 +237,5 @@ export const marks = {
 		template: '<span><slot v-if="info.hasNestedMarks" /><template v-else>{{ mark.slot() }}</template></span>',
 	}),
 	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
-	MarkRoot: defineMark({tag: 'mark'}),
+	MarkRoot: Mark,
 }

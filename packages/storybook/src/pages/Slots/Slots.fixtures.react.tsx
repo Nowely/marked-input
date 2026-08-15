@@ -2,7 +2,7 @@ import {MarkedInput} from '@markput/react'
 import type {HTMLAttributes, KeyboardEvent, Ref} from 'react'
 import {useState} from 'react'
 
-import {defineMark} from '../../shared/lib/marks'
+import {defineMark, Mark} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 
 /**
@@ -93,7 +93,7 @@ export const fixtures = {
 
 /** Spec fixture: the mark the shared spec mounts everywhere. */
 export const marks = {
-	Children: defineMark({tag: 'mark'}),
+	Children: Mark,
 }
 
 /** Spec fixtures: `slots.container` replacements. */

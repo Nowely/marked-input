@@ -1,4 +1,4 @@
-import {defineMark} from '../../shared/lib/marks'
+import {defineMark, Mark} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -6,7 +6,7 @@ import {defineMark} from '../../shared/lib/marks'
  * project if this file drifts.
  */
 export const fixtures = {
-	Value: defineMark({tag: 'mark'}),
+	Value: Mark,
 }
 
 /** Spec fixture: the adapter-owned text surface the cross-select spec configures. */

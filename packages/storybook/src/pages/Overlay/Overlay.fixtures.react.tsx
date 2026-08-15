@@ -1,6 +1,6 @@
 import {useOverlay} from '@markput/react'
 
-import {defineMark, Empty} from '../../shared/lib/marks'
+import {Empty, Mark} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -8,7 +8,7 @@ import {defineMark, Empty} from '../../shared/lib/marks'
  * project if this file drifts.
  */
 export const fixtures = {
-	Mark: defineMark({tag: 'mark'}),
+	Mark,
 	/** The three overlay-only stories render no mark: the overlay itself is what they show. */
 	Empty,
 	Overlay: () => <h1>I am the overlay</h1>,

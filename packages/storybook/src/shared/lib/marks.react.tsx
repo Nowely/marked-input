@@ -28,6 +28,15 @@ export function defineMark(spec: MarkSpec): ComponentType<StyledMarkProps> {
 	}
 }
 
+/**
+ * THE undecorated mark: `<mark>{children ?? value}</mark>`. Ten pages wrote this call out under
+ * ten different names; a page names it again only when the name carries meaning its story needs.
+ */
+export const Mark = defineMark({tag: 'mark'})
+
+/** The same in a `<span>` — a block row's mark, a bare nested shell, an unstyled `Span` slot. */
+export const Span = defineMark({tag: 'span'})
+
 /** The `useMark()` marks the `Base` and `Dynamic` pages both mount, identical on both today. */
 export const Removable: ComponentType<MarkProps> = () => {
 	const mark = useMark()
