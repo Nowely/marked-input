@@ -23,7 +23,4 @@ export const fixtures = {
 		setup: () => ({mark: useMark()}),
 		template: '<mark>{{ mark.value() }}</mark>',
 	}),
-	/** The react instance hides two of these stories from its docs page; this one shows them. */
-	hiddenFromDocs: {},
-	caretInfo: [],
 }

@@ -1,5 +1,6 @@
 import type {Markup} from '@markput/core'
 
+import {containerSlotProps} from '../../shared/lib/framework'
 import {component, story, type PageMeta} from '../../shared/lib/stories'
 import {fixtures} from './Base.fixtures'
 
@@ -56,7 +57,7 @@ export const Configured = story<ButtonMarkProps>({
 			},
 		],
 		value: CONFIGURED_VALUE,
-		slotProps: {container: {...sharedContainerHandlers, ...fixtures.containerSlotProps}},
+		slotProps: {container: {...sharedContainerHandlers, ...containerSlotProps}},
 	},
 	parameters: {plainValue: 'right'},
 })

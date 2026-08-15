@@ -25,10 +25,6 @@ export const fixtures = {
 		template: '<mark @click="alertMeta">{{ value }}</mark>',
 	}),
 	Button,
-	/** Vue takes `onKeydown`; React takes `onKeyDown`. The other four are named identically. */
-	containerSlotProps: {
-		onKeydown: () => console.log('onKeyDown'),
-	},
 }
 
 /**

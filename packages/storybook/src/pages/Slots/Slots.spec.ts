@@ -2,9 +2,10 @@ import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {textSurfaces} from '../../shared/lib/dom'
+import {containerRef, eventProps, outerClass} from '../../shared/lib/framework'
 import {defineMark, Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
-import {containerRef, CustomContainer, eventProps, outerClass} from './Slots.fixtures'
+import {CustomContainer} from './Slots.fixtures'
 
 const VALUE = 'Hello world'
 

@@ -1,13 +1,4 @@
 import {useMark} from '@markput/react'
-import type {Decorator} from '@storybook/react'
-
-import {useCaretInfo} from '../../shared/hooks/useCaretInfo.react'
-
-/** Debug aid with no Vue counterpart: a tooltip on `document.body`, outside the story container. */
-const withCaretInfo: Decorator = Story => {
-	useCaretInfo(true)
-	return <Story />
-}
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -22,7 +13,4 @@ export const fixtures = {
 		const mark = useMark()
 		return <mark>{mark.value()}</mark>
 	},
-	/** Only the react instance hides these stories from its docs page. */
-	hiddenFromDocs: {docs: {disable: true}},
-	caretInfo: [withCaretInfo],
 }

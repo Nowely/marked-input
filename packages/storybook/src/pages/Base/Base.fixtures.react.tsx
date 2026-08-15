@@ -13,10 +13,6 @@ import {Mark} from '../../shared/lib/marks'
 export const fixtures = {
 	Alerting: (props: MarkProps) => <mark onClick={_ => alert(props.meta)}>{props.value}</mark>,
 	Button,
-	/** React takes `onKeyDown`; Vue takes `onKeydown`. The other four are named identically. */
-	containerSlotProps: {
-		onKeyDown: () => console.log('onKeyDown'),
-	},
 }
 
 /** Spec fixtures: mark components the shared spec mounts through story args. */

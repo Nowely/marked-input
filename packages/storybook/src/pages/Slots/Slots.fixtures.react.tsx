@@ -96,26 +96,3 @@ export const fixtures = {
  * default `<div>` by its tag — the container IS the editing host, so no id is needed to find it.
  */
 export const CustomContainer = ({ref, ...props}: DivProps) => <section {...props} ref={ref} />
-
-/**
- * The `slotProps.container` keys the two adapters spell differently. React's synthetic
- * `onFocus`/`onBlur` bubble, so it needs no capture-phase pair; Vue binds the native events,
- * which do not, and takes `onFocusin`/`onFocusout` instead.
- */
-export const eventProps = {
-	keyDown: 'onKeyDown',
-	focus: 'onFocus',
-	blur: 'onBlur',
-} as const
-
-/** The OUTER class arg — `className` here, `class` in Vue. */
-export const outerClass = (name: string) => ({className: name})
-
-/**
- * An object ref for `slotProps.container.ref`: React's is `{current}`, Vue's is a `Ref`. The
- * reader is what the shared spec asserts on.
- */
-export function containerRef() {
-	const ref: {current: HTMLElement | null} = {current: null}
-	return {ref, current: () => ref.current}
-}

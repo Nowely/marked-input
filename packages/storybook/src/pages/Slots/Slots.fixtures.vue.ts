@@ -1,6 +1,6 @@
 import {MarkedInput} from '@markput/vue'
-import type {PropType, Ref} from 'vue'
-import {computed, defineComponent, reactive, ref} from 'vue'
+import type {PropType} from 'vue'
+import {computed, defineComponent, reactive} from 'vue'
 
 import {defineMark} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
@@ -109,26 +109,3 @@ export const fixtures = {
  * default `<div>` by its tag — the container IS the editing host, so no id is needed to find it.
  */
 export const CustomContainer = defineComponent({template: '<section><slot /></section>'})
-
-/**
- * The `slotProps.container` keys the two adapters spell differently. React's synthetic
- * `onFocus`/`onBlur` bubble, so it needs no capture-phase pair; Vue binds the native events,
- * which do not, and takes `onFocusin`/`onFocusout` instead.
- */
-export const eventProps = {
-	keyDown: 'onKeydown',
-	focus: 'onFocusin',
-	blur: 'onFocusout',
-} as const
-
-/** The OUTER class arg — `class` here, `className` in React. */
-export const outerClass = (name: string) => ({class: name})
-
-/**
- * An object ref for `slotProps.container.ref`: Vue's is a `Ref`, React's is `{current}`. The
- * reader is what the shared spec asserts on.
- */
-export function containerRef() {
-	const element: Ref<HTMLElement | null> = ref(null)
-	return {ref: element, current: () => element.value}
-}

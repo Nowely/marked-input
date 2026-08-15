@@ -10,6 +10,8 @@ import type {PageArgs} from '../../shared/lib/stories'
 import {HTML_TAG_STYLES} from './HtmlTagStyles'
 import {markdownOptions} from './MarkdownOptions'
 
+import styles from './InteractiveMark.module.css'
+
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
  * `satisfies` — `Nested.stories.ts` is the contract, and it fails to compile under either
@@ -84,10 +86,9 @@ export const fixtures = {
 		const Tag = (value ?? 'span') as ElementType
 		return <Tag>{children}</Tag>
 	},
-	/** The page's only `useMarkInfo()` story in either framework. */
+	/** The page's only `useMarkInfo()` story in either framework. The highlight is `:hover`. */
 	InteractiveMark: ({children}: MarkProps) => {
 		const info = useMarkInfo()
-		const [isHighlighted, setIsHighlighted] = useState(false)
 		const handleAction = () => {
 			console.log('Mark clicked:', {depth: info.depth, hasNestedMarks: info.hasNestedMarks})
 		}
@@ -96,6 +97,7 @@ export const fixtures = {
 			<span
 				role="button"
 				tabIndex={0}
+				className={styles.interactive}
 				onClick={e => {
 					e.stopPropagation()
 					handleAction()
@@ -105,18 +107,6 @@ export const fixtures = {
 					e.preventDefault()
 					e.stopPropagation()
 					handleAction()
-				}}
-				onMouseEnter={() => setIsHighlighted(true)}
-				onMouseLeave={() => setIsHighlighted(false)}
-				style={{
-					display: 'inline-block',
-					padding: '4px 8px',
-					margin: '2px',
-					border: isHighlighted ? '2px solid #2196f3' : '1px solid #ccc',
-					borderRadius: '4px',
-					backgroundColor: isHighlighted ? '#e3f2fd' : '#f5f5f5',
-					cursor: 'pointer',
-					transition: 'all 0.2s',
 				}}
 				title={`Depth: ${info.depth}, Nested: ${info.hasNestedMarks}`}
 			>

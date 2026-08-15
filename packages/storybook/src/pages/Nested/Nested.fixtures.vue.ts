@@ -7,6 +7,8 @@ import type {PageArgs} from '../../shared/lib/stories'
 import {HTML_TAG_STYLES} from './HtmlTagStyles'
 import {markdownOptions} from './MarkdownOptions'
 
+import styles from './InteractiveMark.module.css'
+
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
  * `satisfies` — `Nested.stories.ts` is the contract, and it fails to compile under either
@@ -109,19 +111,18 @@ export const fixtures = {
 		props: {value: String, meta: String, children: {type: null}},
 		template: `<component :is="value || 'span'"><slot /></component>`,
 	}),
-	/** The page's only `useMarkInfo()` story in either framework. */
+	/** The page's only `useMarkInfo()` story in either framework. The highlight is `:hover`. */
 	InteractiveMark: defineComponent({
 		props: {value: String, meta: String, children: {type: null}},
 		setup() {
 			const info = useMarkInfo()
-			const isHighlighted = ref(false)
 			const handleAction = () => {
 				console.log('Mark clicked:', {depth: info.depth, hasNestedMarks: info.hasNestedMarks})
 			}
 
 			return {
-				isHighlighted,
 				handleAction,
+				interactive: styles.interactive,
 				title: `Depth: ${info.depth}, Nested: ${info.hasNestedMarks}`,
 				handleKeydown(event: KeyboardEvent) {
 					if (event.key !== 'Enter' && event.key !== ' ') return
@@ -135,21 +136,10 @@ export const fixtures = {
 			<span
 				role="button"
 				tabindex="0"
+				:class="interactive"
 				:title="title"
-				:style="{
-					display: 'inline-block',
-					padding: '4px 8px',
-					margin: '2px',
-					border: isHighlighted ? '2px solid #2196f3' : '1px solid #ccc',
-					borderRadius: '4px',
-					backgroundColor: isHighlighted ? '#e3f2fd' : '#f5f5f5',
-					cursor: 'pointer',
-					transition: 'all 0.2s',
-				}"
 				@click.stop="handleAction"
 				@keydown="handleKeydown"
-				@mouseenter="isHighlighted = true"
-				@mouseleave="isHighlighted = false"
 			><slot /></span>`,
 	}),
 	/**
