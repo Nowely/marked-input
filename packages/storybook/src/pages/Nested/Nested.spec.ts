@@ -3,7 +3,7 @@ import {beforeEach, describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {findEditingHost, getElement} from '../../shared/lib/dom'
-import {Mark, Span} from '../../shared/lib/marks'
+import {defineMark, Mark, Span} from '../../shared/lib/marks'
 import {composePage, mount, mountComponent} from '../../shared/lib/page'
 import {capture, marks} from './Nested.fixtures'
 import * as NestedStories from './Nested.stories'
@@ -65,20 +65,24 @@ describe('Nested Marks Rendering', () => {
 		expect(depthsOf(host)).toEqual(['0', '1', '1'])
 	})
 
-	it('render different markup types nested', async () => {
+	it('routes each nested markup to the Mark of its own option', async () => {
 		const {host} = await mountComponent({
-			Mark: marks.Info,
 			value: '#[tag with @[mention]]',
 			options: [
-				{markup: TAG_MARKUP, overlay: {trigger: '#'}},
-				{markup: SLOT_MARKUP, overlay: {trigger: '@'}},
+				{markup: TAG_MARKUP, Mark: defineMark({tag: 'b'}), overlay: {trigger: '#'}},
+				{markup: SLOT_MARKUP, Mark: defineMark({tag: 'i'}), overlay: {trigger: '@'}},
 			],
 		})
 
-		// Two markups, one nested in the other. This does NOT prove the two were told apart:
-		// the mark reports its DEPTH, not which option matched, so a fixture that reads the
-		// option index is what that assertion would need.
-		expect(depthsOf(host)).toEqual(['0', '1'])
+		const tag = host.querySelector('b')
+		const mention = host.querySelector('i')
+
+		// A per-option `Mark` is THE mechanism that tells markups apart, so giving the two options
+		// different elements is what makes the routing observable. Containment pins the direction:
+		// were the options swapped, the `@[...]` element would be the outer one.
+		expect(tag).not.toBeNull()
+		expect(mention).not.toBeNull()
+		expect(tag?.contains(mention)).toBe(true)
 	})
 
 	it('handle empty nested marks', async () => {
