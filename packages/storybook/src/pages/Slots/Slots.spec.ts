@@ -2,8 +2,9 @@ import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {textSurfaces} from '../../shared/lib/dom'
+import {Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
-import {containerRef, containers, eventProps, marks, outerClass, spans} from './Slots.fixtures'
+import {containerRef, containers, eventProps, outerClass, spans} from './Slots.fixtures'
 
 const VALUE = 'Hello world'
 
@@ -181,7 +182,7 @@ describe('Slots API', () => {
 		})
 
 		it('freeze a value-only mark root as an atomic', async () => {
-			await mountComponent({Mark: marks.Children, value: 'Hello @[world](1)'})
+			await mountComponent({Mark, value: 'Hello @[world](1)'})
 
 			const mark = page.getByRole('mark')
 			await expect.element(mark).toHaveAttribute('contenteditable', 'false')
@@ -290,7 +291,7 @@ describe('Slots API', () => {
 
 		it('handle multiple marked values with custom Span', async () => {
 			const {host} = await mountComponent({
-				Mark: marks.Children,
+				Mark,
 				value: '@[hello] world @[test]',
 				Span: spans.TextTestid,
 			})

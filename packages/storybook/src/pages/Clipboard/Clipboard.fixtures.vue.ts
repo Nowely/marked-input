@@ -34,7 +34,6 @@ const PlainTextInput = defineComponent({
 })
 
 export const fixtures = {
-	Mark,
 	NestedMark,
 	renderPlainText: () => PlainTextInput,
 }

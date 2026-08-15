@@ -1,16 +1,11 @@
 import {useOverlay} from '@markput/react'
 
-import {Empty, Mark} from '../../shared/lib/marks'
-
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
  * `satisfies` — `Overlay.stories.ts` is the contract, and it fails to compile under either
  * project if this file drifts.
  */
 export const fixtures = {
-	Mark,
-	/** The three overlay-only stories render no mark: the overlay itself is what they show. */
-	Empty,
 	Overlay: () => <h1>I am the overlay</h1>,
 	Tooltip: () => {
 		const {style} = useOverlay()

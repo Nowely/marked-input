@@ -4,6 +4,7 @@ import {page, userEvent} from 'vitest/browser'
 
 import {caretIsInside, editingHost, findEditingHost, getElement, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtOffset, focusAtStart} from '../../shared/lib/focus'
+import {Empty, Focusable, Mark, Removable} from '../../shared/lib/marks'
 import {composePage, mount, mountEcho} from '../../shared/lib/page'
 import {DroppedReadOnly, marks, Overlay} from './Base.fixtures'
 import * as BaseStories from './Base.stories'
@@ -28,7 +29,7 @@ describe('Component: MarkedInput', () => {
 	})
 
 	it('renders mark roots without adapter wrappers', async () => {
-		const {host} = await mount(Default, {Mark: marks.Value, defaultValue: 'hello @[world](1)'})
+		const {host} = await mount(Default, {Mark, defaultValue: 'hello @[world](1)'})
 		const mark = host.querySelector('mark')!
 
 		expect(mark.parentElement).toBe(host)
@@ -41,7 +42,7 @@ describe('Component: MarkedInput', () => {
 	it('preserves option-provided children for flat mark components', async () => {
 		const markup = '@(__value__)' as Markup
 		const {host} = await mount(Default, {
-			Mark: marks.Children,
+			Mark,
 			options: [{markup, mark: ({value}: {value?: string}) => ({children: value})}],
 			defaultValue: 'hello @(world)',
 		})
@@ -74,7 +75,7 @@ describe('Component: MarkedInput', () => {
 	})
 
 	it('correctly process an annotation type', async () => {
-		const {host} = await mount(Default, {Mark: marks.Value, defaultValue: ''})
+		const {host} = await mount(Default, {Mark, defaultValue: ''})
 		const [span] = textSurfaces(host)
 
 		await expect.element(span).toBeInTheDocument()
@@ -88,7 +89,7 @@ describe('Component: MarkedInput', () => {
 	})
 
 	it('walks the caret across mark tokens with the arrow keys', async () => {
-		const {host} = await mount(Default, {Mark: marks.Focusable, value: EDITABLE_MARK_VALUE})
+		const {host} = await mount(Default, {Mark: Focusable, value: EDITABLE_MARK_VALUE})
 		const [firstSpan, secondSpan, thirdSpan] = textSurfaces(host)
 		const [firstAbbr] = host.querySelectorAll('abbr')
 
@@ -117,7 +118,7 @@ describe('Component: MarkedInput', () => {
 	})
 
 	it('support remove itself', async () => {
-		await mountEcho(Default, {Mark: marks.Removable, value: REMOVABLE_MARK_VALUE})
+		await mountEcho(Default, {Mark: Removable, value: REMOVABLE_MARK_VALUE})
 
 		let mark = page.getByText('contain')
 		await userEvent.click(mark)
@@ -139,7 +140,7 @@ describe('Component: MarkedInput', () => {
 
 	it('keeps controlled span input unchanged until value is echoed', async () => {
 		const onChange = vi.fn()
-		const {host} = await mount(Default, {Mark: marks.Value, value: 'Hello @[world](1)', onChange})
+		const {host} = await mount(Default, {Mark, value: 'Hello @[world](1)', onChange})
 		const [span] = textSurfaces(host)
 
 		await focusAtEnd(span)
@@ -151,7 +152,7 @@ describe('Component: MarkedInput', () => {
 
 	it('keeps controlled mark visible after removal until value is echoed', async () => {
 		const onChange = vi.fn()
-		const {host} = await mount(Default, {Mark: marks.Removable, value: 'Hello @[world](1)', onChange})
+		const {host} = await mount(Default, {Mark: Removable, value: 'Hello @[world](1)', onChange})
 		const mark = host.querySelector<HTMLElement>('mark')!
 
 		await userEvent.click(mark)
@@ -163,7 +164,7 @@ describe('Component: MarkedInput', () => {
 	it('keeps controlled overlay selection text unchanged until value is echoed', async () => {
 		const onChange = vi.fn()
 		const {host} = await mount(Default, {
-			Mark: marks.Value,
+			Mark,
 			value: 'Hello @',
 			onChange,
 			showOverlayOn: 'selectionChange',
@@ -186,7 +187,7 @@ describe('Component: MarkedInput', () => {
 
 	it('support to pass a forward overlay', async () => {
 		await mount(Default, {
-			Mark: marks.Empty,
+			Mark: Empty,
 			Overlay,
 			showOverlayOn: 'selectionChange',
 			defaultValue: 'Hello @',
@@ -202,7 +203,7 @@ describe('Component: MarkedInput', () => {
 
 	it('not create empty mark when pressing Enter in overlay without selection', async () => {
 		await mount(Default, {
-			Mark: marks.Value,
+			Mark,
 			options: [
 				{
 					markup: '@[__value__](test:__meta__)' as Markup,

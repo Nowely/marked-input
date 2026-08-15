@@ -1,8 +1,6 @@
 import type {MarkProps, Option} from '@markput/react'
 import {useEffect} from 'react'
 
-import {Mark, Span} from '../shared/lib/marks'
-
 /**
  * Spec fixtures: the framework half of `renderCount.spec.ts`. Every factory hands back the
  * component AND its reader, so the shared spec never touches a framework spy.
@@ -11,12 +9,6 @@ import {Mark, Span} from '../shared/lib/marks'
  * `useSyncExternalStore` calls `getSnapshot` without committing, and a body counter cannot see
  * those — counting anywhere else would measure the subscription instead of the render.
  */
-
-/** The renderers a gate does not measure — present so the editor has something to draw. */
-export const plain = {
-	Mark,
-	Span,
-}
 
 export const counters = {
 	/** A `Mark` counting its render invocations. */

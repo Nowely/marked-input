@@ -1,13 +1,9 @@
-import {defineMark, Mark} from '../../shared/lib/marks'
+import {defineMark} from '../../shared/lib/marks'
 
 /**
- * Story fixtures: the framework half of this page's stories. There is no shared interface to
- * `satisfies` — `Selection.stories.ts` is the contract, and it fails to compile under either
- * project if this file drifts.
+ * The page's one framework-resolved fixture. Its stories mount the seam's marks directly, so
+ * nothing else here has a framework half.
+ *
+ * Spec fixture: the adapter-owned text surface the cross-select spec configures.
  */
-export const fixtures = {
-	Value: Mark,
-}
-
-/** Spec fixture: the adapter-owned text surface the cross-select spec configures. */
 export const Span = defineMark({tag: 'strong'})

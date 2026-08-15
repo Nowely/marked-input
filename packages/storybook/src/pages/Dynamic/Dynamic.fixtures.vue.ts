@@ -2,8 +2,6 @@ import type {MarkProps} from '@markput/vue'
 import {useMark} from '@markput/vue'
 import {defineComponent} from 'vue'
 
-import {Focusable, Removable} from '../../shared/lib/marks'
-
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
  * `satisfies` — `Dynamic.stories.ts` is the contract, and it fails to compile under either
@@ -25,8 +23,6 @@ export const fixtures = {
 		setup: () => ({mark: useMark()}),
 		template: '<mark>{{ mark.value() }}</mark>',
 	}),
-	Removable,
-	Focusable,
 	/** The react instance hides two of these stories from its docs page; this one shows them. */
 	hiddenFromDocs: {},
 	caretInfo: [],

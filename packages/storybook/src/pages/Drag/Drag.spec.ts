@@ -4,8 +4,8 @@ import {page, userEvent} from 'vitest/browser'
 import {caretIsInside, childrenOf, firstChild, getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart, verifyCaretPosition} from '../../shared/lib/focus'
 import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
+import {Mark} from '../../shared/lib/marks'
 import {composePage, mount, mountComponent, mountEcho} from '../../shared/lib/page'
-import {marks} from './Drag.fixtures'
 import * as DragStories from './Drag.stories'
 
 const {Markdown, PlainTextDrag, MarkdownDrag, ReadOnlyDrag, TodoList} = composePage(DragStories)
@@ -24,7 +24,7 @@ const MARKDOWN_DRAG_VALUE =
  * `Drag.stories.ts`.
  */
 const CONTROLLED_ARGS = {
-	Mark: marks.Value,
+	Mark,
 	value: 'hello @[world](1)\n\nfoo',
 	layout: 'block',
 	draggable: true,

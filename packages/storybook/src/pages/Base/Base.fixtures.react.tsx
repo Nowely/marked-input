@@ -3,7 +3,7 @@ import {MarkedInput, useMark} from '@markput/react'
 import {useState} from 'react'
 
 import {Button} from '../../shared/components/Button'
-import {Empty, Focusable, Mark, Removable} from '../../shared/lib/marks'
+import {Mark} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -21,21 +21,16 @@ export const fixtures = {
 
 /** Spec fixtures: mark components the shared spec mounts through story args. */
 export const marks = {
-	Value: Mark,
-	Children: Mark,
 	Todo: ({children}: MarkProps) => (
 		<span>
 			<input type="checkbox" aria-label="done" />
 			{children}
 		</span>
 	),
-	Focusable,
-	Removable,
 	Updatable: () => {
 		const mark = useMark()
 		return <mark onClick={() => mark.update({value: `${mark.value()}1`})}>{mark.value()}</mark>
 	},
-	Empty,
 }
 
 export const Overlay = () => <span>I'm here!</span>
@@ -46,7 +41,6 @@ export const Overlay = () => <span>I'm here!</span>
  */
 export const DroppedReadOnly = () => {
 	const [locked, setLocked] = useState(true)
-	const Mark = ({value}: MarkProps) => <mark>{value}</mark>
 
 	return (
 		<>

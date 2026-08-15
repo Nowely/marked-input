@@ -2,7 +2,7 @@ import {MarkedInput, useMark} from '@markput/vue'
 import {defineComponent, ref} from 'vue'
 
 import Button from '../../shared/components/Button/Button.vue'
-import {Empty, Focusable, Mark, Removable} from '../../shared/lib/marks'
+import {Mark} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -40,20 +40,15 @@ export const fixtures = {
  * that reads through `useMark()`, through the slot, or through only part of the pair needs it.
  */
 export const marks = {
-	Value: Mark,
-	Children: Mark,
 	Todo: defineComponent({
 		inheritAttrs: false,
 		template: '<span><input type="checkbox" aria-label="done" /><slot /></span>',
 	}),
-	Focusable,
-	Removable,
 	Updatable: defineComponent({
 		inheritAttrs: false,
 		setup: () => ({mark: useMark()}),
 		template: '<mark @click="mark.update({value: `${mark.value()}1`})">{{ mark.value() }}</mark>',
 	}),
-	Empty,
 }
 
 export const Overlay = defineComponent({template: `<span>I'm here!</span>`})
@@ -66,7 +61,7 @@ export const DroppedReadOnly = defineComponent({
 	components: {MarkedInput},
 	setup() {
 		const locked = ref(true)
-		return {locked, unlock: () => (locked.value = false), Mark: marks.Value}
+		return {locked, unlock: () => (locked.value = false), Mark}
 	},
 	template: `
 		<div>

@@ -4,8 +4,9 @@ import {page, userEvent} from 'vitest/browser'
 
 import {childrenOf, getElement} from '../shared/lib/dom'
 import {focusAtEnd} from '../shared/lib/focus'
+import {Mark as PlainMark, Span as PlainSpan} from '../shared/lib/marks'
 import {mountApi, mountComponent} from '../shared/lib/page'
-import {counters, plain} from './renderCount.fixtures'
+import {counters} from './renderCount.fixtures'
 
 /**
  * Render-count gates, held against BOTH adapters from one file. The bridges differ — React
@@ -33,7 +34,7 @@ const rowsOf = (host: HTMLElement) => childrenOf(host)
 describe('Render-count gates: commit routing', () => {
 	it('pure text keystroke does not re-render Span; structural edit does', async () => {
 		const span = counters.span()
-		await mountComponent({Mark: plain.Mark, Span: span.Span, defaultValue: 'Hello @[mark](1)!'})
+		await mountComponent({Mark: PlainMark, Span: span.Span, defaultValue: 'Hello @[mark](1)!'})
 
 		await focusAtEnd(getElement(page.getByText('!')))
 
@@ -65,7 +66,7 @@ describe('Render-count gates: commit routing', () => {
 	 * whole suite green except this case, which sees zero announcements instead of one.
 	 */
 	it('a mark value change announces changed — the commit completes with no root-list move', async () => {
-		const {api} = await mountApi({Mark: plain.Mark, Span: plain.Span, defaultValue: 'a@[x](1)b'})
+		const {api} = await mountApi({Mark: PlainMark, Span: PlainSpan, defaultValue: 'a@[x](1)b'})
 		await expect.element(page.getByText('x')).toBeInTheDocument()
 
 		const announced: number[] = []
@@ -106,7 +107,7 @@ describe('Render-count gates: structural fan-out', () => {
 
 	it('a head insert at 100 marks re-renders exactly the inserted mark', async () => {
 		const mark = counters.mark()
-		await mountComponent({Mark: mark.Mark, Span: plain.Span, defaultValue: document100})
+		await mountComponent({Mark: mark.Mark, Span: PlainSpan, defaultValue: document100})
 		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
 
 		await focusAtEnd(getElement(page.getByText('HEAD ')))
@@ -123,7 +124,7 @@ describe('Render-count gates: structural fan-out', () => {
 
 	it('one mark value change at 100 marks re-renders exactly that mark', async () => {
 		const mark = counters.mark()
-		const {api} = await mountApi({Mark: mark.Mark, Span: plain.Span, defaultValue: document100})
+		const {api} = await mountApi({Mark: mark.Mark, Span: PlainSpan, defaultValue: document100})
 		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
 
 		const baseline = mark.renders()
@@ -229,7 +230,7 @@ describe('Remount gates: identity keys', () => {
 		const log = counters.markMounts()
 		await mountComponent({
 			Mark: log.Mark,
-			Span: plain.Span,
+			Span: PlainSpan,
 			defaultValue: 'Hello @[a](1) and @[b](2)!',
 		})
 		await expect.element(page.getByText('b')).toBeInTheDocument()

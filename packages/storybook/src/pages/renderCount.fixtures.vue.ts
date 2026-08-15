@@ -1,8 +1,6 @@
 import type {Option} from '@markput/vue'
 import {defineComponent, h, onMounted} from 'vue'
 
-import {Mark, Span} from '../shared/lib/marks'
-
 /**
  * Spec fixtures: the framework half of `renderCount.spec.ts`. Every factory hands back the
  * component AND its reader, so the shared spec never touches a framework spy.
@@ -15,12 +13,6 @@ import {Mark, Span} from '../shared/lib/marks'
  * `meta` is declared even though nothing reads it: an undeclared prop falls through onto the
  * mark root as an attribute, which no React fixture does.
  */
-
-/** The renderers a gate does not measure — present so the editor has something to draw. */
-export const plain = {
-	Mark,
-	Span,
-}
 
 export const counters = {
 	/** A `Mark` counting its render invocations. */

@@ -28,7 +28,6 @@ function PlainTextInput() {
 }
 
 export const fixtures = {
-	Mark,
 	NestedMark,
 	renderPlainText: () => <PlainTextInput />,
 }

@@ -1,6 +1,6 @@
 import type {Option} from '@markput/react'
 
-import {defineMark, Mark, Span} from '../../shared/lib/marks'
+import {defineMark, Span} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -18,9 +18,4 @@ export const fixtures = {
 	MarkdownMark: defineMark({tag: 'span', style: {margin: '0 1px'}}),
 	ParagraphMark,
 	paragraphOptions,
-}
-
-/** Spec fixtures: mark components the shared spec mounts through `mountComponent`. */
-export const marks = {
-	Value: Mark,
 }

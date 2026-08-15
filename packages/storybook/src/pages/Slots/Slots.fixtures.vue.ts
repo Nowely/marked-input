@@ -2,7 +2,7 @@ import {MarkedInput} from '@markput/vue'
 import type {PropType, Ref} from 'vue'
 import {computed, defineComponent, reactive, ref} from 'vue'
 
-import {defineMark, Mark} from '../../shared/lib/marks'
+import {defineMark} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 
 /**
@@ -102,11 +102,6 @@ export const fixtures = {
 			setup: () => ({args}),
 			template: '<EventLog v-bind="args" />',
 		}),
-}
-
-/** Spec fixture: the mark the shared spec mounts everywhere. */
-export const marks = {
-	Children: Mark,
 }
 
 /** Spec fixtures: `slots.container` replacements. */
