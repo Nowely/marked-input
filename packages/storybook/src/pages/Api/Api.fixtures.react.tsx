@@ -1,19 +1,27 @@
-import type {MarkNode, MarkProps, MarkputApi, Markup, TextNode} from '@markput/react'
+import type {MarkNode, MarkputApi, Markup, Option, TextNode} from '@markput/react'
 import {MarkedInput} from '@markput/react'
-import type {Meta, StoryObj} from '@storybook/react-vite'
 import {useRef, useState} from 'react'
 
-const MARKUP: Markup = '@[__value__](__meta__)'
+import {Mark} from '../../shared/lib/marks'
+import type {PageArgs} from '../../shared/lib/stories'
 
-const Mark = ({value}: MarkProps) => <mark>{value}</mark>
+/**
+ * Story fixtures: the framework half of this page's stories. There is no shared interface to
+ * `satisfies` — `Api.stories.ts` is the contract, and it fails to compile under either project
+ * if this file drifts.
+ */
+
+const MARKUP = '@[__value__](__meta__)' as Markup
+
+const OPTIONS: Option[] = [{markup: MARKUP}]
 
 /**
  * US-5 driven entirely through the §2.3 host object: every button is a `MarkputApi` verb
  * over node anchors, with no global offsets anywhere.
  */
-const Playground = ({layout, initial}: {layout: 'inline' | 'block'; initial: string}) => {
+function Playground({layout, defaultValue}: PageArgs) {
 	const api = useRef<MarkputApi>(null)
-	const [value, setValue] = useState(initial)
+	const [value, setValue] = useState(defaultValue)
 
 	const nodes = (): readonly (MarkNode | TextNode)[] => api.current?.nodes() ?? []
 
@@ -34,10 +42,10 @@ const Playground = ({layout, initial}: {layout: 'inline' | 'block'; initial: str
 			<MarkedInput
 				ref={api}
 				layout={layout}
-				defaultValue={initial}
+				defaultValue={defaultValue}
 				onChange={setValue}
 				Mark={Mark}
-				options={[{markup: MARKUP}]}
+				options={OPTIONS}
 			/>
 			<div>
 				{/*
@@ -98,16 +106,6 @@ const Playground = ({layout, initial}: {layout: 'inline' | 'block'; initial: str
 	)
 }
 
-export default {
-	title: 'Api',
-	component: Playground,
-} satisfies Meta<typeof Playground>
-
-type Story = StoryObj<typeof Playground>
-
-export const Default: Story = {args: {layout: 'inline', initial: 'hello @[world](u1) foo'}}
-
-// Block ROWS are top-level TOKENS, not newline-separated lines: two marks are two rows,
-// and `'first row\nsecond row'` would be ONE text row — which is why the between-rows
-// scenario needs this fixture and not a multi-line string.
-export const Block: Story = {args: {layout: 'block', initial: '@[a](x)@[b](y)'}}
+export const fixtures = {
+	renderPlayground: (args: PageArgs) => <Playground {...args} />,
+}

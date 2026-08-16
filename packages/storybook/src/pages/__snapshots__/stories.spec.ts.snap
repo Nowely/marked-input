@@ -1,5 +1,62 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`Component: stories > Api stories > Story Block 1`] = `
+"<div>
+  <div contenteditable="true">
+    <div>
+      <div contenteditable="false">
+        <button type="button" draggable="false" aria-label="Block options">
+          <span></span>
+        </button>
+      </div>
+      <mark contenteditable="false">a</mark>
+    </div>
+    <div>
+      <div contenteditable="false">
+        <button type="button" draggable="false" aria-label="Block options">
+          <span></span>
+        </button>
+      </div>
+      <mark contenteditable="false">b</mark>
+    </div>
+  </div>
+  <div>
+    <button type="button">insert at caret</button>
+    <button type="button">edit meta</button>
+    <button type="button">clear meta</button>
+    <button type="button">remove mark</button>
+    <button type="button">replace span</button>
+    <button type="button">replace across</button>
+    <button type="button">set value</button>
+    <button type="button">clear value</button>
+    <button type="button">insert between rows</button>
+  </div>
+  <output aria-label="value">@[a](x)@[b](y)</output>
+</div>"
+`;
+
+exports[`Component: stories > Api stories > Story Default 1`] = `
+"<div>
+  <div contenteditable="true">
+    <span>hello </span>
+    <mark contenteditable="false">world</mark>
+    <span> foo</span>
+  </div>
+  <div>
+    <button type="button">insert at caret</button>
+    <button type="button">edit meta</button>
+    <button type="button">clear meta</button>
+    <button type="button">remove mark</button>
+    <button type="button">replace span</button>
+    <button type="button">replace across</button>
+    <button type="button">set value</button>
+    <button type="button">clear value</button>
+    <button type="button">insert between rows</button>
+  </div>
+  <output aria-label="value">hello @[world](u1) foo</output>
+</div>"
+`;
+
 exports[`Component: stories > Base stories > Story Autocomplete 1`] = `
 "<div contenteditable="true">
   <span>Hello, clickable marked @world!</span>
@@ -1429,43 +1486,6 @@ exports[`Component: stories > Overlay stories > Story PositionedOverlay 1`] = `
 exports[`Component: stories > Overlay stories > Story SelectableOverlay 1`] = `
 "<div contenteditable="true">
   <span>Hello, suggest overlay by trigger @!</span>
-</div>"
-`;
-
-exports[`Component: stories > Selection stories > Story Drag 1`] = `
-"<div contenteditable="true">
-  <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
-    <span>hello&#10;</span>
-  </div>
-  <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
-    <mark contenteditable="false">world</mark>
-  </div>
-  <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
-    <span>&#10;foo</span>
-  </div>
-</div>"
-`;
-
-exports[`Component: stories > Selection stories > Story Inline 1`] = `
-"<div contenteditable="true">
-  <span>hello </span>
-  <mark contenteditable="false">world</mark>
-  <span> foo</span>
 </div>"
 `;
 

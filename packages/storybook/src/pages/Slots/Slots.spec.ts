@@ -1,7 +1,7 @@
 import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {textSurfaces} from '../../shared/lib/dom'
+import {editingHost, textSurfaces} from '../../shared/lib/dom'
 import {containerRef, eventProps, outerClass} from '../../shared/lib/framework'
 import {defineMark, Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
@@ -185,6 +185,9 @@ describe('Slots API', () => {
 			expect(span).not.toBeNull()
 			expect(span).not.toHaveAttribute('contenteditable')
 			expect(span).toHaveTextContent(VALUE)
+			// A consumer-supplied surface does not become a second editing host: the container is
+			// still the one the caret lands in.
+			expect(editingHost(span!)).toBe(host)
 		})
 
 		it('freeze a value-only mark root as an atomic', async () => {
