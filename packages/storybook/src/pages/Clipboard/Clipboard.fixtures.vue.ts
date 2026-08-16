@@ -1,7 +1,7 @@
 import {MarkedInput} from '@markput/vue'
 import {computed, defineComponent, ref} from 'vue'
 
-import {defineMark} from '../../shared/lib/marks'
+import {Mark} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -12,8 +12,6 @@ import {defineMark} from '../../shared/lib/marks'
  * counterparts. `meta` is declared even though nothing reads it: an undeclared prop falls
  * through onto the mark root as an attribute, which no React fixture does.
  */
-
-const Mark = defineMark({tag: 'mark', content: 'value'})
 
 /** Nested HTML inside the mark element, so one mark holds MORE than one text node. */
 const NestedMark = defineComponent({
@@ -36,7 +34,6 @@ const PlainTextInput = defineComponent({
 })
 
 export const fixtures = {
-	Mark,
 	NestedMark,
 	renderPlainText: () => PlainTextInput,
 }

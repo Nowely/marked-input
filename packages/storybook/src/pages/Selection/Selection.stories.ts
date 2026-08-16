@@ -1,5 +1,5 @@
+import {Mark} from '../../shared/lib/marks'
 import {component, story, type PageMeta} from '../../shared/lib/stories'
-import {fixtures} from './Selection.fixtures'
 
 const INLINE_VALUE = 'hello @[world](1) foo'
 const BLOCK_VALUE = 'hello\n@[world](1)\nfoo'
@@ -14,9 +14,9 @@ export default {
 } satisfies PageMeta
 
 export const Inline = story({
-	args: {Mark: fixtures.Value, defaultValue: INLINE_VALUE},
+	args: {Mark, defaultValue: INLINE_VALUE},
 })
 
 export const Drag = story({
-	args: {layout: 'block', draggable: true, Mark: fixtures.Value, defaultValue: BLOCK_VALUE},
+	args: {layout: 'block', draggable: true, Mark, defaultValue: BLOCK_VALUE},
 })

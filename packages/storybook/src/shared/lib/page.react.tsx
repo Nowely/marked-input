@@ -6,7 +6,7 @@ import {useState} from 'react'
 import {render} from 'vitest-browser-react'
 
 import {findEditingHost} from './dom'
-import type {Echoed, EchoOptions, Mounted, MountedApi, StoryAnnotations} from './page.shared'
+import type {Echoed, EchoOptions, Mounted, MountedApi, Remountable, StoryAnnotations} from './page.shared'
 import {assertEchoable} from './page.shared'
 // The exact sibling, not the seam name: oxlint does not honour `moduleSuffixes`.
 import {component as Component} from './stories.react'
@@ -70,9 +70,18 @@ export async function renderStoryHtml(Story: StoryComponent): Promise<string> {
 }
 
 /** Mounts the component itself, for the pages whose specs never go through a story. */
-export async function mountComponent(args: Partial<PageArgs> = {}): Promise<Mounted> {
-	const {container} = await render(<Component {...args} />)
-	return {host: findEditingHost(container)}
+export async function mountComponent(args: Partial<PageArgs> = {}): Promise<Remountable> {
+	const {container, rerender} = await render(<Component {...args} />)
+
+	return {
+		host: findEditingHost(container),
+		// A fresh element, not a merge: react's `rerender` takes the whole node, so a prop the
+		// next bag omits is simply absent — which is the contract {@link Remountable} exists for.
+		rerender: async (next: Record<string, unknown>) => {
+			await rerender(<Component {...next} />)
+			return findEditingHost(container)
+		},
+	}
 }
 
 /**

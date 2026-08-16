@@ -84,7 +84,6 @@ function EventLog({slotProps, ...args}: PageArgs) {
 export const fixtures = {
 	SimpleMark: defineMark({
 		tag: 'mark',
-		content: 'children',
 		style: {backgroundColor: '#ffd700', padding: '2px 4px', borderRadius: '3px'},
 	}),
 	FancyContainer,
@@ -92,54 +91,8 @@ export const fixtures = {
 	renderEventLog: (args: PageArgs) => <EventLog {...args} />,
 }
 
-/** Spec fixture: the mark the shared spec mounts everywhere. */
-export const marks = {
-	Children: defineMark({tag: 'mark', content: 'children'}),
-}
-
-/** Spec fixtures: `slots.container` replacements. */
-export const containers = {
-	Testid: ({ref, ...props}: DivProps) => <div {...props} ref={ref} data-testid="custom-container" />,
-	Plain: ({ref, ...props}: DivProps) => <div {...props} ref={ref} />,
-}
-
 /**
- * Spec fixtures: `Span` replacements. Each keeps the `content` it has today: core is THE writer
- * of a text surface and mirrors the token's text into it whatever the component rendered, so
- * levelling them all to one `content` would be DOM-neutral but hide that.
+ * Spec fixture: the `slots.container` replacement. A `<section>` so the spec can tell it from the
+ * default `<div>` by its tag — the container IS the editing host, so no id is needed to find it.
  */
-export const spans = {
-	Testid: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'custom-span'}}),
-	Classy: defineMark({tag: 'span', content: 'value', class: 'custom-span-class'}),
-	Styled: defineMark({tag: 'span', content: 'value', style: {fontWeight: 'bold', fontSize: '16px'}}),
-	SpanProp: defineMark({
-		tag: 'span',
-		content: 'value',
-		attrs: {'data-testid': 'custom-span', 'data-span-prop': 'span'},
-	}),
-	Children: defineMark({tag: 'span', content: 'children', attrs: {'data-testid': 'custom-editable-span'}}),
-	TextTestid: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'text-span'}}),
-}
-
-/**
- * The `slotProps.container` keys the two adapters spell differently. React's synthetic
- * `onFocus`/`onBlur` bubble, so it needs no capture-phase pair; Vue binds the native events,
- * which do not, and takes `onFocusin`/`onFocusout` instead.
- */
-export const eventProps = {
-	keyDown: 'onKeyDown',
-	focus: 'onFocus',
-	blur: 'onBlur',
-} as const
-
-/** The OUTER class arg — `className` here, `class` in Vue. */
-export const outerClass = (name: string) => ({className: name})
-
-/**
- * An object ref for `slotProps.container.ref`: React's is `{current}`, Vue's is a `Ref`. The
- * reader is what the shared spec asserts on.
- */
-export function containerRef() {
-	const ref: {current: HTMLElement | null} = {current: null}
-	return {ref, current: () => ref.current}
-}
+export const CustomContainer = ({ref, ...props}: DivProps) => <section {...props} ref={ref} />

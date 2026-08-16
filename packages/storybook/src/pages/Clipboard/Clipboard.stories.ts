@@ -1,3 +1,4 @@
+import {Mark} from '../../shared/lib/marks'
 import {component, story, type PageMeta} from '../../shared/lib/stories'
 import {fixtures} from './Clipboard.fixtures'
 
@@ -14,7 +15,7 @@ export default {
 } satisfies PageMeta
 
 export const Inline = story({
-	args: {Mark: fixtures.Mark, defaultValue: INLINE_VALUE},
+	args: {Mark, defaultValue: INLINE_VALUE},
 })
 
 /** The one story with a `render`: React returns an element, Vue a component. */
@@ -23,7 +24,7 @@ export const PlainText = story({
 })
 
 export const Drag = story({
-	args: {layout: 'block', draggable: true, Mark: fixtures.Mark, defaultValue: BLOCK_VALUE},
+	args: {layout: 'block', draggable: true, Mark, defaultValue: BLOCK_VALUE},
 })
 
 export const NestedMarkStory = story({

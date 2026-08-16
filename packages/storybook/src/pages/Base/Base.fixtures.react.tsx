@@ -1,9 +1,6 @@
 import type {MarkProps} from '@markput/react'
-import {MarkedInput, useMark} from '@markput/react'
-import {useState} from 'react'
 
 import {Button} from '../../shared/components/Button'
-import {defineMark, Empty, Focusable, Removable} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -11,51 +8,17 @@ import {defineMark, Empty, Focusable, Removable} from '../../shared/lib/marks'
  * project if this file drifts.
  */
 export const fixtures = {
-	Alerting: (props: MarkProps) => <mark onClick={_ => alert(props.meta)}>{props.value}</mark>,
 	Button,
-	/** React takes `onKeyDown`; Vue takes `onKeydown`. The other four are named identically. */
-	containerSlotProps: {
-		onKeyDown: () => console.log('onKeyDown'),
-	},
 }
 
 /** Spec fixtures: mark components the shared spec mounts through story args. */
 export const marks = {
-	Value: defineMark({tag: 'mark', content: 'value'}),
-	Children: defineMark({tag: 'mark', content: 'children'}),
 	Todo: ({children}: MarkProps) => (
 		<span>
 			<input type="checkbox" aria-label="done" />
 			{children}
 		</span>
 	),
-	Focusable,
-	Removable,
-	Updatable: () => {
-		const mark = useMark()
-		return <mark onClick={() => mark.update({value: `${mark.value()}1`})}>{mark.value()}</mark>
-	},
-	Empty,
 }
 
 export const Overlay = () => <span>I'm here!</span>
-
-/**
- * A harness whose `readOnly` prop DISAPPEARS rather than turning false — the shape a tabbed
- * story has, and the one that used to leave the editor read-only for good.
- */
-export const DroppedReadOnly = () => {
-	const [locked, setLocked] = useState(true)
-	const Mark = ({value}: MarkProps) => <mark>{value}</mark>
-
-	return (
-		<>
-			<button onClick={() => setLocked(false)}>unlock</button>
-			{locked ? (
-				<MarkedInput Mark={Mark} defaultValue="hello @[x](1)" readOnly={true} />
-			) : (
-				<MarkedInput Mark={Mark} defaultValue="hello @[x](1)" />
-			)}
-		</>
-	)
-}

@@ -1,8 +1,6 @@
 import {useOverlay} from '@markput/vue'
 import {defineComponent} from 'vue'
 
-import {defineMark, Empty} from '../../shared/lib/marks'
-
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
  * `satisfies` — `Overlay.stories.ts` is the contract, and it fails to compile under either
@@ -14,9 +12,6 @@ import {defineMark, Empty} from '../../shared/lib/marks'
  * typechecked.
  */
 export const fixtures = {
-	Mark: defineMark({tag: 'mark', content: 'value'}),
-	/** The three overlay-only stories render no mark: the overlay itself is what they show. */
-	Empty,
 	Overlay: defineComponent({template: '<h1>I am the overlay</h1>'}),
 	Tooltip: defineComponent({
 		// The computed is returned at the TOP level so `proxyRefs` unwraps it for the template;

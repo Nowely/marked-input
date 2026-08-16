@@ -4,9 +4,9 @@ import {page, userEvent} from 'vitest/browser'
 
 import {getElement, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
+import {Mark} from '../../shared/lib/marks'
 import {composePage, mount, mountEcho} from '../../shared/lib/page'
 import * as BaseStories from '../Base/Base.stories'
-import {fixtures} from './Overlay.fixtures'
 import * as OverlayStories from './Overlay.stories'
 
 const {Default} = composePage(BaseStories)
@@ -172,7 +172,7 @@ describe('API: Overlay and Triggers', () => {
 	it('probe the trigger against the current generation when controlled and echoed', async () => {
 		const {host} = await mountEcho(Default, {
 			value: 'calling ',
-			Mark: fixtures.Mark,
+			Mark,
 			options: ECHO_OPTIONS,
 		})
 		const [surface] = textSurfaces(host)

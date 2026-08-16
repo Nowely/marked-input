@@ -4,13 +4,17 @@ import {page, userEvent} from 'vitest/browser'
 
 import {caretIsInside, editingHost, findEditingHost, getElement, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtOffset, focusAtStart} from '../../shared/lib/focus'
-import {composePage, mount, mountEcho} from '../../shared/lib/page'
-import {DroppedReadOnly, marks, Overlay} from './Base.fixtures'
+import {defineMark, Empty, Focusable, Mark, Removable} from '../../shared/lib/marks'
+import {composePage, mount, mountComponent, mountEcho} from '../../shared/lib/page'
+import {marks, Overlay} from './Base.fixtures'
 import * as BaseStories from './Base.stories'
 
 const {Configured, Default} = composePage(BaseStories)
 
 const EDITABLE_MARK_VALUE = 'Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!'
+/** Appends to its own value on click, through the node the mark context carries. */
+const Updatable = defineMark({tag: 'mark', on: {click: ({mark}) => mark.update({value: `${mark.value()}1`})}})
+
 const REMOVABLE_MARK_VALUE = 'I @[contain]( ) @[removable]( ) by click @[marks]( )!'
 
 describe('Component: MarkedInput', () => {
@@ -28,7 +32,7 @@ describe('Component: MarkedInput', () => {
 	})
 
 	it('renders mark roots without adapter wrappers', async () => {
-		const {host} = await mount(Default, {Mark: marks.Value, defaultValue: 'hello @[world](1)'})
+		const {host} = await mount(Default, {Mark, defaultValue: 'hello @[world](1)'})
 		const mark = host.querySelector('mark')!
 
 		expect(mark.parentElement).toBe(host)
@@ -41,7 +45,7 @@ describe('Component: MarkedInput', () => {
 	it('preserves option-provided children for flat mark components', async () => {
 		const markup = '@(__value__)' as Markup
 		const {host} = await mount(Default, {
-			Mark: marks.Children,
+			Mark,
 			options: [{markup, mark: ({value}: {value?: string}) => ({children: value})}],
 			defaultValue: 'hello @(world)',
 		})
@@ -74,7 +78,7 @@ describe('Component: MarkedInput', () => {
 	})
 
 	it('correctly process an annotation type', async () => {
-		const {host} = await mount(Default, {Mark: marks.Value, defaultValue: ''})
+		const {host} = await mount(Default, {Mark, defaultValue: ''})
 		const [span] = textSurfaces(host)
 
 		await expect.element(span).toBeInTheDocument()
@@ -88,7 +92,7 @@ describe('Component: MarkedInput', () => {
 	})
 
 	it('walks the caret across mark tokens with the arrow keys', async () => {
-		const {host} = await mount(Default, {Mark: marks.Focusable, value: EDITABLE_MARK_VALUE})
+		const {host} = await mount(Default, {Mark: Focusable, value: EDITABLE_MARK_VALUE})
 		const [firstSpan, secondSpan, thirdSpan] = textSurfaces(host)
 		const [firstAbbr] = host.querySelectorAll('abbr')
 
@@ -117,7 +121,7 @@ describe('Component: MarkedInput', () => {
 	})
 
 	it('support remove itself', async () => {
-		await mountEcho(Default, {Mark: marks.Removable, value: REMOVABLE_MARK_VALUE})
+		await mountEcho(Default, {Mark: Removable, value: REMOVABLE_MARK_VALUE})
 
 		let mark = page.getByText('contain')
 		await userEvent.click(mark)
@@ -129,7 +133,7 @@ describe('Component: MarkedInput', () => {
 	})
 
 	it('support mark controller updates', async () => {
-		const {value} = await mountEcho(Default, {Mark: marks.Updatable, value: EDITABLE_MARK_VALUE})
+		const {value} = await mountEcho(Default, {Mark: Updatable, value: EDITABLE_MARK_VALUE})
 
 		await userEvent.click(page.getByText('world').first())
 
@@ -139,7 +143,7 @@ describe('Component: MarkedInput', () => {
 
 	it('keeps controlled span input unchanged until value is echoed', async () => {
 		const onChange = vi.fn()
-		const {host} = await mount(Default, {Mark: marks.Value, value: 'Hello @[world](1)', onChange})
+		const {host} = await mount(Default, {Mark, value: 'Hello @[world](1)', onChange})
 		const [span] = textSurfaces(host)
 
 		await focusAtEnd(span)
@@ -151,7 +155,7 @@ describe('Component: MarkedInput', () => {
 
 	it('keeps controlled mark visible after removal until value is echoed', async () => {
 		const onChange = vi.fn()
-		const {host} = await mount(Default, {Mark: marks.Removable, value: 'Hello @[world](1)', onChange})
+		const {host} = await mount(Default, {Mark: Removable, value: 'Hello @[world](1)', onChange})
 		const mark = host.querySelector<HTMLElement>('mark')!
 
 		await userEvent.click(mark)
@@ -163,7 +167,7 @@ describe('Component: MarkedInput', () => {
 	it('keeps controlled overlay selection text unchanged until value is echoed', async () => {
 		const onChange = vi.fn()
 		const {host} = await mount(Default, {
-			Mark: marks.Value,
+			Mark,
 			value: 'Hello @',
 			onChange,
 			showOverlayOn: 'selectionChange',
@@ -186,7 +190,7 @@ describe('Component: MarkedInput', () => {
 
 	it('support to pass a forward overlay', async () => {
 		await mount(Default, {
-			Mark: marks.Empty,
+			Mark: Empty,
 			Overlay,
 			showOverlayOn: 'selectionChange',
 			defaultValue: 'Hello @',
@@ -202,7 +206,7 @@ describe('Component: MarkedInput', () => {
 
 	it('not create empty mark when pressing Enter in overlay without selection', async () => {
 		await mount(Default, {
-			Mark: marks.Value,
+			Mark,
 			options: [
 				{
 					markup: '@[__value__](test:__meta__)' as Markup,
@@ -245,14 +249,13 @@ describe('Component: MarkedInput', () => {
 	it('reverts a prop to its default when the caller stops passing it', async () => {
 		// The adapter owes core a FULL sync on every render: `readOnly` that disappears between
 		// renders must revert to its default, not keep the value it last had.
-		const {host} = await mount(DroppedReadOnly)
+		const {host, rerender} = await mountComponent({Mark, defaultValue: 'hello @[x](1)', readOnly: true})
 		expect(host).toHaveAttribute('contenteditable', 'false')
 
-		await userEvent.click(getElement(page.getByText('unlock')))
+		// The same mount with `readOnly` simply ABSENT — the shape a tabbed story has.
+		const unlocked = await rerender({Mark, defaultValue: 'hello @[x](1)'})
 
-		// Re-read rather than reuse `host`: React patches the same element, Vue's `v-if` swaps in
-		// a new one. What both must agree on is that the editor is editable again.
-		expect(findEditingHost(document.body)).toHaveAttribute('contenteditable', 'true')
+		expect(unlocked).toHaveAttribute('contenteditable', 'true')
 	})
 
 	it.todo('be selectable')

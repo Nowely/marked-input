@@ -1,8 +1,6 @@
-import {MarkedInput, useMark} from '@markput/vue'
-import {defineComponent, ref} from 'vue'
+import {defineComponent} from 'vue'
 
 import Button from '../../shared/components/Button/Button.vue'
-import {defineMark, Empty, Focusable, Removable} from '../../shared/lib/marks'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -15,20 +13,7 @@ import {defineMark, Empty, Focusable, Removable} from '../../shared/lib/marks'
  * typechecked.
  */
 export const fixtures = {
-	Alerting: defineComponent({
-		props: {value: String, meta: String},
-		methods: {
-			alertMeta() {
-				alert(this.meta)
-			},
-		},
-		template: '<mark @click="alertMeta">{{ value }}</mark>',
-	}),
 	Button,
-	/** Vue takes `onKeydown`; React takes `onKeyDown`. The other four are named identically. */
-	containerSlotProps: {
-		onKeydown: () => console.log('onKeyDown'),
-	},
 }
 
 /**
@@ -40,39 +25,10 @@ export const fixtures = {
  * that reads through `useMark()`, through the slot, or through only part of the pair needs it.
  */
 export const marks = {
-	Value: defineMark({tag: 'mark', content: 'value'}),
-	Children: defineMark({tag: 'mark', content: 'children'}),
 	Todo: defineComponent({
 		inheritAttrs: false,
 		template: '<span><input type="checkbox" aria-label="done" /><slot /></span>',
 	}),
-	Focusable,
-	Removable,
-	Updatable: defineComponent({
-		inheritAttrs: false,
-		setup: () => ({mark: useMark()}),
-		template: '<mark @click="mark.update({value: `${mark.value()}1`})">{{ mark.value() }}</mark>',
-	}),
-	Empty,
 }
 
 export const Overlay = defineComponent({template: `<span>I'm here!</span>`})
-
-/**
- * A harness whose `readOnly` prop DISAPPEARS rather than turning false — the shape a tabbed
- * story has, and the one that used to leave the editor read-only for good.
- */
-export const DroppedReadOnly = defineComponent({
-	components: {MarkedInput},
-	setup() {
-		const locked = ref(true)
-		return {locked, unlock: () => (locked.value = false), Mark: marks.Value}
-	},
-	template: `
-		<div>
-			<button @click="unlock">unlock</button>
-			<MarkedInput v-if="locked" :Mark="Mark" defaultValue="hello @[x](1)" :readOnly="true" />
-			<MarkedInput v-else :Mark="Mark" defaultValue="hello @[x](1)" />
-		</div>
-	`,
-})

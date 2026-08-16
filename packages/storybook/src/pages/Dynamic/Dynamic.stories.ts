@@ -1,3 +1,6 @@
+import {caretInfo, hiddenFromDocs} from '../../shared/lib/framework'
+// Aliased: this file's own stories are named `Removable` and `Focusable`.
+import {Focusable as FocusableMark, Removable as RemovableMark} from '../../shared/lib/marks'
 import {component, story, type PageMeta} from '../../shared/lib/stories'
 import {fixtures} from './Dynamic.fixtures'
 
@@ -22,12 +25,12 @@ export const Dynamic = story({
 })
 
 export const Removable = story({
-	parameters: fixtures.hiddenFromDocs,
-	args: {Mark: fixtures.Removable, defaultValue: REMOVABLE_VALUE},
+	parameters: hiddenFromDocs,
+	args: {Mark: RemovableMark, defaultValue: REMOVABLE_VALUE},
 })
 
 export const Focusable = story({
-	parameters: {...fixtures.hiddenFromDocs, plainValue: 'right'},
-	args: {Mark: fixtures.Focusable, value: FOCUSABLE_VALUE},
-	decorators: fixtures.caretInfo,
+	parameters: {...hiddenFromDocs, plainValue: 'right'},
+	args: {Mark: FocusableMark, value: FOCUSABLE_VALUE},
+	decorators: caretInfo,
 })

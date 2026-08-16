@@ -1,5 +1,6 @@
 import type {Markup} from '@markput/core'
 
+import {Empty, Mark} from '../../shared/lib/marks'
 import {component, story, type PageMeta} from '../../shared/lib/stories'
 import {fixtures} from './Overlay.fixtures'
 
@@ -21,7 +22,7 @@ export default {
 
 export const DefaultOverlay = story({
 	args: {
-		Mark: fixtures.Mark,
+		Mark,
 		defaultValue: DEFAULT_VALUE,
 		options: [
 			{
@@ -36,7 +37,7 @@ export const DefaultOverlay = story({
 
 export const CustomOverlay = story({
 	args: {
-		Mark: fixtures.Empty,
+		Mark: Empty,
 		Overlay: fixtures.Overlay,
 		defaultValue: CUSTOM_VALUE,
 	},
@@ -44,7 +45,7 @@ export const CustomOverlay = story({
 
 export const CustomTrigger = story({
 	args: {
-		Mark: fixtures.Empty,
+		Mark: Empty,
 		Overlay: fixtures.Overlay,
 		defaultValue: CUSTOM_TRIGGER_VALUE,
 		options: [{overlay: {trigger: '/'}}],
@@ -53,7 +54,7 @@ export const CustomTrigger = story({
 
 export const PositionedOverlay = story({
 	args: {
-		Mark: fixtures.Empty,
+		Mark: Empty,
 		Overlay: fixtures.Tooltip,
 		defaultValue: POSITIONED_VALUE,
 	},
@@ -61,7 +62,7 @@ export const PositionedOverlay = story({
 
 export const SelectableOverlay = story({
 	args: {
-		Mark: fixtures.Mark,
+		Mark,
 		Overlay: fixtures.List,
 		defaultValue: SELECTABLE_VALUE,
 		options: [{markup: '@[__value__](__meta__)' as Markup, overlay: {trigger: '@'}}],

@@ -1,0 +1,20 @@
+/*
+ * The `InteractiveNested` story's mark. The highlight was component-local state driven by
+ * mouseenter/mouseleave in both frameworks; `:hover` says the same thing once, and it is the
+ * only state either fixture had.
+ */
+.interactive {
+	display: inline-block;
+	padding: 4px 8px;
+	margin: 2px;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	background-color: #f5f5f5;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.interactive:hover {
+	border: 2px solid #2196f3;
+	background-color: #e3f2fd;
+}

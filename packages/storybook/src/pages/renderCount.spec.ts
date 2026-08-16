@@ -4,8 +4,9 @@ import {page, userEvent} from 'vitest/browser'
 
 import {childrenOf, getElement} from '../shared/lib/dom'
 import {focusAtEnd} from '../shared/lib/focus'
+import {countRenders, Mark as PlainMark, Span as PlainSpan} from '../shared/lib/marks'
 import {mountApi, mountComponent} from '../shared/lib/page'
-import {counters, plain} from './renderCount.fixtures'
+import {markMounts} from './renderCount.fixtures'
 
 /**
  * Render-count gates, held against BOTH adapters from one file. The bridges differ — React
@@ -13,7 +14,7 @@ import {counters, plain} from './renderCount.fixtures'
  * `shallowRef` — but the contract is the same, and while these gates lived in two files the
  * contract drifted: the commit-routing gate below existed only for React.
  *
- * Every counter sits where one call means one render (see `renderCount.fixtures.*`), and every
+ * Every counter sits where one call means one render (see `countRenders` in the mark seam), and every
  * gate asserts a DELTA from a baseline taken after mount and focus — so click- or hover-induced
  * renders, and React's double-invoked mount renders, cannot skew any of them.
  */
@@ -32,26 +33,26 @@ const rowsOf = (host: HTMLElement) => childrenOf(host)
  */
 describe('Render-count gates: commit routing', () => {
 	it('pure text keystroke does not re-render Span; structural edit does', async () => {
-		const span = counters.span()
-		await mountComponent({Mark: plain.Mark, Span: span.Span, defaultValue: 'Hello @[mark](1)!'})
+		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
+		await mountComponent({Mark: PlainMark, Span: CountedSpan, defaultValue: 'Hello @[mark](1)!'})
 
 		await focusAtEnd(getElement(page.getByText('!')))
 
 		// Baseline after mount + focus: every gate below asserts a DELTA from here.
-		const baseline = span.renders()
+		const baseline = spanRenders()
 		expect(baseline).toBeGreaterThan(0)
 
 		// Gate: a pure text keystroke routes through the core text path — the surface is patched
 		// without invoking the renderer.
 		await userEvent.keyboard('?')
 		await expect.element(page.getByText('!?')).toBeInTheDocument()
-		expect(span.renders()).toBe(baseline)
+		expect(spanRenders()).toBe(baseline)
 
 		// Gate: completing a markup adds a mark token — a structural edit that invalidates the
 		// tree and re-renders through the framework.
 		await userEvent.keyboard('@[[struct](2)')
 		await expect.element(page.getByText('struct')).toBeInTheDocument()
-		expect(span.renders()).toBeGreaterThan(baseline)
+		expect(spanRenders()).toBeGreaterThan(baseline)
 	})
 
 	/**
@@ -65,7 +66,7 @@ describe('Render-count gates: commit routing', () => {
 	 * whole suite green except this case, which sees zero announcements instead of one.
 	 */
 	it('a mark value change announces changed — the commit completes with no root-list move', async () => {
-		const {api} = await mountApi({Mark: plain.Mark, Span: plain.Span, defaultValue: 'a@[x](1)b'})
+		const {api} = await mountApi({Mark: PlainMark, Span: PlainSpan, defaultValue: 'a@[x](1)b'})
 		await expect.element(page.getByText('x')).toBeInTheDocument()
 
 		const announced: number[] = []
@@ -105,12 +106,12 @@ describe('Render-count gates: structural fan-out', () => {
 	const document100 = `HEAD ${Array.from({length: MARKS}, (_, i) => `@[m${i}](${i})`).join(' ')}`
 
 	it('a head insert at 100 marks re-renders exactly the inserted mark', async () => {
-		const mark = counters.mark()
-		await mountComponent({Mark: mark.Mark, Span: plain.Span, defaultValue: document100})
+		const [CountedMark, markRenders] = countRenders()
+		await mountComponent({Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
 		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
 
 		await focusAtEnd(getElement(page.getByText('HEAD ')))
-		const baseline = mark.renders()
+		const baseline = markRenders()
 		expect(baseline).toBeGreaterThanOrEqual(MARKS)
 
 		// Completing a markup BEFORE every existing mark: all MARKS of them suffix-shift, and
@@ -118,15 +119,15 @@ describe('Render-count gates: structural fan-out', () => {
 		await userEvent.keyboard('@[[new](999)')
 		await expect.element(page.getByText('new')).toBeInTheDocument()
 
-		expect(mark.renders() - baseline).toBe(1)
+		expect(markRenders() - baseline).toBe(1)
 	})
 
 	it('one mark value change at 100 marks re-renders exactly that mark', async () => {
-		const mark = counters.mark()
-		const {api} = await mountApi({Mark: mark.Mark, Span: plain.Span, defaultValue: document100})
+		const [CountedMark, markRenders] = countRenders()
+		const {api} = await mountApi({Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
 		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
 
-		const baseline = mark.renders()
+		const baseline = markRenders()
 		expect(baseline).toBeGreaterThanOrEqual(MARKS)
 
 		// The FIRST mark, so the write also suffix-shifts the other 99 (the replacement is a
@@ -138,7 +139,7 @@ describe('Render-count gates: structural fan-out', () => {
 		expect(first?.update({value: 'edited'})).toBe(true)
 		await expect.element(page.getByText('edited')).toBeInTheDocument()
 
-		expect(mark.renders() - baseline).toBe(1)
+		expect(markRenders() - baseline).toBe(1)
 	})
 })
 
@@ -152,11 +153,11 @@ describe('Render-count gates: structural fan-out', () => {
  */
 describe('Render-count gates: block layout', () => {
 	it('block keystroke into a row does not re-render Mark or Span; a row split does', async () => {
-		const row = counters.blockRows()
-		const span = counters.span()
+		const [RowMark, rowRenders] = countRenders({tag: 'span'})
+		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
 		const {host} = await mountComponent({
-			Span: span.Span,
-			options: row.options,
+			Span: CountedSpan,
+			options: [{markup: '__slot__\n\n', Mark: RowMark}],
 			defaultValue: 'First row\n\nSecond row\n\n',
 			layout: 'block',
 			draggable: true,
@@ -167,8 +168,8 @@ describe('Render-count gates: block layout', () => {
 		await focusAtEnd(rowsOf(host)[0])
 
 		// Baseline after mount + focus: every gate below asserts a DELTA from here.
-		const markBaseline = row.renders()
-		const spanBaseline = span.renders()
+		const markBaseline = rowRenders()
+		const spanBaseline = spanRenders()
 		expect(markBaseline).toBeGreaterThan(0)
 		expect(spanBaseline).toBeGreaterThan(0)
 
@@ -176,22 +177,22 @@ describe('Render-count gates: block layout', () => {
 		// directly, zero component re-renders.
 		await userEvent.keyboard('?')
 		await expect.element(page.getByText('First row?')).toBeInTheDocument()
-		expect(span.renders()).toBe(spanBaseline)
-		expect(row.renders()).toBe(markBaseline)
+		expect(spanRenders()).toBe(spanBaseline)
+		expect(rowRenders()).toBe(markBaseline)
 
 		// Gate: Enter splits the row (blockEdit inserts a row separator) — a structural edit that
 		// publishes a new tree and re-renders through the framework.
 		await userEvent.keyboard('{Enter}')
 		expect(rowsOf(host)).toHaveLength(3)
-		expect(row.renders()).toBeGreaterThan(markBaseline)
+		expect(rowRenders()).toBeGreaterThan(markBaseline)
 	})
 
 	it('first keystroke into a freshly-Enter-created empty row rides the text path', async () => {
-		const row = counters.blockRows()
-		const span = counters.span()
+		const [RowMark, rowRenders] = countRenders({tag: 'span'})
+		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
 		const {host} = await mountComponent({
-			Span: span.Span,
-			options: row.options,
+			Span: CountedSpan,
+			options: [{markup: '__slot__\n\n', Mark: RowMark}],
 			defaultValue: 'First row\n\n',
 			layout: 'block',
 			draggable: true,
@@ -204,8 +205,8 @@ describe('Render-count gates: block layout', () => {
 		// re-renders. The gate below is a delta from AFTER it settled.
 		await userEvent.keyboard('{Enter}')
 		expect(rowsOf(host)).toHaveLength(2)
-		const markBaseline = row.renders()
-		const spanBaseline = span.renders()
+		const markBaseline = rowRenders()
+		const spanBaseline = spanRenders()
 
 		// Gate: the FIRST keystroke into the fresh empty row rides the text path — the empty slot
 		// Span is patched in place, zero component re-renders. (Pre-fix: TreeBuilder collapsed the
@@ -213,8 +214,8 @@ describe('Render-count gates: block layout', () => {
 		// framework re-render.)
 		await userEvent.keyboard('x')
 		await expect.element(page.getByText('x')).toBeInTheDocument()
-		expect(span.renders()).toBe(spanBaseline)
-		expect(row.renders()).toBe(markBaseline)
+		expect(spanRenders()).toBe(spanBaseline)
+		expect(rowRenders()).toBe(markBaseline)
 	})
 })
 
@@ -226,10 +227,10 @@ describe('Render-count gates: block layout', () => {
  */
 describe('Remount gates: identity keys', () => {
 	it('a structural edit before a mark does not remount the suffix marks', async () => {
-		const log = counters.markMounts()
+		const log = markMounts()
 		await mountComponent({
 			Mark: log.Mark,
-			Span: plain.Span,
+			Span: PlainSpan,
 			defaultValue: 'Hello @[a](1) and @[b](2)!',
 		})
 		await expect.element(page.getByText('b')).toBeInTheDocument()

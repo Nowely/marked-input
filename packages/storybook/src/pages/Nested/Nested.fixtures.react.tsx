@@ -10,6 +10,8 @@ import type {PageArgs} from '../../shared/lib/stories'
 import {HTML_TAG_STYLES} from './HtmlTagStyles'
 import {markdownOptions} from './MarkdownOptions'
 
+import styles from './InteractiveMark.module.css'
+
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
  * `satisfies` — `Nested.stories.ts` is the contract, and it fails to compile under either
@@ -17,7 +19,7 @@ import {markdownOptions} from './MarkdownOptions'
  */
 
 /** `ComplexMarkdown`'s mark: the markdown preset hands it the `style` of whichever markup matched. */
-const MarkdownMark = defineMark({tag: 'span', content: 'childrenOrValue', style: {margin: '0 1px'}})
+const MarkdownMark = defineMark({tag: 'span', style: {margin: '0 1px'}})
 
 /** `ComplexHtmlDocument`'s mark: this markup's VALUE is the tag name, so the mark IS that element. */
 const HtmlDocMark = ({children, value}: MarkProps) => {
@@ -78,18 +80,12 @@ function TabbedHtml({defaultValue, options}: PageArgs) {
 }
 
 export const fixtures = {
-	/** The panel sits under the editor here; the vue fixtures put it beside it. */
-	SimpleMark: defineMark({tag: 'span', content: 'childrenOrValue'}),
-	MultiLevelMark: defineMark({tag: 'span', content: 'childrenOrValue', style: {margin: '0 2px'}}),
-	HtmlLikeMark: ({children, value}: MarkProps) => {
-		// oxlint-disable-next-line no-unsafe-type-assertion -- this mark's VALUE is the tag name
-		const Tag = (value ?? 'span') as ElementType
-		return <Tag>{children}</Tag>
-	},
-	/** The page's only `useMarkInfo()` story in either framework. */
+	MultiLevelMark: defineMark({tag: 'span', style: {margin: '0 2px'}}),
+	/** This markup's VALUE is the tag name, so the mark IS that element. */
+	HtmlLikeMark: defineMark({tag: ({value}) => value ?? 'span'}),
+	/** The page's only `useMarkInfo()` story in either framework. The highlight is `:hover`. */
 	InteractiveMark: ({children}: MarkProps) => {
 		const info = useMarkInfo()
-		const [isHighlighted, setIsHighlighted] = useState(false)
 		const handleAction = () => {
 			console.log('Mark clicked:', {depth: info.depth, hasNestedMarks: info.hasNestedMarks})
 		}
@@ -98,6 +94,7 @@ export const fixtures = {
 			<span
 				role="button"
 				tabIndex={0}
+				className={styles.interactive}
 				onClick={e => {
 					e.stopPropagation()
 					handleAction()
@@ -107,18 +104,6 @@ export const fixtures = {
 					e.preventDefault()
 					e.stopPropagation()
 					handleAction()
-				}}
-				onMouseEnter={() => setIsHighlighted(true)}
-				onMouseLeave={() => setIsHighlighted(false)}
-				style={{
-					display: 'inline-block',
-					padding: '4px 8px',
-					margin: '2px',
-					border: isHighlighted ? '2px solid #2196f3' : '1px solid #ccc',
-					borderRadius: '4px',
-					backgroundColor: isHighlighted ? '#e3f2fd' : '#f5f5f5',
-					cursor: 'pointer',
-					transition: 'all 0.2s',
 				}}
 				title={`Depth: ${info.depth}, Nested: ${info.hasNestedMarks}`}
 			>
@@ -130,67 +115,20 @@ export const fixtures = {
 	renderTabbedHtml: (args: PageArgs) => <TabbedHtml {...args} />,
 }
 
-/**
- * What the capturing marks record. A mark can only report a hook's value by writing it
- * somewhere the spec can read, and the spec resets these before each mount.
- */
-export const capture = {rootChildren: false, rootHasNestedMarks: false}
-
 /** Spec fixtures: mark components the shared spec mounts through component args. */
 export const marks = {
-	Info: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		return (
-			<span
-				data-testid={`mark-depth-${info.depth}`}
-				data-depth={info.depth}
-				data-has-children={info.hasNestedMarks}
-			>
-				{children}
-			</span>
-		)
-	},
-	/** Names itself by depth, so one component covers two markups in the same value. */
-	Tagged: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		return (
-			<span data-testid={info.depth === 0 ? 'tag-mark' : 'mention-mark'} data-depth={info.depth}>
-				{children}
-			</span>
-		)
-	},
-	Capturing: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		if (info.depth === 0 && info.hasNestedMarks) capture.rootChildren = children != null
-		return <span>{children}</span>
-	},
-	RootInfo: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		if (info.depth === 0) capture.rootHasNestedMarks = info.hasNestedMarks
-		return <span>{children}</span>
-	},
-	Depth: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		return <span data-depth={info.depth}>{children}</span>
-	},
-	HasChildren: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		return <span data-has-children={info.hasNestedMarks}>{children}</span>
-	},
-	/** Renders only `value`: the backward-compatibility marks predate nesting. */
-	Flat: defineMark({tag: 'span', content: 'value', attrs: {'data-testid': 'flat-mark'}}),
-	Plain: defineMark({tag: 'mark', content: 'children'}),
-	Bare: defineMark({tag: 'span', content: 'children'}),
-	Mixed: ({children}: MarkProps) => {
-		const info = useMarkInfo()
-		return <mark data-has-children={info.hasNestedMarks}>{children}</mark>
-	},
+	/**
+	 * Reports both `useMarkInfo()` readings as attributes, which is how the spec finds a mark AND
+	 * asserts on it: `[data-depth="1"]` identifies without a test-only id.
+	 */
+	Info: defineMark({
+		tag: 'span',
+		attrs: ({info}) => ({'data-depth': String(info.depth), 'data-has-children': String(info.hasNestedMarks)}),
+	}),
 	/** Renders the slot itself when there is nothing nested to render. */
 	Rendering: ({children}: MarkProps) => {
 		const mark = useMark()
 		const info = useMarkInfo()
 		return <span>{info.hasNestedMarks ? children : mark.slot()}</span>
 	},
-	/** A `<mark>` root, so the spec can tell mark roots from the spans around them. */
-	MarkRoot: defineMark({tag: 'mark', content: 'childrenOrValue'}),
 }

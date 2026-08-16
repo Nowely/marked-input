@@ -2,11 +2,11 @@ import type {MarkputApi} from '@markput/core'
 import type {composeStories as composeStoriesType} from '@storybook/vue3-vite'
 import {composeStories} from '@storybook/vue3-vite'
 import {render} from 'vitest-browser-vue'
-import type {Component} from 'vue'
+import type {Component, PropType} from 'vue'
 import {defineComponent, h, ref, shallowRef} from 'vue'
 
 import {findEditingHost} from './dom'
-import type {Echoed, EchoOptions, Mounted, MountedApi, StoryAnnotations} from './page.shared'
+import type {Echoed, EchoOptions, Mounted, MountedApi, Remountable, StoryAnnotations} from './page.shared'
 import {assertEchoable} from './page.shared'
 // The exact sibling, not the seam name: oxlint does not honour `moduleSuffixes`.
 import {component} from './stories.vue'
@@ -80,13 +80,29 @@ export async function renderStoryHtml(Story: StoryComponent): Promise<string> {
 	return container.innerHTML
 }
 
-/** Mounts the component itself, for the pages whose specs never go through a story. */
-export async function mountComponent(args: Partial<PageArgs> = {}): Promise<Mounted> {
+/**
+ * Mounts the component itself, for the pages whose specs never go through a story.
+ *
+ * The whole arg bag rides in ONE prop, which is what makes {@link Remountable} honest here: vue's
+ * `rerender` MERGES the props it is given, so re-rendering with a bag that omits `readOnly` would
+ * otherwise leave the old value standing. Replacing a single object prop replaces everything.
+ */
+export async function mountComponent(args: Partial<PageArgs> = {}): Promise<Remountable> {
 	const Wrapper = defineComponent({
-		setup: () => () => h(component, args),
+		props: {args: {type: Object as PropType<Record<string, unknown>>, required: true}},
+		setup: props => () => h(component, props.args),
 	})
-	const {container} = await render(Wrapper)
-	return {host: findEditingHost(container)}
+	// Kept whole rather than destructured: vue's `rerender` is declared a METHOD, so pulling it
+	// off the result unbinds `this`.
+	const result = await render(Wrapper, {props: {args}})
+
+	return {
+		host: findEditingHost(result.container),
+		rerender: async (next: Record<string, unknown>) => {
+			await result.rerender({args: next})
+			return findEditingHost(result.container)
+		},
+	}
 }
 
 /**
