@@ -89,3 +89,19 @@ end: number;
 ```ts
 start: number;
 ```
+
+***
+
+### remove()
+
+```ts
+remove(): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:34](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L34)
+
+See NodeCommands. Rides a transaction; `false` in read-only mode or off the tree.
+
+#### Returns
+
+`boolean`

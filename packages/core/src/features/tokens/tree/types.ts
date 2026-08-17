@@ -30,6 +30,8 @@ export interface TextNode {
 	 * would let a caller corrupt the coordinate space every splice is computed in.
 	 */
 	range(): {start: number; end: number}
+	/** See {@link NodeCommands}. Rides a transaction; `false` in read-only mode or off the tree. */
+	remove(): boolean
 }
 
 export interface MarkNode {
@@ -69,15 +71,29 @@ export type MarkPatch = {
 }
 
 /**
- * The write port `MarkNode.update`/`remove` ride. Declared here rather than beside
+ * STRUCTURAL verbs, on any node. The split from {@link MarkCommands} is by the nature of
+ * the operation rather than by node type: structure is common to every node, while
+ * `value`/`meta`/`slot` are mark-only by definition. A block row can be a text node — the
+ * empty-text filter only drops EMPTY ones — so a mark-only `remove` could not serve one.
+ */
+export interface NodeCommands {
+	remove(node: TreeNode): boolean
+}
+
+/**
+ * CONTENT verbs, mark-only.
+ *
+ * The write ports the node's own verbs ride. Declared here rather than beside
  * the verbs in `transactions.ts` because `types.ts` is where the tree layer's
  * contracts live and both modules already import it. Injected as a THUNK because
  * `TokenModel` builds `#tree` before `#tx`, and the tree's own verbs must reach them.
  */
 export interface MarkCommands {
 	update(node: MarkNode, patch: MarkPatch): boolean
-	remove(node: MarkNode): boolean
 }
+
+/** The whole port bag a wired tree receives. */
+export type TreeCommands = NodeCommands & MarkCommands
 
 /** The addressing model. Mark interiors are addressed via slot text nodes. */
 export type NodeAnchor = {node: TextNode; offset: number} | {before: TreeNode} | {after: TreeNode} | 'start' | 'end'

@@ -18,7 +18,7 @@ import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf, sliceNodes} from '../tree/tree'
-import type {Anchors, MarkCommands, MarkNode, NodeAnchor, TextNode, TreeNode} from '../tree/types'
+import type {Anchors, MarkNode, NodeAnchor, TextNode, TreeCommands, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 
 /**
@@ -420,7 +420,7 @@ export class TokenModel {
 	})
 
 	/** THE tree, and the only representation of the value. */
-	readonly #tree = createTokenTree([], () => this.#markCommands)
+	readonly #tree = createTokenTree([], () => this.#commands)
 
 	/** Whole-node replacement — the mark verbs' write path. */
 	#applyStructural(target: TreeNode, replacement: string): boolean {
@@ -446,12 +446,39 @@ export class TokenModel {
 	}
 
 	/**
-	 * The mark verbs, lowered onto `#applyStructural`. Read-only and dead-node gating live
-	 * in the transaction layer, so both arms answer exactly what it answers.
+	 * The node verbs, lowered onto `#applyStructural`. Read-only and dead-node gating live
+	 * in the transaction layer, so every arm answers exactly what it answers.
+	 *
+	 * `remove` also MOVES THE CARET, which `update` does not: a removal takes a position out
+	 * of the document, so the caret has to be told where that position went, while an update
+	 * leaves the caret's own coordinates to adoption's repair. The offset is formed here for
+	 * {@link replaceBetween}'s reason — this is the layer that may — and resolved against the
+	 * POST-splice tree, so it names the node that took the removed one's place.
 	 */
-	readonly #markCommands: MarkCommands = {
+	readonly #commands: TreeCommands = {
 		update: (node, patch) => this.#applyStructural(node, serializeMark(node, patch)),
-		remove: node => this.#applyStructural(node, ''),
+		remove: node => {
+			let removed = false
+			// One tick for value and selection, exactly as `EditController.replace` batches its pair.
+			batch(() => {
+				const start = untracked(() => node.position.start)
+				if (!this.#applyStructural(node, '')) return
+				removed = true
+				this.#applyCaret(this.anchorAt(start))
+			})
+			return removed
+		},
+	}
+
+	/**
+	 * A verb's post-edit caret, under the ONE controlled-mode rule (spec D6): controlled mode
+	 * moves no DERIVED caret, because the tree has not moved yet — the anchor would be captured
+	 * as `selectionBefore` at the echo and shifted a SECOND time by `map`. The echo's repair
+	 * owns it there.
+	 */
+	#applyCaret(caret: NodeAnchor): void {
+		if (this.props.value() !== undefined) return
+		this.selection.select(caret)
 	}
 
 	/** The lazily-materialized default, so a `defaultValue` set after the first read stays a no-op. */

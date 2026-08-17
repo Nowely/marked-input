@@ -123,6 +123,30 @@ describe('BlockController', () => {
 		expect(selectSpy).not.toHaveBeenCalled()
 	})
 
+	describe('row identity', () => {
+		it('removes the addressed row, not a byte-identical neighbour', () => {
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
+
+			const [first, second, third] = store.tokens.nodes().map(node => node.id)
+
+			store.block.action({type: 'delete', index: 0})
+
+			// The SURVIVORS name which row actually went — the value alone cannot, because
+			// the two candidates compose to the same string. Row identity is what both
+			// adapters key rendering on and what `BlockController` prunes per-row state by.
+			expect(store.tokens.value()).toBe('First\n\nSecond\n\n')
+			expect(store.tokens.nodes().map(node => node.id)).toEqual([second, third])
+			expect(first).not.toBe(second)
+		})
+	})
+
 	describe('per-row stores (identity-keyed)', () => {
 		it('keys stores by stable node id, not by the node object', () => {
 			// Two DISTINCT node objects carrying the same id — each tree allocates from 1.

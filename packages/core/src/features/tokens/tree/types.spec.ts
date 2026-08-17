@@ -32,6 +32,8 @@ describe('tree contract types', () => {
 			readonly text: Signal<string>
 			position: {start: number; end: number}
 			range: () => {start: number; end: number}
+			// Structural, so it is on EVERY node — a block row can be a text node.
+			remove: () => boolean
 		}>()
 		expectTypeOf<MarkNode>().toMatchObjectType<{
 			readonly kind: 'mark'

@@ -30,6 +30,15 @@ export class BlockController {
 			// Reorder is drag-originated (grip dragstart / row drop), so it stays behind
 			// `draggable`; add/duplicate/delete arrive from the menu or the keyboard.
 			if (action.type === 'reorder' && !this.props.draggable()) return
+			// A row DELETE is the row's own node leaving the tree, and saying so is what keeps the
+			// other rows' identity: composing a new whole document and diffing it back cannot tell
+			// two byte-identical rows apart, so `gapWindow` picked the wrong span and the commit
+			// announced the WRONG id as removed. Gated by 'removes the addressed row, not a
+			// byte-identical neighbour'.
+			if (action.type === 'delete') {
+				this.tokens.nodes().at(action.index)?.remove()
+				return
+			}
 			// Anchor-slice reads: the tree's own string, always consistent with nodes().
 			const read = (from: NodeAnchor, to: NodeAnchor): string => this.tokens.valueBetween(from, to)
 			const result = applyDragAction(read, this.tokens.nodes(), action, this.props.options())

@@ -3,7 +3,7 @@ import {computed, signal} from '../../../shared/signals'
 import type {Token} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
 import {offsetOfAnchor} from './anchors'
-import type {Id, MarkCommands, MarkNode, NodeAnchor, TextNode, TreeNode} from './types'
+import type {Id, MarkNode, NodeAnchor, TextNode, TreeCommands, TreeNode} from './types'
 
 export interface TokenTree {
 	// NOT ReturnType<typeof signal<...>> — instantiation picks the last overload
@@ -22,7 +22,7 @@ export function createTokenTree(
 	 * through; an unwired node's verbs answer `false`, which is the same fail-closed answer a
 	 * dead node gives.
 	 */
-	commands?: () => MarkCommands | undefined
+	commands?: () => TreeCommands | undefined
 ): TokenTree {
 	let nextId = 1
 	const alloc = (): Id => nextId++
@@ -35,6 +35,7 @@ export function createTokenTree(
 				text: signal({initial: token.content}),
 				position: {...token.position},
 				range: () => ({...node.position}),
+				remove: () => commands?.()?.remove(node) ?? false,
 			}
 			return node
 		}
