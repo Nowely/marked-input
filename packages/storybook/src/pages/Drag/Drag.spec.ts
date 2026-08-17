@@ -400,6 +400,25 @@ describe('Feature: drag rows', () => {
 				.toBe(true)
 		})
 
+		it('move the row ELEMENT rather than rebuilding it, so component state survives', async () => {
+			// The browser half of the row-identity gate; the core half asserts ids and the
+			// per-row store. If identity survives the reorder, both adapters reconcile by
+			// `key={node.id}` and MOVE the existing element — a rebuilt row would be a new
+			// element object here, and would take the consumer's component state with it.
+			const {host} = await mount(PlainTextDrag)
+			const before = [...rowsOf(host)]
+
+			await dragRow(host, 0, 2)
+
+			// The drop is on row 2's TRAILING edge, so the target slot is 3 and the row lands at
+			// index 2 once it has left index 0.
+			await expect.poll(() => rowsOf(host)[2] === before[0]).toBe(true)
+			const after = rowsOf(host)
+			expect(after[0]).toBe(before[1])
+			expect(after[1]).toBe(before[2])
+			expect(after[3]).toBe(before[3])
+		})
+
 		it('not change order when dragging row onto itself', async () => {
 			const {host, value} = await echoPlainText()
 			const original = value()
