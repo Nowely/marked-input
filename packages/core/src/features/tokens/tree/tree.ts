@@ -38,6 +38,7 @@ export function createTokenTree(
 				remove: () => commands?.()?.remove(node) ?? false,
 				duplicate: () => commands?.()?.duplicate(node) ?? false,
 				insertAfter: text => commands?.()?.insertAfter(node, text) ?? false,
+				mergeWith: next => commands?.()?.mergeWith(node, next) ?? false,
 			}
 			return node
 		}
@@ -66,6 +67,7 @@ export function createTokenTree(
 			remove: () => commands?.()?.remove(node) ?? false,
 			duplicate: () => commands?.()?.duplicate(node) ?? false,
 			insertAfter: text => commands?.()?.insertAfter(node, text) ?? false,
+			mergeWith: next => commands?.()?.mergeWith(node, next) ?? false,
 		}
 		return node
 	}

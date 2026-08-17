@@ -1,5 +1,5 @@
 import type {CoreOption, DragAction} from '../../shared/types'
-import type {MarkNode, NodeAnchor, TreeNode} from '../tokens'
+import type {NodeAnchor, TreeNode} from '../tokens'
 import {createRowContent} from './createRowContent'
 
 /** An anchor-addressed slice of the document — backed by `tokens.valueBetween` in production. */
@@ -8,21 +8,6 @@ export type SliceRead = (from: NodeAnchor, to: NodeAnchor) => string
 export type DragApplyResult = {
 	readonly value: string
 	readonly caret: number
-}
-
-function isSlotLeadingMark(node: TreeNode): node is MarkNode {
-	return node.kind === 'mark' && node.descriptor.hasSlot && node.descriptor.segments.length === 1
-}
-
-/**
- * Returns whether two adjacent rows can be merged (Backspace/Delete).
- * Text rows merge when there's a gap between them.
- * Slot-leading mark rows of the same descriptor merge by removing the first mark's suffix.
- */
-export function canMergeRows(read: SliceRead, a: TreeNode, b: TreeNode): boolean {
-	if (a.kind === 'text' && b.kind === 'text' && read({after: a}, {before: b}) !== '') return true
-	if (isSlotLeadingMark(a) && isSlotLeadingMark(b) && a.descriptor === b.descriptor) return true
-	return false
 }
 
 /**
@@ -160,34 +145,6 @@ export function applyDragAction(
 	}
 }
 
-/**
- * Merges row[index] into row[index - 1] by removing the boundary between them.
- * For text rows: removes the gap. For slot-leading marks: removes the first
- * mark's literal suffix, merging slot content. The within-row offset arithmetic
- * (`slotRange.end - position.start`) indexes the row's OWN slice — positions and
- * the slice come from one tree generation, so the pair is self-consistent.
- */
-export function mergeDragRows(read: SliceRead, rows: readonly TreeNode[], index: number): DragApplyResult {
-	const {texts, gaps} = project(read, rows)
-	if (index <= 0 || index >= rows.length) return {value: compose(texts, gaps), caret: 0}
-	const prev = rows[index - 1]
-	// The merged-in row and everything after it, untouched.
-	const tail = compose(texts.slice(index), gaps.slice(index))
-
-	if (isSlotLeadingMark(prev) && isSlotLeadingMark(rows[index])) {
-		// Everything before the previous row, ITS leading gap included: what goes is
-		// the previous mark's suffix, and the gap between the pair along with it.
-		const head = compose(texts.slice(0, index - 1), gaps.slice(0, index - 1))
-		const slotEnd = (prev.slotRange ? prev.slotRange.end : prev.position.end) - prev.position.start
-		const keptPrev = texts[index - 1].slice(0, slotEnd)
-		return {value: head + keptPrev + tail, caret: head.length + keptPrev.length}
-	}
-
-	// Rows 0..index-1 with their gaps EXCEPT the merged boundary's, then the merged-in row.
-	const head = compose(texts.slice(0, index), gaps.slice(0, index - 1))
-	return {value: head + tail, caret: head.length}
-}
-
 /** Insert `content` as a row after `afterIndex`; caret at the END of the inserted content (blockEdit's Enter on a mark row). */
 export function addDragRow(
 	read: SliceRead,
@@ -199,10 +156,4 @@ export function addDragRow(
 	const at = Math.min(afterIndex + 1, texts.length)
 	const {newTexts, newGaps} = insertRow(texts, gaps, at, content)
 	return {value: compose(newTexts, newGaps), caret: startOf(newTexts, newGaps, at) + content.length}
-}
-
-/** Removes row `index`; the caller (blockEdit's Backspace on an empty row) has already resolved it. */
-export function deleteDragRow(read: SliceRead, rows: readonly TreeNode[], index: number): DragApplyResult {
-	const {texts, gaps} = project(read, rows)
-	return deleteRow(texts, gaps, index)
 }

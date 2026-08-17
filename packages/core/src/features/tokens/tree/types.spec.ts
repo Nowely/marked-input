@@ -36,6 +36,7 @@ describe('tree contract types', () => {
 			remove: () => boolean
 			duplicate: () => boolean
 			insertAfter: (text: string) => boolean
+			mergeWith: (next: TreeNode) => boolean
 		}>()
 		expectTypeOf<MarkNode>().toMatchObjectType<{
 			readonly kind: 'mark'
@@ -53,6 +54,7 @@ describe('tree contract types', () => {
 			remove: () => boolean
 			duplicate: () => boolean
 			insertAfter: (text: string) => boolean
+			mergeWith: (next: TreeNode) => boolean
 		}>()
 		// NodeAnchor: text offsets, boundary forms, document edges — the annotation is the check
 		const start: NodeAnchor = 'start'

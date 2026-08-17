@@ -6,7 +6,7 @@ import type {Store} from '../../store/Store'
 type KbCtx = Pick<Store, 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import type {SliceRead} from '../block/operations'
-import {addDragRow, mergeDragRows, canMergeRows, deleteDragRow} from '../block/operations'
+import {addDragRow} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Anchors, NodeAnchor, TokenHandle, TreeNode} from '../tokens'
 import {anchorEquals} from '../tokens'
@@ -114,8 +114,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 		const blockText = store.tokens.valueBetween({before: row}, {after: row})
 		if (blockText === '') {
 			event.preventDefault()
-			const result = deleteDragRow(sliceRead(store), rows, blockIndex)
-			store.edit.setValue(result.value, result.caret)
+			row.remove()
 			return
 		}
 
@@ -294,15 +293,11 @@ function mergeOrFocusNeighbor(
 	toIndex: number,
 	caretOnFocus: 'start' | 'end'
 ): void {
-	const joinIndex = Math.max(fromIndex, toIndex)
 	const a = rows[Math.min(fromIndex, toIndex)]
-	const b = rows[joinIndex]
-	const read = sliceRead(store)
+	const b = rows[Math.max(fromIndex, toIndex)]
 	event.preventDefault()
-	if (canMergeRows(read, a, b)) {
-		const merged = mergeDragRows(read, rows, joinIndex)
-		store.edit.setValue(merged.value, merged.caret)
-		return
-	}
+	// The verb ANSWERS whether the pair had a boundary to remove, so the separate
+	// `canMergeRows` predicate is gone: asking and then doing was two readings of one question.
+	if (a.mergeWith(b)) return
 	focusRow(store, rows[toIndex], toIndex, caretOnFocus)
 }

@@ -419,3 +419,74 @@ describe('MarkNode live-read parity', () => {
 		expect(store.tokens.value()).toBe('he@[ok]llo@[y]')
 	})
 })
+
+/**
+ * Block rows: a slot-leading markup, so every root is a mark whose trailing literal is the
+ * boundary `mergeWith` removes. A bare container is enough — these verbs settle structurally
+ * and the live tree stays the reconciled parse.
+ */
+function rowSetup(value: string) {
+	const store = new Store()
+	store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: [{markup: '__slot__\n\n'}]})
+	store.host.container(document.createElement('div'))
+	return store
+}
+
+describe('mergeWith', () => {
+	it('removes the previous row suffix and joins the slots', () => {
+		const store = rowSetup('a\n\nb\n\n')
+		const [a, b] = store.tokens.nodes()
+
+		expect(a.mergeWith(b)).toBe(true)
+
+		// The composer's own answers, carried over from the deleted `mergeDragRows` specs.
+		expect(store.tokens.value()).toBe('ab\n\n')
+		expect(store.tokens.selection.anchors()).toBeDefined()
+	})
+
+	it('merging into an EMPTY previous row drops its suffix entirely', () => {
+		const store = rowSetup('\n\nb\n\n')
+		const [a, b] = store.tokens.nodes()
+
+		expect(a.mergeWith(b)).toBe(true)
+		expect(store.tokens.value()).toBe('b\n\n')
+	})
+
+	it('leaves the rows before and after the merged pair untouched', () => {
+		const store = rowSetup('a\n\nb\n\nc\n\n')
+		const rows = store.tokens.nodes()
+		const first = rows[0].id
+
+		expect(rows[1].mergeWith(rows[2])).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\nbc\n\n')
+		expect(store.tokens.nodes()[0].id).toBe(first)
+	})
+
+	it('keeps the FIRST row identity and retires the second', () => {
+		const store = rowSetup('a\n\nb\n\n')
+		const [a, b] = store.tokens.nodes()
+		const [kept, retired] = [a.id, b.id]
+
+		expect(a.mergeWith(b)).toBe(true)
+
+		// `a` survives because it re-pairs at its own index under the same descriptor; a
+		// whole-document rewrite could promise neither half of this.
+		const after = store.tokens.nodes()
+		expect(after).toHaveLength(1)
+		expect(after[0].id).toBe(kept)
+		expect(kept).not.toBe(retired)
+	})
+
+	it('answers false when the pair has no boundary to remove', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'he@[x]llo', Mark: () => null, options: [{markup: '@[__value__]'}]})
+		store.host.container(document.createElement('div'))
+		const rows = store.tokens.nodes()
+
+		// Text next to a value-only mark: neither side is slot-leading, so there is no
+		// trailing literal holding them apart.
+		expect(rows[0].mergeWith(rows[1])).toBe(false)
+		expect(store.tokens.value()).toBe('he@[x]llo')
+	})
+})

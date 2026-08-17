@@ -6,7 +6,7 @@ import {nodesOf, textToken} from '../tokens/__testing__/tokenFactories'
 import {Parser} from '../tokens/parser/Parser'
 import {createRowContent} from './createRowContent'
 import type {SliceRead} from './operations'
-import {addDragRow, applyDragAction, canMergeRows, deleteDragRow, mergeDragRows} from './operations'
+import {addDragRow, applyDragAction} from './operations'
 
 const rowOptions: CoreOption[] = [{markup: '__slot__\n\n'}]
 /** What `createRowContent(rowOptions)` answers — pinned once, below, so the literals stay readable. */
@@ -171,59 +171,7 @@ describe('applyDragAction gap arithmetic (non-tiling rows)', () => {
 	})
 })
 
-describe('canMergeRows', () => {
-	it('text rows merge when a gap separates them', () => {
-		const rows = nodesOf([textToken('a', 0), textToken('b', 2)])
-		expect(canMergeRows(sliceReadOf('a\nb'), rows[0], rows[1])).toBe(true)
-	})
-
-	it('text rows that tile the document have no boundary to remove', () => {
-		const {rows, read} = fixture(['a', 'b'])
-		expect(canMergeRows(read, rows[0], rows[1])).toBe(false)
-	})
-
-	it('slot-leading mark rows of the same descriptor merge', () => {
-		const {rows, read} = markFixture('a\n\nb\n\n')
-		expect(canMergeRows(read, rows[0], rows[1])).toBe(true)
-	})
-})
-
-describe('mergeDragRows', () => {
-	it('merging into an EMPTY previous row drops its suffix (zero-width slot)', () => {
-		// The empty row's slot is a zero-width window at its start, so the merge
-		// removes the empty row's '\n\n' suffix entirely.
-		const {rows, read} = markFixture('\n\nb\n\n')
-		expect(rows).toHaveLength(2)
-
-		expect(mergeDragRows(read, rows, 1)).toEqual({value: 'b\n\n', caret: 0})
-	})
-
-	it('removes the suffix of the previous mark row and joins the slots', () => {
-		const {rows, read} = markFixture('a\n\nb\n\n')
-
-		expect(mergeDragRows(read, rows, 1)).toEqual({value: 'ab\n\n', caret: 1})
-	})
-
-	it('leaves the rows before and after the merged pair untouched', () => {
-		const {rows, read} = markFixture('a\n\nb\n\nc\n\n')
-
-		expect(mergeDragRows(read, rows, 2)).toEqual({value: 'a\n\nbc\n\n', caret: 4})
-	})
-
-	it('text rows merge by dropping the gap between them', () => {
-		const rows = nodesOf([textToken('a', 0), textToken('b', 2)])
-
-		expect(mergeDragRows(sliceReadOf('a\nb'), rows, 1)).toEqual({value: 'ab', caret: 1})
-	})
-
-	it('an out-of-range index recomposes the document unchanged', () => {
-		const {rows, read, doc} = markFixture('a\n\nb\n\n')
-
-		expect(mergeDragRows(read, rows, 0)).toEqual({value: doc, caret: 0})
-	})
-})
-
-describe('addDragRow / deleteDragRow (blockEdit call sites)', () => {
+describe('addDragRow (blockEdit call site)', () => {
 	it('addDragRow inserts after the row and puts the caret at the END of the inserted content', () => {
 		const {rows, read} = fixture(['a\n\n', 'b\n\n'])
 
@@ -234,11 +182,5 @@ describe('addDragRow / deleteDragRow (blockEdit call sites)', () => {
 		const {rows, read} = fixture(['a\n\n', 'b\n\n'])
 
 		expect(addDragRow(read, rows, 1, NEW_ROW)).toEqual({value: 'a\n\nb\n\n' + NEW_ROW, caret: 8})
-	})
-
-	it('deleteDragRow answers the same value and caret as the delete action', () => {
-		const {rows, read} = fixture(['alpha\n\n', 'beta\n\n'])
-
-		expect(deleteDragRow(read, rows, 0)).toEqual({value: 'beta\n\n', caret: 0})
 	})
 })

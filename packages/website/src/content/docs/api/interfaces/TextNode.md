@@ -95,6 +95,26 @@ Defined in: [core/src/features/tokens/tree/types.ts:36](https://github.com/Nowel
 
 ***
 
+### mergeWith()
+
+```ts
+mergeWith(next): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:37](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L37)
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `next` | [`TreeNode`](/api/type-aliases/treenode/) |
+
+#### Returns
+
+`boolean`
+
+***
+
 ### range()
 
 ```ts

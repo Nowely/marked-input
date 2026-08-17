@@ -16,6 +16,7 @@ import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
+import {mergePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkNode, NodeAnchor, TextNode, TreeCommands, TreeNode} from '../tree/types'
@@ -470,6 +471,24 @@ export class TokenModel {
 		},
 		duplicate: node => this.#insertAfter(node, this.valueBetween({before: node}, {after: node})),
 		insertAfter: (node, text) => this.#insertAfter(node, text),
+		/**
+		 * The boundary between the pair, removed by replacing the FIRST node with what survives
+		 * it. `next` keeps its own markup, so the merged row is `next`'s wrapping both slots, and
+		 * `node` is the one that survives adoption — it re-pairs at its own index, same
+		 * descriptor, so the merged row keeps the FIRST row's identity and `next`'s id is what
+		 * the commit reports removed.
+		 */
+		mergeWith: (node, next) => {
+			let merged = false
+			batch(() => {
+				const plan = untracked(() => mergePlan(this.#tree.roots(), node, next))
+				if (!plan) return
+				if (!this.#applyStructural(node, plan.kept)) return
+				merged = true
+				this.#applyCaret(this.anchorAt(plan.at))
+			})
+			return merged
+		},
 	}
 
 	/**

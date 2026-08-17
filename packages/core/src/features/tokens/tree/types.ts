@@ -34,6 +34,7 @@ export interface TextNode {
 	remove(): boolean
 	duplicate(): boolean
 	insertAfter(text: string): boolean
+	mergeWith(next: TreeNode): boolean
 }
 
 export interface MarkNode {
@@ -63,6 +64,7 @@ export interface MarkNode {
 	remove(): boolean
 	duplicate(): boolean
 	insertAfter(text: string): boolean
+	mergeWith(next: TreeNode): boolean
 }
 
 /**
@@ -87,6 +89,8 @@ export interface NodeCommands {
 	duplicate(node: TreeNode): boolean
 	/** Raw markup spliced in at the node's trailing edge — the caller owns serialization. */
 	insertAfter(node: TreeNode, text: string): boolean
+	/** Drop the boundary holding `node` and the sibling after it apart; `false` when there is none. */
+	mergeWith(node: TreeNode, next: TreeNode): boolean
 }
 
 /**
