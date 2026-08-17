@@ -10,6 +10,7 @@ import type {
 	MarkNode,
 	MarkPatch,
 	NodeAnchor,
+	Pairing,
 	TextNode,
 	TransactionResult,
 	TreeChange,
@@ -24,6 +25,9 @@ describe('tree contract types', () => {
 			readonly start: number
 			readonly end: number
 			readonly insertedLength: number
+			// The identity claim a string splice cannot carry (see `Pairing`). Optional, so
+			// every existing producer stays valid without naming it.
+			readonly pairing?: Pairing
 		}>()
 		// Every field is pinned: dropping one from types.ts must fail the typecheck
 		expectTypeOf<TextNode>().toMatchObjectType<{
@@ -37,6 +41,7 @@ describe('tree contract types', () => {
 			duplicate: () => boolean
 			insertAfter: (text: string) => boolean
 			mergeWith: (next: TreeNode) => boolean
+			moveTo: (index: number) => boolean
 		}>()
 		expectTypeOf<MarkNode>().toMatchObjectType<{
 			readonly kind: 'mark'
@@ -55,6 +60,7 @@ describe('tree contract types', () => {
 			duplicate: () => boolean
 			insertAfter: (text: string) => boolean
 			mergeWith: (next: TreeNode) => boolean
+			moveTo: (index: number) => boolean
 		}>()
 		// NodeAnchor: text offsets, boundary forms, document edges — the annotation is the check
 		const start: NodeAnchor = 'start'

@@ -1,5 +1,5 @@
 import {sliceNodes} from './tree'
-import type {MarkNode, TreeNode} from './types'
+import type {MarkNode, Pairing, TreeNode, Window} from './types'
 
 /**
  * A mark whose markup is a slot followed by exactly one literal segment — the shape a block
@@ -42,4 +42,55 @@ export function mergePlan(
 	// The caret goes where the two halves join, which is the slot's own end in the PRE-splice
 	// coordinates — the caller resolves it against the post-splice tree.
 	return {kept, at: slotEnd}
+}
+/**
+ * Moving a root to another root index, as ONE splice over the affected span plus the
+ * {@link Pairing} that says which row went where. Rows outside `[min(from,to), max(from,to)]`
+ * are not touched, so the splice is as narrow as a rotation can be.
+ *
+ * `undefined` — fail closed — when the node is not a root (`indexOf` is the liveness check and
+ * the index in one read, so there is no second `reachable`), when `to` is out of range or equal
+ * to `from`, or when the affected rows do not TILE. The last cannot come from a parse and is
+ * checked rather than assumed, because the splice re-emits the span from the rows alone: any
+ * text between them would be silently dropped.
+ *
+ * The pairing spans the WHOLE root list, not just the moved span — `resolvePairing` needs a
+ * total bijection over the roots, and the untouched rows are the identity part of it.
+ */
+export function movePlan(
+	roots: readonly TreeNode[],
+	node: TreeNode,
+	to: number
+): {window: Window; text: string} | undefined {
+	const from = roots.indexOf(node)
+	if (from < 0) return undefined
+	if (!Number.isInteger(to) || to < 0 || to >= roots.length || to === from) return undefined
+
+	const low = Math.min(from, to)
+	const high = Math.max(from, to)
+	for (let index = low; index < high; index++) {
+		if (roots[index].position.end !== roots[index + 1].position.start) return undefined
+	}
+
+	const rotate = <T>(items: readonly T[]): T[] => {
+		const next = [...items]
+		next.splice(to - low, 0, ...next.splice(from - low, 1))
+		return next
+	}
+
+	const span = rotate(roots.slice(low, high + 1))
+	const text = span.map(row => sliceNodes(roots, {before: row}, {after: row})).join('')
+	const pairing: Pairing = [
+		...roots.slice(0, low).map((_, index) => index),
+		...rotate(roots.slice(low, high + 1).map((_, index) => low + index)),
+		...roots.slice(high + 1).map((_, index) => high + 1 + index),
+	]
+
+	const window: Window = {
+		start: roots[low].position.start,
+		end: roots[high].position.end,
+		insertedLength: text.length,
+		pairing,
+	}
+	return {window, text}
 }

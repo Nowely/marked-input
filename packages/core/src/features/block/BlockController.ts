@@ -5,7 +5,7 @@ import type {PropsModel} from '../state/PropsModel'
 import type {NodeAnchor, TokenModel, TreeNode} from '../tokens'
 import {BlockStore} from './BlockStore'
 import {createRowContent} from './createRowContent'
-import {applyDragAction} from './operations'
+import {addRowUnanchored} from './operations'
 
 export class BlockController {
 	readonly action = event<DragAction>()
@@ -30,28 +30,35 @@ export class BlockController {
 			if (!this.props.layout.isBlock()) return
 			// Reorder is drag-originated (grip dragstart / row drop), so it stays behind
 			// `draggable`; add/duplicate/delete arrive from the menu or the keyboard.
-			if (action.type === 'reorder' && !this.props.draggable()) return
-			// A row DELETE is the row's own node leaving the tree, and saying so is what keeps the
-			// other rows' identity: composing a new whole document and diffing it back cannot tell
-			// two byte-identical rows apart, so `gapWindow` picked the wrong span and the commit
-			// announced the WRONG id as removed. Gated by 'removes the addressed row, not a
-			// byte-identical neighbour'.
+			if (action.type === 'reorder') {
+				if (!this.props.draggable()) return
+				// The drop target names a SLOT BETWEEN rows, so a target below the source shifts down
+				// by one once the row leaves its old place. Both drag no-ops — dropping on itself, and
+				// dropping on its own trailing edge — collapse onto `to === from`, which `movePlan`
+				// already refuses, so the old `isApplicable` reorder rule is subsumed rather than
+				// restated here.
+				if (action.source < 0) return
+				const to = action.target > action.source ? action.target - 1 : action.target
+				this.tokens.nodes().at(action.source)?.moveTo(to)
+				return
+			}
+			// Row DELETE and DUPLICATE are the row's own node speaking, and saying so is what keeps
+			// the other rows' identity: composing a new whole document and diffing it back cannot
+			// tell two byte-identical rows apart, so `gapWindow` picked the wrong span and the
+			// commit announced the WRONG id as removed.
+			//
+			// The `index >= 0` guards are not decoration: `Array.prototype.at` WRAPS on a negative
+			// index, so `at(-1)` would address the LAST row where the composed path wrote nothing.
+			const rows = this.tokens.nodes()
 			if (action.type === 'delete') {
-				this.tokens.nodes().at(action.index)?.remove()
+				if (action.index >= 0) rows.at(action.index)?.remove()
 				return
 			}
 			if (action.type === 'duplicate') {
-				this.tokens.nodes().at(action.index)?.duplicate()
+				if (action.index >= 0) rows.at(action.index)?.duplicate()
 				return
 			}
-			// The EMPTY tree is the one add with no node to address, so it keeps the whole-value
-			// path: with no row there is nothing for an anchor to name.
-			// Two adds keep the whole-value path because neither has a node to address AFTER: an
-			// empty tree has no row at all, and a NEGATIVE `afterIndex` means before the first row.
-			// Both are unreachable from the menu (`BlockStore.addBlock` passes its own row index),
-			// and left on the old path rather than approximated, so no input changes answer.
-			const rows = this.tokens.nodes()
-			if (action.type === 'add' && rows.length > 0 && action.afterIndex >= 0) {
+			if (rows.length > 0 && action.afterIndex >= 0) {
 				// `afterIndex` past the end appends after the LAST row, matching the composer's
 				// `Math.min(afterIndex + 1, texts.length)`.
 				rows.at(Math.min(action.afterIndex, rows.length - 1))?.insertAfter(
@@ -61,8 +68,7 @@ export class BlockController {
 			}
 			// Anchor-slice reads: the tree's own string, always consistent with nodes().
 			const read = (from: NodeAnchor, to: NodeAnchor): string => this.tokens.valueBetween(from, to)
-			const result = applyDragAction(read, this.tokens.nodes(), action, this.props.options())
-			if (result === undefined) return
+			const result = addRowUnanchored(read, rows, action.afterIndex, this.props.options())
 			this.edit.setValue(result.value, result.caret)
 		})
 

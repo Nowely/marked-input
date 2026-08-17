@@ -1,4 +1,4 @@
-import type {CoreOption, DragAction} from '../../shared/types'
+import type {CoreOption} from '../../shared/types'
 import type {NodeAnchor, TreeNode} from '../tokens'
 import {createRowContent} from './createRowContent'
 
@@ -59,90 +59,30 @@ function insertRow(
 	}
 }
 
-/** Removes row `index` along with the boundary that held it. Total: the index is the caller's to validate. */
-function deleteRow(texts: readonly string[], gaps: readonly string[], index: number): DragApplyResult {
-	if (texts.length <= 1) return {value: '', caret: 0}
-	const keptTexts = texts.filter((_, i) => i !== index)
-	const keptGaps = gaps.filter((_, i) => i !== Math.min(index, gaps.length - 1))
-	const value = compose(keptTexts, keptGaps)
-	// The row that takes the deleted row's place — the next one when it exists,
-	// else the end of the new last row.
-	const caret = index < keptTexts.length ? startOf(keptTexts, keptGaps, index) : value.length
-	return {value, caret}
-}
-
 /**
- * Actions with nothing to write: a no-op drop, or a row index no row answers to.
- * Judged BEFORE {@link project}, which costs one slice read per row.
+ * The two adds no anchor can name, and the whole of what is left of the composed path.
+ *
+ * An EMPTY tree has no row to insert after; a NEGATIVE `afterIndex` means before the first
+ * row, which `insertAfter` cannot express. Neither is reachable from the block menu, whose
+ * `addBlock` passes its own row index — they are kept composed rather than approximated by a
+ * verb, so no input changes answer.
  */
-function isApplicable(rows: readonly TreeNode[], action: DragAction): boolean {
-	if (action.type === 'reorder') {
-		const {source, target} = action
-		// `target - 1` is the drop on the row's own trailing edge: it lands where it already is.
-		if (source === target || source === target - 1) return false
-		return rows.length >= 2 && source >= 0 && source < rows.length && target >= 0 && target <= rows.length
-	}
-	if (action.type === 'add') return true
-	// delete | duplicate: both address one row by index.
-	return action.index >= 0 && action.index < rows.length
-}
-
-/**
- * Applies a drag action, composing the new document from anchor-slice reads of the
- * current one. `undefined` means there is nothing to write — see {@link isApplicable} —
- * and is the signal the caller skips its commit on.
- */
-export function applyDragAction(
+export function addRowUnanchored(
 	read: SliceRead,
 	rows: readonly TreeNode[],
-	action: DragAction,
+	afterIndex: number,
 	options: CoreOption[]
-): DragApplyResult | undefined {
-	// The EMPTY-TREE add, stated rather than composed: with no row to address both
-	// answers are constants — the row content twice, and a caret at that row's start.
-	if (action.type === 'add' && rows.length === 0) {
+): DragApplyResult {
+	// Stated rather than composed: with no row to address, both answers are constants — the
+	// row content twice, and a caret at that row's start.
+	if (rows.length === 0) {
 		const rowContent = createRowContent(options)
 		return {value: rowContent + rowContent, caret: 0}
 	}
-	if (!isApplicable(rows, action)) return undefined
 	const {texts, gaps} = project(read, rows)
-
-	switch (action.type) {
-		case 'delete':
-			return deleteRow(texts, gaps, action.index)
-		case 'duplicate': {
-			// The copy glues to its original; the original's own separator stays with it,
-			// ahead of the row that followed.
-			const newTexts = [
-				...texts.slice(0, action.index + 1),
-				texts[action.index],
-				...texts.slice(action.index + 1),
-			]
-			const newGaps = [...gaps.slice(0, action.index), '', ...gaps.slice(action.index)]
-			return {value: compose(newTexts, newGaps), caret: startOf(newTexts, newGaps, action.index + 1)}
-		}
-		case 'add': {
-			const at = Math.min(action.afterIndex + 1, texts.length)
-			const {newTexts, newGaps} = insertRow(texts, gaps, at, createRowContent(options))
-			return {value: compose(newTexts, newGaps), caret: startOf(newTexts, newGaps, at)}
-		}
-		case 'reorder': {
-			const {source, target} = action
-			const newTexts = [...texts]
-			const [moved] = newTexts.splice(source, 1)
-			const insertAt = target > source ? target - 1 : target
-			newTexts.splice(insertAt, 0, moved)
-			const newGaps = [...gaps]
-			newGaps.splice(Math.min(source, newGaps.length - 1), 1)
-			// Marks are self-delimiting, so the moved row lands with an empty gap.
-			if (insertAt < newTexts.length - 1) newGaps.splice(insertAt, 0, '')
-			return {value: compose(newTexts, newGaps), caret: startOf(newTexts, newGaps, insertAt)}
-		}
-		default: {
-			const unhandled: never = action
-			return unhandled
-		}
-	}
+	const at = Math.max(Math.min(afterIndex + 1, texts.length), 0)
+	const {newTexts, newGaps} = insertRow(texts, gaps, at, createRowContent(options))
+	return {value: compose(newTexts, newGaps), caret: startOf(newTexts, newGaps, at)}
 }
 
 /** Insert `content` as a row after `afterIndex`; caret at the END of the inserted content (blockEdit's Enter on a mark row). */

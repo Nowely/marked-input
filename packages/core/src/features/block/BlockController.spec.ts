@@ -123,6 +123,52 @@ describe('BlockController', () => {
 		expect(selectSpy).not.toHaveBeenCalled()
 	})
 
+	describe('adds no anchor can name', () => {
+		const blockProps: Parameters<Store['props']['set']>[0] = {
+			layout: 'block',
+			draggable: true,
+			Mark: () => null,
+			options: [{markup: '__slot__\n\n'}],
+		}
+
+		it('seeds an EMPTY document with two rows', () => {
+			store.props.set(blockProps)
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('')
+
+			store.block.action({type: 'add', afterIndex: 0})
+
+			// With no row to address there is nothing for an anchor to name, so this one stays
+			// composed. Both answers are constants: the row content twice, caret at its start.
+			expect(store.tokens.value()).toBe('\n\n\n\n')
+			expect(selectionRange(store)).toEqual({start: 0, end: 0})
+		})
+
+		it('inserts BEFORE the first row for a negative afterIndex', () => {
+			store.props.set(blockProps)
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('alpha\n\nbeta\n\n')
+
+			store.block.action({type: 'add', afterIndex: -1})
+
+			// `insertAfter` cannot express "before the first row", so this stays composed too.
+			expect(store.tokens.value()).toBe('\n\nalpha\n\nbeta\n\n')
+		})
+
+		it('writes nothing for a row index no row answers to', () => {
+			store.props.set(blockProps)
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('alpha\n\nbeta\n\n')
+
+			store.block.action({type: 'delete', index: 5})
+			// NEGATIVE, which is the case `Array.prototype.at` would wrap onto the LAST row.
+			store.block.action({type: 'duplicate', index: -1})
+			store.block.action({type: 'reorder', source: -1, target: 0})
+
+			expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
+		})
+	})
+
 	describe('row identity', () => {
 		it('removes the addressed row, not a byte-identical neighbour', () => {
 			store.props.set({
@@ -168,6 +214,36 @@ describe('BlockController', () => {
 			expect(after[0]).toBe(alpha)
 			expect(after[2]).toBe(beta)
 			expect(after[1]).not.toBe(alpha)
+		})
+
+		it('carries a row AND its state to the new index on reorder', () => {
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			const container = document.createElement('div')
+			document.body.append(container)
+			store.host.container(container)
+			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
+			store.host.rendered()
+
+			const [a, b, c] = store.tokens.nodes().map(node => node.id)
+			const dragged = store.block.get(store.tokens.nodes()[0])
+			dragged.state.isDragging(true)
+
+			store.block.action({type: 'reorder', source: 0, target: 2})
+			store.host.rendered()
+
+			// The document is UNCHANGED, because the two moved-past rows are byte-identical. So
+			// the ids are the only evidence the move happened at all — and the whole reason the
+			// commit carries an identity claim the string cannot.
+			expect(store.tokens.value()).toBe('First\n\nFirst\n\nSecond\n\n')
+			expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c])
+			expect(store.block.get(store.tokens.nodes()[1])).toBe(dragged)
+			expect(dragged.state.isDragging()).toBe(true)
+			document.body.replaceChildren()
 		})
 
 		it('keeps every existing row when one is added below', () => {

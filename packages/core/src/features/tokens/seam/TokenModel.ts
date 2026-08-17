@@ -16,7 +16,7 @@ import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
-import {mergePlan} from '../tree/siblings'
+import {mergePlan, movePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkNode, NodeAnchor, TextNode, TreeCommands, TreeNode} from '../tree/types'
@@ -488,6 +488,19 @@ export class TokenModel {
 				this.#applyCaret(this.anchorAt(plan.at))
 			})
 			return merged
+		},
+		/**
+		 * Deliberately NO {@link #applyCaret}, unlike every other verb here: a removal or an
+		 * insertion takes a position out of the document or puts one in, so the caret has to be
+		 * told where it went. A move takes NONE out — every node keeps its content and its
+		 * identity — so the anchors the selection already holds still name the same characters,
+		 * and adoption carries them through untouched.
+		 */
+		moveTo: (node, index) => {
+			this.#ensureSeeded()
+			const plan = untracked(() => movePlan(this.#tree.roots(), node, index))
+			if (!plan) return false
+			return this.#tx.applyRange(plan.window, plan.text)
 		},
 	}
 

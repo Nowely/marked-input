@@ -10,6 +10,12 @@ An editable text field that mixes plain text with inline custom components, decl
 A unit of the document — either text or a mark. Carries a stable identity that survives an edit.
 _Avoid_: node, element, item — `node` belongs to the DOM
 
+**Pairing**:
+The claim that says which previous token each freshly parsed one continues. By default it is
+position within the sibling list; an operation that knows better — a row move — states it, and
+adoption honours it only where the parse agrees.
+_Avoid_: mapping, matching, reconciliation, diff
+
 **Mark**:
 A token the consumer renders as their own component. Atomic to the caret unless it declares a slot.
 _Avoid_: tag, chip, widget, entity, annotation
@@ -81,6 +87,7 @@ _Avoid_: internal, self-managed, local
 ## Relationships
 
 - A **Value** is the projection of the **Token**s; every write changes tokens and the value follows
+- A **Pairing** is how a **Token** keeps its identity across a write the value alone cannot explain
 - A **Mark** is a **Token**; a **Row** is a top-level **Token** in **Block layout**
 - An **Option** declares the **Markup** a **Mark** serialises to
 - A **Mark** may own a **Slot**, which holds further **Token**s

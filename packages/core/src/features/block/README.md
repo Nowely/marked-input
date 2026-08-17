@@ -4,7 +4,7 @@ Manages the block editing mode where each row is rendered as a separate draggabl
 
 ## Components
 
-- **BlockController**: Owns `store.block.action` (a reactive event) and lowers each drag operation onto the row's own node — `remove()`, `duplicate()`, `insertAfter()` — so the commit names the row it addressed. Reorder, and the two adds with no row to address, still go through `applyDragAction` and `EditController.setValue`. Also vends each row's `BlockStore` via `store.block.get(node)`, lazily created and cached per stable node id.
+- **BlockController**: Owns `store.block.action` (a reactive event) and lowers every drag operation onto the row's own node — `remove()`, `duplicate()`, `insertAfter()`, `moveTo()` — so the commit names the row it addressed. Only the two adds with no row to address are left composed. Also vends each row's `BlockStore` via `store.block.get(node)`, lazily created and cached per stable node id.
 - **BlockStore**: Per-row UI state (drag/hover/menu signals) and DOM wiring (`attachContainer`/`attachGrip`/`attachMenu`). One instance per row node.
 - **getAlwaysShowHandle**: Extracts `alwaysShowHandle` from `DraggableConfig`
 
@@ -18,9 +18,9 @@ Addressing the row's own node removes the ambiguity at the source: the splice wi
 
 The pure functions in `operations.ts` never take a raw value. The document reaches them as a `SliceRead` — `(from, to) => tokens.valueBetween(from, to)` — so every read comes from the token tree itself and is consistent with the `rows` whose positions address it, which a props-first `value()` is not in controlled mode.
 
-`applyDragAction(read, rows, action, options)` now serves REORDER and the two adds no anchor can name (an empty tree, and a negative `afterIndex`, which means before the first row). It projects the rows into per-row texts plus inter-row gaps, edits those, and composes the result, so its `{value, caret}` caret always indexes the value beside it; `undefined` means there is nothing to write. `addDragRow` serves the keyboard feature's Enter on a mark row, which wants its caret at the END of the inserted content.
+`addRowUnanchored(read, rows, afterIndex, options)` is all that is left of the composed path — the two adds no anchor can name: an EMPTY tree has no row to insert after, and a negative `afterIndex` means before the first row, which `insertAfter` cannot express. Neither is reachable from the menu. `addDragRow` serves the keyboard feature's Enter on a mark row, which wants its caret at the END of the inserted content.
 
-Row deletion and merging left this file for the node verbs: `deleteDragRow` became `row.remove()`, and `mergeDragRows`/`canMergeRows` became `a.mergeWith(b)`, which answers whether the pair had a boundary to remove instead of being asked first. That move also took the last `.position` read out of `block/` — the reason the directory sits on [ADR-0003](../../../../../docs/adr/0003-one-address-space.md)'s allowlist.
+Deletion, merging and reorder left this file for the node verbs: `deleteDragRow` became `row.remove()`, `mergeDragRows`/`canMergeRows` became `a.mergeWith(b)` (which answers whether the pair had a boundary to remove instead of being asked first), and `applyDragAction`'s reorder arm became `row.moveTo(index)`. Reorder is the one that needed more than an anchor: a permutation is not derivable from the two strings, so the commit carries a `Pairing` stating it. That work also took the last `.position` read out of `block/`, which is why the directory is no longer on [ADR-0003](../../../../../docs/adr/0003-one-address-space.md)'s allowlist — the allowlist is gone.
 
 ## Usage
 

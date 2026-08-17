@@ -5,8 +5,39 @@ import type {Markup} from '../parser/types'
 /** Node identity: assigned at node birth, never reused within an input instance. */
 export type Id = number
 
-/** Replaced range in the PREVIOUS projection plus inserted length. */
-export type Window = {readonly start: number; readonly end: number; readonly insertedLength: number}
+/**
+ * An identity claim the string cannot carry: `pairing[j]` is the index of the PREVIOUS root
+ * that becomes new root `j`. ROOT level, and post-filter on both sides — block mode filters
+ * empty text tokens one line before adoption (`valueBoundary`), and the tree's own roots are
+ * the output of that same filtered list, so both ends of the channel are in one space by
+ * construction.
+ *
+ * It exists because a permutation is not derivable from the two strings. Moving a row past a
+ * BYTE-IDENTICAL one produces the same document, so no diff — LCS, keyed or otherwise — can
+ * tell that permutation from a no-op. The difference is entirely in which row the user
+ * grabbed, and only the caller knows it.
+ *
+ * A claim, not an instruction: adoption re-derives every pair against the parse and discards
+ * the whole pairing if any of it disagrees.
+ */
+export type Pairing = readonly number[]
+
+/**
+ * Replaced range in the PREVIOUS projection plus inserted length, and optionally the identity
+ * claim above.
+ *
+ * `pairing` rides HERE rather than as a parameter of `CommitSink.commit` because `Window` is
+ * the one value already recorded and replayed across the controlled echo (`Emission` in
+ * `valueBoundary.ts`), released only when the echo matches both the emitted value and the base
+ * it was spliced from — which is exactly the condition under which the pairing's previous-root
+ * indices are still valid. A parallel channel would need that guard rebuilt beside it.
+ */
+export type Window = {
+	readonly start: number
+	readonly end: number
+	readonly insertedLength: number
+	readonly pairing?: Pairing
+}
 
 /**
  * One structure: the same objects flow through adoption and out of the public
@@ -35,6 +66,7 @@ export interface TextNode {
 	duplicate(): boolean
 	insertAfter(text: string): boolean
 	mergeWith(next: TreeNode): boolean
+	moveTo(index: number): boolean
 }
 
 export interface MarkNode {
@@ -65,6 +97,7 @@ export interface MarkNode {
 	duplicate(): boolean
 	insertAfter(text: string): boolean
 	mergeWith(next: TreeNode): boolean
+	moveTo(index: number): boolean
 }
 
 /**
@@ -91,6 +124,8 @@ export interface NodeCommands {
 	insertAfter(node: TreeNode, text: string): boolean
 	/** Drop the boundary holding `node` and the sibling after it apart; `false` when there is none. */
 	mergeWith(node: TreeNode, next: TreeNode): boolean
+	/** Move a ROOT to another root index, keeping its identity. `false` for a non-root, a no-op or an out-of-range index. */
+	moveTo(node: TreeNode, index: number): boolean
 }
 
 /**

@@ -88,7 +88,8 @@ an id and nothing else, and the split is what makes the pending window safe.
 
 ## Adoption — the descend rules
 
-Pairing is same-index within one sibling list. A candidate is adopted when:
+Pairing is same-index within one sibling list, with ONE exception below. A candidate is
+adopted when:
 
 1. both are text, or
 2. both are marks AND their `descriptor` is reference-equal (descriptors are
@@ -96,6 +97,16 @@ Pairing is same-index within one sibling list. A candidate is adopted when:
 
 Anything else is a rebuild: the candidate's ids are collected into `removed` and
 a fresh node is built into `added`.
+
+**The exception — a stated `Pairing`.** A commit `Window` may carry
+`pairing[j] = previous root index`, and where it resolves it REPLACES all three walks for the
+root list. It exists because same-index pairing cannot express a permutation, and no diff can
+recover one: moving a row past a byte-identical row leaves the document unchanged, so the
+string carries no evidence at all. `resolvePairing` (`tree/adoptUtils.ts`) discards the whole
+claim unless it is a total BIJECTION over the roots and every pair is `snapshotNodeEquals`
+under its OWN shift — the bijection check is not implied by the range check, and the
+counter-example is on the file. A discarded pairing costs nothing: adoption runs exactly as it
+does today.
 
 An adopted mark ALWAYS recurses into its children — that recursion is what keeps
 in-slot component identity alive across a mark-level value/meta change. There is
