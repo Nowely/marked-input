@@ -1,7 +1,6 @@
 import type {Host} from '../features/state/Host'
-import type {PropsModel} from '../features/state/PropsModel'
 import {annotate} from '../features/tokens'
-import type {Id, MarkNode, NodeAnchor, TextNode, TokenDelta, TokenModel, TreeNode} from '../features/tokens'
+import type {Id, NodeAnchor, TextNode, TokenDelta, TokenModel, TreeNode} from '../features/tokens'
 import type {Markup} from '../features/tokens/parser/types'
 import type {Event} from '../shared/signals'
 
@@ -25,7 +24,6 @@ export type MarkInit = {
 export class MarkputApi {
 	constructor(
 		private readonly host: Host,
-		private readonly props: PropsModel,
 		private readonly tokens: TokenModel
 	) {}
 
@@ -65,23 +63,24 @@ export class MarkputApi {
 	}
 
 	/**
-	 * Returns the fresh node in uncontrolled mode and `undefined` in controlled mode (spec D6:
-	 * the node exists only once the parent's echo commits — a caller re-finds it from
-	 * `changed`). `'caret'` means the selection's START in document order and yields
-	 * `undefined` when there is no selection (spec §2.3).
+	 * Whether the insertion was ACCEPTED. `'caret'` means the selection's START in document
+	 * order, and answers `false` when there is no selection (spec §2.3).
+	 *
+	 * It used to answer the fresh node, and that shape could not say what it meant: `undefined`
+	 * was BOTH "refused" and "accepted, but this is controlled mode so the node does not exist
+	 * yet" (spec D6 — the node arrives only once the parent's echo commits). A caller could not
+	 * tell a rejected write from a pending one. `boolean` separates them, and the node is read
+	 * back the way every other post-commit read works: from `changed`, then {@link find}.
+	 *
+	 * That also retired the positional lookup this used to end with — resolving the created
+	 * mark as "the one ending at the post-splice caret" — along with the fixture that existed
+	 * only to discriminate it from "the first mark in the document".
 	 */
-	insertMark(at: NodeAnchor | 'caret', init: MarkInit): MarkNode | undefined {
+	insertMark(at: NodeAnchor | 'caret', init: MarkInit): boolean {
 		const anchor = at === 'caret' ? this.tokens.selection.caretAnchor() : at
-		if (anchor === undefined || !this.live(anchor)) return undefined
+		if (anchor === undefined || !this.live(anchor)) return false
 		const text = annotate(init.markup, {value: init.value, meta: init.meta, slot: init.slot})
-		const caret = this.tokens.replaceBetween(anchor, anchor, text)
-		if (!caret) return undefined
-		if (this.props.value() !== undefined) return undefined
-		// A zero-width splice puts the caret at the END of the annotation, so the mark it
-		// created is the one ENDING there. That keeps the lookup POSITIONAL — a result feed
-		// would mean threading a `TransactionResult` through four sites for one caller — while
-		// leaving the arithmetic in `tree/`, which is what `markStartingAt` could not do.
-		return this.tokens.adjacentMark(caret, -1)
+		return this.tokens.replaceBetween(anchor, anchor, text) !== undefined
 	}
 
 	replaceText(target: {node: TextNode; start: number; end: number}, text: string): boolean {

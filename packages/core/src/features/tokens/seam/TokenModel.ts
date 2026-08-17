@@ -16,9 +16,10 @@ import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
+import {entryAnchor, mergePlan, movePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf, sliceNodes} from '../tree/tree'
-import type {Anchors, MarkCommands, MarkNode, NodeAnchor, TextNode, TreeNode} from '../tree/types'
+import type {Anchors, MarkNode, NodeAnchor, TextNode, TreeCommands, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 
 /**
@@ -420,7 +421,7 @@ export class TokenModel {
 	})
 
 	/** THE tree, and the only representation of the value. */
-	readonly #tree = createTokenTree([], () => this.#markCommands)
+	readonly #tree = createTokenTree([], () => this.#commands)
 
 	/** Whole-node replacement — the mark verbs' write path. */
 	#applyStructural(target: TreeNode, replacement: string): boolean {
@@ -446,12 +447,117 @@ export class TokenModel {
 	}
 
 	/**
-	 * The mark verbs, lowered onto `#applyStructural`. Read-only and dead-node gating live
-	 * in the transaction layer, so both arms answer exactly what it answers.
+	 * The node verbs, lowered onto `#applyStructural`. Read-only and dead-node gating live
+	 * in the transaction layer, so every arm answers exactly what it answers.
+	 *
+	 * `remove` also MOVES THE CARET, which `update` does not: a removal takes a position out
+	 * of the document, so the caret has to be told where that position went, while an update
+	 * leaves the caret's own coordinates to adoption's repair. The offset is formed here for
+	 * {@link replaceBetween}'s reason — this is the layer that may — and resolved against the
+	 * POST-splice tree, so it names the node that took the removed one's place.
 	 */
-	readonly #markCommands: MarkCommands = {
+	readonly #commands: TreeCommands = {
 		update: (node, patch) => this.#applyStructural(node, serializeMark(node, patch)),
-		remove: node => this.#applyStructural(node, ''),
+		remove: node => {
+			let removed = false
+			// One tick for value and selection, exactly as `EditController.replace` batches its pair.
+			batch(() => {
+				const start = untracked(() => node.position.start)
+				if (!this.#applyStructural(node, '')) return
+				removed = true
+				this.#applyCaret(this.anchorAt(start))
+			})
+			return removed
+		},
+		duplicate: node => this.#insertAfter(node, this.valueBetween({before: node}, {after: node})),
+		insertAfter: (node, text) => this.#insertAfter(node, text),
+		/**
+		 * The boundary between the pair, removed by replacing the FIRST node with what survives
+		 * it. `next` keeps its own markup, so the merged row is `next`'s wrapping both slots, and
+		 * `node` is the one that survives adoption — it re-pairs at its own index, same
+		 * descriptor, so the merged row keeps the FIRST row's identity and `next`'s id is what
+		 * the commit reports removed.
+		 */
+		mergeWith: (node, next) => {
+			let merged = false
+			batch(() => {
+				const plan = untracked(() => mergePlan(this.#tree.roots(), node, next))
+				if (!plan) return
+				if (!this.#applyStructural(node, plan.kept)) return
+				merged = true
+				this.#applyCaret(this.anchorAt(plan.at))
+			})
+			return merged
+		},
+		/**
+		 * Deliberately NO {@link #applyCaret}, unlike every other verb here: a removal or an
+		 * insertion takes a position out of the document or puts one in, so the caret has to be
+		 * told where it went. A move takes NONE out — every node keeps its content and its
+		 * identity — so the anchors the selection already holds still name the same characters,
+		 * and adoption carries them through untouched.
+		 */
+		moveTo: (node, index) => {
+			this.#ensureSeeded()
+			const plan = untracked(() => movePlan(this.#tree.roots(), node, index))
+			if (!plan) return false
+			return this.#tx.applyRange(plan.window, plan.text)
+		},
+	}
+
+	/**
+	 * Both insert verbs, and the caret rule they share: the caret belongs at the START of what
+	 * was inserted, which is the anchor node's trailing edge READ BEFORE the splice. Resolved
+	 * against the post-splice tree, so for a slot-leading row markup it lands inside the fresh
+	 * row's slot — the same position the composer's `startOf(...)` answered.
+	 */
+	#insertAfter(node: TreeNode, text: string): boolean {
+		this.#ensureSeeded()
+		let inserted = false
+		batch(() => {
+			const index = untracked(() => this.#tree.roots().indexOf(node))
+			if (!this.#tx.applyAfter(node, text)) return
+			inserted = true
+			// The fresh ROOT when the anchor was one — resolved after the splice, so the node
+			// exists. A nested insert names no root and leaves the caret to adoption's repair.
+			if (index >= 0) this.#enterRoot(index + 1)
+		})
+		return inserted
+	}
+
+	/**
+	 * Put the caret INTO root `index` — {@link entryAnchor}'s one rule, applied after the
+	 * splice so the row exists to be named. A no-op when no such root came back, which is what
+	 * controlled mode always looks like: the tree has not moved, so {@link #applyCaret} would
+	 * decline anyway.
+	 */
+	#enterRoot(index: number): void {
+		// `.at` for `entryAnchor`'s reason; a negative index cannot arrive here — every
+		// caller derives it from a root index or a literal 0.
+		const root = untracked(() => this.#tree.roots().at(index))
+		if (root) this.#applyCaret(entryAnchor(root))
+	}
+
+	/**
+	 * @internal Whole-value replacement that puts the caret INTO a row of the RESULT, named by
+	 * index rather than by a character offset into a string that does not exist yet. That
+	 * offset was the last absolute coordinate above `tree/` (ADR-0003); an index names a node
+	 * the commit is about to produce, which the caller genuinely knows.
+	 */
+	setValueEnteringRoot(text: string, index: number): boolean {
+		if (!this.setValue(text)) return false
+		this.#enterRoot(index)
+		return true
+	}
+
+	/**
+	 * A verb's post-edit caret, under the ONE controlled-mode rule (spec D6): controlled mode
+	 * moves no DERIVED caret, because the tree has not moved yet — the anchor would be captured
+	 * as `selectionBefore` at the echo and shifted a SECOND time by `map`. The echo's repair
+	 * owns it there.
+	 */
+	#applyCaret(caret: NodeAnchor): void {
+		if (this.props.value() !== undefined) return
+		this.selection.select(caret)
 	}
 
 	/** The lazily-materialized default, so a `defaultValue` set after the first read stays a no-op. */

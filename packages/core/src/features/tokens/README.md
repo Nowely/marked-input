@@ -88,7 +88,8 @@ an id and nothing else, and the split is what makes the pending window safe.
 
 ## Adoption — the descend rules
 
-Pairing is same-index within one sibling list. A candidate is adopted when:
+Pairing is same-index within one sibling list, with ONE exception below. A candidate is
+adopted when:
 
 1. both are text, or
 2. both are marks AND their `descriptor` is reference-equal (descriptors are
@@ -96,6 +97,16 @@ Pairing is same-index within one sibling list. A candidate is adopted when:
 
 Anything else is a rebuild: the candidate's ids are collected into `removed` and
 a fresh node is built into `added`.
+
+**The exception — a stated `Pairing`.** A commit `Window` may carry
+`pairing[j] = previous root index`, and where it resolves it REPLACES all three walks for the
+root list. It exists because same-index pairing cannot express a permutation, and no diff can
+recover one: moving a row past a byte-identical row leaves the document unchanged, so the
+string carries no evidence at all. `resolvePairing` (`tree/adoptUtils.ts`) discards the whole
+claim unless it is a total BIJECTION over the roots and every pair is `snapshotNodeEquals`
+under its OWN shift — the bijection check is not implied by the range check, and the
+counter-example is on the file. A discarded pairing costs nothing: adoption runs exactly as it
+does today.
 
 An adopted mark ALWAYS recurses into its children — that recursion is what keeps
 in-slot component identity alive across a mark-level value/meta change. There is
@@ -390,12 +401,21 @@ stops writing its old element. A dead handle never throws — reads answer
 
 ## Mark commands
 
-The write verbs live on the NODE, not on a controller: `MarkNode.update(patch)`
-and `MarkNode.remove()` (`tree/types.ts`, implemented in `tree.ts` against the
-`MarkCommands` port). Both ride a transaction — `serializeMark`
-renders the patch to markup and `applyStructural` splices it — and both answer
-`false` in read-only mode or off the tree, which is the same fail-closed answer a
-dead node gives.
+The write verbs live on the NODE, not on a controller (`tree/types.ts`,
+implemented in `tree.ts`), and they split by the NATURE of the operation rather
+than by node type:
+
+- `NodeCommands` — the STRUCTURAL verbs, on every node: `remove()`,
+  `duplicate()`, `insertAfter(text)`, `mergeWith(next)`, `moveTo(index)`. A block
+  row can be a text node, so a mark-only port could not serve one.
+- `MarkCommands` — `update(patch)`, mark-only because `value`/`meta`/`slot` are.
+
+All of them ride a transaction — `serializeMark` renders a patch to markup,
+`applyStructural`/`applyAfter`/`applyRange` splice — and all answer `false` in
+read-only mode or off the tree, which is the same fail-closed answer a dead node
+gives. Each also OWNS its post-edit caret, applied through one shared rule, with
+one deliberate exception: `moveTo` moves none, because a move takes no position
+out of the document and the stored anchors still name the same characters.
 
 `MarkPatch` has no discriminator: an absent (or `undefined`) field is left alone,
 `null` CLEARS it, and a string sets it. Omitted keys are defaulted off the node

@@ -66,25 +66,17 @@ describe('EditController', () => {
 		expect(selectionRange(store)).toEqual({start: 1, end: 1})
 	})
 
-	it('still honours an explicit setValue caret in controlled mode', () => {
-		// The D-e exemption. `caretOffset` is a caller INTENT map cannot reconstruct; dropping
-		// it deleted a block row (Drag.{react,vue}.spec "backspace on empty row"). Controlled +
-		// no echo here, so the intent is the only writer.
+	it('moves no caret on a controlled setValue', () => {
+		// The D-e exemption went with `caretOffset`. Its callers were block row edits that
+		// wanted the caret inside a row of the RESULT, and they now say so directly through
+		// `tokens.setValueEnteringRoot`; the measurement that justified the exemption had gone
+		// stale, so nothing is left asking `setValue` to write a caret the echo will re-map.
 		const store = new Store()
 		store.props.set({value: 'hello', onChange: vi.fn()})
 		caretAt(store, 0)
 
-		store.edit.setValue('world', 2)
+		store.edit.setValue('world')
 
-		expect(selectionRange(store)).toEqual({start: 2, end: 2})
-	})
-
-	it('honors an explicit setValue caret over the end of the new value', () => {
-		const store = new Store()
-		store.props.set({defaultValue: 'hello world'})
-		store.edit.setValue('hi world', 0)
-
-		expect(store.tokens.value()).toBe('hi world')
 		expect(selectionRange(store)).toEqual({start: 0, end: 0})
 	})
 

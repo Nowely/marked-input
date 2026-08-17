@@ -1,0 +1,67 @@
+import {describe, expect, it} from 'vitest'
+
+/**
+ * ADR-0003's own check, made real.
+ *
+ * The ADR states the rule as "a grep with a fixed allowlist", but no such grep existed
+ * anywhere — not in CI, not in `oxlint.config.ts`, not in a script, and there is no
+ * `scripts/` directory. The rule was enforced by review alone, which is how
+ * `keyboard/blockEdit.ts` stayed on the allowlist after its last real read had become a
+ * comment.
+ *
+ * The rule: only `features/tokens/` may read a node's `position` or `slotRange`. Everything
+ * above it names positions with a `NodeAnchor`. Inside that directory both `tree/` (which owns
+ * the coordinate space) and `parser/` (whose `Token.position` is a different, parse-local
+ * record) read them freely, so the directory boundary IS the allowlist — there is nothing left
+ * to enumerate.
+ *
+ * Sources are read through `import.meta.glob`, not `node:fs`: the core project runs in
+ * Chromium, so there is no filesystem at test time.
+ */
+const sources: Record<string, string> = import.meta.glob('./**/*.ts', {
+	query: '?raw',
+	import: 'default',
+	eager: true,
+})
+
+/**
+ * Comments are stripped before scanning, and that is not cosmetic: `keyboard/blockEdit.ts`
+ * carries `row.position.end` inside a comment explaining why it does NOT form that offset.
+ * A check that failed on prose would be a check nobody could keep green honestly.
+ */
+function stripComments(source: string): string {
+	return source.replaceAll(/\/\*[\s\S]*?\*\//g, '').replaceAll(/\/\/[^\n]*/g, '')
+}
+
+const OWNS_POSITIONS = 'features/tokens/'
+
+function isGoverned(path: string): boolean {
+	// `import.meta.glob` keys are relative to THIS file: './features/tokens/...'.
+	if (path.includes(OWNS_POSITIONS)) return false
+	if (path.includes('/__testing__/')) return false
+	return !path.endsWith('.spec.ts')
+}
+
+describe('one address space (ADR-0003)', () => {
+	it('forms no node position outside features/tokens/', () => {
+		const offenders = Object.entries(sources)
+			.filter(([path]) => isGoverned(path))
+			.flatMap(([path, source]) =>
+				stripComments(source)
+					.split('\n')
+					.map((line, index) => ({path, line: index + 1, text: line}))
+					.filter(entry => /\.(?:position|slotRange)\b/.test(entry.text))
+					.map(entry => `${entry.path}:${entry.line} ${entry.text.trim()}`)
+			)
+
+		expect(offenders).toEqual([])
+	})
+
+	it('scans a meaningful number of files, so a broken glob cannot pass vacuously', () => {
+		// The assertion above is `toEqual([])`, which an empty input satisfies. This is the
+		// guard that the empty answer came from looking rather than from not looking.
+		const governed = Object.keys(sources).filter(isGoverned)
+		expect(governed.length).toBeGreaterThan(20)
+		expect(Object.keys(sources).some(path => path.includes(OWNS_POSITIONS))).toBe(true)
+	})
+})

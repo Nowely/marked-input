@@ -1,6 +1,6 @@
 import {untracked} from '../../../shared/signals'
 import type {TokenTree} from './tree'
-import type {CommitSink, TextNode, TreeNode, Window} from './types'
+import type {CommitSink, Pairing, TextNode, TreeNode, Window} from './types'
 
 /**
  * One splice in the coordinates of the COMMITTED projection. No `insertedLength`:
@@ -45,7 +45,7 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		return false
 	}
 
-	const dispatch = (ops: readonly Op[]): boolean => {
+	const dispatch = (ops: readonly Op[], pairing?: Pairing): boolean => {
 		const value = currentValue()
 		// The `end` tie-break is load-bearing, not cosmetic: half-open disjointness admits a
 		// zero-length op at the start of a range op, and on `start` alone the range op can sort
@@ -68,7 +68,10 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		// reduces to `text.length`.
 		const start = sorted[0].start
 		const end = sorted[sorted.length - 1].end
-		const window: Window = {start, end, insertedLength: end - start + (next.length - value.length)}
+		// The pairing is re-attached HERE and not carried on the caller's window, because this
+		// is where the window is (re)derived from the ops — a hint on an input window would be
+		// silently dropped.
+		const window: Window = {start, end, insertedLength: end - start + (next.length - value.length), pairing}
 
 		// A splice that changes nothing still commits: `next === value` reaches the sink and
 		// costs a parse plus an adoption, which adoption then diffs to no change. It also still
@@ -87,21 +90,26 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		}
 	}
 
-	const submit = (op: Op): boolean => {
+	const submit = (op: Op, pairing?: Pairing): boolean => {
 		if (isReadOnly()) return refuse()
 		if (op.start < 0 || op.end < op.start || op.end > currentValue().length) return refuse()
-		if (!pending) return dispatch([op])
+		if (!pending) return dispatch([op], pairing)
+		// A pairing claims the WHOLE root list, and a hull composed with other ops cannot keep
+		// that claim true — the other ops may add or remove roots the pairing never counted.
+		// Refused rather than dropped: silently ignoring it would commit a move that quietly
+		// lost every row's identity.
+		if (pairing) return refuse()
 		if (pending.ops.some(other => overlaps(op, other))) return refuse()
 		pending.ops.push(op)
 		return true
 	}
 
 	return {
-		/** The primitive: a splice in the committed projection's coordinates. */
+		/** The primitive: a splice in the committed projection's coordinates, plus any identity claim it carries. */
 		applyRange(window: Window, text: string): boolean {
 			assertIdle()
 			// `window.insertedLength` is ignored: what we are about to splice in is the truth.
-			return submit({start: window.start, end: window.end, text})
+			return submit({start: window.start, end: window.end, text}, window.pairing)
 		},
 
 		/** Node-local coordinates → global window. Single-node edits. */
@@ -120,6 +128,26 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 				end: node.position.start + localRange.end,
 				text,
 			})
+		},
+
+		/**
+		 * Zero-length splice at a node's TRAILING EDGE — the insert verbs' primitive.
+		 *
+		 * Node-addressed rather than a raw `applyRange`, and that is the whole reason it exists:
+		 * `applyRange` takes a window and so cannot check liveness, while `reachable` is
+		 * file-local. A verb built on the raw window would have to re-implement the gate, and a
+		 * second implementation of "is this node still in the tree" is exactly what the one-owner
+		 * rule forbids.
+		 *
+		 * The window is EMPTY at the edge, not the node's own span, and that is what keeps the
+		 * anchor node's identity: adoption's prefix walk retains a root whose `position.end <=
+		 * window.start`, which the node itself satisfies here and would not if the splice
+		 * replaced it.
+		 */
+		applyAfter(node: TreeNode, text: string): boolean {
+			assertIdle()
+			if (!isLive(node)) return refuse()
+			return submit({start: node.position.end, end: node.position.end, text})
 		},
 
 		/** Whole-node replacement: mark update/remove, serialized by the caller. */

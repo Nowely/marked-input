@@ -9,7 +9,7 @@ title: "MarkPatch"
 type MarkPatch = object;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:65](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L65)
+Defined in: [core/src/features/tokens/tree/types.ts:107](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L107)
 
 The mark patch. Three states per optional field, expressed without a discriminator:
 absent/`undefined` leaves the field alone, `null` clears it, a string sets it.
@@ -22,7 +22,7 @@ absent/`undefined` leaves the field alone, `null` clears it, a string sets it.
 readonly optional meta: string | null;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:67](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L67)
+Defined in: [core/src/features/tokens/tree/types.ts:109](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L109)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:67](https://github.com/Nowel
 readonly optional slot: string | null;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:68](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L68)
+Defined in: [core/src/features/tokens/tree/types.ts:110](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L110)
 
 ***
 
@@ -42,4 +42,4 @@ Defined in: [core/src/features/tokens/tree/types.ts:68](https://github.com/Nowel
 readonly optional value: string;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:66](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L66)
+Defined in: [core/src/features/tokens/tree/types.ts:108](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L108)

@@ -1,7 +1,8 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
+import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
-import {anchorsAt} from '../__testing__/mountFixtures'
+import {anchorsAt, selectionRange} from '../__testing__/mountFixtures'
 import type {Markup} from '../parser/types'
 import type {MarkNode} from './types'
 
@@ -417,5 +418,195 @@ describe('MarkNode live-read parity', () => {
 		expect(node.value()).toBe('x')
 		expect(node.update({value: 'ok'})).toBe(true)
 		expect(store.tokens.value()).toBe('he@[ok]llo@[y]')
+	})
+})
+
+/**
+ * Block rows: a slot-leading markup, so every root is a mark whose trailing literal is the
+ * boundary `mergeWith` removes. A bare container is enough — these verbs settle structurally
+ * and the live tree stays the reconciled parse.
+ */
+function rowSetup(value: string) {
+	const store = new Store()
+	store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: [{markup: '__slot__\n\n'}]})
+	store.host.container(document.createElement('div'))
+	return store
+}
+
+describe('mergeWith', () => {
+	it('removes the previous row suffix and joins the slots', () => {
+		const store = rowSetup('a\n\nb\n\n')
+		const [a, b] = store.tokens.nodes()
+
+		expect(a.mergeWith(b)).toBe(true)
+
+		// The composer's own answers, carried over from the deleted `mergeDragRows` specs.
+		expect(store.tokens.value()).toBe('ab\n\n')
+		expect(store.tokens.selection.anchors()).toBeDefined()
+	})
+
+	it('merging into an EMPTY previous row drops its suffix entirely', () => {
+		const store = rowSetup('\n\nb\n\n')
+		const [a, b] = store.tokens.nodes()
+
+		expect(a.mergeWith(b)).toBe(true)
+		expect(store.tokens.value()).toBe('b\n\n')
+	})
+
+	it('leaves the rows before and after the merged pair untouched', () => {
+		const store = rowSetup('a\n\nb\n\nc\n\n')
+		const rows = store.tokens.nodes()
+		const first = rows[0].id
+
+		expect(rows[1].mergeWith(rows[2])).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\nbc\n\n')
+		expect(store.tokens.nodes()[0].id).toBe(first)
+	})
+
+	it('keeps the FIRST row identity and retires the second', () => {
+		const store = rowSetup('a\n\nb\n\n')
+		const [a, b] = store.tokens.nodes()
+		const [kept, retired] = [a.id, b.id]
+
+		expect(a.mergeWith(b)).toBe(true)
+
+		// `a` survives because it re-pairs at its own index under the same descriptor; a
+		// whole-document rewrite could promise neither half of this.
+		const after = store.tokens.nodes()
+		expect(after).toHaveLength(1)
+		expect(after[0].id).toBe(kept)
+		expect(kept).not.toBe(retired)
+	})
+
+	it('answers false when the pair has no boundary to remove', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'he@[x]llo', Mark: () => null, options: [{markup: '@[__value__]'}]})
+		store.host.container(document.createElement('div'))
+		const rows = store.tokens.nodes()
+
+		// Text next to a value-only mark: neither side is slot-leading, so there is no
+		// trailing literal holding them apart.
+		expect(rows[0].mergeWith(rows[1])).toBe(false)
+		expect(store.tokens.value()).toBe('he@[x]llo')
+	})
+})
+describe('moveTo', () => {
+	it('carries the row identity to its new index', () => {
+		const store = rowSetup('alpha\n\nbeta\n\ngamma\n\n')
+		const [a, b, c] = store.tokens.nodes().map(node => node.id)
+
+		expect(store.tokens.nodes()[0].moveTo(2)).toBe(true)
+
+		expect(store.tokens.value()).toBe('beta\n\ngamma\n\nalpha\n\n')
+		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, c, a])
+	})
+
+	it('carries identity across BYTE-IDENTICAL rows, where the string says nothing at all', () => {
+		// THE case this channel exists for. The document before and after is the same string,
+		// so no diff of any kind could distinguish this move from a no-op — the difference is
+		// entirely in which row was grabbed.
+		const store = rowSetup('First\n\nFirst\n\nSecond\n\n')
+		const [a, b, c] = store.tokens.nodes().map(node => node.id)
+
+		expect(store.tokens.nodes()[0].moveTo(1)).toBe(true)
+
+		expect(store.tokens.value()).toBe('First\n\nFirst\n\nSecond\n\n')
+		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c])
+	})
+
+	it('announces a move as a render, but not as structural', () => {
+		const store = rowSetup('alpha\n\nbeta\n\n')
+		const deltas: {added: readonly number[]; removed: readonly number[]; updated: readonly number[]}[] = []
+		watch(store.tokens.changed, delta => deltas.push(delta))
+
+		expect(store.tokens.nodes()[0].moveTo(1)).toBe(true)
+		store.host.rendered()
+
+		// Nothing was born, died or changed content — only the order did.
+		expect(deltas).toEqual([{added: [], removed: [], updated: []}])
+	})
+
+	it('keeps the selection anchored to the character it was on', () => {
+		const store = rowSetup('alpha\n\nbeta\n\n')
+		const first = store.tokens.nodes()[0]
+		if (first.kind !== 'mark') throw new Error('expected a mark row')
+		const slot = first.children()[0]
+		if (slot.kind !== 'text') throw new Error('expected a slot text child')
+		store.tokens.selection.select({node: slot, offset: 2})
+
+		expect(first.moveTo(1)).toBe(true)
+
+		// The anchor is node-relative and the node travelled, so the caret is still inside
+		// 'alpha' at 2 — now at a different document offset.
+		const anchor = store.tokens.selection.anchors()?.anchor
+		if (!anchor || typeof anchor === 'string' || !('node' in anchor)) throw new Error('expected a text anchor')
+		expect(anchor.node).toBe(slot)
+		expect(anchor.offset).toBe(2)
+	})
+
+	it('refuses a no-op, an out-of-range index, a non-root and read-only', () => {
+		const store = rowSetup('alpha\n\nbeta\n\n')
+		const rows = store.tokens.nodes()
+		const first = rows[0]
+		if (first.kind !== 'mark') throw new Error('expected a mark row')
+
+		expect(first.moveTo(0)).toBe(false)
+		expect(first.moveTo(2)).toBe(false)
+		expect(first.moveTo(-1)).toBe(false)
+		// A slot child is not a root, so `indexOf` answers -1 — the liveness check and the
+		// index in one read.
+		expect(first.children()[0].moveTo(1)).toBe(false)
+		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
+
+		store.props.set({
+			defaultValue: 'alpha\n\nbeta\n\n',
+			layout: 'block',
+			readOnly: true,
+			Mark: () => null,
+			options: [{markup: '__slot__\n\n'}],
+		})
+		expect(store.tokens.nodes()[0].moveTo(1)).toBe(false)
+	})
+
+	it('refuses a pairing buffered inside a transaction', () => {
+		// A pairing claims the whole root list; a hull with other ops cannot keep that true.
+		const store = rowSetup('alpha\n\nbeta\n\n')
+		const rows = store.tokens.nodes()
+
+		expect(store.tokens.tx(() => void rows[0].moveTo(1))).toBe(false)
+		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
+	})
+})
+describe('entering a fresh row', () => {
+	/**
+	 * A markup with a LITERAL PREFIX — the only shape that can tell the three old new-row caret
+	 * conventions apart. Every block fixture in the suite uses `'__slot__\n\n'`, whose slot
+	 * starts at the row start, so all three coincide there and the unification is invisible.
+	 */
+	function headingSetup(value: string) {
+		const store = new Store()
+		store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: [{markup: '# __slot__\n\n'}]})
+		store.host.container(document.createElement('div'))
+		return store
+	}
+
+	it('lands INSIDE the slot, not at the row start', () => {
+		const store = headingSetup('# a\n\n# b\n\n')
+
+		expect(store.tokens.nodes()[0].insertAfter('# \n\n')).toBe(true)
+
+		expect(store.tokens.value()).toBe('# a\n\n# \n\n# b\n\n')
+		// The fresh row spans [5,9] and its slot is the zero-width text node at 7. The old rule
+		// answered 5 — before the '# ' literal, where the next keystroke corrupts the markup.
+		expect(selectionRange(store)).toEqual({start: 7, end: 7})
+	})
+
+	it('lands inside the slot of a whole-value replacement too', () => {
+		const store = headingSetup('# a\n\n')
+
+		expect(store.tokens.setValueEnteringRoot('# \n\n', 0)).toBe(true)
+
+		expect(selectionRange(store)).toEqual({start: 2, end: 2})
 	})
 })

@@ -2,7 +2,7 @@ import {batch, untracked} from '../../../shared/signals'
 import type {Parser} from '../parser/Parser'
 import type {MarkToken, TextToken, Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
-import {collectIds, shiftPositions, snapshotNodeEquals} from './adoptUtils'
+import {collectIds, resolvePairing, shiftPositions, snapshotNodeEquals} from './adoptUtils'
 import {anchorAt, offsetOfAnchor} from './anchors'
 import type {TokenTree} from './tree'
 import type {
@@ -135,7 +135,23 @@ export function adopt(
 			if (!sameNodes(next, children)) node.children(next)
 		}
 
+		// A verified permutation REPLACES the three walks rather than composing with them, and
+		// that is forced rather than chosen: all three pair by INDEX — prefix `prev[p]↔parsed[p]`,
+		// suffix decrementing both tails together, middle slicing both arrays from the same `p` —
+		// which is exactly why today's reorder outcome does not depend on the window at all. Once
+		// every hinted pair is proven byte-equal under its own shift, the walks have nothing left
+		// to claim.
+		const order = window.pairing && resolvePairing(prev, parsed, window.pairing)
+
 		batch(() => {
+			if (order) {
+				// `adoptSiblings` over the PERMUTED candidates: it writes each node's new position
+				// from its token, recurses into slots, and — because a verified pair is equal in
+				// content — writes no signal, so nothing lands in `updated`.
+				out.push(...adoptSiblings(order, parsed, [], 0))
+				if (!sameNodes(out, prev)) tree.roots(out)
+				return
+			}
 			// 1. Prefix: byte/position-equal AND entirely before the window. The window
 			// bound is load-bearing: content that repeats with the deleted span's own period
 			// keeps matching past the edit, so equality alone walks THROUGH the deleted nodes
@@ -192,14 +208,28 @@ export function adopt(
 		})
 
 		const structural = added.length > 0 || removed.length > 0
-		const render = structural || updated.some(node => node.kind === 'mark')
+		// `moved` is a THIRD disjunct and not folded into `structural`, which types.ts forbids a
+		// move from setting. But the renderer still has to run: `renderEpoch` is a biconditional
+		// ("bumped ⇔ the renderer must run"), and a permutation changes the DOM order while
+		// adding, removing and updating nothing. Leaving it false would make the repaint depend on
+		// each adapter's own `nodes` subscription, which Vue's component-container path does not
+		// reliably have.
+		const moved = order !== undefined
+		const render = structural || moved || updated.some(node => node.kind === 'mark')
 
 		const map = (offset: number): NodeAnchor => untracked(() => resolveMappedAnchor(out, offset, window, delta))
 
-		const selectionAfter = beforeOffsets && {
-			anchor: map(beforeOffsets.anchor),
-			head: map(beforeOffsets.head),
-		}
+		// A verified move carries the selection through UNCHANGED, and coordinate-free: every
+		// anchor is node-relative, no node's content changed and none left the tree, so each
+		// pre-edit anchor still names the same character. `map` cannot answer this — it is
+		// window-arithmetic, and inside a permutation's hull it collapses every offset onto the
+		// hull end.
+		const selectionAfter = moved
+			? selectionBefore
+			: beforeOffsets && {
+					anchor: map(beforeOffsets.anchor),
+					head: map(beforeOffsets.head),
+				}
 
 		return {structural, render, added, removed, updated, selectionAfter, map}
 	})

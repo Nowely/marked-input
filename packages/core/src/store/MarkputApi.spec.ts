@@ -68,39 +68,33 @@ describe('MarkputApi (spec §2.3)', () => {
 
 	it("insertMark inserts at an anchor and at 'caret', and rejects when there is no selection", () => {
 		const {api} = setup('ab')
-		const fresh = api.insertMark({node: textAt(api, 0), offset: 1}, {markup: MARKUP, value: 'x', meta: 'm'})
+		expect(api.insertMark({node: textAt(api, 0), offset: 1}, {markup: MARKUP, value: 'x', meta: 'm'})).toBe(true)
 		expect(api.value()).toBe('a@[x](m)b')
-		expect(fresh?.kind).toBe('mark')
 
 		// Nothing is selected yet: `'caret'` has no offset to resolve and the verb rejects.
-		expect(api.insertMark('caret', {markup: MARKUP, value: 'y'})).toBeUndefined()
+		expect(api.insertMark('caret', {markup: MARKUP, value: 'y'})).toBe(false)
 		expect(api.value()).toBe('a@[x](m)b')
 
 		api.caret({node: textAt(api, 0), offset: 0})
-		expect(api.insertMark('caret', {markup: MARKUP, value: 'y'})?.kind).toBe('mark')
+		expect(api.insertMark('caret', {markup: MARKUP, value: 'y'})).toBe(true)
 		expect(api.value()).toBe('@[y]()a@[x](m)b')
 	})
 
-	it('insertMark returns undefined in controlled mode but still emits', () => {
-		// The fixture is LOAD-BEARING: it puts an existing mark AT the insertion offset, so the
-		// positional lookup would answer with THAT node if the controlled early return were
-		// dropped. With a mark-free offset the mutation survives — measured.
+	it('insertMark reports ACCEPTANCE in controlled mode, where no node exists yet', () => {
+		// The distinction the old `MarkNode | undefined` shape could not draw: this write is
+		// accepted and emitted, and only the parent's echo can commit it (spec D6). Answering
+		// `undefined` here made it indistinguishable from the rejection above.
 		const emitted: string[] = []
 		const {api} = setup('@[a](m)b', {controlled: true, onChange: v => emitted.push(v)})
-		expect(api.insertMark('start', {markup: MARKUP, value: 'x'})).toBeUndefined()
+		expect(api.insertMark('start', {markup: MARKUP, value: 'x'})).toBe(true)
 		expect(emitted).toEqual(['@[x]()@[a](m)b'])
 		expect(api.value()).toBe('@[a](m)b') // controlled: nothing committed
 	})
 
-	it('insertMark returns the mark it created, not the first mark in the document', () => {
-		// Discriminates the positional lookup: with a mark BEFORE the insertion point, a
-		// "first mark in the tree" implementation returns the wrong node.
+	it('insertMark at the document end appends', () => {
 		const {api} = setup('@[a](m)tail')
-		const existing = api.nodes()[1]
-		const fresh = api.insertMark('end', {markup: MARKUP, value: 'b', meta: 'n'})
+		expect(api.insertMark('end', {markup: MARKUP, value: 'b', meta: 'n'})).toBe(true)
 		expect(api.value()).toBe('@[a](m)tail@[b](n)')
-		expect(fresh?.id).not.toBe(existing.id)
-		expect(fresh && api.find(fresh.id)).toBe(fresh)
 	})
 
 	it('replaceText edits inside the node and rejects a range past its end', () => {
@@ -223,9 +217,11 @@ describe('MarkputApi (spec §2.3)', () => {
 		// Without this the `init.slot` passthrough is unproven — measured: dropping it from
 		// `annotate` survives the whole suite.
 		const {api} = setup('ab')
-		const node = api.insertMark({node: textAt(api, 0), offset: 1}, {markup: SLOT_MARKUP, value: 'v', slot: 'inner'})
+		expect(
+			api.insertMark({node: textAt(api, 0), offset: 1}, {markup: SLOT_MARKUP, value: 'v', slot: 'inner'})
+		).toBe(true)
+		// The VALUE is the gate: dropping `slot` from `annotate` renders `a#[v]{}b`.
 		expect(api.value()).toBe('a#[v]{inner}b')
-		expect(node?.slot()).toBe('inner')
 	})
 
 	it("insertMark at 'caret' with a RANGED selection inserts at the selection start", () => {
@@ -233,7 +229,7 @@ describe('MarkputApi (spec §2.3)', () => {
 		const {api} = setup('abcd')
 		const node = textAt(api, 0)
 		api.select({node, offset: 1}, {node, offset: 3})
-		expect(api.insertMark('caret', {markup: MARKUP, value: 'x'})?.kind).toBe('mark')
+		expect(api.insertMark('caret', {markup: MARKUP, value: 'x'})).toBe(true)
 		expect(api.value()).toBe('a@[x]()bcd')
 	})
 
@@ -244,7 +240,7 @@ describe('MarkputApi (spec §2.3)', () => {
 		const {api} = setup('abcd')
 		const node = textAt(api, 0)
 		api.select({node, offset: 3}, {node, offset: 1})
-		expect(api.insertMark('caret', {markup: MARKUP, value: 'x'})?.kind).toBe('mark')
+		expect(api.insertMark('caret', {markup: MARKUP, value: 'x'})).toBe(true)
 		expect(api.value()).toBe('a@[x]()bcd')
 	})
 

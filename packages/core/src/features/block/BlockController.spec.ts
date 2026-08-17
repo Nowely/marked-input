@@ -123,7 +123,182 @@ describe('BlockController', () => {
 		expect(selectSpy).not.toHaveBeenCalled()
 	})
 
+	describe('adds no anchor can name', () => {
+		const blockProps: Parameters<Store['props']['set']>[0] = {
+			layout: 'block',
+			draggable: true,
+			Mark: () => null,
+			options: [{markup: '__slot__\n\n'}],
+		}
+
+		it('seeds an EMPTY document with two rows', () => {
+			store.props.set(blockProps)
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('')
+
+			store.block.action({type: 'add', afterIndex: 0})
+
+			// With no row to address there is nothing for an anchor to name, so this one stays
+			// composed. Both answers are constants: the row content twice, caret at its start.
+			expect(store.tokens.value()).toBe('\n\n\n\n')
+			expect(selectionRange(store)).toEqual({start: 0, end: 0})
+		})
+
+		it('inserts BEFORE the first row for a negative afterIndex', () => {
+			store.props.set(blockProps)
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('alpha\n\nbeta\n\n')
+
+			store.block.action({type: 'add', afterIndex: -1})
+
+			// `insertAfter` cannot express "before the first row", so this stays composed too.
+			expect(store.tokens.value()).toBe('\n\nalpha\n\nbeta\n\n')
+		})
+
+		it('writes nothing for a row index no row answers to', () => {
+			store.props.set(blockProps)
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('alpha\n\nbeta\n\n')
+
+			store.block.action({type: 'delete', index: 5})
+			// NEGATIVE, which is the case `Array.prototype.at` would wrap onto the LAST row.
+			store.block.action({type: 'duplicate', index: -1})
+			store.block.action({type: 'reorder', source: -1, target: 0})
+
+			expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
+		})
+	})
+
+	describe('row identity', () => {
+		it('removes the addressed row, not a byte-identical neighbour', () => {
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
+
+			const [first, second, third] = store.tokens.nodes().map(node => node.id)
+
+			store.block.action({type: 'delete', index: 0})
+
+			// The SURVIVORS name which row actually went — the value alone cannot, because
+			// the two candidates compose to the same string. Row identity is what both
+			// adapters key rendering on and what `BlockController` prunes per-row state by.
+			expect(store.tokens.value()).toBe('First\n\nSecond\n\n')
+			expect(store.tokens.nodes().map(node => node.id)).toEqual([second, third])
+			expect(first).not.toBe(second)
+		})
+
+		it('keeps the original row when it is duplicated', () => {
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('alpha\n\nbeta\n\n')
+			const [alpha, beta] = store.tokens.nodes().map(node => node.id)
+
+			store.block.action({type: 'duplicate', index: 0})
+
+			// The composer's answers, unchanged — the copy glues to its original and the caret
+			// lands at the copy's start.
+			expect(store.tokens.value()).toBe('alpha\n\nalpha\n\nbeta\n\n')
+			expect(selectionRange(store)).toEqual({start: 7, end: 7})
+			// ...and only the copy is new: a whole-document rewrite could not promise this.
+			const after = store.tokens.nodes().map(node => node.id)
+			expect(after[0]).toBe(alpha)
+			expect(after[2]).toBe(beta)
+			expect(after[1]).not.toBe(alpha)
+		})
+
+		it('carries a row AND its state to the new index on reorder', () => {
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			const container = document.createElement('div')
+			document.body.append(container)
+			store.host.container(container)
+			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
+			store.host.rendered()
+
+			const [a, b, c] = store.tokens.nodes().map(node => node.id)
+			const dragged = store.block.get(store.tokens.nodes()[0])
+			dragged.state.isDragging(true)
+
+			store.block.action({type: 'reorder', source: 0, target: 2})
+			store.host.rendered()
+
+			// The document is UNCHANGED, because the two moved-past rows are byte-identical. So
+			// the ids are the only evidence the move happened at all — and the whole reason the
+			// commit carries an identity claim the string cannot.
+			expect(store.tokens.value()).toBe('First\n\nFirst\n\nSecond\n\n')
+			expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c])
+			expect(store.block.get(store.tokens.nodes()[1])).toBe(dragged)
+			expect(dragged.state.isDragging()).toBe(true)
+			document.body.replaceChildren()
+		})
+
+		it('keeps every existing row when one is added below', () => {
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('alpha\n\nbeta\n\n')
+			const [alpha, beta] = store.tokens.nodes().map(node => node.id)
+
+			store.block.action({type: 'add', afterIndex: 0})
+
+			expect(store.tokens.value()).toBe('alpha\n\n\n\nbeta\n\n')
+			expect(selectionRange(store)).toEqual({start: 7, end: 7})
+			const after = store.tokens.nodes().map(node => node.id)
+			expect(after[0]).toBe(alpha)
+			expect(after[2]).toBe(beta)
+		})
+	})
+
 	describe('per-row stores (identity-keyed)', () => {
+		it('keeps a row store, and its state, across an operation on another row', () => {
+			// The CONSEQUENCE-level gate for row identity: the id assertions above say which node
+			// survived, this says what that costs a user. Before the row verbs, deleting the first
+			// of two byte-identical rows announced the SECOND row's id as removed, so the store
+			// below was pruned and the open menu closed itself on an unrelated row's deletion.
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			const container = document.createElement('div')
+			document.body.append(container)
+			store.host.container(container)
+			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
+			// The announcement drives the prune, and it fires whether or not the DOM walk aligns.
+			store.host.rendered()
+
+			const survivor = store.block.get(store.tokens.nodes()[1])
+			survivor.state.menuOpen(true)
+			survivor.state.isHovered(true)
+
+			store.block.action({type: 'delete', index: 0})
+			store.host.rendered()
+
+			expect(store.block.get(store.tokens.nodes()[0])).toBe(survivor)
+			expect(survivor.state.menuOpen()).toBe(true)
+			expect(survivor.state.isHovered()).toBe(true)
+			document.body.replaceChildren()
+		})
+
 		it('keys stores by stable node id, not by the node object', () => {
 			// Two DISTINCT node objects carrying the same id — each tree allocates from 1.
 			// That is the discriminator: object keying (the pre-identity WeakMap) hands the
