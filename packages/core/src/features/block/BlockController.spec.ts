@@ -192,6 +192,37 @@ describe('BlockController', () => {
 	})
 
 	describe('per-row stores (identity-keyed)', () => {
+		it('keeps a row store, and its state, across an operation on another row', () => {
+			// The CONSEQUENCE-level gate for row identity: the id assertions above say which node
+			// survived, this says what that costs a user. Before the row verbs, deleting the first
+			// of two byte-identical rows announced the SECOND row's id as removed, so the store
+			// below was pruned and the open menu closed itself on an unrelated row's deletion.
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			const container = document.createElement('div')
+			document.body.append(container)
+			store.host.container(container)
+			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
+			// The announcement drives the prune, and it fires whether or not the DOM walk aligns.
+			store.host.rendered()
+
+			const survivor = store.block.get(store.tokens.nodes()[1])
+			survivor.state.menuOpen(true)
+			survivor.state.isHovered(true)
+
+			store.block.action({type: 'delete', index: 0})
+			store.host.rendered()
+
+			expect(store.block.get(store.tokens.nodes()[0])).toBe(survivor)
+			expect(survivor.state.menuOpen()).toBe(true)
+			expect(survivor.state.isHovered()).toBe(true)
+			document.body.replaceChildren()
+		})
+
 		it('keys stores by stable node id, not by the node object', () => {
 			// Two DISTINCT node objects carrying the same id — each tree allocates from 1.
 			// That is the discriminator: object keying (the pre-identity WeakMap) hands the
