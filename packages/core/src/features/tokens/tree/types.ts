@@ -122,7 +122,13 @@ export interface NodeCommands {
 	duplicate(node: TreeNode): boolean
 	/** Raw markup spliced in at the node's trailing edge — the caller owns serialization. */
 	insertAfter(node: TreeNode, text: string): boolean
-	/** Drop the boundary holding `node` and the sibling after it apart; `false` when there is none. */
+	/**
+	 * Drop the boundary holding `node` and the sibling after it apart; `false` when there is
+	 * none — which is EVERY text node, since only a slot-leading mark carries a trailing
+	 * literal to remove. That answer is load-bearing rather than a degenerate case:
+	 * `keyboard/blockEdit.ts` asks the verb instead of asking a predicate first, and falls
+	 * through to focusing the neighbour when it declines.
+	 */
 	mergeWith(node: TreeNode, next: TreeNode): boolean
 	/** Move a ROOT to another root index, keeping its identity. `false` for a non-root, a no-op or an out-of-range index. */
 	moveTo(node: TreeNode, index: number): boolean

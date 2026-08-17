@@ -16,7 +16,7 @@ import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
-import {mergePlan, movePlan, rowEntryAnchor} from '../tree/siblings'
+import {entryAnchor, mergePlan, movePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, siblingOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkNode, NodeAnchor, TextNode, TreeCommands, TreeNode} from '../tree/types'
@@ -517,24 +517,24 @@ export class TokenModel {
 			const index = untracked(() => this.#tree.roots().indexOf(node))
 			if (!this.#tx.applyAfter(node, text)) return
 			inserted = true
-			// The fresh ROW when the anchor was a root — resolved after the splice, so the node
-			// exists. A nested insert has no row to enter and keeps the plain positional answer.
-			if (index >= 0) this.#enterRow(index + 1)
+			// The fresh ROOT when the anchor was one — resolved after the splice, so the node
+			// exists. A nested insert names no root and leaves the caret to adoption's repair.
+			if (index >= 0) this.#enterRoot(index + 1)
 		})
 		return inserted
 	}
 
 	/**
-	 * Put the caret INTO root `index` — {@link rowEntryAnchor}'s one rule, applied after the
+	 * Put the caret INTO root `index` — {@link entryAnchor}'s one rule, applied after the
 	 * splice so the row exists to be named. A no-op when no such root came back, which is what
 	 * controlled mode always looks like: the tree has not moved, so {@link #applyCaret} would
 	 * decline anyway.
 	 */
-	#enterRow(index: number): void {
-		// `.at` for `rowEntryAnchor`'s reason; a negative index cannot arrive here — every
+	#enterRoot(index: number): void {
+		// `.at` for `entryAnchor`'s reason; a negative index cannot arrive here — every
 		// caller derives it from a root index or a literal 0.
-		const row = untracked(() => this.#tree.roots().at(index))
-		if (row) this.#applyCaret(rowEntryAnchor(row))
+		const root = untracked(() => this.#tree.roots().at(index))
+		if (root) this.#applyCaret(entryAnchor(root))
 	}
 
 	/**
@@ -543,9 +543,9 @@ export class TokenModel {
 	 * offset was the last absolute coordinate above `tree/` (ADR-0003); an index names a node
 	 * the commit is about to produce, which the caller genuinely knows.
 	 */
-	setValueEnteringRow(text: string, index: number): boolean {
+	setValueEnteringRoot(text: string, index: number): boolean {
 		if (!this.setValue(text)) return false
-		this.#enterRow(index)
+		this.#enterRoot(index)
 		return true
 	}
 

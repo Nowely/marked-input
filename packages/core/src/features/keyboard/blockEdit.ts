@@ -157,7 +157,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 		// The caret ENTERS the fresh row — inside its slot when it has one. That is the one
 		// rule now, where this site used to say "offset 0", which on a `'# __slot__\n\n'`
 		// markup is the row start rather than the slot (backlog issue 04).
-		store.tokens.setValueEnteringRow(createRowContent(store.props.options()), 0)
+		store.tokens.setValueEnteringRoot(createRowContent(store.props.options()), 0)
 		return
 	}
 

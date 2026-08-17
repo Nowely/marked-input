@@ -67,7 +67,7 @@ export class BlockController {
 			// Anchor-slice reads: the tree's own string, always consistent with nodes().
 			const read = (from: NodeAnchor, to: NodeAnchor): string => this.tokens.valueBetween(from, to)
 			const result = addRowUnanchored(read, rows, action.afterIndex, this.props.options())
-			this.tokens.setValueEnteringRow(result.value, result.row)
+			this.tokens.setValueEnteringRoot(result.value, result.row)
 		})
 
 		// The `changed` payload (spec §2.3) replaced a wave-scoped side channel: the

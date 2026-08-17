@@ -12,7 +12,7 @@ import type {NodeAnchor, TokenModel} from '../tokens'
  * existed because `block/operations.ts` synthesised a whole new string from row positions and
  * computed a caret against THAT string before it was parsed, so no node existed to name it.
  * Row edits address their own nodes now, and the one whole-value site left says which ROW the
- * caret enters (`tokens.setValueEnteringRow`) rather than which character.
+ * caret enters (`tokens.setValueEnteringRoot`) rather than which character.
  */
 export class EditController {
 	constructor(
@@ -42,7 +42,7 @@ export class EditController {
 	 * The `caretOffset` override is GONE — it was the last absolute offset in any core module,
 	 * an index into a string that had not been parsed yet. Its callers were all block row edits
 	 * that wanted the caret inside a row of the RESULT, and they now say exactly that through
-	 * `tokens.setValueEnteringRow(text, rowIndex)`. Its controlled-mode exemption went with it:
+	 * `tokens.setValueEnteringRoot(text, rootIndex)`. Its controlled-mode exemption went with it:
 	 * the measurement that justified it had gone stale — `PlainTextDrag` stopped being
 	 * controlled-and-echoing, and the case it cited runs under `mount`, not `mountEcho`.
 	 */
