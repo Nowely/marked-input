@@ -36,6 +36,8 @@ export function createTokenTree(
 				position: {...token.position},
 				range: () => ({...node.position}),
 				remove: () => commands?.()?.remove(node) ?? false,
+				duplicate: () => commands?.()?.duplicate(node) ?? false,
+				insertAfter: text => commands?.()?.insertAfter(node, text) ?? false,
 			}
 			return node
 		}
@@ -62,6 +64,8 @@ export function createTokenTree(
 			range: () => ({...node.position}),
 			update: patch => commands?.()?.update(node, patch) ?? false,
 			remove: () => commands?.()?.remove(node) ?? false,
+			duplicate: () => commands?.()?.duplicate(node) ?? false,
+			insertAfter: text => commands?.()?.insertAfter(node, text) ?? false,
 		}
 		return node
 	}

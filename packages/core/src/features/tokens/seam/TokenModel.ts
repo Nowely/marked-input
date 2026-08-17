@@ -468,6 +468,26 @@ export class TokenModel {
 			})
 			return removed
 		},
+		duplicate: node => this.#insertAfter(node, this.valueBetween({before: node}, {after: node})),
+		insertAfter: (node, text) => this.#insertAfter(node, text),
+	}
+
+	/**
+	 * Both insert verbs, and the caret rule they share: the caret belongs at the START of what
+	 * was inserted, which is the anchor node's trailing edge READ BEFORE the splice. Resolved
+	 * against the post-splice tree, so for a slot-leading row markup it lands inside the fresh
+	 * row's slot — the same position the composer's `startOf(...)` answered.
+	 */
+	#insertAfter(node: TreeNode, text: string): boolean {
+		this.#ensureSeeded()
+		let inserted = false
+		batch(() => {
+			const at = untracked(() => node.position.end)
+			if (!this.#tx.applyAfter(node, text)) return
+			inserted = true
+			this.#applyCaret(this.anchorAt(at))
+		})
+		return inserted
 	}
 
 	/**

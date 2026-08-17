@@ -122,6 +122,26 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 			})
 		},
 
+		/**
+		 * Zero-length splice at a node's TRAILING EDGE — the insert verbs' primitive.
+		 *
+		 * Node-addressed rather than a raw `applyRange`, and that is the whole reason it exists:
+		 * `applyRange` takes a window and so cannot check liveness, while `reachable` is
+		 * file-local. A verb built on the raw window would have to re-implement the gate, and a
+		 * second implementation of "is this node still in the tree" is exactly what the one-owner
+		 * rule forbids.
+		 *
+		 * The window is EMPTY at the edge, not the node's own span, and that is what keeps the
+		 * anchor node's identity: adoption's prefix walk retains a root whose `position.end <=
+		 * window.start`, which the node itself satisfies here and would not if the splice
+		 * replaced it.
+		 */
+		applyAfter(node: TreeNode, text: string): boolean {
+			assertIdle()
+			if (!isLive(node)) return refuse()
+			return submit({start: node.position.end, end: node.position.end, text})
+		},
+
 		/** Whole-node replacement: mark update/remove, serialized by the caller. */
 		applyStructural(target: TreeNode, replacement: string): boolean {
 			assertIdle()

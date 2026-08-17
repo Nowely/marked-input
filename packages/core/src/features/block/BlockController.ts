@@ -4,6 +4,7 @@ import type {EditController} from '../edit'
 import type {PropsModel} from '../state/PropsModel'
 import type {NodeAnchor, TokenModel, TreeNode} from '../tokens'
 import {BlockStore} from './BlockStore'
+import {createRowContent} from './createRowContent'
 import {applyDragAction} from './operations'
 
 export class BlockController {
@@ -37,6 +38,25 @@ export class BlockController {
 			// byte-identical neighbour'.
 			if (action.type === 'delete') {
 				this.tokens.nodes().at(action.index)?.remove()
+				return
+			}
+			if (action.type === 'duplicate') {
+				this.tokens.nodes().at(action.index)?.duplicate()
+				return
+			}
+			// The EMPTY tree is the one add with no node to address, so it keeps the whole-value
+			// path: with no row there is nothing for an anchor to name.
+			// Two adds keep the whole-value path because neither has a node to address AFTER: an
+			// empty tree has no row at all, and a NEGATIVE `afterIndex` means before the first row.
+			// Both are unreachable from the menu (`BlockStore.addBlock` passes its own row index),
+			// and left on the old path rather than approximated, so no input changes answer.
+			const rows = this.tokens.nodes()
+			if (action.type === 'add' && rows.length > 0 && action.afterIndex >= 0) {
+				// `afterIndex` past the end appends after the LAST row, matching the composer's
+				// `Math.min(afterIndex + 1, texts.length)`.
+				rows.at(Math.min(action.afterIndex, rows.length - 1))?.insertAfter(
+					createRowContent(this.props.options())
+				)
 				return
 			}
 			// Anchor-slice reads: the tree's own string, always consistent with nodes().

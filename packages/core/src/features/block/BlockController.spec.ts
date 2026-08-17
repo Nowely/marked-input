@@ -145,6 +145,50 @@ describe('BlockController', () => {
 			expect(store.tokens.nodes().map(node => node.id)).toEqual([second, third])
 			expect(first).not.toBe(second)
 		})
+
+		it('keeps the original row when it is duplicated', () => {
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('alpha\n\nbeta\n\n')
+			const [alpha, beta] = store.tokens.nodes().map(node => node.id)
+
+			store.block.action({type: 'duplicate', index: 0})
+
+			// The composer's answers, unchanged — the copy glues to its original and the caret
+			// lands at the copy's start.
+			expect(store.tokens.value()).toBe('alpha\n\nalpha\n\nbeta\n\n')
+			expect(selectionRange(store)).toEqual({start: 7, end: 7})
+			// ...and only the copy is new: a whole-document rewrite could not promise this.
+			const after = store.tokens.nodes().map(node => node.id)
+			expect(after[0]).toBe(alpha)
+			expect(after[2]).toBe(beta)
+			expect(after[1]).not.toBe(alpha)
+		})
+
+		it('keeps every existing row when one is added below', () => {
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('alpha\n\nbeta\n\n')
+			const [alpha, beta] = store.tokens.nodes().map(node => node.id)
+
+			store.block.action({type: 'add', afterIndex: 0})
+
+			expect(store.tokens.value()).toBe('alpha\n\n\n\nbeta\n\n')
+			expect(selectionRange(store)).toEqual({start: 7, end: 7})
+			const after = store.tokens.nodes().map(node => node.id)
+			expect(after[0]).toBe(alpha)
+			expect(after[2]).toBe(beta)
+		})
 	})
 
 	describe('per-row stores (identity-keyed)', () => {

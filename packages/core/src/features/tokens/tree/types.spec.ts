@@ -32,8 +32,10 @@ describe('tree contract types', () => {
 			readonly text: Signal<string>
 			position: {start: number; end: number}
 			range: () => {start: number; end: number}
-			// Structural, so it is on EVERY node — a block row can be a text node.
+			// Structural, so they are on EVERY node — a block row can be a text node.
 			remove: () => boolean
+			duplicate: () => boolean
+			insertAfter: (text: string) => boolean
 		}>()
 		expectTypeOf<MarkNode>().toMatchObjectType<{
 			readonly kind: 'mark'
@@ -49,6 +51,8 @@ describe('tree contract types', () => {
 			range: () => {start: number; end: number}
 			update: (patch: MarkPatch) => boolean
 			remove: () => boolean
+			duplicate: () => boolean
+			insertAfter: (text: string) => boolean
 		}>()
 		// NodeAnchor: text offsets, boundary forms, document edges — the annotation is the check
 		const start: NodeAnchor = 'start'

@@ -30,8 +30,10 @@ export interface TextNode {
 	 * would let a caller corrupt the coordinate space every splice is computed in.
 	 */
 	range(): {start: number; end: number}
-	/** See {@link NodeCommands}. Rides a transaction; `false` in read-only mode or off the tree. */
+	/** See {@link NodeCommands}. Each rides a transaction; `false` in read-only mode or off the tree. */
 	remove(): boolean
+	duplicate(): boolean
+	insertAfter(text: string): boolean
 }
 
 export interface MarkNode {
@@ -57,7 +59,10 @@ export interface MarkNode {
 	range(): {start: number; end: number}
 	/** Rides a transaction; `false` in read-only mode or off the tree. */
 	update(patch: MarkPatch): boolean
+	/** See {@link NodeCommands}. */
 	remove(): boolean
+	duplicate(): boolean
+	insertAfter(text: string): boolean
 }
 
 /**
@@ -78,6 +83,10 @@ export type MarkPatch = {
  */
 export interface NodeCommands {
 	remove(node: TreeNode): boolean
+	/** A verbatim copy of the node's own projection, spliced in directly after it. */
+	duplicate(node: TreeNode): boolean
+	/** Raw markup spliced in at the node's trailing edge — the caller owns serialization. */
+	insertAfter(node: TreeNode, text: string): boolean
 }
 
 /**

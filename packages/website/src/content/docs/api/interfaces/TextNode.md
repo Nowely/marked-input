@@ -61,6 +61,40 @@ Defined in: [core/src/features/tokens/tree/types.ts:24](https://github.com/Nowel
 
 ## Methods
 
+### duplicate()
+
+```ts
+duplicate(): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:35](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L35)
+
+#### Returns
+
+`boolean`
+
+***
+
+### insertAfter()
+
+```ts
+insertAfter(text): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:36](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L36)
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `text` | `string` |
+
+#### Returns
+
+`boolean`
+
+***
+
 ### range()
 
 ```ts
@@ -100,7 +134,7 @@ remove(): boolean;
 
 Defined in: [core/src/features/tokens/tree/types.ts:34](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L34)
 
-See NodeCommands. Rides a transaction; `false` in read-only mode or off the tree.
+See NodeCommands. Each rides a transaction; `false` in read-only mode or off the tree.
 
 #### Returns
 
