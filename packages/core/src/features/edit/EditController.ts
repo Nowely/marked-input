@@ -7,12 +7,12 @@ import type {NodeAnchor, TokenModel} from '../tokens'
  * only moves the caret when the edit is accepted. Wrapped in {@link batch} so subscribers
  * observe a consistent value/selection pair on one tick.
  *
- * Addressed by NODE ANCHORS since S2.5 (spec S2 §4.5). {@link setValue}'s `caretOffset` is
- * the one absolute offset left in any core module, and D6 is why: `block/operations.ts`
- * synthesizes a complete new string from row positions and computes the caret against THAT
- * string, before it is parsed — so no node exists to name it. `MarkputApi` — the public API
- * proper — neither takes nor returns one; this controller is reachable only through the
- * `Store` value export, which is how an adapter resolves the core at all.
+ * Addressed by NODE ANCHORS since S2.5 (spec S2 §4.5), and now WHOLLY: `setValue`'s
+ * `caretOffset` was the one absolute offset left in any core module, and it is gone. It
+ * existed because `block/operations.ts` synthesised a whole new string from row positions and
+ * computed a caret against THAT string before it was parsed, so no node existed to name it.
+ * Row edits address their own nodes now, and the one whole-value site left says which ROW the
+ * caret enters (`tokens.setValueEnteringRow`) rather than which character.
  */
 export class EditController {
 	constructor(
@@ -36,20 +36,21 @@ export class EditController {
 	}
 
 	/**
-	 * Whole-value rewrite (spec D6). `caretOffset` overrides the default post-edit caret
-	 * (the end of `text`) and indexes `text` itself.
+	 * Whole-value rewrite (spec D6). The post-edit caret is the end of `text`, under the same
+	 * controlled-mode rule as {@link replace}.
 	 *
-	 * It is EXEMPT from the controlled-mode rule above, and the exemption is measured rather
-	 * than defensive: it is a caller INTENT (block reorder, row merge) that `map` cannot
-	 * reconstruct. Dropping it made `Drag.{react,vue}.spec`'s "backspace on empty row › delete
-	 * the row and reduce count by 1" fail in both frameworks — PlainTextDrag is controlled AND
-	 * echoes. Those callers keep the double-shift; see plan decision D-e.
+	 * The `caretOffset` override is GONE — it was the last absolute offset in any core module,
+	 * an index into a string that had not been parsed yet. Its callers were all block row edits
+	 * that wanted the caret inside a row of the RESULT, and they now say exactly that through
+	 * `tokens.setValueEnteringRow(text, rowIndex)`. Its controlled-mode exemption went with it:
+	 * the measurement that justified it had gone stale — `PlainTextDrag` stopped being
+	 * controlled-and-echoing, and the case it cited runs under `mount`, not `mountEcho`.
 	 */
-	setValue(text: string, caretOffset?: number): void {
+	setValue(text: string): void {
 		batch(() => {
 			if (!this.tokens.setValue(text)) return
-			if (this.props.value() !== undefined && caretOffset === undefined) return
-			this.tokens.selection.select(this.tokens.anchorAt(caretOffset ?? text.length))
+			if (this.props.value() !== undefined) return
+			this.tokens.selection.select(this.tokens.anchorAt(text.length))
 		})
 	}
 }

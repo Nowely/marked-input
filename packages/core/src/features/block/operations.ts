@@ -7,7 +7,8 @@ export type SliceRead = (from: NodeAnchor, to: NodeAnchor) => string
 
 export type DragApplyResult = {
 	readonly value: string
-	readonly caret: number
+	/** Index of the row the caret enters in the RESULT — a node the commit is about to produce, never a character offset. */
+	readonly row: number
 }
 
 /**
@@ -34,16 +35,6 @@ function compose(texts: readonly string[], gaps: readonly string[]): string {
 		if (i < gaps.length) parts.push(gaps[i])
 	})
 	return parts.join('')
-}
-
-/** Length of the composition up to (not including) row `index` — the row's start in the composed string. */
-function startOf(texts: readonly string[], gaps: readonly string[], index: number): number {
-	let total = 0
-	for (let i = 0; i < index; i++) {
-		total += texts[i].length
-		if (i < gaps.length) total += gaps[i].length
-	}
-	return total
 }
 
 /** Splice `content` in as row `at`, with an empty gap holding it apart from its new neighbour. */
@@ -77,23 +68,10 @@ export function addRowUnanchored(
 	// row content twice, and a caret at that row's start.
 	if (rows.length === 0) {
 		const rowContent = createRowContent(options)
-		return {value: rowContent + rowContent, caret: 0}
+		return {value: rowContent + rowContent, row: 0}
 	}
 	const {texts, gaps} = project(read, rows)
 	const at = Math.max(Math.min(afterIndex + 1, texts.length), 0)
 	const {newTexts, newGaps} = insertRow(texts, gaps, at, createRowContent(options))
-	return {value: compose(newTexts, newGaps), caret: startOf(newTexts, newGaps, at)}
-}
-
-/** Insert `content` as a row after `afterIndex`; caret at the END of the inserted content (blockEdit's Enter on a mark row). */
-export function addDragRow(
-	read: SliceRead,
-	rows: readonly TreeNode[],
-	afterIndex: number,
-	content: string
-): DragApplyResult {
-	const {texts, gaps} = project(read, rows)
-	const at = Math.min(afterIndex + 1, texts.length)
-	const {newTexts, newGaps} = insertRow(texts, gaps, at, content)
-	return {value: compose(newTexts, newGaps), caret: startOf(newTexts, newGaps, at) + content.length}
+	return {value: compose(newTexts, newGaps), row: at}
 }

@@ -2,7 +2,7 @@ import {afterEach, describe, expect, it} from 'vitest'
 
 import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
-import {anchorsAt} from '../__testing__/mountFixtures'
+import {anchorsAt, selectionRange} from '../__testing__/mountFixtures'
 import type {Markup} from '../parser/types'
 import type {MarkNode} from './types'
 
@@ -576,5 +576,37 @@ describe('moveTo', () => {
 
 		expect(store.tokens.tx(() => void rows[0].moveTo(1))).toBe(false)
 		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
+	})
+})
+describe('entering a fresh row', () => {
+	/**
+	 * A markup with a LITERAL PREFIX — the only shape that can tell the three old new-row caret
+	 * conventions apart. Every block fixture in the suite uses `'__slot__\n\n'`, whose slot
+	 * starts at the row start, so all three coincide there and the unification is invisible.
+	 */
+	function headingSetup(value: string) {
+		const store = new Store()
+		store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: [{markup: '# __slot__\n\n'}]})
+		store.host.container(document.createElement('div'))
+		return store
+	}
+
+	it('lands INSIDE the slot, not at the row start', () => {
+		const store = headingSetup('# a\n\n# b\n\n')
+
+		expect(store.tokens.nodes()[0].insertAfter('# \n\n')).toBe(true)
+
+		expect(store.tokens.value()).toBe('# a\n\n# \n\n# b\n\n')
+		// The fresh row spans [5,9] and its slot is the zero-width text node at 7. The old rule
+		// answered 5 — before the '# ' literal, where the next keystroke corrupts the markup.
+		expect(selectionRange(store)).toEqual({start: 7, end: 7})
+	})
+
+	it('lands inside the slot of a whole-value replacement too', () => {
+		const store = headingSetup('# a\n\n')
+
+		expect(store.tokens.setValueEnteringRow('# \n\n', 0)).toBe(true)
+
+		expect(selectionRange(store)).toEqual({start: 2, end: 2})
 	})
 })

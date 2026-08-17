@@ -5,17 +5,10 @@ import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
-import type {SliceRead} from '../block/operations'
-import {addDragRow} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Anchors, NodeAnchor, TokenHandle, TreeNode} from '../tokens'
 import {anchorEquals} from '../tokens'
 import {anchorsFromInputEvent, dropUnexpressedInput, isConsumerKeyOrigin} from './beforeInput'
-
-/** The tree's own string, addressed by anchors — never the props-first `value()`. */
-function sliceRead(store: KbCtx): SliceRead {
-	return (from, to) => store.tokens.valueBetween(from, to)
-}
 
 function isTextLikeRow(node: TreeNode): boolean {
 	if (node.kind === 'text') return true
@@ -161,9 +154,10 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	// appending an empty row while keeping everything selected.
 	if (store.tokens.selection.isAllSelected()) {
 		event.preventDefault()
-		// Offset 0 is the CARET (not the value) the empty-document `add` takes in
-		// `operations.ts`: the start of the fresh row.
-		store.edit.setValue(createRowContent(store.props.options()), 0)
+		// The caret ENTERS the fresh row — inside its slot when it has one. That is the one
+		// rule now, where this site used to say "offset 0", which on a `'# __slot__\n\n'`
+		// markup is the row start rather than the slot (backlog issue 04).
+		store.tokens.setValueEnteringRow(createRowContent(store.props.options()), 0)
 		return
 	}
 
@@ -179,8 +173,9 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	const newRowContent = createRowContent(store.props.options())
 
 	if (!isTextLikeRow(row)) {
-		const result = addDragRow(sliceRead(store), rows, blockIndex, newRowContent)
-		store.edit.setValue(result.value, result.caret)
+		// The row's own node, and the caret enters the fresh row under the same one rule. It
+		// used to land at the END of the inserted content — past the new row entirely.
+		row.insertAfter(newRowContent)
 		return
 	}
 

@@ -1,5 +1,5 @@
 import {sliceNodes} from './tree'
-import type {MarkNode, Pairing, TreeNode, Window} from './types'
+import type {MarkNode, NodeAnchor, Pairing, TreeNode, Window} from './types'
 
 /**
  * A mark whose markup is a slot followed by exactly one literal segment — the shape a block
@@ -93,4 +93,24 @@ export function movePlan(
 		pairing,
 	}
 	return {window, text}
+}
+/**
+ * Where the caret ENTERS a row: inside its slot when it has one, else at the row's start.
+ *
+ * ONE rule, replacing three that disagreed (backlog issue 04): drag-add landed at the row
+ * start, Enter on a mark row after the inserted content, and select-all + Enter at offset 0 —
+ * which on a slot-leading markup happens to be the slot and on `'# __slot__\n\n'` is the row
+ * start, two rows' worth of literal away from where the user is about to type.
+ *
+ * The slot's first text child, not the slot RANGE: a slot always parses with at least one text
+ * child, and an anchor names a node rather than a coordinate.
+ */
+export function rowEntryAnchor(row: TreeNode): NodeAnchor {
+	if (row.kind === 'mark' && row.descriptor.hasSlot) {
+		// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as
+		// non-nullable and the empty-children guard would be linted away as impossible.
+		const first = row.children().at(0)
+		if (first?.kind === 'text') return {node: first, offset: 0}
+	}
+	return {before: row}
 }
