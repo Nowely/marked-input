@@ -26,5 +26,5 @@ export class Store {
 
 	readonly clipboard = new ClipboardController(this.host, this.edit, this.tokens)
 
-	readonly api = new MarkputApi(this.host, this.props, this.tokens)
+	readonly api = new MarkputApi(this.host, this.tokens)
 }

@@ -125,7 +125,7 @@ function Editor() {
 | `value()` | The current annotated value. |
 | `nodes()` | The live root nodes. Reactive. |
 | `find(id)` | Resolve a stable id to its live node. |
-| `insertMark(at, init)` | Insert a mark at a node anchor or at `'caret'`. Returns the new node, or `undefined` in controlled mode. |
+| `insertMark(at, init)` | Insert a mark at a node anchor or at `'caret'`. Returns whether the write was accepted; read the node back from `changed`, then `find(id)`. |
 | `replaceText(target, text)` | Replace a range inside one text node. |
 | `replaceRange(from, to, text)` | Replace a range spanning nodes. |
 | `setValue(text)` | Replace the whole value. `setValue('')` clears it. |
