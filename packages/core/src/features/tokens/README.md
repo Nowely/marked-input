@@ -401,12 +401,21 @@ stops writing its old element. A dead handle never throws — reads answer
 
 ## Mark commands
 
-The write verbs live on the NODE, not on a controller: `MarkNode.update(patch)`
-and `MarkNode.remove()` (`tree/types.ts`, implemented in `tree.ts` against the
-`MarkCommands` port). Both ride a transaction — `serializeMark`
-renders the patch to markup and `applyStructural` splices it — and both answer
-`false` in read-only mode or off the tree, which is the same fail-closed answer a
-dead node gives.
+The write verbs live on the NODE, not on a controller (`tree/types.ts`,
+implemented in `tree.ts`), and they split by the NATURE of the operation rather
+than by node type:
+
+- `NodeCommands` — the STRUCTURAL verbs, on every node: `remove()`,
+  `duplicate()`, `insertAfter(text)`, `mergeWith(next)`, `moveTo(index)`. A block
+  row can be a text node, so a mark-only port could not serve one.
+- `MarkCommands` — `update(patch)`, mark-only because `value`/`meta`/`slot` are.
+
+All of them ride a transaction — `serializeMark` renders a patch to markup,
+`applyStructural`/`applyAfter`/`applyRange` splice — and all answer `false` in
+read-only mode or off the tree, which is the same fail-closed answer a dead node
+gives. Each also OWNS its post-edit caret, applied through one shared rule, with
+one deliberate exception: `moveTo` moves none, because a move takes no position
+out of the document and the stored anchors still name the same characters.
 
 `MarkPatch` has no discriminator: an absent (or `undefined`) field is left alone,
 `null` CLEARS it, and a string sets it. Omitted keys are defaulted off the node

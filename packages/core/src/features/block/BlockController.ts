@@ -1,6 +1,5 @@
 import {event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
-import type {EditController} from '../edit'
 import type {PropsModel} from '../state/PropsModel'
 import type {NodeAnchor, TokenModel, TreeNode} from '../tokens'
 import {BlockStore} from './BlockStore'
@@ -21,8 +20,7 @@ export class BlockController {
 
 	constructor(
 		private readonly props: PropsModel,
-		private readonly tokens: TokenModel,
-		private readonly edit: EditController
+		private readonly tokens: TokenModel
 	) {
 		watch(this.action, action => {
 			// `draggable` gates the DRAG UI (the grip's drag affordance), not the actions:
