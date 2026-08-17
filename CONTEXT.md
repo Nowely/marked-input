@@ -41,7 +41,7 @@ _Avoid_: data, payload, attributes, props
 ### Addressing
 
 **Anchor**:
-A position in the document, named relative to a token rather than as a number. Anchors are the only way to name a position above `tree/`; `parser/`, `block/` and `keyboard/blockEdit.ts` are the allowlisted exceptions, and adding to that list is a contract change ([ADR-0003](docs/adr/0003-one-address-space.md)).
+A position in the document, named relative to a token rather than as a number. Anchors are the only way to name a position outside `features/tokens/`, which owns the coordinate space; there are no longer any allowlisted exceptions, and the rule is checked by `packages/core/src/addressSpace.spec.ts` ([ADR-0003](docs/adr/0003-one-address-space.md)).
 _Avoid_: offset, index, position, caret position, coordinate
 
 ### The editable surface
