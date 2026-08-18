@@ -1,9 +1,9 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {batch, watch} from '../../../shared/signals/index.js'
+import type {TokenDelta} from '../delta'
 import {bind} from '../dom/bind'
 import {createCommitPipeline} from '../dom/commit'
-import type {TokenDelta} from '../dom/commit'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'

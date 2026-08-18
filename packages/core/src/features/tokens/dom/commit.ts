@@ -1,35 +1,10 @@
 import {event, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
+import {createDeltaLedger} from '../delta'
+import type {TokenDelta} from '../delta'
 import type {TransactionResult, TreeNode} from '../tree/types'
 import {bind} from './bind'
 import type {TokenHandle} from './TokenHandle'
-
-/**
- * The `changed` payload (spec §2.3) — the three id lists one commit did to the id space.
- *
- * Granularity is NORMATIVE and differs per field:
- *
- * - `added` / `removed` — SUBTREE-INCLUSIVE: a born or dead mark contributes every
- *   descendant id. That is not maintained, it is structural — both are differences against
- *   the FLATTENED tree (see {@link difference}), and a flattened set has no roots-only
- *   spelling to get wrong. The accumulator this replaced had to walk `TransactionResult`'s
- *   subtree roots to reach the same place, and roots-only `added` folded against
- *   subtree-inclusive `removed` would have announced descendant removals for ids the
- *   consumer was never told existed.
- * - `updated` — PER NODE, no subtree claim: an id is listed iff that node's own
- *   content/props changed. Adoption's `updated` feed lowers straight through, so a mark
- *   whose PROJECTION changed while its own fields did not stays out; a consumer needing
- *   the subtree re-reads the tree.
- *
- * ORDER is unspecified and differs from the accumulator's: `added` follows the tree's
- * depth-first flatten, `removed` the previously announced set's iteration order. Content is
- * identical. No consumer may depend on it.
- */
-export type TokenDelta = {
-	readonly added: readonly number[]
-	readonly removed: readonly number[]
-	readonly updated: readonly number[]
-}
 
 /**
  * The one commit pipeline: every reconciled value change flows through a single
@@ -103,33 +78,6 @@ export type CommitPipeline = {
 // oxlint-disable-next-line typescript/no-unnecessary-condition -- `import.meta.env` is typed non-null by vite/client but absent at runtime off Vite
 const VERIFY_DOM: boolean = import.meta.env?.DEV ?? false
 
-/**
- * The announcement, DERIVED rather than maintained (backlog issue 28):
- *
- * ```
- * added   = ids \ announced
- * removed = announced \ ids
- * updated = touched ∩ ids ∩ announced
- * ```
- *
- * where `ids` is the flattened tree `bind` walks anyway and `announced` is the id space the
- * consumer was last told about. This replaced a three-`Set` accumulator folded per apply, and
- * the fold's two cancellation rules are not reimplemented here — they FALL OUT. A node born
- * and killed inside one window entered neither set, so it appears in neither list; an update to
- * a node that then died is dropped by `∩ ids`. With every announcement re-diffed against truth,
- * "the accumulator lost or mis-merged an id" stops being expressible and a dropped announcement
- * is self-healing — the repo has already shipped and fixed one bug of that class.
- *
- * `∩ announced` on `updated` is what keeps a freshly added node out of two lists at once.
- */
-function difference(from: ReadonlySet<number>, minus: ReadonlySet<number>): number[] {
-	const out: number[] = []
-	for (const id of from) {
-		if (!minus.has(id)) out.push(id)
-	}
-	return out
-}
-
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// A COUNTER written ONLY when the renderer must run: "the text path repaints nothing"
 	// is direct control flow, not a reference-equality accident. Monotonic, so the write
@@ -153,39 +101,18 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// refusal that mattered.
 	let pendingStructural = false
 	/**
-	 * THE id space the consumer was last told about, and with `touched` the only state the
-	 * announcement needs. REPLACED wholesale by each announcement rather than mutated in
-	 * place, so it is always exactly one announcement behind the tree.
+	 * THE id-space bookkeeping ({@link createDeltaLedger}). It holds the announced space and
+	 * the touched set and derives the three lists from them; this module holds only the
+	 * ROUTING — which of the two paths announces, and when.
 	 */
-	let announced = new Set<number>()
-	/**
-	 * Ids whose OWN content changed since the last announcement. Accumulates across a pending
-	 * window; membership follows `TokenDelta.updated`'s per-node rule, so a mark whose
-	 * PROJECTION changed while its own fields did not stays out.
-	 */
-	const touched = new Set<number>()
+	const ledger = createDeltaLedger()
 	let committing = false
-
-	/**
-	 * The three lists, derived against `ids` (see {@link difference}). Drains `touched` and
-	 * adopts `ids` as the announced space, so the next call diffs against this one.
-	 */
-	function announce(ids: Set<number>): TokenDelta {
-		const updated: number[] = []
-		for (const id of touched) {
-			if (ids.has(id) && announced.has(id)) updated.push(id)
-		}
-		const delta: TokenDelta = {added: difference(ids, announced), removed: difference(announced, ids), updated}
-		announced = ids
-		touched.clear()
-		return delta
-	}
 
 	function apply(result: TransactionResult): void {
 		if (committing) throw new Error('TokenModel commit re-entry')
 		committing = true
 		try {
-			for (const node of result.updated) touched.add(node.id)
+			for (const node of result.updated) ledger.touch(node.id)
 			// Routing decided by the producer (spec D9's `render` bit). The one
 			// commit-side override is the fold guard: while a structural apply awaits
 			// its bind the node layer is one generation stale, so EVERY apply folds
@@ -201,8 +128,9 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			// `render` is `structural || …` and `structural` is
 			// `added.length > 0 || removed.length > 0` (adopt.ts), so reaching here implies
 			// neither. That is why `announced` stands in for the tree's ids and no walk is
-			// needed to say "nothing was added or removed".
-			changed(announce(announced))
+			// needed to say "nothing was added or removed" — which is exactly the
+			// precondition `announceUnchanged` documents.
+			changed(ledger.announceUnchanged())
 		} finally {
 			committing = false
 		}
@@ -237,7 +165,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		// announces three empty lists — no guard needed for that case, and none for the
 		// window either: the difference is the same expression whether one apply or five
 		// folded into this pass.
-		const delta = announce(result.ids)
+		const delta = ledger.announce(result.ids)
 		pendingStructural = false
 		changed(delta)
 	}
