@@ -1,31 +1,10 @@
 import {event, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
+import {createDeltaLedger} from '../delta'
+import type {TokenDelta} from '../delta'
 import type {TransactionResult, TreeNode} from '../tree/types'
 import {bind} from './bind'
 import type {TokenHandle} from './TokenHandle'
-
-/**
- * The `changed` payload (spec §2.3) — the three id lists one commit did to the id space.
- *
- * Granularity is NORMATIVE and differs per field, because `foldDelta` below merges every
- * commit inside one pending window and cancels BY EXACT ID:
- *
- * - `added` / `removed` — SUBTREE-INCLUSIVE: a born or dead mark contributes every
- *   descendant id. `TransactionResult.removed` already is (types.ts), `added` carries
- *   subtree ROOTS (a node hands you the subtree; a bare id gives a consumer nothing to
- *   walk), so {@link deltaOf} walks it. Roots-only `added` folded against subtree-inclusive
- *   `removed` would announce descendant removals for ids the consumer was never told
- *   existed.
- * - `updated` — PER NODE, no subtree claim: an id is listed iff that node's own
- *   content/props changed. Adoption's `updated` feed lowers straight through, so a mark
- *   whose PROJECTION changed while its own fields did not stays out; a consumer needing
- *   the subtree re-reads the tree.
- */
-export type TokenDelta = {
-	readonly added: readonly number[]
-	readonly removed: readonly number[]
-	readonly updated: readonly number[]
-}
 
 /**
  * The one commit pipeline: every reconciled value change flows through a single
@@ -86,8 +65,6 @@ export type CommitPipeline = {
 	 * announcement.
 	 */
 	changed: Event<TokenDelta>
-	/** pendingStructural latch: true between a structural apply and its bind — id-bridged resolution fails closed. */
-	pending(): boolean
 	byElement(element: HTMLElement): TokenHandle | undefined
 	isControlRoot(element: HTMLElement): boolean
 }
@@ -100,33 +77,6 @@ export type CommitPipeline = {
 // `?? true` did the opposite: it shipped a throwing O(tree) sweep into consumers' production apps.
 // oxlint-disable-next-line typescript/no-unnecessary-condition -- `import.meta.env` is typed non-null by vite/client but absent at runtime off Vite
 const VERIFY_DOM: boolean = import.meta.env?.DEV ?? false
-
-type DeltaAccumulator = {added: Set<number>; removed: Set<number>; updated: Set<number>}
-
-/**
- * Compose one commit's delta into the pending window's (spec D9's fold).
- * Exact, because ids are never reused within an input instance: a node added
- * and then removed before the paint never existed for a consumer, and an
- * update to a node that then died is moot.
- */
-function foldDelta(into: DeltaAccumulator, delta: TokenDelta): void {
-	for (const id of delta.added) into.added.add(id)
-	for (const id of delta.updated) {
-		if (!into.added.has(id)) into.updated.add(id)
-	}
-	for (const id of delta.removed) {
-		into.updated.delete(id)
-		if (!into.added.delete(id)) into.removed.add(id)
-	}
-}
-
-function drainDelta(into: DeltaAccumulator): TokenDelta {
-	const delta: TokenDelta = {added: [...into.added], removed: [...into.removed], updated: [...into.updated]}
-	into.added.clear()
-	into.removed.clear()
-	into.updated.clear()
-	return delta
-}
 
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// A COUNTER written ONLY when the renderer must run: "the text path repaints nothing"
@@ -144,19 +94,25 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	let byElement = new WeakMap<HTMLElement, TokenHandle>()
 	let controlRoots = new WeakSet<HTMLElement>()
 
+	// COMMIT ROUTING, not a read: while a structural apply awaits its bind every later apply
+	// folds into it and announces with it. It stopped being observable at ADR-0008, which
+	// removed the `pending()` accessor and with it the id-bridge refusal it fed — a node BORN
+	// by the commit has no handle until `bind` makes one, and that absence was always the
+	// refusal that mattered.
 	let pendingStructural = false
-	// Accumulates across the pending window and is drained by whichever path
-	// announces. It is empty whenever pendingStructural is false — the drain is
-	// what makes that true — so the old `pendingStructural ? … : []` guard on the
-	// bind path is gone rather than duplicated.
-	const pendingDelta: DeltaAccumulator = {added: new Set(), removed: new Set(), updated: new Set()}
+	/**
+	 * THE id-space bookkeeping ({@link createDeltaLedger}). It holds the announced space and
+	 * the touched set and derives the three lists from them; this module holds only the
+	 * ROUTING — which of the two paths announces, and when.
+	 */
+	const ledger = createDeltaLedger()
 	let committing = false
 
 	function apply(result: TransactionResult): void {
 		if (committing) throw new Error('TokenModel commit re-entry')
 		committing = true
 		try {
-			foldDelta(pendingDelta, deltaOf(result))
+			for (const node of result.updated) ledger.touch(node.id)
 			// Routing decided by the producer (spec D9's `render` bit). The one
 			// commit-side override is the fold guard: while a structural apply awaits
 			// its bind the node layer is one generation stale, so EVERY apply folds
@@ -168,8 +124,13 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 				return
 			}
 			// Text-only: the per-surface effects own the DOM write, so all that is left
-			// is the announcement.
-			changed(drainDelta(pendingDelta))
+			// is the announcement. The id space CANNOT have moved on this branch —
+			// `render` is `structural || …` and `structural` is
+			// `added.length > 0 || removed.length > 0` (adopt.ts), so reaching here implies
+			// neither. That is why `announced` stands in for the tree's ids and no walk is
+			// needed to say "nothing was added or removed" — which is exactly the
+			// precondition `announceUnchanged` documents.
+			changed(ledger.announceUnchanged())
 		} finally {
 			committing = false
 		}
@@ -200,8 +161,11 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		})
 		byElement = result.byElement
 		controlRoots = result.controlRoots
-		// A re-bind with no pending structural change drains an empty accumulator.
-		const delta = drainDelta(pendingDelta)
+		// A re-bind with no structural change diffs an unchanged id space against itself and
+		// announces three empty lists — no guard needed for that case, and none for the
+		// window either: the difference is the same expression whether one apply or five
+		// folded into this pass.
+		const delta = ledger.announce(result.ids)
 		pendingStructural = false
 		changed(delta)
 	}
@@ -252,27 +216,8 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		onRendered,
 		renderEpoch,
 		changed,
-		pending: () => pendingStructural,
 		byElement: element => byElement.get(element),
 		isControlRoot: element => controlRoots.has(element),
-	}
-}
-
-/**
- * One adoption result → the id-space delta it announces, at {@link TokenDelta}'s
- * granularity. `untracked` for the reason adoption documents: the walk reads node signals,
- * and a caller inside an effect must not subscribe to every node it happened to touch.
- */
-function deltaOf(result: TransactionResult): TokenDelta {
-	const added: number[] = []
-	untracked(() => {
-		for (const change of result.added) walkTree([change.node], node => added.push(node.id))
-	})
-	return {
-		added,
-		// Already flattened by adoption (types.ts).
-		removed: result.removed,
-		updated: result.updated.map(node => node.id),
 	}
 }
 

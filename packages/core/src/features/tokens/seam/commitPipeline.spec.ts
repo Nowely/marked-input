@@ -1,9 +1,9 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {batch, watch} from '../../../shared/signals/index.js'
+import type {TokenDelta} from '../delta'
 import {bind} from '../dom/bind'
 import {createCommitPipeline} from '../dom/commit'
-import type {TokenDelta} from '../dom/commit'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
@@ -20,7 +20,8 @@ import {createBoundary} from '../tree/valueBoundary'
  * descends into them.
  *
  * What the cases assert is what the pipeline DOES: the DOM, handle identity/liveness, the
- * `changed` payload and count, the renderer wake-up and the pending latch.
+ * `changed` payload and count and the renderer wake-up. The latch is no longer among them:
+ * ADR-0008 removed `pending()`, so the window is asserted through the WITHHELD announcement.
  *
  * S2.7 took the whole text BRANCH out of `commit.ts` — `bind` arms one effect per bound
  * text surface, so a text-only commit reaches the DOM before the pipeline is called and
@@ -39,7 +40,8 @@ import {createBoundary} from '../tree/valueBoundary'
  *   that an untouched handle kept its token OBJECT; there is one representation now and
  *   an untouched node is the same node by construction.
  * - `commit.spec.ts:323` "pending() spans exactly the structural apply → rendered window"
- *   — asserted piecewise by the cold-start, mark-value, fold and text cases below.
+ *   — the accessor is gone (ADR-0008); the window is asserted through the WITHHELD
+ *   announcement by the cold-start, mark-value, fold and text cases below.
  *
  * `commit.spec.ts:490`, `:557`, `:566` and `:730` were not ports but MOVES: they have zero
  * dependence on the lowering, so S1.6a relocated them to the bottom of this file rather
@@ -213,7 +215,6 @@ describe('commit pipeline driven by the tree core', () => {
 
 		harness.boundary.arrive('he@[x]llo')
 
-		expect(pipeline.pending()).toBe(true)
 		expect(changedSpy).not.toHaveBeenCalled()
 		expect(harness.container.childElementCount).toBe(0)
 
@@ -264,7 +265,6 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(bindCount()).toBe(bindsBefore)
 		expect(boundAt(harness, 2)).toBe(tail)
 		expect(tail.element()).toBe(text2)
-		expect(pipeline.pending()).toBe(false)
 		expect(changedSpy).toHaveBeenCalledTimes(1)
 		// Payload parity with commit.spec.ts's live-path case: the edited node is the
 		// only `updated` id, and `shifted` — which lists the same node — must not leak
@@ -287,7 +287,6 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(pipeline.renderEpoch()).not.toBe(epochBefore)
 		expect(changedSpy).not.toHaveBeenCalled()
-		expect(pipeline.pending()).toBe(true)
 		expect(markHandle.element()).toBe(mark)
 
 		harness.render()
@@ -311,7 +310,6 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(harness.splice(2, 6, '')).toBe(true)
 		expect(markHandle.alive()).toBe(true)
-		expect(pipeline.pending()).toBe(true)
 
 		harness.render()
 
@@ -336,7 +334,6 @@ describe('commit pipeline driven by the tree core', () => {
 		harness.splice(2, 6, '@[y]') // render bit set → latched
 		harness.splice(9, 9, '!') // a text edit against the pending tree
 
-		expect(pipeline.pending()).toBe(true)
 		expect(changedSpy).not.toHaveBeenCalled()
 		// Announcement: withheld. DOM: written through, on the surface still bound.
 		expect(text2.textContent).toBe('llo!')
@@ -369,7 +366,6 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(harness.splice(9, 9, '!')).toBe(true)
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(pipeline.pending()).toBe(false)
 		expect(joinNodes([harness.tree.roots()[2]])).toBe('llo!')
 		expect(nodes.size).toBe(3)
 
@@ -442,7 +438,6 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(harness.splice(3, 3, 'X')).toBe(true)
 
 		expect(pipeline.renderEpoch()).toBe(epochBefore)
-		expect(pipeline.pending()).toBe(false)
 		expect(childSurface.textContent).toBe('aXb')
 	})
 
@@ -462,10 +457,13 @@ describe('commit pipeline driven by the tree core', () => {
 		harness.renderNested()
 		const childSurface = boundAt(harness, 1, 0)?.node()?.textElement
 		if (!childSurface) throw new Error('expected the slot child surface')
+		const epochBefore = pipeline.renderEpoch()
 
 		expect(harness.splice(2, 3, 'c')).toBe(true)
 
-		expect(pipeline.pending()).toBe(false)
+		// "with no re-render", stated where a consumer sees it. It used to read
+		// `pending() === false`, which ADR-0008 removed from the pipeline's face.
+		expect(pipeline.renderEpoch()).toBe(epochBefore)
 		// The mark's OWN fields never moved; everything below is derived from the child.
 		expect(nodeFace(nodeAt(harness, 1)!)).toEqual({
 			kind: 'mark',
@@ -503,18 +501,51 @@ describe('commit pipeline driven by the tree core', () => {
 		harness.boundary.arrive('a#[bc]d')
 		harness.renderNested()
 		expect(nodeAt(harness, 1, 0)?.range()).toEqual({start: 3, end: 5})
+		const epochBefore = pipeline.renderEpoch()
 
 		expect(harness.splice(0, 0, 'X')).toBe(true)
 
-		expect(pipeline.pending()).toBe(false)
+		// `render` is false: no re-render republishes the tree (was `pending() === false`).
+		expect(pipeline.renderEpoch()).toBe(epochBefore)
 		expect(nodeAt(harness, 1)?.range()).toEqual({start: 2, end: 7})
 		expect(nodeAt(harness, 1, 0)?.range()).toEqual({start: 4, end: 6})
 	})
 
+	it('a mark born and then EDITED inside one window is announced as added only, never also updated', () => {
+		// The rule that keeps one id out of two lists at once, and it was untested in BOTH
+		// the accumulator (`foldDelta`'s `if (!into.added.has(id))`) and the difference that
+		// replaced it (`updated`'s `∩ announced`). Found by mutation: dropping the clause
+		// left the whole core suite green.
+		//
+		// It needs TWO applies in one window — born, then its value changed — because a node
+		// reaches `touched` only through adoption's `updated` feed, which cannot name a node
+		// that did not exist when the apply started.
+		const harness = createHarness()
+		const {pipeline} = harness
+		harness.boundary.arrive('tail')
+		harness.render()
+		let payload: TokenDelta | undefined
+		watch(pipeline.changed, delta => {
+			payload = delta
+		})
+
+		harness.splice(0, 0, '@[x]') // born, latched for its bind
+		const markId = nodeAt(harness, 1)?.id
+		expect(markId).toBeTypeOf('number')
+		harness.splice(0, 4, '@[y]') // its value changed, still inside the same window
+		harness.render()
+
+		// The precondition, measured rather than assumed: the mark kept its id, so this is
+		// an UPDATE of a new node and not a second birth.
+		expect(nodeAt(harness, 1)?.id).toBe(markId)
+		expect(payload?.added).toContain(markId)
+		expect(payload?.updated).not.toContain(markId)
+	})
+
 	it('a mark born and killed inside one pending window is announced as neither, subtree included', () => {
 		// Ports commit.spec.ts's fold-cancellation case onto a mark WITH a slot
-		// child. `foldDelta` cancels BY EXACT ID, so a roots-only `added` folded
-		// against the flattened `removed` would announce the child's removal to a
+		// child. Cancellation is BY EXACT ID, so a roots-only `added` diffed against
+		// the flattened `removed` would announce the child's removal to a
 		// consumer that was never told it existed (`TokenDelta`'s subtree rule).
 		const harness = createHarness(['#[__slot__]'])
 		const {pipeline} = harness
@@ -538,17 +569,20 @@ describe('commit pipeline driven by the tree core', () => {
 		// `handle.token().position`. There is no second generation to read any more —
 		// the tree IS the generation — so the same property is asserted where it still
 		// exists: the tree moves the instant adoption runs, the node layer keeps pointing
-		// at the elements the adapter actually painted, and `pending()` fails id-bridged
-		// resolution closed until the repaint binds the new layout.
+		// at the elements the adapter actually painted, and the announcement is withheld
+		// until the repaint binds the new layout.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
 		const tail = pipeline.byElement(text2)
 		expect(nodeAt(harness, 2)?.range()).toEqual({start: 6, end: 9})
+		const changedSpy = vi.fn()
+		watch(pipeline.changed, changedSpy)
 
 		expect(harness.splice(0, 0, '@[y]')).toBe(true)
 
-		expect(pipeline.pending()).toBe(true)
+		// Mid-window: the announcement is withheld.
+		expect(changedSpy).not.toHaveBeenCalled()
 		// The tree has moved…
 		expect(nodeAt(harness, 4)?.range()).toEqual({start: 10, end: 13})
 		// …the painted DOM has not: the same handle still owns the same element.
@@ -557,7 +591,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		harness.render()
 
-		expect(pipeline.pending()).toBe(false)
+		expect(changedSpy).toHaveBeenCalledTimes(1)
 		expect(boundAt(harness, 4)).toBe(tail)
 	})
 
@@ -593,7 +627,6 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(bindCount()).toBe(bindsBefore)
 		expect(boundAt(harness, 2)).toBe(tail)
 		expect(tail?.element()).toBe(text2)
-		expect(pipeline.pending()).toBe(false)
 		expect(text2.textContent).toBe('llo')
 	})
 
@@ -677,12 +710,10 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(pipeline.renderEpoch()).not.toBe(epochBefore)
 		expect(changedSpy).not.toHaveBeenCalled()
-		expect(pipeline.pending()).toBe(true)
 
 		harness.renderNested()
 
 		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(pipeline.pending()).toBe(false)
 		const mark = boundAt(harness, 1)
 		const child = boundAt(harness, 1, 0)
 		if (!mark || !child) throw new Error('expected the new mark and its slot child')
@@ -763,8 +794,10 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(payload?.removed).toContain(markY.id)
 	})
 
-	it('onRendered without a container leaves the latch closed', () => {
-		// Ports commit.spec.ts:374.
+	it('onRendered without a container announces nothing and leaves the commit unbound', () => {
+		// Ports commit.spec.ts:374. It read `pending() === true` until ADR-0008 took that
+		// accessor off the pipeline's face; the observable half — nothing announced, nothing
+		// bound — is what it was always gating.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const changedSpy = vi.fn()
@@ -774,8 +807,8 @@ describe('commit pipeline driven by the tree core', () => {
 		harness.unmount()
 
 		expect(() => pipeline.onRendered()).not.toThrow()
-		expect(pipeline.pending()).toBe(true)
 		expect(changedSpy).not.toHaveBeenCalled()
+		expect(boundHandles(harness)).toHaveLength(0)
 	})
 
 	it('a synchronous onRendered from a changed watcher fails loud', () => {

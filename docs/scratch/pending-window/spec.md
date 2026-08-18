@@ -3,114 +3,163 @@
 The maintainer's primary goal, stated 2026-08-18: *"отказ от всяких пендинг и прочего"* — get rid
 of the pending window and its machinery.
 
-Start here. Everything below is measured; nothing needs re-deriving.
+Start here. Everything below is measured; nothing needs re-deriving. The long form, with the
+seam map, the echo protocol and every option costed, is [`architecture.html`](architecture.html).
 
-## What the window is
+## Status — O6 has LANDED on b0 (uncommitted)
 
-`pendingStructural` in `features/tokens/dom/commit.ts` — a latch held between a structural apply
-and its bind. While it is true, `TokenModel.handle(id)` answers `undefined`, so id-bridged reads
-and mutations fail closed rather than acting on a tree the DOM never showed.
+The id gate is gone and `CommitPipeline.pending()` with it. All five checks green: 75 test files /
+1471 tests, build, typecheck, lint, format. The decision record is
+[`adr-draft-0008.md`](adr-draft-0008.md), waiting only on a PR number.
 
-Three facts that make this much smaller than it sounds:
+Since then, and in the same style — delete, then measure — three more items landed: the delta
+accumulator became a set difference (backlog 28, closed), the delta ledger came out of `commit.ts`
+as a DOM-free module with its own spec, and Vue's two announcement sites became one.
 
-- **`pending()` has exactly ONE production consumer in the whole repository** — the guard line in
-  `TokenModel.ts:61`. Verified by grep across core, both adapters and MarkputApi.
-- **Its only externally visible effect is `handle(id)` answering `undefined`.** Gated by
-  `TokenModel.spec.ts:252` and `:256`.
-- **The window only exists for STRUCTURAL commits.** A text keystroke routes around it entirely:
-  `apply` with `render === false` only announces, and the DOM is written by the per-Surface effect
-  at **zero component renders** (`renderCount.spec.ts`). So typing never touches this machinery.
+**The atomicity measurement that gated O1 is DONE, and the answer is yes.** A control experiment in
+Chromium — plain DOM, no markput — puts `ce=false` on the consumer's mark element, on a core-owned
+wrapper, and on that wrapper at `display: contents`. All three are identical: the caret cannot step
+in (`ArrowRight` never lands inside) and `Shift+ArrowRight` swallows the mark whole. A fourth shape,
+a SLOT mark with a bare root, behaves differently — the caret enters and the selection grows by the
+chrome character — which is what proves the probe discriminates rather than answering "atomic" to
+everything. Moving `ce=false` onto core's own element therefore costs nothing, and `display:
+contents` does not weaken it.
 
-## Two routes that are dead ends — do not take them
+The probe was deleted after recording: it measures Chromium, not markput, and guarding an unbuilt
+design with a permanent test is speculative. It comes back with O1 if O1 is built.
 
-**1. Making the parse faster does not shorten the window.** The window sits between the commit and
-the bind: core commits → the framework renders → `rendered()` → bind. The parse happens *before*
-the commit, on the synchronous side. Proven: the paint is asynchronous in both adapters, there is no
-`flushSync` anywhere in the repo, React's bump reaches `useSyncExternalStore` on a microtask and
-Vue's reaches a queued render effect; five assertions in `commitPipeline.spec.ts` (216, 290, 314,
-339, 551) pin the window's existence. The whole incremental-parser branch was originally justified
-by this and the justification does not hold — see
-[`../incremental-parser/spec.md`](../incremental-parser/spec.md).
+## Why it came out — the measurement
 
-**2. Deleting the latch outright is not available.** The paint handshake is irreducible while the
-frameworks own the document DOM ([ADR-0007](../../adr/0007-row-identity-travels-with-the-row.md),
-[ADR-0002](../../adr/0002-one-contenteditable-host.md)). Proven by controlled experiment:
-`@handlewithcare/react-prosemirror` takes ProseMirror's core unchanged and inverts DOM ownership so
-React paints — and a fail-closed latch reappears there (`viewDescRef.current` undefined until a
-layout effect, plus `if (!viewDescRef.current) return`), together with three more of markput's
-concepts. Attacking the latch's existence is attacking ADR-0007.
+`TokenModel.handle` was the latch's only production consumer. Remove the guard line and run the
+whole suite:
 
-So the goal is not to delete the window. It is to make it **unfelt**.
+| | files | tests |
+| --- | --- | --- |
+| baseline, latch in place | 74 / 74 | 1467 ✓ |
+| latch removed | 73 / 74 | 1466 ✓, **1 ✗** |
 
-## Three routes that are available
+The single failure is `TokenModel.spec.ts:242` — the test that pins the latch itself. Nothing else
+in 1466 tests notices, including the React and Vue browser suites with real repaints in Chromium.
 
-Ranked by blast radius. None touches the parser.
+**Why it holds.** The caret after a mark insertion lands on a NEW node. Before `bind` that node has
+no handle in `#nodes` at all — handles are created by `bind` (`bind.ts:86`) — so `handle(id)`
+answers `undefined` by ABSENCE, not by the latch. Fail-closed is already structural. What the latch
+adds on top is a refusal for SURVIVING nodes, whose elements are correct during the window anyway:
+the per-surface effect has already written the new text, pinned at `commitPipeline.spec.ts:323`.
 
-### A. A flush-and-read escape hatch
+The case worth doubting is covered and green without the latch: `Overlay.spec.ts:217` inserts a mark
+into the MIDDLE of a document and asserts the caret offset after it, in a browser.
 
-markput has none. A consumer holding a token id during a pending window can only wait it out.
-Lexical's `editor.read(cb)` defaults to `'force-commit'`, committing pending updates before it
-reads. This is the one idea from the four-editor analog survey shaped like something markput
-**lacks** rather than something it deliberately rejected.
+**Why it was there.** `pendingStructural` first appears 2026-06-22 (`39c721fe`, #267). The move to a
+single contenteditable host is 2026-08-12 (`9f824829`, #274). The latch was designed in the N-host
+world, where a premature `placeCaret` called `focusIfNeeded` and one span stole focus from another —
+stack-proven in `docs/records/one-host-migration.md:43-49`. Under one host `focusEditingHost` targets
+the container, which already has focus. The latch outlived its blast radius.
 
-Open question this must answer: what does "flush" mean when the missing step is a *framework paint*
-that core cannot force? Possibly it only flushes the model side and still declines the DOM half —
-in which case say so in the name.
+## What the window is, now
 
-### B. Make staleness unrepresentable instead of latched
+`pendingStructural` in `features/tokens/dom/commit.ts` is still there and still spans a structural
+apply to its bind — but it is **commit routing only**: while it is set, every later apply folds into
+the pending structural pass and announces with it. It is no longer readable and no longer refuses
+anything. The `pending()` accessor is gone.
 
-A handle carries its generation, so a stale handle is an obviously dead object rather than a live
-object suppressed by a flag consulted at one site. `TokenHandle` already has `alive()` and already
-fails closed on every command; the latch exists because the *lookup* can hand back a handle whose
-node the DOM never showed. Giving the handle a generation moves the check from the registry to the
-object.
+- **The window only exists for STRUCTURAL commits.** A text keystroke routes around it entirely, at
+  zero component renders (`renderCount.spec.ts`).
+- **All six `handle(id)` call sites are caret/selection**, plus one overlay anchor: `DomModel.ts`
+  (twice), `SelectionDriver.ts`, `blockEdit.ts` (twice), `OverlayController.ts`. That census is what
+  made the gate's removal a bounded question rather than an open one.
+- **`blockEdit.ts` still works around the window by hand** ("stored anchors cover the
+  pendingStructural window"). Now that the gate is gone that fallback may be dead weight — worth a
+  look, not yet checked.
 
-### C. Leave it, and fix the report instead
+## The three cases that had to be closed first — all three are
 
-The window is already the best answer among framework-rendered editors. Slate — the only analog
-whose DOM React renders — has the same window and answers with a **throw** at the resolver
-(`Cannot resolve a DOM node from Slate node`), with a latch bolted on beside it at four opt-in
-sites plus `suppressThrow` at five call sites and a bare try/catch. markput's fail-closed read was
-judged better on three axes: centrality (one resolver versus N local decisions), phase alignment
-(the latch clears in the same pass that fills the node layer; Slate's two halves are never fresh
-together), and default direction (a defined "not yet" versus a throw at some unrelated later
-keystroke).
-
-If the objection is *complexity* rather than *behaviour*, C plus a documented contract may be the
-honest answer, and it costs nothing.
+1. **Transient placement in a surviving MARK's parent coordinates.** `TokenHandle.caretBoundary`
+   reads `parent.childNodes.indexOf(tokenElement)` — the OLD DOM's index. **Closed** by
+   `seam/pendingWindow.spec.ts`, which states the invariant over a KEYED repaint fixture: a caret
+   requested mid-window is correct once the bind lands. The shared fixtures rebuild every element on
+   every paint, so none of them could observe a caret surviving one — hence a new fixture.
+2. **`OverlayController` anchoring.** Ungated it anchors to the previous element instead of
+   `document.body`. **Declared** in the ADR rather than tested: the probe's main clock is
+   `tokens.changed`, which fires only after the bind, so the window is reachable only through the
+   `selectionchange` arm. Fabricating a timing-dependent test for it would assert the scheduler, not
+   the contract.
+3. **IME / composition. Out of scope, checked rather than waved through.** `keyboard/beforeInput.ts`
+   lets a non-cancelable `insertCompositionText` pass and expresses no edit for it, so composition
+   opens no commit and therefore no window. The suite's lack of composition coverage is real and
+   pre-existing; this change neither widens nor closes it.
 
 ## The one hard constraint
 
 **Node WRITES must not be gated by the window.** A mid-window `MarkNode.update()` must succeed and
-fold into the pending pass. Gated by `markNode.spec.ts:380-381` and `:391`. Reintroducing a write
+fold into the pending pass. Gated by `tree/markNode.spec.ts:367` and `:391`. Reintroducing a write
 latch is a SEMVER-MAJOR behaviour reversal, not a refactor.
 
 Related, and already true: element-first resolution stays ungated mid-flight — `handleAt`,
 `anchorFor` and `domAnchors` keep answering from the painted DOM while the tree is ahead. That is
-decision S2 D4 and it is deliberate; the DOM→model direction reads the DOM, so it is never stale in
-the direction that matters.
+decision S2 D4 and it is deliberate.
 
-## Adjacent, and cheap, if the goal is fewer concepts
+## Routes, cheapest first
 
-The commit pipeline holds eight concepts. Four of them — the epoch counter, this latch, `bind`'s
-whole-tree walk, and Vue's two announcement sites — are the invoice for framework-owned DOM and are
-not removable. Of the remaining four, exactly one is genuinely removable:
+- **O6 — delete the gate. DONE.** The guard line, `CommitPipeline.pending()` and the spec that
+  pinned them are gone; `pendingStructural` stays as the internal fold guard it always was
+  underneath. Does NOT remove the pipeline: `renderEpoch`, `onRendered` and `bind`'s walk stay.
+- **O5 — move the gate to the selection driver.** Was the fallback if one of the three cases had
+  turned out real. None did, so O6 superseded it. Kept here because it is the answer if a
+  composition or scheduling case ever forces a gate back.
+- **The delta accumulator → a set difference. DONE.** `pendingDelta`, `foldDelta`, `drainDelta`
+  and `deltaOf` are gone; `bind` returns the `ids` Set it already built and threw away. Zero
+  adapter files, zero published type change, and — as the proposal predicted — zero spec edits to
+  make it green. `TokenDelta`'s array ORDER changed, content did not. Closed in
+  [`../backlog/issues/closed.md`](../backlog/issues/closed.md).
+- **O4 — split `CommitPipeline`** into "what changed" (`apply`, `changed`, delta — DOM-free and
+  testable without a browser) and "has it painted" (`renderEpoch`, `onRendered`, `byElement`). Pure
+  structural change; it turns O1 into an adapter swap rather than a rewrite.
+- **O1 — core builds the skeleton, the framework renders only user components** through portals.
+  The only route that actually removes the pipeline, and its one measured blocker is now cleared:
+  atomicity survives the wrapper (see the status note above). What remains is cost, not
+  feasibility — a wrapper element per token, the broken contract that a mark's root element belongs
+  to the consumer's component, and the chrome walk in `applyEditableState`, which O1 does NOT
+  remove: a slot mark's wrapper cannot be `ce=false` because its content must stay editable, so the
+  walk is needed either way. This is ADR-0007's deferred "vapor-style DOM ownership": reopening it
+  is a new decision, now an informed one.
+- **O2 — register elements by ref instead of walking the painted DOM.** Not refuted as a direction;
+  two of the three objections in this file's first revision were wrong and are withdrawn (see
+  `architecture.html` §8). What stands: markput passes no ref to a token component today
+  (`Token.tsx:57`), consumers' components are third-party or render nothing, and the only markput-owned
+  wrappers are the block ROW (`Block.tsx:31-33`) and the slot host (`TokenChildren`). Its live
+  remnant is worth doing on its own: the row element is registered twice, by ref AND positionally
+  (`bind.ts:173-185`).
+- **O3 — leave it and document the contract.** The floor, not the answer.
 
-- **The delta accumulator** (`pendingDelta` + `foldDelta` + `drainDelta` + `deltaOf`) can become a
-  set difference against an announced-id set, using the `treeIds` Set that `bind.ts:76` already
-  builds and throws away. ~60 lines out of `commit.ts`, zero adapter files, zero published type
-  shape change. Specified and parked as
-  [backlog issue 28](../backlog/issues/28-announce-the-delta-as-a-set-difference.md).
-- The re-entry guard, the divergence sweep's placement and the commit batch's ordering rules are
-  each intrinsic — all four major analogs carry equivalents. See
-  [`../token-born-edit/issues/06-concept-sweep.md`](../token-born-edit/issues/06-concept-sweep.md).
+## Dead ends
+
+- **Making the parse faster does not shorten the window.** The window sits between the commit and the
+  bind; the parse happens before the commit. The incremental-parser branch was justified by this and
+  the justification does not hold — see [`../incremental-parser/spec.md`](../incremental-parser/spec.md).
+- **"Conditionally synchronous" does not close it either — but that is not an argument for the latch.**
+  `EditController` writes the anchors inside the SAME batch as `apply`, and the watcher at
+  `SelectionDriver.ts:66-69` places the caret in the same JS turn. Even a zero-delay repaint is a
+  later turn. A native `<input>` avoids the window because the browser owns both the value and its
+  shadow DOM and updates them atomically — not because it is fast. What does NOT follow is that the
+  premature placement must be refused: measured, it is harmless.
+- **`applyEditableState` is not a leftover.** The machinery it looks like — `isUserSelecting`,
+  flipping every host to `ce=false` during a selection — existed and was DELETED whole by the
+  one-host migration (~64 lines + 14 spec refs). Today's `applyEditableState` is its replacement,
+  rewritten by that same commit `9f824829`, and it is ADR-0002's mechanism.
+- **Deleting the whole pipeline is not available without moving ownership.**
+  `@handlewithcare/react-prosemirror` inverts ProseMirror's DOM ownership so React paints, and a
+  fail-closed latch reappears there (`viewDescRef.current` undefined until a layout effect), together
+  with three more of markput's concepts.
 
 ## Where the evidence lives
 
-- Commit-pipeline census — 42 hard constraints, each with the spec that reds if violated, plus four
-  designs and twelve adversarial verdicts:
+- Long form, with the seam map and every option costed: [`architecture.html`](architecture.html).
+- Commit-pipeline census — 42 hard constraints, each with the spec that reds if violated:
   `~/.claude/projects/-Users-ruliny-Git-marked-input/artifacts/commit-pipeline-removal.md`
 - The four-editor analog survey (ProseMirror, CodeMirror 6, Lexical, Slate), fact-checked against
-  primary sources: this session's workflow `wf_2f9164cf-63d`.
+  primary sources: workflow `wf_2f9164cf-63d`.
+- The N-host → one-host migration record, which dates the latch and proves its original blast radius:
+  `docs/records/one-host-migration.md`.
 - The arc this was originally a phase of: [`../token-born-edit/spec.md`](../token-born-edit/spec.md).
   Note that its phase ordering carries two corrections and its phase 3 was refuted by measurement.

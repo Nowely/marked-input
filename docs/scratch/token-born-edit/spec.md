@@ -164,7 +164,7 @@ Only then recount the eight and remove whatever is left without a cause. See
   `Nested` fixtures render Marks as `ul`/`li`/`h1`, which an interposed `span` breaks.
 - **Announcing the delta as a set difference.** Real but orthogonal — it neither blocks nor is
   blocked by anything here. Parked as
-  [backlog issue 28](../backlog/issues/28-announce-the-delta-as-a-set-difference.md).
+  [`backlog/issues/closed.md`](../backlog/issues/closed.md) — done 2026-08-18.
 - **Sweep-line for `SegmentMatcher`'s overlap filter.** It optimises a full parse, which phase 2
   aims to stop performing. Improvement for its own sake until phase 2 resolves; the written patch
   is preserved outside the repo.

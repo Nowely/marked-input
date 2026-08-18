@@ -69,3 +69,21 @@ Nine of that sweep's twelve items no longer exist — the core was inverted twic
 - **`Parser` static + transform/escape API** — gone; `features/tokens/parser/Parser.ts` has no `static`, `transform`, `escape` or `stringify`.
 - **`DomBoundaryHost` / `DomIndexerHost`** — no longer in the tree.
 - **`Lifecycle.onMounted` orchestration** — the `Lifecycle` class is gone; the host owns `onMounted`.
+
+## Closed 2026-08-18
+
+- **Issue 28 — "Announce the commit delta as a set difference, not an accumulator."** DONE. The
+  maintainer's call came in as the follow-on to the pending-window work; the proposal's own caveat
+  ("the subset was never measured alone") is now discharged — the subset was implemented and
+  measured by itself, and the accumulator's evidence held: **zero spec edits** to make it green.
+  `pendingDelta`, `foldDelta`, `drainDelta`, `deltaOf` and its subtree walk are gone;
+  `BindResult.ids` is the one new field. `TokenDelta`'s array ORDER changed as declared, content
+  did not.
+
+  One thing the proposal did not predict, found by mutation testing rather than by reading:
+  `updated`'s `∩ announced` clause — the rule that keeps one id out of `added` and `updated` at
+  once — was covered by NO test, in the accumulator either. Deleting it left all 989 core tests
+  green. It now has one (`commitPipeline.spec.ts`, "a mark born and then EDITED inside one window
+  is announced as added only"). The `removed` half was already mutation-sensitive: emptying it
+  reds three cases.
+

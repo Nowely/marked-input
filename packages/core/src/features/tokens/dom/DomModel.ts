@@ -46,12 +46,13 @@ export type DomModelDeps = {
 	isControlRoot(element: HTMLElement): boolean
 	/** The live root nodes (TokenModel.nodes()). */
 	roots(): readonly TreeNode[]
-	/** Stable id → live node (TokenModel.find) — NOT latch-gated. */
+	/** Stable id → live node (TokenModel.find). */
 	find(id: Id): TreeNode | undefined
 	/**
-	 * Stable id → live handle (TokenModel.handle) — LATCH-GATED, unlike {@link find}.
-	 * The placement commands want the DOM the adapter has actually painted, so a
-	 * structural apply awaiting its bind must serve `undefined` here.
+	 * Stable id → live handle (TokenModel.handle). Refuses by ABSENCE only (ADR-0008): a node
+	 * this commit added has no handle until `bind` makes one, which is the refusal the
+	 * placement commands need. It used to ALSO refuse every id while a structural apply
+	 * awaited its bind; that gate is gone.
 	 */
 	handle(id: Id): TokenHandle | undefined
 }
@@ -232,8 +233,8 @@ export class DomModel {
 
 	/**
 	 * The anchor as a concrete DOM boundary, through its OWN node's handle — the one the
-	 * caret commands place. `undefined` while that handle is unbound or mid-window, which is
-	 * the same fail-closed reading {@link placeCaret} has.
+	 * caret commands place. `undefined` while that handle is absent or unbound, which is the
+	 * same fail-closed reading {@link placeCaret} has.
 	 */
 	#boundaryAt(anchor: NodeAnchor): CaretBoundary | undefined {
 		const target = this.#targetOf(anchor)

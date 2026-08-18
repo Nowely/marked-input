@@ -239,21 +239,28 @@ describe('TokenModel shell (seam/)', () => {
 			expect(model.handle(999999)).toBeUndefined()
 		})
 
-		it('handle(id) fails closed while a structural apply awaits its bind, then resolves again', () => {
+		it('answers for a SURVIVING node and refuses a node BORN by the commit, until its bind', () => {
+			// ADR-0008, and the case that replaced "handle(id) fails closed while a structural
+			// apply awaits its bind": absence is the only refusal. A surviving node keeps its
+			// handle and its element through the window — the latch used to hide both — while a
+			// node this commit added has no entry in the layer at all until `bind` creates one.
 			const {model, render} = mountNewInline()
-			const stale = model.nodes()[2]
-			const handle = model.handle(stale.id!)
+			const survivor = model.nodes()[2]
+			const handle = model.handle(survivor.id!)
 			expect(handle).toBeInstanceOf(TokenHandle)
+			const before = new Set(model.nodes().map(node => node.id))
 
 			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '@[y]')
 
-			// The latched window: the node layer is one generation stale — the
-			// id-bridge must not hand out handles a mutation could act on.
-			expect(model.handle(stale.id!)).toBeUndefined()
+			const born = model.nodes().find(node => !before.has(node.id))
+			if (!born) throw new Error('expected the commit to have added a node')
+			expect(model.handle(survivor.id!)).toBe(handle)
+			expect(model.handle(born.id!)).toBeUndefined()
 
 			render()
 
-			expect(model.handle(stale.id!)).toBe(handle)
+			expect(model.handle(survivor.id!)).toBe(handle)
+			expect(model.handle(born.id!)).toBeInstanceOf(TokenHandle)
 		})
 
 		it('children() refs scope the structural walk to the registered child-sequence host', () => {

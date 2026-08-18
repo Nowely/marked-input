@@ -3,8 +3,8 @@ import {batch, computed, signal, untracked, watch} from '../../../shared/signals
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
+import type {TokenDelta} from '../delta'
 import {createCommitPipeline} from '../dom/commit'
-import type {TokenDelta} from '../dom/commit'
 import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
 import type {SelectionSnapshot} from '../dom/DomModel'
@@ -49,16 +49,26 @@ export class TokenModel {
 	}
 
 	/**
-	 * Resolve a token id to its live handle, or `undefined`. The id-keyed read over the
-	 * live node layer — fails closed while a structural apply awaits its bind (the layer
-	 * is one generation stale, so a handle would let mutations act on a tree the DOM never
-	 * showed). THE identity lookup: a consumer holding a render-tree token resolves
-	 * `handle(token.id)` for MEASUREMENT and CARET commands, and the handle's existence IS
-	 * the validity check. It carries no data of its own — content and positions are read
-	 * from the node ({@link find}).
+	 * Resolve a token id to its live handle, or `undefined`. THE identity lookup: a consumer
+	 * holding a render-tree token resolves `handle(token.id)` for MEASUREMENT and CARET
+	 * commands, and the handle's existence IS the validity check. It carries no data of its
+	 * own — content and positions are read from the node ({@link find}).
+	 *
+	 * ABSENCE IS THE ONLY REFUSAL (ADR-0008). This used to also fail closed for EVERY id
+	 * while a structural apply awaited its bind, gated by the pipeline's `pendingStructural`
+	 * latch. The reason given was that the node layer is one generation stale — but a node
+	 * BORN by that commit has no handle here at all until `bind` creates one
+	 * (`dom/bind.ts`), so the refusal it actually needed was already structural. What the
+	 * latch added on top was a refusal for nodes that SURVIVED the commit, whose elements are
+	 * correct in the window: the per-surface effect has already written the new text
+	 * (`commitPipeline.spec.ts`'s fold case). It refused precisely the case that worked.
+	 *
+	 * A caret placed mid-window against pre-paint parent coordinates is a transient the
+	 * post-bind `tokens.changed` re-apply corrects in the same frame (`dom/SelectionDriver`),
+	 * and it can no longer steal focus the way it could under N editing hosts, which is the
+	 * topology the latch was designed in. Gated by `seam/pendingWindow.spec.ts`.
 	 */
 	handle(id: number): TokenHandle | undefined {
-		if (this.#pipeline.pending()) return undefined
 		return this.#nodes.get(id)
 	}
 

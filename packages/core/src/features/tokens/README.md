@@ -138,7 +138,7 @@ Every committed change flows through a single `apply(result)`, taking the
 ```
 write verb → splice → parse → adopt → TransactionResult
   │    (adoption writes node.text → the per-surface effects write the DOM)
-  → apply(result): deltaOf(result) folded into the pending delta
+  → apply(result): ledger.touch(id) per updated node
   ├─ render === false AND no structural apply pending:
   │    nothing left to do to the DOM → fire changed()
   └─ render === true, or folded into a pending pass:
@@ -165,11 +165,21 @@ write verb → splice → parse → adopt → TransactionResult
   per bound text surface; the handle owns its disposal. That is the ONE writer of
   a text surface — `bind` itself does not write `textContent`, and no text
   travels through `apply`.
-- **The pending window:** between a structural apply and its bind the node layer
-  is one generation stale, so `pipeline.pending()` is true and `handle(id)`
-  answers `undefined` — id-bridged reads and mutations fail closed instead of
-  acting on a tree the DOM never showed. Applies landing inside the window fold
-  into the pending structural pass.
+- **The pending window:** between a structural apply and its bind, applies fold
+  into the pending structural pass and announce with it. That is ALL it does
+  now. It used to also make `handle(id)` answer `undefined` for every id;
+  ADR-0008 removed that refusal — a node BORN by the commit has no handle until
+  `bind` makes one, so absence was always the refusal that mattered, and the
+  latch's extra reach only hid nodes that survived and whose elements were
+  correct. `pending()` went with it.
+- **The announcement is DERIVED, not maintained** (`delta.ts`). The ledger holds
+  the announced id space and the touched ids and answers
+  `added = ids \ announced`, `removed = announced \ ids`,
+  `updated = touched ∩ ids ∩ announced`, where `ids` is the flattened tree
+  `bind` already walks (`BindResult.ids`). The text path takes
+  `announceUnchanged()` instead, whose precondition is checkable: `render` is
+  `structural || …` and `structural` is add-or-remove, so that branch moved no
+  ids. Array ORDER is unspecified and no consumer may depend on it.
 - **bind projects the LIVE tree (`deps.roots()`):** a text commit does not wake
   the renderer, so a re-render arriving afterwards — any unrelated adapter update
   — must bind the current tree, not regress the node layer and the DOM text to
@@ -248,7 +258,7 @@ changed: Event<TokenDelta>    // THE model-level detector; fires after the DOM i
 // the framework key is `node.id` — there is no keyOf
 
 // per-node live view
-handle(id) // id-keyed live handle, or undefined while `pipeline.pending()` is true
+handle(id) // id-keyed live handle, or undefined when the id has none yet (ADR-0008)
 handleAt(node) // handle | 'control' | undefined for a DOM node
 
 // DOM↔model facade — anchors in both directions; no absolute offsets

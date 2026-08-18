@@ -1,10 +1,10 @@
 import {listen, watch} from '../../../shared/signals'
 import type {Event} from '../../../shared/signals'
 import type {Host} from '../../state/Host'
+import type {TokenDelta} from '../delta'
 import {anchorEquals} from '../tree/anchors'
 import type {Selection} from '../tree/selection'
 import type {Anchors, Id, NodeAnchor, TreeNode} from '../tree/types'
-import type {TokenDelta} from './commit'
 import type {BoundaryAffinity} from './domBoundary'
 import type {SelectionSnapshot} from './DomModel'
 import type {TokenHandle} from './TokenHandle'
@@ -123,7 +123,7 @@ export class SelectionDriver {
 	}
 
 	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {
-		// A dead or mid-window handle fails closed; alive() is the mount check.
+		// A dead or unbound handle fails closed; alive() is the mount check.
 		if (!handle.alive()) return false
 		const node = this.deps.find(handle.id)
 		if (!node) return false
