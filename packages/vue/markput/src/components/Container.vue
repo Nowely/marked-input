@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, nextTick, onMounted, onUpdated, watch} from 'vue'
+import {computed, nextTick, onMounted, watch} from 'vue'
 import type {Ref} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -50,27 +50,28 @@ const setContainerRef = (el: unknown) => {
 
 onMounted(() => store.host.rendered())
 
-// `onUpdated` covers a container rendered as an ELEMENT: the tokens are this component's own
-// children, so a commit re-renders it. When `slots.container` is a COMPONENT the tokens compile
-// into a slot function, which the CHILD's render effect evaluates — the reactive read never
-// reaches this component, it never updates, `rendered()` never fires again and core's bind pass
-// never runs, leaving the editor empty.
+// ONE announcement site, and each half of that is measured rather than argued.
 //
-// The watcher below subscribes in its own effect, so it fires either way, and `nextTick` waits
-// for the child's update to reach the DOM. It announces only when `onUpdated` did not, so the
-// element path keeps emitting exactly one `rendered()` per commit.
-let announcedEpoch = -1
-
-onUpdated(() => {
-	announcedEpoch = result.value.renderEpoch
-	store.host.rendered()
-})
-
+// It has to be a WATCHER and not `onUpdated`: when `slots.container` is a COMPONENT the tokens
+// compile into a slot function which the CHILD's render effect evaluates, so the reactive read
+// never reaches this component, it never updates, and an `onUpdated`-only version leaves the
+// editor empty. Measured: deleting this watcher reds three cases — `Slots.spec`'s "render the
+// value inside a component container" and the `CustomComponents` / `StyleMerging` stories.
+//
+// It does NOT need `onUpdated` beside it. This file carried both, plus an `announcedEpoch`
+// mirror so the element path would not announce twice; deleting all three leaves the whole
+// suite green, because the watcher subscribes in its own effect and therefore covers the
+// element path too. The element path's bind now lands one microtask later — still inside the
+// same microtask checkpoint, so still before paint.
+//
+// `nextTick` is load-bearing and `{flush: 'post'}` is NOT a substitute for it, which is the
+// non-obvious half: the epoch is written synchronously from `apply`, outside any flush, so a
+// post-flush watcher runs against a flush that has no render job for this component yet.
+// Measured: 136 red.
 watch(
 	() => result.value.renderEpoch,
-	async epoch => {
+	async () => {
 		await nextTick()
-		if (announcedEpoch === epoch) return
 		store.host.rendered()
 	}
 )
