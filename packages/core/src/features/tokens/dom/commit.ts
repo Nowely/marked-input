@@ -7,19 +7,23 @@ import type {TokenHandle} from './TokenHandle'
 /**
  * The `changed` payload (spec §2.3) — the three id lists one commit did to the id space.
  *
- * Granularity is NORMATIVE and differs per field, because `foldDelta` below merges every
- * commit inside one pending window and cancels BY EXACT ID:
+ * Granularity is NORMATIVE and differs per field:
  *
  * - `added` / `removed` — SUBTREE-INCLUSIVE: a born or dead mark contributes every
- *   descendant id. `TransactionResult.removed` already is (types.ts), `added` carries
- *   subtree ROOTS (a node hands you the subtree; a bare id gives a consumer nothing to
- *   walk), so {@link deltaOf} walks it. Roots-only `added` folded against subtree-inclusive
- *   `removed` would announce descendant removals for ids the consumer was never told
- *   existed.
+ *   descendant id. That is not maintained, it is structural — both are differences against
+ *   the FLATTENED tree (see {@link difference}), and a flattened set has no roots-only
+ *   spelling to get wrong. The accumulator this replaced had to walk `TransactionResult`'s
+ *   subtree roots to reach the same place, and roots-only `added` folded against
+ *   subtree-inclusive `removed` would have announced descendant removals for ids the
+ *   consumer was never told existed.
  * - `updated` — PER NODE, no subtree claim: an id is listed iff that node's own
  *   content/props changed. Adoption's `updated` feed lowers straight through, so a mark
  *   whose PROJECTION changed while its own fields did not stays out; a consumer needing
  *   the subtree re-reads the tree.
+ *
+ * ORDER is unspecified and differs from the accumulator's: `added` follows the tree's
+ * depth-first flatten, `removed` the previously announced set's iteration order. Content is
+ * identical. No consumer may depend on it.
  */
 export type TokenDelta = {
 	readonly added: readonly number[]
@@ -99,31 +103,31 @@ export type CommitPipeline = {
 // oxlint-disable-next-line typescript/no-unnecessary-condition -- `import.meta.env` is typed non-null by vite/client but absent at runtime off Vite
 const VERIFY_DOM: boolean = import.meta.env?.DEV ?? false
 
-type DeltaAccumulator = {added: Set<number>; removed: Set<number>; updated: Set<number>}
-
 /**
- * Compose one commit's delta into the pending window's (spec D9's fold).
- * Exact, because ids are never reused within an input instance: a node added
- * and then removed before the paint never existed for a consumer, and an
- * update to a node that then died is moot.
+ * The announcement, DERIVED rather than maintained (backlog issue 28):
+ *
+ * ```
+ * added   = ids \ announced
+ * removed = announced \ ids
+ * updated = touched ∩ ids ∩ announced
+ * ```
+ *
+ * where `ids` is the flattened tree `bind` walks anyway and `announced` is the id space the
+ * consumer was last told about. This replaced a three-`Set` accumulator folded per apply, and
+ * the fold's two cancellation rules are not reimplemented here — they FALL OUT. A node born
+ * and killed inside one window entered neither set, so it appears in neither list; an update to
+ * a node that then died is dropped by `∩ ids`. With every announcement re-diffed against truth,
+ * "the accumulator lost or mis-merged an id" stops being expressible and a dropped announcement
+ * is self-healing — the repo has already shipped and fixed one bug of that class.
+ *
+ * `∩ announced` on `updated` is what keeps a freshly added node out of two lists at once.
  */
-function foldDelta(into: DeltaAccumulator, delta: TokenDelta): void {
-	for (const id of delta.added) into.added.add(id)
-	for (const id of delta.updated) {
-		if (!into.added.has(id)) into.updated.add(id)
+function difference(from: ReadonlySet<number>, minus: ReadonlySet<number>): number[] {
+	const out: number[] = []
+	for (const id of from) {
+		if (!minus.has(id)) out.push(id)
 	}
-	for (const id of delta.removed) {
-		into.updated.delete(id)
-		if (!into.added.delete(id)) into.removed.add(id)
-	}
-}
-
-function drainDelta(into: DeltaAccumulator): TokenDelta {
-	const delta: TokenDelta = {added: [...into.added], removed: [...into.removed], updated: [...into.updated]}
-	into.added.clear()
-	into.removed.clear()
-	into.updated.clear()
-	return delta
+	return out
 }
 
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
@@ -148,18 +152,40 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// by the commit has no handle until `bind` makes one, and that absence was always the
 	// refusal that mattered.
 	let pendingStructural = false
-	// Accumulates across the pending window and is drained by whichever path
-	// announces. It is empty whenever pendingStructural is false — the drain is
-	// what makes that true — so the old `pendingStructural ? … : []` guard on the
-	// bind path is gone rather than duplicated.
-	const pendingDelta: DeltaAccumulator = {added: new Set(), removed: new Set(), updated: new Set()}
+	/**
+	 * THE id space the consumer was last told about, and with `touched` the only state the
+	 * announcement needs. REPLACED wholesale by each announcement rather than mutated in
+	 * place, so it is always exactly one announcement behind the tree.
+	 */
+	let announced = new Set<number>()
+	/**
+	 * Ids whose OWN content changed since the last announcement. Accumulates across a pending
+	 * window; membership follows `TokenDelta.updated`'s per-node rule, so a mark whose
+	 * PROJECTION changed while its own fields did not stays out.
+	 */
+	const touched = new Set<number>()
 	let committing = false
+
+	/**
+	 * The three lists, derived against `ids` (see {@link difference}). Drains `touched` and
+	 * adopts `ids` as the announced space, so the next call diffs against this one.
+	 */
+	function announce(ids: Set<number>): TokenDelta {
+		const updated: number[] = []
+		for (const id of touched) {
+			if (ids.has(id) && announced.has(id)) updated.push(id)
+		}
+		const delta: TokenDelta = {added: difference(ids, announced), removed: difference(announced, ids), updated}
+		announced = ids
+		touched.clear()
+		return delta
+	}
 
 	function apply(result: TransactionResult): void {
 		if (committing) throw new Error('TokenModel commit re-entry')
 		committing = true
 		try {
-			foldDelta(pendingDelta, deltaOf(result))
+			for (const node of result.updated) touched.add(node.id)
 			// Routing decided by the producer (spec D9's `render` bit). The one
 			// commit-side override is the fold guard: while a structural apply awaits
 			// its bind the node layer is one generation stale, so EVERY apply folds
@@ -171,8 +197,12 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 				return
 			}
 			// Text-only: the per-surface effects own the DOM write, so all that is left
-			// is the announcement.
-			changed(drainDelta(pendingDelta))
+			// is the announcement. The id space CANNOT have moved on this branch —
+			// `render` is `structural || …` and `structural` is
+			// `added.length > 0 || removed.length > 0` (adopt.ts), so reaching here implies
+			// neither. That is why `announced` stands in for the tree's ids and no walk is
+			// needed to say "nothing was added or removed".
+			changed(announce(announced))
 		} finally {
 			committing = false
 		}
@@ -203,8 +233,11 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		})
 		byElement = result.byElement
 		controlRoots = result.controlRoots
-		// A re-bind with no pending structural change drains an empty accumulator.
-		const delta = drainDelta(pendingDelta)
+		// A re-bind with no structural change diffs an unchanged id space against itself and
+		// announces three empty lists — no guard needed for that case, and none for the
+		// window either: the difference is the same expression whether one apply or five
+		// folded into this pass.
+		const delta = announce(result.ids)
 		pendingStructural = false
 		changed(delta)
 	}
@@ -257,24 +290,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		changed,
 		byElement: element => byElement.get(element),
 		isControlRoot: element => controlRoots.has(element),
-	}
-}
-
-/**
- * One adoption result → the id-space delta it announces, at {@link TokenDelta}'s
- * granularity. `untracked` for the reason adoption documents: the walk reads node signals,
- * and a caller inside an effect must not subscribe to every node it happened to touch.
- */
-function deltaOf(result: TransactionResult): TokenDelta {
-	const added: number[] = []
-	untracked(() => {
-		for (const change of result.added) walkTree([change.node], node => added.push(node.id))
-	})
-	return {
-		added,
-		// Already flattened by adoption (types.ts).
-		removed: result.removed,
-		updated: result.updated.map(node => node.id),
 	}
 }
 

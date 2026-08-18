@@ -511,10 +511,41 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(nodeAt(harness, 1, 0)?.range()).toEqual({start: 4, end: 6})
 	})
 
+	it('a mark born and then EDITED inside one window is announced as added only, never also updated', () => {
+		// The rule that keeps one id out of two lists at once, and it was untested in BOTH
+		// the accumulator (`foldDelta`'s `if (!into.added.has(id))`) and the difference that
+		// replaced it (`updated`'s `∩ announced`). Found by mutation: dropping the clause
+		// left the whole core suite green.
+		//
+		// It needs TWO applies in one window — born, then its value changed — because a node
+		// reaches `touched` only through adoption's `updated` feed, which cannot name a node
+		// that did not exist when the apply started.
+		const harness = createHarness()
+		const {pipeline} = harness
+		harness.boundary.arrive('tail')
+		harness.render()
+		let payload: TokenDelta | undefined
+		watch(pipeline.changed, delta => {
+			payload = delta
+		})
+
+		harness.splice(0, 0, '@[x]') // born, latched for its bind
+		const markId = nodeAt(harness, 1)?.id
+		expect(markId).toBeTypeOf('number')
+		harness.splice(0, 4, '@[y]') // its value changed, still inside the same window
+		harness.render()
+
+		// The precondition, measured rather than assumed: the mark kept its id, so this is
+		// an UPDATE of a new node and not a second birth.
+		expect(nodeAt(harness, 1)?.id).toBe(markId)
+		expect(payload?.added).toContain(markId)
+		expect(payload?.updated).not.toContain(markId)
+	})
+
 	it('a mark born and killed inside one pending window is announced as neither, subtree included', () => {
 		// Ports commit.spec.ts's fold-cancellation case onto a mark WITH a slot
-		// child. `foldDelta` cancels BY EXACT ID, so a roots-only `added` folded
-		// against the flattened `removed` would announce the child's removal to a
+		// child. Cancellation is BY EXACT ID, so a roots-only `added` diffed against
+		// the flattened `removed` would announce the child's removal to a
 		// consumer that was never told it existed (`TokenDelta`'s subtree rule).
 		const harness = createHarness(['#[__slot__]'])
 		const {pipeline} = harness

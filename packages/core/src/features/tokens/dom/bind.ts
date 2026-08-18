@@ -47,6 +47,14 @@ export type BindInput = {
 export type BindResult = {
 	byElement: WeakMap<HTMLElement, TokenHandle>
 	controlRoots: WeakSet<HTMLElement>
+	/**
+	 * The flattened id space this walk covered — the TREE's ids, not the bound ones, which is
+	 * what makes it usable on a walk BAIL: the tree is authoritative there and only the DOM is
+	 * transiently misaligned. `commit.ts` diffs it against the last announced set to derive
+	 * `TokenDelta`, so the ids the walk was going to build and discard anyway are the
+	 * announcement.
+	 */
+	ids: Set<number>
 }
 
 type Frame = {
@@ -73,11 +81,14 @@ export function bind(input: BindInput): BindResult {
 		const walked = walkDom(container, roots, controlRoots, childSequenceHostsFor, isBlock)
 
 		const byElement = new WeakMap<HTMLElement, TokenHandle>()
+		// Built from the flattened TREE, outside the batch, because it is returned: the
+		// announcement is a difference against it and must not depend on what the DOM walk
+		// managed to pair up.
+		const treeIds = new Set<number>()
+		for (const node of tree) treeIds.add(node.id)
 
 		batch(() => {
-			const treeIds = new Set<number>()
 			for (const node of tree) {
-				treeIds.add(node.id)
 				const bindings = walked.get(node)
 				const existing = nodes.get(node.id)
 				// An unrendered NEW node materializes no handle; one appears when a
@@ -109,7 +120,7 @@ export function bind(input: BindInput): BindResult {
 			}
 		})
 
-		return {byElement, controlRoots}
+		return {byElement, controlRoots, ids: treeIds}
 	})
 }
 
