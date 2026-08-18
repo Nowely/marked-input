@@ -81,9 +81,15 @@ describe('anchorFor', () => {
 
 		// Structural (a mark is added), so the commit latches for its bind instead of
 		// self-healing; no `host.rendered()` follows, so the DOM stays one generation
-		// behind. 'he' shrinks to 'h' in the same edit.
+		// behind STRUCTURALLY — no element exists for either fresh mark. 'he' shrinks to
+		// 'h' in the same edit.
 		store.tokens.setValue('h@[x]llo@[z]')
-		expect(dom1.data).toBe('he')
+		// The captured node is still the LIVE one and already carries the new text: the
+		// surface writer splices in place, so a `Text` reference (and any DOM Range anchored
+		// in it) survives a commit instead of being orphaned with pre-edit data. Before that
+		// change this read answered 'he' — the detached node's stale content.
+		expect(dom1.data).toBe('h')
+		expect(dom1.isConnected).toBe(true)
 
 		// G2: the offset is local to a node the edit did not touch, so the anchor is
 		// right. The numeric walk deleted at S2.6 added that node's stale
@@ -93,6 +99,13 @@ describe('anchorFor', () => {
 		expect(roots[2].range().start + 1).toBe(6)
 
 		// D4's second fail-closed arm: the DOM offset outlives the text it indexes.
+		//
+		// BLUNTED, and recorded rather than quietly kept: this used to discriminate WHICH length
+		// the walk consults, because the detached node still read 'he' (2) while its node read
+		// 'h' (1), so only a model-side bound refused. The in-place splice keeps the two equal,
+		// so measuring the surface instead would now pass here too. What it still pins is the
+		// refusal itself; a case that separates the lengths again needs the DOM to run ahead of
+		// the model, which no edit in this file produces.
 		expect(store.tokens.anchorFor(dom1, 2)).toBeUndefined()
 	})
 

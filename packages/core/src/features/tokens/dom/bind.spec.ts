@@ -86,24 +86,35 @@ function spanWith(content: string): HTMLElement {
 }
 
 /**
- * A span that counts `textContent` WRITES. The one-writer property of S2.7 is
- * otherwise invisible: two writers agree on the value, so only the write count
- * discriminates them.
+ * A span that counts DOM WRITES to itself. The one-writer property of S2.7 is otherwise
+ * invisible: two writers agree on the value, so only the write count discriminates them.
+ *
+ * Counted at the DOM's level rather than at one API's. This used to trap the `textContent`
+ * setter, which stopped counting anything the moment the writer gained an in-place fast path
+ * (`TokenHandle`'s `writeSurface`): an ordinary edit is a `Text.replaceData` now and never
+ * touches the element accessor, so the gate would have passed vacuously at zero. A
+ * `MutationObserver` sees both — a replace-all as one `childList` record, an in-place splice as
+ * one `characterData` record — and keeps counting a third writer nobody has thought of yet.
+ *
+ * `takeRecords()` is what makes it usable from a synchronous test: it drains the queue on
+ * demand, so the count is readable in the same tick as the write. The callback accumulates too,
+ * in case a microtask checkpoint delivers the batch first. No `disconnect`: the observer is
+ * reachable only from the span it observes, so both go when the test drops it.
  */
 function countingSpan(content: string): {span: HTMLElement; writes: () => number} {
 	const span = spanWith(content)
-	const descriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent')
-	if (!descriptor) throw new Error('textContent is not an accessor on Node.prototype')
-	let writes = 0
-	Object.defineProperty(span, 'textContent', {
-		configurable: true,
-		get: () => descriptor.get?.call(span),
-		set: (value: string) => {
-			writes++
-			descriptor.set?.call(span, value)
-		},
+	let seen = 0
+	const observer = new MutationObserver(records => {
+		seen += records.length
 	})
-	return {span, writes: () => writes}
+	observer.observe(span, {characterData: true, childList: true, subtree: true})
+	return {
+		span,
+		writes: () => {
+			seen += observer.takeRecords().length
+			return seen
+		},
+	}
 }
 
 describe('bind', () => {
@@ -802,6 +813,110 @@ describe('bind', () => {
 			dying.text('gone')
 
 			expect(spanB.textContent).toBe('beta')
+		})
+	})
+
+	/**
+	 * The writer's SPLICE, exercised through the same effect the tests above drive. The property
+	 * throughout is node IDENTITY: `textContent =` replaces every child, so the only way to tell
+	 * an in-place write apart from a replace-all is that the `Text` object survives it — which is
+	 * what keeps a DOM Range anchored in that node alive across a commit.
+	 */
+	describe('the surface splice', () => {
+		/** Bind one text node to one span and hand back both, plus the span's live `Text`. */
+		function mountSurface(initial: string) {
+			const container = document.createElement('div')
+			const span = spanWith(initial)
+			container.append(span)
+			const {roots} = treeOf([textToken(initial, 0)])
+			bindOf(inputFor(container, roots))
+			return {span, node: textAt(roots, 0), text: () => span.firstChild}
+		}
+
+		it('keeps the text node when the string grows, shrinks or is appended to', () => {
+			const {span, node, text} = mountSurface('hello')
+			const original = text()
+			expect(original).toBeInstanceOf(Text)
+
+			node.text('heXllo')
+			expect(text()).toBe(original)
+			expect(span.textContent).toBe('heXllo')
+
+			node.text('hllo')
+			expect(text()).toBe(original)
+			expect(span.textContent).toBe('hllo')
+
+			node.text('hllo!')
+			expect(text()).toBe(original)
+			expect(span.textContent).toBe('hllo!')
+		})
+
+		it('splices only the changed span, so an unrelated DOM range is left alone', () => {
+			// The whole point of computing a minimal splice rather than replacing the node's
+			// whole data: `replaceData` only moves ranges that the replaced span covers.
+			const {node, text} = mountSurface('abcdef')
+			const surface = text()
+			if (!(surface instanceof Text)) throw new Error('expected a text node')
+			const range = document.createRange()
+			range.setStart(surface, 5)
+			range.collapse(true)
+
+			node.text('abcXdef')
+
+			expect(range.startContainer).toBe(surface)
+			// Past the splice, so it shifts by the delta rather than collapsing to 0.
+			expect(range.startOffset).toBe(6)
+		})
+
+		it('rewrites a surrogate pair without producing a lone surrogate', () => {
+			// The splice is computed in code UNITS, so the common prefix here stops between the
+			// pair's two halves. `replaceData` applies it atomically, so the only observable is
+			// the final string.
+			const {span, node, text} = mountSurface('a\u{1F600}b')
+			const original = text()
+
+			node.text('a\u{1F601}b')
+
+			expect(text()).toBe(original)
+			expect(span.textContent).toBe('a\u{1F601}b')
+		})
+
+		it('drops to a whole-content write for an empty string, leaving no text node', () => {
+			// Deliberate: an empty surface has always had NO `Text` child, and that is the shape
+			// every other DOM reader has seen. There is no caret inside it to preserve either.
+			const {span, node} = mountSurface('hello')
+
+			node.text('')
+
+			expect(span.firstChild).toBeNull()
+			expect(span.textContent).toBe('')
+
+			// And it grows back into a fresh node, which every later write then splices.
+			node.text('hi')
+			const grown = span.firstChild
+			expect(grown).toBeInstanceOf(Text)
+			node.text('hi!')
+			expect(span.firstChild).toBe(grown)
+		})
+
+		it('normalises a surface the browser split, then splices every later write', () => {
+			// Two `Text` children is what `splitText` and the browser's own editing leave behind.
+			// The first changed write cannot preserve a caret there — it is a replace-all — but it
+			// restores the single-node shape, so the surface self-corrects from then on.
+			const {span, node, text} = mountSurface('hello')
+			const first = text()
+			if (!(first instanceof Text)) throw new Error('expected a text node')
+			first.splitText(2)
+			expect(span.childNodes.length).toBe(2)
+
+			node.text('hello!')
+
+			expect(span.childNodes.length).toBe(1)
+			expect(span.textContent).toBe('hello!')
+
+			const normalised = span.firstChild
+			node.text('hello!!')
+			expect(span.firstChild).toBe(normalised)
 		})
 	})
 })

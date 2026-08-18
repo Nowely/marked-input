@@ -95,9 +95,10 @@ export function caretIsInside(element: Element): boolean {
  * avoid: only a VALUE-ONLY mark root carries `contenteditable="false"`: a SLOT mark root is
  * bare by policy (core's `editableState.ts`), so on a nested story
  * `:scope > span:not([contenteditable])` hands back slot marks as if they were text. What
- * separates them is structural and exact: a text surface's content is written as
- * `textContent` by the token layer, so it has no ELEMENT children, while a slot mark root
- * holds its slot host.
+ * separates them is structural and exact: a text surface holds only a `Text` node — the token
+ * layer writes it and nothing else does — so it has no ELEMENT children, while a slot mark root
+ * holds its slot host. The predicate is `childElementCount`, so it is indifferent to HOW that
+ * text is written (`TokenHandle` splices it in place rather than assigning `textContent`).
  */
 export function textSurfaces(host: Element): HTMLElement[] {
 	const spans = host.querySelectorAll<HTMLElement>(':scope > span:not([contenteditable])')
