@@ -16,7 +16,9 @@ Since then, and in the same style — delete, then measure — three more items 
 accumulator became a set difference (backlog 28, closed), the delta ledger came out of `commit.ts`
 as a DOM-free module with its own spec, and Vue's two announcement sites became one.
 
-**The atomicity measurement that gated O1 is DONE, and the answer is yes.** A control experiment in
+**The atomicity measurement is DONE, and the answer is yes** — though its headline consumer, O1,
+was rejected the day after it ran, so what it still buys is the WRAPPER variant of O2, where the
+adapter renders the wrapper and core only takes a ref. A control experiment in
 Chromium — plain DOM, no markput — puts `ce=false` on the consumer's mark element, on a core-owned
 wrapper, and on that wrapper at `display: contents`. All three are identical: the caret cannot step
 in (`ArrowRight` never lands inside) and `Shift+ArrowRight` swallows the mark whole. A fourth shape,
@@ -26,7 +28,7 @@ everything. Moving `ce=false` onto core's own element therefore costs nothing, a
 contents` does not weaken it.
 
 The probe was deleted after recording: it measures Chromium, not markput, and guarding an unbuilt
-design with a permanent test is speculative. It comes back with O1 if O1 is built.
+design with a permanent test is speculative.
 
 ## Why it came out — the measurement
 
@@ -114,15 +116,16 @@ decision S2 D4 and it is deliberate.
   [`../backlog/issues/closed.md`](../backlog/issues/closed.md).
 - **O4 — split `CommitPipeline`** into "what changed" (`apply`, `changed`, delta — DOM-free and
   testable without a browser) and "has it painted" (`renderEpoch`, `onRendered`, `byElement`). Pure
-  structural change; it turns O1 into an adapter swap rather than a rewrite.
-- **O1 — core builds the skeleton, the framework renders only user components** through portals.
-  The only route that actually removes the pipeline, and its one measured blocker is now cleared:
-  atomicity survives the wrapper (see the status note above). What remains is cost, not
-  feasibility — a wrapper element per token, the broken contract that a mark's root element belongs
-  to the consumer's component, and the chrome walk in `applyEditableState`, which O1 does NOT
-  remove: a slot mark's wrapper cannot be `ce=false` because its content must stay editable, so the
-  walk is needed either way. This is ADR-0007's deferred "vapor-style DOM ownership": reopening it
-  is a new decision, now an informed one.
+  structural change. Done in the reduced form only — the delta ledger came out; the full split was
+  rejected on its own terms, since it grows the interface from 6 members to 9 and its second
+  adapter would have been O1.
+- ~~**O1 — core builds the skeleton, the framework renders only user components**~~ —
+  **REJECTED by the maintainer 2026-08-19**, verbatim: *"ядро строит скелет и тд создаст больше
+  проблем"*. [ADR-0007](../../adr/0007-row-identity-travels-with-the-row.md) had deferred this;
+  it is now answered no, not deferred. **Accept the consequence whole: `bind`'s walk, `renderEpoch`
+  and `onRendered` stay permanently, and the commit pipeline is never removed — only shrunk.** The
+  analysis is kept in `architecture.html` because it explains what framework-owned DOM costs, which
+  is knowledge worth having; it is not a route.
 - **O2 — register elements by ref instead of walking the painted DOM.** Not refuted as a direction;
   two of the three objections in this file's first revision were wrong and are withdrawn (see
   `architecture.html` §8). What stands: markput passes no ref to a token component today
