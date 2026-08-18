@@ -27,6 +27,49 @@ by size — each one is what makes the next expressible.
 - Breaking changes are allowed. The Markup contract, the `Option` shape, the parse algorithm, the
   Row representation and the public API are all in scope.
 
+## The parser's standing goal
+
+Stated by the maintainer 2026-08-18, and it changes what "done" means for anything touching
+`parser/`:
+
+> My goal is to create a universal parser, which in theory is able to handle any custom syntax and
+> something typical like XML or markdown. While keeping a simple set of markup rules. The current
+> parser implementation is a long process of simplifying its logic, where every rule is extremely
+> logical, derived, natural. In which there are no specific weights and other hacks.
+
+The success criterion is therefore not speed and not incrementality: **every decision the parser
+makes is declared, and none is inferred from a coincidence of shape or from the order in which
+Options were registered.**
+
+Measured against that, these are the current violations — the list is what reclassifies the work,
+because under this criterion the chain is not "slow", it is a hack, and the length sort is not a
+detail, it is a weight that loses data:
+
+| Site | What it is | Consequence |
+| --- | --- | --- |
+| `SegmentMatcher.ts:88` — statics sorted longest-first into one alternation | priority by literal length | a registered `\n\n` eats another Markup's `\n` terminator; the set `['# __slot__\n\n', '- [__value__] __slot__\n']` loses a whole Row, with no slot-leading Markup involved (measured) |
+| `SegmentMatcher.ts:110` — dynamics sorted longest-first | the same weight | not separately measured |
+| `PatternMatcher.ts:146` — "relies on processing order to determine which match to keep" | priority by registration order | which of two colliding Options survives depends on array position |
+| `PatternMatcher.ts:84-92` — completing states before pending, both LIFO | priority by matcher state | its own docblock calls it "priority" |
+| `PatternMatcher.ts:113-137` — `resolveSlotLeadingMatches` | a post-pass repairing one Markup shape | carries `//TODO need review it` at `:43` |
+| `isSlotLeading` = `segments.length === 1 && hasSlot` | semantics inferred from a **count** | cannot tell a leading marker from a trailing terminator; a marker-only Markup gives its second occurrence the previous Row's text as its Slot (measured) |
+
+Not everything is like this, and the audit must stay fair: `Match.conflictsWith` is a principled
+rule — overlap is permitted only where it is legal nesting, tested through `hasSlot` and the slot
+gap. Rules of that kind are semantics and must survive; the table above is accidental priority and
+must not.
+
+**The tension, named rather than dodged.** "Any syntax" and "no priority rules" are not jointly
+achievable in general: ambiguity is a property of syntaxes, not of parsers — markdown requires a
+code span to beat emphasis, XML requires a close to bind to the nearest unmatched open of the same
+name. The achievable form of the goal is that priority becomes **local and declared** instead of
+**global and implicit**.
+
+**The checkable form**, which does not exist as a test yet: *permuting the Options must not change
+the tree.* It is worth landing as a characterisation of what is currently true before any
+behaviour changes, together with the open question of what minimal declaration set covers XML,
+markdown and arbitrary custom syntax, and where a real grammar becomes unavoidable.
+
 ## The floor — what this arc cannot buy
 
 Establishing this first, because it re-aims the whole effort. Eight concepts must be held to
