@@ -94,10 +94,11 @@ decision S2 D4 and it is deliberate.
 - **O5 — move the gate to the selection driver.** Was the fallback if one of the three cases had
   turned out real. None did, so O6 superseded it. Kept here because it is the answer if a
   composition or scheduling case ever forces a gate back.
-- **The delta accumulator → a set difference** against the `treeIds` Set that `bind.ts:78` already
-  builds and throws away. ~60 lines out of `commit.ts`, zero adapter files, zero published type
-  change. Independent of everything else —
-  [backlog issue 28](../backlog/issues/28-announce-the-delta-as-a-set-difference.md).
+- **The delta accumulator → a set difference. DONE.** `pendingDelta`, `foldDelta`, `drainDelta`
+  and `deltaOf` are gone; `bind` returns the `ids` Set it already built and threw away. Zero
+  adapter files, zero published type change, and — as the proposal predicted — zero spec edits to
+  make it green. `TokenDelta`'s array ORDER changed, content did not. Closed in
+  [`../backlog/issues/closed.md`](../backlog/issues/closed.md).
 - **O4 — split `CommitPipeline`** into "what changed" (`apply`, `changed`, delta — DOM-free and
   testable without a browser) and "has it painted" (`renderEpoch`, `onRendered`, `byElement`). Pure
   structural change; it turns O1 into an adapter swap rather than a rewrite.

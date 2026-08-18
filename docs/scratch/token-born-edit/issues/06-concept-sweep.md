@@ -27,7 +27,7 @@ them is attacking ADR-0007.
 The rest are independent of DOM ownership and were each re-attributed:
 
 - **3** comes from the delta being *accumulated* rather than *derived*. Already specified and
-  parked as [backlog issue 28](../../backlog/issues/28-announce-the-delta-as-a-set-difference.md);
+  done 2026-08-18, closed in [`backlog/issues/closed.md`](../../backlog/issues/closed.md);
   it is orthogonal and can land at any time.
 - **4** is re-entrancy, nothing to do with paint. CodeMirror 6 owns its DOM, has no lag, and still
   throws on re-entry in nearly the same words.
