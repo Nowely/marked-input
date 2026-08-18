@@ -86,8 +86,6 @@ export type CommitPipeline = {
 	 * announcement.
 	 */
 	changed: Event<TokenDelta>
-	/** pendingStructural latch: true between a structural apply and its bind — id-bridged resolution fails closed. */
-	pending(): boolean
 	byElement(element: HTMLElement): TokenHandle | undefined
 	isControlRoot(element: HTMLElement): boolean
 }
@@ -144,6 +142,11 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	let byElement = new WeakMap<HTMLElement, TokenHandle>()
 	let controlRoots = new WeakSet<HTMLElement>()
 
+	// COMMIT ROUTING, not a read: while a structural apply awaits its bind every later apply
+	// folds into it and announces with it. It stopped being observable at ADR-0008, which
+	// removed the `pending()` accessor and with it the id-bridge refusal it fed — a node BORN
+	// by the commit has no handle until `bind` makes one, and that absence was always the
+	// refusal that mattered.
 	let pendingStructural = false
 	// Accumulates across the pending window and is drained by whichever path
 	// announces. It is empty whenever pendingStructural is false — the drain is
@@ -252,7 +255,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		onRendered,
 		renderEpoch,
 		changed,
-		pending: () => pendingStructural,
 		byElement: element => byElement.get(element),
 		isControlRoot: element => controlRoots.has(element),
 	}
