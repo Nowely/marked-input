@@ -4,6 +4,15 @@ Status: needs-info
 
 Blocked by: 03
 
+> **The full record now lives in
+> [`docs/scratch/incremental-parser/spec.md`](../../incremental-parser/spec.md)** — the deleted
+> implementation, its contract and algorithm, the three defects underneath it, the measured ceiling,
+> and the open questions. Read that before this file.
+>
+> Re-priced 2026-08-18: an incremental parse **does not shorten the pending window**, which was the
+> reason it sat in this arc. It stays worth doing on correctness grounds, but it is no longer on the
+> path to that goal, and this phase should be scheduled on its own merits rather than as a step here.
+
 Stop re-parsing the whole document on every keystroke.
 
 ## The asymmetry to fix
