@@ -53,8 +53,15 @@ function findActiveRow(store: KbCtx, target: Node | null): ActiveRow | undefined
 	if (target && store.tokens.handleAt(target) === 'control') return undefined
 
 	// THE two tiers, and the only ones: row identity is the selection's. DOM truth first;
-	// stored anchors cover the pendingStructural window, where a structural commit awaits
-	// its bind and the DOM range is absent or stale until the changed watch re-applies it.
+	// stored anchors cover the cases the DOM cannot answer — no window selection at all, or a
+	// range this layer declines to resolve.
+	//
+	// That reason is NARROWER than the one written here before ADR-0008, and the old one was
+	// wrong: it claimed tier two covered the pendingStructural window, but `rowFromAnchor`
+	// ends at `tokens.handle`, which the latch refused for EVERY id — so both tiers returned
+	// undefined there and the fallback bought nothing. With the latch gone tier two does now
+	// answer mid-window, for a row whose node survived the commit.
+	//
 	// (The third tier read `document.activeElement` back when each row was its own host and
 	// focus alone could name one. Under the single host activeElement is always the
 	// container, which owns no row.)

@@ -123,7 +123,7 @@ export class SelectionDriver {
 	}
 
 	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {
-		// A dead or mid-window handle fails closed; alive() is the mount check.
+		// A dead or unbound handle fails closed; alive() is the mount check.
 		if (!handle.alive()) return false
 		const node = this.deps.find(handle.id)
 		if (!node) return false

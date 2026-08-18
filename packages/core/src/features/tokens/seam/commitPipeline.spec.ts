@@ -20,7 +20,8 @@ import {createBoundary} from '../tree/valueBoundary'
  * descends into them.
  *
  * What the cases assert is what the pipeline DOES: the DOM, handle identity/liveness, the
- * `changed` payload and count, the renderer wake-up and the pending latch.
+ * `changed` payload and count and the renderer wake-up. The latch is no longer among them:
+ * ADR-0008 removed `pending()`, so the window is asserted through the WITHHELD announcement.
  *
  * S2.7 took the whole text BRANCH out of `commit.ts` — `bind` arms one effect per bound
  * text surface, so a text-only commit reaches the DOM before the pipeline is called and

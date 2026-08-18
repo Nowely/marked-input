@@ -37,7 +37,7 @@ export type Lookup = {readonly kind: 'control'} | {readonly kind: 'token'; reado
 export type AnchorContext = {
 	container: HTMLElement | undefined
 	locate(node: Node): Lookup | undefined
-	/** Stable id → live node (TokenModel.find). NOT latch-gated: ids outlive the bind window. */
+	/** Stable id → live node (TokenModel.find): ids outlive the bind window. */
 	find(id: Id): TreeNode | undefined
 }
 
