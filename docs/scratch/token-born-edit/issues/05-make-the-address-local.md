@@ -72,4 +72,36 @@ discriminates; a design that quietly turns it into a tautology is worse than a s
 3. **No absolute offsets** — the write verbs carry Token identity plus a local range, and an offset
    is formed, if at all, only where the projection is actually spliced.
 
-Under evaluation now, with measurement, in workflow `wscr4k8qt`.
+## MEASURED 2026-08-18 — this phase is refuted as framed
+
+Two independent census readers instrumented `adopt`, `anchorAt`, `offsetOfAnchor`, the splice and
+the commit phases, and drove real `beforeinput` keystrokes on a mounted Store in headless Chromium
+(300 keystrokes per case; a single keystroke is below `performance.now()` resolution). All 985 core
+tests passed with the instrumentation in place. The design phase never returned — the run died —
+but the census stands on its own and it kills the premise:
+
+- **The eager position rewrite is a rounding error**: 0.8 % (inline, 501 roots) to 2.6 %
+  (block-todo, 500 rows) of one end-to-end keystroke. It is not the second Θ(document) cost this
+  issue was written around.
+- **Naive derivation loses outright**: one on-demand absolute offset costs **7–8× the entire eager
+  rewrite it would replace**, and a keystroke needs at least three.
+- **Reads, not writes, are the Θ(document) traffic** in the address space — and a derived design
+  would have to *serve* them, not remove them. Exact shape: a head edit costs `5·nodes` reads plus
+  `2·nodes` writes; a tail edit costs `3·nodes` reads and **2** writes.
+- `offsetOfAnchor` is called **exactly 6 times per insertText keystroke, independent of document
+  size** (10 for Backspace/Delete). So an O(document) derivation is affordable *only* as a
+  cached-length prefix scan, and unaffordable if it re-projects.
+- Inside `adopt`, the retention (equality) walk costs **2–3.7× more** than the position writing it
+  enables, and this phase does not touch it.
+- **There are four Θ(document) passes per keystroke, not two.** One nobody had named:
+  `#committed(this.#tree.value())`, a full `joinNodes` re-projection on every commit.
+
+What survives, and is worth keeping: most readers do not want an absolute offset at all. They want
+a **length** (`transactions.applyText`'s bound, `selection.ts:137`), an **ordering or containment**
+(`anchors.ts:21-24`), or an **adjacency** (`anchors.ts:82`, `siblings.ts:35`) — and three of the
+four write-verb uses are a node identity wearing a number (`applyAfter` is literally
+`{after: node}`). Replacing *those* with what they mean is a real simplification on
+[the parser's standing goal](../spec.md#the-parsers-standing-goal) grounds — no weights, nothing
+inferred — but it is not a performance project and must not be sold as one.
+
+Raw census output is in this session's workflow journal under `wf_cfa2d422-ab1`.
