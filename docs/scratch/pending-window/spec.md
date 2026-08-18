@@ -12,8 +12,21 @@ The id gate is gone and `CommitPipeline.pending()` with it. All five checks gree
 1471 tests, build, typecheck, lint, format. The decision record is
 [`adr-draft-0008.md`](adr-draft-0008.md), waiting only on a PR number.
 
-What is still open, in order: the delta accumulator → a set difference (backlog 28), then O4 (split
-`CommitPipeline`), then the atomicity measurement that gates O1. See "Routes" below.
+Since then, and in the same style — delete, then measure — three more items landed: the delta
+accumulator became a set difference (backlog 28, closed), the delta ledger came out of `commit.ts`
+as a DOM-free module with its own spec, and Vue's two announcement sites became one.
+
+**The atomicity measurement that gated O1 is DONE, and the answer is yes.** A control experiment in
+Chromium — plain DOM, no markput — puts `ce=false` on the consumer's mark element, on a core-owned
+wrapper, and on that wrapper at `display: contents`. All three are identical: the caret cannot step
+in (`ArrowRight` never lands inside) and `Shift+ArrowRight` swallows the mark whole. A fourth shape,
+a SLOT mark with a bare root, behaves differently — the caret enters and the selection grows by the
+chrome character — which is what proves the probe discriminates rather than answering "atomic" to
+everything. Moving `ce=false` onto core's own element therefore costs nothing, and `display:
+contents` does not weaken it.
+
+The probe was deleted after recording: it measures Chromium, not markput, and guarding an unbuilt
+design with a permanent test is speculative. It comes back with O1 if O1 is built.
 
 ## Why it came out — the measurement
 
@@ -103,10 +116,13 @@ decision S2 D4 and it is deliberate.
   testable without a browser) and "has it painted" (`renderEpoch`, `onRendered`, `byElement`). Pure
   structural change; it turns O1 into an adapter swap rather than a rewrite.
 - **O1 — core builds the skeleton, the framework renders only user components** through portals.
-  The only route that actually removes the pipeline. Costs a wrapper element per token, breaks the
-  contract that a mark's root element belongs to the consumer's component, and does NOT remove the
-  chrome walk in `applyEditableState:41-53`. This is ADR-0007's deferred "vapor-style DOM ownership":
-  reopening it is a new decision.
+  The only route that actually removes the pipeline, and its one measured blocker is now cleared:
+  atomicity survives the wrapper (see the status note above). What remains is cost, not
+  feasibility — a wrapper element per token, the broken contract that a mark's root element belongs
+  to the consumer's component, and the chrome walk in `applyEditableState`, which O1 does NOT
+  remove: a slot mark's wrapper cannot be `ce=false` because its content must stay editable, so the
+  walk is needed either way. This is ADR-0007's deferred "vapor-style DOM ownership": reopening it
+  is a new decision, now an informed one.
 - **O2 — register elements by ref instead of walking the painted DOM.** Not refuted as a direction;
   two of the three objections in this file's first revision were wrong and are withdrawn (see
   `architecture.html` §8). What stands: markput passes no ref to a token component today
