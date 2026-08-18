@@ -1,0 +1,1717 @@
+<!doctype html>
+<html lang="ru">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Markput — коммит, окно ожидания и эхо</title>
+		<style>
+			:root {
+				--bg: #fbfaf8;
+				--panel: #ffffff;
+				--ink: #1d1b18;
+				--ink-soft: #57534e;
+				--ink-faint: #8a8377;
+				--line: #e4e0d9;
+				--line-soft: #efece6;
+				--accent: #3b5bdb;
+				--code-bg: #f5f3ef;
+				--ok: #2f7a4f;
+				--ok-bg: #eaf5ee;
+				--warn: #9a6412;
+				--warn-bg: #fbf2e2;
+				--bad: #a13a3a;
+				--bad-bg: #fbeceb;
+				--note: #4a5a7a;
+				--note-bg: #eef1f7;
+				--mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+			}
+			@media (prefers-color-scheme: dark) {
+				:root {
+					--bg: #17161a;
+					--panel: #1e1d22;
+					--ink: #eae7e1;
+					--ink-soft: #b3ada4;
+					--ink-faint: #837d75;
+					--line: #33313a;
+					--line-soft: #26252b;
+					--accent: #8ea8ff;
+					--code-bg: #232228;
+					--ok: #7fc79c;
+					--ok-bg: #1c2a22;
+					--warn: #e0b070;
+					--warn-bg: #2c2519;
+					--bad: #e59a95;
+					--bad-bg: #2d1e1e;
+					--note: #a8bbdd;
+					--note-bg: #1e222c;
+				}
+			}
+			* {
+				box-sizing: border-box;
+			}
+			html {
+				scroll-behavior: smooth;
+				scroll-padding-top: 1.5rem;
+			}
+			body {
+				margin: 0;
+				background: var(--bg);
+				color: var(--ink);
+				font:
+					16px/1.65 ui-sans-serif,
+					system-ui,
+					-apple-system,
+					'Segoe UI',
+					Roboto,
+					sans-serif;
+				-webkit-font-smoothing: antialiased;
+			}
+			.wrap {
+				display: grid;
+				grid-template-columns: 250px minmax(0, 1fr);
+				gap: 3rem;
+				max-width: 1240px;
+				margin: 0 auto;
+				padding: 3rem 2rem 8rem;
+			}
+			@media (max-width: 900px) {
+				.wrap {
+					grid-template-columns: 1fr;
+					gap: 1.5rem;
+					padding: 2rem 1.1rem 5rem;
+				}
+				nav.toc {
+					position: static !important;
+					max-height: none !important;
+				}
+			}
+
+			nav.toc {
+				position: sticky;
+				top: 2rem;
+				align-self: start;
+				max-height: calc(100vh - 4rem);
+				overflow-y: auto;
+				font-size: 13.5px;
+				line-height: 1.5;
+			}
+			nav.toc .label {
+				font-size: 11px;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: var(--ink-faint);
+				margin-bottom: 0.8rem;
+			}
+			nav.toc a {
+				display: block;
+				color: var(--ink-soft);
+				text-decoration: none;
+				padding: 0.28rem 0 0.28rem 0.7rem;
+				border-left: 2px solid var(--line);
+			}
+			nav.toc a:hover {
+				color: var(--accent);
+				border-left-color: var(--accent);
+			}
+			nav.toc a.sub {
+				padding-left: 1.5rem;
+				font-size: 12.5px;
+				color: var(--ink-faint);
+			}
+
+			header.head {
+				border-bottom: 1px solid var(--line);
+				padding-bottom: 1.6rem;
+				margin-bottom: 2.5rem;
+			}
+			h1 {
+				font-size: 30px;
+				line-height: 1.2;
+				margin: 0 0 0.5rem;
+				letter-spacing: -0.02em;
+			}
+			.subtitle {
+				color: var(--ink-soft);
+				margin: 0;
+				font-size: 16px;
+			}
+			.meta {
+				margin-top: 1rem;
+				font-size: 13px;
+				color: var(--ink-faint);
+				font-family: var(--mono);
+			}
+
+			h2 {
+				font-size: 21px;
+				margin: 3.2rem 0 0.9rem;
+				letter-spacing: -0.01em;
+				padding-bottom: 0.4rem;
+				border-bottom: 1px solid var(--line-soft);
+			}
+			h3 {
+				font-size: 16.5px;
+				margin: 2rem 0 0.6rem;
+			}
+			h4 {
+				font-size: 14px;
+				margin: 1.4rem 0 0.4rem;
+				color: var(--ink-soft);
+				text-transform: uppercase;
+				letter-spacing: 0.06em;
+			}
+			p {
+				margin: 0.8rem 0;
+			}
+			ul,
+			ol {
+				margin: 0.8rem 0;
+				padding-left: 1.3rem;
+			}
+			li {
+				margin: 0.35rem 0;
+			}
+			a {
+				color: var(--accent);
+			}
+			code {
+				font-family: var(--mono);
+				font-size: 0.875em;
+				background: var(--code-bg);
+				padding: 0.1em 0.35em;
+				border-radius: 3px;
+			}
+			pre {
+				background: var(--code-bg);
+				border: 1px solid var(--line-soft);
+				border-radius: 6px;
+				padding: 1rem 1.1rem;
+				overflow-x: auto;
+				font-family: var(--mono);
+				font-size: 13px;
+				line-height: 1.55;
+				margin: 1rem 0;
+			}
+			pre code {
+				background: none;
+				padding: 0;
+				font-size: inherit;
+			}
+			pre .c {
+				color: var(--ink-faint);
+			}
+			pre .k {
+				color: var(--accent);
+			}
+			pre .hl {
+				background: color-mix(in srgb, var(--warn) 18%, transparent);
+				display: inline-block;
+				width: 100%;
+			}
+
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1.1rem 0;
+				font-size: 14px;
+			}
+			th,
+			td {
+				text-align: left;
+				padding: 0.55rem 0.7rem;
+				border-bottom: 1px solid var(--line-soft);
+				vertical-align: top;
+			}
+			th {
+				font-size: 11.5px;
+				text-transform: uppercase;
+				letter-spacing: 0.07em;
+				color: var(--ink-faint);
+				font-weight: 600;
+				border-bottom: 1px solid var(--line);
+			}
+			td code {
+				font-size: 12.5px;
+			}
+
+			.box {
+				border: 1px solid var(--line);
+				border-radius: 8px;
+				padding: 1rem 1.2rem;
+				margin: 1.2rem 0;
+				background: var(--panel);
+			}
+			.box > :first-child {
+				margin-top: 0;
+			}
+			.box > :last-child {
+				margin-bottom: 0;
+			}
+			.tag {
+				display: inline-block;
+				font-size: 10.5px;
+				font-weight: 700;
+				letter-spacing: 0.09em;
+				text-transform: uppercase;
+				padding: 0.18em 0.55em;
+				border-radius: 3px;
+				vertical-align: 2px;
+				margin-right: 0.5rem;
+			}
+			.t-ok {
+				background: var(--ok-bg);
+				color: var(--ok);
+			}
+			.t-warn {
+				background: var(--warn-bg);
+				color: var(--warn);
+			}
+			.t-bad {
+				background: var(--bad-bg);
+				color: var(--bad);
+			}
+			.t-note {
+				background: var(--note-bg);
+				color: var(--note);
+			}
+			.box.ok {
+				border-left: 3px solid var(--ok);
+			}
+			.box.warn {
+				border-left: 3px solid var(--warn);
+			}
+			.box.bad {
+				border-left: 3px solid var(--bad);
+			}
+			.box.note {
+				border-left: 3px solid var(--note);
+			}
+
+			.diagram {
+				background: var(--panel);
+				border: 1px solid var(--line);
+				border-radius: 8px;
+				padding: 1.2rem;
+				overflow-x: auto;
+				margin: 1.2rem 0;
+			}
+			.diagram pre {
+				background: none;
+				border: none;
+				padding: 0;
+				margin: 0;
+				font-size: 12.5px;
+				line-height: 1.5;
+			}
+
+			.src {
+				font-family: var(--mono);
+				font-size: 12px;
+				color: var(--ink-faint);
+			}
+			.lead {
+				font-size: 17px;
+				color: var(--ink-soft);
+			}
+			.cols {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+				gap: 1rem;
+				margin: 1.2rem 0;
+			}
+			.card {
+				border: 1px solid var(--line);
+				border-radius: 8px;
+				padding: 0.9rem 1rem;
+				background: var(--panel);
+			}
+			.card h4 {
+				margin-top: 0;
+			}
+			.card p {
+				font-size: 14px;
+				margin: 0.4rem 0;
+			}
+			hr {
+				border: none;
+				border-top: 1px solid var(--line-soft);
+				margin: 2.5rem 0;
+			}
+			.glossary dt {
+				font-weight: 600;
+				margin-top: 0.8rem;
+			}
+			.glossary dd {
+				margin: 0.1rem 0 0 0;
+				color: var(--ink-soft);
+				font-size: 14.5px;
+			}
+			.verdict {
+				font-size: 15px;
+				font-weight: 600;
+			}
+			.num {
+				font-variant-numeric: tabular-nums;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<nav class="toc">
+				<div class="label">Содержание</div>
+				<a href="#itog">Итог</a>
+				<a href="#slovar">0. Словарь</a>
+				<a href="#karta">1. Карта: три шва</a>
+				<a href="#potok">2. Поток одной правки</a>
+				<a href="#eho">3. Эхо-протокол</a>
+				<a href="#eho-okno" class="sub">Окно эха vs gapWindow</a>
+				<a href="#committed" class="sub">Зеркало #committed</a>
+				<a href="#okno">4. Окно ожидания</a>
+				<a href="#okno-chto" class="sub">Что оно гасит</a>
+				<a href="#okno-ne" class="sub">Чего оно не гасит</a>
+				<a href="#glubina">5. Оценка по глубине</a>
+				<a href="#diagnoz">6. Диагноз</a>
+				<a href="#experiment">7. Эксперимент</a>
+				<a href="#istoria" class="sub">Откуда защёлка</a>
+				<a href="#granica" class="sub">Чего он не доказал</a>
+				<a href="#varianty">8. Варианты</a>
+				<a href="#o6" class="sub">О6 — удалить гейт</a>
+				<a href="#o5" class="sub">О5 — перенести гейт</a>
+				<a href="#o4" class="sub">О4 — разрезать интерфейс</a>
+				<a href="#o1" class="sub">О1 — ядро владеет DOM</a>
+				<a href="#o2" class="sub">О2 — регистрация по ref</a>
+				<a href="#o3" class="sub">О3 — оставить, описать</a>
+				<a href="#tupiki">9. Тупики</a>
+				<a href="#poryadok">10. Порядок работ</a>
+				<a href="#speki">11. Закреплённые спеки</a>
+			</nav>
+
+			<main>
+				<header class="head">
+					<h1>Коммит, окно ожидания и эхо</h1>
+					<p class="subtitle">
+						Текущая архитектура записи в markput и варианты её упрощения — на языке глубоких модулей.
+					</p>
+					<div class="meta">
+						ветка b0 · 2026-08-18 · обновлено после эксперимента · словарь:
+						mattpocock-skills:codebase-design<br />
+						всё ниже проверено по коду или измерено прогоном; каждое утверждение снабжено ссылкой
+					</div>
+				</header>
+
+				<p class="lead">
+					Задача, поставленная владельцем: «отказ от всяких пендинг и прочего» — драматически упростить или
+					убрать
+					<code>createCommitPipeline</code>. Документ отвечает на два вопроса:
+					<b>что там на самом деле стоит</b> и <b>какой шов надо сдвинуть</b>, чтобы это убрать.
+				</p>
+
+				<div class="box ok" id="itog">
+					<p>
+						<span class="tag t-ok">Сделано</span> Защёлка <code>pending</code> снята — <b>измеренно</b>: с
+						ней снятой из 1467 тестов падает ровно один — тот, что закрепляет её саму. Она спроектирована на
+						два месяца раньше перехода на один contenteditable-хост и пережила класс ущерба, ради которого
+						создавалась. Гейт и аксессор <code>pending()</code> удалены, все пять проверок зелёные (75
+						файлов / 1471 тест). См. <a href="#experiment">§7</a>, <a href="#o6">О6</a> и
+						<code>adr-draft-0008.md</code>.
+					</p>
+					<p>
+						Это <b>не</b> убирает конвейер. <code>renderEpoch</code>, <code>onRendered</code> и обход в
+						<code>bind</code> остаются — они счёт за то, что DOM принадлежит фреймворку, и снимаются только
+						сменой владельца (<a href="#o1">О1</a>). Эхо-протокол к этому отношения не имеет и не упрощается
+						вместе с ним (<a href="#eho">§3</a>).
+					</p>
+				</div>
+
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="slovar">0. Словарь</h2>
+
+				<p>
+					Термины используются строго; замены («компонент», «сервис», «граница») не допускаются — в
+					единообразии языка весь смысл.
+				</p>
+
+				<dl class="glossary">
+					<dt>Модуль</dt>
+					<dd>
+						Что угодно, у чего есть интерфейс и реализация: функция, класс, пакет. Масштаб не важен
+						намеренно.
+					</dd>
+
+					<dt>Интерфейс</dt>
+					<dd>
+						Всё, что вызывающая сторона обязана знать, чтобы пользоваться модулем правильно. Не только
+						сигнатура типов, но и инварианты, требования к порядку вызовов, режимы отказа, обязательная
+						конфигурация. <b>Это ключевой термин документа</b>: у <code>bind()</code> сигнатура крошечная, а
+						интерфейс — огромный.
+					</dd>
+
+					<dt>Реализация</dt>
+					<dd>Тело модуля, то, что внутри.</dd>
+
+					<dt>Глубина</dt>
+					<dd>
+						Рычаг на интерфейсе: сколько поведения вызывающая сторона получает на единицу того, что ей
+						пришлось выучить. Глубокий модуль — много поведения за маленьким интерфейсом. Мелкий — интерфейс
+						почти не проще реализации.
+					</dd>
+
+					<dt>Шов</dt>
+					<dd>
+						Место, где можно поменять поведение, не правя код в этом месте; место, где живёт интерфейс
+						модуля. <b>Куда положить шов</b> — отдельное решение, независимое от того, что за ним спрятать.
+					</dd>
+
+					<dt>Адаптер</dt>
+					<dd>Конкретная вещь, удовлетворяющая интерфейсу на шве. Описывает роль, а не содержимое.</dd>
+
+					<dt>Рычаг / Локальность</dt>
+					<dd>
+						Что даёт глубина: рычаг — вызывающим сторонам (больше умений на единицу выученного), локальность
+						— сопровождающим (правка, баг и проверка сходятся в одно место).
+					</dd>
+
+					<dt>Проверка удалением</dt>
+					<dd>
+						Представь, что модуль удалён. Если сложность исчезла — он был транзитом. Если сложность всплыла
+						у N вызывающих — он окупался.
+					</dd>
+				</dl>
+
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="karta">1. Карта: три шва</h2>
+
+				<p>
+					Запись в markput пересекает три шва. Окно ожидания и эхо — это <b>цена двух из них</b>, и путать их
+					нельзя: они решают разные задачи и находятся в разных местах.
+				</p>
+
+				<div class="diagram">
+					<pre>
+                        ┌─────────────────────────────────────────────┐
+   потребитель          │  props.value / onChange   ·   slots.Mark    │
+                        └───────┬─────────────────────────┬───────────┘
+                                │                         │
+  ═══════════════════════ ШОВ A ┼════════════════ ШОВ C ══┼═══════════════
+   строковая граница            │   слоты (DOM чужой)     │
+                                │                         │
+                        ┌───────▼─────────┐               │
+                        │    Boundary     │  эхо-протокол │
+                        │ sink · arrive   │  gapWindow    │
+                        │ reparse         │               │
+                        └───────┬─────────┘               │
+                                │ TransactionResult       │
+                        ┌───────▼─────────┐               │
+                        │   TokenTree     │  ИСТИНА       │
+                        │   + adopt()     │  (ADR-0001)   │
+                        └───────┬─────────┘               │
+                                │                         │
+  ═══════════════════════ ШОВ B ┼═════════════════════════┼═══════════════
+   конвейер коммитов            │                         │
+                        ┌───────▼─────────────────────────▼───────────┐
+                        │            CommitPipeline                   │
+                        │  apply · onRendered · renderEpoch           │
+                        │  changed · pending · byElement              │
+                        │            ↕ ОКНО ОЖИДАНИЯ ↕                │
+                        └───────┬─────────────────────────────────────┘
+                                │ bind() — обход нарисованного DOM
+                        ┌───────▼─────────┐
+                        │  TokenHandle    │  слой узлов, ключ = id
+                        └─────────────────┘
+</pre>
+				</div>
+
+				<table>
+					<tr>
+						<th>Шов</th>
+						<th>Модуль</th>
+						<th>Что через него варьируется</th>
+						<th>Адаптеров</th>
+						<th>Цена</th>
+					</tr>
+					<tr>
+						<td><b>A</b></td>
+						<td><code>Boundary</code><br /><span class="src">tree/valueBoundary.ts</span></td>
+						<td>кто владеет значением: родитель (controlled) или поле (uncontrolled)</td>
+						<td>2 — настоящий шов</td>
+						<td><b>эхо-протокол</b></td>
+					</tr>
+					<tr>
+						<td><b>B</b></td>
+						<td><code>CommitPipeline</code><br /><span class="src">dom/commit.ts</span></td>
+						<td>ничего — единственная реализация</td>
+						<td>1 — гипотетический шов</td>
+						<td><b>окно ожидания</b></td>
+					</tr>
+					<tr>
+						<td><b>C</b></td>
+						<td><code>slots</code><br /><span class="src">features/slots/</span></td>
+						<td>какой компонент рисует метку, строку, контейнер</td>
+						<td>N — настоящий шов</td>
+						<td><b>обход DOM в bind()</b>, и через него — окно</td>
+					</tr>
+				</table>
+
+				<div class="box note">
+					<p>
+						<span class="tag t-note">Ключ</span> Шов B — единственный из трёх, за которым ничего не
+						варьируется. Это не значит, что он лишний: он существует не для вариативности, а потому что
+						<b>шов C отдал DOM наружу</b>. Окно ожидания — не свойство конвейера, а
+						<b>отражение шва C внутри шва B</b>. Отсюда весь дальнейший разбор.
+					</p>
+				</div>
+
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="potok">2. Поток одной правки</h2>
+
+				<p>Один <code>beforeinput</code> проходит весь путь. Ниже — оба режима, с точными местами.</p>
+
+				<h3>Неуправляемый режим (uncontrolled)</h3>
+				<div class="diagram">
+					<pre>
+ 1  transactions.dispatch(ops)          собирает next-строку из ops           <span class="c">tree/transactions.ts:48</span>
+ 2  sink.commit(next, window)           политика коммита                      <span class="c">valueBoundary.ts:73</span>
+ 3  ├─ fold(next, window)               parse → adopt → onResult              <span class="c">valueBoundary.ts:59</span>
+ 4  │  └─ batch:                                                              <span class="c">TokenModel.ts:606</span>
+ 5  │     ├─ pipeline.apply(result)     ← сюда взводится окно
+ 6  │     ├─ #committed(tree.value())   ← ПОСЛЕ apply, порядок нагружен
+ 7  │     └─ selection.repair(result)   ← ПОСЛЕДНИМ, чтобы курсор победил
+ 8  └─ onChange(next)                   ПОСЛЕ adopt: подписчик читает дерево  <span class="c">valueBoundary.ts:84-88</span>
+
+ 9  renderEpoch(++epoch)                будим фреймворк                       <span class="c">commit.ts:167</span>
+    ····························· ЗАЗОР ·······························
+10  React/Vue перерисовывает            ядро не управляет этим моментом
+11  host.rendered()                     useLayoutEffect / onUpdated           <span class="c">Container.tsx:22 · Container.vue:64</span>
+12  pipeline.onRendered() → bind()      обход DOM, привязка ручек             <span class="c">commit.ts:178</span>
+13  pendingStructural = false           окно закрыто                          <span class="c">commit.ts:205</span>
+14  changed(delta)                      единственное объявление               <span class="c">commit.ts:206</span>
+</pre>
+				</div>
+
+				<h3>Управляемый режим (controlled)</h3>
+				<div class="diagram">
+					<pre>
+ 1  transactions.dispatch(ops)
+ 2  sink.commit(next, window)
+ 3  ├─ lastEmitted = {base, value, window}   ЗАПОМНИЛИ, дерево НЕ тронуто     <span class="c">valueBoundary.ts:78</span>
+ 4  ├─ onChange(next)                        отдали родителю
+ 5  └─ return true                           «принято», а не «применено»      <span class="c">valueBoundary.ts:80-82</span>
+    ····························· ЗАЗОР ·······························
+       родитель может: принять · изменить · проигнорировать · ответить позже
+    ·································································
+ 6  props.value меняется → watch → #onExternalValue → boundary.arrive(value)  <span class="c">TokenModel.ts:386</span>
+ 7  emission = lastEmitted; lastEmitted = undefined   съедаем БЕЗУСЛОВНО      <span class="c">valueBoundary.ts:103-104</span>
+ 8  window = echoWindow(...) ?? gapWindow(current, value)                     <span class="c">valueBoundary.ts:113</span>
+ 9  fold(value, window)  →  дальше как шаги 4-14 выше
+</pre>
+				</div>
+
+				<div class="box warn">
+					<p>
+						<span class="tag t-warn">Два разных зазора</span> В шаге 3-8 неуправляемого потока зазора нет —
+						всё синхронно. Зазоров ровно два, и они не связаны:
+					</p>
+					<ul>
+						<li>
+							<b>Зазор эха</b> (только controlled) — между отдачей значения родителю и его возвратом.
+							Может не закрыться никогда. Закрывается <b>эхо-протоколом</b>.
+						</li>
+						<li>
+							<b>Зазор отрисовки</b> (оба режима) — между коммитом и <code>bind</code>. Закрывается
+							всегда, но не под контролем ядра. Закрывается <b>окном ожидания</b>.
+						</li>
+					</ul>
+					<p>
+						Их часто смешивают, потому что оба «pending». Это разные механизмы с разной судьбой: первый
+						неустраним по определению controlled-режима, второй — следствие решения о владении DOM.
+					</p>
+				</div>
+
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="eho">3. Эхо-протокол</h2>
+
+				<p>
+					Модуль: <code>Boundary</code>,
+					<span class="src">packages/core/src/features/tokens/tree/valueBoundary.ts</span> — 147 строк.
+				</p>
+
+				<h4>Интерфейс — три члена</h4>
+				<pre><code>interface Boundary {
+  readonly sink: CommitSink     <span class="c">// отдаётся в createTransactions</span>
+  arrive(value: string): void   <span class="c">// пришло внешнее значение</span>
+  reparse(): void               <span class="c">// сменился парсер или раскладка</span>
+}</code></pre>
+
+				<p>
+					За этими тремя членами прячется: выбор политики коммита по режиму, парсинг, вызов
+					<code>adopt</code>, захват выделения до мутации, фильтрация пустого текста в блочном режиме, порядок
+					«сначала adopt, потом onChange», запись эмиссии и её сверка. <b>Глубокий модуль</b> — по проверке
+					удалением: убери его, и вся эта политика расползётся по <code>transactions</code> и
+					<code>TokenModel</code>.
+				</p>
+
+				<h3 id="eho-okno">Окно эха против gapWindow</h3>
+
+				<p>
+					Adopt принимает не только новую строку, но и <b>окно</b> — где именно в старой строке произошла
+					правка. Окно определяет, какие узлы сохранят идентичность. Источников окна два:
+				</p>
+
+				<div class="cols">
+					<div class="card">
+						<h4>Точное окно (эхо)</h4>
+						<p>
+							Правку сделали мы сами, значит её координаты известны точно. Записываем их в
+							<code>lastEmitted</code> и используем, если вернувшееся значение — <b>именно наше эхо</b>.
+						</p>
+					</div>
+					<div class="card">
+						<h4>gapWindow (запасной)</h4>
+						<p>
+							Значение чужое (или эхо не совпало). Окно вычисляется как общий префикс/суффикс двух строк —
+							<span class="src">tree/gapWindow.ts:18</span>.
+						</p>
+					</div>
+				</div>
+
+				<pre><code>function echoWindow(emission, value, current) {
+  if (!emission) return undefined
+  return emission.value === value <span class="k">&&</span> emission.base === current ? emission.window : undefined
+}                                                       <span class="c">valueBoundary.ts:144-147</span></code></pre>
+
+				<div class="box ok">
+					<p>
+						<span class="tag t-ok">Обе половины нагружены</span> И это доказано в коде, а не предположено
+						(<span class="src">valueBoundary.ts:131-142</span>):
+					</p>
+					<ul>
+						<li>
+							<code>emission.value === value</code> — ломается на
+							<b>трансформации, меняющей число корней</b>: устаревшее окно несёт устаревшую дельту,
+							суффиксный проход adopt глохнет, идентичность хвоста падает на левое индексное сопоставление
+							и смещается ровно на это число.
+						</li>
+						<li>
+							<code>emission.base === current</code> — ломается на
+							<b>переключении controlled→uncontrolled в полёте</b>: правка коммитится локально, дерево
+							уходит вперёд, эхо родителя приходит уже после.
+						</li>
+					</ul>
+					<p>
+						Ни то, ни другое не видно на обычной фикстуре: там оба окна совпадают. Закреплено
+						<b>только идентификаторными</b> проверками в <code>valueBoundary.spec.ts</code> — проверки на
+						уровне значения слепы, потому что adopt сходится к той же строке через любое окно.
+					</p>
+				</div>
+
+				<div class="box note">
+					<p>
+						<span class="tag t-note">Точность, а не корректность</span> Обе ветки сохраняют непрерывность.
+						Сверка эха покупает <b>точность идентичности</b>: на повторяющемся содержимом два окна
+						расходятся в том, какой из повторов «выжил». <span class="src">valueBoundary.ts:106-111</span>
+					</p>
+				</div>
+
+				<h3 id="committed">Зеркало #committed</h3>
+
+				<p>Ещё один участник, который легко принять за дублирование состояния — и это не оно.</p>
+
+				<pre><code>readonly #committed = signal({initial: ''})            <span class="c">TokenModel.ts:588</span>
+
+readonly value = computed(() =>
+  this.props.value() ?? (this.#seeded() ? this.#committed() : this.#seed())
+)                                                       <span class="c">TokenModel.ts:152</span></code></pre>
+
+				<p>
+					Почему <code>value</code> не читает <code>#tree.value()</code> напрямую: <code>adopt()</code> пишет
+					<code>tree.roots</code> внутри собственного <code>batch</code>, и сброс этого batch уведомил бы
+					подписчиков <code>value</code>, пока представление токенов ещё устарело. <code>#committed</code> —
+					это <b>маркер поколения коммита</b>, записываемый после <code>pipeline.apply</code>. Один писатель,
+					содержимое — проекция того же дерева, снятая в тот же момент; расхождение непредставимо.
+				</p>
+
+				<p>
+					Порядок внутри <code>batch</code> нагружен целиком (<span class="src">TokenModel.ts:598-608</span>):
+				</p>
+
+				<table>
+					<tr>
+						<th>#</th>
+						<th>Действие</th>
+						<th>Почему именно здесь</th>
+					</tr>
+					<tr>
+						<td>1</td>
+						<td><code>pipeline.apply(result)</code></td>
+						<td>
+							<code>changed</code> — событие; на глубине 0 оно сбрасывает подписчиков внутри
+							<code>apply</code>, впереди обеих записей ниже
+						</td>
+					</tr>
+					<tr>
+						<td>2</td>
+						<td><code>#committed(tree.value())</code></td>
+						<td>
+							публикация раньше отдала бы подписчикам новую строку поверх устаревшего представления
+							токенов
+						</td>
+					</tr>
+					<tr>
+						<td>3</td>
+						<td><code>selection.repair(result)</code></td>
+						<td>
+							последним, чтобы императивный курсор от <code>EditController</code> лёг позже в том же batch
+							и выиграл
+						</td>
+					</tr>
+				</table>
+
+				<div class="box ok">
+					<p>
+						<span class="tag t-ok">Вердикт по эху</span> Эхо-протокол <b>трогать нечего</b>. Это цена
+						настоящего шва с двумя адаптерами (controlled / uncontrolled), обе половины сверки закреплены
+						измеренными регрессиями, интерфейс — три члена. Он не имеет отношения к <code>pending</code> и
+						не упрощается вместе с ним.
+					</p>
+				</div>
+
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="okno">4. Окно ожидания</h2>
+
+				<p>
+					Модуль: <code>CommitPipeline</code>,
+					<span class="src">packages/core/src/features/tokens/dom/commit.ts</span> — 283 строки, плюс
+					<code>bind.ts</code> — 244.
+				</p>
+
+				<h4>Интерфейс — семь членов</h4>
+				<pre><code>type CommitPipeline = {
+  apply(result: TransactionResult): void       <span class="c">// вход</span>
+  onRendered(): void                           <span class="c">// ← адаптер: «я нарисовал»</span>
+  renderEpoch: Computed&lt;number&gt;                <span class="c">// → адаптер: «перерисуйся»</span>
+  changed: Event&lt;TokenDelta&gt;                   <span class="c">// объявление</span>
+  pending(): boolean                           <span class="c">// ← защёлка</span>
+  byElement(el): TokenHandle | undefined
+  isControlRoot(el): boolean
+}</code></pre>
+
+				<p>Сама защёлка — одна булева переменная:</p>
+
+				<pre><code>let pendingStructural = false                                       <span class="c">commit.ts:147</span>
+
+function apply(result) {
+  foldDelta(pendingDelta, deltaOf(result))
+<span class="hl">  if (result.render || pendingStructural) {                         <span class="c">commit.ts:165</span></span>
+<span class="hl">    pendingStructural = true</span>
+    renderEpoch(++epoch)
+    return
+  }
+  changed(drainDelta(pendingDelta))          <span class="c">// текстовый путь: сразу</span>
+}
+
+function bindAndAnnounce(container) {
+  const result = bind({container, roots: deps.roots(), nodes: deps.nodes, ...})
+  const delta = drainDelta(pendingDelta)
+<span class="hl">  pendingStructural = false                                         <span class="c">commit.ts:205</span></span>
+  changed(delta)
+}</code></pre>
+
+				<h3 id="okno-chto">Что оно гасит</h3>
+
+				<p>Ровно один метод во всём репозитории:</p>
+
+				<pre><code>handle(id: number): TokenHandle | undefined {
+  if (this.#pipeline.pending()) return undefined
+  return this.#nodes.get(id)
+}                                                    <span class="c">seam/TokenModel.ts:60-63</span></code></pre>
+
+				<p>
+					Боевых вызовов <code>handle(id)</code> — шесть: <code>OverlayController.ts:163</code>,
+					<code>DomModel.ts:183</code> и <code>:241</code>, <code>SelectionDriver.ts:77</code>,
+					<code>blockEdit.ts:28</code> и <code>:191</code>. Все — измерение и команды курсору.
+				</p>
+
+				<h3 id="okno-ne">Чего оно не гасит — и это важнее</h3>
+
+				<table>
+					<tr>
+						<th>Направление</th>
+						<th>Во время окна</th>
+						<th>Через что</th>
+						<th>Закреплено</th>
+					</tr>
+					<tr>
+						<td>
+							элемент → ручка<br /><code>byElement</code>, <code>handleAt</code>, <code>anchorFor</code>,
+							<code>domAnchors</code>
+						</td>
+						<td>
+							<b class="verdict" style="color: var(--ok)">отвечает</b><br />читает нарисованный DOM,
+							поэтому не устаревает в том направлении, которое важно
+						</td>
+						<td><code>TokenHandle#bindings</code></td>
+						<td><code>commitPipeline.spec.ts:536</code></td>
+					</tr>
+					<tr>
+						<td>id → ручка<br /><code>handle(id)</code></td>
+						<td><b class="verdict" style="color: var(--bad)">отказывает</b></td>
+						<td>защёлка</td>
+						<td><code>TokenModel.spec.ts:242</code></td>
+					</tr>
+					<tr>
+						<td>запись в узел<br /><code>MarkNode.update()</code></td>
+						<td>
+							<b class="verdict" style="color: var(--ok)">проходит</b> и подмешивается в ожидающий проход
+						</td>
+						<td>fold-гарантия <code>commit.ts:165</code></td>
+						<td><code>tree/markNode.spec.ts:367</code></td>
+					</tr>
+					<tr>
+						<td>чтение узла<br /><code>find(id)</code></td>
+						<td><b class="verdict" style="color: var(--ok)">отвечает</b> — дерево авторитетно</td>
+						<td>не проходит через ручки</td>
+						<td><code>tree/markNode.spec.ts:391</code></td>
+					</tr>
+				</table>
+				<p class="src">
+					Вторая строка — <b>единственное</b>, что защёлка добавляет сверх отказа по отсутствию, и именно она
+					снята измеренно: см. <a href="#experiment">§7</a>.
+				</p>
+
+				<div class="box bad">
+					<p>
+						<span class="tag t-bad">Одно жёсткое ограничение</span> Вернуть защёлку на <b>запись</b> — это
+						разворот наблюдаемого поведения и мажорная версия, а не рефакторинг. Инверсия сделана в S1.6d
+						осознанно. Любой вариант ниже, который снова закрывает запись, отклоняется без обсуждения.
+					</p>
+				</div>
+
+				<div class="box note">
+					<p>
+						<span class="tag t-note">Почему защёлку нельзя заменить на unbind</span> Первые две строки
+						таблицы идут через <b>одно и то же поле</b> <code>#bindings</code>. Отвязать ручки в момент
+						<code>apply</code>, чтобы <code>handle(id)</code> отказал «сам собой», — значит убить и
+						элементное направление тоже. Комментарий в <code>DomModel.ts:181-182</code> прямо фиксирует
+						разделение: <code>#bindings</code> отрабатывает свой уровень, защёлка живёт <b>выше</b>, на
+						поиске по id. Это не дублирование, это два разных вопроса.
+					</p>
+				</div>
+
+				<h3>Скрытый интерфейс bind()</h3>
+
+				<p>Здесь самая большая цена, и её не видно по сигнатуре.</p>
+
+				<pre><code>export function bind(input: BindInput): BindResult      <span class="c">// dom/bind.ts:58</span></code></pre>
+
+				<p>
+					Сигнатура выглядит скромно. <b>Интерфейс</b> — в смысле «всё, что надо знать, чтобы пользоваться
+					правильно» — содержит нигде не объявленный контракт к адаптеру:
+				</p>
+
+				<ul>
+					<li>ровно один элемент на узел дерева, в том же порядке;</li>
+					<li>элементы управления отфильтрованы и не считаются;</li>
+					<li>
+						в блочном режиме каждый прямой ребёнок контейнера — строка, и в строке ровно один не-контрольный
+						элемент;
+					</li>
+					<li>
+						несовпадение количества роняет <b>весь кадр и все кадры-потомки</b> —
+						<span class="src">bind.ts:142</span>, <span class="src">bind.ts:181</span>;
+					</li>
+					<li>
+						вызывать можно только после отрисовки; повторный вызов безусловно перевзводит эффекты всех
+						текстовых поверхностей.
+					</li>
+				</ul>
+
+				<div class="box bad">
+					<p>
+						<span class="tag t-bad">Мелкий модуль</span> Это <b>не</b> глубокий модуль: интерфейс почти так
+						же сложен, как реализация, и вдобавок не выражен в типах. Проверка удалением здесь даёт
+						неприятный ответ: удали <code>bind</code>, и сложность не исчезнет — она
+						<b>всплывёт у адаптеров</b>, которым придётся сообщать элементы явно. То есть модуль окупается,
+						но окупается <b>заменой явного контракта на неявный</b>. Он существует потому, что явный
+						контракт (ref на каждый элемент) невозможно потребовать от чужих компонентов — см.
+						<a href="#o2">О2</a>.
+					</p>
+				</div>
+
+				<h3>Восемь понятий конвейера</h3>
+
+				<table>
+					<tr>
+						<th>Понятие</th>
+						<th>Где</th>
+						<th>Устранимо?</th>
+					</tr>
+					<tr>
+						<td>счётчик эпох <code>renderEpoch</code></td>
+						<td><code>commit.ts:136-137</code></td>
+						<td>нет — счёт за чужой DOM</td>
+					</tr>
+					<tr>
+						<td>защёлка <code>pendingStructural</code></td>
+						<td><code>commit.ts:147</code></td>
+						<td>нет — счёт за чужой DOM</td>
+					</tr>
+					<tr>
+						<td>обход всего дерева в <code>bind</code></td>
+						<td><code>bind.ts:58</code></td>
+						<td>нет — счёт за чужой DOM</td>
+					</tr>
+					<tr>
+						<td>два места объявления во Vue</td>
+						<td><code>Container.vue:64-76</code></td>
+						<td>нет — счёт за чужой DOM</td>
+					</tr>
+					<tr>
+						<td><b>накопитель дельты</b></td>
+						<td><code>commit.ts:104-129</code></td>
+						<td>
+							<b style="color: var(--ok)">да</b> — разность множеств против <code>treeIds</code>, который
+							<code>bind.ts:78</code> уже строит и выбрасывает. ~60 строк
+						</td>
+					</tr>
+					<tr>
+						<td>защита от повторного входа</td>
+						<td><code>commit.ts:156, 179</code></td>
+						<td>нет — есть у всех четырёх аналогов</td>
+					</tr>
+					<tr>
+						<td>место проверки расхождения</td>
+						<td><code>commit.ts:222-248</code></td>
+						<td>нет — измерено: инлайн даёт 13 ложных срабатываний</td>
+					</tr>
+					<tr>
+						<td>правила порядка внутри коммита</td>
+						<td><code>TokenModel.ts:606</code></td>
+						<td>нет — три взаимозависимости</td>
+					</tr>
+				</table>
+
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="glubina">5. Оценка по глубине</h2>
+
+				<p>Каждый модуль — по проверке удалением: что всплывёт у вызывающих сторон, если его убрать.</p>
+				<table>
+					<tr>
+						<th>Модуль</th>
+						<th>Интерфейс</th>
+						<th>Удалить →</th>
+						<th>Оценка</th>
+					</tr>
+					<tr>
+						<td><code>Boundary</code></td>
+						<td>3 члена</td>
+						<td>политика режимов расползается по 2 модулям</td>
+						<td><b style="color: var(--ok)">глубокий</b></td>
+					</tr>
+					<tr>
+						<td><code>TokenHandle</code></td>
+						<td>9 методов, все отказывают закрыто на <code>#bindings</code></td>
+						<td>каждый вызывающий проверяет DOM сам</td>
+						<td><b style="color: var(--ok)">глубокий</b></td>
+					</tr>
+					<tr>
+						<td><code>DomModel</code></td>
+						<td>8 методов, без абсолютных смещений</td>
+						<td>сырые <code>Range</code>/<code>Selection</code> у 6 вызывающих</td>
+						<td><b style="color: var(--ok)">глубокий</b></td>
+					</tr>
+					<tr>
+						<td><code>CommitPipeline</code></td>
+						<td>7 членов, 3 из них — про чужой DOM</td>
+						<td>рукопожатие всплывает у обоих адаптеров</td>
+						<td><b style="color: var(--warn)">окупается, но мелкий</b></td>
+					</tr>
+					<tr>
+						<td><code>bind</code></td>
+						<td>1 функция + неявный контракт к адаптеру</td>
+						<td>контракт становится явным (ref-ы)</td>
+						<td><b style="color: var(--bad)">мелкий</b></td>
+					</tr>
+				</table>
+
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="diagnoz">6. Диагноз</h2>
+
+				<div class="box">
+					<p>
+						<span class="verdict"
+							>Шов B нарисован вокруг рукопожатия, а должен быть нарисован поверх него.</span
+						>
+					</p>
+					<p>
+						Из семи членов интерфейса <code>CommitPipeline</code> <b>три</b> существуют исключительно чтобы
+						описывать обмен с фреймворком: <code>renderEpoch</code> («перерисуйся»),
+						<code>onRendered</code> («я нарисовал»), <code>pending</code> («ещё не нарисовал»). Ни один из
+						них не выражает <i>ничего</i> про коммит как таковой — они выражают <i>то, что DOM чужой</i>.
+						Это утечка реализации в интерфейс, и именно она делает модуль мелким там, где он мог бы быть
+						глубоким.
+					</p>
+					<p>
+						Отсюда следовало заключение, что убрать <code>pending</code>, не трогая шов C, нельзя. Для
+						<code>renderEpoch</code> и <code>onRendered</code> это <b>верно</b> — они и есть шов C,
+						увиденный изнутри. Для <code>pending</code> — <b>неверно</b>, и это опровергнуто измерением: см.
+						<a href="#experiment">§7</a>. Защёлка не была ценой чужого DOM; она была страховкой, пережившей
+						свою причину.
+					</p>
+				</div>
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="experiment">7. Эксперимент: что будет, если снять защёлку</h2>
+
+				<p>
+					Всё выше — разбор устройства. Дальше — измерение. Правка ровно одна: из
+					<code>TokenModel.handle</code> убрана строка
+					<code>if (this.#pipeline.pending()) return undefined</code>. Больше ничего не тронуто.
+				</p>
+
+				<div class="diagram">
+					<pre>
+                                 файлов        тестов
+  база, защёлка на месте         74 / 74       1467 ✓
+  защёлка снята                  73 / 74       1466 ✓   1 ✗
+                                                        │
+       ┌────────────────────────────────────────────────┘
+       └─ TokenModel.spec.ts:242
+          «handle(id) fails closed while a structural apply awaits its bind»
+          AssertionError: expected TokenHandle{ id: 3 } to be undefined
+</pre>
+				</div>
+
+				<div class="box ok">
+					<p>
+						<span class="tag t-ok">Результат</span> Единственная красная — тест, который закрепляет
+						<b>саму защёлку</b>. Ни одного другого падения на 1466 тестах, включая браузерные наборы React и
+						Vue с настоящими перерисовками в Chromium.
+					</p>
+				</div>
+
+				<h3>Случай, ради которого она существует — покрыт, и он проходит</h3>
+
+				<p>
+					Это ровно тот сценарий, о котором стоит спрашивать в первую очередь: вставить метку в середину
+					документа и восстановить каретку после неё.
+				</p>
+
+				<pre><code>it('restore focus after selection from overlay', async () =&gt; {
+  <span class="c">// Use a value with existing marks so the new mark is inserted in the MIDDLE.</span>
+  <span class="c">// After re-parse: [span("Start "), mark("A"), span(" mid "), mark("Item"), span(""), mark("B"), span(" end")]</span>
+  ...
+  verifyCaretPosition(host, 16)
+})                                            <span class="c">Overlay.spec.ts:217-237</span></code></pre>
+
+				<h4>Почему проходит без защёлки</h4>
+
+				<p>
+					Каретка после вставки метки едет в <b>новый</b> узел — <code>span("")</code> сразу за меткой. До
+					привязки у него нет ручки в карте <code>#nodes</code>: ручки создаёт
+					<code>bind</code> (<code>bind.ts:86</code>). Значит <code>handle(id)</code> отвечает
+					<code>undefined</code> <b>по отсутствию</b>, а не по защёлке. Отказ уже встроен в структуру, и
+					защёлка его лишь дублирует.
+				</p>
+
+				<p>
+					Что она добавляет сверх этого — отказ для <b>выживших</b> узлов. Но их элементы во время окна
+					корректны: эффект поверхности уже записал новый текст, и это закреплено отдельно —
+					<code>commitPipeline.spec.ts:323</code>, <code>expect(text2.textContent).toBe('llo!')</code>
+					<i>внутри</i> окна. То есть защёлка запрещает ровно тот случай, который сработал бы.
+				</p>
+
+				<div class="box note">
+					<p>
+						<span class="tag t-note">Страховка</span> Преждевременная попытка безвредна не по случайности:
+						после привязки <code>changed</code> заново применяет выделение
+						(<code>SelectionDriver.ts:46</code>). Тот же <code>#applySelection</code> отрабатывает второй
+						раз по консистентному DOM. Первая попытка — либо уже верная, либо холостая, либо переходно
+						неверная и исправленная в том же кадре.
+					</p>
+				</div>
+
+				<h3 id="istoria">Откуда она взялась</h3>
+
+				<table>
+					<tr>
+						<th>Что</th>
+						<th>Дата</th>
+						<th>Коммит</th>
+					</tr>
+					<tr>
+						<td><code>pendingStructural</code> появляется</td>
+						<td>2026-06-22</td>
+						<td><code>39c721fe</code> — консолидация слоя токенов (#267)</td>
+					</tr>
+					<tr>
+						<td>один contenteditable-хост</td>
+						<td><b>2026-08-12</b></td>
+						<td><code>9f824829</code> — one contenteditable host (#274)</td>
+					</tr>
+				</table>
+
+				<p>
+					Защёлка спроектирована <b>в мире N хостов</b>, на два месяца раньше. В том мире преждевременная
+					постановка каретки была разрушительной — вот стек из отчёта миграции, снятый инструментированным
+					прогоном:
+				</p>
+
+				<div class="diagram">
+					<pre>
+150  Chromium  mousedown на span1 — DOM-выделение всё ещё старое, span2:14
+150  core      focusout microtask: activeElement === BODY → selection.clear()
+150  core      focusin sync читает УСТАРЕВШИЙ диапазон → select(old) → сработал watch якорей
+150  core      #applySelection → placeCaret → focusIfNeeded:
+                  ★ span2.focus() КРАДЁТ ФОКУС ОБРАТНО
+151  Chromium  один слитый selectionchange: каретка на span2:14 — клик не сделал ничего
+</pre>
+				</div>
+				<p class="src">docs/records/one-host-migration.md:43-49</p>
+
+				<div class="box ok">
+					<p>
+						<span class="tag t-ok">Класс ущерба исчез</span> Под одним хостом <code>focusEditingHost</code>
+						целится в контейнер, у которого фокус уже есть. Красть не у кого, переходов между хостами нет.
+						Защёлка пережила причину, ради которой создавалась — и это объясняет, почему её снятие сегодня
+						ничего не ломает.
+					</p>
+				</div>
+
+				<h3 id="granica">Чего эксперимент не доказал — и как это закрыто</h3>
+
+				<div class="box warn">
+					<p>
+						<span class="tag t-warn">Граница</span> Зелёный прогон — это <b>отсутствие опровержения</b>, а
+						не доказательство безопасности. Три случая набор мог не покрывать. Все три закрыты — ниже, с
+						тем, чем именно:
+					</p>
+					<ol>
+						<li>
+							<b>Переходная постановка в родительских координатах выжившей метки.</b>
+							<code>TokenHandle.caretBoundary</code> для метки читает
+							<code>parent.childNodes.indexOf(tokenElement)</code> — индекс <i>старого</i> DOM.
+							<b>Закрыто</b> новым набором <code>seam/pendingWindow.spec.ts</code>: он формулирует
+							инвариант поверх <b>keyed</b>-перерисовки — каретка, запрошенная посреди окна, верна после
+							привязки. Общие фикстуры пересоздают каждый элемент на каждой отрисовке, поэтому ни одна из
+							них не могла наблюдать пережившую перерисовку каретку; отсюда новая фикстура.
+						</li>
+						<li>
+							<b><code>OverlayController</code> — единственный не-курсорный потребитель.</b> Без защёлки
+							он возьмёт старый элемент вместо
+							<code>document.body</code> (<code>OverlayController.ts:163</code>).
+							<b>Объявлено в ADR, а не покрыто тестом</b>, и это обоснованно: главные часы пробы —
+							<code>tokens.changed</code>, а он срабатывает уже <i>после</i> привязки, так что окно
+							достижимо только через ветку <code>selectionchange</code>. Тест на это проверял бы
+							планировщик, а не контракт.
+						</li>
+						<li>
+							<b>IME и составной ввод — вне области.</b> Проверено, а не отмахнулись:
+							<code>keyboard/beforeInput.ts</code> пропускает неотменяемый
+							<code>insertCompositionText</code> и не выражает для него правки, значит композиция
+							<b>не открывает коммит</b> и не открывает окна. Отсутствие тестов композиции во всём наборе
+							— реальный и уже существовавший пробел; эта правка его не расширяет и не закрывает.
+						</li>
+					</ol>
+					<p>
+						Отдельно: первый прогон полного набора дал ещё три упавших файла storybook на уровне загрузки;
+						на повторе не воспроизвелись, база без правки полностью зелёная. Считаю их флаком, а не
+						следствием правки — но это записано, а не умолчано.
+					</p>
+				</div>
+
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="varianty">8. Варианты</h2>
+
+				<p>Отсортированы по стоимости. Первые три не трогают владение DOM и не ломают публичный контракт.</p>
+
+				<!-- О6 -->
+				<h3 id="o6">О6 — удалить гейт</h3>
+
+				<div class="box ok">
+					<p>
+						<span class="tag t-ok">Сделано</span> Самый дешёвый и единственный, у которого понятие
+						<b>исчезает</b>, а не переезжает. Лежит на b0, не закоммичено; все пять проверок зелёные.
+					</p>
+				</div>
+
+				<p><b>Сдвиг шва:</b> никакого. Убирается одна строка и один тест.</p>
+
+				<ul>
+					<li>
+						<code>handle(id)</code> становится обычным поиском по карте. Новые узлы отказывают по
+						отсутствию.
+					</li>
+					<li>
+						Постановка каретки в том же обороте либо срабатывает, либо холостая; повтор после привязки —
+						страховка.
+					</li>
+					<li>
+						<code>pending()</code> теряет последнего потребителя и уходит из интерфейса
+						<code>CommitPipeline</code>: семь членов → шесть, одна из трёх утечек закрыта.
+					</li>
+					<li>
+						Удаляется <code>TokenModel.spec.ts:242</code> и переписывается комментарий на
+						<code>handle</code>.
+					</li>
+					<li>Ноль изменений в адаптерах, ноль в публичных типах, парсер не трогается.</li>
+				</ul>
+
+				<p>
+					Перед этим надо закрыть три случая из <a href="#granica">§7</a>. И следом открывается вторая уборка:
+					<code>blockEdit.ts:56</code> обходит окно <b>вручную</b> («stored anchors cover the
+					pendingStructural window») — этот обход, вероятно, тоже становится лишним.
+				</p>
+
+				<div class="box warn">
+					<p>
+						<span class="tag t-warn">Честная граница</span> О6 убирает <code>pending</code>, а не конвейер.
+						Остаются <code>renderEpoch</code>, <code>onRendered</code> и обход в <code>bind</code> — это
+						по-прежнему счёт за чужой DOM.
+					</p>
+				</div>
+
+				<!-- О5 -->
+				<h3 id="o5">О5 — перенести гейт на владельца</h3>
+
+				<p>
+					Запасной вариант, если какой-то из трёх случаев §7 окажется настоящим. Вместо удаления —
+					<b>перенос</b>: гейт уходит из <code>TokenModel.handle</code> к драйверу выделения, единственному,
+					кто в нём нуждается.
+				</p>
+
+				<p>Основание — состав потребителей. Все шесть боевых вызовов <code>handle(id)</code> про курсор:</p>
+
+				<table>
+					<tr>
+						<th>Вызов</th>
+						<th>Назначение</th>
+					</tr>
+					<tr>
+						<td><code>DomModel.ts:183</code>, <code>:241</code></td>
+						<td>поставить каретку / выделение</td>
+					</tr>
+					<tr>
+						<td><code>SelectionDriver.ts:77</code></td>
+						<td><code>focusFirst</code></td>
+					</tr>
+					<tr>
+						<td><code>blockEdit.ts:28</code>, <code>:191</code></td>
+						<td>строка под кареткой, фокус строки</td>
+					</tr>
+					<tr>
+						<td><code>OverlayController.ts:163</code></td>
+						<td>элемент-якорь всплывашки, с запасным вариантом</td>
+					</tr>
+				</table>
+
+				<p>
+					Ни одного чтения «дай DOM узла» вне этой подсистемы. Перенос ставит операцию к владельцу состояния,
+					которое она защищает — принцип из <code>AGENTS.md</code>. Но понятие остаётся, поэтому О5 хуже О6.
+				</p>
+
+				<!-- О4 -->
+				<h3 id="o4">О4 — разрезать интерфейс по вопросу, а не по механизму</h3>
+
+				<p><b>Сдвиг шва:</b> B остаётся на месте, но перестаёт быть одним модулем.</p>
+
+				<p><code>CommitPipeline</code> отвечает на два несвязанных вопроса, склеенных в один интерфейс.</p>
+
+				<div class="cols">
+					<div class="card">
+						<h4>Вопрос 1 — «что изменилось»</h4>
+						<p>
+							<code>apply</code>, <code>changed</code>, дельта. Чистая функция коммита. Никакого DOM,
+							полностью тестируется без браузера.
+						</p>
+					</div>
+					<div class="card">
+						<h4>Вопрос 2 — «нарисовано ли»</h4>
+						<p>
+							<code>renderEpoch</code>, <code>onRendered</code>, <code>byElement</code>. Целиком про обмен
+							с фреймворком.
+						</p>
+					</div>
+				</div>
+
+				<p>Вынести второй в явный модуль (условно <code>PaintHandshake</code>) с честным именем. Тогда:</p>
+				<ul>
+					<li>первый становится глубоким и тестируемым без DOM;</li>
+					<li>
+						появляется настоящий шов на месте гипотетического: <code>PaintHandshake</code> получает второго
+						адаптера — «ядро владеет DOM», где рукопожатие мгновенное.
+						<b>О1 становится подменой адаптера, а не переписыванием.</b>
+					</li>
+				</ul>
+
+				<div class="box ok">
+					<p>
+						<span class="tag t-ok">Почему стоит</span> Ни строчки поведения не меняется — чистая структурная
+						правка, ровно тот вид, который <code>AGENTS.md</code> требует делать отдельным шагом. После О6
+						пара <code>renderEpoch</code> + <code>onRendered</code> уже не притворяется частью коммита, и
+						разрез становится очевидным.
+					</p>
+				</div>
+
+				<!-- О1 -->
+				<h3 id="o1">О1 — ядро строит скелет, фреймворк рисует только пользовательские компоненты</h3>
+
+				<p>
+					<b>Сдвиг шва:</b> C переезжает внутрь элемента. Ядро синхронно создаёт элемент на каждый узел;
+					компонент потребителя рендерится <i>внутрь</i> через <code>createPortal</code> /
+					<code>&lt;Teleport&gt;</code>. Единственный вариант, который действительно убирает конвейер.
+				</p>
+
+				<div class="diagram">
+					<pre>
+  СЕЙЧАС                                    О1
+  ──────                                    ──
+  apply()                                   apply()
+    │ renderEpoch++                           │ создаём/переставляем элементы  ← синхронно
+    ╎ ╎ ╎ зазор ╎ ╎ ╎                         │ changed(delta)
+    ▼                                         ▼
+  React рисует ВСЁ                          готово. Окна нет.
+    │                                         ╎
+  rendered() → bind() обходит DOM           React дорисовывает СОДЕРЖИМОЕ метки
+    │                                         в портал — геометрия чужого
+  changed(delta)                              содержимого догоняет кадром позже
+</pre>
+				</div>
+
+				<h4>Что умирает</h4>
+				<p>
+					Обход в <code>bind.ts</code> (244 строки), <code>renderEpoch</code>, <code>onRendered</code>,
+					накопитель дельты. Останется прямая карта <code>id → element</code>, заполняемая при создании. Плюс
+					пляска в <code>Container.vue:62-76</code>. Порядка 530 строк ядра.
+				</p>
+
+				<h4>Осуществимость</h4>
+				<div class="box ok">
+					<p>
+						<span class="tag t-ok">Проверено</span> Ядро <b>уже умеет</b> строить нужный DOM:
+						<code>features/tokens/__testing__/mountFixtures.ts</code> собирает его голым
+						<code>document.createElement</code> для всех режимов — inline, метка с пустым корнем, вложенные
+						слоты с хостом <code>display:contents</code>, блочные строки. 204 строки работающего кода.
+					</p>
+				</div>
+
+				<h4>Цена</h4>
+				<ul>
+					<li>
+						<b>Слом контракта.</b> Сегодня корневой элемент метки принадлежит компоненту потребителя и
+						получает <code>contenteditable=false</code>. После — корень принадлежит ядру.
+					</li>
+					<li><b>Лишний элемент на токен</b> внутри contenteditable.</li>
+					<li>
+						<b>Обход хрома остаётся.</b> <code>applyEditableState</code> для слотовой метки поднимается от
+						хоста слота до корня, замораживая всё сбоку от пути (<code>editableState.ts:41-53</code>) — ядро
+						ходит <i>внутри</i> дерева, нарисованного пользователем. Обёртка сужает этот обход до поддерева
+						метки, но не отменяет его.
+					</li>
+					<li><b>Два писателя в один DOM:</b> ядро снаружи, React внутрь портала. Требует измерения.</li>
+					<li>SSR не пострадает: его в проекте нет.</li>
+				</ul>
+
+				<p>
+					Это то, что <a href="../../adr/0007-row-identity-travels-with-the-row.md">ADR-0007</a> называет
+					«full vapor-style DOM ownership» и откладывает словами:
+					<i>«Reopening any of the three is a new decision, not an oversight to be fixed in passing»</i>.
+				</p>
+
+				<!-- О2 -->
+				<h3 id="o2">О2 — регистрация по ref вместо обхода после отрисовки</h3>
+
+				<p>
+					<b>Идея:</b> каждый компонент токена сообщает ядру свой элемент через <code>ref</code>; тогда
+					<code>walkDom</code> с позиционным сопоставлением не нужен, а «привязан ли узел» становится
+					свойством самого узла.
+				</p>
+
+				<div class="box warn">
+					<p>
+						<span class="tag t-warn">Поправка</span> В первой редакции этого документа О2 был объявлен
+						опровергнутым по трём пунктам. Два из трёх были неверны, и они сняты:
+					</p>
+					<ul>
+						<li>
+							<b>«Защёлка не растворяется»</b> — опровергался механизм «отвязывать ручки при
+							<code>apply</code>», которого в О2 нет: рефы срабатывают в фазе коммита фреймворка, там же,
+							где сегодня срабатывает <code>bind</code>. К О2 довод не относился. <b>Снято.</b>
+						</li>
+						<li>
+							<b>«Самозалечивание ломается молча»</b> — требование настоящее, но не блокирующее: рефы дают
+							прямой список привязанных ручек, проход по ним дешевле нынешнего обхода дерева.
+							<b>Снято</b> как возражение, остаётся как стоимость.
+						</li>
+						<li>
+							<b>«Выход всё-или-ничего ломается»</b> — режим отказа, от которого он защищает (адаптер
+							посреди отрисовки), при рефах <i>не может возникнуть</i>. Спека становится беспредметной, а
+							не нарушенной, её надо удалить. <b>Снято.</b>
+						</li>
+					</ul>
+				</div>
+
+				<h4>Что осталось от возражения — одно, и оно настоящее</h4>
+
+				<p>
+					Ref на элемент токена сегодня взять неоткуда: <code>Token.tsx:57</code> рендерит
+					<code>&lt;Component {...props}&gt;</code>, где <code>props</code> это <code>{value, meta}</code>.
+					Компоненты потребителя — чужие (<code>Mark: Tag</code> из Ant Design,
+					<code>Ant.stories.react.tsx:15</code>) или вовсе не создают элемента (<code
+						>Empty = () =&gt; null</code
+					>). Обёртка есть только вокруг <b>строки в блочном режиме</b> (<code>Block.tsx:31-33</code>) и
+					вокруг <b>детей слотовой метки</b> (<code>TokenChildren</code>, <code>display:contents</code>) —
+					вокруг метки в inline-режиме её нет.
+				</p>
+
+				<p>
+					Значит О2 требует либо собственной обёртки на токен — цена О1 без выгоды О1, — либо API-контракта на
+					проброс ref. Второе возможно, и тут верное наблюдение об <b>асимметрии</b>: текстовым спанам ref
+					нужен потому, что markput пишет туда <code>textContent</code> и ставит каретку, а метки потребитель
+					контролирует через <b>узел</b> — <code>useMark()</code> возвращает <code>MarkNode</code>, не
+					элемент. Но ядру элемент метки всё равно нужен: <code>ce=false</code>, разрешение клика через
+					<code>byElement</code> и обход хрома у слотовых меток.
+				</p>
+
+				<div class="box warn">
+					<p>
+						<span class="tag t-warn">Дублирование, которое стоит убрать в любом случае</span> Элемент строки
+						регистрируется <b>дважды</b>: компонент отдаёт его по ref (<code>Block.tsx:31-33</code> →
+						<code>blockStore.attachContainer</code>) и тот же элемент заново вычисляется позиционно обходом
+						(<code>bind.ts:173-185</code>). Живой остаток О2 — перевести на явную регистрацию то, чем
+						markput <b>уже владеет</b>: строки, хосты слотов, контролы.
+					</p>
+				</div>
+
+				<!-- О3 -->
+				<h3 id="o3">О3 — оставить и описать контракт</h3>
+
+				<p>
+					<b>Сдвиг шва:</b> никакого. После эксперимента это уже не «честный ответ», а нижняя граница: если
+					все три случая §7 окажутся настоящими, О6 схлопывается в О5, а О3 остаётся как есть.
+				</p>
+
+				<p>
+					Механизм отложенной повторной попытки <b>уже написан</b> — <code>DomModel.ts:173-176</code>: «a node
+					with no live handle simply declines, and the caret is placed by the
+					<code>tokens.changed</code> re-apply once the bind lands». Среди фреймворк-рисуемых редакторов это
+					по-прежнему лучший из известных ответов: Slate отвечает <b>исключением</b> в резолвере, с защёлкой
+					сбоку в четырёх местах, <code>suppressThrow</code> в пяти вызовах и голым try/catch.
+				</p>
+
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="tupiki">9. Тупики</h2>
+
+				<table>
+					<tr>
+						<th>Предложение</th>
+						<th>Вердикт</th>
+						<th>Доказательство</th>
+					</tr>
+					<tr>
+						<td><b>Ускорить парсер</b></td>
+						<td><span class="tag t-bad">не помогает</span></td>
+						<td>
+							Окно лежит <i>между</i> коммитом и <code>bind</code>; парс происходит <i>до</i> коммита, на
+							синхронной стороне. Исходное обоснование ветки инкрементального парсера не выполняется.
+						</td>
+					</tr>
+					<tr>
+						<td><b>Делать всё синхронно</b><br />(«условно синхронно, чтобы пользователь не заметил»)</td>
+						<td><span class="tag t-warn">верно, но не о том</span></td>
+						<td>
+							Скорость окно не закрывает: <code>EditController</code> пишет якоря
+							<i>внутри того же <code>batch</code></i
+							>, что и <code>apply</code>, и наблюдатель <code>SelectionDriver.ts:66-69</code> ставит
+							каретку <b>в том же обороте JS</b>. Даже нулевая задержка — уже следующий оборот. Обычный
+							<code>&lt;input&gt;</code> обходится без окна не потому что быстрый, а потому что браузер
+							владеет и значением, и теневым DOM и обновляет их атомарно. <b>Но</b> из этого
+							<i>не</i> следует, что преждевременную постановку надо запрещать — см.
+							<a href="#experiment">§7</a>: она безвредна.
+						</td>
+					</tr>
+					<tr>
+						<td><b>Батчить правки</b></td>
+						<td><span class="tag t-bad">уже сделано</span></td>
+						<td>
+							<code>foldDelta</code> сливает все правки внутри одного окна (<code>commit.ts:112</code>),
+							<code>EditController.replace</code> оборачивает запись в <code>batch</code>. Уменьшает
+							количество окон, не их существование.
+						</td>
+					</tr>
+					<tr>
+						<td><b>Асинхронный onChange</b></td>
+						<td><span class="tag t-bad">уже так</span></td>
+						<td>
+							В момент срабатывания <code>changed</code> окно уже закрыто на обоих путях: структурный
+							снимает флаг на <code>commit.ts:205</code> перед объявлением на <code>:206</code>; на
+							текстовом флаг не взводился. <b>Ни один подписчик <code>changed</code> окна не видит.</b>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<b>Признать <code>applyEditableState</code> рудиментом</b>
+						</td>
+						<td><span class="tag t-bad">уже удалено, но не это</span></td>
+						<td>
+							Механика <code>isUserSelecting</code> — проставлять <code>ce=false</code> всем хостам на
+							время выделения — существовала и <b>удалена целиком</b> миграцией на один хост (~64 строки +
+							14 ссылок в спеках). Нынешний <code>applyEditableState</code> — её <b>замена</b>,
+							переписанная тем же коммитом <code>9f824829</code>: механизм ADR-0002, делающий атомарность
+							метки контрактом.
+							<span class="src">one-host-migration.md:159-161</span>
+						</td>
+					</tr>
+					<tr>
+						<td><b>Удалить конвейер как есть</b></td>
+						<td><span class="tag t-bad">закрыто экспериментом</span></td>
+						<td>
+							<code>@handlewithcare/react-prosemirror</code> берёт ядро ProseMirror без изменений и
+							инвертирует владение DOM так, что рисует React — и защёлка, отказывающая закрыто,
+							<b>появляется там заново</b> (<code>viewDescRef.current</code> undefined до layout-эффекта
+							плюс <code>if (!viewDescRef.current) return</code>), вместе с ещё тремя понятиями markput.
+						</td>
+					</tr>
+				</table>
+
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="poryadok">10. Порядок работ</h2>
+
+				<ol>
+					<li>
+						<b>Закрыть три случая из <a href="#granica">§7</a> прицельными тестами</b> — переходная
+						постановка в координатах выжившей метки, якорь всплывашки, композиция. Это единственное, что
+						стоит между измерением и решением.
+					</li>
+					<li>
+						<b>О6 — удалить гейт.</b> Одна строка, один тест, объявленная смена поведения у
+						<code>OverlayController</code>. Следом проверить, не стал ли лишним ручной обход в
+						<code>blockEdit.ts:56</code>.
+					</li>
+					<li>
+						<b>Накопитель дельты → разность множеств.</b> Независимо от всего остального: ~60 строк из
+						<code>commit.ts</code>, ноль файлов адаптеров, ноль изменений публичных типов.
+						<code>docs/scratch/backlog/issues/28</code>.
+					</li>
+					<li>
+						<b>О4 — разрез интерфейса.</b> Чистая структурная правка; делает О1 подменой адаптера вместо
+						переписывания.
+					</li>
+					<li>
+						<b>Замер атомарности</b> — переживает ли <code>contenteditable=false</code> перенос на обёртку,
+						которой владеет ядро. ~30 строк браузерного теста: каретка не заходит внутрь, Backspace сносит
+						метку целиком, выделение перепрыгивает. Ответ закрывает и О1, и обёрточный О2.
+					</li>
+					<li>
+						<b>О1</b> — если замер зелёный и цена контракта приемлема. К этому моменту конвейер уже сильно
+						похудел, и решение принимается о меньшем.
+					</li>
+				</ol>
+
+				<!-- ══════════════════════════════════════════════ -->
+				<h2 id="speki">11. Закреплённые спеки</h2>
+
+				<p>Что покраснеет при нарушении. Это верификационный контракт любого из вариантов.</p>
+
+				<table>
+					<tr>
+						<th>Файл : строка</th>
+						<th>Что закрепляет</th>
+						<th>Кого касается</th>
+					</tr>
+					<tr>
+						<td><code>commitPipeline.spec.ts:208</code></td>
+						<td>холодный старт структурен, тихий до отрисовки, потом привязывает три поверхности</td>
+						<td>все</td>
+					</tr>
+					<tr>
+						<td><code>commitPipeline.spec.ts:275</code></td>
+						<td>
+							смена значения метки идёт по RENDER, ничего не добавляя и не удаляя; ручка всё ещё указывает
+							на старый элемент
+						</td>
+						<td>О1, О2</td>
+					</tr>
+					<tr>
+						<td><code>commitPipeline.spec.ts:301</code></td>
+						<td>ручка удалённого узла жива до отрисовки, мертва после</td>
+						<td>О2</td>
+					</tr>
+					<tr>
+						<td><code>commitPipeline.spec.ts:323</code></td>
+						<td>правка внутри окна сливается в ОДНО объявление</td>
+						<td>все</td>
+					</tr>
+					<tr>
+						<td><code>commitPipeline.spec.ts:350</code></td>
+						<td>один пропавший элемент отвязывает ВСЕ ручки</td>
+						<td>О2</td>
+					</tr>
+					<tr>
+						<td><code>commitPipeline.spec.ts:536</code></td>
+						<td>ручки держатся на НАРИСОВАННЫХ элементах, пока дерево ушло вперёд</td>
+						<td>О1, О2</td>
+					</tr>
+					<tr>
+						<td><code>commitPipeline.spec.ts:766</code></td>
+						<td><code>onRendered</code> без контейнера оставляет защёлку закрытой</td>
+						<td>все</td>
+					</tr>
+					<tr>
+						<td><code>commitPipeline.spec.ts:781</code></td>
+						<td>синхронный <code>onRendered</code> из подписчика <code>changed</code> падает громко</td>
+						<td>все</td>
+					</tr>
+					<tr>
+						<td><code>commitPipeline.spec.ts:828</code></td>
+						<td>структурная ветка сама лечит порчу поверхности</td>
+						<td>О2</td>
+					</tr>
+					<tr>
+						<td><code>TokenModel.spec.ts:242</code></td>
+						<td><code>handle(id)</code> отказывает закрыто в окне, потом снова отвечает</td>
+						<td>все</td>
+					</tr>
+					<tr>
+						<td><code>tree/markNode.spec.ts:367</code></td>
+						<td><code>update()</code> в окне УСПЕШЕН и подмешивается в ожидающий проход</td>
+						<td><b>жёсткое</b></td>
+					</tr>
+					<tr>
+						<td><code>tree/markNode.spec.ts:391</code></td>
+						<td>разрешение в окне читает живой узел и остаётся живым после привязки</td>
+						<td><b>жёсткое</b></td>
+					</tr>
+					<tr>
+						<td><code>valueBoundary.spec.ts</code> (id-проверки)</td>
+						<td>обе половины сверки эха</td>
+						<td>эхо — не трогать</td>
+					</tr>
+					<tr>
+						<td><code>renderCount.spec.ts</code></td>
+						<td>набор текста стоит ноль перерисовок компонентов</td>
+						<td>О1 (порталы!)</td>
+					</tr>
+					<tr>
+						<td><code>Overlay.spec.ts:217</code></td>
+						<td>каретка после метки, вставленной в СЕРЕДИНУ — в браузере, с настоящей перерисовкой</td>
+						<td><b>О6</b> — проходит без защёлки</td>
+					</tr>
+					<tr>
+						<td><code>TokenModel.spec.ts:242</code></td>
+						<td>единственный тест, закрепляющий защёлку; удаляется вместе с ней</td>
+						<td><b>О6</b> — единственная красная из 1467</td>
+					</tr>
+				</table>
+
+				<hr />
+
+				<p class="src">
+					Источники, помимо цитированного кода: <code>docs/adr/0001</code>, <code>0002</code>,
+					<code>0007</code>; <code>packages/core/src/features/tokens/README.md</code>; перепись конвейера
+					коммитов (42 ограничения) в
+					<code>~/.claude/projects/-Users-ruliny-Git-marked-input/artifacts/commit-pipeline-removal.md</code>;
+					обзор четырёх аналогов — ProseMirror, CodeMirror 6, Lexical, Slate.
+				</p>
+			</main>
+		</div>
+	</body>
+</html>
