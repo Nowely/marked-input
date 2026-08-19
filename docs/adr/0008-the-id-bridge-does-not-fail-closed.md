@@ -1,12 +1,3 @@
-# DRAFT — code landed on b0, not yet in a PR
-
-The change this records is implemented and green (all five checks). It is still a draft only
-because every ADR in `docs/adr/` ends with a `Full record: PR #NNN` pointer and this one has no PR
-yet. Move it to `docs/adr/0008-the-id-bridge-does-not-fail-closed.md` and fill the number when the
-PR opens.
-
----
-
 # The id bridge does not fail closed — absence is the only refusal
 
 `TokenModel.handle(id)` used to answer `undefined` for every id while a structural apply awaited its
@@ -29,7 +20,7 @@ after it, in Chromium with a real repaint.
 The latch also predates the topology that removed its blast radius. It first appears 2026-06-22
 (`39c721fe`, #267); the single contenteditable host is 2026-08-12 (`9f824829`, #274). Under N hosts a
 premature `placeCaret` called `focusIfNeeded` and one span stole focus from another, stack-proven in
-[`docs/records/one-host-migration.md`](../../records/one-host-migration.md). Under one host
+[`docs/records/one-host-migration.md`](../records/one-host-migration.md). Under one host
 `focusEditingHost` targets the container, which already holds focus, so a premature placement is a
 no-op or a transient the post-bind `tokens.changed` re-apply corrects in the same frame.
 
@@ -70,7 +61,24 @@ Explicitly unchanged, so this is not read as more than it is:
   answering from the painted DOM (decision S2 D4).
 - `renderEpoch`, `onRendered` and `bind`'s walk are untouched. **This does not remove the commit
   pipeline.** Those three are the invoice for framework-owned DOM and come off only by moving
-  ownership ([ADR-0007](../../adr/0007-row-identity-travels-with-the-row.md)).
+  ownership ([ADR-0007](0007-row-identity-travels-with-the-row.md)).
 
-Full record: PR #TBD. The long-form analysis, including the options this was chosen over, is
-[`architecture.html`](architecture.html).
+Full record: PR #285. The long-form analysis, including the options this was chosen over, is
+[`architecture.html`](../scratch/pending-window/architecture.html).
+
+## What has changed since, 2026-08-19
+
+The decision stands; three of the things this record calls unchanged have since moved, and are
+noted here rather than edited into the text above, which describes the state at the time.
+
+- **`pendingStructural` is gone.** It was deleted in the same PR this record points at, so the
+  "it STAYS, as commit routing" paragraph was already out of date when it was written.
+- **`renderEpoch` and `onRendered` are gone**, with the routing they served. A commit no longer
+  folds into a pending pass: each one announces and binds on its own, an effect on the commit
+  counter drives the whole-tree bind, and a token's own ref binds that token.
+- **There is therefore no window** for a caret to be requested inside. The two accepted costs that
+  depended on one — the mid-window caret at a surviving mark's boundary, and `OverlayController`
+  anchoring to the previous element — are no longer reachable that way.
+
+What this record decided is untouched by all three: the id bridge still answers whatever the node
+layer holds, absence is still the only refusal, and node writes are still ungated.

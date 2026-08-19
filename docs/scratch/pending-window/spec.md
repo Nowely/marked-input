@@ -9,8 +9,9 @@ seam map, the echo protocol and every option costed, is [`architecture.html`](ar
 ## Status — O6 has LANDED on b0 (uncommitted)
 
 The id gate is gone and `CommitPipeline.pending()` with it. All five checks green: 75 test files /
-1471 tests, build, typecheck, lint, format. The decision record is
-[`adr-draft-0008.md`](adr-draft-0008.md), waiting only on a PR number.
+1471 tests, build, typecheck, lint, format. The decision record shipped as
+[ADR-0008](../../adr/0008-the-id-bridge-does-not-fail-closed.md); its closing note records what has
+moved since, including the deletion of the window this whole spec is named after.
 
 Since then, and in the same style — delete, then measure — three more items landed: the delta
 accumulator became a set difference (backlog 28, closed), the delta ledger came out of `commit.ts`
