@@ -32,11 +32,15 @@ node and every DOM Range anchored in it. But no user ever sees that, because `Se
 re-places the caret after every commit and repairs it — probed in both adapters by forcing a
 replace-all mid-edit and watching the next commit put the caret back.
 
-The real cost is that the repair itself is unconditional, and it is the dominant per-keystroke
-work — measured at 1.84 ms of a 2.66 ms keystroke on a 42 KB document, growing linearly. It can
-only be made conditional once the DOM caret is already correct without it, and nothing can make it
-correct while the writer destroys the node the caret lives in. So the writer is a blocker, not a
-bug.
+An earlier draft claimed the unconditional repair is "the dominant per-keystroke work, 1.84 ms of
+a 2.66 ms keystroke". That is ALSO wrong and is corrected here rather than left standing: the
+figure came from a tight-loop benchmark, and against frame-paced typing the caret write is not the
+cost at all — a bare forced reflow costs the same, so the bill is the layout, and the layout
+happens once per frame whoever triggers it. See
+[`native-caret-motion/measurements.md`](../native-caret-motion/measurements.md).
+
+So the in-place Surface write earns its place on correctness, not speed: a DOM Range anchored in a
+Surface survives a commit instead of being orphaned. Nothing here is a latency argument.
 
 ## Solution
 
@@ -57,8 +61,8 @@ post-paint placement stops being an event subscription and becomes a `queueMicro
 schedules for itself, which lands after the framework's patch in both adapters.
 
 The Surface writer stops assigning `textContent` and edits the existing Text node in place through
-a minimal `Text.replaceData`, so a DOM Range anchored in a Surface survives a commit — which is
-what makes the unconditional caret re-place removable later.
+a minimal `Text.replaceData`, so a DOM Range anchored in a Surface survives a commit instead of
+being orphaned with pre-edit data.
 
 From the outside almost nothing changes: the same markup renders, the same value comes out, the
 same components mount, and the caret behaves exactly as it does today. What changes is two
@@ -70,8 +74,8 @@ published surfaces disappearing.
    around it changes, so that I do not have to re-find my place after every edit. (Already true;
    this spec must not regress it, and does not deliver it.)
 2. As a person typing in a long document, I want each keystroke to stay well inside a frame, so
-   that typing never feels behind my fingers — the caret re-place this unblocks is the dominant
-   cost, at 1.84 ms of a 2.66 ms keystroke on 42 KB.
+   that typing never feels behind my fingers. (Measured: it does, up to ~500 inline spans and at
+   every size tested in block layout. This spec does not change that either way.)
 3. As a person typing, I want the caret to be correct on the first frame after a structural edit,
    so that I never see it flicker to the wrong place and back.
 4. As a person selecting text with the mouse, I want a commit landing mid-drag not to collapse my
