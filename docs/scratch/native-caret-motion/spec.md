@@ -1,129 +1,111 @@
-# Let the browser move the caret on the common typing path
+# Let the browser move the caret on the common typing path — CLOSED
 
-Status: needs-triage
+Status: wontfix
 
-Reopens: [ADR-0006](../../adr/0006-beforeinput-guard.md)
+Reopened, then closed: [ADR-0006](../../adr/0006-beforeinput-guard.md) stands.
 
-## The finding that forces this
+## Verdict
 
-Measured on this branch, `packages/core/src/features/tokens/commitCost.bench.ts` and
-`caretCost.bench.ts`. At inline 1000 marks (42 KB, 2001 tokens) a keystroke decomposes as:
+**No.** The direction was proposed on the strength of one inference, and the inference was wrong.
+The guard stays fail-closed, and there is no latency argument left for changing it.
 
-| stage | cost |
+Kept as a record because the measurements behind it redirect a lot of other work.
+
+## How it got proposed
+
+`commitCost.bench.ts` measured a keystroke at inline 1000 marks (42 KB, 2001 tokens) at ~16-40 ms,
+of which the string splice, the full re-parse, adoption's O(document) suffix rewrite and the
+entire commit pipeline are **together ~0.74 ms — about 3%**. The other ~97% was the caret.
+
+`caretCost.bench.ts` then isolated the caret outside markput entirely. At 2000 spans a selection
+write costs ~80 ms after a DOM mutation and ~0.001 ms on clean layout, at every host size. It is
+not frequency (exactly one selection write per keystroke, counted), not locality (dirtying the
+caret's own surface costs the same as a far one), and not `contenteditable` (a plain host pays the
+same).
+
+That read as: the selection write forces a synchronous layout, so let the browser insert the
+character and move the caret inside its own pipeline instead.
+
+## Why it is wrong
+
+**The layout has to happen anyway.** The DOM changed, so it must be laid out before the next
+paint. If forcing it early only moves work the frame was going to do, handing the insertion to the
+browser changes nothing.
+
+Measured, `layoutCost.bench.ts` at 2000 spans:
+
+| after the same mutation | mean |
 | --- | --- |
-| string splice | 0.002 ms |
-| + full document re-parse | 0.41 ms |
-| + adopt, including the O(document) suffix rewrite | 0.55 ms |
-| + the whole commit pipeline | 0.74 ms |
-| **mounted keystroke** | **~16-40 ms** |
+| `selection.collapse` | 93.0 ms |
+| a bare forced reflow (`void host.offsetHeight`) | 89.4 ms |
+| nothing — layout left to the frame | 0.0003 ms |
 
-Everything the architecture work has been aimed at — the parse, adoption, the commit pipeline —
-is together **~3%** of a keystroke. It is not reachable as a performance problem at any document
-size a user will produce.
+A bare reflow costs what the selection write costs. **The bill is the layout, not the selection.**
+`Selection.collapse` is not doing anything special; it forces the layout any layout read would
+force, and the browser pays the same bill when it does the insertion itself.
 
-The remaining ~97% is one thing: **writing the selection forces a synchronous layout of the whole
-editing host.** Three follow-up measurements pin it down and close off the obvious remedies:
+## What the cost actually is
 
-- **It is not frequency.** Exactly one `removeAllRanges`/`addRange` pair runs per keystroke,
-  counted directly. There is nothing to deduplicate.
-- **It is not the write itself.** The same call on clean layout is 0.001 ms at 10 spans and at
-  2000. Only a write that follows a DOM mutation is expensive.
-- **It is not locality.** Dirtying the caret's own surface — what a keystroke does — costs the
-  same as dirtying one at the far end of the document (91 ms vs 72 ms at 2000 spans, one number
-  under the noise).
-- **It is not `contenteditable`.** A plain non-editable host pays the same (83 ms).
+Same 2000 spans, same mutation, same selection write, varying only how the spans are grouped:
 
-Two candidate fixes are already dead:
+| structure | mean | rme |
+| --- | --- | --- |
+| one flat inline context | 93.0 ms | ±30%, 10 samples |
+| 1 span per block | 0.285 ms | ±3.8%, 2457 samples |
+| 20 spans per block | 0.049 ms | ±2.2%, 14449 samples |
 
-- **Skip the write when the DOM already shows the target.** Built, measured, reverted. It cannot
-  help the typing path: typing genuinely moves the caret by one, so the DOM and the model
-  legitimately differ every time.
-- **Write the caret before the mutation, on clean layout.** Closed by the DOM's own range
-  adjustment rules, not by measurement. After inserting at the caret the wanted position is
-  *inside* the inserted text, and no pre-edit boundary maps there — a point at the insertion
-  offset does not move, and a point after it overshoots by the whole insertion.
+Three orders of magnitude. The whole cost is that inline layout puts the entire document in **one
+inline formatting context**, and editing one character reflows it wholesale. Nothing about markput
+is involved — it is a browser property of a flat inline run.
 
-One cheap win has already landed: `Selection.collapse` instead of `removeAllRanges` + `addRange`
-pays the forced layout once instead of twice, worth ~24% of a keystroke
-(`perf(core): place the caret with Selection.collapse instead of addRange`). That is the last
-improvement available without changing who moves the caret.
+This also explains a number that was sitting in plain sight: `commitCost.bench.ts` reads
+block-1000-rows at ~0.8 ms against inline-1000-marks at 16-40 ms **for the same token count**.
+Block layout already has the fix by construction, one block per Row.
 
-## What is left
+## Is there anything to do about it?
 
-Only this: **stop cancelling the input for the common case, and let the browser insert the
-character and move the caret itself.** The browser does that inside its own pipeline and never
-forces a synchronous layout from JS.
+Probably not, and deliberately so.
 
-This reopens ADR-0006, whose guard is fail-closed by design: the container is the one editing
-host, so any default the guard leaves standing edits DOM the model owns. That reasoning is sound
-and this proposal does not dispute it — it argues the exception is narrow enough to be stated
-exactly rather than left to a default.
+Chunking inline content into blocks is **not** available as a fix: a block box breaks the line,
+and an inline field has to flow as one paragraph. `display: inline-block` changes line breaking
+too. So the structural remedy that works for block layout does not transfer.
 
-## The narrow case
+But the shape it costs on is a **single 42 KB inline paragraph**, which no realistic inline field
+has. At 200 spans the flat arm is 0.62 ms. A mention input, a tag field, a formula line — none of
+them approach the size where this appears, and the mode that genuinely holds large documents is
+block layout, which is already ~50× cheaper.
 
-Let the browser handle a `beforeinput` only when **all** of these hold:
+So: no action. If a consumer ever does put a 42 KB single paragraph in an inline editor, the honest
+answer is that Chromium reflows an inline formatting context wholesale and markput cannot change
+that.
 
-- `inputType` is `insertText` with non-empty `data` — no deletes, no paste, no drop, no
-  composition, no `insertParagraph`
-- the selection is COLLAPSED
-- the caret sits inside a bound text Surface, not at a container boundary, not at a Mark edge
-- that Surface's token has no adjacent Mark whose markup the inserted character could complete
-- the editor is uncontrolled, or the controlled parent echoes verbatim (undecided — see below)
-- not block layout for the first cut
+## What this closes elsewhere
 
-Everything else keeps today's fail-closed path unchanged.
+- **ADR-0006 stands.** The fail-closed guard was never the cost.
+- **The conditional-guard idea** — do not cancel, but detect and repair afterwards — is a better
+  design than the predictive narrow-case list this file originally proposed, and it stays a good
+  idea on its own merits (it is also the only shape that could ever manage composition, which is
+  currently unhandled: zero `compositionstart` listeners in core). But it cannot be justified on
+  latency, because the latency is not there.
+- **EditContext** is not favoured on latency grounds either — a non-editable host pays the same
+  forced layout. Its case rests entirely on composition, on deleting the input guard, and on the
+  browser never mutating author DOM. Those are real, and they are unaffected by this.
+- **No work on the parser, adoption or the commit pipeline can be motivated by speed.** They are
+  ~3% of a keystroke. If they are worth changing it is for concept count (G2), which was ranked
+  above efficiency from the start — that argument should be made on its own and not borrow a
+  performance claim the measurements refute.
 
-## What the model then has to do
+## The one improvement that did land
 
-The browser writes into the Surface, which breaks the "exactly one writer per Surface" invariant
-for the duration of one input. So the model must, on the `input` event that follows:
+`Selection.collapse` instead of `removeAllRanges()` + `addRange()`, because the two-call form pays
+the forced layout twice. ~24% off a keystroke at 100 marks. See
+`perf(core): place the caret with Selection.collapse instead of addRange`.
 
-1. read the Surface's new text and reconcile the token from it, rather than splicing the value and
-   writing back
-2. NOT rewrite the Surface — the per-Surface effect must recognise the DOM is already correct and
-   skip, which the in-place writer already does (its comparison short-circuits an equal string)
-3. NOT write the selection — the browser has already moved it correctly
-4. still run the parse, because the inserted character may complete a markup and turn text into a
-   Mark; when it does, that commit falls back to the ordinary cancelled path and repaints
+## Cross-check pending
 
-Step 4 is the subtle one: the parse still has to run to decide whether a Mark was born, and the
-measurement says that is fine — the parse is 0.41 ms at 1000 marks and is not the problem.
-
-## Open questions, to be answered before any code
-
-1. **Does it actually avoid the cost?** This is a browser-behaviour claim and must be measured
-   before it is built: does an uncancelled `insertText` in a 2000-span host cost what the cancelled
-   path costs? The harness for this exists (`caretCost.bench.ts`).
-2. **Controlled mode.** The parent may reject or transform the value, but the browser has already
-   written it. Reverting means rewriting the Surface and the caret — paying exactly the cost this
-   change exists to avoid, plus a visible flicker. Possibly this exception applies only to
-   uncontrolled editors.
-3. **What does the browser do at a Surface's edges?** Typing at offset 0 or at the end of a
-   Surface adjacent to a Mark may insert into the neighbouring node, or split it. The guard's
-   condition list above must be proven against real Chromium behaviour, not assumed.
-4. **Undo.** Letting the browser edit puts entries in the native undo stack that the model does
-   not know about, which is a behaviour the repo has never defined either way.
-5. **Is EditContext the better shape for the same idea?** It gives the same property — the browser
-   moves the caret and never mutates author DOM — without a per-input exception list, and it also
-   closes the composition hole. But it is a much larger change and carries its own prices
-   (spellcheck lost by spec, Firefox/Safari hard break, IME display becomes core's job). The
-   measurement here does **not** favour EditContext on latency grounds: a non-editable host pays
-   the same forced layout. It favours it only because the browser owns caret motion.
-
-## Recommendation
-
-Answer question 1 first. It is a bench, not a build, and if an uncancelled `insertText` does not
-avoid the layout then this whole direction closes and the honest conclusion is that a large
-document simply costs what it costs under framework-owned DOM.
-
-If it does avoid it, the exception is worth specifying properly — and question 5 should be
-settled at the same time, because building the exception list and then replacing it with
-EditContext six months later would be the expensive order.
-
-## What this does NOT justify
-
-The parse, adoption's suffix rewrite, and the commit pipeline are ~3% of a keystroke. No work on
-any of them can be motivated by latency. If they are worth changing it is for concept count (G2),
-which is what the maintainer ranked above efficiency in the first place — and that motivation
-should be stated on its own rather than borrowing a performance argument the measurements do not
-support.
+An independent measurement run was in flight when this was written: a markput-free A/B of native
+versus cancelled typing, a CDP `LayoutCount`/`LayoutDuration` count per path, and a spike that
+actually lets `insertText` through in markput. Its purpose was to answer this same question by
+other instruments. If it contradicts the table above — in particular if it finds the cancelled
+path lays out **more times** per keystroke than the native one — this verdict has to be revisited,
+because that is the one mechanism under which the direction would still pay.
