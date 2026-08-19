@@ -413,7 +413,7 @@ describe('TokenModel shell (seam/)', () => {
 		})
 
 		it('selectRange spans two text surfaces and the reads see the selection', () => {
-			const {model, text1} = mountNewInline()
+			const {model} = mountNewInline()
 
 			expect(model.selectRange(model.anchorAt(0), model.anchorAt(9))).toBe(true)
 			const range = model.domSelection()?.range
@@ -426,35 +426,8 @@ describe('TokenModel shell (seam/)', () => {
 				offset: 3,
 			})
 			expect(model.domSelection()?.anchor.isCollapsed).toBe(false)
-			expect(model.domSelection()?.intersects(text1)).toBe(true)
 			const content = model.selectedContent()
 			expect(content?.text).toContain('he')
-		})
-	})
-
-	describe('editable state', () => {
-		it('setEditable writes the container host', () => {
-			// The ONE editing host is the container, so the manual override is one attribute
-			// write on it — not a sweep over bound surfaces, which carry no editability of
-			// their own. `editable && !readOnly`, so the third call is the readOnly veto.
-			const {model, container} = mountNewInline()
-
-			model.setEditable({editable: false, readOnly: false})
-			expect(container.getAttribute('contenteditable')).toBe('false')
-
-			model.setEditable({editable: true, readOnly: false})
-			expect(container.getAttribute('contenteditable')).toBe('true')
-
-			model.setEditable({editable: true, readOnly: true})
-			expect(container.getAttribute('contenteditable')).toBe('false')
-		})
-
-		it('setEditable is a no-op while unmounted', () => {
-			// The mount guard is the whole case: there is no host to write, and without it the
-			// write reaches `null.contentEditable` and throws.
-			const {model} = createNew(INLINE_PROPS)
-
-			expect(() => model.setEditable({editable: true, readOnly: false})).not.toThrow()
 		})
 	})
 })

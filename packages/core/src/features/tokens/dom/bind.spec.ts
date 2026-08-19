@@ -68,7 +68,6 @@ function consignFrom(
 type BindOverrides = {
 	nodes?: Map<number, TokenHandle>
 	byElement?: WeakMap<HTMLElement, TokenHandle>
-	controlElements?: Set<HTMLElement>
 	consigned?: Map<number, HTMLElement>
 	rows?: Map<number, HTMLElement>
 	childSequenceHostsFor?: (ownerId: number) => readonly HTMLElement[]
@@ -79,11 +78,9 @@ function inputFor(container: HTMLElement, roots: readonly TreeNode[], overrides:
 	const consigned = overrides.consigned ?? consignFrom(container, roots, childSequenceHostsFor)
 	const rows = overrides.rows ?? new Map<number, HTMLElement>()
 	return {
-		container,
 		roots,
 		nodes: overrides.nodes ?? new Map<number, TokenHandle>(),
 		byElement: overrides.byElement ?? new WeakMap<HTMLElement, TokenHandle>(),
-		controlElements: overrides.controlElements ?? new Set<HTMLElement>(),
 		source: {
 			tokenElement: id => consigned.get(id),
 			rowElement: id => rows.get(id),
@@ -339,23 +336,6 @@ describe('bind', () => {
 
 			expect(at(result, roots, 0)?.node()?.childSequenceHost).toBeUndefined()
 			expect(at(result, roots, 0, 0)?.element()).toBe(childEl)
-		})
-
-		it('returns controlRoots including controls and their ancestors up to container', () => {
-			const container = document.createElement('div')
-			const wrapper = document.createElement('div')
-			const control = document.createElement('button')
-			const tokenEl = document.createElement('span')
-			wrapper.append(control)
-			container.append(wrapper, tokenEl)
-
-			const {roots} = treeOf([textToken('hi', 0)])
-
-			const result = bindOf(inputFor(container, roots, {controlElements: new Set([control])}))
-
-			expect(result.controlRoots.has(control)).toBe(true)
-			expect(result.controlRoots.has(wrapper)).toBe(true)
-			expect(result.controlRoots.has(container)).toBe(false)
 		})
 
 		it('ignores a child-sequence host registered outside its owner mark element', () => {

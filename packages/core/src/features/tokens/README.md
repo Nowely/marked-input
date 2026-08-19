@@ -37,7 +37,8 @@ that imports both. There is no upward edge: `dom/commit.ts` takes the
 | `TokenHandle` (`dom/TokenHandle.ts`) | the DOM BINDING — element refs and the text effect   | no — plain field reads                            | the same `id`, keyed in the `nodes` map |
 
 `TreeNode` is the store. `TokenHandle` is a view over one node's DOM. They share
-an id and nothing else, and the split is what makes the pending window safe.
+an id and nothing else, and the split is what lets the tree move ahead of a DOM
+the framework has not repainted yet.
 
 ## The tree (`tree/`)
 
@@ -158,11 +159,14 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   cost a whole-tree walk: mounting an N-node document measured 2N+2 binds through
   both adapters and 678 ms at 2001 nodes. `rebind(id)` is that id's share of the
   walk; the whole walk stays on the commit clock, where the kill sweep needs it.
-- **The bind effect subscribes to two things**, `commits` and the control
-  registrations — NOT the live roots. Every write of `tree.roots` is adoption's,
-  inside a commit that ends in `apply`, so subscribing to both bound twice for one
-  commit. Controls are separate because their only reader is a walk from each
-  control up to the container, which nothing per-id can update.
+- **The bind effect subscribes to ONE thing**, `commits` — not the live roots.
+  Every write of `tree.roots` is adoption's, inside a commit that ends in `apply`,
+  so subscribing to both bound twice for one commit.
+- **A control registration binds nothing.** `dom/controlRoots.ts` owns which
+  elements sit under control chrome and updates in place, because that answer is a
+  DOM walk from each control up to the host and touches no token. It used to be
+  recomputed inside every bind, which made a block mount quadratic — block layout
+  registers up to four controls per ROW.
 - **Text is not the pipeline's business.** `bind` arms
   `effect(() => { const t = node.text(); if (el.textContent !== t) el.textContent = t })`
   per bound text surface; the handle owns its disposal. That is the ONE writer of
@@ -174,14 +178,10 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   generation's elements and the commit's bind re-projects onto those — it cannot
   invent a layout nobody painted. A node BORN by the commit simply has no handle
   until its own ref fires, which was always the refusal that mattered (ADR-0008).
-- **The announcement is DERIVED, not maintained** (`delta.ts`). The ledger holds
-  the announced id space and the touched ids and answers
-  `added = ids \ announced`, `removed = announced \ ids`,
-  `updated = touched ∩ ids ∩ announced`, where `ids` is the flattened tree
-  `bind` already walks (`BindResult.ids`). The text path takes
-  `announceUnchanged()` instead, whose precondition is checkable: `render` is
-  `structural || …` and `structural` is add-or-remove, so that branch moved no
-  ids. Array ORDER is unspecified and no consumer may depend on it.
+- **The announcement carries no payload.** There is no ledger and no delta: both
+  clocks are bare events, and a consumer that wants to know what moved re-reads
+  `nodes()` and `find()`. Deriving a delta cost a module of its own and nothing in
+  core read it.
 - **bind projects the LIVE tree (`deps.roots()`):** a text commit does not wake
   the renderer, so a re-render arriving afterwards — any unrelated adapter update
   — must bind the current tree, not regress the node layer and the DOM text to
@@ -256,7 +256,7 @@ replaceBetween(from, to, text) / setValue(text) / applyText(node, range, text) /
 
 // tree reads, in tree coordinates
 valueBetween(from, to) / adjacentMark(anchor, ±1) / step(anchor, ±1)
-rootIndexOf(id) / siblingOf(id, ±1)
+rootIndexOf(id)
 
 // renderer contract (adapter-only)
 consign(id) / consignRow(id) / children(ownerId) / control() // ref callbacks; a ref IS the bind
@@ -284,16 +284,14 @@ focusFirst() / placeAtHandle(handle, boundary?)
 // consumer is the selection state in `tree/selection.ts` (isAllSelected).
 anchorAt(offset)
 
-// adapter refs
-control() / children(ownerId) // ref callbacks
+// whole-value entry into a row, so a caller never forms an absolute offset
+setValueEnteringRoot(text, rootIndex)
 ```
 
-`setEditable({editable, readOnly})` is the MANUAL override of the one editing
-host: it writes `container.contentEditable` from `editable && !readOnly`, and is
-a no-op while unmounted. Nothing in core calls it — `props.readOnly` owns the
-same attribute through the driver's `{immediate: true}` watch, so the next
-readOnly change (and every re-mount) overwrites whatever it wrote. It is not part
-of the consumer-facing reading surface above.
+There is no manual editable-state override. `setEditable` used to be one, and had
+no caller anywhere: `props.readOnly` owns the container's `contenteditable`
+through the driver's `{immediate: true}` watch, so the next readOnly change (and
+every re-mount) overwrote whatever it wrote.
 
 Nothing is published before a container mounts: `nodes()` is `[]` and facade
 reads fail soft. That ordering is load-bearing rather than incidental — because
@@ -387,8 +385,8 @@ and they are what the public API (and the text effect) subscribes to.
   (`tokenElement`/`textElement`/`rowElement`/`childSequenceHost`).
 
 There is no per-node `dirty` signal, and no event surface: a handle does not
-emit `text`/`moved`/`unmounted`. Consumers detect change through the model's
-`changed` event and re-read.
+emit `text`/`moved`/`unmounted`. Consumers detect change through `committed` —
+published as `api.changed` — and re-read.
 
 ### Measurement (over the bound elements, row scope in block layout)
 
@@ -441,8 +439,8 @@ itself, so a patch that names only `value` round-trips the current `meta` and th
 current slot text.
 
 The adapter hook resolves the node by id per access, so it tracks text-path
-commits without re-capture, and the pending window is what makes a mid-window
-write fail closed rather than act on a tree the DOM never showed.
+commits without re-capture. A node BORN by a commit has no handle until its own
+ref fires, and that absence is the whole of the refusal (ADR-0008).
 
 ## Selection
 

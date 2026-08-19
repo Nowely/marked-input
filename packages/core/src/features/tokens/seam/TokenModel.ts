@@ -1,15 +1,19 @@
 import type {DomRef} from '../../../shared/editorContracts'
 import {batch, computed, effect, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
+import {shallow} from '../../../shared/utils/shallow'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
 import {createCommitPipeline} from '../dom/commit'
+import {createControlRoots} from '../dom/controlRoots'
+import type {ControlRoots} from '../dom/controlRoots'
 import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
 import type {SelectionSnapshot} from '../dom/DomModel'
 import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
+import type {Markup} from '../parser/types'
 import {adjacentMark as findAdjacentMark, anchorAt as anchorAtOffset, offsetOfAnchor, stepAnchor} from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
@@ -17,7 +21,7 @@ import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
 import {entryAnchor, mergePlan, movePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
-import {createTokenTree, findNode, rootIndexOf, siblingOf, sliceNodes} from '../tree/tree'
+import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkNode, NodeAnchor, TextNode, TreeCommands, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 
@@ -108,9 +112,14 @@ export class TokenModel {
 
 	/**
 	 * Ref callback for a control element (e.g. overlay, drag handle). Registration is
-	 * ELEMENT-ONLY: the sole reader is `#controlElements`, which feeds bind's
-	 * `computeControlRoots` — a walk from each control up to the container. Nothing ever
-	 * asks which token owns a control.
+	 * ELEMENT-ONLY — nothing ever asks which token owns a control — and it goes straight into
+	 * {@link ControlRoots}, which owns the membership the locate walk reads.
+	 *
+	 * NO BIND, and that is the whole shape of it. A control used to invalidate a counter the bind
+	 * effect watched, so one ref cost a whole-tree walk on the argument that controls are rare.
+	 * They are not: block layout mounts up to four per ROW — two drop indicators, a drag handle
+	 * and a menu — so that made a block mount quadratic, measured at 400 rows / 400 binds / 93 ms.
+	 * A control's ancestor chain is a pure DOM walk that touches no token, so it updates in place.
 	 *
 	 * REGISTRATION is also where the control leaves the editing host: a control is chrome,
 	 * not document content, so inside the one contenteditable container it must be atomic
@@ -120,18 +129,16 @@ export class TokenModel {
 	 * until some unrelated commit happened to repaint.
 	 */
 	control(): DomRef {
-		const key = {}
+		let registered: HTMLElement | undefined
 		return element => {
 			if (element) {
 				element.contentEditable = 'false'
-				this.#pendingControls.set(key, element)
-			} else {
-				this.#pendingControls.delete(key)
+				registered = element
+				this.#controlRoots.add(element)
+			} else if (registered) {
+				this.#controlRoots.remove(registered)
+				registered = undefined
 			}
-			// Controls feed `computeControlRoots`, which only a whole bind recomputes — so unlike
-			// the owner-keyed registries this one still wakes the effect, or a control mounted off
-			// the commit clock (a menu opening on a block-store signal) leaves the roots stale.
-			this.#controlRegistrations(this.#controlRegistrations() + 1)
 		}
 	}
 
@@ -157,12 +164,11 @@ export class TokenModel {
 	 * the painted DOM in lockstep with the tree. The framework held this element a moment before
 	 * it painted it; consigning it is that association pushed instead of re-discovered.
 	 *
-	 * INERT for now, and deliberately so. Nothing reads either registry yet: this step exists to
-	 * carry the ref plumbing and the contract change on its own, so the walk's deletion is a
-	 * separate, separately revertible step. See `docs/scratch/consigned-surfaces/spec.md`.
+	 * THE element source: `bind` and `rebind` both read this registry and nothing else, and the
+	 * DOM walk that used to re-derive the same pairing is gone.
 	 *
-	 * Keyed per REGISTRATION like {@link children}, with the owner's stable id in the VALUE, so a
-	 * ref that outlives a re-render cannot be filed under a stale key.
+	 * Keyed by owner id, then per REGISTRATION like {@link children}, so a ref that outlives a
+	 * re-render cannot be filed under a stale key and one id's element is one lookup.
 	 */
 	consign(id: number): DomRef {
 		const key = {}
@@ -322,11 +328,6 @@ export class TokenModel {
 		return untracked(() => rootIndexOf(this.#tree.roots(), id))
 	}
 
-	/** The node's previous (-1) or next (+1) sibling within its OWN parent's child list. */
-	siblingOf(id: number, direction: -1 | 1): TreeNode | undefined {
-		return untracked(() => siblingOf(this.#tree.roots(), id, direction))
-	}
-
 	/**
 	 * A global offset → the node anchor at it (right affinity). THE offset→anchor direction
 	 * for the selection write path.
@@ -393,25 +394,6 @@ export class TokenModel {
 		return this.#dom.selectRange(anchor, head)
 	}
 
-	/**
-	 * THE manual override of the container's editable state — `editable && !readOnly`, one
-	 * attribute on the ONE editing host. No-op while unmounted.
-	 *
-	 * NOT authoritative: `props.readOnly` owns the same attribute through the driver's
-	 * `{immediate: true}` watch, so the next readOnly change (and every re-mount) overwrites
-	 * whatever was written here. It is an imperative escape hatch, not state, and core calls
-	 * it nowhere.
-	 *
-	 * `untracked` for {@link DomModel.anchorFor}'s reason: this is a COMMAND, and a caller
-	 * that happens to invoke it from a reactive scope must not subscribe that scope to the
-	 * container signal.
-	 */
-	setEditable(options: {editable: boolean; readOnly: boolean}): void {
-		const container = untracked(() => this.host.container())
-		if (!container) return
-		container.contentEditable = options.editable && !options.readOnly ? 'true' : 'false'
-	}
-
 	// ═══ Wiring ═══════════════════════════════════════════════════════════════
 
 	constructor(
@@ -419,6 +401,10 @@ export class TokenModel {
 		private readonly host: Host
 	) {
 		host.onMounted(() => {
+			// FIRST, because the container is the walk's stop condition: a control registered
+			// before one attached marked nothing, and a container SWAP invalidates every chain
+			// marked against the previous host.
+			this.#controlRoots.rebuild()
 			// Order matters: the immediate arrival seeds the pipeline, so the bind effect
 			// installed right after can bind a pre-built DOM — the shell is live once the
 			// container attaches.
@@ -450,24 +436,25 @@ export class TokenModel {
 			// come through here at all — {@link consign} calls `rebind(id)` straight away — which
 			// is what keeps a mount linear.
 			//
-			// It subscribes to exactly two things: the commit counter and the control
-			// registrations. The commit counter is there so that a commit which moves no element
-			// still binds, which keeps `bound` a clock every commit reaches and keeps the caret's
-			// post-commit re-place; the controls are there because their only reader is a
-			// whole-container walk that nothing per-id can update.
+			// It subscribes to ONE thing, the commit counter — so that a commit which moves no
+			// element still binds, which keeps `bound` a clock every commit reaches and keeps the
+			// caret's post-commit re-place.
 			//
 			// NOT the roots, deliberately, and it is not a gap: every write of `tree.roots` is
 			// adoption's, inside a commit that ends in `apply`. Subscribing to both made a
 			// structural commit bind TWICE — adoption's batch closes and flushes the effect, then
 			// `apply` bumps the counter and flushes it again — for one commit's worth of change.
 			//
-			// Everything the projection itself reads — `children()`, `text()`, every node signal
-			// `bind` touches — is read inside `bind`'s own `untracked`, so an unrelated text edit
-			// cannot wake it. That precision is the whole risk of this shape, and it is pinned by
-			// `TokenModel.bindEffect.spec.ts`.
+			// Everything the projection itself reads is read inside `bind`'s own `untracked`, and
+			// this `untracked` is a second boundary over `bindNow`'s container read. NEITHER is
+			// pinned by a test, and that is stated rather than implied: removing either one leaves
+			// the suite green, because the only node signals the walk reads are `children()`
+			// (written by adoption, inside a commit that wakes the effect anyway) and `text()`
+			// (read inside the per-surface effect, which is its own subscriber). They are
+			// correct-by-construction boundaries. What IS pinned — one bind per commit, one rebind
+			// per ref — is in `TokenModel.bindEffect.spec.ts`.
 			effect(() => {
 				this.#pipeline.commits()
-				this.#controlRegistrations()
 				untracked(() => this.#pipeline.bindNow())
 			})
 		})
@@ -492,12 +479,31 @@ export class TokenModel {
 
 	// ─── internals ─────────────────────────────────────────────────────────────
 
-	readonly #parser: Computed<Parser | undefined> = computed(() => {
+	/**
+	 * The markups, compared SHALLOWLY, and that is the whole point of splitting them out.
+	 *
+	 * `props.options` is a plain signal with no equality, so a fresh-but-identical array — which
+	 * is what an inline `options={[…]}` prop produces on every parent render, and what Vue's
+	 * `syncProps` allocates unconditionally on a watch that depends on `props.value` — used to
+	 * propagate all the way here and mint a new `Parser`. Descriptors are interned PER PARSER and
+	 * `adopt` pairs marks on `candidate.descriptor === token.descriptor`, so every mark fell to
+	 * `buildNode` and took a NEW ID: a full remount of every Mark in both adapters plus the loss
+	 * of `BlockController`'s node-keyed per-row state, on every keystroke of a controlled Vue
+	 * editor. Gated by `TokenModel.parse.spec`'s "a fresh but identical `options` array".
+	 */
+	readonly #markups: Computed<(Markup | undefined)[]> = computed(() => this.props.options().map(opt => opt.markup), {
+		equals: shallow,
+	})
+
+	/** Whether ANY mark component is configured — the parser is pointless without one. */
+	readonly #hasMark: Computed<boolean> = computed(() => {
 		const Mark = this.props.Mark()
-		const options = this.props.options()
-		const hasMark = Mark != null || options.some(opt => 'Mark' in opt && opt.Mark != null)
-		if (!hasMark) return
-		const markups = options.map(opt => opt.markup)
+		return Mark != null || this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
+	})
+
+	readonly #parser: Computed<Parser | undefined> = computed(() => {
+		if (!this.#hasMark()) return
+		const markups = this.#markups()
 		if (!markups.some(Boolean)) return
 		return new Parser(markups)
 	})
@@ -723,6 +729,13 @@ export class TokenModel {
 		this.#onExternalValue(this.props.value())
 	}
 
+	/**
+	 * Control chrome's DOM membership. Not a registry beside the other three: nothing here is
+	 * keyed by a token, and the only question ever asked of it is whether an element sits under a
+	 * control — so it owns its own answer instead of being recomputed by a walk that has a tree.
+	 */
+	readonly #controlRoots: ControlRoots = createControlRoots(() => untracked(() => this.host.container()))
+
 	/** THE live node layer, keyed by stable token id — mutated only through the pipeline. */
 	readonly #nodes = new Map<number, TokenHandle>()
 
@@ -730,7 +743,7 @@ export class TokenModel {
 		container: () => this.host.container(),
 		nodes: this.#nodes,
 		roots: () => this.#tree.roots(),
-		controlElements: () => this.#controlElements(),
+		controlRoots: this.#controlRoots,
 		source: {
 			tokenElement: id => this.#tokenElements.latest(id),
 			rowElement: id => this.#rowElements.latest(id),
@@ -764,18 +777,6 @@ export class TokenModel {
 	readonly #tokenElements = new RefRegistry()
 	readonly #rowElements = new RefRegistry()
 	readonly #childSequenceHosts = new RefRegistry()
-	/**
-	 * Controls are ELEMENT-ONLY — nothing ever asks which token owns one — so they keep a flat
-	 * registry and, alone among the registries, an observable counter: their only reader is
-	 * `computeControlRoots`, a walk from each control up to the container that a whole bind
-	 * recomputes. There is no per-id work to do for one, and there are never many.
-	 */
-	readonly #pendingControls = new Map<object, HTMLElement>()
-	readonly #controlRegistrations = signal({initial: 0})
-
-	#controlElements(): ReadonlySet<HTMLElement> {
-		return new Set(this.#pendingControls.values())
-	}
 }
 
 /**

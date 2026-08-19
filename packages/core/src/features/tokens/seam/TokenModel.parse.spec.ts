@@ -161,5 +161,45 @@ describe('TokenModel', () => {
 			expect(shifted.id).toBe(markKey)
 			expect(shifted.range()).toEqual({start: 3, end: 7})
 		})
+
+		it('a fresh but identical `options` array keeps every node and every id', () => {
+			// THE gate this file was missing, and the defect is invisible without it: `options`
+			// is a plain signal, so a new array with the same contents propagates, mints a new
+			// `Parser`, and descriptors are interned PER PARSER — `adopt` pairs marks only on
+			// `candidate.descriptor === token.descriptor`, so every mark falls to `buildNode` and
+			// takes a new id. Both adapters key on `node.id` and `BlockController` holds per-row
+			// state in a node-keyed WeakMap, so that is a full remount of every Mark plus lost
+			// row state.
+			//
+			// A consumer cannot avoid it: React's props sync has no dep array, and Vue's
+			// `syncProps` allocates a fresh options array on every run of a watch whose deps
+			// include `props.value` — so a controlled Vue editor tripped this on every keystroke.
+			const Mark = () => null
+			store.props.set({Mark, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.host.container(document.createElement('div'))
+			const before = store.tokens.nodes()
+			const ids = before.map(node => node.id)
+
+			// Same content, new array and new option objects — what an inline prop produces.
+			store.props.set({Mark, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+
+			const after = store.tokens.nodes()
+			expect(after.map(node => node.id)).toEqual(ids)
+			// Node IDENTITY, not just the ids: an adapter keyed on the id would be fooled by a
+			// fresh node that happened to be numbered the same.
+			expect(after[1]).toBe(before[1])
+		})
+
+		it('a CHANGED markup still re-parses', () => {
+			// The other half of the gate above: memoizing the parser must not make it deaf.
+			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.host.container(document.createElement('div'))
+			expect(store.tokens.nodes()).toHaveLength(3)
+
+			store.props.set({Mark: () => null, options: [{markup: '#[__value__]'}], defaultValue: 'he@[x]llo'})
+
+			// '@[x]' is no longer a markup, so the whole value is one text token.
+			expect(store.tokens.nodes()).toHaveLength(1)
+		})
 	})
 })

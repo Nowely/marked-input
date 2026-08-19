@@ -5,11 +5,9 @@ import {TokenHandle} from './TokenHandle'
 import type {ElementBindings} from './TokenHandle'
 
 /**
- * The structural DOM walk of the one commit pipeline: zip the freshly rendered
- * DOM with the LIVE token tree and project the result onto the live node layer.
- * Adapted from buildIndex (same frame/stack walk, same all-or-nothing
- * alignment), but instead of building throwaway records it mutates the
- * id-keyed handle map in place:
+ * The whole-tree projection of the one commit pipeline: pair the LIVE token tree with what the
+ * adapters consigned and write the result onto the live node layer. It mutates the id-keyed
+ * handle map in place rather than building throwaway records:
  *
  * - indexed node, known id    → `bindElements(...)` (re-arming the text effect)
  * - indexed node, new id      → `new TokenHandle` + bind
@@ -58,10 +56,8 @@ export type BindTarget = {
 }
 
 export type BindInput = BindTarget & {
-	container: HTMLElement
 	/** The live root nodes the renderer just painted. */
 	roots: readonly TreeNode[]
-	controlElements: ReadonlySet<HTMLElement>
 }
 
 /**
@@ -73,7 +69,6 @@ export type BindInput = BindTarget & {
  * the DOM missed and deletes only ids absent from the tree.
  */
 export type BindResult = {
-	controlRoots: WeakSet<HTMLElement>
 	/**
 	 * The flattened tree by id, so a later single-id rebind does not have to search for its node.
 	 * Rebuilt here because the walk already flattens; a `find(id)` per ref would put the whole
@@ -83,7 +78,7 @@ export type BindResult = {
 }
 
 export function bind(input: BindInput): BindResult {
-	const {container, roots, nodes, byElement, controlElements} = input
+	const {roots, nodes, byElement} = input
 
 	// `untracked` for the reason adoption documents: the walk below reads `children()`
 	// and the text effects read `text()`, and a caller inside an effect or computed must
@@ -95,8 +90,6 @@ export function bind(input: BindInput): BindResult {
 		// Depth-first flatten, before any mutation.
 		const tree: TreeNode[] = []
 		collectTree(roots, tree)
-
-		const controlRoots = computeControlRoots(container, controlElements)
 
 		// The live id space, used below to decide which handles die. Built from the flattened
 		// TREE rather than from what was consigned: a token whose element has not arrived is
@@ -118,7 +111,7 @@ export function bind(input: BindInput): BindResult {
 			}
 		})
 
-		return {controlRoots, nodeById}
+		return {nodeById}
 	})
 }
 
@@ -194,8 +187,8 @@ function collectTree(nodes: readonly TreeNode[], out: TreeNode[]): void {
  * The element bindings of one generation, taken from what the adapters CONSIGNED rather than
  * derived by walking the painted DOM.
  *
- * This replaced a frame/stack walk that zipped each sibling list against its DOM children and
- * bailed a whole frame on a count mismatch. Nothing in that walk was knowledge the framework did
+ * This replaced a frame/stack walk over the painted DOM that zipped each sibling list against
+ * its element children and bailed a whole frame on a count mismatch. Nothing in that walk was knowledge the framework did
  * not already hold, and pairing by COUNT was actively wrong in one measured case: when a
  * consumer's Mark renders its slot as a string instead of rendering `children`, the inner tokens
  * are never rendered at all and the walk still paired them with whatever element sat at the same
@@ -249,16 +242,4 @@ function applyMountState(bindings: ElementBindings, previous: ElementBindings | 
 	const sameHost = previous?.childSequenceHost === bindings.childSequenceHost
 	if (sameRoot && sameHost) return
 	applyEditableState(bindings)
-}
-
-function computeControlRoots(container: HTMLElement, controlElements: ReadonlySet<HTMLElement>): WeakSet<HTMLElement> {
-	const roots = new WeakSet<HTMLElement>()
-	for (const ctrl of controlElements) {
-		let el: HTMLElement | null = ctrl
-		while (el && el !== container) {
-			roots.add(el)
-			el = el.parentElement
-		}
-	}
-	return roots
 }
