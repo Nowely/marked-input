@@ -17,6 +17,10 @@ Kept as a record because the measurements behind it redirect a lot of other work
 of which the string splice, the full re-parse, adoption's O(document) suffix rewrite and the
 entire commit pipeline are **together ~0.74 ms — about 3%**. The other ~97% was the caret.
 
+(Those absolutes are tight-loop figures and read 2-4× high; see
+[measurements.md](measurements.md). The ~3% share is unaffected, and it is the part that matters
+here.)
+
 `caretCost.bench.ts` then isolated the caret outside markput entirely. At 2000 spans a selection
 write costs ~80 ms after a DOM mutation and ~0.001 ms on clean layout, at every host size. It is
 not frequency (exactly one selection write per keystroke, counted), not locality (dirtying the
@@ -78,9 +82,16 @@ has. At 200 spans the flat arm is 0.62 ms. A mention input, a tag field, a formu
 them approach the size where this appears, and the mode that genuinely holds large documents is
 block layout, which is already ~50× cheaper.
 
-So: no action. If a consumer ever does put a 42 KB single paragraph in an inline editor, the honest
-answer is that Chromium reflows an inline formatting context wholesale and markput cannot change
-that.
+So: no action — but the boundary is now known rather than guessed. Measured by frame interval
+while typing one character per frame ([measurements.md](measurements.md)), flat inline is perfectly
+smooth to **~500 spans** (0 of 69 frames over 20 ms) and starts dropping frames from **~1000**
+(19 of 69). At 2000 it drops 57 of 69; at 6000 every frame takes 91 ms. Grouped into blocks the
+same documents never drop a frame, up to 20 000 spans.
+
+A mark contributes roughly two tokens, so an inline field is comfortable to a few hundred marks.
+Beyond that the honest answer is that Chromium reflows an inline formatting context wholesale and
+markput cannot change it — and that block layout, which already renders one block per Row, does not
+pay it at any size.
 
 ## What this closes elsewhere
 
@@ -105,7 +116,7 @@ the forced layout twice. A/B'd by reverting the one line, five runs on an idle m
 a whole keystroke**, and the same figure at inline 100 marks (0.333 → 0.271 ms) and block 1000 rows
 (0.884 → 0.715 ms). See `perf(core): place the caret with Selection.collapse instead of addRange`.
 
-## The cross-check that was stopped, and why
+## The cross-check: stopped, then run properly
 
 An independent run was started to answer this by other instruments — a markput-free A/B of native
 versus cancelled typing, a CDP `LayoutCount`/`LayoutDuration` count per path, and a spike letting
@@ -115,8 +126,8 @@ would have been measured under exactly the contention that invalidates a benchma
 this file was re-taken afterwards on an idle machine, which is why they are quoted as ranges over
 repeated runs.
 
-The verdict above rests on the reflow-equals-collapse result, which held in both clean runs. The
-one finding that would still overturn it is a CDP layout COUNT showing the cancelled path lays out
-**more times** per keystroke than the native one — that is the only mechanism under which handing
-the insertion to the browser would remove work rather than move it. Nobody has counted. It is the
-cheapest remaining experiment and it needs an idle machine.
+That experiment has since been **run directly**, which is what closed this file for good. Counted
+with CDP across three interleaved rounds at 2000 spans, with real keyboard input in both arms:
+native 1.00 layouts per keystroke, cancelled 1.00, mutate-only 1.00. The cancelled path does not
+cause a second layout, so there is no work to remove — only work to move. Numbers and method in
+[measurements.md](measurements.md).

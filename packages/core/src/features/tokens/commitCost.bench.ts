@@ -12,6 +12,14 @@ import type {TextNode, TreeNode, Window} from './tree/types'
 /**
  * PER-KEYSTROKE COST of the commit path, attributed by SUBTRACTION.
  *
+ * ⚠ ABSOLUTES HERE ARE TIGHT-LOOP FIGURES. This harness hammers edits with no frame between
+ * iterations; a person types at most one character per frame, and the browser lays out
+ * incrementally in between. Measured against frame-paced typing, everything below reads 2-4x
+ * high — the RATIOS held up, the absolutes did not. Before quoting any number from this file as
+ * "what a keystroke costs", read `docs/scratch/native-caret-motion/measurements.md`, which has
+ * the frame-interval measurement and the size threshold (smooth to ~500 spans, degrading from
+ * ~1000).
+ *
  * Each size registers the same ladder, every rung adding one stage:
  *
  *   L1 splice            string splice only
