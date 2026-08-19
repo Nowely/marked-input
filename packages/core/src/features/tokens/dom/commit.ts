@@ -3,6 +3,7 @@ import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {TreeNode} from '../tree/types'
 import {bind, rebindNode} from './bind'
 import type {ElementSource} from './bind'
+import type {ControlRoots} from './controlRoots'
 import type {TokenHandle} from './TokenHandle'
 
 /**
@@ -29,7 +30,11 @@ export type CommitDeps = {
 	 * binds the current tree rather than whatever generation was last painted.
 	 */
 	roots: () => readonly TreeNode[]
-	controlElements: () => ReadonlySet<HTMLElement>
+	/**
+	 * THE control chrome's membership, owned by {@link createControlRoots}. The pipeline only
+	 * forwards the read: a control registration updates it directly and no longer costs a bind.
+	 */
+	controlRoots: ControlRoots
 	/**
 	 * THE element source: what the adapters consigned, asked one id at a time. This replaced the
 	 * DOM walk's `isBlock` and its frame alignment — an element is registered under an id or it is
@@ -99,7 +104,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// which a fresh map per bind cannot do. Both paths delete what they stop binding. The id-keyed
 	// side is `deps.nodes`, which bind mutates in place, so there is nothing here to mirror it with.
 	const byElement = new WeakMap<HTMLElement, TokenHandle>()
-	let controlRoots = new WeakSet<HTMLElement>()
 	// The last walk's tree, by id, so `rebind` finds its node without searching. Empty until the
 	// first bind, which is why a registration arriving before one is a no-op rather than a guess.
 	let nodeById = new Map<number, TreeNode>()
@@ -131,14 +135,11 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		committing = true
 		try {
 			const result = bind({
-				container,
 				roots: deps.roots(),
 				nodes: deps.nodes,
 				byElement,
 				source: deps.source,
-				controlElements: deps.controlElements(),
 			})
-			controlRoots = result.controlRoots
 			nodeById = result.nodeById
 			bound()
 		} finally {
@@ -175,6 +176,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		bound,
 		commits,
 		byElement: element => byElement.get(element),
-		isControlRoot: element => controlRoots.has(element),
+		isControlRoot: element => deps.controlRoots.has(element),
 	}
 }

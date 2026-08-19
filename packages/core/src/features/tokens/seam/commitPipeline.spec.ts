@@ -3,6 +3,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 import {batch, effect, untracked, watch} from '../../../shared/signals/index.js'
 import {bind} from '../dom/bind'
 import {createCommitPipeline} from '../dom/commit'
+import {createControlRoots} from '../dom/controlRoots'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
@@ -121,17 +122,17 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 	const parser = new Parser(markups)
 	const tree = createTokenTree([])
 	const nodes = new Map<number, TokenHandle>()
-	const controls = new Set<HTMLElement>()
-	// bind takes its elements from here now, so the harness consigns what it renders.
-	const consigned = new Map<number, HTMLElement>()
 	const container = document.createElement('div')
 	document.body.append(container)
 	let mounted: HTMLElement | null = container
+	const controls = createControlRoots(() => mounted)
+	// bind takes its elements from here now, so the harness consigns what it renders.
+	const consigned = new Map<number, HTMLElement>()
 	const pipeline = createCommitPipeline({
 		container: () => mounted,
 		nodes,
 		roots: () => tree.roots(),
-		controlElements: () => controls,
+		controlRoots: controls,
 		source: {
 			tokenElement: id => consigned.get(id),
 			rowElement: () => undefined,

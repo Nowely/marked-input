@@ -58,10 +58,8 @@ export type BindTarget = {
 }
 
 export type BindInput = BindTarget & {
-	container: HTMLElement
 	/** The live root nodes the renderer just painted. */
 	roots: readonly TreeNode[]
-	controlElements: ReadonlySet<HTMLElement>
 }
 
 /**
@@ -73,7 +71,6 @@ export type BindInput = BindTarget & {
  * the DOM missed and deletes only ids absent from the tree.
  */
 export type BindResult = {
-	controlRoots: WeakSet<HTMLElement>
 	/**
 	 * The flattened tree by id, so a later single-id rebind does not have to search for its node.
 	 * Rebuilt here because the walk already flattens; a `find(id)` per ref would put the whole
@@ -83,7 +80,7 @@ export type BindResult = {
 }
 
 export function bind(input: BindInput): BindResult {
-	const {container, roots, nodes, byElement, controlElements} = input
+	const {roots, nodes, byElement} = input
 
 	// `untracked` for the reason adoption documents: the walk below reads `children()`
 	// and the text effects read `text()`, and a caller inside an effect or computed must
@@ -95,8 +92,6 @@ export function bind(input: BindInput): BindResult {
 		// Depth-first flatten, before any mutation.
 		const tree: TreeNode[] = []
 		collectTree(roots, tree)
-
-		const controlRoots = computeControlRoots(container, controlElements)
 
 		// The live id space, used below to decide which handles die. Built from the flattened
 		// TREE rather than from what was consigned: a token whose element has not arrived is
@@ -118,7 +113,7 @@ export function bind(input: BindInput): BindResult {
 			}
 		})
 
-		return {controlRoots, nodeById}
+		return {nodeById}
 	})
 }
 
@@ -249,16 +244,4 @@ function applyMountState(bindings: ElementBindings, previous: ElementBindings | 
 	const sameHost = previous?.childSequenceHost === bindings.childSequenceHost
 	if (sameRoot && sameHost) return
 	applyEditableState(bindings)
-}
-
-function computeControlRoots(container: HTMLElement, controlElements: ReadonlySet<HTMLElement>): WeakSet<HTMLElement> {
-	const roots = new WeakSet<HTMLElement>()
-	for (const ctrl of controlElements) {
-		let el: HTMLElement | null = ctrl
-		while (el && el !== container) {
-			roots.add(el)
-			el = el.parentElement
-		}
-	}
-	return roots
 }

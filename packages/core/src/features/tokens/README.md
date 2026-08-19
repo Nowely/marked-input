@@ -158,11 +158,14 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   cost a whole-tree walk: mounting an N-node document measured 2N+2 binds through
   both adapters and 678 ms at 2001 nodes. `rebind(id)` is that id's share of the
   walk; the whole walk stays on the commit clock, where the kill sweep needs it.
-- **The bind effect subscribes to two things**, `commits` and the control
-  registrations — NOT the live roots. Every write of `tree.roots` is adoption's,
-  inside a commit that ends in `apply`, so subscribing to both bound twice for one
-  commit. Controls are separate because their only reader is a walk from each
-  control up to the container, which nothing per-id can update.
+- **The bind effect subscribes to ONE thing**, `commits` — not the live roots.
+  Every write of `tree.roots` is adoption's, inside a commit that ends in `apply`,
+  so subscribing to both bound twice for one commit.
+- **A control registration binds nothing.** `dom/controlRoots.ts` owns which
+  elements sit under control chrome and updates in place, because that answer is a
+  DOM walk from each control up to the host and touches no token. It used to be
+  recomputed inside every bind, which made a block mount quadratic — block layout
+  registers up to four controls per ROW.
 - **Text is not the pipeline's business.** `bind` arms
   `effect(() => { const t = node.text(); if (el.textContent !== t) el.textContent = t })`
   per bound text surface; the handle owns its disposal. That is the ONE writer of

@@ -4,6 +4,8 @@ import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
 import {createCommitPipeline} from '../dom/commit'
+import {createControlRoots} from '../dom/controlRoots'
+import type {ControlRoots} from '../dom/controlRoots'
 import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
 import type {SelectionSnapshot} from '../dom/DomModel'
@@ -108,9 +110,14 @@ export class TokenModel {
 
 	/**
 	 * Ref callback for a control element (e.g. overlay, drag handle). Registration is
-	 * ELEMENT-ONLY: the sole reader is `#controlElements`, which feeds bind's
-	 * `computeControlRoots` — a walk from each control up to the container. Nothing ever
-	 * asks which token owns a control.
+	 * ELEMENT-ONLY — nothing ever asks which token owns a control — and it goes straight into
+	 * {@link ControlRoots}, which owns the membership the locate walk reads.
+	 *
+	 * NO BIND, and that is the whole shape of it. A control used to invalidate a counter the bind
+	 * effect watched, so one ref cost a whole-tree walk on the argument that controls are rare.
+	 * They are not: block layout mounts up to four per ROW — two drop indicators, a drag handle
+	 * and a menu — so that made a block mount quadratic, measured at 400 rows / 400 binds / 93 ms.
+	 * A control's ancestor chain is a pure DOM walk that touches no token, so it updates in place.
 	 *
 	 * REGISTRATION is also where the control leaves the editing host: a control is chrome,
 	 * not document content, so inside the one contenteditable container it must be atomic
@@ -120,18 +127,16 @@ export class TokenModel {
 	 * until some unrelated commit happened to repaint.
 	 */
 	control(): DomRef {
-		const key = {}
+		let registered: HTMLElement | undefined
 		return element => {
 			if (element) {
 				element.contentEditable = 'false'
-				this.#pendingControls.set(key, element)
-			} else {
-				this.#pendingControls.delete(key)
+				registered = element
+				this.#controlRoots.add(element)
+			} else if (registered) {
+				this.#controlRoots.remove(registered)
+				registered = undefined
 			}
-			// Controls feed `computeControlRoots`, which only a whole bind recomputes — so unlike
-			// the owner-keyed registries this one still wakes the effect, or a control mounted off
-			// the commit clock (a menu opening on a block-store signal) leaves the roots stale.
-			this.#controlRegistrations(this.#controlRegistrations() + 1)
 		}
 	}
 
@@ -419,6 +424,10 @@ export class TokenModel {
 		private readonly host: Host
 	) {
 		host.onMounted(() => {
+			// FIRST, because the container is the walk's stop condition: a control registered
+			// before one attached marked nothing, and a container SWAP invalidates every chain
+			// marked against the previous host.
+			this.#controlRoots.rebuild()
 			// Order matters: the immediate arrival seeds the pipeline, so the bind effect
 			// installed right after can bind a pre-built DOM — the shell is live once the
 			// container attaches.
@@ -450,11 +459,9 @@ export class TokenModel {
 			// come through here at all — {@link consign} calls `rebind(id)` straight away — which
 			// is what keeps a mount linear.
 			//
-			// It subscribes to exactly two things: the commit counter and the control
-			// registrations. The commit counter is there so that a commit which moves no element
-			// still binds, which keeps `bound` a clock every commit reaches and keeps the caret's
-			// post-commit re-place; the controls are there because their only reader is a
-			// whole-container walk that nothing per-id can update.
+			// It subscribes to ONE thing, the commit counter — so that a commit which moves no
+			// element still binds, which keeps `bound` a clock every commit reaches and keeps the
+			// caret's post-commit re-place.
 			//
 			// NOT the roots, deliberately, and it is not a gap: every write of `tree.roots` is
 			// adoption's, inside a commit that ends in `apply`. Subscribing to both made a
@@ -467,7 +474,6 @@ export class TokenModel {
 			// `TokenModel.bindEffect.spec.ts`.
 			effect(() => {
 				this.#pipeline.commits()
-				this.#controlRegistrations()
 				untracked(() => this.#pipeline.bindNow())
 			})
 		})
@@ -723,6 +729,13 @@ export class TokenModel {
 		this.#onExternalValue(this.props.value())
 	}
 
+	/**
+	 * Control chrome's DOM membership. Not a registry beside the other three: nothing here is
+	 * keyed by a token, and the only question ever asked of it is whether an element sits under a
+	 * control — so it owns its own answer instead of being recomputed by a walk that has a tree.
+	 */
+	readonly #controlRoots: ControlRoots = createControlRoots(() => untracked(() => this.host.container()))
+
 	/** THE live node layer, keyed by stable token id — mutated only through the pipeline. */
 	readonly #nodes = new Map<number, TokenHandle>()
 
@@ -730,7 +743,7 @@ export class TokenModel {
 		container: () => this.host.container(),
 		nodes: this.#nodes,
 		roots: () => this.#tree.roots(),
-		controlElements: () => this.#controlElements(),
+		controlRoots: this.#controlRoots,
 		source: {
 			tokenElement: id => this.#tokenElements.latest(id),
 			rowElement: id => this.#rowElements.latest(id),
@@ -764,18 +777,6 @@ export class TokenModel {
 	readonly #tokenElements = new RefRegistry()
 	readonly #rowElements = new RefRegistry()
 	readonly #childSequenceHosts = new RefRegistry()
-	/**
-	 * Controls are ELEMENT-ONLY — nothing ever asks which token owns one — so they keep a flat
-	 * registry and, alone among the registries, an observable counter: their only reader is
-	 * `computeControlRoots`, a walk from each control up to the container that a whole bind
-	 * recomputes. There is no per-id work to do for one, and there are never many.
-	 */
-	readonly #pendingControls = new Map<object, HTMLElement>()
-	readonly #controlRegistrations = signal({initial: 0})
-
-	#controlElements(): ReadonlySet<HTMLElement> {
-		return new Set(this.#pendingControls.values())
-	}
 }
 
 /**
