@@ -373,6 +373,26 @@ Three things the work turned up that the plan did not predict:
 - **L7 became L6.** With the routing gone the two rungs were the same code, so L7 is deleted and
   its figures are kept in the docblock as the evidence the deletion rests on.
 
+**Two follow-ups landed on top**, each on its own evidence rather than as cleanup:
+
+- `anchorFor`'s fallback leaned OUTWARD while the affinity contract and both neighbouring arms lean
+  inward, so a selection touching that boundary was pushed to the far side of the whole mark at both
+  ends. Fixed once the line was proven reachable.
+- The dev divergence detector came out. Every commit now re-arms every per-surface writer, and the
+  re-arm's first run heals a surface written behind the model's back — inside `bind`, ahead of
+  anything that could observe the divergence. Measured: it caught nothing in 1477 tests, its one
+  remaining true positive is a consumer contract violation neither adapter can produce, and it cost
+  a whole-tree walk per commit in dev. The heal is now pinned by tests in its place. In the same
+  commit `rebind` began arming untracked, which `bind` already did: an effect links itself to
+  whatever scope is active, so a ref firing inside a caller's tracking scope could leave a bound
+  surface with no live writer.
+
+**DEFERRED, with the trade written down:** making the commit's bind incremental too — bind what
+adoption changed, kill `result.removed`, stop walking. It saves ~14 lines and ~1.1 ms at 2000
+tokens, and costs the heal, kill-by-absence, `nodeById` as a pure derivation, and
+order-insensitivity. `issues/01-incremental-commit-bind.md` records the numbers and the four
+conditions that should reopen it.
+
 ### The announcement contract
 
 Deleting the latch changes the published change event from "once per paint, with applies merged" to
