@@ -1,6 +1,7 @@
 import type {DomRef} from '../../../shared/editorContracts'
 import {batch, computed, effect, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
+import {shallow} from '../../../shared/utils/shallow'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
 import {createCommitPipeline} from '../dom/commit'
@@ -12,6 +13,7 @@ import type {SelectionSnapshot} from '../dom/DomModel'
 import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
+import type {Markup} from '../parser/types'
 import {adjacentMark as findAdjacentMark, anchorAt as anchorAtOffset, offsetOfAnchor, stepAnchor} from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
 import {serializeMark} from '../tree/markPatch'
@@ -498,12 +500,31 @@ export class TokenModel {
 
 	// ─── internals ─────────────────────────────────────────────────────────────
 
-	readonly #parser: Computed<Parser | undefined> = computed(() => {
+	/**
+	 * The markups, compared SHALLOWLY, and that is the whole point of splitting them out.
+	 *
+	 * `props.options` is a plain signal with no equality, so a fresh-but-identical array — which
+	 * is what an inline `options={[…]}` prop produces on every parent render, and what Vue's
+	 * `syncProps` allocates unconditionally on a watch that depends on `props.value` — used to
+	 * propagate all the way here and mint a new `Parser`. Descriptors are interned PER PARSER and
+	 * `adopt` pairs marks on `candidate.descriptor === token.descriptor`, so every mark fell to
+	 * `buildNode` and took a NEW ID: a full remount of every Mark in both adapters plus the loss
+	 * of `BlockController`'s node-keyed per-row state, on every keystroke of a controlled Vue
+	 * editor. Gated by `TokenModel.parse.spec`'s "a fresh but identical `options` array".
+	 */
+	readonly #markups: Computed<(Markup | undefined)[]> = computed(() => this.props.options().map(opt => opt.markup), {
+		equals: shallow,
+	})
+
+	/** Whether ANY mark component is configured — the parser is pointless without one. */
+	readonly #hasMark: Computed<boolean> = computed(() => {
 		const Mark = this.props.Mark()
-		const options = this.props.options()
-		const hasMark = Mark != null || options.some(opt => 'Mark' in opt && opt.Mark != null)
-		if (!hasMark) return
-		const markups = options.map(opt => opt.markup)
+		return Mark != null || this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
+	})
+
+	readonly #parser: Computed<Parser | undefined> = computed(() => {
+		if (!this.#hasMark()) return
+		const markups = this.#markups()
 		if (!markups.some(Boolean)) return
 		return new Parser(markups)
 	})
