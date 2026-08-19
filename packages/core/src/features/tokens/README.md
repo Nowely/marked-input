@@ -65,7 +65,7 @@ the framework has not repainted yet.
   projections, via `findGap.ts`. An empty window pins at the END of the value,
   because `start` of an empty window is not an edit location.
 - `transactions.ts` — the write verbs. `applyRange(window, text)` is
-  the primitive; `applyText(node, localRange, text)` and
+  the primitive; `applyAfter(node, text)` and
   `applyStructural(target, replacement)` lower node-local intent into it, and
   `tx(fn)` buffers disjoint ops and adopts once with the hull window. Nothing
   here mutates the tree — adoption, inside the sink, is the only writer.
