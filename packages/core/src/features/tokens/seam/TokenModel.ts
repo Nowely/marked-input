@@ -230,7 +230,7 @@ export class TokenModel {
 	 *
 	 * In CONTROLLED mode the tree has NOT moved — the commit emits and waits for the echo —
 	 * so the anchor describes the pre-edit tree. `EditController` discards it there and
-	 * `MarkputApi.replaceRange` reads it only as a success flag.
+	 * `MarkputHandle.replaceRange` reads it only as a success flag.
 	 */
 	replaceBetween(from: NodeAnchor, to: NodeAnchor, text: string): NodeAnchor | undefined {
 		this.#ensureSeeded()

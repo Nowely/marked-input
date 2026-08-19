@@ -24,7 +24,7 @@ describe('Store', () => {
 
 	// `MarkputHandler`'s `overlay` getter is NOT ported: §2.3's export table drops it as
 	// consumer-free, confirmed by grep over both adapters, the storybook and the demo apps.
-	// `MarkputApi`'s own verb matrix lives in `MarkputApi.spec.ts`; what stays here is the
+	// `MarkputHandle`'s own verb matrix lives in `MarkputHandle.spec.ts`; what stays here is the
 	// wiring claim — the store hands out one live host object.
 	describe('api', () => {
 		it('reflect dom container via api.container', () => {

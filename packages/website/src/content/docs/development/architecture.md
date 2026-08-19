@@ -315,7 +315,7 @@ class Store {
     readonly keyboard:  KeyboardController // input handling and block editing
     readonly block:     BlockController    // block drag actions and operation helpers
     readonly clipboard: ClipboardController // copy/cut handling
-    readonly api:       MarkputApi         // the ref handle: container, focus()
+    readonly api:       MarkputHandle         // the ref handle: container, focus()
 }
 ```
 
@@ -343,7 +343,7 @@ const {nodes} = useMarkput(s => ({nodes: s.tokens.nodes}))
 
 ## Features
 
-11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputApi` — the public host object the component ref exposes — follows the same rule: it owns nothing and delegates every member to the feature that owns the state.
+11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandle` — the public host object the component ref exposes — follows the same rule: it owns nothing and delegates every member to the feature that owns the state.
 
 Signal subscription order is significant: inside its constructor `onMounted` hook, `TokenModel` registers a single `watch` over the `(value, parser, isBlock)` tuple before any other consumer registers a watcher in `onMounted`. When any of the three changes, the watch callback runs the private `#reparse`, so by the time downstream listeners observe a `value.current` change, `tokens.nodes()` already reflects the new value.
 

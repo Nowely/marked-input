@@ -207,7 +207,7 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   The `{added, removed, updated}` payload and the ledger that derived it are
   GONE: nothing in core read them once `BlockController` moved to a node-keyed
   `WeakMap`, which was the last reader. `committed` no longer surfaces publicly
-  either — `MarkputApi.changed` was withdrawn with the rest of the v2 verbs.
+  either — `MarkputHandle.changed` was withdrawn with the rest of the v2 verbs.
 
 ## Element projection (`dom/bind.ts`)
 

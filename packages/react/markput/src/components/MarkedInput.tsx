@@ -1,4 +1,4 @@
-import type {CoreOption, DraggableConfig, MarkputApi, OverlayTrigger} from '@markput/core'
+import type {CoreOption, DraggableConfig, MarkputHandle, OverlayTrigger} from '@markput/core'
 import {Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useImperativeHandle, useLayoutEffect, useState} from 'react'
@@ -27,7 +27,7 @@ import {OverlayRenderer} from './OverlayRenderer'
  */
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps> {
 	/** Ref to the editor API (spec §2.3) */
-	ref?: Ref<MarkputApi>
+	ref?: Ref<MarkputHandle>
 	/** Global component used for rendering text tokens (default: built-in Span) */
 	Span?: ComponentType<MarkProps>
 	/** Global component used for rendering markups (fallback for option.Mark) */

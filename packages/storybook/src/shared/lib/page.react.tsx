@@ -1,4 +1,4 @@
-import type {MarkputApi} from '@markput/core'
+import type {MarkputHandle} from '@markput/core'
 import type {composeStories as composeStoriesType} from '@storybook/react-vite'
 import {composeStories} from '@storybook/react-vite'
 import type {ComponentType} from 'react'
@@ -90,10 +90,10 @@ export async function mountComponent(args: Partial<PageArgs> = {}): Promise<Remo
  * `MarkedInput` directly, and both frameworks do it the same way.
  */
 export async function mountApi(args: Partial<PageArgs> = {}): Promise<MountedApi> {
-	const captured: {current: MarkputApi | null} = {current: null}
+	const captured: {current: MarkputHandle | null} = {current: null}
 	const props = {
 		...args,
-		ref: (instance: MarkputApi | null) => {
+		ref: (instance: MarkputHandle | null) => {
 			captured.current = instance
 		},
 	}

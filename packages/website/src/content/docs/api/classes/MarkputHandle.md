@@ -2,10 +2,10 @@
 editUrl: false
 next: false
 prev: false
-title: "MarkputApi"
+title: "MarkputHandle"
 ---
 
-Defined in: [core/src/store/MarkputApi.ts:18](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L18)
+Defined in: [core/src/store/MarkputHandle.ts:18](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputHandle.ts#L18)
 
 What a consumer holds through the `ref` prop: React's `useImperativeHandle` target
 (`react/.../MarkedInput.tsx`) and Vue's `defineExpose` argument (`vue/.../MarkedInput.vue`).
@@ -25,10 +25,10 @@ layer for the caret — so the shape of the handle can move without moving state
 ### Constructor
 
 ```ts
-new MarkputApi(host, tokens): MarkputApi;
+new MarkputHandle(host, tokens): MarkputHandle;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:19](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L19)
+Defined in: [core/src/store/MarkputHandle.ts:19](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputHandle.ts#L19)
 
 #### Parameters
 
@@ -39,7 +39,7 @@ Defined in: [core/src/store/MarkputApi.ts:19](https://github.com/Nowely/marked-i
 
 #### Returns
 
-`MarkputApi`
+`MarkputHandle`
 
 ## Accessors
 
@@ -51,7 +51,7 @@ Defined in: [core/src/store/MarkputApi.ts:19](https://github.com/Nowely/marked-i
 get container(): HTMLElement | null;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:24](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L24)
+Defined in: [core/src/store/MarkputHandle.ts:24](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputHandle.ts#L24)
 
 ##### Returns
 
@@ -65,7 +65,7 @@ Defined in: [core/src/store/MarkputApi.ts:24](https://github.com/Nowely/marked-i
 focus(): void;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:28](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L28)
+Defined in: [core/src/store/MarkputHandle.ts:28](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputHandle.ts#L28)
 
 #### Returns
 

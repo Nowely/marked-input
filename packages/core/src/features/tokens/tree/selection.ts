@@ -46,7 +46,7 @@ export type Selection = {
 	anchors(): Anchors | undefined
 	/**
 	 * The stored selection's START in document order — what `'caret'` means to a write verb
-	 * that inserts rather than replaces (`MarkputApi.insertMark`). `anchor` is the FIXED end,
+	 * that inserts rather than replaces (`MarkputHandle.insertMark`). `anchor` is the FIXED end,
 	 * not the low one, so a backwards `select(head, anchor)` puts the start in `head`; the
 	 * comparison is the only thing that tells them apart and it is why this lives here, where
 	 * offsets are legal, instead of in the API layer.
@@ -107,7 +107,7 @@ export function createSelection(deps: SelectionDeps): Selection {
 
 	/**
 	 * @internal THE write (spec S1 D7's stored form). {@link selectAll}, {@link selectNode},
-	 * `MarkputApi.select` and `SelectionDriver`'s DOM sync all go through it; S1.7 promoted
+	 * `MarkputHandle.select` and `SelectionDriver`'s DOM sync all go through it; S1.7 promoted
 	 * it to §2.3's `input.select`. Returns whether the stored selection actually changed.
 	 */
 	const select = (anchor: NodeAnchor, head: NodeAnchor = anchor): boolean => stored({anchor, head})

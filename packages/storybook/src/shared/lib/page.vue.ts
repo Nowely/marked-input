@@ -1,4 +1,4 @@
-import type {MarkputApi} from '@markput/core'
+import type {MarkputHandle} from '@markput/core'
 import type {composeStories as composeStoriesType} from '@storybook/vue3-vite'
 import {composeStories} from '@storybook/vue3-vite'
 import {render} from 'vitest-browser-vue'
@@ -112,8 +112,8 @@ export async function mountComponent(args: Partial<PageArgs> = {}): Promise<Remo
  */
 export async function mountApi(args: Partial<PageArgs> = {}): Promise<MountedApi> {
 	// `shallowRef`, not `ref`: `ref<T>()` yields `Ref<UnwrapRef<T>>`, and `UnwrapRef` maps a
-	// class instance into a structural copy that is no longer nominally `MarkputApi`.
-	const captured = shallowRef<MarkputApi | null>(null)
+	// class instance into a structural copy that is no longer nominally `MarkputHandle`.
+	const captured = shallowRef<MarkputHandle | null>(null)
 	const Wrapper = defineComponent({
 		setup: () => () => h(component, {...args, ref: captured}),
 	})

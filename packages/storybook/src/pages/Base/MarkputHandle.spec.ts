@@ -5,7 +5,7 @@ import {mountApi} from '../../shared/lib/page'
 
 const VALUE = 'Hello @[mark](1)!'
 
-describe('API: MarkputApi', () => {
+describe('API: MarkputHandle', () => {
 	it('support the ref prop for accessing the component API', async () => {
 		const {api} = await mountApi({Mark, defaultValue: VALUE})
 

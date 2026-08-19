@@ -1,7 +1,7 @@
 ---
 title: Dynamic Marks
 description: Build interactive React marks with mark node commands.
-keywords: [useMark, MarkNode, MarkputApi, interactive marks, removable marks, dynamic marks]
+keywords: [useMark, MarkNode, MarkputHandle, interactive marks, removable marks, dynamic marks]
 ---
 
 Dynamic marks are custom components rendered for parsed mark tokens. Use `useMark()` inside a Mark component to read the live mark node and issue commands through the core value pipeline.
@@ -88,7 +88,7 @@ function RemovableMark() {
 
 ## Editor API
 
-The component ref exposes a `MarkputApi` — what the props cannot express:
+The component ref exposes a `MarkputHandle` — what the props cannot express:
 
 | Member | Purpose |
 | ------ | ------- |
@@ -102,12 +102,12 @@ and hands it back:
 ```tsx
 import {useRef, useState} from 'react'
 import {annotate, MarkedInput} from '@markput/react'
-import type {MarkputApi} from '@markput/react'
+import type {MarkputHandle} from '@markput/react'
 
 const MARKUP = '@[__value__](__meta__)'
 
 function Editor() {
-    const api = useRef<MarkputApi>(null)
+    const api = useRef<MarkputHandle>(null)
     const [value, setValue] = useState('hello ')
 
     return (

@@ -15,7 +15,7 @@ import type {TokenModel} from '../features/tokens'
  * It owns nothing. Both members lower onto a state owner — the host for the element, the token
  * layer for the caret — so the shape of the handle can move without moving state.
  */
-export class MarkputApi {
+export class MarkputHandle {
 	constructor(
 		private readonly host: Host,
 		private readonly tokens: TokenModel

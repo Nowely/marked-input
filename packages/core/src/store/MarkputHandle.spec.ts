@@ -22,7 +22,7 @@ function setup(value: string) {
 	return {store, api: store.api}
 }
 
-describe('MarkputApi', () => {
+describe('MarkputHandle', () => {
 	it('exposes the container', () => {
 		const {store, api} = setup('hello')
 		expect(api.container).toBe(store.host.container())

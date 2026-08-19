@@ -33,10 +33,10 @@ MarkNode` one structure, `NodeAnchor` the address. Its VERB layer does not:
 - S2 ownership: `TokenModel` owns the value, the DOM binding AND the selection
   (`tokens.selection` plus a private `SelectionDriver`). There is no
   `store.selection` and no construction cycle between `Store`'s fields.
-- Public-API invariant: **`MarkputApi` neither takes nor returns an absolute
+- Public-API invariant: **`MarkputHandle` neither takes nor returns an absolute
   document offset.** Now vacuous on the handle itself, which takes no
   coordinates at all; it still binds whatever the handle grows back. Stated of
-  `MarkputApi`, not of every export — `Store` is a value export, so
+  `MarkputHandle`, not of every export — `Store` is a value export, so
   `store.edit.setValue(text, caretOffset?)` and `store.tokens.anchorAt` /
   `offsetOf` remain reachable through it by design.
 - Error handling: boolean/`undefined` + throw for developer errors; no

@@ -24,7 +24,7 @@ Everything below describes the core's INTERNAL contract with those adapters.
 | `src/features/overlay/`   | trigger matching and suggestion navigation                                                                                                                                            |
 | `src/features/clipboard/` | copy / cut / paste serialization                                                                                                                                                      |
 | `src/features/slots/`     | slot resolution for mark and overlay components                                                                                                                                       |
-| `src/store/`              | `Store` (the wiring root) and `MarkputApi` (the ref handle)                                                                                                                           |
+| `src/store/`              | `Store` (the wiring root) and `MarkputHandle` (the ref handle)                                                                                                                        |
 | `src/shared/signals/`     | the reactive primitives (a vendored alien-signals core)                                                                                                                               |
 
 ## Root exports
@@ -35,7 +35,7 @@ deliberately narrow — anything not listed is internal and may move without not
 | export                                                                                                                                    | kind         | what it is                                                                       |
 | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------ | -------------------------------------------------------------------------------- |
 | `Store`                                                                                                                                   | value        | the wiring root; both adapters construct exactly one per editor                  |
-| `MarkputApi`                                                                                                                              | value        | the ref handle — `container` and `focus()`, reachable as `store.api`             |
+| `MarkputHandle`                                                                                                                           | value        | the ref handle — `container` and `focus()`, reachable as `store.api`             |
 | `Id`, `TreeNode`, `TextNode`, `MarkNode`, `MarkPatch`, `NodeAnchor`                                                                       | types        | the live tree: the shapes of the public reads and write verbs                    |
 | `MarkToken`                                                                                                                               | type         | `denote`'s callback parameter; `Token`/`TextToken` are internal (see `index.ts`) |
 | `annotate`, `denote`, `Markup`                                                                                                            | value/type   | the string-domain utilities                                                      |

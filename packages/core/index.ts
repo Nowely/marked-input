@@ -1,5 +1,5 @@
 // ═══ Public API v2 (spec §2.3) ════════════════════════════════════════════════
-export {MarkputApi} from './src/store/MarkputApi'
+export {MarkputHandle} from './src/store/MarkputHandle'
 // The ONLY resolution path for both adapters, which import it as a value and construct it.
 export {Store} from './src/store'
 // `Anchors` is public because `OverlayMatch.range` is one (S2.5): the overlay contract both

@@ -7,7 +7,7 @@ title: "@markput/react"
 
 ## Classes
 
-- [MarkputApi](/api/classes/markputapi/)
+- [MarkputHandle](/api/classes/markputhandle/)
 
 ## Interfaces
 
