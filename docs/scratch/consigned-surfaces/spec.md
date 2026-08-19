@@ -224,7 +224,7 @@ not on speed.
 | **A1** | Shadow registry | Add consignment and the refs. Add a dev-only assertion that the registry's mapping equals the walk's, for every Token element and the row wrapper. Add a dev-only drift check: a `MutationObserver` on the Container that throws when a mutation lands inside a leased Surface while core is not writing. The walk still owns everything. Zero behaviour change; the DOM snapshot must not move by a line. |
 | **A2** | Delete the walk | DONE. The registry is the owner; `isBlock` and the frame alignment are gone with it. Surfaced one contract that A0 did not: a consumer's `Span` IS the text Surface and so cannot be wrapped the way a Mark is — it must forward its ref or its text never binds. Nothing in the repo used `Span` except the render-count instruments, which now forward it through the shared mark factory. |
 | **B2** | Split the announcement | DONE, and moved AHEAD of A3 — the original order was wrong. Deleting the render epoch silences the commits that move no element (a row reorder, a mark value change), because the announcement came from the bind. Splitting `changed` into `committed` (per commit) and `bound` (per bind) gives those commits a clock of their own, which is what makes A3 possible at all. |
-| **A3** | Delete the scheduling | IN PROGRESS. Delete the render epoch, the render-announcement hook and Vue's `nextTick` watcher; bind becomes an effect on the token layer (see below). The pending-structural latch went ahead of this step in PR #285, and with it the divergence sweep's reason to read it. Production side is a 32-line deletion across five files; the migration is the cost. |
+| **A3** | Delete the scheduling | DONE. The render epoch, the render-announcement hook and Vue's `nextTick` watcher are gone; a bind effect on the commit clock replaced them, and a token's own ref binds that token. The pending-structural latch went ahead of this step in PR #285, and with it the divergence sweep's reason to read it. |
 
 The drift check exists to answer one question while both mechanisms are live and comparable: does a
 leased Surface ever get written by anyone but core? It is deleted at A2 regardless, and the answer
@@ -307,14 +307,23 @@ and a signal compares by identity.
 **A gap this closed:** `control()` did not bump the counter. A control mounted off the commit clock —
 a menu opened from a block-store signal — left the control roots stale. Three tests caught it.
 
-**A finding that is not a test fix.** `anchorFor`'s fallback was pinned by
-`falls back to the owner INVERTED when a neighbour left the tree`, which constructs "elements still
-bound, nodes already out of the tree" by relying on a structural commit *not* binding before the
-adapter repaints. Under C every commit binds, so that state is unreachable by that route and the
-fallback may be dead code. Decision: delete it — but only after proving unreachability by some route
-other than the one the test used. Re-aiming the test would bury the question.
+**A finding that is not a test fix — SETTLED, and the answer was "keep".** `anchorFor`'s fallback
+was pinned by `falls back to the owner INVERTED when a neighbour left the tree`, which constructs
+"elements still bound, nodes already out of the tree" by relying on a structural commit *not*
+binding before the adapter repaints. Every commit binds now and the kill sweep is tree-driven, so
+that construction is gone — but the fallback is NOT dead. Its own comment named the wrong door: the
+reachable one is a registered **control**, because `computeControlRoots` marks every ancestor of a
+control up to the container and `DomModel.#locate` stops at a control root and answers
+`{kind: 'control'}`, which `lookupTokenDescendant` maps to `undefined`. Every node alive, every
+element bound, no timing window. Reproduced twice independently, through the public `tokens.control()`
+SPI; the test is re-aimed onto it and pins the control-free twin taking the paired branch.
 
-### The fix for the storm: rebind one id, keep the whole-tree bind on the commit clock
+A separate defect fell out and is recorded rather than fixed: that arm leans **outward** — `'before'`
+answers the owner's start — while `BoundaryAffinity` and the mark-presentation arm above it both
+lean inward. A selection end landing on that boundary (`beforeInput.ts` asks with `'before'`) is
+truncated to before the whole mark. Pre-existing, out of scope for the bind work, worth its own step.
+
+### The fix for the storm: rebind one id, keep the whole-tree bind on the commit clock — SHIPPED
 
 Three fixes were designed against the measurement and judged. The chosen one is a hybrid, and the
 two it beat are recorded because both are the obvious ones:
@@ -347,11 +356,22 @@ still O(registrations) per ref and mount stays quadratic with a smaller constant
 divergence sweep must move back to `committed`: it walks the whole tree on every `bound`, so left
 where it is, dev and test mount stays quadratic on its own.
 
-**Order of work.** The bench rung comes first, before any production change: the repo has no mount
-benchmark at all, which is exactly why a Θ(N) → Θ(N²) mount regression reached a working tree. Then
-the `rebind` extraction. Then the docblock rewrite and the clock re-aiming — and the eleven red
-tests get triaged one by one rather than regenerated, because two of them are the divergence
-detector, whose net has gone slack precisely because the always-on bind re-arms every surface.
+**What shipped**, and where it differed from the plan. The bench rung, the `rebind` extraction and
+the test triage landed as one commit rather than three: the working tree was never green, so there
+was no earlier boundary to cut at, and splitting would have meant re-aiming the same tests twice
+under semantics that existed for one commit. The M1 rung now reads 0.35 / 1.12 / 4.05 ms at 21 /
+201 / 2001 nodes — ten times the document for ~3.6× the time.
+
+Three things the work turned up that the plan did not predict:
+
+- **`mountDom` never consigned.** Since the DOM walk was deleted, every mounted bench rung was
+  binding an empty registry, so L5/L5b/L6/L7 measured a degenerate case. Fixed with the rung.
+- **The commit counter had to be written outside the re-entry guard.** An unbatched commit flushes
+  the bind effect on that very line, so the commit's own bind read as re-entry and threw. Writing
+  it first also puts the bind — and every per-surface re-arm — ahead of `committed`'s subscribers,
+  which is the order the divergence sweep needs.
+- **L7 became L6.** With the routing gone the two rungs were the same code, so L7 is deleted and
+  its figures are kept in the docblock as the evidence the deletion rests on.
 
 ### The announcement contract
 
