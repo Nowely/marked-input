@@ -6,7 +6,7 @@ import type {Component, PropType} from 'vue'
 import {defineComponent, h, ref, shallowRef} from 'vue'
 
 import {findEditingHost} from './dom'
-import type {Echoed, EchoOptions, Mounted, MountedApi, Remountable, StoryAnnotations} from './page.shared'
+import type {Echoed, EchoOptions, Mounted, MountedHandle, Remountable, StoryAnnotations} from './page.shared'
 import {assertEchoable} from './page.shared'
 // The exact sibling, not the seam name: oxlint does not honour `moduleSuffixes`.
 import {component} from './stories.vue'
@@ -110,7 +110,7 @@ export async function mountComponent(args: Partial<PageArgs> = {}): Promise<Remo
  * story wrapper, which exposes nothing — so the `ref` contract can only be asserted on
  * `MarkedInput` directly, and both frameworks do it the same way.
  */
-export async function mountApi(args: Partial<PageArgs> = {}): Promise<MountedApi> {
+export async function mountHandle(args: Partial<PageArgs> = {}): Promise<MountedHandle> {
 	// `shallowRef`, not `ref`: `ref<T>()` yields `Ref<UnwrapRef<T>>`, and `UnwrapRef` maps a
 	// class instance into a structural copy that is no longer nominally `MarkputHandle`.
 	const captured = shallowRef<MarkputHandle | null>(null)
@@ -119,5 +119,5 @@ export async function mountApi(args: Partial<PageArgs> = {}): Promise<MountedApi
 	})
 
 	const {container} = await render(Wrapper)
-	return {host: findEditingHost(container), api: () => captured.value}
+	return {host: findEditingHost(container), handle: () => captured.value}
 }

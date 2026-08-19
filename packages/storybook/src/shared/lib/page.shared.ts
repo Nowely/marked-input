@@ -24,8 +24,8 @@ export interface Echoed extends Mounted {
 	value: () => string
 }
 
-export interface MountedApi extends Mounted {
-	api: () => MarkputHandle | null
+export interface MountedHandle extends Mounted {
+	handle: () => MarkputHandle | null
 }
 
 export interface EchoOptions {

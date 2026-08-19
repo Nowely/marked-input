@@ -92,7 +92,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOp
 		store.props.set(props)
 	})
 
-	useImperativeHandle(props.ref, () => store.api, [store])
+	useImperativeHandle(props.ref, () => store.handle, [store])
 
 	return (
 		<StoreContext value={store}>

@@ -6,7 +6,7 @@ import {useState} from 'react'
 import {render} from 'vitest-browser-react'
 
 import {findEditingHost} from './dom'
-import type {Echoed, EchoOptions, Mounted, MountedApi, Remountable, StoryAnnotations} from './page.shared'
+import type {Echoed, EchoOptions, Mounted, MountedHandle, Remountable, StoryAnnotations} from './page.shared'
 import {assertEchoable} from './page.shared'
 // The exact sibling, not the seam name: oxlint does not honour `moduleSuffixes`.
 import {component as Component} from './stories.react'
@@ -89,7 +89,7 @@ export async function mountComponent(args: Partial<PageArgs> = {}): Promise<Remo
  * story wrapper, which exposes nothing — so the `ref` contract can only be asserted on
  * `MarkedInput` directly, and both frameworks do it the same way.
  */
-export async function mountApi(args: Partial<PageArgs> = {}): Promise<MountedApi> {
+export async function mountHandle(args: Partial<PageArgs> = {}): Promise<MountedHandle> {
 	const captured: {current: MarkputHandle | null} = {current: null}
 	const props = {
 		...args,
@@ -99,5 +99,5 @@ export async function mountApi(args: Partial<PageArgs> = {}): Promise<MountedApi
 	}
 
 	const {container} = await render(<Component {...props} />)
-	return {host: findEditingHost(container), api: () => captured.current}
+	return {host: findEditingHost(container), handle: () => captured.current}
 }

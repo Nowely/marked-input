@@ -19,24 +19,24 @@ function setup(value: string) {
 	store.host.container(container)
 	container.replaceChildren(...store.tokens.nodes().map(() => document.createElement('span')))
 	consignRendered(store, container)
-	return {store, api: store.api}
+	return {store, handle: store.handle}
 }
 
 describe('MarkputHandle', () => {
 	it('exposes the container', () => {
-		const {store, api} = setup('hello')
-		expect(api.container).toBe(store.host.container())
-		expect(api.container).toBeInstanceOf(HTMLElement)
+		const {store, handle} = setup('hello')
+		expect(handle.container).toBe(store.host.container())
+		expect(handle.container).toBeInstanceOf(HTMLElement)
 	})
 
 	it('focus() puts the caret at the start of the first token', () => {
-		const {store, api} = setup('hello')
+		const {store, handle} = setup('hello')
 
-		api.focus()
+		handle.focus()
 
 		const range = document.getSelection()?.getRangeAt(0)
 		expect(range?.collapsed).toBe(true)
-		expect(api.container?.contains(range?.startContainer ?? null)).toBe(true)
+		expect(handle.container?.contains(range?.startContainer ?? null)).toBe(true)
 
 		// The stored anchors, not the DOM's: `focus()` goes through the selection driver, so the
 		// model must agree that the caret sits at offset 0 of the FIRST token. A TEXT anchor

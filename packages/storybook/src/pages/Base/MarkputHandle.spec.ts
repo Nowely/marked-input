@@ -1,16 +1,16 @@
 import {describe, expect, it} from 'vitest'
 
 import {Mark} from '../../shared/lib/marks'
-import {mountApi} from '../../shared/lib/page'
+import {mountHandle} from '../../shared/lib/page'
 
 const VALUE = 'Hello @[mark](1)!'
 
 describe('API: MarkputHandle', () => {
 	it('support the ref prop for accessing the component API', async () => {
-		const {api} = await mountApi({Mark, defaultValue: VALUE})
+		const {handle} = await mountHandle({Mark, defaultValue: VALUE})
 
-		expect(api()).not.toBeNull()
-		expect(api()?.container).toBeInstanceOf(HTMLElement)
+		expect(handle()).not.toBeNull()
+		expect(handle()?.container).toBeInstanceOf(HTMLElement)
 	})
 
 	it('runs a method through the framework ref, not just a getter', async () => {
@@ -18,9 +18,9 @@ describe('API: MarkputHandle', () => {
 		// reaching `this` is worth one assertion beyond the getter above. (The native `#private`
 		// hazard this test was written for is gone with the verbs that had one; a TS-private field
 		// is a plain property and survives the proxy.)
-		const {api, host} = await mountApi({Mark, defaultValue: VALUE})
+		const {handle, host} = await mountHandle({Mark, defaultValue: VALUE})
 
-		api()?.focus()
+		handle()?.focus()
 
 		const range = document.getSelection()?.getRangeAt(0)
 		expect(range?.collapsed).toBe(true)
