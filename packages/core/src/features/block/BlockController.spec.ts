@@ -3,7 +3,6 @@ import {describe, it, expect, vi, beforeEach} from 'vitest'
 import {effect} from '../../shared/signals'
 import {Store} from '../../store/Store'
 import {anchorsAt, selectionRange} from '../tokens/__testing__/mountFixtures'
-import {nodesOf, textToken} from '../tokens/__testing__/tokenFactories'
 
 describe('BlockController', () => {
 	let store: Store
@@ -186,7 +185,7 @@ describe('BlockController', () => {
 
 			// The SURVIVORS name which row actually went — the value alone cannot, because
 			// the two candidates compose to the same string. Row identity is what both
-			// adapters key rendering on and what `BlockController` prunes per-row state by.
+			// adapters key rendering on and what `BlockController` keys per-row state by.
 			expect(store.tokens.value()).toBe('First\n\nSecond\n\n')
 			expect(store.tokens.nodes().map(node => node.id)).toEqual([second, third])
 			expect(first).not.toBe(second)
@@ -227,14 +226,12 @@ describe('BlockController', () => {
 			document.body.append(container)
 			store.host.container(container)
 			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
-			store.host.rendered()
 
 			const [a, b, c] = store.tokens.nodes().map(node => node.id)
 			const dragged = store.block.get(store.tokens.nodes()[0])
 			dragged.state.isDragging(true)
 
 			store.block.action({type: 'reorder', source: 0, target: 2})
-			store.host.rendered()
 
 			// The document is UNCHANGED, because the two moved-past rows are byte-identical. So
 			// the ids are the only evidence the move happened at all — and the whole reason the
@@ -271,8 +268,10 @@ describe('BlockController', () => {
 		it('keeps a row store, and its state, across an operation on another row', () => {
 			// The CONSEQUENCE-level gate for row identity: the id assertions above say which node
 			// survived, this says what that costs a user. Before the row verbs, deleting the first
-			// of two byte-identical rows announced the SECOND row's id as removed, so the store
-			// below was pruned and the open menu closed itself on an unrelated row's deletion.
+			// of two byte-identical rows retained the WRONG node, so the store below was reset
+			// and the open menu closed itself on an unrelated row's deletion. Kept on the
+			// mounted fixture even though the store no longer rides the announcement: the
+			// bind is what an adapter actually does between the two reads.
 			store.props.set({
 				layout: 'block',
 				draggable: true,
@@ -283,15 +282,12 @@ describe('BlockController', () => {
 			document.body.append(container)
 			store.host.container(container)
 			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
-			// The announcement drives the prune, and it fires whether or not the DOM walk aligns.
-			store.host.rendered()
 
 			const survivor = store.block.get(store.tokens.nodes()[1])
 			survivor.state.menuOpen(true)
 			survivor.state.isHovered(true)
 
 			store.block.action({type: 'delete', index: 0})
-			store.host.rendered()
 
 			expect(store.block.get(store.tokens.nodes()[0])).toBe(survivor)
 			expect(survivor.state.menuOpen()).toBe(true)
@@ -299,48 +295,79 @@ describe('BlockController', () => {
 			document.body.replaceChildren()
 		})
 
-		it('keys stores by stable node id, not by the node object', () => {
-			// Two DISTINCT node objects carrying the same id — each tree allocates from 1.
-			// That is the discriminator: object keying (the pre-identity WeakMap) hands the
-			// second one a fresh store and silently resets its drag/hover state.
-			const [before] = nodesOf([textToken('a', 0)])
-			const [shifted] = nodesOf([textToken('a', 1)])
-			const [, other] = nodesOf([textToken('a', 0), textToken('b', 1)])
-			expect(shifted).not.toBe(before)
-			expect(shifted.id).toBe(before.id)
-			expect(other.id).not.toBe(before.id)
+		it('keeps a row store across an edit above it with NOTHING mounted', () => {
+			// The object key needs no announcement, so this holds with no container and no
+			// a re-bind — the id-keyed Map's prune rode the id lists the old fused
+			// the delta carried, whose removals only ever came from a bind, so an unmounted
+			// input could hand a row a store and never shed it. Both clocks are payload-free now,
+			// so there is no removal list left to ride even where one binds.
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('alpha\n\nbeta\n\n')
 
-			expect(store.block.get(shifted)).toBe(store.block.get(before))
-			expect(store.block.get(other)).not.toBe(store.block.get(before))
+			const second = store.block.get(store.tokens.nodes()[1])
+			second.state.menuOpen(true)
+
+			store.edit.replace(...anchorsAt(store, 1, 1), 'X')
+
+			expect(store.tokens.value()).toBe('aXlpha\n\nbeta\n\n')
+			expect(store.block.get(store.tokens.nodes()[1])).toBe(second)
+			expect(second.state.menuOpen()).toBe(true)
 		})
 
-		it('prunes the store of a structurally removed token after the removal commit', () => {
-			// Mounted fixture (the MarkController.spec pattern): text 'he' [0,2],
-			// mark '@[x]' [2,6], text 'llo' [6,9], bound on rendered().
-			store.props.set({defaultValue: 'he@[x]llo', options: [{markup: '@[__value__]'}], Mark: () => null})
-			const container = document.createElement('div')
-			const text1 = document.createElement('span')
-			const markEl = document.createElement('span')
-			markEl.append(document.createTextNode('x'))
-			const text2 = document.createElement('span')
-			container.append(text1, markEl, text2)
-			document.body.append(container)
-			store.host.container(container)
-			store.host.rendered()
-			const node = store.tokens.nodes().find(n => n.kind === 'mark')
-			if (!node) throw new Error('expected parsed mark node')
-			const blockStore = store.block.get(node)
+		it('hands the row that takes a deleted row’s INDEX its own store', () => {
+			// The prune case restated as what protects a user: an index is not an identity, so
+			// the row that slides into slot 0 must not inherit the deleted row's open menu.
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('alpha\n\nbeta\n\n')
 
-			// Remove the mark structurally and bind the new tree — the changed
-			// event fires after the bind; its removed ids drive the prune.
-			store.edit.replace(...anchorsAt(store, 2, 6), '')
-			container.replaceChildren(document.createElement('span'))
-			store.host.rendered()
+			const first = store.tokens.nodes()[0]
+			const firstStore = store.block.get(first)
+			firstStore.state.menuOpen(true)
 
-			// Same captured node object, same id — but the identity is gone, so
-			// a FRESH store comes back: removed rows leak no per-row UI state.
-			expect(store.block.get(node)).not.toBe(blockStore)
-			document.body.replaceChildren()
+			store.block.action({type: 'delete', index: 0})
+
+			const survivor = store.tokens.nodes()[0]
+			expect(survivor).not.toBe(first)
+			expect(store.block.get(survivor)).not.toBe(firstStore)
+			expect(store.block.get(survivor).state.menuOpen()).toBe(false)
+		})
+
+		it('still answers for a node that has LEFT the tree — the one WeakMap divergence', () => {
+			// MEASURED COST of object keying, pinned rather than argued. The id-keyed Map pruned
+			// on the `removed` list the old fused `changed` carried, so re-asking with a dead
+			// node built a fresh store;
+			// a WeakMap keeps the entry as long as the caller keeps the node. Harmless here
+			// because every caller (`Block`, `DragHandle`, `BlockMenu`, `DropIndicator` in
+			// both adapters) passes a node straight out of `tokens.nodes()`, and the entry
+			// collects with the node once the caller drops it.
+			store.props.set({
+				layout: 'block',
+				draggable: true,
+				Mark: () => null,
+				options: [{markup: '__slot__\n\n'}],
+			})
+			store.host.container(document.createElement('div'))
+			store.tokens.setValue('alpha\n\nbeta\n\n')
+
+			const dead = store.tokens.nodes()[0]
+			const deadStore = store.block.get(dead)
+
+			store.block.action({type: 'delete', index: 0})
+
+			expect(store.tokens.nodes()).not.toContain(dead)
+			expect(store.block.get(dead)).toBe(deadStore)
 		})
 	})
 })

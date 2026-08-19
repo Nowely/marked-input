@@ -3,15 +3,25 @@
 exports[`Component: stories > Ant stories > Story Tagged 1`] = `
 "<div contenteditable="true">
   <span>We preset five different colors. You can set color property such as </span>
-  <span contenteditable="false">success</span>
+  <span contenteditable="false">
+    <span>success</span>
+  </span>
   <span>, </span>
-  <span contenteditable="false">processing</span>
+  <span contenteditable="false">
+    <span>processing</span>
+  </span>
   <span>, </span>
-  <span contenteditable="false">error</span>
+  <span contenteditable="false">
+    <span>error</span>
+  </span>
   <span>, </span>
-  <span contenteditable="false">default</span>
+  <span contenteditable="false">
+    <span>default</span>
+  </span>
   <span> and </span>
-  <span contenteditable="false">warning</span>
+  <span contenteditable="false">
+    <span>warning</span>
+  </span>
   <span> to show specific status.</span>
 </div>"
 `;
@@ -19,13 +29,17 @@ exports[`Component: stories > Ant stories > Story Tagged 1`] = `
 exports[`Component: stories > Material stories > Story Chipped 1`] = `
 "<div contenteditable="true">
   <span>Hello beautiful the </span>
-  <div contenteditable="false">
-    <span>first</span>
-  </div>
+  <span contenteditable="false">
+    <div>
+      <span>first</span>
+    </div>
+  </span>
   <span> world from the </span>
-  <div contenteditable="false">
-    <span>second</span>
-  </div>
+  <span contenteditable="false">
+    <div>
+      <span>second</span>
+    </div>
+  </span>
   <span> </span>
 </div>"
 `;
@@ -33,10 +47,12 @@ exports[`Component: stories > Material stories > Story Chipped 1`] = `
 exports[`Component: stories > Material stories > Story Mentions 1`] = `
 "<div contenteditable="true">
   <span>Enter the '@' for calling mention list:&#10;- Hello @Agustina and </span>
-  <div contenteditable="false">
-    <div>R</div>
-    <span>Ruslan</span>
-  </div>
+  <span contenteditable="false">
+    <div>
+      <div>R</div>
+      <span>Ruslan</span>
+    </div>
+  </span>
   <span>!</span>
 </div>"
 `;
@@ -45,13 +61,17 @@ exports[`Component: stories > Material stories > Story Overridden 1`] = `
 "<div>
   <div contenteditable="true">
     <span>Hello beautiful the </span>
-    <div contenteditable="false">
-      <span>first</span>
-    </div>
+    <span contenteditable="false">
+      <div>
+        <span>first</span>
+      </div>
+    </span>
     <span> world from the </span>
-    <div contenteditable="false">
-      <span>second</span>
-    </div>
+    <span contenteditable="false">
+      <div>
+        <span>second</span>
+      </div>
+    </span>
     <span> </span>
   </div>
 </div>"
@@ -60,13 +80,17 @@ exports[`Component: stories > Material stories > Story Overridden 1`] = `
 exports[`Component: stories > Rsuite stories > Story Overridden 1`] = `
 "<div contenteditable="true">
   <span>Type the '@' to begin creating a </span>
-  <div data-size="md" contenteditable="false">
-    <span>tag</span>
-  </div>
+  <span contenteditable="false">
+    <div data-size="md">
+      <span>tag</span>
+    </div>
+  </span>
   <span>. Then press the </span>
-  <div data-size="md" contenteditable="false">
-    <span>Enter</span>
-  </div>
+  <span contenteditable="false">
+    <div data-size="md">
+      <span>Enter</span>
+    </div>
+  </span>
   <span> to finish. For example: @hello</span>
 </div>"
 `;
@@ -74,13 +98,17 @@ exports[`Component: stories > Rsuite stories > Story Overridden 1`] = `
 exports[`Component: stories > Rsuite stories > Story TaggedInput 1`] = `
 "<div contenteditable="true">
   <span>Type the '@' to begin creating a </span>
-  <div data-size="md" contenteditable="false">
-    <span>tag</span>
-  </div>
+  <span contenteditable="false">
+    <div data-size="md">
+      <span>tag</span>
+    </div>
+  </span>
   <span>. Then press the </span>
-  <div data-size="md" contenteditable="false">
-    <span>Enter</span>
-  </div>
+  <span contenteditable="false">
+    <div data-size="md">
+      <span>Enter</span>
+    </div>
+  </span>
   <span> to finish. For example: @hello</span>
 </div>"
 `;

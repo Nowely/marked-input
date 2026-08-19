@@ -209,11 +209,12 @@ export function adopt(
 
 		const structural = added.length > 0 || removed.length > 0
 		// `moved` is a THIRD disjunct and not folded into `structural`, which types.ts forbids a
-		// move from setting. But the renderer still has to run: `renderEpoch` is a biconditional
-		// ("bumped ⇔ the renderer must run"), and a permutation changes the DOM order while
-		// adding, removing and updating nothing. Leaving it false would make the repaint depend on
-		// each adapter's own `nodes` subscription, which Vue's component-container path does not
-		// reliably have.
+		// move from setting: a permutation changes the DOM order while adding, removing and
+		// updating nothing, and a consumer reading `render` has to hear about it.
+		//
+		// NOTE: nothing in core routes on this bit any more — the commit pipeline stopped
+		// consulting it when the render epoch went, because every commit binds. It is kept as
+		// part of the `TransactionResult` contract, and this disjunct with it.
 		const moved = order !== undefined
 		const render = structural || moved || updated.some(node => node.kind === 'mark')
 

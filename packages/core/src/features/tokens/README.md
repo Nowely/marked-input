@@ -138,40 +138,42 @@ Every committed change flows through a single `apply(result)`, taking the
 ```
 write verb → splice → parse → adopt → TransactionResult
   │    (adoption writes node.text → the per-surface effects write the DOM)
-  → apply(result): ledger.touch(id) per updated node
-  ├─ render === false AND no structural apply pending:
-  │    nothing left to do to the DOM → fire changed()
-  └─ render === true, or folded into a pending pass:
-       bump renderEpoch → renderer runs → onRendered() →
-       bind(container, tree.roots()): one DOM+tree walk —
-         create/kill TokenHandles, set element bindings, re-arm the text effects,
-         apply the one-host editable topology to NEWLY BOUND surfaces and mark roots
-       → fire changed()
+  → apply(result): bump `commits`, then fire committed()
+       └─ the bind EFFECT wakes on `commits` → bind(): one tree walk —
+            create/kill TokenHandles, set element bindings, re-arm the text effects,
+            apply the one-host editable topology to NEWLY BOUND surfaces and mark roots
+          → fire bound()
+
+framework paints → a ref fires → consign(id)(element) → rebind(id): that id's
+  share of the same walk → fire bound()
 ```
 
-- **Routing is `result.render`** — not `result.structural`. The latter is
-  add/remove only, while a mark whose value or meta changed renders new framework
-  props and must reach the renderer.
-- **`renderEpoch` is a COUNTER, not the tree.** The adapters read `nodes()` for
-  data and each token component subscribes to its own node, so the pipeline
-  publishes only "the renderer must run". It is not redundant with
-  `roots`, and that is measured: adoption writes `roots` only when the ROOT LIST
-  changes by reference, so a mark whose value changed and a structural change
-  INSIDE a slot both leave it equal — a container subscribed to `roots` alone
-  never re-renders for either, `rendered()` never fires and `bind` never runs.
-  Gated by "a mark value change announces changed" in both render-count specs.
+- **There is no routing.** `result.render` is not consulted: every commit
+  announces and every commit binds. The bit that used to decide, and the epoch
+  it bumped, are gone — the price is one whole-tree walk per commit, measured at
+  rung L7 in `commitCost.bench.ts` (~1.35× at 100 marks, ~2.5× at 1000 rows) and
+  accepted there.
+- **A ref binds ONE token, and that is the whole reason mount is linear.** A
+  registration used to invalidate a counter the bind effect watched, so every ref
+  cost a whole-tree walk: mounting an N-node document measured 2N+2 binds through
+  both adapters and 678 ms at 2001 nodes. `rebind(id)` is that id's share of the
+  walk; the whole walk stays on the commit clock, where the kill sweep needs it.
+- **The bind effect subscribes to two things**, `commits` and the control
+  registrations — NOT the live roots. Every write of `tree.roots` is adoption's,
+  inside a commit that ends in `apply`, so subscribing to both bound twice for one
+  commit. Controls are separate because their only reader is a walk from each
+  control up to the container, which nothing per-id can update.
 - **Text is not the pipeline's business.** `bind` arms
   `effect(() => { const t = node.text(); if (el.textContent !== t) el.textContent = t })`
   per bound text surface; the handle owns its disposal. That is the ONE writer of
   a text surface — `bind` itself does not write `textContent`, and no text
   travels through `apply`.
-- **The pending window:** between a structural apply and its bind, applies fold
-  into the pending structural pass and announce with it. That is ALL it does
-  now. It used to also make `handle(id)` answer `undefined` for every id;
-  ADR-0008 removed that refusal — a node BORN by the commit has no handle until
-  `bind` makes one, so absence was always the refusal that mattered, and the
-  latch's extra reach only hid nodes that survived and whose elements were
-  correct. `pending()` went with it.
+- **The pending window is GONE.** There is no latch and nothing folds: each apply
+  is its own commit and its own bind. What survives of the idea is only that the
+  framework has not repainted yet, so the registries still hold the previous
+  generation's elements and the commit's bind re-projects onto those — it cannot
+  invent a layout nobody painted. A node BORN by the commit simply has no handle
+  until its own ref fires, which was always the refusal that mattered (ADR-0008).
 - **The announcement is DERIVED, not maintained** (`delta.ts`). The ledger holds
   the announced id space and the touched ids and answers
   `added = ids \ announced`, `removed = announced \ ids`,
@@ -193,16 +195,21 @@ write verb → splice → parse → adopt → TransactionResult
   the chrome hanging off the root→host path. Marks carry no tabindex: Tab leaves
   the field. Controls are frozen where they REGISTER (`control()`), not here,
   because they do not mount on the commit clock. No flags, no per-commit sweep.
-- **`changed`** fires only after the DOM is consistent with the node layer — the model-level "commit done" signal (`dom/SelectionDriver.ts`
-  re-places the caret on it) — carrying that commit's `{added, removed, updated}`
-  ids (`TokenDelta`: `added`/`removed` are subtree-inclusive, `updated` is per
-  node). Consumers re-read content via `nodes()` / `find(id)` / `handle(id)`;
-  `BlockController` prunes its id-keyed store off `delta.removed`. Inside a
-  pending window only the final commit announces, and its payload MERGES every
-  folded apply's delta, so a consumer pruning off `removed` cannot miss a wave
-  when two structural applies land before one bind.
+- **TWO CLOCKS**, because one event was answering two questions, and neither
+  carries a payload. `committed` is the MODEL clock: one pulse per commit, once
+  the tree, the projection and the repaired selection are in place. It fires for
+  the commits that move NO element — a row reorder and a mark value change both
+  leave the id space and the element set untouched — which is exactly what a DOM
+  clock cannot see. `bound` is the DOM clock: one pulse per bind, and only the
+  caret needs it (`dom/SelectionDriver.ts`), because a caret landing in a node
+  BORN by the commit has no handle until bind makes one. Consumers re-read
+  content via `nodes()` / `find(id)` / `handle(id)`.
+  The `{added, removed, updated}` payload and the ledger that derived it are
+  GONE: nothing in core read them once `BlockController` moved to a node-keyed
+  `WeakMap`, which was the last reader. The public `MarkputApi.changed` is
+  payload-free and fires per commit.
 
-## Structural DOM walk (`dom/bind.ts`)
+## Element projection (`dom/bind.ts`)
 
 The renderer's endpoint: zip the freshly rendered DOM with the LIVE tree (one
 iterative frame per nesting level, control elements skipped, optional registered
@@ -220,8 +227,7 @@ the two lookups the walk itself produces. There is no id-keyed `bound` map to
 return: the id-keyed side is `deps.nodes`, THE live node layer, which bind
 mutates in place, and "this walk bound it" is `handle.alive()`, because the walk
 unbinds (never removes) a node the DOM missed and deletes only ids absent from
-the tree. Its one reader goes to that map — `assertAligned` (`dom/commit.ts`)
-reads `deps.nodes` directly. Child-sequence hosts register under the owning mark's
+the tree. Child-sequence hosts register under the owning mark's
 stable id: an id does not go stale when a sibling above the owner is added or
 removed mid-render.
 
@@ -253,8 +259,9 @@ valueBetween(from, to) / adjacentMark(anchor, ±1) / step(anchor, ±1)
 rootIndexOf(id) / siblingOf(id, ±1)
 
 // renderer contract (adapter-only)
-renderEpoch: Computed<number> // bumped ⇔ the renderer must run; NOT data
-changed: Event<TokenDelta>    // THE model-level detector; fires after the DOM is consistent
+consign(id) / consignRow(id) / children(ownerId) / control() // ref callbacks; a ref IS the bind
+committed: Event<void>        // THE model clock; one pulse per commit, DOM or no DOM
+bound: Event<void>            // THE DOM clock; one pulse per binding — what the caret needs
 // the framework key is `node.id` — there is no keyOf
 
 // per-node live view
@@ -289,8 +296,10 @@ readOnly change (and every re-mount) overwrites whatever it wrote. It is not par
 of the consumer-facing reading surface above.
 
 Nothing is published before a container mounts: `nodes()` is `[]` and facade
-reads fail soft. Adapters mount the container ref, re-render from the first
-structural commit, and report `onRendered()`.
+reads fail soft. That ordering is load-bearing rather than incidental — because
+the tree seeds inside the container's own ref, no token element can exist before
+it, so the container's ref always lands first and every token ref lands after the
+bind effect is live.
 
 ### The selection snapshot
 
@@ -311,10 +320,10 @@ type SelectionSnapshot = {
 A consumer that treats "no selection" as collapsed compares
 `domSelection()?.anchor.isCollapsed !== false`.
 
-The per-member contract — why `nodes` is a subscribable `Computed` field, why
-`renderEpoch` is a counter and not the tree, exactly when `handle(id)` fails
-closed — is on the members themselves in `seam/TokenModel.ts` and
-`dom/commit.ts`.
+The per-member contract — why `nodes` is a subscribable `Computed` field, why the
+bind effect subscribes to the commit counter and not to the roots, exactly when
+`handle(id)` fails closed — is on the members themselves in `seam/TokenModel.ts`
+and `dom/commit.ts`.
 
 ### Boundary facade internals
 
@@ -354,8 +363,7 @@ IT HOLDS NO CONTENT and no generation — only `id` and one `ElementBindings`
 record. Content and positions belong to the node, and a second representation of
 them here is what the one-tree design forbids. The two reads that could want one
 take the live source instead: "is this a mark" is `!textElement` (`bind` gives a
-`textElement` to text nodes and to nothing else), and the divergence check
-compares each surface against the live `TextNode.text()`.
+`textElement` to text nodes and to nothing else).
 
 The DOM-side writer is the per-surface TEXT EFFECT `bindElements` arms: one
 writer per bound text surface, subscribed to that node's own `text` signal,
@@ -459,9 +467,9 @@ an explicit type annotation to keep `tsc` off TS7022.
   sees the pre-mutation coordinate space.
 - `dom/SelectionDriver.ts` — the DOM I/O, private to `TokenModel`. Two listeners
   (the document-level `selectionchange` sync, and the `focusout` clear on the
-  container) and three watches (`tokens.changed`, `readOnly`, and the stored
+  container) and three watches (`tokens.bound`, `readOnly`, and the stored
   anchors themselves). BUILT IN THE CONSTRUCTOR
-  BODY, not as a field initializer: its dep bag takes `host` and `changed` as
+  BODY, not as a field initializer: its dep bag takes `host` and `bound` as
   VALUES, so an initializer would read a constructor parameter property (`tsc`
   rejects it, TS2729) and `#pipeline` (which answers `undefined` silently from any
   initializer above it). Building it last also puts its `onMounted` after the
@@ -479,7 +487,7 @@ for both ends and normalizes them in DOM order. The two document edges (`'start'
 / `'end'`) resolve against the live roots. `TokenModel.placeAtHandle(handle,
 boundary)` (the driver's, delegated) places at a handle's start/end. All of it
 fails closed against a dead or mid-window handle: a node with no live handle
-declines, and the `tokens.changed` re-apply places the caret once the bind
+declines, and the `tokens.bound` re-apply places the caret once the bind
 lands. Nothing searches the bound surfaces for a nearest position.
 
 ## Parse
@@ -490,15 +498,26 @@ result to adoption. There is no windowed re-tokenizer: the only incrementality
 is adoption's prefix/suffix retention above. Full-parse cost is tracked by the
 `parser.bench.ts` tripwire.
 
-## Divergence detector (the only flag)
+## Divergence: healed, not detected
 
-`VERIFY_DOM` (`dom/commit.ts`) — in dev/test, every `changed` announcement
-asserts that each bound text surface's `textContent` equals its node's live
-`text()`, throwing `TokenModel divergence at #<id>: DOM "…" ≠ model "…"`. The
-flag's fail-closed derivation (what the published bundle ships, and which
-consumer bundler decides the value) and the sweep's placement (a `changed`
-subscriber, not an inline call and not a per-surface check) are stated in full
-at the site — `VERIFY_DOM` and `assertAligned` in `dom/commit.ts`.
+There is no flag and no check. A dev-only sweep used to walk every bound surface
+after each announcement and throw `TokenModel divergence` when one disagreed with
+its node. It came out once every commit began binding: `bindElements` disposes
+and re-creates the per-surface effect unconditionally, and the re-arm's first run
+rewrites the surface — so anything that wrote a bound surface behind the model's
+back is corrected by the next commit instead of being reported by it.
+
+Measured before deleting it. In the mounted wiring the heal lands inside `bind`,
+ahead of any subscriber that could observe the corruption, so the class the sweep
+was written for — a writer that missed on a node the commit never touched — was
+already unreachable. What it could still catch was one consumer contract
+violation, an element consigned under two ids, which neither adapter can produce:
+each Token creates its own element and passes its own `consign(id)` ref. Against
+that it cost a whole-tree walk on every commit in dev and in every test.
+
+The heal itself is pinned rather than assumed — `commitPipeline.spec.ts` corrupts
+a surface and asserts the next commit repairs it, batched and unbatched, and
+`TokenModel.spec.ts` does the same across a container re-attach.
 
 ## Benchmarking
 

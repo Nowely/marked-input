@@ -20,9 +20,16 @@ cause.
 
 ## What is already known about each
 
-**Do not attack 1, 2, 5 or 7 as accidental complexity** — they are the invoice for framework-owned
-DOM, proven by the `react-prosemirror` inversion described in the [spec](../spec.md). Attacking
-them is attacking ADR-0007.
+**That instruction has been REVERSED.** It used to read "do not attack 1, 2, 5 or 7 as accidental
+complexity — they are the invoice for framework-owned DOM". The `react-prosemirror` analogy behind
+it is confounded, and the claim did not survive measurement: 3 has been deleted, 2 measured
+removable at the cost of exactly one red test in 1492, and 1, 5 and 7 are all removed by
+[`../../consigned-surfaces/spec.md`](../../consigned-surfaces/spec.md) **without touching DOM
+ownership** — because two of them are the price of re-deriving a fact the framework already holds,
+and one is the price of waiting for a paint the framework never had to announce.
+
+The honest floor is **one** concept: a post-paint step for the caret on structural edits, which
+even a design that takes DOM ownership outright still has. Attack the rest.
 
 The rest are independent of DOM ownership and were each re-attributed:
 

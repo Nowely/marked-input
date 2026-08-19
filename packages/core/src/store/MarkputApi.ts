@@ -1,6 +1,6 @@
 import type {Host} from '../features/state/Host'
 import {annotate} from '../features/tokens'
-import type {Id, NodeAnchor, TextNode, TokenDelta, TokenModel, TreeNode} from '../features/tokens'
+import type {Id, NodeAnchor, TextNode, TokenModel, TreeNode} from '../features/tokens'
 import type {Markup} from '../features/tokens/parser/types'
 import type {Event} from '../shared/signals'
 
@@ -57,9 +57,17 @@ export class MarkputApi {
 		return this.tokens.find(id)
 	}
 
-	/** Fires once per commit, after the DOM is consistent (spec §2.3; D9's fold merging). */
-	get changed(): Event<TokenDelta> {
-		return this.tokens.changed
+	/**
+	 * Fires once per commit, payload-free. THE MODEL CLOCK: the tree, the value and the selection
+	 * are all settled when it fires, and it fires for commits that move no DOM at all.
+	 *
+	 * It used to carry `{added, removed, updated}` ids and to wait for the DOM. Both are gone: the
+	 * ids were derived by a module nothing in core read any more, and waiting for the DOM made the
+	 * event silent on exactly the commits that change only a mark's value or a row's order. Read
+	 * what changed back through {@link nodes} and {@link find}.
+	 */
+	get changed(): Event<void> {
+		return this.tokens.committed
 	}
 
 	/**

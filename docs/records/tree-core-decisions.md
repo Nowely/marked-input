@@ -296,9 +296,10 @@ They share `#anchorsIn` instead. `domAnchors` folds both `undefined` reasons int
 swapping the exits turns both red. Collapsing the two into one call is the plausible cleanup
 and it is a behaviour change.
 
-**Two DOM writers became one, and the check that guards it is neither of the obvious
-placements.** `dom/commit.ts:210-248` states it in full and should be read before anything is
-moved: the divergence detector sweeps the WHOLE tree from a `changed` subscriber, not from
+**Two DOM writers became one, and the check that guarded it is neither of the obvious
+placements** — and is now gone entirely (2026-08-19: every commit binds, the bind re-arms every
+writer, and the re-arm heals what the check reported). Kept as written because the reasoning is
+what a future check would have to answer: the divergence detector sweeps the WHOLE tree from a `changed` subscriber, not from
 inside the per-surface effect (an effect that was never armed never runs, and never-armed is
 the primary bug class) and not inline at the end of `apply` (`EditController.replace` wraps
 the write in a batch, so the effects adoption queued have not flushed when `apply` returns).

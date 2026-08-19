@@ -21,7 +21,7 @@ function firstMark(store: Store): MarkNode {
 
 /**
  * Mounted fixture: one span per top-level token (marks render childless),
- * bound on rendered(). The model resolves through the live node layer, so the
+ * bound by their refs. The model resolves through the live node layer, so the
  * verbs need a bound store — there is no headless resolution path.
  */
 function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {
@@ -31,7 +31,6 @@ function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {
 	document.body.append(container)
 	store.host.container(container)
 	container.replaceChildren(...store.tokens.nodes().map(() => document.createElement('span')))
-	store.host.rendered()
 	return {store, node: firstMark(store)}
 }
 
@@ -55,7 +54,6 @@ function mountedSetup() {
 	container.append(text1, mark, text2)
 	document.body.append(container)
 	store.host.container(container)
-	store.host.rendered()
 	return {store, node: firstMark(store)}
 }
 
@@ -227,7 +225,6 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 		// the roots, so the liveness walk misses and update() fails closed.
 		const container = document.querySelector('div')!
 		container.replaceChildren(document.createElement('span'))
-		store.host.rendered()
 
 		expect(store.tokens.handle(node.id)).toBeUndefined()
 
@@ -259,7 +256,6 @@ describe('MarkNode across text-path commits (identity bridge)', () => {
 			return span
 		})
 		container.replaceChildren(...spans)
-		store.host.rendered()
 
 		// The ORIGINAL captured node applies — it survived the inheriting commit
 		// (NOT re-derived from the fresh token).
@@ -316,7 +312,6 @@ describe('MarkNode live-read parity', () => {
 		markEl.append(document.createTextNode('y'))
 		const text2 = document.createElement('span')
 		container.replaceChildren(text1, markEl, text2)
-		store.host.rendered()
 		expect(node.value()).toBe('y')
 	})
 
@@ -333,7 +328,6 @@ describe('MarkNode live-read parity', () => {
 		container.append(document.createElement('span'), document.createElement('span'), document.createElement('span'))
 		document.body.append(container)
 		store.host.container(container)
-		store.host.rendered()
 		const node = firstMark(store)
 		expect(node.value()).toBe('v')
 		expect(node.meta()).toBe('m')
@@ -357,7 +351,6 @@ describe('MarkNode live-read parity', () => {
 		expect(store.tokens.value()).toBe('hello')
 		const container = document.querySelector('div')!
 		container.replaceChildren(document.createElement('span'))
-		store.host.rendered()
 
 		const result = node.update({value: 'bad'})
 		expect(result).toBe(false)
@@ -391,7 +384,7 @@ describe('MarkNode live-read parity', () => {
 	it('resolution during the pending window reads the live node, then stays live after bind', () => {
 		const {store} = mountedSetup()
 
-		// Structural commit, NO rendered() — the pending latch is closed. The resolution
+		// Structural commit and NO repaint, so nothing is re-consigned. The resolution
 		// (which both adapters run synchronously during render) must find the node by id.
 		// The fixture ADDS roots for the reason spelled out on the mid-window case above: a
 		// whole-value write that keeps the root count is a text-path commit and opens no
@@ -413,7 +406,6 @@ describe('MarkNode live-read parity', () => {
 			return span
 		})
 		container.replaceChildren(...spans)
-		store.host.rendered()
 
 		expect(node.value()).toBe('x')
 		expect(node.update({value: 'ok'})).toBe(true)
@@ -515,16 +507,21 @@ describe('moveTo', () => {
 		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c])
 	})
 
-	it('announces a move as a render, but not as structural', () => {
+	it('pulses each clock exactly once at the move', () => {
+		// A reorder leaves the id space and the element set untouched, so only `committed` — the
+		// MODEL clock — can see it as a change at all. `bound` answers the other question (does
+		// every handle match an element in the document), and since bind became an effect it
+		// answers it in the same synchronous step rather than waiting for a paint. What the split
+		// still buys is the reverse direction: a consignment with no commit pulses `bound` alone.
 		const store = rowSetup('alpha\n\nbeta\n\n')
-		const deltas: {added: readonly number[]; removed: readonly number[]; updated: readonly number[]}[] = []
-		watch(store.tokens.changed, delta => deltas.push(delta))
+		let committed = 0
+		let bound = 0
+		watch(store.tokens.committed, () => committed++)
+		watch(store.tokens.bound, () => bound++)
 
 		expect(store.tokens.nodes()[0].moveTo(1)).toBe(true)
-		store.host.rendered()
 
-		// Nothing was born, died or changed content — only the order did.
-		expect(deltas).toEqual([{added: [], removed: [], updated: []}])
+		expect([committed, bound]).toEqual([1, 1])
 	})
 
 	it('keeps the selection anchored to the character it was on', () => {

@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import type {TokenDelta} from '../features/tokens'
+import {consignRendered} from '../features/tokens/__testing__/mountFixtures'
 import type {Markup} from '../features/tokens/parser/types'
 import type {TextNode} from '../features/tokens/tree/types'
 import {effect, watch} from '../shared/signals'
@@ -11,9 +11,9 @@ const MARKUP: Markup = '@[__value__](__meta__)'
 const SLOT_MARKUP: Markup = '#[__value__]{__slot__}'
 
 /**
- * Mounted fixture: one span per top-level token (marks render childless). The verbs resolve
- * through the live node layer, so they need a seeded store; mounting is how production gets
- * one, and it keeps the selection watches wired.
+ * Mounted fixture: one span per top-level token (marks render childless), consigned the way an
+ * adapter's refs would. The verbs resolve through the live node layer, so they need a seeded
+ * store; mounting is how production gets one, and it keeps the selection watches wired.
  */
 function setup(value: string, opts: {controlled?: boolean; onChange?: (value: string) => void} = {}) {
 	const store = new Store()
@@ -27,7 +27,7 @@ function setup(value: string, opts: {controlled?: boolean; onChange?: (value: st
 	document.body.append(container)
 	store.host.container(container)
 	container.replaceChildren(...store.tokens.nodes().map(() => document.createElement('span')))
-	store.host.rendered()
+	consignRendered(store, container)
 	return {store, api: store.api}
 }
 
@@ -52,18 +52,51 @@ describe('MarkputApi (spec §2.3)', () => {
 		expect(api.find(9999)).toBeUndefined()
 	})
 
-	it('changed carries the ids of one commit', () => {
+	it('changed pulses once per commit, carries nothing, and lands on a settled model', () => {
 		const {api} = setup('hello')
-		const seen: TokenDelta[] = []
+		const payloads: unknown[] = []
+		const valueAtPulse: string[] = []
 		// `changed` is an Event, so the subscription verb is `watch` — CALLING it emits. That
 		// is why both adapter barrels re-export `watch`: without it a userland consumer of
 		// @markput/react cannot consume the documented event at all.
-		watch(api.changed, delta => seen.push(delta))
-		const id = api.nodes()[0].id
+		watch(api.changed, payload => {
+			payloads.push(payload)
+			valueAtPulse.push(api.value())
+		})
 		api.replaceText({node: textAt(api, 0), start: 0, end: 1}, 'H')
-		expect(seen).toHaveLength(1)
-		expect(seen[0].updated).toEqual([id])
-		expect(seen[0].added).toEqual([])
+		// PAYLOAD-FREE by contract, pinned as the literal value a subscriber receives: the
+		// `{added, removed, updated}` id lists are gone and a consumer re-reads `nodes()`/`find()`.
+		expect(payloads).toEqual([undefined])
+		// THE MODEL CLOCK: `value()` already answers the committed string when the pulse lands,
+		// which is what makes the read-back the documented replacement for the payload.
+		expect(valueAtPulse).toEqual(['Hello'])
+	})
+
+	it('changed pulses on a structural commit, with no bind in between', () => {
+		// Retimed: `changed` is now the COMMIT clock, not the post-bind one. This fixture consigns
+		// once and never re-renders, so a structural commit binds nothing afterwards — under the
+		// fused post-bind event it announced nothing here at all.
+		const {api} = setup('hello')
+		let pulses = 0
+		watch(api.changed, () => pulses++)
+		expect(api.setValue('a@[x](m)b')).toBe(true)
+		expect(pulses).toBe(1)
+		expect(api.nodes().map(n => n.kind)).toEqual(['text', 'mark', 'text'])
+	})
+
+	it('changed pulses once for a tx, not once per op inside it', () => {
+		// "Once per COMMIT" is the whole of the count contract, and a tx is the case that
+		// discriminates it from "once per write verb".
+		const {api} = setup('abcdef')
+		let pulses = 0
+		watch(api.changed, () => pulses++)
+		const node = textAt(api, 0)
+		const composed = api.tx(() => {
+			api.replaceText({node, start: 0, end: 1}, 'X')
+			api.replaceText({node, start: 5, end: 6}, 'Y')
+		})
+		expect(composed).toBe(true)
+		expect(pulses).toBe(1)
 	})
 
 	it("insertMark inserts at an anchor and at 'caret', and rejects when there is no selection", () => {

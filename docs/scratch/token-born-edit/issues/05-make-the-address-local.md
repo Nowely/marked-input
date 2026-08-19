@@ -6,6 +6,12 @@ Type: research
 
 Stop storing a Token's position, so an edit stops invalidating every Token after it.
 
+> **RE-PRICED 2026-08-19.** The efficiency half of this phase is withdrawn. The suffix rewrite was
+> measured at a few percent of a keystroke, and DERIVING positions instead of storing them was
+> measured **7-8x more expensive** than the rewrite it replaces. Do this phase for G1 — the edit
+> being born in the Token — or do not do it. See
+> [`../../native-caret-motion/measurements.md`](../../native-caret-motion/measurements.md).
+
 ## Why this is the phase that delivers G1
 
 A keystroke costs two O(document) passes, not one. The parse is the first

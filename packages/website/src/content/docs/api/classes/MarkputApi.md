@@ -43,16 +43,22 @@ Defined in: [core/src/store/MarkputApi.ts:25](https://github.com/Nowely/marked-i
 #### Get Signature
 
 ```ts
-get changed(): Event<TokenDelta>;
+get changed(): Event<void>;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:61](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L61)
+Defined in: [core/src/store/MarkputApi.ts:69](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L69)
 
-Fires once per commit, after the DOM is consistent (spec §2.3; D9's fold merging).
+Fires once per commit, payload-free. THE MODEL CLOCK: the tree, the value and the selection
+are all settled when it fires, and it fires for commits that move no DOM at all.
+
+It used to carry `{added, removed, updated}` ids and to wait for the DOM. Both are gone: the
+ids were derived by a module nothing in core read any more, and waiting for the DOM made the
+event silent on exactly the commits that change only a mark's value or a row's order. Read
+what changed back through [nodes](/api/classes/markputapi/#nodes) and [find](/api/classes/markputapi/#find).
 
 ##### Returns
 
-`Event`\<`TokenDelta`\>
+`Event`\<`void`\>
 
 ***
 
@@ -78,7 +84,7 @@ Defined in: [core/src/store/MarkputApi.ts:30](https://github.com/Nowely/marked-i
 caret(at): boolean;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:120](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L120)
+Defined in: [core/src/store/MarkputApi.ts:128](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L128)
 
 #### Parameters
 
@@ -118,7 +124,7 @@ Defined in: [core/src/store/MarkputApi.ts:56](https://github.com/Nowely/marked-i
 focus(): void;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:105](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L105)
+Defined in: [core/src/store/MarkputApi.ts:113](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L113)
 
 #### Returns
 
@@ -132,7 +138,7 @@ Defined in: [core/src/store/MarkputApi.ts:105](https://github.com/Nowely/marked-
 insertMark(at, init): boolean;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:79](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L79)
+Defined in: [core/src/store/MarkputApi.ts:87](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L87)
 
 Whether the insertion was ACCEPTED. `'caret'` means the selection's START in document
 order, and answers `false` when there is no selection (spec §2.3).
@@ -185,7 +191,7 @@ replaceRange(
    text): boolean;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:91](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L91)
+Defined in: [core/src/store/MarkputApi.ts:99](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L99)
 
 Cross-node (spec D5). The pair is normalized, so `from` after `to` is legal.
 
@@ -209,7 +215,7 @@ Cross-node (spec D5). The pair is normalized, so `from` after `to` is legal.
 replaceText(target, text): boolean;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:86](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L86)
+Defined in: [core/src/store/MarkputApi.ts:94](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L94)
 
 #### Parameters
 
@@ -233,7 +239,7 @@ Defined in: [core/src/store/MarkputApi.ts:86](https://github.com/Nowely/marked-i
 select(anchor, head?): boolean;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:114](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L114)
+Defined in: [core/src/store/MarkputApi.ts:122](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L122)
 
 #### Parameters
 
@@ -259,7 +265,7 @@ selection():
   | undefined;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:110](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L110)
+Defined in: [core/src/store/MarkputApi.ts:118](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L118)
 
 The STORED anchors (spec D7), not the derived numbers. Reactive.
 
@@ -279,7 +285,7 @@ The STORED anchors (spec D7), not the derived numbers. Reactive.
 setValue(text): boolean;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:97](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L97)
+Defined in: [core/src/store/MarkputApi.ts:105](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L105)
 
 Whole-value. Rides the same gap narrowing every whole-value site does (spec D8).
 
@@ -301,7 +307,7 @@ Whole-value. Rides the same gap narrowing every whole-value site does (spec D8).
 tx(fn): boolean;
 ```
 
-Defined in: [core/src/store/MarkputApi.ts:101](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L101)
+Defined in: [core/src/store/MarkputApi.ts:109](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputApi.ts#L109)
 
 #### Parameters
 

@@ -1,9 +1,8 @@
 import type {DomRef} from '../../../shared/editorContracts'
-import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
+import {batch, computed, effect, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
-import type {TokenDelta} from '../delta'
 import {createCommitPipeline} from '../dom/commit'
 import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
@@ -39,13 +38,26 @@ export class TokenModel {
 	// ═══ Consumer reads ═══════════════════════════════════════════════════════
 
 	/**
-	 * THE model-level detector: fires once per commit, only after the DOM is
-	 * consistent, carrying that commit's `{added, removed, updated}` ids. Applies
-	 * folded into one pending structural pass announce ONE merged delta — a consumer
-	 * pruning off `removed` cannot miss a wave.
+	 * THE model clock: one pulse per commit, once the tree, the projection and the repaired
+	 * selection are all in place. It fires for commits that move NO element — a row reorder and a
+	 * mark value change both leave the id space and the element set untouched — which is the
+	 * whole reason it is not the DOM clock.
+	 *
+	 * PAYLOAD-FREE, deliberately. It used to carry `{added, removed, updated}` ids derived by a
+	 * ledger module; nothing in core read them once the block store moved to a `WeakMap`, and a
+	 * consumer that wants to know what changed re-reads {@link nodes} or {@link find}.
 	 */
-	get changed(): Event<TokenDelta> {
-		return this.#pipeline.changed
+	get committed(): Event<void> {
+		return this.#pipeline.committed
+	}
+
+	/**
+	 * THE DOM clock: one pulse per bind, so every handle matches an element in the document. Only
+	 * the caret needs it — a caret landing in a node BORN by the commit has no handle until bind
+	 * makes one, so nothing earlier can place it.
+	 */
+	get bound(): Event<void> {
+		return this.#pipeline.bound
 	}
 
 	/**
@@ -64,7 +76,7 @@ export class TokenModel {
 	 * (`commitPipeline.spec.ts`'s fold case). It refused precisely the case that worked.
 	 *
 	 * A caret placed mid-window against pre-paint parent coordinates is a transient the
-	 * post-bind `tokens.changed` re-apply corrects in the same frame (`dom/SelectionDriver`),
+	 * post-bind `tokens.bound` re-apply corrects in the same frame (`dom/SelectionDriver`),
 	 * and it can no longer steal focus the way it could under N editing hosts, which is the
 	 * topology the latch was designed in. Gated by `seam/pendingWindow.spec.ts`.
 	 */
@@ -95,15 +107,6 @@ export class TokenModel {
 	// ═══ Adapter SPI ══════════════════════════════════════════════════════════
 
 	/**
-	 * Renderer contract (adapter-only): bumped ⇔ the renderer must run. NOT a data read —
-	 * the tree is {@link nodes}, and a mark component subscribes to its own node. See
-	 * {@link CommitPipeline.renderEpoch} for why `nodes` alone cannot carry this.
-	 */
-	get renderEpoch(): Computed<number> {
-		return this.#pipeline.renderEpoch
-	}
-
-	/**
 	 * Ref callback for a control element (e.g. overlay, drag handle). Registration is
 	 * ELEMENT-ONLY: the sole reader is `#controlElements`, which feeds bind's
 	 * `computeControlRoots` — a walk from each control up to the container. Nothing ever
@@ -125,6 +128,10 @@ export class TokenModel {
 			} else {
 				this.#pendingControls.delete(key)
 			}
+			// Controls feed `computeControlRoots`, which only a whole bind recomputes — so unlike
+			// the owner-keyed registries this one still wakes the effect, or a control mounted off
+			// the commit clock (a menu opening on a block-store signal) leaves the roots stale.
+			this.#controlRegistrations(this.#controlRegistrations() + 1)
 		}
 	}
 
@@ -137,10 +144,52 @@ export class TokenModel {
 		const key = {}
 		return element => {
 			if (element) {
-				this.#pendingChildSequences.set(key, {ownerId, element})
+				this.#childSequenceHosts.set(ownerId, key, element)
 			} else {
-				this.#pendingChildSequences.delete(key)
+				this.#childSequenceHosts.delete(ownerId, key)
 			}
+			this.#pipeline.rebind(ownerId)
+		}
+	}
+
+	/**
+	 * Ref callback for a token's OWN element — the thing `bind` currently re-derives by walking
+	 * the painted DOM in lockstep with the tree. The framework held this element a moment before
+	 * it painted it; consigning it is that association pushed instead of re-discovered.
+	 *
+	 * INERT for now, and deliberately so. Nothing reads either registry yet: this step exists to
+	 * carry the ref plumbing and the contract change on its own, so the walk's deletion is a
+	 * separate, separately revertible step. See `docs/scratch/consigned-surfaces/spec.md`.
+	 *
+	 * Keyed per REGISTRATION like {@link children}, with the owner's stable id in the VALUE, so a
+	 * ref that outlives a re-render cannot be filed under a stale key.
+	 */
+	consign(id: number): DomRef {
+		const key = {}
+		return element => {
+			if (element) {
+				this.#tokenElements.set(id, key, element)
+			} else {
+				this.#tokenElements.delete(id, key)
+			}
+			this.#pipeline.rebind(id)
+		}
+	}
+
+	/**
+	 * The same, for the ROW wrapper a top-level token gets in block layout. Separate from
+	 * {@link consign} because they are different elements of the same token — the walk answers
+	 * both, and a row holds chrome the token element must not be confused with.
+	 */
+	consignRow(id: number): DomRef {
+		const key = {}
+		return element => {
+			if (element) {
+				this.#rowElements.set(id, key, element)
+			} else {
+				this.#rowElements.delete(id, key)
+			}
+			this.#pipeline.rebind(id)
 		}
 	}
 
@@ -370,9 +419,9 @@ export class TokenModel {
 		private readonly host: Host
 	) {
 		host.onMounted(() => {
-			// Order matters: the immediate arrival seeds the pipeline (cold start is a
-			// structural pass), so the immediate onRendered right after can bind a pre-built
-			// DOM — the shell is live once the container attaches.
+			// Order matters: the immediate arrival seeds the pipeline, so the bind effect
+			// installed right after can bind a pre-built DOM — the shell is live once the
+			// container attaches.
 			//
 			// ONE watch over the (value, parser, isBlock) tuple: a simultaneous props change is
 			// one wave and one commit, where three separate watches would adopt (and announce)
@@ -397,7 +446,30 @@ export class TokenModel {
 				},
 				{immediate: true}
 			)
-			watch(host.rendered, () => this.#pipeline.onRendered(), {immediate: true})
+			// THE BIND EFFECT: when does the WHOLE tree get re-projected. A single ref does not
+			// come through here at all — {@link consign} calls `rebind(id)` straight away — which
+			// is what keeps a mount linear.
+			//
+			// It subscribes to exactly two things: the commit counter and the control
+			// registrations. The commit counter is there so that a commit which moves no element
+			// still binds, which keeps `bound` a clock every commit reaches and keeps the caret's
+			// post-commit re-place; the controls are there because their only reader is a
+			// whole-container walk that nothing per-id can update.
+			//
+			// NOT the roots, deliberately, and it is not a gap: every write of `tree.roots` is
+			// adoption's, inside a commit that ends in `apply`. Subscribing to both made a
+			// structural commit bind TWICE — adoption's batch closes and flushes the effect, then
+			// `apply` bumps the counter and flushes it again — for one commit's worth of change.
+			//
+			// Everything the projection itself reads — `children()`, `text()`, every node signal
+			// `bind` touches — is read inside `bind`'s own `untracked`, so an unrelated text edit
+			// cannot wake it. That precision is the whole risk of this shape, and it is pinned by
+			// `TokenModel.bindEffect.spec.ts`.
+			effect(() => {
+				this.#pipeline.commits()
+				this.#controlRegistrations()
+				untracked(() => this.#pipeline.bindNow())
+			})
 		})
 
 		// LAST, so the driver's own `onMounted` runs after the arrival above. See
@@ -406,7 +478,7 @@ export class TokenModel {
 			selection: this.selection,
 			host,
 			readOnly: () => this.props.readOnly(),
-			changed: this.#pipeline.changed,
+			bound: this.#pipeline.bound,
 			nodes: () => this.nodes(),
 			find: id => this.find(id),
 			handle: id => this.handle(id),
@@ -612,7 +684,7 @@ export class TokenModel {
 		// INSIDE `apply`, ahead of both writes — the batch is what holds them until all three land.
 		onResult: result =>
 			batch(() => {
-				this.#pipeline.apply(result)
+				this.#pipeline.apply()
 				this.#committed(this.#tree.value())
 				this.selection.repair(result)
 			}),
@@ -659,8 +731,11 @@ export class TokenModel {
 		nodes: this.#nodes,
 		roots: () => this.#tree.roots(),
 		controlElements: () => this.#controlElements(),
-		childSequenceHostsFor: ownerId => this.#childSequenceHostsFor(ownerId),
-		isBlock: () => this.props.layout.isBlock(),
+		source: {
+			tokenElement: id => this.#tokenElements.latest(id),
+			rowElement: id => this.#rowElements.latest(id),
+			childSequenceHost: ownerId => this.#childSequenceHosts.sole(ownerId),
+		},
 	})
 
 	// All DOM-related reads/commands live in DomModel; the public methods above are one-line
@@ -681,26 +756,67 @@ export class TokenModel {
 	 */
 	readonly #selectionDriver: SelectionDriver
 
-	// Ref registries — populated by framework ref callbacks, read by bind. Keyed by a
-	// per-registration token, so nothing has to mint or read an id.
+	// THE ref registries — populated by framework ref callbacks, read by bind. Owner-indexed, so
+	// one id's element is one lookup: `rebind(id)` answers a single ref, and a registry that had
+	// to be scanned or rebuilt to serve it would put the whole document back into the cost of one
+	// registration. That is not a micro-optimisation — it is the difference between a linear
+	// mount and a quadratic one, measured.
+	readonly #tokenElements = new RefRegistry()
+	readonly #rowElements = new RefRegistry()
+	readonly #childSequenceHosts = new RefRegistry()
+	/**
+	 * Controls are ELEMENT-ONLY — nothing ever asks which token owns one — so they keep a flat
+	 * registry and, alone among the registries, an observable counter: their only reader is
+	 * `computeControlRoots`, a walk from each control up to the container that a whole bind
+	 * recomputes. There is no per-id work to do for one, and there are never many.
+	 */
 	readonly #pendingControls = new Map<object, HTMLElement>()
-	readonly #pendingChildSequences = new Map<object, ChildSequenceRegistration>()
+	readonly #controlRegistrations = signal({initial: 0})
 
 	#controlElements(): ReadonlySet<HTMLElement> {
 		return new Set(this.#pendingControls.values())
 	}
-
-	/** An unregistered id matches no registration, so the loop answers `[]` without a branch. */
-	#childSequenceHostsFor(ownerId: number): HTMLElement[] {
-		const out: HTMLElement[] = []
-		for (const registration of this.#pendingChildSequences.values()) {
-			if (registration.ownerId === ownerId) out.push(registration.element)
-		}
-		return out
-	}
 }
 
-type ChildSequenceRegistration = {
-	readonly ownerId: number
-	readonly element: HTMLElement
+/**
+ * One ref registry: elements filed under an owner id, and inside it under the REGISTRATION that
+ * produced them — so a ref outliving a re-render cannot be filed under a stale key, and a stale
+ * null-call cannot delete a newer element.
+ */
+class RefRegistry {
+	readonly #byOwner = new Map<number, Map<object, HTMLElement>>()
+
+	set(ownerId: number, key: object, element: HTMLElement): void {
+		let registrations = this.#byOwner.get(ownerId)
+		if (!registrations) {
+			registrations = new Map<object, HTMLElement>()
+			this.#byOwner.set(ownerId, registrations)
+		}
+		registrations.set(key, element)
+	}
+
+	delete(ownerId: number, key: object): void {
+		const registrations = this.#byOwner.get(ownerId)
+		if (!registrations) return
+		registrations.delete(key)
+		if (registrations.size === 0) this.#byOwner.delete(ownerId)
+	}
+
+	/** The newest registration for one owner — insertion order, so the last ref to fire wins. */
+	latest(ownerId: number): HTMLElement | undefined {
+		let latest: HTMLElement | undefined
+		for (const element of this.#byOwner.get(ownerId)?.values() ?? []) latest = element
+		return latest
+	}
+
+	/**
+	 * The SOLE registration for one owner, or `undefined` when there is none or more than one.
+	 * Two live registrations mean two generations are on the page, and the caller declines rather
+	 * than guessing which is this one's.
+	 */
+	sole(ownerId: number): HTMLElement | undefined {
+		const registrations = this.#byOwner.get(ownerId)
+		if (registrations?.size !== 1) return undefined
+		return this.latest(ownerId)
+	}
 }

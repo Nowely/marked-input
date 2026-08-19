@@ -15,6 +15,12 @@ Blocked by: 03
 
 Stop re-parsing the whole document on every keystroke.
 
+> **RE-PRICED 2026-08-19.** Speed is no longer a reason: the full re-parse is ~0.41 ms at 1000
+> marks, about 3% of a keystroke. But a SOUND windowing predicate has since been found and
+> validated over 2.24M chained edits — widen to the neighbours AND up to the parent scope, with a
+> frame check at every ancestor. Doubling alone is refuted at up to 35% wrong trees. See §9 of
+> [`../../incremental-parser/spec.md`](../../incremental-parser/spec.md) before starting.
+
 ## The asymmetry to fix
 
 `fold(next, window)` in `tree/valueBoundary.ts` already **holds** the edit window and hands it to

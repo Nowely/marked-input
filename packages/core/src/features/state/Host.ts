@@ -1,11 +1,13 @@
-import {effectScope, event, signal, watch} from '../../shared/signals'
+import {effectScope, signal, watch} from '../../shared/signals'
 
-// Owns adapter-fed runtime state: the rendered event emitted after each
-// component render and the host element ref. Features read these; only the
-// React/Vue adapter writes them.
+// Owns adapter-fed runtime state: the host element ref, and nothing else. Features read it;
+// only the React/Vue adapter writes it.
+//
+// The `rendered` event is GONE. It existed so an adapter could say "I painted, go and walk the
+// DOM" — and with elements consigned through refs there is nothing to walk and no reason for an
+// adapter to call back in. Binding is an effect on the token layer now.
 
 export class Host {
-	readonly rendered = event()
 	readonly container = signal<HTMLElement | null>({initial: null})
 
 	/**

@@ -48,15 +48,29 @@ export function findTextBoundary(surface: HTMLElement, offset: number): {node: T
 	return {node: text, offset: text.length}
 }
 
-/** THE collapsed placement: one boundary of either shape becomes the whole selection. */
+/**
+ * THE collapsed placement: one boundary of either shape becomes the whole selection.
+ *
+ * `Selection.collapse`, not `removeAllRanges()` + `addRange(range)` — MEASURED, and it is the
+ * cheapest win on the keystroke path this repo has found. The two are equivalent here by
+ * construction (every caller of this function places a COLLAPSED caret, so there is no second
+ * range for `removeAllRanges` to clear that `collapse` would not), but Blink charges very
+ * differently for them: writing the selection forces a synchronous layout of the whole editing
+ * host, and the two-call form pays it twice.
+ *
+ * `commitCost.bench.ts`'s L6 rung, A/B'd by reverting this one line, five runs on an idle machine:
+ *
+ *   inline 100 marks   addRange 0.332 / 0.334 ms   collapse 0.294 / 0.261 / 0.257 ms   -18.6%
+ *   block 1000 rows    addRange 0.887 / 0.881 ms   collapse 0.717 / 0.697 / 0.731 ms   -19.1%
+ *
+ * So ~19% off a whole keystroke, and the same figure on two very different document shapes. An
+ * earlier reading of ~24% was taken while background agents were loading the machine; ratios
+ * survived that, absolutes did not.
+ */
 export function collapseTo(boundary: CaretBoundary): void {
 	const selection = window.getSelection()
 	if (!selection) return
-	const range = document.createRange()
-	range.setStart(boundary.node, boundary.offset)
-	range.collapse(true)
-	selection.removeAllRanges()
-	selection.addRange(range)
+	selection.collapse(boundary.node, boundary.offset)
 }
 
 /** Place a collapsed caret at a character offset inside a text surface. */

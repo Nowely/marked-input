@@ -43,7 +43,7 @@ export class OverlayController {
 				this.match(undefined)
 			})
 
-			// `tokens.changed`, NOT `tokens.value` — the same post-commit clock the
+			// `tokens.committed`, NOT `tokens.value` — the same post-commit clock the
 			// `selectionChange` arm below already probes on. In controlled mode `value` is
 			// `props.value()` and `??` short-circuits, so this watch was notified by the parent's
 			// echo DIRECTLY: it ran from inside adoption, before the surfaces were written and
@@ -58,7 +58,7 @@ export class OverlayController {
 			// 0 and 0 (the props signal short-circuits the equal write). An uncontrolled commit
 			// that leaves the string unchanged: 0 and 1 — the one case `changed` adds, and a
 			// probe is idempotent.
-			watch(this.tokens.changed, () => {
+			watch(this.tokens.committed, () => {
 				if (!hasOverlayTrigger()) return
 				const showOverlayOn = this.props.showOverlayOn()
 				const type: OverlayTrigger = 'change'

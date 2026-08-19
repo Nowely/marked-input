@@ -9,7 +9,9 @@ exports[`Component: stories > Api stories > Story Block 1`] = `
           <span></span>
         </button>
       </div>
-      <mark contenteditable="false">a</mark>
+      <span contenteditable="false">
+        <mark>a</mark>
+      </span>
     </div>
     <div>
       <div contenteditable="false">
@@ -17,7 +19,9 @@ exports[`Component: stories > Api stories > Story Block 1`] = `
           <span></span>
         </button>
       </div>
-      <mark contenteditable="false">b</mark>
+      <span contenteditable="false">
+        <mark>b</mark>
+      </span>
     </div>
   </div>
   <div>
@@ -39,7 +43,9 @@ exports[`Component: stories > Api stories > Story Default 1`] = `
 "<div>
   <div contenteditable="true">
     <span>hello </span>
-    <mark contenteditable="false">world</mark>
+    <span contenteditable="false">
+      <mark>world</mark>
+    </span>
     <span> foo</span>
   </div>
   <div>
@@ -68,13 +74,21 @@ exports[`Component: stories > Base stories > Story Configured 1`] = `
   <div>
     <div contenteditable="true">
       <span>Enter the '@' for calling </span>
-      <button type="button" contenteditable="false">primary</button>
+      <span contenteditable="false">
+        <button type="button">primary</button>
+      </span>
       <span> suggestions and '/' for </span>
-      <button type="button" contenteditable="false">default</button>
+      <span contenteditable="false">
+        <button type="button">default</button>
+      </span>
       <span>!&#10;Mark is can be a any component with any logic. In this example it is the </span>
-      <button type="button" contenteditable="false">Button</button>
+      <span contenteditable="false">
+        <button type="button">Button</button>
+      </span>
       <span>: clickable primary or secondary.&#10;For found mark used </span>
-      <button type="button" contenteditable="false">annotations</button>
+      <span contenteditable="false">
+        <button type="button">annotations</button>
+      </span>
       <span>.</span>
     </div>
   </div>
@@ -94,7 +108,9 @@ exports[`Component: stories > Base stories > Story Configured 1`] = `
 exports[`Component: stories > Base stories > Story Default 1`] = `
 "<div contenteditable="true">
   <span>Hello, clickable marked </span>
-  <mark contenteditable="false">world</mark>
+  <span contenteditable="false">
+    <mark>world</mark>
+  </span>
   <span>!</span>
 </div>"
 `;
@@ -115,7 +131,9 @@ exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
         <span></span>
       </button>
     </div>
-    <mark contenteditable="false">world</mark>
+    <span contenteditable="false">
+      <mark>world</mark>
+    </span>
   </div>
   <div>
     <div contenteditable="false">
@@ -131,7 +149,9 @@ exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
 exports[`Component: stories > Clipboard stories > Story Inline 1`] = `
 "<div contenteditable="true">
   <span>hello </span>
-  <mark contenteditable="false">world</mark>
+  <span contenteditable="false">
+    <mark>world</mark>
+  </span>
   <span> foo</span>
 </div>"
 `;
@@ -139,10 +159,12 @@ exports[`Component: stories > Clipboard stories > Story Inline 1`] = `
 exports[`Component: stories > Clipboard stories > Story NestedMarkStory 1`] = `
 "<div contenteditable="true">
   <span>hello </span>
-  <mark contenteditable="false">
-    <strong>wor</strong>
-    <em>ld</em>
-  </mark>
+  <span contenteditable="false">
+    <mark>
+      <strong>wor</strong>
+      <em>ld</em>
+    </mark>
+  </span>
   <span> foo</span>
 </div>"
 `;
@@ -163,13 +185,17 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     </div>
     <span>
       <span>
-        <span>Welcome to </span>
         <span>
+          <span>Welcome to </span>
           <span>
-            <span>Marked Input</span>
+            <span>
+              <span>
+                <span>Marked Input</span>
+              </span>
+            </span>
           </span>
+          <span></span>
         </span>
-        <span></span>
       </span>
     </span>
   </div>
@@ -189,31 +215,39 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     </div>
     <span>
       <span>
-        <span>Features</span>
-      </span>
-    </span>
-  </div>
-  <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
-    <span>
-      <span>
-        <span></span>
         <span>
-          <span>
-            <span>Bold</span>
-          </span>
+          <span>Features</span>
         </span>
-        <span> and </span>
+      </span>
+    </span>
+  </div>
+  <div>
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
+    </div>
+    <span>
+      <span>
         <span>
+          <span></span>
           <span>
-            <span>italic</span>
+            <span>
+              <span>
+                <span>Bold</span>
+              </span>
+            </span>
           </span>
+          <span> and </span>
+          <span>
+            <span>
+              <span>
+                <span>italic</span>
+              </span>
+            </span>
+          </span>
+          <span> text support</span>
         </span>
-        <span> text support</span>
       </span>
     </span>
   </div>
@@ -225,11 +259,17 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     </div>
     <span>
       <span>
-        <span></span>
-        <span contenteditable="false">Code snippets</span>
-        <span> and </span>
-        <span contenteditable="false">code blocks</span>
-        <span></span>
+        <span>
+          <span></span>
+          <span contenteditable="false">
+            <span>Code snippets</span>
+          </span>
+          <span> and </span>
+          <span contenteditable="false">
+            <span>code blocks</span>
+          </span>
+          <span></span>
+        </span>
       </span>
     </span>
   </div>
@@ -241,9 +281,13 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     </div>
     <span>
       <span>
-        <span></span>
-        <span contenteditable="false">Strikethrough</span>
-        <span> for deleted content</span>
+        <span>
+          <span></span>
+          <span contenteditable="false">
+            <span>Strikethrough</span>
+          </span>
+          <span> for deleted content</span>
+        </span>
       </span>
     </span>
   </div>
@@ -255,9 +299,13 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     </div>
     <span>
       <span>
-        <span>Links like </span>
-        <span contenteditable="false">GitHub</span>
-        <span></span>
+        <span>
+          <span>Links like </span>
+          <span contenteditable="false">
+            <span>GitHub</span>
+          </span>
+          <span></span>
+        </span>
       </span>
     </span>
   </div>
@@ -269,7 +317,9 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     </div>
     <span>
       <span>
-        <span>Example</span>
+        <span>
+          <span>Example</span>
+        </span>
       </span>
     </span>
   </div>
@@ -279,7 +329,9 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         <span></span>
       </button>
     </div>
-    <span contenteditable="false">const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
+    <span contenteditable="false">
+      <span>const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
+    </span>
   </div>
   <div>
     <div contenteditable="false">
@@ -302,7 +354,9 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
     </div>
     <span>
       <span>
-        <span>Welcome to Draggable Blocks</span>
+        <span>
+          <span>Welcome to Draggable Blocks</span>
+        </span>
       </span>
     </span>
   </div>
@@ -322,7 +376,9 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
     </div>
     <span>
       <span>
-        <span>Features</span>
+        <span>
+          <span>Features</span>
+        </span>
       </span>
     </span>
   </div>
@@ -334,7 +390,9 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
     </div>
     <span>
       <span>
-        <span>Drag handles appear on hover</span>
+        <span>
+          <span>Drag handles appear on hover</span>
+        </span>
       </span>
     </span>
   </div>
@@ -351,7 +409,9 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
     </div>
     <span>
       <span>
-        <span>First block of plain text</span>
+        <span>
+          <span>First block of plain text</span>
+        </span>
       </span>
     </span>
   </div>
@@ -363,7 +423,9 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
     </div>
     <span>
       <span>
-        <span>Second block of plain text</span>
+        <span>
+          <span>Second block of plain text</span>
+        </span>
       </span>
     </span>
   </div>
@@ -375,7 +437,9 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
     </div>
     <span>
       <span>
-        <span>Third block of plain text</span>
+        <span>
+          <span>Third block of plain text</span>
+        </span>
       </span>
     </span>
   </div>
@@ -387,7 +451,9 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
     </div>
     <span>
       <span>
-        <span>Fourth block of plain text</span>
+        <span>
+          <span>Fourth block of plain text</span>
+        </span>
       </span>
     </span>
   </div>
@@ -399,7 +465,9 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
     </div>
     <span>
       <span>
-        <span>Fifth block of plain text</span>
+        <span>
+          <span>Fifth block of plain text</span>
+        </span>
       </span>
     </span>
   </div>
@@ -411,21 +479,27 @@ exports[`Component: stories > Drag stories > Story ReadOnlyDrag 1`] = `
   <div>
     <span>
       <span>
-        <span>Read-Only Content</span>
+        <span>
+          <span>Read-Only Content</span>
+        </span>
       </span>
     </span>
   </div>
   <div>
     <span>
       <span>
-        <span>Section A</span>
+        <span>
+          <span>Section A</span>
+        </span>
       </span>
     </span>
   </div>
   <div>
     <span>
       <span>
-        <span>Section B</span>
+        <span>
+          <span>Section B</span>
+        </span>
       </span>
     </span>
   </div>
@@ -450,12 +524,14 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
-        <div>
-          <input type="checkbox" contenteditable="false">
-          <span>
-            <span>Design Phase</span>
-          </span>
-        </div>
+        <span>
+          <div>
+            <input type="checkbox" contenteditable="false">
+            <span>
+              <span>Design Phase</span>
+            </span>
+          </div>
+        </span>
       </div>
       <div>
         <div contenteditable="false">
@@ -464,9 +540,11 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </button>
         </div>
         <span>
-          <input type="checkbox" contenteditable="false">
           <span>
-            <span>Create wireframes</span>
+            <input type="checkbox" contenteditable="false">
+            <span>
+              <span>Create wireframes</span>
+            </span>
           </span>
         </span>
       </div>
@@ -477,9 +555,11 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </button>
         </div>
         <span>
-          <input type="checkbox" checked="" contenteditable="false">
           <span>
-            <span>Define color palette</span>
+            <input type="checkbox" checked="" contenteditable="false">
+            <span>
+              <span>Define color palette</span>
+            </span>
           </span>
         </span>
       </div>
@@ -490,35 +570,11 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </button>
         </div>
         <span>
-          <input type="checkbox" contenteditable="false">
           <span>
-            <span>Design component library</span>
-          </span>
-        </span>
-      </div>
-      <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
-        <div>
-          <input type="checkbox" checked="" contenteditable="false">
-          <span>
-            <span>Research</span>
-          </span>
-        </div>
-      </div>
-      <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
-        <span>
-          <input type="checkbox" checked="" contenteditable="false">
-          <span>
-            <span>Analyze competitors</span>
+            <input type="checkbox" contenteditable="false">
+            <span>
+              <span>Design component library</span>
+            </span>
           </span>
         </span>
       </div>
@@ -529,9 +585,26 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </button>
         </div>
         <span>
-          <input type="checkbox" checked="" contenteditable="false">
+          <div>
+            <input type="checkbox" checked="" contenteditable="false">
+            <span>
+              <span>Research</span>
+            </span>
+          </div>
+        </span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+            <span></span>
+          </button>
+        </div>
+        <span>
           <span>
-            <span>User interviews</span>
+            <input type="checkbox" checked="" contenteditable="false">
+            <span>
+              <span>Analyze competitors</span>
+            </span>
           </span>
         </span>
       </div>
@@ -542,9 +615,11 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </button>
         </div>
         <span>
-          <input type="checkbox" checked="" contenteditable="false">
           <span>
-            <span>Draft interview questions</span>
+            <input type="checkbox" checked="" contenteditable="false">
+            <span>
+              <span>User interviews</span>
+            </span>
           </span>
         </span>
       </div>
@@ -555,35 +630,11 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </button>
         </div>
         <span>
-          <input type="checkbox" checked="" contenteditable="false">
           <span>
-            <span>Schedule 5 sessions</span>
-          </span>
-        </span>
-      </div>
-      <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
-        <div>
-          <input type="checkbox" contenteditable="false">
-          <span>
-            <span>Development</span>
-          </span>
-        </div>
-      </div>
-      <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
-        <span>
-          <input type="checkbox" contenteditable="false">
-          <span>
-            <span>Set up CI/CD pipeline</span>
+            <input type="checkbox" checked="" contenteditable="false">
+            <span>
+              <span>Draft interview questions</span>
+            </span>
           </span>
         </span>
       </div>
@@ -594,9 +645,11 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </button>
         </div>
         <span>
-          <input type="checkbox" checked="" contenteditable="false">
           <span>
-            <span>Write unit tests</span>
+            <input type="checkbox" checked="" contenteditable="false">
+            <span>
+              <span>Schedule 5 sessions</span>
+            </span>
           </span>
         </span>
       </div>
@@ -607,9 +660,26 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </button>
         </div>
         <span>
-          <input type="checkbox" contenteditable="false">
+          <div>
+            <input type="checkbox" contenteditable="false">
+            <span>
+              <span>Development</span>
+            </span>
+          </div>
+        </span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+            <span></span>
+          </button>
+        </div>
+        <span>
           <span>
-            <span>API integration</span>
+            <input type="checkbox" contenteditable="false">
+            <span>
+              <span>Set up CI/CD pipeline</span>
+            </span>
           </span>
         </span>
       </div>
@@ -620,9 +690,11 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </button>
         </div>
         <span>
-          <input type="checkbox" contenteditable="false">
           <span>
-            <span>Auth endpoints</span>
+            <input type="checkbox" checked="" contenteditable="false">
+            <span>
+              <span>Write unit tests</span>
+            </span>
           </span>
         </span>
       </div>
@@ -633,35 +705,11 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </button>
         </div>
         <span>
-          <input type="checkbox" contenteditable="false">
           <span>
-            <span>Data sync</span>
-          </span>
-        </span>
-      </div>
-      <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
-        <div>
-          <input type="checkbox" contenteditable="false">
-          <span>
-            <span>Launch</span>
-          </span>
-        </div>
-      </div>
-      <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
-        <span>
-          <input type="checkbox" contenteditable="false">
-          <span>
-            <span>Final QA pass</span>
+            <input type="checkbox" contenteditable="false">
+            <span>
+              <span>API integration</span>
+            </span>
           </span>
         </span>
       </div>
@@ -672,9 +720,71 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </button>
         </div>
         <span>
-          <input type="checkbox" contenteditable="false">
           <span>
-            <span>Deploy to production</span>
+            <input type="checkbox" contenteditable="false">
+            <span>
+              <span>Auth endpoints</span>
+            </span>
+          </span>
+        </span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+            <span></span>
+          </button>
+        </div>
+        <span>
+          <span>
+            <input type="checkbox" contenteditable="false">
+            <span>
+              <span>Data sync</span>
+            </span>
+          </span>
+        </span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+            <span></span>
+          </button>
+        </div>
+        <span>
+          <div>
+            <input type="checkbox" contenteditable="false">
+            <span>
+              <span>Launch</span>
+            </span>
+          </div>
+        </span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+            <span></span>
+          </button>
+        </div>
+        <span>
+          <span>
+            <input type="checkbox" contenteditable="false">
+            <span>
+              <span>Final QA pass</span>
+            </span>
+          </span>
+        </span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+            <span></span>
+          </button>
+        </div>
+        <span>
+          <span>
+            <input type="checkbox" contenteditable="false">
+            <span>
+              <span>Deploy to production</span>
+            </span>
           </span>
         </span>
       </div>
@@ -696,7 +806,9 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
 exports[`Component: stories > Dynamic stories > Story Dynamic 1`] = `
 "<div contenteditable="true">
   <span>Hello, dynamical mark </span>
-  <mark contenteditable="false">world</mark>
+  <span contenteditable="false">
+    <mark>world</mark>
+  </span>
   <span>!</span>
 </div>"
 `;
@@ -706,9 +818,13 @@ exports[`Component: stories > Dynamic stories > Story Focusable 1`] = `
   <div>
     <div contenteditable="true">
       <span>Hello, </span>
-      <abbr title="By key operations" contenteditable="false">focusable</abbr>
+      <span contenteditable="false">
+        <abbr title="By key operations">focusable</abbr>
+      </span>
       <span> abbreviation </span>
-      <abbr title="Hello! Hello!" contenteditable="false">world</abbr>
+      <span contenteditable="false">
+        <abbr title="Hello! Hello!">world</abbr>
+      </span>
       <span>!</span>
     </div>
   </div>
@@ -728,11 +844,17 @@ exports[`Component: stories > Dynamic stories > Story Focusable 1`] = `
 exports[`Component: stories > Dynamic stories > Story Removable 1`] = `
 "<div contenteditable="true">
   <span>I </span>
-  <mark contenteditable="false">contain</mark>
+  <span contenteditable="false">
+    <mark>contain</mark>
+  </span>
   <span> </span>
-  <mark contenteditable="false">removable</mark>
+  <span contenteditable="false">
+    <mark>removable</mark>
+  </span>
   <span> by click </span>
-  <mark contenteditable="false">marks</mark>
+  <span contenteditable="false">
+    <mark>marks</mark>
+  </span>
   <span>!</span>
 </div>"
 `;
@@ -744,455 +866,605 @@ exports[`Component: stories > Nested stories > Story ComplexHtmlDocument 1`] = `
 </div>
 <div contenteditable="false">
   <span></span>
-  <article>
-    <span>
-      <span>&#10;</span>
-      <header>
+  <span>
+    <article>
+      <span>
+        <span>&#10;</span>
         <span>
-          <span>&#10;</span>
-          <h1>
-            <span>
-              <span>Understanding </span>
-              <strong>
-                <span>
-                  <span>Nested HTML</span>
-                </span>
-              </strong>
-              <span> Structures</span>
-            </span>
-          </h1>
-          <span>&#10;</span>
-          <p>
-            <span>
-              <span></span>
-              <small>
-                <span>
-                  <span>Published on </span>
-                  <time>
-                    <span>
-                      <span>November 13, 2025</span>
-                    </span>
-                  </time>
-                  <span></span>
-                </span>
-              </small>
-              <span></span>
-            </span>
-          </p>
-          <span>&#10;</span>
-        </span>
-      </header>
-      <span>&#10;&#10;</span>
-      <section>
-        <span>
-          <span>&#10;</span>
-          <h2>
-            <span>
-              <span>Introduction</span>
-            </span>
-          </h2>
-          <span>&#10;</span>
-          <p>
-            <span>
-              <span>This is a </span>
-              <em>
-                <span>
-                  <span>comprehensive example</span>
-                </span>
-              </em>
-              <span> of </span>
-              <strong>
-                <span>
-                  <span>nested HTML tags</span>
-                </span>
-              </strong>
-              <span> working together. The </span>
-              <code>
-                <span>
-                  <span>MarkedInput</span>
-                </span>
-              </code>
-              <span> library can parse and render </span>
-              <mark>
-                <span>
-                  <span>complex HTML structures</span>
-                </span>
-              </mark>
-              <span> with multiple levels of nesting.</span>
-            </span>
-          </p>
-          <span>&#10;&#10;</span>
-          <blockquote>
+          <header>
             <span>
               <span>&#10;</span>
-              <p>
-                <span>
-                  <span>HTML nesting allows us to create </span>
-                  <strong>
+              <span>
+                <h1>
+                  <span>
+                    <span>Understanding </span>
                     <span>
-                      <span>rich, semantic documents</span>
-                    </span>
-                  </strong>
-                  <span> that are both </span>
-                  <em>
-                    <span>
-                      <span>readable</span>
-                    </span>
-                  </em>
-                  <span> and </span>
-                  <u>
-                    <span>
-                      <span>well-structured</span>
-                    </span>
-                  </u>
-                  <span>.</span>
-                </span>
-              </p>
-              <span>&#10;</span>
-            </span>
-          </blockquote>
-          <span>&#10;</span>
-        </span>
-      </section>
-      <span>&#10;&#10;</span>
-      <section>
-        <span>
-          <span>&#10;</span>
-          <h2>
-            <span>
-              <span>Key Features</span>
-            </span>
-          </h2>
-          <span>&#10;</span>
-          <ul>
-            <span>
-              <span>&#10;</span>
-              <li>
-                <span>
-                  <span></span>
-                  <strong>
-                    <span>
-                      <span>Bold text</span>
-                    </span>
-                  </strong>
-                  <span> using </span>
-                  <code>
-                    <span>
-                      <span>&amp;lt;strong&amp;gt;</span>
-                    </span>
-                  </code>
-                  <span> or </span>
-                  <code>
-                    <span>
-                      <span>&amp;lt;b&amp;gt;</span>
-                    </span>
-                  </code>
-                  <span> tags</span>
-                </span>
-              </li>
-              <span>&#10;</span>
-              <li>
-                <span>
-                  <span></span>
-                  <em>
-                    <span>
-                      <span>Italic text</span>
-                    </span>
-                  </em>
-                  <span> with </span>
-                  <code>
-                    <span>
-                      <span>&amp;lt;em&amp;gt;</span>
-                    </span>
-                  </code>
-                  <span> or </span>
-                  <code>
-                    <span>
-                      <span>&amp;lt;i&amp;gt;</span>
-                    </span>
-                  </code>
-                  <span> tags</span>
-                </span>
-              </li>
-              <span>&#10;</span>
-              <li>
-                <span>
-                  <span></span>
-                  <u>
-                    <span>
-                      <span>Underlined content</span>
-                    </span>
-                  </u>
-                  <span> for emphasis</span>
-                </span>
-              </li>
-              <span>&#10;</span>
-              <li>
-                <span>
-                  <span></span>
-                  <mark>
-                    <span>
-                      <span>Highlighted text</span>
-                    </span>
-                  </mark>
-                  <span> to draw attention</span>
-                </span>
-              </li>
-              <span>&#10;</span>
-              <li>
-                <span>
-                  <span></span>
-                  <del>
-                    <span>
-                      <span>Strikethrough</span>
-                    </span>
-                  </del>
-                  <span> for deleted content</span>
-                </span>
-              </li>
-              <span>&#10;</span>
-              <li>
-                <span>
-                  <span></span>
-                  <code>
-                    <span>
-                      <span>Inline code</span>
-                    </span>
-                  </code>
-                  <span> snippets</span>
-                </span>
-              </li>
-              <span>&#10;</span>
-            </span>
-          </ul>
-          <span>&#10;</span>
-        </span>
-      </section>
-      <span>&#10;&#10;</span>
-      <section>
-        <span>
-          <span>&#10;</span>
-          <h2>
-            <span>
-              <span>Advanced Examples</span>
-            </span>
-          </h2>
-          <span>&#10;</span>
-          <h3>
-            <span>
-              <span>Mathematical Notation</span>
-            </span>
-          </h3>
-          <span>&#10;</span>
-          <p>
-            <span>
-              <span>The formula for water is H</span>
-              <sub>
-                <span>
-                  <span>2</span>
-                </span>
-              </sub>
-              <span>O, and Einstein's famous equation is E=mc</span>
-              <sup>
-                <span>
-                  <span>2</span>
-                </span>
-              </sup>
-              <span>.</span>
-            </span>
-          </p>
-          <span>&#10;&#10;</span>
-          <h3>
-            <span>
-              <span>Code Blocks</span>
-            </span>
-          </h3>
-          <span>&#10;</span>
-          <pre>
-            <span>
-              <span></span>
-              <code>
-                <span>
-                  <span>function parseHTML(input) {&#10;  return parser.parse(input);&#10;}</span>
-                </span>
-              </code>
-              <span></span>
-            </span>
-          </pre>
-          <span>&#10;&#10;</span>
-          <h3>
-            <span>
-              <span>Nested Lists</span>
-            </span>
-          </h3>
-          <span>&#10;</span>
-          <ol>
-            <span>
-              <span>&#10;</span>
-              <li>
-                <span>
-                  <span>First level item&#10;</span>
-                  <ul>
-                    <span>
-                      <span>&#10;</span>
-                      <li>
-                        <span>
-                          <span>Second level </span>
-                          <strong>
-                            <span>
-                              <span>nested</span>
-                            </span>
-                          </strong>
-                          <span> item</span>
-                        </span>
-                      </li>
-                      <span>&#10;</span>
-                      <li>
-                        <span>
-                          <span>Another nested item with </span>
-                          <em>
-                            <span>
-                              <span>emphasis</span>
-                            </span>
-                          </em>
-                          <span></span>
-                        </span>
-                      </li>
-                      <span>&#10;</span>
-                    </span>
-                  </ul>
-                  <span>&#10;</span>
-                </span>
-              </li>
-              <span>&#10;</span>
-              <li>
-                <span>
-                  <span>Another first level item</span>
-                </span>
-              </li>
-              <span>&#10;</span>
-            </span>
-          </ol>
-          <span>&#10;</span>
-        </span>
-      </section>
-      <span>&#10;&#10;</span>
-      <section>
-        <span>
-          <span>&#10;</span>
-          <h2>
-            <span>
-              <span>Complex Nesting</span>
-            </span>
-          </h2>
-          <span>&#10;</span>
-          <div>
-            <span>
-              <span>&#10;</span>
-              <p>
-                <span>
-                  <span>Here's a </span>
-                  <strong>
-                    <span>
-                      <span>complex example</span>
-                    </span>
-                  </strong>
-                  <span> with </span>
-                  <em>
-                    <span>
-                      <span>multiple </span>
-                      <u>
-                        <span>
-                          <span>nested </span>
-                          <mark>
-                            <span>
-                              <span>tags</span>
-                            </span>
-                          </mark>
-                          <span></span>
-                        </span>
-                      </u>
-                      <span> inside</span>
-                    </span>
-                  </em>
-                  <span> each other.</span>
-                </span>
-              </p>
-              <span>&#10;</span>
-              <p>
-                <span>
-                  <span>You can even have </span>
-                  <code>
-                    <span>
-                      <span>code with </span>
                       <strong>
                         <span>
-                          <span>bold</span>
+                          <span>Nested HTML</span>
                         </span>
                       </strong>
-                      <span> inside</span>
                     </span>
-                  </code>
-                  <span> or </span>
-                  <mark>
+                    <span> Structures</span>
+                  </span>
+                </h1>
+              </span>
+              <span>&#10;</span>
+              <span>
+                <p>
+                  <span>
+                    <span></span>
                     <span>
-                      <span>highlighted </span>
-                      <em>
+                      <small>
                         <span>
-                          <span>italic </span>
-                          <u>
-                            <span>
-                              <span>underlined</span>
-                            </span>
-                          </u>
+                          <span>Published on </span>
+                          <span>
+                            <time>
+                              <span>
+                                <span>November 13, 2025</span>
+                              </span>
+                            </time>
+                          </span>
                           <span></span>
                         </span>
-                      </em>
-                      <span> text</span>
+                      </small>
                     </span>
-                  </mark>
-                  <span>.</span>
-                </span>
-              </p>
+                    <span></span>
+                  </span>
+                </p>
+              </span>
               <span>&#10;</span>
             </span>
-          </div>
-          <span>&#10;</span>
+          </header>
         </span>
-      </section>
-      <span>&#10;&#10;</span>
-      <footer>
+        <span>&#10;&#10;</span>
         <span>
-          <span>&#10;</span>
-          <p>
+          <section>
             <span>
-              <span></span>
-              <small>
-                <span>
-                  <span>© 2025 MarkedInput Library. Built with </span>
-                  <strong>
+              <span>&#10;</span>
+              <span>
+                <h2>
+                  <span>
+                    <span>Introduction</span>
+                  </span>
+                </h2>
+              </span>
+              <span>&#10;</span>
+              <span>
+                <p>
+                  <span>
+                    <span>This is a </span>
                     <span>
-                      <span>React</span>
+                      <em>
+                        <span>
+                          <span>comprehensive example</span>
+                        </span>
+                      </em>
                     </span>
-                  </strong>
-                  <span> and </span>
-                  <em>
+                    <span> of </span>
                     <span>
-                      <span>TypeScript</span>
+                      <strong>
+                        <span>
+                          <span>nested HTML tags</span>
+                        </span>
+                      </strong>
                     </span>
-                  </em>
-                  <span>.</span>
-                </span>
-              </small>
-              <span></span>
+                    <span> working together. The </span>
+                    <span>
+                      <code>
+                        <span>
+                          <span>MarkedInput</span>
+                        </span>
+                      </code>
+                    </span>
+                    <span> library can parse and render </span>
+                    <span>
+                      <mark>
+                        <span>
+                          <span>complex HTML structures</span>
+                        </span>
+                      </mark>
+                    </span>
+                    <span> with multiple levels of nesting.</span>
+                  </span>
+                </p>
+              </span>
+              <span>&#10;&#10;</span>
+              <span>
+                <blockquote>
+                  <span>
+                    <span>&#10;</span>
+                    <span>
+                      <p>
+                        <span>
+                          <span>HTML nesting allows us to create </span>
+                          <span>
+                            <strong>
+                              <span>
+                                <span>rich, semantic documents</span>
+                              </span>
+                            </strong>
+                          </span>
+                          <span> that are both </span>
+                          <span>
+                            <em>
+                              <span>
+                                <span>readable</span>
+                              </span>
+                            </em>
+                          </span>
+                          <span> and </span>
+                          <span>
+                            <u>
+                              <span>
+                                <span>well-structured</span>
+                              </span>
+                            </u>
+                          </span>
+                          <span>.</span>
+                        </span>
+                      </p>
+                    </span>
+                    <span>&#10;</span>
+                  </span>
+                </blockquote>
+              </span>
+              <span>&#10;</span>
             </span>
-          </p>
-          <span>&#10;</span>
+          </section>
         </span>
-      </footer>
-      <span>&#10;</span>
-    </span>
-  </article>
+        <span>&#10;&#10;</span>
+        <span>
+          <section>
+            <span>
+              <span>&#10;</span>
+              <span>
+                <h2>
+                  <span>
+                    <span>Key Features</span>
+                  </span>
+                </h2>
+              </span>
+              <span>&#10;</span>
+              <span>
+                <ul>
+                  <span>
+                    <span>&#10;</span>
+                    <span>
+                      <li>
+                        <span>
+                          <span></span>
+                          <span>
+                            <strong>
+                              <span>
+                                <span>Bold text</span>
+                              </span>
+                            </strong>
+                          </span>
+                          <span> using </span>
+                          <span>
+                            <code>
+                              <span>
+                                <span>&amp;lt;strong&amp;gt;</span>
+                              </span>
+                            </code>
+                          </span>
+                          <span> or </span>
+                          <span>
+                            <code>
+                              <span>
+                                <span>&amp;lt;b&amp;gt;</span>
+                              </span>
+                            </code>
+                          </span>
+                          <span> tags</span>
+                        </span>
+                      </li>
+                    </span>
+                    <span>&#10;</span>
+                    <span>
+                      <li>
+                        <span>
+                          <span></span>
+                          <span>
+                            <em>
+                              <span>
+                                <span>Italic text</span>
+                              </span>
+                            </em>
+                          </span>
+                          <span> with </span>
+                          <span>
+                            <code>
+                              <span>
+                                <span>&amp;lt;em&amp;gt;</span>
+                              </span>
+                            </code>
+                          </span>
+                          <span> or </span>
+                          <span>
+                            <code>
+                              <span>
+                                <span>&amp;lt;i&amp;gt;</span>
+                              </span>
+                            </code>
+                          </span>
+                          <span> tags</span>
+                        </span>
+                      </li>
+                    </span>
+                    <span>&#10;</span>
+                    <span>
+                      <li>
+                        <span>
+                          <span></span>
+                          <span>
+                            <u>
+                              <span>
+                                <span>Underlined content</span>
+                              </span>
+                            </u>
+                          </span>
+                          <span> for emphasis</span>
+                        </span>
+                      </li>
+                    </span>
+                    <span>&#10;</span>
+                    <span>
+                      <li>
+                        <span>
+                          <span></span>
+                          <span>
+                            <mark>
+                              <span>
+                                <span>Highlighted text</span>
+                              </span>
+                            </mark>
+                          </span>
+                          <span> to draw attention</span>
+                        </span>
+                      </li>
+                    </span>
+                    <span>&#10;</span>
+                    <span>
+                      <li>
+                        <span>
+                          <span></span>
+                          <span>
+                            <del>
+                              <span>
+                                <span>Strikethrough</span>
+                              </span>
+                            </del>
+                          </span>
+                          <span> for deleted content</span>
+                        </span>
+                      </li>
+                    </span>
+                    <span>&#10;</span>
+                    <span>
+                      <li>
+                        <span>
+                          <span></span>
+                          <span>
+                            <code>
+                              <span>
+                                <span>Inline code</span>
+                              </span>
+                            </code>
+                          </span>
+                          <span> snippets</span>
+                        </span>
+                      </li>
+                    </span>
+                    <span>&#10;</span>
+                  </span>
+                </ul>
+              </span>
+              <span>&#10;</span>
+            </span>
+          </section>
+        </span>
+        <span>&#10;&#10;</span>
+        <span>
+          <section>
+            <span>
+              <span>&#10;</span>
+              <span>
+                <h2>
+                  <span>
+                    <span>Advanced Examples</span>
+                  </span>
+                </h2>
+              </span>
+              <span>&#10;</span>
+              <span>
+                <h3>
+                  <span>
+                    <span>Mathematical Notation</span>
+                  </span>
+                </h3>
+              </span>
+              <span>&#10;</span>
+              <span>
+                <p>
+                  <span>
+                    <span>The formula for water is H</span>
+                    <span>
+                      <sub>
+                        <span>
+                          <span>2</span>
+                        </span>
+                      </sub>
+                    </span>
+                    <span>O, and Einstein's famous equation is E=mc</span>
+                    <span>
+                      <sup>
+                        <span>
+                          <span>2</span>
+                        </span>
+                      </sup>
+                    </span>
+                    <span>.</span>
+                  </span>
+                </p>
+              </span>
+              <span>&#10;&#10;</span>
+              <span>
+                <h3>
+                  <span>
+                    <span>Code Blocks</span>
+                  </span>
+                </h3>
+              </span>
+              <span>&#10;</span>
+              <span>
+                <pre>
+                  <span>
+                    <span></span>
+                    <span>
+                      <code>
+                        <span>
+                          <span>function parseHTML(input) {&#10;  return parser.parse(input);&#10;}</span>
+                        </span>
+                      </code>
+                    </span>
+                    <span></span>
+                  </span>
+                </pre>
+              </span>
+              <span>&#10;&#10;</span>
+              <span>
+                <h3>
+                  <span>
+                    <span>Nested Lists</span>
+                  </span>
+                </h3>
+              </span>
+              <span>&#10;</span>
+              <span>
+                <ol>
+                  <span>
+                    <span>&#10;</span>
+                    <span>
+                      <li>
+                        <span>
+                          <span>First level item&#10;</span>
+                          <span>
+                            <ul>
+                              <span>
+                                <span>&#10;</span>
+                                <span>
+                                  <li>
+                                    <span>
+                                      <span>Second level </span>
+                                      <span>
+                                        <strong>
+                                          <span>
+                                            <span>nested</span>
+                                          </span>
+                                        </strong>
+                                      </span>
+                                      <span> item</span>
+                                    </span>
+                                  </li>
+                                </span>
+                                <span>&#10;</span>
+                                <span>
+                                  <li>
+                                    <span>
+                                      <span>Another nested item with </span>
+                                      <span>
+                                        <em>
+                                          <span>
+                                            <span>emphasis</span>
+                                          </span>
+                                        </em>
+                                      </span>
+                                      <span></span>
+                                    </span>
+                                  </li>
+                                </span>
+                                <span>&#10;</span>
+                              </span>
+                            </ul>
+                          </span>
+                          <span>&#10;</span>
+                        </span>
+                      </li>
+                    </span>
+                    <span>&#10;</span>
+                    <span>
+                      <li>
+                        <span>
+                          <span>Another first level item</span>
+                        </span>
+                      </li>
+                    </span>
+                    <span>&#10;</span>
+                  </span>
+                </ol>
+              </span>
+              <span>&#10;</span>
+            </span>
+          </section>
+        </span>
+        <span>&#10;&#10;</span>
+        <span>
+          <section>
+            <span>
+              <span>&#10;</span>
+              <span>
+                <h2>
+                  <span>
+                    <span>Complex Nesting</span>
+                  </span>
+                </h2>
+              </span>
+              <span>&#10;</span>
+              <span>
+                <div>
+                  <span>
+                    <span>&#10;</span>
+                    <span>
+                      <p>
+                        <span>
+                          <span>Here's a </span>
+                          <span>
+                            <strong>
+                              <span>
+                                <span>complex example</span>
+                              </span>
+                            </strong>
+                          </span>
+                          <span> with </span>
+                          <span>
+                            <em>
+                              <span>
+                                <span>multiple </span>
+                                <span>
+                                  <u>
+                                    <span>
+                                      <span>nested </span>
+                                      <span>
+                                        <mark>
+                                          <span>
+                                            <span>tags</span>
+                                          </span>
+                                        </mark>
+                                      </span>
+                                      <span></span>
+                                    </span>
+                                  </u>
+                                </span>
+                                <span> inside</span>
+                              </span>
+                            </em>
+                          </span>
+                          <span> each other.</span>
+                        </span>
+                      </p>
+                    </span>
+                    <span>&#10;</span>
+                    <span>
+                      <p>
+                        <span>
+                          <span>You can even have </span>
+                          <span>
+                            <code>
+                              <span>
+                                <span>code with </span>
+                                <span>
+                                  <strong>
+                                    <span>
+                                      <span>bold</span>
+                                    </span>
+                                  </strong>
+                                </span>
+                                <span> inside</span>
+                              </span>
+                            </code>
+                          </span>
+                          <span> or </span>
+                          <span>
+                            <mark>
+                              <span>
+                                <span>highlighted </span>
+                                <span>
+                                  <em>
+                                    <span>
+                                      <span>italic </span>
+                                      <span>
+                                        <u>
+                                          <span>
+                                            <span>underlined</span>
+                                          </span>
+                                        </u>
+                                      </span>
+                                      <span></span>
+                                    </span>
+                                  </em>
+                                </span>
+                                <span> text</span>
+                              </span>
+                            </mark>
+                          </span>
+                          <span>.</span>
+                        </span>
+                      </p>
+                    </span>
+                    <span>&#10;</span>
+                  </span>
+                </div>
+              </span>
+              <span>&#10;</span>
+            </span>
+          </section>
+        </span>
+        <span>&#10;&#10;</span>
+        <span>
+          <footer>
+            <span>
+              <span>&#10;</span>
+              <span>
+                <p>
+                  <span>
+                    <span></span>
+                    <span>
+                      <small>
+                        <span>
+                          <span>© 2025 MarkedInput Library. Built with </span>
+                          <span>
+                            <strong>
+                              <span>
+                                <span>React</span>
+                              </span>
+                            </strong>
+                          </span>
+                          <span> and </span>
+                          <span>
+                            <em>
+                              <span>
+                                <span>TypeScript</span>
+                              </span>
+                            </em>
+                          </span>
+                          <span>.</span>
+                        </span>
+                      </small>
+                    </span>
+                    <span></span>
+                  </span>
+                </p>
+              </span>
+              <span>&#10;</span>
+            </span>
+          </footer>
+        </span>
+        <span>&#10;</span>
+      </span>
+    </article>
+  </span>
   <span></span>
 </div>"
 `;
@@ -1206,105 +1478,151 @@ exports[`Component: stories > Nested stories > Story ComplexMarkdown 1`] = `
   <span></span>
   <span>
     <span>
-      <span>Welcome to </span>
       <span>
+        <span>Welcome to </span>
         <span>
-          <span>Marked Input</span>
+          <span>
+            <span>
+              <span>Marked Input</span>
+            </span>
+          </span>
         </span>
+        <span></span>
       </span>
-      <span></span>
     </span>
   </span>
   <span>This is a </span>
   <span>
     <span>
-      <span>powerful</span>
+      <span>
+        <span>powerful</span>
+      </span>
     </span>
   </span>
   <span> library for parsing </span>
   <span>
     <span>
-      <span>rich text</span>
+      <span>
+        <span>rich text</span>
+      </span>
     </span>
   </span>
   <span> with </span>
   <span>
     <span>
-      <span>markdown</span>
+      <span>
+        <span>markdown</span>
+      </span>
     </span>
   </span>
   <span> formatting.&#10;You can use </span>
-  <span contenteditable="false">inline code</span>
+  <span contenteditable="false">
+    <span>inline code</span>
+  </span>
   <span> snippets like </span>
-  <span contenteditable="false">const parser = new ParserV2()</span>
+  <span contenteditable="false">
+    <span>const parser = new ParserV2()</span>
+  </span>
   <span> in your text.&#10;&#10;</span>
   <span>
     <span>
-      <span>Features</span>
+      <span>
+        <span>Features</span>
+      </span>
     </span>
   </span>
   <span>- </span>
   <span>
     <span>
-      <span>Bold text</span>
+      <span>
+        <span>Bold text</span>
+      </span>
     </span>
   </span>
   <span> with </span>
   <span>
     <span>
-      <span>strong emphasis</span>
+      <span>
+        <span>strong emphasis</span>
+      </span>
     </span>
   </span>
   <span>&#10;- </span>
   <span>
     <span>
-      <span>Italic text</span>
+      <span>
+        <span>Italic text</span>
+      </span>
     </span>
   </span>
   <span> and </span>
   <span>
     <span>
-      <span>emphasis</span>
+      <span>
+        <span>emphasis</span>
+      </span>
     </span>
   </span>
   <span> support&#10;</span>
   <span>
     <span>
-      <span></span>
-      <span contenteditable="false">Code snippets</span>
-      <span> and </span>
-      <span contenteditable="false">code blocks</span>
-      <span>&#10;</span>
       <span>
-        <span>
-          <span></span>
-          <span contenteditable="false">Strikethrough</span>
-          <span> for deleted content&#10;</span>
-          <span>
-            <span>
-              <span>Links like </span>
-              <span contenteditable="false">GitHub</span>
-              <span></span>
-            </span>
-          </span>
-          <span></span>
-          <span>
-            <span>
-              <span>Example</span>
-            </span>
-          </span>
-          <span>Here's how to use it:</span>
+        <span></span>
+        <span contenteditable="false">
+          <span>Code snippets</span>
         </span>
+        <span> and </span>
+        <span contenteditable="false">
+          <span>code blocks</span>
+        </span>
+        <span>&#10;</span>
+        <span>
+          <span>
+            <span>
+              <span></span>
+              <span contenteditable="false">
+                <span>Strikethrough</span>
+              </span>
+              <span> for deleted content&#10;</span>
+              <span>
+                <span>
+                  <span>
+                    <span>Links like </span>
+                    <span contenteditable="false">
+                      <span>GitHub</span>
+                    </span>
+                    <span></span>
+                  </span>
+                </span>
+              </span>
+              <span></span>
+              <span>
+                <span>
+                  <span>
+                    <span>Example</span>
+                  </span>
+                </span>
+              </span>
+              <span>Here's how to use it:</span>
+            </span>
+          </span>
+        </span>
+        <span></span>
+        <span contenteditable="false">
+          <span>const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
+        </span>
+        <span></span>
       </span>
-      <span></span>
-      <span contenteditable="false">const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
-      <span></span>
     </span>
   </span>
   <span>Visit our </span>
-  <span contenteditable="false">documentation</span>
+  <span contenteditable="false">
+    <span>documentation</span>
+  </span>
   <span> for more details.&#10;</span>
-  <span contenteditable="false">This feature is deprecated</span>
+  <span contenteditable="false">
+    <span>This feature is deprecated</span>
+  </span>
   <span> and will be removed in v3.0.</span>
 </div>"
 `;
@@ -1314,29 +1632,37 @@ exports[`Component: stories > Nested stories > Story HtmlLikeTags 1`] = `
   <div>
     <div contenteditable="true">
       <span></span>
-      <div>
-        <span>
-          <span>This is a div with </span>
-          <mark>
+      <span>
+        <div>
+          <span>
+            <span>This is a div with </span>
             <span>
-              <span>a mark inside</span>
-            </span>
-          </mark>
-          <span> and </span>
-          <b>
-            <span>
-              <span>bold text with </span>
-              <del>
+              <mark>
                 <span>
-                  <span>nested del</span>
+                  <span>a mark inside</span>
                 </span>
-              </del>
-              <span></span>
+              </mark>
             </span>
-          </b>
-          <span></span>
-        </span>
-      </div>
+            <span> and </span>
+            <span>
+              <b>
+                <span>
+                  <span>bold text with </span>
+                  <span>
+                    <del>
+                      <span>
+                        <span>nested del</span>
+                      </span>
+                    </del>
+                  </span>
+                  <span></span>
+                </span>
+              </b>
+            </span>
+            <span></span>
+          </span>
+        </div>
+      </span>
       <span></span>
     </div>
   </div>
@@ -1356,21 +1682,27 @@ exports[`Component: stories > Nested stories > Story HtmlLikeTags 1`] = `
 exports[`Component: stories > Nested stories > Story InteractiveNested 1`] = `
 "<div contenteditable="true">
   <span></span>
-  <span role="button" title="Depth: 0, Nested: true">
-    <span>
-      <span>Click me </span>
-      <span role="button" title="Depth: 1, Nested: true">
+  <span>
+    <span role="button" tabindex="0" title="Depth: 0, Nested: true">
+      <span>
+        <span>Click me </span>
         <span>
-          <span>or me </span>
-          <span role="button" title="Depth: 2, Nested: false">
+          <span role="button" tabindex="0" title="Depth: 1, Nested: true">
             <span>
-              <span>or even me</span>
+              <span>or me </span>
+              <span>
+                <span role="button" tabindex="0" title="Depth: 2, Nested: false">
+                  <span>
+                    <span>or even me</span>
+                  </span>
+                </span>
+              </span>
+              <span></span>
             </span>
           </span>
-          <span></span>
         </span>
+        <span></span>
       </span>
-      <span></span>
     </span>
   </span>
   <span></span>
@@ -1384,31 +1716,41 @@ exports[`Component: stories > Nested stories > Story MultipleLevels 1`] = `
       <span>Check </span>
       <span>
         <span>
-          <span>this tag with </span>
           <span>
+            <span>this tag with </span>
             <span>
-              <span>nested mention with </span>
               <span>
                 <span>
-                  <span>code</span>
+                  <span>nested mention with </span>
+                  <span>
+                    <span>
+                      <span>
+                        <span>code</span>
+                      </span>
+                    </span>
+                  </span>
+                  <span></span>
                 </span>
               </span>
-              <span></span>
             </span>
+            <span></span>
           </span>
-          <span></span>
         </span>
       </span>
       <span> and </span>
       <span>
         <span>
-          <span>another </span>
           <span>
+            <span>another </span>
             <span>
-              <span>deeply nested</span>
+              <span>
+                <span>
+                  <span>deeply nested</span>
+                </span>
+              </span>
             </span>
+            <span> tag</span>
           </span>
-          <span> tag</span>
         </span>
       </span>
       <span></span>
@@ -1434,13 +1776,17 @@ exports[`Component: stories > Nested stories > Story SimpleNesting 1`] = `
       <span>This is </span>
       <span>
         <span>
-          <span>italic text with </span>
           <span>
+            <span>italic text with </span>
             <span>
-              <span>bold</span>
+              <span>
+                <span>
+                  <span>bold</span>
+                </span>
+              </span>
             </span>
+            <span> inside</span>
           </span>
-          <span> inside</span>
         </span>
       </span>
       <span> and more text.</span>

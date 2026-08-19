@@ -2,7 +2,7 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
 import {
-	mountNested,
+	consignRendered,
 	mountStructuralInline,
 	mountStructuralInlineMark,
 	mountValue,
@@ -30,6 +30,52 @@ function mountStructuralMarkWithDescendant(value = '@[world]', editableSpelling 
 	return {store, container, descendantText}
 }
 
+/**
+ * '@[a @[b] c]' — a mark whose slot children hang off a registered child-sequence host, the
+ * shape an adapter renders for a `__slot__` markup. The parse brackets the mark with empty text
+ * tokens, so the container holds three root elements.
+ *
+ * Consigned explicitly rather than through `consignRendered`, which pairs a mark's children
+ * with the mark ELEMENT's own children: here they hang off the host one level down, so that
+ * helper hands the 'a ' token the host itself and its text effect overwrites the whole slot.
+ * The shared `mountNested` has that defect today, which is why this fixture is local.
+ */
+function mountNestedSlot() {
+	const store = new Store()
+	store.props.set({
+		defaultValue: '@[a @[b] c]',
+		options: [{markup: '@[__slot__]'}],
+		Mark: () => null,
+	})
+	const container = document.createElement('div')
+	const leading = document.createElement('span')
+	const outer = document.createElement('mark')
+	const host = document.createElement('span')
+	const before = document.createElement('span')
+	const inner = document.createElement('mark')
+	const after = document.createElement('span')
+	const trailing = document.createElement('span')
+	host.style.display = 'contents'
+	host.append(before, inner, after)
+	outer.append(host)
+	container.append(leading, outer, trailing)
+	document.body.append(container)
+	store.host.container(container)
+	const roots = store.tokens.nodes()
+	const mark = roots[1]
+	if (mark.kind !== 'mark') throw new Error('expected the slot mark as the middle root')
+	store.tokens.children(mark.id)(host)
+	const consign = (id: number, element: HTMLElement) => store.tokens.consign(id)(element)
+	consign(roots[0].id, leading)
+	consign(mark.id, outer)
+	consign(roots[2].id, trailing)
+	const children = mark.children()
+	consign(children[0].id, before)
+	consign(children[1].id, inner)
+	consign(children[2].id, after)
+	return {store, container, leading, host, before}
+}
+
 /** A registered control root (block menu, custom chrome) holding its own `<input>`. */
 function mountInlineWithControl(value = 'hello') {
 	const store = new Store()
@@ -43,7 +89,7 @@ function mountInlineWithControl(value = 'hello') {
 	document.body.append(container)
 	store.host.container(container)
 	store.tokens.control()(control)
-	store.host.rendered()
+	consignRendered(store, container)
 	return {store, container, controlInput}
 }
 
@@ -90,7 +136,7 @@ function mountControlledAdjacentMarks() {
 	document.body.append(container)
 	store.host.container(container)
 	for (const _root of store.tokens.nodes()) container.append(document.createElement('span'))
-	store.host.rendered()
+	consignRendered(store, container)
 	return {store, container, echoed}
 }
 
@@ -107,9 +153,9 @@ function liveCaretRange(): Range {
  * offsets — the state the select-all defect lived in, and the reason it takes block layout to
  * reach: the inline parse of the same value has an empty text token on each side.
  *
- * One `<div>` per ROOT holding exactly one token element, which is what `bind` aligns a block
- * frame against; a mark with children gets one element per child, a markless one gets the
- * presentation text an adapter would render.
+ * One `<div>` per ROOT holding exactly one token element — the row wrapper and the token
+ * element are consigned separately, which is how `bind` tells them apart; a mark with children
+ * gets one element per child, a markless one gets the presentation text an adapter would render.
  */
 function mountBlockWithMarkEdge(value: string) {
 	const store = new Store()
@@ -127,11 +173,16 @@ function mountBlockWithMarkEdge(value: string) {
 		const token = document.createElement('span')
 		const children = root.kind === 'mark' ? root.children() : []
 		if (root.kind === 'mark' && children.length === 0) token.append(document.createTextNode('MARK'))
-		for (const _child of children) token.append(document.createElement('span'))
+		for (const child of children) {
+			const element = document.createElement('span')
+			token.append(element)
+			store.tokens.consign(child.id)(element)
+		}
 		row.append(token)
 		container.append(row)
+		store.tokens.consignRow(root.id)(row)
+		store.tokens.consign(root.id)(token)
 	}
-	store.host.rendered()
 	return {store, container}
 }
 
@@ -245,7 +296,7 @@ describe('handleBeforeInput()', () => {
 			// into the slot's text. Neither is a control: the caret has to win in both, and both
 			// go red on the precedence revert (the second lands 'X' outside as well, not merely
 			// at the wrong offset inside).
-			const {store, container, leading, before} = mountNested()
+			const {store, container, leading, before} = mountNestedSlot()
 			const slotText = before.firstChild
 			if (!(slotText instanceof Text)) throw new Error('expected the slot text surface to be filled')
 			selectBoundary(slotText, caretOffset)
@@ -268,7 +319,7 @@ describe('handleBeforeInput()', () => {
 		// end. Answering with the OWNER's boundary put the character outside the markup
 		// ('X@[a @[b] c]' / '@[a @[b] c]X') — the slot content is editable, so the caret at
 		// that edge has exactly one meaning.
-		const {store, container, host} = mountNested()
+		const {store, container, host} = mountNestedSlot()
 
 		container.dispatchEvent(inputEvent('insertText', selectBoundary(host, offset), {data: 'X'}))
 

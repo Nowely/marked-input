@@ -1,7 +1,7 @@
 import type {TreeNode} from '@markput/core'
 import {cx} from '@markput/core'
 import type {CSSProperties} from 'react'
-import {memo} from 'react'
+import {memo, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {BlockMenu} from './BlockMenu'
@@ -17,7 +17,7 @@ interface BlockProps {
 }
 
 export const Block = memo(({node, blockIndex}: BlockProps) => {
-	const {blockStore, action, Component, slotProps, isDragging} = useMarkput(s => {
+	const {blockStore, action, Component, slotProps, isDragging, tokens} = useMarkput(s => {
 		const blockStore = s.block.get(node)
 		return {
 			blockStore,
@@ -25,10 +25,16 @@ export const Block = memo(({node, blockIndex}: BlockProps) => {
 			Component: s.slots.blockComponent,
 			slotProps: s.slots.blockProps,
 			isDragging: blockStore.state.isDragging,
+			tokens: s.tokens,
 		}
 	})
 
+	// MEMOISED, unlike `setBlockRef` below: `consignRow` mints a registration key per CALL, so
+	// calling it inline would file a fresh entry on every paint and never release the old one.
+	const consignRow = useMemo(() => tokens.consignRow(node.id), [tokens, node.id])
+
 	const setBlockRef = (el: HTMLElement | null) => {
+		consignRow(el)
 		blockStore.attachContainer(el, blockIndex, {action})
 	}
 

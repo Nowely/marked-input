@@ -5,6 +5,7 @@ import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {
 	caretAt,
+	consignRendered,
 	mountNested,
 	mountStructuralInline,
 	mountStructuralInlineMark,
@@ -298,7 +299,7 @@ describe('SelectionDriver', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
-			store.host.rendered()
+			consignRendered(store, container)
 
 			store.tokens.selection.selectAll()
 			expect(selectionRange(store)).toEqual({start: 0, end: 5})
@@ -336,7 +337,12 @@ describe('SelectionDriver', () => {
 		})
 	})
 
-	describe('restoration via tokens.changed', () => {
+	describe('restoration via tokens.bound', () => {
+		// THE DOM CLOCK, and these cases are what pins it rather than the commit clock: every one
+		// of them writes its caret intent BEFORE any element is bound, then binds. Measured on
+		// the first case — consigning fires `bound` and `committed` NOT AT ALL, and the caret is
+		// unplaced until that binding lands — so a driver reading `committed` would leave the
+		// caret where it was, having never been told the handles exist.
 		it('restores range after the model announces consistency', () => {
 			const store = new Store()
 			const container = document.createElement('div')
@@ -347,9 +353,9 @@ describe('SelectionDriver', () => {
 
 			store.props.set({defaultValue: 'hello'})
 			store.host.container(container)
+			consignRendered(store, container)
 			caretAt(store, 5)
 
-			store.host.rendered()
 			const sel = window.getSelection()
 			expect(sel?.focusNode).toBe(span.firstChild)
 			expect(sel?.focusOffset).toBe(5)
@@ -366,7 +372,6 @@ describe('SelectionDriver', () => {
 			store.props.set({defaultValue: 'hello'})
 			store.host.container(container)
 			caretAt(store, 3)
-			store.host.rendered()
 			expect(selectionRange(store)).toEqual({start: 3, end: 3})
 			container.remove()
 		})
@@ -383,8 +388,8 @@ describe('SelectionDriver', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
+			consignRendered(store, container)
 			caretAt(store, 999)
-			store.host.rendered()
 
 			expect(selectionRange(store)).toEqual({start: 5, end: 5})
 			container.remove()
@@ -399,8 +404,8 @@ describe('SelectionDriver', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
+			consignRendered(store, container)
 			store.tokens.selection.select(store.tokens.anchorAt(999), store.tokens.anchorAt(1000))
-			store.host.rendered()
 
 			// Both anchors are `'end'`, so the selection is collapsed rather than clamped.
 			expect(selectionRange(store)).toEqual({start: 5, end: 5})

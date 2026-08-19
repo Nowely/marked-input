@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {Store} from '../../../store/Store'
+import {mountStructuralInline} from '../__testing__/mountFixtures'
 import {markToken, textToken} from '../__testing__/tokenFactories'
 import type {Token} from '../parser/types'
 import {createTokenTree} from '../tree/tree'
@@ -45,21 +46,10 @@ function mountMark() {
 	return {container, mark}
 }
 
-function mountInline(value: string) {
-	const store = new Store()
-	store.props.set({defaultValue: value})
-	const container = document.createElement('div')
-	const span = document.createElement('span')
-	container.append(span)
-	document.body.append(container)
-	store.host.container(container)
-	store.host.rendered()
-	return {store, container, span}
-}
-
 /**
- * Block layout: two rows with mark tokens using the block controller pattern
- * (Mark + markup '__slot__\n\n').
+ * Block layout: one row per mark token, consigned as a block adapter's refs do — the row
+ * wrapper under `consignRow` and the token's own element under `consign`. `unmount` is the
+ * pair of null ref calls the adapter makes when the row component goes away.
  */
 function mountBlock(value: string) {
 	const store = new Store()
@@ -73,18 +63,25 @@ function mountBlock(value: string) {
 	document.body.append(container)
 	store.host.container(container)
 
-	// Build DOM rows: one div+span per mark token
-	const rows = value.split('\n\n').filter(r => r.length > 0)
-	for (const row of rows) {
-		const rowEl = document.createElement('div')
-		const tokenEl = document.createElement('span')
-		tokenEl.textContent = row
-		rowEl.append(tokenEl)
-		container.append(rowEl)
-	}
+	const rows = store.tokens.nodes().map(node => {
+		const rowElement = document.createElement('div')
+		const tokenElement = document.createElement('span')
+		rowElement.append(tokenElement)
+		container.append(rowElement)
+		const consignRow = store.tokens.consignRow(node.id)
+		const consign = store.tokens.consign(node.id)
+		consignRow(rowElement)
+		consign(tokenElement)
+		return {
+			unmount: () => {
+				consignRow(null)
+				consign(null)
+				rowElement.remove()
+			},
+		}
+	})
 
-	store.host.rendered()
-	return {store, container}
+	return {store, rows}
 }
 
 describe('TokenHandle', () => {
@@ -336,22 +333,27 @@ describe('TokenHandle', () => {
 	})
 
 	it('alive() is true while bound', () => {
-		const {store, span} = mountInline('hello')
-		const handle = store.tokens.handleAt(span)
+		const {store, textSurface} = mountStructuralInline('hello')
+		const handle = store.tokens.handleAt(textSurface)
 		if (!handle || handle === 'control') throw new Error('expected handle')
 		expect(handle.alive()).toBe(true)
 	})
 
 	it('alive() is false once the handle is killed', () => {
 		// Block layout: capture row 1's handle, then shrink to one row so bind kills it.
-		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
-		const handle = store.tokens.handle(store.tokens.nodes()[1].id!)
+		const {store, rows} = mountBlock('alpha\n\nbeta\n\n')
+		const rowId = store.tokens.nodes()[1].id
+		const handle = store.tokens.handle(rowId)
 		if (!handle) throw new Error('expected handle for row 1')
-		const secondRow = container.children[1]
-		if (!(secondRow instanceof HTMLElement)) throw new Error('expected HTMLElement')
-		secondRow.remove()
+		expect(handle.alive()).toBe(true)
+
+		rows[1].unmount()
 		store.tokens.setValue('alpha\n\n')
-		store.host.rendered()
+
 		expect(handle.alive()).toBe(false)
+		// KILLED, not merely unbound, and `alive()` alone cannot tell the two apart — it is
+		// false for both. Only an id absent from the TREE leaves the node layer; a token
+		// deconsigned while the tree still owns it stays in the map, unbound.
+		expect(store.tokens.handle(rowId)).toBeUndefined()
 	})
 })

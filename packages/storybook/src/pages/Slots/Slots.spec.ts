@@ -1,7 +1,7 @@
 import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {editingHost, textSurfaces} from '../../shared/lib/dom'
+import {editingHost, getElement, textSurfaces} from '../../shared/lib/dom'
 import {containerRef, eventProps, outerClass} from '../../shared/lib/framework'
 import {defineMark, Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
@@ -193,9 +193,11 @@ describe('Slots API', () => {
 		it('freeze a value-only mark root as an atomic', async () => {
 			await mountComponent({Mark, value: 'Hello @[world](1)'})
 
-			const mark = page.getByRole('mark')
-			await expect.element(mark).toHaveAttribute('contenteditable', 'false')
-			await expect.element(mark).not.toHaveAttribute('tabindex')
+			// The atomicity attributes live on markput's own wrapper, not on the consumer's
+			// element — core no longer writes to consumer DOM at all.
+			const wrapper = getElement(page.getByRole('mark')).parentElement!
+			expect(wrapper).toHaveAttribute('contenteditable', 'false')
+			expect(wrapper).not.toHaveAttribute('tabindex')
 		})
 	})
 

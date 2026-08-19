@@ -1,7 +1,7 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {Store} from '../../../store/Store'
-import {anchorsAt} from '../__testing__/mountFixtures'
+import {anchorsAt, consignRendered} from '../__testing__/mountFixtures'
 import {joinNodes} from '../tree/tree'
 
 function mountInline(value: string) {
@@ -12,7 +12,7 @@ function mountInline(value: string) {
 	container.append(span)
 	document.body.append(container)
 	store.host.container(container)
-	store.host.rendered()
+	consignRendered(store, container)
 	return {store, container, span}
 }
 
@@ -35,15 +35,36 @@ function mountBlock(value: string) {
 	// Build DOM rows: one div+span per mark token
 	const rows = value.split('\n\n').filter(r => r.length > 0)
 	for (const row of rows) {
-		const rowEl = document.createElement('div')
-		const tokenEl = document.createElement('span')
-		tokenEl.textContent = row
-		rowEl.append(tokenEl)
-		container.append(rowEl)
+		container.append(buildRow(row))
 	}
 
-	store.host.rendered()
+	consignRows(store, container)
 	return {store, container}
+}
+
+/** One block row as the adapters render it: the Block's wrapper around the mark's own element. */
+function buildRow(text: string): HTMLElement {
+	const rowEl = document.createElement('div')
+	const tokenEl = document.createElement('span')
+	tokenEl.textContent = text
+	rowEl.append(tokenEl)
+	return rowEl
+}
+
+/**
+ * Consign a block document: each root's ROW wrapper and, inside it, the mark's own element.
+ * Explicit rather than {@link consignRendered} because that pairs the container's children with
+ * the roots directly, which in block layout would hand the mark the row wrapper.
+ */
+function consignRows(store: Store, container: HTMLElement): void {
+	store.tokens.nodes().forEach((node, index) => {
+		const rowEl = container.children[index]
+		if (!(rowEl instanceof HTMLElement)) throw new Error(`no row element for root ${index}`)
+		const tokenEl = rowEl.firstElementChild
+		if (!(tokenEl instanceof HTMLElement)) throw new Error(`no token element in row ${index}`)
+		store.tokens.consignRow(node.id)(rowEl)
+		store.tokens.consign(node.id)(tokenEl)
+	})
 }
 
 describe('TokenHandle', () => {
@@ -67,7 +88,6 @@ describe('TokenHandle', () => {
 		const {store, span} = mountInline('hello')
 
 		const first = store.tokens.handleAt(span)
-		store.host.rendered()
 		const second = store.tokens.handleAt(span)
 		expect(second).toBe(first)
 	})
@@ -96,7 +116,7 @@ describe('TokenHandle', () => {
 	it('kills handles whose token disappears (dead-handle contract)', () => {
 		// Block layout: two text rows "alpha\n\n" and "beta\n\n".
 		// We capture the handle for row 2's token, then reduce the value to one
-		// row, update the DOM to one row, and rendered(). The handle should die.
+		// row, update the DOM to one row, and re-bind. The handle should die.
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
 		// Grab the second row's handle (path [1])
@@ -113,8 +133,6 @@ describe('TokenHandle', () => {
 		// Update the parsed value so the token tree shrinks too
 		store.tokens.setValue('alpha\n\n')
 
-		store.host.rendered()
-
 		expect(handle.alive()).toBe(false)
 		expect(handle.element()).toBeUndefined()
 		// The element it held is untouched — kill clears the binding, it does not repaint.
@@ -123,15 +141,12 @@ describe('TokenHandle', () => {
 		expect(handle.placeCaret(0)).toBe(false)
 
 		// A fresh lookup after re-adding the row returns a DIFFERENT handle
-		const rowEl = document.createElement('div')
-		const tokenEl = document.createElement('span')
-		tokenEl.textContent = 'beta'
-		rowEl.append(tokenEl)
-		container.append(rowEl)
+		container.append(buildRow('beta'))
 		store.tokens.setValue('alpha\n\nbeta\n\n')
-		store.host.rendered()
+		consignRows(store, container)
 
 		const newHandle = store.tokens.handle(store.tokens.nodes()[1].id!)
+		expect(newHandle).toBeDefined()
 		expect(newHandle).not.toBe(handle)
 	})
 
@@ -150,14 +165,9 @@ describe('TokenHandle', () => {
 		// Prepend a row through the edit controller (records the edit hint)
 		store.edit.replace(...anchorsAt(store, 0, 0), 'new\n\n')
 
-		// Mirror the render: insert the new row's DOM at the front
-		const rowEl = document.createElement('div')
-		const tokenEl = document.createElement('span')
-		tokenEl.textContent = 'new'
-		rowEl.append(tokenEl)
-		container.prepend(rowEl)
-
-		store.host.rendered()
+		// Mirror the render: insert the new row's DOM at the front and consign it
+		container.prepend(buildRow('new'))
+		consignRows(store, container)
 
 		// The same handle object now lives at the shifted path
 		expect(handle.alive()).toBe(true)
@@ -173,7 +183,6 @@ describe('TokenHandle', () => {
 		const control = document.createElement('button')
 		container.append(control)
 		store.tokens.control()(control)
-		store.host.rendered()
 
 		expect(store.tokens.handleAt(control)).toBe('control')
 		expect(store.tokens.handleAt(document.body)).toBeUndefined()

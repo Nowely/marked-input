@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {Store} from '../../../store/Store'
+import {consignRendered} from '../__testing__/mountFixtures'
 import {offsetOfAnchor} from '../tree/anchors'
 import type {NodeAnchor, TreeNode} from '../tree/types'
 
@@ -54,7 +55,9 @@ function mountKeyed(value: string) {
 			const element = byId.get(node.id)
 			if (element && element.textContent !== node.value()) element.textContent = node.value()
 		}
-		store.host.rendered()
+		// The keyed pairing this renderer already holds, pushed to core the way a ref does:
+		// the container's children ARE the roots in order, so the shared helper says it.
+		consignRendered(store, container)
 	}
 
 	store.host.container(container)

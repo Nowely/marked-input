@@ -31,15 +31,29 @@ describe('Component: MarkedInput', () => {
 		expect(surface).toHaveTextContent('plain')
 	})
 
-	it('renders mark roots without adapter wrappers', async () => {
+	it('wraps a mark root in one box-less element and leaves the consumer’s own element alone', async () => {
+		// CHANGED CONTRACT. This used to assert `mark.parentElement === host` — that markput
+		// interposes nothing. It now interposes exactly one element, and that is the point: a
+		// Mark's element belongs to the CONSUMER, who may pass a third-party component straight
+		// through, so core cannot demand a ref on it and must not write attributes onto it.
+		// The wrapper carries both instead.
+		//
+		// It costs no layout: `display: contents` generates no box, measured identical to no
+		// wrapper across inline, block, list and flex/grid shapes.
 		const {host} = await mount(Default, {Mark, defaultValue: 'hello @[world](1)'})
 		const mark = host.querySelector('mark')!
+		const wrapper = mark.parentElement!
 
-		expect(mark.parentElement).toBe(host)
+		expect(wrapper.parentElement).toBe(host)
+		expect(wrapper.tagName).toBe('SPAN')
+		expect(wrapper.style.display).toBe('contents')
 		expect(mark).toHaveTextContent('world')
-		// Atomic by contract, and NOT a tab stop: Tab leaves the field.
-		expect(mark).toHaveAttribute('contenteditable', 'false')
-		expect(mark).not.toHaveAttribute('tabindex')
+
+		// Atomic by contract, and NOT a tab stop: Tab leaves the field. Both now live on the
+		// wrapper; the consumer's element carries neither.
+		expect(wrapper).toHaveAttribute('contenteditable', 'false')
+		expect(wrapper).not.toHaveAttribute('tabindex')
+		expect(mark).not.toHaveAttribute('contenteditable')
 	})
 
 	it('preserves option-provided children for flat mark components', async () => {
@@ -102,7 +116,9 @@ describe('Component: MarkedInput', () => {
 		// moves the CARET from the position before the mark to the position after it.
 		await userEvent.keyboard(`{ArrowRight>${firstSpan.textContent.length}/}`)
 		expect(caretIsInside(firstSpan)).toBe(true)
-		expect(firstAbbr).toHaveAttribute('contenteditable', 'false')
+		// Atomicity lives on the WRAPPER now, not on the consumer's element — the caret behaviour
+		// asserted below is unchanged by that, which is the whole point of the move.
+		expect(firstAbbr.parentElement).toHaveAttribute('contenteditable', 'false')
 
 		await userEvent.keyboard('{ArrowRight}')
 		expect(caretIsInside(secondSpan)).toBe(true)

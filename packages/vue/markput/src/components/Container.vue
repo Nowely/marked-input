@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, nextTick, onMounted, watch} from 'vue'
+import {computed} from 'vue'
 import type {Ref} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -12,11 +12,6 @@ const store = useStore()
 const result = useMarkput(s => ({
 	isBlock: s.props.layout.isBlock,
 	nodes: s.tokens.nodes,
-	// SUBSCRIBED, not read. `nodes` alone under-notifies: adoption writes `roots` only when
-	// the ROOT LIST changes by reference, so a mark whose value changed and a structural
-	// change inside a slot both leave it equal — and the `rendered()` below, which is what
-	// drives `bind`, would never fire for either.
-	renderEpoch: s.tokens.renderEpoch,
 }))
 
 const containerComponent = useMarkput(s => s.slots.containerComponent)
@@ -47,34 +42,6 @@ const setContainerRef = (el: unknown) => {
 	if (typeof user === 'function') user(element)
 	else if (user) user.value = element
 }
-
-onMounted(() => store.host.rendered())
-
-// ONE announcement site, and each half of that is measured rather than argued.
-//
-// It has to be a WATCHER and not `onUpdated`: when `slots.container` is a COMPONENT the tokens
-// compile into a slot function which the CHILD's render effect evaluates, so the reactive read
-// never reaches this component, it never updates, and an `onUpdated`-only version leaves the
-// editor empty. Measured: deleting this watcher reds three cases — `Slots.spec`'s "render the
-// value inside a component container" and the `CustomComponents` / `StyleMerging` stories.
-//
-// It does NOT need `onUpdated` beside it. This file carried both, plus an `announcedEpoch`
-// mirror so the element path would not announce twice; deleting all three leaves the whole
-// suite green, because the watcher subscribes in its own effect and therefore covers the
-// element path too. The element path's bind now lands one microtask later — still inside the
-// same microtask checkpoint, so still before paint.
-//
-// `nextTick` is load-bearing and `{flush: 'post'}` is NOT a substitute for it, which is the
-// non-obvious half: the epoch is written synchronously from `apply`, outside any flush, so a
-// post-flush watcher runs against a flush that has no render job for this component yet.
-// Measured: 136 red.
-watch(
-	() => result.value.renderEpoch,
-	async () => {
-		await nextTick()
-		store.host.rendered()
-	}
-)
 </script>
 
 <template>

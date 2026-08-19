@@ -1,6 +1,6 @@
 import {Store} from '../../../store/Store'
 import {offsetOfAnchor} from '../tree/anchors'
-import type {NodeAnchor} from '../tree/types'
+import type {NodeAnchor, TreeNode} from '../tree/types'
 
 /**
  * A document offset as the anchor `EditController.replace` takes. TEST-ONLY: the production
@@ -37,6 +37,38 @@ export function selectionRange(store: Store): {start: number; end: number} | und
 	return anchor <= head ? {start: anchor, end: head} : {start: head, end: anchor}
 }
 
+/**
+ * Consign the elements a fixture built, the way an adapter's refs would.
+ *
+ * `bind` takes its elements from the consignment registries rather than walking the DOM, so a
+ * fixture that renders by hand has to say which element belongs to which token — that IS the
+ * adapter's job in production.
+ *
+ * FLAT PAIRING ONLY, and the limit is deliberate rather than unfinished: it pairs a parent's
+ * element children with its tokens in order, so it fits the shapes where a mark's children are its
+ * own element children. It CANNOT follow a child-sequence host, because the registry that knows
+ * about hosts is private to the model — and a fixture whose slot children live inside a host must
+ * name them itself, or the first child is consigned the host and the per-Surface writer replaces
+ * the host's contents with that child's text. `mountNested` and `mountBlock` below do exactly
+ * that; so does any spec with a bespoke shape.
+ */
+export function consignRendered(store: Store, container: HTMLElement): void {
+	const visit = (nodes: readonly TreeNode[], parent: HTMLElement): void => {
+		const elements = Array.from(parent.children).filter((c): c is HTMLElement => c instanceof HTMLElement)
+		nodes.forEach((node, index) => {
+			// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as
+			// non-nullable and the short fixture guard below is linted away as impossible.
+			const element = elements.at(index)
+			if (!element) return
+			store.tokens.consign(node.id)(element)
+			if (node.kind !== 'mark') return
+			const children = node.children()
+			if (children.length > 0) visit(children, element)
+		})
+	}
+	visit(store.tokens.nodes(), container)
+}
+
 /** A store seeded from props alone: a tree, no container, so nothing below is mounted. */
 export function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
@@ -55,7 +87,7 @@ export function mountInline(store: Store) {
 	container.append(textSurface)
 	document.body.append(container)
 	store.host.container(container)
-	store.host.rendered()
+	consignRendered(store, container)
 	const textNode = textSurface.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
 	return {store, container, textSurface, textNode}
@@ -80,7 +112,7 @@ export function mountStructuralInlineMark(value = 'hello @[world]') {
 	container.append(before, mark, after)
 	document.body.append(container)
 	store.host.container(container)
-	store.host.rendered()
+	consignRendered(store, container)
 	return {store, container, before, mark, after}
 }
 
@@ -107,7 +139,7 @@ export function mountWithMark() {
 	container.append(text1, mark, text2)
 	document.body.append(container)
 	store.host.container(container)
-	store.host.rendered()
+	consignRendered(store, container)
 	return {store, container, text1, mark, text2}
 }
 
@@ -119,7 +151,7 @@ export function mountWithMark() {
  *
  * The surfaces are appended AFTER `host.container` because their count comes
  * from the parse, which only runs once the container is set; binding happens at
- * `rendered()`, so the DOM is complete by the time it is read.
+ * consignment, so the DOM is complete by the time it is read.
  */
 export function mountValue(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
@@ -132,7 +164,7 @@ export function mountValue(value: string, props: Parameters<Store['props']['set'
 		container.append(surface)
 		return surface
 	})
-	store.host.rendered()
+	consignRendered(store, container)
 	return {store, container, surfaces}
 }
 
@@ -144,7 +176,7 @@ export function mountValue(value: string, props: Parameters<Store['props']['set'
  * container holds three root elements and the mark is `nodes()[1]`.
  *
  * The host registration is id-keyed, so it has to come AFTER `host.container`
- * publishes a tree and BEFORE `rendered()` binds against it.
+ * publishes a tree and BEFORE any ref binds against it.
  */
 export function mountNested() {
 	const store = new Store()
@@ -167,8 +199,16 @@ export function mountNested() {
 	container.append(leading, outer, trailing)
 	document.body.append(container)
 	store.host.container(container)
-	store.tokens.children(store.tokens.nodes()[1].id)(host)
-	store.host.rendered()
+	const roots = store.tokens.nodes()
+	const owner = roots[1]
+	if (owner.kind !== 'mark') throw new Error('expected a mark root')
+	store.tokens.children(owner.id)(host)
+	// Named one by one rather than through `consignRendered`: the slot children live inside the
+	// HOST, one level below the mark's own element, which flat pairing cannot express.
+	const rootElements = [leading, outer, trailing]
+	roots.forEach((node, index) => store.tokens.consign(node.id)(rootElements[index]))
+	const childElements = [before, inner, after]
+	owner.children().forEach((child, index) => store.tokens.consign(child.id)(childElements[index]))
 	return {store, container, leading, outer, host, before, inner, after, trailing}
 }
 
@@ -188,6 +228,8 @@ export function mountBlock() {
 	})
 	const container = document.createElement('div')
 	const rows: HTMLElement[] = []
+	const marks: HTMLElement[] = []
+	const surfaces: HTMLElement[] = []
 	for (let i = 0; i < 2; i++) {
 		const row = document.createElement('div')
 		const mark = document.createElement('span')
@@ -196,9 +238,18 @@ export function mountBlock() {
 		row.append(mark)
 		container.append(row)
 		rows.push(row)
+		marks.push(mark)
+		surfaces.push(text)
 	}
 	document.body.append(container)
 	store.host.container(container)
-	store.host.rendered()
+	// A ROW and a TOKEN ELEMENT are different elements of the same token, registered separately —
+	// `Block` consigns the row, `Token` its own element — and that pairing is the only way a handle
+	// gets a `rowElement`. Flat pairing would file the row wrapper as the mark's element instead.
+	store.tokens.nodes().forEach((node, index) => {
+		store.tokens.consignRow(node.id)(rows[index])
+		store.tokens.consign(node.id)(marks[index])
+		if (node.kind === 'mark') store.tokens.consign(node.children()[0].id)(surfaces[index])
+	})
 	return {store, container, rows}
 }

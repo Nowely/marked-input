@@ -8,6 +8,22 @@ the pending window. That was the reason it was wanted, and the reason does not h
 [§5](#5-what-it-would-actually-buy). It is still worth doing, on the correctness grounds in
 [§4](#4-what-blocks-it), just not for that.
 
+> **UPDATED 2026-08-19, twice over.**
+>
+> **The speed case is withdrawn entirely.** Measured: at 1000 marks the full re-parse is ~0.41 ms
+> and the whole commit path ~0.74 ms, about 3% of a keystroke, and typing stays inside a frame up
+> to ~500 inline spans. See
+> [`../native-caret-motion/measurements.md`](../native-caret-motion/measurements.md). Pursue this
+> for correctness and for the parser's standing goal — every decision declared, none inferred from
+> shape or registration order — and for nothing else.
+>
+> **A sound window predicate was found, and it is not the one this file describes.** See §9.
+>
+> **One thing here IS worth doing now, and it is not incrementality.** §5's finding that a
+> two-value inline markup costs 8.5 ms at 800 rows through `SegmentMatcher`'s O(static × dynamic)
+> overlap filter still stands, and rewriting that filter as a two-pointer merge is ~15 lines and
+> depends on nothing. It is the only latency work in this area with a case behind it.
+
 ## 1. It already existed, and it was deleted
 
 `8685bc69`, 2026-06-13 — `refactor(tokens): delete incrementalParse + property spec; bench keeps the
@@ -182,3 +198,31 @@ None of them touch the parser.
   **throw** at the resolver, with the latch bolted on beside it at four opt-in sites. markput's
   fail-closed read was judged better on centrality, phase alignment and default direction — so the
   goal is to make the window unfelt, not to adopt someone else's answer.
+
+## 9. The escalating window, measured 2026-08-19
+
+The maintainer proposed closing the straddle problem by **widening the reparse window to the
+neighbours, and up to the PARENT scope when needed**. Tested against a scope-recursive parser
+prototype, and the two halves of that proposal do not fare the same:
+
+| variant | result |
+| --- | --- |
+| crossing predicate — no segment literal straddles an edge, no match wants to cross, checked on BOTH pre- and post-edit strings, **plus a frame check at every ancestor** | 2 240 000 chained edits, **100% agreement with a full parse, 0 drift**; plus 24 000 adversarial span/delimiter edits, 0 wrong |
+| "touch the neighbours and verify" read literally (doubling only) | **refuted** — up to 35% wrong trees |
+| this file's own inert-outside guard, ported | **refuted** — up to 77% wrong |
+| crossing predicate **without** the ancestor frame check | 40.9% wrong on the row markup |
+| a simpler root-boundary predicate | **refuted** — 19.8% wrong on paragraph-block at a 0% bail rate |
+
+So **the "widen to the parent" half is the load-bearing one**, and doubling alone is not sound.
+The contract this file states in §2 — deep-equals a full parse for any document and any single
+edit, every guard falling back — survives and should be kept.
+
+**Two hard limits.** Symmetric delimiters (`*`, `**`, backtick, `~~` — four of nine markups in the
+markdown preset) force a whole-document reparse on every keystroke; the only relaxation tried is
+refuted with a kept counterexample. And as built the predicate costs ~1.9 full parses per
+keystroke; the cache that would fix that is designed, not built.
+
+**The ordering in §4 stands, and an attempt to reorder it was refuted.** A proposal to do the Row
+work after the window, on the grounds that the chain does not block a window, was measured on
+static slices of well-formed documents; under an edit the chain does move roots outside the
+window. Row boundary first, then delete the chain, then the window.
