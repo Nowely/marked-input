@@ -3,7 +3,6 @@ import {batch, computed, signal, untracked, watch} from '../../../shared/signals
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
-import type {TokenDelta} from '../delta'
 import {createCommitPipeline} from '../dom/commit'
 import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
@@ -39,13 +38,26 @@ export class TokenModel {
 	// ═══ Consumer reads ═══════════════════════════════════════════════════════
 
 	/**
-	 * THE model-level detector: fires once per commit, only after the DOM is
-	 * consistent, carrying that commit's `{added, removed, updated}` ids. Applies
-	 * folded into one pending structural pass announce ONE merged delta — a consumer
-	 * pruning off `removed` cannot miss a wave.
+	 * THE model clock: one pulse per commit, once the tree, the projection and the repaired
+	 * selection are all in place. It fires for commits that move NO element — a row reorder and a
+	 * mark value change both leave the id space and the element set untouched — which is the
+	 * whole reason it is not the DOM clock.
+	 *
+	 * PAYLOAD-FREE, deliberately. It used to carry `{added, removed, updated}` ids derived by a
+	 * ledger module; nothing in core read them once the block store moved to a `WeakMap`, and a
+	 * consumer that wants to know what changed re-reads {@link nodes} or {@link find}.
 	 */
-	get changed(): Event<TokenDelta> {
-		return this.#pipeline.changed
+	get committed(): Event<void> {
+		return this.#pipeline.committed
+	}
+
+	/**
+	 * THE DOM clock: one pulse per bind, so every handle matches an element in the document. Only
+	 * the caret needs it — a caret landing in a node BORN by the commit has no handle until bind
+	 * makes one, so nothing earlier can place it.
+	 */
+	get bound(): Event<void> {
+		return this.#pipeline.bound
 	}
 
 	/**
@@ -64,7 +76,7 @@ export class TokenModel {
 	 * (`commitPipeline.spec.ts`'s fold case). It refused precisely the case that worked.
 	 *
 	 * A caret placed mid-window against pre-paint parent coordinates is a transient the
-	 * post-bind `tokens.changed` re-apply corrects in the same frame (`dom/SelectionDriver`),
+	 * post-bind `tokens.bound` re-apply corrects in the same frame (`dom/SelectionDriver`),
 	 * and it can no longer steal focus the way it could under N editing hosts, which is the
 	 * topology the latch was designed in. Gated by `seam/pendingWindow.spec.ts`.
 	 */
@@ -445,7 +457,7 @@ export class TokenModel {
 			selection: this.selection,
 			host,
 			readOnly: () => this.props.readOnly(),
-			changed: this.#pipeline.changed,
+			bound: this.#pipeline.bound,
 			nodes: () => this.nodes(),
 			find: id => this.find(id),
 			handle: id => this.handle(id),

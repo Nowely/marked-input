@@ -50,14 +50,6 @@ export type BindInput = {
 export type BindResult = {
 	byElement: WeakMap<HTMLElement, TokenHandle>
 	controlRoots: WeakSet<HTMLElement>
-	/**
-	 * The flattened id space this walk covered — the TREE's ids, not the bound ones, which is
-	 * what makes it usable on a walk BAIL: the tree is authoritative there and only the DOM is
-	 * transiently misaligned. `commit.ts` diffs it against the last announced set to derive
-	 * `TokenDelta`, so the ids the walk was going to build and discard anyway are the
-	 * announcement.
-	 */
-	ids: Set<number>
 }
 
 export function bind(input: BindInput): BindResult {
@@ -78,9 +70,9 @@ export function bind(input: BindInput): BindResult {
 		const walked = bindingsFor(tree, consigned, rows, childSequenceHostsFor)
 
 		const byElement = new WeakMap<HTMLElement, TokenHandle>()
-		// Built from the flattened TREE, outside the batch, because it is returned: the
-		// announcement is a difference against it and must not depend on which nodes the
-		// adapters had consigned by this point.
+		// The live id space, used below to decide which handles die. Built from the flattened
+		// TREE rather than from what was consigned: a token whose element has not arrived is
+		// still the tree's, and must not be killed for it.
 		const treeIds = new Set<number>()
 		for (const node of tree) treeIds.add(node.id)
 
@@ -115,7 +107,7 @@ export function bind(input: BindInput): BindResult {
 			}
 		})
 
-		return {byElement, controlRoots, ids: treeIds}
+		return {byElement, controlRoots}
 	})
 }
 

@@ -57,20 +57,26 @@ describe('Render-count gates: commit routing', () => {
 
 	/**
 	 * The VALUE-ONLY commit: `render` is true, `structural` is false, and it is the one commit
-	 * shape whose completion nothing else here gates. It matters because adoption writes `roots`
-	 * only when the ROOT LIST changes by reference, so this commit leaves `tokens.nodes` equal —
-	 * a container subscribed to that alone never re-renders, its `rendered()` never fires, `bind`
-	 * never runs and the pending latch never opens.
+	 * shape whose completion nothing else here gates. Adoption writes `roots` only when the ROOT
+	 * LIST changes by reference, so this commit leaves `tokens.nodes` equal, the id space
+	 * untouched and the element set untouched — it is precisely the commit a DOM clock is blind
+	 * to.
 	 *
-	 * MEASURED on the Vue side: dropping `renderEpoch` from `Container.vue`'s selector leaves the
-	 * whole suite green except this case, which sees zero announcements instead of one.
+	 * So the clock read here is the MODEL one. `api.changed` is `tokens.committed`, fired from
+	 * `apply` once the tree, the projection and the repaired selection are in place — it does not
+	 * wait for a bind, so nothing about this commit's empty element set can silence it. The DOM
+	 * clock (`tokens.bound`) is the wrong question for a value assertion: it answers "does every
+	 * handle match an element", which this commit never changed the answer to.
+	 *
+	 * The pulse COUNT is the whole gate: the event is payload-free, and a consumer that wants to
+	 * know what moved re-reads `nodes()`.
 	 */
-	it('a mark value change announces changed — the commit completes with no root-list move', async () => {
+	it('a mark value change pulses the model clock — the commit completes with no root-list move', async () => {
 		const {api} = await mountApi({Mark: PlainMark, Span: PlainSpan, defaultValue: 'a@[x](1)b'})
 		await expect.element(page.getByText('x')).toBeInTheDocument()
 
-		const announced: number[] = []
-		watch(api()!.changed, delta => announced.push(delta.updated.length))
+		let pulses = 0
+		watch(api()!.changed, () => pulses++)
 
 		const mark = api()
 			?.nodes()
@@ -78,7 +84,7 @@ describe('Render-count gates: commit routing', () => {
 		expect(mark?.update({value: 'y'})).toBe(true)
 		await expect.element(page.getByText('y')).toBeInTheDocument()
 
-		expect(announced).toEqual([1])
+		expect(pulses).toBe(1)
 	})
 })
 

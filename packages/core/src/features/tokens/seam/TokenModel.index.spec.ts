@@ -20,7 +20,7 @@ function mountInline(value: string) {
 }
 
 describe('TokenModel lookups', () => {
-	it('fires changed after rendered()', () => {
+	it('fires bound after rendered()', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hi'})
 		const container = document.createElement('div')
@@ -29,12 +29,17 @@ describe('TokenModel lookups', () => {
 		document.body.append(container)
 		store.host.container(container)
 
-		const onChanged = vi.fn()
-		watch(store.tokens.changed, onChanged)
+		// `rendered()` is the BIND, so the clock this subject means is the DOM one. The commit
+		// clock already pulsed when the container seeded the tree, before this watch existed.
+		const onBound = vi.fn()
+		const onCommitted = vi.fn()
+		watch(store.tokens.bound, onBound)
+		watch(store.tokens.committed, onCommitted)
 
 		store.host.rendered()
 
-		expect(onChanged).toHaveBeenCalledTimes(1)
+		expect(onBound).toHaveBeenCalledTimes(1)
+		expect(onCommitted).toHaveBeenCalledTimes(0)
 		container.remove()
 	})
 

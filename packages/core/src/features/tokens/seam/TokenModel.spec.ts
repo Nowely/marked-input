@@ -108,20 +108,27 @@ describe('TokenModel shell (seam/)', () => {
 	})
 
 	describe('construction seam and wiring', () => {
-		it('mounts directly on the state models: the parse reaches nodes(), changed announces the first bind', () => {
+		it('mounts directly on the state models: the parse reaches nodes(), the model clock pulses once and the DOM clock once per bind', () => {
 			const setup = createNew(INLINE_PROPS)
-			const changedSpy = vi.fn()
-			watch(setup.model.changed, changedSpy)
+			// Both clocks, because the mount drives both: the reconcile is a commit, and the
+			// `rendered` watch the mount installs is immediate, so a bind follows it in the same
+			// turn. The fused event could not tell them apart.
+			const committedSpy = vi.fn()
+			const boundSpy = vi.fn()
+			watch(setup.model.committed, committedSpy)
+			watch(setup.model.bound, boundSpy)
 			// Renderer contract: no tree before mount.
 			expect(setup.model.nodes()).toEqual([])
 
 			const dom = buildInlineDom()
 			setup.host.container(dom.container)
 
-			// Mount applied the first reconcile and announced the tree. Nothing is BOUND yet:
-			// elements arrive by consignment, which is id-keyed, so the earliest an adapter can
-			// name a token is after the mount published one.
-			expect(changedSpy).toHaveBeenCalledTimes(1)
+			// Mount applied the first reconcile (the model clock) and bound the empty registry
+			// (the DOM clock). Nothing is BOUND for all that: elements arrive by consignment,
+			// which is id-keyed, so the earliest an adapter can name a token is after the mount
+			// published one.
+			expect(committedSpy).toHaveBeenCalledTimes(1)
+			expect(boundSpy).toHaveBeenCalledTimes(1)
 			expect(setup.model.nodes().map(node => node.range())).toEqual([
 				{start: 0, end: 2},
 				{start: 2, end: 6},
@@ -129,19 +136,22 @@ describe('TokenModel shell (seam/)', () => {
 			])
 			expect(setup.model.handle(setup.model.nodes()[0].id)).toBeUndefined()
 
-			// The adapter's refs fire, then it reports the paint: THAT is the first bind.
+			// The adapter's refs fire, then it reports the paint: THAT is the first bind that
+			// names anything. A bind is not a commit, so the model clock stands still.
 			consignRoots(setup.model, dom.container)
 			setup.host.rendered()
 
-			expect(changedSpy).toHaveBeenCalledTimes(2)
+			expect(boundSpy).toHaveBeenCalledTimes(2)
+			expect(committedSpy).toHaveBeenCalledTimes(1)
 			expect(dom.text1.textContent).toBe('he')
 			expect(dom.text2.textContent).toBe('llo')
 			expect(dom.text1.hasAttribute('contenteditable')).toBe(false)
 			expect(dom.mark.getAttribute('contenteditable')).toBe('false')
 
-			// Adapter re-render: idempotent re-bind, consistency re-announced.
+			// Adapter re-render: idempotent re-bind, DOM clock only.
 			setup.host.rendered()
-			expect(changedSpy).toHaveBeenCalledTimes(3)
+			expect(boundSpy).toHaveBeenCalledTimes(3)
+			expect(committedSpy).toHaveBeenCalledTimes(1)
 		})
 
 		it('facade reads fail soft before mount', () => {
@@ -155,16 +165,22 @@ describe('TokenModel shell (seam/)', () => {
 		})
 	})
 
-	describe('renderEpoch and changed (renderer contract)', () => {
-		it('text edits leave the epoch standing, patch the DOM in place and fire changed once after consistency', () => {
+	describe('renderEpoch and the two clocks (renderer contract)', () => {
+		it('text edits leave the epoch standing, patch the DOM in place and pulse the model clock once after consistency', () => {
+			// `committed`: the subject is the model's own value reaching the DOM, and a text edit
+			// paints through the per-surface effect with no bind at all, so the DOM clock never
+			// speaks here. `domAtEvent` is the ordering pin — the writers are queued ahead of the
+			// event's subscribers.
 			const {model, text2} = mountNewInline()
 			const epochBefore = model.renderEpoch()
 			const treeSpy = vi.fn()
 			watch(model.renderEpoch, treeSpy)
-			const changedSpy = vi.fn()
+			const committedSpy = vi.fn()
+			const boundSpy = vi.fn()
+			watch(model.bound, boundSpy)
 			let domAtEvent: string | null = null
-			watch(model.changed, changeset => {
-				changedSpy(changeset)
+			watch(model.committed, () => {
+				committedSpy()
 				domAtEvent = text2.textContent
 			})
 
@@ -174,20 +190,27 @@ describe('TokenModel shell (seam/)', () => {
 			expect(domAtEvent).toBe('llo!')
 			expect(model.renderEpoch()).toBe(epochBefore)
 			expect(treeSpy).not.toHaveBeenCalled()
-			expect(changedSpy).toHaveBeenCalledTimes(1)
+			expect(committedSpy).toHaveBeenCalledTimes(1)
+			expect(boundSpy).not.toHaveBeenCalled()
 
 			// Consume-once hint: a second edit patches through the windowed parse again.
 			model.replaceBetween(model.anchorAt(10), model.anchorAt(10), '!')
 			expect(text2.textContent).toBe('llo!!')
-			expect(changedSpy).toHaveBeenCalledTimes(2)
+			expect(committedSpy).toHaveBeenCalledTimes(2)
+			expect(boundSpy).not.toHaveBeenCalled()
 			expect(model.renderEpoch()).toBe(epochBefore)
 		})
 
-		it('structural edits bump the epoch and stay quiet until the adapter renders', () => {
+		it('structural edits bump the epoch, pulse the model clock at once and the DOM clock only once the adapter renders', () => {
+			// The split's whole point, on one commit: `committed` is a commit fact and does not
+			// wait for a paint, while `bound` cannot fire before one — the born node has no
+			// element until the adapter consigns it.
 			const {model, render} = mountNewInline()
 			const epochBefore = model.renderEpoch()
-			const changedSpy = vi.fn()
-			watch(model.changed, changedSpy)
+			const committedSpy = vi.fn()
+			const boundSpy = vi.fn()
+			watch(model.committed, committedSpy)
+			watch(model.bound, boundSpy)
 
 			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '@[y]')
 
@@ -199,11 +222,13 @@ describe('TokenModel shell (seam/)', () => {
 				{start: 9, end: 13},
 				{start: 13, end: 13},
 			])
-			expect(changedSpy).not.toHaveBeenCalled()
+			expect(committedSpy).toHaveBeenCalledTimes(1)
+			expect(boundSpy).not.toHaveBeenCalled()
 
 			const spans = render()
 
-			expect(changedSpy).toHaveBeenCalledTimes(1)
+			expect(boundSpy).toHaveBeenCalledTimes(1)
+			expect(committedSpy).toHaveBeenCalledTimes(1)
 			expect(spans[3].textContent).toBe('y')
 			expect(model.handleAt(spans[3])).toBeInstanceOf(TokenHandle)
 		})

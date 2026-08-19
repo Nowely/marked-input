@@ -515,16 +515,25 @@ describe('moveTo', () => {
 		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c])
 	})
 
-	it('announces a move as a render, but not as structural', () => {
+	it('pulses the model clock at the move and the DOM clock only at the bind', () => {
+		// A reorder is the case the two clocks were split for: it leaves the id space and the
+		// element set untouched, so only `committed` — the MODEL clock — can see it at all, and
+		// it sees it at the commit, with no paint in between. `bound` answers the other question
+		// (does every handle match an element in the document) and so waits for the bind.
 		const store = rowSetup('alpha\n\nbeta\n\n')
-		const deltas: {added: readonly number[]; removed: readonly number[]; updated: readonly number[]}[] = []
-		watch(store.tokens.changed, delta => deltas.push(delta))
+		let committed = 0
+		let bound = 0
+		watch(store.tokens.committed, () => committed++)
+		watch(store.tokens.bound, () => bound++)
 
 		expect(store.tokens.nodes()[0].moveTo(1)).toBe(true)
+
+		expect([committed, bound]).toEqual([1, 0])
+
 		store.host.rendered()
 
-		// Nothing was born, died or changed content — only the order did.
-		expect(deltas).toEqual([{added: [], removed: [], updated: []}])
+		// The bind adds a DOM pulse and NOT a second model pulse.
+		expect([committed, bound]).toEqual([1, 1])
 	})
 
 	it('keeps the selection anchored to the character it was on', () => {

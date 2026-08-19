@@ -338,7 +338,12 @@ describe('SelectionDriver', () => {
 		})
 	})
 
-	describe('restoration via tokens.changed', () => {
+	describe('restoration via tokens.bound', () => {
+		// THE DOM CLOCK, and these cases are what pins it rather than the commit clock: every one
+		// of them writes its caret intent BEFORE any element is bound, then binds. Measured on the
+		// first case — `host.rendered()` fires `bound` once and `committed` NOT AT ALL, and the
+		// caret is unplaced until that bind lands — so a driver reading `committed` would leave
+		// the caret where it was, having never been told the handles exist.
 		it('restores range after the model announces consistency', () => {
 			const store = new Store()
 			const container = document.createElement('div')

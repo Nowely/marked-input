@@ -1,7 +1,6 @@
 import {listen, watch} from '../../../shared/signals'
 import type {Event} from '../../../shared/signals'
 import type {Host} from '../../state/Host'
-import type {TokenDelta} from '../delta'
 import {anchorEquals} from '../tree/anchors'
 import type {Selection} from '../tree/selection'
 import type {Anchors, Id, NodeAnchor, TreeNode} from '../tree/types'
@@ -15,7 +14,8 @@ export type SelectionDriverDeps = {
 	selection: Selection
 	host: Host
 	readOnly(): boolean
-	changed: Event<TokenDelta>
+	/** THE DOM clock. See the watch below for why the caret needs this one and not the commit. */
+	bound: Event<void>
 	/** The live root nodes — {@link SelectionDriver.focusFirst}'s first-token read, and nothing more. */
 	nodes(): readonly TreeNode[]
 	find(id: Id): TreeNode | undefined
@@ -40,10 +40,10 @@ export class SelectionDriver {
 		deps.host.onMounted(container => {
 			this.#trackSelection(container)
 
-			// The model announces `changed` only after the DOM is consistent (both
-			// commit branches), so the caret re-place runs against live surfaces —
-			// exactly when the old per-commit index event fired.
-			watch(this.deps.changed, () => this.#applySelection())
+			// THE DOM clock, not the commit clock, and the difference is load-bearing: a caret
+			// landing in a node BORN by this commit has no handle until `bind` makes one, so a
+			// placement attempted at commit time declines and the caret is simply never placed.
+			watch(this.deps.bound, () => this.#applySelection())
 			// THE editing host: the container, gated only by readOnly. `immediate` is the
 			// mount write; per-token topology is bind's.
 			watch(
@@ -61,8 +61,8 @@ export class SelectionDriver {
 			// not placed (8 assertion failures across react and vue, in the three focus specs;
 			// the core suite stays green, so only `pnpm test` sees this one).
 			// Separately, `range` also moves when adoption shifts positions, and re-placing on
-			// that would fight the DOM after every commit; the post-commit re-place is the
-			// `tokens.changed` watch above, which fires only once the DOM is consistent.
+			// that would fight the DOM after every commit; the post-bind re-place is the
+			// `bound` watch above, which fires only once the DOM is consistent.
 			watch(
 				() => this.deps.selection.anchors(),
 				() => this.#applySelection()

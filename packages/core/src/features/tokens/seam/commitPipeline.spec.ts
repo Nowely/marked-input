@@ -1,7 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {batch, watch} from '../../../shared/signals/index.js'
-import type {TokenDelta} from '../delta'
 import {bind} from '../dom/bind'
 import {createCommitPipeline} from '../dom/commit'
 import type {TokenHandle} from '../dom/TokenHandle'
@@ -20,16 +19,25 @@ import {createBoundary} from '../tree/valueBoundary'
  * consigns no element below them.
  *
  * What the cases assert is what the pipeline DOES: the DOM, handle identity/liveness, the
- * `changed` payload and count and the renderer wake-up. The latch is no longer among them:
- * ADR-0008 removed `pending()`, so the window is asserted through the WITHHELD announcement.
+ * two CLOCKS and the renderer wake-up. Neither clock carries a payload any more, so every
+ * case that was about the delta's id lists — the ledger's cancellation arithmetic, the
+ * text-vs-structural announce split, the fold merging two applies into one delta — is gone
+ * rather than restated.
+ *
+ * WHICH CLOCK a case reads follows from its own subject: `committed` fires from `apply`,
+ * once per commit and including the commits that move no element, so a value or model
+ * assertion reads it; `bound` fires from `onRendered` once per bind, so a case about
+ * elements, handles or the caret reads that one. A commit that moves elements therefore
+ * pulses TWICE — once on each — and several cases below count both.
  *
  * S2.7 took the whole text BRANCH out of `commit.ts` — `bind` arms one effect per bound
  * text surface, so a text-only commit reaches the DOM before the pipeline is called and
  * `apply` is left with the divergence check and the announcement. S2.8 then took the
- * lowering: `treeInput.ts` and the `CommitInput` it built are gone, `apply` takes the
- * adoption result, and this file absorbed the two granularity cases that were `treeInput`
- * SPEC's alone (see the block near the end). Everything else that suite pinned was the
- * snapshot memo, which no longer exists.
+ * lowering: `treeInput.ts` and the `CommitInput` it built are gone and `apply` takes the
+ * adoption result. The two granularity cases this file absorbed from `treeInput.spec.ts`
+ * were both about which id landed in `updated`, so the clock split took them with the
+ * ledger; what a consumer can still observe about those same edits is asserted directly on
+ * the tree by the in-slot cases above.
  *
  * COVERAGE SCOPE (settled at S1.5 Task 6, kept as written). When S1.6a deleted
  * `commit.spec.ts`, every live case whose only gate was that file was ported or moved
@@ -40,8 +48,8 @@ import {createBoundary} from '../tree/valueBoundary'
  *   that an untouched handle kept its token OBJECT; there is one representation now and
  *   an untouched node is the same node by construction.
  * - `commit.spec.ts:323` "pending() spans exactly the structural apply → rendered window"
- *   — the accessor is gone (ADR-0008); the window is asserted through the WITHHELD
- *   announcement by the cold-start, mark-value, fold and text cases below.
+ *   — the accessor is gone (ADR-0008); the window is asserted through the silent DOM
+ *   CLOCK by the cold-start, mark-value, fold and text cases below.
  *
  * `commit.spec.ts:490`, `:557`, `:566` and `:730` were not ports but MOVES: they have zero
  * dependence on the lowering, so S1.6a relocated them to the bottom of this file rather
@@ -221,20 +229,26 @@ describe('commit pipeline driven by the tree core', () => {
 		window.getSelection()?.removeAllRanges()
 	})
 
-	it('cold start: the seed is structural, quiet until rendered, then binds three surfaces', () => {
+	it('cold start: the seed commits at once, and the DOM clock waits for the paint', () => {
+		// BOTH clocks, because this is the case that separates them: the seed is a commit the
+		// instant `arrive` returns, and it is not a DOM fact until something paints.
 		const harness = createHarness()
 		const {pipeline} = harness
-		const changedSpy = vi.fn()
-		watch(pipeline.changed, changedSpy)
+		const committedSpy = vi.fn()
+		const boundSpy = vi.fn()
+		watch(pipeline.committed, committedSpy)
+		watch(pipeline.bound, boundSpy)
 
 		harness.boundary.arrive('he@[x]llo')
 
-		expect(changedSpy).not.toHaveBeenCalled()
+		expect(committedSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).not.toHaveBeenCalled()
 		expect(harness.container.childElementCount).toBe(0)
 
 		const [text1, mark, text2] = harness.render()
 
-		expect(changedSpy).toHaveBeenCalledTimes(1)
+		expect(committedSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).toHaveBeenCalledTimes(1)
 		expect(boundHandles(harness)).toHaveLength(3)
 		expect(text1.textContent).toBe('he')
 		expect(mark.textContent).toBe('x')
@@ -243,11 +257,14 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(mark.getAttribute('contenteditable')).toBe('false')
 	})
 
-	it('a tail text edit patches in place, leaves the epoch standing and announces once', () => {
+	it('a tail text edit patches in place, leaves the epoch standing and commits once', () => {
 		// The DOM write is the EFFECT's, not this pipeline's: by the time `apply` runs,
 		// adoption's batch has already flushed it. What the pipeline still owes is the
-		// order — `changed` fires only once the surface is consistent — which
+		// order — `committed` fires only once the surface is consistent — which
 		// `domAtEvent` below is the witness for.
+		//
+		// `committed`, not `bound`: a text edit binds nothing (the assertion two lines under
+		// the splice counts exactly that), so the DOM clock never pulses here at all.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
@@ -258,14 +275,14 @@ describe('commit pipeline driven by the tree core', () => {
 		// The counter is LIVE: the paint inside `mount` bound, so the equality below is a
 		// measurement and not a vacuous 0 === 0.
 		expect(bindsBefore).toBeGreaterThan(0)
-		const changedSpy = vi.fn()
+		const committedSpy = vi.fn()
+		const boundSpy = vi.fn()
 		let domAtEvent: string | null = null
-		let payload: TokenDelta | undefined
-		watch(pipeline.changed, delta => {
-			changedSpy()
-			payload = delta
+		watch(pipeline.committed, () => {
+			committedSpy()
 			domAtEvent = text2.textContent
 		})
+		watch(pipeline.bound, boundSpy)
 
 		expect(harness.splice(9, 9, '!')).toBe(true)
 
@@ -279,33 +296,37 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(bindCount()).toBe(bindsBefore)
 		expect(boundAt(harness, 2)).toBe(tail)
 		expect(tail.element()).toBe(text2)
-		expect(changedSpy).toHaveBeenCalledTimes(1)
-		// Payload parity with commit.spec.ts's live-path case: the edited node is the
-		// only `updated` id, and `shifted` — which lists the same node — must not leak
-		// into a content feed.
-		expect(payload).toEqual({added: [], removed: [], updated: [tail.id]})
+		expect(committedSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).not.toHaveBeenCalled()
 	})
 
-	it('a mark value change routes RENDER even though it adds and removes nothing', () => {
+	it('a mark value change commits at once and routes RENDER even though it adds and removes nothing', () => {
+		// THE commit the DOM clock cannot see: the id space and the element set are both
+		// untouched, so `bound` says nothing new about it and only `committed` reports it. It is
+		// also why the model clock cannot be derived from the bind.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {mark} = mount(harness)
 		const markHandle = boundAt(harness, 1)
 		if (!markHandle) throw new Error('expected mark handle')
 		const epochBefore = pipeline.renderEpoch()
-		const changedSpy = vi.fn()
-		watch(pipeline.changed, changedSpy)
+		const committedSpy = vi.fn()
+		const boundSpy = vi.fn()
+		watch(pipeline.committed, committedSpy)
+		watch(pipeline.bound, boundSpy)
 
 		// '@[x]' spans [2,6]; replacing it whole is what MarkController lowers to.
 		expect(harness.splice(2, 6, '@[y]')).toBe(true)
 
 		expect(pipeline.renderEpoch()).not.toBe(epochBefore)
-		expect(changedSpy).not.toHaveBeenCalled()
+		expect(committedSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).not.toHaveBeenCalled()
 		expect(markHandle.element()).toBe(mark)
 
 		harness.render()
 
-		expect(changedSpy).toHaveBeenCalledTimes(1)
+		expect(committedSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).toHaveBeenCalledTimes(1)
 		// Handle continuity across a re-render is the pinned contract (id-keyed).
 		expect(boundAt(harness, 1)).toBe(markHandle)
 		expect(harness.container.children[1].textContent).toBe('y')
@@ -313,59 +334,63 @@ describe('commit pipeline driven by the tree core', () => {
 
 	it('a removal routes structural and kills the handle at bind', () => {
 		const harness = createHarness()
-		const {pipeline, nodes} = harness
+		const {nodes} = harness
 		mount(harness)
 		const markHandle = boundAt(harness, 1)
 		if (!markHandle) throw new Error('expected mark handle')
-		let payload: {removed: readonly number[]} | undefined
-		watch(pipeline.changed, delta => {
-			payload = delta
-		})
 
 		expect(harness.splice(2, 6, '')).toBe(true)
+		// The tree lost the mark on the apply; the HANDLE outlives it until the paint binds.
 		expect(markHandle.alive()).toBe(true)
 
 		harness.render()
 
 		expect(markHandle.alive()).toBe(false)
-		expect(payload?.removed).toContain(markHandle.id)
 		expect(nodes.size).toBe(1)
 	})
 
-	it('an edit landing in the pending window folds into ONE announcement', () => {
-		// The fold is an ANNOUNCEMENT guard, and since S2.7 only that. It used to gate
-		// the DOM too — `commitText` refused to run while a structural apply was
-		// unpainted, so the surface stayed on the painted generation. The per-surface
-		// effect has no such gate and writes at once, which is the behavior change of
-		// this phase: the element is still bound to the same node, so showing that
-		// node's new text is not a guess about a layout nobody painted.
+	it('an edit landing in the pending window writes through and binds ONCE for both applies', () => {
+		// The fold no longer merges anything into one announcement — each apply is its own
+		// commit and pulses `committed` on its own — so what the window still means is the DOM
+		// clock: two applies, one paint, one `bound`.
+		//
+		// The DOM half is the S2.7 behavior change and is unaffected by the clocks: `commitText`
+		// used to refuse to run while a structural apply was unpainted, so the surface stayed on
+		// the painted generation. The per-surface effect has no such gate and writes at once —
+		// the element is still bound to the same node, so showing that node's new text is not a
+		// guess about a layout nobody painted.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
-		const changedSpy = vi.fn()
-		watch(pipeline.changed, changedSpy)
+		const committedSpy = vi.fn()
+		const boundSpy = vi.fn()
+		watch(pipeline.committed, committedSpy)
+		watch(pipeline.bound, boundSpy)
 
 		harness.splice(2, 6, '@[y]') // render bit set → latched
 		harness.splice(9, 9, '!') // a text edit against the pending tree
 
-		expect(changedSpy).not.toHaveBeenCalled()
-		// Announcement: withheld. DOM: written through, on the surface still bound.
+		expect(committedSpy).toHaveBeenCalledTimes(2)
+		expect(boundSpy).not.toHaveBeenCalled()
+		// DOM: written through mid-window, on the surface still bound.
 		expect(text2.textContent).toBe('llo!')
 
 		harness.render()
 
-		expect(changedSpy).toHaveBeenCalledTimes(1)
+		expect(committedSpy).toHaveBeenCalledTimes(2)
+		expect(boundSpy).toHaveBeenCalledTimes(1)
 		expect(harness.container.children[2].textContent).toBe('llo!')
 	})
 
-	it('a text edit against an UNCONSIGNED node announces and recovers at the next paint', () => {
+	it('a text edit against an UNCONSIGNED node commits and recovers at the next paint', () => {
 		// What the two deleted `commitText`-miss cases guarded, restated for the one
 		// remaining path. It used to reach the unbound state by MISALIGNING the DOM, which
 		// made the walk drop the whole frame; a mismatch is not representable now, so the
 		// node reaches it the only way left — its element is not consigned. The edit then
 		// finds no surface at all: there is no branch to abandon and nothing to escalate.
-		// The commit still announces, the handle survives unbound rather than killed, and
-		// the next paint consigns a fresh element whose armed effect writes the current text.
+		// The commit still pulses `committed` — a missing element is not a missing commit —
+		// the handle survives unbound rather than killed, and the next paint consigns a fresh
+		// element whose armed effect writes the current text.
 		const harness = createHarness()
 		const {pipeline, nodes, container} = harness
 		mount(harness)
@@ -378,12 +403,12 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(boundAt(harness, 2)).toBeUndefined()
 		expect(nodes.get(tail.id)).toBe(tail)
 		expect(tail.element()).toBeUndefined()
-		const changedSpy = vi.fn()
-		watch(pipeline.changed, changedSpy)
+		const committedSpy = vi.fn()
+		watch(pipeline.committed, committedSpy)
 
 		expect(harness.splice(9, 9, '!')).toBe(true)
 
-		expect(changedSpy).toHaveBeenCalledTimes(1)
+		expect(committedSpy).toHaveBeenCalledTimes(1)
 		expect(joinNodes([harness.tree.roots()[2]])).toBe('llo!')
 		expect(nodes.size).toBe(3)
 
@@ -423,7 +448,7 @@ describe('commit pipeline driven by the tree core', () => {
 		// until that outer batch closes — after `apply` has returned. Measured with the
 		// check called inline at the end of `apply`: every `store.edit.replace` fixture in
 		// the suite threw a false divergence (13 red cases across 4 files). The check is a
-		// `changed` SUBSCRIBER for that reason, queued behind the writers.
+		// `committed` SUBSCRIBER for that reason, queued behind the writers.
 		const harness = createHarness()
 		const {text2} = mount(harness)
 
@@ -501,11 +526,10 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(childSurface.textContent).toBe('cb')
 	})
 
-	// Beyond the plan's case list, and both survived the first mutation run: the
-	// eight cases above all passed with the lowering's two subtree walks removed
-	// (now `deltaOf`'s). Each ports a `commit.spec.ts` case whose live-path behavior comes
-	// from reconcile's recursion (its `collectChanges`/`collectRemovedIds`, deleted
-	// at S1.6d), so a roots-only lowering is a real parity break.
+	// Beyond the plan's case list: a `commit.spec.ts` case whose live-path behavior came from
+	// reconcile's recursion (its `collectChanges`/`collectRemovedIds`, deleted at S1.6d), so a
+	// roots-only lowering is a real parity break. Its two neighbours here were the ledger's
+	// born-then-edited and born-then-killed arithmetic, and went with the ledger.
 
 	it('a shift re-materializes the descendants of a shifted mark, not just its root', () => {
 		// Ports commit.spec.ts's 'shifted suffix' case to a mark WITH children.
@@ -529,57 +553,6 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(nodeAt(harness, 1, 0)?.range()).toEqual({start: 4, end: 6})
 	})
 
-	it('a mark born and then EDITED inside one window is announced as added only, never also updated', () => {
-		// The rule that keeps one id out of two lists at once, and it was untested in BOTH
-		// the accumulator (`foldDelta`'s `if (!into.added.has(id))`) and the difference that
-		// replaced it (`updated`'s `∩ announced`). Found by mutation: dropping the clause
-		// left the whole core suite green.
-		//
-		// It needs TWO applies in one window — born, then its value changed — because a node
-		// reaches `touched` only through adoption's `updated` feed, which cannot name a node
-		// that did not exist when the apply started.
-		const harness = createHarness()
-		const {pipeline} = harness
-		harness.boundary.arrive('tail')
-		harness.render()
-		let payload: TokenDelta | undefined
-		watch(pipeline.changed, delta => {
-			payload = delta
-		})
-
-		harness.splice(0, 0, '@[x]') // born, latched for its bind
-		const markId = nodeAt(harness, 1)?.id
-		expect(markId).toBeTypeOf('number')
-		harness.splice(0, 4, '@[y]') // its value changed, still inside the same window
-		harness.render()
-
-		// The precondition, measured rather than assumed: the mark kept its id, so this is
-		// an UPDATE of a new node and not a second birth.
-		expect(nodeAt(harness, 1)?.id).toBe(markId)
-		expect(payload?.added).toContain(markId)
-		expect(payload?.updated).not.toContain(markId)
-	})
-
-	it('a mark born and killed inside one pending window is announced as neither, subtree included', () => {
-		// Ports commit.spec.ts's fold-cancellation case onto a mark WITH a slot
-		// child. Cancellation is BY EXACT ID, so a roots-only `added` diffed against
-		// the flattened `removed` would announce the child's removal to a
-		// consumer that was never told it existed (`TokenDelta`'s subtree rule).
-		const harness = createHarness(['#[__slot__]'])
-		const {pipeline} = harness
-		harness.boundary.arrive('tail')
-		harness.render()
-		let payload: TokenDelta | undefined
-		watch(pipeline.changed, delta => {
-			payload = delta
-		})
-
-		harness.splice(0, 0, '#[ab]') // born: mark + slot child + the empty head text
-		harness.splice(0, 5, '') // killed again, still inside the pending window
-		harness.render()
-
-		expect(payload).toEqual({added: [], removed: [], updated: []})
-	})
 	// ═══ S2.7: what replaced the bind-generation read ══════════════════════════
 
 	it('keeps handles on the PAINTED elements through the pending window while the tree moves on', () => {
@@ -587,20 +560,23 @@ describe('commit pipeline driven by the tree core', () => {
 		// `handle.token().position`. There is no second generation to read any more —
 		// the tree IS the generation — so the same property is asserted where it still
 		// exists: the tree moves the instant adoption runs, the node layer keeps pointing
-		// at the elements the adapter actually painted, and the announcement is withheld
+		// at the elements the adapter actually painted, and the DOM clock stays silent
 		// until the repaint binds the new layout.
+		//
+		// `bound`, not `committed`: every assertion here is about which element a handle owns,
+		// which is the question the DOM clock answers and the commit clock does not.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
 		const tail = pipeline.byElement(text2)
 		expect(nodeAt(harness, 2)?.range()).toEqual({start: 6, end: 9})
-		const changedSpy = vi.fn()
-		watch(pipeline.changed, changedSpy)
+		const boundSpy = vi.fn()
+		watch(pipeline.bound, boundSpy)
 
 		expect(harness.splice(0, 0, '@[y]')).toBe(true)
 
-		// Mid-window: the announcement is withheld.
-		expect(changedSpy).not.toHaveBeenCalled()
+		// Mid-window: nothing has bound.
+		expect(boundSpy).not.toHaveBeenCalled()
 		// The tree has moved…
 		expect(nodeAt(harness, 4)?.range()).toEqual({start: 10, end: 13})
 		// …the painted DOM has not: the same handle still owns the same element.
@@ -609,7 +585,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		harness.render()
 
-		expect(changedSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).toHaveBeenCalledTimes(1)
 		expect(boundAt(harness, 4)).toBe(tail)
 	})
 
@@ -617,11 +593,11 @@ describe('commit pipeline driven by the tree core', () => {
 	// These had no gate outside `commit.spec.ts`, which S1.6a deleted. See the
 	// coverage-scope note at the top for what was deliberately left unported.
 
-	it('a no-op splice still announces consistency without touching anything', () => {
+	it('a no-op splice still commits without touching anything', () => {
 		// Ports commit.spec.ts:187. `transactions.ts` commits a splice that changes
-		// nothing, adoption diffs it to empty feeds, and the lowering must produce an
-		// EMPTY text pass rather than an escalation: `render` false with no changes
-		// routes `commitText([])`, which announces and returns true.
+		// nothing, adoption diffs it to empty feeds, and `apply` must still pulse the model
+		// clock: a commit that changed nothing is a commit, and a consumer polling on it
+		// re-reads the tree and finds it unmoved.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
@@ -629,17 +605,12 @@ describe('commit pipeline driven by the tree core', () => {
 		const tail = boundAt(harness, 2)
 		const bindsBefore = bindCount()
 		expect(bindsBefore).toBeGreaterThan(0)
-		let payload: TokenDelta | undefined
-		const changedSpy = vi.fn()
-		watch(pipeline.changed, delta => {
-			changedSpy()
-			payload = delta
-		})
+		const committedSpy = vi.fn()
+		watch(pipeline.committed, committedSpy)
 
 		expect(harness.splice(9, 9, '')).toBe(true)
 
-		expect(changedSpy).toHaveBeenCalledTimes(1)
-		expect(payload).toEqual({added: [], removed: [], updated: []})
+		expect(committedSpy).toHaveBeenCalledTimes(1)
 		expect(pipeline.renderEpoch()).toBe(epochBefore)
 		// No re-bind either, on the path where the commit changed nothing at all.
 		expect(bindCount()).toBe(bindsBefore)
@@ -658,8 +629,12 @@ describe('commit pipeline driven by the tree core', () => {
 		mount(harness)
 		const treeSpy = vi.fn()
 		watch(pipeline.renderEpoch, treeSpy)
-		const changedSpy = vi.fn()
-		watch(pipeline.changed, changedSpy)
+		// BOTH clocks: the point of the case is that the epoch tracks the RENDERER while the
+		// model clock tracks commits, and only the four-versus-one count below shows that.
+		const committedSpy = vi.fn()
+		const boundSpy = vi.fn()
+		watch(pipeline.committed, committedSpy)
+		watch(pipeline.bound, boundSpy)
 		const epochBefore = pipeline.renderEpoch()
 
 		harness.splice(9, 9, '!')
@@ -668,18 +643,23 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(treeSpy).toHaveBeenCalledTimes(0)
 		expect(pipeline.renderEpoch()).toBe(epochBefore)
-		expect(changedSpy).toHaveBeenCalledTimes(3)
+		expect(committedSpy).toHaveBeenCalledTimes(3)
+		expect(boundSpy).not.toHaveBeenCalled()
 		expect(container.children[2].textContent).toBe('llo!!!')
 
 		harness.splice(12, 12, '@[y]')
 
 		expect(treeSpy).toHaveBeenCalledTimes(1)
-		expect(changedSpy).toHaveBeenCalledTimes(3)
+		// The structural apply commits IMMEDIATELY — it no longer waits for its paint.
+		expect(committedSpy).toHaveBeenCalledTimes(4)
+		expect(boundSpy).not.toHaveBeenCalled()
 
 		harness.render()
 
 		expect(treeSpy).toHaveBeenCalledTimes(1)
-		expect(changedSpy).toHaveBeenCalledTimes(4)
+		// The paint adds no commit; it adds the second pulse the structural commit owes.
+		expect(committedSpy).toHaveBeenCalledTimes(4)
+		expect(boundSpy).toHaveBeenCalledTimes(1)
 	})
 
 	it('a re-render after a text edit re-binds the LIVE tree', () => {
@@ -690,10 +670,10 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
-		const seen: TokenDelta[] = []
-		watch(pipeline.changed, delta => {
-			seen.push(delta)
-		})
+		const committedSpy = vi.fn()
+		const boundSpy = vi.fn()
+		watch(pipeline.committed, committedSpy)
+		watch(pipeline.bound, boundSpy)
 
 		expect(harness.splice(9, 9, '!')).toBe(true)
 		const handle = pipeline.byElement(text2)
@@ -704,152 +684,87 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(text2.textContent).toBe('llo!')
 		expect(joinNodes([harness.tree.roots()[2]])).toBe('llo!')
 		expect(pipeline.byElement(text2)).toBe(handle)
-		// A re-bind with nothing pending drains an empty accumulator (commit.spec.ts:727).
-		expect(seen[1]).toEqual({added: [], removed: [], updated: []})
+		// The two clocks are INDEPENDENT here, which is the case's other half: a bind nobody
+		// committed for still pulses the DOM clock, and it invents no commit while doing it.
+		expect(boundSpy).toHaveBeenCalledTimes(1)
+		expect(committedSpy).toHaveBeenCalledTimes(1)
 	})
 
-	it('an add stays quiet until bind and announces every id of the new subtree', () => {
-		// Ports commit.spec.ts:228 onto a mark WITH a slot child, which also gives
-		// `delta.added` its only POSITIVE pipeline-level assertion — the fold case above
-		// asserts the cancellation, i.e. the empty one.
+	it('an add binds the whole new subtree, and not before the paint', () => {
+		// Ports commit.spec.ts:228 onto a mark WITH a slot child. The ids of the new subtree
+		// are no longer announced, so the observable that replaces `delta.added` is the one it
+		// was derived from: after the paint every node of the subtree HAS a live handle, and
+		// before it none does — which is exactly why the caret reads this clock.
 		const harness = createHarness(['#[__slot__]'])
 		const {pipeline} = harness
 		harness.boundary.arrive('tail')
 		harness.renderNested()
 		const epochBefore = pipeline.renderEpoch()
-		let payload: TokenDelta | undefined
-		const changedSpy = vi.fn()
-		watch(pipeline.changed, delta => {
-			changedSpy()
-			payload = delta
-		})
+		const boundSpy = vi.fn()
+		watch(pipeline.bound, boundSpy)
 
 		expect(harness.splice(0, 0, '#[ab]')).toBe(true)
 
 		expect(pipeline.renderEpoch()).not.toBe(epochBefore)
-		expect(changedSpy).not.toHaveBeenCalled()
+		expect(boundSpy).not.toHaveBeenCalled()
+		expect(boundAt(harness, 1)).toBeUndefined()
 
 		harness.renderNested()
 
-		expect(changedSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).toHaveBeenCalledTimes(1)
 		const mark = boundAt(harness, 1)
 		const child = boundAt(harness, 1, 0)
 		if (!mark || !child) throw new Error('expected the new mark and its slot child')
-		expect(payload?.added).toEqual(expect.arrayContaining([mark.id, child.id]))
 	})
 
-	// ═══ `deltaOf`'s granularity (moved from the deleted treeInput.spec.ts) ══════
-	//
-	// The two cases the lowering had to itself. Everything else that suite pinned was
-	// the snapshot memo — its reuse, its cache-hit branch, its re-materialization of an
-	// ancestor — and went with it; what a consumer can still observe about those edits
-	// is asserted directly on the tree above.
-
-	it('lists a node ONCE in `updated` when it is both updated and shifted', () => {
-		// `shifted` is not a content signal and must not leak into the announcement.
-		const harness = createHarness(['#[__slot__]'])
-		const {pipeline} = harness
-		harness.boundary.arrive('he#[x]llo')
-		harness.renderNested()
-		const tailId = nodeAt(harness, 2)?.id
-		let payload: TokenDelta | undefined
-		watch(pipeline.changed, delta => {
-			payload = delta
-		})
-
-		expect(harness.splice(9, 9, '!')).toBe(true)
-
-		expect(payload).toEqual({added: [], removed: [], updated: [tailId]})
-	})
-
-	it('leaves an ANCESTOR whose own fields never changed out of `updated`', () => {
-		// '#[ab]t' → '#[cb]t': the mark's PROJECTION changes and its own props do not, so
-		// `TokenDelta`'s per-node rule keeps it out and a consumer needing the subtree
-		// re-reads the tree. Length-preserving deliberately — a longer splice would put
-		// the mark in `shifted`, which this rule is about not confusing with content.
-		const harness = createHarness(['#[__slot__]'])
-		const {pipeline} = harness
-		harness.boundary.arrive('#[ab]t')
-		harness.renderNested()
-		const childId = nodeAt(harness, 1, 0)?.id
-		let payload: TokenDelta | undefined
-		watch(pipeline.changed, delta => {
-			payload = delta
-		})
-
-		expect(harness.splice(2, 3, 'c')).toBe(true)
-
-		expect(payload).toEqual({added: [], removed: [], updated: [childId]})
-		// The precondition, measured rather than assumed: the ancestor DID change.
-		expect(joinNodes([nodeAt(harness, 1)!])).toBe('#[cb]')
-	})
-
-	it('merges the removals of every edit folded into one pending structural pass', () => {
-		// Ports commit.spec.ts:662, the gate on the leak Task 2 reproduced and fixed
-		// (`pendingRemovedIds = removedIds` dropped the FIRST removal, so
-		// BlockController never pruned that row's BlockStore). Kept on BOTH lowerings
-		// deliberately: the fold is the only pipeline state that spans applies, and
-		// after S1.6a this file is its only gate.
-		const harness = createHarness()
-		const {pipeline} = harness
-		harness.boundary.arrive('a@[x]b@[y]c')
-		harness.render()
-		const markX = boundAt(harness, 1)
-		const markY = boundAt(harness, 3)
-		if (!markX || !markY) throw new Error('expected both mark handles')
-		let payload: TokenDelta | undefined
-		watch(pipeline.changed, delta => {
-			payload = delta
-		})
-
-		// Two structural edits, ONE bind. '@[x]' spans [1,5]; once it is gone the value
-		// is 'ab@[y]c' and '@[y]' spans [2,6].
-		harness.splice(1, 5, '')
-		harness.splice(2, 6, '')
-		harness.render()
-
-		expect(payload?.removed).toContain(markX.id)
-		expect(payload?.removed).toContain(markY.id)
-	})
-
-	it('onRendered without a container announces nothing and leaves the commit unbound', () => {
+	it('onRendered without a container binds nothing and leaves the DOM clock silent', () => {
 		// Ports commit.spec.ts:374. It read `pending() === true` until ADR-0008 took that
-		// accessor off the pipeline's face; the observable half — nothing announced, nothing
-		// bound — is what it was always gating.
+		// accessor off the pipeline's face; the observable half — nothing bound, no DOM
+		// pulse — is what it was always gating.
+		//
+		// `bound`, not `committed`: the arrival IS a commit and pulses the model clock even
+		// unmounted, which the first assertion pins. Only the DOM half is refused.
 		const harness = createHarness()
 		const {pipeline} = harness
-		const changedSpy = vi.fn()
-		watch(pipeline.changed, changedSpy)
+		const committedSpy = vi.fn()
+		const boundSpy = vi.fn()
+		watch(pipeline.committed, committedSpy)
+		watch(pipeline.bound, boundSpy)
 
 		harness.boundary.arrive('he@[x]llo')
 		harness.unmount()
 
+		expect(committedSpy).toHaveBeenCalledTimes(1)
 		expect(() => pipeline.onRendered()).not.toThrow()
-		expect(changedSpy).not.toHaveBeenCalled()
+		expect(boundSpy).not.toHaveBeenCalled()
 		expect(boundHandles(harness)).toHaveLength(0)
 	})
 
-	it('a synchronous onRendered from a changed watcher fails loud', () => {
-		// Ports commit.spec.ts:525.
+	it('a synchronous onRendered from a bound watcher fails loud', () => {
+		// Ports commit.spec.ts:525. `bound` is the clock that fires from INSIDE the bind, so
+		// it is the one whose watcher can re-enter `onRendered`.
 		const harness = createHarness()
 		mount(harness)
-		watch(harness.pipeline.changed, () => harness.pipeline.onRendered())
+		watch(harness.pipeline.bound, () => harness.pipeline.onRendered())
 
 		harness.splice(2, 6, '@[y]')
 		expect(() => harness.render()).toThrow(/re-entry/)
 	})
 
-	it('a synchronous arrival from a changed watcher fails loud', () => {
+	it('a synchronous arrival from a committed watcher fails loud', () => {
 		// Ports commit.spec.ts:517, but through `arrive` rather than a verb, because the
 		// two guards are LAYERED and the transaction one fires first: a verb called from
-		// a `changed` watcher is still inside `dispatch`, so `transactions.assertIdle`
+		// a commit watcher is still inside `dispatch`, so `transactions.assertIdle`
 		// throws 're-entrant transaction dispatch' before the pipeline is re-entered at
 		// all (gated by transactions.spec.ts:203). `arrive` is the entry point that
 		// bypasses the dispatcher — a props echo — and it is what reaches the
 		// pipeline's own guard.
+		//
+		// `committed` is the clock here for the mirror of the case above: it fires from
+		// inside `apply`, so it is the one whose watcher can re-enter `apply`.
 		const harness = createHarness()
 		mount(harness)
-		watch(harness.pipeline.changed, () => harness.boundary.arrive('he@[x]llo!!'))
+		watch(harness.pipeline.committed, () => harness.boundary.arrive('he@[x]llo!!'))
 
 		expect(() => harness.splice(9, 9, '!')).toThrow(/re-entry/)
 	})

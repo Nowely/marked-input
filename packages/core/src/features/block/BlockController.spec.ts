@@ -301,9 +301,10 @@ describe('BlockController', () => {
 
 		it('keeps a row store across an edit above it with NOTHING mounted', () => {
 			// The object key needs no announcement, so this holds with no container and no
-			// `rendered()` — the id-keyed Map's prune rode `tokens.changed`, which only ever
-			// announces removals from a bind, so an unmounted input could hand a row a store
-			// and never shed it.
+			// `rendered()` — the id-keyed Map's prune rode the id lists the old fused
+			// `tokens.changed` carried, whose removals only ever came from a bind, so an unmounted
+			// input could hand a row a store and never shed it. Both clocks are payload-free now,
+			// so there is no removal list left to ride even where one binds.
 			store.props.set({
 				layout: 'block',
 				draggable: true,
@@ -348,8 +349,9 @@ describe('BlockController', () => {
 		})
 
 		it('still answers for a node that has LEFT the tree — the one WeakMap divergence', () => {
-			// MEASURED COST of object keying, pinned rather than argued. The id-keyed Map
-			// pruned on `changed.removed`, so re-asking with a dead node built a fresh store;
+			// MEASURED COST of object keying, pinned rather than argued. The id-keyed Map pruned
+			// on the `removed` list the old fused `changed` carried, so re-asking with a dead
+			// node built a fresh store;
 			// a WeakMap keeps the entry as long as the caller keeps the node. Harmless here
 			// because every caller (`Block`, `DragHandle`, `BlockMenu`, `DropIndicator` in
 			// both adapters) passes a node straight out of `tokens.nodes()`, and the entry

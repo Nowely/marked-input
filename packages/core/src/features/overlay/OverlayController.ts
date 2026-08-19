@@ -58,7 +58,7 @@ export class OverlayController {
 			// 0 and 0 (the props signal short-circuits the equal write). An uncontrolled commit
 			// that leaves the string unchanged: 0 and 1 — the one case `changed` adds, and a
 			// probe is idempotent.
-			watch(this.tokens.changed, () => {
+			watch(this.tokens.committed, () => {
 				if (!hasOverlayTrigger()) return
 				const showOverlayOn = this.props.showOverlayOn()
 				const type: OverlayTrigger = 'change'

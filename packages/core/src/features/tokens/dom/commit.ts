@@ -1,7 +1,5 @@
 import {event, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
-import {createDeltaLedger} from '../delta'
-import type {TokenDelta} from '../delta'
 import type {TransactionResult, TreeNode} from '../tree/types'
 import {bind} from './bind'
 import type {TokenHandle} from './TokenHandle'
@@ -13,10 +11,11 @@ import type {TokenHandle} from './TokenHandle'
  * effect on each bound text node, so a text-only commit reaches the DOM off the
  * node's own signal and `apply` is left with the announcement.
  *
- * `changed` still fires only once the DOM is consistent with the node layer, but
- * that is now an ORDERING property of the effect queue rather than of this
- * function's statement order: the writers are queued ahead of every `changed`
- * subscriber, including {@link assertAligned} (see its registration below).
+ * There are TWO clocks now, because one event was serving two different questions.
+ * `committed` is the model's — one pulse per commit, including the commits that
+ * move no element at all, which is precisely what a DOM clock cannot see.
+ * `bound` is the DOM's, and only the caret needs it. Neither carries a payload:
+ * nothing in core read the old delta, and deriving one cost a module of its own.
  */
 export type CommitDeps = {
 	/** Adapter container; null until mounted. */
@@ -69,7 +68,19 @@ export type CommitPipeline = {
 	 * apply folded into one pending structural pass is MERGED into the single
 	 * announcement.
 	 */
-	changed: Event<TokenDelta>
+	/**
+	 * THE MODEL CLOCK: one pulse per commit, once the tree, the projection and the repaired
+	 * selection are all in place. Fires for EVERY commit, including the ones that move no element
+	 * at all — a row reorder and a mark value change both leave the id space and the element set
+	 * untouched, and they are exactly the commits a DOM clock cannot see.
+	 */
+	committed: Event<void>
+	/**
+	 * THE DOM CLOCK: one pulse per bind, so every handle in the node layer matches an element that
+	 * is actually in the document. Only the caret needs this — a caret landing in a node BORN by
+	 * the commit has no handle until bind makes one, so nothing earlier can place it.
+	 */
+	bound: Event<void>
 	byElement(element: HTMLElement): TokenHandle | undefined
 	isControlRoot(element: HTMLElement): boolean
 }
@@ -90,7 +101,8 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// value-only commits `roots` cannot carry.
 	let epoch = 0
 	const renderEpoch = signal({initial: epoch})
-	const changed = event<TokenDelta>()
+	const committed = event<void>()
+	const bound = event<void>()
 
 	// Element-keyed lookups over the bound nodes — replaced wholesale by bind, untouched by a
 	// text-only commit (no node is added or removed there by definition, so the same ids
@@ -105,37 +117,21 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// by the commit has no handle until `bind` makes one, and that absence was always the
 	// refusal that mattered.
 	let pendingStructural = false
-	/**
-	 * THE id-space bookkeeping ({@link createDeltaLedger}). It holds the announced space and
-	 * the touched set and derives the three lists from them; this module holds only the
-	 * ROUTING — which of the two paths announces, and when.
-	 */
-	const ledger = createDeltaLedger()
 	let committing = false
 
 	function apply(result: TransactionResult): void {
 		if (committing) throw new Error('TokenModel commit re-entry')
 		committing = true
 		try {
-			for (const node of result.updated) ledger.touch(node.id)
-			// Routing decided by the producer (spec D9's `render` bit). The one
-			// commit-side override is the fold guard: while a structural apply awaits
-			// its bind the node layer is one generation stale, so EVERY apply folds
-			// into the pending structural pass and announces with it (fail-closed — no
-			// consumer is told about a tree the DOM never showed).
+			// The renderer still has to run for a commit the producer marked (spec D9's `render`
+			// bit), and the latch still folds a later apply into an outstanding one. What is gone
+			// is the ROUTING: both arms announce now, because the announcement is a commit fact
+			// and not a DOM fact.
 			if (result.render || pendingStructural) {
 				pendingStructural = true
 				renderEpoch(++epoch)
-				return
 			}
-			// Text-only: the per-surface effects own the DOM write, so all that is left
-			// is the announcement. The id space CANNOT have moved on this branch —
-			// `render` is `structural || …` and `structural` is
-			// `added.length > 0 || removed.length > 0` (adopt.ts), so reaching here implies
-			// neither. That is why `announced` stands in for the tree's ids and no walk is
-			// needed to say "nothing was added or removed" — which is exactly the
-			// precondition `announceUnchanged` documents.
-			changed(ledger.announceUnchanged())
+			committed()
 		} finally {
 			committing = false
 		}
@@ -167,13 +163,8 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		})
 		byElement = result.byElement
 		controlRoots = result.controlRoots
-		// A re-bind with no structural change diffs an unchanged id space against itself and
-		// announces three empty lists — no guard needed for that case, and none for the
-		// window either: the difference is the same expression whether one apply or five
-		// folded into this pass.
-		const delta = ledger.announce(result.ids)
 		pendingStructural = false
-		changed(delta)
+		bound()
 	}
 
 	/**
@@ -204,7 +195,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		})
 	}
 
-	// A `changed` SUBSCRIBER, not an inline call at the end of `apply` — MEASURED, and
+	// A `committed` SUBSCRIBER, not an inline call at the end of `apply` — MEASURED, and
 	// the one thing about this phase that a reading of the code alone gets wrong.
 	// `EditController.replace` wraps the whole write in `batch`, so the per-surface
 	// effects adoption queued do NOT flush until that outer batch closes, well after
@@ -212,16 +203,33 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// divergence with the check inline). Event subscribers are queued BEHIND those
 	// effects, so a watcher here runs once every writer has finished — in the batched
 	// case and in the unbatched one alike, where adoption's own batch already flushed.
-	// Registered before any consumer's `changed` watch, which keeps the old ordering:
+	// Registered before any consumer's watch, which keeps the old ordering:
 	// the check runs first, and a divergence fails the commit rather than leaking into
 	// a caret re-place.
-	untracked(() => watch(changed, assertAligned))
+	// BOTH clocks, and the guard between them is the whole subtlety. The sweep asks a DOM
+	// question, so on a commit awaiting its bind it must wait too: `bind` disposes and re-arms
+	// every per-surface effect, and that re-arm's first run is what heals a surface corrupted
+	// between binds. Sweeping at commit time on that path reports the corruption instead of
+	// letting the heal happen — measured, it turned the structural self-heal case into a throw.
+	//
+	// The text path has no bind at all, so it must be swept at commit time or never — which is
+	// exactly the path the per-surface writer lives on and the one this sweep exists for.
+	//
+	// WHEN THE LATCH GOES, THIS NEEDS REVISITING: `pendingStructural` is what "a bind is still
+	// coming" is spelled as today.
+	untracked(() =>
+		watch(committed, () => {
+			if (!pendingStructural) assertAligned()
+		})
+	)
+	untracked(() => watch(bound, assertAligned))
 
 	return {
 		apply,
 		onRendered,
 		renderEpoch,
-		changed,
+		committed,
+		bound,
 		byElement: element => byElement.get(element),
 		isControlRoot: element => controlRoots.has(element),
 	}
