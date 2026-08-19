@@ -2,7 +2,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals/index.js'
 import {Store} from '../../../store/Store'
-import {anchorsAt, enableStructuralStore, mountInline} from '../__testing__/mountFixtures'
+import {anchorsAt, consignRendered, enableStructuralStore, mountInline} from '../__testing__/mountFixtures'
 
 /** Inline fixture (from TokenModel.facade.spec.ts): text 'he' [0,2], mark '@[x]' [2,6], text 'llo' [6,9]. */
 function mountWithMark(beforeMount?: (store: Store) => void) {
@@ -21,6 +21,7 @@ function mountWithMark(beforeMount?: (store: Store) => void) {
 	document.body.append(container)
 	beforeMount?.(store)
 	store.host.container(container)
+	consignRendered(store, container)
 	store.host.rendered()
 	return {store, container}
 }
@@ -41,8 +42,10 @@ describe('TokenModel changed event', () => {
 		const changedSpy = vi.fn()
 		const {store} = mountWithMark(s => watch(s.tokens.changed, changedSpy))
 
-		// Mount binds the pre-built DOM immediately and announces the cold start,
-		// then the explicit rendered() re-binds idempotently — two announcements
+		// Mount binds immediately and announces the cold start off the TREE's ids —
+		// measured: `{added: [1, 2, 3], removed: [], updated: []}` with zero handles
+		// alive, because nothing is consigned that early. The explicit rendered() after
+		// consignment binds all three and announces an empty delta. Two announcements
 		// (the count is the contract here; the payload is pinned in the cases below).
 		expect(changedSpy).toHaveBeenCalledTimes(2)
 
@@ -187,7 +190,9 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 		// The renderer owns this change: consistency is not announced yet.
 		expect(changedSpy).toHaveBeenCalledTimes(3)
 
-		// The (manual) adapter re-renders from the new tree and reports back.
+		// The (manual) adapter re-renders from the new tree, consigns the fresh elements and
+		// reports back. Re-consigning is the whole of the adapter's side: without it bind
+		// would keep the elements this replaceChildren just detached.
 		container.replaceChildren(
 			...store.tokens.nodes().map(node => {
 				const span = document.createElement('span')
@@ -195,6 +200,7 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 				return span
 			})
 		)
+		consignRendered(store, container)
 		store.host.rendered()
 
 		// The bind completes the structural flow — exactly one more consistency

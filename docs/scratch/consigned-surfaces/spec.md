@@ -222,7 +222,7 @@ not on speed.
 | --- | --- | --- |
 | **A0** | Ref contract | Pass the ref through the Mark and text slots in both adapters, unwrapping it on the Vue side. Update `how-it-works.md` and the slot docs. Nothing in core reads it yet, so this is inert on its own — and it is the step that carries the major-version break. |
 | **A1** | Shadow registry | Add consignment and the refs. Add a dev-only assertion that the registry's mapping equals the walk's, for every Token element and the row wrapper. Add a dev-only drift check: a `MutationObserver` on the Container that throws when a mutation lands inside a leased Surface while core is not writing. The walk still owns everything. Zero behaviour change; the DOM snapshot must not move by a line. |
-| **A2** | Delete the walk | The registry becomes the owner. Handle lifecycle, text-effect arming and editable state move to consignment. Delete the walk, its spec, and both dev-only checks from A1. |
+| **A2** | Delete the walk | DONE. The registry is the owner; `isBlock` and the frame alignment are gone with it. Surfaced one contract that A0 did not: a consumer's `Span` IS the text Surface and so cannot be wrapped the way a Mark is — it must forward its ref or its text never binds. Nothing in the repo used `Span` except the render-count instruments, which now forward it through the shared mark factory. |
 | **A3** | Delete the scheduling | Delete the render epoch, the render-announcement hook, the pending-structural latch and Vue's `nextTick` watcher. Collapse the commit module and fold what remains into the DOM model. |
 
 The drift check exists to answer one question while both mechanisms are live and comparable: does a

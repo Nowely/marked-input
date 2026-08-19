@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
 import type {TokenDelta} from '../features/tokens'
+import {consignRendered} from '../features/tokens/__testing__/mountFixtures'
 import type {Markup} from '../features/tokens/parser/types'
 import type {TextNode} from '../features/tokens/tree/types'
 import {effect, watch} from '../shared/signals'
@@ -11,9 +12,9 @@ const MARKUP: Markup = '@[__value__](__meta__)'
 const SLOT_MARKUP: Markup = '#[__value__]{__slot__}'
 
 /**
- * Mounted fixture: one span per top-level token (marks render childless). The verbs resolve
- * through the live node layer, so they need a seeded store; mounting is how production gets
- * one, and it keeps the selection watches wired.
+ * Mounted fixture: one span per top-level token (marks render childless), consigned the way an
+ * adapter's refs would. The verbs resolve through the live node layer, so they need a seeded
+ * store; mounting is how production gets one, and it keeps the selection watches wired.
  */
 function setup(value: string, opts: {controlled?: boolean; onChange?: (value: string) => void} = {}) {
 	const store = new Store()
@@ -27,6 +28,7 @@ function setup(value: string, opts: {controlled?: boolean; onChange?: (value: st
 	document.body.append(container)
 	store.host.container(container)
 	container.replaceChildren(...store.tokens.nodes().map(() => document.createElement('span')))
+	consignRendered(store, container)
 	store.host.rendered()
 	return {store, api: store.api}
 }

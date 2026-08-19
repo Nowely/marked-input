@@ -33,7 +33,10 @@ export type BindInput = {
 	controlElements: ReadonlySet<HTMLElement>
 	/** Registered `__slot__` hosts for one owner, resolved by the owner's stable id. */
 	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[]
-	isBlock: boolean
+	/** THE element source: what each adapter consigned for this generation, by token id. */
+	consigned: ReadonlyMap<number, HTMLElement>
+	/** The same for block row wrappers; empty outside block layout, because only rows register. */
+	rows: ReadonlyMap<number, HTMLElement>
 }
 
 /**
@@ -57,14 +60,8 @@ export type BindResult = {
 	ids: Set<number>
 }
 
-type Frame = {
-	nodes: readonly TreeNode[]
-	elements: HTMLElement[]
-	rows?: ReadonlyMap<number, HTMLElement>
-}
-
 export function bind(input: BindInput): BindResult {
-	const {container, roots, nodes, controlElements, childSequenceHostsFor, isBlock} = input
+	const {container, roots, nodes, controlElements, childSequenceHostsFor, consigned, rows} = input
 
 	// `untracked` for the reason adoption documents: the walk below reads `children()`
 	// and the text effects read `text()`, and a caller inside an effect or computed must
@@ -78,12 +75,12 @@ export function bind(input: BindInput): BindResult {
 		collectTree(roots, tree)
 
 		const controlRoots = computeControlRoots(container, controlElements)
-		const walked = walkDom(container, roots, controlRoots, childSequenceHostsFor, isBlock)
+		const walked = bindingsFor(tree, consigned, rows, childSequenceHostsFor)
 
 		const byElement = new WeakMap<HTMLElement, TokenHandle>()
 		// Built from the flattened TREE, outside the batch, because it is returned: the
-		// announcement is a difference against it and must not depend on what the DOM walk
-		// managed to pair up.
+		// announcement is a difference against it and must not depend on which nodes the
+		// adapters had consigned by this point.
 		const treeIds = new Set<number>()
 		for (const node of tree) treeIds.add(node.id)
 
@@ -91,8 +88,8 @@ export function bind(input: BindInput): BindResult {
 			for (const node of tree) {
 				const bindings = walked.get(node)
 				const existing = nodes.get(node.id)
-				// An unrendered NEW node materializes no handle; one appears when a
-				// later walk reaches it (or on demand through the model shell).
+				// An unconsigned NEW node materializes no handle; one appears once its
+				// component paints and its ref fires.
 				if (!existing && !bindings) continue
 				const handle = existing ?? new TokenHandle(node.id)
 				if (!existing) nodes.set(node.id, handle)
@@ -108,11 +105,9 @@ export function bind(input: BindInput): BindResult {
 				if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
 			}
 
-			// Kill ONLY ids genuinely absent from the new TREE. A DOM-walk bail must
-			// not kill: the DOM is transiently misaligned (adapter mid-render) while
-			// the tree still owns those nodes — they were unbound above instead.
-			// (Deliberate divergence from the old TokenModel#syncHandles, which
-			// rebuilt #byId from byPath and so killed every handle on a bail.)
+			// Kill ONLY ids genuinely absent from the new TREE. A token whose element has
+			// not arrived yet is transiently unconsigned while the tree still owns it —
+			// it was unbound above instead.
 			for (const [id, handle] of nodes) {
 				if (treeIds.has(id)) continue
 				handle.kill()
@@ -132,69 +127,43 @@ function collectTree(nodes: readonly TreeNode[], out: TreeNode[]): void {
 }
 
 /**
- * buildIndex's frame/stack walk, emitting element bindings per tree node
- * instead of index records. Alignment is all-or-nothing per frame: a count
- * mismatch drops the frame and every descendant frame with it.
+ * The element bindings of one generation, taken from what the adapters CONSIGNED rather than
+ * derived by walking the painted DOM.
+ *
+ * This replaced a frame/stack walk that zipped each sibling list against its DOM children and
+ * bailed a whole frame on a count mismatch. Nothing in that walk was knowledge the framework did
+ * not already hold, and pairing by COUNT was actively wrong in one measured case: when a
+ * consumer's Mark renders its slot as a string instead of rendering `children`, the inner tokens
+ * are never rendered at all and the walk still paired them with whatever element sat at the same
+ * index. A token with no consigned element now simply has none, which is the truth.
+ *
+ * A Mark's element is the box-less wrapper the adapters render around it, so nothing here — and
+ * nothing in {@link applyMountState} — ever touches a consumer's own element.
  */
-function walkDom(
-	container: HTMLElement,
-	roots: readonly TreeNode[],
-	controlRoots: WeakSet<HTMLElement>,
-	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[],
-	isBlock: boolean
+function bindingsFor(
+	tree: readonly TreeNode[],
+	consigned: ReadonlyMap<number, HTMLElement>,
+	rows: ReadonlyMap<number, HTMLElement>,
+	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[]
 ): Map<TreeNode, ElementBindings> {
 	const bound = new Map<TreeNode, ElementBindings>()
-	const stack: Frame[] = [resolveRoot()]
-
-	while (stack.length > 0) {
-		const frame = stack.pop()
-		if (!frame) continue
-		const {nodes: frameNodes, elements, rows} = frame
-		if (elements.length !== frameNodes.length) continue
-
-		frameNodes.forEach((node, i) => {
-			const element = elements[i]
-			const hosts = childSequenceHostsFor(node.id)
-			const childSequenceHost = hosts.length === 1 && element.contains(hosts[0]) ? hosts[0] : undefined
-			bound.set(node, {
-				tokenElement: element,
-				textElement: node.kind === 'text' ? element : undefined,
-				rowElement: rows?.get(i),
-				childSequenceHost,
-			})
-			if (node.kind !== 'mark') return
-			const children = node.children()
-			if (children.length === 0) return
-			stack.push({
-				nodes: children,
-				elements: nonControlChildren(childSequenceHost ?? element, controlRoots),
-			})
+	for (const node of tree) {
+		const element = consigned.get(node.id)
+		if (!element) continue
+		const hosts = childSequenceHostsFor(node.id)
+		// The `contains` test survives the walk's deletion: a host registered under this owner
+		// but sitting outside its element belongs to a generation that has not been torn down.
+		const childSequenceHost = hosts.length === 1 && element.contains(hosts[0]) ? hosts[0] : undefined
+		bound.set(node, {
+			tokenElement: element,
+			// A Surface is a TEXT token's own element — the walk gave one to text nodes only, and
+			// that equivalence is what lets the text effect write straight into it.
+			textElement: node.kind === 'text' ? element : undefined,
+			rowElement: rows.get(node.id),
+			childSequenceHost,
 		})
 	}
-
 	return bound
-
-	function resolveRoot(): Frame {
-		if (!isBlock) {
-			return {nodes: roots, elements: nonControlChildren(container, controlRoots)}
-		}
-		// Block layout: take all container children as candidate rows (do NOT filter rows
-		// by controlRoots — a row that contains controls is still a row). Controls are
-		// filtered only inside each row when looking for the single token element.
-		const rowEls = elementChildren(container)
-		const tokenEls: HTMLElement[] = []
-		const rows = new Map<number, HTMLElement>()
-		const len = Math.min(roots.length, rowEls.length)
-		for (let i = 0; i < len; i++) {
-			const row = rowEls[i]
-			const inner = nonControlChildren(row, controlRoots)
-			// Block alignment is all-or-nothing: one bad row bails the whole frame.
-			if (inner.length !== 1) return {nodes: roots, elements: []}
-			tokenEls.push(inner[0])
-			rows.set(i, row)
-		}
-		return {nodes: roots, elements: tokenEls, rows}
-	}
 }
 
 /**
@@ -225,22 +194,6 @@ function applyMountState(bindings: ElementBindings, previous: ElementBindings | 
 	const sameHost = previous?.childSequenceHost === bindings.childSequenceHost
 	if (sameRoot && sameHost) return
 	applyEditableState(bindings)
-}
-
-function nonControlChildren(parent: HTMLElement, controlRoots: WeakSet<HTMLElement>): HTMLElement[] {
-	const out: HTMLElement[] = []
-	for (const child of parent.children) {
-		if (child instanceof HTMLElement && !controlRoots.has(child)) out.push(child)
-	}
-	return out
-}
-
-function elementChildren(parent: HTMLElement): HTMLElement[] {
-	const out: HTMLElement[] = []
-	for (const child of parent.children) {
-		if (child instanceof HTMLElement) out.push(child)
-	}
-	return out
 }
 
 function computeControlRoots(container: HTMLElement, controlElements: ReadonlySet<HTMLElement>): WeakSet<HTMLElement> {

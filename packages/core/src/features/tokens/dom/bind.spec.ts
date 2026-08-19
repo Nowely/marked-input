@@ -25,14 +25,51 @@ function treeOf(tokens: Token[]): {tree: TokenTree; roots: readonly TreeNode[]} 
 	return {tree, roots: tree.roots()}
 }
 
+/**
+ * The elements the adapters would have consigned, derived here from the DOM a case built.
+ *
+ * bind no longer walks, so a case has to SAY which element belongs to which token — which is what
+ * the adapters do through their refs. The default mirrors the shape they render: the container's
+ * element children pair with the roots in order, and a mark's children pair with the element
+ * children of its child-sequence host (or of the mark's own element when it has none). A case that
+ * wants a different pairing passes `consigned` itself.
+ */
+function consignFrom(
+	container: HTMLElement,
+	roots: readonly TreeNode[],
+	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[] = () => []
+): Map<number, HTMLElement> {
+	const out = new Map<number, HTMLElement>()
+	const visit = (nodes: readonly TreeNode[], parent: HTMLElement): void => {
+		const elements = Array.from(parent.children).filter((c): c is HTMLElement => c instanceof HTMLElement)
+		nodes.forEach((node, i) => {
+			// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as
+			// non-nullable and the short-fixture guard below is linted away as impossible.
+			const element = elements.at(i)
+			if (!element) return
+			out.set(node.id, element)
+			if (node.kind !== 'mark') return
+			const children = node.children()
+			if (children.length === 0) return
+			const hosts = childSequenceHostsFor(node.id)
+			const host = hosts.length === 1 && element.contains(hosts[0]) ? hosts[0] : element
+			visit(children, host)
+		})
+	}
+	visit(roots, container)
+	return out
+}
+
 function inputFor(container: HTMLElement, roots: readonly TreeNode[], overrides: Partial<BindInput> = {}): BindInput {
+	const childSequenceHostsFor = overrides.childSequenceHostsFor ?? (() => [])
 	return {
 		container,
 		roots,
 		nodes: new Map<number, TokenHandle>(),
 		controlElements: new Set<HTMLElement>(),
-		childSequenceHostsFor: () => [],
-		isBlock: false,
+		childSequenceHostsFor,
+		consigned: consignFrom(container, roots, childSequenceHostsFor),
+		rows: new Map<number, HTMLElement>(),
 		...overrides,
 	}
 }
@@ -189,7 +226,10 @@ describe('bind', () => {
 			expect(nodes.size).toBe(1)
 		})
 
-		it('peels block-layout rows and binds the single node per row', () => {
+		it('binds a block row wrapper alongside the token element', () => {
+			// The rows arrive from their own registry now. There is no peeling and no `isBlock`:
+			// a row is registered under its token's id or it is not, and outside block layout
+			// nothing registers one.
 			const container = document.createElement('div')
 			const row0 = document.createElement('div')
 			const tokenEl0 = document.createElement('span')
@@ -201,7 +241,18 @@ describe('bind', () => {
 
 			const {roots} = treeOf([textToken('a', 0), textToken('b', 2)])
 
-			const result = bindOf(inputFor(container, roots, {isBlock: true}))
+			const result = bindOf(
+				inputFor(container, roots, {
+					consigned: new Map([
+						[roots[0].id, tokenEl0],
+						[roots[1].id, tokenEl1],
+					]),
+					rows: new Map([
+						[roots[0].id, row0],
+						[roots[1].id, row1],
+					]),
+				})
+			)
 
 			expect(at(result, roots, 0)?.element()).toBe(tokenEl0)
 			expect(at(result, roots, 0)?.node()?.rowElement).toBe(row0)
@@ -209,110 +260,6 @@ describe('bind', () => {
 			expect(at(result, roots, 1)?.node()?.rowElement).toBe(row1)
 			expect(result.byElement.get(row0)).toBe(at(result, roots, 0))
 			expect(result.byElement.get(row1)).toBe(at(result, roots, 1))
-		})
-
-		it('treats block-row control children as non-tokens (preserves single-token-per-row invariant)', () => {
-			const container = document.createElement('div')
-			const row = document.createElement('div')
-			const control = document.createElement('button')
-			const tokenEl = document.createElement('span')
-			row.append(control, tokenEl)
-			container.append(row)
-
-			const {roots} = treeOf([textToken('a', 0)])
-
-			const result = bindOf(inputFor(container, roots, {isBlock: true, controlElements: new Set([control])}))
-
-			expect(at(result, roots, 0)?.element()).toBe(tokenEl)
-			expect(at(result, roots, 0)?.node()?.rowElement).toBe(row)
-		})
-
-		it('bails block alignment when a row has more than one non-control child (fail-loud)', () => {
-			const container = document.createElement('div')
-			const row0 = document.createElement('div')
-			const tokenEl0 = document.createElement('span')
-			row0.append(tokenEl0)
-			const row1 = document.createElement('div')
-			const extra1 = document.createElement('span')
-			const extra2 = document.createElement('span')
-			row1.append(extra1, extra2)
-			container.append(row0, row1)
-
-			const {roots} = treeOf([textToken('a', 0), textToken('b', 2)])
-			const nodes = new Map<number, TokenHandle>()
-
-			const result = bindOf(inputFor(container, roots, {isBlock: true, nodes}))
-
-			expect(at(result, roots, 0)).toBeUndefined()
-			expect(at(result, roots, 1)).toBeUndefined()
-			// All-or-nothing: nothing was indexed, so no handles materialize either.
-			expect(nodes.size).toBe(0)
-		})
-
-		it('drops a frame AND every descendant frame on a count mismatch', () => {
-			// The all-or-nothing frame bail, asserted where it can be told apart from
-			// "nothing bound at all": the ROOT frame aligns (one mark, one element) and
-			// the mark's own frame does not (two children, three elements). The mark binds;
-			// neither child does, and the grandchild inside the second child — whose own
-			// frame WOULD align on its own — is never reached, because a dropped frame
-			// never enqueues its descendants.
-			//
-			// MEASURED against the realistic competing design (zip the common prefix
-			// instead of dropping): that mutant binds child #2 AND grandchild #4 here, and
-			// is killed by 7 cases across the core suite.
-			const container = document.createElement('div')
-			const outer = document.createElement('mark')
-			const childA = document.createElement('span')
-			const childB = document.createElement('mark')
-			const grandchild = document.createElement('span')
-			childB.append(grandchild)
-			const stray = document.createElement('span')
-			outer.append(childA, childB, stray)
-			container.append(outer)
-
-			const {roots} = treeOf([
-				markToken('x', '@[x]', 0, [textToken('a', 0), markToken('y', '@[y]', 1, [textToken('b', 1)])]),
-			])
-			const nodes = new Map<number, TokenHandle>()
-
-			const result = bindOf(inputFor(container, roots, {nodes}))
-
-			expect(at(result, roots, 0)?.element()).toBe(outer)
-			expect(at(result, roots, 0, 0)).toBeUndefined()
-			expect(at(result, roots, 0, 1)).toBeUndefined()
-			expect(at(result, roots, 0, 1, 0)).toBeUndefined()
-			// Only the outer mark materialized a handle, and it is the only bound one.
-			expect(nodes.size).toBe(1)
-			expect([...nodes.values()].filter(handle => handle.alive())).toEqual([at(result, roots, 0)])
-		})
-
-		it('skips control elements when zipping nodes with DOM children', () => {
-			const container = document.createElement('div')
-			const control = document.createElement('button')
-			const tokenEl = document.createElement('span')
-			container.append(control, tokenEl)
-
-			const {roots} = treeOf([textToken('a', 0)])
-
-			const result = bindOf(inputFor(container, roots, {controlElements: new Set([control])}))
-
-			expect(at(result, roots, 0)?.element()).toBe(tokenEl)
-			expect(result.byElement.get(control)).toBeUndefined()
-		})
-
-		it('treats elements containing a control as control roots', () => {
-			const container = document.createElement('div')
-			const wrapper = document.createElement('div')
-			const control = document.createElement('button')
-			wrapper.append(control)
-			const tokenEl = document.createElement('span')
-			container.append(wrapper, tokenEl)
-
-			const {roots} = treeOf([textToken('a', 0)])
-
-			const result = bindOf(inputFor(container, roots, {controlElements: new Set([control])}))
-
-			expect(at(result, roots, 0)?.element()).toBe(tokenEl)
 		})
 
 		it('uses a registered child-sequence host as the parent for nested children', () => {
@@ -339,24 +286,35 @@ describe('bind', () => {
 			expect(result.byElement.get(host)).toBe(at(result, roots, 0))
 		})
 
-		it('falls back to in-place descent when child-sequence host is duplicated', () => {
+		it('refuses a duplicated child-sequence host without disturbing the children', () => {
+			// Two hosts registered under one owner is ambiguous, so neither is used. The children
+			// are unaffected: they bind to whatever their own components consigned, which is the
+			// half the deleted walk used to decide by descending in place.
 			const container = document.createElement('div')
 			const outer = document.createElement('mark')
 			const hostA = document.createElement('span')
 			const hostB = document.createElement('span')
+			const childEl = document.createElement('span')
+			hostA.append(childEl)
 			outer.append(hostA, hostB)
 			container.append(outer)
 
 			const {roots} = treeOf([markToken('x', '@[x]', 0, [textToken('a', 0)])])
+			const child = nodeAt(roots, 0, 0)
+			if (!child) throw new Error('expected a slot child')
 
 			const result = bindOf(
 				inputFor(container, roots, {
 					childSequenceHostsFor: ownerId => (ownerId === roots[0].id ? [hostA, hostB] : []),
+					consigned: new Map([
+						[roots[0].id, outer],
+						[child.id, childEl],
+					]),
 				})
 			)
 
 			expect(at(result, roots, 0)?.node()?.childSequenceHost).toBeUndefined()
-			expect(at(result, roots, 0, 0)).toBeUndefined()
+			expect(at(result, roots, 0, 0)?.element()).toBe(childEl)
 		})
 
 		it('returns controlRoots including controls and their ancestors up to container', () => {
@@ -474,12 +432,11 @@ describe('bind', () => {
 			expect(handleA.element()).toBe(spanA)
 		})
 
-		it('keeps handles alive but unbound when the DOM walk bails (transient misalignment)', () => {
-			// DELIBERATE DIVERGENCE from the old TokenModel: #syncHandles killed every
-			// handle whose id vanished from #byId, and on a bail #byId was empty — a
-			// transiently misaligned DOM (adapter mid-render) killed all handles.
-			// Here only ids genuinely absent from the TREE die; on a bail the nodes
-			// keep their identity and lose only their element bindings.
+		it('keeps handles alive but unbound when a token is not consigned', () => {
+			// Only ids genuinely absent from the TREE die. A token whose element has not been
+			// consigned — its component has not painted yet, or it renders nothing — keeps its
+			// identity and loses only its bindings. The bail this replaced was the walk's
+			// frame-drop; the property it protected is the same one.
 			const container = document.createElement('div')
 			container.append(spanWith('alpha '), spanWith('beta'))
 			const {roots} = treeOf([textToken('alpha ', 0), textToken('beta', 6)])
@@ -490,13 +447,13 @@ describe('bind', () => {
 			const handleB = nodes.get(2)
 			if (!handleA || !handleB) throw new Error('expected handles for both ids')
 
-			// New generation (text grew), but the DOM is misaligned: one element, two nodes.
+			// New generation, and NOTHING is consigned this time.
 			textAt(roots, 0).text('alpha! ')
 			container.replaceChildren(spanWith('alpha! '))
 
-			bindOf(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes, consigned: new Map<number, HTMLElement>()}))
 
-			// Nothing bound: the walk dropped the frame.
+			// Nothing bound.
 			expect([...nodes.values()].some(handle => handle.alive())).toBe(false)
 			// Both handles survive in the node map — not killed, only unbound.
 			expect(nodes.size).toBe(2)
@@ -786,9 +743,9 @@ describe('bind', () => {
 
 			bindOf(inputFor(container, roots, {nodes}))
 			bindOf(inputFor(container, roots, {nodes}))
-			// Misaligned DOM: the walk bails and every handle is unbound.
+			// The element is deconsigned — its component unmounted — so every handle unbinds.
 			container.replaceChildren(spanA)
-			bindOf(inputFor(container, roots, {nodes}))
+			bindOf(inputFor(container, roots, {nodes, consigned: new Map<number, HTMLElement>()}))
 			expect(nodes.get(1)?.element()).toBeUndefined()
 
 			textAt(roots, 0).text('alpha!')

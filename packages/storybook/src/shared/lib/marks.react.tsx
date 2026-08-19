@@ -1,7 +1,7 @@
 import type {CSSProperties} from '@markput/core'
 import type {MarkProps} from '@markput/react'
 import {useMark, useMarkInfo} from '@markput/react'
-import type {ComponentType} from 'react'
+import type {ComponentType, Ref} from 'react'
 import {createElement} from 'react'
 
 // The exact sibling, not the seam name: oxlint does not honour `moduleSuffixes`.
@@ -13,8 +13,14 @@ import type {MarkContext, MarkSpec} from './marks.shared'
  * file through `resolve.extensions` (vitest) and `moduleSuffixes` (tsc).
  */
 
-/** The props a mark receives once an option's `mark` mapper adds a style, as the preset does. */
-export type StyledMarkProps = MarkProps & {style?: CSSProperties}
+/**
+ * The props a mark receives once an option's `mark` mapper adds a style, as the preset does.
+ *
+ * `ref` is forwarded because a consumer's `Span` IS the text Surface and so cannot be wrapped the
+ * way a Mark is — core writes into it directly, and it has to be consigned to be found. A Mark's
+ * own ref is unused (markput wraps it), but this factory serves both and forwarding costs nothing.
+ */
+export type StyledMarkProps = MarkProps & {style?: CSSProperties; ref?: Ref<HTMLElement>}
 
 /**
  * A mark that is one element, its decoration, and at most a click. Anything past that — a second
@@ -30,13 +36,13 @@ export function defineMark(spec: MarkSpec): ComponentType<StyledMarkProps> {
 	const click = on?.click
 
 	if (typeof tag !== 'function' && typeof attrs !== 'function' && !click) {
-		return function Mark({children, value, style}: StyledMarkProps) {
+		return function Mark({children, value, style, ref}: StyledMarkProps) {
 			onRender?.()
-			return createElement(tag, {className, style: {...style, ...ownStyle}, ...attrs}, children ?? value)
+			return createElement(tag, {className, style: {...style, ...ownStyle}, ...attrs, ref}, children ?? value)
 		}
 	}
 
-	return function ComputedMark({children, value, meta, style}: StyledMarkProps) {
+	return function ComputedMark({children, value, meta, style, ref}: StyledMarkProps) {
 		onRender?.()
 		const context: MarkContext = {value, meta, info: useMarkInfo(), mark: useMark()}
 
@@ -47,6 +53,7 @@ export function defineMark(spec: MarkSpec): ComponentType<StyledMarkProps> {
 				style: {...style, ...ownStyle},
 				...(typeof attrs === 'function' ? attrs(context) : attrs),
 				onClick: click && (() => click(context)),
+				ref,
 			},
 			children ?? value
 		)

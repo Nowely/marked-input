@@ -2,7 +2,7 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals/index.js'
 import {Store} from '../../../store/Store'
-import {caretAt} from '../__testing__/mountFixtures'
+import {caretAt, consignRendered} from '../__testing__/mountFixtures'
 import {treeShape} from '../__testing__/tokenFactories'
 import {TokenHandle} from '../dom/TokenHandle'
 
@@ -14,6 +14,7 @@ function mountInline(value: string) {
 	container.append(span)
 	document.body.append(container)
 	store.host.container(container)
+	consignRendered(store, container)
 	store.host.rendered()
 	return {store, container, span}
 }

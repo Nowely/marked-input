@@ -28,6 +28,24 @@ function buildInlineDom() {
 type CoreProps = Parameters<PropsModel['set']>[0]
 
 /**
+ * The adapter's refs, by hand: pair the container's element children with the roots in order.
+ * `bind` takes its elements from the consignment registries rather than from the painted DOM, so a
+ * fixture that paints by hand has to say which element belongs to which token.
+ *
+ * Local rather than `__testing__/mountFixtures`'s `consignRendered`, which takes a `Store` — these
+ * cases build on the state models directly, one layer below it.
+ */
+function consignRoots(model: TokenModel, container: HTMLElement): void {
+	const elements = Array.from(container.children).filter((el): el is HTMLElement => el instanceof HTMLElement)
+	model.nodes().forEach((node, index) => {
+		// `.at`, so a fixture that paints fewer elements than it has roots leaves the rest
+		// unconsigned rather than reading `undefined` past the end.
+		const element = elements.at(index)
+		if (element) model.consign(node.id)(element)
+	})
+}
+
+/**
  * The snapshot's collapsed caret as an `anchorFor` argument list. These cases build the
  * model directly on the state models rather than through `Store`, so the resolution is the
  * same one `domAnchors()` performs, one step lower.
@@ -60,8 +78,10 @@ function createNew(props: CoreProps) {
 function mountNew(props: CoreProps, container: HTMLElement) {
 	const setup = createNew(props)
 	setup.host.container(container)
+	// Consignment is id-keyed, so it can only run once the mount has published a tree.
+	consignRoots(setup.model, container)
 	setup.host.rendered()
-	/** Manual adapter for structural passes: repaint the live roots (value-only inline markups), report rendered. */
+	/** Manual adapter for structural passes: repaint the live roots (value-only inline markups), consign, report rendered. */
 	const render = () => {
 		const spans = setup.model.nodes().map(node => {
 			const span = document.createElement('span')
@@ -69,6 +89,7 @@ function mountNew(props: CoreProps, container: HTMLElement) {
 			return span
 		})
 		container.replaceChildren(...spans)
+		consignRoots(setup.model, container)
 		setup.host.rendered()
 		return spans
 	}
@@ -97,13 +118,22 @@ describe('TokenModel shell (seam/)', () => {
 			const dom = buildInlineDom()
 			setup.host.container(dom.container)
 
-			// Mount applied the first reconcile and bound the pre-built DOM.
+			// Mount applied the first reconcile and announced the tree. Nothing is BOUND yet:
+			// elements arrive by consignment, which is id-keyed, so the earliest an adapter can
+			// name a token is after the mount published one.
 			expect(changedSpy).toHaveBeenCalledTimes(1)
 			expect(setup.model.nodes().map(node => node.range())).toEqual([
 				{start: 0, end: 2},
 				{start: 2, end: 6},
 				{start: 6, end: 9},
 			])
+			expect(setup.model.handle(setup.model.nodes()[0].id)).toBeUndefined()
+
+			// The adapter's refs fire, then it reports the paint: THAT is the first bind.
+			consignRoots(setup.model, dom.container)
+			setup.host.rendered()
+
+			expect(changedSpy).toHaveBeenCalledTimes(2)
 			expect(dom.text1.textContent).toBe('he')
 			expect(dom.text2.textContent).toBe('llo')
 			expect(dom.text1.hasAttribute('contenteditable')).toBe(false)
@@ -111,7 +141,7 @@ describe('TokenModel shell (seam/)', () => {
 
 			// Adapter re-render: idempotent re-bind, consistency re-announced.
 			setup.host.rendered()
-			expect(changedSpy).toHaveBeenCalledTimes(2)
+			expect(changedSpy).toHaveBeenCalledTimes(3)
 		})
 
 		it('facade reads fail soft before mount', () => {
@@ -263,7 +293,7 @@ describe('TokenModel shell (seam/)', () => {
 			expect(model.handle(born.id!)).toBeInstanceOf(TokenHandle)
 		})
 
-		it('children() refs scope the structural walk to the registered child-sequence host', () => {
+		it('a registered child-sequence host lands on its mark handle and opens the mark for editing', () => {
 			// 'he#[ab]llo' → text 'he' [0,2], mark '#[ab]' [2,7] (child text 'ab' [4,6]), text 'llo' [7,10]
 			const setup = createNew({defaultValue: 'he#[ab]llo', options: [{markup: '#[__slot__]'}], Mark: () => null})
 			const container = document.createElement('div')
@@ -276,20 +306,22 @@ describe('TokenModel shell (seam/)', () => {
 			const text2 = document.createElement('span')
 			document.body.append(container)
 
-			// Mount the EMPTY container, then paint, then register, then report rendered — the
-			// real adapter order, and mandatory since S1.8 step 4 made the registration
-			// id-keyed: the id only exists once the mount has published a tree. Painting
-			// before the mount instead would let the mount's immediate bind run with no host
-			// registered, mis-bind the child text token to `wrapper` and overwrite its
-			// `textContent` — destroying `childSpan` before the real bind ever sees it.
+			// Mount the EMPTY container, then paint, then register and consign, then report
+			// rendered — the real adapter order, and mandatory because both registrations are
+			// id-keyed: the id only exists once the mount has published a tree.
 			setup.host.container(container)
 			container.append(text1, markEl, text2)
-			setup.model.children(setup.model.nodes()[1].id)(wrapper)
-			setup.host.rendered()
-
 			const mark = setup.model.nodes()[1]
 			if (mark.kind !== 'mark') throw new Error('expected mark')
+			setup.model.children(mark.id)(wrapper)
+			consignRoots(setup.model, container)
+			setup.model.consign(mark.children()[0].id)(childSpan)
+			setup.host.rendered()
+
 			expect(setup.model.handle(mark.id)?.node()?.childSequenceHost).toBe(wrapper)
+			// The host is what keeps the mark root out of `contenteditable=false`: a value-only
+			// mark is atomic, a slot mark's content stays in the one editing host.
+			expect(markEl.hasAttribute('contenteditable')).toBe(false)
 			const child = setup.model.handle(mark.children()[0].id)
 			expect(child?.element()).toBe(childSpan)
 			expect(childSpan.textContent).toBe('ab')

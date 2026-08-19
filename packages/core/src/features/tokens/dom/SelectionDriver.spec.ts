@@ -5,6 +5,7 @@ import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {
 	caretAt,
+	consignRendered,
 	mountNested,
 	mountStructuralInline,
 	mountStructuralInlineMark,
@@ -298,6 +299,7 @@ describe('SelectionDriver', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
+			consignRendered(store, container)
 			store.host.rendered()
 
 			store.tokens.selection.selectAll()
@@ -347,6 +349,7 @@ describe('SelectionDriver', () => {
 
 			store.props.set({defaultValue: 'hello'})
 			store.host.container(container)
+			consignRendered(store, container)
 			caretAt(store, 5)
 
 			store.host.rendered()
@@ -383,6 +386,7 @@ describe('SelectionDriver', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
+			consignRendered(store, container)
 			caretAt(store, 999)
 			store.host.rendered()
 
@@ -399,6 +403,7 @@ describe('SelectionDriver', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 			store.host.container(container)
+			consignRendered(store, container)
 			store.tokens.selection.select(store.tokens.anchorAt(999), store.tokens.anchorAt(1000))
 			store.host.rendered()
 

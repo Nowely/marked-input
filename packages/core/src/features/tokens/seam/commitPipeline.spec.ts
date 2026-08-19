@@ -16,8 +16,8 @@ import {createBoundary} from '../tree/valueBoundary'
  * THE pipeline suite: an empty tree seeded through the boundary, edits through the
  * transaction verbs, and `onResult` handing each `TransactionResult` straight to
  * `pipeline.apply` — the same manual adapter the deleted `commit.spec.ts` used, wired to
- * the tree core. Value-only marks render their value as a bare text node, so bind never
- * descends into them.
+ * the tree core. Value-only marks render their value as a bare text node, so the fixture
+ * consigns no element below them.
  *
  * What the cases assert is what the pipeline DOES: the DOM, handle identity/liveness, the
  * `changed` payload and count and the renderer wake-up. The latch is no longer among them:
@@ -76,8 +76,8 @@ function bindCount(): number {
  * it sits in the fixture resolves the node first and looks its handle up by id.
  *
  * It reads the NODE LAYER, filtered by `alive()`, since bind stopped returning a separate
- * id-keyed `bound` map — a per-paint copy of exactly this. Bound ⇔ alive: the walk unbinds
- * (never removes) a node whose element it missed, and deletes only ids gone from the tree.
+ * id-keyed `bound` map — a per-paint copy of exactly this. Bound ⇔ alive: bind unbinds
+ * (never removes) a node no adapter consigned, and deletes only ids gone from the tree.
  */
 function boundAt(harness: Harness, ...path: number[]): TokenHandle | undefined {
 	const node = nodeAt(harness, ...path)
@@ -114,6 +114,8 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 	const tree = createTokenTree([])
 	const nodes = new Map<number, TokenHandle>()
 	const controls = new Set<HTMLElement>()
+	// bind takes its elements from here now, so the harness consigns what it renders.
+	const consigned = new Map<number, HTMLElement>()
 	const container = document.createElement('div')
 	document.body.append(container)
 	let mounted: HTMLElement | null = container
@@ -122,11 +124,8 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		nodes,
 		roots: () => tree.roots(),
 		controlElements: () => controls,
-		// This harness builds its own DOM and never consigns; the shadow check skips an empty
-		// registry for exactly that reason.
-		consignedElements: () => new Map<number, HTMLElement>(),
+		consignedElements: kind => (kind === 'token' ? consigned : new Map<number, HTMLElement>()),
 		childSequenceHostsFor: () => [],
-		isBlock: () => false,
 	})
 	const boundary = createBoundary({
 		tree,
@@ -136,30 +135,40 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		onResult: result => pipeline.apply(result),
 	})
 	const tx = createTransactions({tree, readOnly: () => false, sink: boundary.sink})
-	// FLAT paint: a value-only mark renders its value as a bare text node, so
-	// bind never descends. This is the default for every case but the slot one.
+	// FLAT paint: a value-only mark renders its value as a bare text node, so nothing
+	// below a mark is painted. This is the default for every case but the slot one.
 	// `leading` paints extra non-token elements ahead of the spans — the control
 	// case needs one, and threading it here beats a second copy of the paint.
+	//
+	// The paint CONSIGNS what it made, which is what an adapter's refs do: elements
+	// reach bind through the registry, not by being found in the container. `leading`
+	// belongs to no token, so it is consigned under no id. `clear()` first because
+	// `replaceChildren` detaches the previous generation, whose refs would have fired null.
 	const render = (...leading: HTMLElement[]) => {
-		const spans = tree.roots().map(node => {
+		const roots = tree.roots()
+		const spans = roots.map(node => {
 			const span = document.createElement('span')
 			if (node.kind === 'mark') span.append(document.createTextNode(node.value()))
 			return span
 		})
 		container.replaceChildren(...leading, ...spans)
+		consigned.clear()
+		roots.forEach((node, index) => consigned.set(node.id, spans[index]))
 		pipeline.onRendered()
 		return spans
 	}
-	// NESTED paint, for slot markups: a mark renders its CHILDREN as spans, so
-	// bind descends and each child text token owns a surface. Same recursion as
-	// createSlotHarness's `paint` at commit.spec.ts:598-606 — and it lives HERE,
-	// inside createHarness, for the same reason that one does: it needs
-	// `container` and `pipeline.onRendered()`, neither of which a free function
-	// has.
+	// NESTED paint, for slot markups: a mark renders its CHILDREN as spans, so each
+	// child text token is consigned an element of its own and owns a surface. Same
+	// recursion as createSlotHarness's `paint` at commit.spec.ts:598-606 — and it lives
+	// HERE, inside createHarness, for the same reason that one does: it needs
+	// `container`, `consigned` and `pipeline.onRendered()`, none of which a free
+	// function has.
 	const renderNested = () => {
+		consigned.clear()
 		const paint = (nodes: readonly TreeNode[]): HTMLElement[] =>
 			nodes.map(node => {
 				const span = document.createElement('span')
+				consigned.set(node.id, span)
 				if (node.kind === 'mark') span.append(...paint(node.children()))
 				return span
 			})
@@ -180,6 +189,8 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		render,
 		renderNested,
 		splice,
+		/** The ref's null call for one token: its element is gone and no other takes its place. */
+		deconsign: (id: number) => void consigned.delete(id),
 		unmount: () => void (mounted = null),
 	}
 }
@@ -262,7 +273,7 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(domAtEvent).toBe('llo!')
 		expect(pipeline.renderEpoch()).toBe(epochBefore)
 		// NO RE-BIND, counted rather than inferred. `bind` re-arms every text effect and
-		// re-walks the whole DOM, so a text path that called it would pay both per keystroke
+		// re-projects the whole registry, so a text path that called it would pay both per keystroke
 		// — and leave the two assertions under it just as green, since it would re-bind the
 		// same handle to the same element.
 		expect(bindCount()).toBe(bindsBefore)
@@ -347,12 +358,14 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(harness.container.children[2].textContent).toBe('llo!')
 	})
 
-	it('a text edit against an UNBOUND node layer announces and recovers at the next paint', () => {
+	it('a text edit against an UNCONSIGNED node announces and recovers at the next paint', () => {
 		// What the two deleted `commitText`-miss cases guarded, restated for the one
-		// remaining path. A misaligned DOM (adapter mid-render) unbinds every handle,
-		// so the edit reaches no surface at all — there is no branch left to abandon
-		// and nothing to escalate. The commit still announces, and the next paint binds
-		// the fresh elements, whose newly armed effects write the current text.
+		// remaining path. It used to reach the unbound state by MISALIGNING the DOM, which
+		// made the walk drop the whole frame; a mismatch is not representable now, so the
+		// node reaches it the only way left — its element is not consigned. The edit then
+		// finds no surface at all: there is no branch to abandon and nothing to escalate.
+		// The commit still announces, the handle survives unbound rather than killed, and
+		// the next paint consigns a fresh element whose armed effect writes the current text.
 		const harness = createHarness()
 		const {pipeline, nodes, container} = harness
 		mount(harness)
@@ -360,8 +373,10 @@ describe('commit pipeline driven by the tree core', () => {
 		if (!tail) throw new Error('expected tail handle')
 
 		container.lastElementChild?.remove()
+		harness.deconsign(tail.id)
 		pipeline.onRendered()
-		expect(boundHandles(harness)).toHaveLength(0)
+		expect(boundAt(harness, 2)).toBeUndefined()
+		expect(nodes.get(tail.id)).toBe(tail)
 		expect(tail.element()).toBeUndefined()
 		const changedSpy = vi.fn()
 		watch(pipeline.changed, changedSpy)
@@ -426,8 +441,8 @@ describe('commit pipeline driven by the tree core', () => {
 	})
 
 	it('an in-slot edit routes TEXT and patches the child surface', () => {
-		// Slot harness: marks render their CHILDREN, so bind descends and the child
-		// text token owns a surface. '#[ab]tail' → text ''[0,0], mark '#[ab]'[0,5]
+		// Slot harness: marks render their CHILDREN, so the child text token is consigned
+		// an element of its own and owns a surface. '#[ab]tail' → text ''[0,0], mark '#[ab]'[0,5]
 		// {child 'ab'[2,4]}, text 'tail'[5,9].
 		const harness = createHarness(['#[__slot__]'])
 		const {pipeline} = harness

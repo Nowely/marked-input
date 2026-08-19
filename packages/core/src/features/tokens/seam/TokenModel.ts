@@ -699,7 +699,6 @@ export class TokenModel {
 		roots: () => this.#tree.roots(),
 		controlElements: () => this.#controlElements(),
 		childSequenceHostsFor: ownerId => this.#childSequenceHostsFor(ownerId),
-		isBlock: () => this.props.layout.isBlock(),
 		consignedElements: kind => this.consignedElements(kind),
 	})
 

@@ -118,9 +118,22 @@ describe('blockEdit beforeinput guard', () => {
 		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
 	})
 
+	/**
+	 * The Surface of a row's text slot, asked of the model rather than found by shape: the
+	 * element belongs to a token because it was consigned under that token's id, and a text
+	 * token's element IS its Surface.
+	 */
+	function rowSurface(store: Store, rowIndex: number): HTMLElement {
+		const row = store.tokens.nodes()[rowIndex]
+		if (row.kind !== 'mark') throw new Error('expected a mark row')
+		const surface = store.tokens.handle(row.children()[0].id)?.element()
+		if (!surface) throw new Error('block row slot has no consigned element')
+		return surface
+	}
+
 	/** The row's own text node, with a collapsed DOM caret on it. */
-	function caretInRow(row: HTMLElement, offset: number): Node {
-		const text = row.querySelector('span > span')?.firstChild
+	function caretInRow(store: Store, rowIndex: number, offset: number): Node {
+		const text = rowSurface(store, rowIndex).firstChild
 		if (!text) throw new Error('block row did not render a text node')
 		const selection = window.getSelection()
 		if (!selection) throw new Error('no window selection')
@@ -135,8 +148,8 @@ describe('blockEdit beforeinput guard', () => {
 	it('inserts a newline INSIDE the row on insertLineBreak (Shift+Enter)', () => {
 		// Parity with the inline guard: without its own case the closed default would drop
 		// Shift+Enter silently. Plain Enter never arrives — `handleEnter` cancels the keydown.
-		const {store, rows} = mountBlock()
-		const text = caretInRow(rows[0], 1)
+		const {store} = mountBlock()
+		const text = caretInRow(store, 0, 1)
 
 		const event = new InputEvent('beforeinput', {inputType: 'insertLineBreak', bubbles: true, cancelable: true})
 		text.dispatchEvent(event)
@@ -146,8 +159,8 @@ describe('blockEdit beforeinput guard', () => {
 	})
 
 	it('inserts the dropped text in the row on insertFromDrop', () => {
-		const {store, rows} = mountBlock()
-		const text = caretInRow(rows[0], 1)
+		const {store} = mountBlock()
+		const text = caretInRow(store, 0, 1)
 		const dataTransfer = new DataTransfer()
 		dataTransfer.setData('text/plain', 'X')
 
@@ -168,12 +181,11 @@ describe('blockEdit beforeinput guard', () => {
 		// the event still targets model-owned DOM: `handleEnter` bails
 		// on the same missing row and `input.ts` returned on `isBlock`, so this guard is
 		// the last one standing.
-		const {store, rows} = mountBlock()
+		const {store} = mountBlock()
+		const rowText = rowSurface(store, 0)
 		store.tokens.selection.clear()
 		window.getSelection()?.removeAllRanges()
 		if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-		const rowText = rows[0].querySelector('span > span')
-		if (!rowText) throw new Error('block row did not render a text surface')
 
 		const event = new InputEvent('beforeinput', {inputType: 'insertParagraph', bubbles: true, cancelable: true})
 		rowText.dispatchEvent(event)
@@ -203,18 +215,29 @@ describe('blockEdit control guard', () => {
 		const container = document.createElement('div')
 		const control = document.createElement('button')
 		control.setAttribute('aria-label', 'drag')
-		for (let i = 0; i < 2; i++) {
+		const painted = [0, 1].map(i => {
 			const row = document.createElement('div')
 			if (i === controlRow) row.append(control)
 			const mark = document.createElement('span')
-			const text = document.createElement('span')
-			mark.append(text)
+			const surface = document.createElement('span')
+			mark.append(surface)
 			row.append(mark)
 			container.append(row)
-		}
+			return {row, mark, surface}
+		})
 		document.body.append(container)
 		store.host.container(container)
 		store.tokens.control()(control)
+		// Consigned by hand, the way the Block and Token components do it: the wrapper under
+		// `consignRow`, the row token's own element and its slot Surface under `consign`. The
+		// positional helper cannot serve here — the control sits where a row's first child
+		// element would be, so pairing by index would file it under the slot's id.
+		store.tokens.nodes().forEach((node, i) => {
+			const {row, mark, surface} = painted[i]
+			store.tokens.consignRow(node.id)(row)
+			store.tokens.consign(node.id)(mark)
+			if (node.kind === 'mark') store.tokens.consign(node.children()[0].id)(surface)
+		})
 		store.host.rendered()
 		return {store, container, control}
 	}
