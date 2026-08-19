@@ -23,6 +23,15 @@ async function buildDts() {
 		input: path.resolve(__dirname, './index.ts'),
 		plugins: [
 			dts({
+				// The DTS pass is a full rolldown build, so without this it ALSO emits an
+				// `index.js` chunk into the same `dir` and clobbers vite's. That chunk reaches
+				// @markput/core through two module IDs (paths alias and workspace symlink), so
+				// its CSS imports land as two specifiers that resolve from neither the tarball
+				// nor npm — which is what shipped in 0.10.1 through 0.14.3.
+				emitDtsOnly: true,
+				// The map's `sources` point outside the tarball and it carries no
+				// `sourcesContent`, so shipping it is 47 kB of paths a consumer cannot follow.
+				sourcemap: false,
 				compilerOptions: {
 					paths: {
 						'@markput/core': ['../../core/index.ts'],
