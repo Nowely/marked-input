@@ -43,7 +43,7 @@ export class OverlayController {
 				this.match(undefined)
 			})
 
-			// `tokens.changed`, NOT `tokens.value` — the same post-commit clock the
+			// `tokens.committed`, NOT `tokens.value` — the same post-commit clock the
 			// `selectionChange` arm below already probes on. In controlled mode `value` is
 			// `props.value()` and `??` short-circuits, so this watch was notified by the parent's
 			// echo DIRECTLY: it ran from inside adoption, before the surfaces were written and

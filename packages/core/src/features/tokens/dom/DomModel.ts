@@ -174,7 +174,7 @@ export class DomModel {
 	 * reading BIND-GENERATION positions (spec S1 D9) — during a structural apply's
 	 * pending window they describe a layout the adapter has not painted. Here a node
 	 * with no live handle simply declines, and the caret is placed by the
-	 * `tokens.changed` re-apply once the bind lands.
+	 * `tokens.bound` re-apply once the bind lands.
 	 */
 	placeCaret(anchor: NodeAnchor): boolean {
 		const target = this.#targetOf(anchor)

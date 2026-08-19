@@ -302,7 +302,7 @@ describe('BlockController', () => {
 		it('keeps a row store across an edit above it with NOTHING mounted', () => {
 			// The object key needs no announcement, so this holds with no container and no
 			// `rendered()` — the id-keyed Map's prune rode the id lists the old fused
-			// `tokens.changed` carried, whose removals only ever came from a bind, so an unmounted
+			// the delta carried, whose removals only ever came from a bind, so an unmounted
 			// input could hand a row a store and never shed it. Both clocks are payload-free now,
 			// so there is no removal list left to ride even where one binds.
 			store.props.set({

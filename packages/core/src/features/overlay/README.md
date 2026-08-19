@@ -20,4 +20,4 @@ const result = navigateSuggestions(action, {index: 0, total: 3})
 // Returns: {index: 1} for 'next' action
 ```
 
-The `OverlayController` is registered by the Store. Trigger detection is its own model-only probe: the stored caret anchor plus that node's `text()`, run on `tokens.changed` (`showOverlayOn: 'change'`) and on `document`'s `selectionchange` (`showOverlayOn: 'selectionChange'`).
+The `OverlayController` is registered by the Store. Trigger detection is its own model-only probe: the stored caret anchor plus that node's `text()`, run on `tokens.committed` (`showOverlayOn: 'change'`) and on `document`'s `selectionchange` (`showOverlayOn: 'selectionChange'`).

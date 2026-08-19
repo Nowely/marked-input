@@ -19,7 +19,7 @@ export class BlockController {
 	 * re-materializes it (the pre-identity WeakMap predates that).
 	 *
 	 * Keying on the object also makes the map self-collecting, which is why there is no
-	 * prune: a number-keyed Map could only shed a dead row on the `changed` announcement,
+	 * prune: a number-keyed Map could only shed a dead row on an announcement,
 	 * and that announcement needs a mounted container — an unmounted or never-bound row
 	 * leaked its store for the lifetime of the input.
 	 */

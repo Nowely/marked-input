@@ -63,12 +63,6 @@ export type CommitPipeline = {
 	 */
 	renderEpoch: Computed<number>
 	/**
-	 * THE model-level detector: fires once per commit, only after the DOM is
-	 * consistent, carrying what that commit did to the id space (spec §2.3). Every
-	 * apply folded into one pending structural pass is MERGED into the single
-	 * announcement.
-	 */
-	/**
 	 * THE MODEL CLOCK: one pulse per commit, once the tree, the projection and the repaired
 	 * selection are all in place. Fires for EVERY commit, including the ones that move no element
 	 * at all — a row reorder and a mark value change both leave the id space and the element set

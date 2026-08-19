@@ -193,21 +193,21 @@ write verb → splice → parse → adopt → TransactionResult
   the chrome hanging off the root→host path. Marks carry no tabindex: Tab leaves
   the field. Controls are frozen where they REGISTER (`control()`), not here,
   because they do not mount on the commit clock. No flags, no per-commit sweep.
-- **`changed`** fires only after the DOM is consistent with the node layer — the model-level "commit done" signal (`dom/SelectionDriver.ts`
-  re-places the caret on it) — carrying that commit's `{added, removed, updated}`
-  ids (`TokenDelta`: `added`/`removed` are subtree-inclusive, `updated` is per
-  node). Consumers re-read content via `nodes()` / `find(id)` / `handle(id)`.
-  Inside a pending window only the final commit announces, and its payload
-  MERGES every folded apply's delta, so a consumer pruning off `removed` cannot
-  miss a wave when two structural applies land before one bind. NOTHING in core
-  reads the payload any more — the three in-core subscribers
-  (`dom/SelectionDriver.ts`, `features/overlay/OverlayController.ts`, and
-  `dom/commit.ts`'s divergence sweep) all take the event as a bare pulse, and
-  `BlockController` stopped pruning off `removed` when it moved to a
-  node-keyed `WeakMap`. `TokenDelta` survives as PUBLIC surface
-  (`store/MarkputApi.ts`), not as an internal contract.
+- **TWO CLOCKS**, because one event was answering two questions, and neither
+  carries a payload. `committed` is the MODEL clock: one pulse per commit, once
+  the tree, the projection and the repaired selection are in place. It fires for
+  the commits that move NO element — a row reorder and a mark value change both
+  leave the id space and the element set untouched — which is exactly what a DOM
+  clock cannot see. `bound` is the DOM clock: one pulse per bind, and only the
+  caret needs it (`dom/SelectionDriver.ts`), because a caret landing in a node
+  BORN by the commit has no handle until bind makes one. Consumers re-read
+  content via `nodes()` / `find(id)` / `handle(id)`.
+  The `{added, removed, updated}` payload and the ledger that derived it are
+  GONE: nothing in core read them once `BlockController` moved to a node-keyed
+  `WeakMap`, which was the last reader. The public `MarkputApi.changed` is
+  payload-free and fires per commit.
 
-## Structural DOM walk (`dom/bind.ts`)
+## Element projection (`dom/bind.ts`)
 
 The renderer's endpoint: zip the freshly rendered DOM with the LIVE tree (one
 iterative frame per nesting level, control elements skipped, optional registered
@@ -259,7 +259,8 @@ rootIndexOf(id) / siblingOf(id, ±1)
 
 // renderer contract (adapter-only)
 renderEpoch: Computed<number> // bumped ⇔ the renderer must run; NOT data
-changed: Event<TokenDelta>    // THE model-level detector; fires after the DOM is consistent
+committed: Event<void>        // THE model clock; one pulse per commit, DOM or no DOM
+bound: Event<void>            // THE DOM clock; one pulse per bind — what the caret needs
 // the framework key is `node.id` — there is no keyOf
 
 // per-node live view
@@ -464,9 +465,9 @@ an explicit type annotation to keep `tsc` off TS7022.
   sees the pre-mutation coordinate space.
 - `dom/SelectionDriver.ts` — the DOM I/O, private to `TokenModel`. Two listeners
   (the document-level `selectionchange` sync, and the `focusout` clear on the
-  container) and three watches (`tokens.changed`, `readOnly`, and the stored
+  container) and three watches (`tokens.bound`, `readOnly`, and the stored
   anchors themselves). BUILT IN THE CONSTRUCTOR
-  BODY, not as a field initializer: its dep bag takes `host` and `changed` as
+  BODY, not as a field initializer: its dep bag takes `host` and `bound` as
   VALUES, so an initializer would read a constructor parameter property (`tsc`
   rejects it, TS2729) and `#pipeline` (which answers `undefined` silently from any
   initializer above it). Building it last also puts its `onMounted` after the
@@ -484,7 +485,7 @@ for both ends and normalizes them in DOM order. The two document edges (`'start'
 / `'end'`) resolve against the live roots. `TokenModel.placeAtHandle(handle,
 boundary)` (the driver's, delegated) places at a handle's start/end. All of it
 fails closed against a dead or mid-window handle: a node with no live handle
-declines, and the `tokens.changed` re-apply places the caret once the bind
+declines, and the `tokens.bound` re-apply places the caret once the bind
 lands. Nothing searches the bound surfaces for a nearest position.
 
 ## Parse
