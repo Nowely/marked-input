@@ -37,7 +37,8 @@ that imports both. There is no upward edge: `dom/commit.ts` takes the
 | `TokenHandle` (`dom/TokenHandle.ts`) | the DOM BINDING — element refs and the text effect   | no — plain field reads                            | the same `id`, keyed in the `nodes` map |
 
 `TreeNode` is the store. `TokenHandle` is a view over one node's DOM. They share
-an id and nothing else, and the split is what makes the pending window safe.
+an id and nothing else, and the split is what lets the tree move ahead of a DOM
+the framework has not repainted yet.
 
 ## The tree (`tree/`)
 
@@ -177,14 +178,10 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   generation's elements and the commit's bind re-projects onto those — it cannot
   invent a layout nobody painted. A node BORN by the commit simply has no handle
   until its own ref fires, which was always the refusal that mattered (ADR-0008).
-- **The announcement is DERIVED, not maintained** (`delta.ts`). The ledger holds
-  the announced id space and the touched ids and answers
-  `added = ids \ announced`, `removed = announced \ ids`,
-  `updated = touched ∩ ids ∩ announced`, where `ids` is the flattened tree
-  `bind` already walks (`BindResult.ids`). The text path takes
-  `announceUnchanged()` instead, whose precondition is checkable: `render` is
-  `structural || …` and `structural` is add-or-remove, so that branch moved no
-  ids. Array ORDER is unspecified and no consumer may depend on it.
+- **The announcement carries no payload.** There is no ledger and no delta: both
+  clocks are bare events, and a consumer that wants to know what moved re-reads
+  `nodes()` and `find()`. Deriving a delta cost a module of its own and nothing in
+  core read it.
 - **bind projects the LIVE tree (`deps.roots()`):** a text commit does not wake
   the renderer, so a re-render arriving afterwards — any unrelated adapter update
   — must bind the current tree, not regress the node layer and the DOM text to
@@ -287,8 +284,8 @@ focusFirst() / placeAtHandle(handle, boundary?)
 // consumer is the selection state in `tree/selection.ts` (isAllSelected).
 anchorAt(offset)
 
-// adapter refs
-control() / children(ownerId) // ref callbacks
+// whole-value entry into a row, so a caller never forms an absolute offset
+setValueEnteringRoot(text, rootIndex)
 ```
 
 There is no manual editable-state override. `setEditable` used to be one, and had
@@ -388,8 +385,8 @@ and they are what the public API (and the text effect) subscribes to.
   (`tokenElement`/`textElement`/`rowElement`/`childSequenceHost`).
 
 There is no per-node `dirty` signal, and no event surface: a handle does not
-emit `text`/`moved`/`unmounted`. Consumers detect change through the model's
-`changed` event and re-read.
+emit `text`/`moved`/`unmounted`. Consumers detect change through `committed` —
+published as `api.changed` — and re-read.
 
 ### Measurement (over the bound elements, row scope in block layout)
 
@@ -442,8 +439,8 @@ itself, so a patch that names only `value` round-trips the current `meta` and th
 current slot text.
 
 The adapter hook resolves the node by id per access, so it tracks text-path
-commits without re-capture, and the pending window is what makes a mid-window
-write fail closed rather than act on a tree the DOM never showed.
+commits without re-capture. A node BORN by a commit has no handle until its own
+ref fires, and that absence is the whole of the refusal (ADR-0008).
 
 ## Selection
 

@@ -5,11 +5,9 @@ import {TokenHandle} from './TokenHandle'
 import type {ElementBindings} from './TokenHandle'
 
 /**
- * The structural DOM walk of the one commit pipeline: zip the freshly rendered
- * DOM with the LIVE token tree and project the result onto the live node layer.
- * Adapted from buildIndex (same frame/stack walk, same all-or-nothing
- * alignment), but instead of building throwaway records it mutates the
- * id-keyed handle map in place:
+ * The whole-tree projection of the one commit pipeline: pair the LIVE token tree with what the
+ * adapters consigned and write the result onto the live node layer. It mutates the id-keyed
+ * handle map in place rather than building throwaway records:
  *
  * - indexed node, known id    → `bindElements(...)` (re-arming the text effect)
  * - indexed node, new id      → `new TokenHandle` + bind
@@ -189,8 +187,8 @@ function collectTree(nodes: readonly TreeNode[], out: TreeNode[]): void {
  * The element bindings of one generation, taken from what the adapters CONSIGNED rather than
  * derived by walking the painted DOM.
  *
- * This replaced a frame/stack walk that zipped each sibling list against its DOM children and
- * bailed a whole frame on a count mismatch. Nothing in that walk was knowledge the framework did
+ * This replaced a frame/stack walk over the painted DOM that zipped each sibling list against
+ * its element children and bailed a whole frame on a count mismatch. Nothing in that walk was knowledge the framework did
  * not already hold, and pairing by COUNT was actively wrong in one measured case: when a
  * consumer's Mark renders its slot as a string instead of rendering `children`, the inner tokens
  * are never rendered at all and the walk still paired them with whatever element sat at the same

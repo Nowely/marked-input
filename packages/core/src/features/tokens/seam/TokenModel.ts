@@ -164,12 +164,11 @@ export class TokenModel {
 	 * the painted DOM in lockstep with the tree. The framework held this element a moment before
 	 * it painted it; consigning it is that association pushed instead of re-discovered.
 	 *
-	 * INERT for now, and deliberately so. Nothing reads either registry yet: this step exists to
-	 * carry the ref plumbing and the contract change on its own, so the walk's deletion is a
-	 * separate, separately revertible step. See `docs/scratch/consigned-surfaces/spec.md`.
+	 * THE element source: `bind` and `rebind` both read this registry and nothing else, and the
+	 * DOM walk that used to re-derive the same pairing is gone.
 	 *
-	 * Keyed per REGISTRATION like {@link children}, with the owner's stable id in the VALUE, so a
-	 * ref that outlives a re-render cannot be filed under a stale key.
+	 * Keyed by owner id, then per REGISTRATION like {@link children}, so a ref that outlives a
+	 * re-render cannot be filed under a stale key and one id's element is one lookup.
 	 */
 	consign(id: number): DomRef {
 		const key = {}
@@ -446,10 +445,14 @@ export class TokenModel {
 			// structural commit bind TWICE — adoption's batch closes and flushes the effect, then
 			// `apply` bumps the counter and flushes it again — for one commit's worth of change.
 			//
-			// Everything the projection itself reads — `children()`, `text()`, every node signal
-			// `bind` touches — is read inside `bind`'s own `untracked`, so an unrelated text edit
-			// cannot wake it. That precision is the whole risk of this shape, and it is pinned by
-			// `TokenModel.bindEffect.spec.ts`.
+			// Everything the projection itself reads is read inside `bind`'s own `untracked`, and
+			// this `untracked` is a second boundary over `bindNow`'s container read. NEITHER is
+			// pinned by a test, and that is stated rather than implied: removing either one leaves
+			// the suite green, because the only node signals the walk reads are `children()`
+			// (written by adoption, inside a commit that wakes the effect anyway) and `text()`
+			// (read inside the per-surface effect, which is its own subscriber). They are
+			// correct-by-construction boundaries. What IS pinned — one bind per commit, one rebind
+			// per ref — is in `TokenModel.bindEffect.spec.ts`.
 			effect(() => {
 				this.#pipeline.commits()
 				untracked(() => this.#pipeline.bindNow())
