@@ -271,7 +271,7 @@ Rides a transaction; `false` in read-only mode or off the tree.
 
 | Parameter | Type |
 | ------ | ------ |
-| `patch` | [`MarkPatch`](/api/type-aliases/markpatch/) |
+| `patch` | `MarkPatch` |
 
 #### Returns
 

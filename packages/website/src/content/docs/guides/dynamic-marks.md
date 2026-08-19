@@ -65,6 +65,13 @@ mark.update({meta: null})
 mark.update({slot: 'nested text'})
 ```
 
+The patch shape is not an exported type — write the literal, or name it with
+`Parameters<MarkNode['update']>[0]`:
+
+```ts
+{value?: string; meta?: string | null; slot?: string | null}
+```
+
 All commands go through the core write path. In controlled mode, Markput emits `onChange` and waits for the matching `value` prop echo before applying the new caret position.
 
 ## Read-Only Marks
