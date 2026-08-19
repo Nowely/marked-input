@@ -1,4 +1,4 @@
-import {event, signal, untracked, watch} from '../../../shared/signals/index.js'
+import {event, signal, untracked} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {TreeNode} from '../tree/types'
 import {bind, rebindNode} from './bind'
@@ -74,8 +74,8 @@ export type CommitPipeline = {
 	 * Bumped once per commit. The bind effect reads it, which is what makes EVERY commit bind —
 	 * including the ones that move no element, where nothing else the effect subscribes to has
 	 * changed. Measured at ~1.85 ms on a 2000-token document, comfortably inside a frame, and it
-	 * buys two things: {@link bound} becomes the one DOM clock every commit reaches, and the
-	 * divergence sweep needs no second subscription to cover the text path.
+	 * buys the thing the DOM clock is for: {@link bound} is a clock every commit reaches, so a
+	 * caret can trust it after any of them.
 	 */
 	commits: Computed<number>
 	/**
@@ -87,15 +87,6 @@ export type CommitPipeline = {
 	byElement(element: HTMLElement): TokenHandle | undefined
 	isControlRoot(element: HTMLElement): boolean
 }
-
-// Guards the divergence detector. The published bundle ships this expression VERBATIM (prepack's
-// rolldown pass overwrites Vite's substituted output), so the consumer's bundler decides the value —
-// which is why it must fail CLOSED. Vite and Vitest define `import.meta.env.DEV` true in dev/test;
-// every other host (webpack, Next, node, plain rollup) has no `import.meta.env`, so the chain
-// short-circuits to `undefined ?? false` → false and the sweep below is dead code. The former
-// `?? true` did the opposite: it shipped a throwing O(tree) sweep into consumers' production apps.
-// oxlint-disable-next-line typescript/no-unnecessary-condition -- `import.meta.env` is typed non-null by vite/client but absent at runtime off Vite
-const VERIFY_DOM: boolean = import.meta.env?.DEV ?? false
 
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	const committed = event<void>()
@@ -112,21 +103,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// The last walk's tree, by id, so `rebind` finds its node without searching. Empty until the
 	// first bind, which is why a registration arriving before one is a no-op rather than a guess.
 	let nodeById = new Map<number, TreeNode>()
-	/**
-	 * The commit the last whole-tree bind ran for, and THE precondition of the divergence sweep
-	 * below: a commit that did not bind healed nothing, so it has no right to an opinion about
-	 * what a surface shows. It replaces the `pendingStructural` guard the sweep used to read.
-	 *
-	 * Two commits reach `apply` without binding, and both were measured throwing before this
-	 * existed: one made while the container is detached (`bindNow` returns at its own guard), and
-	 * the FIRST commit of every attach (the props watch's immediate arm commits from inside
-	 * `host.onMounted`, one statement before the bind effect is installed). On a RE-attach the
-	 * previous generation's handles are still bound, so the second one swept last generation's
-	 * surfaces — and its throw unwound out of `onMounted` before the effect scope was assigned,
-	 * leaving the editor permanently unbound in dev.
-	 */
-	let boundForCommit = -1
-
 	let committing = false
 
 	function apply(): void {
@@ -136,9 +112,8 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		//
 		// The counter is written BEFORE the guard closes, and that is not a detail. An unbatched
 		// commit flushes the bind effect on this very line, synchronously — so writing it inside
-		// the guard made the commit's own bind read as re-entry and throw. It also fixes the
-		// order the divergence sweep depends on: the bind, and with it every per-surface re-arm,
-		// lands before `committed` reaches a single subscriber.
+		// the guard made the commit's own bind read as re-entry and throw. It also puts the bind,
+		// and with it every per-surface re-arm, ahead of every `committed` subscriber.
 		commits(++commitCount)
 		committing = true
 		try {
@@ -165,7 +140,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			})
 			controlRoots = result.controlRoots
 			nodeById = result.nodeById
-			boundForCommit = commitCount
 			bound()
 		} finally {
 			committing = false
@@ -181,66 +155,17 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		if (committing) throw new Error('TokenModel commit re-entry')
 		committing = true
 		try {
-			rebindNode(node, {nodes: deps.nodes, byElement, source: deps.source})
+			// `untracked` for the reason `bind` documents at its own entry, and it is load-bearing
+			// HERE for a second one: `rebindNode` ARMS the per-surface effect, and an effect links
+			// itself to whatever scope is active when it is created. A ref firing inside a caller's
+			// tracking scope would otherwise make the writer that scope's child, and the scope's
+			// next run would dispose it — leaving a surface bound with nothing left to write it.
+			untracked(() => rebindNode(node, {nodes: deps.nodes, byElement, source: deps.source}))
 		} finally {
 			committing = false
 		}
 		bound()
 	}
-
-	/**
-	 * Divergence detector. White-box rationale kept from the old patch spec, now stated
-	 * against the ONE representation: every bound text surface must show its node's
-	 * CURRENT `text()`, because the per-surface effect wrote it and bind re-armed that
-	 * effect over whatever the renderer painted. A throw here means the writer itself
-	 * missed — never armed, disposed early, or outraced by a second writer — which is
-	 * the bug class it guards.
-	 *
-	 * It sweeps the whole tree rather than only the node a commit touched, and that is
-	 * the point: the S1 sweep it descends from caught 12 divergences, several of them on
-	 * surfaces the commit in flight never named. A check folded into the per-surface
-	 * effect could not see any of them — an effect that was never armed never runs.
-	 */
-	function assertAligned(): void {
-		if (!VERIFY_DOM) return
-		// See {@link boundForCommit}: no bind for this commit means no re-arm, and the re-arm IS
-		// the heal this check assumes has already happened.
-		if (boundForCommit !== commitCount) return
-		untracked(() => {
-			walkTree(deps.roots(), node => {
-				if (node.kind !== 'text') return
-				const surface = deps.nodes.get(node.id)?.node()?.textElement
-				if (!surface) return
-				const expected = node.text()
-				const actual = surface.textContent
-				if (actual === expected) return
-				throw new Error(`TokenModel divergence at #${node.id}: DOM "${actual}" ≠ model "${expected}"`)
-			})
-		})
-	}
-
-	// A `committed` SUBSCRIBER, not an inline call at the end of `apply` — MEASURED, and
-	// the one thing about this phase that a reading of the code alone gets wrong.
-	// `EditController.replace` wraps the whole write in `batch`, so the per-surface
-	// effects adoption queued do NOT flush until that outer batch closes, well after
-	// `apply` returned (probe: every `store.edit.replace` fixture threw a false
-	// divergence with the check inline). Event subscribers are queued BEHIND those
-	// effects, so a watcher here runs once every writer has finished — in the batched
-	// case and in the unbatched one alike, where adoption's own batch already flushed.
-	// Registered before any consumer's watch, which keeps the old ordering:
-	// the check runs first, and a divergence fails the commit rather than leaking into
-	// a caret re-place.
-	// THE COMMIT CLOCK, and the ordering that makes it safe is a property of the dependency graph
-	// rather than of a flag. A structural commit writes `tree.roots` inside adoption's own batch,
-	// BEFORE `apply` fires `committed` — so at the flush the bind effect is queued ahead of this
-	// watch, and by the time the sweep runs `bind` has already disposed and re-armed every
-	// per-surface effect, whose first run IS the heal. The text path never binds off its own
-	// writes, so it must be swept at commit time or never — and every commit reaches this watch.
-	//
-	// NOT the DOM clock, and that is a cost decision as much as a correctness one: `bound` pulses
-	// once per REGISTRATION now, so a sweep hanging off it would walk the whole tree per ref and
-	// put back, in dev and in every test, exactly the quadratic mount that `rebind` removes.
-	untracked(() => watch(committed, assertAligned))
 
 	return {
 		apply,
@@ -251,12 +176,5 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		commits,
 		byElement: element => byElement.get(element),
 		isControlRoot: element => controlRoots.has(element),
-	}
-}
-
-function walkTree(nodes: readonly TreeNode[], visit: (node: TreeNode) => void): void {
-	for (const node of nodes) {
-		visit(node)
-		if (node.kind === 'mark') walkTree(node.children(), visit)
 	}
 }

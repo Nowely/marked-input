@@ -25,8 +25,8 @@ export type ElementBindings = {
  * SHOWING" — a second representation of data the tree already owns. Cut B took its
  * last positional reader, and this phase took the other two: `setEditable`'s type
  * read (dead — bind gives a text surface to text nodes ONLY, so a bound handle's
- * kind is readable off `textElement`) and `commit.ts`'s divergence detector, which
- * now compares the surface against the LIVE `TextNode.text()`.
+ * kind is readable off `textElement`) and the dev divergence detector, deleted once
+ * every commit began re-arming every writer.
  *
  * What replaces the latch is {@link bindElements}'s text effect: one writer per
  * surface, subscribed to that node's own `text` signal, whose immediate first run
@@ -153,8 +153,8 @@ export class TokenHandle {
 	 *
 	 * WHEN it fires is up to the caller's batching, not to this module: adoption writes
 	 * `text` inside its own batch, and a caller that wraps the whole edit in one more
-	 * (`EditController.replace` does) defers the flush to the end of THAT batch. See
-	 * `commit.ts`'s divergence-detector registration for what that costs.
+	 * (`EditController.replace` does) defers the flush to the end of THAT batch — so the write
+	 * lands at that batch's close, ahead of every `committed` subscriber.
 	 */
 	#armText(surface: HTMLElement | undefined, node: TreeNode): void {
 		this.#disposeText?.()

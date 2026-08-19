@@ -380,7 +380,9 @@ A dev-only sweep, registered as a `changed` subscriber rather than called inline
 
 It shipped _enabled_ to consumers until the session that produced this record — the guard was `import.meta.env?.DEV ?? true`, which fails open in any bundler without `import.meta.env`. Now `?? false`.
 
-_Source: dom/commit.ts — VERIFY_DOM, assertAligned_
+**DELETED 2026-08-19.** Once every commit began binding, `bindElements` re-armed every per-surface writer on every commit and the re-arm's first run healed the surface — inside `bind`, ahead of anything that could observe the divergence. The class this was written for became unreachable, so the check came out along with `VERIFY_DOM` and the whole-tree walk it cost per commit. What replaced it is the heal itself, pinned in `commitPipeline.spec.ts` and `TokenModel.spec.ts`. The paragraphs above describe the state before that.
+
+_Source: dom/commit.ts — VERIFY_DOM, assertAligned (both removed)_
 
 ## Members
 

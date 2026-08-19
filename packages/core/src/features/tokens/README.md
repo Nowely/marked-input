@@ -227,8 +227,7 @@ the two lookups the walk itself produces. There is no id-keyed `bound` map to
 return: the id-keyed side is `deps.nodes`, THE live node layer, which bind
 mutates in place, and "this walk bound it" is `handle.alive()`, because the walk
 unbinds (never removes) a node the DOM missed and deletes only ids absent from
-the tree. Its one reader goes to that map — `assertAligned` (`dom/commit.ts`)
-reads `deps.nodes` directly. Child-sequence hosts register under the owning mark's
+the tree. Child-sequence hosts register under the owning mark's
 stable id: an id does not go stale when a sibling above the owner is added or
 removed mid-render.
 
@@ -364,8 +363,7 @@ IT HOLDS NO CONTENT and no generation — only `id` and one `ElementBindings`
 record. Content and positions belong to the node, and a second representation of
 them here is what the one-tree design forbids. The two reads that could want one
 take the live source instead: "is this a mark" is `!textElement` (`bind` gives a
-`textElement` to text nodes and to nothing else), and the divergence check
-compares each surface against the live `TextNode.text()`.
+`textElement` to text nodes and to nothing else).
 
 The DOM-side writer is the per-surface TEXT EFFECT `bindElements` arms: one
 writer per bound text surface, subscribed to that node's own `text` signal,
@@ -500,15 +498,26 @@ result to adoption. There is no windowed re-tokenizer: the only incrementality
 is adoption's prefix/suffix retention above. Full-parse cost is tracked by the
 `parser.bench.ts` tripwire.
 
-## Divergence detector (the only flag)
+## Divergence: healed, not detected
 
-`VERIFY_DOM` (`dom/commit.ts`) — in dev/test, every `changed` announcement
-asserts that each bound text surface's `textContent` equals its node's live
-`text()`, throwing `TokenModel divergence at #<id>: DOM "…" ≠ model "…"`. The
-flag's fail-closed derivation (what the published bundle ships, and which
-consumer bundler decides the value) and the sweep's placement (a `changed`
-subscriber, not an inline call and not a per-surface check) are stated in full
-at the site — `VERIFY_DOM` and `assertAligned` in `dom/commit.ts`.
+There is no flag and no check. A dev-only sweep used to walk every bound surface
+after each announcement and throw `TokenModel divergence` when one disagreed with
+its node. It came out once every commit began binding: `bindElements` disposes
+and re-creates the per-surface effect unconditionally, and the re-arm's first run
+rewrites the surface — so anything that wrote a bound surface behind the model's
+back is corrected by the next commit instead of being reported by it.
+
+Measured before deleting it. In the mounted wiring the heal lands inside `bind`,
+ahead of any subscriber that could observe the corruption, so the class the sweep
+was written for — a writer that missed on a node the commit never touched — was
+already unreachable. What it could still catch was one consumer contract
+violation, an element consigned under two ids, which neither adapter can produce:
+each Token creates its own element and passes its own `consign(id)` ref. Against
+that it cost a whole-tree walk on every commit in dev and in every test.
+
+The heal itself is pinned rather than assumed — `commitPipeline.spec.ts` corrupts
+a surface and asserts the next commit repairs it, batched and unbatched, and
+`TokenModel.spec.ts` does the same across a container re-attach.
 
 ## Benchmarking
 
