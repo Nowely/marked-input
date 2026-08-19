@@ -1,4 +1,4 @@
-import type {MarkputApi} from '@markput/core'
+import type {MarkputHandle} from '@markput/core'
 
 /**
  * The framework-free half of the page seam: everything `page.react.tsx` and `page.vue.ts`
@@ -24,8 +24,8 @@ export interface Echoed extends Mounted {
 	value: () => string
 }
 
-export interface MountedApi extends Mounted {
-	api: () => MarkputApi | null
+export interface MountedHandle extends Mounted {
+	handle: () => MarkputHandle | null
 }
 
 export interface EchoOptions {

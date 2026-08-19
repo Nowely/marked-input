@@ -22,7 +22,7 @@ import type {Selection} from '../tree/selection'
 import {entryAnchor, mergePlan, movePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
-import type {Anchors, MarkNode, NodeAnchor, TextNode, TreeCommands, TreeNode} from '../tree/types'
+import type {Anchors, MarkNode, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 
 /**
@@ -230,7 +230,7 @@ export class TokenModel {
 	 *
 	 * In CONTROLLED mode the tree has NOT moved — the commit emits and waits for the echo —
 	 * so the anchor describes the pre-edit tree. `EditController` discards it there and
-	 * `MarkputApi.replaceRange` reads it only as a success flag.
+	 * `MarkputHandle.replaceRange` reads it only as a success flag.
 	 */
 	replaceBetween(from: NodeAnchor, to: NodeAnchor, text: string): NodeAnchor | undefined {
 		this.#ensureSeeded()
@@ -301,24 +301,6 @@ export class TokenModel {
 	 * handed to the renderer uncalled.
 	 */
 	readonly nodes: Computed<readonly TreeNode[]> = computed(() => this.#tree.roots())
-
-	/**
-	 * @internal Text replacement in a node's own coordinates. NO spec gates the seed call: every
-	 * spec reaching it writes to a MOUNTED store, so a green suite is no proof it is dead.
-	 */
-	applyText(node: TextNode, range: {start: number; end: number}, text: string): boolean {
-		this.#ensureSeeded()
-		return this.#tx.applyText(node, range, text)
-	}
-
-	/**
-	 * @internal Buffer several write verbs and commit them as one transaction. Seeds up front,
-	 * and as ungoverned as {@link applyText}'s: no spec buffers verbs on an unseeded store.
-	 */
-	tx(fn: () => void): boolean {
-		this.#ensureSeeded()
-		return this.#tx.tx(fn)
-	}
 
 	/**
 	 * The index of the ROOT whose subtree contains `id` — the block ROW index. Off the live

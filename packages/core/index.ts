@@ -1,10 +1,19 @@
 // ═══ Public API v2 (spec §2.3) ════════════════════════════════════════════════
-export {MarkputApi} from './src/store/MarkputApi'
+export {MarkputHandle} from './src/store/MarkputHandle'
 // The ONLY resolution path for both adapters, which import it as a value and construct it.
 export {Store} from './src/store'
-// `Anchors` is public because `OverlayMatch.range` is one (S2.5): the overlay contract both
-// adapters carry names nodes now, so the type has to be nameable outside core.
-export type {Anchors, Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TreeNode} from './src/features/tokens'
+// What a consumer MEETS: `Anchors` because `OverlayMatch.range` is one (S2.5);
+// `TreeNode`/`TextNode`/`MarkNode` because both adapters render them and `useMark()` hands one
+// back; `NodeAnchor` because `Anchors` is a pair of them.
+//
+// `Id` and `MarkPatch` were here and are not any more — the list is now what a consumer RECEIVES,
+// not everything they might want to name. `Id` is `type Id = number`, so its export bought a name
+// for something already nameable, and the signature that made the name worth having (`find(id)` on
+// the public handle) is gone. `MarkPatch` is `MarkNode.update`'s parameter: inference covers a
+// patch literal at the call site, `Parameters<MarkNode['update']>[0]` covers a declaration, and
+// nothing in this repo or either adapter imported the name. Both are still declared inline in the
+// built `.d.ts`, so no shape a consumer sees changed — only the ability to import the name.
+export type {Anchors, MarkNode, NodeAnchor, TextNode, TreeNode} from './src/features/tokens'
 
 // String-domain utilities (spec §2.3: keep)
 export {annotate, denote} from './src/features/tokens'

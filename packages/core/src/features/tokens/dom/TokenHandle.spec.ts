@@ -266,7 +266,7 @@ describe('TokenHandle', () => {
 
 		it('a model-initiated placement focuses the editing host, not the bare surface', () => {
 			// The reason `focusEditingHost` exists: a placement with no click behind it — the
-			// `api.focus()` / `placeAtHandle` / block `focusRow` path — must pull focus INTO
+			// `handle.focus()` / `placeAtHandle` / block `focusRow` path — must pull focus INTO
 			// the editor, and the old per-element focus was a no-op on a bare span.
 			//
 			// THE CALL, not just `activeElement`, and the difference is MEASURED: in a focused

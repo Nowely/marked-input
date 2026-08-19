@@ -25,7 +25,7 @@ describe('EditController', () => {
 	it('normalizes a reversed anchor pair instead of rejecting it', () => {
 		// BEHAVIOR CHANGE (S2.5): the numeric verb rejected `{start: 4, end: 2}` outright.
 		// `replaceBetween` normalizes, so the two ends are interchangeable — the contract
-		// `MarkputApi.replaceRange` already documented.
+		// `MarkputHandle.replaceRange` already documented.
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', onChange})

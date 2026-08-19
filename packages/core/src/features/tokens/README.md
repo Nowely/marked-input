@@ -65,7 +65,7 @@ the framework has not repainted yet.
   projections, via `findGap.ts`. An empty window pins at the END of the value,
   because `start` of an empty window is not an edit location.
 - `transactions.ts` — the write verbs. `applyRange(window, text)` is
-  the primitive; `applyText(node, localRange, text)` and
+  the primitive; `applyAfter(node, text)` and
   `applyStructural(target, replacement)` lower node-local intent into it, and
   `tx(fn)` buffers disjoint ops and adopts once with the hull window. Nothing
   here mutates the tree — adoption, inside the sink, is the only writer.
@@ -206,8 +206,8 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   content via `nodes()` / `find(id)` / `handle(id)`.
   The `{added, removed, updated}` payload and the ledger that derived it are
   GONE: nothing in core read them once `BlockController` moved to a node-keyed
-  `WeakMap`, which was the last reader. The public `MarkputApi.changed` is
-  payload-free and fires per commit.
+  `WeakMap`, which was the last reader. `committed` no longer surfaces publicly
+  either — `MarkputHandle.changed` was withdrawn with the rest of the v2 verbs.
 
 ## Element projection (`dom/bind.ts`)
 
@@ -251,7 +251,7 @@ find(id) // the live TreeNode by stable id
 selection: Selection // THE stored anchors and their derivations (see below)
 
 // writes
-replaceBetween(from, to, text) / setValue(text) / applyText(node, range, text) / tx(fn)
+replaceBetween(from, to, text) / setValue(text)
 // per-node writes are MarkNode.update / MarkNode.remove, which ride a transaction
 
 // tree reads, in tree coordinates

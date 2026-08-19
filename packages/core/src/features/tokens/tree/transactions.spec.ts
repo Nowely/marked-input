@@ -113,14 +113,6 @@ describe('transactions: verbs', () => {
 		expect(tree.value()).toBe('hello')
 	})
 
-	it('applyText resolves node-local coordinates', () => {
-		const {tree, tx} = setup('he@[x](m)llo')
-		const tail = tree.roots()[2]
-		if (tail.kind !== 'text') throw new Error('expected text')
-		expect(tx.applyText(tail, {start: 1, end: 1}, 'Z')).toBe(true)
-		expect(tree.value()).toBe('he@[x](m)lZlo')
-	})
-
 	it('applyStructural replaces a mark through its stored range and keeps its identity', () => {
 		const {tree, tx} = setup('he@[x](m)llo')
 		const mark = asMark(tree.roots()[1])
@@ -147,7 +139,7 @@ describe('transactions: rejection', () => {
 		const {tree, tx} = setup('he@[x](m)llo', {readOnly: true})
 		const tail = asText(tree.roots()[2])
 		expect(tx.applyRange({start: 0, end: 5, insertedLength: 0}, 'x')).toBe(false)
-		expect(tx.applyText(tail, {start: 0, end: 1}, 'x')).toBe(false)
+		expect(tx.applyAfter(tail, 'x')).toBe(false)
 		expect(tx.applyStructural(tree.roots()[1], '')).toBe(false)
 		// readOnly is gated at tx ENTRY: the body never runs.
 		expect(
@@ -171,16 +163,7 @@ describe('transactions: rejection', () => {
 		expect(tree.value()).toBe('hello')
 	})
 
-	it('rejects a local range outside the node in applyText', () => {
-		const {tree, tx} = setup('he@[x](m)llo')
-		const tail = asText(tree.roots()[2]) // 'llo'
-		expect(tx.applyText(tail, {start: 0, end: 4}, 'x')).toBe(false)
-		expect(tx.applyText(tail, {start: -1, end: 1}, 'x')).toBe(false)
-		expect(tx.applyText(tail, {start: 2, end: 1}, 'x')).toBe(false)
-		expect(tree.value()).toBe('he@[x](m)llo')
-	})
-
-	it('rejects a dead node in applyText', () => {
+	it('rejects a dead node', () => {
 		// A root text node at index 0 can never die under whole-value replacement — the
 		// parser always emits a leading text token and middle pairing retains it. Kill a
 		// TAIL node instead:
@@ -188,7 +171,7 @@ describe('transactions: rejection', () => {
 		const node = tree.roots()[2] // text 'llo'
 		if (node.kind !== 'text') throw new Error('expected text')
 		tx.applyRange({start: 0, end: 12, insertedLength: 0}, 'x') // parses to ONE text token → mark + tail removed
-		expect(tx.applyText(node, {start: 0, end: 0}, 'x')).toBe(false)
+		expect(tx.applyAfter(node, 'x')).toBe(false)
 	})
 
 	it('rejects a dead node whose stale range still fits the current value', () => {
@@ -200,7 +183,7 @@ describe('transactions: rejection', () => {
 		const mark = asMark(tree.roots()[1])
 		expect(tx.applyRange({start: 0, end: 12, insertedLength: 0}, 'plain text here')).toBe(true)
 		expect(tree.roots().map(n => n.kind)).toEqual(['text'])
-		expect(tx.applyText(tail, {start: 0, end: 1}, 'Z')).toBe(false)
+		expect(tx.applyAfter(tail, 'Z')).toBe(false)
 		expect(tx.applyStructural(mark, 'Z')).toBe(false)
 		expect(tree.value()).toBe('plain text here')
 	})
@@ -332,6 +315,22 @@ describe('transactions: tx composition', () => {
 		expect(tree.value()).toBe('hello')
 	})
 
+	it('tx() refuses a buffered pairing and rejects the transaction with it', () => {
+		// A pairing claims the WHOLE root list, and a hull composed with other ops cannot keep
+		// that claim true. Ported down from `markNode.spec.ts`, which reached this refusal
+		// through `TokenModel.tx` + `MarkNode.moveTo` until the seam's `tx` was deleted with the
+		// public one; `applyRange` carries the same claim on its window.
+		const {tree, tx, results} = setup('alpha beta')
+
+		const ok = tx.tx(() => {
+			tx.applyRange({start: 0, end: 10, insertedLength: 10, pairing: [1, 0]}, 'beta alpha')
+		})
+
+		expect(ok).toBe(false)
+		expect(tree.value()).toBe('alpha beta')
+		expect(results).toEqual([])
+	})
+
 	it('tx() with no ops succeeds without a commit', () => {
 		const {tx, results} = setup('hello')
 		expect(tx.tx(() => undefined)).toBe(true)
@@ -390,7 +389,7 @@ describe('transactions: untracked reads', () => {
 		let runs = 0
 		const stop = effect(() => {
 			runs++
-			tx.applyText(tail, {start: 0, end: 0}, '') // no-op splice: reads everything, writes nothing
+			tx.applyAfter(tail, '') // no-op splice: reads everything, writes nothing
 		})
 		expect(runs).toBe(1)
 

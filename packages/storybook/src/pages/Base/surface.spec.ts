@@ -1,11 +1,10 @@
-import type {MarkputApi, TextNode} from '@markput/core'
 import {describe, expect, it} from 'vitest'
 import {page} from 'vitest/browser'
 
 import {getElement} from '../../shared/lib/dom'
 import {focusAtOffset, verifyCaretPosition} from '../../shared/lib/focus'
 import {Mark} from '../../shared/lib/marks'
-import {mountApi} from '../../shared/lib/page'
+import {mountComponent} from '../../shared/lib/page'
 
 /**
  * The Surface writer's contract, held against both adapters from one file.
@@ -17,6 +16,11 @@ import {mountApi} from '../../shared/lib/page'
  * leaves that node alone across the same commit: React and Vue each own the `<span>`, and either
  * one re-creating it on a text commit would defeat the writer entirely.
  *
+ * The edit arrives as a NEW CONTROLLED VALUE rather than through an imperative verb: the handle
+ * stopped exposing writes, and a props arrival is the path a parent actually drives. It reaches
+ * the same commit, and the caret cases below are only expressible this way — typing would have
+ * to move the caret to the edit site, which is the opposite of what they measure.
+ *
  * The caret gates below pass BEFORE the in-place writer too, and that is stated rather than
  * hidden: `SelectionDriver` re-places the caret after every commit, so it repairs whatever the
  * old replace-all destroyed. They are regression guards for the write, not the gate that
@@ -25,13 +29,12 @@ import {mountApi} from '../../shared/lib/page'
  */
 
 const VALUE = 'Hello @[mark](1)!'
+/** Same length before the caret: 'H' -> 'J'. */
+const SAME_LENGTH = 'Jello @[mark](1)!'
+/** Longer before the caret: 'H' -> 'Howd'. */
+const LONGER = 'Howdello @[mark](1)!'
 
-/** The document's first text token — 'Hello ' in {@link VALUE}. */
-function firstTextToken(api: MarkputApi): TextNode {
-	const token = api.nodes().find(node => node.kind === 'text')
-	if (!token) throw new Error('expected a text token')
-	return token
-}
+const ARGS = {Mark, value: VALUE}
 
 /**
  * `focusAtOffset` writes the DOM selection directly, and `selectionchange` reaches the model on
@@ -46,15 +49,12 @@ async function settleSelection(): Promise<void> {
 
 describe('Surface writer: an edit splices the surface in place', () => {
 	it('keeps the surface element and its text node across a text edit, in both adapters', async () => {
-		const {api} = await mountApi({Mark, defaultValue: VALUE})
+		const {rerender} = await mountComponent(ARGS)
 		const surface = getElement(page.getByText('Hello'))
 		const textNode = surface.firstChild
 		expect(textNode).toBeInstanceOf(Text)
 
-		const live = api()
-		expect(live).not.toBeNull()
-		if (!live) return
-		expect(live.replaceText({node: firstTextToken(live), start: 0, end: 1}, 'J')).toBe(true)
+		await rerender({...ARGS, value: SAME_LENGTH})
 
 		await expect.element(page.getByText('Jello')).toBeInTheDocument()
 
@@ -66,35 +66,27 @@ describe('Surface writer: an edit splices the surface in place', () => {
 	})
 
 	it('keeps the caret when a same-length edit lands earlier in the same surface', async () => {
-		const {api} = await mountApi({Mark, defaultValue: VALUE})
+		const {rerender} = await mountComponent(ARGS)
 		const surface = getElement(page.getByText('Hello'))
 
 		// Offset 5 — inside 'Hello ', after the last letter and clear of the edit below.
 		await focusAtOffset(surface, 5)
 		await settleSelection()
 
-		const live = api()
-		expect(live).not.toBeNull()
-		if (!live) return
-		// 'H' -> 'J': same length, entirely before the caret.
-		expect(live.replaceText({node: firstTextToken(live), start: 0, end: 1}, 'J')).toBe(true)
+		await rerender({...ARGS, value: SAME_LENGTH})
 
 		await expect.element(page.getByText('Jello')).toBeInTheDocument()
 		verifyCaretPosition(getElement(page.getByText('Jello')), 5)
 	})
 
 	it('moves the caret with the text when a longer edit lands earlier in the same surface', async () => {
-		const {api} = await mountApi({Mark, defaultValue: VALUE})
+		const {rerender} = await mountComponent(ARGS)
 		const surface = getElement(page.getByText('Hello'))
 
 		await focusAtOffset(surface, 5)
 		await settleSelection()
 
-		const live = api()
-		expect(live).not.toBeNull()
-		if (!live) return
-		// 'H' -> 'Howd': the caret is past the splice, so it must move with the text.
-		expect(live.replaceText({node: firstTextToken(live), start: 0, end: 1}, 'Howd')).toBe(true)
+		await rerender({...ARGS, value: LONGER})
 
 		await expect.element(page.getByText('Howdello')).toBeInTheDocument()
 		verifyCaretPosition(getElement(page.getByText('Howdello')), 8)

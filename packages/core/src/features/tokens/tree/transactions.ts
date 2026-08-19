@@ -1,6 +1,6 @@
 import {untracked} from '../../../shared/signals'
 import type {TokenTree} from './tree'
-import type {CommitSink, Pairing, TextNode, TreeNode, Window} from './types'
+import type {CommitSink, Pairing, TreeNode, Window} from './types'
 
 /**
  * One splice in the coordinates of the COMMITTED projection. No `insertedLength`:
@@ -112,24 +112,6 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 			return submit({start: window.start, end: window.end, text}, window.pairing)
 		},
 
-		/** Node-local coordinates → global window. Single-node edits. */
-		applyText(node: TextNode, localRange: {start: number; end: number}, text: string): boolean {
-			assertIdle()
-			if (!isLive(node)) return refuse()
-			// The bound has to come from `position`, because that is the coordinate space the
-			// splice offsets below are built in: `text().length` would bound one space by
-			// another. They agree by construction — adoption writes a node's position and its
-			// content from one parse token, and the suffix walk moves both ends by the same
-			// delta — and reading `text()` would add a signal dependency on top.
-			const length = node.position.end - node.position.start
-			if (localRange.start < 0 || localRange.end < localRange.start || localRange.end > length) return refuse()
-			return submit({
-				start: node.position.start + localRange.start,
-				end: node.position.start + localRange.end,
-				text,
-			})
-		},
-
 		/**
 		 * Zero-length splice at a node's TRAILING EDGE — the insert verbs' primitive.
 		 *
@@ -163,7 +145,7 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		 *
 		 * Op coordinates stay in the COMMITTED projection's space rather than being remapped
 		 * through accumulated offsets: nothing commits until the end, so node positions —
-		 * which is where `applyText`/`applyStructural` get their coordinates — never move
+		 * which is where `applyAfter`/`applyStructural` get their coordinates — never move
 		 * mid-`tx`. Remapping would silently break exactly those verbs. Disjointness is what
 		 * makes the two readings equivalent, and overlapping ops are rejected anyway.
 		 *

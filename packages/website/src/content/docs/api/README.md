@@ -7,7 +7,7 @@ title: "@markput/react"
 
 ## Classes
 
-- [MarkputApi](/api/classes/markputapi/)
+- [MarkputHandle](/api/classes/markputhandle/)
 
 ## Interfaces
 
@@ -24,8 +24,6 @@ title: "@markput/react"
 
 ## Type Aliases
 
-- [Id](/api/type-aliases/id/)
-- [MarkPatch](/api/type-aliases/markpatch/)
 - [Markup](/api/type-aliases/markup/)
 - [NodeAnchor](/api/type-aliases/nodeanchor/)
 - [TreeNode](/api/type-aliases/treenode/)
