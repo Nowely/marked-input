@@ -1,25 +1,19 @@
 import type {Host} from '../features/state/Host'
-import {annotate} from '../features/tokens'
-import type {Id, NodeAnchor, TextNode, TokenModel, TreeNode} from '../features/tokens'
-import type {Markup} from '../features/tokens/parser/types'
-import type {Event} from '../shared/signals'
-
-/** Spec §2.3's `insertMark` initializer. */
-export type MarkInit = {
-	readonly markup: Markup
-	readonly value: string
-	readonly meta?: string
-	readonly slot?: string
-}
+import type {TokenModel} from '../features/tokens'
 
 /**
- * THE public surface (spec §2.3). The evolved `MarkputHandler`: it keeps `container`,
- * absorbs `focus()`, drops the consumer-free `overlay` getter, and gains the live node
- * reads, the model-centric write verbs, node-anchored selection and the `changed` payload.
+ * What a consumer holds through the `ref` prop: React's `useImperativeHandle` target
+ * (`react/.../MarkedInput.tsx`) and Vue's `defineExpose` argument (`vue/.../MarkedInput.vue`).
  *
- * It owns nothing. Every member lowers onto a state owner — the token layer, which owns the
- * tree, the DOM binding and (since S2.9) the selection — so the shape of the API can move
- * without moving state (AGENTS.md's one-owner rule).
+ * TWO MEMBERS, deliberately. The v2 surface added twelve more — `value`, `nodes`, `find`,
+ * `changed`, `insertMark`, `replaceText`, `replaceRange`, `setValue`, `tx`, `selection`,
+ * `select`, `caret` — and they are withdrawn: the editor is driven by its props, so a write
+ * belongs in the `value` a parent already owns, not in a second imperative path that has to
+ * agree with it. What is left is what props cannot express: the host element, and moving the
+ * caret into it.
+ *
+ * It owns nothing. Both members lower onto a state owner — the host for the element, the token
+ * layer for the caret — so the shape of the handle can move without moving state.
  */
 export class MarkputApi {
 	constructor(
@@ -31,118 +25,7 @@ export class MarkputApi {
 		return this.host.container()
 	}
 
-	/**
-	 * The string projection (spec D1): controlled → the props value, uncontrolled → the last
-	 * committed `join(tree)`. A delegation to {@link TokenModel.value}, and deliberately not
-	 * `join(tree)` inline — the two disagree while a controlled parent's `props.value` is
-	 * ahead of the last arrival, and on an UNSEEDED store, where the tree has no roots at all
-	 * but `value()` already answers the seed.
-	 *
-	 * RECORDED GAP (measured): swapping in `joinNodes(this.tokens.nodes())` survives the whole
-	 * suite (73 files, 1326 passed). Every fixture here reaches the verb through a mounted,
-	 * seeded store, and an arrival is synchronous on the props watch, so the two readings agree
-	 * at every moment a test can observe. Closing it takes an UNMOUNTED-store case, which this
-	 * spec's mounted fixture cannot express.
-	 */
-	value(): string {
-		return this.tokens.value()
-	}
-
-	/** The live root nodes, reactive (spec §2.3, D11). Ids are always present. */
-	nodes(): readonly TreeNode[] {
-		return this.tokens.nodes()
-	}
-
-	find(id: Id): TreeNode | undefined {
-		return this.tokens.find(id)
-	}
-
-	/**
-	 * Fires once per commit, payload-free. THE MODEL CLOCK: the tree, the value and the selection
-	 * are all settled when it fires, and it fires for commits that move no DOM at all.
-	 *
-	 * It used to carry `{added, removed, updated}` ids and to wait for the DOM. Both are gone: the
-	 * ids were derived by a module nothing in core read any more, and waiting for the DOM made the
-	 * event silent on exactly the commits that change only a mark's value or a row's order. Read
-	 * what changed back through {@link nodes} and {@link find}.
-	 */
-	get changed(): Event<void> {
-		return this.tokens.committed
-	}
-
-	/**
-	 * Whether the insertion was ACCEPTED. `'caret'` means the selection's START in document
-	 * order, and answers `false` when there is no selection (spec §2.3).
-	 *
-	 * It used to answer the fresh node, and that shape could not say what it meant: `undefined`
-	 * was BOTH "refused" and "accepted, but this is controlled mode so the node does not exist
-	 * yet" (spec D6 — the node arrives only once the parent's echo commits). A caller could not
-	 * tell a rejected write from a pending one. `boolean` separates them, and the node is read
-	 * back the way every other post-commit read works: from `changed`, then {@link find}.
-	 *
-	 * That also retired the positional lookup this used to end with — resolving the created
-	 * mark as "the one ending at the post-splice caret" — along with the fixture that existed
-	 * only to discriminate it from "the first mark in the document".
-	 */
-	insertMark(at: NodeAnchor | 'caret', init: MarkInit): boolean {
-		const anchor = at === 'caret' ? this.tokens.selection.caretAnchor() : at
-		if (anchor === undefined || !this.live(anchor)) return false
-		const text = annotate(init.markup, {value: init.value, meta: init.meta, slot: init.slot})
-		return this.tokens.replaceBetween(anchor, anchor, text) !== undefined
-	}
-
-	replaceText(target: {node: TextNode; start: number; end: number}, text: string): boolean {
-		return this.tokens.applyText(target.node, {start: target.start, end: target.end}, text)
-	}
-
-	/** Cross-node (spec D5). The pair is normalized, so `from` after `to` is legal. */
-	replaceRange(from: NodeAnchor, to: NodeAnchor, text: string): boolean {
-		if (!this.live(from) || !this.live(to)) return false
-		return this.tokens.replaceBetween(from, to, text) !== undefined
-	}
-
-	/** Whole-value. Rides the same gap narrowing every whole-value site does (spec D8). */
-	setValue(text: string): boolean {
-		return this.tokens.setValue(text)
-	}
-
-	tx(fn: () => void): boolean {
-		return this.tokens.tx(fn)
-	}
-
 	focus(): void {
 		this.tokens.focusFirst()
-	}
-
-	/** The STORED anchors (spec D7), not the derived numbers. Reactive. */
-	selection(): {anchor: NodeAnchor; head: NodeAnchor} | undefined {
-		return this.tokens.selection.anchors()
-	}
-
-	select(anchor: NodeAnchor, head: NodeAnchor = anchor): boolean {
-		if (!this.live(anchor) || !this.live(head)) return false
-		this.tokens.selection.select(anchor, head)
-		return true
-	}
-
-	caret(at: NodeAnchor): boolean {
-		return this.select(at)
-	}
-
-	/**
-	 * An anchor naming a node from a previous generation is REJECTED rather than silently
-	 * resolved (plan decision D-f): its stored `position` is whatever adoption last wrote
-	 * before the node left the tree, so resolving it would splice at an arbitrary offset. The
-	 * document edges are always live.
-	 *
-	 * TypeScript-private, NOT `#private`: this class is handed to consumers through the
-	 * adapters, and Vue's `defineExpose` wraps it in a Proxy. A native private field is
-	 * branded to the instance, so every method reaching one through the proxy throws
-	 * `Receiver must be an instance of class MarkputApi`.
-	 */
-	private live(anchor: NodeAnchor): boolean {
-		if (typeof anchor === 'string') return true
-		const node = 'node' in anchor ? anchor.node : 'before' in anchor ? anchor.before : anchor.after
-		return this.tokens.find(node.id) === node
 	}
 }

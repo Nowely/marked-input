@@ -3,8 +3,13 @@
 Contracts that later work is expected to hold to. Lifted verbatim from the
 repo's former `docs/conventions.md`, which has since been retired.
 
-- S1 public API: spec v2 §2.3 (`MarkputApi`, `TreeNode = TextNode | MarkNode`
-  one structure, `NodeAnchor`, verbs over `applyRange`, `changed` payload).
+- S1 public API: spec v2 §2.3's TYPE layer holds — `TreeNode = TextNode |
+MarkNode` one structure, `NodeAnchor` the address. Its VERB layer does not:
+  the ref handle is `container` + `focus()`, and the twelve read/write members
+  (`value`, `nodes`, `find`, `changed`, `insertMark`, `replaceText`,
+  `replaceRange`, `setValue`, `tx`, `selection`, `select`, `caret`) were
+  withdrawn — a consumer writes through the `value` prop and reaches a mark
+  through `useMark()`.
 - S1 internal: `adopt(tree, window, parsed, selectionBefore?)` returns the
   `TransactionResult` — the single change feed; CommitSink splits
   uncontrolled/controlled commit policy.
@@ -29,8 +34,10 @@ repo's former `docs/conventions.md`, which has since been retired.
   (`tokens.selection` plus a private `SelectionDriver`). There is no
   `store.selection` and no construction cycle between `Store`'s fields.
 - Public-API invariant: **`MarkputApi` neither takes nor returns an absolute
-  document offset.** Stated of `MarkputApi`, not of every export — `Store` is a
-  value export, so `store.edit.setValue(text, caretOffset?)` and
-  `store.tokens.anchorAt` / `offsetOf` remain reachable through it by design.
+  document offset.** Now vacuous on the handle itself, which takes no
+  coordinates at all; it still binds whatever the handle grows back. Stated of
+  `MarkputApi`, not of every export — `Store` is a value export, so
+  `store.edit.setValue(text, caretOffset?)` and `store.tokens.anchorAt` /
+  `offsetOf` remain reachable through it by design.
 - Error handling: boolean/`undefined` + throw for developer errors; no
   Result/Either types.

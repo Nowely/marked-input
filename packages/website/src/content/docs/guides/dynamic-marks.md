@@ -88,30 +88,32 @@ function RemovableMark() {
 
 ## Editor API
 
-The component ref exposes a `MarkputApi` — the whole editor, addressed by nodes rather than
-by global offsets:
+The component ref exposes a `MarkputApi` — what the props cannot express:
+
+| Member | Purpose |
+| ------ | ------- |
+| `container` | The editor's container element, or `null` before mount. |
+| `focus()` | Put the caret at the start of the first token. |
+
+Everything else goes through the `value` prop. The parent already owns the string, and a second
+imperative path would have to agree with it — so a toolbar builds the new value with `annotate()`
+and hands it back:
 
 ```tsx
-import {useRef} from 'react'
-import {MarkedInput} from '@markput/react'
+import {useRef, useState} from 'react'
+import {annotate, MarkedInput} from '@markput/react'
 import type {MarkputApi} from '@markput/react'
+
+const MARKUP = '@[__value__](__meta__)'
 
 function Editor() {
     const api = useRef<MarkputApi>(null)
+    const [value, setValue] = useState('hello ')
 
     return (
         <>
-            <MarkedInput ref={api} defaultValue="hello" options={[{markup: '@[__value__](__meta__)'}]} />
-            {/*
-              `onMouseDown` + preventDefault is required, not optional: the editor clears its
-              stored selection on blur, so a toolbar button that takes focus makes
-              `insertMark('caret')` reject every time.
-            */}
-            <button
-                type="button"
-                onMouseDown={e => e.preventDefault()}
-                onClick={() => api.current?.insertMark('caret', {markup: '@[__value__](__meta__)', value: 'alice'})}
-            >
+            <MarkedInput ref={api} value={value} onChange={setValue} options={[{markup: MARKUP}]} />
+            <button type="button" onClick={() => setValue(current => current + annotate(MARKUP, {value: 'alice'}))}>
                 Mention
             </button>
         </>
@@ -119,24 +121,11 @@ function Editor() {
 }
 ```
 
-| Member | Purpose |
-| ------ | ------- |
-| `container` | The editor's container element, or `null` before mount. |
-| `value()` | The current annotated value. |
-| `nodes()` | The live root nodes. Reactive. |
-| `find(id)` | Resolve a stable id to its live node. |
-| `insertMark(at, init)` | Insert a mark at a node anchor or at `'caret'`. Returns whether the write was accepted; read the node back from `changed`, then `find(id)`. |
-| `replaceText(target, text)` | Replace a range inside one text node. |
-| `replaceRange(from, to, text)` | Replace a range spanning nodes. |
-| `setValue(text)` | Replace the whole value. `setValue('')` clears it. |
-| `tx(fn)` | Compose several verbs into one commit; overlapping ops reject the whole transaction. |
-| `focus()` | Focus the first token. |
-| `selection()` | The stored `{anchor, head}` node anchors. Reactive. |
-| `select(anchor, head?)` / `caret(at)` | Move the selection. `false` for an anchor whose node has left the value. |
-| `changed` | Fires once per commit with `{added, removed, updated}` ids. Subscribe with `watch(api.changed, fn)`. |
-
-A node anchor is `{node, offset}` for a text node, `{before: node}` / `{after: node}` for a
-boundary, or `'start'` / `'end'` for the document edges.
+What a props write cannot place is the caret: appending a mention puts it at the end of the value,
+not at the position the user left. The ref used to carry `insertMark`, `replaceText`,
+`replaceRange`, `setValue`, `tx`, `select`/`caret`, `selection()`, `nodes()`, `find()` and
+`changed`; they are withdrawn. Inside a mark, `useMark()` still gives the live node and its
+write verbs.
 
 ## Nesting Info
 

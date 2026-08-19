@@ -315,7 +315,7 @@ class Store {
     readonly keyboard:  KeyboardController // input handling and block editing
     readonly block:     BlockController    // block drag actions and operation helpers
     readonly clipboard: ClipboardController // copy/cut handling
-    readonly api:       MarkputApi         // the imperative verbs (insertMark, replaceRange, …)
+    readonly api:       MarkputApi         // the ref handle: container, focus()
 }
 ```
 

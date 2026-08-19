@@ -1,11 +1,11 @@
-import {watch} from '@markput/core'
+import type {MarkNode} from '@markput/core'
 import {describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {childrenOf, getElement} from '../shared/lib/dom'
 import {focusAtEnd} from '../shared/lib/focus'
 import {countRenders, Mark as PlainMark, Span as PlainSpan} from '../shared/lib/marks'
-import {mountApi, mountComponent} from '../shared/lib/page'
+import {mountComponent} from '../shared/lib/page'
 import {markMounts} from './renderCount.fixtures'
 
 /**
@@ -55,37 +55,10 @@ describe('Render-count gates: commit routing', () => {
 		expect(spanRenders()).toBeGreaterThan(baseline)
 	})
 
-	/**
-	 * The VALUE-ONLY commit: `render` is true, `structural` is false, and it is the one commit
-	 * shape whose completion nothing else here gates. Adoption writes `roots` only when the ROOT
-	 * LIST changes by reference, so this commit leaves `tokens.nodes` equal, the id space
-	 * untouched and the element set untouched — it is precisely the commit a DOM clock is blind
-	 * to.
-	 *
-	 * So the clock read here is the MODEL one. `api.changed` is `tokens.committed`, fired from
-	 * `apply` once the tree, the projection and the repaired selection are in place — it does not
-	 * wait for a bind, so nothing about this commit's empty element set can silence it. The DOM
-	 * clock (`tokens.bound`) is the wrong question for a value assertion: it answers "does every
-	 * handle match an element", which this commit never changed the answer to.
-	 *
-	 * The pulse COUNT is the whole gate: the event is payload-free, and a consumer that wants to
-	 * know what moved re-reads `nodes()`.
-	 */
-	it('a mark value change pulses the model clock — the commit completes with no root-list move', async () => {
-		const {api} = await mountApi({Mark: PlainMark, Span: PlainSpan, defaultValue: 'a@[x](1)b'})
-		await expect.element(page.getByText('x')).toBeInTheDocument()
-
-		let pulses = 0
-		watch(api()!.changed, () => pulses++)
-
-		const mark = api()
-			?.nodes()
-			.find(node => node.kind === 'mark')
-		expect(mark?.update({value: 'y'})).toBe(true)
-		await expect.element(page.getByText('y')).toBeInTheDocument()
-
-		expect(pulses).toBe(1)
-	})
+	// The VALUE-ONLY commit — `render` true, `structural` false — used to be gated here, through
+	// the public handle's `changed`. Its subject is core's own clock rather than either bridge, so
+	// it went down to `core/features/tokens/tree/markNode.spec.ts` when the handle stopped carrying
+	// the event.
 })
 
 /**
@@ -129,20 +102,26 @@ describe('Render-count gates: structural fan-out', () => {
 	})
 
 	it('one mark value change at 100 marks re-renders exactly that mark', async () => {
-		const [CountedMark, markRenders] = countRenders()
-		const {api} = await mountApi({Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
+		// The node is reached the way a consumer reaches one — `useMark()` inside the mark's own
+		// component — now that the public handle hands out no nodes. The click that captures it
+		// lands BEFORE the baseline, so whatever it re-renders cannot skew the delta.
+		let captured: MarkNode | undefined
+		const [CountedMark, markRenders] = countRenders({
+			tag: 'mark',
+			on: {click: ({mark}) => (captured = mark)},
+		})
+		await mountComponent({Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
 		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
+
+		// The FIRST mark, so the write also suffix-shifts the other 99 (the replacement is a
+		// different length): one mark's props change, 99 move.
+		await page.getByText('m0').click()
+		expect(captured).toBeDefined()
 
 		const baseline = markRenders()
 		expect(baseline).toBeGreaterThanOrEqual(MARKS)
 
-		// The FIRST mark, so the write also suffix-shifts the other 99 (the replacement is a
-		// different length): one mark's props change, 99 move.
-		const first = api()
-			?.nodes()
-			.find(node => node.kind === 'mark')
-		expect(first).toBeDefined()
-		expect(first?.update({value: 'edited'})).toBe(true)
+		expect(captured?.update({value: 'edited'})).toBe(true)
 		await expect.element(page.getByText('edited')).toBeInTheDocument()
 
 		expect(markRenders() - baseline).toBe(1)

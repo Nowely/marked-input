@@ -19,7 +19,7 @@ Three colours in the original: `tree/` is the model with no DOM, `dom/` is DOM I
 |                       |                                                                                                                                                      |                                |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
 | `Store`               | Assembly root. Constructs host, props, tokens, then the feature controllers in a fixed order — `host.onMounted` callbacks run in registration order. | `store/Store.ts`               |
-| `MarkputApi`          | The public v2 surface: value, nodes, find, changed, insertMark, replaceText, replaceRange, setValue, tx, focus, selection, select, caret.            | `store/MarkputApi.ts`          |
+| `MarkputApi`          | The ref handle: `container` and `focus()`. The v2 read/write verbs were withdrawn — writes ride the `value` prop, mark verbs ride `useMark()`.       | `store/MarkputApi.ts`          |
 | React / Vue           | Render `TreeNode` off `nodes()`, re-render on `renderEpoch`, register refs through `control()`/`children()`. Four members total.                     | `packages/{react,vue}/markput` |
 | `PropsModel` / `Host` | value, defaultValue, options, Mark, readOnly, layout · container element + mounted/rendered lifecycle signals.                                       | `features/state/`              |
 

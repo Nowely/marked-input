@@ -1,6 +1,6 @@
 import {describe, it, expect, vi} from 'vitest'
 
-import {watch} from '../../../shared/signals/index.js'
+import {effect, watch} from '../../../shared/signals/index.js'
 import {Store} from '../../../store/Store'
 import {caretAt, consignRendered} from '../__testing__/mountFixtures'
 import {treeShape} from '../__testing__/tokenFactories'
@@ -140,6 +140,31 @@ describe('TokenModel.nodes() — the fresh reconciled read', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
 		expect(treeShape(store.tokens.nodes())).toEqual([])
+	})
+
+	it('nodes() is reactive — an effect re-runs on a structural change', () => {
+		// Measured: without this, wrapping `nodes()` in `untracked` survives the entire suite. It
+		// moved down here from the public handle's spec when the handle stopped answering reads;
+		// both adapters render straight off this one, so its reactive half has to stay gated.
+		const store = new Store()
+		store.props.set({defaultValue: 'hello', Mark: () => null, options: [{markup: '@[__value__](__meta__)'}]})
+		const container = document.createElement('div')
+		container.append(document.createElement('span'))
+		document.body.append(container)
+		store.host.container(container)
+		consignRendered(store, container)
+
+		let runs = 0
+		const stop = effect(() => {
+			store.tokens.nodes()
+			runs++
+		})
+		expect(runs).toBe(1)
+		expect(store.tokens.setValue('a@[x](m)b')).toBe(true)
+		expect(runs).toBe(2)
+
+		stop()
+		container.remove()
 	})
 })
 

@@ -13,11 +13,17 @@ describe('API: MarkputApi', () => {
 		expect(api()?.container).toBeInstanceOf(HTMLElement)
 	})
 
-	it('runs API methods that touch private state through the framework ref', async () => {
-		// Vue hands the API out through a Proxy, so a native `#private` in `MarkputApi` makes
-		// every method reaching it throw `Receiver must be an instance of class MarkputApi`.
-		const {api} = await mountApi({Mark, defaultValue: VALUE})
+	it('runs a method through the framework ref, not just a getter', async () => {
+		// Vue hands the handle out through `defineExpose`, which wraps it in a Proxy — so a method
+		// reaching `this` is worth one assertion beyond the getter above. (The native `#private`
+		// hazard this test was written for is gone with the verbs that had one; a TS-private field
+		// is a plain property and survives the proxy.)
+		const {api, host} = await mountApi({Mark, defaultValue: VALUE})
 
-		expect(api()?.caret('start')).toBe(true)
+		api()?.focus()
+
+		const range = document.getSelection()?.getRangeAt(0)
+		expect(range?.collapsed).toBe(true)
+		expect(host.contains(range?.startContainer ?? null)).toBe(true)
 	})
 })

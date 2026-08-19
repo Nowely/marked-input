@@ -92,6 +92,23 @@ describe('MarkNode verbs', () => {
 		expect(store.tokens.value()).toBe('hello @[markput]')
 	})
 
+	it('pulses committed exactly once on a value-only change, which moves no root list', () => {
+		// THE VALUE-ONLY commit: `render` is true, `structural` is false. Adoption writes `roots`
+		// only when the root list changes by reference, so this one leaves the tree read, the id
+		// space and the element set untouched — it is precisely the commit a DOM clock is blind to.
+		// The reorder case below pins the same count for a move; this is the shape nothing else here
+		// gates. It read the clock through the public handle until the handle stopped carrying one.
+		const {store, node} = setup()
+		const before = store.tokens.nodes()
+		let committed = 0
+		watch(store.tokens.committed, () => committed++)
+
+		expect(node.update({value: 'markput'})).toBe(true)
+
+		expect(committed).toBe(1)
+		expect(store.tokens.nodes()).toBe(before)
+	})
+
 	it('clears metadata without leaking placeholder text', () => {
 		const {store, node} = setup('hello @[world](meta)', '@[__value__](__meta__)')
 
