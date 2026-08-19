@@ -1,6 +1,6 @@
 # Auto-batching: drop `tx` from the public write API
 
-Status: needs-info
+Status: resolved
 
 `tx` is the one piece of the transaction layer a consumer has to learn, and it exists only so
 that two edits land as one commit. If several verbs called in one tick coalesced by themselves,
@@ -33,3 +33,17 @@ The row-verbs design conversation, 2026-08-17. The structural verbs settle on `b
 and a caret the verb moves itself, which leaves `tx` as the only reason a consumer meets the
 transaction layer at all. The row-verbs change deliberately keeps `tx` as-is; this is its
 follow-up.
+
+## Answer
+
+Closed without the timing model, because the premise went away. The ref handle was cut back to
+`container` + `focus()` (2026-08-20), which took every public write verb with it — so there is
+nothing left for a consumer to compose, and no tick to define. `TokenModel.tx` went in the same
+sweep: with `MarkputHandle.tx` gone it had no production caller at all.
+
+`createTransactions`' `tx` stays. It is the hull-window buffer the commit path itself uses, it
+is reachable only inside `tree/`, and `transactions.spec.ts` keeps its full gate set —
+including the buffered-pairing refusal ported down from `markNode.spec.ts`.
+
+Auto-batching is not implemented and is not needed by anything today. If a write surface ever
+comes back, the timing question above comes back with it, unanswered.

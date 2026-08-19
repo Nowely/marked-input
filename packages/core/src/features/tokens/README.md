@@ -251,7 +251,7 @@ find(id) // the live TreeNode by stable id
 selection: Selection // THE stored anchors and their derivations (see below)
 
 // writes
-replaceBetween(from, to, text) / setValue(text) / applyText(node, range, text) / tx(fn)
+replaceBetween(from, to, text) / setValue(text)
 // per-node writes are MarkNode.update / MarkNode.remove, which ride a transaction
 
 // tree reads, in tree coordinates

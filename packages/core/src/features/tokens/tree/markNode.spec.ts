@@ -582,15 +582,6 @@ describe('moveTo', () => {
 		})
 		expect(store.tokens.nodes()[0].moveTo(1)).toBe(false)
 	})
-
-	it('refuses a pairing buffered inside a transaction', () => {
-		// A pairing claims the whole root list; a hull with other ops cannot keep that true.
-		const store = rowSetup('alpha\n\nbeta\n\n')
-		const rows = store.tokens.nodes()
-
-		expect(store.tokens.tx(() => void rows[0].moveTo(1))).toBe(false)
-		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
-	})
 })
 describe('entering a fresh row', () => {
 	/**

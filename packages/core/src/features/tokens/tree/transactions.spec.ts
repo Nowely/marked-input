@@ -332,6 +332,22 @@ describe('transactions: tx composition', () => {
 		expect(tree.value()).toBe('hello')
 	})
 
+	it('tx() refuses a buffered pairing and rejects the transaction with it', () => {
+		// A pairing claims the WHOLE root list, and a hull composed with other ops cannot keep
+		// that claim true. Ported down from `markNode.spec.ts`, which reached this refusal
+		// through `TokenModel.tx` + `MarkNode.moveTo` until the seam's `tx` was deleted with the
+		// public one; `applyRange` carries the same claim on its window.
+		const {tree, tx, results} = setup('alpha beta')
+
+		const ok = tx.tx(() => {
+			tx.applyRange({start: 0, end: 10, insertedLength: 10, pairing: [1, 0]}, 'beta alpha')
+		})
+
+		expect(ok).toBe(false)
+		expect(tree.value()).toBe('alpha beta')
+		expect(results).toEqual([])
+	})
+
 	it('tx() with no ops succeeds without a commit', () => {
 		const {tx, results} = setup('hello')
 		expect(tx.tx(() => undefined)).toBe(true)
