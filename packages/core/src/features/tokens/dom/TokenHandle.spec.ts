@@ -81,7 +81,6 @@ function mountBlock(value: string) {
 		}
 	})
 
-	store.host.rendered()
 	return {store, rows}
 }
 
@@ -350,7 +349,6 @@ describe('TokenHandle', () => {
 
 		rows[1].unmount()
 		store.tokens.setValue('alpha\n\n')
-		store.host.rendered()
 
 		expect(handle.alive()).toBe(false)
 		// KILLED, not merely unbound, and `alive()` alone cannot tell the two apart — it is

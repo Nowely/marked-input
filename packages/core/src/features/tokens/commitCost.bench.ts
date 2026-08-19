@@ -32,10 +32,40 @@ import type {TextNode, TreeNode, Window} from './tree/types'
  *   L6 focused           L5 with the editor actually focused — a person typing
  *   C1 caret only        one caret write, no edit, on CLEAN layout
  *   C2 caret on dirty    one caret write after touching the DOM
+ *   M1 mount             one registry write per element — an adapter's refs, replayed
  *
  * Subtraction is valid because every rung repeats the lower rungs' work verbatim on the
  * same string sequence: the parse is a pure function of the spliced value, so L2 - L1 is
- * the parse, L3 - L2 the adoption, and so on.
+ * the parse, L3 - L2 the adoption, and so on. M1 is outside that ladder: it prices MOUNT,
+ * not a keystroke, and it is read as a curvature (does 2N cost 2× or 4×?) rather than as
+ * an absolute.
+ *
+ * ── A WARNING ABOUT EVERY MOUNTED FIGURE BELOW ──────────────────────────────────────────
+ *
+ * They were taken before consignment became the element source. `mountDom` built the DOM but
+ * never consigned it, so from that change until M1 was added every mounted rung bound an EMPTY
+ * registry — the walk found no element for any node and unbound the lot. `mountDom` now consigns
+ * what it builds; the L5/L5b/L6 numbers quoted below have NOT been re-taken since and are lower
+ * bounds at best.
+ *
+ * ── M1, AND THE REGRESSION IT EXISTS TO CATCH ───────────────────────────────────────────
+ *
+ * When a registration invalidated a signal the bind effect watched, one ref cost a whole-tree
+ * walk. Measured through both adapters before the fix: mounting N marks ran 2N+2 binds
+ * (22/102/402/802/1602 for N = 10/50/200/400/800, React and Vue identical), and the core-level
+ * cold mount read 2.6 / 7.2 / 41.5 / 166.3 / 678 ms at 101 / 201 / 501 / 1001 / 2001 nodes —
+ * ms/N^2 flat at ~1.66e-4, i.e. 4x per doubling. A ref binds one id now:
+ *
+ *   inline 10 marks     (21 nodes)      0.35 ms
+ *   inline 100 marks    (201 nodes)     1.12 ms
+ *   inline 1000 marks   (2001 nodes)    4.05 ms
+ *   block 100 rows      (300 refs)      1.73 ms
+ *   block 1000 rows     (3000 refs)     6.42 ms
+ *
+ * READ IT AS CURVATURE. 10x the document costs ~3.6x here, not 100x; the absolute numbers move
+ * with the machine and the per-ref cost is small enough that fixed overhead dominates the small
+ * sizes. If a doubling ever costs 4x again, a registration has started doing work proportional
+ * to the whole document.
  *
  * ── WHAT THIS MEASURED, at inline 1000 marks (42 KB, 2001 tokens) ───────────────────────
  *
@@ -83,12 +113,16 @@ import type {TextNode, TreeNode, Window} from './tree/types'
  *    {@link settleCaretAt} fixes the order and both L6 and L7 share it. The unfocused rungs (L5,
  *    L5b) never used it and are unaffected.
  *
- * ── L7, AND WHAT IT IS FOR ──────────────────────────────────────────────────────────────
+ * ── L7, THE RUNG THAT BECAME THE BEHAVIOUR ──────────────────────────────────────────────
  *
- * Most of the commit system is OPTIMISATION: `renderEpoch` and the text/structural routing exist
- * so a plain keystroke never repaints and never re-binds, and the `pendingStructural` latch and
- * the delta ledger exist to manage the announcements that routing creates. L7 prices deleting all
- * of it — every commit takes the structural path, so `bind` walks the whole tree every time:
+ * Most of the commit system WAS optimisation: a render epoch and the text/structural routing
+ * existed so a plain keystroke never repainted and never re-bound, and the `pendingStructural`
+ * latch and the delta ledger existed to manage the announcements that routing created. L7 priced
+ * deleting all of it — every commit binds, so `bind` walks the whole tree every time.
+ *
+ * The rung is GONE from the ladder because its answer is now L6: with the routing deleted, the
+ * two rungs were the same code. The figures it took are kept, because they are the evidence the
+ * deletion rests on:
  *
  *   inline 100 marks    L6 0.26-0.29 ms -> L7 0.35-0.40 ms   (~1.35x)
  *   block 100 rows      L6 0.34-0.37 ms -> L7 0.30-0.61 ms   (unstable, see below)
@@ -110,10 +144,10 @@ import type {TextNode, TreeNode, Window} from './tree/types'
  * 20-105%. Ratios between rungs survived, absolutes did not. If a rung reports rme above ~10% at
  * a size where its neighbours report ~1%, suspect the machine before the code.
  *
- * CAVEAT, and it is the whole remaining question: this is the CORE half only. `mountDom` builds
- * the DOM by hand and `host.rendered()` drives bind directly, so no React or Vue reconciliation
- * happens. A real always-render also makes both adapters rebuild the token list every keystroke,
- * and that is NOT measured here. `packages/storybook` is where it would have to be.
+ * CAVEAT: this is the CORE half only. `mountDom` builds the DOM by hand and consigns it, so no
+ * React or Vue reconciliation happens. That is the right half to measure for always-BIND, which
+ * is what shipped — the adapters do not re-render for a text edit, because `nodes` keeps its
+ * reference. It would be the wrong half for always-RENDER, which was never built.
  *
  * The workload OSCILLATES — insert 'x' at `pos`, then delete it — so the document never
  * grows across a benchmark's thousands of iterations and every sample is the same edit at
@@ -395,9 +429,18 @@ function coreCommitKeystroke(doc: Doc, caret = true): Keystroke {
 /**
  * The adapter's DOM, hand-rendered once: one span per root inline, one
  * `div > span > span` per row in block layout (the shape `bind` walks — see
- * `__testing__/mountFixtures.ts`).
+ * `__testing__/mountFixtures.ts`), and then CONSIGNED, because consignment is the element
+ * source since the DOM walk was deleted.
+ *
+ * Building the DOM without consigning it, which this did until now, leaves every mounted rung
+ * measuring a bind over an empty registry: no node has an element, so the walk binds nothing and
+ * unbinds everything. Every mounted figure recorded in the docblock above predates that change
+ * and should be re-taken before it is quoted again.
+ *
+ * Returns one thunk per registration, in the order an adapter's refs would fire, so the mount
+ * rung can replay the ref storm without paying for the parse and the DOM build on every sample.
  */
-function mountDom(store: Store, doc: Doc): void {
+function mountDom(store: Store, doc: Doc): readonly (() => void)[] {
 	// Every mounted rung gets the page to itself: worlds are built lazily and used by one
 	// bench each, and leaving the previous fixture attached made a later rung pay style and
 	// layout for a document it never edits (measured: block-100's no-caret rung read SLOWER
@@ -406,43 +449,49 @@ function mountDom(store: Store, doc: Doc): void {
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
-	if (doc.isBlock) {
-		for (const _root of store.tokens.nodes()) {
+	const consignments: (() => void)[] = []
+	for (const root of store.tokens.nodes()) {
+		if (doc.isBlock) {
+			// A ROW and a TOKEN ELEMENT are different elements of the same token, registered
+			// separately — the same pairing `mountBlock` documents in `__testing__/mountFixtures.ts`.
 			const row = document.createElement('div')
 			const mark = document.createElement('span')
 			const text = document.createElement('span')
 			mark.append(text)
 			row.append(mark)
 			container.append(row)
+			const surface = root.kind === 'mark' ? root.children()[0] : undefined
+			consignments.push(
+				() => store.tokens.consignRow(root.id)(row),
+				() => store.tokens.consign(root.id)(mark)
+			)
+			if (surface) consignments.push(() => store.tokens.consign(surface.id)(text))
+		} else {
+			const span = document.createElement('span')
+			container.append(span)
+			consignments.push(() => store.tokens.consign(root.id)(span))
 		}
-	} else {
-		for (const _root of store.tokens.nodes()) container.append(document.createElement('span'))
 	}
-	store.host.rendered()
+	for (const consign of consignments) consign()
+	return consignments
 }
 
 /**
- * L7: every keystroke takes the STRUCTURAL path — the commit is followed by a `rendered()`, so
- * `bind` walks the whole tree and re-pairs every element, every time.
+ * M1: MOUNT — one registry write per element, which is exactly what an adapter's refs do.
  *
- * This is the "delete the optimisations" question made measurable. Most of the commit system
- * exists to AVOID this: `renderEpoch` and the text/structural routing exist so a plain keystroke
- * never repaints and never re-binds, and the `pendingStructural` latch and the delta ledger exist
- * to manage the announcements that routing creates. If always binding is cheap, all of it is
- * concept cost buying nothing.
+ * The rung the ladder was missing, and its absence is why a Θ(N) → Θ(N²) mount reached a working
+ * tree unnoticed. It replays the registrations against an already-built world, so what it measures
+ * is the storm itself and not the parse or the DOM build.
  *
- * It measures the CORE half only — commit + bind. The framework's own re-render is the other half
- * and needs a real adapter, so it cannot be measured from here; `packages/storybook` is where that
- * belongs. Read this rung as a lower bound on the simple design, not as its full price.
+ * Read it as a CURVATURE rung, not an absolute one: doubling the document must roughly double the
+ * time. A ratio near 4× per doubling means each registration is doing work proportional to the
+ * whole document.
  */
-function alwaysBindKeystroke(doc: Doc): Keystroke {
+function mountRung(doc: Doc): Keystroke {
 	const store = storeFor(doc)
-	mountDom(store, doc)
-	const keystroke = storeKeystroke(store, doc, true)
-	settleCaretAt(store, doc)
+	const consignments = mountDom(store, doc)
 	return () => {
-		keystroke()
-		store.host.rendered()
+		for (const consign of consignments) consign()
 	}
 }
 
@@ -543,6 +592,11 @@ for (const doc of docs) {
 		// The mounted rungs need a DOM; the ladder still measures L1–L4 without one.
 		if (typeof document === 'undefined') return
 		bench(
+			'M1 mount (one ref per element)',
+			lazy(() => mountRung(doc)),
+			options
+		)
+		bench(
 			'L5 full keystroke',
 			lazy(() => fullKeystroke(doc)),
 			options
@@ -560,11 +614,6 @@ for (const doc of docs) {
 		bench(
 			'L5b stored selection, no post-edit caret',
 			lazy(() => storedSelectionKeystroke(doc)),
-			options
-		)
-		bench(
-			'L7 always bind (structural every time)',
-			lazy(() => alwaysBindKeystroke(doc)),
 			options
 		)
 		bench(

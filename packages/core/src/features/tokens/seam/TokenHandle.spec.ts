@@ -13,7 +13,6 @@ function mountInline(value: string) {
 	document.body.append(container)
 	store.host.container(container)
 	consignRendered(store, container)
-	store.host.rendered()
 	return {store, container, span}
 }
 
@@ -40,7 +39,6 @@ function mountBlock(value: string) {
 	}
 
 	consignRows(store, container)
-	store.host.rendered()
 	return {store, container}
 }
 
@@ -90,7 +88,6 @@ describe('TokenHandle', () => {
 		const {store, span} = mountInline('hello')
 
 		const first = store.tokens.handleAt(span)
-		store.host.rendered()
 		const second = store.tokens.handleAt(span)
 		expect(second).toBe(first)
 	})
@@ -119,7 +116,7 @@ describe('TokenHandle', () => {
 	it('kills handles whose token disappears (dead-handle contract)', () => {
 		// Block layout: two text rows "alpha\n\n" and "beta\n\n".
 		// We capture the handle for row 2's token, then reduce the value to one
-		// row, update the DOM to one row, and rendered(). The handle should die.
+		// row, update the DOM to one row, and re-bind. The handle should die.
 		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
 
 		// Grab the second row's handle (path [1])
@@ -136,8 +133,6 @@ describe('TokenHandle', () => {
 		// Update the parsed value so the token tree shrinks too
 		store.tokens.setValue('alpha\n\n')
 
-		store.host.rendered()
-
 		expect(handle.alive()).toBe(false)
 		expect(handle.element()).toBeUndefined()
 		// The element it held is untouched — kill clears the binding, it does not repaint.
@@ -149,7 +144,6 @@ describe('TokenHandle', () => {
 		container.append(buildRow('beta'))
 		store.tokens.setValue('alpha\n\nbeta\n\n')
 		consignRows(store, container)
-		store.host.rendered()
 
 		const newHandle = store.tokens.handle(store.tokens.nodes()[1].id!)
 		expect(newHandle).toBeDefined()
@@ -175,8 +169,6 @@ describe('TokenHandle', () => {
 		container.prepend(buildRow('new'))
 		consignRows(store, container)
 
-		store.host.rendered()
-
 		// The same handle object now lives at the shifted path
 		expect(handle.alive()).toBe(true)
 		expect(joinNodes([store.tokens.nodes()[2]])).toBe('beta\n\n')
@@ -191,7 +183,6 @@ describe('TokenHandle', () => {
 		const control = document.createElement('button')
 		container.append(control)
 		store.tokens.control()(control)
-		store.host.rendered()
 
 		expect(store.tokens.handleAt(control)).toBe('control')
 		expect(store.tokens.handleAt(document.body)).toBeUndefined()

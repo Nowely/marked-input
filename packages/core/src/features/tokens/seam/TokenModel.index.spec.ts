@@ -15,12 +15,11 @@ function mountInline(value: string) {
 	document.body.append(container)
 	store.host.container(container)
 	consignRendered(store, container)
-	store.host.rendered()
 	return {store, container, span}
 }
 
 describe('TokenModel lookups', () => {
-	it('fires bound after rendered()', () => {
+	it('fires bound on a consignment, with no commit behind it', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hi'})
 		const container = document.createElement('div')
@@ -29,14 +28,15 @@ describe('TokenModel lookups', () => {
 		document.body.append(container)
 		store.host.container(container)
 
-		// `rendered()` is the BIND, so the clock this subject means is the DOM one. The commit
-		// clock already pulsed when the container seeded the tree, before this watch existed.
+		// A ref IS the bind now, so the clock this subject means is the DOM one. The commit clock
+		// already pulsed when the container seeded the tree, before this watch existed — and a
+		// registration is not a commit, so it stays silent here.
 		const onBound = vi.fn()
 		const onCommitted = vi.fn()
 		watch(store.tokens.bound, onBound)
 		watch(store.tokens.committed, onCommitted)
 
-		store.host.rendered()
+		store.tokens.consign(store.tokens.nodes()[0].id)(span)
 
 		expect(onBound).toHaveBeenCalledTimes(1)
 		expect(onCommitted).toHaveBeenCalledTimes(0)
@@ -74,7 +74,6 @@ describe('TokenModel lookups', () => {
 		document.body.append(container)
 		store.host.container(container)
 		store.tokens.control()(control)
-		store.host.rendered()
 
 		expect(store.tokens.handleAt(control)).toBe('control')
 		container.remove()

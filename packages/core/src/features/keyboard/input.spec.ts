@@ -73,7 +73,6 @@ function mountNestedSlot() {
 	consign(children[0].id, before)
 	consign(children[1].id, inner)
 	consign(children[2].id, after)
-	store.host.rendered()
 	return {store, container, leading, host, before}
 }
 
@@ -91,7 +90,6 @@ function mountInlineWithControl(value = 'hello') {
 	store.host.container(container)
 	store.tokens.control()(control)
 	consignRendered(store, container)
-	store.host.rendered()
 	return {store, container, controlInput}
 }
 
@@ -139,7 +137,6 @@ function mountControlledAdjacentMarks() {
 	store.host.container(container)
 	for (const _root of store.tokens.nodes()) container.append(document.createElement('span'))
 	consignRendered(store, container)
-	store.host.rendered()
 	return {store, container, echoed}
 }
 
@@ -186,7 +183,6 @@ function mountBlockWithMarkEdge(value: string) {
 		store.tokens.consignRow(root.id)(row)
 		store.tokens.consign(root.id)(token)
 	}
-	store.host.rendered()
 	return {store, container}
 }
 

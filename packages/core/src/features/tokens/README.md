@@ -138,40 +138,42 @@ Every committed change flows through a single `apply(result)`, taking the
 ```
 write verb → splice → parse → adopt → TransactionResult
   │    (adoption writes node.text → the per-surface effects write the DOM)
-  → apply(result): ledger.touch(id) per updated node
-  ├─ render === false AND no structural apply pending:
-  │    nothing left to do to the DOM → fire changed()
-  └─ render === true, or folded into a pending pass:
-       bump renderEpoch → renderer runs → onRendered() →
-       bind(container, tree.roots()): one DOM+tree walk —
-         create/kill TokenHandles, set element bindings, re-arm the text effects,
-         apply the one-host editable topology to NEWLY BOUND surfaces and mark roots
-       → fire changed()
+  → apply(result): bump `commits`, then fire committed()
+       └─ the bind EFFECT wakes on `commits` → bind(): one tree walk —
+            create/kill TokenHandles, set element bindings, re-arm the text effects,
+            apply the one-host editable topology to NEWLY BOUND surfaces and mark roots
+          → fire bound()
+
+framework paints → a ref fires → consign(id)(element) → rebind(id): that id's
+  share of the same walk → fire bound()
 ```
 
-- **Routing is `result.render`** — not `result.structural`. The latter is
-  add/remove only, while a mark whose value or meta changed renders new framework
-  props and must reach the renderer.
-- **`renderEpoch` is a COUNTER, not the tree.** The adapters read `nodes()` for
-  data and each token component subscribes to its own node, so the pipeline
-  publishes only "the renderer must run". It is not redundant with
-  `roots`, and that is measured: adoption writes `roots` only when the ROOT LIST
-  changes by reference, so a mark whose value changed and a structural change
-  INSIDE a slot both leave it equal — a container subscribed to `roots` alone
-  never re-renders for either, `rendered()` never fires and `bind` never runs.
-  Gated by "a mark value change announces changed" in both render-count specs.
+- **There is no routing.** `result.render` is not consulted: every commit
+  announces and every commit binds. The bit that used to decide, and the epoch
+  it bumped, are gone — the price is one whole-tree walk per commit, measured at
+  rung L7 in `commitCost.bench.ts` (~1.35× at 100 marks, ~2.5× at 1000 rows) and
+  accepted there.
+- **A ref binds ONE token, and that is the whole reason mount is linear.** A
+  registration used to invalidate a counter the bind effect watched, so every ref
+  cost a whole-tree walk: mounting an N-node document measured 2N+2 binds through
+  both adapters and 678 ms at 2001 nodes. `rebind(id)` is that id's share of the
+  walk; the whole walk stays on the commit clock, where the kill sweep needs it.
+- **The bind effect subscribes to two things**, `commits` and the control
+  registrations — NOT the live roots. Every write of `tree.roots` is adoption's,
+  inside a commit that ends in `apply`, so subscribing to both bound twice for one
+  commit. Controls are separate because their only reader is a walk from each
+  control up to the container, which nothing per-id can update.
 - **Text is not the pipeline's business.** `bind` arms
   `effect(() => { const t = node.text(); if (el.textContent !== t) el.textContent = t })`
   per bound text surface; the handle owns its disposal. That is the ONE writer of
   a text surface — `bind` itself does not write `textContent`, and no text
   travels through `apply`.
-- **The pending window:** between a structural apply and its bind, applies fold
-  into the pending structural pass and announce with it. That is ALL it does
-  now. It used to also make `handle(id)` answer `undefined` for every id;
-  ADR-0008 removed that refusal — a node BORN by the commit has no handle until
-  `bind` makes one, so absence was always the refusal that mattered, and the
-  latch's extra reach only hid nodes that survived and whose elements were
-  correct. `pending()` went with it.
+- **The pending window is GONE.** There is no latch and nothing folds: each apply
+  is its own commit and its own bind. What survives of the idea is only that the
+  framework has not repainted yet, so the registries still hold the previous
+  generation's elements and the commit's bind re-projects onto those — it cannot
+  invent a layout nobody painted. A node BORN by the commit simply has no handle
+  until its own ref fires, which was always the refusal that mattered (ADR-0008).
 - **The announcement is DERIVED, not maintained** (`delta.ts`). The ledger holds
   the announced id space and the touched ids and answers
   `added = ids \ announced`, `removed = announced \ ids`,
@@ -258,9 +260,9 @@ valueBetween(from, to) / adjacentMark(anchor, ±1) / step(anchor, ±1)
 rootIndexOf(id) / siblingOf(id, ±1)
 
 // renderer contract (adapter-only)
-renderEpoch: Computed<number> // bumped ⇔ the renderer must run; NOT data
+consign(id) / consignRow(id) / children(ownerId) / control() // ref callbacks; a ref IS the bind
 committed: Event<void>        // THE model clock; one pulse per commit, DOM or no DOM
-bound: Event<void>            // THE DOM clock; one pulse per bind — what the caret needs
+bound: Event<void>            // THE DOM clock; one pulse per binding — what the caret needs
 // the framework key is `node.id` — there is no keyOf
 
 // per-node live view
@@ -295,8 +297,10 @@ readOnly change (and every re-mount) overwrites whatever it wrote. It is not par
 of the consumer-facing reading surface above.
 
 Nothing is published before a container mounts: `nodes()` is `[]` and facade
-reads fail soft. Adapters mount the container ref, re-render from the first
-structural commit, and report `onRendered()`.
+reads fail soft. That ordering is load-bearing rather than incidental — because
+the tree seeds inside the container's own ref, no token element can exist before
+it, so the container's ref always lands first and every token ref lands after the
+bind effect is live.
 
 ### The selection snapshot
 
@@ -317,10 +321,10 @@ type SelectionSnapshot = {
 A consumer that treats "no selection" as collapsed compares
 `domSelection()?.anchor.isCollapsed !== false`.
 
-The per-member contract — why `nodes` is a subscribable `Computed` field, why
-`renderEpoch` is a counter and not the tree, exactly when `handle(id)` fails
-closed — is on the members themselves in `seam/TokenModel.ts` and
-`dom/commit.ts`.
+The per-member contract — why `nodes` is a subscribable `Computed` field, why the
+bind effect subscribes to the commit counter and not to the roots, exactly when
+`handle(id)` fails closed — is on the members themselves in `seam/TokenModel.ts`
+and `dom/commit.ts`.
 
 ### Boundary facade internals
 

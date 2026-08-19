@@ -1,7 +1,8 @@
 import {event, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
-import type {TransactionResult, TreeNode} from '../tree/types'
-import {bind} from './bind'
+import type {TreeNode} from '../tree/types'
+import {bind, rebindNode} from './bind'
+import type {ElementSource} from './bind'
 import type {TokenHandle} from './TokenHandle'
 
 /**
@@ -29,39 +30,39 @@ export type CommitDeps = {
 	 */
 	roots: () => readonly TreeNode[]
 	controlElements: () => ReadonlySet<HTMLElement>
-	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[]
 	/**
-	 * THE element source: what the adapters consigned for this generation, by token id. This
-	 * replaced the DOM walk's `isBlock` and its frame alignment — an element is registered under
-	 * an id or it is not, and a mismatch is no longer representable.
+	 * THE element source: what the adapters consigned, asked one id at a time. This replaced the
+	 * DOM walk's `isBlock` and its frame alignment — an element is registered under an id or it is
+	 * not, and a mismatch is no longer representable.
 	 */
-	consignedElements: (kind: 'token' | 'row') => ReadonlyMap<number, HTMLElement>
+	source: ElementSource
 }
 
 export type CommitPipeline = {
 	/**
-	 * THE entry — one adoption result, routed by its own `render` bit. It takes the
-	 * `TransactionResult` directly since S2.8: the `CommitInput` that used to sit between
-	 * them carried a snapshot nothing renders any more, and the routing bit and the delta
-	 * were always adoption's answers.
+	 * THE entry: a commit happened. It takes NOTHING, and the emptiness is the point — the
+	 * `CommitInput` that once carried a snapshot went at S2.8, the delta went with the ledger,
+	 * and the `render` bit went when the routing did. What is left of "what changed" lives in the
+	 * tree, which every reader here already has.
 	 */
-	apply(result: TransactionResult): void
-	/** Adapter signal: the renderer painted — bind the DOM and complete a pending structural apply. */
-	onRendered(): void
+	apply(): void
 	/**
-	 * THE renderer wake-up: bumped once per commit the renderer must run for (spec D9's
-	 * `render` bit). A COUNTER and not the tree, because the tree is no longer this layer's
-	 * to publish — the adapters read `tokens.nodes()` and each token component subscribes to
-	 * its own node's signals (spec D8).
+	 * Project the registries onto the node layer and pulse {@link bound}.
 	 *
-	 * It is NOT redundant with `roots`, and that is measured rather than assumed: adoption
-	 * writes `roots` only when the ROOT LIST changes by reference (`adopt.ts`'s
-	 * `sameNodes(out, prev)` gate), so a mark whose value changed and a structural change
-	 * INSIDE a slot both leave it reference-equal. A container subscribed to `roots` alone
-	 * would not re-render for either, and the post-render `rendered()` that drives `bind`
-	 * would never fire — leaving a freshly born in-slot node with no handle and no text.
+	 * Called by the model's bind EFFECT, which is subscribed to the live roots and to the
+	 * consignment registries — so "when does bind run" is answered by the dependency graph rather
+	 * than by a scheduler, a latch or a round trip through the renderer.
 	 */
-	renderEpoch: Computed<number>
+	bindNow(): void
+	/**
+	 * Bind ONE id, because its element just arrived, changed or went away.
+	 *
+	 * The registration path, and the reason mount is linear: an adapter's ref carries an element
+	 * that belongs to exactly one token, so it costs that token's share of a bind rather than a
+	 * whole-tree walk. A ref for an id the last walk did not see is a no-op — the next commit's
+	 * walk owns it.
+	 */
+	rebind(id: number): void
 	/**
 	 * THE MODEL CLOCK: one pulse per commit, once the tree, the projection and the repaired
 	 * selection are all in place. Fires for EVERY commit, including the ones that move no element
@@ -69,6 +70,14 @@ export type CommitPipeline = {
 	 * untouched, and they are exactly the commits a DOM clock cannot see.
 	 */
 	committed: Event<void>
+	/**
+	 * Bumped once per commit. The bind effect reads it, which is what makes EVERY commit bind —
+	 * including the ones that move no element, where nothing else the effect subscribes to has
+	 * changed. Measured at ~1.85 ms on a 2000-token document, comfortably inside a frame, and it
+	 * buys two things: {@link bound} becomes the one DOM clock every commit reaches, and the
+	 * divergence sweep needs no second subscription to cover the text path.
+	 */
+	commits: Computed<number>
 	/**
 	 * THE DOM CLOCK: one pulse per bind, so every handle in the node layer matches an element that
 	 * is actually in the document. Only the caret needs this — a caret landing in a node BORN by
@@ -89,75 +98,78 @@ export type CommitPipeline = {
 const VERIFY_DOM: boolean = import.meta.env?.DEV ?? false
 
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
-	// A COUNTER written ONLY when the renderer must run: "the text path repaints nothing"
-	// is direct control flow, not a reference-equality accident. Monotonic, so the write
-	// can never dedupe — which a re-published tree reference would, exactly on the
-	// value-only commits `roots` cannot carry.
-	let epoch = 0
-	const renderEpoch = signal({initial: epoch})
 	const committed = event<void>()
+	let commitCount = 0
+	const commits = signal({initial: commitCount})
 	const bound = event<void>()
 
-	// Element-keyed lookups over the bound nodes — replaced wholesale by bind, untouched by a
-	// text-only commit (no node is added or removed there by definition, so the same ids
-	// stay bound to the same elements). The id-keyed side is `deps.nodes`, which bind
-	// mutates in place, so there is nothing here to mirror it with.
-	let byElement = new WeakMap<HTMLElement, TokenHandle>()
+	// Element-keyed lookups over the bound nodes. LONG-LIVED and mutated in place, not replaced
+	// per walk: a single-id rebind touches one token and must leave every other element answering,
+	// which a fresh map per bind cannot do. Both paths delete what they stop binding. The id-keyed
+	// side is `deps.nodes`, which bind mutates in place, so there is nothing here to mirror it with.
+	const byElement = new WeakMap<HTMLElement, TokenHandle>()
 	let controlRoots = new WeakSet<HTMLElement>()
+	// The last walk's tree, by id, so `rebind` finds its node without searching. Empty until the
+	// first bind, which is why a registration arriving before one is a no-op rather than a guess.
+	let nodeById = new Map<number, TreeNode>()
 
-	// COMMIT ROUTING, not a read: while a structural apply awaits its bind every later apply
-	// folds into it and announces with it. It stopped being observable at ADR-0008, which
-	// removed the `pending()` accessor and with it the id-bridge refusal it fed — a node BORN
-	// by the commit has no handle until `bind` makes one, and that absence was always the
-	// refusal that mattered.
-	let pendingStructural = false
 	let committing = false
 
-	function apply(result: TransactionResult): void {
+	function apply(): void {
 		if (committing) throw new Error('TokenModel commit re-entry')
+		// No routing left. The producer's `render` bit is not consulted here at all: every commit
+		// announces, and every commit binds.
+		//
+		// The counter is written BEFORE the guard closes, and that is not a detail. An unbatched
+		// commit flushes the bind effect on this very line, synchronously — so writing it inside
+		// the guard made the commit's own bind read as re-entry and throw. It also fixes the
+		// order the divergence sweep depends on: the bind, and with it every per-surface re-arm,
+		// lands before `committed` reaches a single subscriber.
+		commits(++commitCount)
 		committing = true
 		try {
-			// The renderer still has to run for a commit the producer marked (spec D9's `render`
-			// bit), and the latch still folds a later apply into an outstanding one. What is gone
-			// is the ROUTING: both arms announce now, because the announcement is a commit fact
-			// and not a DOM fact.
-			if (result.render || pendingStructural) {
-				pendingStructural = true
-				renderEpoch(++epoch)
-			}
 			committed()
 		} finally {
 			committing = false
 		}
 	}
 
-	function onRendered(): void {
-		if (committing) throw new Error('TokenModel commit re-entry')
+	function bindNow(): void {
 		const container = deps.container()
-		// No container: nothing to bind — a pending latch stays closed until a real bind.
+		// No container: nothing to bind. The effect re-runs when one arrives.
 		if (!container) return
+		if (committing) throw new Error('TokenModel commit re-entry')
 		committing = true
 		try {
-			bindAndAnnounce(container)
+			const result = bind({
+				container,
+				roots: deps.roots(),
+				nodes: deps.nodes,
+				byElement,
+				source: deps.source,
+				controlElements: deps.controlElements(),
+			})
+			controlRoots = result.controlRoots
+			nodeById = result.nodeById
+			bound()
 		} finally {
 			committing = false
 		}
 	}
 
-	/** The renderer painted: one DOM+tree walk onto the node layer, then announce. */
-	function bindAndAnnounce(container: HTMLElement): void {
-		const result = bind({
-			container,
-			roots: deps.roots(),
-			nodes: deps.nodes,
-			controlElements: deps.controlElements(),
-			childSequenceHostsFor: deps.childSequenceHostsFor,
-			consigned: deps.consignedElements('token'),
-			rows: deps.consignedElements('row'),
-		})
-		byElement = result.byElement
-		controlRoots = result.controlRoots
-		pendingStructural = false
+	function rebind(id: number): void {
+		// Before the first walk, or for an id it did not see: the registration stays in the
+		// registry and the next walk reads it. Guessing a node here is what `find(id)` would do,
+		// and that walk per ref is the cost this path exists to avoid.
+		const node = nodeById.get(id)
+		if (!node || !deps.container()) return
+		if (committing) throw new Error('TokenModel commit re-entry')
+		committing = true
+		try {
+			rebindNode(node, {nodes: deps.nodes, byElement, source: deps.source})
+		} finally {
+			committing = false
+		}
 		bound()
 	}
 
@@ -200,30 +212,25 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// Registered before any consumer's watch, which keeps the old ordering:
 	// the check runs first, and a divergence fails the commit rather than leaking into
 	// a caret re-place.
-	// BOTH clocks, and the guard between them is the whole subtlety. The sweep asks a DOM
-	// question, so on a commit awaiting its bind it must wait too: `bind` disposes and re-arms
-	// every per-surface effect, and that re-arm's first run is what heals a surface corrupted
-	// between binds. Sweeping at commit time on that path reports the corruption instead of
-	// letting the heal happen — measured, it turned the structural self-heal case into a throw.
+	// THE COMMIT CLOCK, and the ordering that makes it safe is a property of the dependency graph
+	// rather than of a flag. A structural commit writes `tree.roots` inside adoption's own batch,
+	// BEFORE `apply` fires `committed` — so at the flush the bind effect is queued ahead of this
+	// watch, and by the time the sweep runs `bind` has already disposed and re-armed every
+	// per-surface effect, whose first run IS the heal. The text path never binds off its own
+	// writes, so it must be swept at commit time or never — and every commit reaches this watch.
 	//
-	// The text path has no bind at all, so it must be swept at commit time or never — which is
-	// exactly the path the per-surface writer lives on and the one this sweep exists for.
-	//
-	// WHEN THE LATCH GOES, THIS NEEDS REVISITING: `pendingStructural` is what "a bind is still
-	// coming" is spelled as today.
-	untracked(() =>
-		watch(committed, () => {
-			if (!pendingStructural) assertAligned()
-		})
-	)
-	untracked(() => watch(bound, assertAligned))
+	// NOT the DOM clock, and that is a cost decision as much as a correctness one: `bound` pulses
+	// once per REGISTRATION now, so a sweep hanging off it would walk the whole tree per ref and
+	// put back, in dev and in every test, exactly the quadratic mount that `rebind` removes.
+	untracked(() => watch(committed, assertAligned))
 
 	return {
 		apply,
-		onRendered,
-		renderEpoch,
+		bindNow,
+		rebind,
 		committed,
 		bound,
+		commits,
 		byElement: element => byElement.get(element),
 		isControlRoot: element => controlRoots.has(element),
 	}

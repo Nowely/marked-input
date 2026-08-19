@@ -211,13 +211,21 @@ function childBoundaryAnchor(
 		}
 	}
 
-	// INVERTED: 'before' answers with the owner's START. It reads backwards, and it is
-	// preserved from the numeric twin deleted at S2.6 — whose pinned probe table never
-	// reached this line either. Its one gate is `domBoundary.spec`'s "falls back to the
-	// owner INVERTED when a neighbour left the tree", on the `mountNested` fixture after
-	// a structural edit that kills a child: a dead neighbour is the only way to reach
-	// here, because `locate` walks up to the nearest bound ancestor and so resolves every
-	// child of a bound element.
+	// A neighbour that resolves to no TOKEN. The reachable door is a registered CONTROL:
+	// `computeControlRoots` marks a control and every ancestor of it up to the container, and
+	// `DomModel.#locate` answers `{kind: 'control'}` for one and stops walking — so a sibling
+	// that merely CONTAINS a control resolves to nothing here, with every node alive and every
+	// element bound. Gated by `domBoundary.spec`'s "falls back to the owner when a neighbour is a
+	// registered CONTROL", which also pins the control-free twin taking the paired branch.
+	//
+	// The older claim that a dead neighbour was the only way here was wrong twice over: it is not
+	// the only way, and it is no longer a way at all — every commit binds and the kill sweep is
+	// tree-driven, so "element bound, node gone" is not a state a commit can leave behind.
+	//
+	// KNOWN DEFECT, pre-existing and deliberately not fixed here: this arm leans OUTWARD while
+	// {@link BoundaryAffinity} and the mark-presentation arm above both lean inward — 'before'
+	// answers the owner's START rather than its end. A selection END landing on this boundary
+	// (`beforeInput.ts` asks with 'before') is therefore truncated to before the whole mark.
 	return affinity === 'before' ? {before: owner} : {after: owner}
 }
 

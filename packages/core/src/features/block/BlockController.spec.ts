@@ -226,14 +226,12 @@ describe('BlockController', () => {
 			document.body.append(container)
 			store.host.container(container)
 			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
-			store.host.rendered()
 
 			const [a, b, c] = store.tokens.nodes().map(node => node.id)
 			const dragged = store.block.get(store.tokens.nodes()[0])
 			dragged.state.isDragging(true)
 
 			store.block.action({type: 'reorder', source: 0, target: 2})
-			store.host.rendered()
 
 			// The document is UNCHANGED, because the two moved-past rows are byte-identical. So
 			// the ids are the only evidence the move happened at all — and the whole reason the
@@ -284,14 +282,12 @@ describe('BlockController', () => {
 			document.body.append(container)
 			store.host.container(container)
 			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
-			store.host.rendered()
 
 			const survivor = store.block.get(store.tokens.nodes()[1])
 			survivor.state.menuOpen(true)
 			survivor.state.isHovered(true)
 
 			store.block.action({type: 'delete', index: 0})
-			store.host.rendered()
 
 			expect(store.block.get(store.tokens.nodes()[0])).toBe(survivor)
 			expect(survivor.state.menuOpen()).toBe(true)
@@ -301,7 +297,7 @@ describe('BlockController', () => {
 
 		it('keeps a row store across an edit above it with NOTHING mounted', () => {
 			// The object key needs no announcement, so this holds with no container and no
-			// `rendered()` — the id-keyed Map's prune rode the id lists the old fused
+			// a re-bind — the id-keyed Map's prune rode the id lists the old fused
 			// the delta carried, whose removals only ever came from a bind, so an unmounted
 			// input could hand a row a store and never shed it. Both clocks are payload-free now,
 			// so there is no removal list left to ride even where one binds.

@@ -80,8 +80,8 @@ function mountNew(props: CoreProps, container: HTMLElement) {
 	setup.host.container(container)
 	// Consignment is id-keyed, so it can only run once the mount has published a tree.
 	consignRoots(setup.model, container)
-	setup.host.rendered()
-	/** Manual adapter for structural passes: repaint the live roots (value-only inline markups), consign, report rendered. */
+
+	/** Manual adapter for structural passes: repaint the live roots, then consign — the bind effect does the rest. */
 	const render = () => {
 		const spans = setup.model.nodes().map(node => {
 			const span = document.createElement('span')
@@ -90,7 +90,6 @@ function mountNew(props: CoreProps, container: HTMLElement) {
 		})
 		container.replaceChildren(...spans)
 		consignRoots(setup.model, container)
-		setup.host.rendered()
 		return spans
 	}
 	return {...setup, container, render}
@@ -108,11 +107,11 @@ describe('TokenModel shell (seam/)', () => {
 	})
 
 	describe('construction seam and wiring', () => {
-		it('mounts directly on the state models: the parse reaches nodes(), the model clock pulses once and the DOM clock once per bind', () => {
+		it('mounts directly on the state models: the parse reaches nodes(), the model clock pulses once and the DOM clock once per binding', () => {
 			const setup = createNew(INLINE_PROPS)
-			// Both clocks, because the mount drives both: the reconcile is a commit, and the
-			// `rendered` watch the mount installs is immediate, so a bind follows it in the same
-			// turn. The fused event could not tell them apart.
+			// Both clocks, because the mount drives both: the reconcile is a commit, and the bind
+			// effect the mount installs runs immediately, so a bind follows it in the same turn.
+			// The fused event could not tell them apart.
 			const committedSpy = vi.fn()
 			const boundSpy = vi.fn()
 			watch(setup.model.committed, committedSpy)
@@ -136,21 +135,21 @@ describe('TokenModel shell (seam/)', () => {
 			])
 			expect(setup.model.handle(setup.model.nodes()[0].id)).toBeUndefined()
 
-			// The adapter's refs fire, then it reports the paint: THAT is the first bind that
-			// names anything. A bind is not a commit, so the model clock stands still.
+			// The adapter's refs fire, and each ONE of them binds its own token — there is no
+			// second whole-tree walk and nothing to report a paint. Three roots, three pulses of
+			// the DOM clock. A binding is not a commit, so the model clock stands still.
 			consignRoots(setup.model, dom.container)
-			setup.host.rendered()
-
-			expect(boundSpy).toHaveBeenCalledTimes(2)
+			expect(boundSpy).toHaveBeenCalledTimes(4)
 			expect(committedSpy).toHaveBeenCalledTimes(1)
 			expect(dom.text1.textContent).toBe('he')
 			expect(dom.text2.textContent).toBe('llo')
 			expect(dom.text1.hasAttribute('contenteditable')).toBe(false)
 			expect(dom.mark.getAttribute('contenteditable')).toBe('false')
 
-			// Adapter re-render: idempotent re-bind, DOM clock only.
-			setup.host.rendered()
-			expect(boundSpy).toHaveBeenCalledTimes(3)
+			// The adapter re-renders and re-consigns the same elements: idempotent, and still
+			// one pulse per ref rather than one per paint.
+			consignRoots(setup.model, dom.container)
+			expect(boundSpy).toHaveBeenCalledTimes(7)
 			expect(committedSpy).toHaveBeenCalledTimes(1)
 		})
 
@@ -165,16 +164,14 @@ describe('TokenModel shell (seam/)', () => {
 		})
 	})
 
-	describe('renderEpoch and the two clocks (renderer contract)', () => {
-		it('text edits leave the epoch standing, patch the DOM in place and pulse the model clock once after consistency', () => {
-			// `committed`: the subject is the model's own value reaching the DOM, and a text edit
-			// paints through the per-surface effect with no bind at all, so the DOM clock never
-			// speaks here. `domAtEvent` is the ordering pin — the writers are queued ahead of the
-			// event's subscribers.
+	describe('the two clocks (renderer contract)', () => {
+		it('text edits patch the DOM in place and pulse the model clock once after consistency', () => {
+			// `committed` is the subject: the model's own value reaching the DOM. A text edit
+			// paints through the per-surface effect, so nothing here needs a bind to show the new
+			// character — but every commit binds anyway, which is what makes `bound` a clock the
+			// caret can trust after ANY commit. `domAtEvent` is the ordering pin: the writers are
+			// queued ahead of the event's subscribers.
 			const {model, text2} = mountNewInline()
-			const epochBefore = model.renderEpoch()
-			const treeSpy = vi.fn()
-			watch(model.renderEpoch, treeSpy)
 			const committedSpy = vi.fn()
 			const boundSpy = vi.fn()
 			watch(model.bound, boundSpy)
@@ -188,25 +185,21 @@ describe('TokenModel shell (seam/)', () => {
 
 			expect(text2.textContent).toBe('llo!')
 			expect(domAtEvent).toBe('llo!')
-			expect(model.renderEpoch()).toBe(epochBefore)
-			expect(treeSpy).not.toHaveBeenCalled()
 			expect(committedSpy).toHaveBeenCalledTimes(1)
-			expect(boundSpy).not.toHaveBeenCalled()
+			expect(boundSpy).toHaveBeenCalledTimes(1)
 
 			// Consume-once hint: a second edit patches through the windowed parse again.
 			model.replaceBetween(model.anchorAt(10), model.anchorAt(10), '!')
 			expect(text2.textContent).toBe('llo!!')
 			expect(committedSpy).toHaveBeenCalledTimes(2)
-			expect(boundSpy).not.toHaveBeenCalled()
-			expect(model.renderEpoch()).toBe(epochBefore)
+			expect(boundSpy).toHaveBeenCalledTimes(2)
 		})
 
-		it('structural edits bump the epoch, pulse the model clock at once and the DOM clock only once the adapter renders', () => {
+		it('a structural edit pulses the model clock once, and the born node gets its handle from its own ref', () => {
 			// The split's whole point, on one commit: `committed` is a commit fact and does not
-			// wait for a paint, while `bound` cannot fire before one — the born node has no
-			// element until the adapter consigns it.
+			// wait for a paint, while a HANDLE cannot appear before one — the born node has no
+			// element until the adapter consigns it, and no clock can conjure one.
 			const {model, render} = mountNewInline()
-			const epochBefore = model.renderEpoch()
 			const committedSpy = vi.fn()
 			const boundSpy = vi.fn()
 			watch(model.committed, committedSpy)
@@ -214,7 +207,6 @@ describe('TokenModel shell (seam/)', () => {
 
 			model.replaceBetween(model.anchorAt(9), model.anchorAt(9), '@[y]')
 
-			expect(model.renderEpoch()).not.toBe(epochBefore)
 			expect(model.nodes().map(node => node.range())).toEqual([
 				{start: 0, end: 2},
 				{start: 2, end: 6},
@@ -223,11 +215,15 @@ describe('TokenModel shell (seam/)', () => {
 				{start: 13, end: 13},
 			])
 			expect(committedSpy).toHaveBeenCalledTimes(1)
-			expect(boundSpy).not.toHaveBeenCalled()
+			// The commit rebound what it could, but the node it BORE is still elementless.
+			expect(model.handle(model.nodes()[3].id)).toBeUndefined()
+			const boundAtCommit = boundSpy.mock.calls.length
+			expect(boundAtCommit).toBeGreaterThan(0)
 
 			const spans = render()
 
-			expect(boundSpy).toHaveBeenCalledTimes(1)
+			// Five refs fire, and each binds its own token: no commit, so the model clock is still.
+			expect(boundSpy).toHaveBeenCalledTimes(boundAtCommit + 5)
 			expect(committedSpy).toHaveBeenCalledTimes(1)
 			expect(spans[3].textContent).toBe('y')
 			expect(model.handleAt(spans[3])).toBeInstanceOf(TokenHandle)
@@ -247,13 +243,12 @@ describe('TokenModel shell (seam/)', () => {
 		})
 
 		it('handleAt is tri-state: handle for token DOM, control for registered controls, undefined outside', () => {
-			const {model, host, container, text1, mark} = mountNewInline()
+			const {model, container, text1, mark} = mountNewInline()
 			const button = document.createElement('button')
 			const inner = document.createElement('span')
 			button.append(inner)
 			container.append(button)
 			model.control()(button)
-			host.rendered()
 
 			const handle = model.handleAt(text1)
 			expect(handle).toBeInstanceOf(TokenHandle)
@@ -341,8 +336,6 @@ describe('TokenModel shell (seam/)', () => {
 			setup.model.children(mark.id)(wrapper)
 			consignRoots(setup.model, container)
 			setup.model.consign(mark.children()[0].id)(childSpan)
-			setup.host.rendered()
-
 			expect(setup.model.handle(mark.id)?.node()?.childSequenceHost).toBe(wrapper)
 			// The host is what keeps the mark root out of `contenteditable=false`: a value-only
 			// mark is atomic, a slot mark's content stays in the one editing host.

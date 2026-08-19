@@ -1,5 +1,5 @@
 import type {DomRef} from '../../../shared/editorContracts'
-import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
+import {batch, computed, effect, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
@@ -107,15 +107,6 @@ export class TokenModel {
 	// ═══ Adapter SPI ══════════════════════════════════════════════════════════
 
 	/**
-	 * Renderer contract (adapter-only): bumped ⇔ the renderer must run. NOT a data read —
-	 * the tree is {@link nodes}, and a mark component subscribes to its own node. See
-	 * {@link CommitPipeline.renderEpoch} for why `nodes` alone cannot carry this.
-	 */
-	get renderEpoch(): Computed<number> {
-		return this.#pipeline.renderEpoch
-	}
-
-	/**
 	 * Ref callback for a control element (e.g. overlay, drag handle). Registration is
 	 * ELEMENT-ONLY: the sole reader is `#controlElements`, which feeds bind's
 	 * `computeControlRoots` — a walk from each control up to the container. Nothing ever
@@ -137,6 +128,10 @@ export class TokenModel {
 			} else {
 				this.#pendingControls.delete(key)
 			}
+			// Controls feed `computeControlRoots`, which only a whole bind recomputes — so unlike
+			// the owner-keyed registries this one still wakes the effect, or a control mounted off
+			// the commit clock (a menu opening on a block-store signal) leaves the roots stale.
+			this.#controlRegistrations(this.#controlRegistrations() + 1)
 		}
 	}
 
@@ -149,10 +144,11 @@ export class TokenModel {
 		const key = {}
 		return element => {
 			if (element) {
-				this.#pendingChildSequences.set(key, {ownerId, element})
+				this.#childSequenceHosts.set(ownerId, key, element)
 			} else {
-				this.#pendingChildSequences.delete(key)
+				this.#childSequenceHosts.delete(ownerId, key)
 			}
+			this.#pipeline.rebind(ownerId)
 		}
 	}
 
@@ -172,10 +168,11 @@ export class TokenModel {
 		const key = {}
 		return element => {
 			if (element) {
-				this.#pendingTokens.set(key, {ownerId: id, element})
+				this.#tokenElements.set(id, key, element)
 			} else {
-				this.#pendingTokens.delete(key)
+				this.#tokenElements.delete(id, key)
 			}
+			this.#pipeline.rebind(id)
 		}
 	}
 
@@ -188,10 +185,11 @@ export class TokenModel {
 		const key = {}
 		return element => {
 			if (element) {
-				this.#pendingRows.set(key, {ownerId: id, element})
+				this.#rowElements.set(id, key, element)
 			} else {
-				this.#pendingRows.delete(key)
+				this.#rowElements.delete(id, key)
 			}
+			this.#pipeline.rebind(id)
 		}
 	}
 
@@ -421,9 +419,9 @@ export class TokenModel {
 		private readonly host: Host
 	) {
 		host.onMounted(() => {
-			// Order matters: the immediate arrival seeds the pipeline (cold start is a
-			// structural pass), so the immediate onRendered right after can bind a pre-built
-			// DOM — the shell is live once the container attaches.
+			// Order matters: the immediate arrival seeds the pipeline, so the bind effect
+			// installed right after can bind a pre-built DOM — the shell is live once the
+			// container attaches.
 			//
 			// ONE watch over the (value, parser, isBlock) tuple: a simultaneous props change is
 			// one wave and one commit, where three separate watches would adopt (and announce)
@@ -448,7 +446,30 @@ export class TokenModel {
 				},
 				{immediate: true}
 			)
-			watch(host.rendered, () => this.#pipeline.onRendered(), {immediate: true})
+			// THE BIND EFFECT: when does the WHOLE tree get re-projected. A single ref does not
+			// come through here at all — {@link consign} calls `rebind(id)` straight away — which
+			// is what keeps a mount linear.
+			//
+			// It subscribes to exactly two things: the commit counter and the control
+			// registrations. The commit counter is there so that a commit which moves no element
+			// still binds, which keeps `bound` a clock every commit reaches and keeps the caret's
+			// post-commit re-place; the controls are there because their only reader is a
+			// whole-container walk that nothing per-id can update.
+			//
+			// NOT the roots, deliberately, and it is not a gap: every write of `tree.roots` is
+			// adoption's, inside a commit that ends in `apply`. Subscribing to both made a
+			// structural commit bind TWICE — adoption's batch closes and flushes the effect, then
+			// `apply` bumps the counter and flushes it again — for one commit's worth of change.
+			//
+			// Everything the projection itself reads — `children()`, `text()`, every node signal
+			// `bind` touches — is read inside `bind`'s own `untracked`, so an unrelated text edit
+			// cannot wake it. That precision is the whole risk of this shape, and it is pinned by
+			// `TokenModel.bindEffect.spec.ts`.
+			effect(() => {
+				this.#pipeline.commits()
+				this.#controlRegistrations()
+				untracked(() => this.#pipeline.bindNow())
+			})
 		})
 
 		// LAST, so the driver's own `onMounted` runs after the arrival above. See
@@ -663,7 +684,7 @@ export class TokenModel {
 		// INSIDE `apply`, ahead of both writes — the batch is what holds them until all three land.
 		onResult: result =>
 			batch(() => {
-				this.#pipeline.apply(result)
+				this.#pipeline.apply()
 				this.#committed(this.#tree.value())
 				this.selection.repair(result)
 			}),
@@ -710,8 +731,11 @@ export class TokenModel {
 		nodes: this.#nodes,
 		roots: () => this.#tree.roots(),
 		controlElements: () => this.#controlElements(),
-		childSequenceHostsFor: ownerId => this.#childSequenceHostsFor(ownerId),
-		consignedElements: kind => this.consignedElements(kind),
+		source: {
+			tokenElement: id => this.#tokenElements.latest(id),
+			rowElement: id => this.#rowElements.latest(id),
+			childSequenceHost: ownerId => this.#childSequenceHosts.sole(ownerId),
+		},
 	})
 
 	// All DOM-related reads/commands live in DomModel; the public methods above are one-line
@@ -732,46 +756,67 @@ export class TokenModel {
 	 */
 	readonly #selectionDriver: SelectionDriver
 
-	// Ref registries — populated by framework ref callbacks, read by bind. Keyed by a
-	// per-registration token, so nothing has to mint or read an id.
+	// THE ref registries — populated by framework ref callbacks, read by bind. Owner-indexed, so
+	// one id's element is one lookup: `rebind(id)` answers a single ref, and a registry that had
+	// to be scanned or rebuilt to serve it would put the whole document back into the cost of one
+	// registration. That is not a micro-optimisation — it is the difference between a linear
+	// mount and a quadratic one, measured.
+	readonly #tokenElements = new RefRegistry()
+	readonly #rowElements = new RefRegistry()
+	readonly #childSequenceHosts = new RefRegistry()
+	/**
+	 * Controls are ELEMENT-ONLY — nothing ever asks which token owns one — so they keep a flat
+	 * registry and, alone among the registries, an observable counter: their only reader is
+	 * `computeControlRoots`, a walk from each control up to the container that a whole bind
+	 * recomputes. There is no per-id work to do for one, and there are never many.
+	 */
 	readonly #pendingControls = new Map<object, HTMLElement>()
-	readonly #pendingChildSequences = new Map<object, ChildSequenceRegistration>()
-	/**
-	 * The consignment registries ({@link consign}, {@link consignRow}). WRITE-ONLY so far — no
-	 * reader exists yet, by design: this step carries the ref plumbing so that deleting the walk
-	 * is a separate commit. `#consignedElements` is what the next step reads.
-	 */
-	readonly #pendingTokens = new Map<object, ChildSequenceRegistration>()
-	readonly #pendingRows = new Map<object, ChildSequenceRegistration>()
-
-	/**
-	 * @internal The consigned elements by owner id, newest registration winning. Exists so the
-	 * shadow-check step has something to compare `bind`'s answer against; it is not on any
-	 * production path.
-	 */
-	consignedElements(kind: 'token' | 'row'): ReadonlyMap<number, HTMLElement> {
-		const out = new Map<number, HTMLElement>()
-		for (const {ownerId, element} of kind === 'token' ? this.#pendingTokens.values() : this.#pendingRows.values()) {
-			out.set(ownerId, element)
-		}
-		return out
-	}
+	readonly #controlRegistrations = signal({initial: 0})
 
 	#controlElements(): ReadonlySet<HTMLElement> {
 		return new Set(this.#pendingControls.values())
 	}
-
-	/** An unregistered id matches no registration, so the loop answers `[]` without a branch. */
-	#childSequenceHostsFor(ownerId: number): HTMLElement[] {
-		const out: HTMLElement[] = []
-		for (const registration of this.#pendingChildSequences.values()) {
-			if (registration.ownerId === ownerId) out.push(registration.element)
-		}
-		return out
-	}
 }
 
-type ChildSequenceRegistration = {
-	readonly ownerId: number
-	readonly element: HTMLElement
+/**
+ * One ref registry: elements filed under an owner id, and inside it under the REGISTRATION that
+ * produced them — so a ref outliving a re-render cannot be filed under a stale key, and a stale
+ * null-call cannot delete a newer element.
+ */
+class RefRegistry {
+	readonly #byOwner = new Map<number, Map<object, HTMLElement>>()
+
+	set(ownerId: number, key: object, element: HTMLElement): void {
+		let registrations = this.#byOwner.get(ownerId)
+		if (!registrations) {
+			registrations = new Map<object, HTMLElement>()
+			this.#byOwner.set(ownerId, registrations)
+		}
+		registrations.set(key, element)
+	}
+
+	delete(ownerId: number, key: object): void {
+		const registrations = this.#byOwner.get(ownerId)
+		if (!registrations) return
+		registrations.delete(key)
+		if (registrations.size === 0) this.#byOwner.delete(ownerId)
+	}
+
+	/** The newest registration for one owner — insertion order, so the last ref to fire wins. */
+	latest(ownerId: number): HTMLElement | undefined {
+		let latest: HTMLElement | undefined
+		for (const element of this.#byOwner.get(ownerId)?.values() ?? []) latest = element
+		return latest
+	}
+
+	/**
+	 * The SOLE registration for one owner, or `undefined` when there is none or more than one.
+	 * Two live registrations mean two generations are on the page, and the caller declines rather
+	 * than guessing which is this one's.
+	 */
+	sole(ownerId: number): HTMLElement | undefined {
+		const registrations = this.#byOwner.get(ownerId)
+		if (registrations?.size !== 1) return undefined
+		return this.latest(ownerId)
+	}
 }

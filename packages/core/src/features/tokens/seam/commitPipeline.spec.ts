@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
-import {batch, watch} from '../../../shared/signals/index.js'
+import {batch, effect, untracked, watch} from '../../../shared/signals/index.js'
 import {bind} from '../dom/bind'
 import {createCommitPipeline} from '../dom/commit'
 import type {TokenHandle} from '../dom/TokenHandle'
@@ -26,9 +26,9 @@ import {createBoundary} from '../tree/valueBoundary'
  *
  * WHICH CLOCK a case reads follows from its own subject: `committed` fires from `apply`,
  * once per commit and including the commits that move no element, so a value or model
- * assertion reads it; `bound` fires from `onRendered` once per bind, so a case about
- * elements, handles or the caret reads that one. A commit that moves elements therefore
- * pulses TWICE — once on each — and several cases below count both.
+ * assertion reads it; `bound` fires once per BINDING — the commit's own whole-tree bind, and
+ * each single-id rebind a ref drives — so a case about elements, handles or the caret reads that
+ * one. Every commit therefore pulses both, and the paint that follows pulses `bound` alone.
  *
  * S2.7 took the whole text BRANCH out of `commit.ts` — `bind` arms one effect per bound
  * text surface, so a text-only commit reaches the DOM before the pipeline is called and
@@ -132,15 +132,26 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		nodes,
 		roots: () => tree.roots(),
 		controlElements: () => controls,
-		consignedElements: kind => (kind === 'token' ? consigned : new Map<number, HTMLElement>()),
-		childSequenceHostsFor: () => [],
+		source: {
+			tokenElement: id => consigned.get(id),
+			rowElement: () => undefined,
+			childSequenceHost: () => undefined,
+		},
+	})
+	// THE BIND EFFECT, the same one `TokenModel` installs. It is here and not left implicit
+	// because without it this harness answers a question the model never asks: a commit would not
+	// bind, so the divergence sweep would run ahead of the per-surface re-arm that heals, and the
+	// "a text edit does not re-bind" gate below would pass on a wiring that does not exist.
+	effect(() => {
+		pipeline.commits()
+		untracked(() => pipeline.bindNow())
 	})
 	const boundary = createBoundary({
 		tree,
 		parser: () => parser,
 		controlled: () => false,
 		onChange: () => {},
-		onResult: result => pipeline.apply(result),
+		onResult: () => pipeline.apply(),
 	})
 	const tx = createTransactions({tree, readOnly: () => false, sink: boundary.sink})
 	// FLAT paint: a value-only mark renders its value as a bare text node, so nothing
@@ -162,14 +173,14 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		container.replaceChildren(...leading, ...spans)
 		consigned.clear()
 		roots.forEach((node, index) => consigned.set(node.id, spans[index]))
-		pipeline.onRendered()
+		pipeline.bindNow()
 		return spans
 	}
 	// NESTED paint, for slot markups: a mark renders its CHILDREN as spans, so each
 	// child text token is consigned an element of its own and owns a surface. Same
 	// recursion as createSlotHarness's `paint` at commit.spec.ts:598-606 — and it lives
 	// HERE, inside createHarness, for the same reason that one does: it needs
-	// `container`, `consigned` and `pipeline.onRendered()`, none of which a free
+	// `container`, `consigned` and `pipeline.bindNow()`, none of which a free
 	// function has.
 	const renderNested = () => {
 		consigned.clear()
@@ -182,7 +193,7 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 			})
 		const spans = paint(tree.roots())
 		container.replaceChildren(...spans)
-		pipeline.onRendered()
+		pipeline.bindNow()
 		return spans
 	}
 	const splice = (start: number, end: number, text: string) => tx.applyRange({start, end, insertedLength: 0}, text)
@@ -229,9 +240,11 @@ describe('commit pipeline driven by the tree core', () => {
 		window.getSelection()?.removeAllRanges()
 	})
 
-	it('cold start: the seed commits at once, and the DOM clock waits for the paint', () => {
+	it('cold start: the seed commits at once, and binds nothing because nothing is consigned', () => {
 		// BOTH clocks, because this is the case that separates them: the seed is a commit the
-		// instant `arrive` returns, and it is not a DOM fact until something paints.
+		// instant `arrive` returns, and every commit binds — but a bind can only name elements
+		// that have been consigned, and at a cold start there are none. The DOM clock pulses;
+		// the node layer stays empty. That is the distinction the split actually carries now.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const committedSpy = vi.fn()
@@ -242,13 +255,14 @@ describe('commit pipeline driven by the tree core', () => {
 		harness.boundary.arrive('he@[x]llo')
 
 		expect(committedSpy).toHaveBeenCalledTimes(1)
-		expect(boundSpy).not.toHaveBeenCalled()
+		expect(boundSpy).toHaveBeenCalledTimes(1)
+		expect(boundHandles(harness)).toHaveLength(0)
 		expect(harness.container.childElementCount).toBe(0)
 
 		const [text1, mark, text2] = harness.render()
 
 		expect(committedSpy).toHaveBeenCalledTimes(1)
-		expect(boundSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).toHaveBeenCalledTimes(2)
 		expect(boundHandles(harness)).toHaveLength(3)
 		expect(text1.textContent).toBe('he')
 		expect(mark.textContent).toBe('x')
@@ -257,20 +271,20 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(mark.getAttribute('contenteditable')).toBe('false')
 	})
 
-	it('a tail text edit patches in place, leaves the epoch standing and commits once', () => {
+	it('a tail text edit patches in place and commits once', () => {
 		// The DOM write is the EFFECT's, not this pipeline's: by the time `apply` runs,
 		// adoption's batch has already flushed it. What the pipeline still owes is the
 		// order — `committed` fires only once the surface is consistent — which
 		// `domAtEvent` below is the witness for.
 		//
-		// `committed`, not `bound`: a text edit binds nothing (the assertion two lines under
-		// the splice counts exactly that), so the DOM clock never pulses here at all.
+		// It binds too — every commit does — and the assertions under the splice are what that
+		// costs and what it must not disturb: exactly ONE bind, the same handle, the same
+		// element. An idempotent re-projection, not a new generation.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
 		const tail = boundAt(harness, 2)
 		if (!tail) throw new Error('expected tail handle')
-		const epochBefore = pipeline.renderEpoch()
 		const bindsBefore = bindCount()
 		// The counter is LIVE: the paint inside `mount` bound, so the equality below is a
 		// measurement and not a vacuous 0 === 0.
@@ -288,28 +302,27 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(text2.textContent).toBe('llo!')
 		expect(domAtEvent).toBe('llo!')
-		expect(pipeline.renderEpoch()).toBe(epochBefore)
-		// NO RE-BIND, counted rather than inferred. `bind` re-arms every text effect and
-		// re-projects the whole registry, so a text path that called it would pay both per keystroke
-		// — and leave the two assertions under it just as green, since it would re-bind the
-		// same handle to the same element.
-		expect(bindCount()).toBe(bindsBefore)
+		// ONE re-bind, counted rather than inferred — the price of the commit clock and the DOM
+		// clock agreeing on every commit. It re-arms every text effect and re-projects the whole
+		// registry, and the two assertions under it are what makes that safe rather than merely
+		// green: the same handle, still on the same element.
+		expect(bindCount()).toBe(bindsBefore + 1)
 		expect(boundAt(harness, 2)).toBe(tail)
 		expect(tail.element()).toBe(text2)
 		expect(committedSpy).toHaveBeenCalledTimes(1)
-		expect(boundSpy).not.toHaveBeenCalled()
+		expect(boundSpy).toHaveBeenCalledTimes(1)
 	})
 
-	it('a mark value change commits at once and routes RENDER even though it adds and removes nothing', () => {
-		// THE commit the DOM clock cannot see: the id space and the element set are both
-		// untouched, so `bound` says nothing new about it and only `committed` reports it. It is
-		// also why the model clock cannot be derived from the bind.
+	it('a mark value change commits at once even though it adds and removes nothing', () => {
+		// THE commit the DOM clock cannot DESCRIBE: the id space and the element set are both
+		// untouched, so the bind that follows it re-projects the very same pairing and reports
+		// nothing new. Only `committed` carries the fact that anything happened, which is why the
+		// model clock cannot be derived from the bind.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {mark} = mount(harness)
 		const markHandle = boundAt(harness, 1)
 		if (!markHandle) throw new Error('expected mark handle')
-		const epochBefore = pipeline.renderEpoch()
 		const committedSpy = vi.fn()
 		const boundSpy = vi.fn()
 		watch(pipeline.committed, committedSpy)
@@ -318,21 +331,20 @@ describe('commit pipeline driven by the tree core', () => {
 		// '@[x]' spans [2,6]; replacing it whole is what MarkController lowers to.
 		expect(harness.splice(2, 6, '@[y]')).toBe(true)
 
-		expect(pipeline.renderEpoch()).not.toBe(epochBefore)
 		expect(committedSpy).toHaveBeenCalledTimes(1)
-		expect(boundSpy).not.toHaveBeenCalled()
+		expect(boundSpy).toHaveBeenCalledTimes(1)
 		expect(markHandle.element()).toBe(mark)
 
 		harness.render()
 
 		expect(committedSpy).toHaveBeenCalledTimes(1)
-		expect(boundSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).toHaveBeenCalledTimes(2)
 		// Handle continuity across a re-render is the pinned contract (id-keyed).
 		expect(boundAt(harness, 1)).toBe(markHandle)
 		expect(harness.container.children[1].textContent).toBe('y')
 	})
 
-	it('a removal routes structural and kills the handle at bind', () => {
+	it('a removal routes structural and kills the handle at the commit', () => {
 		const harness = createHarness()
 		const {nodes} = harness
 		mount(harness)
@@ -340,8 +352,12 @@ describe('commit pipeline driven by the tree core', () => {
 		if (!markHandle) throw new Error('expected mark handle')
 
 		expect(harness.splice(2, 6, '')).toBe(true)
-		// The tree lost the mark on the apply; the HANDLE outlives it until the paint binds.
-		expect(markHandle.alive()).toBe(true)
+		// The commit binds, and the bind's kill sweep is tree-driven — so an id the tree has
+		// dropped dies with the commit rather than outliving it until the next paint. That is
+		// what makes the whole-tree walk worth keeping on the commit clock: the per-id path can
+		// never learn about a token that no longer exists to have a ref.
+		expect(markHandle.alive()).toBe(false)
+		expect(nodes.size).toBe(1)
 
 		harness.render()
 
@@ -349,10 +365,11 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(nodes.size).toBe(1)
 	})
 
-	it('an edit landing in the pending window writes through and binds ONCE for both applies', () => {
-		// The fold no longer merges anything into one announcement — each apply is its own
-		// commit and pulses `committed` on its own — so what the window still means is the DOM
-		// clock: two applies, one paint, one `bound`.
+	it('an edit landing before the paint writes through, and each apply binds on its own', () => {
+		// The fold merges nothing: each apply is its own commit, pulses `committed` on its own
+		// and binds on its own. What is left of the "window" is that the PAINT has not happened
+		// yet — the elements are still the previous generation's, and both binds re-project onto
+		// them rather than waiting.
 		//
 		// The DOM half is the S2.7 behavior change and is unaffected by the clocks: `commitText`
 		// used to refuse to run while a structural apply was unpainted, so the surface stayed on
@@ -367,18 +384,18 @@ describe('commit pipeline driven by the tree core', () => {
 		watch(pipeline.committed, committedSpy)
 		watch(pipeline.bound, boundSpy)
 
-		harness.splice(2, 6, '@[y]') // render bit set → latched
-		harness.splice(9, 9, '!') // a text edit against the pending tree
+		harness.splice(2, 6, '@[y]') // structural, and unpainted
+		harness.splice(9, 9, '!') // a text edit against the un-painted tree
 
 		expect(committedSpy).toHaveBeenCalledTimes(2)
-		expect(boundSpy).not.toHaveBeenCalled()
-		// DOM: written through mid-window, on the surface still bound.
+		expect(boundSpy).toHaveBeenCalledTimes(2)
+		// DOM: written through before the paint, on the surface still bound.
 		expect(text2.textContent).toBe('llo!')
 
 		harness.render()
 
 		expect(committedSpy).toHaveBeenCalledTimes(2)
-		expect(boundSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).toHaveBeenCalledTimes(3)
 		expect(harness.container.children[2].textContent).toBe('llo!')
 	})
 
@@ -399,7 +416,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		container.lastElementChild?.remove()
 		harness.deconsign(tail.id)
-		pipeline.onRendered()
+		pipeline.bindNow()
 		expect(boundAt(harness, 2)).toBeUndefined()
 		expect(nodes.get(tail.id)).toBe(tail)
 		expect(tail.element()).toBeUndefined()
@@ -419,27 +436,25 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(boundAt(harness, 2)).toBe(tail)
 	})
 
-	it('the divergence detector still throws with the NODE ID on an untouched surface', () => {
-		// THE reason the detector stayed a SWEEP in S2.7 instead of folding into the
-		// per-surface effect: the corrupted node is not the node this commit touches, so
-		// its effect never re-runs and a check living inside it could not fire. The sweep
-		// compares every bound surface against its node's live `text()`.
+	it('a surface corrupted between commits is HEALED by the next commit, not reported', () => {
+		// BEHAVIOUR CHANGE, and it is the detector's own: this case used to throw
+		// `TokenModel divergence` naming the untouched head surface. Once every commit binds,
+		// every commit also disposes and re-arms every per-surface effect, and the re-arm's
+		// first run rewrites the surface — so the corruption is gone before the sweep, which
+		// runs behind the bind, ever looks.
+		//
+		// What that leaves of the detector is recorded rather than assumed: the class it was
+		// written for — a surface the writer missed, on a node this commit never touched — is
+		// no longer reachable through a commit. It is kept because "unreachable" is an argument
+		// and this repo has been wrong with those; deleting it is its own step, with its own
+		// evidence.
 		const harness = createHarness()
 		const {text1} = mount(harness)
 		text1.textContent = 'WRONG'
 
-		const head = boundAt(harness, 0)
+		expect(() => harness.splice(9, 9, '!')).not.toThrow()
 
-		let message = ''
-		try {
-			harness.splice(9, 9, '!')
-		} catch (e) {
-			message = e instanceof Error ? e.message : String(e)
-		}
-		expect(message).toMatch(/TokenModel divergence/)
-		expect(message).toContain(`#${head?.id}`)
-		expect(message).toContain('"WRONG"')
-		expect(message).toContain('"he"')
+		expect(text1.textContent).toBe('he')
 	})
 
 	it('a BATCHED edit reaches the DOM and reports no false divergence', () => {
@@ -457,12 +472,17 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(text2.textContent).toBe('llo!')
 	})
 
-	it('the divergence detector still fires from inside a caller batch', () => {
+	it('the heal reaches a corrupted surface from inside a caller batch too', () => {
+		// The batched twin of the case above, and the one that pins the ORDER inside a batch:
+		// the bind effect and the sweep are both queued at the close, effects ahead of event
+		// subscribers, so the re-arm still lands first.
 		const harness = createHarness()
 		const {text1} = mount(harness)
 		text1.textContent = 'WRONG'
 
-		expect(() => batch(() => void harness.splice(9, 9, '!'))).toThrow(/TokenModel divergence/)
+		expect(() => batch(() => void harness.splice(9, 9, '!'))).not.toThrow()
+
+		expect(text1.textContent).toBe('he')
 	})
 
 	it('an in-slot edit routes TEXT and patches the child surface', () => {
@@ -470,17 +490,14 @@ describe('commit pipeline driven by the tree core', () => {
 		// an element of its own and owns a surface. '#[ab]tail' → text ''[0,0], mark '#[ab]'[0,5]
 		// {child 'ab'[2,4]}, text 'tail'[5,9].
 		const harness = createHarness(['#[__slot__]'])
-		const {pipeline} = harness
 		harness.boundary.arrive('#[ab]tail')
 		harness.renderNested()
 		const childHandle = boundAt(harness, 1, 0)
 		const childSurface = childHandle?.node()?.textElement
 		if (!childSurface) throw new Error('expected the child surface')
-		const epochBefore = pipeline.renderEpoch()
 
 		expect(harness.splice(3, 3, 'X')).toBe(true)
 
-		expect(pipeline.renderEpoch()).toBe(epochBefore)
 		expect(childSurface.textContent).toBe('aXb')
 	})
 
@@ -495,18 +512,15 @@ describe('commit pipeline driven by the tree core', () => {
 		// string, so the mark lands in `shifted`. `render` is false here, so no re-render
 		// refreshes anything either.
 		const harness = createHarness(['#[__slot__]'])
-		const {pipeline} = harness
 		harness.boundary.arrive('#[ab]t')
 		harness.renderNested()
 		const childSurface = boundAt(harness, 1, 0)?.node()?.textElement
 		if (!childSurface) throw new Error('expected the slot child surface')
-		const epochBefore = pipeline.renderEpoch()
 
 		expect(harness.splice(2, 3, 'c')).toBe(true)
 
 		// "with no re-render", stated where a consumer sees it. It used to read
 		// `pending() === false`, which ADR-0008 removed from the pipeline's face.
-		expect(pipeline.renderEpoch()).toBe(epochBefore)
 		// The mark's OWN fields never moved; everything below is derived from the child.
 		expect(nodeFace(nodeAt(harness, 1)!)).toEqual({
 			kind: 'mark',
@@ -539,32 +553,27 @@ describe('commit pipeline driven by the tree core', () => {
 		// three right by one and touches only 'a', so the mark stays out of `updated`
 		// and `render` is false — no re-render republishes the tree.
 		const harness = createHarness(['#[__slot__]'])
-		const {pipeline} = harness
 		harness.boundary.arrive('a#[bc]d')
 		harness.renderNested()
 		expect(nodeAt(harness, 1, 0)?.range()).toEqual({start: 3, end: 5})
-		const epochBefore = pipeline.renderEpoch()
 
 		expect(harness.splice(0, 0, 'X')).toBe(true)
 
 		// `render` is false: no re-render republishes the tree (was `pending() === false`).
-		expect(pipeline.renderEpoch()).toBe(epochBefore)
 		expect(nodeAt(harness, 1)?.range()).toEqual({start: 2, end: 7})
 		expect(nodeAt(harness, 1, 0)?.range()).toEqual({start: 4, end: 6})
 	})
 
 	// ═══ S2.7: what replaced the bind-generation read ══════════════════════════
 
-	it('keeps handles on the PAINTED elements through the pending window while the tree moves on', () => {
+	it('keeps handles on the PAINTED elements while the tree moves on ahead of the repaint', () => {
 		// The deleted 'holds the BIND-GENERATION token' case asserted this through
 		// `handle.token().position`. There is no second generation to read any more —
 		// the tree IS the generation — so the same property is asserted where it still
-		// exists: the tree moves the instant adoption runs, the node layer keeps pointing
-		// at the elements the adapter actually painted, and the DOM clock stays silent
-		// until the repaint binds the new layout.
-		//
-		// `bound`, not `committed`: every assertion here is about which element a handle owns,
-		// which is the question the DOM clock answers and the commit clock does not.
+		// exists: the tree moves the instant adoption runs, and the node layer keeps pointing at
+		// the elements the adapter actually painted, INCLUDING across the bind the commit itself
+		// runs. That bind re-projects from the registries, which still hold the painted
+		// generation, so it cannot invent the new layout either.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
@@ -575,8 +584,8 @@ describe('commit pipeline driven by the tree core', () => {
 
 		expect(harness.splice(0, 0, '@[y]')).toBe(true)
 
-		// Mid-window: nothing has bound.
-		expect(boundSpy).not.toHaveBeenCalled()
+		// The commit bound, once.
+		expect(boundSpy).toHaveBeenCalledTimes(1)
 		// The tree has moved…
 		expect(nodeAt(harness, 4)?.range()).toEqual({start: 10, end: 13})
 		// …the painted DOM has not: the same handle still owns the same element.
@@ -585,7 +594,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		harness.render()
 
-		expect(boundSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).toHaveBeenCalledTimes(2)
 		expect(boundAt(harness, 4)).toBe(tail)
 	})
 
@@ -601,7 +610,6 @@ describe('commit pipeline driven by the tree core', () => {
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
-		const epochBefore = pipeline.renderEpoch()
 		const tail = boundAt(harness, 2)
 		const bindsBefore = bindCount()
 		expect(bindsBefore).toBeGreaterThan(0)
@@ -611,62 +619,21 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(harness.splice(9, 9, '')).toBe(true)
 
 		expect(committedSpy).toHaveBeenCalledTimes(1)
-		expect(pipeline.renderEpoch()).toBe(epochBefore)
-		// No re-bind either, on the path where the commit changed nothing at all.
-		expect(bindCount()).toBe(bindsBefore)
+		// And it binds, like every commit — a commit that changed nothing still re-projects,
+		// because "nothing changed" is adoption's answer about the TREE and says nothing about
+		// which elements are currently consigned.
+		expect(bindCount()).toBe(bindsBefore + 1)
 		expect(boundAt(harness, 2)).toBe(tail)
 		expect(tail?.element()).toBe(text2)
 		expect(text2.textContent).toBe('llo')
 	})
 
-	it('leaves the epoch standing across N text edits and bumps it exactly once per structural edit', () => {
-		// Ports commit.spec.ts:290 — D9's headline, that text edits cost the renderer
-		// nothing. Sharper on this path: the memo returns a FRESH array every apply, so
-		// the kept reference is control flow (only `commitStructural` writes
-		// the epoch) rather than array identity leaking through from the producer.
-		const harness = createHarness()
-		const {pipeline, container} = harness
-		mount(harness)
-		const treeSpy = vi.fn()
-		watch(pipeline.renderEpoch, treeSpy)
-		// BOTH clocks: the point of the case is that the epoch tracks the RENDERER while the
-		// model clock tracks commits, and only the four-versus-one count below shows that.
-		const committedSpy = vi.fn()
-		const boundSpy = vi.fn()
-		watch(pipeline.committed, committedSpy)
-		watch(pipeline.bound, boundSpy)
-		const epochBefore = pipeline.renderEpoch()
-
-		harness.splice(9, 9, '!')
-		harness.splice(10, 10, '!')
-		harness.splice(11, 11, '!')
-
-		expect(treeSpy).toHaveBeenCalledTimes(0)
-		expect(pipeline.renderEpoch()).toBe(epochBefore)
-		expect(committedSpy).toHaveBeenCalledTimes(3)
-		expect(boundSpy).not.toHaveBeenCalled()
-		expect(container.children[2].textContent).toBe('llo!!!')
-
-		harness.splice(12, 12, '@[y]')
-
-		expect(treeSpy).toHaveBeenCalledTimes(1)
-		// The structural apply commits IMMEDIATELY — it no longer waits for its paint.
-		expect(committedSpy).toHaveBeenCalledTimes(4)
-		expect(boundSpy).not.toHaveBeenCalled()
-
-		harness.render()
-
-		expect(treeSpy).toHaveBeenCalledTimes(1)
-		// The paint adds no commit; it adds the second pulse the structural commit owes.
-		expect(committedSpy).toHaveBeenCalledTimes(4)
-		expect(boundSpy).toHaveBeenCalledTimes(1)
-	})
-
 	it('a re-render after a text edit re-binds the LIVE tree', () => {
-		// Ports commit.spec.ts:204. A text edit does not wake the renderer, so an
-		// unrelated re-render arriving afterwards must bind `deps.roots()` — the live tree,
-		// which already carries the edit — or the node layer and the patched surface both
-		// regress to the painted generation.
+		// Ports commit.spec.ts:204. A text edit does not wake the renderer, so an unrelated
+		// re-render arriving afterwards must bind `deps.roots()` — the live tree, which already
+		// carries the edit — or the node layer and the patched surface both regress to the
+		// painted generation. The edit's own bind does not make this vacuous: the assertion is
+		// about the SECOND bind, the one no commit asked for.
 		const harness = createHarness()
 		const {pipeline} = harness
 		const {text2} = mount(harness)
@@ -679,14 +646,14 @@ describe('commit pipeline driven by the tree core', () => {
 		const handle = pipeline.byElement(text2)
 		expect(text2.textContent).toBe('llo!')
 
-		pipeline.onRendered()
+		pipeline.bindNow()
 
 		expect(text2.textContent).toBe('llo!')
 		expect(joinNodes([harness.tree.roots()[2]])).toBe('llo!')
 		expect(pipeline.byElement(text2)).toBe(handle)
-		// The two clocks are INDEPENDENT here, which is the case's other half: a bind nobody
-		// committed for still pulses the DOM clock, and it invents no commit while doing it.
-		expect(boundSpy).toHaveBeenCalledTimes(1)
+		// The two clocks are INDEPENDENT here, which is the case's other half: the second bind
+		// is one nobody committed for, and it invents no commit while pulsing the DOM clock.
+		expect(boundSpy).toHaveBeenCalledTimes(2)
 		expect(committedSpy).toHaveBeenCalledTimes(1)
 	})
 
@@ -699,25 +666,25 @@ describe('commit pipeline driven by the tree core', () => {
 		const {pipeline} = harness
 		harness.boundary.arrive('tail')
 		harness.renderNested()
-		const epochBefore = pipeline.renderEpoch()
 		const boundSpy = vi.fn()
 		watch(pipeline.bound, boundSpy)
 
 		expect(harness.splice(0, 0, '#[ab]')).toBe(true)
 
-		expect(pipeline.renderEpoch()).not.toBe(epochBefore)
-		expect(boundSpy).not.toHaveBeenCalled()
+		// The commit bound, and it changed nothing about the new subtree: a bind can only name
+		// elements that exist, and the adapter has not painted these yet.
+		expect(boundSpy).toHaveBeenCalledTimes(1)
 		expect(boundAt(harness, 1)).toBeUndefined()
 
 		harness.renderNested()
 
-		expect(boundSpy).toHaveBeenCalledTimes(1)
+		expect(boundSpy).toHaveBeenCalledTimes(2)
 		const mark = boundAt(harness, 1)
 		const child = boundAt(harness, 1, 0)
 		if (!mark || !child) throw new Error('expected the new mark and its slot child')
 	})
 
-	it('onRendered without a container binds nothing and leaves the DOM clock silent', () => {
+	it('a bind without a container binds nothing and leaves the DOM clock silent', () => {
 		// Ports commit.spec.ts:374. It read `pending() === true` until ADR-0008 took that
 		// accessor off the pipeline's face; the observable half — nothing bound, no DOM
 		// pulse — is what it was always gating.
@@ -731,24 +698,26 @@ describe('commit pipeline driven by the tree core', () => {
 		watch(pipeline.committed, committedSpy)
 		watch(pipeline.bound, boundSpy)
 
-		harness.boundary.arrive('he@[x]llo')
+		// UNMOUNTED FIRST, and the order is the case now: every commit binds, so arriving while
+		// still mounted would pulse the DOM clock before the refusal could be observed.
 		harness.unmount()
+		harness.boundary.arrive('he@[x]llo')
 
 		expect(committedSpy).toHaveBeenCalledTimes(1)
-		expect(() => pipeline.onRendered()).not.toThrow()
+		expect(() => pipeline.bindNow()).not.toThrow()
 		expect(boundSpy).not.toHaveBeenCalled()
 		expect(boundHandles(harness)).toHaveLength(0)
 	})
 
-	it('a synchronous onRendered from a bound watcher fails loud', () => {
-		// Ports commit.spec.ts:525. `bound` is the clock that fires from INSIDE the bind, so
-		// it is the one whose watcher can re-enter `onRendered`.
+	it('a synchronous bind from a bound watcher fails loud', () => {
+		// Ports commit.spec.ts:525. `bound` is the clock that fires from INSIDE the bind, so it
+		// is the one whose watcher can re-enter it — and since every commit binds, the commit is
+		// now where that re-entry surfaces.
 		const harness = createHarness()
 		mount(harness)
-		watch(harness.pipeline.bound, () => harness.pipeline.onRendered())
+		watch(harness.pipeline.bound, () => harness.pipeline.bindNow())
 
-		harness.splice(2, 6, '@[y]')
-		expect(() => harness.render()).toThrow(/re-entry/)
+		expect(() => harness.splice(2, 6, '@[y]')).toThrow(/re-entry/)
 	})
 
 	it('a synchronous arrival from a committed watcher fails loud', () => {
@@ -795,7 +764,7 @@ describe('commit pipeline driven by the tree core', () => {
 		// Moved from commit.spec.ts:557. NOT `harness.render()`: that
 		// `replaceChildren()`s with FRESH spans, orphaning the node corrupted below,
 		// so the heal is asserted against a detached element (measured: expected
-		// 'WRONG' to be 'he'). `onRendered()` re-binds the surfaces already there,
+		// 'WRONG' to be 'he'). A direct `bindNow()` re-binds the surfaces already there,
 		// which is the sequence the original was written against.
 		//
 		// S2.7's version of the heal is the re-armed effect's IMMEDIATE first run,
@@ -807,7 +776,7 @@ describe('commit pipeline driven by the tree core', () => {
 
 		harness.splice(2, 6, '@[y]') // render bit set → the structural branch
 
-		expect(() => harness.pipeline.onRendered()).not.toThrow()
+		expect(() => harness.pipeline.bindNow()).not.toThrow()
 		expect(text1.textContent).toBe('he')
 	})
 

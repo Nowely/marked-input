@@ -58,7 +58,6 @@ function mountKeyed(value: string) {
 		// The keyed pairing this renderer already holds, pushed to core the way a ref does:
 		// the container's children ARE the roots in order, so the shared helper says it.
 		consignRendered(store, container)
-		store.host.rendered()
 	}
 
 	store.host.container(container)

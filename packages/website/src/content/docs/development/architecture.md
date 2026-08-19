@@ -218,10 +218,9 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | Event           | Feature        | When Fired                  | Payload                                  |
 | --------------- | -------------- | --------------------------- | ---------------------------------------- |
 | `close`         | overlay        | Close overlay               | `void`                                   |
-| `rendered`      | host           | After each component render  | `void`                                  |
 | `action`        | drag           | Drag-and-drop action        | `{type, ...}` (internal `DragAction`)    |
 
-Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) and the internal `host.rendered` watcher are reactive effect hooks, not store events.
+Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) and the token model's bind effect are reactive effect hooks, not store events.
 
 ### Event Usage
 
@@ -336,10 +335,10 @@ store.tokens.setValue('Hello @[World]')
 // Framework-provided props (MarkedInput calls store.props.set on each render)
 store.props.set({readOnly: true})
 
-// Use in component (framework-specific reactive binding). `nodes` is the data;
-// `renderEpoch` is the adapter-only renderer signal — it is bumped ⇔ the renderer
-// must run, and it carries no tree of its own.
-const {nodes} = useMarkput(s => ({nodes: s.tokens.nodes, renderEpoch: s.tokens.renderEpoch}))
+// Use in component (framework-specific reactive binding). `nodes` is the data, and
+// the only renderer subscription there is: an adapter re-renders when the tree's
+// root list changes by reference, and nothing else tells it to.
+const {nodes} = useMarkput(s => ({nodes: s.tokens.nodes}))
 ```
 
 ## Features
@@ -382,7 +381,8 @@ React/Vue render asynchronously, so initialization order matters:
 //      ce=false value marks and mark chrome, no tabindex anywhere), and arms one
 //      text effect per bound text surface (which writes its textContent)
 
-// 4. Framework emits store.host.rendered() after tokens render
+// 4. Each token's ref fires as it paints → store.tokens.consign(id)(element)
+//    → rebind(id): that token's share of the walk, no whole-tree pass per ref
 
 // 5. Framework writes store.host.container(null) on unmount
 //    → Each onMounted scope is disposed (DOM listeners removed, watchers torn down)

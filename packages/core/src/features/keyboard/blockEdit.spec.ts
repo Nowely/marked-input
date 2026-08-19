@@ -238,7 +238,6 @@ describe('blockEdit control guard', () => {
 			store.tokens.consign(node.id)(mark)
 			if (node.kind === 'mark') store.tokens.consign(node.children()[0].id)(surface)
 		})
-		store.host.rendered()
 		return {store, container, control}
 	}
 

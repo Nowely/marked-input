@@ -28,7 +28,6 @@ function setup(value: string, opts: {controlled?: boolean; onChange?: (value: st
 	store.host.container(container)
 	container.replaceChildren(...store.tokens.nodes().map(() => document.createElement('span')))
 	consignRendered(store, container)
-	store.host.rendered()
 	return {store, api: store.api}
 }
 

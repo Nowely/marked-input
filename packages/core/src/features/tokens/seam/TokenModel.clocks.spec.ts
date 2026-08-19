@@ -22,7 +22,6 @@ function mountWithMark(beforeMount?: (store: Store) => void) {
 	beforeMount?.(store)
 	store.host.container(container)
 	consignRendered(store, container)
-	store.host.rendered()
 	return {store, container}
 }
 
@@ -38,7 +37,7 @@ describe('TokenModel commit clocks', () => {
 		document.body.replaceChildren()
 	})
 
-	it('mount pulses committed once and bound once per bind, and handles carry distinct stable ids', () => {
+	it('mount pulses committed once and bound once per binding, and handles carry distinct stable ids', () => {
 		const committedSpy = vi.fn()
 		const boundSpy = vi.fn()
 		const {store} = mountWithMark(s => {
@@ -47,11 +46,12 @@ describe('TokenModel commit clocks', () => {
 		})
 
 		// Both clocks, because mount is the one place their counts differ by construction:
-		// attaching the container is ONE arrival and one commit, while `onMounted` binds
-		// immediately (against a DOM nothing is consigned into yet) and the explicit
-		// `rendered()` after consignment binds a second time.
+		// attaching the container is ONE arrival and one commit, while the bind effect runs
+		// immediately (against a DOM nothing is consigned into yet) and each of the three roots
+		// then binds itself as its ref fires. FOUR, and the number is the contract — one bind per
+		// registration, never one whole-tree walk per registration.
 		expect(committedSpy).toHaveBeenCalledTimes(1)
-		expect(boundSpy).toHaveBeenCalledTimes(2)
+		expect(boundSpy).toHaveBeenCalledTimes(4)
 
 		const ids = store.tokens.nodes().map((_, i) => handleId(store, i))
 		expect(ids).toHaveLength(3)
@@ -65,8 +65,9 @@ describe('TokenModel commit clocks', () => {
 		const {store} = mountWithMark()
 		const markId = handleId(store, 1)
 		const tailId = handleId(store, 2)
-		// `committed`, not `bound`: the subject is the commit and the ids it kept, and a
-		// text-only edit reaches the DOM off the per-surface effect without a bind at all.
+		// The subject is the commit and the ids it kept. A text-only edit reaches the DOM off the
+		// per-surface effect and needs no bind to show the character — but it binds anyway, ONCE,
+		// because every commit does: that is what lets the caret trust `bound` after any commit.
 		const committedSpy = vi.fn()
 		watch(store.tokens.committed, committedSpy)
 		const boundSpy = vi.fn()
@@ -76,7 +77,7 @@ describe('TokenModel commit clocks', () => {
 		store.edit.replace(...anchorsAt(store, 9, 9), '!')
 
 		expect(committedSpy).toHaveBeenCalledTimes(1)
-		expect(boundSpy).toHaveBeenCalledTimes(0)
+		expect(boundSpy).toHaveBeenCalledTimes(1)
 		// identity survives the edit: the same handles answer for the new tree
 		expect(handleId(store, 1)).toBe(markId)
 		expect(handleId(store, 2)).toBe(tailId)
@@ -155,48 +156,47 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 		document.body.replaceChildren()
 	})
 
-	it('3 text edits → renderEpoch watcher 0 / committed 3 / bound 0; a structural edit moves the epoch and only rendered() pulses bound', () => {
+	it('3 text edits do not touch the renderer, and a born token gets its handle from its own ref rather than from a paint', () => {
 		const {store, container} = mountWithMark()
 
-		// A watch on renderEpoch pulls the signal every flush wave; its callback only
-		// fires when the value differs (equality cutoff) — exactly the adapters'
-		// subscription semantics (useSyncExternalStore / shallowRef).
+		// `nodes` is what an adapter subscribes to, and its identity is the renderer contract:
+		// a text edit must leave it alone, a structural edit must move it. That replaced the
+		// render epoch, whose whole job was to say the same thing in a second place.
 		const treeSpy = vi.fn()
-		watch(store.tokens.renderEpoch, treeSpy)
-		// Both clocks: the gate is the DIFFERENCE between them. `committed` counts commits
-		// whatever the DOM does; `bound` counts binds and so stays flat until the adapter paints.
+		watch(store.tokens.nodes, treeSpy)
+		// Both clocks: the gate is the DIFFERENCE between them. `committed` counts commits;
+		// `bound` counts BINDINGS, and since a ref binds its own token it can move without a
+		// commit — which is the direction the split still earns.
 		const committedSpy = vi.fn()
 		watch(store.tokens.committed, committedSpy)
 		const boundSpy = vi.fn()
 		watch(store.tokens.bound, boundSpy)
 
-		// Three consecutive tail text edits — the adapter never re-renders
-		// (rendered() is deliberately not called): 'llo' → 'llo!' → 'llo!!' → 'llo!!!'
+		// Three consecutive tail text edits, with no re-render at all:
+		// 'llo' → 'llo!' → 'llo!!' → 'llo!!!'
 		store.edit.replace(...anchorsAt(store, 9, 9), '!')
 		store.edit.replace(...anchorsAt(store, 10, 10), '!')
 		store.edit.replace(...anchorsAt(store, 11, 11), '!')
 
-		// Gate: text edit → 0 committed renderer invocations…
+		// Gate: text edit → 0 renderer invocations…
 		expect(treeSpy).toHaveBeenCalledTimes(0)
-		// …while every edit still committed, and none of them bound.
+		// …while every edit still committed, and the DOM was patched without the renderer.
 		expect(committedSpy).toHaveBeenCalledTimes(3)
-		expect(boundSpy).toHaveBeenCalledTimes(0)
-		// And the DOM was patched without the renderer.
 		expect(container.children[2].textContent).toBe('llo!!!')
 
 		// One structural edit: 'he@[x]llo!!!' → 'he@[x]llo!!!@[y]' (added tokens).
 		store.edit.replace(...anchorsAt(store, 12, 12), '@[y]')
 
-		// Gate: structural edit → ≥1 renderer invocation (the epoch moved).
+		// Gate: structural edit → ≥1 renderer invocation.
 		expect(treeSpy).toHaveBeenCalledTimes(1)
-		// The commit is a commit whether or not the renderer has run, so the model clock
-		// pulses here; the DOM clock cannot, because no element for '@[y]' exists yet.
 		expect(committedSpy).toHaveBeenCalledTimes(4)
-		expect(boundSpy).toHaveBeenCalledTimes(0)
+		// The born token has no element yet, and no clock can conjure one.
+		expect(store.tokens.handle(store.tokens.nodes()[3].id)).toBeUndefined()
+		const boundBefore = boundSpy.mock.calls.length
 
-		// The (manual) adapter re-renders from the new tree, consigns the fresh elements and
-		// reports back. Re-consigning is the whole of the adapter's side: without it bind
-		// would keep the elements this replaceChildren just detached.
+		// The (manual) adapter re-renders from the new tree and consigns the fresh elements.
+		// Re-consigning is the whole of the adapter's side: without it bind would keep the
+		// elements this replaceChildren just detached.
 		container.replaceChildren(
 			...store.tokens.nodes().map(node => {
 				const span = document.createElement('span')
@@ -205,11 +205,10 @@ describe('render-count gates: text edits bypass the renderer, structural edits i
 			})
 		)
 		consignRendered(store, container)
-		store.host.rendered()
 
-		// The bind is the second pulse of the SAME commit, on the other clock — no extra
-		// commit, and no further renderer invalidation.
-		expect(boundSpy).toHaveBeenCalledTimes(1)
+		// The refs bound, on the DOM clock alone: no extra commit and no renderer invalidation.
+		expect(boundSpy.mock.calls.length).toBeGreaterThan(boundBefore)
+		expect(store.tokens.handle(store.tokens.nodes()[3].id)).toBeDefined()
 		expect(committedSpy).toHaveBeenCalledTimes(4)
 		expect(treeSpy).toHaveBeenCalledTimes(1)
 	})

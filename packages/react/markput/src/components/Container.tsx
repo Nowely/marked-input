@@ -1,4 +1,4 @@
-import {memo, useCallback, useLayoutEffect} from 'react'
+import {memo, useCallback} from 'react'
 import type {Ref} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -10,18 +10,9 @@ export const Container = memo(() => {
 		host: s.host,
 		isBlock: s.props.layout.isBlock,
 		nodes: s.tokens.nodes,
-		// SUBSCRIBED, not read. `nodes` alone under-notifies: adoption writes `roots` only
-		// when the ROOT LIST changes by reference, so a mark whose value changed and a
-		// structural change inside a slot both leave it equal — and the `rendered()` below,
-		// which is what drives `bind`, would never fire for either.
-		renderEpoch: s.tokens.renderEpoch,
 		Component: s.slots.containerComponent,
 		props: s.slots.containerProps,
 	}))
-
-	useLayoutEffect(() => {
-		host.rendered()
-	})
 
 	// Compose the host ref with a user-provided slotProps.container ref: the
 	// model publishes tokens only once the container mounts, so letting a user

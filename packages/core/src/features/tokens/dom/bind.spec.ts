@@ -60,17 +60,40 @@ function consignFrom(
 	return out
 }
 
-function inputFor(container: HTMLElement, roots: readonly TreeNode[], overrides: Partial<BindInput> = {}): BindInput {
+/**
+ * The registries as a case states them — maps and a host lookup — assembled into the per-id
+ * {@link ElementSource} bind actually takes. The indirection is deliberate: a case says "this
+ * element belongs to this token", which is a mapping, while bind asks one id at a time.
+ */
+type BindOverrides = {
+	nodes?: Map<number, TokenHandle>
+	byElement?: WeakMap<HTMLElement, TokenHandle>
+	controlElements?: Set<HTMLElement>
+	consigned?: Map<number, HTMLElement>
+	rows?: Map<number, HTMLElement>
+	childSequenceHostsFor?: (ownerId: number) => readonly HTMLElement[]
+}
+
+function inputFor(container: HTMLElement, roots: readonly TreeNode[], overrides: BindOverrides = {}): BindInput {
 	const childSequenceHostsFor = overrides.childSequenceHostsFor ?? (() => [])
+	const consigned = overrides.consigned ?? consignFrom(container, roots, childSequenceHostsFor)
+	const rows = overrides.rows ?? new Map<number, HTMLElement>()
 	return {
 		container,
 		roots,
-		nodes: new Map<number, TokenHandle>(),
-		controlElements: new Set<HTMLElement>(),
-		childSequenceHostsFor,
-		consigned: consignFrom(container, roots, childSequenceHostsFor),
-		rows: new Map<number, HTMLElement>(),
-		...overrides,
+		nodes: overrides.nodes ?? new Map<number, TokenHandle>(),
+		byElement: overrides.byElement ?? new WeakMap<HTMLElement, TokenHandle>(),
+		controlElements: overrides.controlElements ?? new Set<HTMLElement>(),
+		source: {
+			tokenElement: id => consigned.get(id),
+			rowElement: id => rows.get(id),
+			// The registry declines when two generations are registered; the `contains` test that
+			// decides which one is this generation's stays inside bind.
+			childSequenceHost: ownerId => {
+				const hosts = childSequenceHostsFor(ownerId)
+				return hosts.length === 1 ? hosts[0] : undefined
+			},
+		},
 	}
 }
 
@@ -91,11 +114,12 @@ function nodeAt(roots: readonly TreeNode[], ...path: number[]): TreeNode | undef
 }
 
 /**
- * `bind` plus the node map it mutated. There is no id-keyed `BindResult.bound` any more —
- * it was a rebuilt-every-walk copy of `input.nodes` — so the cases read the map bind owns.
+ * `bind` plus the two maps it mutated. There is no id-keyed `BindResult.bound` any more — it was
+ * a rebuilt-every-walk copy of `input.nodes` — and `byElement` stopped being returned when it
+ * stopped being rebuilt per walk, so the cases read the maps bind writes into.
  */
 function bindOf(input: BindInput) {
-	return {...bind(input), nodes: input.nodes}
+	return {...bind(input), nodes: input.nodes, byElement: input.byElement}
 }
 
 /**

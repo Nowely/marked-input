@@ -16,7 +16,7 @@ import {offsetOfAnchor} from '../tree/anchors'
  * child's text. Both adapters render the children inside the host (`TokenChildren`), so they are
  * named here one by one.
  */
-function mountNestedSlot() {
+function mountNestedSlot({chrome = false, control = true} = {}) {
 	const store = enableStructuralStore('@[a @[b] c]', {options: [{markup: '@[__slot__]'}], Mark: () => null})
 	const container = document.createElement('div')
 	const leading = document.createElement('span')
@@ -28,6 +28,17 @@ function mountNestedSlot() {
 	const trailing = document.createElement('span')
 	host.style.display = 'contents'
 	host.append(before, inner, after)
+	// `chrome` is a consumer's own presentation INSIDE the mark's element, beside the slot host —
+	// which is what gives the owner an interior boundary at all. `control` decides whether the
+	// button inside it is registered, and that one bit is the difference between a neighbour that
+	// resolves to a token and one that resolves to `'control'`.
+	if (chrome) {
+		const box = document.createElement('span')
+		const button = document.createElement('button')
+		box.append(button)
+		outer.append(box)
+		if (control) store.tokens.control()(button)
+	}
 	outer.append(host)
 	container.append(leading, outer, trailing)
 	document.body.append(container)
@@ -36,13 +47,12 @@ function mountNestedSlot() {
 	const owner = roots[1]
 	if (owner.kind !== 'mark') throw new Error('expected a mark root')
 	// Both registrations are id-keyed, so they come AFTER `host.container` publishes a tree and
-	// BEFORE `rendered()` binds against it.
+	// BEFORE any ref binds against it.
 	store.tokens.children(owner.id)(host)
 	const rootElements = [leading, outer, trailing]
 	roots.forEach((node, index) => store.tokens.consign(node.id)(rootElements[index]))
 	const childElements = [before, inner, after]
 	owner.children().forEach((child, index) => store.tokens.consign(child.id)(childElements[index]))
-	store.host.rendered()
 	return {store, container, leading, outer, host, before, inner, after, trailing}
 }
 
@@ -95,7 +105,6 @@ function mountBlockRows({grip = false} = {}) {
 		store.tokens.consign(node.id)(marks[index])
 		if (node.kind === 'mark') store.tokens.consign(node.children()[0].id)(surfaces[index])
 	})
-	store.host.rendered()
 	return {store, container, rows}
 }
 
@@ -167,10 +176,10 @@ describe('anchorFor', () => {
 		const dom2 = text2.firstChild
 		if (!(dom1 instanceof Text) || !(dom2 instanceof Text)) throw new Error('expected rendered text nodes')
 
-		// Structural (a mark is added), so the commit latches for its bind instead of
-		// self-healing; no `host.rendered()` follows, so the DOM stays one generation
-		// behind STRUCTURALLY — no element exists for either fresh mark. 'he' shrinks to
-		// 'h' in the same edit.
+		// Structural (a mark is added), and the commit's own bind can only re-project what is
+		// consigned — nothing repaints here, so the DOM stays one generation behind
+		// STRUCTURALLY: no element exists for either fresh mark. 'he' shrinks to 'h' in the
+		// same edit.
 		store.tokens.setValue('h@[x]llo@[z]')
 		// The captured node is still the LIVE one and already carries the new text: the
 		// surface writer splices in place, so a `Text` reference (and any DOM Range anchored
@@ -248,23 +257,37 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(host, 1, 'after')).toEqual({before: second})
 	})
 
-	it('falls back to the owner INVERTED when a neighbour left the tree', () => {
-		const {store, host} = mountNestedSlot()
+	it('falls back to the owner when a neighbour is a registered CONTROL', () => {
+		// RE-AIMED, and the reason is worth keeping. This case used to reach the fallback by
+		// killing a neighbour NODE while its element stayed bound, which it got by relying on a
+		// structural commit not binding before the repaint. Every commit binds now and the bind's
+		// kill sweep is tree-driven, so that state is gone and the old fixture takes the paired
+		// branch instead.
+		//
+		// The fallback is NOT dead for it. The line's own comment claimed a dead neighbour was
+		// the only door — "`locate` walks up to the nearest bound ancestor, so every child of a
+		// bound element resolves to SOMETHING" — and that is false: `#locate` answers
+		// `{kind: 'control'}` for a control root and stops walking, and `computeControlRoots`
+		// marks every ancestor of a control up to the container. So a neighbour that merely
+		// CONTAINS a registered control resolves to no token, with every node alive, every
+		// element bound and no timing window anywhere.
+		const {store, outer} = mountNestedSlot({chrome: true})
+		const owner = store.tokens.nodes()[1]
+		if (owner.kind !== 'mark') throw new Error('expected a mark root')
 
-		// The fallback needs an interior boundary whose two neighbours do not BOTH resolve
-		// to live nodes, and a dead neighbour is the only way to get one: `locate` walks up
-		// to the nearest bound ancestor, so every child of a bound element resolves to
-		// SOMETHING. Structural with no repaint, so the elements stay bound while their
-		// nodes leave the tree (the state D4's first fail-closed arm is measured in).
-		store.tokens.setValue('@[q]')
-		const outer = store.tokens.nodes()[1]
-		if (outer.kind !== 'mark') throw new Error('expected the outer mark to survive the edit')
-		expect(outer.children()).toHaveLength(1)
+		// The door, pinned rather than assumed: the chrome sibling is a control root.
+		expect(store.tokens.handleAt(outer.children[0])).toBe('control')
 
-		// INVERTED, and this is the only case that gates it: 'before' answers with the
-		// owner's START. Reads backwards, preserved verbatim from the numeric projection.
-		expect(store.tokens.anchorFor(host, 2, 'before')).toEqual({before: outer})
-		expect(store.tokens.anchorFor(host, 2, 'after')).toEqual({after: outer})
+		// The boundary between the chrome and the slot host, inside the owner's own element.
+		expect(store.tokens.anchorFor(outer, 1, 'before')).toEqual({before: owner})
+		expect(store.tokens.anchorFor(outer, 1, 'after')).toEqual({after: owner})
+		// The same shape WITHOUT the control resolves both neighbours and takes the paired
+		// branch — which is what makes the pair above a measurement of this line and not of
+		// some other return.
+		const plain = mountNestedSlot({chrome: true, control: false})
+		const plainOwner = plain.store.tokens.nodes()[1]
+		if (plainOwner.kind !== 'mark') throw new Error('expected a mark root')
+		expect(plain.store.tokens.anchorFor(plain.outer, 1, 'before')).not.toEqual({before: plainOwner})
 	})
 
 	it('anchors a token-shell boundary to the owner by side', () => {
@@ -398,7 +421,6 @@ function mountStructuralBlockWithControl(value: string) {
 	const [node] = store.tokens.nodes()
 	store.tokens.consignRow(node.id)(row)
 	store.tokens.consign(node.id)(textSurface)
-	store.host.rendered()
 	const textNode = textSurface.firstChild
 	const controlText = control.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Structural block text surface did not render a text node')
@@ -446,7 +468,6 @@ function mountInlineWithChrome() {
 	store.tokens.consign(first.id)(text1)
 	store.tokens.consign(second.id)(mark)
 	store.tokens.consign(third.id)(text2)
-	store.host.rendered()
 	return {store, container, control, text1, mark, text2}
 }
 

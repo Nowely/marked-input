@@ -88,7 +88,6 @@ export function mountInline(store: Store) {
 	document.body.append(container)
 	store.host.container(container)
 	consignRendered(store, container)
-	store.host.rendered()
 	const textNode = textSurface.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
 	return {store, container, textSurface, textNode}
@@ -114,7 +113,6 @@ export function mountStructuralInlineMark(value = 'hello @[world]') {
 	document.body.append(container)
 	store.host.container(container)
 	consignRendered(store, container)
-	store.host.rendered()
 	return {store, container, before, mark, after}
 }
 
@@ -142,7 +140,6 @@ export function mountWithMark() {
 	document.body.append(container)
 	store.host.container(container)
 	consignRendered(store, container)
-	store.host.rendered()
 	return {store, container, text1, mark, text2}
 }
 
@@ -154,7 +151,7 @@ export function mountWithMark() {
  *
  * The surfaces are appended AFTER `host.container` because their count comes
  * from the parse, which only runs once the container is set; binding happens at
- * `rendered()`, so the DOM is complete by the time it is read.
+ * consignment, so the DOM is complete by the time it is read.
  */
 export function mountValue(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
@@ -168,7 +165,6 @@ export function mountValue(value: string, props: Parameters<Store['props']['set'
 		return surface
 	})
 	consignRendered(store, container)
-	store.host.rendered()
 	return {store, container, surfaces}
 }
 
@@ -180,7 +176,7 @@ export function mountValue(value: string, props: Parameters<Store['props']['set'
  * container holds three root elements and the mark is `nodes()[1]`.
  *
  * The host registration is id-keyed, so it has to come AFTER `host.container`
- * publishes a tree and BEFORE `rendered()` binds against it.
+ * publishes a tree and BEFORE any ref binds against it.
  */
 export function mountNested() {
 	const store = new Store()
@@ -213,7 +209,6 @@ export function mountNested() {
 	roots.forEach((node, index) => store.tokens.consign(node.id)(rootElements[index]))
 	const childElements = [before, inner, after]
 	owner.children().forEach((child, index) => store.tokens.consign(child.id)(childElements[index]))
-	store.host.rendered()
 	return {store, container, leading, outer, host, before, inner, after, trailing}
 }
 
@@ -256,6 +251,5 @@ export function mountBlock() {
 		store.tokens.consign(node.id)(marks[index])
 		if (node.kind === 'mark') store.tokens.consign(node.children()[0].id)(surfaces[index])
 	})
-	store.host.rendered()
 	return {store, container, rows}
 }
