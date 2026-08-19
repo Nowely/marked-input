@@ -54,7 +54,9 @@ Markput's core owns the editor-engine primitives:
 - caret range application to the DOM after framework renders
 - mark commands through the live `MarkNode` (`mark.update()` / `mark.remove()`)
 
-React and Vue render structural token shells, text surfaces, slot roots, rows, and controls, then register them with core through private refs. Features do not rely on DOM child order, public data attributes, or user-provided refs to locate tokens.
+React and Vue render structural token shells, text surfaces, slot roots, rows, and controls, then register them with core through private refs. Features do not rely on DOM child order or on public data attributes to locate tokens.
+
+A Mark's own element belongs to you, so core never asks for it and never writes to it. Each Mark is rendered inside one element markput owns — a `span` with `display: contents`, which generates no box and so is invisible to layout. That wrapper is what core registers, and it is where the `contenteditable="false"` that makes a value-only Mark atomic is written. Your Mark component needs to forward nothing, which is what lets a third-party component be passed straight through as `Mark`.
 
 ## Marks vs Tokens
 

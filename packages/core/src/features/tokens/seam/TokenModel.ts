@@ -144,6 +144,45 @@ export class TokenModel {
 		}
 	}
 
+	/**
+	 * Ref callback for a token's OWN element — the thing `bind` currently re-derives by walking
+	 * the painted DOM in lockstep with the tree. The framework held this element a moment before
+	 * it painted it; consigning it is that association pushed instead of re-discovered.
+	 *
+	 * INERT for now, and deliberately so. Nothing reads either registry yet: this step exists to
+	 * carry the ref plumbing and the contract change on its own, so the walk's deletion is a
+	 * separate, separately revertible step. See `docs/scratch/consigned-surfaces/spec.md`.
+	 *
+	 * Keyed per REGISTRATION like {@link children}, with the owner's stable id in the VALUE, so a
+	 * ref that outlives a re-render cannot be filed under a stale key.
+	 */
+	consign(id: number): DomRef {
+		const key = {}
+		return element => {
+			if (element) {
+				this.#pendingTokens.set(key, {ownerId: id, element})
+			} else {
+				this.#pendingTokens.delete(key)
+			}
+		}
+	}
+
+	/**
+	 * The same, for the ROW wrapper a top-level token gets in block layout. Separate from
+	 * {@link consign} because they are different elements of the same token — the walk answers
+	 * both, and a row holds chrome the token element must not be confused with.
+	 */
+	consignRow(id: number): DomRef {
+		const key = {}
+		return element => {
+			if (element) {
+				this.#pendingRows.set(key, {ownerId: id, element})
+			} else {
+				this.#pendingRows.delete(key)
+			}
+		}
+	}
+
 	// ═══ Engine SPI (in-core consumers) ═══════════════════════════════════════
 
 	/**
@@ -661,6 +700,7 @@ export class TokenModel {
 		controlElements: () => this.#controlElements(),
 		childSequenceHostsFor: ownerId => this.#childSequenceHostsFor(ownerId),
 		isBlock: () => this.props.layout.isBlock(),
+		consignedElements: kind => this.consignedElements(kind),
 	})
 
 	// All DOM-related reads/commands live in DomModel; the public methods above are one-line
@@ -685,6 +725,26 @@ export class TokenModel {
 	// per-registration token, so nothing has to mint or read an id.
 	readonly #pendingControls = new Map<object, HTMLElement>()
 	readonly #pendingChildSequences = new Map<object, ChildSequenceRegistration>()
+	/**
+	 * The consignment registries ({@link consign}, {@link consignRow}). WRITE-ONLY so far — no
+	 * reader exists yet, by design: this step carries the ref plumbing so that deleting the walk
+	 * is a separate commit. `#consignedElements` is what the next step reads.
+	 */
+	readonly #pendingTokens = new Map<object, ChildSequenceRegistration>()
+	readonly #pendingRows = new Map<object, ChildSequenceRegistration>()
+
+	/**
+	 * @internal The consigned elements by owner id, newest registration winning. Exists so the
+	 * shadow-check step has something to compare `bind`'s answer against; it is not on any
+	 * production path.
+	 */
+	consignedElements(kind: 'token' | 'row'): ReadonlyMap<number, HTMLElement> {
+		const out = new Map<number, HTMLElement>()
+		for (const {ownerId, element} of kind === 'token' ? this.#pendingTokens.values() : this.#pendingRows.values()) {
+			out.set(ownerId, element)
+		}
+		return out
+	}
 
 	#controlElements(): ReadonlySet<HTMLElement> {
 		return new Set(this.#pendingControls.values())

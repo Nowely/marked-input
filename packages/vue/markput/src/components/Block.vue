@@ -33,8 +33,13 @@ const otherSlotProps = computed(() => {
 	return Object.keys(rest).length > 0 ? rest : undefined
 })
 
+// Created ONCE in setup: `consignRow` mints a registration key per call, so calling it inside the
+// ref callback would file a fresh entry on every paint and never release the old one.
+const consignRow = store.tokens.consignRow(props.node.id)
+
 const setBlockRef = (el: unknown) => {
 	const element = unwrapEl(el)
+	consignRow(element)
 	blockStore.attachContainer(element, props.blockIndex, {action: store.block.action})
 }
 </script>

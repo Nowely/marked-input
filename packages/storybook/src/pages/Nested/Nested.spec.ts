@@ -98,7 +98,7 @@ describe('Nested Marks Rendering', () => {
 		expect(host.textContent).toContain('nested')
 	})
 
-	it('renders nested token roots without slot-root wrappers', async () => {
+	it('puts exactly one markput element between a mark root and a nested one', async () => {
 		const {host} = await mountComponent({
 			Mark,
 			defaultValue: '@[before @[nested] after]',
@@ -109,15 +109,21 @@ describe('Nested Marks Rendering', () => {
 		const childSequenceHost = outer.firstElementChild
 		if (!(childSequenceHost instanceof HTMLElement)) throw new Error('Expected child sequence host')
 
-		// ONE child sequence host under the mark root, and the nested root sits directly in it:
-		// no per-token wrapper on the way down.
+		// CHANGED CONTRACT. This used to assert that the nested root sits DIRECTLY in the child
+		// sequence host — no per-token wrapper at all. There is now exactly one, carrying the
+		// consignment ref and the atomicity attribute so core never writes to consumer DOM.
+		// Both it and the sequence host are box-less, so the nesting costs no layout.
+		const innerWrapper = inner.parentElement!
+
 		expect(Array.from(outer.children)).toEqual([childSequenceHost])
 		expect(childSequenceHost.tagName).toBe('SPAN')
 		expect(childSequenceHost.style.display).toBe('contents')
 		expect(childSequenceHost.parentElement).toBe(outer)
-		expect(inner.parentElement).toBe(childSequenceHost)
-		expect(Array.from(childSequenceHost.children)).toContain(inner)
-		expect(childSequenceHost.querySelector('span > span > mark')).toBeNull()
+
+		expect(innerWrapper.tagName).toBe('SPAN')
+		expect(innerWrapper.style.display).toBe('contents')
+		expect(innerWrapper.parentElement).toBe(childSequenceHost)
+		expect(Array.from(childSequenceHost.children)).toContain(innerWrapper)
 	})
 })
 

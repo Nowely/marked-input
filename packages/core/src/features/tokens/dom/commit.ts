@@ -32,6 +32,12 @@ export type CommitDeps = {
 	controlElements: () => ReadonlySet<HTMLElement>
 	childSequenceHostsFor: (ownerId: number) => readonly HTMLElement[]
 	isBlock: () => boolean
+	/**
+	 * The elements the framework CONSIGNED for this generation, by owner id. Read only by
+	 * {@link assertConsigned}, which is dev-only and temporary: it exists to prove the pushed
+	 * registry answers what the walk derives, so the walk can then be deleted. Both go together.
+	 */
+	consignedElements: (kind: 'token' | 'row') => ReadonlyMap<number, HTMLElement>
 }
 
 export type CommitPipeline = {
@@ -161,6 +167,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		})
 		byElement = result.byElement
 		controlRoots = result.controlRoots
+		assertConsigned()
 		// A re-bind with no structural change diffs an unchanged id space against itself and
 		// announces three empty lists — no guard needed for that case, and none for the
 		// window either: the difference is the same expression whether one apply or five
@@ -168,6 +175,51 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		const delta = ledger.announce(result.ids)
 		pendingStructural = false
 		changed(delta)
+	}
+
+	/**
+	 * SHADOW CHECK, dev-only and deliberately temporary. Every element the walk just derived must
+	 * equal the one the framework consigned for the same token, and every bound token must have
+	 * been consigned at all.
+	 *
+	 * It is the whole verification of the consignment step: the registry has no production reader
+	 * yet, so without this it would be untested code shipped on a promise. Running it here puts it
+	 * inside every existing browser test at once — which is the only place a React or Vue ref can
+	 * actually be observed to arrive.
+	 *
+	 * DELETE THIS WITH THE WALK. Once the registry is the owner there is nothing left to disagree
+	 * with, and keeping a comparison against a deleted mechanism is dead weight.
+	 * See `docs/scratch/consigned-surfaces/spec.md`.
+	 */
+	function assertConsigned(): void {
+		if (!VERIFY_DOM) return
+		const tokens = deps.consignedElements('token')
+		// NOTHING consigned means no framework is in the picture — a core unit fixture builds its
+		// own DOM and calls bind directly. The invariant is about what React and Vue hand over, so
+		// there is nothing to check here and an empty registry is not a disagreement.
+		if (tokens.size === 0) return
+		const rows = deps.consignedElements('row')
+		for (const [id, handle] of deps.nodes) {
+			const bindings = handle.node()
+			if (!bindings) continue
+			const consigned = tokens.get(id)
+			// BOUND BUT NOT CONSIGNED is not a failure, and finding that out is a result of this
+			// step rather than a compromise in it. The walk pairs tree nodes with element children
+			// by COUNT, so when a consumer's Mark renders its slot as a string instead of rendering
+			// `children`, the inner tokens are never rendered — and the walk still pairs them with
+			// whatever element happens to sit at the same index. Consignment cannot reproduce that
+			// because nothing rendered, which makes consignment the MORE correct of the two. Once
+			// the walk is gone these tokens simply have no element, which is the truth.
+			if (!consigned) continue
+			if (consigned !== bindings.tokenElement) {
+				throw new Error(`TokenModel: #${id} consigned a different element than the walk derived`)
+			}
+			// A row exists only in block layout, and only for a ROOT — the walk answers `undefined`
+			// for everything else, so only the positive case is comparable.
+			if (bindings.rowElement && rows.get(id) !== bindings.rowElement) {
+				throw new Error(`TokenModel: #${id} consigned a different ROW than the walk derived`)
+			}
+		}
 	}
 
 	/**

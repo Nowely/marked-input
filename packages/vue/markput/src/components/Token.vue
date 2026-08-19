@@ -3,7 +3,9 @@ import type {TreeNode} from '@markput/core'
 import {defineComponent, h, markRaw, provide, toRef, type PropType, type VNode} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
+import {useStore} from '../lib/hooks/useStore'
 import {TOKEN_KEY} from '../lib/providers/tokenKey'
+import {unwrapEl} from '../lib/unwrapEl'
 import TokenChildren from './TokenChildren.vue'
 
 /**
@@ -40,6 +42,14 @@ const Token = defineComponent({
 		// by `node.id` and a node keeps its object for exactly as long as it keeps its id.
 		const rendered = useMarkput(() => nodeRender(props.node))
 
+		// The token's element, handed to core instead of core re-deriving it by walking the painted
+		// DOM. Created once for the same reason `rendered` is captured once.
+		const store = useStore()
+		const consign = store.tokens.consign(props.node.id)
+		const setTokenRef = (el: unknown) => {
+			consign(unwrapEl(el))
+		}
+
 		return () => {
 			// READ so Vue's render effect depends on it — this is what repaints a mark whose
 			// value changed while its node object, and therefore its props, stayed put.
@@ -61,7 +71,19 @@ const Token = defineComponent({
 							)
 					: undefined
 
-			return children ? h(Comp, compProps, children) : h(Comp, compProps)
+			// A MARK is wrapped in an element markput owns, which carries the consignment ref and
+			// (via the editable policy) the atomicity attribute — so nothing is ever written onto
+			// the consumer's own element and no ref is required from it. The wrapper generates no
+			// box: measured, an inline mark's geometry is identical with and without it, and a
+			// `li` inside a `ul` keeps `display: list-item` through it.
+			//
+			// A TEXT token needs none of that: its element is markput's own `span` by default, so
+			// the ref lands natively.
+			if (node.kind !== 'mark') {
+				return h(Comp, {...compProps, ref: setTokenRef})
+			}
+			const painted = children ? h(Comp, compProps, children) : h(Comp, compProps)
+			return h('span', {ref: setTokenRef, style: {display: 'contents'}}, [painted])
 		}
 	},
 })

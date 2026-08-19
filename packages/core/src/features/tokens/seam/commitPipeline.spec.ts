@@ -122,6 +122,9 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		nodes,
 		roots: () => tree.roots(),
 		controlElements: () => controls,
+		// This harness builds its own DOM and never consigns; the shadow check skips an empty
+		// registry for exactly that reason.
+		consignedElements: () => new Map<number, HTMLElement>(),
 		childSequenceHostsFor: () => [],
 		isBlock: () => false,
 	})
