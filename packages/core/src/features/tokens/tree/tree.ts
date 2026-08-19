@@ -107,27 +107,6 @@ function containsNode(node: TreeNode, id: Id): boolean {
 	return node.kind === 'mark' && node.children().some(child => containsNode(child, id))
 }
 
-/** The node's previous (-1) or next (+1) sibling within its OWN parent's child list. */
-export function siblingOf(roots: readonly TreeNode[], id: Id, direction: -1 | 1): TreeNode | undefined {
-	const found = locateSiblings(roots, id)
-	return found ? found.siblings[found.index + direction] : undefined
-}
-
-function locateSiblings(
-	nodes: readonly TreeNode[],
-	id: Id
-): {siblings: readonly TreeNode[]; index: number} | undefined {
-	for (let index = 0; index < nodes.length; index++) {
-		const node = nodes[index]
-		if (node.id === id) return {siblings: nodes, index}
-		if (node.kind === 'mark') {
-			const found = locateSiblings(node.children(), id)
-			if (found) return found
-		}
-	}
-	return undefined
-}
-
 /**
  * The projection of the span between two anchors — {@link joinNodes} restricted to a window,
  * and the clipboard's markup serialization (spec S2 §4.5). The pair is normalized.

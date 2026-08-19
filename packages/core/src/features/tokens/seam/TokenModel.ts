@@ -21,7 +21,7 @@ import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
 import {entryAnchor, mergePlan, movePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
-import {createTokenTree, findNode, rootIndexOf, siblingOf, sliceNodes} from '../tree/tree'
+import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkNode, NodeAnchor, TextNode, TreeCommands, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 
@@ -329,11 +329,6 @@ export class TokenModel {
 		return untracked(() => rootIndexOf(this.#tree.roots(), id))
 	}
 
-	/** The node's previous (-1) or next (+1) sibling within its OWN parent's child list. */
-	siblingOf(id: number, direction: -1 | 1): TreeNode | undefined {
-		return untracked(() => siblingOf(this.#tree.roots(), id, direction))
-	}
-
 	/**
 	 * A global offset → the node anchor at it (right affinity). THE offset→anchor direction
 	 * for the selection write path.
@@ -398,25 +393,6 @@ export class TokenModel {
 	/** Select between two node anchors, in either order (see {@link DomModel.selectRange}). */
 	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean {
 		return this.#dom.selectRange(anchor, head)
-	}
-
-	/**
-	 * THE manual override of the container's editable state — `editable && !readOnly`, one
-	 * attribute on the ONE editing host. No-op while unmounted.
-	 *
-	 * NOT authoritative: `props.readOnly` owns the same attribute through the driver's
-	 * `{immediate: true}` watch, so the next readOnly change (and every re-mount) overwrites
-	 * whatever was written here. It is an imperative escape hatch, not state, and core calls
-	 * it nowhere.
-	 *
-	 * `untracked` for {@link DomModel.anchorFor}'s reason: this is a COMMAND, and a caller
-	 * that happens to invoke it from a reactive scope must not subscribe that scope to the
-	 * container signal.
-	 */
-	setEditable(options: {editable: boolean; readOnly: boolean}): void {
-		const container = untracked(() => this.host.container())
-		if (!container) return
-		container.contentEditable = options.editable && !options.readOnly ? 'true' : 'false'
 	}
 
 	// ═══ Wiring ═══════════════════════════════════════════════════════════════

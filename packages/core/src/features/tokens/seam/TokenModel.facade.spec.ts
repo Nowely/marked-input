@@ -183,7 +183,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 		expect(store.tokens.domSelection()).toBeUndefined()
 	})
 
-	it('carries the window range, anchor, focusNode, rect, and intersects', () => {
+	it('carries the window range, anchor, focusNode and rect', () => {
 		const {store, container} = mountWithMark()
 		const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
 		if (!(firstText instanceof Text) || firstText.length < 2) throw new Error('expected the "he" text node')
@@ -202,8 +202,6 @@ describe('TokenModel selection() — the one snapshot', () => {
 		expect(snapshot.anchor.node).toBe(firstText)
 		expect(snapshot.focusNode).toBe(firstText)
 		expect(snapshot.rect).toBeInstanceOf(DOMRect)
-		expect(snapshot.intersects(firstText)).toBe(true)
-		expect(snapshot.intersects(document.body)).toBe(true)
 	})
 
 	it("range is the window selection's own range, not a clone", () => {

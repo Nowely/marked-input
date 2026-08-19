@@ -259,7 +259,7 @@ replaceBetween(from, to, text) / setValue(text) / applyText(node, range, text) /
 
 // tree reads, in tree coordinates
 valueBetween(from, to) / adjacentMark(anchor, ±1) / step(anchor, ±1)
-rootIndexOf(id) / siblingOf(id, ±1)
+rootIndexOf(id)
 
 // renderer contract (adapter-only)
 consign(id) / consignRow(id) / children(ownerId) / control() // ref callbacks; a ref IS the bind
@@ -291,12 +291,10 @@ anchorAt(offset)
 control() / children(ownerId) // ref callbacks
 ```
 
-`setEditable({editable, readOnly})` is the MANUAL override of the one editing
-host: it writes `container.contentEditable` from `editable && !readOnly`, and is
-a no-op while unmounted. Nothing in core calls it — `props.readOnly` owns the
-same attribute through the driver's `{immediate: true}` watch, so the next
-readOnly change (and every re-mount) overwrites whatever it wrote. It is not part
-of the consumer-facing reading surface above.
+There is no manual editable-state override. `setEditable` used to be one, and had
+no caller anywhere: `props.readOnly` owns the container's `contenteditable`
+through the driver's `{immediate: true}` watch, so the next readOnly change (and
+every re-mount) overwrote whatever it wrote.
 
 Nothing is published before a container mounts: `nodes()` is `[]` and facade
 reads fail soft. That ordering is load-bearing rather than incidental — because

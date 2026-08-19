@@ -32,8 +32,6 @@ export type SelectionSnapshot = {
 	readonly anchor: SelectionAnchor
 	/** Focus node of the raw window selection. */
 	readonly focusNode: Node | undefined
-	/** Whether the raw selection intersects `node` (partial containment counts). */
-	intersects(node: Node): boolean
 }
 
 /** What the DOM facade reads from the token layer — nothing more. */
@@ -132,7 +130,7 @@ export class DomModel {
 	 * `undefined` when there is no range (the element is unfocused / nothing
 	 * selected). Subsumes the five micro-reads — `range` is the boundary pair (the
 	 * selection driver resolves it through `anchorFor`), `rect`/`anchor`/`focusNode`
-	 * reflect the raw window selection, and `intersects` closes over it.
+	 * reflect the raw window selection.
 	 * Whether the selection is collapsed is `anchor.isCollapsed`. A consumer that
 	 * treated "no selection" as collapsed compares
 	 * `selection()?.anchor.isCollapsed !== false`.
@@ -148,7 +146,6 @@ export class DomModel {
 			rect: getRect() ?? undefined,
 			anchor: {node: anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed},
 			focusNode: sel.focusNode ?? undefined,
-			intersects: node => sel.containsNode(node, true),
 		}
 	}
 

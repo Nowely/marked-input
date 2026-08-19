@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest'
 
 import {Parser} from '../parser/Parser'
 import {toString} from '../parser/utils/toString'
-import {createTokenTree, joinNodes, rootIndexOf, siblingOf, sliceNodes} from './tree'
+import {createTokenTree, joinNodes, rootIndexOf, sliceNodes} from './tree'
 import type {TextNode, TreeNode} from './types'
 
 const parser = new Parser(['@[__value__](__meta__)', '#[__slot__]'])
@@ -88,18 +88,6 @@ describe('rootIndexOf', () => {
 	})
 })
 
-describe('siblingOf', () => {
-	it('walks the node OWN sibling list, not the flattened document', () => {
-		const tree = createTokenTree(parser.parse('a#[bc]d'))
-		const mark = tree.roots()[1]
-		if (mark.kind !== 'mark') throw new Error('expected a mark')
-		expect(siblingOf(tree.roots(), mark.id, -1)).toBe(tree.roots()[0])
-		expect(siblingOf(tree.roots(), mark.id, 1)).toBe(tree.roots()[2])
-		// A slot's only child has no sibling — it must NOT escape into the roots.
-		expect(siblingOf(tree.roots(), mark.children()[0].id, 1)).toBeUndefined()
-		expect(siblingOf(tree.roots(), tree.roots()[0].id, -1)).toBeUndefined()
-	})
-})
 describe('sliceNodes (the clipboard projection)', () => {
 	// 'ab@[x](m)cd': text [0,2), mark [2,9), text [9,11).
 	const source = 'ab@[x](m)cd'

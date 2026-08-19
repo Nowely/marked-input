@@ -47,10 +47,10 @@ export class EditController {
 	 * controlled-and-echoing, and the case it cited runs under `mount`, not `mountEcho`.
 	 */
 	setValue(text: string): void {
-		batch(() => {
-			if (!this.tokens.setValue(text)) return
-			if (this.props.value() !== undefined) return
-			this.tokens.selection.select(this.tokens.anchorAt(text.length))
-		})
+		// The document edges, and it is {@link replace} verbatim: `'start'`/`'end'` always
+		// resolve to the whole span, so `replaceBetween` takes its whole-value arm and answers
+		// the caret at `text.length` — which is exactly what this used to recompute for itself,
+		// along with a second copy of the controlled-mode rule.
+		this.replace('start', 'end', text)
 	}
 }
