@@ -63,6 +63,9 @@ jobs:
 
             - name: Run Build
               run: pnpm run build
+
+            - name: Smoke Test Packed Tarballs
+              run: ./scripts/smoke-pack.sh
     format:
         name: Check Formatting
         runs-on: ubuntu-latest
