@@ -24,7 +24,6 @@ title: "@markput/react"
 
 ## Type Aliases
 
-- [Id](/api/type-aliases/id/)
 - [MarkPatch](/api/type-aliases/markpatch/)
 - [Markup](/api/type-aliases/markup/)
 - [NodeAnchor](/api/type-aliases/nodeanchor/)

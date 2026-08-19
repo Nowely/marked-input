@@ -2,9 +2,17 @@
 export {MarkputHandle} from './src/store/MarkputHandle'
 // The ONLY resolution path for both adapters, which import it as a value and construct it.
 export {Store} from './src/store'
-// `Anchors` is public because `OverlayMatch.range` is one (S2.5): the overlay contract both
-// adapters carry names nodes now, so the type has to be nameable outside core.
-export type {Anchors, Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TreeNode} from './src/features/tokens'
+// Each one is NAMEABILITY for a signature a consumer meets, which is the only test this list
+// applies: `Anchors` because `OverlayMatch.range` is one (S2.5); `TreeNode`/`TextNode`/`MarkNode`
+// because both adapters render them and `useMark()` hands one back; `MarkPatch` because it is
+// `MarkNode.update`'s parameter, and without the export a consumer cannot declare a patch
+// separately (inference covers a literal at the call site and nothing else).
+//
+// `Id` was here too and is NOT any more: it is `type Id = number`, so the export bought a name
+// for something already nameable, and the one signature that made the name worth having —
+// `find(id)` on the public handle — is gone. `TreeNode.id` keeps its type and now prints as
+// `number`.
+export type {Anchors, MarkNode, MarkPatch, NodeAnchor, TextNode, TreeNode} from './src/features/tokens'
 
 // String-domain utilities (spec §2.3: keep)
 export {annotate, denote} from './src/features/tokens'
