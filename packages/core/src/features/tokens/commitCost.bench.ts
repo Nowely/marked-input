@@ -1,0 +1,478 @@
+import {bench, describe} from 'vitest'
+
+import {batch} from '../../shared/signals'
+import {Store} from '../../store/Store'
+import {Parser} from './parser/Parser'
+import type {Markup, Token} from './parser/types'
+import {filterEmptyText} from './parser/utils/filterEmptyText'
+import {adopt, parseValue} from './tree/adopt'
+import {createTokenTree} from './tree/tree'
+import type {TextNode, TreeNode, Window} from './tree/types'
+
+/**
+ * PER-KEYSTROKE COST of the commit path, attributed by SUBTRACTION.
+ *
+ * Each size registers the same ladder, every rung adding one stage:
+ *
+ *   L1 splice            string splice only
+ *   L2 +parse            L1 + parseValue (full document re-parse)
+ *   L3 +adopt            L2 + adopt (incl. the suffix walk's shiftPositions)
+ *   L4 core commit       replaceBetween: transactions + boundary + L3 + pipeline.apply
+ *                        + tree.value() joins + selection repair
+ *   L5 full keystroke    EditController.replace on a MOUNTED store: L4 + the DOM write
+ *   L5b stored selection a selection EXISTS but no post-edit caret is issued
+ *   L6 focused           L5 with the editor actually focused — a person typing
+ *   C1 caret only        one caret write, no edit, on CLEAN layout
+ *   C2 caret on dirty    one caret write after touching the DOM
+ *
+ * Subtraction is valid because every rung repeats the lower rungs' work verbatim on the
+ * same string sequence: the parse is a pure function of the spliced value, so L2 - L1 is
+ * the parse, L3 - L2 the adoption, and so on.
+ *
+ * ── WHAT THIS MEASURED, at inline 1000 marks (42 KB, 2001 tokens) ───────────────────────
+ *
+ * The parse is NOT the problem, and the caret is not the problem in the way it first looks:
+ *
+ *   L5 mounted, no caret     ~1.0 ms
+ *   L5b stored selection    ~25-31 ms      <- merely HAVING a selection costs the keystroke
+ *   L5 full keystroke       ~25-40 ms
+ *   C1 caret write only      ~0.005 ms     <- a caret write on clean layout is free
+ *   C2 caret write, dirty    ~1.6 ms       <- 296x, from nothing but touching the DOM first
+ *
+ * So the cost is not FREQUENCY — exactly one `removeAllRanges` + `addRange` pair runs per
+ * keystroke, counted — and not the placement arithmetic. It is that writing the selection
+ * forces a synchronous layout, and that layout is charged for the whole editing host. C1
+ * against C2 isolates it: same call, same document, the only difference is whether the DOM
+ * was touched first.
+ *
+ * Two consequences worth writing down before anyone optimises the wrong thing. A guard that
+ * skips the write when the DOM already shows the target CANNOT help the typing path — typing
+ * genuinely moves the caret by one, so the DOM and the model legitimately differ every time
+ * (built, measured, reverted). And L1-L4 are all under 1 ms here, so no amount of work on the
+ * parse, on adoption, or on the commit pipeline reaches this: at 1000 marks they are together
+ * ~3% of the keystroke.
+ *
+ * The rme on the mounted 1000-mark rungs is +-15-22% on ~30 samples, so treat those as an
+ * order of magnitude, not a figure. The small documents are stable to +-2%.
+ *
+ * The workload OSCILLATES — insert 'x' at `pos`, then delete it — so the document never
+ * grows across a benchmark's thousands of iterations and every sample is the same edit at
+ * the same offset. `pos` is the middle of the text node nearest the document midpoint,
+ * which is the worst case for adoption's suffix walk: every node after the edit is
+ * retained and re-positioned.
+ */
+
+/** Keeps a measured call's result observable so nothing is optimized out. */
+let sink = 0
+
+const INLINE_MARKUP: Markup = '@[__value__](__meta__)'
+const BLOCK_MARKUP: Markup = '__slot__\n\n'
+
+function inlineDoc(marks: number): string {
+	let out = 'Start text'
+	for (let i = 0; i < marks; i++) out += ` word${i} and more text @[user${i}](User ${i})`
+	return out + ' end of text'
+}
+
+function blockDoc(rows: number): string {
+	let out = ''
+	for (let i = 0; i < rows; i++) out += `row ${i} with some plain text in it\n\n`
+	return out
+}
+
+function tokensFor(parser: Parser, value: string, isBlock: boolean): Token[] {
+	const parsed = parseValue(parser, value)
+	return isBlock ? filterEmptyText(parsed) : parsed
+}
+
+function textNodesOf(nodes: readonly TreeNode[], out: TextNode[] = []): TextNode[] {
+	for (const node of nodes) {
+		if (node.kind === 'text') out.push(node)
+		else textNodesOf(node.children(), out)
+	}
+	return out
+}
+
+/**
+ * Three caret offsets, each strictly INSIDE a text node so the splice is a text edit:
+ *
+ * - `head` — the first text node. Adoption's prefix walk retains nothing and the suffix
+ *   walk retains AND shifts every following node: the whole document is `shiftPositions`.
+ * - `mid` — the text node nearest the document midpoint. Half prefix, half shifted suffix.
+ * - `tail` — the last text node. The prefix walk retains everything and writes nothing.
+ *
+ * `head` − `tail` is therefore the write cost of the suffix walk over the whole document,
+ * with the parse and the equality checks held constant.
+ */
+function caretOffsets(roots: readonly TreeNode[], value: string): {head: number; mid: number; tail: number} {
+	const texts = textNodesOf(roots).filter(node => node.position.end - node.position.start >= 4)
+	if (texts.length === 0) throw new Error('bench fixture has no text node wide enough to type into')
+	const centre = Math.floor(value.length / 2)
+	let nearest = texts[0]
+	for (const node of texts) {
+		const middle = (node.position.start + node.position.end) / 2
+		if (Math.abs(middle - centre) < Math.abs((nearest.position.start + nearest.position.end) / 2 - centre)) {
+			nearest = node
+		}
+	}
+	return {
+		head: texts[0].position.start + 1,
+		mid: Math.floor((nearest.position.start + nearest.position.end) / 2),
+		tail: texts[texts.length - 1].position.end - 1,
+	}
+}
+
+type Doc = {
+	name: string
+	value: string
+	markup: Markup
+	isBlock: boolean
+	parser: Parser
+	/** Simulated caret offsets; `pos` (the ladder's) is `mid`. */
+	pos: number
+	head: number
+	tail: number
+	roots: number
+	tokens: number
+}
+
+function describeDoc(name: string, value: string, markup: Markup, isBlock: boolean): Doc {
+	const parser = new Parser([markup])
+	const tokens = tokensFor(parser, value, isBlock)
+	const tree = createTokenTree(tokens)
+	const roots = tree.roots()
+	let total = 0
+	const count = (nodes: readonly TreeNode[]): void => {
+		for (const node of nodes) {
+			total++
+			if (node.kind === 'mark') count(node.children())
+		}
+	}
+	count(roots)
+	const carets = caretOffsets(roots, value)
+	return {
+		name,
+		value,
+		markup,
+		isBlock,
+		parser,
+		pos: carets.mid,
+		head: carets.head,
+		tail: carets.tail,
+		roots: roots.length,
+		tokens: total,
+	}
+}
+
+const docs: Doc[] = [
+	describeDoc('inline 10 marks', inlineDoc(10), INLINE_MARKUP, false),
+	describeDoc('inline 100 marks', inlineDoc(100), INLINE_MARKUP, false),
+	describeDoc('inline 1000 marks', inlineDoc(1000), INLINE_MARKUP, false),
+	describeDoc('block 100 rows', blockDoc(100), BLOCK_MARKUP, true),
+	describeDoc('block 1000 rows', blockDoc(1000), BLOCK_MARKUP, true),
+]
+
+console.log(
+	'\nbench documents:\n' +
+		docs
+			.map(
+				doc =>
+					`  ${doc.name.padEnd(20)} chars=${String(doc.value.length).padStart(6)} roots=${String(doc.roots).padStart(5)} tokens=${String(doc.tokens).padStart(5)} carets head/mid/tail=${doc.head}/${doc.pos}/${doc.tail}`
+			)
+			.join('\n') +
+		`\n  environment: ${typeof document === 'undefined' ? 'node' : 'browser'}, import.meta.env.DEV=${String(import.meta.env.DEV)}\n`
+)
+
+// ── the ladder ───────────────────────────────────────────────────────────────
+
+type Keystroke = () => void
+
+function insertWindow(pos: number): Window {
+	return {start: pos, end: pos, insertedLength: 1}
+}
+
+function deleteWindow(pos: number): Window {
+	return {start: pos, end: pos + 1, insertedLength: 0}
+}
+
+function spliceKeystroke(doc: Doc): Keystroke {
+	let current = doc.value
+	let inserted = false
+	return () => {
+		current = inserted
+			? current.slice(0, doc.pos) + current.slice(doc.pos + 1)
+			: current.slice(0, doc.pos) + 'x' + current.slice(doc.pos)
+		inserted = !inserted
+		sink += current.length
+	}
+}
+
+function parseKeystroke(doc: Doc): Keystroke {
+	let current = doc.value
+	let inserted = false
+	return () => {
+		current = inserted
+			? current.slice(0, doc.pos) + current.slice(doc.pos + 1)
+			: current.slice(0, doc.pos) + 'x' + current.slice(doc.pos)
+		inserted = !inserted
+		sink += tokensFor(doc.parser, current, doc.isBlock).length
+	}
+}
+
+function adoptKeystroke(doc: Doc, pos: number = doc.pos): Keystroke {
+	const tree = createTokenTree(tokensFor(doc.parser, doc.value, doc.isBlock))
+	let current = doc.value
+	let inserted = false
+	return () => {
+		const window = inserted ? deleteWindow(pos) : insertWindow(pos)
+		current = inserted
+			? current.slice(0, pos) + current.slice(pos + 1)
+			: current.slice(0, pos) + 'x' + current.slice(pos)
+		inserted = !inserted
+		const result = adopt(tree, window, tokensFor(doc.parser, current, doc.isBlock))
+		sink += result.updated.length
+	}
+}
+
+function storeFor(doc: Doc): Store {
+	const store = new Store()
+	store.props.set({
+		defaultValue: doc.value,
+		options: [{markup: doc.markup}],
+		Mark: () => null,
+		...(doc.isBlock ? {layout: 'block' as const} : {}),
+	})
+	return store
+}
+
+/**
+ * The keystroke on a Store. `caret` false skips the stored selection entirely — the write
+ * goes straight to `tokens.replaceBetween`, so `selection.repair` and (when mounted)
+ * `SelectionDriver`'s post-commit caret re-place both have nothing to do. The difference
+ * against the `caret` true variant is what the selection costs.
+ */
+function storeKeystroke(store: Store, doc: Doc, caret: boolean): Keystroke {
+	if (caret) store.tokens.selection.select(store.tokens.anchorAt(doc.pos))
+	let inserted = false
+	return () => {
+		const from = store.tokens.anchorAt(doc.pos)
+		const to = store.tokens.anchorAt(inserted ? doc.pos + 1 : doc.pos)
+		const text = inserted ? '' : 'x'
+		// `batch` on both arms: `EditController.replace` has one, and without it the no-caret
+		// arm would flush the surface effects twice per keystroke and measure that instead.
+		if (caret) store.edit.replace(from, to, text)
+		else batch(() => store.tokens.replaceBetween(from, to, text))
+		inserted = !inserted
+		sink += store.tokens.nodes().length
+	}
+}
+
+/**
+ * L5b: a stored selection is PRESENT (so adoption captures it and `selection.repair` runs), but
+ * the write goes through `replaceBetween` rather than `EditController.replace`, so no post-edit
+ * `selection.select` is issued.
+ *
+ * The bisection L5 and L5-no-caret could not do: those two differ in TWO ways at once — whether a
+ * selection exists at all, and which verb writes. L5b − L5-no-caret is what merely HAVING a
+ * selection costs an adoption; L5 − L5b is what the post-edit caret costs on top.
+ */
+function storedSelectionKeystroke(doc: Doc): Keystroke {
+	const store = storeFor(doc)
+	mountDom(store, doc)
+	store.tokens.selection.select(store.tokens.anchorAt(doc.pos))
+	let inserted = false
+	return () => {
+		const from = store.tokens.anchorAt(doc.pos)
+		const to = store.tokens.anchorAt(inserted ? doc.pos + 1 : doc.pos)
+		const text = inserted ? '' : 'x'
+		batch(() => store.tokens.replaceBetween(from, to, text))
+		inserted = !inserted
+		sink += store.tokens.nodes().length
+	}
+}
+
+/**
+ * C1: the CARET WRITE ALONE — no edit, no commit, no adoption. Alternates a collapsed caret
+ * between two offsets in the same text node on a mounted, focused document.
+ *
+ * This rung exists because subtraction stopped being enough. L5 − L5-no-caret says the caret
+ * costs almost the whole mounted keystroke and grows superlinearly, but it cannot say whether
+ * that is markput placing the caret too often or Chromium charging for one placement inside a
+ * large editing host. Counting says it is not frequency — exactly one `removeAllRanges` +
+ * `addRange` pair runs per keystroke, measured. So this isolates the single write.
+ *
+ * If C1 tracks the L5 − L5-no-caret gap, the cost is the browser's and no scheduling change in
+ * this repo can reach it; the lever would have to be writing the selection less often than once
+ * per keystroke, which the typing path cannot do while it cancels the browser's own editing.
+ */
+function caretOnlyKeystroke(doc: Doc, dirtyLayout = false): Keystroke {
+	const store = storeFor(doc)
+	mountDom(store, doc)
+	store.tokens.focusFirst()
+	const container = document.body.lastElementChild
+	let there = false
+	return () => {
+		// C2 only: touch the DOM first, so the caret write lands on a DIRTY layout the way it
+		// does inside a real commit (the per-Surface effects have just written text). C1 leaves
+		// layout clean, which is the whole difference under test.
+		if (dirtyLayout && container?.lastElementChild instanceof HTMLElement) {
+			container.lastElementChild.textContent = there ? 'a' : 'b'
+		}
+		store.tokens.placeCaret(store.tokens.anchorAt(there ? doc.pos : doc.pos + 1))
+		there = !there
+		sink += 1
+	}
+}
+
+/** L4: the write verb on an UNMOUNTED store — everything but the DOM. */
+function coreCommitKeystroke(doc: Doc, caret = true): Keystroke {
+	const store = storeFor(doc)
+	// Materializes the tree (`#ensureSeeded`) without changing the value.
+	store.tokens.replaceBetween('end', 'end', '')
+	return storeKeystroke(store, doc, caret)
+}
+
+/**
+ * The adapter's DOM, hand-rendered once: one span per root inline, one
+ * `div > span > span` per row in block layout (the shape `bind` walks — see
+ * `__testing__/mountFixtures.ts`).
+ */
+function mountDom(store: Store, doc: Doc): void {
+	// Every mounted rung gets the page to itself: worlds are built lazily and used by one
+	// bench each, and leaving the previous fixture attached made a later rung pay style and
+	// layout for a document it never edits (measured: block-100's no-caret rung read SLOWER
+	// than its caret rung purely from the fixture left over by the rung before it).
+	document.body.replaceChildren()
+	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
+	if (doc.isBlock) {
+		for (const _root of store.tokens.nodes()) {
+			const row = document.createElement('div')
+			const mark = document.createElement('span')
+			const text = document.createElement('span')
+			mark.append(text)
+			row.append(mark)
+			container.append(row)
+		}
+	} else {
+		for (const _root of store.tokens.nodes()) container.append(document.createElement('span'))
+	}
+	store.host.rendered()
+}
+
+/** L5: the same write on a MOUNTED store — the per-surface DOM write included. */
+function fullKeystroke(doc: Doc, caret = true): Keystroke {
+	const store = storeFor(doc)
+	mountDom(store, doc)
+	return storeKeystroke(store, doc, caret)
+}
+
+/**
+ * L6: L5 with the editor actually FOCUSED — the only rung that describes a person typing.
+ *
+ * L5 above leaves focus on `document.body`, so its caret rung measures a re-place into an
+ * editor nobody is in. That is a real path (an `api` write while the user is elsewhere) but it
+ * is not the keystroke path, and it is the one case `SelectionDriver`'s skip-if-already-showing
+ * guard deliberately declines to take — it must not swallow the write that pulls focus IN.
+ * Measuring only L5 therefore reports that guard as worthless.
+ *
+ * The oscillating workload keeps this rung honest rather than rigging it: the DOM caret ends up
+ * at the model's anchor after the first iteration whichever way the guard goes, so both the
+ * guarded and unguarded builds are measured on exactly the same DOM state.
+ */
+function focusedKeystroke(doc: Doc): Keystroke {
+	const store = storeFor(doc)
+	mountDom(store, doc)
+	const keystroke = storeKeystroke(store, doc, true)
+	store.tokens.focusFirst()
+	store.tokens.placeCaret(store.tokens.anchorAt(doc.pos))
+	return keystroke
+}
+
+const options = {time: 1000, warmupTime: 200} as const
+
+/**
+ * Builds the world on the first call and reuses it — a mounted world costs more to build
+ * than the keystroke it measures, and vitest's warmup pass absorbs that first call.
+ */
+function lazy(build: () => Keystroke): () => void {
+	let keystroke: Keystroke | undefined
+	return () => {
+		keystroke ??= build()
+		keystroke()
+	}
+}
+
+for (const doc of docs) {
+	// oxlint-disable-next-line vitest/valid-title -- one ladder per document, named from the table above
+	describe(doc.name, () => {
+		bench(
+			'L1 splice',
+			lazy(() => spliceKeystroke(doc)),
+			options
+		)
+		bench(
+			'L2 +parse',
+			lazy(() => parseKeystroke(doc)),
+			options
+		)
+		bench(
+			'L3 +adopt',
+			lazy(() => adoptKeystroke(doc)),
+			options
+		)
+		bench(
+			'L3 +adopt @head',
+			lazy(() => adoptKeystroke(doc, doc.head)),
+			options
+		)
+		bench(
+			'L3 +adopt @tail',
+			lazy(() => adoptKeystroke(doc, doc.tail)),
+			options
+		)
+		bench(
+			'L4 core commit',
+			lazy(() => coreCommitKeystroke(doc)),
+			options
+		)
+		bench(
+			'L4 core, no caret',
+			lazy(() => coreCommitKeystroke(doc, false)),
+			options
+		)
+		// The mounted rungs need a DOM; the ladder still measures L1–L4 without one.
+		if (typeof document === 'undefined') return
+		bench(
+			'L5 full keystroke',
+			lazy(() => fullKeystroke(doc)),
+			options
+		)
+		bench(
+			'L5 mounted, no caret',
+			lazy(() => fullKeystroke(doc, false)),
+			options
+		)
+		bench(
+			'L6 focused keystroke',
+			lazy(() => focusedKeystroke(doc)),
+			options
+		)
+		bench(
+			'L5b stored selection, no post-edit caret',
+			lazy(() => storedSelectionKeystroke(doc)),
+			options
+		)
+		bench(
+			'C1 caret write only',
+			lazy(() => caretOnlyKeystroke(doc)),
+			options
+		)
+		bench(
+			'C2 caret write on dirty layout',
+			lazy(() => caretOnlyKeystroke(doc, true)),
+			options
+		)
+	})
+}
