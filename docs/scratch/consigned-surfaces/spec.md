@@ -158,6 +158,36 @@ a text Token's element *is* its Surface. That equivalence is preserved.
 
 The slot-host and chrome registries keep their current shape unchanged.
 
+### A Mark component must forward its ref — DECIDED, and it is a major break
+
+The Token's element is rendered by the CONSUMER's component, not by markput, so consignment needs
+the consumer to pass the ref through. The two adapters differ, and only one of them is free:
+
+- **Vue costs nothing.** A ref on a component resolves to the instance, and the repo already
+  unwraps `$el` for exactly this — the container and row slots both do it today. For a single-root
+  component it is automatic and the consumer does nothing.
+- **React requires forwarding.** There is no `$el` equivalent; a function component that ignores
+  its `ref` prop drops it silently. Since a Mark component is mandatory — mark resolution throws
+  without one — this touches every React consumer that renders a custom Mark.
+
+**Decision: require it.** This is not a new principle, it is an existing one applied to a third
+slot: the container slot already requires it (the repo's own fixtures destructure
+`({ref, ...props})` and pass it on) and so does the row slot. The consumer's change is one line.
+
+Consequences that must ship with it:
+
+- a MAJOR version, called out in the release notes rather than buried;
+- the documented contract has to change. `development/how-it-works.md` currently states the
+  opposite — "Features do not rely on DOM child order, public data attributes, or user-provided
+  refs to locate tokens" — and that sentence becomes false;
+- the mark and text slot documentation gains the requirement, with an example;
+- the `Span` slot is affected in principle and almost free in practice: no demo app, story fixture
+  or README example uses it.
+
+The alternative of wrapping every Token in a markput-owned element was rejected: it adds one
+element per Token, which moves the cross-framework DOM snapshot, flips the arms of the DOM-to-Anchor
+projection, and is invalid inside the `Nested` fixtures, which render Marks as `ul`/`li`.
+
 ### What the walk did, and where each part goes
 
 | What the walk did | New owner |
@@ -190,6 +220,7 @@ not on speed.
 
 | | Step | Contents |
 | --- | --- | --- |
+| **A0** | Ref contract | Pass the ref through the Mark and text slots in both adapters, unwrapping it on the Vue side. Update `how-it-works.md` and the slot docs. Nothing in core reads it yet, so this is inert on its own — and it is the step that carries the major-version break. |
 | **A1** | Shadow registry | Add consignment and the refs. Add a dev-only assertion that the registry's mapping equals the walk's, for every Token element and the row wrapper. Add a dev-only drift check: a `MutationObserver` on the Container that throws when a mutation lands inside a leased Surface while core is not writing. The walk still owns everything. Zero behaviour change; the DOM snapshot must not move by a line. |
 | **A2** | Delete the walk | The registry becomes the owner. Handle lifecycle, text-effect arming and editable state move to consignment. Delete the walk, its spec, and both dev-only checks from A1. |
 | **A3** | Delete the scheduling | Delete the render epoch, the render-announcement hook, the pending-structural latch and Vue's `nextTick` watcher. Collapse the commit module and fold what remains into the DOM model. |
