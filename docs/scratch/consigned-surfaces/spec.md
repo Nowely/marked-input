@@ -300,6 +300,48 @@ free and is deleted at step 2.
   the document layer both interact with it; that gap needs its own ticket.
 - **Undo/redo.** Not affected and not addressed.
 
+## Measured: the optimisations do not pay for themselves
+
+Added after the fact, because it changes why this spec is worth doing.
+
+Most of the commit system is optimisation — `renderEpoch`, the text/structural routing, the
+`pendingStructural` latch, the delta ledger. They exist to avoid work. Here is what the work costs
+if you simply always do it.
+
+**Always binding** (`commitCost.bench.ts`'s L7 rung: every commit takes the structural path, so
+`bind` walks the whole tree every time), three runs on an idle machine:
+
+| document | today | always bind |
+| --- | --- | --- |
+| inline 100 marks | 0.26-0.29 ms | 0.35-0.40 ms |
+| block 1000 rows | 0.70-0.73 ms | 1.81-1.86 ms |
+
+**Always re-rendering.** A mark value change already forces a whole-Container re-render today
+(`renderEpoch` bumps on `updated.some(mark)`), so its cost is measurable directly. Median of 15
+operations, each given a frame, against an idle control of the same shape:
+
+| document | added to the frame | synchronous cost per update |
+| --- | --- | --- |
+| 10 marks | 0 ms | 0.043 ms |
+| 100 marks | 0 ms | 0.167 ms |
+| 400 marks | 0 ms | 0.413 ms |
+
+The synchronous cost is linear — about 1 µs per mark, and that figure includes the core commit's
+own O(document) parse and adoption, not just the render. Nothing measurable reaches the frame.
+
+Two things follow.
+
+**The routing does not pay for its concepts.** The worst case of deleting it is ~1.85 ms on a
+2000-token document, and nothing at all at realistic sizes.
+
+**Fine-grained rendering already works and is not what the routing buys.** `Token` subscribes to
+its own node's `value`/`meta`/`children`, so a mark repaints itself without the tree being
+re-rendered, and a text edit repaints nothing at all — the per-Surface effect writes it. What
+`renderEpoch` actually buys is not avoided rendering; it is the only thing that makes the Container
+re-render so that its layout effect calls `host.rendered()` so that `bind` can run. It is a
+scheduling device wearing an optimisation's clothes, and consignment removes the need for it
+outright.
+
 ## Further Notes
 
 **Two investigations are still running and could change step 4.** A caret redesign is in flight
