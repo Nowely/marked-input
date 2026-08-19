@@ -112,6 +112,20 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// The last walk's tree, by id, so `rebind` finds its node without searching. Empty until the
 	// first bind, which is why a registration arriving before one is a no-op rather than a guess.
 	let nodeById = new Map<number, TreeNode>()
+	/**
+	 * The commit the last whole-tree bind ran for, and THE precondition of the divergence sweep
+	 * below: a commit that did not bind healed nothing, so it has no right to an opinion about
+	 * what a surface shows. It replaces the `pendingStructural` guard the sweep used to read.
+	 *
+	 * Two commits reach `apply` without binding, and both were measured throwing before this
+	 * existed: one made while the container is detached (`bindNow` returns at its own guard), and
+	 * the FIRST commit of every attach (the props watch's immediate arm commits from inside
+	 * `host.onMounted`, one statement before the bind effect is installed). On a RE-attach the
+	 * previous generation's handles are still bound, so the second one swept last generation's
+	 * surfaces — and its throw unwound out of `onMounted` before the effect scope was assigned,
+	 * leaving the editor permanently unbound in dev.
+	 */
+	let boundForCommit = -1
 
 	let committing = false
 
@@ -151,6 +165,7 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 			})
 			controlRoots = result.controlRoots
 			nodeById = result.nodeById
+			boundForCommit = commitCount
 			bound()
 		} finally {
 			committing = false
@@ -188,6 +203,9 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	 */
 	function assertAligned(): void {
 		if (!VERIFY_DOM) return
+		// See {@link boundForCommit}: no bind for this commit means no re-arm, and the re-arm IS
+		// the heal this check assumes has already happened.
+		if (boundForCommit !== commitCount) return
 		untracked(() => {
 			walkTree(deps.roots(), node => {
 				if (node.kind !== 'text') return

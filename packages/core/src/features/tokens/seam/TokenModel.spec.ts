@@ -162,6 +162,40 @@ describe('TokenModel shell (seam/)', () => {
 			expect(model.handle(0)).toBeUndefined()
 			expect(model.placeCaret('start')).toBe(false)
 		})
+
+		it('a commit made while DETACHED does not police a DOM it cannot bind', () => {
+			// The dev divergence sweep assumes the commit's own bind has re-armed every surface,
+			// because that re-arm IS the heal. Detached, `bindNow` returns at its own guard and
+			// nothing heals — while every handle stays bound, since a detach unbinds nothing. A
+			// sweep here reads a DOM core no longer drives. MEASURED before the guard existed:
+			// this threw `TokenModel divergence`.
+			const {model, host, text1} = mountNewInline()
+			text1.textContent = 'WRONG'
+
+			host.container(null)
+
+			expect(() => model.setValue('he@[x]llo!')).not.toThrow()
+		})
+
+		it('a RE-ATTACH heals a surface corrupted while detached instead of throwing', () => {
+			// The same guard's second window, and the one that mattered: the props watch commits
+			// from its `{immediate: true}` arm inside `host.onMounted`, one statement BEFORE the
+			// bind effect is installed — so the first commit of every attach binds nothing. On a
+			// re-attach the previous generation's handles are still bound, so the sweep read last
+			// generation's surfaces; worse, the throw unwound out of `onMounted` before the effect
+			// scope was assigned, so the bind effect was never installed and every later commit
+			// threw again. MEASURED: a permanently unbound editor in dev.
+			const {model, host, container, text1} = mountNewInline()
+			text1.textContent = 'WRONG'
+			host.container(null)
+
+			expect(() => host.container(container)).not.toThrow()
+
+			// Not merely silent — the mount is live and the surface is repaired.
+			consignRoots(model, container)
+			expect(text1.textContent).toBe('he')
+			expect(() => model.setValue('he@[x]llo!')).not.toThrow()
+		})
 	})
 
 	describe('the two clocks (renderer contract)', () => {
