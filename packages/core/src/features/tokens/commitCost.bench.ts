@@ -55,6 +55,46 @@ import type {TextNode, TreeNode, Window} from './tree/types'
  * The rme on the mounted 1000-mark rungs is +-15-22% on ~30 samples, so treat those as an
  * order of magnitude, not a figure. The small documents are stable to +-2%.
  *
+ * ── TWO CORRECTIONS TO THE PARAGRAPH ABOVE, both measured later ─────────────────────────
+ *
+ * 1. "The caret is ~97%" holds ONLY for the flat inline document, and the caret is not the cause.
+ *    `layoutCost.bench.ts` isolated it: a bare forced reflow costs the same as the selection
+ *    write, so the bill is the LAYOUT, and the layout is expensive because inline layout puts the
+ *    whole document in ONE inline formatting context that a one-character edit reflows wholesale.
+ *    Grouping the same spans into blocks takes it from 93 ms to 0.049 ms. Read that file before
+ *    concluding anything about the caret from this one.
+ *
+ *    On BLOCK 1000 rows — 36 KB, 2000 tokens, the realistic large document, and stable to +-1% —
+ *    the caret costs +0.11 ms on a 0.86 ms keystroke. Block layout already has one block per Row,
+ *    so it never pays the inline-context bill.
+ *
+ * 2. An earlier version of the FOCUSED rungs was confounded and its numbers were wrong (block
+ *    1000 rows read 5.56 ms where it now reads 0.82 ms). `focusFirst()` places at the FIRST root
+ *    and so overwrites the seeded selection, leaving the caret at the document start while the
+ *    edit happened in the middle — and placing a caret far from the edit is itself expensive.
+ *    {@link settleCaretAt} fixes the order and both L6 and L7 share it. The unfocused rungs (L5,
+ *    L5b) never used it and are unaffected.
+ *
+ * ── L7, AND WHAT IT IS FOR ──────────────────────────────────────────────────────────────
+ *
+ * Most of the commit system is OPTIMISATION: `renderEpoch` and the text/structural routing exist
+ * so a plain keystroke never repaints and never re-binds, and the `pendingStructural` latch and
+ * the delta ledger exist to manage the announcements that routing creates. L7 prices deleting all
+ * of it — every commit takes the structural path, so `bind` walks the whole tree every time:
+ *
+ *   inline 100 marks    L6 0.317 ms -> L7 0.459 ms
+ *   block 100 rows      L6 0.357 ms -> L7 0.676 ms
+ *   block 1000 rows     L6 0.822 ms -> L7 1.925 ms   (both +-1%)
+ *
+ * So always binding roughly doubles the commit, and the worst case measured is 1.9 ms on a 2000
+ * token document — about 12% of a frame. Cheap enough that the routing does not pay for its
+ * concepts.
+ *
+ * CAVEAT, and it is the whole remaining question: this is the CORE half only. `mountDom` builds
+ * the DOM by hand and `host.rendered()` drives bind directly, so no React or Vue reconciliation
+ * happens. A real always-render also makes both adapters rebuild the token list every keystroke,
+ * and that is NOT measured here. `packages/storybook` is where it would have to be.
+ *
  * The workload OSCILLATES — insert 'x' at `pos`, then delete it — so the document never
  * grows across a benchmark's thousands of iterations and every sample is the same edit at
  * the same offset. `pos` is the middle of the text node nearest the document midpoint,
@@ -361,6 +401,31 @@ function mountDom(store: Store, doc: Doc): void {
 	store.host.rendered()
 }
 
+/**
+ * L7: every keystroke takes the STRUCTURAL path — the commit is followed by a `rendered()`, so
+ * `bind` walks the whole tree and re-pairs every element, every time.
+ *
+ * This is the "delete the optimisations" question made measurable. Most of the commit system
+ * exists to AVOID this: `renderEpoch` and the text/structural routing exist so a plain keystroke
+ * never repaints and never re-binds, and the `pendingStructural` latch and the delta ledger exist
+ * to manage the announcements that routing creates. If always binding is cheap, all of it is
+ * concept cost buying nothing.
+ *
+ * It measures the CORE half only — commit + bind. The framework's own re-render is the other half
+ * and needs a real adapter, so it cannot be measured from here; `packages/storybook` is where that
+ * belongs. Read this rung as a lower bound on the simple design, not as its full price.
+ */
+function alwaysBindKeystroke(doc: Doc): Keystroke {
+	const store = storeFor(doc)
+	mountDom(store, doc)
+	const keystroke = storeKeystroke(store, doc, true)
+	settleCaretAt(store, doc)
+	return () => {
+		keystroke()
+		store.host.rendered()
+	}
+}
+
 /** L5: the same write on a MOUNTED store — the per-surface DOM write included. */
 function fullKeystroke(doc: Doc, caret = true): Keystroke {
 	const store = storeFor(doc)
@@ -385,9 +450,22 @@ function focusedKeystroke(doc: Doc): Keystroke {
 	const store = storeFor(doc)
 	mountDom(store, doc)
 	const keystroke = storeKeystroke(store, doc, true)
-	store.tokens.focusFirst()
-	store.tokens.placeCaret(store.tokens.anchorAt(doc.pos))
+	settleCaretAt(store, doc)
 	return keystroke
+}
+
+/**
+ * Focus the editor and leave BOTH the stored selection and the DOM caret at `doc.pos`.
+ *
+ * The order is load-bearing and getting it wrong invalidated an earlier version of these rungs:
+ * `focusFirst()` places at the FIRST root, which overwrites whatever the stored selection was, so
+ * calling it after seeding the selection silently moves the caret to the document start while the
+ * edit still happens in the middle. Focus first, then seed.
+ */
+function settleCaretAt(store: Store, doc: Doc): void {
+	store.tokens.focusFirst()
+	store.tokens.selection.select(store.tokens.anchorAt(doc.pos))
+	store.tokens.placeCaret(store.tokens.anchorAt(doc.pos))
 }
 
 const options = {time: 1000, warmupTime: 200} as const
@@ -462,6 +540,11 @@ for (const doc of docs) {
 		bench(
 			'L5b stored selection, no post-edit caret',
 			lazy(() => storedSelectionKeystroke(doc)),
+			options
+		)
+		bench(
+			'L7 always bind (structural every time)',
+			lazy(() => alwaysBindKeystroke(doc)),
 			options
 		)
 		bench(
