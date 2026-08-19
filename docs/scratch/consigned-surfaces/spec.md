@@ -224,7 +224,7 @@ not on speed.
 | **A1** | Shadow registry | Add consignment and the refs. Add a dev-only assertion that the registry's mapping equals the walk's, for every Token element and the row wrapper. Add a dev-only drift check: a `MutationObserver` on the Container that throws when a mutation lands inside a leased Surface while core is not writing. The walk still owns everything. Zero behaviour change; the DOM snapshot must not move by a line. |
 | **A2** | Delete the walk | DONE. The registry is the owner; `isBlock` and the frame alignment are gone with it. Surfaced one contract that A0 did not: a consumer's `Span` IS the text Surface and so cannot be wrapped the way a Mark is — it must forward its ref or its text never binds. Nothing in the repo used `Span` except the render-count instruments, which now forward it through the shared mark factory. |
 | **B2** | Split the announcement | DONE, and moved AHEAD of A3 — the original order was wrong. Deleting the render epoch silences the commits that move no element (a row reorder, a mark value change), because the announcement came from the bind. Splitting `changed` into `committed` (per commit) and `bound` (per bind) gives those commits a clock of their own, which is what makes A3 possible at all. |
-| **A3** | Delete the scheduling | Delete the render epoch, the render-announcement hook, the pending-structural latch and Vue's `nextTick` watcher. Collapse the commit module and fold what remains into the DOM model. NOTE: the dev divergence sweep currently reads `pendingStructural` to know a bind is still coming; that needs a new spelling when the latch goes. |
+| **A3** | Delete the scheduling | IN PROGRESS. Delete the render epoch, the render-announcement hook and Vue's `nextTick` watcher; bind becomes an effect on the token layer (see below). The pending-structural latch went ahead of this step in PR #285, and with it the divergence sweep's reason to read it. Production side is a 32-line deletion across five files; the migration is the cost. |
 
 The drift check exists to answer one question while both mechanisms are live and comparable: does a
 leased Surface ever get written by anyone but core? It is deleted at A2 regardless, and the answer
@@ -234,6 +234,124 @@ goes in the A2 commit body.
 Token report its own paint, and that double-bound on every structural commit in Vue because the
 Token's update hook beat the Container's. Consignment is a different mechanism — refs fire during
 the patch, and nothing needs waking — so that failure does not transfer.
+
+### A3 is bind-as-effect, and the two rival shapes are measured out
+
+Three shapes for "when does bind run" were prototyped once the announcement hook was gone. They are
+recorded because the losing two are the obvious ones, and the argument that picked the winner was
+wrong twice before measurement corrected it.
+
+| | Shape | Migration red | bind | Async window | Generation counter | Caret pulse |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | Scheduler + microtask | **253** | async | yes | — | from the scheduler |
+| B | Manual invalidation counter | — | sync | no | **hand-written** | none |
+| **C** | **Effect on the token layer** | **11** | **sync** | **none** | not needed — the subscription *is* the invalidation | from the effect itself |
+
+C was first rejected on an argument: signals flush synchronously per write (`if (!batchDepth)
+flush()`), a batch coalesces them but core does not own the batch because the framework calls refs
+one by one — so mounting a 1000-mark document reads as 2000 refs × O(tree). It was then reinstated
+on a counter-argument — refs fire bottom-up, so at mount every element is consigned before the
+effect exists — and on a steady-state measurement: on a live editor with 50 marks, a plain keystroke
+ran the effect 0 times and a structural edit 2.
+
+**The counter-argument is false, and the ref storm is real.** The steady-state numbers hold; the
+mount numbers were never taken. Refs *are* bottom-up, but that is not what orders mount: core
+publishes `nodes` only once `host.container` is set, and the tree seeds inside `host.onMounted`,
+which runs synchronously from the container's ref. Tokens therefore paint in a LATER commit, with
+the effect already live, and every unbatched registry write flushes it.
+
+Measured after the fact, through both real adapters, with a counter in `bindNow`:
+
+| N marks | binds at mount, React | binds at mount, Vue |
+| --- | --- | --- |
+| 10 | 22 | 22 |
+| 50 | 102 | 102 |
+| 200 | 402 | 402 |
+| 400 | 802 | 802 |
+| 800 | 1602 | 1602 |
+
+One whole-tree bind per consigned element — `2N+2` for this document shape, identical in both
+adapters across five runs. Core-only wall clock over the same registry writes: 2.6 ms at 101 nodes,
+7.2 at 201, 41.5 at 501, 166.3 at 1001, **678 ms at 2001**. `ms/N²` is flat at ~1.66e-4 across the
+whole range; every doubling of N costs 4×.
+
+**This is a regression, not a standing cost.** At HEAD `host.rendered()` fires once per Container
+render from one call site per adapter, so mount is O(1) binds. C as prototyped turns mount from
+Θ(N) into Θ(N²). That is a different question from the one rung L7 answered: L7 traded a *constant*
+0.26 → 0.40 ms per keystroke for a deleted concept and was accepted on that basis. An asymptote is
+not a constant.
+
+The control measurement names the fix: the same registry writes wrapped in one `batch()` collapse to
+**one** bind — 1.0 / 2.4 / 6.5 ms at N = 200 / 400 / 800, against 33 / 96 / 386 ms unbatched. The
+cost is entirely self-inflicted coalescing, not framework overhead.
+
+Two smaller facts from the same measurement, both worth keeping:
+
+- One bind is worse than O(tree): `#childSequenceHostsFor` is a linear scan over ALL registrations
+  and is called once per node, so a single bind is O(nodes × hosts) before the per-node work.
+- The dev-only divergence sweep is a second whole-tree walk per bind and inflates every figure above
+  by 10–20%. It is dead in production, so the production curve is slightly better than measured — and
+  the *test* curve is worse.
+
+**The effect subscribes to exactly three things** — live `roots`, the consignment counter, the
+commit counter. Everything the projection itself reads is read inside bind's own `untracked`, so an
+unrelated text edit cannot wake it. The commit counter is in the list deliberately: without it a
+commit that moves no element never binds, `bound` stops being the one DOM clock, and the caret loses
+its post-commit re-place. That precision is the whole risk of this shape, so it is pinned by its own
+spec rather than left to the migration.
+
+One registry counter covers token elements, rows and controls together — nothing wants to rebind for
+one of them alone, and it is a counter rather than the maps because the maps are mutated in place
+and a signal compares by identity.
+
+**A gap this closed:** `control()` did not bump the counter. A control mounted off the commit clock —
+a menu opened from a block-store signal — left the control roots stale. Three tests caught it.
+
+**A finding that is not a test fix.** `anchorFor`'s fallback was pinned by
+`falls back to the owner INVERTED when a neighbour left the tree`, which constructs "elements still
+bound, nodes already out of the tree" by relying on a structural commit *not* binding before the
+adapter repaints. Under C every commit binds, so that state is unreachable by that route and the
+fallback may be dead code. Decision: delete it — but only after proving unreachability by some route
+other than the one the test used. Re-aiming the test would bury the question.
+
+### The fix for the storm: rebind one id, keep the whole-tree bind on the commit clock
+
+Three fixes were designed against the measurement and judged. The chosen one is a hybrid, and the
+two it beat are recorded because both are the obvious ones:
+
+- **Coalesce to a microtask** — 12 lines, kills the asymptote, and buys it with the exact async
+  window this step exists to delete. It also turns ~200 synchronous core tests into `await` ones,
+  surrendering the property that caught the missing `control()` bump, and it makes a mark's text
+  empty inside `useLayoutEffect` / `onMounted` at mount.
+- **Bracket the framework's paint from the adapter** — resurrects `host.rendered` with two edges
+  instead of one, and does not even work: when `slots.container` is a component the Container never
+  updates, so neither edge fires. That topology is what the deleted `nextTick` watcher existed for.
+
+The shape to build instead:
+
+- Extract `rebind(id)` — the body of bind's current per-node iteration, reading the registries fresh
+  for that one id. Every ref factory already has the id, so nothing new has to be threaded.
+- Registry writes (`consign`, `consignRow`, `control`, and `children`, which bumps nothing today)
+  call `rebind(ownerId)` directly and mutate a long-lived `byElement`, instead of bumping a counter
+  that destroys "id X moved" into "+1".
+- `bind()` keeps its signature, its whole-tree walk, its `treeIds` kill sweep and its fresh
+  `byElement`; its loop just calls `rebind`. The effect keeps subscribing to `roots` and `commits`,
+  so every commit still binds in full.
+
+Mount becomes one full bind plus N O(1) rebinds. Keeping the full bind on the commit clock is what
+makes this safe rather than clever: order-insensitivity and the per-surface self-heal survive
+structurally, the kill sweep stays tree-driven, and `bind.spec.ts`'s whole-tree cases stay green.
+
+Two riders are not optional. `#pendingChildSequences` must be keyed by owner id, or `rebind` is
+still O(registrations) per ref and mount stays quadratic with a smaller constant. And the dev
+divergence sweep must move back to `committed`: it walks the whole tree on every `bound`, so left
+where it is, dev and test mount stays quadratic on its own.
+
+**Order of work.** The bench rung comes first, before any production change: the repo has no mount
+benchmark at all, which is exactly why a Θ(N) → Θ(N²) mount regression reached a working tree. Then
+the `rebind` extraction. Then the docblock rewrite and the clock re-aiming — and the eleven red
+tests get triaged one by one rather than regenerated, because two of them are the divergence
+detector, whose net has gone slack precisely because the always-on bind re-arms every surface.
 
 ### The announcement contract
 
