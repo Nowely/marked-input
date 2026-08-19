@@ -13,8 +13,11 @@ import {bench, describe} from 'vitest'
  *
  * ── WHAT IT ANSWERED ────────────────────────────────────────────────────────────────────
  *
- * At 2000 spans: clean layout 0.001 ms; dirtied OWN span 91 ms; dirtied FAR span 72 ms; plain
- * (non-editable) host 83 ms. The three dirty rungs are one number under ±25-35% rme.
+ * At 2000 spans, two runs on an idle machine: clean layout 0.0013 / 0.0012 ms; dirtied OWN span
+ * 83 / 97 ms; dirtied FAR span 83 / 66 ms; plain (non-editable) host 79 / 65 ms. The three dirty
+ * rungs are one number under ±25-36% rme — that noise is inherent, not contention: each iteration
+ * costs ~80 ms so the run collects only ~10 samples. Run on an IDLE machine even so; see the
+ * measurement note in `commitCost.bench.ts`.
  *
  * 1. LOCALITY BUYS NOTHING. Dirtying the caret's own surface — what a keystroke actually does —
  *    costs the same as dirtying one at the far end. There is no cheap local path to find.

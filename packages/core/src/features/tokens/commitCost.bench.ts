@@ -82,13 +82,25 @@ import type {TextNode, TreeNode, Window} from './tree/types'
  * the delta ledger exist to manage the announcements that routing creates. L7 prices deleting all
  * of it — every commit takes the structural path, so `bind` walks the whole tree every time:
  *
- *   inline 100 marks    L6 0.317 ms -> L7 0.459 ms
- *   block 100 rows      L6 0.357 ms -> L7 0.676 ms
- *   block 1000 rows     L6 0.822 ms -> L7 1.925 ms   (both +-1%)
+ *   inline 100 marks    L6 0.26-0.29 ms -> L7 0.35-0.40 ms   (~1.35x)
+ *   block 100 rows      L6 0.34-0.37 ms -> L7 0.30-0.61 ms   (unstable, see below)
+ *   block 1000 rows     L6 0.70-0.73 ms -> L7 1.81-1.86 ms   (~2.5x, +-0.6% rme)
  *
- * So always binding roughly doubles the commit, and the worst case measured is 1.9 ms on a 2000
+ * So always binding roughly doubles the commit, and the worst case measured is ~1.85 ms on a 2000
  * token document — about 12% of a frame. Cheap enough that the routing does not pay for its
  * concepts.
+ *
+ * Ranges, not single figures, because these are three separate runs on an idle machine. Block 100
+ * rows is the one rung that did not settle (0.295 / 0.613 / 0.597 across the three), so treat it
+ * as unresolved rather than as a number.
+ *
+ * ── MEASUREMENT CONDITIONS, because it changed the answer once ──────────────────────────
+ *
+ * Run these with NOTHING else on the machine. An earlier set of these figures was taken while
+ * three background agents were running browser suites, and it inflated every absolute by roughly
+ * 5-30% (block 1000 L7 read 1.925 ms against 1.81-1.86 ms clean) while pushing rme from ~1% to
+ * 20-105%. Ratios between rungs survived, absolutes did not. If a rung reports rme above ~10% at
+ * a size where its neighbours report ~1%, suspect the machine before the code.
  *
  * CAVEAT, and it is the whole remaining question: this is the CORE half only. `mountDom` builds
  * the DOM by hand and `host.rendered()` drives bind directly, so no React or Vue reconciliation

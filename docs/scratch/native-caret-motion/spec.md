@@ -36,9 +36,12 @@ Measured, `layoutCost.bench.ts` at 2000 spans:
 
 | after the same mutation | mean |
 | --- | --- |
-| `selection.collapse` | 93.0 ms |
-| a bare forced reflow (`void host.offsetHeight`) | 89.4 ms |
+| `selection.collapse` | 73.0 / 101.6 ms |
+| a bare forced reflow (`void host.offsetHeight`) | 76.8 / 104.9 ms |
 | nothing — layout left to the frame | 0.0003 ms |
+
+(Two runs on an idle machine. These big rungs carry ±19-32% rme because each iteration costs
+~80 ms and the run collects only ~10 samples; the reflow-equals-collapse result held in both.)
 
 A bare reflow costs what the selection write costs. **The bill is the layout, not the selection.**
 `Selection.collapse` is not doing anything special; it forces the layout any layout read would
@@ -50,9 +53,9 @@ Same 2000 spans, same mutation, same selection write, varying only how the spans
 
 | structure | mean | rme |
 | --- | --- | --- |
-| one flat inline context | 93.0 ms | ±30%, 10 samples |
-| 1 span per block | 0.285 ms | ±3.8%, 2457 samples |
-| 20 spans per block | 0.049 ms | ±2.2%, 14449 samples |
+| one flat inline context | 73.0 / 101.6 ms | ±19-32%, ~10 samples |
+| 1 span per block | 0.237 / 0.291 ms | ±0.8-6% |
+| 20 spans per block | 0.047 / 0.052 ms | ±2% |
 
 Three orders of magnitude. The whole cost is that inline layout puts the entire document in **one
 inline formatting context**, and editing one character reflows it wholesale. Nothing about markput
@@ -98,14 +101,22 @@ that.
 ## The one improvement that did land
 
 `Selection.collapse` instead of `removeAllRanges()` + `addRange()`, because the two-call form pays
-the forced layout twice. ~24% off a keystroke at 100 marks. See
-`perf(core): place the caret with Selection.collapse instead of addRange`.
+the forced layout twice. A/B'd by reverting the one line, five runs on an idle machine: **~19% off
+a whole keystroke**, and the same figure at inline 100 marks (0.333 → 0.271 ms) and block 1000 rows
+(0.884 → 0.715 ms). See `perf(core): place the caret with Selection.collapse instead of addRange`.
 
-## Cross-check pending
+## The cross-check that was stopped, and why
 
-An independent measurement run was in flight when this was written: a markput-free A/B of native
-versus cancelled typing, a CDP `LayoutCount`/`LayoutDuration` count per path, and a spike that
-actually lets `insertText` through in markput. Its purpose was to answer this same question by
-other instruments. If it contradicts the table above — in particular if it finds the cancelled
-path lays out **more times** per keystroke than the native one — this verdict has to be revisited,
-because that is the one mechanism under which the direction would still pay.
+An independent run was started to answer this by other instruments — a markput-free A/B of native
+versus cancelled typing, a CDP `LayoutCount`/`LayoutDuration` count per path, and a spike letting
+`insertText` through in markput. It was **stopped before producing results**, deliberately: three
+agents were benchmarking concurrently with each other and with the foreground runs, so its numbers
+would have been measured under exactly the contention that invalidates a benchmark. Every figure in
+this file was re-taken afterwards on an idle machine, which is why they are quoted as ranges over
+repeated runs.
+
+The verdict above rests on the reflow-equals-collapse result, which held in both clean runs. The
+one finding that would still overturn it is a CDP layout COUNT showing the cancelled path lays out
+**more times** per keystroke than the native one — that is the only mechanism under which handing
+the insertion to the browser would remove work rather than move it. Nobody has counted. It is the
+cheapest remaining experiment and it needs an idle machine.

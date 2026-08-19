@@ -28,8 +28,9 @@ import {bench, describe} from 'vitest'
  *
  * ── WHAT IT ANSWERED, and it closes the question rather than narrowing it ────────────────
  *
- * At 2000 spans: mutate + `selection.collapse` 93.0 ms; mutate + bare forced reflow 89.4 ms;
- * mutate only 0.0003 ms. The bare reflow costs what the selection write costs, so THE BILL IS
+ * At 2000 spans, two runs on an idle machine: mutate + `selection.collapse` 73.0 / 101.6 ms;
+ * mutate + bare forced reflow 76.8 / 104.9 ms; mutate only 0.0003 ms. The bare reflow costs what
+ * the selection write costs — in BOTH runs, which is the point — so THE BILL IS
  * THE LAYOUT, not the selection. `Selection.collapse` is not doing anything special — it forces
  * the layout that any layout read would force, and the frame has to pay it either way.
  *
@@ -39,9 +40,10 @@ import {bench, describe} from 'vitest'
  * Then the chunking rungs found what the cost actually IS. Same 2000 spans, same mutation, same
  * selection write, varying only how the spans are grouped:
  *
- *   one flat inline context   93.0 ms   (±30% rme, 10 samples)
- *   1 span per block           0.285 ms (±3.8%, 2457 samples)
- *   20 spans per block         0.049 ms (±2.2%, 14449 samples)
+ *   one flat inline context   73.0 / 101.6 ms  (±19-32% rme, ~10 samples — inherently noisy,
+ *                                              each iteration is ~80 ms so the run gets few)
+ *   1 span per block            0.237 / 0.291 ms (±0.8-6%)
+ *   20 spans per block          0.047 / 0.052 ms (±2%)
  *
  * Three orders of magnitude, far outside the noise. The whole cost is that inline layout puts the
  * entire document in ONE inline formatting context, and editing one character reflows it
@@ -50,6 +52,10 @@ import {bench, describe} from 'vitest'
  * markput's BLOCK layout already has the fix by construction, one block per Row, which is why
  * `commitCost.bench.ts` reads block-1000-rows at ~0.8 ms against inline-1000-marks at 16-40 ms
  * for the same token count.
+ *
+ * Run these on an IDLE machine. Under background load the absolutes inflate and the big rungs'
+ * rme goes past 100%; the three-orders-of-magnitude gap survives either way, but the figures do
+ * not. See the measurement note in `commitCost.bench.ts`.
  *
  * DIAGNOSTIC, NOT A PRESCRIPTION. Do not read this as "chunk inline layout into blocks": a block
  * box breaks the line, and an inline field has to flow as one paragraph. The finding is that the
