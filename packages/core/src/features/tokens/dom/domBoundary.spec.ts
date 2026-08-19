@@ -28,15 +28,16 @@ function mountNestedSlot({chrome = false, control = true} = {}) {
 	const trailing = document.createElement('span')
 	host.style.display = 'contents'
 	host.append(before, inner, after)
-	// `chrome` is a consumer's own presentation INSIDE the mark's element, beside the slot host —
-	// which is what gives the owner an interior boundary at all. `control` decides whether the
-	// button inside it is registered, and that one bit is the difference between a neighbour that
-	// resolves to a token and one that resolves to `'control'`.
+	// `chrome` is a consumer's own presentation AMONG the slot children — a per-item button, say.
+	// It is what gives the host an interior boundary whose right-hand neighbour belongs to no
+	// token, and `control` decides whether the button inside it is registered. That one bit is
+	// the whole difference between a neighbour that resolves to a token and one that resolves to
+	// `'control'`, which is what selects the fallback.
 	if (chrome) {
 		const box = document.createElement('span')
 		const button = document.createElement('button')
 		box.append(button)
-		outer.append(box)
+		host.append(box)
 		if (control) store.tokens.control()(button)
 	}
 	outer.append(host)
@@ -271,23 +272,28 @@ describe('anchorFor', () => {
 		// marks every ancestor of a control up to the container. So a neighbour that merely
 		// CONTAINS a registered control resolves to no token, with every node alive, every
 		// element bound and no timing window anywhere.
-		const {store, outer} = mountNestedSlot({chrome: true})
+		const {store, host} = mountNestedSlot({chrome: true})
 		const owner = store.tokens.nodes()[1]
 		if (owner.kind !== 'mark') throw new Error('expected a mark root')
 
-		// The door, pinned rather than assumed: the chrome sibling is a control root.
-		expect(store.tokens.handleAt(outer.children[0])).toBe('control')
+		// The door, pinned rather than assumed: the chrome among the slot children is a control root.
+		expect(store.tokens.handleAt(host.children[3])).toBe('control')
 
-		// The boundary between the chrome and the slot host, inside the owner's own element.
-		expect(store.tokens.anchorFor(outer, 1, 'before')).toEqual({before: owner})
-		expect(store.tokens.anchorFor(outer, 1, 'after')).toEqual({after: owner})
-		// The same shape WITHOUT the control resolves both neighbours and takes the paired
-		// branch — which is what makes the pair above a measurement of this line and not of
-		// some other return.
+		// The boundary between the last slot child and that chrome. The answer LEANS INWARD like
+		// every other arm: a range END asks with 'before' and gets the owner's far side, so a
+		// selection touching this boundary swallows the mark instead of stopping short of it
+		// (`beforeInput.ts`'s `anchorsFromTargetRange` is what asks that way).
+		expect(store.tokens.anchorFor(host, 3, 'before')).toEqual({after: owner})
+		expect(store.tokens.anchorFor(host, 3, 'after')).toEqual({before: owner})
+
+		// THE DISCRIMINATOR: byte-identical shape minus the registration. Both neighbours now
+		// resolve — the chrome walks up to the owner — so the PAIRED branch answers with the
+		// slot CHILD, not with the owner. That is what makes the pair above a measurement of the
+		// fallback line and not of some other return.
 		const plain = mountNestedSlot({chrome: true, control: false})
 		const plainOwner = plain.store.tokens.nodes()[1]
 		if (plainOwner.kind !== 'mark') throw new Error('expected a mark root')
-		expect(plain.store.tokens.anchorFor(plain.outer, 1, 'before')).not.toEqual({before: plainOwner})
+		expect(plain.store.tokens.anchorFor(plain.host, 3, 'before')).toEqual({after: plainOwner.children()[2]})
 	})
 
 	it('anchors a token-shell boundary to the owner by side', () => {

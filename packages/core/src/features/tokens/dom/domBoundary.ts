@@ -222,11 +222,13 @@ function childBoundaryAnchor(
 	// the only way, and it is no longer a way at all — every commit binds and the kill sweep is
 	// tree-driven, so "element bound, node gone" is not a state a commit can leave behind.
 	//
-	// KNOWN DEFECT, pre-existing and deliberately not fixed here: this arm leans OUTWARD while
-	// {@link BoundaryAffinity} and the mark-presentation arm above both lean inward — 'before'
-	// answers the owner's START rather than its end. A selection END landing on this boundary
-	// (`beforeInput.ts` asks with 'before') is therefore truncated to before the whole mark.
-	return affinity === 'before' ? {before: owner} : {after: owner}
+	// INWARD, the same spelling as the mark-presentation arm above and as the container arm: a
+	// range END asks with 'before' and gets the owner's far side, a START asks with 'after' and
+	// gets its near one, so a selection touching this boundary SWALLOWS the mark rather than
+	// stopping short of it. It read backwards until 2026-08-19 — inherited verbatim from the
+	// numeric projection deleted at S2.6, whose own probe table never reached this line either —
+	// and truncated a selection to the far side of the whole mark at both ends.
+	return affinity === 'after' ? {before: owner} : {after: owner}
 }
 
 /**
