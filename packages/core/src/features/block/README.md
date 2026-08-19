@@ -4,13 +4,13 @@ Manages the block editing mode where each row is rendered as a separate draggabl
 
 ## Components
 
-- **BlockController**: Owns `store.block.action` (a reactive event) and lowers every drag operation onto the row's own node — `remove()`, `duplicate()`, `insertAfter()`, `moveTo()` — so the commit names the row it addressed. Only the two adds with no row to address are left composed. Also vends each row's `BlockStore` via `store.block.get(node)`, lazily created and cached per stable node id.
+- **BlockController**: Owns `store.block.action` (a reactive event) and lowers every drag operation onto the row's own node — `remove()`, `duplicate()`, `insertAfter()`, `moveTo()` — so the commit names the row it addressed. Only the two adds with no row to address are left composed. Also vends each row's `BlockStore` via `store.block.get(node)`, lazily created and cached in a `WeakMap` keyed by the row NODE — adoption writes surviving nodes in place and allocates an id only at `buildNode`, so within one input "kept its id" and "kept its object" are the same statement, and the object key self-collects instead of needing a prune.
 - **BlockStore**: Per-row UI state (drag/hover/menu signals) and DOM wiring (`attachContainer`/`attachGrip`/`attachMenu`). One instance per row node.
 - **getAlwaysShowHandle**: Extracts `alwaysShowHandle` from `DraggableConfig`
 
 ## Why the node verbs, and not a composed document
 
-A composed document is diffed back to an edit window by `gapWindow`, a STRING diff — and a string diff cannot tell two byte-identical rows apart. `duplicate` and `add` manufacture exactly those (`createRowContent` answers the same string every time), so deleting the first of two identical rows retained the wrong node and announced the wrong id in `changed.removed`. Both adapters key rows by `node.id` and this feature prunes per-row state by it, so the wrong id unmounted the wrong row.
+A composed document is diffed back to an edit window by `gapWindow`, a STRING diff — and a string diff cannot tell two byte-identical rows apart. `duplicate` and `add` manufacture exactly those (`createRowContent` answers the same string every time), so deleting the first of two identical rows retained the wrong node and announced the wrong id in `changed.removed`. Both adapters key rows by `node.id` and this feature keyed per-row state by the row's identity, so the wrong id unmounted the wrong row.
 
 Addressing the row's own node removes the ambiguity at the source: the splice window is the row's own span, and adoption's prefix/suffix walks keep every other row.
 

@@ -196,11 +196,16 @@ write verb → splice → parse → adopt → TransactionResult
 - **`changed`** fires only after the DOM is consistent with the node layer — the model-level "commit done" signal (`dom/SelectionDriver.ts`
   re-places the caret on it) — carrying that commit's `{added, removed, updated}`
   ids (`TokenDelta`: `added`/`removed` are subtree-inclusive, `updated` is per
-  node). Consumers re-read content via `nodes()` / `find(id)` / `handle(id)`;
-  `BlockController` prunes its id-keyed store off `delta.removed`. Inside a
-  pending window only the final commit announces, and its payload MERGES every
-  folded apply's delta, so a consumer pruning off `removed` cannot miss a wave
-  when two structural applies land before one bind.
+  node). Consumers re-read content via `nodes()` / `find(id)` / `handle(id)`.
+  Inside a pending window only the final commit announces, and its payload
+  MERGES every folded apply's delta, so a consumer pruning off `removed` cannot
+  miss a wave when two structural applies land before one bind. NOTHING in core
+  reads the payload any more — the three in-core subscribers
+  (`dom/SelectionDriver.ts`, `features/overlay/OverlayController.ts`, and
+  `dom/commit.ts`'s divergence sweep) all take the event as a bare pulse, and
+  `BlockController` stopped pruning off `removed` when it moved to a
+  node-keyed `WeakMap`. `TokenDelta` survives as PUBLIC surface
+  (`store/MarkputApi.ts`), not as an internal contract.
 
 ## Structural DOM walk (`dom/bind.ts`)
 
