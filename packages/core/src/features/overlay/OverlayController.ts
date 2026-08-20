@@ -24,7 +24,7 @@ export class OverlayController {
 
 	readonly position: Computed<{left: number; top: number}> = computed(() => {
 		if (!this.match()) return {left: 0, top: 0}
-		const rect = this.tokens.domSelection()?.rect
+		const rect = this.tokens.caretRect()
 		if (!rect) return {left: 0, top: 0}
 		return {left: rect.left, top: rect.top + rect.height + 1}
 	})

@@ -15,5 +15,5 @@ export type {Anchors, Id, MarkNode, MarkPatch, NodeAnchor, TextNode, Transaction
 // not exported at all since S2.9: `TokenModel` constructs it privately and delegates its
 // three reads, so nothing outside this folder names the class.
 export type {Selection} from './tree/selection'
-export type {SelectionAnchor, SelectionSnapshot} from './dom/DomModel'
+export type {SelectionSnapshot} from './dom/DomModel'
 export {TokenHandle} from './dom/TokenHandle'

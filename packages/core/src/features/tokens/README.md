@@ -271,6 +271,7 @@ anchorFor(node, offset, affinity?)   // DOM (node, offset) → NodeAnchor in the
 placeCaret(anchor: NodeAnchor)       // collapsed caret, through the anchor's OWN node
 selectRange(anchor, head)            // order-insensitive; normalized in DOM order
 domSelection(): SelectionSnapshot | undefined // THE raw window-selection read
+caretRect(): DOMRect | undefined     // viewport rect of the caret/selection, on demand
 selectedContent(): {html; text} | undefined // selection serialized for clipboard
 
 // the selection driver's reads, delegated (the driver itself is private)
@@ -306,15 +307,14 @@ a set of per-field micro-reads:
 ```ts
 type SelectionSnapshot = {
     range: globalThis.Range // the window selection's OWN first range, not a clone
-    rect: DOMRect | undefined
-    anchor: SelectionAnchor // {node, offset, isCollapsed}
     focusNode: Node | undefined
-    intersects(node: Node): boolean // partial containment counts
 }
 ```
 
 A consumer that treats "no selection" as collapsed compares
-`domSelection()?.anchor.isCollapsed !== false`.
+`domSelection()?.range.collapsed !== false`. The caret's viewport rect is not on
+the snapshot — `caretRect()` computes it only when asked, so a `selectionchange`
+snapshot forces no layout.
 
 The per-member contract — why `nodes` is a subscribable `Computed` field, why the
 bind effect subscribes to the commit counter and not to the roots, exactly when

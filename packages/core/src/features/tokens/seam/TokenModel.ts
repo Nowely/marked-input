@@ -334,6 +334,11 @@ export class TokenModel {
 		return this.#dom.selection()
 	}
 
+	/** Viewport rect of the caret/selection (see {@link DomModel.caretRect}). */
+	caretRect(): DOMRect | undefined {
+		return this.#dom.caretRect()
+	}
+
 	/** DOM TRUTH as anchors: see {@link SelectionDriver.domAnchors}. */
 	domAnchors(): Anchors | undefined {
 		return this.#selectionDriver.domAnchors()

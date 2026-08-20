@@ -52,7 +52,7 @@ function consignRoots(model: TokenModel, container: HTMLElement): void {
  */
 function boundaryOf(snapshot: SelectionSnapshot | undefined): [Node, number] {
 	if (!snapshot) throw new Error('expected a selection snapshot')
-	return [snapshot.anchor.node, snapshot.anchor.offset]
+	return [snapshot.range.startContainer, snapshot.range.startOffset]
 }
 
 const INLINE_PROPS: CoreProps = {
@@ -391,11 +391,11 @@ describe('TokenModel shell (seam/)', () => {
 
 			expect(model.placeCaret(model.anchorAt(1))).toBe(true)
 			expect(model.anchorFor(...boundaryOf(model.domSelection()))).toEqual({node: model.nodes()[0], offset: 1})
-			expect(model.domSelection()?.anchor.node).toBe(text1.firstChild)
-			const anchor = model.domSelection()?.anchor
-			expect(anchor?.isCollapsed).toBe(true)
-			expect(model.domSelection()?.rect).toBeDefined()
-			expect(model.domSelection()?.focusNode).toBe(anchor?.node)
+			const range = model.domSelection()?.range
+			expect(range?.startContainer).toBe(text1.firstChild)
+			expect(range?.collapsed).toBe(true)
+			expect(model.caretRect()).toBeDefined()
+			expect(model.domSelection()?.focusNode).toBe(range?.startContainer)
 		})
 
 		it("handle.placeCaret targets the handle's token explicitly", () => {
@@ -425,7 +425,7 @@ describe('TokenModel shell (seam/)', () => {
 				node: model.nodes()[2],
 				offset: 3,
 			})
-			expect(model.domSelection()?.anchor.isCollapsed).toBe(false)
+			expect(model.domSelection()?.range.collapsed).toBe(false)
 			const content = model.selectedContent()
 			expect(content?.text).toContain('he')
 		})
