@@ -35,6 +35,30 @@ export interface MarkToken {
 }
 
 /**
+ * A first-class block-mode row. `parseRows` splits the document at separator
+ * occurrences that lie outside every match extent and wraps each span as a Row;
+ * block layout's top level is `RowToken[]`. `content`/`position` INCLUDE the
+ * trailing separator when `terminated`, so joining row contents reproduces the
+ * value byte-for-byte; `children` are the row's inline tokens (absolute
+ * positions, separator excluded). A Row is never an inline child — `Token`
+ * stays `TextToken | MarkToken`.
+ */
+export interface RowToken {
+	type: 'row'
+	content: string
+	position: {
+		start: number
+		end: number
+	}
+	/** Stable identity id, stamped by the tree's snapshot (`tree/snapshot.ts`) — NOT by the parser. Absent on freshly parsed trees. */
+	id?: number
+	/** Inline tokens of the row content (the same shape `parse()` emits), always edged by text tokens. */
+	children: Token[]
+	/** False only for the document-final row, which no separator terminates. */
+	terminated: boolean
+}
+
+/**
  * Position range representing a span in text with start and end positions
  * Used for various positioning needs throughout the parser
  */

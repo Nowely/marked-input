@@ -1,8 +1,9 @@
 import {MarkupRegistry} from './core/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
+import {acceptMatches, closeTrailingGaps, findSeparators, groupRows} from './core/RowBuilder'
 import {SegmentMatcher} from './core/SegmentMatcher'
 import {TreeBuilder} from './core/TreeBuilder'
-import type {Markup, Token} from './types'
+import type {Markup, RowToken, Token} from './types'
 
 /**
  * Parser - High-performance tree-based markup parser
@@ -75,5 +76,42 @@ export class Parser {
 		const segments = this.segmentMatcher.search(value)
 		const matches = this.patternMatcher.process(segments)
 		return this.treeBuilder.build(matches, value)
+	}
+
+	/**
+	 * Parses text into separator-delimited rows — block layout's top level
+	 * (issue 08: the separator is structural).
+	 *
+	 * The same match pipeline as {@link parse}, then the row pass: separator
+	 * occurrences outside every match extent become row boundaries (an opaque
+	 * `__value__`/`__meta__` interior hides its separators), open trailing gaps
+	 * close forward to the next boundary, and the top level is grouped into
+	 * {@link RowToken}s. The piece after the final separator is a row even when
+	 * empty, so Enter at the document end always yields a visible row.
+	 *
+	 * @param value - Text to parse
+	 * @param separator - The editor-level row separator; never part of any markup
+	 *
+	 * @example
+	 * ```typescript
+	 * const parser = new Parser(['# __slot__'])
+	 * const rows = parser.parseRows('# Title\n\nBody', '\n\n')
+	 * // Returns: [
+	 * //   RowToken('# Title\n\n', terminated, children=[TextToken(''), MarkToken('# Title'), TextToken('')]),
+	 * //   RowToken('Body', unterminated, children=[TextToken('Body')])
+	 * // ]
+	 * ```
+	 */
+	parseRows(value: string, separator: string): RowToken[] {
+		if (separator.length === 0) {
+			throw new Error('Parser.parseRows: separator must be non-empty')
+		}
+		const segments = this.segmentMatcher.search(value)
+		// The backwards slot-leading chain is skipped: the row pass owns gap closure
+		const matches = acceptMatches(this.patternMatcher.process(segments, {resolveSlotLeading: false}))
+		const separators = findSeparators(value, separator, matches)
+		closeTrailingGaps(matches, separators, value.length)
+		const tokens = this.treeBuilder.build(matches, value)
+		return groupRows(tokens, separators, value)
 	}
 }

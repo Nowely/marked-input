@@ -29,8 +29,14 @@ export class PatternMatcher {
 
 	constructor(private readonly registry: MarkupRegistry) {}
 
-	/** Main method that converts found segments into structured matches */
-	process(segments: SegmentMatch[]): Match[] {
+	/**
+	 * Main method that converts found segments into structured matches.
+	 *
+	 * `resolveSlotLeading: false` is the row pipeline's entry (`Parser.parseRows`):
+	 * there, open trailing gaps close FORWARD to a row boundary, and the backwards
+	 * chain below would instead hand a leading marker the previous row's text.
+	 */
+	process(segments: SegmentMatch[], options?: {resolveSlotLeading?: boolean}): Match[] {
 		this.pendingStates.clear()
 		this.completingStates.clear()
 		this.completedStates.length = 0
@@ -41,7 +47,9 @@ export class PatternMatcher {
 		}
 
 		//TODO need review it
-		this.resolveSlotLeadingMatches()
+		if (options?.resolveSlotLeading !== false) {
+			this.resolveSlotLeadingMatches()
+		}
 
 		return this.completedStates.map(entry => entry.match)
 	}
