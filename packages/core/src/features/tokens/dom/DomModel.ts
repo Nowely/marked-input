@@ -3,7 +3,7 @@ import type {Id, NodeAnchor, TreeNode} from '../tree/types'
 import {getRect, placeRangeAcrossBoundaries} from './caret'
 import type {CaretBoundary} from './caret'
 import {anchorFromBoundary} from './domBoundary'
-import type {AnchorContext, BoundaryAffinity, Lookup, TokenView} from './domBoundary'
+import type {AnchorContext, BoundaryAffinity, Lookup} from './domBoundary'
 import type {TokenHandle} from './TokenHandle'
 
 export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
@@ -76,7 +76,7 @@ export class DomModel {
 		const lookup = this.#locate(node)
 		if (!lookup) return undefined
 		if (lookup.kind === 'control') return 'control'
-		return lookup.node.handle
+		return lookup.handle
 	}
 
 	/** Locate the live node owning a DOM node, walking up to the container. */
@@ -89,21 +89,14 @@ export class DomModel {
 			if (current instanceof HTMLElement) {
 				const handle = this.deps.byElement(current)
 				if (handle) {
-					const view = this.#view(handle)
-					return view ? {kind: 'token', node: view} : undefined
+					const bindings = handle.node()
+					return bindings ? {kind: 'token', handle, bindings} : undefined
 				}
 				if (this.deps.isControlRoot(current)) return {kind: 'control'}
 			}
 			current = current.parentNode
 		}
 		return undefined
-	}
-
-	/** View of a handle for the boundary facade: its live DOM bindings plus the handle. */
-	#view(handle: TokenHandle): TokenView | undefined {
-		const bindings = handle.node()
-		if (!bindings) return undefined
-		return {handle, ...bindings}
 	}
 
 	#anchorContext(): AnchorContext {

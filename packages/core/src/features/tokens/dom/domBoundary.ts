@@ -16,12 +16,10 @@ import type {ElementBindings, TokenHandle} from './TokenHandle'
  */
 export type BoundaryAffinity = 'before' | 'after' | 'nearest'
 
-/** A bound token as the facade reads it: the live DOM bindings plus the handle itself. */
-export type TokenView = ElementBindings & {
-	readonly handle: TokenHandle
-}
-
-export type Lookup = {readonly kind: 'control'} | {readonly kind: 'token'; readonly node: TokenView}
+/** The token arm carries the handle plus its own live DOM bindings — no flattened copy. */
+export type Lookup =
+	| {readonly kind: 'control'}
+	| {readonly kind: 'token'; readonly handle: TokenHandle; readonly bindings: ElementBindings}
 
 /**
  * What the ANCHOR projection needs, and the whole of it: two DOM-side reads plus a
@@ -67,17 +65,17 @@ export function anchorFromBoundary(
 	// deleted its bind-generation `Token` — which is the point, because reading a
 	// second generation here would reintroduce the coordinate space this projection
 	// exists to avoid.
-	const owner = ctx.find(lookup.node.handle.id)
+	const owner = ctx.find(lookup.handle.id)
 	if (!owner) return undefined
 
 	// ABOVE the text-surface branch below: a token bound with both a `textElement` and a
 	// `childSequenceHost` must resolve host boundaries here, or a host boundary on a
 	// text-bearing token would be read as a text offset.
-	if (node instanceof HTMLElement && node === lookup.node.childSequenceHost) {
+	if (node instanceof HTMLElement && node === lookup.bindings.childSequenceHost) {
 		return fromHostAnchor(ctx, node, offset, owner, affinity)
 	}
 
-	const textElement = lookup.node.textElement
+	const textElement = lookup.bindings.textElement
 	if (textElement?.contains(node)) {
 		// A TYPE NARROW, not a runtime guard, and unreachable by construction: `bind`
 		// sets `textElement` only for text tokens (bind.ts) and `adopt` never reuses a
@@ -93,24 +91,24 @@ export function anchorFromBoundary(
 		return local <= owner.text().length ? {node: owner, offset: local} : undefined
 	}
 
-	if (node === lookup.node.tokenElement) {
-		return fromChildAnchor(ctx, lookup.node.tokenElement, offset, owner, affinity)
+	if (node === lookup.bindings.tokenElement) {
+		return fromChildAnchor(ctx, lookup.bindings.tokenElement, offset, owner, affinity)
 	}
 
-	if (owner.kind === 'mark' && lookup.node.tokenElement.contains(node)) {
-		if (hasEditableAncestorBefore(node, lookup.node.tokenElement)) {
+	if (owner.kind === 'mark' && lookup.bindings.tokenElement.contains(node)) {
+		if (hasEditableAncestorBefore(node, lookup.bindings.tokenElement)) {
 			return undefined
 		}
-		if (affinity === 'nearest') return nearestMarkEdge(lookup.node.tokenElement, node, offset, owner)
+		if (affinity === 'nearest') return nearestMarkEdge(lookup.bindings.tokenElement, node, offset, owner)
 		return affinity === 'after' ? {before: owner} : {after: owner}
 	}
 
-	if (lookup.node.rowElement && node === lookup.node.rowElement) {
+	if (lookup.bindings.rowElement && node === lookup.bindings.rowElement) {
 		// AGAINST THE TOKEN'S OWN INDEX, not 0: a row also holds chrome the tree does not
 		// own (the React/Vue `Block` renderers put a drop indicator and a drag handle
 		// BEFORE the token), so the boundary that precedes the token is its child index,
 		// not the row's start.
-		const tokenIndex = Array.prototype.indexOf.call(node.childNodes, lookup.node.tokenElement)
+		const tokenIndex = Array.prototype.indexOf.call(node.childNodes, lookup.bindings.tokenElement)
 		return offset <= tokenIndex ? {before: owner} : {after: owner}
 	}
 
@@ -279,14 +277,17 @@ function tokenAt(ctx: AnchorContext, container: HTMLElement, index: number, step
 		if (!(child instanceof HTMLElement)) continue
 		const lookup = ctx.locate(child)
 		if (lookup?.kind !== 'token') continue
-		const node = ctx.find(lookup.node.handle.id)
+		const node = ctx.find(lookup.handle.id)
 		if (node) return node
 	}
 	return undefined
 }
 
-function lookupTokenDescendant(ctx: Pick<AnchorContext, 'locate'>, node: Node | null): TokenView | undefined {
+function lookupTokenDescendant(
+	ctx: Pick<AnchorContext, 'locate'>,
+	node: Node | null
+): Extract<Lookup, {kind: 'token'}> | undefined {
 	if (!node) return undefined
 	const lookup = ctx.locate(node)
-	return lookup?.kind === 'token' ? lookup.node : undefined
+	return lookup?.kind === 'token' ? lookup : undefined
 }
