@@ -133,6 +133,14 @@ describe('TokenModel', () => {
 			expect(row.children().map(child => child.kind)).toEqual(['text', 'mark', 'text'])
 		})
 
+		it('throws loudly on an explicit empty separator instead of degrading to inline', () => {
+			// PropsModel defaults replace only undefined, so '' would flow through; the
+			// truthiness gate used to silently downgrade block to the inline parse
+			// (review finding) — parseRows' own contract is the loud failure.
+			store.props.set({layout: 'block', separator: '', options: []})
+			expect(() => store.host.container(document.createElement('div'))).toThrow('separator must be non-empty')
+		})
+
 		it('does not filter out empty text tokens when layout is inline', () => {
 			store.props.set({
 				Mark: () => null,

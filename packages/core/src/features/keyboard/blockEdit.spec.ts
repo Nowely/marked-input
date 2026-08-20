@@ -203,6 +203,23 @@ describe('blockEdit beforeinput guard', () => {
  * must be judged by its EVENT TARGET, not by whatever selection happens to be
  * stored for some row elsewhere.
  */
+describe('blockEdit trailing row', () => {
+	it('Backspace in the trailing empty row removes it with the previous separator', () => {
+		const {store, container} = mountBlock()
+		const trailing = store.tokens.nodes()[2]
+		store.tokens.selection.selectNode(trailing, 'start')
+		if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+		window.getSelection()?.removeAllRanges()
+
+		const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('one\n\ntwo')
+		expect(store.tokens.nodes()).toHaveLength(2)
+	})
+})
+
 describe('blockEdit mark swallow', () => {
 	it('deletes the adjacent inline mark inside a row on Backspace', () => {
 		// Safe since issue 08: a block row is a RowNode, never a MarkNode, so the swallow

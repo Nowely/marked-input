@@ -169,6 +169,23 @@ describe('BlockController', () => {
 		})
 	})
 
+	it('menu Delete on the final unterminated row shrinks the row count', () => {
+		// The final row owns no separator; its removal takes the PREVIOUS row's, so
+		// Delete cannot merely convert it into the trailing empty row (review finding).
+		store.props.set({
+			layout: 'block',
+			draggable: true,
+			options: [],
+		})
+		store.host.container(document.createElement('div'))
+		store.tokens.setValue('alpha\n\nbeta')
+
+		store.block.action({type: 'delete', index: 1})
+
+		expect(store.tokens.value()).toBe('alpha')
+		expect(store.tokens.nodes()).toHaveLength(1)
+	})
+
 	describe('row identity', () => {
 		it('removes the addressed row, not a byte-identical neighbour', () => {
 			store.props.set({

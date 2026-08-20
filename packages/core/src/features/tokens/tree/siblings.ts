@@ -28,6 +28,23 @@ export function mergePlan(
 	return {kept, at: contentEnd}
 }
 /**
+ * The removal window of a ROOT row when its own span is not the whole story: the
+ * document-final row owns no separator, so the boundary that leaves with it is the
+ * PREVIOUS row's — deleting only the row's span would convert it into the trailing
+ * empty row and leave that separator dangling, so the row count could never shrink
+ * (issue 08 review finding). `undefined` everywhere else: a terminated row's span
+ * already includes its separator, and non-rows keep the plain structural splice.
+ */
+export function removePlan(roots: readonly TreeNode[], node: TreeNode): {start: number; end: number} | undefined {
+	if (node.kind !== 'row' || node.terminator !== '') return undefined
+	const index = roots.indexOf(node)
+	if (index <= 0) return undefined
+	const previous = roots[index - 1]
+	if (previous.kind !== 'row' || previous.terminator === '') return undefined
+	return {start: previous.position.end - previous.terminator.length, end: node.position.end}
+}
+
+/**
  * Moving a root to another root index, as ONE splice over the affected span plus the
  * {@link Pairing} that says which sibling went where. Roots outside
  * `[min(from,to), max(from,to)]` are not touched, so the splice is as narrow as a rotation can

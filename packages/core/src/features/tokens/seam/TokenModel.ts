@@ -19,7 +19,7 @@ import {adjacentMark as findAdjacentMark, anchorAt as anchorAtOffset, offsetOfAn
 import {gapWindow} from '../tree/gapWindow'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
-import {entryAnchor, mergePlan, movePlan} from '../tree/siblings'
+import {entryAnchor, mergePlan, movePlan, removePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkNode, MarkPatch, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
@@ -497,14 +497,36 @@ export class TokenModel {
 			let removed = false
 			// One tick for value and selection, exactly as `EditController.replace` batches its pair.
 			batch(() => {
-				const start = untracked(() => node.position.start)
+				// The document-final row owns no separator, so its removal takes the PREVIOUS
+				// row's — a span-only splice would just convert it into the trailing empty row
+				// (issue 08 review finding). removePlan's root indexOf is the liveness check.
+				const plan = untracked(() => removePlan(this.#tree.roots(), node))
+				if (plan) {
+					if (!this.#tx.applyRange({start: plan.start, end: plan.end, insertedLength: 0}, '')) return
+					removed = true
+					this.#applyCaret(this.anchorAt(plan.start))
+					return
+				}
+				const {start, end} = untracked(() => node.position)
+				// A zero-width node has nothing to remove: refuse instead of committing a
+				// no-op splice that fires onChange with the unchanged value.
+				if (start === end) return
 				if (!this.#applyStructural(node, '')) return
 				removed = true
 				this.#applyCaret(this.anchorAt(start))
 			})
 			return removed
 		},
-		duplicate: node => this.#insertAfter(node, this.valueBetween({before: node}, {after: node})),
+		duplicate: node => {
+			const projection = this.valueBetween({before: node}, {after: node})
+			// The document-final row carries no separator; without one between the copies
+			// they fuse into a single row (issue 08 review finding) — the same
+			// normalization movePlan applies to a moved span.
+			const text = untracked(() =>
+				node.kind === 'row' && node.terminator === '' ? this.props.separator() + projection : projection
+			)
+			return this.#insertAfter(node, text)
+		},
 		insertAfter: (node, text) => this.#insertAfter(node, text),
 		/**
 		 * The boundary between the pair, removed by replacing the FIRST node with what survives

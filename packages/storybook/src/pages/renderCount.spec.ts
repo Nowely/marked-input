@@ -136,12 +136,13 @@ describe('Render-count gates: structural fan-out', () => {
  * the framework.
  */
 describe('Render-count gates: block layout', () => {
-	it('block keystroke into a row does not re-render Span; a row split does', async () => {
+	it('block keystroke into a row does not re-render Mark or Span; a row split does', async () => {
+		const [CountedMark, markRenders] = countRenders({tag: 'mark'})
 		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
 		const {host} = await mountComponent({
 			Span: CountedSpan,
-			options: [],
-			defaultValue: 'First row\n\nSecond row\n\n',
+			options: [{markup: '@[__value__](__meta__)', Mark: CountedMark}],
+			defaultValue: 'First @[m](1) row\n\nSecond row\n\n',
 			layout: 'block',
 			draggable: true,
 		})
@@ -151,14 +152,17 @@ describe('Render-count gates: block layout', () => {
 		await focusAtEnd(rowsOf(host)[0])
 
 		// Baseline after mount + focus: every gate below asserts a DELTA from here.
+		const markBaseline = markRenders()
 		const spanBaseline = spanRenders()
+		expect(markBaseline).toBeGreaterThan(0)
 		expect(spanBaseline).toBeGreaterThan(0)
 
 		// Gate: a keystroke INSIDE a row rides the text path — the surface is patched
-		// directly, zero component re-renders.
+		// directly, zero component re-renders, the INLINE mark inside the row included.
 		await userEvent.keyboard('?')
-		await expect.element(page.getByText('First row?')).toBeInTheDocument()
+		await expect.element(page.getByText('row?')).toBeInTheDocument()
 		expect(spanRenders()).toBe(spanBaseline)
+		expect(markRenders()).toBe(markBaseline)
 
 		// Gate: Enter splits the row (blockEdit inserts the separator) — a structural edit
 		// that publishes a new tree and re-renders through the framework.

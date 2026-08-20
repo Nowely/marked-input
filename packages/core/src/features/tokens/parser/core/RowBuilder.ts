@@ -26,6 +26,40 @@ export function acceptMatches(matches: Match[]): Match[] {
 }
 
 /**
+ * The whole row derivation, run to a FIXPOINT. One round is not enough: closing a
+ * trailing gap can extend a match into a conflict the tree will drop, and a dropped
+ * match must not keep hiding the separator occurrences inside its extent — so the
+ * pass re-derives boundaries and closures over the surviving set until a round drops
+ * nothing. Terminates: every extra round strictly shrinks the accepted list.
+ */
+export function rowPass(
+	matches: Match[],
+	value: string,
+	separator: string
+): {accepted: Match[]; separators: PositionRange[]} {
+	// Closure mutates `end`; re-derivation needs the segment end back
+	const segmentEnds = new Map<Match, number>()
+	for (const match of matches) segmentEnds.set(match, match.end)
+
+	let accepted = acceptMatches(matches)
+	for (;;) {
+		for (const match of accepted) {
+			const {trailingGap} = match.descriptor
+			const segmentEnd = segmentEnds.get(match)
+			if (trailingGap && segmentEnd !== undefined) {
+				match.end = segmentEnd
+				match.gaps[trailingGap] = undefined
+			}
+		}
+		const separators = findSeparators(value, separator, accepted)
+		closeTrailingGaps(accepted, separators, value.length)
+		const survivors = acceptMatches(accepted)
+		if (survivors.length === accepted.length) return {accepted, separators}
+		accepted = survivors
+	}
+}
+
+/**
  * Separator occurrences that delimit rows: every occurrence lying outside all
  * accepted match extents. An occurrence inside an extent is that markup's own
  * text — an opaque `__value__`/`__meta__` interior (a code block's internal
@@ -40,8 +74,14 @@ export function findSeparators(value: string, separator: string, matches: Match[
 		const overlaps = matches.some(match => match.start < end && match.end > at)
 		if (!overlaps) {
 			result.push({start: at, end})
+			at = value.indexOf(separator, end)
+		} else {
+			// A HIDDEN occurrence advances one char, not its own length: a valid
+			// occurrence may start inside the hidden span ('- item\n' followed by
+			// '\n\n' shares its first newline with the markup's literal), and
+			// skipping the whole span would fuse two rows of plain text.
+			at = value.indexOf(separator, at + 1)
 		}
-		at = value.indexOf(separator, end)
 	}
 	return result
 }

@@ -206,6 +206,31 @@ describe('parseRows', () => {
 		})
 	})
 
+	describe('separator precedence under conflicts (review findings)', () => {
+		it('keeps a boundary that starts inside a hidden straddling occurrence', () => {
+			// The occurrence at [7,9) straddles the todo's trailing '\n' literal and is
+			// hidden; the fully-plain-text occurrence at [8,10) is still a boundary — a
+			// hidden occurrence advances the scan by one char, not by its own length.
+			const rows = new Parser(['- [__value__] __slot__\n']).parseRows('- [x] a\n\n\nnext', SEPARATOR)
+
+			expect(rows.map(row => row.content)).toEqual(['- [x] a\n\n\n', 'next'])
+		})
+
+		it('recomputes boundaries when closure drops the match that hid one', () => {
+			// The mention passes the single-lookback filter, hides the separator at [14,16),
+			// and is then dropped by the tree after closure extends the heading into a
+			// conflict — the row pass must re-derive boundaries over the surviving set, or
+			// the separator lands as plain row text with no boundary (fixpoint rowPass).
+			const rows = new Parser(['**__slot__**', '# __value__', '@[__value__](__meta__)']).parseRows(
+				'**# t @[a](x**\n\ny)\n\nend',
+				SEPARATOR
+			)
+
+			expect(rows.map(row => row.content)).toEqual(['**# t @[a](x**\n\n', 'y)\n\n', 'end'])
+			expect(rows.map(row => row.content).join('')).toBe('**# t @[a](x**\n\ny)\n\nend')
+		})
+	})
+
 	describe('contract', () => {
 		it('rejects an empty separator', () => {
 			expect(() => new Parser([]).parseRows('alpha', '')).toThrow('separator must be non-empty')

@@ -502,6 +502,50 @@ describe('mergeWith', () => {
 		expect(store.tokens.value()).toBe('he@[x]llo')
 	})
 })
+describe('row removal and duplication at the document end (review findings)', () => {
+	it('removing the document-final row takes the previous separator with it', () => {
+		const store = rowSetup('alpha\n\nbeta')
+		const rows = store.tokens.nodes()
+		expect(rows).toHaveLength(2)
+
+		expect(rows[1].remove()).toBe(true)
+
+		expect(store.tokens.value()).toBe('alpha')
+		expect(store.tokens.nodes()).toHaveLength(1)
+	})
+
+	it('removing the trailing empty row deletes the previous separator', () => {
+		const store = rowSetup('alpha\n\n')
+		const rows = store.tokens.nodes()
+		expect(rows).toHaveLength(2)
+
+		expect(rows[1].remove()).toBe(true)
+
+		expect(store.tokens.value()).toBe('alpha')
+		expect(store.tokens.nodes()).toHaveLength(1)
+	})
+
+	it('refuses to remove the only empty row', () => {
+		const store = rowSetup('')
+		const row = store.tokens.nodes()[0]
+
+		// Nothing to remove: a zero-width splice would only fire onChange with the
+		// unchanged value.
+		expect(row.remove()).toBe(false)
+		expect(store.tokens.value()).toBe('')
+		expect(store.tokens.nodes()).toHaveLength(1)
+	})
+
+	it('duplicating the document-final row yields two rows, not a fused one', () => {
+		const store = rowSetup('alpha\n\nbeta')
+
+		expect(store.tokens.nodes()[1].duplicate()).toBe(true)
+
+		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\nbeta')
+		expect(store.tokens.nodes()).toHaveLength(3)
+	})
+})
+
 describe('moveTo', () => {
 	it('carries the row identity to its new index', () => {
 		const store = rowSetup('alpha\n\nbeta\n\ngamma\n\n')

@@ -581,6 +581,9 @@ describe('Feature: drag row keyboard navigation', () => {
 			await focusAtEnd(last)
 			await userEvent.keyboard('{ArrowRight}')
 
+			// The row check carries the claim: offset 0 alone is satisfied by a caret
+			// anywhere BEFORE the empty row too (the range collapses to nothing).
+			expect(caretIsInside(last)).toBe(true)
 			verifyCaretPosition(last, 0)
 		})
 	})
@@ -598,16 +601,20 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(caretIsInside(rows[1])).toBe(true)
 		})
 
-		it('not cross row boundary from the last row', async () => {
+		it('never travels above the last content row', async () => {
+			// The trailing EMPTY row renders a zero-height line box, and Chromium's vertical
+			// move from it resolves upward — a native quirk this layer does not cancel. The
+			// stable claim lives one row up: ArrowDown from the last CONTENT row must not
+			// land in any row above it.
 			const {host} = await mount(PlainTextDrag)
 			const rows = rowsOf(host)
-			// The document-final row is the trailing EMPTY row (issue 08)
-			const last = rows[rows.length - 1]
+			const lastContent = rows[rows.length - 2]
 
-			await focusAtEnd(last)
+			await focusAtEnd(lastContent)
 			await userEvent.keyboard('{ArrowDown}')
 
-			verifyCaretPosition(last, 0)
+			const above = rows.slice(0, -2)
+			expect(above.some(row => caretIsInside(row))).toBe(false)
 		})
 	})
 

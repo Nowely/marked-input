@@ -66,8 +66,11 @@ export function createBoundary(deps: {
 		// that owes the pre-mutation reading of their positions.
 		const selectionBefore = deps.selection?.()
 		// Block layout's top level is rows (issue 08); inline stays the flat parse.
+		// `!== undefined`, not truthiness: an explicit `separator: ''` must reach
+		// parseRows' own loud throw, not silently downgrade block to the inline parse.
 		const separator = deps.isBlock?.() === true ? deps.separator?.() : undefined
-		const parsed = separator ? parseRowsValue(deps.parser(), next, separator) : parseValue(deps.parser(), next)
+		const parsed =
+			separator !== undefined ? parseRowsValue(deps.parser(), next, separator) : parseValue(deps.parser(), next)
 		const result = adopt(deps.tree, window, parsed, selectionBefore)
 		// Adoption is the commit; it must not sit inside the optional call's argument,
 		// which JS skips evaluating when no listener is registered.

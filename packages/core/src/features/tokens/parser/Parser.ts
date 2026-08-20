@@ -1,6 +1,6 @@
 import {MarkupRegistry} from './core/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
-import {acceptMatches, closeTrailingGaps, findSeparators, groupRows} from './core/RowBuilder'
+import {acceptMatches, closeTrailingGaps, groupRows, rowPass} from './core/RowBuilder'
 import {SegmentMatcher} from './core/SegmentMatcher'
 import {TreeBuilder} from './core/TreeBuilder'
 import type {Markup, RowToken, Token} from './types'
@@ -109,10 +109,8 @@ export class Parser {
 			throw new Error('Parser.parseRows: separator must be non-empty')
 		}
 		const segments = this.segmentMatcher.search(value)
-		const matches = acceptMatches(this.patternMatcher.process(segments))
-		const separators = findSeparators(value, separator, matches)
-		closeTrailingGaps(matches, separators, value.length)
-		const tokens = this.treeBuilder.build(matches, value)
+		const {accepted, separators} = rowPass(this.patternMatcher.process(segments), value, separator)
+		const tokens = this.treeBuilder.build(accepted, value)
 		return groupRows(tokens, separators, value)
 	}
 }
