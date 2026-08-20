@@ -10,7 +10,7 @@ Manages the block editing mode where each row is rendered as a separate draggabl
 
 ## Why the node verbs, and not a composed document
 
-A composed document is diffed back to an edit window by `gapWindow`, a STRING diff — and a string diff cannot tell two byte-identical rows apart. `duplicate` and `add` manufacture exactly those (`createRowContent` answers the same string every time), so deleting the first of two identical rows retained the wrong node and announced the wrong id in `changed.removed`. Both adapters key rows by `node.id` and this feature keyed per-row state by the row's identity, so the wrong id unmounted the wrong row.
+A composed document is diffed back to an edit window by `gapWindow`, a STRING diff — and a string diff cannot tell two byte-identical rows apart. `duplicate` and `add` manufacture exactly those (an added row is the separator string, the same bytes every time), so deleting the first of two identical rows retained the wrong node and announced the wrong id in `changed.removed`. Both adapters key rows by `node.id` and this feature keyed per-row state by the row's identity, so the wrong id unmounted the wrong row.
 
 Addressing the row's own node removes the ambiguity at the source: the splice window is the row's own span, and adoption's prefix/suffix walks keep every other row.
 

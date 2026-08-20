@@ -103,18 +103,16 @@ describe('TokenHandle', () => {
 	describe('element bindings', () => {
 		it('bindElements exposes the live DOM, unbind clears it, rebinding while alive works', () => {
 			const {container, span} = mountSurface('hello')
-			const row = document.createElement('div')
 			const host = document.createElement('div')
 			const node = textNodeOf('hello')
 			const handle = new TokenHandle(1)
 			expect(handle.node()).toBeUndefined()
 
-			handle.bindElements({tokenElement: span, textElement: span, rowElement: row, childSequenceHost: host}, node)
+			handle.bindElements({tokenElement: span, textElement: span, childSequenceHost: host}, node)
 			expect(handle.element()).toBe(span)
 			expect(handle.node()).toEqual({
 				tokenElement: span,
 				textElement: span,
-				rowElement: row,
 				childSequenceHost: host,
 			})
 
@@ -197,9 +195,10 @@ describe('TokenHandle', () => {
 			document.body.append(container)
 
 			const handle = new TokenHandle(1)
-			handle.bindElements({tokenElement: span, textElement: span, rowElement: row}, textNodeOf('hello'))
+			handle.bindElements({tokenElement: row}, textNodeOf('hello'))
 
-			// 6, not 5: the scope is the ROW, so the sibling's text counts too.
+			// 6, not 5: the measure scope is the token element — for a row handle that IS
+			// the block wrapper — so the sibling's text counts too.
 			expect(handle.textLength()).toBe(6)
 		})
 

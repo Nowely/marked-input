@@ -453,16 +453,11 @@ function mountDom(store: Store, doc: Doc): readonly (() => void)[] {
 			// A ROW and a TOKEN ELEMENT are different elements of the same token, registered
 			// separately — the same pairing `mountBlock` documents in `__testing__/mountFixtures.ts`.
 			const row = document.createElement('div')
-			const mark = document.createElement('span')
 			const text = document.createElement('span')
-			mark.append(text)
-			row.append(mark)
+			row.append(text)
 			container.append(row)
-			const surface = root.kind === 'mark' ? root.children()[0] : undefined
-			consignments.push(
-				() => store.tokens.consignRow(root.id)(row),
-				() => store.tokens.consign(root.id)(mark)
-			)
+			const surface = root.kind === 'row' ? root.children()[0] : undefined
+			consignments.push(() => store.tokens.consign(root.id)(row))
 			if (surface) consignments.push(() => store.tokens.consign(surface.id)(text))
 		} else {
 			const span = document.createElement('span')

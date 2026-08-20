@@ -103,15 +103,6 @@ export function anchorFromBoundary(
 		return affinity === 'after' ? {before: owner} : {after: owner}
 	}
 
-	if (lookup.bindings.rowElement && node === lookup.bindings.rowElement) {
-		// AGAINST THE TOKEN'S OWN INDEX, not 0: a row also holds chrome the tree does not
-		// own (the React/Vue `Block` renderers put a drop indicator and a drag handle
-		// BEFORE the token), so the boundary that precedes the token is its child index,
-		// not the row's start.
-		const tokenIndex = Array.prototype.indexOf.call(node.childNodes, lookup.bindings.tokenElement)
-		return offset <= tokenIndex ? {before: owner} : {after: owner}
-	}
-
 	return undefined
 }
 

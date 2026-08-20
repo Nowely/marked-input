@@ -69,21 +69,18 @@ type BindOverrides = {
 	nodes?: Map<number, TokenHandle>
 	byElement?: WeakMap<HTMLElement, TokenHandle>
 	consigned?: Map<number, HTMLElement>
-	rows?: Map<number, HTMLElement>
 	childSequenceHostsFor?: (ownerId: number) => readonly HTMLElement[]
 }
 
 function inputFor(container: HTMLElement, roots: readonly TreeNode[], overrides: BindOverrides = {}): BindInput {
 	const childSequenceHostsFor = overrides.childSequenceHostsFor ?? (() => [])
 	const consigned = overrides.consigned ?? consignFrom(container, roots, childSequenceHostsFor)
-	const rows = overrides.rows ?? new Map<number, HTMLElement>()
 	return {
 		roots,
 		nodes: overrides.nodes ?? new Map<number, TokenHandle>(),
 		byElement: overrides.byElement ?? new WeakMap<HTMLElement, TokenHandle>(),
 		source: {
 			tokenElement: id => consigned.get(id),
-			rowElement: id => rows.get(id),
 			// The registry declines when two generations are registered; the `contains` test that
 			// decides which one is this generation's stays inside bind.
 			childSequenceHost: ownerId => {
@@ -245,42 +242,6 @@ describe('bind', () => {
 			// No handle is materialized for a tree node the walk never reached.
 			expect(nodes.has(2)).toBe(false)
 			expect(nodes.size).toBe(1)
-		})
-
-		it('binds a block row wrapper alongside the token element', () => {
-			// The rows arrive from their own registry now. There is no peeling and no `isBlock`:
-			// a row is registered under its token's id or it is not, and outside block layout
-			// nothing registers one.
-			const container = document.createElement('div')
-			const row0 = document.createElement('div')
-			const tokenEl0 = document.createElement('span')
-			row0.append(tokenEl0)
-			const row1 = document.createElement('div')
-			const tokenEl1 = document.createElement('span')
-			row1.append(tokenEl1)
-			container.append(row0, row1)
-
-			const {roots} = treeOf([textToken('a', 0), textToken('b', 2)])
-
-			const result = bindOf(
-				inputFor(container, roots, {
-					consigned: new Map([
-						[roots[0].id, tokenEl0],
-						[roots[1].id, tokenEl1],
-					]),
-					rows: new Map([
-						[roots[0].id, row0],
-						[roots[1].id, row1],
-					]),
-				})
-			)
-
-			expect(at(result, roots, 0)?.element()).toBe(tokenEl0)
-			expect(at(result, roots, 0)?.node()?.rowElement).toBe(row0)
-			expect(at(result, roots, 1)?.element()).toBe(tokenEl1)
-			expect(at(result, roots, 1)?.node()?.rowElement).toBe(row1)
-			expect(result.byElement.get(row0)).toBe(at(result, roots, 0))
-			expect(result.byElement.get(row1)).toBe(at(result, roots, 1))
 		})
 
 		it('uses a registered child-sequence host as the parent for nested children', () => {

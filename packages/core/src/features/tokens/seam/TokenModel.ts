@@ -178,15 +178,6 @@ export class TokenModel {
 		return this.#refInto(this.#tokenElements, id)
 	}
 
-	/**
-	 * The same, for the ROW wrapper a top-level token gets in block layout. Separate from
-	 * {@link consign} because they are different elements of the same token — the walk answers
-	 * both, and a row holds chrome the token element must not be confused with.
-	 */
-	consignRow(id: number): DomRef {
-		return this.#refInto(this.#rowElements, id)
-	}
-
 	// ═══ Engine SPI (in-core consumers) ═══════════════════════════════════════
 
 	/**
@@ -702,7 +693,6 @@ export class TokenModel {
 		roots: () => this.#tree.roots(),
 		source: {
 			tokenElement: id => this.#tokenElements.latest(id),
-			rowElement: id => this.#rowElements.latest(id),
 			childSequenceHost: ownerId => this.#childSequenceHosts.sole(ownerId),
 		},
 	})
@@ -731,7 +721,6 @@ export class TokenModel {
 	// registration. That is not a micro-optimisation — it is the difference between a linear
 	// mount and a quadratic one, measured.
 	readonly #tokenElements = new RefRegistry()
-	readonly #rowElements = new RefRegistry()
 	readonly #childSequenceHosts = new RefRegistry()
 
 	/** The shared ref-callback body: one key per registration, filed into `registry` under `id`. */

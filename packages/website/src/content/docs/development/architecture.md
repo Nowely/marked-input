@@ -69,7 +69,7 @@ Both framework adapters share the same component structure:
 | **Container**        | contenteditable management, renders tokens or blocks         |
 | **Token**            | Unified renderer for both text and mark tokens (recursive)   |
 | **TokenChildren**    | Internal nested token sequence host for slot children        |
-| **Block**            | Drag-mode wrapper with handle, menu, and drop indicators     |
+| **Block**            | Block layout's row wrapper — the RowNode's own element; renders the row's children plus handle, menu and drop indicators |
 | **DragHandle**       | Drag grip UI element                                         |
 | **BlockMenu**        | Context menu for block operations (add, delete, duplicate)   |
 | **DropIndicator**    | Visual drop target indicator during drag                     |
@@ -294,6 +294,7 @@ class Store {
         options: Signal<CoreOption[]>
         readOnly: Signal<boolean>
         layout: Signal<'inline' | 'block'>
+        separator: Signal<string>            // block layout's structural row separator (ADR-0009)
         draggable: Signal<boolean | DraggableConfig>
         showOverlayOn: Signal<OverlayTrigger>
         Span: Signal<Slot | undefined>
