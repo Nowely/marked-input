@@ -4,8 +4,10 @@ import {describe, expect, it} from 'vitest'
 import {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
 import {toString} from '../parser/utils/toString'
+import {captureTree, diffTree} from './__testing__/diff'
 import {snapshot, stripIds} from './__testing__/snapshot'
 import {adopt} from './adopt'
+import {anchorAt} from './anchors'
 import {gapWindow} from './gapWindow'
 import {createTokenTree} from './tree'
 import type {Id, NodeAnchor, TreeNode, Window} from './types'
@@ -140,15 +142,6 @@ const idsOf = (nodes: readonly TreeNode[], into: Id[] = []): Id[] => {
 	return into
 }
 
-/** Per id, everything a signal write on that node could change: text, or value+meta. */
-const record = (nodes: readonly TreeNode[], into = new Map<Id, string>()): Map<Id, string> => {
-	for (const node of nodes) {
-		into.set(node.id, node.kind === 'text' ? node.text() : JSON.stringify([node.value(), node.meta()]))
-		if (node.kind === 'mark') record(node.children(), into)
-	}
-	return into
-}
-
 /**
  * Independent mirror of `snapshotNodeEquals` over two PARSED streams — the tree is
  * not involved, so the reference walks below are derived from the parser alone.
@@ -214,9 +207,11 @@ describe('adopt property: output equivalence', () => {
 		const seen = {editedValues: 0, structuralAdoptions: 0}
 		for (const c of CASES) {
 			const tree = createTokenTree(parser.parse(c.source))
-			const result = adopt(tree, windowOf(c), parser.parse(c.next))
+			const before = new Set(idsOf(tree.roots()))
+			adopt(tree, windowOf(c), parser.parse(c.next))
+			const after = idsOf(tree.roots())
 			if (c.next !== c.source) seen.editedValues++
-			if (result.structural) seen.structuralAdoptions++
+			if (after.length !== before.size || after.some(id => !before.has(id))) seen.structuralAdoptions++
 			expect(stripIds(snapshot(tree.roots())), label(c)).toEqual(stripIds(parser.parse(c.next)))
 			expect(tree.value(), label(c)).toBe(c.next)
 		}
@@ -225,57 +220,31 @@ describe('adopt property: output equivalence', () => {
 	})
 })
 
-describe('adopt property: feed accounting', () => {
+describe('adopt property: id uniqueness', () => {
 	/**
-	 * Every id in the resulting tree is accounted for by the feeds, every id that left
-	 * is reported, and every observable change to a surviving node reaches the feed
-	 * that owns it. Immune to the unbounded-slot-pairing deviation (§4.2): that
-	 * deviation picks the WRONG node to drop, it never drops one silently.
+	 * The one clause of the retired feed-accounting property whose subject outlived the
+	 * change feed: every other clause compared the feed against the tree, and with the
+	 * feed deleted the tree is the only witness — a diff of it against a pre-adoption
+	 * capture IS the reality it used to be checked against. What can still go wrong
+	 * without a feed is a node adopted into two places at once, so that is what this
+	 * gates; the diff-based counters keep the corpus adversarial (births, deaths and
+	 * content writes all above the floor) rather than gating anything themselves.
 	 */
-	it('accounts for every id and every change through the feeds', () => {
+	it('never leaves two nodes sharing an id', () => {
 		const failures: string[] = []
 		const seen = {contentChanges: 0, removals: 0, additions: 0}
 		for (const c of CASES) {
 			const tree = createTokenTree(parser.parse(c.source))
-			const before = record(tree.roots())
-			const result = adopt(tree, windowOf(c), parser.parse(c.next))
+			const before = captureTree(tree.roots())
+			adopt(tree, windowOf(c), parser.parse(c.next))
 			const afterList = idsOf(tree.roots())
-			const after = record(tree.roots())
+			const diff = diffTree(before, tree.roots())
 			// `added` carries subtree ROOTS (D9), so an added mark's children are new too.
-			const added = new Set(idsOf(result.added.map(change => change.node)))
-			const removed = new Set(result.removed)
-			const updated = new Set(result.updated.map(node => node.id))
-			seen.removals += removed.size
-			seen.additions += added.size
+			seen.additions += idsOf(diff.added.map(change => change.node)).length
+			seen.removals += diff.removed.length
+			seen.contentChanges += diff.updated.length
 
-			if (afterList.length !== after.size) failures.push(`${label(c)} — duplicate id in the result`)
-			for (const id of removed) {
-				if (after.has(id)) failures.push(`${label(c)} — removed id ${id} is still in the tree`)
-				if (!before.has(id)) failures.push(`${label(c)} — removed id ${id} was never in the tree`)
-			}
-			for (const id of afterList) {
-				if (!before.has(id) && !added.has(id)) failures.push(`${label(c)} — id ${id} arrived unannounced`)
-			}
-			for (const id of before.keys()) {
-				if (!after.has(id) && !removed.has(id)) failures.push(`${label(c)} — id ${id} vanished unreported`)
-			}
-			for (const change of result.added) {
-				if (before.has(change.node.id)) failures.push(`${label(c)} — added id ${change.node.id} is not new`)
-			}
-			for (const id of updated) {
-				if (!before.has(id) || !after.has(id)) failures.push(`${label(c)} — feed id ${id} did not survive`)
-			}
-
-			for (const [id, content] of after) {
-				const was = before.get(id)
-				if (was === undefined) continue
-				// `updated` owns the signal writes: a retained node whose text (or value/meta)
-				// changed must be listed, and a node that changed nothing must not be.
-				if ((content !== was) !== updated.has(id)) {
-					failures.push(`${label(c)} — id ${id}: updated=${updated.has(id)} for a content change`)
-				}
-				if (content !== was) seen.contentChanges++
-			}
+			if (afterList.length !== new Set(afterList).size) failures.push(`${label(c)} — duplicate id in the result`)
 		}
 		expectNoFailures(failures)
 		// Measured 441 content changes, 712 removals, 317 additions.
@@ -312,9 +281,8 @@ describe('adopt property: identity outside the window', () => {
 			const runs = referenceRuns(sourceTokens, nextTokens, window, delta)
 			const tree = createTokenTree(sourceTokens)
 			const before = tree.roots().map(node => ({id: node.id, start: node.position.start, end: node.position.end}))
-			const result = adopt(tree, window, nextTokens)
+			adopt(tree, window, nextTokens)
 			const after = tree.roots()
-			const removed = new Set(result.removed)
 			seen.prefixNodes += runs.prefix
 			seen.suffixNodes += runs.suffix.length
 
@@ -330,7 +298,6 @@ describe('adopt property: identity outside the window', () => {
 				if (node.position.start !== was.start || node.position.end !== was.end) {
 					failures.push(`${label(c)} — prefix root ${index}: moved to ${node.position.start}`)
 				}
-				if (removed.has(was.id)) failures.push(`${label(c)} — prefix root ${index} reported removed`)
 			}
 
 			runs.suffix.forEach((sourceIndex, offset) => {
@@ -345,7 +312,6 @@ describe('adopt property: identity outside the window', () => {
 						`${label(c)} — suffix root ${sourceIndex}: at ${node.position.start}, want ${was.start + delta}`
 					)
 				}
-				if (removed.has(was.id)) failures.push(`${label(c)} — suffix root ${sourceIndex} reported removed`)
 			})
 		}
 		expectNoFailures(failures)
@@ -355,69 +321,87 @@ describe('adopt property: identity outside the window', () => {
 	})
 })
 
-describe('adopt property: map', () => {
+/**
+ * {node, offset} → node.position.start + offset; {before}/{after} → the node's
+ * start/end. Deliberately NOT `offsetOfAnchor`: a property gated by the production
+ * function it tests is circular. Do not deduplicate.
+ */
+function resolveOn(
+	roots: readonly TreeNode[],
+	anchor: NodeAnchor
+): {position: number; anchorable: boolean; node?: TreeNode} {
+	if (anchor === 'start') return {position: 0, anchorable: true}
+	if (anchor === 'end') {
+		return {position: roots.length > 0 ? roots[roots.length - 1].position.end : 0, anchorable: true}
+	}
+	if ('node' in anchor) {
+		return {position: anchor.node.position.start + anchor.offset, anchorable: true, node: anchor.node}
+	}
+	if ('before' in anchor) {
+		return {position: anchor.before.position.start, anchorable: false, node: anchor.before}
+	}
+	return {position: anchor.after.position.end, anchorable: false, node: anchor.after}
+}
+
+describe('adopt property: selection mapping', () => {
 	/**
-	 * Totality plus the shift contract (spec D7). Monotonicity is asserted over the
-	 * ANCHORABLE answers only, and that restriction is forced by spec §2.3, not by
-	 * convenience: an offset inside a mark's markup punctuation ('#[' of '#[Nkl]') has
-	 * no anchor, so `anchorAt` answers with the mark's trailing boundary. Reading that
-	 * boundary as a global offset jumps forward and then back when the next offset
-	 * lands in the slot. Every anchorable answer is pinned to an exact position
-	 * instead, which is strictly stronger than monotonicity over that subsequence.
+	 * Totality plus the shift contract (spec D7), routed through the one channel the
+	 * window mapping still feeds: `selectionAfter`. Each sampled pre-edit offset enters
+	 * as a captured caret — built with `anchorAt` on the pre-adoption tree, the same
+	 * construction the boundary's selection reader hands `adopt` — and the landed
+	 * anchor must answer a live, in-range node, pinned to the exact window-shifted
+	 * position when it is anchorable: a pure shift outside the window, a collapse onto
+	 * the end of the inserted text at or inside it (RIGHT affinity, plan decision D-a).
+	 *
+	 * The expectation reads the INPUT anchor's own position (`resolveOn`, pre-adoption)
+	 * rather than the sampled offset: a markup-interior offset has no anchor (spec
+	 * §2.3), so `anchorAt` snaps it to a mark boundary and THAT position is what the
+	 * mapping is owed for. The samples are the window's own boundaries plus the
+	 * document edges and the window interior — the exact positions an affinity
+	 * off-by-one moves.
 	 */
-	it('answers a resolvable, in-range anchor for every pre-edit offset', () => {
+	it('lands a captured caret at the window-shifted position for the sampled offsets', () => {
 		const failures: string[] = []
 		const seen = {anchorable: 0, markInterior: 0}
 		for (const c of CASES) {
-			const tree = createTokenTree(parser.parse(c.source))
+			const sourceTokens = parser.parse(c.source)
+			const nextTokens = parser.parse(c.next)
 			const window = windowOf(c)
 			const delta = c.text.length - (c.end - c.start)
-			const result = adopt(tree, window, parser.parse(c.next))
-			const roots = tree.roots()
-			const live = new Set(idsOf(roots))
-			const documentEnd = roots.length > 0 ? roots[roots.length - 1].position.end : 0
-			/**
-			 * {node, offset} → node.position.start + offset; {before}/{after} → the node's
-			 * start/end. Deliberately NOT `offsetOfAnchor`: a property gated by the production
-			 * function it tests is circular. Do not deduplicate.
-			 */
-			const resolve = (anchor: NodeAnchor): {position: number; anchorable: boolean; node?: TreeNode} => {
-				if (anchor === 'start') return {position: 0, anchorable: true}
-				if (anchor === 'end') return {position: documentEnd, anchorable: true}
-				if ('node' in anchor) {
-					return {position: anchor.node.position.start + anchor.offset, anchorable: true, node: anchor.node}
+			const offsets = [...new Set([0, c.start, Math.floor((c.start + c.end) / 2), c.end, c.source.length])]
+			for (const offset of offsets) {
+				const tree = createTokenTree(sourceTokens)
+				const anchor = anchorAt(tree.roots(), offset)
+				const pre = resolveOn(tree.roots(), anchor).position
+				const result = adopt(tree, window, nextTokens, {anchor, head: anchor})
+				const after = result.selectionAfter
+				if (!after) {
+					failures.push(`${label(c)} — offset ${offset}: no selectionAfter for a captured caret`)
+					continue
 				}
-				if ('before' in anchor) {
-					return {position: anchor.before.position.start, anchorable: false, node: anchor.before}
+				const roots = tree.roots()
+				const live = new Set(idsOf(roots))
+				const landed = resolveOn(roots, after.anchor)
+				if (landed.node && !live.has(landed.node.id)) {
+					failures.push(`${label(c)} — offset ${offset}: anchor node is dead`)
 				}
-				return {position: anchor.after.position.end, anchorable: false, node: anchor.after}
-			}
-
-			let previous = -1
-			for (let offset = 0; offset <= c.source.length; offset++) {
-				const {position, anchorable, node} = resolve(result.map(offset))
-				if (node && !live.has(node.id)) failures.push(`${label(c)} — offset ${offset}: anchor node is dead`)
-				if (position < 0 || position > c.next.length) {
-					failures.push(`${label(c)} — offset ${offset}: ${position} outside [0, ${c.next.length}]`)
+				if (landed.position < 0 || landed.position > c.next.length) {
+					failures.push(`${label(c)} — offset ${offset}: ${landed.position} outside [0, ${c.next.length}]`)
 				}
-				seen[anchorable ? 'anchorable' : 'markInterior']++
-				if (!anchorable) continue
-				if (position < previous) {
-					failures.push(`${label(c)} — offset ${offset}: ${position} < previous ${previous}`)
-				}
-				previous = position
-				// Outside the window the mapping is a pure shift; at or inside it the offset
-				// collapses to the end of the inserted text (RIGHT affinity, plan decision D-a).
-				const want = offset < c.start ? offset : offset >= c.end ? offset + delta : c.start + c.text.length
-				if (position !== want) {
-					failures.push(`${label(c)} — offset ${offset}: ${position}, want ${want}`)
+				seen[landed.anchorable ? 'anchorable' : 'markInterior']++
+				if (!landed.anchorable) continue
+				const want = pre < c.start ? pre : pre >= c.end ? pre + delta : c.start + c.text.length
+				if (landed.position !== want) {
+					failures.push(`${label(c)} — offset ${offset}: ${landed.position}, want ${want}`)
 				}
 			}
 		}
 		expectNoFailures(failures)
-		// Measured 6269 anchorable answers against 4036 markup-interior ones: the exact-
-		// position clause only bites on the former, the excluded set is the latter.
-		expectCoverage(seen, 500)
+		// Measured 1951 anchorable landings against 57 markup-interior ones: the exact-
+		// position clause only bites on the former, the excluded set is the latter. The
+		// floor sits under the smaller count — five samples per case land on a mark
+		// boundary far more rarely than the retired per-offset sweep did.
+		expectCoverage(seen, 30)
 	})
 })
 

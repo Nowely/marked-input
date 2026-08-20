@@ -1,5 +1,5 @@
 import type {Token} from '../parser/types'
-import type {Id, Pairing, TreeNode} from './types'
+import type {Pairing, TreeNode} from './types'
 
 /**
  * Shift-tolerant equality over (node, parsed token) — the retention test adoption
@@ -42,11 +42,6 @@ export function shiftPositions(node: TreeNode, delta: number): void {
 	}
 }
 
-/** Subtree ids for the removed feed. */
-export function collectIds(node: TreeNode, bucket: Id[]): void {
-	bucket.push(node.id)
-	if (node.kind === 'mark') for (const child of node.children()) collectIds(child, bucket)
-}
 /**
  * A {@link Pairing} resolved against the parse, or `undefined` — in which case adoption runs
  * its ordinary walks and the hint changes nothing. FAIL CLOSED by construction: the caller can
@@ -56,9 +51,9 @@ export function collectIds(node: TreeNode, bucket: Id[]): void {
  * Three gates, and the BIJECTION one is not implied by the others. Counter-example, on the very
  * shape this channel exists for: two byte-identical rows `A@[0,7]`, `B@[7,14]` with
  * `pairing = [0, 0]`. Both pairs pass the equality check — pair 0 at delta 0, pair 1 at delta
- * +7, same content — so a range-only gate accepts it. `B` then leaves the tree through no
- * branch that records it, because `collectIds` only fires for candidates IN the list adoption
- * walks, so `removed` under-reports and every consumer keyed by that id leaks it forever.
+ * +7, same content — so a range-only gate accepts it. Adoption would then adopt the SAME node
+ * object into both root slots: `B` leaves the tree silently while `A`'s id appears twice, so
+ * every consumer keyed by node identity is corrupted.
  *
  * Equality is checked under EACH PAIR'S OWN delta rather than one window delta: in a
  * permutation the rows move by different amounts, and that is the whole difference from the

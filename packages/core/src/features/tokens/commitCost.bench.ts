@@ -323,8 +323,8 @@ function adoptKeystroke(doc: Doc, pos: number = doc.pos): Keystroke {
 			? current.slice(0, pos) + current.slice(pos + 1)
 			: current.slice(0, pos) + 'x' + current.slice(pos)
 		inserted = !inserted
-		const result = adopt(tree, window, tokensFor(doc.parser, current, doc.isBlock))
-		sink += result.updated.length
+		adopt(tree, window, tokensFor(doc.parser, current, doc.isBlock))
+		sink += tree.roots().length
 	}
 }
 

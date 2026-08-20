@@ -5,6 +5,7 @@ import type {Signal} from '../../../shared/signals'
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import type {Markup} from '../parser/types'
 import type {
+	Anchors,
 	CommitSink,
 	Id,
 	MarkNode,
@@ -13,7 +14,6 @@ import type {
 	Pairing,
 	TextNode,
 	TransactionResult,
-	TreeChange,
 	TreeNode,
 	Window,
 } from './types'
@@ -69,10 +69,8 @@ describe('tree contract types', () => {
 		void end
 		// Mark interiors are NOT anchorable (spec §2.3): they are reached through slot text nodes
 		expectTypeOf<{node: MarkNode; offset: number}>().not.toExtend<NodeAnchor>()
-		// TransactionResult is the single change feed
-		expectTypeOf<TransactionResult['added']>().toEqualTypeOf<readonly TreeChange[]>()
-		expectTypeOf<TransactionResult['removed']>().toEqualTypeOf<readonly Id[]>()
-		expectTypeOf<TransactionResult['map']>().toExtend<(offset: number) => NodeAnchor>()
+		// TransactionResult carries the one field production reads — growing it back must be deliberate
+		expectTypeOf<TransactionResult>().toEqualTypeOf<{selectionAfter: Anchors | undefined}>()
 		expectTypeOf<CommitSink['commit']>().toExtend<(next: string, window: Window) => boolean>()
 		// A TreeNode is a TextNode or MarkNode discriminated by `kind`
 		expectTypeOf<TreeNode['kind']>().toEqualTypeOf<'text' | 'mark'>()

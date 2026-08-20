@@ -161,34 +161,12 @@ export type NodeAnchor = {node: TextNode; offset: number} | {before: TreeNode} |
  */
 export type Anchors = {anchor: NodeAnchor; head: NodeAnchor}
 
-/** One change entry: `path` indexes the tree AFTER adoption. */
-export interface TreeChange {
-	readonly node: TreeNode
-	readonly path: readonly number[]
-}
-
 /**
- * The single change feed adoption emits.
- *
- * Granularity splits by payload type and is normative: the id-only feed is
- * FLATTENED, the node feeds carry subtree ROOTS only (the node hands you the
- * subtree; an id cannot). A consumer refreshing per-node state from `added` must
- * therefore walk children itself.
+ * What adoption reports back: the one field production reads. The change feed
+ * (`structural`/`render`/`added`/`removed`/`updated`/`map`) was deleted with zero runtime
+ * readers; the identity oracles in the specs diff the tree directly instead.
  */
 export interface TransactionResult {
-	/**
-	 * Node ADD or REMOVE only — a pure move must NOT set it: moves are plain position-field
-	 * writes, and the consumers this flag routes — the view pipeline included — would
-	 * repaint for a scroll of offsets that changes nothing they render.
-	 */
-	structural: boolean
-	/** structural OR updated contains a MarkNode — compat snapshot renderer routes on this. */
-	render: boolean
-	/** Subtree roots: the children of a fresh mark are not listed separately. */
-	added: readonly TreeChange[]
-	/** Subtree-inclusive: a removed mark contributes every descendant id too. */
-	removed: readonly Id[]
-	updated: readonly TreeNode[]
 	/**
 	 * Where the pre-adoption selection LANDS after this adoption, or `undefined` when there
 	 * was none. THE selection channel — the capture itself is `adopt`'s `selectionBefore`
@@ -196,10 +174,10 @@ export interface TransactionResult {
 	 * carries its own input is a mirror nothing resyncs.
 	 *
 	 * Resolved here because a consumer cannot resolve it itself: it would have to turn the
-	 * captured anchors into an offset to feed {@link map}, and by the time it holds the
-	 * result the stored positions have already moved — so that offset would describe the
-	 * NEW coordinate space and `map` would shift it a SECOND time. Adoption is the only
-	 * code on the pre-mutation side of that line.
+	 * captured anchors into an offset to shift through the window arithmetic, and by the
+	 * time it holds the result the stored positions have already moved — so that offset
+	 * would describe the NEW coordinate space and be shifted a SECOND time. Adoption is the
+	 * only code on the pre-mutation side of that line.
 	 *
 	 * The capture reaches `adopt` from `createBoundary`'s `fold` — the single funnel every
 	 * adoption on the live path runs through (commit, arrival, reparse). NOT from the
@@ -210,8 +188,6 @@ export interface TransactionResult {
 	 * implementations would have to ignore.
 	 */
 	selectionAfter: Anchors | undefined
-	/** Valid for PRE-adoption offsets only. */
-	map(offset: number): NodeAnchor
 }
 
 /** Transactions produce {next, window}; commit policy lives in the sink. */

@@ -3,11 +3,13 @@ import {describe, expect, it} from 'vitest'
 
 import {Parser} from '../parser/Parser'
 import {filterEmptyText} from '../parser/utils/filterEmptyText'
+import type {TreeCapture} from './__testing__/diff'
+import {captureTree, diffTree} from './__testing__/diff'
 import {snapshot, stripIds} from './__testing__/snapshot'
 import {adopt} from './adopt'
 import {movePlan} from './siblings'
 import {createTokenTree} from './tree'
-import type {Pairing, TransactionResult, TreeNode, Window} from './types'
+import type {Pairing, Window} from './types'
 
 /**
  * The property gates for the identity {@link Pairing}. They are the acceptance oracle for the
@@ -77,15 +79,19 @@ function planned(c: Case): {tree: ReturnType<typeof buildTree>; window: Window; 
 	return {tree, window: plan.window, next, ids}
 }
 
-/** Everything an adoption did, in a shape two runs can be compared by. */
-function outcomeOf(tree: ReturnType<typeof buildTree>, result: TransactionResult) {
+/**
+ * Everything an adoption did, in a shape two runs can be compared by. Diff-based since the
+ * change feed left `TransactionResult`: the two trees allocate ids from independent counters
+ * that start equal, so ids — and the diffs built on them — compare across runs by value.
+ */
+function outcomeOf(tree: ReturnType<typeof buildTree>, before: TreeCapture) {
+	const diff = diffTree(before, tree.roots())
 	return {
-		ids: tree.roots().map((node: TreeNode) => node.id),
+		ids: tree.roots().map(node => node.id),
 		value: tree.value(),
-		structural: result.structural,
-		added: result.added.map(change => change.node.id),
-		removed: [...result.removed],
-		updated: result.updated.map(node => node.id),
+		added: diff.added.map(change => change.node.id),
+		removed: diff.removed,
+		updated: diff.updated.map(node => node.id),
 	}
 }
 
@@ -117,18 +123,19 @@ describe('pairing: a verified claim moves identity', () => {
 		}
 	})
 
-	it('reports a move as a non-event on the id feeds', () => {
+	it('moves rows without births, deaths or content writes', () => {
 		for (const c of CASES) {
 			const {tree, window, next} = planned(c)
+			const before = captureTree(tree.roots())
 
-			const result = adopt(tree, window, parseRows(next))
+			adopt(tree, window, parseRows(next))
 
-			// Nothing was born, died or changed content — `structural` is reserved for add and
-			// remove, and `types.ts` forbids a move from setting it.
-			expect({added: result.added, removed: result.removed, structural: result.structural}, label(c)).toEqual({
+			// Nothing was born, died or changed content: a verified move is position writes only.
+			const diff = diffTree(before, tree.roots())
+			expect({added: diff.added, removed: diff.removed, updated: diff.updated}, label(c)).toEqual({
 				added: [],
 				removed: [],
-				structural: false,
+				updated: [],
 			})
 		}
 	})
@@ -153,22 +160,20 @@ describe('pairing: a claim the parse refuses changes nothing', () => {
 			for (const c of CASES) {
 				const corrupted = planned(c)
 				const bare = planned(c)
+				const corruptedBefore = captureTree(corrupted.tree.roots())
+				const bareBefore = captureTree(bare.tree.roots())
 				const claim = corrupted.window.pairing
 				if (!claim) throw new Error(`movePlan produced no pairing: ${label(c)}`)
 
-				const withBadClaim = adopt(
-					corrupted.tree,
-					{...corrupted.window, pairing: corrupt(claim)},
-					parseRows(corrupted.next)
-				)
-				const withNoClaim = adopt(
+				adopt(corrupted.tree, {...corrupted.window, pairing: corrupt(claim)}, parseRows(corrupted.next))
+				adopt(
 					bare.tree,
 					{start: bare.window.start, end: bare.window.end, insertedLength: bare.window.insertedLength},
 					parseRows(bare.next)
 				)
 
-				expect(outcomeOf(corrupted.tree, withBadClaim), `${name} — ${label(c)}`).toEqual(
-					outcomeOf(bare.tree, withNoClaim)
+				expect(outcomeOf(corrupted.tree, corruptedBefore), `${name} — ${label(c)}`).toEqual(
+					outcomeOf(bare.tree, bareBefore)
 				)
 			}
 		})
