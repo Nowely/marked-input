@@ -96,14 +96,26 @@ export class TokenModel {
 	 */
 	readonly selection: Selection = createSelection({
 		// A bag of CLOSURES, none of them read before the first verb call — the ONLY reason this
-		// field may sit above `#tree`/`value`/`#offsetOf`, whose initializers have not run yet.
+		// field may sit above `#tree`/`value`, whose initializers have not run yet.
 		//
 		// Two of the three are NOT bare tree reads and cannot become them: {@link anchorAt}
 		// SEEDS (an unmaterialized tree has no roots, so every offset answers `'end'` — gates
 		// `tree/selection.spec`'s "returns true when range spans the entire value"), and
 		// {@link value} is props-first, so `#tree.value()` disagrees with it exactly while a
 		// controlled parent's value is ahead of the last arrival.
-		offsetOf: anchor => this.#offsetOf(anchor),
+		//
+		// `offsetOf` is an anchor's absolute offset in the tree's projection — the ONE place a
+		// coordinate is formed, and its readers are inside `tree/` (`Selection.isAllSelected`,
+		// `anchors.ts`'s adjacency and step). Deliberately does NOT seed — it is a READ reached
+		// from a computed's evaluation, and seeding writes signals.
+		//
+		// TREE space, not {@link value}: the two disagree exactly while a controlled parent's
+		// `props.value` is ahead of the last arrival, which is when the echo's capture runs. Its
+		// gate is `tree/selection.spec`'s "captures an 'end' anchor in TREE space, not against
+		// the props value", and that case has to be a DELETION — under an insertion the
+		// over-read and `map`'s shift both saturate onto the document end and the two readings
+		// agree by accident.
+		offsetOf: anchor => untracked(() => offsetOfAnchor(this.#tree.roots(), anchor)),
 		anchorAt: (offset, side) => this.anchorAt(offset, side),
 		value: () => this.value(),
 	})
@@ -268,8 +280,8 @@ export class TokenModel {
 	}
 
 	/**
-	 * THE render read: the live root nodes. Deliberately does NOT seed, for `#offsetOf`'s
-	 * reason — it is a read, and seeding writes signals.
+	 * THE render read: the live root nodes. Deliberately does NOT seed — it is a read, and
+	 * seeding writes signals.
 	 *
 	 * A `Computed` field rather than a method, which is what lets an adapter SUBSCRIBE to
 	 * it: `readSelected` calls a selector entry only when `isReactive` says so, and that
@@ -473,23 +485,6 @@ export class TokenModel {
 	#applyStructural(target: TreeNode, replacement: string): boolean {
 		this.#ensureSeeded()
 		return this.#tx.applyStructural(target, replacement)
-	}
-
-	/**
-	 * An anchor's absolute offset in the tree's projection — the ONE place a coordinate is
-	 * formed, and its readers are inside `tree/` (`Selection.isAllSelected`, `anchors.ts`'s
-	 * adjacency and step). Deliberately does NOT seed — it is a READ reached from a
-	 * computed's evaluation, and seeding writes signals.
-	 *
-	 * TREE space, not {@link value}: the two disagree exactly while a controlled parent's
-	 * `props.value` is ahead of the last arrival, which is when the echo's capture runs. Its
-	 * gate is `tree/selection.spec`'s "captures an 'end' anchor in TREE space, not against
-	 * the props value", and that case has to be a DELETION — under an insertion the
-	 * over-read and `map`'s shift both saturate onto the document end and the two readings
-	 * agree by accident.
-	 */
-	#offsetOf(anchor: NodeAnchor): number {
-		return untracked(() => offsetOfAnchor(this.#tree.roots(), anchor))
 	}
 
 	/**

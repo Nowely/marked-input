@@ -280,8 +280,8 @@ domAnchors(): Anchors | undefined    // DOM TRUTH as anchors
 focusFirst() / placeAtHandle(handle, boundary?)
 
 // the tree layer's own coordinate boundary — the ONE place a number may be formed.
-// Only this direction is public; its inverse is the private `#offsetOf`, whose one
-// consumer is the selection state in `tree/selection.ts` (isAllSelected).
+// Only this direction is public; its inverse is a private `offsetOf` closure in the
+// selection deps, whose one consumer is `tree/selection.ts` (isAllSelected).
 anchorAt(offset)
 
 // whole-value entry into a row, so a caller never forms an absolute offset
