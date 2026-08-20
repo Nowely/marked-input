@@ -1234,78 +1234,59 @@ describe('Parser', () => {
 		})
 	})
 
-	describe('slot-leading single-segment patterns', () => {
-		it('produces correct token structure with boundary text tokens', () => {
-			const parser = new Parser(['__slot__\n\n'])
-			const result = parser.parse('First\n\nSecond\n\n')
+	describe('trailing-gap markups (issue 08: the separator is structural)', () => {
+		it('rejects a markup that begins with a placeholder', () => {
+			// The backwards slot-leading chain is gone; the shape it repaired is declared
+			// invalid instead — a leading gap has nothing to delimit it on the left.
+			for (const markup of ['__slot__\n\n', '__value__:'] as const) {
+				expect(() => new Parser([markup])).toThrow('must not begin with a placeholder')
+			}
+		})
+
+		it('closes an open trailing slot at end of input — inline is one implicit row', () => {
+			const parser = new Parser(['# __slot__'])
+			const result = parser.parse('# Title')
 
 			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 				"0: TEXT "" [0-0]
-				 1: MARK "First↲↲" [0-7] [value="", slot="First"]
-					1.0: TEXT "First" [0-5]
-				 2: TEXT "" [7-7]
-				 3: MARK "Second↲↲" [7-15] [value="", slot="Second"]
-					3.0: TEXT "Second" [7-13]
-				 4: TEXT "" [15-15]"
+				 1: MARK "# Title" [0-7] [value="", slot="Title"]
+					1.0: TEXT "Title" [2-7]
+				 2: TEXT "" [7-7]"
 			`)
 		})
 
-		it('handles trailing text without delimiter as text token', () => {
-			const parser = new Parser(['__slot__\n\n'])
-			const result = parser.parse('First\n\nTrailing')
+		it('closes an open trailing value at end of input', () => {
+			const parser = new Parser(['- __value__'])
+			const result = parser.parse('- item')
 
-			expect(result).toHaveLength(3)
-			expect(result[0].type).toBe('text')
-			expect(result[1].type).toBe('mark')
-			expect(result[1].content).toBe('First\n\n')
-			expect(result[2].type).toBe('text')
-			expect(result[2].content).toBe('Trailing')
-		})
-
-		it('handles empty input', () => {
-			const parser = new Parser(['__slot__\n\n'])
-			const result = parser.parse('')
-
-			expect(result).toHaveLength(1)
-			expect(result[0].type).toBe('text')
-		})
-
-		it('supports nesting with other markups', () => {
-			const parser = new Parser(['__slot__\n\n', '@[__value__]'])
-			const result = parser.parse('Hello @[world]\n\n')
-
-			expect(result).toHaveLength(3)
-			expect(result[0].type).toBe('text')
 			const mark = getMarkToken(result)
-			expect(mark.type).toBe('mark')
-			expect(mark.content).toBe('Hello @[world]\n\n')
+			expect(mark.value).toBe('item')
+			expect(mark.content).toBe('- item')
+		})
+
+		it('nests inline marks inside the closed trailing slot', () => {
+			const parser = new Parser(['# __slot__', '@[__value__]'])
+			const result = parser.parse('# Hello @[world]')
+
+			const mark = getMarkToken(result)
+			expect(mark.content).toBe('# Hello @[world]')
 			expect(mark.children).toHaveLength(3)
-			expect(mark.children[0].type).toBe('text')
-			expect(mark.children[0].content).toBe('Hello ')
 			expect(mark.children[1].type).toBe('mark')
-			expect(mark.children[2].type).toBe('text')
-			expect(result[2].type).toBe('text')
 		})
 
-		it('handles single paragraph', () => {
-			const parser = new Parser(['__slot__\n\n'])
-			const result = parser.parse('Only\n\n')
+		it('bounds a nested trailing gap by the enclosing slot', () => {
+			const parser = new Parser(['#[__slot__]', '# __slot__'])
+			const result = parser.parse('#[# a] tail')
 
-			expect(result).toHaveLength(3)
-			expect(result[1].type).toBe('mark')
-			expect(result[1].content).toBe('Only\n\n')
-			const mark = getMarkToken(result)
-			expect(mark.value).toBe('')
-			expect(mark.slot?.content).toBe('Only')
-		})
-
-		it('handles empty slot content (just delimiter)', () => {
-			const parser = new Parser(['__slot__\n\n'])
-			const result = parser.parse('\n\n')
-
-			expect(result).toHaveLength(3)
-			expect(result[1].type).toBe('mark')
-			expect(result[1].content).toBe('\n\n')
+			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+				"0: TEXT "" [0-0]
+				 1: MARK "#[# a]" [0-6] [value="", slot="# a"]
+					1.0: TEXT "" [2-2]
+					1.1: MARK "# a" [2-5] [value="", slot="a"]
+						1.1.0: TEXT "a" [4-5]
+					1.2: TEXT "" [5-5]
+				 2: TEXT " tail" [6-11]"
+			`)
 		})
 	})
 })

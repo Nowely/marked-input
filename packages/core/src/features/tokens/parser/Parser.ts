@@ -74,7 +74,9 @@ export class Parser {
 	 */
 	parse(value: string): Token[] {
 		const segments = this.segmentMatcher.search(value)
-		const matches = this.patternMatcher.process(segments)
+		const matches = acceptMatches(this.patternMatcher.process(segments))
+		// Inline is one implicit row (issue 08): an open trailing gap closes at end of input
+		closeTrailingGaps(matches, [], value.length)
 		return this.treeBuilder.build(matches, value)
 	}
 
@@ -107,8 +109,7 @@ export class Parser {
 			throw new Error('Parser.parseRows: separator must be non-empty')
 		}
 		const segments = this.segmentMatcher.search(value)
-		// The backwards slot-leading chain is skipped: the row pass owns gap closure
-		const matches = acceptMatches(this.patternMatcher.process(segments, {resolveSlotLeading: false}))
+		const matches = acceptMatches(this.patternMatcher.process(segments))
 		const separators = findSeparators(value, separator, matches)
 		closeTrailingGaps(matches, separators, value.length)
 		const tokens = this.treeBuilder.build(matches, value)

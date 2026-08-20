@@ -52,9 +52,10 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		counts,
 		valueGapIndices,
 		trailingGap,
+		leadingGap,
 	} = scanMarkupStructure(markup)
 
-	validateMarkup(counts, markup)
+	validateMarkup(counts, leadingGap, markup)
 
 	const hasTwoValues = counts.value === 2
 
@@ -141,13 +142,26 @@ function scanMarkupStructure(markup: string) {
 		valueGapIndices,
 		// The markup ends exactly at a placeholder: its last gap has no closing segment
 		trailingGap: finalSegment.length === 0 && gapTypes.length > 0 ? gapTypes[gapTypes.length - 1] : undefined,
+		// The markup BEGINS with a placeholder: nothing delimits its gap on the left
+		leadingGap: placeholders.length > 0 && placeholders[0].position === 0,
 	}
 }
 
 /**
- * Validates markup placeholder counts
+ * Validates markup placeholder counts and placement
  */
-function validateMarkup(counts: Record<GapType, number>, markup: string): void {
+function validateMarkup(counts: Record<GapType, number>, leadingGap: boolean, markup: string): void {
+	// The row separator is structural (issue 08): a leading-gap form like '__slot__\n\n'
+	// has nothing to delimit it on the left — the backwards chain that used to repair it
+	// handed a leading marker the previous row's text, and is gone. Declared invalid
+	// instead of silently misparsed.
+	if (leadingGap) {
+		throw new Error(
+			`Invalid markup: "${markup}". A markup must not begin with a placeholder — ` +
+				'the row separator is an editor-level setting, not part of any markup'
+		)
+	}
+
 	const rules = [
 		{count: counts.value, max: 2, name: PLACEHOLDER.Value},
 		{count: counts.meta, max: 1, name: PLACEHOLDER.Meta},

@@ -2,7 +2,6 @@ import {faker} from '@faker-js/faker'
 import {describe, expect, it} from 'vitest'
 
 import {Parser} from '../parser/Parser'
-import {filterEmptyText} from '../parser/utils/filterEmptyText'
 import type {TreeCapture} from './__testing__/diff'
 import {captureTree, diffTree} from './__testing__/diff'
 import {snapshot, stripIds} from './__testing__/snapshot'
@@ -23,15 +22,14 @@ import type {Pairing, Window} from './types'
  * below is decided by the pairing alone. A pool of distinct rows would let ordinary
  * position-equality carry the identity and none of this would be tested.
  */
-const ROW_MARKUP = '__slot__\n\n'
-const parser = new Parser([ROW_MARKUP])
+const parser = new Parser([])
 const POOL = ['alpha', 'beta', 'alpha'] as const
 
 const BASE_SEED = 17_082_026
 const ITERATIONS = 200
 
-/** Block mode filters empty text tokens one line before adoption, so both ends speak post-filter indices. */
-const parseRows = (value: string): ReturnType<typeof parser.parse> => filterEmptyText(parser.parse(value))
+/** Paragraph rows (issue 08): the structural separator forms the rows, no markup needed. */
+const parseRows = (value: string) => parser.parseRows(value, '\n\n')
 
 const buildTree = (value: string) => createTokenTree(parseRows(value))
 

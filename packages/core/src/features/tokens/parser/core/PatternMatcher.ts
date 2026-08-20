@@ -29,14 +29,8 @@ export class PatternMatcher {
 
 	constructor(private readonly registry: MarkupRegistry) {}
 
-	/**
-	 * Main method that converts found segments into structured matches.
-	 *
-	 * `resolveSlotLeading: false` is the row pipeline's entry (`Parser.parseRows`):
-	 * there, open trailing gaps close FORWARD to a row boundary, and the backwards
-	 * chain below would instead hand a leading marker the previous row's text.
-	 */
-	process(segments: SegmentMatch[], options?: {resolveSlotLeading?: boolean}): Match[] {
+	/** Main method that converts found segments into structured matches */
+	process(segments: SegmentMatch[]): Match[] {
 		this.pendingStates.clear()
 		this.completingStates.clear()
 		this.completedStates.length = 0
@@ -44,11 +38,6 @@ export class PatternMatcher {
 		for (const segment of segments) {
 			this.processWaitingStates(segment)
 			this.tryStartNewStates(segment)
-		}
-
-		//TODO need review it
-		if (options?.resolveSlotLeading !== false) {
-			this.resolveSlotLeadingMatches()
 		}
 
 		return this.completedStates.map(entry => entry.match)
@@ -107,45 +96,6 @@ export class PatternMatcher {
 		if (segmentIndex === undefined) return
 		const map = match.isAwaitingLastSegment ? this.completingStates : this.pendingStates
 		getOrCreate(map, segmentIndex).push(match)
-	}
-
-	/**
-	 * Resolves slot-leading single-segment matches by extending their start backwards.
-	 *
-	 * For patterns like `__slot__\n\n`, the segment `\n\n` is a suffix delimiter and
-	 * the slot content precedes it. After normal processing, such matches only cover
-	 * the delimiter. This pass extends each slot-leading match backwards to the end
-	 * of the previous slot-leading match (or input start), so that non-slot-leading
-	 * matches between them become nested children rather than siblings.
-	 */
-	private resolveSlotLeadingMatches(): void {
-		let hasSlotLeading = false
-		for (const entry of this.completedStates) {
-			if (this.isSlotLeading(entry.match)) {
-				hasSlotLeading = true
-				break
-			}
-		}
-		if (!hasSlotLeading) return
-
-		// Only slot-leading match boundaries matter — other matches become nested children
-		let boundary = 0
-		for (const entry of this.completedStates) {
-			const {match} = entry
-			if (this.isSlotLeading(match)) {
-				const segmentStart = match.start
-				match.start = boundary
-				entry.position = boundary
-				match.gaps.slot = {start: boundary, end: segmentStart}
-				boundary = match.end
-			}
-		}
-
-		this.completedStates.sort((a, b) => a.position - b.position)
-	}
-
-	private isSlotLeading(match: Match): boolean {
-		return match.descriptor.segments.length === 1 && match.descriptor.hasSlot
 	}
 
 	/**

@@ -49,7 +49,7 @@ export function diffTree(before: TreeCapture, roots: readonly TreeNode[]): TreeD
 				return
 			}
 			if (was !== after.get(node.id)) updated.push(node)
-			if (node.kind === 'mark') walk(node.children(), at)
+			if (node.kind !== 'text') walk(node.children(), at)
 		})
 	}
 	walk(roots, [])
