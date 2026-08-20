@@ -36,6 +36,11 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	defaultValue?: string
 	readOnly?: boolean
 	layout?: 'inline' | 'block'
+	/**
+	 * The structural row separator for block layout (issue 08): editor-level, never part of
+	 * any markup. Inline layout ignores it. Default '\n\n'.
+	 */
+	separator?: string
 	draggable?: boolean | DraggableConfig
 }
 

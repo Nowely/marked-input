@@ -10,8 +10,8 @@ import {defineMark, Span} from '../../shared/lib/marks'
 
 const ParagraphMark = Span
 
-/** One block-level markup, so a plain-text document is split into one draggable row per paragraph. */
-const paragraphOptions: Option[] = [{markup: '__slot__\n\n', Mark: ParagraphMark}]
+/** Paragraph rows need NO markup (issue 08): the structural separator splits the rows. */
+const paragraphOptions: Option[] = []
 
 export const fixtures = {
 	/** The markdown options hand every mark the `style` of whichever markup matched. */

@@ -1,6 +1,4 @@
-import type {CoreOption} from '../../shared/types'
 import type {NodeAnchor, TreeNode} from '../tokens'
-import {createRowContent} from './createRowContent'
 
 /** An anchor-addressed slice of the document — backed by `tokens.valueBetween` in production. */
 export type SliceRead = (from: NodeAnchor, to: NodeAnchor) => string
@@ -62,16 +60,16 @@ export function addRowUnanchored(
 	read: SliceRead,
 	rows: readonly TreeNode[],
 	afterIndex: number,
-	options: CoreOption[]
+	separator: string
 ): DragApplyResult {
-	// Stated rather than composed: with no row to address, both answers are constants — the
-	// row content twice, and a caret at that row's start.
+	// Stated rather than composed: with no row to address, both answers are constants.
+	// One separator IS two rows under issue 08's trailing convention — an empty
+	// terminated row plus the empty document-final one — with the caret in the first.
 	if (rows.length === 0) {
-		const rowContent = createRowContent(options)
-		return {value: rowContent + rowContent, row: 0}
+		return {value: separator, row: 0}
 	}
 	const {texts, gaps} = project(read, rows)
 	const at = Math.max(Math.min(afterIndex + 1, texts.length), 0)
-	const {newTexts, newGaps} = insertRow(texts, gaps, at, createRowContent(options))
+	const {newTexts, newGaps} = insertRow(texts, gaps, at, separator)
 	return {value: compose(newTexts, newGaps), row: at}
 }

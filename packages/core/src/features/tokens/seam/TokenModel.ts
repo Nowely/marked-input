@@ -19,7 +19,7 @@ import {adjacentMark as findAdjacentMark, anchorAt as anchorAtOffset, offsetOfAn
 import {gapWindow} from '../tree/gapWindow'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
-import {entryAnchor, mergePlan, movePlan} from '../tree/siblings'
+import {entryAnchor, mergePlan, movePlan, removePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkNode, MarkPatch, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
@@ -176,15 +176,6 @@ export class TokenModel {
 	 */
 	consign(id: number): DomRef {
 		return this.#refInto(this.#tokenElements, id)
-	}
-
-	/**
-	 * The same, for the ROW wrapper a top-level token gets in block layout. Separate from
-	 * {@link consign} because they are different elements of the same token — the walk answers
-	 * both, and a row holds chrome the token element must not be confused with.
-	 */
-	consignRow(id: number): DomRef {
-		return this.#refInto(this.#rowElements, id)
 	}
 
 	// ═══ Engine SPI (in-core consumers) ═══════════════════════════════════════
@@ -385,14 +376,15 @@ export class TokenModel {
 			// installed right after can bind a pre-built DOM — the shell is live once the
 			// container attaches.
 			//
-			// ONE watch over the (value, parser, isBlock) tuple: a simultaneous props change is
-			// one wave and one commit, where three separate watches would adopt (and announce)
-			// two or three times.
+			// ONE watch over the (value, parser, isBlock, separator) tuple: a simultaneous props
+			// change is one wave and one commit, where separate watches would adopt (and
+			// announce) several times.
 			watch(
 				() => ({
 					value: this.props.value(),
 					parser: this.#parser(),
 					isBlock: this.props.layout.isBlock(),
+					separator: this.props.separator(),
 				}),
 				(next, previous) => {
 					if (previous && next.value === previous.value && this.#seeded()) {
@@ -505,14 +497,36 @@ export class TokenModel {
 			let removed = false
 			// One tick for value and selection, exactly as `EditController.replace` batches its pair.
 			batch(() => {
-				const start = untracked(() => node.position.start)
+				// The document-final row owns no separator, so its removal takes the PREVIOUS
+				// row's — a span-only splice would just convert it into the trailing empty row
+				// (issue 08 review finding). removePlan's root indexOf is the liveness check.
+				const plan = untracked(() => removePlan(this.#tree.roots(), node))
+				if (plan) {
+					if (!this.#tx.applyRange({start: plan.start, end: plan.end, insertedLength: 0}, '')) return
+					removed = true
+					this.#applyCaret(this.anchorAt(plan.start))
+					return
+				}
+				const {start, end} = untracked(() => node.position)
+				// A zero-width node has nothing to remove: refuse instead of committing a
+				// no-op splice that fires onChange with the unchanged value.
+				if (start === end) return
 				if (!this.#applyStructural(node, '')) return
 				removed = true
 				this.#applyCaret(this.anchorAt(start))
 			})
 			return removed
 		},
-		duplicate: node => this.#insertAfter(node, this.valueBetween({before: node}, {after: node})),
+		duplicate: node => {
+			const projection = this.valueBetween({before: node}, {after: node})
+			// The document-final row carries no separator; without one between the copies
+			// they fuse into a single row (issue 08 review finding) — the same
+			// normalization movePlan applies to a moved span.
+			const text = untracked(() =>
+				node.kind === 'row' && node.terminator === '' ? this.props.separator() + projection : projection
+			)
+			return this.#insertAfter(node, text)
+		},
 		insertAfter: (node, text) => this.#insertAfter(node, text),
 		/**
 		 * The boundary between the pair, removed by replacing the FIRST node with what survives
@@ -634,6 +648,7 @@ export class TokenModel {
 		tree: this.#tree,
 		parser: () => this.#parser(),
 		isBlock: () => this.props.layout.isBlock(),
+		separator: () => this.props.separator(),
 		controlled: () => this.props.value() !== undefined,
 		selection: () => this.selection.anchors(),
 		onChange: next => this.props.onChange()?.(next),
@@ -700,7 +715,6 @@ export class TokenModel {
 		roots: () => this.#tree.roots(),
 		source: {
 			tokenElement: id => this.#tokenElements.latest(id),
-			rowElement: id => this.#rowElements.latest(id),
 			childSequenceHost: ownerId => this.#childSequenceHosts.sole(ownerId),
 		},
 	})
@@ -729,7 +743,6 @@ export class TokenModel {
 	// registration. That is not a micro-optimisation — it is the difference between a linear
 	// mount and a quadratic one, measured.
 	readonly #tokenElements = new RefRegistry()
-	readonly #rowElements = new RefRegistry()
 	readonly #childSequenceHosts = new RefRegistry()
 
 	/** The shared ref-callback body: one key per registration, filed into `registry` under `id`. */

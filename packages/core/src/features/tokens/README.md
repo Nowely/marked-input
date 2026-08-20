@@ -70,7 +70,8 @@ the framework has not repainted yet.
   writer.
 - `valueBoundary.ts` — the string boundary: commit policy plus arrival routing.
   Controlled mode emits and waits for the echo it spliced; uncontrolled commits
-  straight through. Block mode's parse filter (`filterEmptyText`) lives here.
+  straight through. Block mode's parse routes through `parseRows` here — the
+  structural separator forms the rows (ADR-0009).
 - `__testing__/snapshot.ts` — TEST-ONLY, no production caller:
   `stripIds(snapshot(tree))` deep-equals a fresh parse of the tree's projection.
   That is the output-equivalence ORACLE, and the only check that compares the
@@ -120,11 +121,11 @@ it. What holds the position writes correct is the snapshot ORACLE
 `adopt.property.spec.ts` asserts the whole tree against a fresh parse after
 every adopt, so a position left stale is a deep-equal mismatch.
 
-**Block-typing consequence:** every row of a slot-leading block markup
-(`'__slot__\n\n'`) is a mark, so without in-slot adoption each keystroke in a row
-would be a whole-mark replacement → structural → re-render. With it the keystroke
-touches only the row's slot text node → text path → the surface is patched with
-ZERO component re-renders — gated end-to-end by the block render-count specs
+**Block-typing consequence:** every block row is a `RowNode` whose content is its
+children (ADR-0009), so without in-row adoption each keystroke in a row would be
+a whole-row replacement → structural → re-render. With it the keystroke touches
+only the row's text child → text path → the surface is patched with ZERO
+component re-renders — gated end-to-end by the block render-count specs
 (`packages/storybook/src/pages/renderCount.spec.ts`, one file held against both
 adapters).
 

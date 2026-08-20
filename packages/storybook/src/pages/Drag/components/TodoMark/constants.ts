@@ -8,8 +8,10 @@ import {TodoIndent1Mark, TodoItemMark} from './TodoMark'
  * un-annotated on purpose — the framework `Option` type it has to satisfy is the story
  * file's, and that file is compiled once per project.
  */
-const ITEM_MARKUP: Markup = '- [__value__] __slot__\n'
-const INDENT_MARKUP: Markup = '\t- [__value__] __slot__\n'
+// Separator-less (issue 08): the TodoList story sets `separator: '\n'`, and each
+// item's trailing slot closes at its own row boundary.
+const ITEM_MARKUP: Markup = '- [__value__] __slot__'
+const INDENT_MARKUP: Markup = '\t- [__value__] __slot__'
 
 export const TODO_OPTIONS = [
 	{markup: ITEM_MARKUP, Mark: TodoItemMark},

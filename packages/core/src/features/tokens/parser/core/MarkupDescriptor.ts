@@ -20,6 +20,15 @@ export interface MarkupDescriptor {
 	hasSlot: boolean
 	/** True if this markup contains exactly two __value__ placeholders */
 	hasTwoValues: boolean
+	/**
+	 * Gap type the markup ENDS with when its last placeholder has no closing
+	 * segment (`'# __slot__'`). Such a gap is unfillable by segments — only an
+	 * outer boundary (row end, enclosing slot end, end of input) can close it.
+	 * A segment count cannot express this: `'# __slot__'` and `'__slot__\n\n'`
+	 * both scan to one segment and one slot gap. Undefined for two-value
+	 * patterns, whose trailing placeholder is absorbed into a dynamic segment.
+	 */
+	trailingGap?: GapType
 	/** Global indices of segments in registry segments array (parallel to segments array) */
 	segmentGlobalIndices: number[]
 }
@@ -37,9 +46,16 @@ export interface MarkupDescriptor {
  * - `<__value__ __meta__>__slot__</__value__>` -> segments: [{pattern: '<([^> ]+) '}, " ", {pattern: '>__slot__</([^>]+)>'}], gapTypes: ["value", "meta", "slot", "value"] (dynamic)
  */
 export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
-	const {segments: rawSegments, gapTypes: rawGapTypes, counts, valueGapIndices} = scanMarkupStructure(markup)
+	const {
+		segments: rawSegments,
+		gapTypes: rawGapTypes,
+		counts,
+		valueGapIndices,
+		trailingGap,
+		leadingGap,
+	} = scanMarkupStructure(markup)
 
-	validateMarkup(counts, markup)
+	validateMarkup(counts, leadingGap, markup)
 
 	const hasTwoValues = counts.value === 2
 
@@ -54,6 +70,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		gapTypes,
 		hasSlot: counts.slot === 1,
 		hasTwoValues,
+		trailingGap: hasTwoValues ? undefined : trailingGap,
 		segmentGlobalIndices: Array.from({length: segments.length}), // Will be populated by MarkupRegistry
 	}
 }
@@ -123,13 +140,28 @@ function scanMarkupStructure(markup: string) {
 		gapTypes,
 		counts,
 		valueGapIndices,
+		// The markup ends exactly at a placeholder: its last gap has no closing segment
+		trailingGap: finalSegment.length === 0 && gapTypes.length > 0 ? gapTypes[gapTypes.length - 1] : undefined,
+		// The markup BEGINS with a placeholder: nothing delimits its gap on the left
+		leadingGap: placeholders.length > 0 && placeholders[0].position === 0,
 	}
 }
 
 /**
- * Validates markup placeholder counts
+ * Validates markup placeholder counts and placement
  */
-function validateMarkup(counts: Record<GapType, number>, markup: string): void {
+function validateMarkup(counts: Record<GapType, number>, leadingGap: boolean, markup: string): void {
+	// The row separator is structural (issue 08): a leading-gap form like '__slot__\n\n'
+	// has nothing to delimit it on the left — the backwards chain that used to repair it
+	// handed a leading marker the previous row's text, and is gone. Declared invalid
+	// instead of silently misparsed.
+	if (leadingGap) {
+		throw new Error(
+			`Invalid markup: "${markup}". A markup must not begin with a placeholder — ` +
+				'the row separator is an editor-level setting, not part of any markup'
+		)
+	}
+
 	const rules = [
 		{count: counts.value, max: 2, name: PLACEHOLDER.Value},
 		{count: counts.meta, max: 1, name: PLACEHOLDER.Meta},

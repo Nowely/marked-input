@@ -72,7 +72,7 @@ describe('tree contract types', () => {
 		// TransactionResult carries the one field production reads — growing it back must be deliberate
 		expectTypeOf<TransactionResult>().toEqualTypeOf<{selectionAfter: Anchors | undefined}>()
 		expectTypeOf<CommitSink['commit']>().toExtend<(next: string, window: Window) => boolean>()
-		// A TreeNode is a TextNode or MarkNode discriminated by `kind`
-		expectTypeOf<TreeNode['kind']>().toEqualTypeOf<'text' | 'mark'>()
+		// A TreeNode is a TextNode, MarkNode or RowNode discriminated by `kind`
+		expectTypeOf<TreeNode['kind']>().toEqualTypeOf<'text' | 'mark' | 'row'>()
 	})
 })

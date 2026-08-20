@@ -8,7 +8,8 @@ title: "TreeNode"
 ```ts
 type TreeNode =
   | TextNode
-  | MarkNode;
+  | MarkNode
+  | RowNode;
 ```
 
 Defined in: [core/src/features/tokens/tree/types.ts:50](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L50)

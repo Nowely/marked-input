@@ -202,15 +202,29 @@ export class DomModel {
 	#targetOf(anchor: NodeAnchor): {id: Id; offset: number} | undefined {
 		if (anchor === 'start') {
 			const first = this.deps.roots().at(0)
-			return first && {id: first.id, offset: 0}
+			return first && this.#entryOf(first, 'start')
 		}
 		if (anchor === 'end') {
 			const last = this.deps.roots().at(-1)
-			return last && {id: last.id, offset: Infinity}
+			return last && this.#entryOf(last, 'end')
 		}
 		if ('node' in anchor) return {id: anchor.node.id, offset: anchor.offset}
-		if ('before' in anchor) return {id: anchor.before.id, offset: 0}
-		return {id: anchor.after.id, offset: Infinity}
+		if ('before' in anchor) return this.#entryOf(anchor.before, 'start')
+		return this.#entryOf(anchor.after, 'end')
+	}
+
+	/**
+	 * A row's boundary descends to its edge CHILD — a row's own handle is the block
+	 * wrapper, whose parent-index coordinates would put the caret between rows rather
+	 * than inside one, and the separator has no DOM to land in. Text and mark nodes
+	 * answer themselves, as before.
+	 */
+	#entryOf(node: TreeNode, side: 'start' | 'end'): {id: Id; offset: number} {
+		if (node.kind === 'row') {
+			const child = side === 'start' ? node.children().at(0) : node.children().at(-1)
+			if (child) return {id: child.id, offset: side === 'start' ? 0 : Infinity}
+		}
+		return {id: node.id, offset: side === 'start' ? 0 : Infinity}
 	}
 
 	/**

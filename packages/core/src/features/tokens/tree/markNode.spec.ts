@@ -431,19 +431,20 @@ describe('MarkNode live-read parity', () => {
 })
 
 /**
- * Block rows: a slot-leading markup, so every root is a mark whose trailing literal is the
- * boundary `mergeWith` removes. A bare container is enough — these verbs settle structurally
- * and the live tree stays the reconciled parse.
+ * Block rows (issue 08): paragraph rows need no markup at all — the separator is
+ * structural, every root is a RowNode, and the boundary `mergeWith` removes is the
+ * first row's own separator. The trailing empty piece is a row too, so a value
+ * ending in a separator carries one more root than it used to.
  */
 function rowSetup(value: string) {
 	const store = new Store()
-	store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: [{markup: '__slot__\n\n'}]})
+	store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: []})
 	store.host.container(document.createElement('div'))
 	return store
 }
 
 describe('mergeWith', () => {
-	it('removes the previous row suffix and joins the slots', () => {
+	it('deletes the first row separator and joins the rows', () => {
 		const store = rowSetup('a\n\nb\n\n')
 		const [a, b] = store.tokens.nodes()
 
@@ -454,7 +455,7 @@ describe('mergeWith', () => {
 		expect(store.tokens.selection.anchors()).toBeDefined()
 	})
 
-	it('merging into an EMPTY previous row drops its suffix entirely', () => {
+	it('merging into an EMPTY previous row drops its separator entirely', () => {
 		const store = rowSetup('\n\nb\n\n')
 		const [a, b] = store.tokens.nodes()
 
@@ -480,10 +481,11 @@ describe('mergeWith', () => {
 
 		expect(a.mergeWith(b)).toBe(true)
 
-		// `a` survives because it re-pairs at its own index under the same descriptor; a
-		// whole-document rewrite could promise neither half of this.
+		// `a` survives because it re-pairs at its own index — a row pairs on kind alone; a
+		// whole-document rewrite could promise neither half of this. The second root is the
+		// merged pair; the trailing empty row stays.
 		const after = store.tokens.nodes()
-		expect(after).toHaveLength(1)
+		expect(after).toHaveLength(2)
 		expect(after[0].id).toBe(kept)
 		expect(kept).not.toBe(retired)
 	})
@@ -500,15 +502,59 @@ describe('mergeWith', () => {
 		expect(store.tokens.value()).toBe('he@[x]llo')
 	})
 })
+describe('row removal and duplication at the document end (review findings)', () => {
+	it('removing the document-final row takes the previous separator with it', () => {
+		const store = rowSetup('alpha\n\nbeta')
+		const rows = store.tokens.nodes()
+		expect(rows).toHaveLength(2)
+
+		expect(rows[1].remove()).toBe(true)
+
+		expect(store.tokens.value()).toBe('alpha')
+		expect(store.tokens.nodes()).toHaveLength(1)
+	})
+
+	it('removing the trailing empty row deletes the previous separator', () => {
+		const store = rowSetup('alpha\n\n')
+		const rows = store.tokens.nodes()
+		expect(rows).toHaveLength(2)
+
+		expect(rows[1].remove()).toBe(true)
+
+		expect(store.tokens.value()).toBe('alpha')
+		expect(store.tokens.nodes()).toHaveLength(1)
+	})
+
+	it('refuses to remove the only empty row', () => {
+		const store = rowSetup('')
+		const row = store.tokens.nodes()[0]
+
+		// Nothing to remove: a zero-width splice would only fire onChange with the
+		// unchanged value.
+		expect(row.remove()).toBe(false)
+		expect(store.tokens.value()).toBe('')
+		expect(store.tokens.nodes()).toHaveLength(1)
+	})
+
+	it('duplicating the document-final row yields two rows, not a fused one', () => {
+		const store = rowSetup('alpha\n\nbeta')
+
+		expect(store.tokens.nodes()[1].duplicate()).toBe(true)
+
+		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\nbeta')
+		expect(store.tokens.nodes()).toHaveLength(3)
+	})
+})
+
 describe('moveTo', () => {
 	it('carries the row identity to its new index', () => {
 		const store = rowSetup('alpha\n\nbeta\n\ngamma\n\n')
-		const [a, b, c] = store.tokens.nodes().map(node => node.id)
+		const [a, b, c, tail] = store.tokens.nodes().map(node => node.id)
 
 		expect(store.tokens.nodes()[0].moveTo(2)).toBe(true)
 
 		expect(store.tokens.value()).toBe('beta\n\ngamma\n\nalpha\n\n')
-		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, c, a])
+		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, c, a, tail])
 	})
 
 	it('carries identity across BYTE-IDENTICAL rows, where the string says nothing at all', () => {
@@ -516,12 +562,12 @@ describe('moveTo', () => {
 		// so no diff of any kind could distinguish this move from a no-op — the difference is
 		// entirely in which row was grabbed.
 		const store = rowSetup('First\n\nFirst\n\nSecond\n\n')
-		const [a, b, c] = store.tokens.nodes().map(node => node.id)
+		const [a, b, c, tail] = store.tokens.nodes().map(node => node.id)
 
 		expect(store.tokens.nodes()[0].moveTo(1)).toBe(true)
 
 		expect(store.tokens.value()).toBe('First\n\nFirst\n\nSecond\n\n')
-		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c])
+		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c, tail])
 	})
 
 	it('pulses each clock exactly once at the move', () => {
@@ -544,9 +590,9 @@ describe('moveTo', () => {
 	it('keeps the selection anchored to the character it was on', () => {
 		const store = rowSetup('alpha\n\nbeta\n\n')
 		const first = store.tokens.nodes()[0]
-		if (first.kind !== 'mark') throw new Error('expected a mark row')
+		if (first.kind !== 'row') throw new Error('expected a row')
 		const slot = first.children()[0]
-		if (slot.kind !== 'text') throw new Error('expected a slot text child')
+		if (slot.kind !== 'text') throw new Error('expected a row text child')
 		store.tokens.selection.select({node: slot, offset: 2})
 
 		expect(first.moveTo(1)).toBe(true)
@@ -559,16 +605,35 @@ describe('moveTo', () => {
 		expect(anchor.offset).toBe(2)
 	})
 
+	it('keeps every row object when the document-final unterminated row moves', () => {
+		// THE pairing × terminator guard (issue 08): the move flips `terminated` on two
+		// rows — the one leaving the final position gains a separator, the one landing
+		// there loses its own. Strict pair equality would reject the pairing and identity
+		// would silently degrade to index pairing — the exact ADR-0007 failure mode.
+		const store = rowSetup('alpha\n\nbeta\n\ngamma')
+		const before = store.tokens.nodes()
+		expect(before.map(node => node.kind)).toEqual(['row', 'row', 'row'])
+
+		expect(before[2].moveTo(0)).toBe(true)
+
+		// movePlan re-emits the span separator-normalized, so no pair of rows fuses.
+		expect(store.tokens.value()).toBe('gamma\n\nalpha\n\nbeta')
+		const after = store.tokens.nodes()
+		expect(after[0]).toBe(before[2])
+		expect(after[1]).toBe(before[0])
+		expect(after[2]).toBe(before[1])
+	})
+
 	it('refuses a no-op, an out-of-range index, a non-root and read-only', () => {
 		const store = rowSetup('alpha\n\nbeta\n\n')
 		const rows = store.tokens.nodes()
 		const first = rows[0]
-		if (first.kind !== 'mark') throw new Error('expected a mark row')
+		if (first.kind !== 'row') throw new Error('expected a row')
 
 		expect(first.moveTo(0)).toBe(false)
-		expect(first.moveTo(2)).toBe(false)
+		expect(first.moveTo(3)).toBe(false)
 		expect(first.moveTo(-1)).toBe(false)
-		// A slot child is not a root, so `indexOf` answers -1 — the liveness check and the
+		// A row child is not a root, so `indexOf` answers -1 — the liveness check and the
 		// index in one read.
 		expect(first.children()[0].moveTo(1)).toBe(false)
 		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
@@ -578,7 +643,7 @@ describe('moveTo', () => {
 			layout: 'block',
 			readOnly: true,
 			Mark: () => null,
-			options: [{markup: '__slot__\n\n'}],
+			options: [],
 		})
 		expect(store.tokens.nodes()[0].moveTo(1)).toBe(false)
 	})
@@ -586,12 +651,12 @@ describe('moveTo', () => {
 describe('entering a fresh row', () => {
 	/**
 	 * A markup with a LITERAL PREFIX — the only shape that can tell the three old new-row caret
-	 * conventions apart. Every block fixture in the suite uses `'__slot__\n\n'`, whose slot
-	 * starts at the row start, so all three coincide there and the unification is invisible.
+	 * conventions apart. A paragraph row's first text child starts at the row start, so all
+	 * three coincide there and the unification is invisible.
 	 */
 	function headingSetup(value: string) {
 		const store = new Store()
-		store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: [{markup: '# __slot__\n\n'}]})
+		store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: [{markup: '# __slot__'}]})
 		store.host.container(document.createElement('div'))
 		return store
 	}

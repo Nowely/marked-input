@@ -33,15 +33,23 @@ const otherSlotProps = computed(() => {
 	return Object.keys(rest).length > 0 ? rest : undefined
 })
 
-// Created ONCE in setup: `consignRow` mints a registration key per call, so calling it inside the
+// Created ONCE in setup: `consign` mints a registration key per call, so calling it inside the
 // ref callback would file a fresh entry on every paint and never release the old one.
-const consignRow = store.tokens.consignRow(props.node.id)
+// The wrapper IS the row's token element (issue 08) — no separate row registry entry.
+const consignBlock = store.tokens.consign(props.node.id)
 
 const setBlockRef = (el: unknown) => {
 	const element = unwrapEl(el)
-	consignRow(element)
+	consignBlock(element)
 	blockStore.attachContainer(element, props.blockIndex, {action: store.block.action})
 }
+
+// The per-row subscription: a RowNode's children are what this component paints, so a
+// structural edit inside the row must re-render it — the same job Token's nodeRender
+// does for a mark.
+const rowChildren = useMarkput<readonly TreeNode[] | undefined>(() => () => {
+	return props.node.kind === 'row' ? props.node.children() : undefined
+})
 </script>
 
 <template>
@@ -54,7 +62,10 @@ const setBlockRef = (el: unknown) => {
 	>
 		<DropIndicator :node="node" position="before" />
 		<DragHandle :node="node" :block-index="blockIndex" />
-		<Token :node="node" :depth="0" />
+		<template v-if="rowChildren">
+			<Token v-for="child in rowChildren" :key="child.id" :node="child" :depth="0" />
+		</template>
+		<Token v-else :node="node" :depth="0" />
 		<DropIndicator :node="node" position="after" />
 		<BlockMenu :node="node" />
 	</component>

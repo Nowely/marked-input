@@ -71,8 +71,16 @@ The mode in which every top-level token is its own row, draggable and reorderabl
 _Avoid_: block mode, rows mode, list mode
 
 **Row**:
-A top-level token, when the editor is in block layout. Rows are tokens, not a separate structure.
+Block layout's only top-level node: a span of the document between **Separator** occurrences,
+holding the row's inline **Token**s as children. A Row carries no **Markup** — a paragraph is a
+Row of plain text — and the piece after the final separator is a Row even when empty (ADR-0009).
 _Avoid_: line, paragraph, block, item
+
+**Separator**:
+The editor-level string that delimits **Row**s in **Block layout** (`separator` prop, default
+`'\n\n'`). Structural: it belongs to no **Markup**, is that markup's own text inside an opaque
+`__value__`/`__meta__` gap, and closes an open trailing gap at the row boundary (ADR-0009).
+_Avoid_: terminator, delimiter (as a term; both fine as prose)
 
 ### Value ownership
 
@@ -88,7 +96,7 @@ _Avoid_: internal, self-managed, local
 
 - A **Value** is the projection of the **Token**s; every write changes tokens and the value follows
 - A **Pairing** is how a **Token** keeps its identity across a write the value alone cannot explain
-- A **Mark** is a **Token**; a **Row** is a top-level **Token** in **Block layout**
+- A **Mark** is a **Token**; a **Row** is **Block layout**'s top-level node, formed by the **Separator**
 - An **Option** declares the **Markup** a **Mark** serialises to
 - A **Mark** may own a **Slot**, which holds further **Token**s
 - Every **Token** is mirrored into one **Surface**, all of them inside the one **Container**

@@ -8,7 +8,7 @@ import {useTab} from '../../shared/components/Tabs'
 import {defineMark} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 import {HTML_TAG_STYLES} from './HtmlTagStyles'
-import {markdownOptions} from './MarkdownOptions'
+import {inlineMarkdownOptions} from './MarkdownOptions'
 
 import styles from './InteractiveMark.module.css'
 
@@ -53,7 +53,7 @@ function TabbedMarkdown({defaultValue}: PageArgs) {
 			<Tab />
 
 			{activeTab === 'preview' ? (
-				<MarkedInput Mark={MarkdownMark} options={markdownOptions} value={value} readOnly={true} />
+				<MarkedInput Mark={MarkdownMark} options={inlineMarkdownOptions} value={value} readOnly={true} />
 			) : (
 				<MarkedInput options={[]} value={value} onChange={setValue} />
 			)}

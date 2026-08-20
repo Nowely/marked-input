@@ -14,8 +14,15 @@ export type TreeCapture = Map<Id, string>
 /** Per id, everything a signal write on that node could change: text, or value+meta. */
 export function captureTree(nodes: readonly TreeNode[], into: TreeCapture = new Map()): TreeCapture {
 	for (const node of nodes) {
-		into.set(node.id, node.kind === 'text' ? node.text() : JSON.stringify([node.value(), node.meta()]))
-		if (node.kind === 'mark') captureTree(node.children(), into)
+		into.set(
+			node.id,
+			node.kind === 'text'
+				? node.text()
+				: node.kind === 'row'
+					? node.terminator
+					: JSON.stringify([node.value(), node.meta()])
+		)
+		if (node.kind !== 'text') captureTree(node.children(), into)
 	}
 	return into
 }
@@ -42,7 +49,7 @@ export function diffTree(before: TreeCapture, roots: readonly TreeNode[]): TreeD
 				return
 			}
 			if (was !== after.get(node.id)) updated.push(node)
-			if (node.kind === 'mark') walk(node.children(), at)
+			if (node.kind !== 'text') walk(node.children(), at)
 		})
 	}
 	walk(roots, [])

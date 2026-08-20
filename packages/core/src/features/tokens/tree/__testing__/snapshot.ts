@@ -1,4 +1,4 @@
-import type {MarkToken, TextToken, Token} from '../../parser/types'
+import type {MarkToken, RowToken, TextToken, Token} from '../../parser/types'
 import {annotate} from '../../parser/utils/annotate'
 import type {TreeNode} from '../types'
 
@@ -19,11 +19,30 @@ import type {TreeNode} from '../types'
  * Ids are included; {@link stripIds} takes them off for the comparison against a parse,
  * which carries none.
  */
-export function snapshot(nodes: readonly TreeNode[]): Token[] {
+export function snapshot(nodes: readonly TreeNode[]): (Token | RowToken)[] {
 	return nodes.map(materializeNode)
 }
 
-function materializeNode(node: TreeNode): Token {
+function materializeNode(node: TreeNode): Token | RowToken {
+	if (node.kind === 'row') {
+		const children = node.children().map(materializeInline)
+		const token: RowToken = {
+			type: 'row',
+			content: children.map(child => child.content).join('') + node.terminator,
+			position: {...node.position},
+			id: node.id,
+			children,
+			terminated: node.terminator !== '',
+		}
+		return token
+	}
+	return materializeInline(node)
+}
+
+/** A Row is never an inline child, so everything below a root materializes to `Token`. */
+function materializeInline(node: TreeNode): Token {
+	if (node.kind === 'row') throw new Error('A Row is never an inline child')
+
 	if (node.kind === 'text') {
 		const token: TextToken = {
 			type: 'text',
@@ -34,7 +53,7 @@ function materializeNode(node: TreeNode): Token {
 		return token
 	}
 
-	const children = node.children().map(materializeNode)
+	const children = node.children().map(materializeInline)
 	// Same rule as joinNodes: children are the sole slot source (a slot mark always has
 	// >=1 text child), and the node stores no slot text to read instead. The parser creates
 	// `slot` exactly when the markup has a slot gap, so one gate drives both the projected
@@ -64,8 +83,12 @@ function materializeNode(node: TreeNode): Token {
 }
 
 /** Deep-comparison helper for the equivalence properties: parsed tokens carry no ids. */
-export function stripIds(tokens: readonly Token[]): Token[] {
+export function stripIds(tokens: readonly Token[]): Token[]
+export function stripIds(tokens: readonly (Token | RowToken)[]): (Token | RowToken)[]
+export function stripIds(tokens: readonly (Token | RowToken)[]): (Token | RowToken)[] {
+	// A mark's and a row's children are both `Token[]`, so the recursion takes the
+	// narrow overload and the rebuilt token keeps its children type without a cast.
 	return tokens.map(({id: _id, ...rest}) =>
-		rest.type === 'mark' ? {...rest, children: stripIds(rest.children)} : rest
+		rest.type === 'text' ? rest : {...rest, children: stripIds(rest.children)}
 	)
 }

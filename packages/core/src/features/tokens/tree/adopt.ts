@@ -1,10 +1,21 @@
 import {batch, untracked} from '../../../shared/signals'
-import type {Parser} from '../parser/Parser'
-import type {MarkToken, TextToken, Token} from '../parser/types'
+import {Parser} from '../parser/Parser'
+import type {MarkToken, RowToken, TextToken, Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {anchorAt, offsetOfAnchor} from './anchors'
 import type {TokenTree} from './tree'
-import type {Anchors, MarkNode, NodeAnchor, Pairing, TextNode, TransactionResult, TreeNode, Window} from './types'
+import {rowTokenTerminator} from './tree'
+import type {
+	Anchors,
+	MarkNode,
+	NodeAnchor,
+	Pairing,
+	RowNode,
+	TextNode,
+	TransactionResult,
+	TreeNode,
+	Window,
+} from './types'
 
 /**
  * Parse a projection with the configured parser. The parser-less fallback mirrors
@@ -13,6 +24,16 @@ import type {Anchors, MarkNode, NodeAnchor, Pairing, TextNode, TransactionResult
  */
 export function parseValue(parser: Parser | undefined, value: string): Token[] {
 	return parser ? parser.parse(value) : [createTextToken(value)]
+}
+
+/**
+ * Block layout's parse: rows exist with or without markups — a paragraph-only
+ * block editor is legal (issue 08), so a missing parser falls back to a bare
+ * one that finds no marks and still splits rows.
+ */
+const bareParser = new Parser([])
+export function parseRowsValue(parser: Parser | undefined, value: string, separator: string): RowToken[] {
+	return (parser ?? bareParser).parseRows(value, separator)
 }
 
 /**
@@ -28,7 +49,7 @@ export function parseValue(parser: Parser | undefined, value: string): Token[] {
 export function adopt(
 	tree: TokenTree,
 	window: Window,
-	parsed: readonly Token[],
+	parsed: readonly (Token | RowToken)[],
 	selectionBefore?: Anchors
 ): TransactionResult {
 	return untracked(() => {
@@ -52,7 +73,7 @@ export function adopt(
 		 * descriptors would leave a node whose markup disagrees with the parse and
 		 * `snapshot` would re-annotate with the old one, breaking output equivalence.
 		 */
-		function adoptSiblings(candidates: readonly TreeNode[], tokens: readonly Token[]): TreeNode[] {
+		function adoptSiblings(candidates: readonly TreeNode[], tokens: readonly (Token | RowToken)[]): TreeNode[] {
 			const result: TreeNode[] = []
 			for (let index = 0; index < tokens.length; index++) {
 				const token = tokens[index]
@@ -67,6 +88,12 @@ export function adopt(
 				) {
 					adoptMark(candidate, token)
 					result.push(candidate)
+				} else if (candidate?.kind === 'row' && token.type === 'row') {
+					// KIND match only: a row carries no descriptor, so any row candidate can
+					// adopt any row token — this is what keeps the row object (and the block
+					// state keyed on it) alive when its content changes shape.
+					adoptRow(candidate, token)
+					result.push(candidate)
 				} else {
 					result.push(tree.buildNode(token))
 				}
@@ -75,9 +102,17 @@ export function adopt(
 		}
 
 		/** Plain field writes (spec D3): a move leaves no signal trace and reaches no feed. */
-		function adoptPosition(node: TreeNode, token: Token): void {
+		function adoptPosition(node: TreeNode, token: Token | RowToken): void {
 			node.position.start = token.position.start
 			node.position.end = token.position.end
+		}
+
+		function adoptRow(node: RowNode, token: RowToken): void {
+			adoptPosition(node, token)
+			node.terminator = rowTokenTerminator(token)
+			const children = node.children()
+			const next = adoptSiblings(children, token.children)
+			if (!sameNodes(next, children)) node.children(next)
 		}
 
 		function adoptText(node: TextNode, token: TextToken): void {
@@ -232,10 +267,17 @@ function resolveMappedAnchor(roots: readonly TreeNode[], offset: number, window:
  * else, `slot.start/end` included, is compared: they are live positions a retention
  * must already agree with, or the retained mark keeps stale ones forever.
  */
-function snapshotNodeEquals(node: TreeNode, token: Token, delta: number): boolean {
+function snapshotNodeEquals(node: TreeNode, token: Token | RowToken, delta: number): boolean {
 	if (node.position.start + delta !== token.position.start) return false
 	if (node.position.end + delta !== token.position.end) return false
 	if (node.kind === 'text') return token.type === 'text' && node.text() === token.content
+	if (node.kind === 'row') {
+		if (token.type !== 'row') return false
+		if (node.terminator !== rowTokenTerminator(token)) return false
+		const rowChildren = node.children()
+		if (rowChildren.length !== token.children.length) return false
+		return rowChildren.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
+	}
 	if (token.type !== 'mark') return false
 	if (node.descriptor !== token.descriptor) return false
 	if (node.value() !== token.value || node.meta() !== token.meta) return false
@@ -254,13 +296,12 @@ function snapshotNodeEquals(node: TreeNode, token: Token, delta: number): boolea
 function shiftPositions(node: TreeNode, delta: number): void {
 	node.position.start += delta
 	node.position.end += delta
-	if (node.kind === 'mark') {
-		if (node.slotRange) {
-			node.slotRange.start += delta
-			node.slotRange.end += delta
-		}
-		for (const child of node.children()) shiftPositions(child, delta)
+	if (node.kind === 'text') return
+	if (node.kind === 'mark' && node.slotRange) {
+		node.slotRange.start += delta
+		node.slotRange.end += delta
 	}
+	for (const child of node.children()) shiftPositions(child, delta)
 }
 
 /**
@@ -282,7 +323,7 @@ function shiftPositions(node: TreeNode, delta: number): void {
  */
 function resolvePairing(
 	prev: readonly TreeNode[],
-	parsed: readonly Token[],
+	parsed: readonly (Token | RowToken)[],
 	pairing: Pairing
 ): readonly TreeNode[] | undefined {
 	if (pairing.length !== prev.length || pairing.length !== parsed.length) return undefined
@@ -296,8 +337,25 @@ function resolvePairing(
 
 		const node = prev[previous]
 		const token = parsed[index]
-		if (!snapshotNodeEquals(node, token, token.position.start - node.position.start)) return undefined
+		if (!pairEquals(node, token)) return undefined
 		order.push(node)
 	}
 	return order
+}
+
+/**
+ * The pairing gate's equality — {@link snapshotNodeEquals} under the pair's own delta,
+ * except for a ROW pair: a permutation legally flips `terminated` on the rows entering
+ * and leaving the document-final position, so a row pair matches on CHILDREN alone and
+ * `adoptRow` writes the new terminator. Strict equality here silently rejected the
+ * pairing and dropped identity to index pairing — the exact ADR-0007 failure mode.
+ */
+function pairEquals(node: TreeNode, token: Token | RowToken): boolean {
+	const delta = token.position.start - node.position.start
+	if (node.kind === 'row' && token.type === 'row') {
+		const children = node.children()
+		if (children.length !== token.children.length) return false
+		return children.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
+	}
+	return snapshotNodeEquals(node, token, delta)
 }

@@ -19,7 +19,7 @@ export interface MarkupPreset {
  */
 export const defaultMarkdownTheme: Record<string, MarkupPreset> = {
 	h1: {
-		markup: '# __slot__\n\n',
+		markup: '# __slot__',
 		style: {
 			display: 'block',
 			fontSize: '2em',
@@ -28,7 +28,7 @@ export const defaultMarkdownTheme: Record<string, MarkupPreset> = {
 		},
 	},
 	h2: {
-		markup: '## __slot__\n\n',
+		markup: '## __slot__',
 		style: {
 			display: 'block',
 			fontSize: '1.5em',
@@ -37,7 +37,7 @@ export const defaultMarkdownTheme: Record<string, MarkupPreset> = {
 		},
 	},
 	h3: {
-		markup: '### __slot__\n\n',
+		markup: '### __slot__',
 		style: {
 			display: 'block',
 			fontSize: '1.17em',
@@ -46,7 +46,7 @@ export const defaultMarkdownTheme: Record<string, MarkupPreset> = {
 		},
 	},
 	list: {
-		markup: '- __slot__\n\n',
+		markup: '- __slot__',
 		style: {
 			display: 'block',
 			paddingLeft: '1em',
@@ -120,13 +120,25 @@ function buildMarkdownOptions(theme: Record<string, MarkupPreset>) {
 }
 
 /**
- * Markdown options ready for MarkedInput
+ * Markdown options ready for MarkedInput. The block-level markups carry NO separator
+ * (issue 08, ADR-0009): in block layout the editor-level `separator` bounds each row and
+ * an open trailing slot closes at the row boundary.
  */
 export const markdownOptions = buildMarkdownOptions(defaultMarkdownTheme)
 
+/** The theme keys whose marks are whole rows in block layout. */
+const BLOCK_LEVEL = new Set(['h1', 'h2', 'h3', 'list'])
+
 /**
- * Block-level markdown options only (those whose markup includes \n\n).
- * Use in drag mode so inline marks (bold, italic, code, link, strikethrough)
- * are not each split into their own draggable row.
+ * INLINE layout's forms of the same options: with no structural separator there, a
+ * block-level markup must be self-delimiting, so these re-bake the `\n\n` the block
+ * forms dropped. Only the inline `Nested` page wants this shape.
  */
-export const blockLevelMarkdownOptions = markdownOptions.filter(opt => opt.markup.includes('\n\n'))
+export const inlineMarkdownOptions = Object.entries(defaultMarkdownTheme).map(([key, preset]) => {
+	// oxlint-disable-next-line no-unsafe-type-assertion -- appending a literal suffix keeps the placeholder shape
+	const markup = (BLOCK_LEVEL.has(key) ? preset.markup + '\n\n' : preset.markup) as Markup
+	return {
+		markup,
+		mark: <TProps extends object>(props: TProps) => ({...props, style: preset.style}),
+	}
+})

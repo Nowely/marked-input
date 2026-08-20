@@ -60,7 +60,7 @@ Initial value for uncontrolled mode
 optional draggable: boolean | DraggableConfig;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:77](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L77)
+Defined in: [react/markput/src/components/MarkedInput.tsx:83](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L83)
 
 Enable drag interaction on block rows. Only effective when layout='block'.
 
@@ -171,6 +171,25 @@ optional ref: Ref<MarkputHandle>;
 Defined in: [react/markput/src/components/MarkedInput.tsx:30](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L30)
 
 Ref to the editor API (spec §2.3)
+
+***
+
+### separator?
+
+```ts
+optional separator: string;
+```
+
+Defined in: [react/markput/src/components/MarkedInput.tsx:79](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L79)
+
+The structural row separator for block layout (issue 08): editor-level, never part of
+any markup. Inline layout ignores it.
+
+#### Default
+
+```ts
+'\n\n'
+```
 
 ***
 

@@ -24,7 +24,7 @@ export const PlainText = story({
 })
 
 export const Drag = story({
-	args: {layout: 'block', draggable: true, Mark, defaultValue: BLOCK_VALUE},
+	args: {layout: 'block', separator: '\n', draggable: true, Mark, defaultValue: BLOCK_VALUE},
 })
 
 export const NestedMarkStory = story({

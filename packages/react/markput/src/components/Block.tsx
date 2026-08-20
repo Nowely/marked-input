@@ -16,6 +16,8 @@ interface BlockProps {
 	blockIndex: number
 }
 
+const rowRender = (node: TreeNode) => () => (node.kind === 'row' ? node.children() : undefined)
+
 export const Block = memo(({node, blockIndex}: BlockProps) => {
 	const {blockStore, action, Component, slotProps, isDragging, tokens} = useMarkput(s => {
 		const blockStore = s.block.get(node)
@@ -28,13 +30,18 @@ export const Block = memo(({node, blockIndex}: BlockProps) => {
 			tokens: s.tokens,
 		}
 	})
+	// The per-row subscription: a RowNode's children are what this component paints, so a
+	// structural edit inside the row must re-render it — the same job Token's nodeRender
+	// does for a mark.
+	useMarkput(() => rowRender(node))
 
-	// MEMOISED, unlike `setBlockRef` below: `consignRow` mints a registration key per CALL, so
+	// MEMOISED, unlike `setBlockRef` below: `consign` mints a registration key per CALL, so
 	// calling it inline would file a fresh entry on every paint and never release the old one.
-	const consignRow = useMemo(() => tokens.consignRow(node.id), [tokens, node.id])
+	// The wrapper IS the row's token element (issue 08) — no separate row registry entry.
+	const consignBlock = useMemo(() => tokens.consign(node.id), [tokens, node.id])
 
 	const setBlockRef = (el: HTMLElement | null) => {
-		consignRow(el)
+		consignBlock(el)
 		blockStore.attachContainer(el, blockIndex, {action})
 	}
 
@@ -51,7 +58,11 @@ export const Block = memo(({node, blockIndex}: BlockProps) => {
 
 			<DragHandle node={node} blockIndex={blockIndex} />
 
-			<Token node={node} depth={0} />
+			{node.kind === 'row' ? (
+				node.children().map(child => <Token key={child.id} node={child} depth={0} />)
+			) : (
+				<Token node={node} depth={0} />
+			)}
 
 			<DropIndicator node={node} position="after" />
 

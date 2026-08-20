@@ -1,6 +1,6 @@
 # The separator is structural, and a Row is a node
 
-Status: ready-for-agent
+Status: resolved
 
 Decided by the maintainer 2026-08-20. This closes [issue 02](02-decide-the-row-boundary.md)
 (phase 0) as **candidate 3** — the separator belongs to the tree, not to any Markup — and
@@ -111,6 +111,12 @@ review) produced 2026-08-20; essentials:
 
 ## Migration (each step green)
 
+**EXECUTED 2026-08-20**, steps 2-7 landed as one commit each on `b0` (parser `fc148a53`,
+tree `25ff7aaa`, plumbing `5c9a4db8`, cutover `65c46f02`, chain deletion `5b993063`,
+reductions+docs follow). The inline open-tail sub-decision below was taken per this file's
+own recommendation: an open trailing gap closes at END OF INPUT inline — one rule, one
+direction, declared in [ADR-0009](../../../adr/0009-the-separator-is-structural.md).
+
 1. ~~Ratify decisions~~ — this file.
 2. Parser additive: `RowToken`, `trailingGap` descriptor bit, `parseRows` beside `parse()`,
    property specs (round-trip; row-locality). No production caller.
@@ -142,13 +148,12 @@ review) produced 2026-08-20; essentials:
 
 ## Remaining sub-decisions (surface before the step that needs them, not before starting)
 
-- **Inline rule for open-tail markups** (needed by step 6): an open trailing gap closes at
-  end of input (document = one implicit row) — recommended — vs the match is discarded.
-  Affects any consumer keeping a single-segment slot markup in inline layout; either way it
-  is the declared capability change.
-- **Shift+Enter under `separator: '\n'`**: `insertLineBreak` would insert the separator
-  itself and split the row; disable or redefine soft-break for such editors (irrelevant for
-  the `'\n\n'` default).
+- ~~**Inline rule for open-tail markups**~~ TAKEN at step 6, per the recommendation: an open
+  trailing gap closes at end of input (document = one implicit row). A leading-gap markup
+  (`'__slot__\n\n'`) throws at registration — the declared capability change.
+- **Shift+Enter under `separator: '\n'`** — still open, and now LIVE in the TodoList story:
+  `insertLineBreak` inserts `'\n'`, which IS that editor's separator, so a soft break splits
+  the row. Arguably correct for a per-line editor; decide before documenting soft-break.
 
 ## Relation to the phase plan
 

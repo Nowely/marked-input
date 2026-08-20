@@ -1,7 +1,6 @@
 import {describe, it, expect} from 'vitest'
 
 import {Store} from '../../store/Store'
-import {createRowContent} from '../block/createRowContent'
 import {mountBlock} from '../tokens/__testing__/mountFixtures'
 
 /**
@@ -78,12 +77,14 @@ describe('blockEdit row identity', () => {
 		container.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(true)
-		expect(store.tokens.value()).toBe(createRowContent(store.props.options()))
+		// An empty document IS one empty row (issue 08's trailing convention).
+		expect(store.tokens.value()).toBe('')
+		expect(store.tokens.nodes()).toHaveLength(1)
 
 		// The caret is INSIDE the fresh row, not merely at document offset 0: the anchor
-		// names the row's own slot text node.
+		// names the row's own text child.
 		const row = store.tokens.nodes()[0]
-		if (row.kind !== 'mark') throw new Error('expected a mark row')
+		if (row.kind !== 'row') throw new Error('expected a row')
 		const slot = row.children()[0]
 		const anchor = store.tokens.selection.anchors()?.anchor
 		if (!anchor || typeof anchor === 'string' || !('node' in anchor)) throw new Error('expected a node anchor')
@@ -99,7 +100,7 @@ describe('blockEdit row identity', () => {
 
 		container.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true}))
 
-		expect(store.tokens.nodes().length).toBe(2)
+		expect(store.tokens.nodes().length).toBe(3)
 	})
 })
 
@@ -125,9 +126,9 @@ describe('blockEdit beforeinput guard', () => {
 	 */
 	function rowSurface(store: Store, rowIndex: number): HTMLElement {
 		const row = store.tokens.nodes()[rowIndex]
-		if (row.kind !== 'mark') throw new Error('expected a mark row')
+		if (row.kind !== 'row') throw new Error('expected a row')
 		const surface = store.tokens.handle(row.children()[0].id)?.element()
-		if (!surface) throw new Error('block row slot has no consigned element')
+		if (!surface) throw new Error('block row has no consigned element')
 		return surface
 	}
 
@@ -202,6 +203,68 @@ describe('blockEdit beforeinput guard', () => {
  * must be judged by its EVENT TARGET, not by whatever selection happens to be
  * stored for some row elsewhere.
  */
+describe('blockEdit trailing row', () => {
+	it('Backspace in the trailing empty row removes it with the previous separator', () => {
+		const {store, container} = mountBlock()
+		const trailing = store.tokens.nodes()[2]
+		store.tokens.selection.selectNode(trailing, 'start')
+		if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+		window.getSelection()?.removeAllRanges()
+
+		const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('one\n\ntwo')
+		expect(store.tokens.nodes()).toHaveLength(2)
+	})
+})
+
+describe('blockEdit mark swallow', () => {
+	it('deletes the adjacent inline mark inside a row on Backspace', () => {
+		// Safe since issue 08: a block row is a RowNode, never a MarkNode, so the swallow
+		// can only grab an INLINE mark inside the row — never a whole row.
+		const store = new Store()
+		store.props.set({
+			defaultValue: 'a @[m](1) b\n\nnext',
+			layout: 'block',
+			Mark: () => null,
+			options: [{markup: '@[__value__](__meta__)'}],
+		})
+		const container = document.createElement('div')
+		document.body.append(container)
+		store.host.container(container)
+
+		const row = store.tokens.nodes()[0]
+		if (row.kind !== 'row') throw new Error('expected a row')
+		const rowElement = document.createElement('div')
+		container.append(rowElement)
+		store.tokens.consign(row.id)(rowElement)
+		const surfaces = row.children().map(child => {
+			const surface = document.createElement('span')
+			rowElement.append(surface)
+			store.tokens.consign(child.id)(surface)
+			return surface
+		})
+
+		// A real DOM caret at the start of the text AFTER the mark — the beforeinput
+		// resolver reads the live selection, not the stored one.
+		const afterMarkText = surfaces[2].firstChild
+		if (!afterMarkText) throw new Error('expected the surface after the mark to render text')
+		window.getSelection()?.collapse(afterMarkText, 0)
+
+		const event = new InputEvent('beforeinput', {
+			inputType: 'deleteContentBackward',
+			bubbles: true,
+			cancelable: true,
+		})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('a  b\n\nnext')
+	})
+})
+
 describe('blockEdit control guard', () => {
 	function mountBlockWithControl(controlRow: 0 | 1) {
 		const store = new Store()
@@ -209,34 +272,26 @@ describe('blockEdit control guard', () => {
 			defaultValue: 'one\n\ntwo\n\n',
 			layout: 'block',
 			draggable: true,
-			Mark: () => null,
-			options: [{markup: '__slot__\n\n'}],
+			options: [],
 		})
 		const container = document.createElement('div')
 		const control = document.createElement('button')
 		control.setAttribute('aria-label', 'drag')
-		const painted = [0, 1].map(i => {
-			const row = document.createElement('div')
-			if (i === controlRow) row.append(control)
-			const mark = document.createElement('span')
-			const surface = document.createElement('span')
-			mark.append(surface)
-			row.append(mark)
-			container.append(row)
-			return {row, mark, surface}
-		})
 		document.body.append(container)
 		store.host.container(container)
 		store.tokens.control()(control)
 		// Consigned by hand, the way the Block and Token components do it: the wrapper under
-		// `consignRow`, the row token's own element and its slot Surface under `consign`. The
-		// positional helper cannot serve here — the control sits where a row's first child
-		// element would be, so pairing by index would file it under the slot's id.
+		// `consign(row.id)` — the wrapper IS the row's element now — and each row text child
+		// under its own id. The positional helper cannot serve here — the control sits where
+		// a row's first child element would be, so pairing by index would misfile it.
 		store.tokens.nodes().forEach((node, i) => {
-			const {row, mark, surface} = painted[i]
-			store.tokens.consignRow(node.id)(row)
-			store.tokens.consign(node.id)(mark)
-			if (node.kind === 'mark') store.tokens.consign(node.children()[0].id)(surface)
+			const row = document.createElement('div')
+			if (i === controlRow) row.append(control)
+			const surface = document.createElement('span')
+			row.append(surface)
+			container.append(row)
+			store.tokens.consign(node.id)(row)
+			if (node.kind === 'row') store.tokens.consign(node.children()[0].id)(surface)
 		})
 		return {store, container, control}
 	}
@@ -251,7 +306,7 @@ describe('blockEdit control guard', () => {
 		control.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(false)
-		expect(store.tokens.nodes().length).toBe(2)
+		expect(store.tokens.nodes().length).toBe(3)
 	})
 
 	it('ignores Enter targeting a control even with everything selected', () => {

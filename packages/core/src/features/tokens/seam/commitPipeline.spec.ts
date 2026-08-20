@@ -134,7 +134,6 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		roots: () => tree.roots(),
 		source: {
 			tokenElement: id => consigned.get(id),
-			rowElement: () => undefined,
 			childSequenceHost: () => undefined,
 		},
 	})

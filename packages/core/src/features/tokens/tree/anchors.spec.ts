@@ -9,7 +9,6 @@ const build = (source: string) => createTokenTree(parser.parse(source))
 
 /** Nesting needs a slot to nest INTO, and a shared boundary needs a mark flush with a row's edge. */
 const nestedParser = new Parser(['#[__slot__]', '@[__value__]'])
-const rowParser = new Parser(['__slot__\n\n'])
 
 describe('offsetOfAnchor', () => {
 	it('resolves a text anchor through its node position', () => {
@@ -163,12 +162,10 @@ describe('adjacentMark', () => {
 
 	it('prefers the INNER mark over the one enclosing it at a shared boundary', () => {
 		// ASSEMBLED, not parsed: a shared boundary needs a nested mark flush with its parent's
-		// edge, and every markup the parser can open puts its own text between the two — the one
-		// shape that would not, a slot-first markup whose slot OPENS with a mark, is dropped by
-		// the parser today (`'@[x]\n\n'` under `'__slot__\n\n'` yields the mention plus literal
-		// text, no row). Nested-first is normative regardless, and the tree layer accepts the
-		// shape, so it is built from parsed tokens rather than left unpinned.
-		const row = rowParser.parse('a\n\n')[1]
+		// edge, and every markup the parser can open puts its own text between the two.
+		// Nested-first is normative regardless, and the tree layer accepts the shape, so it
+		// is built from parsed tokens rather than left unpinned.
+		const row = nestedParser.parse('#[a]')[1]
 		const mention = parser.parse('@[x]')[1]
 		if (row.type !== 'mark' || mention.type !== 'mark') throw new Error('expected marks')
 		mention.position = {start: 0, end: 4}

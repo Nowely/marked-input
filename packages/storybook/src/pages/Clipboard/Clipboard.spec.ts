@@ -56,11 +56,13 @@ function setSelection(startNode: Node, startOffset: number, endNode: Node, endOf
 	return range
 }
 
-/** The first text node inside an element. */
+/** The first NON-EMPTY text node inside an element — a Vue fragment anchors on an empty one. */
 function firstTextNode(el: Element): Text | null {
 	const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+	let node = walker.nextNode()
+	while (node?.textContent === '') node = walker.nextNode()
 	// oxlint-disable-next-line no-unsafe-type-assertion -- nodeType === 3 guarantees Text
-	return (walker.nextNode() as Text | null) ?? null
+	return (node as Text | null) ?? null
 }
 
 /** Every text node of an element, in document order. */

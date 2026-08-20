@@ -41,18 +41,11 @@ export class Match {
 		this.start = firstSegment.start
 		this.end = firstSegment.end
 
-		// Auto-complete single segment patterns
+		// Auto-complete single segment patterns. Their gap is TRAILING by validation (a
+		// markup may not begin with a placeholder), and a trailing gap is only fillable by
+		// the closure pass — the row boundary or end of input — so nothing is seeded here.
 		if (descriptor.segments.length === 1) {
 			this.expectedSegmentIndex = NaN
-
-			//TODO need review it. before it was only value gap type
-			const gapType = descriptor.gapTypes[0] ?? 'value'
-			if (gapType === 'slot') {
-				// Slot-leading: real range resolved by PatternMatcher.resolveSlotLeadingMatches
-				this.gaps.slot = {start: this.start, end: this.start}
-			} else {
-				this.gaps[gapType] = {start: this.start, end: this.end}
-			}
 		}
 
 		if (descriptor.hasTwoValues && firstSegment.captured) {

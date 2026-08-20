@@ -34,7 +34,7 @@ describe('BlockController', () => {
 			layout: 'block',
 			draggable: false,
 			Mark: () => null,
-			options: [{markup: '__slot__\n\n'}],
+			options: [],
 		})
 		store.host.container(document.createElement('div'))
 		store.tokens.setValue('alpha\n\nbeta\n\n')
@@ -49,7 +49,7 @@ describe('BlockController', () => {
 			layout: 'block',
 			draggable: false,
 			Mark: () => null,
-			options: [{markup: '__slot__\n\n'}],
+			options: [],
 		})
 		store.host.container(document.createElement('div'))
 		store.tokens.setValue('alpha\n\nbeta\n\n')
@@ -64,7 +64,7 @@ describe('BlockController', () => {
 			layout: 'block',
 			draggable: true,
 			Mark: () => null,
-			options: [{markup: '__slot__\n\n'}],
+			options: [],
 		})
 		// Drag actions read the mounted token layer (a bare container is enough:
 		// commits settle structurally and the live tree stays the reconciled parse).
@@ -85,7 +85,7 @@ describe('BlockController', () => {
 			layout: 'block',
 			draggable: true,
 			Mark: () => null,
-			options: [{markup: '__slot__\n\n'}],
+			options: [],
 		})
 		store.host.container(document.createElement('div'))
 		store.tokens.setValue('alpha\n\nbeta\n\n')
@@ -109,7 +109,7 @@ describe('BlockController', () => {
 			layout: 'block',
 			draggable: true,
 			Mark: () => null,
-			options: [{markup: '__slot__\n\n'}],
+			options: [],
 		})
 		store.host.container(document.createElement('div'))
 		store.tokens.setValue('alpha\n\nbeta\n\n')
@@ -127,20 +127,21 @@ describe('BlockController', () => {
 			layout: 'block',
 			draggable: true,
 			Mark: () => null,
-			options: [{markup: '__slot__\n\n'}],
+			options: [],
 		}
 
-		it('seeds an EMPTY document with two rows', () => {
+		it('adds a row to an empty document', () => {
 			store.props.set(blockProps)
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('')
 
+			// An empty document already IS one empty row (issue 08), so the menu add goes
+			// through the anchored path: one separator after it yields two empty rows.
 			store.block.action({type: 'add', afterIndex: 0})
 
-			// With no row to address there is nothing for an anchor to name, so this one stays
-			// composed. Both answers are constants: the row content twice, caret at its start.
-			expect(store.tokens.value()).toBe('\n\n\n\n')
-			expect(selectionRange(store)).toEqual({start: 0, end: 0})
+			expect(store.tokens.value()).toBe('\n\n')
+			expect(store.tokens.nodes()).toHaveLength(2)
+			expect(selectionRange(store)).toEqual({start: 2, end: 2})
 		})
 
 		it('inserts BEFORE the first row for a negative afterIndex', () => {
@@ -168,18 +169,35 @@ describe('BlockController', () => {
 		})
 	})
 
+	it('menu Delete on the final unterminated row shrinks the row count', () => {
+		// The final row owns no separator; its removal takes the PREVIOUS row's, so
+		// Delete cannot merely convert it into the trailing empty row (review finding).
+		store.props.set({
+			layout: 'block',
+			draggable: true,
+			options: [],
+		})
+		store.host.container(document.createElement('div'))
+		store.tokens.setValue('alpha\n\nbeta')
+
+		store.block.action({type: 'delete', index: 1})
+
+		expect(store.tokens.value()).toBe('alpha')
+		expect(store.tokens.nodes()).toHaveLength(1)
+	})
+
 	describe('row identity', () => {
 		it('removes the addressed row, not a byte-identical neighbour', () => {
 			store.props.set({
 				layout: 'block',
 				draggable: true,
 				Mark: () => null,
-				options: [{markup: '__slot__\n\n'}],
+				options: [],
 			})
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
 
-			const [first, second, third] = store.tokens.nodes().map(node => node.id)
+			const [first, second, third, tail] = store.tokens.nodes().map(node => node.id)
 
 			store.block.action({type: 'delete', index: 0})
 
@@ -187,7 +205,7 @@ describe('BlockController', () => {
 			// the two candidates compose to the same string. Row identity is what both
 			// adapters key rendering on and what `BlockController` keys per-row state by.
 			expect(store.tokens.value()).toBe('First\n\nSecond\n\n')
-			expect(store.tokens.nodes().map(node => node.id)).toEqual([second, third])
+			expect(store.tokens.nodes().map(node => node.id)).toEqual([second, third, tail])
 			expect(first).not.toBe(second)
 		})
 
@@ -196,7 +214,7 @@ describe('BlockController', () => {
 				layout: 'block',
 				draggable: true,
 				Mark: () => null,
-				options: [{markup: '__slot__\n\n'}],
+				options: [],
 			})
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('alpha\n\nbeta\n\n')
@@ -220,14 +238,14 @@ describe('BlockController', () => {
 				layout: 'block',
 				draggable: true,
 				Mark: () => null,
-				options: [{markup: '__slot__\n\n'}],
+				options: [],
 			})
 			const container = document.createElement('div')
 			document.body.append(container)
 			store.host.container(container)
 			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
 
-			const [a, b, c] = store.tokens.nodes().map(node => node.id)
+			const [a, b, c, tail] = store.tokens.nodes().map(node => node.id)
 			const dragged = store.block.get(store.tokens.nodes()[0])
 			dragged.state.isDragging(true)
 
@@ -237,7 +255,7 @@ describe('BlockController', () => {
 			// the ids are the only evidence the move happened at all — and the whole reason the
 			// commit carries an identity claim the string cannot.
 			expect(store.tokens.value()).toBe('First\n\nFirst\n\nSecond\n\n')
-			expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c])
+			expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c, tail])
 			expect(store.block.get(store.tokens.nodes()[1])).toBe(dragged)
 			expect(dragged.state.isDragging()).toBe(true)
 			document.body.replaceChildren()
@@ -248,7 +266,7 @@ describe('BlockController', () => {
 				layout: 'block',
 				draggable: true,
 				Mark: () => null,
-				options: [{markup: '__slot__\n\n'}],
+				options: [],
 			})
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('alpha\n\nbeta\n\n')
@@ -276,7 +294,7 @@ describe('BlockController', () => {
 				layout: 'block',
 				draggable: true,
 				Mark: () => null,
-				options: [{markup: '__slot__\n\n'}],
+				options: [],
 			})
 			const container = document.createElement('div')
 			document.body.append(container)
@@ -305,7 +323,7 @@ describe('BlockController', () => {
 				layout: 'block',
 				draggable: true,
 				Mark: () => null,
-				options: [{markup: '__slot__\n\n'}],
+				options: [],
 			})
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('alpha\n\nbeta\n\n')
@@ -327,7 +345,7 @@ describe('BlockController', () => {
 				layout: 'block',
 				draggable: true,
 				Mark: () => null,
-				options: [{markup: '__slot__\n\n'}],
+				options: [],
 			})
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('alpha\n\nbeta\n\n')
@@ -356,7 +374,7 @@ describe('BlockController', () => {
 				layout: 'block',
 				draggable: true,
 				Mark: () => null,
-				options: [{markup: '__slot__\n\n'}],
+				options: [],
 			})
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('alpha\n\nbeta\n\n')

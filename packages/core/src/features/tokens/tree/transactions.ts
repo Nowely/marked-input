@@ -104,5 +104,5 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
  * against a commit that parses and adopts the whole document anyway.
  */
 function reachable(nodes: readonly TreeNode[], node: TreeNode): boolean {
-	return nodes.some(child => child === node || (child.kind === 'mark' && reachable(child.children(), node)))
+	return nodes.some(child => child === node || (child.kind !== 'text' && reachable(child.children(), node)))
 }

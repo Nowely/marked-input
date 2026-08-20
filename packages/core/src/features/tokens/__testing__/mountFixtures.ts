@@ -213,43 +213,32 @@ export function mountNested() {
 }
 
 /**
- * Mounted block fixture (pattern from BlockController.spec.ts): mark "one\n\n"
- * [0,5] with child text "one" [0,3], mark "two\n\n" [5,10] with child text
- * "two" [5,8]. One row div per mark, the mark element holding one text surface;
- * the rows are returned because they are the only handle on the row binding.
+ * Mounted block fixture (issue 08's row world): paragraph rows need no markup, so
+ * 'one\n\ntwo\n\n' parses to THREE RowNodes — "one\n\n" [0,5], "two\n\n" [5,10] and
+ * the empty document-final row [10,10]. One row div per RowNode, consigned as the
+ * row's own token element (the Block wrapper's role), holding one text surface per
+ * row text child; the rows are returned because they are the only handle on the
+ * row binding.
  */
 export function mountBlock() {
 	const store = new Store()
 	store.props.set({
 		defaultValue: 'one\n\ntwo\n\n',
 		layout: 'block',
-		Mark: () => null,
-		options: [{markup: '__slot__\n\n'}],
+		options: [],
 	})
 	const container = document.createElement('div')
-	const rows: HTMLElement[] = []
-	const marks: HTMLElement[] = []
-	const surfaces: HTMLElement[] = []
-	for (let i = 0; i < 2; i++) {
-		const row = document.createElement('div')
-		const mark = document.createElement('span')
-		const text = document.createElement('span')
-		mark.append(text)
-		row.append(mark)
-		container.append(row)
-		rows.push(row)
-		marks.push(mark)
-		surfaces.push(text)
-	}
 	document.body.append(container)
 	store.host.container(container)
-	// A ROW and a TOKEN ELEMENT are different elements of the same token, registered separately —
-	// `Block` consigns the row, `Token` its own element — and that pairing is the only way a handle
-	// gets a `rowElement`. Flat pairing would file the row wrapper as the mark's element instead.
-	store.tokens.nodes().forEach((node, index) => {
-		store.tokens.consignRow(node.id)(rows[index])
-		store.tokens.consign(node.id)(marks[index])
-		if (node.kind === 'mark') store.tokens.consign(node.children()[0].id)(surfaces[index])
+	const rows: HTMLElement[] = []
+	store.tokens.nodes().forEach(node => {
+		const row = document.createElement('div')
+		const text = document.createElement('span')
+		row.append(text)
+		container.append(row)
+		rows.push(row)
+		store.tokens.consign(node.id)(row)
+		if (node.kind === 'row') store.tokens.consign(node.children()[0].id)(text)
 	})
 	return {store, container, rows}
 }

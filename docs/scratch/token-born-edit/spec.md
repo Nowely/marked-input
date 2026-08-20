@@ -201,7 +201,9 @@ person feels is the frame interval.
 
 ## Open, at the time of writing
 
-- Phase 0's answer. Still the blocker for phases 1 and 2, and still unanswered.
+- ~~Phase 0's answer.~~ Answered 2026-08-20: candidate 3 — the separator is structural, and a
+  Row becomes a tree node. Decisions, evidence and the 7-step plan:
+  [issues/08](issues/08-the-separator-is-structural.md). Phases 1 and 2 are unblocked.
 - ~~What `incrementalParse` actually cost.~~ Answered: it does not matter, because the parse is
   ~3% of a keystroke. Pursue a local parse for correctness and for the parser's standing goal, not
   for speed.

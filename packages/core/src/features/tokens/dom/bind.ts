@@ -31,8 +31,6 @@ import type {ElementBindings} from './TokenHandle'
 export type ElementSource = {
 	/** The token's own element. */
 	tokenElement(id: number): HTMLElement | undefined
-	/** The block-layout row wrapper; `undefined` outside block layout, where no row registers. */
-	rowElement(id: number): HTMLElement | undefined
 	/**
 	 * The SOLE registered `__slot__` host for one owner, resolved by the owner's stable id, and
 	 * `undefined` when there is none or more than one. Two live registrations mean two generations
@@ -143,10 +141,11 @@ export function rebindNode(node: TreeNode, target: BindTarget): void {
 		return
 	}
 	handle.bindElements(bindings, node)
-	applyMountState(bindings, previous)
+	// A ROW's wrapper stays BARE: it is neither a text surface nor a mark root, and the
+	// mark-root arm would freeze it atomic. Its chrome freezes itself via control() refs.
+	if (node.kind !== 'row') applyMountState(bindings, previous)
 	forget(byElement, previous, bindings)
 	byElement.set(bindings.tokenElement, handle)
-	if (bindings.rowElement) byElement.set(bindings.rowElement, handle)
 	if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
 }
 
@@ -163,12 +162,9 @@ function forget(
 	next?: ElementBindings
 ): void {
 	if (!previous) return
-	for (const element of [previous.tokenElement, previous.rowElement, previous.childSequenceHost]) {
+	for (const element of [previous.tokenElement, previous.childSequenceHost]) {
 		if (!element) continue
-		if (
-			next &&
-			(element === next.tokenElement || element === next.rowElement || element === next.childSequenceHost)
-		) {
+		if (next && (element === next.tokenElement || element === next.childSequenceHost)) {
 			continue
 		}
 		byElement.delete(element)
@@ -178,7 +174,7 @@ function forget(
 function collectTree(nodes: readonly TreeNode[], out: TreeNode[]): void {
 	for (const node of nodes) {
 		out.push(node)
-		if (node.kind === 'mark') collectTree(node.children(), out)
+		if (node.kind !== 'text') collectTree(node.children(), out)
 	}
 }
 
@@ -208,7 +204,6 @@ function bindingsFor(node: TreeNode, source: ElementSource): ElementBindings | u
 		// A Surface is a TEXT token's own element — the walk gave one to text nodes only, and
 		// that equivalence is what lets the text effect write straight into it.
 		textElement: node.kind === 'text' ? element : undefined,
-		rowElement: source.rowElement(node.id),
 		childSequenceHost,
 	}
 }

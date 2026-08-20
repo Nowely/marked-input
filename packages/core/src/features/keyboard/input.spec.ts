@@ -163,25 +163,23 @@ function mountBlockWithMarkEdge(value: string) {
 		defaultValue: value,
 		layout: 'block',
 		Mark: () => null,
-		options: [{markup: '__slot__\n\n'}, {markup: '@[__value__](__meta__)'}],
+		options: [{markup: '@[__value__](__meta__)'}],
 	})
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
 	for (const root of store.tokens.nodes()) {
 		const row = document.createElement('div')
-		const token = document.createElement('span')
-		const children = root.kind === 'mark' ? root.children() : []
-		if (root.kind === 'mark' && children.length === 0) token.append(document.createTextNode('MARK'))
+		const children = root.kind === 'row' ? root.children() : []
 		for (const child of children) {
 			const element = document.createElement('span')
-			token.append(element)
+			// A mark child renders presentation text; a text child's span is its Surface
+			if (child.kind === 'mark') element.append(document.createTextNode('MARK'))
+			row.append(element)
 			store.tokens.consign(child.id)(element)
 		}
-		row.append(token)
 		container.append(row)
-		store.tokens.consignRow(root.id)(row)
-		store.tokens.consign(root.id)(token)
+		store.tokens.consign(root.id)(row)
 	}
 	return {store, container}
 }

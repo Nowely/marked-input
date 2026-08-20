@@ -60,7 +60,7 @@ exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
         <span></span>
       </button>
     </div>
-    <span>hello&#10;</span>
+    <span>hello</span>
   </div>
   <div>
     <div contenteditable="false">
@@ -68,9 +68,11 @@ exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
         <span></span>
       </button>
     </div>
+    <span></span>
     <span contenteditable="false">
       <mark>world</mark>
     </span>
+    <span></span>
   </div>
   <div>
     <div contenteditable="false">
@@ -78,7 +80,7 @@ exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
         <span></span>
       </button>
     </div>
-    <span>&#10;foo</span>
+    <span>foo</span>
   </div>
 </div>"
 `;
@@ -120,6 +122,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         <span></span>
       </button>
     </div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -135,6 +138,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
   </div>
   <div>
     <div contenteditable="false">
@@ -142,7 +146,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         <span></span>
       </button>
     </div>
-    <span>A powerful library for parsing rich text with markdown formatting.&#10;&#10;</span>
+    <span>A powerful library for parsing rich text with markdown formatting.</span>
   </div>
   <div>
     <div contenteditable="false">
@@ -150,6 +154,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         <span></span>
       </button>
     </div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -157,6 +162,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
   </div>
   <div>
     <div contenteditable="false">
@@ -164,6 +170,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         <span></span>
       </button>
     </div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -187,6 +194,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
   </div>
   <div>
     <div contenteditable="false">
@@ -194,6 +202,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         <span></span>
       </button>
     </div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -209,6 +218,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
   </div>
   <div>
     <div contenteditable="false">
@@ -216,6 +226,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         <span></span>
       </button>
     </div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -227,6 +238,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
   </div>
   <div>
     <div contenteditable="false">
@@ -234,6 +246,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         <span></span>
       </button>
     </div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -245,6 +258,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
   </div>
   <div>
     <div contenteditable="false">
@@ -252,6 +266,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         <span></span>
       </button>
     </div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -259,6 +274,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
   </div>
   <div>
     <div contenteditable="false">
@@ -266,9 +282,11 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         <span></span>
       </button>
     </div>
+    <span></span>
     <span contenteditable="false">
       <span>const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
     </span>
+    <span></span>
   </div>
   <div>
     <div contenteditable="false">
@@ -276,7 +294,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         <span></span>
       </button>
     </div>
-    <span>&#10;&#10;Visit our docs for more details.</span>
+    <span>Visit our docs for more details.</span>
   </div>
 </div>"
 `;
@@ -289,6 +307,7 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
         <span></span>
       </button>
     </div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -296,6 +315,7 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
   </div>
   <div>
     <div contenteditable="false">
@@ -303,7 +323,7 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
         <span></span>
       </button>
     </div>
-    <span>This is the first paragraph.&#10;&#10;This is the second paragraph.&#10;&#10;</span>
+    <span>This is the first paragraph.</span>
   </div>
   <div>
     <div contenteditable="false">
@@ -311,6 +331,15 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
         <span></span>
       </button>
     </div>
+    <span>This is the second paragraph.</span>
+  </div>
+  <div>
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
+    </div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -318,6 +347,7 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
   </div>
   <div>
     <div contenteditable="false">
@@ -325,6 +355,7 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
         <span></span>
       </button>
     </div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -332,6 +363,15 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
+  </div>
+  <div>
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
+    </div>
+    <span></span>
   </div>
 </div>"
 `;
@@ -344,13 +384,7 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
         <span></span>
       </button>
     </div>
-    <span>
-      <span>
-        <span>
-          <span>First block of plain text</span>
-        </span>
-      </span>
-    </span>
+    <span>First block of plain text</span>
   </div>
   <div>
     <div contenteditable="false">
@@ -358,13 +392,7 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
         <span></span>
       </button>
     </div>
-    <span>
-      <span>
-        <span>
-          <span>Second block of plain text</span>
-        </span>
-      </span>
-    </span>
+    <span>Second block of plain text</span>
   </div>
   <div>
     <div contenteditable="false">
@@ -372,13 +400,7 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
         <span></span>
       </button>
     </div>
-    <span>
-      <span>
-        <span>
-          <span>Third block of plain text</span>
-        </span>
-      </span>
-    </span>
+    <span>Third block of plain text</span>
   </div>
   <div>
     <div contenteditable="false">
@@ -386,13 +408,7 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
         <span></span>
       </button>
     </div>
-    <span>
-      <span>
-        <span>
-          <span>Fourth block of plain text</span>
-        </span>
-      </span>
-    </span>
+    <span>Fourth block of plain text</span>
   </div>
   <div>
     <div contenteditable="false">
@@ -400,13 +416,15 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
         <span></span>
       </button>
     </div>
-    <span>
-      <span>
-        <span>
-          <span>Fifth block of plain text</span>
-        </span>
-      </span>
-    </span>
+    <span>Fifth block of plain text</span>
+  </div>
+  <div>
+    <div contenteditable="false">
+      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+        <span></span>
+      </button>
+    </div>
+    <span></span>
   </div>
 </div>"
 `;
@@ -414,31 +432,16 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
 exports[`Component: stories > Drag stories > Story ReadOnlyDrag 1`] = `
 "<div contenteditable="false">
   <div>
-    <span>
-      <span>
-        <span>
-          <span>Read-Only Content</span>
-        </span>
-      </span>
-    </span>
+    <span>Read-Only Content</span>
   </div>
   <div>
-    <span>
-      <span>
-        <span>
-          <span>Section A</span>
-        </span>
-      </span>
-    </span>
+    <span>Section A</span>
   </div>
   <div>
-    <span>
-      <span>
-        <span>
-          <span>Section B</span>
-        </span>
-      </span>
-    </span>
+    <span>Section B</span>
+  </div>
+  <div>
+    <span></span>
   </div>
 </div>"
 `;
@@ -453,7 +456,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
-        <span>&#10;</span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -461,6 +464,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <div>
             <input type="checkbox" contenteditable="false">
@@ -469,6 +473,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </div>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -476,6 +481,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" contenteditable="false">
@@ -484,6 +490,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -491,6 +498,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" checked="" contenteditable="false">
@@ -499,6 +507,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -506,6 +515,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" contenteditable="false">
@@ -514,6 +524,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -521,6 +532,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <div>
             <input type="checkbox" checked="" contenteditable="false">
@@ -529,6 +541,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </div>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -536,6 +549,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" checked="" contenteditable="false">
@@ -544,6 +558,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -551,6 +566,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" checked="" contenteditable="false">
@@ -559,6 +575,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -566,6 +583,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" checked="" contenteditable="false">
@@ -574,6 +592,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -581,6 +600,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" checked="" contenteditable="false">
@@ -589,6 +609,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -596,6 +617,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <div>
             <input type="checkbox" contenteditable="false">
@@ -604,6 +626,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </div>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -611,6 +634,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" contenteditable="false">
@@ -619,6 +643,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -626,6 +651,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" checked="" contenteditable="false">
@@ -634,6 +660,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -641,6 +668,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" contenteditable="false">
@@ -649,6 +677,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -656,6 +685,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" contenteditable="false">
@@ -664,6 +694,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -671,6 +702,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" contenteditable="false">
@@ -679,6 +711,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -686,6 +719,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <div>
             <input type="checkbox" contenteditable="false">
@@ -694,6 +728,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </div>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -701,6 +736,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" contenteditable="false">
@@ -709,6 +745,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -716,6 +753,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             <span></span>
           </button>
         </div>
+        <span></span>
         <span>
           <span>
             <input type="checkbox" contenteditable="false">
@@ -724,6 +762,15 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
+            <span></span>
+          </button>
+        </div>
+        <span></span>
       </div>
     </div>
   </div>

@@ -1,4 +1,23 @@
-import type {Token} from '../types'
+import type {RowToken, Token} from '../types'
+
+function escapeString(str: string): string {
+	return str
+		.replace(/\n/g, '↲') // Newline (down-left arrow)
+		.replace(/\r/g, '⏎') // Carriage return (left arrow)
+		.replace(/\t/g, '⇥') // Tab (right-up arrow)
+}
+
+export function rowsToDebugTree(rows: RowToken[]): string {
+	return rows
+		.map((row, index) => {
+			const paddedPrefix = index > 0 ? ` ${index}` : `${index}`
+			const terminated = row.terminated ? '' : ' unterminated'
+			const header = `${paddedPrefix}: ROW "${escapeString(row.content)}" [${row.position.start}-${row.position.end}]${terminated}`
+			const children = tokensToDebugTree(row.children, 1, String(index))
+			return children ? `${header}\n${children}` : header
+		})
+		.join('\n')
+}
 
 export function tokensToDebugTree(tokens: Token[], level = 0, prefix = ''): string {
 	const lines: string[] = []
@@ -38,13 +57,6 @@ export function tokensToDebugTree(tokens: Token[], level = 0, prefix = ''): stri
 	})
 
 	return lines.join('\n')
-
-	function escapeString(str: string): string {
-		return str
-			.replace(/\n/g, '↲') // Newline (down-left arrow)
-			.replace(/\r/g, '⏎') // Carriage return (left arrow)
-			.replace(/\t/g, '⇥') // Tab (right-up arrow)
-	}
 }
 
 export function countMarks(tokens: Token[]): number {

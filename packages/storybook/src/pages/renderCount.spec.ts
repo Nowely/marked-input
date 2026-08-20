@@ -129,78 +129,73 @@ describe('Render-count gates: structural fan-out', () => {
 })
 
 /**
- * Block-layout gate (deep reconcile, design-spec B3): every row of a slot-leading markup is a
- * MARK, so before deep reconcile a keystroke inside a row was a mark-level textChanged —
- * escalated structurally, re-rendering on every keystroke. With deep descend the edit lands on
- * the row's child text token (`textChanged`), the mark itself becomes an `updated`, and the
- * commit routes the text path: the child surface is patched in place while the tree keeps its
- * reference, so neither the row Mark nor the slot Span re-renders.
+ * Block-layout gate (issue 08's row world): a row is a RowNode with no markup, its text a
+ * bare Span inside the one host. A keystroke inside a row lands on the row's child text
+ * token and rides the text path — the surface is patched in place while the tree keeps
+ * its reference, so no Span re-renders. A row split is structural and re-renders through
+ * the framework.
  */
 describe('Render-count gates: block layout', () => {
 	it('block keystroke into a row does not re-render Mark or Span; a row split does', async () => {
-		const [RowMark, rowRenders] = countRenders({tag: 'span'})
+		const [CountedMark, markRenders] = countRenders({tag: 'mark'})
 		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
 		const {host} = await mountComponent({
 			Span: CountedSpan,
-			options: [{markup: '__slot__\n\n', Mark: RowMark}],
-			defaultValue: 'First row\n\nSecond row\n\n',
+			options: [{markup: '@[__value__](__meta__)', Mark: CountedMark}],
+			defaultValue: 'First @[m](1) row\n\nSecond row\n\n',
 			layout: 'block',
 			draggable: true,
 		})
-		expect(rowsOf(host)).toHaveLength(2)
+		// Two content rows plus the trailing empty row (issue 08)
+		expect(rowsOf(host)).toHaveLength(3)
 
-		// The row's text is the slot Span, bare inside the one host: the row measures it.
 		await focusAtEnd(rowsOf(host)[0])
 
 		// Baseline after mount + focus: every gate below asserts a DELTA from here.
-		const markBaseline = rowRenders()
+		const markBaseline = markRenders()
 		const spanBaseline = spanRenders()
 		expect(markBaseline).toBeGreaterThan(0)
 		expect(spanBaseline).toBeGreaterThan(0)
 
-		// Gate: a keystroke INSIDE a row rides the text path — the slot surface is patched
-		// directly, zero component re-renders.
+		// Gate: a keystroke INSIDE a row rides the text path — the surface is patched
+		// directly, zero component re-renders, the INLINE mark inside the row included.
 		await userEvent.keyboard('?')
-		await expect.element(page.getByText('First row?')).toBeInTheDocument()
+		await expect.element(page.getByText('row?')).toBeInTheDocument()
 		expect(spanRenders()).toBe(spanBaseline)
-		expect(rowRenders()).toBe(markBaseline)
+		expect(markRenders()).toBe(markBaseline)
 
-		// Gate: Enter splits the row (blockEdit inserts a row separator) — a structural edit that
-		// publishes a new tree and re-renders through the framework.
+		// Gate: Enter splits the row (blockEdit inserts the separator) — a structural edit
+		// that publishes a new tree and re-renders through the framework.
 		await userEvent.keyboard('{Enter}')
-		expect(rowsOf(host)).toHaveLength(3)
-		expect(rowRenders()).toBeGreaterThan(markBaseline)
+		expect(rowsOf(host)).toHaveLength(4)
+		expect(spanRenders()).toBeGreaterThan(spanBaseline)
 	})
 
 	it('first keystroke into a freshly-Enter-created empty row rides the text path', async () => {
-		const [RowMark, rowRenders] = countRenders({tag: 'span'})
 		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
 		const {host} = await mountComponent({
 			Span: CountedSpan,
-			options: [{markup: '__slot__\n\n', Mark: RowMark}],
+			options: [],
 			defaultValue: 'First row\n\n',
 			layout: 'block',
 			draggable: true,
 		})
-		expect(rowsOf(host)).toHaveLength(1)
+		// One content row plus the trailing empty row (issue 08)
+		expect(rowsOf(host)).toHaveLength(2)
 
 		await focusAtEnd(rowsOf(host)[0])
 
 		// Enter at the row end creates an EMPTY row with the caret inside it — structural,
 		// re-renders. The gate below is a delta from AFTER it settled.
 		await userEvent.keyboard('{Enter}')
-		expect(rowsOf(host)).toHaveLength(2)
-		const markBaseline = rowRenders()
+		expect(rowsOf(host)).toHaveLength(3)
 		const spanBaseline = spanRenders()
 
-		// Gate: the FIRST keystroke into the fresh empty row rides the text path — the empty slot
-		// Span is patched in place, zero component re-renders. (Pre-fix: TreeBuilder collapsed the
-		// empty slot to undefined, tryDescend refused, and the keystroke escalated to a full
-		// framework re-render.)
+		// Gate: the FIRST keystroke into the fresh empty row rides the text path — the empty
+		// row's Span is patched in place, zero component re-renders.
 		await userEvent.keyboard('x')
 		await expect.element(page.getByText('x')).toBeInTheDocument()
 		expect(spanRenders()).toBe(spanBaseline)
-		expect(rowRenders()).toBe(markBaseline)
 	})
 })
 

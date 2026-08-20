@@ -8,7 +8,6 @@ import {textLength} from './textOffsets'
 export type ElementBindings = {
 	readonly tokenElement: HTMLElement
 	readonly textElement?: HTMLElement
-	readonly rowElement?: HTMLElement
 	readonly childSequenceHost?: HTMLElement
 }
 
@@ -63,10 +62,10 @@ export class TokenHandle {
 		return this.#bindings
 	}
 
-	/** Row in block layout, else the text surface / token root. */
+	/** The text surface, else the token root — which for a RowNode IS the block wrapper. */
 	#measureScope(): HTMLElement | undefined {
 		const bindings = this.#bindings
-		return bindings?.rowElement ?? bindings?.textElement ?? bindings?.tokenElement
+		return bindings?.textElement ?? bindings?.tokenElement
 	}
 
 	/** Deliberately kept despite zero in-repo callers: public-reachable surface via the exported Store (`store.tokens.handle()`) — the `api.focus()` precedent. */

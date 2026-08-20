@@ -3,9 +3,8 @@ import {bench, describe} from 'vitest'
 import {batch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 import {Parser} from './parser/Parser'
-import type {Markup, Token} from './parser/types'
-import {filterEmptyText} from './parser/utils/filterEmptyText'
-import {adopt, parseValue} from './tree/adopt'
+import type {Markup, RowToken, Token} from './parser/types'
+import {adopt, parseRowsValue, parseValue} from './tree/adopt'
 import {createTokenTree} from './tree/tree'
 import type {TextNode, TreeNode, Window} from './tree/types'
 
@@ -160,7 +159,6 @@ import type {TextNode, TreeNode, Window} from './tree/types'
 let sink = 0
 
 const INLINE_MARKUP: Markup = '@[__value__](__meta__)'
-const BLOCK_MARKUP: Markup = '__slot__\n\n'
 
 function inlineDoc(marks: number): string {
 	let out = 'Start text'
@@ -174,9 +172,9 @@ function blockDoc(rows: number): string {
 	return out
 }
 
-function tokensFor(parser: Parser, value: string, isBlock: boolean): Token[] {
-	const parsed = parseValue(parser, value)
-	return isBlock ? filterEmptyText(parsed) : parsed
+function tokensFor(parser: Parser | undefined, value: string, isBlock: boolean): (Token | RowToken)[] {
+	// Block mode is rows (issue 08): the structural separator forms them, no markup needed
+	return isBlock ? parseRowsValue(parser, value, '\n\n') : parseValue(parser, value)
 }
 
 function textNodesOf(nodes: readonly TreeNode[], out: TextNode[] = []): TextNode[] {
@@ -219,9 +217,9 @@ function caretOffsets(roots: readonly TreeNode[], value: string): {head: number;
 type Doc = {
 	name: string
 	value: string
-	markup: Markup
+	markup: Markup | undefined
 	isBlock: boolean
-	parser: Parser
+	parser: Parser | undefined
 	/** Simulated caret offsets; `pos` (the ladder's) is `mid`. */
 	pos: number
 	head: number
@@ -230,8 +228,8 @@ type Doc = {
 	tokens: number
 }
 
-function describeDoc(name: string, value: string, markup: Markup, isBlock: boolean): Doc {
-	const parser = new Parser([markup])
+function describeDoc(name: string, value: string, markup: Markup | undefined, isBlock: boolean): Doc {
+	const parser = markup === undefined ? undefined : new Parser([markup])
 	const tokens = tokensFor(parser, value, isBlock)
 	const tree = createTokenTree(tokens)
 	const roots = tree.roots()
@@ -239,7 +237,7 @@ function describeDoc(name: string, value: string, markup: Markup, isBlock: boole
 	const count = (nodes: readonly TreeNode[]): void => {
 		for (const node of nodes) {
 			total++
-			if (node.kind === 'mark') count(node.children())
+			if (node.kind !== 'text') count(node.children())
 		}
 	}
 	count(roots)
@@ -262,8 +260,8 @@ const docs: Doc[] = [
 	describeDoc('inline 10 marks', inlineDoc(10), INLINE_MARKUP, false),
 	describeDoc('inline 100 marks', inlineDoc(100), INLINE_MARKUP, false),
 	describeDoc('inline 1000 marks', inlineDoc(1000), INLINE_MARKUP, false),
-	describeDoc('block 100 rows', blockDoc(100), BLOCK_MARKUP, true),
-	describeDoc('block 1000 rows', blockDoc(1000), BLOCK_MARKUP, true),
+	describeDoc('block 100 rows', blockDoc(100), undefined, true),
+	describeDoc('block 1000 rows', blockDoc(1000), undefined, true),
 ]
 
 console.log(
@@ -332,7 +330,7 @@ function storeFor(doc: Doc): Store {
 	const store = new Store()
 	store.props.set({
 		defaultValue: doc.value,
-		options: [{markup: doc.markup}],
+		options: doc.markup === undefined ? [] : [{markup: doc.markup}],
 		Mark: () => null,
 		...(doc.isBlock ? {layout: 'block' as const} : {}),
 	})
@@ -455,16 +453,11 @@ function mountDom(store: Store, doc: Doc): readonly (() => void)[] {
 			// A ROW and a TOKEN ELEMENT are different elements of the same token, registered
 			// separately — the same pairing `mountBlock` documents in `__testing__/mountFixtures.ts`.
 			const row = document.createElement('div')
-			const mark = document.createElement('span')
 			const text = document.createElement('span')
-			mark.append(text)
-			row.append(mark)
+			row.append(text)
 			container.append(row)
-			const surface = root.kind === 'mark' ? root.children()[0] : undefined
-			consignments.push(
-				() => store.tokens.consignRow(root.id)(row),
-				() => store.tokens.consign(root.id)(mark)
-			)
+			const surface = root.kind === 'row' ? root.children()[0] : undefined
+			consignments.push(() => store.tokens.consign(root.id)(row))
 			if (surface) consignments.push(() => store.tokens.consign(surface.id)(text))
 		} else {
 			const span = document.createElement('span')

@@ -3,7 +3,6 @@ import type {DragAction} from '../../shared/types'
 import type {PropsModel} from '../state/PropsModel'
 import type {NodeAnchor, TokenModel, TreeNode} from '../tokens'
 import {BlockStore} from './BlockStore'
-import {createRowContent} from './createRowContent'
 import {addRowUnanchored} from './operations'
 
 export class BlockController {
@@ -65,15 +64,15 @@ export class BlockController {
 			}
 			if (rows.length > 0 && action.afterIndex >= 0) {
 				// `afterIndex` past the end appends after the LAST row, matching the composer's
-				// `Math.min(afterIndex + 1, texts.length)`.
-				rows.at(Math.min(action.afterIndex, rows.length - 1))?.insertAfter(
-					createRowContent(this.props.options())
-				)
+				// `Math.min(afterIndex + 1, texts.length)`. A fresh row is the separator itself
+				// (issue 08): spliced after the anchor row's own separator it reads as an empty
+				// row, and on the document-final unterminated row it first terminates that row.
+				rows.at(Math.min(action.afterIndex, rows.length - 1))?.insertAfter(this.props.separator())
 				return
 			}
 			// Anchor-slice reads: the tree's own string, always consistent with nodes().
 			const read = (from: NodeAnchor, to: NodeAnchor): string => this.tokens.valueBetween(from, to)
-			const result = addRowUnanchored(read, rows, action.afterIndex, this.props.options())
+			const result = addRowUnanchored(read, rows, action.afterIndex, this.props.separator())
 			this.tokens.setValueEnteringRoot(result.value, result.row)
 		})
 	}

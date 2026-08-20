@@ -69,6 +69,11 @@ export function resolveMarkSlot(
 		const fallback = (GlobalSpan ?? 'span') as Slot
 		return [fallback, GlobalSpan ? {value: node.text()} : {}]
 	}
+	if (node.kind === 'row') {
+		// A row carries no markup and no option: adapters render its children, never the
+		// row itself (issue 08). Reaching here is a wiring bug, not a configuration one.
+		throw new Error('A RowNode has no mark slot. Render row.children() instead.')
+	}
 	const option = tokenOptions?.[node.descriptor.index]
 	const baseProps = {value: node.value(), meta: node.meta()}
 	const props = resolveOptionSlot(option?.mark, baseProps)
