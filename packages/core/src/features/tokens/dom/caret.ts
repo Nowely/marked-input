@@ -30,9 +30,8 @@ export type CaretBoundary = {node: Node; offset: number}
 /**
  * Resolve a character offset within a structural text surface to a concrete
  * (Text, offset) pair. If the surface contains no Text node, append an empty
- * one and target it. Used by `placeAtTextOffset` / `placeRangeAcrossBoundaries` —
- * needs the empty-Text fallback so freshly-mounted empty surfaces still accept
- * a caret.
+ * one and target it. Used by `TokenHandle.caretBoundary` — needs the
+ * empty-Text fallback so freshly-mounted empty surfaces still accept a caret.
  */
 export function findTextBoundary(surface: HTMLElement, offset: number): {node: Text; offset: number} {
 	const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
@@ -71,19 +70,6 @@ export function collapseTo(boundary: CaretBoundary): void {
 	const selection = window.getSelection()
 	if (!selection) return
 	selection.collapse(boundary.node, boundary.offset)
-}
-
-/** Place a collapsed caret at a character offset inside a text surface. */
-export function placeAtTextOffset(surface: HTMLElement, offset: number): void {
-	collapseTo(findTextBoundary(surface, offset))
-}
-
-/**
- * Place a collapsed caret at a child index of `parent` — the one-host coordinate for
- * "before/after an atomic child", whose own interior holds no reachable position.
- */
-export function placeAtParentBoundary(parent: HTMLElement, childIndex: number): void {
-	collapseTo({node: parent, offset: childIndex})
 }
 
 /**

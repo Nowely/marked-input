@@ -38,12 +38,12 @@ describe('caretDom', () => {
 		})
 	})
 
-	describe('placeAtTextOffset', () => {
+	describe('findTextBoundary', () => {
 		it('places caret at character offset within a single text node', () => {
 			const el = document.createElement('span')
 			el.appendChild(document.createTextNode('hello'))
 			document.body.appendChild(el)
-			caretDom.placeAtTextOffset(el, 3)
+			caretDom.collapseTo(caretDom.findTextBoundary(el, 3))
 			const range = window.getSelection()?.getRangeAt(0)
 			expect(range?.startContainer).toBe(el.firstChild)
 			expect(range?.startOffset).toBe(3)
@@ -55,7 +55,7 @@ describe('caretDom', () => {
 			const el = document.createElement('span')
 			el.append(document.createTextNode('ab'), document.createTextNode('cd'))
 			document.body.appendChild(el)
-			caretDom.placeAtTextOffset(el, 3)
+			caretDom.collapseTo(caretDom.findTextBoundary(el, 3))
 			const range = window.getSelection()?.getRangeAt(0)
 			expect(range?.startContainer).toBe(el.childNodes[1])
 			expect(range?.startOffset).toBe(1)
@@ -65,7 +65,7 @@ describe('caretDom', () => {
 		it('creates a fallback text node when the surface is empty', () => {
 			const el = document.createElement('span')
 			document.body.appendChild(el)
-			caretDom.placeAtTextOffset(el, 0)
+			caretDom.collapseTo(caretDom.findTextBoundary(el, 0))
 			expect(el.firstChild?.nodeType).toBe(Node.TEXT_NODE)
 			const range = window.getSelection()?.getRangeAt(0)
 			expect(range?.startContainer).toBe(el.firstChild)
@@ -77,7 +77,7 @@ describe('caretDom', () => {
 			const el = document.createElement('span')
 			el.appendChild(document.createTextNode('hi'))
 			document.body.appendChild(el)
-			caretDom.placeAtTextOffset(el, 99)
+			caretDom.collapseTo(caretDom.findTextBoundary(el, 99))
 			const range = window.getSelection()?.getRangeAt(0)
 			expect(range?.startContainer).toBe(el.firstChild)
 			expect(range?.startOffset).toBe(2)
@@ -85,7 +85,7 @@ describe('caretDom', () => {
 		})
 	})
 
-	describe('placeAtParentBoundary', () => {
+	describe('collapseTo', () => {
 		it('places a collapsed caret at a child index of the parent', () => {
 			const host = document.createElement('div')
 			host.contentEditable = 'true'
@@ -96,7 +96,7 @@ describe('caretDom', () => {
 			host.append(a, mark)
 			document.body.append(host)
 
-			caretDom.placeAtParentBoundary(host, 1)
+			caretDom.collapseTo({node: host, offset: 1})
 
 			const sel = window.getSelection()
 			expect(sel?.anchorNode).toBe(host)
@@ -110,7 +110,7 @@ describe('caretDom', () => {
 			el.append(document.createElement('b'), document.createElement('i'))
 			document.body.append(el)
 
-			caretDom.placeAtParentBoundary(el, el.childNodes.length)
+			caretDom.collapseTo({node: el, offset: el.childNodes.length})
 
 			expect(window.getSelection()?.anchorOffset).toBe(2)
 			el.remove()

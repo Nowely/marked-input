@@ -7,7 +7,7 @@ import type {TokenTree} from '../tree/tree'
 import type {TextNode, TreeNode} from '../tree/types'
 import {bind} from './bind'
 import type {BindInput} from './bind'
-import {focusEditingHost, getCaretIndex, placeAtTextOffset} from './caret'
+import {collapseTo, findTextBoundary, focusEditingHost, getCaretIndex} from './caret'
 import type {TokenHandle} from './TokenHandle'
 
 /**
@@ -678,7 +678,7 @@ describe('bind', () => {
 			if (!(only instanceof Text)) throw new Error('expected one text child')
 			only.splitText(2)
 			focusEditingHost(span)
-			placeAtTextOffset(span, 4)
+			collapseTo(findTextBoundary(span, 4))
 			expect(getCaretIndex(span)).toBe(4)
 
 			bindOf(inputFor(container, roots, {nodes}))

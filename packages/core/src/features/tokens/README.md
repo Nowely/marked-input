@@ -346,9 +346,9 @@ not.
   token's surface, and those extra writes clobbered Chromium's drag base.
   There is no numeric twin: this is the only projection of the walk, and every
   branch names its own case in `domBoundary.spec.ts`.
-- `dom/caret.ts` — stateless `Range`/`Selection` mechanics (`placeAtTextOffset`,
-  `placeAtParentBoundary`, `placeRangeAcrossSurfaces`, `getCaretIndex`,
-  `getRect`, `focusEditingHost`).
+- `dom/caret.ts` — stateless `Range`/`Selection` mechanics (`collapseTo`,
+  `findTextBoundary`, `placeRangeAcrossBoundaries`, `getCaretIndex`, `getRect`,
+  `focusEditingHost`).
 - `dom/textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
   `textOffsetWithin`, `hasEditableAncestorBefore`).
 
