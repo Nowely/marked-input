@@ -1,9 +1,20 @@
 import type {Computed, Signal} from '../../../shared/signals'
 import {computed, signal} from '../../../shared/signals'
-import type {Token} from '../parser/types'
+import type {RowToken, Token} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
 import {offsetOfAnchor} from './anchors'
-import type {Id, MarkNode, NodeAnchor, TextNode, TreeCommands, TreeNode} from './types'
+import type {Id, MarkNode, NodeAnchor, RowNode, TextNode, TreeCommands, TreeNode} from './types'
+
+/**
+ * The separator text a RowToken consumed: everything past its last child. The
+ * token stores `content` (a mirror the node does not keep), so the terminator
+ * is derived rather than carried as a second field.
+ */
+export function rowTokenTerminator(token: RowToken): string {
+	if (!token.terminated) return ''
+	const lastChild = token.children[token.children.length - 1]
+	return token.content.slice(lastChild.position.end - token.position.start)
+}
 
 export interface TokenTree {
 	// NOT ReturnType<typeof signal<...>> — instantiation picks the last overload
@@ -11,11 +22,11 @@ export interface TokenTree {
 	readonly roots: Signal<readonly TreeNode[]>
 	readonly value: Computed<string>
 	/** Allocates fresh ids from the tree-local counter; adoption builds its new nodes through it. */
-	readonly buildNode: (token: Token) => TreeNode
+	readonly buildNode: (token: Token | RowToken) => TreeNode
 }
 
 export function createTokenTree(
-	tokens: readonly Token[],
+	tokens: readonly (Token | RowToken)[],
 	/**
 	 * Spec §2.3's `mark.update`/`mark.remove`. Optional because the tree is built UNWIRED in
 	 * the specs and in the §7.1 snapshot gate, where there is no transaction layer to write
@@ -27,7 +38,23 @@ export function createTokenTree(
 	let nextId = 1
 	const alloc = (): Id => nextId++
 
-	const buildNode = (token: Token): TreeNode => {
+	const buildNode = (token: Token | RowToken): TreeNode => {
+		if (token.type === 'row') {
+			const node: RowNode = {
+				kind: 'row',
+				id: alloc(),
+				children: signal<readonly TreeNode[]>({initial: token.children.map(buildNode)}),
+				terminator: rowTokenTerminator(token),
+				position: {...token.position},
+				range: () => ({...node.position}),
+				remove: () => commands?.()?.remove(node) ?? false,
+				duplicate: () => commands?.()?.duplicate(node) ?? false,
+				insertAfter: text => commands?.()?.insertAfter(node, text) ?? false,
+				mergeWith: next => commands?.()?.mergeWith(node, next) ?? false,
+				moveTo: index => commands?.()?.moveTo(node, index) ?? false,
+			}
+			return node
+		}
 		if (token.type === 'text') {
 			const node: TextNode = {
 				kind: 'text',
@@ -86,7 +113,7 @@ export function createTokenTree(
 export function findNode(nodes: readonly TreeNode[], id: Id): TreeNode | undefined {
 	for (const node of nodes) {
 		if (node.id === id) return node
-		if (node.kind === 'mark') {
+		if (node.kind !== 'text') {
 			const found = findNode(node.children(), id)
 			if (found) return found
 		}
@@ -104,7 +131,7 @@ export function rootIndexOf(roots: readonly TreeNode[], id: Id): number | undefi
 
 function containsNode(node: TreeNode, id: Id): boolean {
 	if (node.id === id) return true
-	return node.kind === 'mark' && node.children().some(child => containsNode(child, id))
+	return node.kind !== 'text' && node.children().some(child => containsNode(child, id))
 }
 
 /**
@@ -144,6 +171,19 @@ function sliceWithin(nodes: readonly TreeNode[], start: number, end: number): st
 			continue
 		}
 
+		if (node.kind === 'row') {
+			result += sliceWithin(node.children(), start, end)
+			// The separator span is plain text for slicing: [position.end - terminator, position.end)
+			if (node.terminator) {
+				const terminatorStart = node.position.end - node.terminator.length
+				result += node.terminator.slice(
+					Math.max(0, start - terminatorStart),
+					Math.min(node.terminator.length, end - terminatorStart)
+				)
+			}
+			continue
+		}
+
 		const slot = node.descriptor.hasSlot ? sliceWithin(node.children(), start, end) : undefined
 		result += annotate(node.descriptor.markup, {value: node.value(), meta: node.meta(), slot})
 	}
@@ -158,6 +198,11 @@ export function joinNodes(nodes: readonly TreeNode[]): string {
 	for (const node of nodes) {
 		if (node.kind === 'text') {
 			result += node.text()
+			continue
+		}
+
+		if (node.kind === 'row') {
+			result += joinNodes(node.children()) + node.terminator
 			continue
 		}
 

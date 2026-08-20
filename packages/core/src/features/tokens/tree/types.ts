@@ -47,7 +47,37 @@ export type Window = {
  * position breaks the round-trip invariant. The rule is documented here rather
  * than enforced by the types, so nothing stops such a write at compile time.
  */
-export type TreeNode = TextNode | MarkNode
+export type TreeNode = TextNode | MarkNode | RowNode
+
+/**
+ * A first-class block row (issue 08): block layout's only root kind, formed by
+ * `Parser.parseRows` from the structural separator rather than matched by any
+ * markup. Never a child of a mark or another row. A paragraph is a Row whose
+ * children are plain text and inline marks — no markup, no descriptor.
+ */
+export interface RowNode {
+	readonly kind: 'row'
+	readonly id: Id
+	/** The row's inline content — Text and Mark nodes only, at least one text child. */
+	readonly children: Signal<readonly TreeNode[]>
+	/**
+	 * The separator text this row consumed — `''` only for the document-final row.
+	 * A plain field written by adoption, like `position`: every observable flip
+	 * co-occurs with a roots or children write, so the projection recomputes
+	 * without a signal here.
+	 */
+	terminator: string
+	/** INCLUDES the trailing separator when terminated, so rows keep tiling the document. */
+	position: {start: number; end: number}
+	/** See {@link TextNode.range}. */
+	range(): {start: number; end: number}
+	/** See {@link NodeCommands}. */
+	remove(): boolean
+	duplicate(): boolean
+	insertAfter(text: string): boolean
+	mergeWith(next: TreeNode): boolean
+	moveTo(index: number): boolean
+}
 
 export interface TextNode {
 	readonly kind: 'text'

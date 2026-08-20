@@ -11,7 +11,7 @@ import {anchorEquals} from '../tokens'
 import {anchorsFromInputEvent, dropUnexpressedInput, isConsumerKeyOrigin} from './beforeInput'
 
 function isTextLikeRow(node: TreeNode): boolean {
-	if (node.kind === 'text') return true
+	if (node.kind === 'text' || node.kind === 'row') return true
 	return node.descriptor.hasSlot && node.descriptor.segments.length === 1
 }
 

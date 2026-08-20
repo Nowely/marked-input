@@ -105,7 +105,7 @@ export function movePlan(
  * child, and an anchor names a node rather than a coordinate.
  */
 export function entryAnchor(node: TreeNode): NodeAnchor {
-	if (node.kind === 'mark' && node.descriptor.hasSlot) {
+	if (node.kind === 'row' || (node.kind === 'mark' && node.descriptor.hasSlot)) {
 		// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as
 		// non-nullable and the empty-children guard would be linted away as impossible.
 		const first = node.children().at(0)

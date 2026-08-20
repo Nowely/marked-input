@@ -1,4 +1,4 @@
-import type {MarkNode, NodeAnchor, TextNode, TreeNode} from './types'
+import type {MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from './types'
 
 /**
  * Right-affinity resolution: the last text node (document order) containing the offset.
@@ -13,7 +13,7 @@ import type {MarkNode, NodeAnchor, TextNode, TreeNode} from './types'
  */
 export function anchorAt(roots: readonly TreeNode[], offset: number, side: 'left' | 'right' = 'right'): NodeAnchor {
 	let text: {node: TextNode; offset: number} | undefined
-	let mark: MarkNode | undefined
+	let owner: MarkNode | RowNode | undefined
 	const visit = (nodes: readonly TreeNode[]): void => {
 		for (const node of nodes) {
 			// Sibling positions ascend, so the first node starting past the offset ends the
@@ -23,7 +23,7 @@ export function anchorAt(roots: readonly TreeNode[], offset: number, side: 'left
 			if (node.kind === 'text') {
 				text = {node, offset: offset - node.position.start}
 			} else {
-				mark = node
+				owner = node
 				visit(node.children())
 			}
 		}
@@ -31,7 +31,9 @@ export function anchorAt(roots: readonly TreeNode[], offset: number, side: 'left
 	visit(roots)
 	if (text) return text
 	// A mark interior is not anchorable (spec §2.3), so a slotless mark answers with its
-	// boundary. `{after}` under the default: the interior and the end have no other reading,
+	// boundary — and a row's separator span answers the same way: no text covers it, so the
+	// row itself does, failing closed exactly like a block row's trailing `\n\n` always has.
+	// `{after}` under the default: the interior and the end have no other reading,
 	// and neither does the start under right affinity.
 	//
 	// `'left'` is what a select-all seed asks for, and only its START seed: block mode filters
@@ -39,7 +41,7 @@ export function anchorAt(roots: readonly TreeNode[], offset: number, side: 'left
 	// with a mark NOTHING covers offset 0 but the mark itself — `{after: mark}` projects back to
 	// its END, `isAllSelected` compared that against 0 and answered false, and Ctrl+A was
 	// cancelled having done nothing.
-	if (mark) return side === 'left' && offset === mark.position.start ? {before: mark} : {after: mark}
+	if (owner) return side === 'left' && offset === owner.position.start ? {before: owner} : {after: owner}
 	return offset <= 0 ? 'start' : 'end'
 }
 
@@ -76,9 +78,10 @@ export function adjacentMark(roots: readonly TreeNode[], anchor: NodeAnchor, dir
 	const offset = offsetOfAnchor(roots, anchor)
 	const visit = (nodes: readonly TreeNode[]): MarkNode | undefined => {
 		for (const node of nodes) {
-			if (node.kind !== 'mark') continue
+			if (node.kind === 'text') continue
 			const nested = visit(node.children())
 			if (nested) return nested
+			if (node.kind !== 'mark') continue
 			if (direction === -1 ? node.position.end === offset : node.position.start === offset) return node
 		}
 		return undefined

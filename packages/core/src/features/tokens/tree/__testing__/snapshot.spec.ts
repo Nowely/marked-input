@@ -2,7 +2,7 @@ import {faker} from '@faker-js/faker'
 import {describe, expect, it} from 'vitest'
 
 import {Parser} from '../../parser/Parser'
-import type {Token} from '../../parser/types'
+import type {RowToken, Token} from '../../parser/types'
 import {annotate} from '../../parser/utils/annotate'
 import {toString} from '../../parser/utils/toString'
 import {createTokenTree} from '../tree'
@@ -21,8 +21,8 @@ const MAX_DEPTH = 3
 const nodeIds = (nodes: readonly TreeNode[]): number[] =>
 	nodes.flatMap(node => (node.kind === 'mark' ? [node.id, ...nodeIds(node.children())] : [node.id]))
 
-const tokenIds = (tokens: readonly Token[]): (number | undefined)[] =>
-	tokens.flatMap(token => (token.type === 'mark' ? [token.id, ...tokenIds(token.children)] : [token.id]))
+const tokenIds = (tokens: readonly (Token | RowToken)[]): (number | undefined)[] =>
+	tokens.flatMap(token => (token.type === 'text' ? [token.id] : [token.id, ...tokenIds(token.children)]))
 
 function randomSource(depth: number): string {
 	const parts: string[] = []
