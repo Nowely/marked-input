@@ -26,7 +26,7 @@ inherits editability or is explicitly atomic:
 </div>
 ```
 
-Who writes what: `editableState.ts` writes the per-token topology (bare text surfaces, `ce=false` value marks, frozen
+Who writes what: `bind.ts` writes the per-token topology (bare text surfaces, `ce=false` value marks, frozen
 chrome around a slot host); `SelectionDriver` owns the container's `contenteditable`, gated only by `readOnly`;
 `TokenModel.control()` marks registered controls (grips, menus, overlays) `ce=false` at registration, because chrome is
 not document content.

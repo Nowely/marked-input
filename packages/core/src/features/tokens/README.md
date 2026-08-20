@@ -187,7 +187,7 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   — must bind the current tree, not regress the node layer and the DOM text to
   the painted generation.
 - **Editable state:** the CONTAINER is the one editing host, and
-  `dom/editableState.ts` gives every bound token its place in it, at bind time,
+  `dom/bind.ts` gives every bound token its place in it, at bind time,
   on newly bound elements only. Text surfaces stay bare (they inherit); a
   value-only mark root is `contenteditable=false`; a SLOT mark leaves its root
   and its slot host bare — a nested editing host would be a `display: contents`

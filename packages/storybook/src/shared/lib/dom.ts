@@ -93,7 +93,7 @@ export function caretIsInside(element: Element): boolean {
  *
  * The attribute alone does NOT separate them, which is the trap this predicate exists to
  * avoid: only a VALUE-ONLY mark root carries `contenteditable="false"`: a SLOT mark root is
- * bare by policy (core's `editableState.ts`), so on a nested story
+ * bare by policy (core's `bind.ts`), so on a nested story
  * `:scope > span:not([contenteditable])` hands back slot marks as if they were text. What
  * separates them is structural and exact: a text surface holds only a `Text` node — the token
  * layer writes it and nothing else does — so it has no ELEMENT children, while a slot mark root
