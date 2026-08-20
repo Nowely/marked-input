@@ -218,7 +218,7 @@ export class TokenModel {
 	 *
 	 * In CONTROLLED mode the tree has NOT moved — the commit emits and waits for the echo —
 	 * so the anchor describes the pre-edit tree. `EditController` discards it there and
-	 * `MarkputHandle.replaceRange` reads it only as a success flag.
+	 * {@link setValue} reads it only as a success flag.
 	 */
 	replaceBetween(from: NodeAnchor, to: NodeAnchor, text: string): NodeAnchor | undefined {
 		this.#ensureSeeded()
@@ -251,6 +251,7 @@ export class TokenModel {
 	 * @internal Whole-value replacement: {@link replaceBetween} over the document edges. The
 	 * EDGES, not `{0, value().length}`: the whole-value arm tests `end` against the TREE's
 	 * length, which {@link value} outruns mid-flight — missing it splices a foreign window.
+	 * Deliberately kept: spec-facing and public-reachable through the exported Store (`store.tokens`) — the `api.focus()` precedent.
 	 */
 	setValue(text: string): boolean {
 		return this.replaceBetween('start', 'end', text) !== undefined

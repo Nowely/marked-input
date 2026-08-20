@@ -69,6 +69,7 @@ export class TokenHandle {
 		return bindings?.rowElement ?? bindings?.textElement ?? bindings?.tokenElement
 	}
 
+	/** Deliberately kept despite zero in-repo callers: public-reachable surface via the exported Store (`store.tokens.handle()`) — the `api.focus()` precedent. */
 	hasTextSurface(): boolean {
 		return this.#bindings?.textElement != null
 	}
@@ -126,7 +127,10 @@ export class TokenHandle {
 		return true
 	}
 
-	/** Focus the editing host of this token's scope element (row in block layout). */
+	/**
+	 * Focus the editing host of this token's scope element (row in block layout).
+	 * Deliberately kept despite zero in-repo callers: public-reachable surface via the exported Store (`store.tokens.handle()`) — the `api.focus()` precedent.
+	 */
 	focus(): boolean {
 		const scope = this.#measureScope()
 		if (!scope) return false
