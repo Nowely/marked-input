@@ -84,8 +84,6 @@ the framework has not repainted yet.
   DOM-free, and unit-tested without a mounted container. Its dep bag (three
   closures, not the tree) is what lets `TokenModel` satisfy `anchorAt` with the
   SEEDING read rather than the bare tree walk.
-- `markPatch.ts` — `serializeMark(node, patch)`: a patch becomes markup, with
-  the omitted fields defaulted off the node so an omitted key round-trips.
 
 ## Adoption — the descend rules
 
@@ -426,7 +424,8 @@ than by node type:
   row can be a text node, so a mark-only port could not serve one.
 - `MarkCommands` — `update(patch)`, mark-only because `value`/`meta`/`slot` are.
 
-All of them ride a transaction — `serializeMark` renders a patch to markup,
+All of them ride a transaction — `serializeMark` (`seam/TokenModel.ts`, beside the
+verb wiring) renders a patch to markup,
 `applyStructural`/`applyAfter`/`applyRange` splice — and all answer `false` in
 read-only mode or off the tree, which is the same fail-closed answer a dead node
 gives. Each also OWNS its post-edit caret, applied through one shared rule, with

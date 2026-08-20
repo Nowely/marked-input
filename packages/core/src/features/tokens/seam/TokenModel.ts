@@ -14,15 +14,15 @@ import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
+import {annotate} from '../parser/utils/annotate'
 import {adjacentMark as findAdjacentMark, anchorAt as anchorAtOffset, offsetOfAnchor, stepAnchor} from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
-import {serializeMark} from '../tree/markPatch'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
 import {entryAnchor, mergePlan, movePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
-import type {Anchors, MarkNode, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
+import type {Anchors, MarkNode, MarkPatch, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 
 /**
@@ -738,6 +738,26 @@ export class TokenModel {
 			this.#pipeline.rebind(id)
 		}
 	}
+}
+
+/**
+ * A patch becomes markup. Moved out of the deleted `MarkController` (`#serialize` plus its
+ * three field defaults) so the node can serialize without reaching into the store; the only
+ * semantic change is `null` instead of `{kind: 'clear'}` (plan decision D-b).
+ *
+ * The defaults come off the NODE: an omitted key must round-trip the current field, and the
+ * slot's current value is the joined children, because the node stores no slot text
+ * (`MarkNode.slotRange` is positions only).
+ */
+function serializeMark(node: MarkNode, patch: MarkPatch): string {
+	const value = patch.value ?? node.value()
+	const meta = patch.meta === null ? undefined : (patch.meta ?? node.meta())
+	const slot = patch.slot === null ? undefined : (patch.slot ?? node.slot())
+	return annotate(node.markup, {
+		value,
+		meta: node.descriptor.gapTypes.includes('meta') ? (meta ?? '') : undefined,
+		slot: node.descriptor.hasSlot ? (slot ?? '') : undefined,
+	})
 }
 
 /**
