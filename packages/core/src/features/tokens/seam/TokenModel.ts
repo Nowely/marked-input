@@ -148,15 +148,7 @@ export class TokenModel {
 	 * it does not go stale when a sibling above the owner is added or removed mid-render.
 	 */
 	children(ownerId: number): DomRef {
-		const key = {}
-		return element => {
-			if (element) {
-				this.#childSequenceHosts.set(ownerId, key, element)
-			} else {
-				this.#childSequenceHosts.delete(ownerId, key)
-			}
-			this.#pipeline.rebind(ownerId)
-		}
+		return this.#refInto(this.#childSequenceHosts, ownerId)
 	}
 
 	/**
@@ -171,15 +163,7 @@ export class TokenModel {
 	 * re-render cannot be filed under a stale key and one id's element is one lookup.
 	 */
 	consign(id: number): DomRef {
-		const key = {}
-		return element => {
-			if (element) {
-				this.#tokenElements.set(id, key, element)
-			} else {
-				this.#tokenElements.delete(id, key)
-			}
-			this.#pipeline.rebind(id)
-		}
+		return this.#refInto(this.#tokenElements, id)
 	}
 
 	/**
@@ -188,15 +172,7 @@ export class TokenModel {
 	 * both, and a row holds chrome the token element must not be confused with.
 	 */
 	consignRow(id: number): DomRef {
-		const key = {}
-		return element => {
-			if (element) {
-				this.#rowElements.set(id, key, element)
-			} else {
-				this.#rowElements.delete(id, key)
-			}
-			this.#pipeline.rebind(id)
-		}
+		return this.#refInto(this.#rowElements, id)
 	}
 
 	// ═══ Engine SPI (in-core consumers) ═══════════════════════════════════════
@@ -758,6 +734,19 @@ export class TokenModel {
 	readonly #tokenElements = new RefRegistry()
 	readonly #rowElements = new RefRegistry()
 	readonly #childSequenceHosts = new RefRegistry()
+
+	/** The shared ref-callback body: one key per registration, filed into `registry` under `id`. */
+	#refInto(registry: RefRegistry, id: number): DomRef {
+		const key = {}
+		return element => {
+			if (element) {
+				registry.set(id, key, element)
+			} else {
+				registry.delete(id, key)
+			}
+			this.#pipeline.rebind(id)
+		}
+	}
 }
 
 /**
