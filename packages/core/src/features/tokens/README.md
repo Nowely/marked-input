@@ -58,17 +58,16 @@ the framework has not repainted yet.
   retained byte- and position-equal and strictly OUTSIDE the edit window (the
   window bound is load-bearing — repeating content matches past the edit
   otherwise), the middle pairs same-index candidates and recurses into a mark
-  whose `descriptor` matches. Returns a `TransactionResult` carrying
-  `added`/`removed`/`updated`, the resolved `selectionAfter`, the anchor `map`,
-  and the `structural`/`render` bits.
+  whose `descriptor` matches. Returns a `TransactionResult` carrying the
+  resolved `selectionAfter`.
 - `gapWindow.ts` — the boundary-reset window: the common prefix/suffix of two
   projections. An empty window pins at the END of the value, because `start`
   of an empty window is not an edit location.
 - `transactions.ts` — the write verbs. `applyRange(window, text)` is
   the primitive; `applyAfter(node, text)` and
-  `applyStructural(target, replacement)` lower node-local intent into it, and
-  `tx(fn)` buffers disjoint ops and adopts once with the hull window. Nothing
-  here mutates the tree — adoption, inside the sink, is the only writer.
+  `applyStructural(target, replacement)` lower node-local intent into it.
+  Nothing here mutates the tree — adoption, inside the sink, is the only
+  writer.
 - `valueBoundary.ts` — the string boundary: commit policy plus arrival routing.
   Controlled mode emits and waits for the echo it spliced; uncontrolled commits
   straight through. Block mode's parse filter (`filterEmptyText`) lives here.
