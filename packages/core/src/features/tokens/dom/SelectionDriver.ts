@@ -3,9 +3,8 @@ import type {Event} from '../../../shared/signals'
 import type {Host} from '../../state/Host'
 import {anchorEquals} from '../tree/anchors'
 import type {Selection} from '../tree/selection'
-import type {Anchors, Id, NodeAnchor, TreeNode} from '../tree/types'
-import type {BoundaryAffinity} from './domBoundary'
-import type {SelectionSnapshot} from './DomModel'
+import type {Anchors, Id, TreeNode} from '../tree/types'
+import type {DomModel} from './DomModel'
 import type {TokenHandle} from './TokenHandle'
 
 /** What the selection's DOM half reads from the model — nothing more. */
@@ -20,13 +19,7 @@ export type SelectionDriverDeps = {
 	nodes(): readonly TreeNode[]
 	find(id: Id): TreeNode | undefined
 	handle(id: Id): TokenHandle | undefined
-	handleAt(node: Node): TokenHandle | 'control' | undefined
-	domSelection(): SelectionSnapshot | undefined
-	/** THE model→DOM direction: a stored anchor placed through its OWN node (spec S2 D1). */
-	placeCaret(anchor: NodeAnchor): boolean
-	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean
-	/** THE DOM→model direction: a live DOM boundary as an anchor in the live tree, forming no offset. */
-	anchorFor(node: Node, offset: number, affinity?: BoundaryAffinity): NodeAnchor | undefined
+	dom: DomModel
 }
 
 /**
@@ -94,7 +87,7 @@ export class SelectionDriver {
 	 * not a second `undefined`.
 	 */
 	domAnchors(): Anchors | undefined {
-		const range = this.deps.domSelection()?.range
+		const range = this.deps.dom.selection()?.range
 		return range ? this.#anchorsIn(range) : undefined
 	}
 
@@ -112,13 +105,13 @@ export class SelectionDriver {
 		// no inside, so a boundary Chromium put inside a mark's text answers with the edge the
 		// click was aimed at rather than always the left one; see {@link BoundaryAffinity}.
 		if (range.collapsed) {
-			const caret = this.deps.anchorFor(range.startContainer, range.startOffset, 'nearest')
+			const caret = this.deps.dom.anchorFor(range.startContainer, range.startOffset, 'nearest')
 			return caret && {anchor: caret, head: caret}
 		}
 		// A DOM Range is always document-ordered, and these are the affinities the numeric
 		// read used, so `anchor` is the low end and `head` the high one.
-		const anchor = this.deps.anchorFor(range.startContainer, range.startOffset, 'after')
-		const head = this.deps.anchorFor(range.endContainer, range.endOffset, 'before')
+		const anchor = this.deps.dom.anchorFor(range.startContainer, range.startOffset, 'after')
+		const head = this.deps.dom.anchorFor(range.endContainer, range.endOffset, 'before')
 		return anchor && head ? {anchor, head} : undefined
 	}
 
@@ -149,10 +142,10 @@ export class SelectionDriver {
 		// ANCHORS on both arms, and the ranged one no longer detours through the derived
 		// numeric `range`: normalizing the pair is DOM-order work the placement owns.
 		if (anchorEquals(anchors.anchor, anchors.head)) {
-			this.deps.placeCaret(anchors.head)
+			this.deps.dom.placeCaret(anchors.head)
 			return
 		}
-		this.deps.selectRange(anchors.anchor, anchors.head)
+		this.deps.dom.selectRange(anchors.anchor, anchors.head)
 	}
 
 	#trackSelection(container: HTMLElement): void {
@@ -189,7 +182,7 @@ export class SelectionDriver {
 				sync()
 				return
 			}
-			const at = this.deps.handleAt(node)
+			const at = this.deps.dom.handleAt(node)
 			if (at && at !== 'control') {
 				sync()
 				return
@@ -205,7 +198,7 @@ export class SelectionDriver {
 		})
 
 		listen(document, 'selectionchange', () => {
-			const focusNode = this.deps.domSelection()?.focusNode
+			const focusNode = this.deps.dom.selection()?.focusNode
 			if (!focusNode) return
 			syncIfInEditor(focusNode)
 		})

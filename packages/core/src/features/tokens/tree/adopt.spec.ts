@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest'
 
 import {effect} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
+import {captureTree, diffTree} from './__testing__/diff'
 import {snapshot, stripIds} from './__testing__/snapshot'
 import {adopt} from './adopt'
 import {offsetOfAnchor} from './anchors'
@@ -11,21 +12,22 @@ import type {Anchors, MarkNode, NodeAnchor, TextNode, TransactionResult, TreeNod
 
 const parser = new Parser(['@[__value__](__meta__)', '#[__slot__]'])
 
-/** Build a tree, apply an exact-window edit, adopt, return {tree, result, before}. */
+/** Build a tree, apply an exact-window edit, adopt, return {tree, diff, before}. */
 function editAndAdopt(source: string, start: number, end: number, text: string) {
 	const tree = createTokenTree(parser.parse(source))
 	const before = tree.roots()
+	const captured = captureTree(before)
 	const next = source.slice(0, start) + text + source.slice(end)
-	const result = adopt(tree, {start, end, insertedLength: text.length}, parser.parse(next))
-	return {tree, result, before, next}
+	adopt(tree, {start, end, insertedLength: text.length}, parser.parse(next))
+	return {tree, before, next, diff: diffTree(captured, tree.roots())}
 }
 
 describe('adopt: prefix/suffix walks', () => {
 	it('interior text edit retains every node and writes one content signal', () => {
-		const {tree, result, before} = editAndAdopt('he@[x](m)llo', 10, 10, 'Z') // inside "llo"
+		const {tree, diff, before} = editAndAdopt('he@[x](m)llo', 10, 10, 'Z') // inside "llo"
 		expect(tree.roots().map(n => n.id)).toEqual(before.map(n => n.id))
-		expect(result.structural).toBe(false)
-		expect(result.updated.map(n => n.id)).toEqual([before[2].id])
+		expect([diff.added, diff.removed]).toEqual([[], []])
+		expect(diff.updated.map(n => n.id)).toEqual([before[2].id])
 	})
 
 	it('suffix nodes shift positions without signal writes', () => {
@@ -38,11 +40,11 @@ describe('adopt: prefix/suffix walks', () => {
 		// x@[a](m)x@[a](m)x — tokens: x[0,1] mark[1,8] x[8,9] mark[9,16] x[16,17].
 		// Delete exactly the second mark: window {9,16} → 'x@[a](m)xx'.
 		const source = 'x@[a](m)x@[a](m)x'
-		const {tree, result, before} = editAndAdopt(source, 9, 16, '')
+		const {tree, diff, before} = editAndAdopt(source, 9, 16, '')
 		const after = tree.roots()
 		expect(after[0].id).toBe(before[0].id)
 		expect(after[1].id).toBe(before[1].id) // first mark survives — NOT the second
-		expect(result.removed).toContain(before[3].id) // the second mark is the removed one
+		expect(diff.removed).toContain(before[3].id) // the second mark is the removed one
 		// The two 'x' texts around the deleted mark merge into one 'xx' — a middle-region
 		// outcome (identity there is best-effort); output equivalence is the hard assertion:
 		expect(stripIds(snapshot(after))).toEqual(stripIds(parser.parse('x@[a](m)xx')))
@@ -55,13 +57,13 @@ describe('adopt: prefix/suffix walks', () => {
 		// position-matches; without the `position.end <= window.start` bound the walk runs
 		// straight through the deleted mark and removes the THIRD one instead (AC-3.1).
 		const source = '@[a](m)@[a](m)@[a](m)'
-		const {tree, result, before} = editAndAdopt(source, 7, 14, '')
+		const {tree, diff, before} = editAndAdopt(source, 7, 14, '')
 		const after = tree.roots()
 		expect(after[1].id).toBe(before[1].id) // first mark: prefix walk
 		expect(after[3].id).toBe(before[5].id) // third mark: suffix walk
-		expect(result.removed).toContain(before[3].id)
-		expect(result.removed).not.toContain(before[1].id)
-		expect(result.removed).not.toContain(before[5].id)
+		expect(diff.removed).toContain(before[3].id)
+		expect(diff.removed).not.toContain(before[1].id)
+		expect(diff.removed).not.toContain(before[5].id)
 		expect(stripIds(snapshot(after))).toEqual(stripIds(parser.parse('@[a](m)@[a](m)')))
 	})
 
@@ -73,11 +75,11 @@ describe('adopt: prefix/suffix walks', () => {
 		// outcome, because pairing reaches the same node from the other side.
 		const text = editAndAdopt('ab', 0, 1, 'a') // delete 'a', type 'a' back
 		expect(text.tree.roots()[0].id).toBe(text.before[0].id)
-		expect(text.result.structural).toBe(false)
+		expect([text.diff.added, text.diff.removed]).toEqual([[], []])
 
 		const mark = editAndAdopt('x@[a](m)', 2, 8, '@[a](m)') // window swallows all but '@'
 		expect(mark.tree.roots()[1].id).toBe(mark.before[1].id)
-		expect(mark.result.removed).toEqual([])
+		expect(mark.diff.removed).toEqual([])
 	})
 
 	it('deleting across the first two of three identical marks kills the second (suffix bound)', () => {
@@ -93,10 +95,10 @@ describe('adopt: prefix/suffix walks', () => {
 		// window is invisible there: dropping the bound leaves all five properties green
 		// at 6000 iterations. Do not retire this fixture as "covered by the properties".
 		const source = '@[a](m)@[a](m)@[a](m)'
-		const {tree, result, before} = editAndAdopt(source, 1, 8, '')
+		const {tree, diff, before} = editAndAdopt(source, 1, 8, '')
 		expect(tree.roots()[1].id).toBe(before[1].id)
-		expect(result.removed).toContain(before[3].id)
-		expect(result.removed).not.toContain(before[1].id)
+		expect(diff.removed).toContain(before[3].id)
+		expect(diff.removed).not.toContain(before[1].id)
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('@[a](m)@[a](m)')))
 	})
 
@@ -122,7 +124,7 @@ describe('adopt: prefix/suffix walks', () => {
 		// The leading 'a' is absent on purpose: it ends exactly at the window start, so
 		// middle pairing keeps it across the merge into 'af' (§7.1 identity outside the
 		// window). Everything the window swallowed is listed, subtree-flattened.
-		expect(drop.result.removed).toEqual([
+		expect(drop.diff.removed).toEqual([
 			droppedMark.id,
 			...droppedMark.children().map(node => node.id),
 			drop.before[2].id,
@@ -135,6 +137,7 @@ describe('adopt: prefix/suffix walks', () => {
 		const source = 'a@[b](c)d'
 		const tree = createTokenTree(parser.parse(source))
 		const before = tree.roots()
+		const captured = captureTree(before)
 		// Adoption rebuilds the root list every time and signals compare by reference, so an
 		// unguarded `roots` write would wake every subscriber on a pure echo.
 		let runs = 0
@@ -143,13 +146,12 @@ describe('adopt: prefix/suffix walks', () => {
 			tree.roots()
 		})
 
-		const result = adopt(tree, gapWindow(source, source), parser.parse(source))
+		adopt(tree, gapWindow(source, source), parser.parse(source))
 
 		expect(runs).toBe(1)
 		expect(tree.roots().map(node => node.id)).toEqual(before.map(node => node.id))
-		expect(result.structural).toBe(false)
-		expect(result.added).toEqual([])
-		expect(result.removed).toEqual([])
+		const diff = diffTree(captured, tree.roots())
+		expect([diff.added, diff.removed, diff.updated]).toEqual([[], [], []])
 		stop()
 	})
 
@@ -162,36 +164,38 @@ describe('adopt: prefix/suffix walks', () => {
 describe('adopt: middle pairing and descend', () => {
 	it('in-slot edit descends: mark and sibling child ids survive, no mark update', () => {
 		const source = '#[a @[b](c) d]'
-		const {tree, result, before} = editAndAdopt(source, 2, 2, 'X') // edit inside slot text "a "
+		const {tree, diff, before} = editAndAdopt(source, 2, 2, 'X') // edit inside slot text "a "
 		const mark = tree.roots()[1]
 		if (mark.kind !== 'mark') throw new Error('expected mark')
 		const beforeMark = before[1]
 		if (beforeMark.kind !== 'mark') throw new Error('expected mark')
 		expect(mark.id).toBe(beforeMark.id)
-		expect(result.updated.some(n => n.kind === 'mark')).toBe(false) // no mark-level update
-		expect(result.render).toBe(false)
+		expect(diff.updated.some(n => n.kind === 'mark')).toBe(false) // no mark-level update
+		expect([diff.added, diff.removed]).toEqual([[], []])
 	})
 
 	it('inner mark meta change (refused descend at the inner level) keeps outer and sibling identity', () => {
 		const source = '#[a @[b](c) d]'
 		const tree = createTokenTree(parser.parse(source))
 		const before = tree.roots()
+		const captured = captureTree(before)
 		const beforeMark = before[1]
 		if (beforeMark.kind !== 'mark') throw new Error('expected mark')
 		const beforeChildIds = beforeMark.children().map(n => n.id)
 		const next = '#[a @[b](Z) d]'
-		const result = adopt(tree, {start: 9, end: 10, insertedLength: 1}, parser.parse(next))
+		adopt(tree, {start: 9, end: 10, insertedLength: 1}, parser.parse(next))
 		const mark = tree.roots()[1]
 		if (mark.kind !== 'mark') throw new Error('expected mark')
 		expect(mark.id).toBe(beforeMark.id)
 		expect(mark.children().map(n => n.id)).toEqual(beforeChildIds) // children survived
-		expect(result.render).toBe(true) // inner mark meta changed → a MarkNode is in updated
+		const diff = diffTree(captured, tree.roots())
+		expect(diff.updated.some(n => n.kind === 'mark')).toBe(true) // the inner mark's meta changed
 	})
 
 	it('same-index text pairing inside the window retains the id with a content write', () => {
-		const {tree, result, before} = editAndAdopt('he@[x](m)llo', 10, 10, 'Z')
+		const {tree, diff, before} = editAndAdopt('he@[x](m)llo', 10, 10, 'Z')
 		expect(tree.roots()[2].id).toBe(before[2].id)
-		expect(result.updated.map(n => n.id)).toEqual([before[2].id])
+		expect(diff.updated.map(n => n.id)).toEqual([before[2].id])
 	})
 
 	it('middle-region pairing rewrites the positions of the retained nodes', () => {
@@ -211,12 +215,12 @@ describe('adopt: middle pairing and descend', () => {
 		// `descriptor` is readonly, so a loosened pairing gate would retain the mark under its
 		// old markup and `snapshot`/`join` would re-annotate with it — the projection becomes
 		// 'ab@[]()cd', wrong markup and slot dropped, with no other symptom.
-		const {tree, result, before} = editAndAdopt('ab@[x](m)cd', 2, 9, '#[q]')
+		const {tree, diff, before} = editAndAdopt('ab@[x](m)cd', 2, 9, '#[q]')
 		const mark = tree.roots()[1]
 
 		expect(mark.id).not.toBe(before[1].id)
-		expect(result.added.map(change => [change.node.id, change.path])).toEqual([[mark.id, [1]]])
-		expect(result.removed).toEqual([before[1].id])
+		expect(diff.added.map(change => [change.node.id, change.path])).toEqual([[mark.id, [1]]])
+		expect(diff.removed).toEqual([before[1].id])
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('ab#[q]cd')))
 	})
 
@@ -275,17 +279,18 @@ describe('adopt: middle pairing and descend', () => {
 		// nothing else catches this. Implementing the slot-local window must flip this test
 		// deliberately.
 		const tree = createTokenTree(parser.parse('#[@[a](m) @[a](m) tail]'))
+		const captured = captureTree(tree.roots())
 		const outer = tree.roots()[1]
 		if (outer.kind !== 'mark') throw new Error('expected mark')
 		const [, first, , second, tail] = outer.children()
 		expect(tail.position).toEqual({start: 17, end: 22})
 
-		const result = adopt(tree, {start: 2, end: 9, insertedLength: 0}, parser.parse('#[ @[a](m) tail]'))
+		adopt(tree, {start: 2, end: 9, insertedLength: 0}, parser.parse('#[ @[a](m) tail]'))
 
 		const after = tree.roots()[1]
 		if (after.kind !== 'mark') throw new Error('expected mark')
 		expect(after.children()[1].id).toBe(first.id)
-		expect(result.removed).toEqual([second.id, tail.id])
+		expect(diffTree(captured, tree.roots()).removed).toEqual([second.id, tail.id])
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('#[ @[a](m) tail]')))
 	})
 })
@@ -312,17 +317,18 @@ describe('adopt: untracked reads', () => {
 		stop()
 	})
 
-	it('calling map inside an effect subscribes that effect to nothing', () => {
-		// `map` defers its reads to call time (anchorAt reads `children()`), so the
-		// subscriber it can capture is the caller's, not adoption's.
+	it('resolving selectionAfter inside an effect subscribes that effect to nothing', () => {
+		// The selection resolution rides `anchorAt`, which reads `children()` on every mark
+		// it descends; the anchor sits ON the mark so the resolution must touch that list,
+		// and the read must stay inside adoption's own `untracked` body.
 		const tree = createTokenTree(parser.parse(source))
-		const {map} = adopt(tree, gapWindow(source, source), parser.parse(source))
 		const mark = tree.roots()[1]
 		if (mark.kind !== 'mark') throw new Error('expected mark at index 1')
+		const anchor: NodeAnchor = {after: mark}
 		let runs = 0
 		const stop = effect(() => {
 			runs++
-			map(4) // inside the mark
+			adopt(tree, gapWindow(source, source), parser.parse(source), {anchor, head: anchor})
 		})
 		expect(runs).toBe(1)
 
@@ -352,13 +358,14 @@ describe('adopt: ported reconcile fixtures', () => {
 	it('descends a nested slot: every id in the subtree survives an inner keystroke', () => {
 		const slotParser = new Parser(['#[__slot__]'])
 		const tree = createTokenTree(slotParser.parse('#[a #[b] c]'))
+		const captured = captureTree(tree.roots())
 		const outer = asMark(tree.roots()[1])
 		const [head, innerNode, tail] = outer.children()
 		const inner = asMark(innerNode)
 		const ids = [outer.id, head.id, inner.id, inner.children()[0].id, tail.id]
 
 		// insert 'X' inside the INNER slot ('b' → 'bX', absolute offset 7)
-		const result = adopt(tree, {start: 7, end: 7, insertedLength: 1}, slotParser.parse('#[a #[bX] c]'))
+		adopt(tree, {start: 7, end: 7, insertedLength: 1}, slotParser.parse('#[a #[bX] c]'))
 
 		const outerAfter = asMark(tree.roots()[1])
 		const innerAfter = asMark(outerAfter.children()[1])
@@ -369,11 +376,12 @@ describe('adopt: ported reconcile fixtures', () => {
 			innerAfter.children()[0].id,
 			outerAfter.children()[2].id,
 		]).toEqual(ids)
-		expect(result.added).toEqual([])
-		expect(result.removed).toEqual([])
+		const diff = diffTree(captured, tree.roots())
+		expect(diff.added).toEqual([])
+		expect(diff.removed).toEqual([])
 		// Only the typed-into text node changed content; reconcile also listed the two
 		// marks and the moved tail here, because it reported position moves as updates.
-		expect(result.updated.map(node => node.id)).toEqual([inner.children()[0].id])
+		expect(diff.updated.map(node => node.id)).toEqual([inner.children()[0].id])
 		expect(outer.position).toEqual({start: 0, end: 12}) // the move itself: [0,11] → [0,12]
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(slotParser.parse('#[a #[bX] c]')))
 	})
@@ -398,65 +406,68 @@ describe('adopt: ported reconcile fixtures', () => {
 		// cannot be retained; the outer one has nothing to refuse and keeps its id.
 		const dualParser = new Parser(['#[__slot__]', '%[__slot__]'])
 		const tree = createTokenTree(dualParser.parse('#[a #[b] c]'))
+		const captured = captureTree(tree.roots())
 		const outer = asMark(tree.roots()[1])
 		const [head, innerNode, tail] = outer.children()
 		const inner = asMark(innerNode)
 
-		const result = adopt(tree, {start: 4, end: 5, insertedLength: 1}, dualParser.parse('#[a %[b] c]'))
+		adopt(tree, {start: 4, end: 5, insertedLength: 1}, dualParser.parse('#[a %[b] c]'))
 
 		const outerAfter = asMark(tree.roots()[1])
 		expect(outerAfter.id).toBe(outer.id)
 		expect([outerAfter.children()[0].id, outerAfter.children()[2].id]).toEqual([head.id, tail.id])
 		const innerAfter = asMark(outerAfter.children()[1])
 		expect(innerAfter.id).not.toBe(inner.id)
-		expect(result.added.map(change => [change.node.id, change.path])).toEqual([[innerAfter.id, [1, 1]]])
+		const diff = diffTree(captured, tree.roots())
+		expect(diff.added.map(change => [change.node.id, change.path])).toEqual([[innerAfter.id, [1, 1]]])
 		// DELIBERATE contract change: a refused mark's subtree was opaque to reconcile, so
 		// it reported no removals for one — the original descriptor-mismatch test asserted
-		// nothing about `removed` at all, and its sibling child-count refusal pinned
-		// `removed: []` with that limitation spelled out. Adoption diffs the subtree, so
-		// the vanished inner mark and its child are both reported.
-		expect(result.removed).toEqual([inner.id, inner.children()[0].id])
+		// nothing about removals at all, and its sibling child-count refusal pinned an
+		// empty removal set with that limitation spelled out. Adoption rebuilds the
+		// subtree, so the vanished inner mark and its child both left the tree.
+		expect(diff.removed).toEqual([inner.id, inner.children()[0].id])
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(dualParser.parse('#[a %[b] c]')))
 	})
 
 	it('inherits the child id when a mark value changes', () => {
 		const valueSlotParser = new Parser(['@[__value__](__slot__)'])
 		const tree = createTokenTree(valueSlotParser.parse('@[v](ab)'))
+		const captured = captureTree(tree.roots())
 		const mark = asMark(tree.roots()[1])
 		const childId = mark.children()[0].id
 
-		const result = adopt(tree, {start: 2, end: 3, insertedLength: 1}, valueSlotParser.parse('@[w](ab)'))
+		adopt(tree, {start: 2, end: 3, insertedLength: 1}, valueSlotParser.parse('@[w](ab)'))
 
 		const after = asMark(tree.roots()[1])
 		expect(after.id).toBe(mark.id)
 		expect(after.children()[0].id).toBe(childId) // in-slot continuity across a refusal
 		expect(after.value()).toBe('w')
-		expect([result.added, result.removed]).toEqual([[], []])
-		expect(result.updated.map(node => node.id)).toEqual([mark.id])
-		// reconcile forced `structural` for a refused descend; the routing datum is now
-		// `render` — a MarkNode in `updated` (rendered props changed).
-		expect(result.render).toBe(true)
+		const diff = diffTree(captured, tree.roots())
+		expect([diff.added, diff.removed]).toEqual([[], []])
+		// A refused descend is a mark-level content change and nothing else — reconcile
+		// forced `structural` for it.
+		expect(diff.updated.map(node => node.id)).toEqual([mark.id])
 	})
 
 	it('inherits the child id when a mark meta changes', () => {
 		const metaSlotParser = new Parser(['#[__slot__](__meta__)'])
 		const tree = createTokenTree(metaSlotParser.parse('#[ab](m)'))
+		const captured = captureTree(tree.roots())
 		const mark = asMark(tree.roots()[1])
 		const childId = mark.children()[0].id
 
-		const result = adopt(tree, {start: 6, end: 7, insertedLength: 1}, metaSlotParser.parse('#[ab](n)'))
+		adopt(tree, {start: 6, end: 7, insertedLength: 1}, metaSlotParser.parse('#[ab](n)'))
 
 		const after = asMark(tree.roots()[1])
 		expect(after.id).toBe(mark.id)
 		expect(after.children()[0].id).toBe(childId)
 		expect(after.meta()).toBe('n')
-		expect(result.updated.map(node => node.id)).toEqual([mark.id])
-		expect(result.render).toBe(true)
+		expect(diffTree(captured, tree.roots()).updated.map(node => node.id)).toEqual([mark.id])
 	})
 
 	it('derives the window from gapWindow and keeps identity at both edges', () => {
 		// The two reconcile cases that ran WITHOUT a hint. The prepend one is the reason
-		// gapWindow clamps: findGap('he@[x]llo', 'Xhe@[x]llo') reports no right edge.
+		// gapWindow clamps: for 'he@[x]llo' → 'Xhe@[x]llo' the suffix scan spans the whole previous value.
 		const valueParser = new Parser(['@[__value__]'])
 		const append = createTokenTree(valueParser.parse('he@[x]llo'))
 		const appendIds = append.roots().map(node => node.id)
@@ -468,12 +479,13 @@ describe('adopt: ported reconcile fixtures', () => {
 
 		const prepend = createTokenTree(valueParser.parse('he@[x]llo'))
 		const prependIds = prepend.roots().map(node => node.id)
+		const captured = captureTree(prepend.roots())
 
-		const result = adopt(prepend, gapWindow('he@[x]llo', 'Xhe@[x]llo'), valueParser.parse('Xhe@[x]llo'))
+		adopt(prepend, gapWindow('he@[x]llo', 'Xhe@[x]llo'), valueParser.parse('Xhe@[x]llo'))
 
 		expect(prepend.roots().map(node => node.id)).toEqual(prependIds)
 		expect(prepend.roots()[1].position).toEqual({start: 3, end: 7})
-		expect(result.removed).toEqual([])
+		expect(diffTree(captured, prepend.roots()).removed).toEqual([])
 	})
 
 	it('pairs the empty text child of an empty slot on the first keystroke', () => {
@@ -482,6 +494,7 @@ describe('adopt: ported reconcile fixtures', () => {
 		// empty-text alternation the parser guarantees (every slot mark has >=1 text child).
 		const slotParser = new Parser(['#[__slot__]'])
 		const tree = createTokenTree(slotParser.parse('#[]'))
+		const captured = captureTree(tree.roots())
 		const mark = asMark(tree.roots()[1])
 		const child = mark.children()[0]
 		expect([child.position, mark.slotRange]).toEqual([
@@ -489,12 +502,13 @@ describe('adopt: ported reconcile fixtures', () => {
 			{start: 2, end: 2},
 		])
 
-		const result = adopt(tree, {start: 2, end: 2, insertedLength: 1}, slotParser.parse('#[a]'))
+		adopt(tree, {start: 2, end: 2, insertedLength: 1}, slotParser.parse('#[a]'))
 
 		const after = asMark(tree.roots()[1])
 		expect([after.id, after.children()[0].id]).toEqual([mark.id, child.id])
-		expect([result.added, result.removed]).toEqual([[], []])
-		expect(result.updated.map(node => node.id)).toEqual([child.id])
+		const diff = diffTree(captured, tree.roots())
+		expect([diff.added, diff.removed]).toEqual([[], []])
+		expect(diff.updated.map(node => node.id)).toEqual([child.id])
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(slotParser.parse('#[a]')))
 	})
 })
@@ -503,12 +517,27 @@ const textAnchorOf = (anchor: NodeAnchor): {node: TextNode; offset: number} => {
 	return anchor
 }
 
-describe('adopt: map affinity (spec D7, plan decision D-a)', () => {
+describe('adopt: selection affinity (spec D7, plan decision D-a)', () => {
+	/**
+	 * The affinity gates ride the selection channel — the one consumer the internal
+	 * window mapping has left: a selection spanning [anchorOffset, headOffset] of
+	 * 'abcde' is captured, the edit adopted, and the landed anchors carry the verdict.
+	 */
+	const adoptWithSelection = (start: number, end: number, text: string, anchorOffset: number, headOffset: number) => {
+		const tree = createTokenTree(parser.parse('abcde'))
+		const node = tree.roots()[0]
+		if (node.kind !== 'text') throw new Error('expected a text root')
+		const before: Anchors = {anchor: {node, offset: anchorOffset}, head: {node, offset: headOffset}}
+		const next = 'abcde'.slice(0, start) + text + 'abcde'.slice(end)
+		const result = adopt(tree, {start, end, insertedLength: text.length}, parser.parse(next), before)
+		return selectionAfterOf(result)
+	}
+
 	it('maps a caret AT an insertion point to the end of the inserted text', () => {
 		// The whole decision in one assertion. LEFT affinity (the S1.3 shape) answered 5,
 		// which parks the caret BEFORE the character the user just typed.
-		const {result} = editAndAdopt('abcde', 5, 5, 'X')
-		const anchor = textAnchorOf(result.map(5))
+		const after = adoptWithSelection(5, 5, 'X', 5, 5)
+		const anchor = textAnchorOf(after.anchor)
 		expect(anchor.offset).toBe(6)
 		expect(anchor.node.text()).toBe('abcdeX')
 	})
@@ -516,21 +545,21 @@ describe('adopt: map affinity (spec D7, plan decision D-a)', () => {
 	it('collapses an overtyped selection: both endpoints land on the replacement end', () => {
 		// AC-3.3/3.4. Under LEFT affinity the anchor stays at 2 and the repair would
 		// restore a one-character SELECTION instead of a caret.
-		const {result} = editAndAdopt('abcde', 2, 5, 'X')
-		expect(textAnchorOf(result.map(2)).offset).toBe(3)
-		expect(textAnchorOf(result.map(5)).offset).toBe(3)
+		const after = adoptWithSelection(2, 5, 'X', 2, 5)
+		expect(textAnchorOf(after.anchor).offset).toBe(3)
+		expect(textAnchorOf(after.head).offset).toBe(3)
 	})
 
 	it('leaves an offset strictly before the window alone', () => {
-		const {result} = editAndAdopt('abcde', 2, 5, 'X')
-		expect(textAnchorOf(result.map(1)).offset).toBe(1)
+		const after = adoptWithSelection(2, 5, 'X', 1, 1)
+		expect(textAnchorOf(after.anchor).offset).toBe(1)
 	})
 
 	it('a deletion is unaffected by the affinity', () => {
 		// Both biases agree here; the case exists so a future "fix" that special-cases
 		// deletions has a pin. Backspace at 5: window {4,5,0}, caret 5 → 4.
-		const {result} = editAndAdopt('abcde', 4, 5, '')
-		expect(textAnchorOf(result.map(5)).offset).toBe(4)
+		const after = adoptWithSelection(4, 5, '', 5, 5)
+		expect(textAnchorOf(after.anchor).offset).toBe(4)
 	})
 })
 

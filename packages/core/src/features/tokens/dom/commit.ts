@@ -3,7 +3,6 @@ import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {TreeNode} from '../tree/types'
 import {bind, rebindNode} from './bind'
 import type {ElementSource} from './bind'
-import type {ControlRoots} from './controlRoots'
 import type {TokenHandle} from './TokenHandle'
 
 /**
@@ -30,11 +29,6 @@ export type CommitDeps = {
 	 * binds the current tree rather than whatever generation was last painted.
 	 */
 	roots: () => readonly TreeNode[]
-	/**
-	 * THE control chrome's membership, owned by {@link createControlRoots}. The pipeline only
-	 * forwards the read: a control registration updates it directly and no longer costs a bind.
-	 */
-	controlRoots: ControlRoots
 	/**
 	 * THE element source: what the adapters consigned, asked one id at a time. This replaced the
 	 * DOM walk's `isBlock` and its frame alignment — an element is registered under an id or it is
@@ -90,7 +84,6 @@ export type CommitPipeline = {
 	 */
 	bound: Event<void>
 	byElement(element: HTMLElement): TokenHandle | undefined
-	isControlRoot(element: HTMLElement): boolean
 }
 
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
@@ -176,6 +169,5 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		bound,
 		commits,
 		byElement: element => byElement.get(element),
-		isControlRoot: element => deps.controlRoots.has(element),
 	}
 }

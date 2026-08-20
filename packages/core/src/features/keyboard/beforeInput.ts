@@ -14,7 +14,7 @@ type KbCtx = Pick<Store, 'tokens'>
  * A COLLAPSED one does NOT, and that is measured rather than stylistic: Chromium
  * canonicalizes a collapsed target range to the EARLIEST visually equivalent position, which
  * erases the side-of-boundary distinction the model's own caret keeps. At the leading edge of
- * a TRANSPARENT mark — a slot mark is bare by policy (`editableState.ts`), so the position
+ * a TRANSPARENT mark — a slot mark is bare by policy (`bind.ts`), so the position
  * before its first slot child and the position after the preceding text are the same pixel —
  * the caret reads `text('a'):0` INSIDE the slot while the event's target range reads
  * `text('…Slot doc: '):12` OUTSIDE the mark. Measured in the react demo app with real keys:

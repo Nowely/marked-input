@@ -252,12 +252,11 @@ describe('boundary: resets', () => {
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('a@[x](m)b')))
 	})
 
-	it('reparse() maps an offset into the node that holds it, not to the document end', () => {
+	it('reparse() resolves a captured caret into the node that holds it, not to the document end', () => {
 		// Decision D-c's real consequence, and the only guard on the window `reparse` picks:
-		// with `gapWindow(v, v)` every offset is at or before `window.start`, so `map` is an
-		// identity. A full window `{0, n, n}` would send every interior offset to
-		// `window.start + insertedLength` — the document end — parking the caret there once
-		// S1.6c consumes `map`.
+		// with `gapWindow(v, v)` every offset is at or before `window.start`, so the mapping
+		// is an identity. A full window `{0, n, n}` would send every interior offset to
+		// `window.start + insertedLength` — the document end — parking the caret there.
 		const tree = createTokenTree([createTextToken('a@[x](m)b')])
 		const results: TransactionResult[] = []
 		const boundary = createBoundary({
@@ -265,11 +264,17 @@ describe('boundary: resets', () => {
 			parser: () => parser,
 			controlled: () => false,
 			onChange: () => {},
+			selection: () => {
+				const caret: NodeAnchor = {node: asText(tree.roots()[0]), offset: 1}
+				return {anchor: caret, head: caret}
+			},
 			onResult: result => results.push(result),
 		})
 		boundary.reparse()
 		expect(tree.roots().map(n => n.kind)).toEqual(['text', 'mark', 'text'])
-		const anchor = textAnchor(results[0].map(1))
+		const after = results[0].selectionAfter
+		if (!after) throw new Error('expected a resolved selectionAfter')
+		const anchor = textAnchor(after.anchor)
 		expect(anchor.node).toBe(tree.roots()[0]) // 'a', not the trailing 'b'
 		expect(anchor.offset).toBe(1)
 	})

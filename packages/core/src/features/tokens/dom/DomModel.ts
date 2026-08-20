@@ -3,10 +3,8 @@ import type {Id, NodeAnchor, TreeNode} from '../tree/types'
 import {getRect, placeRangeAcrossBoundaries} from './caret'
 import type {CaretBoundary} from './caret'
 import {anchorFromBoundary} from './domBoundary'
-import type {AnchorContext, BoundaryAffinity, Lookup, TokenView} from './domBoundary'
+import type {AnchorContext, BoundaryAffinity, Lookup} from './domBoundary'
 import type {TokenHandle} from './TokenHandle'
-
-export type SelectionAnchor = {node: Node; offset: number; isCollapsed: boolean}
 
 export type SelectionSnapshot = {
 	/**
@@ -26,10 +24,6 @@ export type SelectionSnapshot = {
 	 * `TokenModel.facade.spec`'s "range is the window selection's own range, not a clone".
 	 */
 	readonly range: globalThis.Range
-	/** Viewport rect of the caret/selection. */
-	readonly rect: DOMRect | undefined
-	/** Anchor node, offset, and collapsed state of the raw window selection. */
-	readonly anchor: SelectionAnchor
 	/** Focus node of the raw window selection. */
 	readonly focusNode: Node | undefined
 }
@@ -76,7 +70,7 @@ export class DomModel {
 		const lookup = this.#locate(node)
 		if (!lookup) return undefined
 		if (lookup.kind === 'control') return 'control'
-		return lookup.node.handle
+		return lookup.handle
 	}
 
 	/** Locate the live node owning a DOM node, walking up to the container. */
@@ -89,21 +83,14 @@ export class DomModel {
 			if (current instanceof HTMLElement) {
 				const handle = this.deps.byElement(current)
 				if (handle) {
-					const view = this.#view(handle)
-					return view ? {kind: 'token', node: view} : undefined
+					const bindings = handle.node()
+					return bindings ? {kind: 'token', handle, bindings} : undefined
 				}
 				if (this.deps.isControlRoot(current)) return {kind: 'control'}
 			}
 			current = current.parentNode
 		}
 		return undefined
-	}
-
-	/** View of a handle for the boundary facade: its live DOM bindings plus the handle. */
-	#view(handle: TokenHandle): TokenView | undefined {
-		const bindings = handle.node()
-		if (!bindings) return undefined
-		return {handle, ...bindings}
 	}
 
 	#anchorContext(): AnchorContext {
@@ -128,25 +115,23 @@ export class DomModel {
 	/**
 	 * THE selection read: one snapshot of the live window selection, or
 	 * `undefined` when there is no range (the element is unfocused / nothing
-	 * selected). Subsumes the five micro-reads — `range` is the boundary pair (the
-	 * selection driver resolves it through `anchorFor`), `rect`/`anchor`/`focusNode`
-	 * reflect the raw window selection.
-	 * Whether the selection is collapsed is `anchor.isCollapsed`. A consumer that
-	 * treated "no selection" as collapsed compares
-	 * `selection()?.anchor.isCollapsed !== false`.
+	 * selected). `range` is the boundary pair (the selection driver resolves it
+	 * through `anchorFor`); `focusNode` reflects the raw window selection.
+	 * Whether the selection is collapsed is `range.collapsed`; the caret's
+	 * viewport rect is {@link caretRect}, computed only when asked.
 	 */
 	selection(): SelectionSnapshot | undefined {
 		const sel = window.getSelection()
 		if (!sel || sel.rangeCount === 0) return undefined
-		const anchorNode = sel.anchorNode
-		if (!anchorNode) return undefined
-		const range = sel.getRangeAt(0)
-		return {
-			range,
-			rect: getRect() ?? undefined,
-			anchor: {node: anchorNode, offset: sel.anchorOffset, isCollapsed: sel.isCollapsed},
-			focusNode: sel.focusNode ?? undefined,
-		}
+		// A null anchorNode still answers "no DOM selection" — the guard outlives the
+		// removed anchor field so the snapshot's existence keeps meaning the same thing.
+		if (!sel.anchorNode) return undefined
+		return {range: sel.getRangeAt(0), focusNode: sel.focusNode ?? undefined}
+	}
+
+	/** Viewport rect of the caret/selection, or `undefined` when there is none. */
+	caretRect(): DOMRect | undefined {
+		return getRect() ?? undefined
 	}
 
 	/** Current selection serialized for clipboard use. */

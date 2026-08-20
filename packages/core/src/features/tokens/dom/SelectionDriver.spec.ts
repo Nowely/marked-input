@@ -14,6 +14,7 @@ import {
 } from '../__testing__/mountFixtures'
 import {offsetOfAnchor} from '../tree/anchors'
 import type {TextNode} from '../tree/types'
+import {DomModel} from './DomModel'
 
 describe('SelectionDriver', () => {
 	it('repeated placement at the same handle notifies once', () => {
@@ -39,7 +40,7 @@ describe('SelectionDriver', () => {
 		// collapses the second apply. RANGED deliberately — `selectRange` is the ranged apply
 		// path, and the collapsed one is masked by `placeAtHandle`'s re-apply branch.
 		const {store, container} = mountStructuralInline('hello')
-		const spy = vi.spyOn(store.tokens, 'selectRange')
+		const spy = vi.spyOn(DomModel.prototype, 'selectRange')
 		store.tokens.selection.selectAll()
 		store.tokens.selection.selectAll()
 		expect(spy).toHaveBeenCalledTimes(1)

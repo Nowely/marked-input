@@ -58,17 +58,16 @@ the framework has not repainted yet.
   retained byte- and position-equal and strictly OUTSIDE the edit window (the
   window bound is load-bearing — repeating content matches past the edit
   otherwise), the middle pairs same-index candidates and recurses into a mark
-  whose `descriptor` matches. Returns a `TransactionResult` carrying
-  `added`/`removed`/`updated`, the resolved `selectionAfter`, the anchor `map`,
-  and the `structural`/`render` bits.
+  whose `descriptor` matches. Returns a `TransactionResult` carrying the
+  resolved `selectionAfter`.
 - `gapWindow.ts` — the boundary-reset window: the common prefix/suffix of two
-  projections, via `findGap.ts`. An empty window pins at the END of the value,
-  because `start` of an empty window is not an edit location.
+  projections. An empty window pins at the END of the value, because `start`
+  of an empty window is not an edit location.
 - `transactions.ts` — the write verbs. `applyRange(window, text)` is
   the primitive; `applyAfter(node, text)` and
-  `applyStructural(target, replacement)` lower node-local intent into it, and
-  `tx(fn)` buffers disjoint ops and adopts once with the hull window. Nothing
-  here mutates the tree — adoption, inside the sink, is the only writer.
+  `applyStructural(target, replacement)` lower node-local intent into it.
+  Nothing here mutates the tree — adoption, inside the sink, is the only
+  writer.
 - `valueBoundary.ts` — the string boundary: commit policy plus arrival routing.
   Controlled mode emits and waits for the echo it spliced; uncontrolled commits
   straight through. Block mode's parse filter (`filterEmptyText`) lives here.
@@ -84,8 +83,6 @@ the framework has not repainted yet.
   DOM-free, and unit-tested without a mounted container. Its dep bag (three
   closures, not the tree) is what lets `TokenModel` satisfy `anchorAt` with the
   SEEDING read rather than the bare tree walk.
-- `markPatch.ts` — `serializeMark(node, patch)`: a patch becomes markup, with
-  the omitted fields defaulted off the node so an omitted key round-trips.
 
 ## Adoption — the descend rules
 
@@ -103,7 +100,7 @@ a fresh node is built into `added`.
 `pairing[j] = previous root index`, and where it resolves it REPLACES all three walks for the
 root list. It exists because same-index pairing cannot express a permutation, and no diff can
 recover one: moving a row past a byte-identical row leaves the document unchanged, so the
-string carries no evidence at all. `resolvePairing` (`tree/adoptUtils.ts`) discards the whole
+string carries no evidence at all. `resolvePairing` (`tree/adopt.ts`) discards the whole
 claim unless it is a total BIJECTION over the roots and every pair is `snapshotNodeEquals`
 under its OWN shift — the bijection check is not implied by the range check, and the
 counter-example is on the file. A discarded pairing costs nothing: adoption runs exactly as it
@@ -187,7 +184,7 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   — must bind the current tree, not regress the node layer and the DOM text to
   the painted generation.
 - **Editable state:** the CONTAINER is the one editing host, and
-  `dom/editableState.ts` gives every bound token its place in it, at bind time,
+  `dom/bind.ts` gives every bound token its place in it, at bind time,
   on newly bound elements only. Text surfaces stay bare (they inherit); a
   value-only mark root is `contenteditable=false`; a SLOT mark leaves its root
   and its slot host bare — a nested editing host would be a `display: contents`
@@ -273,6 +270,7 @@ anchorFor(node, offset, affinity?)   // DOM (node, offset) → NodeAnchor in the
 placeCaret(anchor: NodeAnchor)       // collapsed caret, through the anchor's OWN node
 selectRange(anchor, head)            // order-insensitive; normalized in DOM order
 domSelection(): SelectionSnapshot | undefined // THE raw window-selection read
+caretRect(): DOMRect | undefined     // viewport rect of the caret/selection, on demand
 selectedContent(): {html; text} | undefined // selection serialized for clipboard
 
 // the selection driver's reads, delegated (the driver itself is private)
@@ -280,8 +278,8 @@ domAnchors(): Anchors | undefined    // DOM TRUTH as anchors
 focusFirst() / placeAtHandle(handle, boundary?)
 
 // the tree layer's own coordinate boundary — the ONE place a number may be formed.
-// Only this direction is public; its inverse is the private `#offsetOf`, whose one
-// consumer is the selection state in `tree/selection.ts` (isAllSelected).
+// Only this direction is public; its inverse is a private `offsetOf` closure in the
+// selection deps, whose one consumer is `tree/selection.ts` (isAllSelected).
 anchorAt(offset)
 
 // whole-value entry into a row, so a caller never forms an absolute offset
@@ -308,15 +306,14 @@ a set of per-field micro-reads:
 ```ts
 type SelectionSnapshot = {
     range: globalThis.Range // the window selection's OWN first range, not a clone
-    rect: DOMRect | undefined
-    anchor: SelectionAnchor // {node, offset, isCollapsed}
     focusNode: Node | undefined
-    intersects(node: Node): boolean // partial containment counts
 }
 ```
 
 A consumer that treats "no selection" as collapsed compares
-`domSelection()?.anchor.isCollapsed !== false`.
+`domSelection()?.range.collapsed !== false`. The caret's viewport rect is not on
+the snapshot — `caretRect()` computes it only when asked, so a `selectionchange`
+snapshot forces no layout.
 
 The per-member contract — why `nodes` is a subscribable `Computed` field, why the
 bind effect subscribes to the commit counter and not to the roots, exactly when
@@ -346,9 +343,9 @@ not.
   token's surface, and those extra writes clobbered Chromium's drag base.
   There is no numeric twin: this is the only projection of the walk, and every
   branch names its own case in `domBoundary.spec.ts`.
-- `dom/caret.ts` — stateless `Range`/`Selection` mechanics (`placeAtTextOffset`,
-  `placeAtParentBoundary`, `placeRangeAcrossSurfaces`, `getCaretIndex`,
-  `getRect`, `focusEditingHost`).
+- `dom/caret.ts` — stateless `Range`/`Selection` mechanics (`collapseTo`,
+  `findTextBoundary`, `placeRangeAcrossBoundaries`, `getCaretIndex`, `getRect`,
+  `focusEditingHost`).
 - `dom/textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
   `textOffsetWithin`, `hasEditableAncestorBefore`).
 
@@ -426,7 +423,8 @@ than by node type:
   row can be a text node, so a mark-only port could not serve one.
 - `MarkCommands` — `update(patch)`, mark-only because `value`/`meta`/`slot` are.
 
-All of them ride a transaction — `serializeMark` renders a patch to markup,
+All of them ride a transaction — `serializeMark` (`seam/TokenModel.ts`, beside the
+verb wiring) renders a patch to markup,
 `applyStructural`/`applyAfter`/`applyRange` splice — and all answer `false` in
 read-only mode or off the tree, which is the same fail-closed answer a dead node
 gives. Each also OWNS its post-edit caret, applied through one shared rule, with

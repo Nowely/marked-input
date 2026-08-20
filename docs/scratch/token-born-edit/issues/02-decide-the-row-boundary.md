@@ -1,6 +1,6 @@
 # Phase 0 — decide the Row boundary
 
-Status: needs-info
+Status: resolved
 
 Type: research
 
@@ -55,3 +55,18 @@ start backwards, handing it the previous Row's text as its Slot.
 The exact `Value` string for one three-row document under each candidate and under today's
 behaviour, plus measured parse cost at 10 / 100 / 500 rows against a baseline established for the
 purpose. The maintainer decides on that comparison.
+
+## Answer
+
+**Candidate 3 — the separator belongs to the tree.** Decided by the maintainer 2026-08-20;
+decisions, evidence and the execution plan are in
+[issue 08](08-the-separator-is-structural.md).
+
+The deliverable above was superseded, not produced: parse cost was withdrawn as a criterion by
+the spec's 2026-08-19 re-pricing (G4), and the decision was made on defect measurements (the
+backwards-extending chain on `'# __slot__'`; the alternation losing rows to a registered
+`\n\n`), the `phase7-first-class-rows-wip` archaeology, and a full-subsystem analysis of Row
+as a tree node against the incremental mark==row alternative.
+
+The consequence flagged at lines 40-42 — a leading-marker markup satisfying the slot-leading
+predicate and extending backwards — was reproduced by measurement before deciding.

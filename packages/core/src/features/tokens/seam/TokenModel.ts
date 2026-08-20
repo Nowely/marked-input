@@ -14,15 +14,15 @@ import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
+import {annotate} from '../parser/utils/annotate'
 import {adjacentMark as findAdjacentMark, anchorAt as anchorAtOffset, offsetOfAnchor, stepAnchor} from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
-import {serializeMark} from '../tree/markPatch'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
 import {entryAnchor, mergePlan, movePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
-import type {Anchors, MarkNode, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
+import type {Anchors, MarkNode, MarkPatch, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 
 /**
@@ -96,14 +96,26 @@ export class TokenModel {
 	 */
 	readonly selection: Selection = createSelection({
 		// A bag of CLOSURES, none of them read before the first verb call — the ONLY reason this
-		// field may sit above `#tree`/`value`/`#offsetOf`, whose initializers have not run yet.
+		// field may sit above `#tree`/`value`, whose initializers have not run yet.
 		//
 		// Two of the three are NOT bare tree reads and cannot become them: {@link anchorAt}
 		// SEEDS (an unmaterialized tree has no roots, so every offset answers `'end'` — gates
 		// `tree/selection.spec`'s "returns true when range spans the entire value"), and
 		// {@link value} is props-first, so `#tree.value()` disagrees with it exactly while a
 		// controlled parent's value is ahead of the last arrival.
-		offsetOf: anchor => this.#offsetOf(anchor),
+		//
+		// `offsetOf` is an anchor's absolute offset in the tree's projection — the ONE place a
+		// coordinate is formed, and its readers are inside `tree/` (`Selection.isAllSelected`,
+		// `anchors.ts`'s adjacency and step). Deliberately does NOT seed — it is a READ reached
+		// from a computed's evaluation, and seeding writes signals.
+		//
+		// TREE space, not {@link value}: the two disagree exactly while a controlled parent's
+		// `props.value` is ahead of the last arrival, which is when the echo's capture runs. Its
+		// gate is `tree/selection.spec`'s "captures an 'end' anchor in TREE space, not against
+		// the props value", and that case has to be a DELETION — under an insertion the
+		// over-read and `map`'s shift both saturate onto the document end and the two readings
+		// agree by accident.
+		offsetOf: anchor => untracked(() => offsetOfAnchor(this.#tree.roots(), anchor)),
 		anchorAt: (offset, side) => this.anchorAt(offset, side),
 		value: () => this.value(),
 	})
@@ -148,15 +160,7 @@ export class TokenModel {
 	 * it does not go stale when a sibling above the owner is added or removed mid-render.
 	 */
 	children(ownerId: number): DomRef {
-		const key = {}
-		return element => {
-			if (element) {
-				this.#childSequenceHosts.set(ownerId, key, element)
-			} else {
-				this.#childSequenceHosts.delete(ownerId, key)
-			}
-			this.#pipeline.rebind(ownerId)
-		}
+		return this.#refInto(this.#childSequenceHosts, ownerId)
 	}
 
 	/**
@@ -171,15 +175,7 @@ export class TokenModel {
 	 * re-render cannot be filed under a stale key and one id's element is one lookup.
 	 */
 	consign(id: number): DomRef {
-		const key = {}
-		return element => {
-			if (element) {
-				this.#tokenElements.set(id, key, element)
-			} else {
-				this.#tokenElements.delete(id, key)
-			}
-			this.#pipeline.rebind(id)
-		}
+		return this.#refInto(this.#tokenElements, id)
 	}
 
 	/**
@@ -188,15 +184,7 @@ export class TokenModel {
 	 * both, and a row holds chrome the token element must not be confused with.
 	 */
 	consignRow(id: number): DomRef {
-		const key = {}
-		return element => {
-			if (element) {
-				this.#rowElements.set(id, key, element)
-			} else {
-				this.#rowElements.delete(id, key)
-			}
-			this.#pipeline.rebind(id)
-		}
+		return this.#refInto(this.#rowElements, id)
 	}
 
 	// ═══ Engine SPI (in-core consumers) ═══════════════════════════════════════
@@ -230,7 +218,7 @@ export class TokenModel {
 	 *
 	 * In CONTROLLED mode the tree has NOT moved — the commit emits and waits for the echo —
 	 * so the anchor describes the pre-edit tree. `EditController` discards it there and
-	 * `MarkputHandle.replaceRange` reads it only as a success flag.
+	 * {@link setValue} reads it only as a success flag.
 	 */
 	replaceBetween(from: NodeAnchor, to: NodeAnchor, text: string): NodeAnchor | undefined {
 		this.#ensureSeeded()
@@ -263,6 +251,7 @@ export class TokenModel {
 	 * @internal Whole-value replacement: {@link replaceBetween} over the document edges. The
 	 * EDGES, not `{0, value().length}`: the whole-value arm tests `end` against the TREE's
 	 * length, which {@link value} outruns mid-flight — missing it splices a foreign window.
+	 * Deliberately kept: spec-facing and public-reachable through the exported Store (`store.tokens`) — the `api.focus()` precedent.
 	 */
 	setValue(text: string): boolean {
 		return this.replaceBetween('start', 'end', text) !== undefined
@@ -292,8 +281,8 @@ export class TokenModel {
 	}
 
 	/**
-	 * THE render read: the live root nodes. Deliberately does NOT seed, for `#offsetOf`'s
-	 * reason — it is a read, and seeding writes signals.
+	 * THE render read: the live root nodes. Deliberately does NOT seed — it is a read, and
+	 * seeding writes signals.
 	 *
 	 * A `Computed` field rather than a method, which is what lets an adapter SUBSCRIBE to
 	 * it: `readSelected` calls a selector entry only when `isReactive` says so, and that
@@ -329,9 +318,9 @@ export class TokenModel {
 
 	/**
 	 * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree — the DOM→model
-	 * direction of the selection sync (`SelectionDriver`'s `sync`), and the only production
-	 * caller. The subscription guard lives at {@link DomModel.anchorFor}, the walk's own
-	 * entry, so it holds for every caller rather than only this one.
+	 * direction `beforeInput`'s range reads use. The subscription guard lives at
+	 * {@link DomModel.anchorFor}, the walk's own entry, so it holds for every caller rather
+	 * than only this one.
 	 */
 	anchorFor(node: Node, offset: number, affinity?: BoundaryAffinity): NodeAnchor | undefined {
 		return this.#dom.anchorFor(node, offset, affinity)
@@ -344,6 +333,11 @@ export class TokenModel {
 	 */
 	domSelection(): SelectionSnapshot | undefined {
 		return this.#dom.selection()
+	}
+
+	/** Viewport rect of the caret/selection (see {@link DomModel.caretRect}). */
+	caretRect(): DOMRect | undefined {
+		return this.#dom.caretRect()
 	}
 
 	/** DOM TRUTH as anchors: see {@link SelectionDriver.domAnchors}. */
@@ -451,11 +445,7 @@ export class TokenModel {
 			nodes: () => this.nodes(),
 			find: id => this.find(id),
 			handle: id => this.handle(id),
-			handleAt: node => this.handleAt(node),
-			domSelection: () => this.domSelection(),
-			placeCaret: anchor => this.placeCaret(anchor),
-			selectRange: (anchor, head) => this.selectRange(anchor, head),
-			anchorFor: (node, offset, affinity) => this.anchorFor(node, offset, affinity),
+			dom: this.#dom,
 		})
 	}
 
@@ -497,23 +487,6 @@ export class TokenModel {
 	#applyStructural(target: TreeNode, replacement: string): boolean {
 		this.#ensureSeeded()
 		return this.#tx.applyStructural(target, replacement)
-	}
-
-	/**
-	 * An anchor's absolute offset in the tree's projection — the ONE place a coordinate is
-	 * formed, and its readers are inside `tree/` (`Selection.isAllSelected`, `anchors.ts`'s
-	 * adjacency and step). Deliberately does NOT seed — it is a READ reached from a
-	 * computed's evaluation, and seeding writes signals.
-	 *
-	 * TREE space, not {@link value}: the two disagree exactly while a controlled parent's
-	 * `props.value` is ahead of the last arrival, which is when the echo's capture runs. Its
-	 * gate is `tree/selection.spec`'s "captures an 'end' anchor in TREE space, not against
-	 * the props value", and that case has to be a DELETION — under an insertion the
-	 * over-read and `map`'s shift both saturate onto the document end and the two readings
-	 * agree by accident.
-	 */
-	#offsetOf(anchor: NodeAnchor): number {
-		return untracked(() => offsetOfAnchor(this.#tree.roots(), anchor))
 	}
 
 	/**
@@ -725,7 +698,6 @@ export class TokenModel {
 		container: () => this.host.container(),
 		nodes: this.#nodes,
 		roots: () => this.#tree.roots(),
-		controlRoots: this.#controlRoots,
 		source: {
 			tokenElement: id => this.#tokenElements.latest(id),
 			rowElement: id => this.#rowElements.latest(id),
@@ -738,7 +710,7 @@ export class TokenModel {
 	readonly #dom = new DomModel({
 		container: () => this.host.container(),
 		byElement: element => this.#pipeline.byElement(element),
-		isControlRoot: element => this.#pipeline.isControlRoot(element),
+		isControlRoot: element => this.#controlRoots.has(element),
 		roots: () => this.nodes(),
 		find: id => this.find(id),
 		handle: id => this.handle(id),
@@ -759,6 +731,39 @@ export class TokenModel {
 	readonly #tokenElements = new RefRegistry()
 	readonly #rowElements = new RefRegistry()
 	readonly #childSequenceHosts = new RefRegistry()
+
+	/** The shared ref-callback body: one key per registration, filed into `registry` under `id`. */
+	#refInto(registry: RefRegistry, id: number): DomRef {
+		const key = {}
+		return element => {
+			if (element) {
+				registry.set(id, key, element)
+			} else {
+				registry.delete(id, key)
+			}
+			this.#pipeline.rebind(id)
+		}
+	}
+}
+
+/**
+ * A patch becomes markup. Moved out of the deleted `MarkController` (`#serialize` plus its
+ * three field defaults) so the node can serialize without reaching into the store; the only
+ * semantic change is `null` instead of `{kind: 'clear'}` (plan decision D-b).
+ *
+ * The defaults come off the NODE: an omitted key must round-trip the current field, and the
+ * slot's current value is the joined children, because the node stores no slot text
+ * (`MarkNode.slotRange` is positions only).
+ */
+function serializeMark(node: MarkNode, patch: MarkPatch): string {
+	const value = patch.value ?? node.value()
+	const meta = patch.meta === null ? undefined : (patch.meta ?? node.meta())
+	const slot = patch.slot === null ? undefined : (patch.slot ?? node.slot())
+	return annotate(node.markup, {
+		value,
+		meta: node.descriptor.gapTypes.includes('meta') ? (meta ?? '') : undefined,
+		slot: node.descriptor.hasSlot ? (slot ?? '') : undefined,
+	})
 }
 
 /**

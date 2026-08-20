@@ -120,7 +120,7 @@ describe('MarkNode verbs', () => {
 
 	it('preserves an unpatched META when only the value changes', () => {
 		// The `null`-vs-omitted split (plan decision D-b) needs BOTH directions pinned: this
-		// one dies if `serializeMark` treats an omitted key as a clear.
+		// one dies if `serializeMark` (`seam/TokenModel.ts`) treats an omitted key as a clear.
 		const {store, node} = setup('hello @[world](keep)', '@[__value__](__meta__)')
 
 		node.update({value: 'other'})

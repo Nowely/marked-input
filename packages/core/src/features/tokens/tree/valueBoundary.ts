@@ -120,7 +120,7 @@ export function createBoundary(deps: {
 				// is enough because adoption is equality-driven rather than window-driven — both
 				// walks go inert and the middle re-derives every token from the new parse. A full
 				// window is actively worse: it sends every mapped interior offset to the document
-				// end (pinned through `map` in valueBoundary.spec.ts).
+				// end (pinned through the resolved selection in valueBoundary.spec.ts).
 				const value = deps.tree.value()
 				fold(value, gapWindow(value, value))
 			})

@@ -183,7 +183,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 		expect(store.tokens.domSelection()).toBeUndefined()
 	})
 
-	it('carries the window range, anchor, focusNode and rect', () => {
+	it('carries the window range and focusNode; caretRect() answers the rect', () => {
 		const {store, container} = mountWithMark()
 		const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
 		if (!(firstText instanceof Text) || firstText.length < 2) throw new Error('expected the "he" text node')
@@ -198,10 +198,10 @@ describe('TokenModel selection() — the one snapshot', () => {
 		if (!snapshot) throw new Error('expected a selection snapshot')
 		expect(snapshot.range.startOffset).toBe(0)
 		expect(snapshot.range.endOffset).toBe(2)
-		expect(snapshot.anchor.isCollapsed).toBe(false)
-		expect(snapshot.anchor.node).toBe(firstText)
+		expect(snapshot.range.collapsed).toBe(false)
+		expect(snapshot.range.startContainer).toBe(firstText)
 		expect(snapshot.focusNode).toBe(firstText)
-		expect(snapshot.rect).toBeInstanceOf(DOMRect)
+		expect(store.tokens.caretRect()).toBeInstanceOf(DOMRect)
 	})
 
 	it("range is the window selection's own range, not a clone", () => {
@@ -233,7 +233,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 		expect(store.tokens.domSelection()?.range.endOffset).toBe(1)
 	})
 
-	it('anchor.isCollapsed and range.collapsed both report a caret', () => {
+	it('range.collapsed reports a caret', () => {
 		const {store, container} = mountWithMark()
 		const firstText = document.createTreeWalker(container, NodeFilter.SHOW_TEXT).nextNode()
 		if (!(firstText instanceof Text) || firstText.length < 1) throw new Error('expected the "he" text node')
@@ -246,7 +246,6 @@ describe('TokenModel selection() — the one snapshot', () => {
 
 		const snapshot = store.tokens.domSelection()
 		if (!snapshot) throw new Error('expected a selection snapshot')
-		expect(snapshot.anchor.isCollapsed).toBe(true)
 		expect(snapshot.range.collapsed).toBe(true)
 	})
 })
