@@ -203,6 +203,51 @@ describe('blockEdit beforeinput guard', () => {
  * must be judged by its EVENT TARGET, not by whatever selection happens to be
  * stored for some row elsewhere.
  */
+describe('blockEdit mark swallow', () => {
+	it('deletes the adjacent inline mark inside a row on Backspace', () => {
+		// Safe since issue 08: a block row is a RowNode, never a MarkNode, so the swallow
+		// can only grab an INLINE mark inside the row — never a whole row.
+		const store = new Store()
+		store.props.set({
+			defaultValue: 'a @[m](1) b\n\nnext',
+			layout: 'block',
+			Mark: () => null,
+			options: [{markup: '@[__value__](__meta__)'}],
+		})
+		const container = document.createElement('div')
+		document.body.append(container)
+		store.host.container(container)
+
+		const row = store.tokens.nodes()[0]
+		if (row.kind !== 'row') throw new Error('expected a row')
+		const rowElement = document.createElement('div')
+		container.append(rowElement)
+		store.tokens.consign(row.id)(rowElement)
+		const surfaces = row.children().map(child => {
+			const surface = document.createElement('span')
+			rowElement.append(surface)
+			store.tokens.consign(child.id)(surface)
+			return surface
+		})
+
+		// A real DOM caret at the start of the text AFTER the mark — the beforeinput
+		// resolver reads the live selection, not the stored one.
+		const afterMarkText = surfaces[2].firstChild
+		if (!afterMarkText) throw new Error('expected the surface after the mark to render text')
+		window.getSelection()?.collapse(afterMarkText, 0)
+
+		const event = new InputEvent('beforeinput', {
+			inputType: 'deleteContentBackward',
+			bubbles: true,
+			cancelable: true,
+		})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('a  b\n\nnext')
+	})
+})
+
 describe('blockEdit control guard', () => {
 	function mountBlockWithControl(controlRow: 0 | 1) {
 		const store = new Store()

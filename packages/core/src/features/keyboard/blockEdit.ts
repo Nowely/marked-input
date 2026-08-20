@@ -259,15 +259,19 @@ function replaceBlockRange(store: KbCtx, container: HTMLElement, event: InputEve
 }
 
 /**
- * No mark-swallow arm, unlike `input.ts`: every block row IS a mark, so expanding onto the
- * adjacent one would delete a whole row on a plain Backspace. Row-level deletes are
- * {@link handleDelete}'s, and it preventDefaults before this ever runs.
+ * The same mark-swallow arm as `input.ts`, safe here since issue 08: a block row is a
+ * RowNode, never a MarkNode, so `adjacentMark` can only answer an INLINE mark inside a
+ * row — a plain Backspace beside a mention deletes the mention, never a whole row.
+ * Row-level deletes are {@link handleDelete}'s, and it preventDefaults before this runs.
  */
 function anchorsForBlockInput(store: KbCtx, event: InputEvent, anchors: Anchors): Anchors | undefined {
 	if (!event.inputType.startsWith('delete')) return anchors
 	if (!anchorEquals(anchors.anchor, anchors.head)) return anchors
 
 	const direction = event.inputType.endsWith('Backward') ? -1 : 1
+	const mark = store.tokens.adjacentMark(anchors.anchor, direction)
+	if (mark) return {anchor: {before: mark}, head: {after: mark}}
+
 	const stepped = store.tokens.step(anchors.anchor, direction)
 	if (!stepped) return undefined
 	return direction === -1 ? {anchor: stepped, head: anchors.head} : {anchor: anchors.anchor, head: stepped}
