@@ -317,9 +317,9 @@ export class TokenModel {
 
 	/**
 	 * Map a DOM boundary (node, offset) to a node anchor in the LIVE tree — the DOM→model
-	 * direction of the selection sync (`SelectionDriver`'s `sync`), and the only production
-	 * caller. The subscription guard lives at {@link DomModel.anchorFor}, the walk's own
-	 * entry, so it holds for every caller rather than only this one.
+	 * direction `beforeInput`'s range reads use. The subscription guard lives at
+	 * {@link DomModel.anchorFor}, the walk's own entry, so it holds for every caller rather
+	 * than only this one.
 	 */
 	anchorFor(node: Node, offset: number, affinity?: BoundaryAffinity): NodeAnchor | undefined {
 		return this.#dom.anchorFor(node, offset, affinity)
@@ -439,11 +439,7 @@ export class TokenModel {
 			nodes: () => this.nodes(),
 			find: id => this.find(id),
 			handle: id => this.handle(id),
-			handleAt: node => this.handleAt(node),
-			domSelection: () => this.domSelection(),
-			placeCaret: anchor => this.placeCaret(anchor),
-			selectRange: (anchor, head) => this.selectRange(anchor, head),
-			anchorFor: (node, offset, affinity) => this.anchorFor(node, offset, affinity),
+			dom: this.#dom,
 		})
 	}
 
