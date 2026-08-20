@@ -385,14 +385,15 @@ export class TokenModel {
 			// installed right after can bind a pre-built DOM — the shell is live once the
 			// container attaches.
 			//
-			// ONE watch over the (value, parser, isBlock) tuple: a simultaneous props change is
-			// one wave and one commit, where three separate watches would adopt (and announce)
-			// two or three times.
+			// ONE watch over the (value, parser, isBlock, separator) tuple: a simultaneous props
+			// change is one wave and one commit, where separate watches would adopt (and
+			// announce) several times.
 			watch(
 				() => ({
 					value: this.props.value(),
 					parser: this.#parser(),
 					isBlock: this.props.layout.isBlock(),
+					separator: this.props.separator(),
 				}),
 				(next, previous) => {
 					if (previous && next.value === previous.value && this.#seeded()) {
