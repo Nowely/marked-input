@@ -4,13 +4,9 @@ import type {CommitSink, Pairing, TreeNode, Window} from './types'
 
 /**
  * One splice in the coordinates of the COMMITTED projection. No `insertedLength`:
- * it is `text.length` for a single op and recomputed for a hull, so storing it
- * would only be a second place to get it wrong.
+ * it is `text.length`, so storing it would only be a second place to get it wrong.
  */
 type Op = {start: number; end: number; text: string}
-
-/** The open `tx` buffer. `refused` latches the first refusal — see `refuse`. */
-type Batch = {ops: Op[]; refused: boolean}
 
 /**
  * The write path: verbs lower an edit to a projection splice and hand
@@ -19,7 +15,6 @@ type Batch = {ops: Op[]; refused: boolean}
  */
 export function createTransactions(deps: {tree: TokenTree; readOnly: () => boolean; sink: CommitSink}) {
 	let dispatching = false
-	let pending: Batch | undefined
 
 	/**
 	 * Every tree read below is `untracked` for the reason adoption documents: a verb
@@ -35,43 +30,13 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		if (dispatching) throw new Error('TokenTree: re-entrant transaction dispatch')
 	}
 
-	/**
-	 * One refusal rule for the whole layer: the refusing call answers `false` at once,
-	 * and inside a `tx` it also poisons the batch, so a caller's intent is never half
-	 * applied: overlapping ops reject the whole tx, and no partial state survives.
-	 */
-	const refuse = (): false => {
-		if (pending) pending.refused = true
-		return false
-	}
-
-	const dispatch = (ops: readonly Op[], pairing?: Pairing): boolean => {
+	const dispatch = (op: Op, pairing?: Pairing): boolean => {
 		const value = currentValue()
-		// The `end` tie-break is load-bearing, not cosmetic: half-open disjointness admits a
-		// zero-length op at the start of a range op, and on `start` alone the range op can sort
-		// first, drive `cursor` BACKWARDS and re-emit the span it just deleted.
-		const sorted = ops.toSorted((a, b) => a.start - b.start || a.end - b.end)
-
-		let next = ''
-		let cursor = 0
-		for (const op of sorted) {
-			next += value.slice(cursor, op.start) + op.text
-			cursor = op.end
-		}
-		next += value.slice(cursor)
-
-		// `sorted[last].end` is the maximal end: an earlier op either starts before the last
-		// one — and half-open disjointness then holds its end at or before that op's start —
-		// or shares its start, where the tie-break already ordered the ends. So the loop
-		// copied `value[0, start)` and `value[end, …)` verbatim and everything between them is
-		// the hull's inserted text: its old span plus the total delta. For a single op that
-		// reduces to `text.length`.
-		const start = sorted[0].start
-		const end = sorted[sorted.length - 1].end
+		const next = value.slice(0, op.start) + op.text + value.slice(op.end)
 		// The pairing is re-attached HERE and not carried on the caller's window, because this
-		// is where the window is (re)derived from the ops — a hint on an input window would be
+		// is where the window is (re)derived from the op — a hint on an input window would be
 		// silently dropped.
-		const window: Window = {start, end, insertedLength: end - start + (next.length - value.length), pairing}
+		const window: Window = {start: op.start, end: op.end, insertedLength: op.text.length, pairing}
 
 		// A splice that changes nothing still commits: `next === value` reaches the sink and
 		// costs a parse plus an adoption, which adoption then diffs to no change. It also still
@@ -91,17 +56,9 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 	}
 
 	const submit = (op: Op, pairing?: Pairing): boolean => {
-		if (isReadOnly()) return refuse()
-		if (op.start < 0 || op.end < op.start || op.end > currentValue().length) return refuse()
-		if (!pending) return dispatch([op], pairing)
-		// A pairing claims the WHOLE root list, and a hull composed with other ops cannot keep
-		// that claim true — the other ops may add or remove roots the pairing never counted.
-		// Refused rather than dropped: silently ignoring it would commit a move that quietly
-		// lost every row's identity.
-		if (pairing) return refuse()
-		if (pending.ops.some(other => overlaps(op, other))) return refuse()
-		pending.ops.push(op)
-		return true
+		if (isReadOnly()) return false
+		if (op.start < 0 || op.end < op.start || op.end > currentValue().length) return false
+		return dispatch(op, pairing)
 	}
 
 	return {
@@ -128,51 +85,17 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 		 */
 		applyAfter(node: TreeNode, text: string): boolean {
 			assertIdle()
-			if (!isLive(node)) return refuse()
+			if (!isLive(node)) return false
 			return submit({start: node.position.end, end: node.position.end, text})
 		},
 
 		/** Whole-node replacement: mark update/remove, serialized by the caller. */
 		applyStructural(target: TreeNode, replacement: string): boolean {
 			assertIdle()
-			if (!isLive(target)) return refuse()
+			if (!isLive(target)) return false
 			return submit({start: target.position.start, end: target.position.end, text: replacement})
 		},
-
-		/**
-		 * Composition: buffer the verbs, commit once, adopt once with the hull window
-		 * (identity precision inside the hull degrades to middle pairing).
-		 *
-		 * Op coordinates stay in the COMMITTED projection's space rather than being remapped
-		 * through accumulated offsets: nothing commits until the end, so node positions —
-		 * which is where `applyAfter`/`applyStructural` get their coordinates — never move
-		 * mid-`tx`. Remapping would silently break exactly those verbs. Disjointness is what
-		 * makes the two readings equivalent, and overlapping ops are rejected anyway.
-		 *
-		 * A throw out of `fn` propagates with nothing committed: the buffer only ever
-		 * held intent. An empty `tx` is a no-op success.
-		 */
-		tx(fn: () => void): boolean {
-			assertIdle()
-			if (pending) return refuse() // nested tx is unsupported, and it rejects its parent
-			if (isReadOnly()) return false
-			const buffer: Batch = {ops: [], refused: false}
-			pending = buffer
-			try {
-				fn()
-			} finally {
-				pending = undefined
-			}
-			if (buffer.refused) return false
-			if (buffer.ops.length === 0) return true
-			return dispatch(buffer.ops)
-		},
 	}
-}
-
-/** Half-open overlap: two zero-length inserts at the same offset do NOT overlap. */
-function overlaps(a: Op, b: Op): boolean {
-	return a.start < b.end && b.start < a.end
 }
 
 /**

@@ -104,6 +104,15 @@ describe('transactions: verbs', () => {
 		expect(commits).toEqual([{next: 'xy', window: {start: 0, end: 5, insertedLength: 2}}])
 	})
 
+	it('applyRange commits a splice that changes nothing', () => {
+		const {tree, tx, results, commits} = setup('hello')
+		expect(tx.applyRange({start: 2, end: 2, insertedLength: 0}, '')).toBe(true)
+		// Pinned, not endorsed: see the no-op note in `dispatch`.
+		expect(commits).toEqual([{next: 'hello', window: {start: 2, end: 2, insertedLength: 0}}])
+		expect(results).toHaveLength(1)
+		expect(tree.value()).toBe('hello')
+	})
+
 	it('applyRange reports the sink verdict and leaves committing to the sink', () => {
 		const tree = createTokenTree(parser.parse('hello'))
 		const {commits, sink} = recordingSink(false)
@@ -141,12 +150,6 @@ describe('transactions: rejection', () => {
 		expect(tx.applyRange({start: 0, end: 5, insertedLength: 0}, 'x')).toBe(false)
 		expect(tx.applyAfter(tail, 'x')).toBe(false)
 		expect(tx.applyStructural(tree.roots()[1], '')).toBe(false)
-		// readOnly is gated at tx ENTRY: the body never runs.
-		expect(
-			tx.tx(() => {
-				throw new Error('tx body ran under readOnly')
-			})
-		).toBe(false)
 		expect(tree.value()).toBe('he@[x](m)llo')
 	})
 
@@ -192,176 +195,6 @@ describe('transactions: rejection', () => {
 		const {tx, onResult} = setup('hello')
 		onResult(() => tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'x'))
 		expect(() => tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'y')).toThrow('re-entrant')
-	})
-
-	it('throws before running the body of a re-entrant tx', () => {
-		const {tx, onResult} = setup('hello')
-		onResult(() => tx.tx(() => undefined))
-		expect(() => tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'y')).toThrow('re-entrant')
-	})
-})
-
-describe('transactions: tx composition', () => {
-	it('tx() batches two disjoint ops into one commit and one adoption', () => {
-		const {tree, tx, results} = setup('he@[x](m)llo')
-		const ok = tx.tx(() => {
-			tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'A')
-			tx.applyRange({start: 9, end: 12, insertedLength: 0}, 'B') // "llo" → "B", original coords
-		})
-		expect(ok).toBe(true)
-		expect(tree.value()).toBe('Ahe@[x](m)B')
-		expect(results).toHaveLength(1)
-	})
-
-	it('tx() composes ops given out of order into one hull window', () => {
-		const tree = createTokenTree(parser.parse('abcdefghij'))
-		const {commits, sink} = recordingSink()
-		const tx = createTransactions({tree, readOnly: () => false, sink})
-		const ok = tx.tx(() => {
-			tx.applyRange({start: 7, end: 8, insertedLength: 0}, '')
-			tx.applyRange({start: 2, end: 4, insertedLength: 0}, 'XYZ')
-		})
-		expect(ok).toBe(true)
-		// Hull [2,8) of the OLD value maps to [2,8) of 'abXYZefgij' — six characters.
-		expect(commits).toEqual([{next: 'abXYZefgij', window: {start: 2, end: 8, insertedLength: 6}}])
-	})
-
-	it('tx() applies two inserts at the same offset in submission order', () => {
-		const {tree, tx} = setup('hello')
-		expect(
-			tx.tx(() => {
-				tx.applyRange({start: 2, end: 2, insertedLength: 0}, 'A')
-				tx.applyRange({start: 2, end: 2, insertedLength: 0}, 'B')
-			})
-		).toBe(true)
-		expect(tree.value()).toBe('heABllo')
-	})
-
-	it('tx() removes a mark and inserts at its start offset without resurrecting it', () => {
-		const {tree, tx, commits} = setup('he@[x](m)llo')
-		const mark = asMark(tree.roots()[1]) // [2,9)
-		// The range op is submitted FIRST and the zero-length op shares its start: sorting on
-		// `start` alone would leave the splice cursor at 9 and re-emit the deleted span.
-		const ok = tx.tx(() => {
-			tx.applyStructural(mark, '')
-			tx.applyRange({start: 2, end: 2, insertedLength: 0}, '!')
-		})
-		expect(ok).toBe(true)
-		expect(tree.value()).toBe('he!llo')
-		expect(tree.roots().map(node => node.kind)).toEqual(['text'])
-		expect(commits).toEqual([{next: 'he!llo', window: {start: 2, end: 9, insertedLength: 1}}])
-	})
-
-	it('tx() replaces a mark and inserts at its start offset without duplicating it', () => {
-		const {tree, tx, commits} = setup('he@[x](m)llo')
-		const mark = asMark(tree.roots()[1])
-		const ok = tx.tx(() => {
-			tx.applyStructural(mark, '@[y](n)')
-			tx.applyRange({start: 2, end: 2, insertedLength: 0}, '!')
-		})
-		expect(ok).toBe(true)
-		expect(tree.value()).toBe('he!@[y](n)llo')
-		expect(tree.roots().filter(node => node.kind === 'mark')).toHaveLength(1)
-		expect(commits).toEqual([{next: 'he!@[y](n)llo', window: {start: 2, end: 9, insertedLength: 8}}])
-	})
-
-	it('tx() commits a splice that changes nothing', () => {
-		const {tree, tx, results, commits} = setup('hello')
-		expect(
-			tx.tx(() => {
-				tx.applyRange({start: 2, end: 2, insertedLength: 0}, '')
-			})
-		).toBe(true)
-		// Pinned, not endorsed: see the no-op note in `dispatch`.
-		expect(commits).toEqual([{next: 'hello', window: {start: 2, end: 2, insertedLength: 0}}])
-		expect(results).toHaveLength(1)
-		expect(tree.value()).toBe('hello')
-	})
-
-	it('tx() rejects overlapping ops atomically', () => {
-		const {tree, tx} = setup('hello')
-		let second: boolean | undefined
-		const ok = tx.tx(() => {
-			tx.applyRange({start: 0, end: 3, insertedLength: 0}, 'x')
-			second = tx.applyRange({start: 2, end: 4, insertedLength: 0}, 'y')
-		})
-		expect(second).toBe(false) // the refused verb answers honestly, mid-tx
-		expect(ok).toBe(false)
-		expect(tree.value()).toBe('hello')
-	})
-
-	it('tx() rejects the whole transaction when one op is out of bounds', () => {
-		const {tree, tx, results} = setup('hello')
-		let second: boolean | undefined
-		const ok = tx.tx(() => {
-			tx.applyRange({start: 0, end: 1, insertedLength: 0}, 'Z')
-			second = tx.applyRange({start: 3, end: 99, insertedLength: 0}, 'x')
-		})
-		expect(second).toBe(false)
-		expect(ok).toBe(false)
-		expect(results).toEqual([])
-		expect(tree.value()).toBe('hello')
-	})
-
-	it('tx() refuses a nested tx and rejects the outer transaction with it', () => {
-		const {tree, tx} = setup('hello')
-		let inner: boolean | undefined
-		const ok = tx.tx(() => {
-			tx.applyRange({start: 0, end: 1, insertedLength: 0}, 'Z')
-			inner = tx.tx(() => undefined)
-		})
-		expect(inner).toBe(false)
-		expect(ok).toBe(false)
-		expect(tree.value()).toBe('hello')
-	})
-
-	it('tx() refuses a buffered pairing and rejects the transaction with it', () => {
-		// A pairing claims the WHOLE root list, and a hull composed with other ops cannot keep
-		// that claim true. Ported down from `markNode.spec.ts`, which reached this refusal
-		// through `TokenModel.tx` + `MarkNode.moveTo` until the seam's `tx` was deleted with the
-		// public one; `applyRange` carries the same claim on its window.
-		const {tree, tx, results} = setup('alpha beta')
-
-		const ok = tx.tx(() => {
-			tx.applyRange({start: 0, end: 10, insertedLength: 10, pairing: [1, 0]}, 'beta alpha')
-		})
-
-		expect(ok).toBe(false)
-		expect(tree.value()).toBe('alpha beta')
-		expect(results).toEqual([])
-	})
-
-	it('tx() with no ops succeeds without a commit', () => {
-		const {tx, results} = setup('hello')
-		expect(tx.tx(() => undefined)).toBe(true)
-		expect(results).toEqual([])
-	})
-
-	it('tx() discards the buffer when the body throws and stays usable', () => {
-		const {tree, tx, results} = setup('hello')
-		expect(() =>
-			tx.tx(() => {
-				tx.applyRange({start: 0, end: 1, insertedLength: 0}, 'Z')
-				throw new Error('boom')
-			})
-		).toThrow('boom')
-		expect(results).toEqual([])
-		expect(tree.value()).toBe('hello')
-		expect(tx.applyRange({start: 0, end: 1, insertedLength: 0}, 'Z')).toBe(true)
-		expect(tree.value()).toBe('Zello')
-	})
-
-	it('tx() keeps ids outside the hull stable (multi-op identity)', () => {
-		const {tree, tx} = setup('aa@[x](m)bb@[y](n)cc')
-		const before = tree.roots().map(n => n.id)
-		tx.tx(() => {
-			tx.applyRange({start: 0, end: 1, insertedLength: 0}, 'Z') // inside 'aa'
-			tx.applyRange({start: 10, end: 11, insertedLength: 0}, 'W') // inside 'bb'
-		})
-		// hull = {0,11}; the second mark and tail 'cc' lie outside → same ids
-		const after = tree.roots().map(n => n.id)
-		expect(after[3]).toBe(before[3]) // @[y](n)
-		expect(after[4]).toBe(before[4]) // 'cc'
 	})
 })
 
