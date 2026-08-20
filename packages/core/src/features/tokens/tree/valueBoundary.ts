@@ -1,7 +1,6 @@
 import {untracked} from '../../../shared/signals'
 import type {Parser} from '../parser/Parser'
-import {filterEmptyText} from '../parser/utils/filterEmptyText'
-import {adopt, parseValue} from './adopt'
+import {adopt, parseRowsValue, parseValue} from './adopt'
 import {gapWindow} from './gapWindow'
 import type {TokenTree} from './tree'
 import type {Anchors, CommitSink, TransactionResult, Window} from './types'
@@ -37,6 +36,11 @@ export function createBoundary(deps: {
 	 */
 	isBlock?: () => boolean
 	/**
+	 * The structural row separator (issue 08), read per adoption like `isBlock`.
+	 * Block layout parses through `parseRows` exactly when both are provided.
+	 */
+	separator?: () => string
+	/**
 	 * Pre-adoption selection capture. Read once per adoption and by `fold` alone — never
 	 * during construction — see `TransactionResult.selectionAfter` for why the boundary
 	 * and not the dispatcher owns this.
@@ -61,9 +65,10 @@ export function createBoundary(deps: {
 		// anchors themselves hold no coordinate, so it is adoption — not this call site —
 		// that owes the pre-mutation reading of their positions.
 		const selectionBefore = deps.selection?.()
-		const parsed = parseValue(deps.parser(), next)
-		const tokens = deps.isBlock?.() === true ? filterEmptyText(parsed) : parsed
-		const result = adopt(deps.tree, window, tokens, selectionBefore)
+		// Block layout's top level is rows (issue 08); inline stays the flat parse.
+		const separator = deps.isBlock?.() === true ? deps.separator?.() : undefined
+		const parsed = separator ? parseRowsValue(deps.parser(), next, separator) : parseValue(deps.parser(), next)
+		const result = adopt(deps.tree, window, parsed, selectionBefore)
 		// Adoption is the commit; it must not sit inside the optional call's argument,
 		// which JS skips evaluating when no listener is registered.
 		deps.onResult?.(result)

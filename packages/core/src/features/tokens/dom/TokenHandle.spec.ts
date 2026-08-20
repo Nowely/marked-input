@@ -47,17 +47,17 @@ function mountMark() {
 }
 
 /**
- * Block layout: one row per mark token, consigned as a block adapter's refs do — the row
- * wrapper under `consignRow` and the token's own element under `consign`. `unmount` is the
- * pair of null ref calls the adapter makes when the row component goes away.
+ * Block layout (issue 08's row world): paragraph rows, no markup. Each RowNode's
+ * wrapper div is the row's own token element (the Block wrapper's role); each row
+ * text child gets a surface span. `unmount` is the pair of null ref calls the
+ * adapter makes when the row component goes away.
  */
 function mountBlock(value: string) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: value,
 		layout: 'block',
-		Mark: () => null,
-		options: [{markup: '__slot__\n\n'}],
+		options: [],
 	})
 	const container = document.createElement('div')
 	document.body.append(container)
@@ -65,16 +65,17 @@ function mountBlock(value: string) {
 
 	const rows = store.tokens.nodes().map(node => {
 		const rowElement = document.createElement('div')
-		const tokenElement = document.createElement('span')
-		rowElement.append(tokenElement)
+		const surface = document.createElement('span')
+		rowElement.append(surface)
 		container.append(rowElement)
-		const consignRow = store.tokens.consignRow(node.id)
 		const consign = store.tokens.consign(node.id)
-		consignRow(rowElement)
-		consign(tokenElement)
+		consign(rowElement)
+		const child = node.kind === 'row' ? node.children()[0] : undefined
+		const consignSurface = child?.kind === 'text' ? store.tokens.consign(child.id) : undefined
+		consignSurface?.(surface)
 		return {
 			unmount: () => {
-				consignRow(null)
+				consignSurface?.(null)
 				consign(null)
 				rowElement.remove()
 			},

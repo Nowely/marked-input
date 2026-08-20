@@ -83,14 +83,17 @@ const echoPlainText = () => mountEcho(PlainTextDrag, {value: PLAIN_TEXT_VALUE})
 const echoMarkdown = () => mountEcho(MarkdownDrag, {value: MARKDOWN_DRAG_VALUE})
 
 describe('Feature: drag rows', () => {
-	it('render 5 rows for PlainTextDrag', async () => {
+	it('render 6 rows for PlainTextDrag — the trailing empty row included', async () => {
+		// Issue 08: the piece after the final separator is a row even when empty.
 		const {host} = await mount(PlainTextDrag)
-		expect(rowsOf(host)).toHaveLength(5)
+		expect(rowsOf(host)).toHaveLength(6)
 	})
 
-	it('render 4 rows for MarkdownDrag', async () => {
+	it('render 6 rows for MarkdownDrag — every paragraph its own row', async () => {
+		// Two plain paragraphs used to fuse into one text root; a row is a span between
+		// separators now, so each is its own draggable row, plus the trailing empty one.
 		const {host} = await mount(MarkdownDrag)
-		expect(rowsOf(host)).toHaveLength(4)
+		expect(rowsOf(host)).toHaveLength(6)
 	})
 
 	it('render the markdown showcase as one row per block-level token', async () => {
@@ -162,7 +165,7 @@ describe('Feature: drag rows', () => {
 			await openMenuForRow(host, 0)
 			await userEvent.click(getElement(page.getByText('Add below')))
 
-			expect(rowsOf(host)).toHaveLength(6)
+			expect(rowsOf(host)).toHaveLength(7)
 		})
 
 		it('keeps controlled row unchanged after adding below until value is echoed', async () => {
@@ -174,9 +177,10 @@ describe('Feature: drag rows', () => {
 			const rows = rowsOf(host)
 			expect(onChange).toHaveBeenCalled()
 			expect(host.textContent).toContain('world')
+			// One row per separator span now: the mark lives inside the first row
 			expect(rows[0].textContent).toContain('hello ')
-			expect(rows[1].textContent).toContain('world')
-			expect(rows[2].textContent).toContain('foo')
+			expect(rows[0].textContent).toContain('world')
+			expect(rows[1].textContent).toContain('foo')
 		})
 
 		it('insert the empty row below the middle row and leave the rest in place', async () => {
@@ -184,7 +188,7 @@ describe('Feature: drag rows', () => {
 			await openMenuForRow(host, 2)
 			await userEvent.click(getElement(page.getByText('Add below')))
 
-			expect(rowsOf(host)).toHaveLength(6)
+			expect(rowsOf(host)).toHaveLength(7)
 			await expect
 				.poll(value)
 				.toBe(
@@ -197,7 +201,7 @@ describe('Feature: drag rows', () => {
 			await openMenuForRow(host, 4)
 			await userEvent.click(getElement(page.getByText('Add below')))
 
-			expect(rowsOf(host)).toHaveLength(6)
+			expect(rowsOf(host)).toHaveLength(7)
 			await expect.poll(value).toBe(PLAIN_TEXT_VALUE + '\n\n')
 		})
 
@@ -224,7 +228,7 @@ describe('Feature: drag rows', () => {
 			await openMenuForRow(host, 2)
 			await userEvent.click(getElement(page.getByText('Delete')))
 
-			expect(rowsOf(host)).toHaveLength(4)
+			expect(rowsOf(host)).toHaveLength(5)
 			await expect
 				.poll(value)
 				.toBe(
@@ -240,7 +244,7 @@ describe('Feature: drag rows', () => {
 			await openMenuForRow(host, 2)
 			await userEvent.click(getElement(page.getByText('Delete')))
 
-			expect(rowsOf(host)).toHaveLength(4)
+			expect(rowsOf(host)).toHaveLength(5)
 			expect(host.textContent).not.toContain('Third block of plain text')
 		})
 
@@ -253,9 +257,10 @@ describe('Feature: drag rows', () => {
 			const rows = rowsOf(host)
 			expect(onChange).toHaveBeenCalled()
 			expect(host.textContent).toContain('world')
+			// One row per separator span now: the mark lives inside the first row
 			expect(rows[0].textContent).toContain('hello ')
-			expect(rows[1].textContent).toContain('world')
-			expect(rows[2].textContent).toContain('foo')
+			expect(rows[0].textContent).toContain('world')
+			expect(rows[1].textContent).toContain('foo')
 		})
 
 		it('preserve remaining content when deleting first row', async () => {
@@ -263,7 +268,7 @@ describe('Feature: drag rows', () => {
 			await openMenuForRow(host, 0)
 			await userEvent.click(getElement(page.getByText('Delete')))
 
-			expect(rowsOf(host)).toHaveLength(4)
+			expect(rowsOf(host)).toHaveLength(5)
 			await expect.poll(value).toContain('Second block of plain text')
 		})
 
@@ -272,7 +277,7 @@ describe('Feature: drag rows', () => {
 			await openMenuForRow(host, 4)
 			await userEvent.click(getElement(page.getByText('Delete')))
 
-			expect(rowsOf(host)).toHaveLength(4)
+			expect(rowsOf(host)).toHaveLength(5)
 			await expect.poll(value).toContain('Fourth block of plain text')
 			expect(value()).not.toContain('Fifth block of plain text')
 		})
@@ -285,13 +290,15 @@ describe('Feature: drag rows', () => {
 				await userEvent.click(getElement(page.getByText('Delete')))
 			}
 
-			expect(rowsOf(host)).toHaveLength(1)
+			// The last content row plus the trailing empty row
+			expect(rowsOf(host)).toHaveLength(2)
 
 			await openMenuForRow(host, 0)
 			await userEvent.click(getElement(page.getByText('Delete')))
 
+			// An empty document IS one empty row (issue 08)
 			await expect.poll(value).toBe('')
-			expect(rowsOf(host)).toHaveLength(0)
+			expect(rowsOf(host)).toHaveLength(1)
 		})
 	})
 
@@ -301,7 +308,7 @@ describe('Feature: drag rows', () => {
 			await openMenuForRow(host, 0)
 			await userEvent.click(getElement(page.getByText('Duplicate')))
 
-			expect(rowsOf(host)).toHaveLength(6)
+			expect(rowsOf(host)).toHaveLength(7)
 		})
 
 		it('keeps controlled row unchanged after duplicating until value is echoed', async () => {
@@ -313,9 +320,10 @@ describe('Feature: drag rows', () => {
 			const rows = rowsOf(host)
 			expect(onChange).toHaveBeenCalled()
 			expect(host.textContent).toContain('world')
+			// One row per separator span now: the mark lives inside the first row
 			expect(rows[0].textContent).toContain('hello ')
-			expect(rows[1].textContent).toContain('world')
-			expect(rows[2].textContent).toContain('foo')
+			expect(rows[0].textContent).toContain('world')
+			expect(rows[1].textContent).toContain('foo')
 		})
 
 		it('create a copy with the same text content', async () => {
@@ -331,7 +339,7 @@ describe('Feature: drag rows', () => {
 			await openMenuForRow(host, 4)
 			await userEvent.click(getElement(page.getByText('Duplicate')))
 
-			expect(rowsOf(host)).toHaveLength(6)
+			expect(rowsOf(host)).toHaveLength(7)
 			await expect.poll(value).toBe(PLAIN_TEXT_VALUE + 'Fifth block of plain text\n\n')
 		})
 	})
@@ -339,12 +347,12 @@ describe('Feature: drag rows', () => {
 	describe('enter key', () => {
 		it('create a new row when pressing Enter at end of text row', async () => {
 			const {host} = await mount(PlainTextDrag)
-			expect(rowsOf(host)).toHaveLength(5)
+			expect(rowsOf(host)).toHaveLength(6)
 
 			await focusAtEnd(rowsOf(host)[0])
 			await userEvent.keyboard('{Enter}')
 
-			expect(rowsOf(host)).toHaveLength(6)
+			expect(rowsOf(host)).toHaveLength(7)
 		})
 
 		it('preserve all row content after pressing Enter', async () => {
@@ -365,7 +373,7 @@ describe('Feature: drag rows', () => {
 			await focusAtEnd(rowsOf(host)[0])
 			await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
 
-			expect(rowsOf(host)).toHaveLength(5)
+			expect(rowsOf(host)).toHaveLength(6)
 		})
 
 		it('create a new empty row after a mark row when pressing Enter', async () => {
@@ -436,13 +444,13 @@ describe('Feature: drag rows', () => {
 			// Insert an empty row after row 0
 			await openMenuForRow(host, 0)
 			await userEvent.click(getElement(page.getByText('Add below')))
-			expect(rowsOf(host)).toHaveLength(6)
+			expect(rowsOf(host)).toHaveLength(7)
 
 			// Put the caret in the new empty row (index 1) and press Backspace
 			await focusAtStart(rowsOf(host)[1])
 			await userEvent.keyboard('{Backspace}')
 
-			expect(rowsOf(host)).toHaveLength(5)
+			expect(rowsOf(host)).toHaveLength(6)
 		})
 
 		it('not delete a non-empty row on Backspace', async () => {
@@ -450,7 +458,7 @@ describe('Feature: drag rows', () => {
 			await focusAtEnd(rowsOf(host)[0])
 			await userEvent.keyboard('{Backspace}')
 
-			expect(rowsOf(host)).toHaveLength(5)
+			expect(rowsOf(host)).toHaveLength(6)
 		})
 	})
 
@@ -472,7 +480,7 @@ describe('Feature: drag rows', () => {
 		await focusAtStart(rowsOf(host)[0])
 		await userEvent.keyboard('{Enter}')
 
-		expect(rowsOf(host)).toHaveLength(6)
+		expect(rowsOf(host)).toHaveLength(7)
 		expect(value()).toContain('First block of plain text')
 	})
 
@@ -482,11 +490,11 @@ describe('Feature: drag rows', () => {
 
 		await openMenuForRow(host, 0)
 		await userEvent.click(getElement(page.getByText('Add below')))
-		expect(rowsOf(host)).toHaveLength(6)
+		expect(rowsOf(host)).toHaveLength(7)
 
 		await openMenuForRow(host, 1)
 		await userEvent.click(getElement(page.getByText('Delete')))
-		expect(rowsOf(host)).toHaveLength(5)
+		expect(rowsOf(host)).toHaveLength(6)
 
 		await expect.poll(value).toBe(original)
 	})
@@ -497,11 +505,11 @@ describe('Feature: drag rows', () => {
 
 		await openMenuForRow(host, 0)
 		await userEvent.click(getElement(page.getByText('Duplicate')))
-		expect(rowsOf(host)).toHaveLength(6)
+		expect(rowsOf(host)).toHaveLength(7)
 
 		await openMenuForRow(host, 1)
 		await userEvent.click(getElement(page.getByText('Delete')))
-		expect(rowsOf(host)).toHaveLength(5)
+		expect(rowsOf(host)).toHaveLength(6)
 
 		await expect.poll(value).toBe(original)
 	})
@@ -567,12 +575,13 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('not cross row boundary from the last row', async () => {
 			const {host} = await mount(PlainTextDrag)
 			const rows = rowsOf(host)
+			// The document-final row is the trailing EMPTY row (issue 08)
 			const last = rows[rows.length - 1]
 
 			await focusAtEnd(last)
 			await userEvent.keyboard('{ArrowRight}')
 
-			verifyCaretPosition(last, 'Fifth block of plain text'.length)
+			verifyCaretPosition(last, 0)
 		})
 	})
 
@@ -592,12 +601,13 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('not cross row boundary from the last row', async () => {
 			const {host} = await mount(PlainTextDrag)
 			const rows = rowsOf(host)
+			// The document-final row is the trailing EMPTY row (issue 08)
 			const last = rows[rows.length - 1]
 
 			await focusAtEnd(last)
 			await userEvent.keyboard('{ArrowDown}')
 
-			verifyCaretPosition(last, 'Fifth block of plain text'.length)
+			verifyCaretPosition(last, 0)
 		})
 	})
 
@@ -653,18 +663,20 @@ describe('Feature: drag row keyboard navigation', () => {
 			verifyCaretPosition(rowsOf(host)[0], 'First block of plain text'.length)
 		})
 
-		describe('Backspace at start of text row after a mark row (navigate-only in drag mode)', () => {
-			it('NOT reduce row count when Backspace at start of text row after mark row', async () => {
+		describe('Backspace at start of a paragraph after a heading row (issue 08 merge policy)', () => {
+			it('merges the paragraph INTO the heading row', async () => {
+				// The ratified markdown-like rule: Backspace at a row boundary deletes the
+				// separator and reparse decides — the heading's trailing slot absorbs the text.
 				const {host} = await mount(MarkdownDrag)
 				const before = rowsOf(host).length
 
 				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Backspace}')
 
-				expect(rowsOf(host)).toHaveLength(before)
+				expect(rowsOf(host)).toHaveLength(before - 1)
 			})
 
-			it('move focus to the mark row on Backspace at mark boundary', async () => {
+			it('lands the caret at the join inside the heading row', async () => {
 				const {host} = await mount(MarkdownDrag)
 				const markBlock = rowsOf(host)[0]
 
@@ -769,15 +781,15 @@ describe('Feature: drag row keyboard navigation', () => {
 			})
 		})
 
-		describe('Delete at mark→text boundary (navigate-only in drag mode)', () => {
-			it('NOT reduce row count when Delete at start of text row after mark row', async () => {
+		describe('Delete at a heading→paragraph boundary (issue 08 merge policy)', () => {
+			it('merges the paragraph into the heading on Delete at the boundary', async () => {
 				const {host} = await mount(MarkdownDrag)
 				const before = rowsOf(host).length
 
 				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Delete}')
 
-				expect(rowsOf(host)).toHaveLength(before)
+				expect(rowsOf(host)).toHaveLength(before - 1)
 			})
 
 			it('move focus to mark row on Delete at mark boundary', async () => {
@@ -883,7 +895,7 @@ describe('Feature: drag row keyboard navigation', () => {
 
 			await expect.poll(value).toContain('Second block of plain text')
 			expect(value()).toContain('Fifth block of plain text')
-			expect(rowsOf(host)).toHaveLength(5)
+			expect(rowsOf(host)).toHaveLength(6)
 		})
 
 		it('update raw value when pasting text at end of a mark row', async () => {
@@ -907,7 +919,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}')
 			await userEvent.keyboard('{Enter}')
 
-			expect(rowsOf(host)).toHaveLength(6)
+			expect(rowsOf(host)).toHaveLength(7)
 		})
 
 		it('put text before caret in current row', async () => {

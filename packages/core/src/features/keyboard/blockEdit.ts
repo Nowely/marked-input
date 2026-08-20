@@ -4,16 +4,10 @@ import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'edit' | 'tokens' | 'props'>
-import {createRowContent} from '../block/createRowContent'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Anchors, NodeAnchor, TokenHandle, TreeNode} from '../tokens'
 import {anchorEquals} from '../tokens'
 import {anchorsFromInputEvent, dropUnexpressedInput, isConsumerKeyOrigin} from './beforeInput'
-
-function isTextLikeRow(node: TreeNode): boolean {
-	if (node.kind === 'text' || node.kind === 'row') return true
-	return node.descriptor.hasSlot && node.descriptor.segments.length === 1
-}
 
 type ActiveRow = {
 	handle: TokenHandle
@@ -161,10 +155,9 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	// appending an empty row while keeping everything selected.
 	if (store.tokens.selection.isAllSelected()) {
 		event.preventDefault()
-		// The caret ENTERS the fresh row — inside its slot when it has one. That is the one
-		// rule now, where this site used to say "offset 0", which on a `'# __slot__\n\n'`
-		// markup is the row start rather than the slot (backlog issue 04).
-		store.tokens.setValueEnteringRoot(createRowContent(store.props.options()), 0)
+		// An empty document IS one empty row (issue 08's trailing convention), so the block
+		// analogue of inline's whole-value replace needs no row content at all.
+		store.tokens.setValueEnteringRoot('', 0)
 		return
 	}
 
@@ -177,19 +170,12 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	const rows = store.tokens.nodes()
 	const row = rows[blockIndex]
 
-	const newRowContent = createRowContent(store.props.options())
-
-	if (!isTextLikeRow(row)) {
-		// The row's own node, and the caret enters the fresh row under the same one rule. It
-		// used to land at the END of the inserted content — past the new row entirely.
-		row.insertAfter(newRowContent)
-		return
-	}
-
-	// The caret, or — with no readable DOM selection — the end of the row this Enter
-	// split. `{after: row}` IS `row.position.end` without forming the offset.
+	// ONE arm (issue 08): Enter inserts the separator at the caret and reparse forms the
+	// rows — no row content is composed, no markup consulted. The fallback with no
+	// readable DOM selection is the end of this row: `{after: row}` sits past its own
+	// separator, so the fresh empty row lands directly after it.
 	const at: NodeAnchor = store.tokens.domAnchors()?.anchor ?? {after: row}
-	store.edit.replace(at, at, newRowContent)
+	store.edit.replace(at, at, store.props.separator())
 }
 
 function focusRow(store: KbCtx, row: TreeNode, rowIndex: number, caret: 'start' | 'end'): void {

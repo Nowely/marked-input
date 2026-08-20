@@ -143,7 +143,9 @@ export function rebindNode(node: TreeNode, target: BindTarget): void {
 		return
 	}
 	handle.bindElements(bindings, node)
-	applyMountState(bindings, previous)
+	// A ROW's wrapper stays BARE: it is neither a text surface nor a mark root, and the
+	// mark-root arm would freeze it atomic. Its chrome freezes itself via control() refs.
+	if (node.kind !== 'row') applyMountState(bindings, previous)
 	forget(byElement, previous, bindings)
 	byElement.set(bindings.tokenElement, handle)
 	if (bindings.rowElement) byElement.set(bindings.rowElement, handle)
@@ -178,7 +180,7 @@ function forget(
 function collectTree(nodes: readonly TreeNode[], out: TreeNode[]): void {
 	for (const node of nodes) {
 		out.push(node)
-		if (node.kind === 'mark') collectTree(node.children(), out)
+		if (node.kind !== 'text') collectTree(node.children(), out)
 	}
 }
 

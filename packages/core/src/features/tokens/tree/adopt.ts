@@ -1,5 +1,5 @@
 import {batch, untracked} from '../../../shared/signals'
-import type {Parser} from '../parser/Parser'
+import {Parser} from '../parser/Parser'
 import type {MarkToken, RowToken, TextToken, Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {anchorAt, offsetOfAnchor} from './anchors'
@@ -24,6 +24,16 @@ import type {
  */
 export function parseValue(parser: Parser | undefined, value: string): Token[] {
 	return parser ? parser.parse(value) : [createTextToken(value)]
+}
+
+/**
+ * Block layout's parse: rows exist with or without markups — a paragraph-only
+ * block editor is legal (issue 08), so a missing parser falls back to a bare
+ * one that finds no marks and still splits rows.
+ */
+const bareParser = new Parser([])
+export function parseRowsValue(parser: Parser | undefined, value: string, separator: string): RowToken[] {
+	return (parser ?? bareParser).parseRows(value, separator)
 }
 
 /**
@@ -327,8 +337,25 @@ function resolvePairing(
 
 		const node = prev[previous]
 		const token = parsed[index]
-		if (!snapshotNodeEquals(node, token, token.position.start - node.position.start)) return undefined
+		if (!pairEquals(node, token)) return undefined
 		order.push(node)
 	}
 	return order
+}
+
+/**
+ * The pairing gate's equality — {@link snapshotNodeEquals} under the pair's own delta,
+ * except for a ROW pair: a permutation legally flips `terminated` on the rows entering
+ * and leaving the document-final position, so a row pair matches on CHILDREN alone and
+ * `adoptRow` writes the new terminator. Strict equality here silently rejected the
+ * pairing and dropped identity to index pairing — the exact ADR-0007 failure mode.
+ */
+function pairEquals(node: TreeNode, token: Token | RowToken): boolean {
+	const delta = token.position.start - node.position.start
+	if (node.kind === 'row' && token.type === 'row') {
+		const children = node.children()
+		if (children.length !== token.children.length) return false
+		return children.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
+	}
+	return snapshotNodeEquals(node, token, delta)
 }

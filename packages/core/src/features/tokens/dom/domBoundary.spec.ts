@@ -74,37 +74,27 @@ function mountNestedSlot({chrome = false, control = true} = {}) {
 function mountBlockRows({grip = false} = {}) {
 	const store = enableStructuralStore('one\n\ntwo\n\n', {
 		layout: 'block',
-		Mark: () => null,
-		options: [{markup: '__slot__\n\n'}],
+		options: [],
 	})
 	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
 	const rows: HTMLElement[] = []
-	const marks: HTMLElement[] = []
-	const surfaces: HTMLElement[] = []
-	const grips: HTMLElement[] = []
-	for (let i = 0; i < 2; i++) {
+	store.tokens.nodes().forEach(node => {
 		const row = document.createElement('div')
-		const mark = document.createElement('span')
-		const surface = document.createElement('span')
-		mark.append(surface)
 		if (grip) {
 			const handle = document.createElement('div')
 			row.append(handle)
-			grips.push(handle)
+			store.tokens.control()(handle)
 		}
-		row.append(mark)
+		const surface = document.createElement('span')
+		row.append(surface)
 		container.append(row)
 		rows.push(row)
-		marks.push(mark)
-		surfaces.push(surface)
-	}
-	document.body.append(container)
-	store.host.container(container)
-	for (const handle of grips) store.tokens.control()(handle)
-	store.tokens.nodes().forEach((node, index) => {
-		store.tokens.consignRow(node.id)(rows[index])
-		store.tokens.consign(node.id)(marks[index])
-		if (node.kind === 'mark') store.tokens.consign(node.children()[0].id)(surfaces[index])
+		store.tokens.consign(node.id)(row)
+		if (node.kind === 'row' && node.children()[0]?.kind === 'text') {
+			store.tokens.consign(node.children()[0].id)(surface)
+		}
 	})
 	return {store, container, rows}
 }
@@ -121,11 +111,11 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(orphan, 0)).toBeUndefined()
 	})
 
-	it('returns start for a boundary in a rootless document', () => {
-		// Only block layout can be rootless: inline keeps the empty text token of an
-		// empty value, block filters it out.
+	it('anchors an empty block document to its single empty row', () => {
+		// Rootless documents no longer exist (issue 08): an empty block value IS one
+		// empty unterminated row, and the container boundary resolves to it.
 		const {store, container} = mountValue('', {layout: 'block'})
-		expect(store.tokens.anchorFor(container, 0)).toBe('start')
+		expect(store.tokens.anchorFor(container, 0)).toEqual({before: store.tokens.nodes()[0]})
 	})
 
 	it('anchors a container boundary before the first root', () => {
@@ -425,8 +415,10 @@ function mountStructuralBlockWithControl(value: string) {
 	store.host.container(container)
 	store.tokens.control()(control)
 	const [node] = store.tokens.nodes()
-	store.tokens.consignRow(node.id)(row)
-	store.tokens.consign(node.id)(textSurface)
+	store.tokens.consign(node.id)(row)
+	if (node.kind === 'row' && node.children()[0]?.kind === 'text') {
+		store.tokens.consign(node.children()[0].id)(textSurface)
+	}
 	const textNode = textSurface.firstChild
 	const controlText = control.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Structural block text surface did not render a text node')

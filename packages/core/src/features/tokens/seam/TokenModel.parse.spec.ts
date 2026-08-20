@@ -115,8 +115,8 @@ describe('TokenModel', () => {
 		})
 	})
 
-	describe('block layout empty text filtering', () => {
-		it('filters out empty text tokens when layout is block', () => {
+	describe('block layout rows (issue 08)', () => {
+		it('wraps the block top level into rows', () => {
 			store.props.set({
 				Mark: () => null,
 				layout: 'block',
@@ -124,8 +124,13 @@ describe('TokenModel', () => {
 				defaultValue: '@[hello]',
 			})
 			store.host.container(document.createElement('div'))
+			// One unterminated row holding [text, mark, text] — the separator is structural,
+			// so a separator-less value is a single row.
 			expect(store.tokens.nodes()).toHaveLength(1)
-			expect(store.tokens.nodes()[0].kind).toBe('mark')
+			const row = store.tokens.nodes()[0]
+			expect(row.kind).toBe('row')
+			if (row.kind !== 'row') throw new Error('expected a row')
+			expect(row.children().map(child => child.kind)).toEqual(['text', 'mark', 'text'])
 		})
 
 		it('does not filter out empty text tokens when layout is inline', () => {

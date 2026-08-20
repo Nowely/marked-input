@@ -17,53 +17,51 @@ function mountInline(value: string) {
 }
 
 /**
- * Block layout: two rows with mark tokens using the block controller pattern
- * (Mark + markup '__slot__\n\n').
+ * Block layout (issue 08's row world): paragraph rows, no markup. Each RowNode's
+ * wrapper div is the row's own token element (the Block wrapper's role); each row
+ * text child gets a surface span the text effect writes into.
  */
 function mountBlock(value: string) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: value,
 		layout: 'block',
-		Mark: () => null,
-		options: [{markup: '__slot__\n\n'}],
+		options: [],
 	})
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
 
-	// Build DOM rows: one div+span per mark token
-	const rows = value.split('\n\n').filter(r => r.length > 0)
-	for (const row of rows) {
-		container.append(buildRow(row))
+	for (const node of store.tokens.nodes()) {
+		void node
+		container.append(buildRow())
 	}
 
 	consignRows(store, container)
 	return {store, container}
 }
 
-/** One block row as the adapters render it: the Block's wrapper around the mark's own element. */
-function buildRow(text: string): HTMLElement {
+/** One block row as the adapters render it: the Block's wrapper around the row's surface. */
+function buildRow(): HTMLElement {
 	const rowEl = document.createElement('div')
-	const tokenEl = document.createElement('span')
-	tokenEl.textContent = text
-	rowEl.append(tokenEl)
+	rowEl.append(document.createElement('span'))
 	return rowEl
 }
 
 /**
- * Consign a block document: each root's ROW wrapper and, inside it, the mark's own element.
- * Explicit rather than {@link consignRendered} because that pairs the container's children with
- * the roots directly, which in block layout would hand the mark the row wrapper.
+ * Consign a block document: each row's wrapper as the ROW's own element and, inside it,
+ * a surface per row text child. Explicit rather than {@link consignRendered} because that
+ * pairs the container's children with the roots directly and cannot descend into rows.
  */
 function consignRows(store: Store, container: HTMLElement): void {
 	store.tokens.nodes().forEach((node, index) => {
 		const rowEl = container.children[index]
 		if (!(rowEl instanceof HTMLElement)) throw new Error(`no row element for root ${index}`)
-		const tokenEl = rowEl.firstElementChild
-		if (!(tokenEl instanceof HTMLElement)) throw new Error(`no token element in row ${index}`)
-		store.tokens.consignRow(node.id)(rowEl)
-		store.tokens.consign(node.id)(tokenEl)
+		const surface = rowEl.firstElementChild
+		if (!(surface instanceof HTMLElement)) throw new Error(`no surface element in row ${index}`)
+		store.tokens.consign(node.id)(rowEl)
+		const child = node.kind === 'row' ? node.children()[0] : undefined
+		if (child?.kind === 'text') store.tokens.consign(child.id)(surface)
 	})
 }
 
@@ -137,11 +135,12 @@ describe('TokenHandle', () => {
 		expect(handle.element()).toBeUndefined()
 		// The element it held is untouched — kill clears the binding, it does not repaint.
 		expect(element?.textContent).toBe('beta')
+
 		// placeCaret returns false on a dead handle
 		expect(handle.placeCaret(0)).toBe(false)
 
 		// A fresh lookup after re-adding the row returns a DIFFERENT handle
-		container.append(buildRow('beta'))
+		container.append(buildRow())
 		store.tokens.setValue('alpha\n\nbeta\n\n')
 		consignRows(store, container)
 
@@ -166,7 +165,7 @@ describe('TokenHandle', () => {
 		store.edit.replace(...anchorsAt(store, 0, 0), 'new\n\n')
 
 		// Mirror the render: insert the new row's DOM at the front and consign it
-		container.prepend(buildRow('new'))
+		container.prepend(buildRow())
 		consignRows(store, container)
 
 		// The same handle object now lives at the shifted path

@@ -30,6 +30,19 @@ export function mergePlan(
 	node: TreeNode,
 	next: TreeNode
 ): {kept: string; at: number} | undefined {
+	// ROW pair: the boundary is the first row's separator, and deleting it is the whole
+	// merge — reparse decides what the joined text becomes (issue 08's markdown-like
+	// policy: a paragraph merging into a heading is absorbed by its trailing slot).
+	// No kind gate on the merged CONTENT and no descriptor to compare: any adjacent
+	// rows merge.
+	if (node.kind === 'row' && next.kind === 'row') {
+		if (node.terminator === '') return undefined
+		if (node.position.end !== next.position.start) return undefined
+		const contentEnd = node.position.end - node.terminator.length
+		const kept = sliceNodes(roots, {before: node}, {after: node}).slice(0, contentEnd - node.position.start)
+		return {kept, at: contentEnd}
+	}
+
 	if (!isSlotLeading(node) || !isSlotLeading(next)) return undefined
 	if (node.descriptor !== next.descriptor) return undefined
 	if (node.position.end !== next.position.start) return undefined
@@ -79,7 +92,35 @@ export function movePlan(
 	}
 
 	const span = rotate(roots.slice(low, high + 1))
-	const text = span.map(node => sliceNodes(roots, {before: node}, {after: node})).join('')
+
+	// ROW NORMALIZATION (issue 08's movePlan × terminated guard): a verbatim join would
+	// carry the document-final row's MISSING separator into the middle — fusing it with
+	// its new right neighbour — and leave a separator on whichever row lands final. Every
+	// re-emitted row gets a terminator except the one landing document-final; the
+	// separator text comes from any terminated sibling, since it is one editor-level
+	// setting. Fail closed when a terminator is needed and none exists to copy — with two
+	// or more rows the first is always terminated, so that door is a corrupted tree.
+	const separator = roots.find(root => root.kind === 'row' && root.terminator !== '')
+	const separatorText = separator?.kind === 'row' ? separator.terminator : undefined
+	const spanEndsDocument = high === roots.length - 1
+
+	const serialize = (node: TreeNode, indexInSpan: number): string | undefined => {
+		const raw = sliceNodes(roots, {before: node}, {after: node})
+		if (node.kind !== 'row') return raw
+		const content = node.terminator === '' ? raw : raw.slice(0, raw.length - node.terminator.length)
+		if (spanEndsDocument && indexInSpan === span.length - 1) return content
+		if (node.terminator !== '') return raw
+		if (separatorText === undefined) return undefined
+		return content + separatorText
+	}
+
+	const parts: string[] = []
+	for (const [indexInSpan, spanNode] of span.entries()) {
+		const part = serialize(spanNode, indexInSpan)
+		if (part === undefined) return undefined
+		parts.push(part)
+	}
+	const text = parts.join('')
 	const pairing: Pairing = [
 		...roots.slice(0, low).map((_, index) => index),
 		...rotate(roots.slice(low, high + 1).map((_, index) => low + index)),
@@ -105,9 +146,21 @@ export function movePlan(
  * child, and an anchor names a node rather than a coordinate.
  */
 export function entryAnchor(node: TreeNode): NodeAnchor {
-	if (node.kind === 'row' || (node.kind === 'mark' && node.descriptor.hasSlot)) {
+	if (node.kind === 'row') {
+		const children = node.children()
 		// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as
 		// non-nullable and the empty-children guard would be linted away as impossible.
+		const first = children.at(0)
+		// A row OPENING with a mark (its leading text is zero-width) enters through that
+		// mark — for a fresh '# ' heading row the first legal typing position is inside
+		// the heading's slot, not before its literal (backlog issue 04's rule, one level up).
+		if (first?.kind === 'text' && first.position.start === first.position.end) {
+			const second = children.at(1)
+			if (second?.kind === 'mark') return entryAnchor(second)
+		}
+		if (first?.kind === 'text') return {node: first, offset: 0}
+	}
+	if (node.kind === 'mark' && node.descriptor.hasSlot) {
 		const first = node.children().at(0)
 		if (first?.kind === 'text') return {node: first, offset: 0}
 	}

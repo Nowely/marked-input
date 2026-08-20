@@ -125,8 +125,15 @@ function buildMarkdownOptions(theme: Record<string, MarkupPreset>) {
 export const markdownOptions = buildMarkdownOptions(defaultMarkdownTheme)
 
 /**
- * Block-level markdown options only (those whose markup includes \n\n).
- * Use in drag mode so inline marks (bold, italic, code, link, strikethrough)
- * are not each split into their own draggable row.
+ * Block layout's forms of the same options (issue 08): the row separator is structural
+ * there — one editor-level `separator`, never part of a markup — so the block-level
+ * markups drop their trailing `\n\n` and their slots close at the row boundary instead.
+ * The inline set above keeps the baked separators: inline layout still parses them as
+ * self-delimiting marks.
  */
-export const blockLevelMarkdownOptions = markdownOptions.filter(opt => opt.markup.includes('\n\n'))
+export const blockMarkdownOptions = markdownOptions.map(option => {
+	if (!option.markup.endsWith('\n\n')) return option
+	// oxlint-disable-next-line no-unsafe-type-assertion -- stripping a literal suffix keeps the placeholder shape
+	const markup = option.markup.slice(0, -2) as Markup
+	return {markup, mark: option.mark}
+})

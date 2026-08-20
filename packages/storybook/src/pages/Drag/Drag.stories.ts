@@ -1,6 +1,6 @@
 import {DRAG_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {component, story, type PageMeta} from '../../shared/lib/stories'
-import {markdownOptions} from '../Nested/MarkdownOptions'
+import {blockMarkdownOptions} from '../Nested/MarkdownOptions'
 import {TODO_OPTIONS, TODO_VALUE} from './components/TodoMark'
 import {fixtures} from './Drag.fixtures'
 
@@ -24,7 +24,7 @@ export default {
 		docs: {
 			description: {
 				component:
-					'Drag mode: each top-level token (mark or text fragment) is its own draggable row. Adjacent marks need no separator; adjacent text rows use \\n\\n.',
+					'Drag mode: each separator-delimited row is its own draggable block (issue 08). The separator is an editor-level setting, never part of a markup; the piece after the final separator is a row even when empty.',
 			},
 		},
 	},
@@ -33,7 +33,7 @@ export default {
 export const Markdown = story({
 	args: {
 		Mark: fixtures.MarkdownMark,
-		options: markdownOptions,
+		options: blockMarkdownOptions,
 		defaultValue: DRAG_MARKDOWN,
 		layout: 'block',
 		draggable: true,
@@ -68,7 +68,7 @@ export const MarkdownDrag = story({
 	parameters: {docs: {disable: true}},
 	args: {
 		Mark: fixtures.MarkdownMark,
-		options: markdownOptions,
+		options: blockMarkdownOptions,
 		defaultValue: MARKDOWN_DRAG_VALUE,
 		layout: 'block',
 		draggable: true,
@@ -88,12 +88,13 @@ export const ReadOnlyDrag = story({
 	},
 })
 
-/** Every markup ends in `\n`, so each todo line is its own draggable row. */
+/** A single-newline separator: each todo line is its own draggable row. */
 export const TodoList = story({
 	args: {
 		options: TODO_OPTIONS,
 		value: TODO_VALUE,
 		layout: 'block',
+		separator: '\n',
 		draggable: true,
 	},
 	parameters: {plainValue: 'right'},

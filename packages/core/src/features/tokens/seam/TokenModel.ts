@@ -635,6 +635,7 @@ export class TokenModel {
 		tree: this.#tree,
 		parser: () => this.#parser(),
 		isBlock: () => this.props.layout.isBlock(),
+		separator: () => this.props.separator(),
 		controlled: () => this.props.value() !== undefined,
 		selection: () => this.selection.anchors(),
 		onChange: next => this.props.onChange()?.(next),
