@@ -103,7 +103,7 @@ a fresh node is built into `added`.
 `pairing[j] = previous root index`, and where it resolves it REPLACES all three walks for the
 root list. It exists because same-index pairing cannot express a permutation, and no diff can
 recover one: moving a row past a byte-identical row leaves the document unchanged, so the
-string carries no evidence at all. `resolvePairing` (`tree/adoptUtils.ts`) discards the whole
+string carries no evidence at all. `resolvePairing` (`tree/adopt.ts`) discards the whole
 claim unless it is a total BIJECTION over the roots and every pair is `snapshotNodeEquals`
 under its OWN shift — the bijection check is not implied by the range check, and the
 counter-example is on the file. A discarded pairing costs nothing: adoption runs exactly as it

@@ -72,6 +72,6 @@ export type {MarkInfo} from './src/shared/editorContracts'
 // parameter is a `MarkToken`, so dropping the type made a shipped signature unnameable —
 // a weakening D12 did not intend. `Token` and `TextToken` stay internal, and that was
 // checked rather than assumed: neither appears in any signature reachable from this file.
-// `Token` is referenced only by `parser/`, `tree/tree.ts`, `tree/adopt.ts`,
-// `tree/adoptUtils.ts` and the test-only oracle, none of which is exported; `TextToken`
-// only by `adopt.ts` and that oracle.
+// `Token` is referenced only by `parser/`, `tree/tree.ts`, `tree/adopt.ts` and the
+// test-only oracle, none of which is exported; `TextToken` only by `adopt.ts` and
+// that oracle.

@@ -149,7 +149,7 @@ const idsOf = (nodes: readonly TreeNode[], into: Id[] = []): Id[] => {
  * The duplication IS the point — do not "de-duplicate" it onto `snapshotNodeEquals`:
  * reusing adoption's own predicate would mirror any defect in it on both sides of
  * the walk-positions property, and that property is what catches a prefix-bound
- * off-by-one. Keep the two in sync by hand: a field compared in `adoptUtils.ts` and
+ * off-by-one. Keep the two in sync by hand: a field compared in `adopt.ts` and
  * not here (or the reverse) skews the reference runs in one direction.
  */
 function tokensEqualShifted(a: Token, b: Token, delta: number): boolean {
