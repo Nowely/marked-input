@@ -132,7 +132,6 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		container: () => mounted,
 		nodes,
 		roots: () => tree.roots(),
-		controlRoots: controls,
 		source: {
 			tokenElement: id => consigned.get(id),
 			rowElement: () => undefined,
@@ -739,7 +738,7 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(() => harness.splice(9, 9, '!')).toThrow(/re-entry/)
 	})
 
-	it('byElement resolves bound elements and isControlRoot flags control ancestry', () => {
+	it('byElement resolves bound elements and controlRoots flags control ancestry', () => {
 		// Ports commit.spec.ts:742 — the read surface the DOM layer locates on.
 		const harness = createHarness()
 		const {pipeline, controls} = harness
@@ -753,8 +752,8 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(pipeline.byElement(spans[0])).toBe(boundAt(harness, 0))
 		expect(pipeline.byElement(spans[1])).toBe(boundAt(harness, 1))
 		expect(pipeline.byElement(button)).toBeUndefined()
-		expect(pipeline.isControlRoot(button)).toBe(true)
-		expect(pipeline.isControlRoot(spans[0])).toBe(false)
+		expect(controls.has(button)).toBe(true)
+		expect(controls.has(spans[0])).toBe(false)
 	})
 
 	// ═══ S1.6a: MOVED here when commit.spec.ts was deleted ═════════════════════

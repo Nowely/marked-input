@@ -725,7 +725,6 @@ export class TokenModel {
 		container: () => this.host.container(),
 		nodes: this.#nodes,
 		roots: () => this.#tree.roots(),
-		controlRoots: this.#controlRoots,
 		source: {
 			tokenElement: id => this.#tokenElements.latest(id),
 			rowElement: id => this.#rowElements.latest(id),
@@ -738,7 +737,7 @@ export class TokenModel {
 	readonly #dom = new DomModel({
 		container: () => this.host.container(),
 		byElement: element => this.#pipeline.byElement(element),
-		isControlRoot: element => this.#pipeline.isControlRoot(element),
+		isControlRoot: element => this.#controlRoots.has(element),
 		roots: () => this.nodes(),
 		find: id => this.find(id),
 		handle: id => this.handle(id),
