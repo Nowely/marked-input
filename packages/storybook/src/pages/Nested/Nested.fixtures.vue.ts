@@ -5,7 +5,7 @@ import {useTab} from '../../shared/components/Tabs'
 import {defineMark} from '../../shared/lib/marks'
 import type {PageArgs} from '../../shared/lib/stories'
 import {HTML_TAG_STYLES} from './HtmlTagStyles'
-import {markdownOptions} from './MarkdownOptions'
+import {inlineMarkdownOptions} from './MarkdownOptions'
 
 import styles from './InteractiveMark.module.css'
 
@@ -59,7 +59,7 @@ const TabbedMarkdown = defineComponent({
 		const value = ref(props.defaultValue)
 		const {Tab, activeTab} = useTab(TABS)
 
-		return {Tab, activeTab, value, MarkdownMark, markdownOptions}
+		return {Tab, activeTab, value, MarkdownMark, inlineMarkdownOptions}
 	},
 	template: `
 		<component :is="Tab" />
@@ -67,7 +67,7 @@ const TabbedMarkdown = defineComponent({
 		<MarkedInput
 			v-if="activeTab === 'preview'"
 			:Mark="MarkdownMark"
-			:options="markdownOptions"
+			:options="inlineMarkdownOptions"
 			:value="value"
 			:readOnly="true"
 		/>
