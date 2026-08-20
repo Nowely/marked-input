@@ -62,8 +62,8 @@ the framework has not repainted yet.
   `added`/`removed`/`updated`, the resolved `selectionAfter`, the anchor `map`,
   and the `structural`/`render` bits.
 - `gapWindow.ts` — the boundary-reset window: the common prefix/suffix of two
-  projections, via `findGap.ts`. An empty window pins at the END of the value,
-  because `start` of an empty window is not an edit location.
+  projections. An empty window pins at the END of the value, because `start`
+  of an empty window is not an edit location.
 - `transactions.ts` — the write verbs. `applyRange(window, text)` is
   the primitive; `applyAfter(node, text)` and
   `applyStructural(target, replacement)` lower node-local intent into it, and

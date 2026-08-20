@@ -456,7 +456,7 @@ describe('adopt: ported reconcile fixtures', () => {
 
 	it('derives the window from gapWindow and keeps identity at both edges', () => {
 		// The two reconcile cases that ran WITHOUT a hint. The prepend one is the reason
-		// gapWindow clamps: findGap('he@[x]llo', 'Xhe@[x]llo') reports no right edge.
+		// gapWindow clamps: for 'he@[x]llo' → 'Xhe@[x]llo' the suffix scan spans the whole previous value.
 		const valueParser = new Parser(['@[__value__]'])
 		const append = createTokenTree(valueParser.parse('he@[x]llo'))
 		const appendIds = append.roots().map(node => node.id)

@@ -43,6 +43,8 @@ describe('gapWindow', () => {
 		const cases: [previous: string, next: string, expected: Window][] = [
 			['hello', 'heXYllo', {start: 2, end: 2, insertedLength: 2}],
 			['abcdef', 'abef', {start: 2, end: 4, insertedLength: 0}],
+			['abc', 'bc', {start: 0, end: 1, insertedLength: 0}],
+			['abcd', 'ab', {start: 2, end: 4, insertedLength: 0}],
 			['abc', 'xyz', {start: 0, end: 3, insertedLength: 3}],
 			['bc', 'abc', {start: 0, end: 0, insertedLength: 1}],
 			['ab', 'abc', {start: 2, end: 2, insertedLength: 1}],

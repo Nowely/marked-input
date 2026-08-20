@@ -100,8 +100,8 @@ describe('TokenModel commit clocks', () => {
 	})
 
 	// Direct value sets carry no edit hint; the identity tracker derives the changed
-	// window via findGap, so token identity survives a set the same way it survives an edit.
-	it('direct value set keeps identity via the findGap-derived hint and pulses committed once', () => {
+	// window via gapWindow, so token identity survives a set the same way it survives an edit.
+	it('direct value set keeps identity via the gapWindow-derived hint and pulses committed once', () => {
 		const {store} = mountWithMark()
 		const markId = handleId(store, 1)
 		const committedSpy = vi.fn()
