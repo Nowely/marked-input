@@ -116,7 +116,6 @@ parser/
     ├── denote.ts            # Transform annotated text with a callback
     ├── getOrCreate.ts       # Get-or-create a map-keyed array
     ├── getSegmentIndex.ts   # Segment-index lookup helper
-    ├── processTokens.ts     # Post-parse token processing
     └── toString.ts          # Token serialization
 ```
 
