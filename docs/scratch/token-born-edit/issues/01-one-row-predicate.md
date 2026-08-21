@@ -1,6 +1,16 @@
 # One Row predicate, owned by `tree/`
 
-Status: ready-for-agent
+Status: resolved
+
+**Resolved by construction 2026-08-20 (#291), not by doing this.** Every predicate named below
+is gone from the tree — `isSlotLeading`, `isTextLikeRow` and `isSlotLeadingMark` return zero
+hits, and `canMergeRows` survives only as a tombstone comment at `keyboard/blockEdit.ts:227`
+("asking and then doing was two readings of one question"). The separator became structural and
+a Row became a tree node, so "is this a Row?" is now `node.kind === 'row'` and there is no
+predicate to unify. The four citations below point at lines that have since moved: `siblings.ts:9`
+is a docblock and `blockEdit.ts:13` is an import.
+
+---
 
 The question "is this a Row?" is asked in four places, and two of them are near-duplicate
 predicates that differ by a single clause:

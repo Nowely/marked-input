@@ -1,8 +1,31 @@
 # Phase 1 — make the Row extent local
 
-Status: needs-info
+Status: resolved
 
-Blocked by: 02
+**Done 2026-08-20 inside phase 0's execution (#291).** `PatternMatcher.resolveSlotLeadingMatches`
+is gone — the file's numstat in `31fac6d1` is `0 42`, the exact deletion size this issue
+predicted — and `filterEmptyText` went with it (`0 14`). Only a tombstone comment remains
+(`parser/core/RowBuilder.ts:94`). The replacement is `RowBuilder.closeTrailingGaps`, which closes
+an open trailing gap FORWARD to the next separator, bounded by the enclosing slot or end of input.
+
+**Three ways it landed differently from this plan, recorded because they falsify its premises:**
+
+1. It took NEITHER route this issue allowed. Rows became tree NODES (`RowNode`), not
+   self-delimiting Marks, and it was not a pure `parser/` refactor — `31fac6d1` is 82 files,
+   +1960/−857.
+2. "A pure deletion, replaced by nothing" is false: `RowBuilder.ts` is +185 new lines.
+3. The promise that "`adopt`, anchors, `Pairing`, `bind` and both adapters are untouched and no
+   ADR is amended" did not hold. All four were touched and ADR-0009 was written.
+
+The capability the chain provided was DROPPED BY DECLARATION, not silently lost: a markup may no
+longer begin with a placeholder (`MarkupDescriptor.ts` throws at registration, pinned in
+`Parser.spec.ts`).
+
+**One limit worth stating:** the replacement is still document-wide. `RowBuilder.rowPass` is a
+fixpoint over the whole accepted-match set and `findSeparators` scans the entire value. The Row's
+extent is local SEMANTICALLY (the span between nearest separators) and not STRUCTURALLY.
+
+---
 
 Delete `PatternMatcher.resolveSlotLeadingMatches`, so a Row's extent is decided by its own
 boundaries instead of by a document-wide left-to-right chain.
