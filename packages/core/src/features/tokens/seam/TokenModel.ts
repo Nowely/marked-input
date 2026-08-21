@@ -362,7 +362,8 @@ export class TokenModel {
 					}
 					// The IMMEDIATE run has no `previous`, so it always takes this arm — including
 					// on a re-attach, which rebuilds the onMounted scope and re-runs this watch.
-					// `#restore` is what carries an uncontrolled edit across that (gate:
+					// An uncontrolled re-attach arrives with no value and resolves to the tree's
+					// own, which is what carries the edit across (gate:
 					// `TokenModel.value.spec`'s 'a container re-attach keeps the uncontrolled edit').
 					this.#onExternalValue(next.value)
 				},
@@ -553,14 +554,6 @@ export class TokenModel {
 	 * to the first commit (gates: `Store.spec`'s three write-then-read-unmounted cases).
 	 */
 	readonly #seeded = signal({initial: false})
-	/** Where an uncontrolled fallback returns to: re-recorded per arrival until control is taken. */
-	#restore: string | undefined
-	/**
-	 * Edge detector for the uncontrolled→controlled transition. A field, not `watch`'s
-	 * `previous`, so a container swap (which tears down and rebuilds the onMounted scope)
-	 * cannot make a remount look like a fresh edge.
-	 */
-	#controlled = false
 	/**
 	 * The commit-generation marker: `join(tree)` as of the last COMPLETED commit, written by
 	 * the boundary's `onResult` AFTER `pipeline.apply`. {@link value} reads this and never
@@ -601,17 +594,18 @@ export class TokenModel {
 		sink: this.#boundary.sink,
 	})
 
-	/** One router for every external value: the props watch, and `#ensureSeeded`. */
+	/**
+	 * One router for every external value: the props watch, and `#ensureSeeded`.
+	 *
+	 * THE FALLBACK IS THE TREE. An arrival with no value means no parent owns it, and what the
+	 * editor keeps is what it is already showing — the seed answers only before the tree holds
+	 * anything at all. There is no memory of an earlier uncontrolled era: a `#restore` string
+	 * frozen at the moment control was taken used to serve three arms, and two of them (a
+	 * container re-attach, an edit made before mount) are the tree's own value by then. The
+	 * third was the behaviour change that removed it — see the commit body.
+	 */
 	#onExternalValue(value: string | undefined): void {
-		const controlled = value !== undefined
-		// While no parent owns the value every arrival re-records where an uncontrolled fallback
-		// returns to — a re-attach re-runs the mount watch's immediate arm, and without this the
-		// fallback would be the seed again. Entering controlled mode freezes it. The three arms
-		// are pinned separately: never-uncontrolled falls back to the seed, an uncontrolled edit
-		// falls back to that edit, and a re-attach keeps it.
-		if (!this.#controlled) this.#restore = this.#seeded() ? this.#tree.value() : undefined
-		this.#controlled = controlled
-		const next = value ?? this.#restore ?? this.#seed()
+		const next = value ?? (this.#seeded() ? this.#tree.value() : this.#seed())
 		this.#seeded(true)
 		this.#boundary.arrive(next)
 	}

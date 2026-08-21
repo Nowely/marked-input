@@ -48,9 +48,13 @@ Additional classes
 optional defaultValue: string;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:65](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L65)
+Defined in: [react/markput/src/components/MarkedInput.tsx:71](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L71)
 
-Initial value for uncontrolled mode
+Initial value for uncontrolled mode — the value the editor starts from when no `value`
+prop is given. It is read once: setting it later does not move an editor that already
+holds a value, and it is NOT what a controlled editor reverts to. Dropping `value`
+(passing `undefined` after a string) keeps whatever is on screen; to go back to some
+earlier text, pass it.
 
 ***
 
@@ -60,7 +64,7 @@ Initial value for uncontrolled mode
 optional draggable: boolean | DraggableConfig;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:83](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L83)
+Defined in: [react/markput/src/components/MarkedInput.tsx:89](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L89)
 
 Enable drag interaction on block rows. Only effective when layout='block'.
 
@@ -78,7 +82,7 @@ false
 optional layout: "inline" | "block";
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:73](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L73)
+Defined in: [react/markput/src/components/MarkedInput.tsx:79](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L79)
 
 Layout mode: 'inline' renders tokens in a single flow, 'block' stacks each token as its own row.
 
@@ -108,7 +112,7 @@ Global component used for rendering markups (fallback for option.Mark)
 optional onChange: (value) => void;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:67](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L67)
+Defined in: [react/markput/src/components/MarkedInput.tsx:73](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L73)
 
 Change event handler
 
@@ -156,7 +160,7 @@ Global component used for rendering overlays (fallback for option.Overlay)
 optional readOnly: boolean;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:69](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L69)
+Defined in: [react/markput/src/components/MarkedInput.tsx:75](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L75)
 
 Read-only mode
 
@@ -180,7 +184,7 @@ Ref to the editor API (spec §2.3)
 optional separator: string;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:79](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L79)
+Defined in: [react/markput/src/components/MarkedInput.tsx:85](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L85)
 
 The structural row separator for block layout (issue 08): editor-level, never part of
 any markup. Inline layout ignores it.

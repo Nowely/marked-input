@@ -537,6 +537,12 @@ function App() {
 }
 ```
 
+`defaultValue` is read once, to start a tree that holds nothing yet. It is not a
+value the editor reverts to: an editor that stops receiving `value` (a parent
+passing `undefined` after a string) keeps what is on screen, because the tree —
+not a remembered string — is what an arrival without a value falls back to. To go
+back to earlier text, pass it.
+
 ### Pattern: Drag Mode
 
 ```typescript

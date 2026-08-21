@@ -61,7 +61,13 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	showOverlayOn?: OverlayTrigger
 	/** Annotated text with markups */
 	value?: string
-	/** Initial value for uncontrolled mode */
+	/**
+	 * Initial value for uncontrolled mode — the value the editor starts from when no `value`
+	 * prop is given. It is read once: setting it later does not move an editor that already
+	 * holds a value, and it is NOT what a controlled editor reverts to. Dropping `value`
+	 * (passing `undefined` after a string) keeps whatever is on screen; to go back to some
+	 * earlier text, pass it.
+	 */
 	defaultValue?: string
 	/** Change event handler */
 	onChange?: (value: string) => void
