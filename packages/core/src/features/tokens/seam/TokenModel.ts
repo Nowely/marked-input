@@ -47,9 +47,8 @@ export class TokenModel {
 	 * mark value change both leave the id space and the element set untouched — which is the
 	 * whole reason it is not the DOM clock.
 	 *
-	 * PAYLOAD-FREE, deliberately. It used to carry `{added, removed, updated}` ids derived by a
-	 * ledger module; nothing in core read them once the block store moved to a `WeakMap`, and a
-	 * consumer that wants to know what changed re-reads {@link nodes} or {@link find}.
+	 * PAYLOAD-FREE, deliberately: a consumer that wants to know what changed re-reads
+	 * {@link nodes} or {@link find}. The change-feed record is in the README's refuted list.
 	 */
 	get committed(): Event<void> {
 		return this.#pipeline.committed
@@ -70,19 +69,11 @@ export class TokenModel {
 	 * commands, and the handle's existence IS the validity check. It carries no data of its
 	 * own — content and positions are read from the node ({@link find}).
 	 *
-	 * ABSENCE IS THE ONLY REFUSAL (ADR-0008). This used to also fail closed for EVERY id
-	 * while a structural apply awaited its bind, gated by the pipeline's `pendingStructural`
-	 * latch. The reason given was that the node layer is one generation stale — but a node
-	 * BORN by that commit has no handle here at all until `bind` creates one
-	 * (`dom/bind.ts`), so the refusal it actually needed was already structural. What the
-	 * latch added on top was a refusal for nodes that SURVIVED the commit, whose elements are
-	 * correct in the window: the per-surface effect has already written the new text
-	 * (`commitPipeline.spec.ts`'s fold case). It refused precisely the case that worked.
-	 *
-	 * A caret placed mid-window against pre-paint parent coordinates is a transient the
-	 * post-bind `tokens.bound` re-apply corrects in the same frame (`dom/SelectionDriver`),
-	 * and it can no longer steal focus the way it could under N editing hosts, which is the
-	 * topology the latch was designed in. Gated by `seam/pendingWindow.spec.ts`.
+	 * ABSENCE IS THE ONLY REFUSAL (ADR-0008): a node BORN by a commit has no handle until
+	 * `bind` creates one, and that structural refusal is the only one this lookup needs — the
+	 * pending-structural latch that also failed closed for SURVIVING nodes is refuted in the
+	 * README. A caret placed mid-window is a transient the post-bind `tokens.bound` re-apply
+	 * corrects in the same frame (`dom/SelectionDriver`). Gated by `seam/pendingWindow.spec.ts`.
 	 */
 	handle(id: number): TokenHandle | undefined {
 		return this.#nodes.get(id)
@@ -127,11 +118,9 @@ export class TokenModel {
 	 * ELEMENT-ONLY — nothing ever asks which token owns a control — and it goes straight into
 	 * {@link ControlRoots}, which owns the membership the locate walk reads.
 	 *
-	 * NO BIND, and that is the whole shape of it. A control used to invalidate a counter the bind
-	 * effect watched, so one ref cost a whole-tree walk on the argument that controls are rare.
-	 * They are not: block layout mounts up to four per ROW — two drop indicators, a drag handle
-	 * and a menu — so that made a block mount quadratic, measured at 400 rows / 400 binds / 93 ms.
-	 * A control's ancestor chain is a pure DOM walk that touches no token, so it updates in place.
+	 * NO BIND: a control's ancestor chain is a pure DOM walk that touches no token, so it
+	 * updates in place. Routing a ref through the bind counter makes a block mount quadratic —
+	 * block layout mounts up to four controls per ROW, measured at 400 rows / 400 binds / 93 ms.
 	 *
 	 * REGISTRATION is also where the control leaves the editing host: a control is chrome,
 	 * not document content, so inside the one contenteditable container it must be atomic
@@ -164,12 +153,9 @@ export class TokenModel {
 	}
 
 	/**
-	 * Ref callback for a token's OWN element — the thing `bind` currently re-derives by walking
-	 * the painted DOM in lockstep with the tree. The framework held this element a moment before
-	 * it painted it; consigning it is that association pushed instead of re-discovered.
-	 *
-	 * THE element source: `bind` and `rebind` both read this registry and nothing else, and the
-	 * DOM walk that used to re-derive the same pairing is gone.
+	 * Ref callback for a token's OWN element. THE element source: `bind` and `rebind` both read
+	 * this registry and nothing else — the framework held the element a moment before it painted
+	 * it, so the association is pushed rather than re-discovered by a DOM walk.
 	 *
 	 * Keyed by owner id, then per REGISTRATION like {@link children}, so a ref that outlives a
 	 * re-render cannot be filed under a stale key and one id's element is one lookup.
@@ -411,21 +397,14 @@ export class TokenModel {
 			//
 			// It subscribes to ONE thing, the commit counter — so that a commit which moves no
 			// element still binds, which keeps `bound` a clock every commit reaches and keeps the
-			// caret's post-commit re-place.
+			// caret's post-commit re-place. NOT the roots too: every write of `tree.roots` is
+			// adoption's, inside a commit that ends in `apply`, so subscribing to both makes a
+			// structural commit bind TWICE for one commit's worth of change.
 			//
-			// NOT the roots, deliberately, and it is not a gap: every write of `tree.roots` is
-			// adoption's, inside a commit that ends in `apply`. Subscribing to both made a
-			// structural commit bind TWICE — adoption's batch closes and flushes the effect, then
-			// `apply` bumps the counter and flushes it again — for one commit's worth of change.
-			//
-			// Everything the projection itself reads is read inside `bind`'s own `untracked`, and
-			// this `untracked` is a second boundary over `bindNow`'s container read. NEITHER is
-			// pinned by a test, and that is stated rather than implied: removing either one leaves
-			// the suite green, because the only node signals the walk reads are `children()`
-			// (written by adoption, inside a commit that wakes the effect anyway) and `text()`
-			// (read inside the per-surface effect, which is its own subscriber). They are
-			// correct-by-construction boundaries. What IS pinned — one bind per commit, one rebind
-			// per ref — is in `TokenModel.bindEffect.spec.ts`.
+			// Neither this `untracked` nor `bindNow`'s own is pinned by a test — stated rather
+			// than implied: they are correct-by-construction boundaries over node reads that have
+			// their own subscribers. What IS pinned — one bind per commit, one rebind per ref —
+			// is in `TokenModel.bindEffect.spec.ts`.
 			effect(() => {
 				this.#pipeline.commits()
 				untracked(() => this.#pipeline.bindNow())
@@ -449,16 +428,13 @@ export class TokenModel {
 	// ─── internals ─────────────────────────────────────────────────────────────
 
 	/**
-	 * The markups, compared SHALLOWLY, and that is the whole point of splitting them out.
-	 *
-	 * `props.options` is a plain signal with no equality, so a fresh-but-identical array — which
-	 * is what an inline `options={[…]}` prop produces on every parent render, and what Vue's
-	 * `syncProps` allocates unconditionally on a watch that depends on `props.value` — used to
-	 * propagate all the way here and mint a new `Parser`. Descriptors are interned PER PARSER and
-	 * `adopt` pairs marks on `candidate.descriptor === token.descriptor`, so every mark fell to
-	 * `buildNode` and took a NEW ID: a full remount of every Mark in both adapters plus the loss
-	 * of `BlockController`'s node-keyed per-row state, on every keystroke of a controlled Vue
-	 * editor. Gated by `TokenModel.parse.spec`'s "a fresh but identical `options` array".
+	 * The markups, compared SHALLOWLY, and that is the whole point of splitting them out:
+	 * `props.options` is a plain signal with no equality, and a fresh-but-identical array (an
+	 * inline `options={[…]}` prop on every parent render; Vue's `syncProps` allocates one per
+	 * watch run) would mint a new `Parser` here. Descriptors are interned PER PARSER and `adopt`
+	 * pairs marks on descriptor identity, so a new parser remounts every Mark with a NEW ID and
+	 * drops `BlockController`'s node-keyed per-row state — on every keystroke of a controlled
+	 * Vue editor. Gated by `TokenModel.parse.spec`'s "a fresh but identical `options` array".
 	 */
 	readonly #markups: Computed<(Markup | undefined)[]> = computed(() => this.props.options().map(opt => opt.markup), {
 		equals: shallow,
@@ -645,7 +621,8 @@ export class TokenModel {
 	 * whose flush would notify value subscribers while the token view is still stale
 	 * (`seam/TokenModel.parse.spec.ts`'s "the live tree is updated when value.current
 	 * fires"). Not a second store: one writer, and its content is the tree's own projection
-	 * read at that instant, so drift is unrepresentable.
+	 * read at that instant, so drift is unrepresentable — its deletion is refuted in the
+	 * README's list.
 	 */
 	readonly #committed = signal({initial: ''})
 
@@ -765,13 +742,10 @@ export class TokenModel {
 }
 
 /**
- * A patch becomes markup. Moved out of the deleted `MarkController` (`#serialize` plus its
- * three field defaults) so the node can serialize without reaching into the store; the only
- * semantic change is `null` instead of `{kind: 'clear'}` (plan decision D-b).
+ * A patch becomes markup: `null` clears a field, an omitted key round-trips the current one.
  *
- * The defaults come off the NODE: an omitted key must round-trip the current field, and the
- * slot's current value is the joined children, because the node stores no slot text
- * (`MarkNode.slotRange` is positions only).
+ * The defaults come off the NODE, and the slot's current value is the joined children,
+ * because the node stores no slot text (`MarkNode.slotRange` is positions only).
  */
 function serializeMark(node: MarkNode, patch: MarkPatch): string {
 	const value = patch.value ?? node.value()

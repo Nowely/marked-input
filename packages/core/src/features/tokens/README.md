@@ -516,6 +516,42 @@ The heal itself is pinned rather than assumed — `commitPipeline.spec.ts` corru
 a surface and asserts the next commit repairs it, batched and unbatched, and
 `TokenModel.spec.ts` does the same across a container re-attach.
 
+## Refuted simplifications
+
+Deletions and folds that were tried against the suite or measured in worktrees
+and refuted. Do not re-propose without new evidence.
+
+- **`handle()`'s pending-structural latch** (removed; ADR-0008). The latch failed
+  closed for EVERY id while a structural apply awaited its bind, on the argument
+  that the node layer is one generation stale. But a node BORN by that commit has
+  no handle at all until `bind` creates one, so the refusal it needed was already
+  structural. What the latch added was a refusal for nodes that SURVIVED the
+  commit, whose elements are correct in the window — the per-surface effect has
+  already written the new text (`commitPipeline.spec.ts`'s fold case). It refused
+  precisely the case that worked. A caret placed mid-window against pre-paint
+  parent coordinates is a transient the post-bind `tokens.bound` re-apply
+  corrects in the same frame, and it cannot steal focus the way it could under
+  the N-editing-host topology the latch was designed in. Gate:
+  `seam/pendingWindow.spec.ts`.
+- **Deleting the `#committed` mirror** (refuted by measurement, 2026-08-20).
+  Folding `value` onto `#tree.value()` in one batch breaks the pinned mount
+  clock contract — the committed pulse is lost to pre-mount subscribers
+  (`TokenModel.clocks.spec` red). Deleting the mirror WITHOUT the batch is
+  suite-green but silently inverts the value-vs-committed flush order. The
+  mirror stays: one writer, content is the tree's own projection, drift is
+  unrepresentable.
+- **The change feed** (`{added, removed, updated}` ids on `committed`, derived
+  by a ledger module). Deleted once the block store moved to a `WeakMap` and
+  left it with zero core readers; the spec oracles moved to
+  `tree/__testing__/diff.ts`. A future fine-grained render feed may want it
+  back — that is a re-add with a consumer, not a revert.
+- **Folding `EditController` into `tokens.replaceBetween`.** The seam IS the
+  contract: user edits move the caret, programmatic writes are repair-only —
+  pinned by selection.spec AC-3.x and the bench L5/L5b ladder. `store.edit` is
+  also exported-Store surface.
+- **`domBoundary` vs `valueBoundary` "duplication".** None: one is DOM-domain,
+  the other string-domain, with zero shared computation.
+
 ## Benchmarking
 
 ### Running Benchmarks
