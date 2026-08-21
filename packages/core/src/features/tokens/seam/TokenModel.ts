@@ -166,9 +166,9 @@ export class TokenModel {
 
 	/**
 	 * THE value read: controlled → the props value; uncontrolled → the last COMMITTED
-	 * projection. There is no separate uncontrolled string — the tree IS the store; the
-	 * three private inputs (`#seed`, `#seeded`, `#committed`) are declared together in the
-	 * internals section below.
+	 * projection. There is no separate uncontrolled string — the tree IS the store; its two
+	 * private inputs (`#seed`, `#committed`) are declared together in the internals section
+	 * below, and `#seeded` is derived from the tree beside them.
 	 *
 	 * The `#seeded` arm is load-bearing and its gate is NOT the obvious one: reduced to
 	 * `props.value() ?? this.#committed()`, the red case is `TokenModel.value.spec`'s "an
@@ -549,11 +549,16 @@ export class TokenModel {
 	/** The lazily-materialized default, so a `defaultValue` set after the first read stays a no-op. */
 	readonly #seed = signal({initial: () => this.props.defaultValue() ?? ''})
 	/**
-	 * One-shot: the tree holds a value. A SIGNAL, not a plain flag — {@link value} routes on
-	 * it, and a field would leave that computed permanently subscribed to `#seed` and blind
-	 * to the first commit (gates: `Store.spec`'s three write-then-read-unmounted cases).
+	 * Does the tree hold a value yet — DERIVED, not stored. An unmaterialized tree is built
+	 * from an empty array and has no roots; any parse gives at least one, because the parser
+	 * always emits a leading text token. The empty document is the input that could have made
+	 * this wrong and does not: `''` parses to ONE empty text root, so an editor cleared to
+	 * nothing stays cleared instead of re-seeding from `defaultValue` on the next arrival.
+	 *
+	 * Reads a signal, so {@link value} still routes reactively — that was the reason the
+	 * stored form had to be a signal rather than a plain flag.
 	 */
-	readonly #seeded = signal({initial: false})
+	readonly #seeded = () => this.#tree.roots().length > 0
 	/**
 	 * The commit-generation marker: `join(tree)` as of the last COMPLETED commit, written by
 	 * the boundary's `onResult` AFTER `pipeline.apply`. {@link value} reads this and never
@@ -606,7 +611,6 @@ export class TokenModel {
 	 */
 	#onExternalValue(value: string | undefined): void {
 		const next = value ?? (this.#seeded() ? this.#tree.value() : this.#seed())
-		this.#seeded(true)
 		this.#boundary.arrive(next)
 	}
 
@@ -615,7 +619,7 @@ export class TokenModel {
 	 * waiting for mount, because several specs edit an UNMOUNTED store.
 	 *
 	 * Reads TRACKED, where every other read on the write path is `untracked`: wrapping this one
-	 * drops the `#seeded`/`#seed` subscription a reactive writer on an unseeded store gets today.
+	 * drops the roots/`#seed` subscription a reactive writer on an unseeded store gets today.
 	 */
 	#ensureSeeded(): void {
 		if (this.#seeded()) return
