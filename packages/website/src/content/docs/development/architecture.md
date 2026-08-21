@@ -220,7 +220,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `close`         | overlay        | Close overlay               | `void`                                   |
 | `action`        | drag           | Drag-and-drop action        | `{type, ...}` (internal `DragAction`)    |
 
-Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) and the token model's bind effect are reactive effect hooks, not store events.
+Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
 
 ### Event Usage
 

@@ -137,11 +137,10 @@ Every committed change flows through a single `apply(result)`, taking the
 ```
 write verb → splice → parse → adopt → TransactionResult
   │    (adoption writes node.text → the per-surface effects write the DOM)
-  → apply(result): bump `commits`, then fire committed()
-       └─ the bind EFFECT wakes on `commits` → bind(): one tree walk —
-            create/kill TokenHandles, set element bindings, re-arm the text effects,
-            apply the one-host editable topology to NEWLY BOUND surfaces and mark roots
-          → fire bound()
+  → apply(): bind() — one tree walk: create/kill TokenHandles, set element
+       bindings, re-arm the text effects, apply the one-host editable topology to
+       NEWLY BOUND surfaces and mark roots → fire bound()
+     then fire committed()
 
 framework paints → a ref fires → consign(id)(element) → rebind(id): that id's
   share of the same walk → fire bound()
@@ -153,13 +152,18 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   rung L7 in `commitCost.bench.ts` (~1.35× at 100 marks, ~2.5× at 1000 rows) and
   accepted there.
 - **A ref binds ONE token, and that is the whole reason mount is linear.** A
-  registration used to invalidate a counter the bind effect watched, so every ref
+  registration used to invalidate a counter the bind read reactively, so every ref
   cost a whole-tree walk: mounting an N-node document measured 2N+2 binds through
   both adapters and 678 ms at 2001 nodes. `rebind(id)` is that id's share of the
   walk; the whole walk stays on the commit clock, where the kill sweep needs it.
-- **The bind effect subscribes to ONE thing**, `commits` — not the live roots.
-  Every write of `tree.roots` is adoption's, inside a commit that ends in `apply`,
-  so subscribing to both bound twice for one commit.
+- **Bind is a CALL inside `apply`, not a reactive effect.** It runs before
+  `committed` fires, so every subscriber sees a DOM that already matches the tree
+  and every per-surface effect is re-armed. That order used to be encoded in the
+  POSITION of a counter write — a signal the model watched in an effect, flushed
+  synchronously on that line — which made moving a line a behaviour change. The
+  counter, the effect and the model's last use of `effect` went with it. There is
+  no separate mount bind either: a mount always arrives through the props watch,
+  which commits, which binds.
 - **A control registration binds nothing.** `dom/controlRoots.ts` owns which
   elements sit under control chrome and updates in place, because that answer is a
   DOM walk from each control up to the host and touches no token. It used to be

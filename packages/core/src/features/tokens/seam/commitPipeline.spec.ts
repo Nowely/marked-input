@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
-import {batch, effect, untracked, watch} from '../../../shared/signals/index.js'
+import {batch, watch} from '../../../shared/signals/index.js'
 import {bind} from '../dom/bind'
 import {createCommitPipeline} from '../dom/commit'
 import {createControlRoots} from '../dom/controlRoots'
@@ -136,14 +136,6 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 			tokenElement: id => consigned.get(id),
 			childSequenceHost: () => undefined,
 		},
-	})
-	// THE BIND EFFECT, the same one `TokenModel` installs. It is here and not left implicit
-	// because without it this harness answers a question the model never asks: a commit would not
-	// bind, so the divergence sweep would run ahead of the per-surface re-arm that heals, and the
-	// "a text edit does not re-bind" gate below would pass on a wiring that does not exist.
-	effect(() => {
-		pipeline.commits()
-		untracked(() => pipeline.bindNow())
 	})
 	const boundary = createBoundary({
 		tree,

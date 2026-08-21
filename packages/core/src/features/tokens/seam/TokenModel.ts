@@ -1,5 +1,5 @@
 import type {DomRef} from '../../../shared/editorContracts'
-import {batch, computed, effect, signal, untracked, watch} from '../../../shared/signals/index.js'
+import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import {shallow} from '../../../shared/utils/shallow'
 import type {Host} from '../../state/Host'
@@ -368,24 +368,6 @@ export class TokenModel {
 				},
 				{immediate: true}
 			)
-			// THE BIND EFFECT: when does the WHOLE tree get re-projected. A single ref does not
-			// come through here at all — {@link consign} calls `rebind(id)` straight away — which
-			// is what keeps a mount linear.
-			//
-			// It subscribes to ONE thing, the commit counter — so that a commit which moves no
-			// element still binds, which keeps `bound` a clock every commit reaches and keeps the
-			// caret's post-commit re-place. NOT the roots too: every write of `tree.roots` is
-			// adoption's, inside a commit that ends in `apply`, so subscribing to both makes a
-			// structural commit bind TWICE for one commit's worth of change.
-			//
-			// Neither this `untracked` nor `bindNow`'s own is pinned by a test — stated rather
-			// than implied: they are correct-by-construction boundaries over node reads that have
-			// their own subscribers. What IS pinned — one bind per commit, one rebind per ref —
-			// is in `TokenModel.bindEffect.spec.ts`.
-			effect(() => {
-				this.#pipeline.commits()
-				untracked(() => this.#pipeline.bindNow())
-			})
 		})
 
 		// LAST, so the driver's own `onMounted` runs after the arrival above. See
