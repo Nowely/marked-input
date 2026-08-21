@@ -341,7 +341,12 @@ export class TokenModel {
 		this.#selectionDriver.focusFirst()
 	}
 
-	/** Place the caret at a bound handle's start/end; see {@link SelectionDriver.placeAtHandle}. */
+	/**
+	 * Place the caret at a bound handle's start/end; see {@link SelectionDriver.placeAtHandle}.
+	 * Deliberately kept without a production caller (the focusRow arm was its last): spec-facing —
+	 * the only test entry into the private driver — and public-reachable through the exported
+	 * Store, the `api.focus()` precedent.
+	 */
 	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {
 		return this.#selectionDriver.placeAtHandle(handle, boundary)
 	}
