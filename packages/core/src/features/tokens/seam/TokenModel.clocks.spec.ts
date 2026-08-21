@@ -113,6 +113,40 @@ describe('TokenModel commit clocks', () => {
 		// the mark id survived a set that carried no edit hint
 		expect(handleId(store, 1)).toBe(markId)
 	})
+
+	it('a value subscriber sees a DOM that already matches the value it was handed', () => {
+		// THE ordering contract, and the reason `value` reads `#committed` rather than the
+		// tree. `#committed` is written after `pipeline.apply`, so `value` is the LAST thing
+		// a commit invalidates — after `bind` has rewritten every bound surface.
+		//
+		// Reading the tree directly instead is suite-green and silently breaks this: the
+		// tree moves FIRST (adoption writes roots at the head of the commit), so the
+		// subscriber wakes mid-commit and reads the previous generation's DOM under the new
+		// string. Measured before this case existed — 'hello' in the container while `value`
+		// answered 'hello world'.
+		//
+		// The divergence is transient, not permanent: it is gone by the time the write
+		// returns. That is exactly what makes it invisible to every other assertion here,
+		// which read after the fact.
+		const {store, container} = mountWithMark()
+		let domAtNotification: string | undefined
+		let valueAtNotification: string | undefined
+		watch(
+			() => store.tokens.value(),
+			value => {
+				domAtNotification = container.textContent
+				valueAtNotification = value
+			}
+		)
+
+		store.tokens.setValue('he@[x]llo world')
+
+		expect(valueAtNotification).toBe('he@[x]llo world')
+		// The mark renders its VALUE, so the fixture's DOM reads 'hexllo world' where the
+		// projection reads 'he@[x]llo world'. Stated literally: reading the tree instead of
+		// `#committed` answers 'hexllo' here — the pre-edit DOM under the post-edit value.
+		expect(domAtNotification).toBe('hexllo world')
+	})
 })
 
 // ---------------------------------------------------------------------------
