@@ -11,8 +11,10 @@ export const Suggestions = () => {
 	const container = useMarkput(s => s.host.container)
 	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
-	const data = match?.option.overlay?.data ?? []
-	const filtered = useMemo(() => (match ? filterSuggestions(data, match.value) : []), [match, data])
+	const filtered = useMemo(
+		() => (match ? filterSuggestions(match.option.overlay?.data ?? [], match.value) : []),
+		[match]
+	)
 	const length = filtered.length
 
 	const activeRef = useRef(active)

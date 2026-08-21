@@ -2,6 +2,7 @@ import {memo, useCallback} from 'react'
 import type {Ref} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
+import type {BlockRow} from './Block'
 import {Block} from './Block'
 import {Token} from './Token'
 
@@ -31,7 +32,10 @@ export const Container = memo(() => {
 	return (
 		<Component {...props} ref={setRef}>
 			{isBlock
-				? nodes.map((n, i) => <Block key={n.id} node={n} blockIndex={i} />)
+				? nodes.map((n, i) => (
+						// oxlint-disable-next-line no-unsafe-type-assertion -- block-mode parse policy: parseRowsValue makes every root a RowNode
+						<Block key={n.id} node={n as BlockRow} blockIndex={i} />
+					))
 				: nodes.map(n => <Token key={n.id} node={n} depth={0} />)}
 		</Component>
 	)

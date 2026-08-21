@@ -11,12 +11,15 @@ import {Token} from './Token'
 
 import styles from '@markput/core/styles.module.css'
 
+// Not exported from core's public index: block layout's only root kind (RowNode), named locally.
+export type BlockRow = Extract<TreeNode, {kind: 'row'}>
+
 interface BlockProps {
-	node: TreeNode
+	node: BlockRow
 	blockIndex: number
 }
 
-const rowRender = (node: TreeNode) => () => (node.kind === 'row' ? node.children() : undefined)
+const rowRender = (node: BlockRow) => () => node.children()
 
 export const Block = memo(({node, blockIndex}: BlockProps) => {
 	const {blockStore, action, Component, slotProps, isDragging, tokens} = useMarkput(s => {
@@ -58,11 +61,9 @@ export const Block = memo(({node, blockIndex}: BlockProps) => {
 
 			<DragHandle node={node} blockIndex={blockIndex} />
 
-			{node.kind === 'row' ? (
-				node.children().map(child => <Token key={child.id} node={child} depth={0} />)
-			) : (
-				<Token node={node} depth={0} />
-			)}
+			{node.children().map(child => (
+				<Token key={child.id} node={child} depth={0} />
+			))}
 
 			<DropIndicator node={node} position="after" />
 

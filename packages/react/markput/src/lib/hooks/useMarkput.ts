@@ -1,11 +1,10 @@
 import {computed, watch, readSelected} from '@markput/core'
-import type {Computed, SignalValues, Store, Selectable, ObjectSelector} from '@markput/core'
+import type {SignalValues, Store, Selectable, ObjectSelector} from '@markput/core'
 import {useSyncExternalStore, useContext, useRef} from 'react'
 
 import {StoreContext} from '../providers/StoreContext'
 
 type StableRef = {
-	derived: Computed<unknown>
 	subscribe: (cb: () => void) => () => void
 	getSnapshot: () => unknown
 }
@@ -25,7 +24,6 @@ export function useMarkput(selector: (store: Store) => Selectable<unknown> | Obj
 		const derived = computed((): unknown => readSelected(target))
 
 		stableRef.current = {
-			derived,
 			subscribe: cb => watch(derived, cb),
 			getSnapshot: () => derived(),
 		}
