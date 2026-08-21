@@ -161,7 +161,8 @@ length, "the edit is born in the Token" is not representable.*
 ### Phase 4 — the concept sweep
 
 Only then recount the eight and remove whatever is left without a cause. See
-[issue 06](issues/06-concept-sweep.md).
+[issue 06](issues/06-concept-sweep.md). The API acceptance criterion for this phase is
+[The target surface](#the-target-surface).
 
 ## What each phase buys
 
@@ -172,6 +173,37 @@ Only then recount the eight and remove whatever is left without a cause. See
 | Phase 2 — local parse | — | — | — | ~~half~~ withdrawn |
 | Phase 3 — local address | **✓** | `gapWindow`, the echo protocol, `#committed` | — | ~~half~~ withdrawn |
 | Phase 4 — sweep | — | 1–2 pipeline concepts | — | — |
+
+## The target surface
+
+Stated by the maintainer 2026-08-21: a minimal API even for internal use — one owner,
+no low-level surface left standing. This is an acceptance criterion for phase 4, not a
+phase of its own. The 18 low-level members on `TokenModel` exist because editing is born
+outside the token layer, so keyboard/clipboard/edit each pull the primitive they need;
+G1 removes the cause, the sweep collects the bodies.
+
+The criterion: **the token layer's internal and public surface are the same surface** —
+about a dozen members. No DOM addresses (nodes, offsets) and no absolute string offsets
+cross the feature boundary; geometry (`caretRect`) and element hand-over (the refs) are
+the deliberate exceptions. Write verbs live on nodes, per the 2026-08-04 model-centric
+choice — not on the model.
+
+Target: `nodes`, `find`, `handle`, `committed`, `value`, `selection`, `setValue`,
+`focus`, `caretRect`, `selectedContent`, plus the three adapter ref callbacks
+(`control`, `children`, `consign`) — the part that cannot shrink, because the
+frameworks must hand elements over. `Store.tokens` is then typed as this surface and
+nothing else; no second, wider internal view.
+
+Where today's members go:
+
+| Today | Fate |
+| --- | --- |
+| `domAnchors`, `handleAt`, `anchorFor`, `step`, `adjacentMark` | Die inside the feature: `beforeInput` lowers to intents, the anchor math goes private |
+| `replaceBetween`, `setValueEnteringRoot`, `anchorAt` | Edit-path internals. Two verbs survive on the one owner — user edit (moves the caret) and programmatic write (repair-only). The refuted EditController fold stays refuted: what was refuted is the *mechanical* fold under string-first architecture; the contract split (selection.spec AC-3.x) survives as two verbs |
+| `valueBetween`, `rootIndexOf` | Block ops become node verbs (`moveTo`/`duplicate`/…); BlockStore already resolves the index from the tree |
+| `domSelection` | Fold into `caretRect` or one caret-context read — unverified; check what `OverlayController` actually reads first |
+| `focusFirst` | Becomes `focus()` — `MarkputHandle`'s one need |
+| `placeCaret`, `selectRange`, `placeAtHandle`, `bound` | Zero production callers, or caret plumbing. The KEEP+mark rulings were made for the current world; whether they fall is a maintainer decision at sweep time, once specs get a direct driver entry |
 
 ## Out of scope, deliberately
 
