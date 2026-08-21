@@ -540,13 +540,20 @@ and refuted. Do not re-propose without new evidence.
   corrects in the same frame, and it cannot steal focus the way it could under
   the N-editing-host topology the latch was designed in. Gate:
   `seam/pendingWindow.spec.ts`.
-- **Deleting the `#committed` mirror** (refuted by measurement, 2026-08-20).
-  Folding `value` onto `#tree.value()` in one batch breaks the pinned mount
-  clock contract — the committed pulse is lost to pre-mount subscribers
-  (`TokenModel.clocks.spec` red). Deleting the mirror WITHOUT the batch is
-  suite-green but silently inverts the value-vs-committed flush order. The
-  mirror stays: one writer, content is the tree's own projection, drift is
-  unrepresentable.
+- ~~**Deleting the `#committed` mirror**~~ — refuted 2026-08-20, then DONE
+  2026-08-22, and the sequence is the point. Both refusals were real: folding
+  `value` onto the tree in one batch lost the mount clock pulses, and deleting
+  the mirror without the batch silently inverted the value-vs-DOM order (a
+  subscriber handed the new string over the previous generation's document —
+  now pinned by `TokenModel.clocks.spec`'s "a value subscriber sees a DOM that
+  already matches"). What neither refusal saw was that the first failure was a
+  BUG in our own event primitive: `eventReadOper` consumed a shared dirty flag,
+  so a `watch` registered during the batch cancelled delivery for everyone
+  queued behind it. Fixing that (`shared/signals/eventDelivery.spec.ts`) made
+  the atomic commit work, and the mirror came out with nothing to compensate
+  for. **The lesson to carry, not the verdict:** a refutation is evidence about
+  the code as it stands, never a permanent no — check whether the obstacle is
+  ours to remove.
 - **The change feed** (`{added, removed, updated}` ids on `committed`, derived
   by a ledger module). Deleted once the block store moved to a `WeakMap` and
   left it with zero core readers; the spec oracles moved to

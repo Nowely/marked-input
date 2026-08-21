@@ -165,19 +165,21 @@ export class TokenModel {
 	// ═══ Engine SPI (in-core consumers) ═══════════════════════════════════════
 
 	/**
-	 * THE value read: controlled → the props value; uncontrolled → the last COMMITTED
-	 * projection. There is no separate uncontrolled string — the tree IS the store; its two
-	 * private inputs (`#seed`, `#committed`) are declared together in the internals section
-	 * below, and `#seeded` is derived from the tree beside them.
+	 * THE value read: controlled → the props value; uncontrolled → THE TREE'S OWN PROJECTION.
+	 * There is no second store and no mirrored string: the tree is the value, and `#seed`
+	 * answers only before it holds anything.
 	 *
-	 * The `#seeded` arm is load-bearing and its gate is NOT the obvious one: reduced to
-	 * `props.value() ?? this.#committed()`, the red case is `TokenModel.value.spec`'s "an
-	 * unmounted store reads defaultValue before anything has committed" — nothing has
-	 * committed there, so `#committed()` is `''`. A store that mounts is seeded by the
-	 * mount watch before the first read.
+	 * It read a `#committed` mirror — the projection copied out after each commit — until the
+	 * commit became atomic. The copy existed to make `value` the LAST thing a commit
+	 * invalidated, because adoption's batch used to flush before the DOM caught up, handing a
+	 * subscriber a new string over an old document. One batch around the fold makes that
+	 * unrepresentable, so the derivation can name its source directly.
+	 *
+	 * The `#seeded` arm is load-bearing: without it, `TokenModel.value.spec`'s "an unmounted
+	 * store reads defaultValue before anything has committed" reads the empty tree.
 	 */
 	readonly value: Computed<string> = computed(
-		() => this.props.value() ?? (this.#seeded() ? this.#committed() : this.#seed())
+		() => this.props.value() ?? (this.#seeded() ? this.#tree.value() : this.#seed())
 	)
 
 	/**
@@ -559,17 +561,6 @@ export class TokenModel {
 	 * stored form had to be a signal rather than a plain flag.
 	 */
 	readonly #seeded = () => this.#tree.roots().length > 0
-	/**
-	 * The commit-generation marker: `join(tree)` as of the last COMPLETED commit, written by
-	 * the boundary's `onResult` AFTER `pipeline.apply`. {@link value} reads this and never
-	 * `#tree.value()` directly, because `adopt()` writes `tree.roots` inside its own `batch`
-	 * whose flush would notify value subscribers while the token view is still stale
-	 * (`seam/TokenModel.parse.spec.ts`'s "the live tree is updated when value.current
-	 * fires"). Not a second store: one writer, and its content is the tree's own projection
-	 * read at that instant, so drift is unrepresentable — its deletion is refuted in the
-	 * README's list.
-	 */
-	readonly #committed = signal({initial: ''})
 
 	readonly #boundary = createBoundary({
 		tree: this.#tree,
@@ -579,16 +570,14 @@ export class TokenModel {
 		controlled: () => this.props.value() !== undefined,
 		selection: () => this.selection.anchors(),
 		onChange: next => this.props.onChange()?.(next),
-		// Synchronous by contract, and ORDER IS LOAD-BEARING inside the `batch` that makes it
-		// observable: `#committed` is written AFTER `pipeline.apply` — publishing it first
-		// hands subscribers a new string over a stale token view — and `selection.repair` runs
-		// LAST, so an imperative post-edit caret (`EditController`) lands later in the same
-		// batch and wins by design. `changed` is an EVENT: at depth 0 it flushes its subscribers
-		// INSIDE `apply`, ahead of both writes — the batch is what holds them until all three land.
+		// Synchronous by contract, and the ORDER is load-bearing: `selection.repair` runs after
+		// `apply`, so an imperative post-edit caret (`EditController`) lands later in the same
+		// batch and wins by design. The batch here is nested inside the boundary's own — the
+		// commit is atomic as a whole — and it is kept because this pair has its own ordering
+		// to state.
 		onResult: result =>
 			batch(() => {
 				this.#pipeline.apply()
-				this.#committed(this.#tree.value())
 				this.selection.repair(result)
 			}),
 	})

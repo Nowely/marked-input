@@ -1,6 +1,6 @@
 # The token tree is the source of truth, the value string is its projection
 
-The editor originally held the value as a string and re-derived tokens from it, which meant nothing in the document had a stable identity across an edit. S1 inverted that: the tree owns reads and identity, and `value` is `joinNodes(roots)`. Writes still lower to a string splice and a full re-parse, so identity is _recovered_ after the fact by `adopt()` walking a window rather than _preserved_ by construction — that asymmetry is deliberate, and it is what pays for `gapWindow`, the echo protocol and the `#committed` mirror signal.
+The editor originally held the value as a string and re-derived tokens from it, which meant nothing in the document had a stable identity across an edit. S1 inverted that: the tree owns reads and identity, and `value` is `joinNodes(roots)`. Writes still lower to a string splice and a full re-parse, so identity is _recovered_ after the fact by `adopt()` walking a window rather than _preserved_ by construction — that asymmetry is deliberate, and it is what pays for `gapWindow` and the echo protocol. It also paid for a `#committed` mirror signal until 2026-08-22, when the commit became atomic (one batch around the fold) and `value` could name the tree directly.
 
 **Amended for row moves.** Recovery-after-the-fact has one case it cannot cover: a permutation
 of rows. Moving a row past a byte-identical one produces the SAME document, so no diff of the
