@@ -5,6 +5,7 @@ import {Parser} from '../parser/Parser'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {snapshot, stripIds} from './__testing__/snapshot'
 import {parseRowsValue} from './adopt'
+import {offsetOfAnchor} from './anchors'
 import {createTransactions} from './transactions'
 import {createTokenTree} from './tree'
 import type {Anchors, NodeAnchor, TextNode, TransactionResult, TreeNode} from './types'
@@ -86,6 +87,38 @@ describe('boundary: controlled', () => {
 		boundary.arrive('@[x](m)')
 		expect(tree.value()).toBe('@[x](m)')
 		expect(tree.roots()[1].id).toBe(secondMarkId) // the survivor is the one the exact window implies
+	})
+
+	it('resolves the CARET through the recorded window, not the gap-derived one', () => {
+		// The other half of what the record buys, and the visible one. The id assertion above
+		// cannot see it: both windows converge on the same string, so a value-level or
+		// structure-level check passes either way.
+		//
+		// Repeated content again, with the caret BETWEEN the two marks. Deleting the FIRST one
+		// should leave the caret where it was — at 0, before the survivor. `gapWindow` cannot
+		// tell that deletion from deleting the SECOND (same result string), reads the caret at 7
+		// as sitting at the START of a span deleted at 7-14, and leaves it at 7 — which in a
+		// 7-character document is the far side of the mark. The user would stop typing before a
+		// mention and resume after it.
+		const tree = createTokenTree(parser.parse('@[x](m)@[x](m)'))
+		const anchor: NodeAnchor = {after: tree.roots()[1]}
+		const results: TransactionResult[] = []
+		const boundary = createBoundary({
+			tree,
+			parser: () => parser,
+			controlled: () => true,
+			onChange: () => {},
+			selection: () => ({anchor, head: anchor}),
+			onResult: result => results.push(result),
+		})
+		const tx = createTransactions({tree, readOnly: () => false, sink: boundary.sink})
+		expect(offsetOfAnchor(tree.roots(), anchor)).toBe(7)
+
+		tx.applyRange({start: 0, end: 7, insertedLength: 0}, '')
+		boundary.arrive('@[x](m)')
+
+		const landed = results[0].selectionAfter
+		expect(landed && offsetOfAnchor(tree.roots(), landed.anchor)).toBe(0)
 	})
 
 	it('the tree moves on the arrival, not on the commit', () => {
