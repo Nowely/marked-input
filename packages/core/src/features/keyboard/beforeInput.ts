@@ -117,6 +117,33 @@ function inExplicitEditableIsland(origin: Node, container: HTMLElement): boolean
 	return false
 }
 
+export function anchorsForInput(store: KbCtx, event: InputEvent, anchors: Anchors): Anchors | undefined {
+	if (!event.inputType.startsWith('delete')) return anchors
+	return anchorsForDelete(store, event.inputType, anchors)
+}
+
+/**
+ * A collapsed delete EXPANDS: onto the adjacent MARK when the caret sits exactly on one of
+ * its boundaries — that is the mark swallow — else by one character in the delete's
+ * direction.
+ *
+ * Both arms resolve against the LIVE tree, so typing right before a mark and then deleting
+ * still swallows it. Gated by `input.spec`'s two "mark swallow" cases — MEASURED: inverting
+ * `direction` turns BOTH red, and either one alone would only pin "some mark got deleted".
+ * The browser suites (`Base/keyboard.{react,vue}.spec`) cover it end to end.
+ */
+export function anchorsForDelete(store: KbCtx, inputType: string, anchors: Anchors): Anchors | undefined {
+	if (!anchorEquals(anchors.anchor, anchors.head)) return anchors
+
+	const direction = inputType.endsWith('Backward') ? -1 : 1
+	const mark = store.tokens.adjacentMark(anchors.anchor, direction)
+	if (mark) return {anchor: {before: mark}, head: {after: mark}}
+
+	const stepped = store.tokens.step(anchors.anchor, direction)
+	if (!stepped) return undefined
+	return direction === -1 ? {anchor: stepped, head: anchors.head} : {anchor: anchors.anchor, head: stepped}
+}
+
 /** Where the edit would land: the event's own target range, else the event target. */
 function editOrigin(event: InputEvent): Node | undefined {
 	const ranges = event.getTargetRanges()

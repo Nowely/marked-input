@@ -5,9 +5,8 @@ import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'edit' | 'tokens' | 'props'>
 import {consumeMarkupPaste} from '../clipboard'
-import type {Anchors, NodeAnchor, TokenHandle, TreeNode} from '../tokens'
-import {anchorEquals} from '../tokens'
-import {anchorsFromInputEvent, dropUnexpressedInput, isConsumerKeyOrigin} from './beforeInput'
+import type {NodeAnchor, TokenHandle, TreeNode} from '../tokens'
+import {anchorsForInput, anchorsFromInputEvent, dropUnexpressedInput, isConsumerKeyOrigin} from './beforeInput'
 
 type ActiveRow = {
 	handle: TokenHandle
@@ -41,11 +40,7 @@ function rowFromAnchor(store: KbCtx, anchor: NodeAnchor | undefined): ActiveRow 
 	return handle && {handle, index}
 }
 
-function findActiveRow(store: KbCtx, target: Node | null): ActiveRow | undefined {
-	// A control (drag handle, block menu) is not a row: focusing it leaves the
-	// row's selection standing, and this keypress is not aimed at that row.
-	if (target && store.tokens.handleAt(target) === 'control') return undefined
-
+function findActiveRow(store: KbCtx): ActiveRow | undefined {
 	// THE two tiers, and the only ones: row identity is the selection's. DOM truth first;
 	// stored anchors cover the cases the DOM cannot answer — no window selection at all, or a
 	// range this layer declines to resolve.
@@ -69,9 +64,9 @@ export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'keydown', e => {
 		if (!store.props.layout.isBlock()) return
 		// The same consumer-origin test `enableInput`'s keydown tier takes, and for the same
-		// reason: `findActiveRow` below excluded CONTROLS only, so Backspace or Enter inside a
-		// consumer's editable island resolved a row from the stored selection and edited (or
-		// merged) it. A control root is still excluded there, where row identity is decided.
+		// reason: the handlers below key on the STORED selection, not on where the key was
+		// pressed, so Backspace or Enter inside a control or a consumer's editable island
+		// would resolve a row and edit (or merge) it.
 		if (isConsumerKeyOrigin(store, container, e)) return
 
 		// No arrow arm: one host makes cross-row caret movement native.
@@ -92,13 +87,11 @@ export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 }
 
 function handleDelete(store: KbCtx, event: KeyboardEvent) {
-	const active = findActiveRow(store, nodeTarget(event))
+	const active = findActiveRow(store)
 	if (!active) return
 	const {handle, index: blockIndex} = active
 
 	const rows = store.tokens.nodes()
-	if (blockIndex >= rows.length) return
-
 	const row = rows[blockIndex]
 
 	if (event.key === KEYBOARD.BACKSPACE) {
@@ -141,14 +134,6 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
-	const target = nodeTarget(event)
-	// The control verdict comes FIRST for the same reason it does in `input.ts`: the arm
-	// below keys on the STORED selection, not on where the event came from, so an Enter
-	// inside consumer chrome would wipe the document. `findActiveRow` asks the same
-	// question again further down; this one is not redundant, because the arm between them
-	// never reaches it.
-	if (target && store.tokens.handleAt(target) === 'control') return
-
 	// Everything selected: Enter REPLACES the document with one fresh row — the block
 	// analogue of inline's whole-value replace. Ahead of the row lookup, which would
 	// resolve the single row the selection merely STARTS in and split that one instead,
@@ -161,7 +146,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 		return
 	}
 
-	const active = findActiveRow(store, target)
+	const active = findActiveRow(store)
 	if (!active) return
 
 	event.preventDefault()
@@ -178,13 +163,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	store.edit.replace(at, at, store.props.separator())
 }
 
-function focusRow(store: KbCtx, row: TreeNode, rowIndex: number, caret: 'start' | 'end'): void {
-	if (row.kind === 'mark') {
-		// placeAtHandle reads the handle's current positions to disambiguate a shared boundary.
-		const handle = store.tokens.handle(row.id)
-		if (handle && store.tokens.placeAtHandle(handle, caret)) return
-	}
-
+function focusRow(store: KbCtx, rowIndex: number, caret: 'start' | 'end'): void {
 	// No focus call ahead of the placement: `placeCaret` focuses the editing host itself,
 	// and under one host that host is the container either way.
 	rowHandle(store, rowIndex)?.placeCaret(caret === 'start' ? 0 : Infinity)
@@ -198,7 +177,7 @@ function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: Inp
 	// sanctioned — `handleEnter` bails on the same missing row, and `input.ts` has already
 	// returned on `isBlock`), so it fails closed like every other unexpressed edit.
 	if (target && store.tokens.handleAt(target) === 'control') return
-	if (!findActiveRow(store, target)) {
+	if (!findActiveRow(store)) {
 		dropUnexpressedInput(container, event)
 		return
 	}
@@ -248,7 +227,11 @@ function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: Inp
 
 function replaceBlockRange(store: KbCtx, container: HTMLElement, event: InputEvent, replacement: string): void {
 	const anchors = anchorsFromInputEvent(store, event)
-	const target = anchors && anchorsForBlockInput(store, event, anchors)
+	// The shared mark swallow is safe here since issue 08: a block row is a RowNode, never a
+	// MarkNode, so `adjacentMark` can only answer an INLINE mark inside a row — a plain
+	// Backspace beside a mention deletes the mention, never a whole row. Row-level deletes
+	// are {@link handleDelete}'s, and it preventDefaults before this runs.
+	const target = anchors && anchorsForInput(store, event, anchors)
 	if (!target) {
 		dropUnexpressedInput(container, event)
 		return
@@ -256,25 +239,6 @@ function replaceBlockRange(store: KbCtx, container: HTMLElement, event: InputEve
 
 	event.preventDefault()
 	store.edit.replace(target.anchor, target.head, replacement)
-}
-
-/**
- * The same mark-swallow arm as `input.ts`, safe here since issue 08: a block row is a
- * RowNode, never a MarkNode, so `adjacentMark` can only answer an INLINE mark inside a
- * row — a plain Backspace beside a mention deletes the mention, never a whole row.
- * Row-level deletes are {@link handleDelete}'s, and it preventDefaults before this runs.
- */
-function anchorsForBlockInput(store: KbCtx, event: InputEvent, anchors: Anchors): Anchors | undefined {
-	if (!event.inputType.startsWith('delete')) return anchors
-	if (!anchorEquals(anchors.anchor, anchors.head)) return anchors
-
-	const direction = event.inputType.endsWith('Backward') ? -1 : 1
-	const mark = store.tokens.adjacentMark(anchors.anchor, direction)
-	if (mark) return {anchor: {before: mark}, head: {after: mark}}
-
-	const stepped = store.tokens.step(anchors.anchor, direction)
-	if (!stepped) return undefined
-	return direction === -1 ? {anchor: stepped, head: anchors.head} : {anchor: anchors.anchor, head: stepped}
 }
 
 function mergeOrFocusNeighbor(
@@ -291,5 +255,5 @@ function mergeOrFocusNeighbor(
 	// The verb ANSWERS whether the pair had a boundary to remove, so the separate
 	// `canMergeRows` predicate is gone: asking and then doing was two readings of one question.
 	if (a.mergeWith(b)) return
-	focusRow(store, rows[toIndex], toIndex, caretOnFocus)
+	focusRow(store, toIndex, caretOnFocus)
 }
