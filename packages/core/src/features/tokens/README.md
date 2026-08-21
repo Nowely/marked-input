@@ -268,15 +268,12 @@ handleAt(node) // handle | 'control' | undefined for a DOM node
 
 // DOM↔model facade — anchors in both directions; no absolute offsets
 anchorFor(node, offset, affinity?)   // DOM (node, offset) → NodeAnchor in the LIVE tree
-placeCaret(anchor: NodeAnchor)       // collapsed caret, through the anchor's OWN node
-selectRange(anchor, head)            // order-insensitive; normalized in DOM order
-domSelection(): SelectionSnapshot | undefined // THE raw window-selection read
 caretRect(): DOMRect | undefined     // viewport rect of the caret/selection, on demand
 selectedContent(): {html; text} | undefined // selection serialized for clipboard
 
 // the selection driver's reads, delegated (the driver itself is private)
 domAnchors(): Anchors | undefined    // DOM TRUTH as anchors
-focusFirst() / placeAtHandle(handle, boundary?)
+focusFirst()
 
 // the tree layer's own coordinate boundary — the ONE place a number may be formed.
 // Only this direction is public; its inverse is a private `offsetOf` closure in the
@@ -286,6 +283,14 @@ anchorAt(offset)
 // whole-value entry into a row, so a caller never forms an absolute offset
 setValueEnteringRoot(text, rootIndex)
 ```
+
+**Not here, deliberately** (API-surface cut, 2026-08-21): `placeCaret`,
+`selectRange`, `domSelection` and `placeAtHandle` were one-line pass-throughs with no
+production caller — the driver and the controllers reach `DomModel` directly, and only
+specs went through the model. They live on their owners (`dom/DomModel`,
+`dom/SelectionDriver`); specs reach a `DomModel` through `__testing__/mountFixtures`'s
+`domModelOf`. The target for the whole surface is in [the token-born-edit
+spec](../../../../../docs/scratch/token-born-edit/spec.md#the-target-surface).
 
 There is no manual editable-state override. `setEditable` used to be one, and had
 no caller anywhere: `props.readOnly` owns the container's `contenteditable`
@@ -300,7 +305,7 @@ bind effect is live.
 
 ### The selection snapshot
 
-`domSelection()` returns one `SelectionSnapshot` of the live window selection, or
+`DomModel.selection()` returns one `SelectionSnapshot` of the live window selection, or
 `undefined` when there is no range (unfocused / nothing selected). One read, not
 a set of per-field micro-reads:
 
@@ -312,7 +317,7 @@ type SelectionSnapshot = {
 ```
 
 A consumer that treats "no selection" as collapsed compares
-`domSelection()?.range.collapsed !== false`. The caret's viewport rect is not on
+`selection()?.range.collapsed !== false`. The caret's viewport rect is not on
 the snapshot — `caretRect()` computes it only when asked, so a `selectionchange`
 snapshot forces no layout.
 
@@ -445,9 +450,8 @@ ref fires, and that absence is the whole of the refusal (ADR-0008).
 
 Split in two by owner, and owned HERE. There is no `features/selection/` and no
 `store.selection`: `TokenModel` constructs both halves, publishes the state as
-`tokens.selection` and delegates the driver's three externally-needed reads
-(`domAnchors`, `focusFirst`, `placeAtHandle`) the same way it delegates
-`DomModel`'s.
+`tokens.selection` and delegates the driver's two externally-needed reads
+(`domAnchors`, `focusFirst`) the same way it delegates `DomModel`'s.
 
 There is no construction cycle around it: the string boundary calls
 `this.selection.anchors()` / `this.selection.repair(result)` directly, with no
@@ -478,12 +482,12 @@ an explicit type annotation to keep `tsc` off TS7022.
 
 ## Caret placement by handle
 
-`TokenModel.placeCaret(anchor)` resolves the anchor's OWN node and lowers onto
+`DomModel.placeCaret(anchor)` resolves the anchor's OWN node and lowers onto
 `TokenHandle.placeCaret(localOffset)`; `selectRange(anchor, head)` does the same
 for both ends and normalizes them in DOM order. The two document edges (`'start'`
-/ `'end'`) resolve against the live roots. `TokenModel.placeAtHandle(handle,
-boundary)` (the driver's, delegated) places at a handle's start/end. All of it
-fails closed against a dead or mid-window handle: a node with no live handle
+/ `'end'`) resolve against the live roots. `SelectionDriver.placeAtHandle(handle,
+boundary)` places at a handle's start/end — `focusFirst`'s own lowering, and the
+only caller. All of it fails closed against a dead or mid-window handle: a node with no live handle
 declines, and the `tokens.bound` re-apply places the caret once the bind
 lands. Nothing searches the bound surfaces for a nearest position.
 

@@ -17,18 +17,21 @@ import type {TextNode} from '../tree/types'
 import {DomModel} from './DomModel'
 
 describe('SelectionDriver', () => {
-	it('repeated placement at the same handle notifies once', () => {
+	it('repeated placement at the same node notifies once', () => {
 		// The stored form is anchors, so the dedupe under test is anchor IDENTITY. It watches
 		// those anchors DIRECTLY since S2.6 — until then it watched the derived numeric
 		// `range`, whose own `{equals: shallow}` collapsed the second notification whatever
 		// `anchorEquals` did, which is why the case below had to exist to gate it.
+		//
+		// `selectNode` IS the write `focusFirst`'s placement performs (`placeAtHandle` lowers
+		// onto it); the model's pass-through to that method came off with the API-surface cut,
+		// and the dedupe it exercised is the stored write's, which this reaches directly.
 		const {store, container} = mountStructuralInline('hello')
-		const handle = store.tokens.handle(store.tokens.nodes()[0].id)
-		if (!handle) throw new Error('Structural text token did not bind a handle')
+		const node = store.tokens.nodes()[0]
 		const notify = vi.fn()
 		const stop = watch(() => store.tokens.selection.anchors(), notify)
-		store.tokens.placeAtHandle(handle, 'start')
-		store.tokens.placeAtHandle(handle, 'start')
+		store.tokens.selection.selectNode(node, 'start')
+		store.tokens.selection.selectNode(node, 'start')
 		expect(notify).toHaveBeenCalledTimes(1)
 		stop()
 		container.remove()
@@ -55,10 +58,11 @@ describe('SelectionDriver', () => {
 		const {store, container} = mountStructuralInlineMark('ab@[x]cd')
 		const roots = store.tokens.nodes()
 		const markNode = roots[1]
-		const markHandle = store.tokens.handle(markNode.id)
-		if (!markHandle) throw new Error('Mark token did not bind a handle')
+		// The handle still has to be BOUND for the placement to reach the DOM; the write
+		// itself is the stored one `placeAtHandle` lowers onto.
+		if (!store.tokens.handle(markNode.id)) throw new Error('Mark token did not bind a handle')
 
-		expect(store.tokens.placeAtHandle(markHandle, 'start')).toBe(true)
+		expect(store.tokens.selection.selectNode(markNode, 'start')).toBe(true)
 
 		// WHERE THE CARET LANDED, not what took focus: mark roots are not tab stops under the
 		// one-host topology, so `document.activeElement` — the old witness — names the editing

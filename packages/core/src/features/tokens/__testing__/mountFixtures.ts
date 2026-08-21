@@ -1,6 +1,31 @@
 import {Store} from '../../../store/Store'
+import {DomModel} from '../dom/DomModel'
+import type {TokenModel} from '../seam/TokenModel'
 import {offsetOfAnchor} from '../tree/anchors'
 import type {NodeAnchor, TreeNode} from '../tree/types'
+
+/**
+ * A `DomModel` over a mounted store — the DOM reads and placement commands that used to be
+ * one-line pass-throughs on `TokenModel`. They had no production caller: the driver and the
+ * controllers reach the model's own `DomModel` directly, so the facade methods existed for
+ * these specs alone and came off with the API-surface cut.
+ *
+ * A SECOND instance is sound and not a weaker subject: `DomModel` is stateless by contract,
+ * and the two reads that touch the model at all (`placeCaret`, `selectRange`) are handed the
+ * store's own `find`/`handle`, so they resolve the same handles against the same document.
+ * `byElement`/`isControlRoot` answer empty because only `handleAt` reads them, and that one
+ * stays on the model.
+ */
+export function domModelOf(tokens: TokenModel, container: HTMLElement): DomModel {
+	return new DomModel({
+		container: () => container,
+		byElement: () => undefined,
+		isControlRoot: () => false,
+		roots: () => tokens.nodes(),
+		find: id => tokens.find(id),
+		handle: id => tokens.handle(id),
+	})
+}
 
 /**
  * A document offset as the anchor `EditController.replace` takes. TEST-ONLY: the production

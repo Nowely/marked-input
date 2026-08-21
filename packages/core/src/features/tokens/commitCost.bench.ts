@@ -2,6 +2,7 @@ import {bench, describe} from 'vitest'
 
 import {batch} from '../../shared/signals'
 import {Store} from '../../store/Store'
+import {domModelOf} from './__testing__/mountFixtures'
 import {Parser} from './parser/Parser'
 import type {Markup, RowToken, Token} from './parser/types'
 import {adopt, parseRowsValue, parseValue} from './tree/adopt'
@@ -402,15 +403,19 @@ function caretOnlyKeystroke(doc: Doc, dirtyLayout = false): Keystroke {
 	mountDom(store, doc)
 	store.tokens.focusFirst()
 	const container = document.body.lastElementChild
+	if (!(container instanceof HTMLElement)) throw new Error('expected the mounted container')
+	// The placement command is `DomModel`'s own since the API-surface cut; the rung measures
+	// the same single selection write it always did.
+	const dom = domModelOf(store.tokens, container)
 	let there = false
 	return () => {
 		// C2 only: touch the DOM first, so the caret write lands on a DIRTY layout the way it
 		// does inside a real commit (the per-Surface effects have just written text). C1 leaves
 		// layout clean, which is the whole difference under test.
-		if (dirtyLayout && container?.lastElementChild instanceof HTMLElement) {
+		if (dirtyLayout && container.lastElementChild instanceof HTMLElement) {
 			container.lastElementChild.textContent = there ? 'a' : 'b'
 		}
-		store.tokens.placeCaret(store.tokens.anchorAt(there ? doc.pos : doc.pos + 1))
+		dom.placeCaret(store.tokens.anchorAt(there ? doc.pos : doc.pos + 1))
 		there = !there
 		sink += 1
 	}
@@ -527,7 +532,8 @@ function focusedKeystroke(doc: Doc): Keystroke {
 function settleCaretAt(store: Store, doc: Doc): void {
 	store.tokens.focusFirst()
 	store.tokens.selection.select(store.tokens.anchorAt(doc.pos))
-	store.tokens.placeCaret(store.tokens.anchorAt(doc.pos))
+	const container = store.host.container()
+	if (container) domModelOf(store.tokens, container).placeCaret(store.tokens.anchorAt(doc.pos))
 }
 
 const options = {time: 1000, warmupTime: 200} as const

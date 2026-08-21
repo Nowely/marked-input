@@ -2,6 +2,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals/index.js'
 import {Host, PropsModel} from '../../state'
+import {domModelOf} from '../__testing__/mountFixtures'
 import {textToken} from '../__testing__/tokenFactories'
 import type {SelectionSnapshot} from '../dom/DomModel'
 import {TokenHandle} from '../dom/TokenHandle'
@@ -160,7 +161,9 @@ describe('TokenModel shell (seam/)', () => {
 			expect(model.anchorFor(document.body, 0)).toBeUndefined()
 			expect(model.handleAt(document.body)).toBeUndefined()
 			expect(model.handle(0)).toBeUndefined()
-			expect(model.placeCaret('start')).toBe(false)
+			// The placement half of the same soft failure, now on its own owner: an unmounted
+			// model has no roots, so the edge anchor resolves to no node and nothing is placed.
+			expect(domModelOf(model, document.createElement('div')).placeCaret('start')).toBe(false)
 		})
 
 		it('commits while DETACHED without touching a DOM it no longer drives', () => {
@@ -385,26 +388,32 @@ describe('TokenModel shell (seam/)', () => {
 		})
 	})
 
+	// The placement commands and the raw snapshot read are `DomModel`'s own — they came off
+	// the model with the API-surface cut, having never had a production caller. What is still
+	// under test here is the pairing: a caret placed through the anchor's OWN node resolves
+	// back through `anchorFor`, which stays on the model because `beforeInput` reads it.
 	describe('placement commands and selection reads', () => {
 		it("placeCaret places inside the anchor's own surface; the snapshot reads it back", () => {
-			const {model, text1} = mountNewInline()
+			const {model, container, text1} = mountNewInline()
+			const dom = domModelOf(model, container)
 
-			expect(model.placeCaret(model.anchorAt(1))).toBe(true)
-			expect(model.anchorFor(...boundaryOf(model.domSelection()))).toEqual({node: model.nodes()[0], offset: 1})
-			const range = model.domSelection()?.range
+			expect(dom.placeCaret(model.anchorAt(1))).toBe(true)
+			expect(model.anchorFor(...boundaryOf(dom.selection()))).toEqual({node: model.nodes()[0], offset: 1})
+			const range = dom.selection()?.range
 			expect(range?.startContainer).toBe(text1.firstChild)
 			expect(range?.collapsed).toBe(true)
 			expect(model.caretRect()).toBeDefined()
-			expect(model.domSelection()?.focusNode).toBe(range?.startContainer)
+			expect(dom.selection()?.focusNode).toBe(range?.startContainer)
 		})
 
 		it("handle.placeCaret targets the handle's token explicitly", () => {
-			const {model} = mountNewInline()
+			const {model, container} = mountNewInline()
+			const dom = domModelOf(model, container)
 			const token = model.nodes()[2] // text 'llo' [6,9]
 			const handle = model.handle(token.id!)
 			if (!handle) throw new Error('expected handle')
 			expect(handle.placeCaret(1)).toBe(true)
-			expect(model.anchorFor(...boundaryOf(model.domSelection()))).toEqual({node: model.nodes()[2], offset: 1})
+			expect(model.anchorFor(...boundaryOf(dom.selection()))).toEqual({node: model.nodes()[2], offset: 1})
 			// A foreign token object (never reconciled) carries no id, so it has no
 			// live handle — the stale reference is rejected at resolution, leaving
 			// nothing to place into.
@@ -413,10 +422,11 @@ describe('TokenModel shell (seam/)', () => {
 		})
 
 		it('selectRange spans two text surfaces and the reads see the selection', () => {
-			const {model} = mountNewInline()
+			const {model, container} = mountNewInline()
+			const dom = domModelOf(model, container)
 
-			expect(model.selectRange(model.anchorAt(0), model.anchorAt(9))).toBe(true)
-			const range = model.domSelection()?.range
+			expect(dom.selectRange(model.anchorAt(0), model.anchorAt(9))).toBe(true)
+			const range = dom.selection()?.range
 			expect(model.anchorFor(range!.startContainer, range!.startOffset, 'after')).toEqual({
 				node: model.nodes()[0],
 				offset: 0,
@@ -425,7 +435,7 @@ describe('TokenModel shell (seam/)', () => {
 				node: model.nodes()[2],
 				offset: 3,
 			})
-			expect(model.domSelection()?.range.collapsed).toBe(false)
+			expect(dom.selection()?.range.collapsed).toBe(false)
 			const content = model.selectedContent()
 			expect(content?.text).toContain('he')
 		})

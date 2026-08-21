@@ -9,7 +9,6 @@ import {createControlRoots} from '../dom/controlRoots'
 import type {ControlRoots} from '../dom/controlRoots'
 import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
-import type {SelectionSnapshot} from '../dom/DomModel'
 import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
@@ -82,8 +81,7 @@ export class TokenModel {
 	/**
 	 * THE selection state: a pair of `NodeAnchor`s and their derivations, DOM-free. Its DOM
 	 * half is the private {@link SelectionDriver} declared in the internals section, whose
-	 * reads are exposed here as {@link domAnchors} / {@link focusFirst} /
-	 * {@link placeAtHandle}.
+	 * reads are exposed here as {@link domAnchors} / {@link focusFirst}.
 	 */
 	readonly selection: Selection = createSelection({
 		// A bag of CLOSURES, none of them read before the first verb call — the ONLY reason this
@@ -303,15 +301,6 @@ export class TokenModel {
 		return this.#dom.anchorFor(node, offset, affinity)
 	}
 
-	/**
-	 * THE raw selection read: one snapshot of the live window selection (see
-	 * {@link DomModel.selection}). The `dom*` prefix is the same authority marker
-	 * {@link domAnchors} carries — {@link selection} is the stored anchors.
-	 */
-	domSelection(): SelectionSnapshot | undefined {
-		return this.#dom.selection()
-	}
-
 	/** Viewport rect of the caret/selection (see {@link DomModel.caretRect}). */
 	caretRect(): DOMRect | undefined {
 		return this.#dom.caretRect()
@@ -327,29 +316,9 @@ export class TokenModel {
 		this.#selectionDriver.focusFirst()
 	}
 
-	/**
-	 * Place the caret at a bound handle's start/end; see {@link SelectionDriver.placeAtHandle}.
-	 * Deliberately kept without a production caller (the focusRow arm was its last): spec-facing —
-	 * the only test entry into the private driver — and public-reachable through the exported
-	 * Store, the `api.focus()` precedent.
-	 */
-	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {
-		return this.#selectionDriver.placeAtHandle(handle, boundary)
-	}
-
 	/** Current selection serialized for clipboard use. */
 	selectedContent(): {html: string; text: string} | undefined {
 		return this.#dom.selectedContent()
-	}
-
-	/** Place a collapsed caret at a node anchor (see {@link DomModel.placeCaret}). */
-	placeCaret(anchor: NodeAnchor): boolean {
-		return this.#dom.placeCaret(anchor)
-	}
-
-	/** Select between two node anchors, in either order (see {@link DomModel.selectRange}). */
-	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean {
-		return this.#dom.selectRange(anchor, head)
 	}
 
 	// ═══ Wiring ═══════════════════════════════════════════════════════════════
