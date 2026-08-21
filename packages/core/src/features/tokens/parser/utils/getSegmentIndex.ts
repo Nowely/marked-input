@@ -1,16 +1,14 @@
 /**
- * Creates a value-specific index using djb2 hash algorithm for dynamic segments
- * For static segments, returns the base index directly to avoid unnecessary hashing
+ * Creates a value-specific index for a dynamic segment by hashing its matched text (djb2),
+ * so a closing tag only dequeues the match that opened with the same value.
+ *
+ * Callers pass only dynamic segments; static segments keep their raw registry index.
  *
  * @param baseIndex - The base index of the segment type
- * @param value - The actual value of the segment (optional, for dynamic segments only)
- * @returns Value-specific index for dynamic segments, or base index for static segments
+ * @param value - The matched text of the dynamic segment (never empty: the pattern captures 1+ chars)
+ * @returns Value-specific index for the dynamic segment
  */
-export function getSegmentIndex(baseIndex: number, value?: string): number {
-	if (!value) {
-		return baseIndex
-	}
-
+export function getSegmentIndex(baseIndex: number, value: string): number {
 	let hash = 5381
 	for (let i = 0; i < value.length; i++) {
 		hash = (hash * 33) ^ value.charCodeAt(i)
