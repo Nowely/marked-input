@@ -191,7 +191,7 @@ function sliceWithin(nodes: readonly TreeNode[], start: number, end: number): st
 	return result
 }
 
-/** The string projection: mirrors parser/utils/toString over live nodes. */
+/** The string projection: mirrors parser/__testing__/toString over live nodes. */
 export function joinNodes(nodes: readonly TreeNode[]): string {
 	let result = ''
 

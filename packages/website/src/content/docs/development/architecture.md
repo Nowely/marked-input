@@ -359,7 +359,7 @@ Signal subscription order is significant: inside its constructor `onMounted` hoo
 | **BlockController**           | Drag-and-drop block reordering and operation helpers     |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
-`KeyboardController` internally composes two modules: `enableInput` (the `beforeinput` guard, paste, the delete keys and Ctrl/Cmd+A) and `enableBlockEdit` (row split, merge and delete in block layout). Caret navigation is the browser's: the container is the one editing host, so arrows and Home/End move natively and no core keyboard handler intercepts them. (The adapters' `Suggestions` component does claim ArrowUp/ArrowDown/Enter while the overlay is open — see `navigateSuggestions`.) The selection is not a feature of its own: `store.tokens.selection` is the stored anchor pair (see below).
+`KeyboardController` internally composes two modules: `enableInput` (the `beforeinput` guard, paste, the delete keys and Ctrl/Cmd+A) and `enableBlockEdit` (row split, merge and delete in block layout). Caret navigation is the browser's: the container is the one editing host, so arrows and Home/End move natively and no core keyboard handler intercepts them. (Core's `SuggestionsModel` does claim ArrowUp/ArrowDown/Enter while the built-in `Suggestions` component is mounted — the adapter component only activates it.) The selection is not a feature of its own: `store.tokens.selection` is the stored anchor pair (see below).
 
 ## Lifecycle Timing
 

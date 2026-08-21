@@ -17,8 +17,7 @@ export class ClipboardController {
 				this.#handleCopy(e)
 			})
 			listen(container, 'cut', e => {
-				if (!this.#handleCopy(e)) return
-				const anchors = this.#selected()
+				const anchors = this.#handleCopy(e)
 				if (!anchors) return
 				edit.replace(anchors.anchor, anchors.head, '')
 			})
@@ -32,12 +31,12 @@ export class ClipboardController {
 		return anchors
 	}
 
-	#handleCopy(e: ClipboardEvent): boolean {
+	#handleCopy(e: ClipboardEvent): Anchors | undefined {
 		const anchors = this.#selected()
-		if (!anchors) return false
+		if (!anchors) return
 
 		const content = this.tokens.selectedContent()
-		if (!content) return false
+		if (!content) return
 
 		e.preventDefault()
 		e.clipboardData?.setData('text/plain', content.text)
@@ -45,6 +44,6 @@ export class ClipboardController {
 		// The markup entry is the LIVE tree's own projection of the copied span, so a copy
 		// right after typing is fresh by construction — there is no snapshot to fall behind.
 		e.clipboardData?.setData(MARKPUT_MIME, this.tokens.valueBetween(anchors.anchor, anchors.head))
-		return true
+		return anchors
 	}
 }

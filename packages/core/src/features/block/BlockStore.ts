@@ -1,35 +1,7 @@
 import {signal} from '../../shared/signals'
-import type {DragAction, DragActions} from '../../shared/types'
+import type {DragAction} from '../../shared/types'
 
-function getDragDropPosition(clientY: number, rect: DOMRect): 'before' | 'after' {
-	return clientY < rect.top + rect.height / 2 ? 'before' : 'after'
-}
-
-function parseDragSourceIndex(dataTransfer: DataTransfer): number | null {
-	const index = parseInt(dataTransfer.getData('text/plain'), 10)
-	return isNaN(index) ? null : index
-}
-
-function getDragTargetIndex(blockIndex: number, position: 'before' | 'after'): number {
-	return position === 'before' ? blockIndex : blockIndex + 1
-}
-
-/**
- * Returns true when `target` is outside `element` (i.e. not contained by it).
- * Useful for closing a menu when the user clicks outside of it.
- */
-function isClickOutside(target: EventTarget | null, element: Element | null): boolean {
-	return !!element && !element.contains(target instanceof Node ? target : null)
-}
-
-/**
- * Returns true when the keyboard event is the Escape key.
- */
-function isEscapeKey(e: KeyboardEvent): boolean {
-	return e.key === 'Escape'
-}
-
-export type DropPosition = 'before' | 'after' | null
+type DropPosition = 'before' | 'after' | null
 
 // Per-event-target overloads infer the correct event type per handler key
 // (mouseenter → MouseEvent, dragover → DragEvent, etc.). Call sites stay
@@ -64,15 +36,21 @@ export class BlockStore {
 		menuPosition: signal({initial: {top: 0, left: 0}}),
 	}
 
-	#blockIndex = 0
-	#dragAction: DragActions['action'] | null = null
+	readonly #action: (action: DragAction) => void
+	readonly #blockIndex: () => number
 	#cleanupContainer?: () => void
 	#cleanupGrip?: () => void
 	#cleanupMenu?: () => void
 
-	attachContainer(el: HTMLElement | null, blockIndex: number, actions: DragActions) {
+	// The index is a READER, not a fed number: the store outlives renders, so a copy goes
+	// stale as soon as a row above it appears or disappears. During a drag the tree is
+	// static, so the live read equals what a render would have fed.
+	constructor(action: (action: DragAction) => void, blockIndex: () => number) {
+		this.#action = action
 		this.#blockIndex = blockIndex
-		this.#dragAction = actions.action
+	}
+
+	attachContainer(el: HTMLElement | null) {
 		if (el === this.refs.container) return
 		this.#cleanupContainer?.()
 		this.refs.container = el
@@ -86,9 +64,7 @@ export class BlockStore {
 		})
 	}
 
-	attachGrip(el: HTMLButtonElement | null, blockIndex: number, actions: DragActions) {
-		this.#blockIndex = blockIndex
-		this.#dragAction = actions.action
+	attachGrip(el: HTMLButtonElement | null) {
 		this.#cleanupGrip?.()
 		if (!el) return
 		this.#cleanupGrip = wireListeners(el, {
@@ -108,15 +84,16 @@ export class BlockStore {
 	}
 
 	closeMenu = () => this.state.menuOpen(false)
-	addBlock = () => this.#emitAndClose({type: 'add', afterIndex: this.#blockIndex})
-	deleteBlock = () => this.#emitAndClose({type: 'delete', index: this.#blockIndex})
-	duplicateBlock = () => this.#emitAndClose({type: 'duplicate', index: this.#blockIndex})
+	addBlock = () => this.#emitAndClose({type: 'add', afterIndex: this.#blockIndex()})
+	deleteBlock = () => this.#emitAndClose({type: 'delete', index: this.#blockIndex()})
+	duplicateBlock = () => this.#emitAndClose({type: 'duplicate', index: this.#blockIndex()})
 
 	#onContainerDragOver(e: DragEvent, el: HTMLElement) {
 		if (!e.dataTransfer) return
 		e.preventDefault()
 		e.dataTransfer.dropEffect = 'move'
-		this.state.dropPosition(getDragDropPosition(e.clientY, el.getBoundingClientRect()))
+		const rect = el.getBoundingClientRect()
+		this.state.dropPosition(e.clientY < rect.top + rect.height / 2 ? 'before' : 'after')
 	}
 
 	#onContainerDragLeave(e: DragEvent) {
@@ -128,17 +105,18 @@ export class BlockStore {
 	#onContainerDrop(e: DragEvent) {
 		if (!e.dataTransfer) return
 		e.preventDefault()
-		const sourceIndex = parseDragSourceIndex(e.dataTransfer)
-		if (sourceIndex === null) return
-		const targetIndex = getDragTargetIndex(this.#blockIndex, this.state.dropPosition() ?? 'after')
+		const sourceIndex = Number.parseInt(e.dataTransfer.getData('text/plain'), 10)
+		if (Number.isNaN(sourceIndex)) return
+		const index = this.#blockIndex()
+		const targetIndex = (this.state.dropPosition() ?? 'after') === 'before' ? index : index + 1
 		this.state.dropPosition(null)
-		this.#emit({type: 'reorder', source: sourceIndex, target: targetIndex})
+		this.#action({type: 'reorder', source: sourceIndex, target: targetIndex})
 	}
 
 	#onGripDragStart(e: DragEvent) {
 		if (!e.dataTransfer) return
 		e.dataTransfer.effectAllowed = 'move'
-		e.dataTransfer.setData('text/plain', String(this.#blockIndex))
+		e.dataTransfer.setData('text/plain', String(this.#blockIndex()))
 		this.state.isDragging(true)
 		if (this.refs.container) e.dataTransfer.setDragImage(this.refs.container, 0, 0)
 	}
@@ -156,19 +134,15 @@ export class BlockStore {
 	}
 
 	#onMenuOutsideMouseDown(e: MouseEvent, el: HTMLElement) {
-		if (isClickOutside(e.target, el)) this.closeMenu()
+		if (!el.contains(e.target instanceof Node ? e.target : null)) this.closeMenu()
 	}
 
 	#onMenuKeyDown(e: KeyboardEvent) {
-		if (isEscapeKey(e)) this.closeMenu()
-	}
-
-	#emit(action: DragAction) {
-		this.#dragAction?.(action)
+		if (e.key === 'Escape') this.closeMenu()
 	}
 
 	#emitAndClose(action: DragAction) {
-		this.#emit(action)
+		this.#action(action)
 		this.closeMenu()
 	}
 }

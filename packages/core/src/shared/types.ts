@@ -53,7 +53,11 @@ export interface CoreOption {
 	 * "@[__slot__]"
 	 */
 	markup?: Markup
-	overlay?: {trigger?: string}
+	overlay?: {
+		trigger?: string
+		/** Rows the built-in Suggestions overlay filters against the match value. */
+		data?: string[]
+	}
 }
 
 export type OverlayMatch<TOption = CoreOption> = {
@@ -111,7 +115,3 @@ export type DragAction =
 	| {type: 'add'; afterIndex: number}
 	| {type: 'delete'; index: number}
 	| {type: 'duplicate'; index: number}
-
-export interface DragActions {
-	action: {(action: DragAction): void}
-}

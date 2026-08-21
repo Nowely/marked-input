@@ -1,6 +1,6 @@
 <script setup lang="ts" generic="TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps">
 import {type CoreOption, type CoreSlots, Store} from '@markput/core'
-import {markRaw, provide, shallowRef, toRaw, watch} from 'vue'
+import {markRaw, provide, toRaw, watch} from 'vue'
 
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps, MarkProps, OverlayProps} from '../types'
@@ -13,9 +13,9 @@ const emit = defineEmits<{
 	change: [value: string]
 }>()
 
-const store = shallowRef(new Store())
+const store = new Store()
 
-provide(STORE_KEY, store.value)
+provide(STORE_KEY, store)
 
 function markSlotComponents(slots: CoreSlots | undefined): CoreSlots | undefined {
 	if (!slots) return undefined
@@ -32,7 +32,7 @@ function syncProps() {
 	const rawSpan = props.Span ? markRaw(toRaw(props.Span)) : undefined
 	const rawOverlay = props.Overlay ? markRaw(toRaw(props.Overlay)) : undefined
 
-	store.value.props.set({
+	store.props.set({
 		value: props.value,
 		defaultValue: props.defaultValue,
 		onChange: (v: string) => emit('change', v),
@@ -79,7 +79,7 @@ watch(
 	syncProps
 )
 
-defineExpose(store.value.handle)
+defineExpose(store.handle)
 </script>
 
 <template>

@@ -25,10 +25,11 @@ export {annotate, denote} from './src/features/tokens'
 export type {MarkToken, Markup} from './src/features/tokens'
 
 // Adapter utilities (spec §2.3: keep)
-export {cx} from './src/shared/utils'
+export {cx} from './src/shared/utils/cx'
 export {key} from './src/shared/classes'
 export {filterSuggestions, navigateSuggestions} from './src/features/overlay'
-export {getAlwaysShowHandle} from './src/features/block'
+// `BLOCK_MENU_ITEMS` is the block menu's content contract; both adapters' BlockMenu map it.
+export {BLOCK_MENU_ITEMS, getAlwaysShowHandle} from './src/features/block'
 export type {
 	OverlayMatch,
 	OverlayTrigger,
@@ -56,6 +57,10 @@ export {computed, effect, watch} from './src/shared/signals'
 export type {Computed, SignalValues} from './src/shared/signals'
 export {readSelected} from './src/shared/readSelected'
 export type {Selectable, ObjectSelector} from './src/shared/readSelected'
+// `readSelected`'s sibling on the subscription side: the per-node repaint target all four
+// adapter Token/Block components pass to `useMarkput`, hoisted so the field contract has one
+// owner instead of a copy per adapter.
+export {renderSubscription} from './src/features/tokens'
 
 // Mark metadata (spec §2.3: keep — the whole implementation of useMarkInfo)
 export {toMarkInfo} from './src/shared/editorContracts'

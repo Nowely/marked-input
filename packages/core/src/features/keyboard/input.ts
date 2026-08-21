@@ -4,9 +4,15 @@ import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
-import type {Anchors} from '../tokens'
-import {anchorEquals} from '../tokens'
-import {anchorsFromInputEvent, dropUnexpressedInput, isConsumerKeyOrigin, isConsumerOrigin} from './beforeInput'
+import {
+	anchorsForDelete,
+	anchorsForInput,
+	anchorsFromInputEvent,
+	dropUnexpressedInput,
+	isConsumerKeyOrigin,
+	isConsumerOrigin,
+	replacementForInput,
+} from './beforeInput'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'paste', e => {
@@ -122,47 +128,6 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 
 	event.preventDefault()
 	store.edit.replace(target.anchor, target.head, replacement)
-}
-
-function replacementForInput(container: HTMLElement, event: InputEvent): string | undefined {
-	if (event.inputType.startsWith('delete')) return ''
-	if (event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') {
-		const markup = consumeMarkupPaste(container)
-		return markup ?? event.dataTransfer?.getData('text/plain') ?? event.data ?? ''
-	}
-	if (event.inputType === 'insertText') return event.data ?? ''
-	// Enter is a newline in the VALUE, not a DOM line break: the guard owns the edit, so
-	// the browser never gets to build a <div>/<br> inside the host.
-	if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') return '\n'
-	if (event.inputType === 'insertFromDrop') return event.dataTransfer?.getData('text/plain') ?? ''
-	return undefined
-}
-
-function anchorsForInput(store: KbCtx, event: InputEvent, anchors: Anchors): Anchors | undefined {
-	if (!event.inputType.startsWith('delete')) return anchors
-	return anchorsForDelete(store, event.inputType, anchors)
-}
-
-/**
- * A collapsed delete EXPANDS: onto the adjacent MARK when the caret sits exactly on one of
- * its boundaries — that is the mark swallow — else by one character in the delete's
- * direction.
- *
- * Both arms resolve against the LIVE tree, so typing right before a mark and then deleting
- * still swallows it. Gated by `input.spec`'s two "mark swallow" cases — MEASURED: inverting
- * `direction` turns BOTH red, and either one alone would only pin "some mark got deleted".
- * The browser suites (`Base/keyboard.{react,vue}.spec`) cover it end to end.
- */
-function anchorsForDelete(store: KbCtx, inputType: string, anchors: Anchors): Anchors | undefined {
-	if (!anchorEquals(anchors.anchor, anchors.head)) return anchors
-
-	const direction = inputType.endsWith('Backward') ? -1 : 1
-	const mark = store.tokens.adjacentMark(anchors.anchor, direction)
-	if (mark) return {anchor: {before: mark}, head: {after: mark}}
-
-	const stepped = store.tokens.step(anchors.anchor, direction)
-	if (!stepped) return undefined
-	return direction === -1 ? {anchor: stepped, head: anchors.head} : {anchor: anchors.anchor, head: stepped}
 }
 
 function handlePaste(store: KbCtx, container: HTMLElement, event: ClipboardEvent): void {

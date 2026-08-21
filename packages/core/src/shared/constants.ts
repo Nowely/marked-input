@@ -14,7 +14,7 @@ export const KEYBOARD = {
 } as const
 export type KEYBOARD = (typeof KEYBOARD)[keyof typeof KEYBOARD]
 
-export const DEFAULT_OPTIONS: (CoreOption & {overlay?: {trigger?: string; data?: string[]}})[] = [
+export const DEFAULT_OPTIONS: CoreOption[] = [
 	{
 		markup: '@[__value__](__meta__)' satisfies Markup,
 		overlay: {

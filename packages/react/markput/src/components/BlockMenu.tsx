@@ -1,4 +1,4 @@
-import {cx} from '@markput/core'
+import {BLOCK_MENU_ITEMS} from '@markput/core'
 import type {TreeNode} from '@markput/core'
 import {memo, useMemo} from 'react'
 
@@ -6,8 +6,6 @@ import {useMarkput} from '../lib/hooks/useMarkput'
 import {List} from './Popup/List'
 import {ListItem} from './Popup/ListItem'
 import {Popup} from './Popup/Popup'
-
-import styles from '@markput/core/styles.module.css'
 
 export const BlockMenu = memo(({node}: {node: TreeNode}) => {
 	const {blockStore, menuOpen, menuPosition, tokens} = useMarkput(s => {
@@ -33,18 +31,12 @@ export const BlockMenu = memo(({node}: {node: TreeNode}) => {
 			style={{top: menuPosition.top, left: menuPosition.left}}
 		>
 			<List>
-				<ListItem onClick={() => blockStore.addBlock()}>
-					<span className={cx(styles.Icon, styles.IconAdd)} />
-					<span>Add below</span>
-				</ListItem>
-				<ListItem onClick={() => blockStore.duplicateBlock()}>
-					<span className={cx(styles.Icon, styles.IconDuplicate)} />
-					<span>Duplicate</span>
-				</ListItem>
-				<ListItem onClick={() => blockStore.deleteBlock()}>
-					<span className={cx(styles.Icon, styles.IconTrash)} />
-					<span>Delete</span>
-				</ListItem>
+				{BLOCK_MENU_ITEMS.map(item => (
+					<ListItem key={item.label} onClick={() => item.run(blockStore)}>
+						<span className={item.iconClass} />
+						<span>{item.label}</span>
+					</ListItem>
+				))}
 			</List>
 		</Popup>
 	)

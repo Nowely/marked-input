@@ -20,12 +20,17 @@ they cannot be settled inside core alone.
 
 ## Decisions so far
 
-Nothing resolved yet.
+- 06 resolved (2026-08-21): the block row-array projection is neither moved into `tree/` nor
+  kept — it dissolved. `addRowUnanchored` composes from two anchor slices through the existing
+  `read`; `project`/`compose`/`insertRow` are deleted. See
+  [06-block-row-array-manager.md](issues/06-block-row-array-manager.md).
+- 03 partial (2026-08-21): the "fold the two derivable fields" option is executed —
+  `BlockStore` now takes the `action` event and a live `rootIndexOf` reader at construction,
+  and the adapters attach bare elements. The store-union question itself stays open. See
+  [03-token-and-block-store-union.md](issues/03-token-and-block-store-union.md).
 
 ## Fog
 
 - Whether "hide the host in the token model" is worth doing at all once the eight production
   readers outside `DomModel` are counted (01).
 - What "block mark" refers to — three candidate referents, three different projects (05).
-- Whether the block row-array projection over strings is a layering fault or the right shape
-  for what it does (06).

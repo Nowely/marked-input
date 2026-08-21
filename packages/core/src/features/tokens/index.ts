@@ -1,6 +1,6 @@
 // Canonical export point for the token layer: parsing, the live node model, and the DOM facade.
 
-export type {Token, TextToken, MarkToken, Markup} from './parser/types'
+export type {MarkToken, Markup} from './parser/types'
 export {annotate} from './parser/utils/annotate'
 export {denote} from './parser/utils/denote'
 export {TokenModel} from './seam/TokenModel'
@@ -10,10 +10,8 @@ export {TokenModel} from './seam/TokenModel'
 // `anchorEquals` joined them at S2.5, when "is this selection collapsed?" stopped being a
 // numeric comparison for the four keyboard and overlay call sites above this layer.
 export {anchorEquals} from './tree/anchors'
-export type {Anchors, Id, MarkNode, MarkPatch, NodeAnchor, TextNode, TransactionResult, TreeNode} from './tree/types'
-// The selection's tree-space half (spec S2 D10). Its DOM half (`dom/SelectionDriver.ts`) is
-// not exported at all since S2.9: `TokenModel` constructs it privately and delegates its
-// three reads, so nothing outside this folder names the class.
-export type {Selection} from './tree/selection'
-export type {SelectionSnapshot} from './dom/DomModel'
+// The repaint-field contract both adapters pass to `useMarkput` — core knowledge (which node
+// fields reach a framework component), so it lives with the node model, not in an adapter.
+export {renderSubscription} from './tree/renderSubscription'
+export type {Anchors, MarkNode, NodeAnchor, TextNode, TreeNode} from './tree/types'
 export {TokenHandle} from './dom/TokenHandle'

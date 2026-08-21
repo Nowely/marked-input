@@ -47,7 +47,7 @@ const setContainerRef = (el: unknown) => {
 <template>
 	<component :is="containerComponent" :ref="setContainerRef" v-bind="boundProps">
 		<template v-if="result.isBlock">
-			<Block v-for="(node, index) in result.nodes" :key="node.id" :node="node" :block-index="index" />
+			<Block v-for="node in result.nodes" :key="node.id" :node="node" />
 		</template>
 		<template v-else>
 			<Token v-for="node in result.nodes" :key="node.id" :node="node" :depth="0" />

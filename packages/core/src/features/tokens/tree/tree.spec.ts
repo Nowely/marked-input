@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
+import {toString} from '../parser/__testing__/toString'
 import {Parser} from '../parser/Parser'
-import {toString} from '../parser/utils/toString'
 import {createTokenTree, joinNodes, rootIndexOf, sliceNodes} from './tree'
 import type {TextNode, TreeNode} from './types'
 

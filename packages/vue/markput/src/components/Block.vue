@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {CSSProperties, TreeNode} from '@markput/core'
+import {renderSubscription} from '@markput/core'
 import {computed} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -12,7 +13,7 @@ import Token from './Token.vue'
 
 import styles from '@markput/core/styles.module.css'
 
-const props = defineProps<{node: TreeNode; blockIndex: number}>()
+const props = defineProps<{node: TreeNode}>()
 
 const store = useStore()
 const blockStore = store.block.get(props.node)
@@ -41,13 +42,18 @@ const consignBlock = store.tokens.consign(props.node.id)
 const setBlockRef = (el: unknown) => {
 	const element = unwrapEl(el)
 	consignBlock(element)
-	blockStore.attachContainer(element, props.blockIndex, {action: store.block.action})
+	blockStore.attachContainer(element)
 }
 
 // The per-row subscription: a RowNode's children are what this component paints, so a
-// structural edit inside the row must re-render it — the same job Token's nodeRender
-// does for a mark.
-const rowChildren = useMarkput<readonly TreeNode[] | undefined>(() => () => {
+// structural edit inside the row must re-render it — `renderSubscription`'s row arm,
+// the same job its mark arm does for Token.
+const rendered = useMarkput(() => renderSubscription(props.node))
+// READ so the computed depends on it — core's `children` signal is not Vue-reactive, so the
+// subscription ref is what carries the change across. The kind check stays here because the
+// template forks on it: a row paints its children, anything else falls back to one Token.
+const rowChildren = computed(() => {
+	void rendered.value
 	return props.node.kind === 'row' ? props.node.children() : undefined
 })
 </script>
@@ -61,7 +67,7 @@ const rowChildren = useMarkput<readonly TreeNode[] | undefined>(() => () => {
 		:style="blockStyle"
 	>
 		<DropIndicator :node="node" position="before" />
-		<DragHandle :node="node" :block-index="blockIndex" />
+		<DragHandle :node="node" />
 		<template v-if="rowChildren">
 			<Token v-for="child in rowChildren" :key="child.id" :node="child" :depth="0" />
 		</template>

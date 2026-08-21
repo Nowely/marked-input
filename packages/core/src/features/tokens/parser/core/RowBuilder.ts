@@ -66,7 +66,7 @@ export function rowPass(
  * `'\n\n'`), a closed slot's interior, or a literal the occurrence straddles —
  * and is never a row boundary.
  */
-export function findSeparators(value: string, separator: string, matches: Match[]): PositionRange[] {
+function findSeparators(value: string, separator: string, matches: Match[]): PositionRange[] {
 	const result: PositionRange[] = []
 	let at = value.indexOf(separator)
 	while (at !== -1) {

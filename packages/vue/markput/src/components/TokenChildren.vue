@@ -1,5 +1,5 @@
 <script lang="ts">
-import {defineComponent, h, onBeforeUnmount, watch} from 'vue'
+import {defineComponent, h, onBeforeUnmount} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
 
@@ -11,31 +11,14 @@ export default defineComponent({
 	},
 	setup(props, {slots}) {
 		const store = useStore()
-		let childSequenceRef: ((element: HTMLElement | null) => void) | undefined
-		let currentElement: HTMLElement | null = null
-
-		const getChildSequenceRef = () => {
-			if (childSequenceRef) return childSequenceRef
-			childSequenceRef = store.tokens.children(props.ownerId)
-			return childSequenceRef
-		}
+		const childSequenceRef = store.tokens.children(props.ownerId)
 
 		const setElement = (el: unknown) => {
-			currentElement = el instanceof HTMLElement ? el : null
-			getChildSequenceRef()?.(currentElement)
+			childSequenceRef(el instanceof HTMLElement ? el : null)
 		}
 
-		watch(
-			() => props.ownerId,
-			() => {
-				childSequenceRef?.(null)
-				childSequenceRef = store.tokens.children(props.ownerId)
-				childSequenceRef(currentElement)
-			}
-		)
-
 		onBeforeUnmount(() => {
-			childSequenceRef?.(null)
+			childSequenceRef(null)
 		})
 
 		return () => h('span', {ref: setElement, style: {display: 'contents'}}, slots.default?.())

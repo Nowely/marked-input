@@ -2,11 +2,6 @@ import type {TreeNode} from '../features/tokens'
 
 export type DomRef = (element: HTMLElement | null) => void
 
-export type Range = {
-	readonly start: number
-	readonly end: number
-}
-
 export type MarkInfo = {
 	/** Nesting level: a top-level mark has depth 0. */
 	readonly depth: number

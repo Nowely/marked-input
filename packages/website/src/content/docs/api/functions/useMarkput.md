@@ -11,7 +11,7 @@ title: "useMarkput"
 function useMarkput<T>(selector): T;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useMarkput.ts:13](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useMarkput.ts#L13)
+Defined in: [react/markput/src/lib/hooks/useMarkput.ts:12](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useMarkput.ts#L12)
 
 ### Type Parameters
 
@@ -35,7 +35,7 @@ Defined in: [react/markput/src/lib/hooks/useMarkput.ts:13](https://github.com/No
 function useMarkput<R>(selector): SignalValues<R>;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useMarkput.ts:14](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useMarkput.ts#L14)
+Defined in: [react/markput/src/lib/hooks/useMarkput.ts:13](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useMarkput.ts#L13)
 
 ### Type Parameters
 

@@ -1,2 +1,2 @@
-export type {MarkSlot, OverlaySlot} from './types'
+export type {OverlaySlot} from './types'
 export {SlotsFeature} from './SlotsFeature'

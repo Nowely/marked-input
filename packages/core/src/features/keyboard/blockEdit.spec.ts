@@ -106,8 +106,8 @@ describe('blockEdit row identity', () => {
 
 describe('blockEdit beforeinput guard', () => {
 	it('drops an unhandled cancelable inputType instead of letting the browser edit the row', () => {
-		// Same contract as `input.ts`: block rows live in the SAME single host, so a
-		// default this switch cannot express would edit model-owned DOM.
+		// Same contract as `input.ts`: block rows live in the SAME single host, so an
+		// inputType the shared table cannot express would edit model-owned DOM.
 		const {store, container} = mountBlock()
 		const second = store.tokens.nodes()[1]
 		store.tokens.selection.selectNode(second, 'end')
@@ -132,18 +132,23 @@ describe('blockEdit beforeinput guard', () => {
 		return surface
 	}
 
-	/** The row's own text node, with a collapsed DOM caret on it. */
-	function caretInRow(store: Store, rowIndex: number, offset: number): Node {
+	/** The row's own text node, with a live DOM Range over [start, end) on it. */
+	function selectInRow(store: Store, rowIndex: number, start: number, end: number): Node {
 		const text = rowSurface(store, rowIndex).firstChild
 		if (!text) throw new Error('block row did not render a text node')
 		const selection = window.getSelection()
 		if (!selection) throw new Error('no window selection')
 		const range = document.createRange()
-		range.setStart(text, offset)
-		range.setEnd(text, offset)
+		range.setStart(text, start)
+		range.setEnd(text, end)
 		selection.removeAllRanges()
 		selection.addRange(range)
 		return text
+	}
+
+	/** The row's own text node, with a collapsed DOM caret on it. */
+	function caretInRow(store: Store, rowIndex: number, offset: number): Node {
+		return selectInRow(store, rowIndex, offset, offset)
 	}
 
 	it('inserts a newline INSIDE the row on insertLineBreak (Shift+Enter)', () => {
@@ -175,6 +180,64 @@ describe('blockEdit beforeinput guard', () => {
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(store.tokens.value()).toBe('oXne\n\ntwo\n\n')
+	})
+
+	it('deletes the dragged-out source range on deleteByDrag', () => {
+		// The SOURCE half of a drag: the browser pairs insertFromDrop at the target with
+		// deleteByDrag at the origin. Without an expressed '' deletion the dragged text
+		// survives where it came from, so a drag out of a row duplicates it.
+		const {store} = mountBlock()
+		const text = selectInRow(store, 0, 1, 3)
+
+		const event = new InputEvent('beforeinput', {inputType: 'deleteByDrag', bubbles: true, cancelable: true})
+		text.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('o\n\ntwo\n\n')
+	})
+
+	it('deletes the cut range on deleteByCut', () => {
+		const {store} = mountBlock()
+		const text = selectInRow(store, 0, 0, 3)
+
+		const event = new InputEvent('beforeinput', {inputType: 'deleteByCut', bubbles: true, cancelable: true})
+		text.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('\n\ntwo\n\n')
+	})
+
+	it('falls back to event.data when a paste carries no dataTransfer', () => {
+		// The shared table's last paste resort: engines that put the payload on `data`
+		// rather than `dataTransfer`.
+		const {store} = mountBlock()
+		const text = caretInRow(store, 0, 1)
+
+		const event = new InputEvent('beforeinput', {
+			inputType: 'insertFromPaste',
+			data: 'X',
+			bubbles: true,
+			cancelable: true,
+		})
+		text.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('oXne\n\ntwo\n\n')
+	})
+
+	it('drops insertParagraph even with a resolvable row instead of taking the inline mapping', () => {
+		// The one divergence from the shared table: Enter belongs to `handleEnter`'s keydown,
+		// which inserts the SEPARATOR — the table's '\n' would splice a literal newline
+		// inside the row. Unreachable from a real Enter (the keydown is cancelled first);
+		// pinned so the divergence survives the table.
+		const {store} = mountBlock()
+		const text = caretInRow(store, 0, 1)
+
+		const event = new InputEvent('beforeinput', {inputType: 'insertParagraph', bubbles: true, cancelable: true})
+		text.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
 	})
 
 	it('drops an edit that resolves NO row instead of letting the browser split the host', () => {

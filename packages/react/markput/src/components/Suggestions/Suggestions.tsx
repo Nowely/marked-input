@@ -1,5 +1,4 @@
-import {filterSuggestions, navigateSuggestions} from '@markput/core'
-import {useEffect, useMemo, useRef, useState} from 'react'
+import {useEffect} from 'react'
 
 import {useMarkput} from '../../lib/hooks/useMarkput'
 import {useOverlay} from '../../lib/hooks/useOverlay'
@@ -8,43 +7,14 @@ import {ListItem} from '../Popup/ListItem'
 import {Popup} from '../Popup/Popup'
 
 export const Suggestions = () => {
-	const container = useMarkput(s => s.host.container)
-	const {match, select, style, ref} = useOverlay()
-	const [active, setActive] = useState(NaN)
-	const data = match?.option.overlay?.data ?? []
-	const filtered = useMemo(() => (match ? filterSuggestions(data, match.value) : []), [match, data])
-	const length = filtered.length
+	const {style, ref} = useOverlay()
+	const {filtered, active, suggestions} = useMarkput(s => ({
+		filtered: s.overlay.suggestions.filtered,
+		active: s.overlay.suggestions.active,
+		suggestions: s.overlay.suggestions,
+	}))
 
-	const activeRef = useRef(active)
-	activeRef.current = active
-	const filteredRef = useRef(filtered)
-	filteredRef.current = filtered
-
-	useEffect(() => {
-		if (!container) return
-
-		const handler = (event: KeyboardEvent) => {
-			const result = navigateSuggestions(event.key, activeRef.current, length)
-			switch (result.action) {
-				case 'up':
-				case 'down':
-					event.preventDefault()
-					setActive(result.index)
-					break
-				case 'select': {
-					event.preventDefault()
-					const suggestion = filteredRef.current[result.index]
-					select({value: suggestion, meta: result.index.toString()})
-					break
-				}
-				case 'none':
-					break
-			}
-		}
-
-		container.addEventListener('keydown', handler)
-		return () => container.removeEventListener('keydown', handler)
-	}, [container, length, select])
+	useEffect(() => suggestions.activate(), [suggestions])
 
 	if (!filtered.length) return null
 
@@ -52,11 +22,7 @@ export const Suggestions = () => {
 		<Popup ref={ref} style={style}>
 			<List>
 				{filtered.map((suggestion, index) => (
-					<ListItem
-						key={suggestion}
-						active={index === active}
-						onClick={() => select({value: suggestion, meta: index.toString()})}
-					>
+					<ListItem key={suggestion} active={index === active} onClick={() => suggestions.select(index)}>
 						{suggestion}
 					</ListItem>
 				))}

@@ -2,7 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import {escape} from '../../shared/escape'
 import {signal, computed, event, effect, watch, listen} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
+import type {CoreOption, OverlayMatch, Slot} from '../../shared/types'
 import type {EditController} from '../edit'
 import type {OverlaySlot} from '../slots'
 import {resolveOverlaySlot} from '../slots/resolveSlot'
@@ -10,10 +10,24 @@ import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {TokenModel} from '../tokens'
 import {anchorEquals, annotate} from '../tokens'
+import {SuggestionsModel} from './SuggestionsModel'
 
 export class OverlayController {
 	readonly match = signal<OverlayMatch>()
 	readonly element = signal<HTMLElement | null>({initial: null})
+
+	/** The `{current}` facade over `element` that both adapters hand out as `OverlayHandler.ref`. */
+	readonly ref: {current: HTMLElement | null}
+
+	readonly suggestions: SuggestionsModel
+
+	/**
+	 * `choose` under the `{value, meta}` payload shape both adapters expose as
+	 * `OverlayHandler.select`. An arrow so the adapters can pass it around unbound.
+	 */
+	readonly select = (value: {value: string; meta?: string}): void => {
+		this.choose(value.value, value.meta)
+	}
 
 	readonly slot: OverlaySlot = computed(() => {
 		const Overlay = this.props.Overlay()
@@ -35,6 +49,18 @@ export class OverlayController {
 		private readonly edit: EditController,
 		private readonly tokens: TokenModel
 	) {
+		this.suggestions = new SuggestionsModel(host, this)
+
+		const element = this.element
+		this.ref = {
+			get current() {
+				return element()
+			},
+			set current(v: HTMLElement | null) {
+				element(v)
+			},
+		}
+
 		const hasOverlayTrigger = computed(() => this.props.options().some(opt => opt.overlay?.trigger != null))
 
 		this.host.onMounted(() => {
@@ -60,11 +86,7 @@ export class OverlayController {
 			// probe is idempotent.
 			watch(this.tokens.committed, () => {
 				if (!hasOverlayTrigger()) return
-				const showOverlayOn = this.props.showOverlayOn()
-				const type: OverlayTrigger = 'change'
-				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-					this.#probeTrigger()
-				}
+				if (this.#wantsTrigger('change')) this.#probeTrigger()
 			})
 
 			effect(() => {
@@ -91,11 +113,7 @@ export class OverlayController {
 				const handler = () => {
 					const container = this.host.container()
 					if (!container?.contains(document.activeElement)) return
-					const showOverlayOn = this.props.showOverlayOn()
-					const type: OverlayTrigger = 'selectionChange'
-					if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-						this.#probeTrigger()
-					}
+					if (this.#wantsTrigger('selectionChange')) this.#probeTrigger()
 				}
 				listen(document, 'selectionchange', handler)
 			})
@@ -112,6 +130,11 @@ export class OverlayController {
 		if (!markup) return
 		this.edit.replace(match.range.anchor, match.range.head, annotate(markup, {value, meta}))
 		this.match(undefined)
+	}
+
+	#wantsTrigger(type: 'change' | 'selectionChange'): boolean {
+		const on = this.props.showOverlayOn()
+		return on === type || (Array.isArray(on) && on.includes(type))
 	}
 
 	#probeTrigger() {

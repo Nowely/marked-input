@@ -2,7 +2,6 @@ import type {MarkNode} from '@markput/core'
 import {inject} from 'vue'
 
 import {TOKEN_KEY} from '../providers/tokenKey'
-import {useMarkput} from './useMarkput'
 
 /**
  * The live mark node for the surrounding mark token context (spec §2.3) — a context READ
@@ -23,6 +22,5 @@ export const useMark = (): MarkNode => {
 	const node = contextRef.value.node
 	if (node.kind !== 'mark') throw new Error('useMark must be called within a mark token context')
 
-	useMarkput(s => s.props.readOnly)
 	return node
 }

@@ -1,6 +1,5 @@
 import type {OverlayMatch} from '@markput/core'
 import type {RefObject} from 'react'
-import {useCallback, useMemo} from 'react'
 
 import type {Option} from '../../types'
 import {useMarkput} from './useMarkput'
@@ -21,23 +20,7 @@ export function useOverlay(): OverlayHandler {
 
 	const style = useMarkput(s => s.overlay.position())
 
-	const close = useCallback(() => overlay.close(), [overlay])
-	const select = useCallback(
-		(value: {value: string; meta?: string}) => overlay.choose(value.value, value.meta),
-		[overlay]
-	)
-
-	const ref = useMemo(
-		(): RefObject<HTMLElement | null> => ({
-			get current() {
-				return overlay.element()
-			},
-			set current(v: HTMLElement | null) {
-				overlay.element(v)
-			},
-		}),
-		[overlay]
-	)
-
-	return {match, style, select, close, ref}
+	// close/select/ref are framework-free glue and live on the controller; only the reactive
+	// match/style bindings are React's.
+	return {match, style, select: overlay.select, close: overlay.close, ref: overlay.ref}
 }
