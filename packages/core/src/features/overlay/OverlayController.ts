@@ -13,7 +13,31 @@ import {anchorEquals, annotate} from '../tokens'
 import {SuggestionsModel} from './SuggestionsModel'
 
 export class OverlayController {
-	readonly match = signal<OverlayMatch>()
+	/**
+	 * THE open overlay, or `undefined`. Compared BY CONTENT, because `#findTrigger` allocates a
+	 * fresh match on every probe and every commit re-probes. Without this, a commit that changes
+	 * nothing the overlay can see — a parent re-setting `value` to what it already holds, a
+	 * reparse — announced a "new" match, and `SuggestionsModel`'s watch reset the highlighted
+	 * suggestion to NaN. The user lost the row they had arrowed to, for a probe that found
+	 * exactly the same thing. Measured field by field: value, source, span, node, option and
+	 * both anchors were all identical, including the anchors' own node objects.
+	 *
+	 * `range` needs {@link anchorEquals} for `selection.ts`'s reason — one position has two legal
+	 * spellings — and everything else is identity, which is what a re-probe preserves.
+	 */
+	readonly match = signal<OverlayMatch>({
+		equals: (a, b) =>
+			a === b ||
+			(a !== undefined &&
+				b !== undefined &&
+				a.value === b.value &&
+				a.source === b.source &&
+				a.span === b.span &&
+				a.node === b.node &&
+				a.option === b.option &&
+				anchorEquals(a.range.anchor, b.range.anchor) &&
+				anchorEquals(a.range.head, b.range.head)),
+	})
 	readonly element = signal<HTMLElement | null>({initial: null})
 
 	/** The `{current}` facade over `element` that both adapters hand out as `OverlayHandler.ref`. */
