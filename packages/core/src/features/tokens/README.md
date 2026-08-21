@@ -263,7 +263,7 @@ valueBetween(from, to) / adjacentMark(anchor, ±1) / step(anchor, ±1)
 rootIndexOf(id)
 
 // renderer contract (adapter-only)
-consign(id) / consignRow(id) / children(ownerId) / control() // ref callbacks; a ref IS the bind
+consign(id) / children(ownerId) / control() // ref callbacks; a ref IS the bind
 committed: Event<void>        // THE model clock; one pulse per commit, DOM or no DOM
 bound: Event<void>            // THE DOM clock; one pulse per binding — what the caret needs
 // the framework key is `node.id` — there is no keyOf
@@ -305,7 +305,7 @@ Nothing is published before a container mounts: `nodes()` is `[]` and facade
 reads fail soft. That ordering is load-bearing rather than incidental — because
 the tree seeds inside the container's own ref, no token element can exist before
 it, so the container's ref always lands first and every token ref lands after the
-bind effect is live.
+mount's own commit has bound.
 
 ### The selection snapshot
 
@@ -325,10 +325,9 @@ A consumer that treats "no selection" as collapsed compares
 the snapshot — `caretRect()` computes it only when asked, so a `selectionchange`
 snapshot forces no layout.
 
-The per-member contract — why `nodes` is a subscribable `Computed` field, why the
-bind effect subscribes to the commit counter and not to the roots, exactly when
-`handle(id)` fails closed — is on the members themselves in `seam/TokenModel.ts`
-and `dom/commit.ts`.
+The per-member contract — why `nodes` is a subscribable `Computed` field, why
+`apply` binds before it announces, exactly when `handle(id)` fails closed — is on
+the members themselves in `seam/TokenModel.ts` and `dom/commit.ts`.
 
 ### Boundary facade internals
 
