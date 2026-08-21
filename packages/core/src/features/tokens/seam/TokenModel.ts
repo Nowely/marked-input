@@ -227,9 +227,17 @@ export class TokenModel {
 	 * EDGES, not `{0, value().length}`: the whole-value arm tests `end` against the TREE's
 	 * length, which {@link value} outruns mid-flight — missing it splices a foreign window.
 	 * Deliberately kept: spec-facing and public-reachable through the exported Store (`store.tokens`) — the `api.focus()` precedent.
+	 *
+	 * `enterRoot` puts the caret INTO that row of the RESULT, named by index rather than by a
+	 * character offset into a string that does not exist yet — that offset was the last
+	 * absolute coordinate above `tree/` (ADR-0003), while an index names a node the commit is
+	 * about to produce, which the caller genuinely knows. A separate verb until the
+	 * API-surface cut; the block callers are the only ones that pass it.
 	 */
-	setValue(text: string): boolean {
-		return this.replaceBetween('start', 'end', text) !== undefined
+	setValue(text: string, enterRoot?: number): boolean {
+		if (this.replaceBetween('start', 'end', text) === undefined) return false
+		if (enterRoot !== undefined) this.#enterRoot(enterRoot)
+		return true
 	}
 
 	/**
@@ -542,18 +550,6 @@ export class TokenModel {
 		// caller derives it from a root index or a literal 0.
 		const root = untracked(() => this.#tree.roots().at(index))
 		if (root) this.#applyCaret(entryAnchor(root))
-	}
-
-	/**
-	 * @internal Whole-value replacement that puts the caret INTO a row of the RESULT, named by
-	 * index rather than by a character offset into a string that does not exist yet. That
-	 * offset was the last absolute coordinate above `tree/` (ADR-0003); an index names a node
-	 * the commit is about to produce, which the caller genuinely knows.
-	 */
-	setValueEnteringRoot(text: string, index: number): boolean {
-		if (!this.setValue(text)) return false
-		this.#enterRoot(index)
-		return true
 	}
 
 	/**

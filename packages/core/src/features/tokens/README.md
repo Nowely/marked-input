@@ -249,7 +249,9 @@ find(id) // the live TreeNode by stable id
 selection: Selection // THE stored anchors and their derivations (see below)
 
 // writes
-replaceBetween(from, to, text) / setValue(text)
+replaceBetween(from, to, text) / setValue(text, enterRoot?)
+// `enterRoot` puts the caret INTO that row of the RESULT, so a caller never forms an
+// absolute offset into a string that does not exist yet (ADR-0003)
 // per-node writes are MarkNode.update / MarkNode.remove, which ride a transaction
 
 // tree reads, in tree coordinates
@@ -279,9 +281,6 @@ focusFirst()
 // Only this direction is public; its inverse is a private `offsetOf` closure in the
 // selection deps, whose one consumer is `tree/selection.ts` (isAllSelected).
 anchorAt(offset)
-
-// whole-value entry into a row, so a caller never forms an absolute offset
-setValueEnteringRoot(text, rootIndex)
 ```
 
 **Not here, deliberately** (API-surface cut, 2026-08-21): `placeCaret`,
@@ -289,7 +288,8 @@ setValueEnteringRoot(text, rootIndex)
 production caller — the driver and the controllers reach `DomModel` directly, and only
 specs went through the model. They live on their owners (`dom/DomModel`,
 `dom/SelectionDriver`); specs reach a `DomModel` through `__testing__/mountFixtures`'s
-`domModelOf`. The target for the whole surface is in [the token-born-edit
+`domModelOf`. `setValueEnteringRoot` folded into `setValue`'s second parameter. The
+target for the whole surface is in [the token-born-edit
 spec](../../../../../docs/scratch/token-born-edit/spec.md#the-target-surface).
 
 There is no manual editable-state override. `setEditable` used to be one, and had

@@ -73,7 +73,7 @@ export class BlockController {
 			// Anchor-slice reads: the tree's own string, always consistent with nodes().
 			const read = (from: NodeAnchor, to: NodeAnchor): string => this.tokens.valueBetween(from, to)
 			const result = addRowUnanchored(read, rows, action.afterIndex, this.props.separator())
-			this.tokens.setValueEnteringRoot(result.value, result.row)
+			this.tokens.setValue(result.value, result.row)
 		})
 	}
 
