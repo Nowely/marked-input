@@ -53,7 +53,11 @@ export interface CoreOption {
 	 * "@[__slot__]"
 	 */
 	markup?: Markup
-	overlay?: {trigger?: string}
+	overlay?: {
+		trigger?: string
+		/** Rows the built-in Suggestions overlay filters against the match value. */
+		data?: string[]
+	}
 }
 
 export type OverlayMatch<TOption = CoreOption> = {

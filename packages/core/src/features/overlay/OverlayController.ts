@@ -10,10 +10,24 @@ import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {TokenModel} from '../tokens'
 import {anchorEquals, annotate} from '../tokens'
+import {SuggestionsModel} from './SuggestionsModel'
 
 export class OverlayController {
 	readonly match = signal<OverlayMatch>()
 	readonly element = signal<HTMLElement | null>({initial: null})
+
+	/** The `{current}` facade over `element` that both adapters hand out as `OverlayHandler.ref`. */
+	readonly ref: {current: HTMLElement | null}
+
+	readonly suggestions: SuggestionsModel
+
+	/**
+	 * `choose` under the `{value, meta}` payload shape both adapters expose as
+	 * `OverlayHandler.select`. An arrow so the adapters can pass it around unbound.
+	 */
+	readonly select = (value: {value: string; meta?: string}): void => {
+		this.choose(value.value, value.meta)
+	}
 
 	readonly slot: OverlaySlot = computed(() => {
 		const Overlay = this.props.Overlay()
@@ -35,6 +49,18 @@ export class OverlayController {
 		private readonly edit: EditController,
 		private readonly tokens: TokenModel
 	) {
+		this.suggestions = new SuggestionsModel(host, this)
+
+		const element = this.element
+		this.ref = {
+			get current() {
+				return element()
+			},
+			set current(v: HTMLElement | null) {
+				element(v)
+			},
+		}
+
 		const hasOverlayTrigger = computed(() => this.props.options().some(opt => opt.overlay?.trigger != null))
 
 		this.host.onMounted(() => {

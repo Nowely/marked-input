@@ -20,22 +20,12 @@ export interface OverlayHandler {
 }
 
 export function useOverlay(): OverlayHandler {
-	const store = useStore()
+	const {overlay} = useStore()
 	const matchRef = useMarkput(s => s.overlay.match) as Ref<OverlayMatch<Option> | undefined>
 
-	const style = computed(() => store.overlay.position())
+	const style = computed(() => overlay.position())
 
-	const close = () => store.overlay.close()
-	const select = (value: {value: string; meta?: string}) => store.overlay.choose(value.value, value.meta)
-
-	const ref = {
-		get current() {
-			return store.overlay.element()
-		},
-		set current(v: HTMLElement | null) {
-			store.overlay.element(v)
-		},
-	}
-
-	return {match: matchRef, style, select, close, ref}
+	// close/select/ref are framework-free glue and live on the controller; only the reactive
+	// match/style bindings are Vue's.
+	return {match: matchRef, style, select: overlay.select, close: overlay.close, ref: overlay.ref}
 }
