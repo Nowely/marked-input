@@ -2,7 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import {escape} from '../../shared/escape'
 import {signal, computed, event, effect, watch, listen} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
+import type {CoreOption, OverlayMatch, Slot} from '../../shared/types'
 import type {EditController} from '../edit'
 import type {OverlaySlot} from '../slots'
 import {resolveOverlaySlot} from '../slots/resolveSlot'
@@ -60,11 +60,7 @@ export class OverlayController {
 			// probe is idempotent.
 			watch(this.tokens.committed, () => {
 				if (!hasOverlayTrigger()) return
-				const showOverlayOn = this.props.showOverlayOn()
-				const type: OverlayTrigger = 'change'
-				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-					this.#probeTrigger()
-				}
+				if (this.#wantsTrigger('change')) this.#probeTrigger()
 			})
 
 			effect(() => {
@@ -91,11 +87,7 @@ export class OverlayController {
 				const handler = () => {
 					const container = this.host.container()
 					if (!container?.contains(document.activeElement)) return
-					const showOverlayOn = this.props.showOverlayOn()
-					const type: OverlayTrigger = 'selectionChange'
-					if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-						this.#probeTrigger()
-					}
+					if (this.#wantsTrigger('selectionChange')) this.#probeTrigger()
 				}
 				listen(document, 'selectionchange', handler)
 			})
@@ -112,6 +104,11 @@ export class OverlayController {
 		if (!markup) return
 		this.edit.replace(match.range.anchor, match.range.head, annotate(markup, {value, meta}))
 		this.match(undefined)
+	}
+
+	#wantsTrigger(type: 'change' | 'selectionChange'): boolean {
+		const on = this.props.showOverlayOn()
+		return on === type || (Array.isArray(on) && on.includes(type))
 	}
 
 	#probeTrigger() {
