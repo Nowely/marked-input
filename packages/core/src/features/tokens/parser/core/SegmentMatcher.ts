@@ -30,8 +30,6 @@ interface SegmentEntry {
 	index: number
 	/** Regex pattern for this segment (escaped static or dynamic pattern) */
 	pattern: string
-	/** Original definition for reference */
-	definition: SegmentDefinition
 }
 
 /**
@@ -54,7 +52,6 @@ interface StaticMatcher {
 interface DynamicMatcher {
 	regex: RegExp
 	entries: SegmentEntry[]
-	indices: Set<number>
 }
 
 /**
@@ -95,15 +92,13 @@ export class SegmentMatcher {
 
 		// Create dynamic matcher
 		if (dynamics.length > 0) {
-			const indices = new Set<number>()
 			const entries: SegmentEntry[] = []
 
 			dynamics.forEach(({segment, index}) => {
 				const [before, after, exclusions] = segment
-				indices.add(index)
 				const pattern = computeDynamicPattern(before, after, exclusions)
 				const namedPattern = pattern.replace('(', `(?<content${index}>`)
-				entries.push({index, pattern: namedPattern, definition: segment})
+				entries.push({index, pattern: namedPattern})
 			})
 
 			// Sort by pattern length (longest first) for optimal matching
@@ -111,7 +106,6 @@ export class SegmentMatcher {
 
 			this.dynamic = {
 				entries,
-				indices,
 				regex: new RegExp(entries.map((e, i) => `(?<seg${i}>${e.pattern})`).join('|'), 'gu'),
 			}
 		}
@@ -139,7 +133,7 @@ export class SegmentMatcher {
 
 		// Dynamic segments
 		if (this.dynamic) {
-			const {regex, entries, indices} = this.dynamic
+			const {regex, entries} = this.dynamic
 			for (const match of text.matchAll(regex)) {
 				const matchedText = match[0]
 				const start = match.index
@@ -153,9 +147,7 @@ export class SegmentMatcher {
 						// oxlint-disable-next-line no-unnecessary-condition
 						if (groupValue !== undefined) {
 							matchedIndex = entries[i].index
-							if (indices.has(matchedIndex)) {
-								captured = match.groups[`content${matchedIndex}`]
-							}
+							captured = match.groups[`content${matchedIndex}`]
 							break
 						}
 					}
