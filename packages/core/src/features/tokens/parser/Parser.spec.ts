@@ -444,6 +444,34 @@ describe('Parser', () => {
 			})
 
 			describe('edge cases', () => {
+				it("a dynamic value cannot hash onto a static segment's key", () => {
+					// The waiting-state maps are keyed by number, and the two kinds of key share
+					// them: a static segment waits under its RAW registry index, a dynamic one
+					// under a hash of the text it matched. While the hash mask (0xfffff) was wider
+					// than the stride between bases (1e6), a base-0 hash could land on a real raw
+					// index — and then the wrong match was dequeued.
+					//
+					// '<i:nx>' is not decorative: it is brute-forced to hash onto the raw index of
+					// '**' under exactly this markup list, so the closing '**' used to pop the
+					// waiting HTML match and end the bold mark at the '>'. Both cases below
+					// produced the same TREE SHAPE, which is why a line-count check missed it.
+					const collide = new Parser([
+						'<__value__>__slot__</__value__>',
+						'**__slot__**',
+						'`__slot__`',
+						'@[__value__]',
+					])
+
+					// The bold mark spans the whole input, exactly as it does for a non-colliding
+					// value; before the fix it ended at the '>' and ' more**' fell out as text.
+					expect(tokensToDebugTree(collide.parse('**bold <i:nx> more**'))).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "**bold <i:nx> more**" [0-20] [value="", slot="bold <i:nx> more"]
+							1.0: TEXT "bold <i:nx> more" [2-18]
+						 2: TEXT "" [20-20]"
+					`)
+				})
+
 				it('handles adjacent marks', () => {
 					const input = '@[first](1)@[second](2)'
 					const result = parser.parse(input)
