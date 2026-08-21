@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {CSSProperties, TreeNode} from '@markput/core'
+import {renderSubscription} from '@markput/core'
 import {computed} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -45,9 +46,14 @@ const setBlockRef = (el: unknown) => {
 }
 
 // The per-row subscription: a RowNode's children are what this component paints, so a
-// structural edit inside the row must re-render it — the same job Token's nodeRender
-// does for a mark.
-const rowChildren = useMarkput<readonly TreeNode[] | undefined>(() => () => {
+// structural edit inside the row must re-render it — `renderSubscription`'s row arm,
+// the same job its mark arm does for Token.
+const rendered = useMarkput(() => renderSubscription(props.node))
+// READ so the computed depends on it — core's `children` signal is not Vue-reactive, so the
+// subscription ref is what carries the change across. The kind check stays here because the
+// template forks on it: a row paints its children, anything else falls back to one Token.
+const rowChildren = computed(() => {
+	void rendered.value
 	return props.node.kind === 'row' ? props.node.children() : undefined
 })
 </script>

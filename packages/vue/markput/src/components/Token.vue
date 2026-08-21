@@ -1,5 +1,6 @@
 <script lang="ts">
 import type {TreeNode} from '@markput/core'
+import {renderSubscription} from '@markput/core'
 import {defineComponent, h, markRaw, provide, toRef, type PropType, type VNode} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -14,17 +15,12 @@ import TokenChildren from './TokenChildren.vue'
  * `TokenChildren`, which now registers under the owner's stable id.
  */
 /**
- * THE per-node subscription (spec S2 D8) — the same rationale as `Token.tsx`, where it is
- * written out in full. Short version: adoption keeps a node OBJECT for as long as it keeps
- * its id, so Vue's own prop diffing already shields a mark whose only change is a
- * `position` move; what it cannot see is a value/meta/children change INSIDE that object.
- *
- * NOT `resolveMarkSlot` inside the tracked scope, which would be shorter: that reads
- * `text()` for a text node and would repaint its Span on every keystroke.
+ * THE per-node subscription (spec S2 D8) — the field contract lives in core
+ * (`renderSubscription`); what it adds HERE is what Vue's own prop diffing cannot see.
+ * Adoption keeps a node OBJECT for as long as it keeps its id, so prop diffing already
+ * shields a mark whose only change is a `position` move; what it cannot see is a
+ * value/meta/children change INSIDE that object.
  */
-const nodeRender = (node: TreeNode) => () =>
-	node.kind === 'mark' ? [node.value(), node.meta(), node.children()] : undefined
-
 const Token = defineComponent({
 	name: 'Token',
 	props: {
@@ -40,7 +36,7 @@ const Token = defineComponent({
 		const resolveMarkSlot = useMarkput(s => s.slots.mark)
 		// Captured ONCE, as every `useMarkput` target is: safe because the component is keyed
 		// by `node.id` and a node keeps its object for exactly as long as it keeps its id.
-		const rendered = useMarkput(() => nodeRender(props.node))
+		const rendered = useMarkput(() => renderSubscription(props.node))
 
 		// The token's element, handed to core instead of core re-deriving it by walking the painted
 		// DOM. Created once for the same reason `rendered` is captured once.

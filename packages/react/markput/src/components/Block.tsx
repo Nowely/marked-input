@@ -1,5 +1,5 @@
 import type {TreeNode} from '@markput/core'
-import {cx} from '@markput/core'
+import {cx, renderSubscription} from '@markput/core'
 import type {CSSProperties} from 'react'
 import {memo, useMemo} from 'react'
 
@@ -19,8 +19,6 @@ interface BlockProps {
 	blockIndex: number
 }
 
-const rowRender = (node: BlockRow) => () => node.children()
-
 export const Block = memo(({node, blockIndex}: BlockProps) => {
 	const {blockStore, action, Component, slotProps, isDragging, tokens} = useMarkput(s => {
 		const blockStore = s.block.get(node)
@@ -34,9 +32,9 @@ export const Block = memo(({node, blockIndex}: BlockProps) => {
 		}
 	})
 	// The per-row subscription: a RowNode's children are what this component paints, so a
-	// structural edit inside the row must re-render it — the same job Token's nodeRender
-	// does for a mark.
-	useMarkput(() => rowRender(node))
+	// structural edit inside the row must re-render it — `renderSubscription`'s row arm,
+	// the same job its mark arm does for Token.
+	useMarkput(() => renderSubscription(node))
 
 	// MEMOISED, unlike `setBlockRef` below: `consign` mints a registration key per CALL, so
 	// calling it inline would file a fresh entry on every paint and never release the old one.

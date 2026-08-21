@@ -57,6 +57,10 @@ export {computed, effect, watch} from './src/shared/signals'
 export type {Computed, SignalValues} from './src/shared/signals'
 export {readSelected} from './src/shared/readSelected'
 export type {Selectable, ObjectSelector} from './src/shared/readSelected'
+// `readSelected`'s sibling on the subscription side: the per-node repaint target all four
+// adapter Token/Block components pass to `useMarkput`, hoisted so the field contract has one
+// owner instead of a copy per adapter.
+export {renderSubscription} from './src/features/tokens'
 
 // Mark metadata (spec §2.3: keep — the whole implementation of useMarkInfo)
 export {toMarkInfo} from './src/shared/editorContracts'

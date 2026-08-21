@@ -1,4 +1,5 @@
 import type {TreeNode} from '@markput/core'
+import {renderSubscription} from '@markput/core'
 import type {CSSProperties} from 'react'
 import {memo, useMemo} from 'react'
 
@@ -12,21 +13,13 @@ import {TokenChildren} from './TokenChildren'
  * `TokenChildren`, which now registers under the owner's stable id.
  */
 /**
- * THE per-node subscription (spec S2 D8) — what replaced the snapshot value comparator.
- *
- * `memo`'s default reference compare already suppresses the fan-out that comparator was
- * measured against: adoption keeps a node OBJECT exactly when it keeps its id, and an edit
- * before a mark only moves its `position`, a plain field (S1 D3) no component reads. What
- * reference compare cannot see is a mark whose value changed INSIDE that same object —
- * this is what sees it.
- *
- * Deliberately not the shorter "call `resolveMarkSlot` inside the computed": that reads
- * `text()` for a text node and would repaint its Span on every keystroke, which is the one
- * thing the text path exists to avoid. These three are exactly the fields that reach a
- * framework component.
- *
- * A fresh tuple per evaluation, and that is the point — the computed re-evaluates only
- * when one of the three signals fired, so a new reference IS the notification.
+ * THE per-node subscription (spec S2 D8) — what replaced the snapshot value comparator. The
+ * field contract itself lives in core (`renderSubscription`); what it adds HERE is what
+ * `memo`'s default reference compare cannot see. That compare already suppresses the fan-out
+ * the comparator was measured against: adoption keeps a node OBJECT exactly when it keeps its
+ * id, and an edit before a mark only moves its `position`, a plain field (S1 D3) no component
+ * reads. What it cannot see is a mark whose value changed INSIDE that same object — this is
+ * what sees it.
  */
 /**
  * THE MARK WRAPPER. A Mark's element is rendered by the CONSUMER, so core cannot ask for it
@@ -47,9 +40,6 @@ import {TokenChildren} from './TokenChildren'
  */
 const markWrapperStyle: CSSProperties = {display: 'contents'}
 
-const nodeRender = (node: TreeNode) => () =>
-	node.kind === 'mark' ? [node.value(), node.meta(), node.children()] : undefined
-
 export const Token = memo(({node, depth}: {node: TreeNode; depth: number}) => {
 	const {resolveMarkSlot, store} = useMarkput(s => ({
 		resolveMarkSlot: s.slots.mark,
@@ -59,7 +49,7 @@ export const Token = memo(({node, depth}: {node: TreeNode; depth: number}) => {
 	// by construction: the component is keyed by `node.id`, ids are never reused within an
 	// input instance, and a node keeps its object for exactly as long as it keeps its id —
 	// so a different node is a different key and a fresh component.
-	useMarkput(() => nodeRender(node))
+	useMarkput(() => renderSubscription(node))
 
 	const [Component, props] = resolveMarkSlot(node)
 
