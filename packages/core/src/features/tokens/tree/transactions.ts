@@ -25,7 +25,16 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 	const isReadOnly = (): boolean => untracked(deps.readOnly)
 	const isLive = (node: TreeNode): boolean => untracked(() => reachable(deps.tree.roots(), node))
 
-	/** Mirrors the commit pipeline's re-entry guard: editing from a result consumer is a bug. */
+	/**
+	 * Editing from a result consumer is a bug: the dispatcher is still on the stack, so the
+	 * splice would be computed from a projection the outer op has already replaced.
+	 *
+	 * THE only re-entry guard left. The commit pipeline mirrored it until the commit became
+	 * atomic — its clocks now fire after the walk and inside the boundary's batch, so nothing
+	 * can re-enter mid-write and there was no reachable case to police. This one stays because
+	 * it IS reachable: `arrive` bypasses the dispatcher, but a verb called from a commit
+	 * watcher still runs inside it (gated below).
+	 */
 	const assertIdle = (): void => {
 		if (dispatching) throw new Error('TokenTree: re-entrant transaction dispatch')
 	}
