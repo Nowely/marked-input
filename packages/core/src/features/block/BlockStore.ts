@@ -1,5 +1,5 @@
 import {signal} from '../../shared/signals'
-import type {DragAction, DragActions} from '../../shared/types'
+import type {DragAction} from '../../shared/types'
 
 type DropPosition = 'before' | 'after' | null
 
@@ -36,15 +36,21 @@ export class BlockStore {
 		menuPosition: signal({initial: {top: 0, left: 0}}),
 	}
 
-	#blockIndex = 0
-	#dragAction: DragActions['action'] | null = null
+	readonly #action: (action: DragAction) => void
+	readonly #blockIndex: () => number
 	#cleanupContainer?: () => void
 	#cleanupGrip?: () => void
 	#cleanupMenu?: () => void
 
-	attachContainer(el: HTMLElement | null, blockIndex: number, actions: DragActions) {
+	// The index is a READER, not a fed number: the store outlives renders, so a copy goes
+	// stale as soon as a row above it appears or disappears. During a drag the tree is
+	// static, so the live read equals what a render would have fed.
+	constructor(action: (action: DragAction) => void, blockIndex: () => number) {
+		this.#action = action
 		this.#blockIndex = blockIndex
-		this.#dragAction = actions.action
+	}
+
+	attachContainer(el: HTMLElement | null) {
 		if (el === this.refs.container) return
 		this.#cleanupContainer?.()
 		this.refs.container = el
@@ -58,9 +64,7 @@ export class BlockStore {
 		})
 	}
 
-	attachGrip(el: HTMLButtonElement | null, blockIndex: number, actions: DragActions) {
-		this.#blockIndex = blockIndex
-		this.#dragAction = actions.action
+	attachGrip(el: HTMLButtonElement | null) {
 		this.#cleanupGrip?.()
 		if (!el) return
 		this.#cleanupGrip = wireListeners(el, {
@@ -80,9 +84,9 @@ export class BlockStore {
 	}
 
 	closeMenu = () => this.state.menuOpen(false)
-	addBlock = () => this.#emitAndClose({type: 'add', afterIndex: this.#blockIndex})
-	deleteBlock = () => this.#emitAndClose({type: 'delete', index: this.#blockIndex})
-	duplicateBlock = () => this.#emitAndClose({type: 'duplicate', index: this.#blockIndex})
+	addBlock = () => this.#emitAndClose({type: 'add', afterIndex: this.#blockIndex()})
+	deleteBlock = () => this.#emitAndClose({type: 'delete', index: this.#blockIndex()})
+	duplicateBlock = () => this.#emitAndClose({type: 'duplicate', index: this.#blockIndex()})
 
 	#onContainerDragOver(e: DragEvent, el: HTMLElement) {
 		if (!e.dataTransfer) return
@@ -103,16 +107,16 @@ export class BlockStore {
 		e.preventDefault()
 		const sourceIndex = Number.parseInt(e.dataTransfer.getData('text/plain'), 10)
 		if (Number.isNaN(sourceIndex)) return
-		const targetIndex =
-			(this.state.dropPosition() ?? 'after') === 'before' ? this.#blockIndex : this.#blockIndex + 1
+		const index = this.#blockIndex()
+		const targetIndex = (this.state.dropPosition() ?? 'after') === 'before' ? index : index + 1
 		this.state.dropPosition(null)
-		this.#emit({type: 'reorder', source: sourceIndex, target: targetIndex})
+		this.#action({type: 'reorder', source: sourceIndex, target: targetIndex})
 	}
 
 	#onGripDragStart(e: DragEvent) {
 		if (!e.dataTransfer) return
 		e.dataTransfer.effectAllowed = 'move'
-		e.dataTransfer.setData('text/plain', String(this.#blockIndex))
+		e.dataTransfer.setData('text/plain', String(this.#blockIndex()))
 		this.state.isDragging(true)
 		if (this.refs.container) e.dataTransfer.setDragImage(this.refs.container, 0, 0)
 	}
@@ -137,12 +141,8 @@ export class BlockStore {
 		if (e.key === 'Escape') this.closeMenu()
 	}
 
-	#emit(action: DragAction) {
-		this.#dragAction?.(action)
-	}
-
 	#emitAndClose(action: DragAction) {
-		this.#emit(action)
+		this.#action(action)
 		this.closeMenu()
 	}
 }

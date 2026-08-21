@@ -27,3 +27,17 @@ layer would put drag and menu state on a public `TreeNode`.
 separate id-keyed store, or accept one merged map and the public-surface cost of UI state on a
 node? The note's own reason for asking — "so a new block isn't created in time" — needs
 restating as a concrete symptom before either option can be scored.
+
+## Comments
+
+2026-08-21 — The "fold the two derivable fields" option is executed; the store-union question
+itself stays open. The RowNode cutover removed this issue's stated blocker ("`BlockStore`
+holds no node id at all"): `BlockController.get(node)` keys stores by the node object, so it
+constructs each `BlockStore` with what it already holds — the shared `action` event and a live
+index reader, `() => tokens.rootIndexOf(node.id) ?? -1`. `#blockIndex` and `#dragAction` are
+deleted, `attachContainer`/`attachGrip` take only the element, the one-field `DragActions`
+interface is gone from `shared/types.ts`, and both adapters dropped the `blockIndex` prop
+threading (react `Block.tsx`/`DragHandle.tsx`, vue `Block.vue`/`DragHandle.vue`, plus both
+`Container`s). Of the seven fields the body counts, what remains in `BlockStore` is the five UI
+signals, `refs.container`, and the listener cleanups — exactly the set the body called not
+derivable. Whether THAT residue merges into the token layer is still the open question.

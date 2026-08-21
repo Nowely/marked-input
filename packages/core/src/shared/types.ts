@@ -111,7 +111,3 @@ export type DragAction =
 	| {type: 'add'; afterIndex: number}
 	| {type: 'delete'; index: number}
 	| {type: 'duplicate'; index: number}
-
-export interface DragActions {
-	action: {(action: DragAction): void}
-}

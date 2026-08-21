@@ -8,13 +8,12 @@ import styles from '@markput/core/styles.module.css'
 
 const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
-export const DragHandle = memo(({node, blockIndex}: {node: TreeNode; blockIndex: number}) => {
-	const {blockStore, action, readOnly, draggable, isDragging, isHovered, tokens} = useMarkput(s => {
+export const DragHandle = memo(({node}: {node: TreeNode}) => {
+	const {blockStore, readOnly, draggable, isDragging, isHovered, tokens} = useMarkput(s => {
 		const blockStore = s.block.get(node)
 
 		return {
 			blockStore,
-			action: s.block.action,
 			readOnly: s.props.readOnly,
 			draggable: s.props.draggable,
 			isDragging: blockStore.state.isDragging,
@@ -37,7 +36,7 @@ export const DragHandle = memo(({node, blockIndex}: {node: TreeNode; blockIndex:
 		>
 			<button
 				ref={(el: HTMLButtonElement | null) => {
-					blockStore.attachGrip(el, blockIndex, {action})
+					blockStore.attachGrip(el)
 				}}
 				type="button"
 				// The grip is also the menu trigger, so it renders in block mode regardless;

@@ -63,8 +63,8 @@ export class BlockController {
 				return
 			}
 			if (rows.length > 0 && action.afterIndex >= 0) {
-				// `afterIndex` past the end appends after the LAST row, matching the composer's
-				// `Math.min(afterIndex + 1, texts.length)`. A fresh row is the separator itself
+				// `afterIndex` past the end appends after the LAST row, matching `addRowUnanchored`'s
+				// `Math.min(afterIndex + 1, rows.length)`. A fresh row is the separator itself
 				// (issue 08): spliced after the anchor row's own separator it reads as an empty
 				// row, and on the document-final unterminated row it first terminates that row.
 				rows.at(Math.min(action.afterIndex, rows.length - 1))?.insertAfter(this.props.separator())
@@ -81,7 +81,11 @@ export class BlockController {
 	get(node: TreeNode): BlockStore {
 		let store = this.#stores.get(node)
 		if (!store) {
-			store = new BlockStore()
+			// The store learns its row index from the tree, not from a render: the WeakMap key
+			// IS the node, so `rootIndexOf` answers live. `-1` only for a node that has left
+			// the tree, which no emitter reaches — they are all DOM handlers on the row's own
+			// mounted elements.
+			store = new BlockStore(this.action, () => this.tokens.rootIndexOf(node.id) ?? -1)
 			this.#stores.set(node, store)
 		}
 		return store

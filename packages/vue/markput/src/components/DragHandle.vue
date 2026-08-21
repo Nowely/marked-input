@@ -8,7 +8,7 @@ import {useStore} from '../lib/hooks/useStore'
 
 import styles from '@markput/core/styles.module.css'
 
-const props = defineProps<{node: TreeNode; blockIndex: number}>()
+const props = defineProps<{node: TreeNode}>()
 
 const store = useStore()
 const readOnly = useMarkput(s => s.props.readOnly)
@@ -26,7 +26,7 @@ const setPanelRef = (el: unknown) => {
 
 const setGripRef = (el: unknown) => {
 	const element = el as HTMLButtonElement | null
-	blockStore.attachGrip(element, props.blockIndex, {action: store.block.action})
+	blockStore.attachGrip(element)
 }
 </script>
 

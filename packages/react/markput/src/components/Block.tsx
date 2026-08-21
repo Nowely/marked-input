@@ -16,15 +16,13 @@ export type BlockRow = Extract<TreeNode, {kind: 'row'}>
 
 interface BlockProps {
 	node: BlockRow
-	blockIndex: number
 }
 
-export const Block = memo(({node, blockIndex}: BlockProps) => {
-	const {blockStore, action, Component, slotProps, isDragging, tokens} = useMarkput(s => {
+export const Block = memo(({node}: BlockProps) => {
+	const {blockStore, Component, slotProps, isDragging, tokens} = useMarkput(s => {
 		const blockStore = s.block.get(node)
 		return {
 			blockStore,
-			action: s.block.action,
 			Component: s.slots.blockComponent,
 			slotProps: s.slots.blockProps,
 			isDragging: blockStore.state.isDragging,
@@ -43,7 +41,7 @@ export const Block = memo(({node, blockIndex}: BlockProps) => {
 
 	const setBlockRef = (el: HTMLElement | null) => {
 		consignBlock(el)
-		blockStore.attachContainer(el, blockIndex, {action})
+		blockStore.attachContainer(el)
 	}
 
 	return (
@@ -57,7 +55,7 @@ export const Block = memo(({node, blockIndex}: BlockProps) => {
 		>
 			<DropIndicator node={node} position="before" />
 
-			<DragHandle node={node} blockIndex={blockIndex} />
+			<DragHandle node={node} />
 
 			{node.children().map(child => (
 				<Token key={child.id} node={child} depth={0} />

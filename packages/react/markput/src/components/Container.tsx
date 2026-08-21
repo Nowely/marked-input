@@ -32,9 +32,9 @@ export const Container = memo(() => {
 	return (
 		<Component {...props} ref={setRef}>
 			{isBlock
-				? nodes.map((n, i) => (
+				? nodes.map(n => (
 						// oxlint-disable-next-line no-unsafe-type-assertion -- block-mode parse policy: parseRowsValue makes every root a RowNode
-						<Block key={n.id} node={n as BlockRow} blockIndex={i} />
+						<Block key={n.id} node={n as BlockRow} />
 					))
 				: nodes.map(n => <Token key={n.id} node={n} depth={0} />)}
 		</Component>

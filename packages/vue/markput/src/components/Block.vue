@@ -13,7 +13,7 @@ import Token from './Token.vue'
 
 import styles from '@markput/core/styles.module.css'
 
-const props = defineProps<{node: TreeNode; blockIndex: number}>()
+const props = defineProps<{node: TreeNode}>()
 
 const store = useStore()
 const blockStore = store.block.get(props.node)
@@ -42,7 +42,7 @@ const consignBlock = store.tokens.consign(props.node.id)
 const setBlockRef = (el: unknown) => {
 	const element = unwrapEl(el)
 	consignBlock(element)
-	blockStore.attachContainer(element, props.blockIndex, {action: store.block.action})
+	blockStore.attachContainer(element)
 }
 
 // The per-row subscription: a RowNode's children are what this component paints, so a
@@ -67,7 +67,7 @@ const rowChildren = computed(() => {
 		:style="blockStyle"
 	>
 		<DropIndicator :node="node" position="before" />
-		<DragHandle :node="node" :block-index="blockIndex" />
+		<DragHandle :node="node" />
 		<template v-if="rowChildren">
 			<Token v-for="child in rowChildren" :key="child.id" :node="child" :depth="0" />
 		</template>
