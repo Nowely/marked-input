@@ -137,11 +137,10 @@ Every committed change flows through a single `apply(result)`, taking the
 ```
 write verb → splice → parse → adopt → TransactionResult
   │    (adoption writes node.text → the per-surface effects write the DOM)
-  → apply(result): bump `commits`, then fire committed()
-       └─ the bind EFFECT wakes on `commits` → bind(): one tree walk —
-            create/kill TokenHandles, set element bindings, re-arm the text effects,
-            apply the one-host editable topology to NEWLY BOUND surfaces and mark roots
-          → fire bound()
+  → apply(): bind() — one tree walk: create/kill TokenHandles, set element
+       bindings, re-arm the text effects, apply the one-host editable topology to
+       NEWLY BOUND surfaces and mark roots → fire bound()
+     then fire committed()
 
 framework paints → a ref fires → consign(id)(element) → rebind(id): that id's
   share of the same walk → fire bound()
@@ -153,13 +152,18 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   rung L7 in `commitCost.bench.ts` (~1.35× at 100 marks, ~2.5× at 1000 rows) and
   accepted there.
 - **A ref binds ONE token, and that is the whole reason mount is linear.** A
-  registration used to invalidate a counter the bind effect watched, so every ref
+  registration used to invalidate a counter the bind read reactively, so every ref
   cost a whole-tree walk: mounting an N-node document measured 2N+2 binds through
   both adapters and 678 ms at 2001 nodes. `rebind(id)` is that id's share of the
   walk; the whole walk stays on the commit clock, where the kill sweep needs it.
-- **The bind effect subscribes to ONE thing**, `commits` — not the live roots.
-  Every write of `tree.roots` is adoption's, inside a commit that ends in `apply`,
-  so subscribing to both bound twice for one commit.
+- **Bind is a CALL inside `apply`, not a reactive effect.** It runs before
+  `committed` fires, so every subscriber sees a DOM that already matches the tree
+  and every per-surface effect is re-armed. That order used to be encoded in the
+  POSITION of a counter write — a signal the model watched in an effect, flushed
+  synchronously on that line — which made moving a line a behaviour change. The
+  counter, the effect and the model's last use of `effect` went with it. There is
+  no separate mount bind either: a mount always arrives through the props watch,
+  which commits, which binds.
 - **A control registration binds nothing.** `dom/controlRoots.ts` owns which
   elements sit under control chrome and updates in place, because that answer is a
   DOM walk from each control up to the host and touches no token. It used to be
@@ -249,7 +253,9 @@ find(id) // the live TreeNode by stable id
 selection: Selection // THE stored anchors and their derivations (see below)
 
 // writes
-replaceBetween(from, to, text) / setValue(text)
+replaceBetween(from, to, text) / setValue(text, enterRoot?)
+// `enterRoot` puts the caret INTO that row of the RESULT, so a caller never forms an
+// absolute offset into a string that does not exist yet (ADR-0003)
 // per-node writes are MarkNode.update / MarkNode.remove, which ride a transaction
 
 // tree reads, in tree coordinates
@@ -257,7 +263,7 @@ valueBetween(from, to) / adjacentMark(anchor, ±1) / step(anchor, ±1)
 rootIndexOf(id)
 
 // renderer contract (adapter-only)
-consign(id) / consignRow(id) / children(ownerId) / control() // ref callbacks; a ref IS the bind
+consign(id) / children(ownerId) / control() // ref callbacks; a ref IS the bind
 committed: Event<void>        // THE model clock; one pulse per commit, DOM or no DOM
 bound: Event<void>            // THE DOM clock; one pulse per binding — what the caret needs
 // the framework key is `node.id` — there is no keyOf
@@ -268,24 +274,27 @@ handleAt(node) // handle | 'control' | undefined for a DOM node
 
 // DOM↔model facade — anchors in both directions; no absolute offsets
 anchorFor(node, offset, affinity?)   // DOM (node, offset) → NodeAnchor in the LIVE tree
-placeCaret(anchor: NodeAnchor)       // collapsed caret, through the anchor's OWN node
-selectRange(anchor, head)            // order-insensitive; normalized in DOM order
-domSelection(): SelectionSnapshot | undefined // THE raw window-selection read
 caretRect(): DOMRect | undefined     // viewport rect of the caret/selection, on demand
 selectedContent(): {html; text} | undefined // selection serialized for clipboard
 
 // the selection driver's reads, delegated (the driver itself is private)
 domAnchors(): Anchors | undefined    // DOM TRUTH as anchors
-focusFirst() / placeAtHandle(handle, boundary?)
+focusFirst()
 
 // the tree layer's own coordinate boundary — the ONE place a number may be formed.
 // Only this direction is public; its inverse is a private `offsetOf` closure in the
 // selection deps, whose one consumer is `tree/selection.ts` (isAllSelected).
 anchorAt(offset)
-
-// whole-value entry into a row, so a caller never forms an absolute offset
-setValueEnteringRoot(text, rootIndex)
 ```
+
+**Not here, deliberately** (API-surface cut, 2026-08-21): `placeCaret`,
+`selectRange`, `domSelection` and `placeAtHandle` were one-line pass-throughs with no
+production caller — the driver and the controllers reach `DomModel` directly, and only
+specs went through the model. They live on their owners (`dom/DomModel`,
+`dom/SelectionDriver`); specs reach a `DomModel` through `__testing__/mountFixtures`'s
+`domModelOf`. `setValueEnteringRoot` folded into `setValue`'s second parameter. The
+target for the whole surface is in [the token-born-edit
+spec](../../../../../docs/scratch/token-born-edit/spec.md#the-target-surface).
 
 There is no manual editable-state override. `setEditable` used to be one, and had
 no caller anywhere: `props.readOnly` owns the container's `contenteditable`
@@ -296,11 +305,11 @@ Nothing is published before a container mounts: `nodes()` is `[]` and facade
 reads fail soft. That ordering is load-bearing rather than incidental — because
 the tree seeds inside the container's own ref, no token element can exist before
 it, so the container's ref always lands first and every token ref lands after the
-bind effect is live.
+mount's own commit has bound.
 
 ### The selection snapshot
 
-`domSelection()` returns one `SelectionSnapshot` of the live window selection, or
+`DomModel.selection()` returns one `SelectionSnapshot` of the live window selection, or
 `undefined` when there is no range (unfocused / nothing selected). One read, not
 a set of per-field micro-reads:
 
@@ -312,14 +321,13 @@ type SelectionSnapshot = {
 ```
 
 A consumer that treats "no selection" as collapsed compares
-`domSelection()?.range.collapsed !== false`. The caret's viewport rect is not on
+`selection()?.range.collapsed !== false`. The caret's viewport rect is not on
 the snapshot — `caretRect()` computes it only when asked, so a `selectionchange`
 snapshot forces no layout.
 
-The per-member contract — why `nodes` is a subscribable `Computed` field, why the
-bind effect subscribes to the commit counter and not to the roots, exactly when
-`handle(id)` fails closed — is on the members themselves in `seam/TokenModel.ts`
-and `dom/commit.ts`.
+The per-member contract — why `nodes` is a subscribable `Computed` field, why
+`apply` binds before it announces, exactly when `handle(id)` fails closed — is on
+the members themselves in `seam/TokenModel.ts` and `dom/commit.ts`.
 
 ### Boundary facade internals
 
@@ -445,9 +453,8 @@ ref fires, and that absence is the whole of the refusal (ADR-0008).
 
 Split in two by owner, and owned HERE. There is no `features/selection/` and no
 `store.selection`: `TokenModel` constructs both halves, publishes the state as
-`tokens.selection` and delegates the driver's three externally-needed reads
-(`domAnchors`, `focusFirst`, `placeAtHandle`) the same way it delegates
-`DomModel`'s.
+`tokens.selection` and delegates the driver's two externally-needed reads
+(`domAnchors`, `focusFirst`) the same way it delegates `DomModel`'s.
 
 There is no construction cycle around it: the string boundary calls
 `this.selection.anchors()` / `this.selection.repair(result)` directly, with no
@@ -478,12 +485,12 @@ an explicit type annotation to keep `tsc` off TS7022.
 
 ## Caret placement by handle
 
-`TokenModel.placeCaret(anchor)` resolves the anchor's OWN node and lowers onto
+`DomModel.placeCaret(anchor)` resolves the anchor's OWN node and lowers onto
 `TokenHandle.placeCaret(localOffset)`; `selectRange(anchor, head)` does the same
 for both ends and normalizes them in DOM order. The two document edges (`'start'`
-/ `'end'`) resolve against the live roots. `TokenModel.placeAtHandle(handle,
-boundary)` (the driver's, delegated) places at a handle's start/end. All of it
-fails closed against a dead or mid-window handle: a node with no live handle
+/ `'end'`) resolve against the live roots. `SelectionDriver.placeAtHandle(handle,
+boundary)` places at a handle's start/end — `focusFirst`'s own lowering, and the
+only caller. All of it fails closed against a dead or mid-window handle: a node with no live handle
 declines, and the `tokens.bound` re-apply places the caret once the bind
 lands. Nothing searches the bound surfaces for a nearest position.
 
@@ -515,6 +522,49 @@ that it cost a whole-tree walk on every commit in dev and in every test.
 The heal itself is pinned rather than assumed — `commitPipeline.spec.ts` corrupts
 a surface and asserts the next commit repairs it, batched and unbatched, and
 `TokenModel.spec.ts` does the same across a container re-attach.
+
+## Refuted simplifications
+
+Deletions and folds that were tried against the suite or measured in worktrees
+and refuted. Do not re-propose without new evidence.
+
+- **`handle()`'s pending-structural latch** (removed; ADR-0008). The latch failed
+  closed for EVERY id while a structural apply awaited its bind, on the argument
+  that the node layer is one generation stale. But a node BORN by that commit has
+  no handle at all until `bind` creates one, so the refusal it needed was already
+  structural. What the latch added was a refusal for nodes that SURVIVED the
+  commit, whose elements are correct in the window — the per-surface effect has
+  already written the new text (`commitPipeline.spec.ts`'s fold case). It refused
+  precisely the case that worked. A caret placed mid-window against pre-paint
+  parent coordinates is a transient the post-bind `tokens.bound` re-apply
+  corrects in the same frame, and it cannot steal focus the way it could under
+  the N-editing-host topology the latch was designed in. Gate:
+  `seam/pendingWindow.spec.ts`.
+- ~~**Deleting the `#committed` mirror**~~ — refuted 2026-08-20, then DONE
+  2026-08-22, and the sequence is the point. Both refusals were real: folding
+  `value` onto the tree in one batch lost the mount clock pulses, and deleting
+  the mirror without the batch silently inverted the value-vs-DOM order (a
+  subscriber handed the new string over the previous generation's document —
+  now pinned by `TokenModel.clocks.spec`'s "a value subscriber sees a DOM that
+  already matches"). What neither refusal saw was that the first failure was a
+  BUG in our own event primitive: `eventReadOper` consumed a shared dirty flag,
+  so a `watch` registered during the batch cancelled delivery for everyone
+  queued behind it. Fixing that (`shared/signals/eventDelivery.spec.ts`) made
+  the atomic commit work, and the mirror came out with nothing to compensate
+  for. **The lesson to carry, not the verdict:** a refutation is evidence about
+  the code as it stands, never a permanent no — check whether the obstacle is
+  ours to remove.
+- **The change feed** (`{added, removed, updated}` ids on `committed`, derived
+  by a ledger module). Deleted once the block store moved to a `WeakMap` and
+  left it with zero core readers; the spec oracles moved to
+  `tree/__testing__/diff.ts`. A future fine-grained render feed may want it
+  back — that is a re-add with a consumer, not a revert.
+- **Folding `EditController` into `tokens.replaceBetween`.** The seam IS the
+  contract: user edits move the caret, programmatic writes are repair-only —
+  pinned by selection.spec AC-3.x and the bench L5/L5b ladder. `store.edit` is
+  also exported-Store surface.
+- **`domBoundary` vs `valueBoundary` "duplication".** None: one is DOM-domain,
+  the other string-domain, with zero shared computation.
 
 ## Benchmarking
 

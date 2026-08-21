@@ -1,5 +1,5 @@
 import type {DomRef} from '../../../shared/editorContracts'
-import {batch, computed, effect, signal, untracked, watch} from '../../../shared/signals/index.js'
+import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import {shallow} from '../../../shared/utils/shallow'
 import type {Host} from '../../state/Host'
@@ -9,7 +9,6 @@ import {createControlRoots} from '../dom/controlRoots'
 import type {ControlRoots} from '../dom/controlRoots'
 import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
-import type {SelectionSnapshot} from '../dom/DomModel'
 import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
@@ -47,9 +46,8 @@ export class TokenModel {
 	 * mark value change both leave the id space and the element set untouched — which is the
 	 * whole reason it is not the DOM clock.
 	 *
-	 * PAYLOAD-FREE, deliberately. It used to carry `{added, removed, updated}` ids derived by a
-	 * ledger module; nothing in core read them once the block store moved to a `WeakMap`, and a
-	 * consumer that wants to know what changed re-reads {@link nodes} or {@link find}.
+	 * PAYLOAD-FREE, deliberately: a consumer that wants to know what changed re-reads
+	 * {@link nodes} or {@link find}. The change-feed record is in the README's refuted list.
 	 */
 	get committed(): Event<void> {
 		return this.#pipeline.committed
@@ -70,19 +68,11 @@ export class TokenModel {
 	 * commands, and the handle's existence IS the validity check. It carries no data of its
 	 * own — content and positions are read from the node ({@link find}).
 	 *
-	 * ABSENCE IS THE ONLY REFUSAL (ADR-0008). This used to also fail closed for EVERY id
-	 * while a structural apply awaited its bind, gated by the pipeline's `pendingStructural`
-	 * latch. The reason given was that the node layer is one generation stale — but a node
-	 * BORN by that commit has no handle here at all until `bind` creates one
-	 * (`dom/bind.ts`), so the refusal it actually needed was already structural. What the
-	 * latch added on top was a refusal for nodes that SURVIVED the commit, whose elements are
-	 * correct in the window: the per-surface effect has already written the new text
-	 * (`commitPipeline.spec.ts`'s fold case). It refused precisely the case that worked.
-	 *
-	 * A caret placed mid-window against pre-paint parent coordinates is a transient the
-	 * post-bind `tokens.bound` re-apply corrects in the same frame (`dom/SelectionDriver`),
-	 * and it can no longer steal focus the way it could under N editing hosts, which is the
-	 * topology the latch was designed in. Gated by `seam/pendingWindow.spec.ts`.
+	 * ABSENCE IS THE ONLY REFUSAL (ADR-0008): a node BORN by a commit has no handle until
+	 * `bind` creates one, and that structural refusal is the only one this lookup needs — the
+	 * pending-structural latch that also failed closed for SURVIVING nodes is refuted in the
+	 * README. A caret placed mid-window is a transient the post-bind `tokens.bound` re-apply
+	 * corrects in the same frame (`dom/SelectionDriver`). Gated by `seam/pendingWindow.spec.ts`.
 	 */
 	handle(id: number): TokenHandle | undefined {
 		return this.#nodes.get(id)
@@ -91,8 +81,7 @@ export class TokenModel {
 	/**
 	 * THE selection state: a pair of `NodeAnchor`s and their derivations, DOM-free. Its DOM
 	 * half is the private {@link SelectionDriver} declared in the internals section, whose
-	 * reads are exposed here as {@link domAnchors} / {@link focusFirst} /
-	 * {@link placeAtHandle}.
+	 * reads are exposed here as {@link domAnchors} / {@link focusFirst}.
 	 */
 	readonly selection: Selection = createSelection({
 		// A bag of CLOSURES, none of them read before the first verb call — the ONLY reason this
@@ -127,11 +116,9 @@ export class TokenModel {
 	 * ELEMENT-ONLY — nothing ever asks which token owns a control — and it goes straight into
 	 * {@link ControlRoots}, which owns the membership the locate walk reads.
 	 *
-	 * NO BIND, and that is the whole shape of it. A control used to invalidate a counter the bind
-	 * effect watched, so one ref cost a whole-tree walk on the argument that controls are rare.
-	 * They are not: block layout mounts up to four per ROW — two drop indicators, a drag handle
-	 * and a menu — so that made a block mount quadratic, measured at 400 rows / 400 binds / 93 ms.
-	 * A control's ancestor chain is a pure DOM walk that touches no token, so it updates in place.
+	 * NO BIND: a control's ancestor chain is a pure DOM walk that touches no token, so it
+	 * updates in place. Routing a ref through the bind counter makes a block mount quadratic —
+	 * block layout mounts up to four controls per ROW, measured at 400 rows / 400 binds / 93 ms.
 	 *
 	 * REGISTRATION is also where the control leaves the editing host: a control is chrome,
 	 * not document content, so inside the one contenteditable container it must be atomic
@@ -164,12 +151,9 @@ export class TokenModel {
 	}
 
 	/**
-	 * Ref callback for a token's OWN element — the thing `bind` currently re-derives by walking
-	 * the painted DOM in lockstep with the tree. The framework held this element a moment before
-	 * it painted it; consigning it is that association pushed instead of re-discovered.
-	 *
-	 * THE element source: `bind` and `rebind` both read this registry and nothing else, and the
-	 * DOM walk that used to re-derive the same pairing is gone.
+	 * Ref callback for a token's OWN element. THE element source: `bind` and `rebind` both read
+	 * this registry and nothing else — the framework held the element a moment before it painted
+	 * it, so the association is pushed rather than re-discovered by a DOM walk.
 	 *
 	 * Keyed by owner id, then per REGISTRATION like {@link children}, so a ref that outlives a
 	 * re-render cannot be filed under a stale key and one id's element is one lookup.
@@ -181,19 +165,21 @@ export class TokenModel {
 	// ═══ Engine SPI (in-core consumers) ═══════════════════════════════════════
 
 	/**
-	 * THE value read: controlled → the props value; uncontrolled → the last COMMITTED
-	 * projection. There is no separate uncontrolled string — the tree IS the store; the
-	 * three private inputs (`#seed`, `#seeded`, `#committed`) are declared together in the
-	 * internals section below.
+	 * THE value read: controlled → the props value; uncontrolled → THE TREE'S OWN PROJECTION.
+	 * There is no second store and no mirrored string: the tree is the value, and `#seed`
+	 * answers only before it holds anything.
 	 *
-	 * The `#seeded` arm is load-bearing and its gate is NOT the obvious one: reduced to
-	 * `props.value() ?? this.#committed()`, the red case is `TokenModel.value.spec`'s "an
-	 * unmounted store reads defaultValue before anything has committed" — nothing has
-	 * committed there, so `#committed()` is `''`. A store that mounts is seeded by the
-	 * mount watch before the first read.
+	 * It read a `#committed` mirror — the projection copied out after each commit — until the
+	 * commit became atomic. The copy existed to make `value` the LAST thing a commit
+	 * invalidated, because adoption's batch used to flush before the DOM caught up, handing a
+	 * subscriber a new string over an old document. One batch around the fold makes that
+	 * unrepresentable, so the derivation can name its source directly.
+	 *
+	 * The `#seeded` arm is load-bearing: without it, `TokenModel.value.spec`'s "an unmounted
+	 * store reads defaultValue before anything has committed" reads the empty tree.
 	 */
 	readonly value: Computed<string> = computed(
-		() => this.props.value() ?? (this.#seeded() ? this.#committed() : this.#seed())
+		() => this.props.value() ?? (this.#seeded() ? this.#tree.value() : this.#seed())
 	)
 
 	/**
@@ -243,9 +229,17 @@ export class TokenModel {
 	 * EDGES, not `{0, value().length}`: the whole-value arm tests `end` against the TREE's
 	 * length, which {@link value} outruns mid-flight — missing it splices a foreign window.
 	 * Deliberately kept: spec-facing and public-reachable through the exported Store (`store.tokens`) — the `api.focus()` precedent.
+	 *
+	 * `enterRoot` puts the caret INTO that row of the RESULT, named by index rather than by a
+	 * character offset into a string that does not exist yet — that offset was the last
+	 * absolute coordinate above `tree/` (ADR-0003), while an index names a node the commit is
+	 * about to produce, which the caller genuinely knows. A separate verb until the
+	 * API-surface cut; the block callers are the only ones that pass it.
 	 */
-	setValue(text: string): boolean {
-		return this.replaceBetween('start', 'end', text) !== undefined
+	setValue(text: string, enterRoot?: number): boolean {
+		if (this.replaceBetween('start', 'end', text) === undefined) return false
+		if (enterRoot !== undefined) this.#enterRoot(enterRoot)
+		return true
 	}
 
 	/**
@@ -317,15 +311,6 @@ export class TokenModel {
 		return this.#dom.anchorFor(node, offset, affinity)
 	}
 
-	/**
-	 * THE raw selection read: one snapshot of the live window selection (see
-	 * {@link DomModel.selection}). The `dom*` prefix is the same authority marker
-	 * {@link domAnchors} carries — {@link selection} is the stored anchors.
-	 */
-	domSelection(): SelectionSnapshot | undefined {
-		return this.#dom.selection()
-	}
-
 	/** Viewport rect of the caret/selection (see {@link DomModel.caretRect}). */
 	caretRect(): DOMRect | undefined {
 		return this.#dom.caretRect()
@@ -341,24 +326,9 @@ export class TokenModel {
 		this.#selectionDriver.focusFirst()
 	}
 
-	/** Place the caret at a bound handle's start/end; see {@link SelectionDriver.placeAtHandle}. */
-	placeAtHandle(handle: TokenHandle, boundary: 'start' | 'end' = 'start'): boolean {
-		return this.#selectionDriver.placeAtHandle(handle, boundary)
-	}
-
 	/** Current selection serialized for clipboard use. */
 	selectedContent(): {html: string; text: string} | undefined {
 		return this.#dom.selectedContent()
-	}
-
-	/** Place a collapsed caret at a node anchor (see {@link DomModel.placeCaret}). */
-	placeCaret(anchor: NodeAnchor): boolean {
-		return this.#dom.placeCaret(anchor)
-	}
-
-	/** Select between two node anchors, in either order (see {@link DomModel.selectRange}). */
-	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean {
-		return this.#dom.selectRange(anchor, head)
 	}
 
 	// ═══ Wiring ═══════════════════════════════════════════════════════════════
@@ -394,37 +364,13 @@ export class TokenModel {
 					}
 					// The IMMEDIATE run has no `previous`, so it always takes this arm — including
 					// on a re-attach, which rebuilds the onMounted scope and re-runs this watch.
-					// `#restore` is what carries an uncontrolled edit across that (gate:
+					// An uncontrolled re-attach arrives with no value and resolves to the tree's
+					// own, which is what carries the edit across (gate:
 					// `TokenModel.value.spec`'s 'a container re-attach keeps the uncontrolled edit').
 					this.#onExternalValue(next.value)
 				},
 				{immediate: true}
 			)
-			// THE BIND EFFECT: when does the WHOLE tree get re-projected. A single ref does not
-			// come through here at all — {@link consign} calls `rebind(id)` straight away — which
-			// is what keeps a mount linear.
-			//
-			// It subscribes to ONE thing, the commit counter — so that a commit which moves no
-			// element still binds, which keeps `bound` a clock every commit reaches and keeps the
-			// caret's post-commit re-place.
-			//
-			// NOT the roots, deliberately, and it is not a gap: every write of `tree.roots` is
-			// adoption's, inside a commit that ends in `apply`. Subscribing to both made a
-			// structural commit bind TWICE — adoption's batch closes and flushes the effect, then
-			// `apply` bumps the counter and flushes it again — for one commit's worth of change.
-			//
-			// Everything the projection itself reads is read inside `bind`'s own `untracked`, and
-			// this `untracked` is a second boundary over `bindNow`'s container read. NEITHER is
-			// pinned by a test, and that is stated rather than implied: removing either one leaves
-			// the suite green, because the only node signals the walk reads are `children()`
-			// (written by adoption, inside a commit that wakes the effect anyway) and `text()`
-			// (read inside the per-surface effect, which is its own subscriber). They are
-			// correct-by-construction boundaries. What IS pinned — one bind per commit, one rebind
-			// per ref — is in `TokenModel.bindEffect.spec.ts`.
-			effect(() => {
-				this.#pipeline.commits()
-				untracked(() => this.#pipeline.bindNow())
-			})
 		})
 
 		// LAST, so the driver's own `onMounted` runs after the arrival above. See
@@ -444,16 +390,13 @@ export class TokenModel {
 	// ─── internals ─────────────────────────────────────────────────────────────
 
 	/**
-	 * The markups, compared SHALLOWLY, and that is the whole point of splitting them out.
-	 *
-	 * `props.options` is a plain signal with no equality, so a fresh-but-identical array — which
-	 * is what an inline `options={[…]}` prop produces on every parent render, and what Vue's
-	 * `syncProps` allocates unconditionally on a watch that depends on `props.value` — used to
-	 * propagate all the way here and mint a new `Parser`. Descriptors are interned PER PARSER and
-	 * `adopt` pairs marks on `candidate.descriptor === token.descriptor`, so every mark fell to
-	 * `buildNode` and took a NEW ID: a full remount of every Mark in both adapters plus the loss
-	 * of `BlockController`'s node-keyed per-row state, on every keystroke of a controlled Vue
-	 * editor. Gated by `TokenModel.parse.spec`'s "a fresh but identical `options` array".
+	 * The markups, compared SHALLOWLY, and that is the whole point of splitting them out:
+	 * `props.options` is a plain signal with no equality, and a fresh-but-identical array (an
+	 * inline `options={[…]}` prop on every parent render; Vue's `syncProps` allocates one per
+	 * watch run) would mint a new `Parser` here. Descriptors are interned PER PARSER and `adopt`
+	 * pairs marks on descriptor identity, so a new parser remounts every Mark with a NEW ID and
+	 * drops `BlockController`'s node-keyed per-row state — on every keystroke of a controlled
+	 * Vue editor. Gated by `TokenModel.parse.spec`'s "a fresh but identical `options` array".
 	 */
 	readonly #markups: Computed<(Markup | undefined)[]> = computed(() => this.props.options().map(opt => opt.markup), {
 		equals: shallow,
@@ -595,18 +538,6 @@ export class TokenModel {
 	}
 
 	/**
-	 * @internal Whole-value replacement that puts the caret INTO a row of the RESULT, named by
-	 * index rather than by a character offset into a string that does not exist yet. That
-	 * offset was the last absolute coordinate above `tree/` (ADR-0003); an index names a node
-	 * the commit is about to produce, which the caller genuinely knows.
-	 */
-	setValueEnteringRoot(text: string, index: number): boolean {
-		if (!this.setValue(text)) return false
-		this.#enterRoot(index)
-		return true
-	}
-
-	/**
 	 * A verb's post-edit caret, under the ONE controlled-mode rule (spec D6): controlled mode
 	 * moves no DERIVED caret, because the tree has not moved yet — the anchor would be captured
 	 * as `selectionBefore` at the echo and shifted a SECOND time by `map`. The echo's repair
@@ -620,29 +551,16 @@ export class TokenModel {
 	/** The lazily-materialized default, so a `defaultValue` set after the first read stays a no-op. */
 	readonly #seed = signal({initial: () => this.props.defaultValue() ?? ''})
 	/**
-	 * One-shot: the tree holds a value. A SIGNAL, not a plain flag — {@link value} routes on
-	 * it, and a field would leave that computed permanently subscribed to `#seed` and blind
-	 * to the first commit (gates: `Store.spec`'s three write-then-read-unmounted cases).
+	 * Does the tree hold a value yet — DERIVED, not stored. An unmaterialized tree is built
+	 * from an empty array and has no roots; any parse gives at least one, because the parser
+	 * always emits a leading text token. The empty document is the input that could have made
+	 * this wrong and does not: `''` parses to ONE empty text root, so an editor cleared to
+	 * nothing stays cleared instead of re-seeding from `defaultValue` on the next arrival.
+	 *
+	 * Reads a signal, so {@link value} still routes reactively — that was the reason the
+	 * stored form had to be a signal rather than a plain flag.
 	 */
-	readonly #seeded = signal({initial: false})
-	/** Where an uncontrolled fallback returns to: re-recorded per arrival until control is taken. */
-	#restore: string | undefined
-	/**
-	 * Edge detector for the uncontrolled→controlled transition. A field, not `watch`'s
-	 * `previous`, so a container swap (which tears down and rebuilds the onMounted scope)
-	 * cannot make a remount look like a fresh edge.
-	 */
-	#controlled = false
-	/**
-	 * The commit-generation marker: `join(tree)` as of the last COMPLETED commit, written by
-	 * the boundary's `onResult` AFTER `pipeline.apply`. {@link value} reads this and never
-	 * `#tree.value()` directly, because `adopt()` writes `tree.roots` inside its own `batch`
-	 * whose flush would notify value subscribers while the token view is still stale
-	 * (`seam/TokenModel.parse.spec.ts`'s "the live tree is updated when value.current
-	 * fires"). Not a second store: one writer, and its content is the tree's own projection
-	 * read at that instant, so drift is unrepresentable.
-	 */
-	readonly #committed = signal({initial: ''})
+	readonly #seeded = () => this.#tree.roots().length > 0
 
 	readonly #boundary = createBoundary({
 		tree: this.#tree,
@@ -652,16 +570,14 @@ export class TokenModel {
 		controlled: () => this.props.value() !== undefined,
 		selection: () => this.selection.anchors(),
 		onChange: next => this.props.onChange()?.(next),
-		// Synchronous by contract, and ORDER IS LOAD-BEARING inside the `batch` that makes it
-		// observable: `#committed` is written AFTER `pipeline.apply` — publishing it first
-		// hands subscribers a new string over a stale token view — and `selection.repair` runs
-		// LAST, so an imperative post-edit caret (`EditController`) lands later in the same
-		// batch and wins by design. `changed` is an EVENT: at depth 0 it flushes its subscribers
-		// INSIDE `apply`, ahead of both writes — the batch is what holds them until all three land.
+		// Synchronous by contract, and the ORDER is load-bearing: `selection.repair` runs after
+		// `apply`, so an imperative post-edit caret (`EditController`) lands later in the same
+		// batch and wins by design. The batch here is nested inside the boundary's own — the
+		// commit is atomic as a whole — and it is kept because this pair has its own ordering
+		// to state.
 		onResult: result =>
 			batch(() => {
 				this.#pipeline.apply()
-				this.#committed(this.#tree.value())
 				this.selection.repair(result)
 			}),
 	})
@@ -672,18 +588,18 @@ export class TokenModel {
 		sink: this.#boundary.sink,
 	})
 
-	/** One router for every external value: the props watch, and `#ensureSeeded`. */
+	/**
+	 * One router for every external value: the props watch, and `#ensureSeeded`.
+	 *
+	 * THE FALLBACK IS THE TREE. An arrival with no value means no parent owns it, and what the
+	 * editor keeps is what it is already showing — the seed answers only before the tree holds
+	 * anything at all. There is no memory of an earlier uncontrolled era: a `#restore` string
+	 * frozen at the moment control was taken used to serve three arms, and two of them (a
+	 * container re-attach, an edit made before mount) are the tree's own value by then. The
+	 * third was the behaviour change that removed it — see the commit body.
+	 */
 	#onExternalValue(value: string | undefined): void {
-		const controlled = value !== undefined
-		// While no parent owns the value every arrival re-records where an uncontrolled fallback
-		// returns to — a re-attach re-runs the mount watch's immediate arm, and without this the
-		// fallback would be the seed again. Entering controlled mode freezes it. The three arms
-		// are pinned separately: never-uncontrolled falls back to the seed, an uncontrolled edit
-		// falls back to that edit, and a re-attach keeps it.
-		if (!this.#controlled) this.#restore = this.#seeded() ? this.#tree.value() : undefined
-		this.#controlled = controlled
-		const next = value ?? this.#restore ?? this.#seed()
-		this.#seeded(true)
+		const next = value ?? (this.#seeded() ? this.#tree.value() : this.#seed())
 		this.#boundary.arrive(next)
 	}
 
@@ -692,7 +608,7 @@ export class TokenModel {
 	 * waiting for mount, because several specs edit an UNMOUNTED store.
 	 *
 	 * Reads TRACKED, where every other read on the write path is `untracked`: wrapping this one
-	 * drops the `#seeded`/`#seed` subscription a reactive writer on an unseeded store gets today.
+	 * drops the roots/`#seed` subscription a reactive writer on an unseeded store gets today.
 	 */
 	#ensureSeeded(): void {
 		if (this.#seeded()) return
@@ -760,13 +676,10 @@ export class TokenModel {
 }
 
 /**
- * A patch becomes markup. Moved out of the deleted `MarkController` (`#serialize` plus its
- * three field defaults) so the node can serialize without reaching into the store; the only
- * semantic change is `null` instead of `{kind: 'clear'}` (plan decision D-b).
+ * A patch becomes markup: `null` clears a field, an omitted key round-trips the current one.
  *
- * The defaults come off the NODE: an omitted key must round-trip the current field, and the
- * slot's current value is the joined children, because the node stores no slot text
- * (`MarkNode.slotRange` is positions only).
+ * The defaults come off the NODE, and the slot's current value is the joined children,
+ * because the node stores no slot text (`MarkNode.slotRange` is positions only).
  */
 function serializeMark(node: MarkNode, patch: MarkPatch): string {
 	const value = patch.value ?? node.value()

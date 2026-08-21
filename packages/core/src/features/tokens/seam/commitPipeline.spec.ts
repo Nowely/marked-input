@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
-import {batch, effect, untracked, watch} from '../../../shared/signals/index.js'
+import {batch, watch} from '../../../shared/signals/index.js'
 import {bind} from '../dom/bind'
 import {createCommitPipeline} from '../dom/commit'
 import {createControlRoots} from '../dom/controlRoots'
@@ -136,14 +136,6 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 			tokenElement: id => consigned.get(id),
 			childSequenceHost: () => undefined,
 		},
-	})
-	// THE BIND EFFECT, the same one `TokenModel` installs. It is here and not left implicit
-	// because without it this harness answers a question the model never asks: a commit would not
-	// bind, so the divergence sweep would run ahead of the per-surface re-arm that heals, and the
-	// "a text edit does not re-bind" gate below would pass on a wiring that does not exist.
-	effect(() => {
-		pipeline.commits()
-		untracked(() => pipeline.bindNow())
 	})
 	const boundary = createBoundary({
 		tree,
@@ -708,33 +700,45 @@ describe('commit pipeline driven by the tree core', () => {
 		expect(boundHandles(harness)).toHaveLength(0)
 	})
 
-	it('a synchronous bind from a bound watcher fails loud', () => {
-		// Ports commit.spec.ts:525. `bound` is the clock that fires from INSIDE the bind, so it
-		// is the one whose watcher can re-enter it — and since every commit binds, the commit is
-		// now where that re-entry surfaces.
+	it('a bind from a bound watcher is a second bind, not a re-entry', () => {
+		// Ports commit.spec.ts:525, INVERTED by the atomic commit. `bound` used to fire from
+		// inside the bind, with the pipeline's guard still closed, so a watcher calling
+		// `bindNow` re-entered it and threw. Now the whole commit lands in one batch and the
+		// clocks flush after it, so the same call is simply the next operation: it runs, it
+		// completes, and the edit that triggered it is in the tree.
+		//
+		// The hazard is GONE rather than undetected — measured before this case was rewritten:
+		// one watcher run, no recursion, no throw, the tree holding the edit.
 		const harness = createHarness()
 		mount(harness)
-		watch(harness.pipeline.bound, () => harness.pipeline.bindNow())
+		let runs = 0
+		watch(harness.pipeline.bound, () => {
+			runs++
+			if (runs < 20) harness.pipeline.bindNow()
+		})
 
-		expect(() => harness.splice(2, 6, '@[y]')).toThrow(/re-entry/)
+		expect(() => harness.splice(2, 6, '@[y]')).not.toThrow()
+		expect(harness.tree.value()).toBe('he@[y]llo')
 	})
 
-	it('a synchronous arrival from a committed watcher fails loud', () => {
-		// Ports commit.spec.ts:517, but through `arrive` rather than a verb, because the
-		// two guards are LAYERED and the transaction one fires first: a verb called from
-		// a commit watcher is still inside `dispatch`, so `transactions.assertIdle`
-		// throws 're-entrant transaction dispatch' before the pipeline is re-entered at
-		// all (gated by transactions.spec.ts:203). `arrive` is the entry point that
-		// bypasses the dispatcher — a props echo — and it is what reaches the
-		// pipeline's own guard.
-		//
-		// `committed` is the clock here for the mirror of the case above: it fires from
-		// inside `apply`, so it is the one whose watcher can re-enter `apply`.
+	it('an arrival from a committed watcher is a second commit, not a re-entry', () => {
+		// The mirror of the case above, through `arrive` rather than a verb: the two guards are
+		// LAYERED and the transaction one still fires first for a VERB — a write called from a
+		// commit watcher is refused by `transactions.assertIdle` (gated by
+		// transactions.spec.ts:203), which the atomic commit does not change, because the
+		// dispatcher is still on the stack. `arrive` is the entry that bypasses the dispatcher
+		// — a props echo — and under the atomic commit it lands as its own commit.
 		const harness = createHarness()
 		mount(harness)
-		watch(harness.pipeline.committed, () => harness.boundary.arrive('he@[x]llo!!'))
+		let runs = 0
+		watch(harness.pipeline.committed, () => {
+			runs++
+			if (runs < 20) harness.boundary.arrive('he@[x]llo!!')
+		})
 
-		expect(() => harness.splice(9, 9, '!')).toThrow(/re-entry/)
+		expect(() => harness.splice(9, 9, '!')).not.toThrow()
+		expect(harness.tree.value()).toBe('he@[x]llo!!')
+		expect(runs).toBe(1)
 	})
 
 	it('byElement resolves bound elements and controlRoots flags control ancestry', () => {

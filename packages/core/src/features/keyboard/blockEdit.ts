@@ -136,7 +136,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 		event.preventDefault()
 		// An empty document IS one empty row (issue 08's trailing convention), so the block
 		// analogue of inline's whole-value replace needs no row content at all.
-		store.tokens.setValueEnteringRoot('', 0)
+		store.tokens.setValue('', 0)
 		return
 	}
 

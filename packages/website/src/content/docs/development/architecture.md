@@ -87,18 +87,18 @@ Both framework adapters share the same component structure:
         ↓
 3. store.tokens.domAnchors() resolves the DOM selection (or the input target range) to a pair of node anchors in the live tree
         ↓
-4. KeyboardController calls store.edit.replace(from, to, text) for every user edit; a whole-value rewrite (block reorder, row merge) calls store.edit.setValue(text, caretOffset?) instead
+4. KeyboardController calls store.edit.replace(from, to, text) for every user edit; a whole-value rewrite calls store.edit.setValue(text) instead. Block row edits name the row the caret enters — store.tokens.setValue(text, enterRoot) — rather than a character offset
         ↓
 5. The string boundary decides commit policy — uncontrolled commits straight through; controlled emits onChange and waits for the echo it spliced
         ↓
-6. Adoption folds the fresh parse back into the persistent nodes, and the commit pipeline routes to the text path (DOM patch, no re-render) or the structural path (publish new tree reference)
+6. Adoption folds the fresh parse back into the persistent nodes, and apply() binds the tree to the painted DOM, then announces the commit
         ↓
-7. On the structural path: React/Vue re-renders via the framework `useMarkput()` hook (tree reference changed); on the text path, no re-render fires
+7. The pipeline does not route: what re-renders is decided by what changed. A text edit writes one node's `text` signal, which its own bound surface effect writes to the DOM — no component re-renders. A structural change publishes new roots, so React/Vue re-render through `useMarkput()`
         ↓
 8. SelectionDriver applies the stored anchors to the DOM after the adapter registers the new DOM
 ```
 
-All user mutations go through `store.edit.replace(from, to, text)`: features name the two NODE ANCHORS that bound the span, and the edit coordinator applies the post-edit caret the token layer answers with, inside a single batch. `store.edit.setValue(text, caretOffset?)` is the whole-value form and the one place an absolute offset survives above the token tree — a whole-value rewriter synthesizes a new string from row positions, so no node exists to name the caret; it is not part of the public export. Programmatic writes go through `store.tokens.replaceBetween()` / `setValue()`, and `store.tokens.value()` reads the current projection. DOM→model boundary mapping lives in `store.tokens` (`anchorFor`, `domSelection()`); its private `SelectionDriver` re-applies the stored anchors to the DOM on `tokens.bound` — the DOM clock, one pulse per bind — and on anchor writes. `TokenModel` owns the token parse, the live node map, and all DOM↔model operations.
+All user mutations go through `store.edit.replace(from, to, text)`: features name the two NODE ANCHORS that bound the span, and the edit coordinator applies the post-edit caret the token layer answers with, inside a single batch. `store.edit.setValue(text)` is the whole-value form; it is not part of the public export. No absolute offset survives above the token tree — a whole-value rewriter that must place the caret names the ROW it enters (`store.tokens.setValue(text, enterRoot)`), an index into the result the caller genuinely knows. Programmatic writes go through `store.tokens.replaceBetween()` / `setValue()`, and `store.tokens.value()` reads the current projection. DOM→model boundary mapping lives in `store.tokens` (`anchorFor`); its private `SelectionDriver` re-applies the stored anchors to the DOM on `tokens.bound` — the DOM clock, one pulse per bind — and on anchor writes. `TokenModel` owns the token parse, the live node map, and all DOM↔model operations.
 
 ### Trigger Flow (Overlay Opens)
 
@@ -220,7 +220,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `close`         | overlay        | Close overlay               | `void`                                   |
 | `action`        | drag           | Drag-and-drop action        | `{type, ...}` (internal `DragAction`)    |
 
-Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) and the token model's bind effect are reactive effect hooks, not store events.
+Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
 
 ### Event Usage
 
@@ -310,7 +310,7 @@ class Store {
     readonly host:      Host               // rendered event + container signal + onMounted lifecycle
     readonly props:     PropsModel         // framework-provided configuration
     readonly slots:     SlotsFeature       // isBlock, isDragEnabled, slot component/props, mark resolver
-    readonly edit:      EditController     // replace(from, to, text) / setValue(text, caretOffset?) — single batched write path
+    readonly edit:      EditController     // replace(from, to, text) / setValue(text) — single batched write path
     readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops
     readonly overlay:   OverlayController  // match, element, slot, select, close
     readonly keyboard:  KeyboardController // input handling and block editing
@@ -351,7 +351,7 @@ Signal subscription order is significant: inside its constructor `onMounted` hoo
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
 | **Host**                      | Adapter-fed runtime state: the rendered event and the container HTMLElement |
-| **EditController**            | Unified user edit path: `replace(from, to, text)` between node anchors, plus `setValue(text, caretOffset?)` for a whole-value rewrite |
+| **EditController**            | Unified user edit path: `replace(from, to, text)` between node anchors, plus `setValue(text)` for a whole-value rewrite |
 | **TokenModel**                | Parsing, the token tree, the selection (state + DOM driver), live node map (id-keyed), one commit pipeline, DOM↔model facade, adapter ref registries — see `features/tokens/README.md` |
 | **OverlayController**         | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution, mark resolver |
@@ -424,8 +424,8 @@ Core owns token identity (stable ids and live handles), DOM registration, DOM→
 There is no selection feature and no `store.selection`. `TokenModel` owns both halves (split by owner, not by convenience):
 
 - **State — `store.tokens.selection`** (`tree/selection.ts`, DOM-free). The STORED form is a pair of node anchors, never offsets; `anchors()` reads them, `select`/`selectNode`/`selectAll`/`clear` write them, and `repair(result)` applies the post-adoption anchor adoption resolved. `isAllSelected` is the one derived number left, computed inside the tree layer where that arithmetic is legal.
-- **DOM I/O — the private `SelectionDriver`** (`dom/SelectionDriver.ts`). It owns the `selectionchange` sync, the `focusout` clear, the caret application and the editing host's `contenteditable`. Its three externally-needed reads are delegated on the model: `tokens.domAnchors()` (the live browser selection as anchors), `tokens.focusFirst()` and `tokens.placeAtHandle(handle, boundary)`.
-- The driver's ONE direct DOM write is the editing host itself — `container.contentEditable`, gated by `props.readOnly`. Everything else goes through `tokens.placeCaret(anchor)` / `tokens.selectRange(anchor, head)`. DOM→anchor boundary mapping (`dom/domBoundary.ts`) and caret placement (`dom/caret.ts`) live entirely inside the token layer and are not exported from `@markput/core`.
+- **DOM I/O — the private `SelectionDriver`** (`dom/SelectionDriver.ts`). It owns the `selectionchange` sync, the `focusout` clear, the caret application and the editing host's `contenteditable`. Its two externally-needed reads are delegated on the model: `tokens.domAnchors()` (the live browser selection as anchors) and `tokens.focusFirst()`.
+- The driver's ONE direct DOM write is the editing host itself — `container.contentEditable`, gated by `props.readOnly`. Everything else goes through the model's own `DomModel` — `placeCaret(anchor)` / `selectRange(anchor, head)` — which the driver holds as a dep. DOM→anchor boundary mapping (`dom/domBoundary.ts`) and caret placement (`dom/caret.ts`) live entirely inside the token layer and are not exported from `@markput/core`.
 - The selection is re-applied after every bind: the driver's `onMounted` hook watches `tokens.bound` (one pulse per bind, so every handle matches an element in the document) and the stored anchors, re-running the placement against the live surfaces. It is the DOM clock and not the commit clock because a caret landing in a node BORN by the commit has no handle until bind makes one.
 - Editable policy is one host deep and nothing sweeps: `props.readOnly` writes the container's own `contenteditable` through the driver, and the topology below it (bare text surfaces, `ce=false` value marks, bare slot marks with frozen chrome) is applied once per bind.
 
@@ -433,9 +433,9 @@ There is no selection feature and no `store.selection`. `TokenModel` owns both h
 
 `TokenModel` is the thin public shell over a live-node core — `dom/TokenHandle.ts` (the per-token live binding), `dom/commit.ts` (the one commit pipeline), and `dom/bind.ts` (the DOM walk that binds freshly rendered DOM). It consolidates the DOM responsibilities that were previously split across separate ref/index/surface modules:
 
-- **Adapter ref registries** — `tokens.control()` and `tokens.children(ownerId)` register non-editable control elements and `__slot__` child-sequence hosts, and `tokens.consign(id)` / `tokens.consignRow(id)` register a token's own element and its block row wrapper. All are keyed by the owning token's stable id. A Mark's registered element is the box-less wrapper markput renders around it, not the consumer's component — so no consumer needs to forward a ref, and core writes attributes only to elements it owns.
+- **Adapter ref registries** — `tokens.control()` and `tokens.children(ownerId)` register non-editable control elements and `__slot__` child-sequence hosts, and `tokens.consign(id)` registers a token's own element — a block row's wrapper included, since a row IS a token (ADR-0009). All are keyed by the owning token's stable id. A Mark's registered element is the box-less wrapper markput renders around it, not the consumer's component — so no consumer needs to forward a ref, and core writes attributes only to elements it owns.
 - **Live node map and commit pipeline** — one id-keyed `Map<number, TokenHandle>`, mutated only through the pipeline. Elements are CONSIGNED by the adapters through refs, keyed by token id, rather than derived by walking the painted DOM; `bind` projects those registries onto the node layer. Text never reaches the pipeline: binding arms one conditional-write effect per bound text surface, subscribed to that node's `text` signal, so a text edit repaints no component. `nodes()` is the live tree (consistent with `tokens.value()`) and what both adapters render. There are TWO payload-free clocks, because one event was answering two questions: `committed` fires once per commit — including the commits that move no element, such as a row reorder or a mark value change — and `bound` fires once per bind, which is what the caret needs.
-- **DOM↔model facade** — `handleAt(node)` resolves a DOM node to its handle (or `'control'`), `handle(id)` resolves a stable id to its live handle, `anchorFor(node, offset)` maps a DOM boundary to a node anchor in the live tree, `placeCaret(anchor)` / `selectRange(anchor, head)` write the caret, and `domSelection()` / `selectedContent()` read the live window selection. No member of this facade takes or returns an absolute document offset — `anchorAt` / `offsetOf` are the tree layer's own boundary, kept because that is the one place a coordinate may be formed.
+- **DOM↔model facade** — `handleAt(node)` resolves a DOM node to its handle (or `'control'`), `handle(id)` resolves a stable id to its live handle, `anchorFor(node, offset)` maps a DOM boundary to a node anchor in the live tree, and `caretRect()` / `selectedContent()` read the live selection. The placement commands (`placeCaret`, `selectRange`) and the raw snapshot read live on their owner, `dom/DomModel`, which nothing outside the token layer holds. No member of this facade takes or returns an absolute document offset — `anchorAt` / `offsetOf` are the tree layer's own boundary, kept because that is the one place a coordinate may be formed.
 - **Editable-state application** — `bind` applies the one-host topology to newly mounted surfaces, and that is the whole of it. The container's `contenteditable` belongs to `props.readOnly`, through the selection driver's `{immediate: true}` watch; there is no second writer and no manual override.
 
 See `packages/core/src/features/tokens/README.md` for the full architecture of the token layer.
@@ -536,6 +536,12 @@ function App() {
   )
 }
 ```
+
+`defaultValue` is read once, to start a tree that holds nothing yet. It is not a
+value the editor reverts to: an editor that stops receiving `value` (a parent
+passing `undefined` after a string) keeps what is on screen, because the tree —
+not a remembered string — is what an arrival without a value falls back to. To go
+back to earlier text, pass it.
 
 ### Pattern: Drag Mode
 

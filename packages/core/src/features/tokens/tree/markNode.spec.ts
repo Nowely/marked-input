@@ -675,7 +675,7 @@ describe('entering a fresh row', () => {
 	it('lands inside the slot of a whole-value replacement too', () => {
 		const store = headingSetup('# a\n\n')
 
-		expect(store.tokens.setValueEnteringRoot('# \n\n', 0)).toBe(true)
+		expect(store.tokens.setValue('# \n\n', 0)).toBe(true)
 
 		expect(selectionRange(store)).toEqual({start: 2, end: 2})
 	})

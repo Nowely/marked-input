@@ -69,7 +69,7 @@ describe('EditController', () => {
 	it('moves no caret on a controlled setValue', () => {
 		// The D-e exemption went with `caretOffset`. Its callers were block row edits that
 		// wanted the caret inside a row of the RESULT, and they now say so directly through
-		// `tokens.setValueEnteringRoot`; the measurement that justified the exemption had gone
+		// `tokens.setValue`'s `enterRoot`; the measurement that justified the exemption had gone
 		// stale, so nothing is left asking `setValue` to write a caret the echo will re-map.
 		const store = new Store()
 		store.props.set({value: 'hello', onChange: vi.fn()})

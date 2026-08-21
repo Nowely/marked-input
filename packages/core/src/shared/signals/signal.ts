@@ -1,5 +1,5 @@
 // oxlint-disable typescript/no-explicit-any -- reactive node interfaces need flexible generic defaults
-import {createReactiveSystem, ReactiveFlags, type ReactiveNode} from './alien-signals/system'
+import {createReactiveSystem, ReactiveFlags, type Link, type ReactiveNode} from './alien-signals/system'
 
 // ---------------------------------------------------------------------------
 // Node types
@@ -579,6 +579,14 @@ export function event<T = void>(): Event<T> {
 		const subs = node.subs
 		if (subs !== undefined) {
 			propagate(subs)
+			// A fire is unconditionally a change for EVERY subscriber, so each one is marked
+			// dirty in its own right. AFTER propagate, which skips a sub that is already
+			// dirty. Without this the decision rides a single flag on the NODE, which
+			// `eventReadOper` clears on the first read — so one subscriber reading the
+			// payload silently cancelled every subscriber still queued behind it.
+			for (let l: Link | undefined = subs; l !== undefined; l = l.nextSub) {
+				l.sub.flags |= ReactiveFlags.Dirty
+			}
 			if (!batchDepth) {
 				flush()
 			}

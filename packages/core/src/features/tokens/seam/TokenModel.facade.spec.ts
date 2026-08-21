@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
-import {mountBlock, mountWithMark} from '../__testing__/mountFixtures'
+import {domModelOf, mountBlock, mountWithMark} from '../__testing__/mountFixtures'
 import {joinNodes} from '../tree/tree'
 
 describe('TokenModel facade selection reads', () => {
@@ -40,16 +40,20 @@ describe('TokenModel facade selection reads', () => {
 	}
 })
 
-describe('TokenModel placement commands', () => {
+// `DomModel`'s placement commands, reached directly since the API-surface cut took their
+// pass-throughs off the model. The reader stays `tokens.domAnchors()`, which is the model's
+// own and has production callers — so each case is still "place through the anchor's node,
+// then read the live DOM back as anchors".
+describe('DomModel placement commands', () => {
 	afterEach(() => {
 		document.body.replaceChildren()
 		window.getSelection()?.removeAllRanges()
 	})
 
 	it("placeCaret places inside the anchor's own surface", () => {
-		const {store} = mountWithMark()
+		const {store, container} = mountWithMark()
 		const at = store.tokens.anchorAt(1)
-		expect(store.tokens.placeCaret(at)).toBe(true)
+		expect(domModelOf(store.tokens, container).placeCaret(at)).toBe(true)
 		expect(store.tokens.domAnchors()).toEqual({anchor: at, head: at})
 	})
 
@@ -58,17 +62,18 @@ describe('TokenModel placement commands', () => {
 		// live roots — and they are not theoretical: `anchorAt` answers `'end'` for ANY
 		// out-of-range caret intent (spec S1 §4.6 item 5), which is what replaced the
 		// deleted selection clamp. Declining them leaves such a caret unplaced.
-		const {store} = mountWithMark()
+		const {store, container} = mountWithMark()
+		const dom = domModelOf(store.tokens, container)
 		const roots = store.tokens.nodes()
 
 		// `domAnchors` resolves the LIVE DOM selection, so the anchor it answers is the
 		// witness that the caret landed in that root's own surface. (The `activeElement`
 		// checks that used to sit beside it are gone with the per-token focus targets:
 		// text surfaces carry no contenteditable of their own any more.)
-		expect(store.tokens.placeCaret('end')).toBe(true)
+		expect(dom.placeCaret('end')).toBe(true)
 		expect(store.tokens.domAnchors()?.anchor).toEqual({node: roots[2], offset: 3})
 
-		expect(store.tokens.placeCaret('start')).toBe(true)
+		expect(dom.placeCaret('start')).toBe(true)
 		expect(store.tokens.domAnchors()?.anchor).toEqual({node: roots[0], offset: 0})
 	})
 
@@ -77,7 +82,8 @@ describe('TokenModel placement commands', () => {
 		// two anchors. The numeric predecessor could only answer with one of them (its
 		// nearest-text-surface search always won, which is why its mark branch was
 		// unreachable); each anchor now places through its own node.
-		const {store} = mountWithMark()
+		const {store, container} = mountWithMark()
+		const dom = domModelOf(store.tokens, container)
 		const [, markNode, text2Node] = store.tokens.nodes()
 		// WHERE THE CARET LANDED, not what took focus: no token element is a focus target
 		// under the one-host topology.
@@ -90,10 +96,10 @@ describe('TokenModel placement commands', () => {
 		// starts) spelled from the other side, and a spelling that re-placed the caret on
 		// into 'llo'. MEASURED, and still sensitive to an after↔before inversion: swapping
 		// the two branches of the mark placement answers `{before: markNode}` here.
-		expect(store.tokens.placeCaret({after: markNode})).toBe(true)
+		expect(dom.placeCaret({after: markNode})).toBe(true)
 		expect(store.tokens.domAnchors()?.anchor).toEqual({after: markNode})
 
-		expect(store.tokens.placeCaret(store.tokens.anchorAt(6))).toBe(true)
+		expect(dom.placeCaret(store.tokens.anchorAt(6))).toBe(true)
 		expect(store.tokens.domAnchors()?.anchor).toEqual({node: text2Node, offset: 0})
 	})
 
@@ -107,20 +113,21 @@ describe('TokenModel placement commands', () => {
 	})
 
 	it('selectRange spans two text surfaces, in either anchor order', () => {
-		const {store} = mountWithMark()
+		const {store, container} = mountWithMark()
+		const dom = domModelOf(store.tokens, container)
 		const roots = store.tokens.nodes()
 		const from = store.tokens.anchorAt(0)
 		const to = store.tokens.anchorAt(9)
 		const spanned = {anchor: {node: roots[0], offset: 0}, head: {node: roots[2], offset: 3}}
 
-		expect(store.tokens.selectRange(from, to)).toBe(true)
+		expect(dom.selectRange(from, to)).toBe(true)
 		expect(store.tokens.domAnchors()).toEqual(spanned)
 
 		// THE gate on the DOM-order normalization that replaced the numeric `min`/`max`:
 		// a Range whose end precedes its start COLLAPSES rather than throwing, so a
 		// reversed pair would silently select nothing.
 		window.getSelection()?.removeAllRanges()
-		expect(store.tokens.selectRange(to, from)).toBe(true)
+		expect(dom.selectRange(to, from)).toBe(true)
 		expect(store.tokens.domAnchors()).toEqual(spanned)
 	})
 
@@ -134,7 +141,7 @@ describe('TokenModel placement commands', () => {
 		const roots = store.tokens.nodes()
 		const mark = roots[1]
 
-		expect(store.tokens.selectRange(store.tokens.anchorAt(0), {after: mark})).toBe(true)
+		expect(domModelOf(store.tokens, container).selectRange(store.tokens.anchorAt(0), {after: mark})).toBe(true)
 
 		// The DOM really moved: the round-trip re-reads the live range, and the mark's own
 		// text ('x', the adapter's presentation) is inside the selected span.
@@ -150,14 +157,14 @@ describe('TokenModel placement commands', () => {
 		// end, which is indistinguishable from the right answer while a surface holds ONE
 		// text node — the state every bind leaves it in. Contenteditable input splits one,
 		// which is what this fixture reproduces.
-		const {store, text2} = mountWithMark()
+		const {store, container, text2} = mountWithMark()
 		const roots = store.tokens.nodes()
 		const first = text2.firstChild
 		if (!(first instanceof Text)) throw new Error('expected the "llo" text node')
 		first.splitText(1)
 		expect(text2.childNodes).toHaveLength(2)
 
-		expect(store.tokens.selectRange(store.tokens.anchorAt(0), {after: roots[2]})).toBe(true)
+		expect(domModelOf(store.tokens, container).selectRange(store.tokens.anchorAt(0), {after: roots[2]})).toBe(true)
 		expect(store.tokens.domAnchors()?.head).toEqual({node: roots[2], offset: 3})
 	})
 
@@ -171,16 +178,20 @@ describe('TokenModel placement commands', () => {
 	})
 })
 
-describe('TokenModel selection() — the one snapshot', () => {
+// `DomModel.selection()`'s own contract. It reached these specs as `tokens.domSelection()`
+// until the API-surface cut took the pass-through off the model; the subject — the snapshot's
+// identity, its write-through and its pull — is unchanged, and it cannot be asserted against a
+// bare `window.getSelection()` read, which would make the identity case a tautology.
+describe('DomModel selection() — the one snapshot', () => {
 	afterEach(() => {
 		document.body.replaceChildren()
 		window.getSelection()?.removeAllRanges()
 	})
 
 	it('returns undefined when there is no range', () => {
-		const {store} = mountWithMark()
+		const {store, container} = mountWithMark()
 		window.getSelection()?.removeAllRanges()
-		expect(store.tokens.domSelection()).toBeUndefined()
+		expect(domModelOf(store.tokens, container).selection()).toBeUndefined()
 	})
 
 	it('carries the window range and focusNode; caretRect() answers the rect', () => {
@@ -194,7 +205,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 		sel.removeAllRanges()
 		sel.addRange(range)
 
-		const snapshot = store.tokens.domSelection()
+		const snapshot = domModelOf(store.tokens, container).selection()
 		if (!snapshot) throw new Error('expected a selection snapshot')
 		expect(snapshot.range.startOffset).toBe(0)
 		expect(snapshot.range.endOffset).toBe(2)
@@ -220,7 +231,8 @@ describe('TokenModel selection() — the one snapshot', () => {
 		sel.removeAllRanges()
 		sel.setBaseAndExtent(firstText, 0, firstText, 1)
 
-		const snapshot = store.tokens.domSelection()
+		const dom = domModelOf(store.tokens, container)
+		const snapshot = dom.selection()
 		if (!snapshot) throw new Error('expected a selection snapshot')
 		expect(snapshot.range).toBe(sel.getRangeAt(0))
 
@@ -230,7 +242,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 
 		// The pull, which is what `sync` actually depends on.
 		sel.setBaseAndExtent(firstText, 0, firstText, 1)
-		expect(store.tokens.domSelection()?.range.endOffset).toBe(1)
+		expect(dom.selection()?.range.endOffset).toBe(1)
 	})
 
 	it('range.collapsed reports a caret', () => {
@@ -244,7 +256,7 @@ describe('TokenModel selection() — the one snapshot', () => {
 		sel.removeAllRanges()
 		sel.addRange(range)
 
-		const snapshot = store.tokens.domSelection()
+		const snapshot = domModelOf(store.tokens, container).selection()
 		if (!snapshot) throw new Error('expected a selection snapshot')
 		expect(snapshot.range.collapsed).toBe(true)
 	})

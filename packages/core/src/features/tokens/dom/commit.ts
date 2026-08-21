@@ -1,5 +1,5 @@
-import {event, signal, untracked} from '../../../shared/signals/index.js'
-import type {Computed, Event} from '../../../shared/signals/index.js'
+import {event, untracked} from '../../../shared/signals/index.js'
+import type {Event} from '../../../shared/signals/index.js'
 import type {TreeNode} from '../tree/types'
 import {bind, rebindNode} from './bind'
 import type {ElementSource} from './bind'
@@ -48,9 +48,9 @@ export type CommitPipeline = {
 	/**
 	 * Project the registries onto the node layer and pulse {@link bound}.
 	 *
-	 * Called by the model's bind EFFECT, which is subscribed to the live roots and to the
-	 * consignment registries — so "when does bind run" is answered by the dependency graph rather
-	 * than by a scheduler, a latch or a round trip through the renderer.
+	 * Called by {@link apply} on every commit, and by nothing else — "when does bind run" is a
+	 * call in one function rather than a dependency graph, a scheduler or a latch. A mount needs
+	 * no separate call: it arrives through the model's props watch, which commits.
 	 */
 	bindNow(): void
 	/**
@@ -70,14 +70,6 @@ export type CommitPipeline = {
 	 */
 	committed: Event<void>
 	/**
-	 * Bumped once per commit. The bind effect reads it, which is what makes EVERY commit bind —
-	 * including the ones that move no element, where nothing else the effect subscribes to has
-	 * changed. Measured at ~1.85 ms on a 2000-token document, comfortably inside a frame, and it
-	 * buys the thing the DOM clock is for: {@link bound} is a clock every commit reaches, so a
-	 * caret can trust it after any of them.
-	 */
-	commits: Computed<number>
-	/**
 	 * THE DOM CLOCK: one pulse per bind, so every handle in the node layer matches an element that
 	 * is actually in the document. Only the caret needs this — a caret landing in a node BORN by
 	 * the commit has no handle until bind makes one, so nothing earlier can place it.
@@ -88,8 +80,6 @@ export type CommitPipeline = {
 
 export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	const committed = event<void>()
-	let commitCount = 0
-	const commits = signal({initial: commitCount})
 	const bound = event<void>()
 
 	// Element-keyed lookups over the bound nodes. LONG-LIVED and mutated in place, not replaced
@@ -104,14 +94,16 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 
 	function apply(): void {
 		if (committing) throw new Error('TokenModel commit re-entry')
-		// No routing left. The producer's `render` bit is not consulted here at all: every commit
-		// announces, and every commit binds.
+		// BIND FIRST, ANNOUNCE SECOND, and the order is load-bearing: every `committed`
+		// subscriber must see a DOM that already matches the tree, and every per-surface effect
+		// must be re-armed before anything reads a surface. It used to be encoded in the POSITION
+		// of a counter write — the bind effect flushed synchronously on that line — which made a
+		// line move a behaviour change. A call says it instead.
 		//
-		// The counter is written BEFORE the guard closes, and that is not a detail. An unbatched
-		// commit flushes the bind effect on this very line, synchronously — so writing it inside
-		// the guard made the commit's own bind read as re-entry and throw. It also puts the bind,
-		// and with it every per-surface re-arm, ahead of every `committed` subscriber.
-		commits(++commitCount)
+		// No routing: every commit announces, and every commit binds, including the ones that
+		// move no element. `bindNow` is a whole-tree walk, measured at ~1.85 ms on a 2000-token
+		// document, and it is what makes {@link bound} a clock every commit reaches.
+		bindNow()
 		committing = true
 		try {
 			committed()
@@ -167,7 +159,6 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		rebind,
 		committed,
 		bound,
-		commits,
 		byElement: element => byElement.get(element),
 	}
 }

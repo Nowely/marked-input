@@ -78,16 +78,20 @@ describe('TokenModel value boundary', () => {
 		])
 	})
 
-	it('falls back to defaultValue when controlled value becomes undefined', () => {
+	it('keeps the value on screen when the controlled value becomes undefined', () => {
+		// THE FALLBACK IS THE TREE. Dropping control keeps what the editor is showing —
+		// 'hello', the last value the parent owned — rather than reverting to `defaultValue`,
+		// which the user last saw before the parent took over (or never saw at all). The seed
+		// answers only before the tree holds anything; here it holds 'hello'.
 		const store = new Store()
 		store.props.update({value: 'hello', defaultValue: 'default'})
 		mount(store)
 		store.props.update({value: undefined})
 
 		expect(store.props.value()).toBeUndefined()
-		expect(store.tokens.value()).toBe('default')
+		expect(store.tokens.value()).toBe('hello')
 		expect(treeShape(store.tokens.nodes())).toMatchObject([
-			{kind: 'text', content: 'default', position: {start: 0, end: 7}},
+			{kind: 'text', content: 'hello', position: {start: 0, end: 5}},
 		])
 	})
 
@@ -150,11 +154,12 @@ describe('TokenModel value boundary', () => {
 		// `tokens.replaceBetween`, which emits for a no-op splice exactly as it always did
 		// (`tree/valueBoundary.spec.ts`'s 'emits an unchanged value in both modes'). The
 		// divergence is gone rather than merely untested.
-		it('an uncontrolled edit before control is taken is what dropping control returns to', () => {
-			// The pin for the frozen-storage arm. 'falls back to defaultValue when
-			// controlled value becomes undefined' above covers the OTHER arm (never
-			// uncontrolled → the seed); this one is the only test that fails if the
-			// restore point is replaced by the seed.
+		it('dropping control keeps the controlled value, not the edit that preceded it', () => {
+			// The behaviour change that removed `#restore` (a string frozen at the moment
+			// control was taken). It used to answer 'edited' here — a value from before the
+			// parent took over, which the user has not seen since. The tree answers what is on
+			// screen. An editor that wants 'edited' back can pass it: dropping control is not
+			// an undo.
 			const store = new Store()
 			store.props.set({defaultValue: 'default'})
 			mount(store)
@@ -165,7 +170,7 @@ describe('TokenModel value boundary', () => {
 			expect(store.tokens.value()).toBe('controlled')
 
 			store.props.update({value: undefined})
-			expect(store.tokens.value()).toBe('edited')
+			expect(store.tokens.value()).toBe('controlled')
 		})
 
 		it('a container re-attach keeps the uncontrolled edit, not the defaultValue', () => {

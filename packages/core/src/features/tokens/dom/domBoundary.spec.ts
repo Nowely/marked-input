@@ -1,7 +1,13 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
 import {computed} from '../../../shared/signals'
-import {enableStructuralStore, mountStructuralInlineMark, mountValue, mountWithMark} from '../__testing__/mountFixtures'
+import {
+	domModelOf,
+	enableStructuralStore,
+	mountStructuralInlineMark,
+	mountValue,
+	mountWithMark,
+} from '../__testing__/mountFixtures'
 import {offsetOfAnchor} from '../tree/anchors'
 
 /**
@@ -528,11 +534,11 @@ describe('anchorFor across chrome the tree does not own', () => {
 	})
 
 	it('places a caret after a mark at the mark end, not the document end', () => {
-		const {store} = mountInlineWithChrome()
+		const {store, container} = mountInlineWithChrome()
 		const roots = store.tokens.nodes()
 		const mark = roots[1]
 
-		expect(store.tokens.placeCaret({after: mark})).toBe(true)
+		expect(domModelOf(store.tokens, container).placeCaret({after: mark})).toBe(true)
 
 		// The SHAPE is affinity's, and `domAnchors` is the COLLAPSED reader, which is
 		// left-affine at the container arm: the boundary answers from the MARK's side, so the
