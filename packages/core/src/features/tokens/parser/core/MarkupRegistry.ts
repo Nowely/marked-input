@@ -60,17 +60,6 @@ export class MarkupRegistry {
 		const globalIndex = this.registerSegment(segment, segmentKey, segmentIndexMap)
 
 		descriptor.segmentGlobalIndices[segmentIndex] = globalIndex
-
-		// Register static parts of dynamic segments
-		if (typeof segment !== 'string') {
-			const [before, after] = segment
-			if (before) {
-				this.registerSegment(before, before, segmentIndexMap)
-			}
-			if (after) {
-				this.registerSegment(after, after, segmentIndexMap)
-			}
-		}
 	}
 
 	private registerSegment(
