@@ -111,7 +111,7 @@ describe('SegmentMatcher', () => {
 			const matcher = new SegmentMatcher(registry.segments)
 			const result = matcher.search('<div class><p>Text **bold**</p></div>')
 
-			expect(result).toHaveLength(8)
+			expect(result).toHaveLength(7)
 			// Verify the results match the expected segmentation
 			expect(result[0]).toEqual({
 				index: 0,
@@ -121,54 +121,61 @@ describe('SegmentMatcher', () => {
 				captured: 'div',
 			})
 			expect(result[1]).toEqual({
-				index: 3,
+				index: 1,
 				start: 10,
 				end: 11,
 				value: '>',
 				captured: undefined,
 			})
 			expect(result[2]).toEqual({
-				index: 6,
+				index: 3,
 				start: 11,
 				end: 14,
 				value: '<p>',
 				captured: 'p',
 			})
 			expect(result[3]).toEqual({
-				index: 2,
-				start: 18,
-				end: 19,
-				value: ' ',
-				captured: undefined,
-			})
-			expect(result[4]).toEqual({
-				index: 7,
+				index: 4,
 				start: 19,
 				end: 21,
 				value: '**',
 				captured: undefined,
 			})
-			expect(result[5]).toEqual({
-				index: 7,
+			expect(result[4]).toEqual({
+				index: 4,
 				start: 25,
 				end: 27,
 				value: '**',
 				captured: undefined,
 			})
-			expect(result[6]).toEqual({
-				index: 4,
+			expect(result[5]).toEqual({
+				index: 2,
 				start: 27,
 				end: 31,
 				value: '</p>',
 				captured: 'p',
 			})
-			expect(result[7]).toEqual({
-				index: 4,
+			expect(result[6]).toEqual({
+				index: 2,
 				start: 31,
 				end: 37,
 				value: '</div>',
 				captured: 'div',
 			})
+		})
+
+		it('does not register the static halves of a dynamic segment as segments of their own', () => {
+			// A dynamic segment's `before`/`after` are matched by its own regex. Registering
+			// them separately put them in the static alternation, where they could consume
+			// characters a real static segment needed — e.g. the phantom '</' of
+			// '<__value__>...</__value__>' ate the '/' of a '/[' segment.
+			const registry = new MarkupRegistry(['<__value__>__slot__</__value__>', '/[__value__]'])
+
+			expect(registry.segments).toEqual([['<', '>', ''], ['</', '>', ''], '/[', ']'])
+			expect(new SegmentMatcher(registry.segments).search('</[x]')).toEqual([
+				{index: 2, start: 1, end: 3, value: '/[', captured: undefined},
+				{index: 3, start: 4, end: 5, value: ']', captured: undefined},
+			])
 		})
 	})
 })

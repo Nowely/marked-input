@@ -90,10 +90,8 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 	// The last walk's tree, by id, so `rebind` finds its node without searching. Empty until the
 	// first bind, which is why a registration arriving before one is a no-op rather than a guess.
 	let nodeById = new Map<number, TreeNode>()
-	let committing = false
 
 	function apply(): void {
-		if (committing) throw new Error('TokenModel commit re-entry')
 		// BIND FIRST, ANNOUNCE SECOND, and the order is load-bearing: every `committed`
 		// subscriber must see a DOM that already matches the tree, and every per-surface effect
 		// must be re-armed before anything reads a surface. It used to be encoded in the POSITION
@@ -104,32 +102,26 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		// move no element. `bindNow` is a whole-tree walk, measured at ~1.85 ms on a 2000-token
 		// document, and it is what makes {@link bound} a clock every commit reaches.
 		bindNow()
-		committing = true
-		try {
-			committed()
-		} finally {
-			committing = false
-		}
+		committed()
 	}
 
 	function bindNow(): void {
 		const container = deps.container()
 		// No container: nothing to bind. The effect re-runs when one arrives.
 		if (!container) return
-		if (committing) throw new Error('TokenModel commit re-entry')
-		committing = true
-		try {
-			const result = bind({
-				roots: deps.roots(),
-				nodes: deps.nodes,
-				byElement,
-				source: deps.source,
-			})
-			nodeById = result.nodeById
-			bound()
-		} finally {
-			committing = false
-		}
+		const result = bind({
+			roots: deps.roots(),
+			nodes: deps.nodes,
+			byElement,
+			source: deps.source,
+		})
+		nodeById = result.nodeById
+		// AFTER the walk, never during it, and that is what makes a re-entry guard unnecessary
+		// here: a subscriber cannot run while `nodes`/`byElement` are half-rewritten. It also
+		// lands inside the boundary's commit batch on the `apply` path, so it is queued rather
+		// than flushed. The `committing` flag that used to police this had no reachable case
+		// left once the commit became atomic — provoked from both drivers, measured.
+		bound()
 	}
 
 	function rebind(id: number): void {
@@ -138,18 +130,12 @@ export function createCommitPipeline(deps: CommitDeps): CommitPipeline {
 		// and that walk per ref is the cost this path exists to avoid.
 		const node = nodeById.get(id)
 		if (!node || !deps.container()) return
-		if (committing) throw new Error('TokenModel commit re-entry')
-		committing = true
-		try {
-			// `untracked` for the reason `bind` documents at its own entry, and it is load-bearing
-			// HERE for a second one: `rebindNode` ARMS the per-surface effect, and an effect links
-			// itself to whatever scope is active when it is created. A ref firing inside a caller's
-			// tracking scope would otherwise make the writer that scope's child, and the scope's
-			// next run would dispose it — leaving a surface bound with nothing left to write it.
-			untracked(() => rebindNode(node, {nodes: deps.nodes, byElement, source: deps.source}))
-		} finally {
-			committing = false
-		}
+		// `untracked` for the reason `bind` documents at its own entry, and it is load-bearing
+		// HERE for a second one: `rebindNode` ARMS the per-surface effect, and an effect links
+		// itself to whatever scope is active when it is created. A ref firing inside a caller's
+		// tracking scope would otherwise make the writer that scope's child, and the scope's
+		// next run would dispose it — leaving a surface bound with nothing left to write it.
+		untracked(() => rebindNode(node, {nodes: deps.nodes, byElement, source: deps.source}))
 		bound()
 	}
 

@@ -143,6 +143,37 @@ describe('OverlayController', () => {
 		})
 	})
 
+	describe('match identity', () => {
+		it('a commit that finds the SAME trigger keeps the highlighted suggestion', () => {
+			// `#findTrigger` allocates, and every commit re-probes — so without a content
+			// comparison on `match`, a commit that changes nothing the overlay can see still
+			// announced a new match, and `SuggestionsModel`'s watch reset the highlight.
+			//
+			// The commit here is the emptiest one there is: the same value arriving again, which
+			// moves no caret and changes no text. Measured field by field before the equality
+			// existed — value, source, span, node, option and both anchors were identical,
+			// including the anchors' own node objects — and the highlight went to NaN anyway.
+			const store = new Store()
+			store.props.set({
+				defaultValue: 'hi ',
+				options: [{overlay: {trigger: '@', data: ['alpha', 'beta', 'gamma']}}],
+			})
+			store.host.container(document.createElement('div'))
+			caretAt(store, 3)
+			store.edit.replace(...anchorsAt(store, 3, 3), '@al')
+			const opened = store.overlay.match()
+			expect(opened?.value).toBe('al')
+
+			store.overlay.suggestions.active(1)
+
+			store.props.update({value: store.tokens.value()})
+			store.props.update({value: undefined})
+
+			expect(store.overlay.match()).toBe(opened)
+			expect(store.overlay.suggestions.active()).toBe(1)
+		})
+	})
+
 	describe('deactivation', () => {
 		it('stop reacting to events after removing overlay trigger', () => {
 			store.props.update({options: []})

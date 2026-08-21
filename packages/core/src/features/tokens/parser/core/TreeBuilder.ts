@@ -38,11 +38,13 @@ export class TreeBuilder {
 	/**
 	 * Builds nested token tree from pre-processed matches in a single pass
 	 *
+	 * Precondition: `matches` are sorted by start and conflict-free — the caller
+	 * runs `acceptMatches` last, after every mutation of `end`.
+	 *
 	 * Algorithm:
 	 * 1. Iterate through matches in order
 	 * 2. For each match:
 	 *    - Close any parents whose content ends before this match
-	 *    - Skip matches that conflict with the last accepted match
 	 *    - Add text token before this match
 	 *    - Create mark token and push to appropriate parent
 	 *    - If match has nested content, push to active parents stack
@@ -72,17 +74,9 @@ export class TreeBuilder {
 	private buildSinglePass(matches: Match[]): Token[] {
 		const roots: Token[] = []
 		const parentStack: ParentContext[] = []
-		let lastAcceptedMatch: Match | null = null
 		let rootTextPos = 0
 
 		for (const match of matches) {
-			// Skip conflicting matches
-			if (lastAcceptedMatch && match.conflictsWith(lastAcceptedMatch)) {
-				continue
-			}
-
-			lastAcceptedMatch = match
-
 			// Close parents whose content ends before this match
 			while (parentStack.length > 0) {
 				const parent = parentStack[parentStack.length - 1]
