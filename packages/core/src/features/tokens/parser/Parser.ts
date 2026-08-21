@@ -77,7 +77,8 @@ export class Parser {
 		const matches = acceptMatches(this.patternMatcher.process(segments))
 		// Inline is one implicit row (issue 08): an open trailing gap closes at end of input
 		closeTrailingGaps(matches, [], value.length)
-		return this.treeBuilder.build(matches, value)
+		// Closure extends `end`, which can put two accepted matches back in conflict
+		return this.treeBuilder.build(acceptMatches(matches), value)
 	}
 
 	/**

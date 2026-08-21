@@ -10,9 +10,10 @@ import type {Match} from './Match'
  */
 
 /**
- * Keeps the matches `TreeBuilder.build` will accept, using its exact
- * single-lookback conflict rule, so the row pass and the tree agree on which
- * extents hide separators.
+ * The single conflict authority: drops every match that overlaps the last kept
+ * one without nesting inside its slot. `TreeBuilder.build` assumes its input
+ * already passed through here, so the row pass and the tree agree on which
+ * extents survive and hide separators.
  */
 export function acceptMatches(matches: Match[]): Match[] {
 	const accepted: Match[] = []
