@@ -1,5 +1,56 @@
 # Changelog
 
+## [0.15.0](https://github.com/Nowely/marked-input/compare/0.14.3...0.15.0) (2026-08-20)
+
+
+### Features
+
+* **core:** the row separator is structural — block layout cuts over to RowNodes ([#291](https://github.com/Nowely/marked-input/issues/291)) ([31fac6d](https://github.com/Nowely/marked-input/commit/31fac6d1f13110a630bd177af6b9061bd5642456))
+* **tokens:** consolidate the token layer into one DOM-encapsulated module with stable-identity handles ([#267](https://github.com/Nowely/marked-input/issues/267)) ([39c721f](https://github.com/Nowely/marked-input/commit/39c721fe03ac4bb41b1a2d546be6a0014d91d2dd))
+
+
+### Bug Fixes
+
+* **build:** the DTS pass overwrote the published bundle, and no check consumed it ([#288](https://github.com/Nowely/marked-input/issues/288)) ([e259efc](https://github.com/Nowely/marked-input/commit/e259efc9e5f97e39559eb0d2969a2c16fc53989a))
+* **core:** invert the core — token tree as the source of truth, public API v2 ([#271](https://github.com/Nowely/marked-input/issues/271)) ([a558bf4](https://github.com/Nowely/marked-input/commit/a558bf443a36bee08522e8706ca77c6c979de833))
+* **tokens:** extract DomModel for DOM interaction and selection management ([#270](https://github.com/Nowely/marked-input/issues/270)) ([6d6db5d](https://github.com/Nowely/marked-input/commit/6d6db5dc0986e6070f9617943812782ade612a3e))
+
+
+### Refactoring
+
+* **block:** consolidate BlockRegistry into BlockController ([#265](https://github.com/Nowely/marked-input/issues/265)) ([6805461](https://github.com/Nowely/marked-input/commit/6805461d32b809343cbada235b7d2638b36d9b17))
+* **core:** block row edits address their own nodes, and reorder keeps its identity ([#283](https://github.com/Nowely/marked-input/issues/283)) ([1a1751d](https://github.com/Nowely/marked-input/commit/1a1751dad515471a1ae78e8f295ef073c2f94969))
+* **core:** delete three commit-pipeline concepts the census called irreducible ([#285](https://github.com/Nowely/marked-input/issues/285)) ([258e214](https://github.com/Nowely/marked-input/commit/258e21494e336f7573754417065dfaf80c4eb7a7))
+* **core:** one address space, one node representation — retire the S1 compat layers ([#272](https://github.com/Nowely/marked-input/issues/272)) ([36a621c](https://github.com/Nowely/marked-input/commit/36a621c880639c5715e006e49533541efb170e46))
+* **core:** one contenteditable host, block on tree anchors ([#274](https://github.com/Nowely/marked-input/issues/274)) ([9f82482](https://github.com/Nowely/marked-input/commit/9f8248294e552eaa31b34986d1a5324886e2854a))
+* **core:** retire the migration archaeology, fix two shipped defects ([#273](https://github.com/Nowely/marked-input/issues/273)) ([0883d32](https://github.com/Nowely/marked-input/commit/0883d32547f0e9c721334e811735c6ad1af73074))
+* **core:** the dom/tree/seam sweep — four files dissolve and the change feed keeps one field ([#290](https://github.com/Nowely/marked-input/issues/290)) ([f86832c](https://github.com/Nowely/marked-input/commit/f86832cfef477b955d004cdd4536012ac0652be3))
+* **core:** the framework consigns its elements, and a ref binds one token ([#286](https://github.com/Nowely/marked-input/issues/286)) ([93d84a3](https://github.com/Nowely/marked-input/commit/93d84a3fc075bfa986fb47e704919e9cc15db1d9))
+* **core:** the ref handle keeps two members, and the withdrawn verbs take five internals with them ([#289](https://github.com/Nowely/marked-input/issues/289)) ([6be66f5](https://github.com/Nowely/marked-input/commit/6be66f5b01dc4b10b9f63a7181dac987fdbf45ce))
+* **core:** two measured defects, four dead members, five false claims ([#287](https://github.com/Nowely/marked-input/issues/287)) ([8752d27](https://github.com/Nowely/marked-input/commit/8752d27d8dc5c2a40e58f82931d38d18d1c89cb9))
+* **storybook:** collapse the fixture layer onto the mark seam ([#281](https://github.com/Nowely/marked-input/issues/281)) ([874ec0b](https://github.com/Nowely/marked-input/commit/874ec0b6d004b9f264aace3e0a04f7210b1389a5))
+* **storybook:** one story file and one spec per page, shared by both frameworks ([#276](https://github.com/Nowely/marked-input/issues/276)) ([e7055ac](https://github.com/Nowely/marked-input/commit/e7055ac80f758eaf09d967fa4f4f34d4cfc90b63))
+
+
+### Documentation
+
+* adopt the agent-skills layout — CONTEXT.md, short ADRs, one issue queue ([#278](https://github.com/Nowely/marked-input/issues/278)) ([ca50a03](https://github.com/Nowely/marked-input/commit/ca50a037d1bccdb1d9ae9b20523cacce20508f99))
+* **scratch:** the Token-born editing arc — spec, phases, and the parser record ([#284](https://github.com/Nowely/marked-input/issues/284)) ([a4089db](https://github.com/Nowely/marked-input/commit/a4089dba0d7e969070341be5585e2d26a8e42a71))
+* **scratch:** triage the note sweep into issues ([#280](https://github.com/Nowely/marked-input/issues/280)) ([cef9f26](https://github.com/Nowely/marked-input/commit/cef9f264b94ade0a61d498d85489c32741a177e5))
+
+
+### Miscellaneous
+
+* add a one-command branch restart, under a git: namespace ([#277](https://github.com/Nowely/marked-input/issues/277)) ([359d4eb](https://github.com/Nowely/marked-input/commit/359d4ebf33ec7db301a01505af000b49e8d65252))
+* dependency updates and TypeScript linting improvements ([#268](https://github.com/Nowely/marked-input/issues/268)) ([f2de0bd](https://github.com/Nowely/marked-input/commit/f2de0bd0000dafa929c2d8488f86ff6bab91ef6f))
+* drop .cursor/rules ([#275](https://github.com/Nowely/marked-input/issues/275)) ([1648822](https://github.com/Nowely/marked-input/commit/164882239c8f640421541ed2724933cf737c4b2e))
+* move storybook deps out of root catalog, enable typecheck everywhere ([#269](https://github.com/Nowely/marked-input/issues/269)) ([396ad41](https://github.com/Nowely/marked-input/commit/396ad41a7be8926545ba91871c37edf19ffb8929))
+
+
+### Tests
+
+* **storybook:** drop the duplicate Selection page, move Api onto the shared harness ([#282](https://github.com/Nowely/marked-input/issues/282)) ([90c7062](https://github.com/Nowely/marked-input/commit/90c70622d3726be0c68c57560bfacfbe1772b707))
+
 ## [0.14.3](https://github.com/Nowely/marked-input/compare/0.14.2...0.14.3) (2026-05-26)
 
 
