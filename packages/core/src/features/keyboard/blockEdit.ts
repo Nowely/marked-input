@@ -92,19 +92,8 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	const {handle, index: blockIndex} = active
 
 	const rows = store.tokens.nodes()
-	const row = rows[blockIndex]
 
 	if (event.key === KEYBOARD.BACKSPACE) {
-		// The ROW's own projection, which for a mark row is its whole markup — the
-		// `Token.content` this used to read, and NOT `node.text()`: every block row is a
-		// mark, so a text-only reading would make plain Backspace delete the row.
-		const blockText = store.tokens.valueBetween({before: row}, {after: row})
-		if (blockText === '') {
-			event.preventDefault()
-			row.remove()
-			return
-		}
-
 		const caretAtStart = (handle.caretIndex() ?? 0) === 0
 
 		if (caretAtStart && blockIndex > 0) {
