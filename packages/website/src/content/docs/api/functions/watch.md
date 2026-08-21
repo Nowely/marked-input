@@ -14,7 +14,7 @@ function watch<T>(
    opts?): () => void;
 ```
 
-Defined in: [core/src/shared/signals/signal.ts:651](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/signals/signal.ts#L651)
+Defined in: [core/src/shared/signals/signal.ts:659](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/signals/signal.ts#L659)
 
 ### Type Parameters
 
@@ -49,7 +49,7 @@ function watch<T>(
    opts?): () => void;
 ```
 
-Defined in: [core/src/shared/signals/signal.ts:656](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/signals/signal.ts#L656)
+Defined in: [core/src/shared/signals/signal.ts:664](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/signals/signal.ts#L664)
 
 ### Type Parameters
 
@@ -84,7 +84,7 @@ function watch<T>(
    opts?): () => void;
 ```
 
-Defined in: [core/src/shared/signals/signal.ts:661](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/signals/signal.ts#L661)
+Defined in: [core/src/shared/signals/signal.ts:669](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/signals/signal.ts#L669)
 
 ### Type Parameters
 
