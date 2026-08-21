@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {BLOCK_MENU_ITEMS} from '@markput/core'
 import type {TreeNode} from '@markput/core'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -6,8 +7,6 @@ import {useStore} from '../lib/hooks/useStore'
 import List from './Popup/List.vue'
 import ListItem from './Popup/ListItem.vue'
 import Popup from './Popup/Popup.vue'
-
-import styles from '@markput/core/styles.module.css'
 
 const props = defineProps<{node: TreeNode}>()
 
@@ -31,17 +30,9 @@ const setMenuRef = (el: HTMLElement | null) => {
 		:style="{top: menuPosition.top + 'px', left: menuPosition.left + 'px'}"
 	>
 		<List>
-			<ListItem @mousedown.prevent="blockStore.addBlock()">
-				<span :class="[styles.Icon, styles.IconAdd]" />
-				<span>Add below</span>
-			</ListItem>
-			<ListItem @mousedown.prevent="blockStore.duplicateBlock()">
-				<span :class="[styles.Icon, styles.IconDuplicate]" />
-				<span>Duplicate</span>
-			</ListItem>
-			<ListItem @mousedown.prevent="blockStore.deleteBlock()">
-				<span :class="[styles.Icon, styles.IconTrash]" />
-				<span>Delete</span>
+			<ListItem v-for="item in BLOCK_MENU_ITEMS" :key="item.label" @mousedown.prevent="item.run(blockStore)">
+				<span :class="item.iconClass" />
+				<span>{{ item.label }}</span>
 			</ListItem>
 		</List>
 	</Popup>

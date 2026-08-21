@@ -28,7 +28,8 @@ export type {MarkToken, Markup} from './src/features/tokens'
 export {cx} from './src/shared/utils/cx'
 export {key} from './src/shared/classes'
 export {filterSuggestions, navigateSuggestions} from './src/features/overlay'
-export {getAlwaysShowHandle} from './src/features/block'
+// `BLOCK_MENU_ITEMS` is the block menu's content contract; both adapters' BlockMenu map it.
+export {BLOCK_MENU_ITEMS, getAlwaysShowHandle} from './src/features/block'
 export type {
 	OverlayMatch,
 	OverlayTrigger,
