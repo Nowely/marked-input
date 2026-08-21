@@ -4,9 +4,14 @@ import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'edit' | 'tokens' | 'props'>
-import {consumeMarkupPaste} from '../clipboard'
 import type {NodeAnchor, TokenHandle, TreeNode} from '../tokens'
-import {anchorsForInput, anchorsFromInputEvent, dropUnexpressedInput, isConsumerKeyOrigin} from './beforeInput'
+import {
+	anchorsForInput,
+	anchorsFromInputEvent,
+	dropUnexpressedInput,
+	isConsumerKeyOrigin,
+	replacementForInput,
+} from './beforeInput'
 
 type ActiveRow = {
 	handle: TokenHandle
@@ -171,47 +176,24 @@ function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: Inp
 		return
 	}
 
-	switch (event.inputType) {
-		case 'insertText': {
-			const data = event.data ?? ''
-			replaceBlockRange(store, container, event, data)
-			break
-		}
-		case 'insertFromPaste':
-		case 'insertReplacementText': {
-			const markup = consumeMarkupPaste(container)
-			const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
-			replaceBlockRange(store, container, event, pasteData)
-			break
-		}
-		case 'deleteContentBackward':
-		case 'deleteContentForward':
-		case 'deleteWordBackward':
-		case 'deleteWordForward':
-		case 'deleteSoftLineBackward':
-		case 'deleteSoftLineForward': {
-			replaceBlockRange(store, container, event, '')
-			break
-		}
-		// PARITY with `input.ts`'s `replacementForInput`, which the closed default below
-		// would otherwise turn into a silent drop. Shift+Enter is a newline INSIDE the row
-		// (plain Enter never reaches here — `handleEnter` cancels its keydown and splits
-		// the row instead).
-		case 'insertLineBreak': {
-			replaceBlockRange(store, container, event, '\n')
-			break
-		}
-		case 'insertFromDrop': {
-			replaceBlockRange(store, container, event, event.dataTransfer?.getData('text/plain') ?? '')
-			break
-		}
-		// FAIL CLOSED, same contract as `input.ts`: block rows live in the SAME single
-		// host, so an input type this switch cannot express would edit model-owned DOM.
-		// Enter is not among the cases because `handleEnter` already cancelled its
-		// keydown, so no `insertParagraph` reaches this at all.
-		default:
-			dropUnexpressedInput(container, event)
+	// Enter is `handleEnter`'s: its keydown arm cancels plain Enter and inserts the
+	// SEPARATOR, so the shared table's '\n' mapping is wrong for a row — it would splice a
+	// literal newline inside it instead of splitting it. An insertParagraph that still
+	// arrives answered to no keydown, so it fails closed with the rest of the unexpressed.
+	if (event.inputType === 'insertParagraph') {
+		dropUnexpressedInput(container, event)
+		return
 	}
+
+	// The SAME inputType→replacement table as `input.ts`, undefined failing CLOSED the same
+	// way: block rows live in the one shared host, so an input type the table cannot
+	// express would edit model-owned DOM.
+	const replacement = replacementForInput(container, event)
+	if (replacement === undefined) {
+		dropUnexpressedInput(container, event)
+		return
+	}
+	replaceBlockRange(store, container, event, replacement)
 }
 
 function replaceBlockRange(store: KbCtx, container: HTMLElement, event: InputEvent, replacement: string): void {

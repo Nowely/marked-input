@@ -1,5 +1,6 @@
 import {nodeTarget} from '../../shared/checkers'
 import type {Store} from '../../store/Store'
+import {consumeMarkupPaste} from '../clipboard'
 import type {Anchors} from '../tokens'
 import {anchorEquals} from '../tokens'
 
@@ -59,6 +60,27 @@ export function dropUnexpressedInput(container: HTMLElement, event: InputEvent):
 	if (!event.cancelable) return
 	if (inExplicitEditableIsland(editOrigin(event) ?? container, container)) return
 	event.preventDefault()
+}
+
+/**
+ * The ONE inputType→replacement table, shared by the inline guard (`input.ts`) and the
+ * block guard (`blockEdit.ts`) — a per-guard copy is a drift hazard, not a policy.
+ * `undefined` means the type has no expression as a value edit; every caller answers that
+ * with {@link dropUnexpressedInput}. Block's single divergence, insertParagraph, is decided
+ * BEFORE this table in `handleBlockBeforeInput`, so the mapping itself stays layout-free.
+ */
+export function replacementForInput(container: HTMLElement, event: InputEvent): string | undefined {
+	if (event.inputType.startsWith('delete')) return ''
+	if (event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') {
+		const markup = consumeMarkupPaste(container)
+		return markup ?? event.dataTransfer?.getData('text/plain') ?? event.data ?? ''
+	}
+	if (event.inputType === 'insertText') return event.data ?? ''
+	// Enter is a newline in the VALUE, not a DOM line break: the guard owns the edit, so
+	// the browser never gets to build a <div>/<br> inside the host.
+	if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') return '\n'
+	if (event.inputType === 'insertFromDrop') return event.dataTransfer?.getData('text/plain') ?? ''
+	return undefined
 }
 
 /**

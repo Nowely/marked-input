@@ -11,6 +11,7 @@ import {
 	dropUnexpressedInput,
 	isConsumerKeyOrigin,
 	isConsumerOrigin,
+	replacementForInput,
 } from './beforeInput'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
@@ -127,20 +128,6 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 
 	event.preventDefault()
 	store.edit.replace(target.anchor, target.head, replacement)
-}
-
-function replacementForInput(container: HTMLElement, event: InputEvent): string | undefined {
-	if (event.inputType.startsWith('delete')) return ''
-	if (event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') {
-		const markup = consumeMarkupPaste(container)
-		return markup ?? event.dataTransfer?.getData('text/plain') ?? event.data ?? ''
-	}
-	if (event.inputType === 'insertText') return event.data ?? ''
-	// Enter is a newline in the VALUE, not a DOM line break: the guard owns the edit, so
-	// the browser never gets to build a <div>/<br> inside the host.
-	if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') return '\n'
-	if (event.inputType === 'insertFromDrop') return event.dataTransfer?.getData('text/plain') ?? ''
-	return undefined
 }
 
 function handlePaste(store: KbCtx, container: HTMLElement, event: ClipboardEvent): void {
