@@ -1,4 +1,4 @@
-import {untracked} from '../../../shared/signals'
+import {batch, untracked} from '../../../shared/signals'
 import type {Parser} from '../parser/Parser'
 import {adopt, parseRowsValue, parseValue} from './adopt'
 import {gapWindow} from './gapWindow'
@@ -71,10 +71,19 @@ export function createBoundary(deps: {
 		const separator = deps.isBlock?.() === true ? deps.separator?.() : undefined
 		const parsed =
 			separator !== undefined ? parseRowsValue(deps.parser(), next, separator) : parseValue(deps.parser(), next)
-		const result = adopt(deps.tree, window, parsed, selectionBefore)
-		// Adoption is the commit; it must not sit inside the optional call's argument,
-		// which JS skips evaluating when no listener is registered.
-		deps.onResult?.(result)
+		// THE COMMIT IS ATOMIC. Adoption and everything the result drives — the bind, the
+		// clocks, the selection repair — land inside ONE batch, so nothing observes a half
+		// applied commit: no subscriber wakes between the tree moving and the DOM catching up.
+		//
+		// Before this, adoption's own batch closed first and flushed, which is why anything
+		// derived from the tree had to be routed around: `value` read a mirrored string
+		// written after the fact rather than the tree itself.
+		batch(() => {
+			const result = adopt(deps.tree, window, parsed, selectionBefore)
+			// Adoption is the commit; it must not sit inside the optional call's argument,
+			// which JS skips evaluating when no listener is registered.
+			deps.onResult?.(result)
+		})
 	}
 
 	const sink: CommitSink = {
