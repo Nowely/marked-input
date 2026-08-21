@@ -159,26 +159,28 @@ const FastMark = memo<MarkProps>(({ value }) => (
 
 **Solution: Memoize Options**
 
+Core compares `options` by ELEMENT IDENTITY, so a fresh array holding the same
+option objects costs nothing — hoisting the objects out of the render is enough,
+and a `useMemo` over the whole array is not required. What still costs is fresh
+option OBJECTS, because nothing can tell them from a genuine change.
+
 ```typescript
+// ❌ New option objects on every render — the resolver churns and every token re-renders
 function Editor() {
-  // ❌ Creates new options object on every render
-  return (
-    <MarkedInput
-      Mark={MyMark}
-      options={[
-        { markup: '@[__value__]' } // New object every render!
-      ]}
-    />
-  )
+  return <MarkedInput Mark={MyMark} options={[{markup: '@[__value__]'}]} />
+}
 
-  // ✅ Memoized options
-  const options = useMemo(() => [
-    { markup: '@[__value__]' }
-  ], [])
+// ✅ The objects are stable; the array around them may be fresh
+const OPTIONS = [{markup: '@[__value__]'}]
 
-  return <MarkedInput Mark={MyMark} options={options} />
+function Editor() {
+  return <MarkedInput Mark={MyMark} options={OPTIONS} />
 }
 ```
+
+The parser is defended separately and unconditionally: it is re-created only when
+the MARKUP STRINGS change, so even the ❌ form above never re-mints token ids.
+The cost it leaves is a render pass, not a remount.
 
 ## Many Marks
 
