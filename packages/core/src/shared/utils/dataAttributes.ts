@@ -10,13 +10,11 @@
  * convertDataAttrs({ dataUserId: '123', dataUserName: 'John', className: 'test' })
  * // Returns: { 'data-user-id': '123', 'data-user-name': 'John', className: 'test' }
  *
- * convertDataAttrs({ dataTestId * @example
-: 'test', dataFoo: 'bar' })
+ * @example
+ * convertDataAttrs({ dataTestId: 'test', dataFoo: 'bar' })
  * // Returns: { 'data-test-id': 'test', 'data-foo': 'bar' }
  */
-export function convertDataAttrs(obj: Record<string, unknown> | undefined): Record<string, unknown> {
-	if (!obj) return {}
-
+export function convertDataAttrs(obj: Record<string, unknown>): Record<string, unknown> {
 	return Object.fromEntries(
 		Object.entries(obj).map(([key, value]) => {
 			if (key.startsWith('data') && key.length > 4 && key[4] === key[4].toUpperCase()) {

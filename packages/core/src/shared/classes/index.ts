@@ -1,1 +1,1 @@
-export {key, KeyGenerator} from './KeyGenerator'
+export {key} from './KeyGenerator'

@@ -25,7 +25,7 @@ export {annotate, denote} from './src/features/tokens'
 export type {MarkToken, Markup} from './src/features/tokens'
 
 // Adapter utilities (spec §2.3: keep)
-export {cx} from './src/shared/utils'
+export {cx} from './src/shared/utils/cx'
 export {key} from './src/shared/classes'
 export {filterSuggestions, navigateSuggestions} from './src/features/overlay'
 export {getAlwaysShowHandle} from './src/features/block'

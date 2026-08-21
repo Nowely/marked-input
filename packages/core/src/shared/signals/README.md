@@ -381,25 +381,6 @@ batch(() => {
 })
 ```
 
-### `trigger(fn)`
-
-One-shot reactive trigger. Reads signals inside `fn`, then immediately propagates changes to their downstream subscribers. Does not create a persistent subscription.
-
-```ts
-const arr = signal<number[]>([])
-const length = computed(() => arr().length)
-
-length() // 0
-
-arr().push(1) // direct mutation — signal doesn't know it changed
-length() // still 0 — cached
-
-trigger(() => {
-    arr() // read `arr` so trigger knows what to propagate
-})
-length() // 1 — propagated
-```
-
 ### `untracked(fn)`
 
 Runs `fn` without tracking reactive dependencies. Useful inside effects where you need to read a signal without subscribing to it.
@@ -510,5 +491,4 @@ This module extends the [alien-signals](./alien-signals/) reference API with:
 | `watch()` with old/new values        | No            | Yes         |
 | `batch()` with `{mutable}` scope     | No            | Yes         |
 | Effect scopes                        | Yes           | Yes         |
-| `trigger()`                          | Yes           | Yes         |
 | `untracked()`                        | No            | Yes         |

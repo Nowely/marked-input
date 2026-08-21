@@ -1,9 +1,9 @@
 import {faker} from '@faker-js/faker'
 import {describe, expect, it} from 'vitest'
 
+import {toString} from '../parser/__testing__/toString'
 import {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
-import {toString} from '../parser/utils/toString'
 import {captureTree, diffTree} from './__testing__/diff'
 import {snapshot, stripIds} from './__testing__/snapshot'
 import {adopt} from './adopt'

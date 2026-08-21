@@ -1,5 +1,5 @@
 import type {Token} from '../types'
-import {annotate} from './annotate'
+import {annotate} from '../utils/annotate'
 
 /**
  * Convert parsed tokens back to annotated string (inverse of `parse`).
