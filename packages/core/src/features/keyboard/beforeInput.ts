@@ -63,11 +63,12 @@ export function dropUnexpressedInput(container: HTMLElement, event: InputEvent):
 }
 
 /**
- * The ONE inputType→replacement table, shared by the inline guard (`input.ts`) and the
- * block guard (`blockEdit.ts`) — a per-guard copy is a drift hazard, not a policy.
- * `undefined` means the type has no expression as a value edit; every caller answers that
- * with {@link dropUnexpressedInput}. Block's single divergence, insertParagraph, is decided
- * BEFORE this table in `handleBlockBeforeInput`, so the mapping itself stays layout-free.
+ * The ONE inputType→replacement table, and since the guards folded into one there is one
+ * caller too — `input.ts`'s `beforeinput` — where a per-guard copy used to be the drift
+ * hazard this shared table answered. `undefined` means the type has no expression as a value
+ * edit; the caller answers that with {@link dropUnexpressedInput}. Block's single divergence,
+ * insertParagraph, is decided BEFORE this table in `blockEdit.ts`'s `handleRowParagraph`, so
+ * the mapping itself stays layout-free.
  */
 export function replacementForInput(container: HTMLElement, event: InputEvent): string | undefined {
 	if (event.inputType.startsWith('delete')) return ''
@@ -137,11 +138,6 @@ function inExplicitEditableIsland(origin: Node, container: HTMLElement): boolean
 		current = current.parentElement
 	}
 	return false
-}
-
-export function anchorsForInput(store: KbCtx, event: InputEvent, anchors: Anchors): Anchors | undefined {
-	if (!event.inputType.startsWith('delete')) return anchors
-	return anchorsForDelete(store, event.inputType, anchors)
 }
 
 /**

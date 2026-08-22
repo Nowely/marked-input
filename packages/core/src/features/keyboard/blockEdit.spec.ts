@@ -165,6 +165,43 @@ describe('blockEdit beforeinput guard', () => {
 		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
 	})
 
+	it('leaves an edit inside an EXPLICIT contenteditable island alone', () => {
+		// The block half of `input.spec`'s 'leaves an unhandled type alone inside an EXPLICIT
+		// contenteditable island'. The consumer's own DOM, marked as such by an attribute: the
+		// model neither owns it nor resolves boundaries in it, so it must neither edit on the
+		// event nor cancel it.
+		//
+		// MEASURED before the guards folded into one: block took only the control-root half of
+		// the consumer-origin test, so this event resolved a caret at the ROW's text end and
+		// typed there — 'one\n\ntwo\n\n' became 'one\n\ntwox\n\n' with the event cancelled,
+		// while the same edit inline was left alone.
+		const {store} = mountBlock()
+		const island = document.createElement('span')
+		island.setAttribute('contenteditable', 'true')
+		island.textContent = 'inner'
+		rowSurface(store, 1).append(island)
+		const islandText = island.firstChild
+		if (!(islandText instanceof Text)) throw new Error('island did not render a text node')
+		const range = document.createRange()
+		range.setStart(islandText, 0)
+		range.setEnd(islandText, 0)
+		const selection = window.getSelection()
+		selection?.removeAllRanges()
+		selection?.addRange(range)
+
+		const event = new InputEvent('beforeinput', {
+			inputType: 'insertText',
+			data: 'x',
+			bubbles: true,
+			cancelable: true,
+		})
+		Object.defineProperty(event, 'getTargetRanges', {value: () => [new StaticRange(range)]})
+		islandText.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
+	})
+
 	it('inserts a newline INSIDE the row on insertLineBreak (Shift+Enter)', () => {
 		// Parity with the inline guard: without its own case the closed default would drop
 		// Shift+Enter silently. Plain Enter never arrives — `handleRowEnter` cancels the keydown.
@@ -355,6 +392,23 @@ describe('blockEdit row-boundary delete', () => {
 
 		expect(event.defaultPrevented).toBe(false)
 		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
+	})
+
+	it('clears the whole value even when the DOM selection is gone', () => {
+		// The block half of `input.spec`'s inline pin, and block only reaches it now that both
+		// layouts share one delete arm. The discriminating case: with the STORED selection
+		// all-selected and no live range, `domAnchors()` declines and `rowEdgeAnchors` cannot
+		// answer a RANGE, so without the all-selected branch ahead of them this returns without
+		// cancelling and the browser mutates the host behind the model's back.
+		const {store, container} = mountBlock()
+		store.tokens.selection.selectAll()
+		window.getSelection()?.removeAllRanges()
+
+		const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('')
 	})
 })
 

@@ -1,44 +1,9 @@
-import {nodeTarget} from '../../shared/checkers'
 import {KEYBOARD} from '../../shared/constants'
-import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'edit' | 'tokens' | 'props'>
 import type {Anchors, NodeAnchor} from '../tokens'
-import {
-	anchorsForDelete,
-	anchorsForInput,
-	anchorsFromInputEvent,
-	dropUnexpressedInput,
-	isConsumerKeyOrigin,
-	replacementForInput,
-} from './beforeInput'
-
-export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
-	listen(container, 'keydown', e => {
-		if (!store.props.layout.isBlock()) return
-		// The same consumer-origin test `enableInput`'s keydown tier takes, and for the same
-		// reason: the handlers below key on the STORED selection, not on where the key was
-		// pressed, so Backspace or Enter inside a control or a consumer's editable island
-		// would resolve a row and edit (or merge) it.
-		if (isConsumerKeyOrigin(store, container, e)) return
-
-		// No arrow arm: one host makes cross-row caret movement native.
-		handleDelete(store, e)
-		handleRowEnter(store, e)
-	})
-
-	listen(
-		container,
-		'beforeinput',
-		e => {
-			if (!store.props.layout.isBlock()) return
-			if (e.defaultPrevented) return
-			handleBlockBeforeInput(store, container, e)
-		},
-		true
-	)
-}
+import {dropUnexpressedInput} from './beforeInput'
 
 /**
  * THE anchor a delete falls back on when the live DOM boundary resolves to none — the near EDGE
@@ -66,13 +31,14 @@ export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
  * form (ADR-0003), and a mid-row delete arrives again as a `beforeinput` carrying its own
  * target range.
  */
-function rowEdgeAnchors(store: KbCtx): Anchors | undefined {
+export function rowEdgeAnchors(store: KbCtx): Anchors | undefined {
 	const stored = store.tokens.selection.anchors()?.anchor
 	const row = stored && rowOfAnchor(store, stored)
 	if (!row) return undefined
 	const handle = store.tokens.handle(row.id)
-	const caret = handle?.caretIndex()
-	if (!handle || caret === undefined) return undefined
+	if (!handle) return undefined
+	const caret = handle.caretIndex()
+	if (caret === undefined) return undefined
 	if (caret === 0) return collapsed({before: row})
 	// The row's children END with a text token (`RowBuilder.groupRows`' edge invariant), so its
 	// content end is that child's trailing edge. `{after: row}` would sit PAST the separator.
@@ -98,31 +64,17 @@ function rowOfAnchor(store: KbCtx, anchor: NodeAnchor) {
 }
 
 /**
- * Backspace/Delete, resolved entirely through ANCHORS — the same body `input.ts`'s inline arm
- * runs. A row boundary is no longer a case of its own: {@link anchorsForDelete} expands a
- * collapsed delete sitting on one onto the whole SEPARATOR, and removing that span IS the merge
- * `RowNode.mergeWith` used to perform on a row resolved out of the selection.
+ * Block layout's KEYDOWN arm, called by `enableInput` after the shared consumer-origin and
+ * select-all checks: Enter splits the row by inserting the SEPARATOR, and reparse forms the
+ * rows — no row content is composed, no markup consulted (issue 08).
+ *
+ * It is the only key block answers differently. There is no arrow arm: one host makes cross-row
+ * caret movement native, and nothing may cancel an arrow keydown (`blockEdit.spec`'s two arrow
+ * cases). Delete is not here either — a row boundary is an ANCHOR question since
+ * `anchorsForDelete` learned the separator, so both layouts run one delete arm.
  */
-function handleDelete(store: KbCtx, event: KeyboardEvent) {
-	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
-	// The same word/line decline the inline arm takes, and block needs it for the same reason
-	// now that this one answers on the KEYDOWN: the extent of Alt/Ctrl/Cmd+Backspace rides on
-	// the `beforeinput` that follows, so cancelling here would turn a word delete into a
-	// one-character one. It folds into the inline test when the two arms become one.
-	if (event.ctrlKey || event.altKey || event.metaKey) return
-
-	const anchors = store.tokens.domAnchors() ?? rowEdgeAnchors(store)
-	if (!anchors) return
-
-	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
-	const target = anchorsForDelete(store, inputType, anchors)
-	if (!target) return
-
-	event.preventDefault()
-	store.edit.replace(target.anchor, target.head, '')
-}
-
-function handleRowEnter(store: KbCtx, event: KeyboardEvent) {
+export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
+	if (!store.props.layout.isBlock()) return
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
@@ -138,10 +90,8 @@ function handleRowEnter(store: KbCtx, event: KeyboardEvent) {
 		return
 	}
 
-	// ONE arm (issue 08): Enter inserts the separator at the caret and reparse forms the rows —
-	// no row content is composed, no markup consulted. Over a RANGE it splices at the LOW end
-	// and KEEPS what was selected, which is deliberately not the shared table's replace-the-
-	// range rule.
+	// Over a RANGE this splices at the LOW end and KEEPS what was selected, which is
+	// deliberately not the shared table's replace-the-range rule.
 	//
 	// The stored anchors stand behind the live selection here rather than
 	// {@link rowEdgeAnchors}: a split needs the position itself, which only they carry, where
@@ -153,44 +103,18 @@ function handleRowEnter(store: KbCtx, event: KeyboardEvent) {
 	store.edit.replace(at, at, store.props.separator())
 }
 
-function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent) {
-	const target = nodeTarget(event)
-	// A control root is consumer chrome that owns its own input, so its event passes through
-	// untouched.
-	if (target && store.tokens.handleAt(target) === 'control') return
-
-	// Enter is {@link handleRowEnter}'s: its keydown arm cancels plain Enter and inserts the
-	// SEPARATOR, so the shared table's '\n' mapping is wrong for a row — it would splice a
-	// literal newline inside it instead of splitting it. An insertParagraph that still arrives
-	// answered to no keydown, so it fails closed with the rest of the unexpressed.
-	if (event.inputType === 'insertParagraph') {
-		dropUnexpressedInput(container, event)
-		return
-	}
-
-	// The SAME inputType→replacement table as `input.ts`, undefined failing CLOSED the same
-	// way: block rows live in the one shared host, so an input type the table cannot
-	// express would edit model-owned DOM.
-	const replacement = replacementForInput(container, event)
-	if (replacement === undefined) {
-		dropUnexpressedInput(container, event)
-		return
-	}
-	replaceBlockRange(store, container, event, replacement)
-}
-
-function replaceBlockRange(store: KbCtx, container: HTMLElement, event: InputEvent, replacement: string): void {
-	const anchors = anchorsFromInputEvent(store, event)
-	// The shared mark swallow is safe here since issue 08: a block row is a RowNode, never a
-	// MarkNode, so `adjacentMark` can only answer an INLINE mark inside a row — a plain
-	// Backspace beside a mention deletes the mention, never a whole row. Row-level deletes
-	// are {@link handleDelete}'s, and it preventDefaults before this runs.
-	const target = anchors && anchorsForInput(store, event, anchors)
-	if (!target) {
-		dropUnexpressedInput(container, event)
-		return
-	}
-
-	event.preventDefault()
-	store.edit.replace(target.anchor, target.head, replacement)
+/**
+ * Block layout's ONE divergence from the shared inputType table, and the whole of what its
+ * `beforeinput` arm still is. Answers whether it consumed the event.
+ *
+ * Enter belongs to {@link handleRowEnter}'s keydown, which cancels plain Enter and inserts the
+ * SEPARATOR, so the table's `'\n'` mapping is wrong for a row — it would splice a literal
+ * newline INSIDE the row instead of splitting it. An insertParagraph that still arrives
+ * answered to no keydown, so it fails closed with the rest of the unexpressed.
+ */
+export function handleRowParagraph(store: KbCtx, container: HTMLElement, event: InputEvent): boolean {
+	if (!store.props.layout.isBlock()) return false
+	if (event.inputType !== 'insertParagraph') return false
+	dropUnexpressedInput(container, event)
+	return true
 }

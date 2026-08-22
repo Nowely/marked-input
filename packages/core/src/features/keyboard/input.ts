@@ -6,13 +6,13 @@ type KbCtx = Pick<Store, 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import {
 	anchorsForDelete,
-	anchorsForInput,
 	anchorsFromInputEvent,
 	dropUnexpressedInput,
 	isConsumerKeyOrigin,
 	isConsumerOrigin,
 	replacementForInput,
 } from './beforeInput'
+import {handleRowEnter, handleRowParagraph, rowEdgeAnchors} from './blockEdit'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'paste', e => {
@@ -49,12 +49,14 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 			store.tokens.selection.selectAll()
 			return
 		}
+		// The block ARM, after the shared checks and answering only in block layout. It used to
+		// be a second keydown listener on this same container that repeated both of them.
+		handleRowEnter(store, e)
 		handleDeleteKey(store, e)
 	})
 }
 
 function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
-	if (store.props.layout.isBlock()) return
 	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
 
 	// NOT redundant with the fallthrough below, and the difference is measured rather than
@@ -80,7 +82,10 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	// in this test: Shift+Backspace is a plain delete.
 	if (event.ctrlKey || event.altKey || event.metaKey) return
 
-	const anchors = store.tokens.domAnchors()
+	// DOM truth, with the row-edge fallback behind it for a boundary this layer declines. That
+	// fallback answers for a ROW and nothing else, so it leaves the discrimination above intact
+	// and inline reaches it never.
+	const anchors = store.tokens.domAnchors() ?? rowEdgeAnchors(store)
 	if (!anchors) return
 
 	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
@@ -120,9 +125,12 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 		return
 	}
 
-	// Block layout's own guard is `blockEdit`'s `handleBlockBeforeInput`, which fails
-	// closed the same way this tail does.
-	if (store.props.layout.isBlock()) return
+	// The block ARM, after the two checks above and answering only in block layout. It used to
+	// be a second CAPTURE listener on this same container, which repeated the control-root half
+	// of `isConsumerOrigin`, skipped whatever this one had already prevented, and — the reason
+	// this order matters — never took the island half at all. Everything past it is shared: the
+	// block tail was a copy of the one below.
+	if (handleRowParagraph(store, container, event)) return
 
 	const anchors = anchorsFromInputEvent(store, event)
 	const replacement = replacementForInput(container, event)
@@ -131,7 +139,8 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 		return
 	}
 
-	const target = anchorsForInput(store, event, anchors)
+	// Only a DELETE expands; every other type edits exactly the span the event named.
+	const target = event.inputType.startsWith('delete') ? anchorsForDelete(store, event.inputType, anchors) : anchors
 	if (!target) {
 		dropUnexpressedInput(container, event)
 		return
