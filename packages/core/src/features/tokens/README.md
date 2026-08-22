@@ -497,8 +497,8 @@ lands. Nothing searches the bound surfaces for a nearest position.
 ## Parse
 
 Inline and block parse are always a full parse. The boundary parses the whole
-spliced projection (block mode then filters empty text tokens) and hands the
-result to adoption. There is no windowed re-tokenizer: the only incrementality
+spliced projection — `Parser.parseRows` in block layout, `Parser.parse` inline —
+and hands the result to adoption. There is no windowed re-tokenizer: the only incrementality
 is adoption's prefix/suffix retention above. Full-parse cost is tracked by the
 `parser.bench.ts` tripwire.
 

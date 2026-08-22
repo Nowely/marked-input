@@ -7,10 +7,9 @@ export type Id = number
 
 /**
  * An identity claim the string cannot carry: `pairing[j]` is the index of the PREVIOUS root
- * that becomes new root `j`. ROOT level, and post-filter on both sides — block mode filters
- * empty text tokens one line before adoption (`valueBoundary`), and the tree's own roots are
- * the output of that same filtered list, so both ends of the channel are in one space by
- * construction.
+ * that becomes new root `j`. ROOT level, and ONE space on both ends: nothing sits between the
+ * parse and the tree, so a root index is the parse's top-level index — in block layout, the
+ * row index a drag names (ADR-0009).
  *
  * It exists because a permutation is not derivable from the two strings. Moving a row past a
  * BYTE-IDENTICAL one produces the same document, so no diff — LCS, keyed or otherwise — can
@@ -143,8 +142,7 @@ export type MarkPatch = {
 /**
  * STRUCTURAL verbs, on any node. The split from {@link MarkCommands} is by the nature of
  * the operation rather than by node type: structure is common to every node, while
- * `value`/`meta`/`slot` are mark-only by definition. A block row can be a text node — the
- * empty-text filter only drops EMPTY ones — so a mark-only `remove` could not serve one.
+ * `value`/`meta`/`slot` are mark-only by definition.
  */
 export interface NodeCommands {
 	remove(node: TreeNode): boolean

@@ -148,10 +148,10 @@ function liveCaretRange(): Range {
 }
 
 /**
- * A BLOCK document with a MARK at one edge. Block mode filters the EMPTY text tokens a mark
- * is bracketed with inline (`valueBoundary.ts`), so nothing covers that mark's own boundary
- * offsets — the state the select-all defect lived in, and the reason it takes block layout to
- * reach: the inline parse of the same value has an empty text token on each side.
+ * A BLOCK document with a MARK at one edge — the shape the select-all defect lived in, kept as
+ * its regression gate. The premise that made it reachable is gone: block layout no longer
+ * filters the empty text tokens a mark is bracketed with, because a row's children open and
+ * close with one (`RowBuilder.groupRows`).
  *
  * One `<div>` per ROOT holding exactly one token element — the row wrapper and the token
  * element are consigned separately, which is how `bind` tells them apart; a mark with children

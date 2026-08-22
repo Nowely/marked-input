@@ -36,11 +36,11 @@ export function anchorAt(roots: readonly TreeNode[], offset: number, side: 'left
 	// `{after}` under the default: the interior and the end have no other reading,
 	// and neither does the start under right affinity.
 	//
-	// `'left'` is what a select-all seed asks for, and only its START seed: block mode filters
-	// the empty text tokens that bracket a mark (valueBoundary.ts), so on a document that OPENS
-	// with a mark NOTHING covers offset 0 but the mark itself — `{after: mark}` projects back to
-	// its END, `isAllSelected` compared that against 0 and answered false, and Ctrl+A was
-	// cancelled having done nothing.
+	// `'left'` is `Selection.selectAll`'s START seed, and NO PARSED document reaches it at
+	// offset 0 any more: the inline parse brackets a leading mark with an empty text token and
+	// a row's children open with one (`RowBuilder.groupRows`), so a text anchor always answers
+	// first. Only `anchors.spec`'s hand-assembled roots still exercise the branch — measured by
+	// deleting it: the whole core suite and the browser suite stay green but that one case.
 	if (owner) return side === 'left' && offset === owner.position.start ? {before: owner} : {after: owner}
 	return offset <= 0 ? 'start' : 'end'
 }

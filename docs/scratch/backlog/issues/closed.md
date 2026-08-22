@@ -87,3 +87,32 @@ Nine of that sweep's twelve items no longer exist — the core was inverted twic
   is announced as added only"). The `removed` half was already mutation-sensitive: emptying it
   reds three cases.
 
+## Closed 2026-08-22
+
+Both closed by the row/mark unification map's stale-premises sweep
+(`docs/scratch/row-mark-unification/issues/07-stale-premises-sweep.md`). Both rested on
+the same dead premise — that block layout filters empty text tokens — which died with
+`parser/utils/filterEmptyText.ts` in #291.
+
+- **Issue 09 — "Block gap caret."** Closed 2026-08-22 — does not reproduce. The premise died with `parser/utils/filterEmptyText.ts`, deleted in #291 when block layout cut over to RowNodes; `RowBuilder.groupRows` now guarantees the opposite, and the parser still puts an empty text token between two adjacent marks.
+
+  Measured on `@[a](1)X@[b](2)` in block layout, separator `'\n\n'`: deleting the `X` (`applyRange({start: 7, end: 8, insertedLength: 0}, '')`) repairs the caret to `text[7,7]+0` — offset 7, the deletion site. The row after the delete is `row[0,14]{text[0,0], mark[0,7], text[7,7], mark[7,14], text[14,14]}`. Inline layout on the same value answers identically, so there is no block/inline divergence left to compare and no design table owed.
+
+  What survives is a different item: that caret position sits on a 0px bare gap span, so it is arrow-reachable but not clickable (ADR-0004). See `28-caret-defects-nobody-wrote-down.md`.
+
+- **Issue 15 — "A block row whose slot starts with a mark never opens."** Closed 2026-08-22 — moot in every form, verified by measurement.
+
+  **The repro no longer registers.** `new Parser(['__slot__\n\n', '@[__value__]'])` throws
+`Invalid markup: "__slot__\n\n". A markup must not begin with a placeholder — the row separator is an editor-level setting, not part of any markup` (`MarkupDescriptor.validateMarkup`, ADR-0009 / #295). A row is not a markup any more, so the shape the issue is about cannot be built.
+
+  **The defect does not survive in the legal shape.** The same document expressed the ADR-0009 way — rows from `props.separator` — opens the mark-first row:
+
+  ```
+parseRows('@[x]\n\nplain', '\n\n')
+  ROW "@[x]↲↲" [0-6] term=true   TEXT "" [0-0] | MARK "@[x]" [0-4] | TEXT "" [4-4]
+  ROW "plain"  [6-11] term=false TEXT "plain" [6-11]
+```
+
+  A slot whose content starts with a mark parses too: `#[@[x] tail]` nests as `mark[0,12]{text ""[2,2], mark "@[x]"[2,6], text " tail"[6,11]}`.
+
+  **The trailing note is permanently false, not pending.** It said `tree/anchors.spec.ts`'s nested-first test could stop assembling its tree by hand "once this is fixed". Every legal markup now begins with a literal segment, so a nested mark can never be flush with its parent's start and that shape is unparseable by design. The test's own comment already says exactly that.

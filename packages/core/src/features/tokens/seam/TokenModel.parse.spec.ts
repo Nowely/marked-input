@@ -141,7 +141,7 @@ describe('TokenModel', () => {
 			expect(() => store.host.container(document.createElement('div'))).toThrow('separator must be non-empty')
 		})
 
-		it('does not filter out empty text tokens when layout is inline', () => {
+		it('brackets a leading mark with empty text roots in inline layout', () => {
 			store.props.set({
 				Mark: () => null,
 				layout: 'inline',
