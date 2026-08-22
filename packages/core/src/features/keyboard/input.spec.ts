@@ -834,5 +834,27 @@ describe('handleBeforeInput()', () => {
 			expect(store.tokens.value()).toBe('')
 			container.remove()
 		})
+
+		it('leaves a word delete to the beforeinput that names its own range', () => {
+			// The extent of Alt/Ctrl/Cmd+Backspace belongs to the platform, and only the
+			// `beforeinput` carries it. Answering the keydown cancelled that event before it
+			// existed, so 'alpha beta' lost ONE character instead of the word — pinned here
+			// because the ranged case above ('a RANGED target range outranks the live caret')
+			// proves the tail handles it and cannot see that the keydown ate the event first.
+			const {store, container, textNode} = mountStructuralInline('alpha beta')
+			selectBoundary(textNode, 10)
+
+			const event = new KeyboardEvent('keydown', {
+				key: 'Backspace',
+				altKey: true,
+				bubbles: true,
+				cancelable: true,
+			})
+			container.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(false)
+			expect(store.tokens.value()).toBe('alpha beta')
+			container.remove()
+		})
 	})
 })

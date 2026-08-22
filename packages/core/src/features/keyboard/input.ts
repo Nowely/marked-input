@@ -69,6 +69,17 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 		return
 	}
 
+	// A WORD or LINE delete is not this arm's to answer. The keys are the same Backspace and
+	// Delete, but the extent is the platform's — Alt+Backspace deletes a word on macOS,
+	// Ctrl+Backspace on Windows, Cmd+Backspace a whole line — and this arm can only form a
+	// one-character step. Cancelling here kept the browser from ever emitting the
+	// `deleteWordBackward`/`deleteSoftLine*` `beforeinput` that carries the RANGED target range
+	// the extent lives in, so a word delete silently became a character delete. Declining lets
+	// that event arrive, where the shared tail resolves it — the precedence `handleBeforeInput`
+	// already pins ('a RANGED target range outranks the live caret'). Shift is deliberately not
+	// in this test: Shift+Backspace is a plain delete.
+	if (event.ctrlKey || event.altKey || event.metaKey) return
+
 	const anchors = store.tokens.domAnchors()
 	if (!anchors) return
 
