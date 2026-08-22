@@ -75,11 +75,21 @@ Implementation is a separate effort after this map.
 - [One input pipeline](issues/03-one-input-pipeline.md) — shape A (one listener
   pair, block arms after the shared checks) plus a row-separator expansion in
   `anchorsForDelete`, without rewriting `stepAnchor`. Ranged-Enter options C and
-  D died on a measured regression. The 46-line row tier shrank to 28 rather than
-  dying: `rowEdgeAnchors` + `rowOfAnchor` survive as an ANCHOR SOURCE, because
-  `domBoundary.ts` has no arm for a boundary inside a row that lands on no text
-  surface and the stored anchors alone are not a caret (see the round-1 list
-  below). Deleting them turns 7 tests red across core and vue.
+  D died on a measured regression. The 46-line row tier is now GONE in full —
+  `rowEdgeAnchors` + `rowOfAnchor` looked load-bearing only because a TEST HELPER
+  manufactured their input: storybook's `setCaretPosition` matched a zero-length
+  text node at offset 0 and parked the caret on Vue's `v-for` fragment anchor. One
+  line in `focus.ts` removed all 6 vue hits; the 7th was hand-built and is deleted
+  with the tier. BEHAVIOR CHANGE declared there: Backspace with no resolvable DOM
+  caret is a no-op instead of merging on a fabricated caret index of 0.
+- [No user reaches a row-interior boundary](issues/03-one-input-pipeline.md) —
+  MEASURED in a real browser, both projects. A real Backspace after a real blur
+  never reaches the container's keydown at all (focus is outside it), and
+  `rangeCount` stays 1 across a blur, so "no window selection" does not occur.
+  Dispatching the keydown by hand after a real blur confirms `SelectionDriver`'s
+  `focusout` microtask has already cleared the stored anchors. The
+  `domBoundary.ts` gap in the round-1 list below is therefore real but
+  UNREACHABLE from input — it stays a recorded defect, not a blocker.
 - [Stale premises](issues/07-stale-premises-sweep.md) — the filter is gone; 9
   stale sites fixed (the census found 3), backlog 09 and 15 both closed as
   non-reproducing, and `anchorAt`'s `side` param is now measured
@@ -156,9 +166,15 @@ map's destination; recorded so they are not lost.
   an empty text node), the exact shape `fromContainerAnchor` exists for one level
   up. It answers `undefined`, `SelectionDriver.sync` bails on `undefined`, and
   the STORED selection silently keeps a stale offset for as long as the caret
-  sits there. That is why 03's row tier could not die. Needs its own ticket with
-  the caret fixpoint measured — a naive row-interior arm took vue `Drag.spec`
-  from 9 failures to 13.
+  sits there. It was blamed for 03's row tier surviving; the real cause was a test
+  helper parking the caret there, and the tier is gone. NOT reachable by any input
+  path measured so far, so it is a latent gap rather than a live defect. If it is
+  ever wanted it needs its own ticket with the caret fixpoint measured — a naive
+  row-interior arm took vue `Drag.spec` from 9 failures to 13, because
+  `childBoundaryAnchor`'s no-neighbour fallback answers `{after: row}` under
+  `'nearest'` and `SelectionDriver.#applySelection` then drags the caret to the
+  row's end; 4 of those 13 press no delete key at all. It also flips
+  `domBoundary.spec:395`'s documented contract.
 
 ## Out of scope
 
