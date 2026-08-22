@@ -48,7 +48,18 @@ Implementation is a separate effort after this map.
   produced: the hovered row must be PINNED on the grip's mousedown or drag
   never starts, and the pin may not use a `document` listener. Honest cost:
   React line count is roughly flat — the reduction lands on the second adapter.
-  Asset: branch `prototype/chrome-layer` (`4e041dd0`).
+  Asset: branch `prototype/chrome-layer` (`4e041dd0`). Follow-on decisions
+  taken the same day: the layer lives INSIDE the container (a new wrapper
+  element in `MarkedInput` would impose a published DOM change on every
+  consumer), and `alwaysShowHandle: true` is redefined as "one grip, on the
+  row nearest the pointer" — a declared behavior change on a published option,
+  since one layer cannot render 201 always-visible grips.
+- [The slot registry](issues/02-one-render-path.md) — it lands, as its own PR
+  AFTER the chrome layer. `slots: {container, text, mark, row}` replaces
+  `props.Mark`, `props.Span` and the `'block'` special case. The largest
+  declared break here (~42 files), and it deliberately reopens
+  `CONTEXT.md:110`'s "not a rename target". It repairs a pair that is already
+  half-broken: `slotProps.block` typechecks on neither adapter.
 - [One input pipeline](issues/03-one-input-pipeline.md) — shape A (one listener
   pair, block arms after the shared checks) plus a row-separator expansion in
   `anchorsForDelete`, which kills the 46-line row tier without rewriting
@@ -64,13 +75,10 @@ Implementation is a separate effort after this map.
   `mergeWith` stay row-only) — sharpens after 01/02.
 - Migration order for the implementation — belongs to the spec (08).
 - Storybook Drag page reshaping (name, shared-spec harness) — after 04.
-- Where the chrome layer lives: inside the container (then `childrenOf(host)`
-  stops meaning "the rows" and two spec helpers need a filter) or a new wrapper
-  element in `MarkedInput` (a published DOM change). Answered by 04 as a fork,
-  not a decision — neither branch is free.
-- What `alwaysShowHandle: true` means under one layer. It cannot mean what it
-  means today (201 always-visible grips at N=200); one layer shows one grip.
-  The only place the layer cannot reproduce HEAD.
+- The scope that releases the chrome layer's hover pin. The prototype used a
+  container `mouseup` because a `document` one failed an assertion; that
+  assertion may be a stale pin, and container `mouseup` misses a release
+  outside the editor. Under investigation.
 - Fate of published `slots.block` / `slotProps.block` names — after 02's slot
   registry sub-question; glossary says "not a rename target", and
   `slotProps.block` typechecks on neither adapter today.

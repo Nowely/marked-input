@@ -207,7 +207,14 @@ adapter, and make its case on the runtime numbers and the concept count.
 
 1. The drag source must not move between mousedown and dragstart. Not
    optional — without the pin, drag does not work at all.
-2. The pin cannot use a `document` mouse listener (`SelectionDriver.spec.ts:339`).
+2. ~~The pin cannot use a `document` mouse listener
+   (`SelectionDriver.spec.ts:339`).~~ **REOPENED 2026-08-22.** The prototype
+   inferred this from a failing test, and a failing test is not a reason. The
+   assertion may be a stale pin from the single-host migration rather than a
+   live invariant, and container `mouseup` has a real hole a document listener
+   does not: press the grip, leave the container, release outside, and the pin
+   never clears. Under investigation; whatever the answer, it is recorded with
+   its cause rather than with a test number.
 3. `.Container` needs `position: relative`; the layer's origin is the padding
    box (`left: 0`).
 4. A per-mousemove hit-test cost where HEAD had none: ~12 µs/tick steady, ~38
@@ -221,19 +228,21 @@ adapter, and make its case on the runtime numbers and the concept count.
    renaming to `edge`. The chrome layer's vocabulary must dodge
    `position`/`slotRange`, or the gate needs narrowing.
 
-### Two decisions this hands back to the maintainer
+### Two decisions handed back, both taken 2026-08-22
 
-- **Where does the layer live?** The prototype put it inside the container,
-  the only element markput reliably owns a class on. Consequence:
-  `childrenOf(host)` stops meaning "the rows", and both `Drag.spec.ts:39` and
-  `renderCount.spec.ts:26` define `rowsOf` that way, so both need a filter.
-  The alternative is a new wrapper element in `MarkedInput` — a published DOM
-  change. Neither branch is free.
-- **`alwaysShowHandle` cannot be reproduced.** At HEAD every row renders its
-  own always-visible grip (201 buttons at N=200). One layer can show one grip,
-  so `alwaysShowHandle: true` under the layer means "one grip, on the row
-  nearest the pointer" — a different feature from what ships. This is the one
-  place the layer cannot match HEAD's behavior.
+- **The layer lives INSIDE the container** — as the prototype built it. The
+  alternative, a new wrapper element in `MarkedInput`, is a published DOM
+  change imposed on every consumer for internal convenience. The cost of this
+  choice is that `childrenOf(host)` stops meaning "the rows": both
+  `Drag.spec.ts:39` and `renderCount.spec.ts:26` define `rowsOf` that way and
+  need a filter. Two test helpers, reversible.
+- **`alwaysShowHandle: true` is redefined** as "one grip, on the row nearest
+  the pointer". At HEAD every row renders its own always-visible grip (201
+  buttons at N=200) and one layer can show one, so today's meaning is not
+  reproducible. **BEHAVIOR CHANGE on a published option — declare it.** The
+  rejected alternative was letting rows keep rendering their own grip under
+  this flag, which would preserve exactly the duplicated branch this whole
+  effort exists to delete.
 
 ### Behavior changes measured, beyond those already declared
 

@@ -70,12 +70,35 @@ repaint") and `bind.ts:146`'s own comment. Both lenses measured the open popup
 as editable without it. Any approach premised on folding `control()` away is
 dead.
 
-Still open here after the prototype: the slot registry (option D — `slots:
-{container, text, mark, row}`, killing `props.Mark`, `props.Span`,
-`slots.block` and the `'block'` special case). It is independent of the chrome
-question and is the one option that renames what `CONTEXT.md:110` calls "not a
-rename target", so [ticket 06](06-is-a-row-a-token.md) waits on it. Facts it
-needs, both verified by typecheck probes: `slotProps.block` typechecks on
-NEITHER adapter, and `slots.block` only on React — Vue declares its own
-`Slots`/`SlotProps` extending neither core type — while `architecture.md:504`
-documents `block: MyCustomBlock` to consumers.
+## The slot registry — taken 2026-08-22, sequenced after the layer
+
+**Decision: the slot registry lands** — `slots: {container, text, mark, row}`
+with mirrored `slotProps`, killing `props.Mark`, `props.Span`, `slots.block`
+and the `'block'` special case. `options[i].Mark` stays the only per-option
+override.
+
+**But as its own PR, after the chrome layer.** Mixing the two puts two
+breaking changes in one diff, and they break different things for different
+reasons — one moves chrome out of rows, the other renames the consumer-facing
+slot surface.
+
+This is the largest declared break in the effort: ~42 files touch `Mark=`/
+`Mark:`, 14 sites touch `Span`, plus the storybook, the website docs, both
+demo apps and a typedoc regeneration. It renames what `CONTEXT.md:110` calls
+"not a rename target", so that glossary entry is reopened deliberately, and
+[ticket 06](06-is-a-row-a-token.md) is unblocked only once this lands.
+
+The state it is repairing is worse than "published API being renamed" — the
+pair is already half-broken, both verified by typecheck probes: **`slotProps.block`
+typechecks on NEITHER adapter**, and `slots.block` only on React, because Vue
+declares its own `Slots`/`SlotProps` extending neither core type. Meanwhile
+`architecture.md:504` documents `block: MyCustomBlock` to consumers. Vue
+consumers gain slots typing they do not have today.
+
+Three things the registry work must not lose, all found in round 1: it drops
+`resolveOptionSlot` (the published function-form `option.mark` transform) and
+must decide whether `convertDataAttrs` applies to the new `text`/`mark` arms;
+`TokenModel.ts:406-413`'s `#hasMark` gates whether a `Parser` is constructed at
+all, so moving `Mark` into the registry moves the parse gate with it; and
+`CoreSlotProps` is not exported from `packages/core/index.ts`, so "publish it
+for real" also means a new core export.
