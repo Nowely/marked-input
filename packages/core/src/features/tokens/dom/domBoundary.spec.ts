@@ -27,6 +27,12 @@ function mountNestedSlot({chrome = false, control = true} = {}) {
 	const container = document.createElement('div')
 	const leading = document.createElement('span')
 	const outer = document.createElement('mark')
+	// The CONSUMER'S OWN element, between the mark root and the slot host — the shape both
+	// adapters render (`Token` consigns a `display: contents` wrapper, the consumer's `Mark`
+	// sits inside it, and `TokenChildren` is the host below that). `bindingsFor` records the
+	// host through `contains`, so the extra level changes no host boundary; what it adds is
+	// the one element `applyEditableState` leaves BARE on the root→host path.
+	const presentation = document.createElement('span')
 	const host = document.createElement('span')
 	const before = document.createElement('span')
 	const inner = document.createElement('mark')
@@ -46,7 +52,8 @@ function mountNestedSlot({chrome = false, control = true} = {}) {
 		host.append(box)
 		if (control) store.tokens.control()(button)
 	}
-	outer.append(host)
+	presentation.append(host)
+	outer.append(presentation)
 	container.append(leading, outer, trailing)
 	document.body.append(container)
 	store.host.container(container)
@@ -60,7 +67,7 @@ function mountNestedSlot({chrome = false, control = true} = {}) {
 	roots.forEach((node, index) => store.tokens.consign(node.id)(rootElements[index]))
 	const childElements = [before, inner, after]
 	owner.children().forEach((child, index) => store.tokens.consign(child.id)(childElements[index]))
-	return {store, container, leading, outer, host, before, inner, after, trailing}
+	return {store, container, leading, outer, presentation, host, before, inner, after, trailing}
 }
 
 /**
@@ -342,7 +349,7 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(inner, 1, 'before')).toEqual({after: markNode})
 	})
 
-	it('returns undefined inside an editable descendant of a mark', () => {
+	it('returns undefined inside an EXPLICIT editable island in a mark', () => {
 		const {store, mark} = mountWithMark()
 		const editable = document.createElement('span')
 		editable.contentEditable = 'true'
@@ -354,6 +361,25 @@ describe('anchorFor', () => {
 		// editable inside a mark owns its own caret, and a collapsed read must not drag it onto
 		// one of the mark's edges.
 		expect(store.tokens.anchorFor(inner, 0, 'nearest')).toBeUndefined()
+	})
+
+	it('answers a mark EDGE on a slot mark presentation that is merely INHERITED-editable', () => {
+		// The island test above reads the `contentEditable` PROPERTY, never `isContentEditable`,
+		// and this is its twin: a SLOT mark's root and slot host go BARE by policy
+		// (`bind.ts`'s `applyEditableState`), so the consumer's own element between them inherits
+		// `isContentEditable === true` from the container. Under the inherited reading EVERY
+		// boundary on a slot mark's presentation declined, `SelectionDriver.domAnchors` declined
+		// with it, and `dropUnexpressedInput` cancelled the keystroke with no model edit —
+		// a silently dropped key. Gated end to end by `Drag.spec`'s "insert at the list mark's
+		// near edge when the click lands on the mark's own padding".
+		const {store, presentation} = mountNestedSlot()
+		const owner = store.tokens.nodes()[1]
+
+		expect(presentation.getAttribute('contenteditable')).toBeNull()
+		expect(presentation.isContentEditable).toBe(true)
+		expect(store.tokens.anchorFor(presentation, 0, 'nearest')).toEqual({before: owner})
+		expect(store.tokens.anchorFor(presentation, 0, 'after')).toEqual({before: owner})
+		expect(store.tokens.anchorFor(presentation, 0, 'before')).toEqual({after: owner})
 	})
 
 	it('does not subscribe its caller to the text it reads', () => {

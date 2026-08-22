@@ -78,6 +78,24 @@ The parser guarantees an empty `TextToken('')` between two adjacent marks, rende
 A ZWSP or min-width filler remains **rejected**: a filler is real text in the DOM, so it contaminates `range.toString()`
 on every copy, and it costs a second arrow stop at every gap. Reach the gap with an arrow key.
 
+### A click on a mark's own presentation lands at the mark's nearest EDGE
+
+A consumer's mark styling can own pixels no token's text covers — the markdown `list` preset is
+`display: block; padding-left: 1em`, so the 1em band left of the first glyph belongs to the mark's element and to no
+text. Chromium hit-tests a click there to that element, and the model owns no position inside a mark's presentation, so
+the boundary answers the mark's **near edge** instead. Typing then inserts *outside* the mark: on
+`` - `Code snippets` and `code blocks` `` a click in the padding plus `X` yields `XCode snippets and code blocks` —
+the row un-lists.
+
+Until 2026-08-22 that same click **dropped the keystroke entirely**: the boundary's island guard read the inherited
+`isContentEditable`, which a slot mark's bare root and every element below it get from the container, so it declined,
+`domAnchors()` declined with it, and the fail-closed `beforeinput` guard cancelled the key with no model edit. Reading
+the `contentEditable` **property** instead — a consumer's *explicit* island and nothing else — is the fix, and the near
+edge is the documented fallback it uncovers.
+
+Whether "start of the slot content" would be a better answer than "before the mark" is undecided; it is a change to
+`nearestMarkEdge`, not to the guard.
+
 ### Native undo/redo is dead
 
 Cmd+Z / Ctrl+Z does nothing — for mark deletion *and* for plain typing. Two independent reasons, both measured:

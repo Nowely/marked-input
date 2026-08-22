@@ -962,3 +962,57 @@ describe('Feature: drag row keyboard navigation', () => {
 		})
 	})
 })
+
+/**
+ * The `list` preset renders `- __slot__` as `display: block; padding-left: 1em`, so the mark's
+ * own element owns pixels no token's text covers. Chromium hit-tests a click in that 1em band
+ * to the WRAPPER at offset 0 whenever the slot's first child is caret-unreachable — an atomic
+ * `contenteditable=false` mark, which the `code` and `strikethrough` presets both are.
+ *
+ * That boundary used to answer nothing: the island guard read `isContentEditable`, which a slot
+ * mark's BARE root and every element on its root→host path inherit from the container, so
+ * `domAnchors()` declined and `dropUnexpressedInput` cancelled the key with no model edit.
+ * Rows 3 and 6 are the controls in the same shape — a slot-mark-first row and a text-first row
+ * both typed throughout.
+ */
+describe('Feature: typing on a list mark own padding', () => {
+	/** Row-relative, in the padding band left of the first glyph and vertically centred. */
+	const clickInPadding = async (row: HTMLElement, x: number) =>
+		userEvent.click(row, {position: {x, y: Math.round(row.getBoundingClientRect().height / 2)}})
+
+	it('insert at the near mark edge for a row whose slot opens with an ATOMIC mark', async () => {
+		const {host} = await mount(Markdown)
+
+		await clickInPadding(rowsOf(host)[4], 3)
+		await userEvent.keyboard('X')
+
+		// BEFORE the mark, not inside it: the boundary names no position within a mark's
+		// presentation, so the collapsed read answers the near EDGE and the row un-lists.
+		expect(rowsOf(host)[4].textContent).toBe('XCode snippets and code blocks')
+	})
+
+	it('insert for a strikethrough row too, at every x across the padding band', async () => {
+		for (const x of [1, 3, 8]) {
+			const {host} = await mount(Markdown)
+
+			await clickInPadding(rowsOf(host)[5], x)
+			await userEvent.keyboard('X')
+
+			expect(rowsOf(host)[5].textContent).toBe('XStrikethrough for deleted content')
+		}
+	})
+
+	it('leave the SLOT-mark-first and text-first rows where they already worked', async () => {
+		const {host} = await mount(Markdown)
+
+		// Chromium normalises the padding click out to the slot's own text here, so these two
+		// never reached the guard — they are the control that says the harness types at all.
+		await clickInPadding(rowsOf(host)[3], 3)
+		await userEvent.keyboard('X')
+		expect(rowsOf(host)[3].textContent).toBe('XBold and italic text support')
+
+		await clickInPadding(rowsOf(host)[6], 3)
+		await userEvent.keyboard('Y')
+		expect(rowsOf(host)[6].textContent).toBe('YLinks like GitHub')
+	})
+})

@@ -57,14 +57,22 @@ function elementBoundaryOffset(surface: HTMLElement, offset: number): number | u
 	return total
 }
 
+/**
+ * A CONSUMER'S OWN editable island between `node` and `boundary` — the one thing inside a mark
+ * that owns its caret, and the only reason this projection declines a boundary there.
+ *
+ * The `contentEditable` PROPERTY, never `isContentEditable`, which is the same rule
+ * `keyboard/beforeInput.ts`'s `inExplicitEditableIsland` states and for the same reason: a slot
+ * mark's root, its slot host and every element the consumer renders between them go BARE
+ * (`bind.ts`'s `applyEditableState`), so they INHERIT `true` from the container. Reading the
+ * inherited flag therefore answered true for a mark's own presentation and declined every
+ * boundary on it — see `domBoundary.spec`'s "answers a mark EDGE on a slot mark presentation
+ * that is merely INHERITED-editable".
+ */
 export function hasEditableAncestorBefore(node: Node, boundary: HTMLElement): boolean {
 	let current = node instanceof HTMLElement ? node : node.parentElement
 	while (current && current !== boundary) {
-		if (
-			current.isContentEditable ||
-			current.contentEditable === 'true' ||
-			current.contentEditable === 'plaintext-only'
-		) {
+		if (current.contentEditable === 'true' || current.contentEditable === 'plaintext-only') {
 			return true
 		}
 		current = current.parentElement

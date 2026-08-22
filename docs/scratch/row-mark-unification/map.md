@@ -132,17 +132,26 @@ map's destination; recorded so they are not lost.
 - **`anchorAt`'s `side` parameter is production-dead** — measured, one
   hand-assembled test holds it up. A signature change, so it needs its own yes.
 - **A boundary on a slot mark's own presentation wrapper declines, and the
-  keystroke is dropped.** `domBoundary.ts:98-101` calls
-  `hasEditableAncestorBefore` (`textOffsets.ts:59-72`), which answers true for
-  ANY element inside the single host that is not in a `contenteditable=false`
-  subtree — `isContentEditable` is inherited — while a slot mark's root and
-  slot host go BARE by design (`bind.ts:250-256`). Measured user-reachable in
-  BOTH adapters: in the Markdown story's block layout, clicking at x=3 on a
-  list row whose first content is a mark leaves `domAnchors()` undefined, and
-  typing `X` then Backspace left `host.textContent` identical. **PLAUSIBLE, not
-  confirmed** — the mechanism was verified in source but the browser repro was
-  not re-measured independently. This is the "editable marks never worked"
-  area, not the row cutover, and it wants its own investigation.
+  keystroke is dropped** — **CONFIRMED and FIXED.** `domBoundary.ts:99` asked
+  `hasEditableAncestorBefore`, which read the INHERITED `isContentEditable`; a
+  slot mark's root, its slot host and every consumer element between them go
+  BARE by design (`bind.ts`'s `applyEditableState` freezes only the path's
+  SIBLINGS), so the guard answered true for the mark's own presentation,
+  `domAnchors()` declined and `dropUnexpressedInput` cancelled the key. The fix
+  drops the inherited disjunct, leaving the `contentEditable` PROPERTY test —
+  identical in meaning to `beforeInput.ts`'s `inExplicitEditableIsland`, which
+  the two walks now share. Two corrections to the filing above: the TRIGGER is
+  not "a list row whose first content is a mark" (row 3, a slot-mark-first row,
+  always typed) but a BLOCK-box presentation wrapper with own pixels plus a
+  caret-unreachable `ce=false` atomic as the slot's first child — the shipped
+  `code` and `strikethrough` presets; and it is not the "editable marks never
+  worked" area but a regression from the one-host migration (#274 moved
+  `contenteditable=true` onto the container and left `textOffsets.ts`
+  byte-identical, flipping the guard's premise). Pinned by `Drag.spec`'s
+  "Feature: typing on a list mark own padding" (both adapters) and
+  `domBoundary.spec`'s inherited-editable case. BEHAVIOR CHANGE declared: that
+  click plus a key now inserts at the mark's NEAR EDGE, so the row un-lists
+  (`XCode snippets and code blocks`) instead of the key evaporating.
 - **A row-interior DOM boundary resolves to nothing** — `anchorFromBoundary`
   has arms for the container, a text surface, `node === tokenElement` and
   `owner.kind === 'mark'`, none for a node INSIDE a row. New with ADR-0009 /

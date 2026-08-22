@@ -114,15 +114,20 @@ export function isConsumerKeyOrigin(store: KbCtx, container: HTMLElement, event:
 
 /**
  * The `contentEditable` PROPERTY, never `isContentEditable` — the distinction is the whole
- * test, and it is what `domBoundary`'s twin walk cannot be reused for. That one stops at a
- * MARK, which is `ce=false`, so inherited editability under it can only come from an
- * island. This one stops at the CONTAINER, and every model-owned element below it either
- * inherits `true` from the host (bare text surfaces, slot marks and their slot hosts) or
- * declares `false` (value-only mark roots and mark chrome). So an INHERITED reading calls
- * every ordinary edit an island and fails the guard OPEN, while the property answers
- * `'inherit'` for exactly the bare ones. MEASURED — `input.spec`'s 'fails an unhandled
- * type closed even when it originates BELOW the container' is red under the inherited
- * test and green under this one.
+ * test, and it holds for `domBoundary`'s twin walk for the SAME reason, not for an opposite
+ * one. Every model-owned element under the container either inherits `true` from the host
+ * (bare text surfaces, slot mark ROOTS and their slot hosts, and every element the consumer
+ * renders between them) or declares `false` (value-only mark roots and mark chrome). So an
+ * INHERITED reading calls every ordinary edit an island: here it fails the guard OPEN
+ * (MEASURED — `input.spec`'s 'fails an unhandled type closed even when it originates BELOW
+ * the container' is red under the inherited test and green under this one), and in
+ * `domBoundary` it failed CLOSED, declining every boundary on a slot mark's own presentation
+ * and dropping the keystroke typed there. The property answers `'inherit'` for exactly the
+ * bare ones, which is what makes both walks name a CONSUMER'S island and nothing else.
+ *
+ * The older note here claimed the twin walk "stops at a MARK, which is `ce=false`". Only a
+ * VALUE-ONLY mark root is: `bind.ts`'s `applyEditableState` strips the attribute from a slot
+ * mark's root and host, so that premise was false for every slot mark either adapter paints.
  *
  * The property over the raw attribute because Chromium normalizes the spellings: an
  * island written `contenteditable=""` or `contenteditable="TRUE"` answers `'true'` here
