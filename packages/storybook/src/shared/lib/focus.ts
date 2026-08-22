@@ -15,7 +15,12 @@ function setCaretPosition(element: HTMLElement, offset: number) {
 	let node = walker.nextNode()
 	while (node) {
 		const nodeLength = node.textContent?.length ?? 0
-		if (currentOffset + nodeLength >= offset) {
+		// `nodeLength > 0` or a ZERO-LENGTH node satisfies the test at offset 0 and takes the
+		// caret. Under Vue that node is the `v-for` fragment anchor a row wrapper opens with —
+		// an adapter's own bookkeeping, on no token surface — so the helper would place the
+		// caret at a position no click, arrow key or core caret write can reach, and the specs
+		// downstream would be measuring the placeholder rather than the row.
+		if (nodeLength > 0 && currentOffset + nodeLength >= offset) {
 			range.setStart(node, offset - currentOffset)
 			range.collapse(true)
 			selection.removeAllRanges()
