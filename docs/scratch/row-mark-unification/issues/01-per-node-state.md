@@ -67,3 +67,39 @@ before bind. The node route writes a mutable member on a published type whose
 invariant is "ADOPTION IS THE ONLY WRITER" (`tree/types.ts:43-49`), and
 `BlockController.ts:11-24` already argues object keying and id keying are the
 same statement. Both lenses killed both.
+
+## Landed (2026-08-22) — the fold half only
+
+The row-verb fold shipped; the ticket stays `open` because its actual question
+— the per-node state facility — is still behind [02](02-one-render-path.md).
+
+Gone: the `DragAction` type, the `store.block.action` event, `BlockController`'s
+lowering watch, and `features/block/operations.ts`. `BlockStore` takes
+`(node, PropsModel, TokenModel)` and its verbs are `insertAfter(separator)` /
+`remove()` / `duplicate()` on the row it holds; the drop handler calls
+`moveTo()`. `BlockController` is the `WeakMap<TreeNode, BlockStore>` and
+`get(node)`. Neither adapter changed.
+
+Behavior changes, all declared in the commit body:
+
+- `store.block.action({...})` leaves the reachable Store surface; the website
+  architecture doc and both READMEs are updated.
+- The "two adds no anchor can name" go with `addRowUnanchored`. An empty
+  document already IS one empty row (issue 08), and the negative-`afterIndex`
+  arm was reachable only through a store whose row had left the tree, where it
+  inserted an empty row at the DOCUMENT START. It now no-ops.
+- Index-out-of-range refusals for delete/duplicate go away with the index
+  protocol — a store addresses its own node.
+
+Carried, as the round-1 answer required, and each now pinned by a test that
+fails without it: the drop path's `source < 0`, `Number.isNaN`, `draggable`
+and `isBlock` refusals. The `isBlock` copy on the MENU verbs is the one guard
+measured non-load-bearing — a row node cannot outlive block layout, so the
+transaction layer refuses first. Kept as the second belt; a clean follow-up
+removal.
+
+Rehoming: `describe('row identity')` moved to
+`packages/core/src/features/tokens/tree/markNode.spec.ts`.
+`describe('per-row stores (identity-keyed)')` stayed put, because
+`BlockController.spec.ts` was not deleted — the controller survives as the
+WeakMap vendor and `get(node)` is what those cases assert.
