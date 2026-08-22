@@ -6,21 +6,23 @@ import {computed} from 'vue'
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 import {unwrapEl} from '../lib/unwrapEl'
-import BlockMenu from './BlockMenu.vue'
-import DragHandle from './DragHandle.vue'
-import DropIndicator from './DropIndicator.vue'
 import Token from './Token.vue'
 
 import styles from '@markput/core/styles.module.css'
 
+/**
+ * A row's wrapper and its children — nothing else. The grip, the drop indicators and the menu
+ * that used to be painted here live in the editor's one `ChromeLayer`.
+ */
 const props = defineProps<{node: TreeNode}>()
 
 const store = useStore()
-const blockStore = store.block.get(props.node)
 
 const blockComponent = useMarkput(s => s.slots.blockComponent)
 const slotProps = useMarkput(s => s.slots.blockProps)
-const isDragging = useMarkput(() => blockStore.state.isDragging)
+// A SCALAR subscription: read as a boolean, the derivation notifies only when THIS row's own
+// answer flips, so picking a row up does not re-render every other row.
+const isDragging = useMarkput(s => () => s.chrome.state.dragging() === props.node.id)
 
 const blockStyle = computed(() => ({
 	opacity: isDragging.value ? 0.4 : 1,
@@ -36,10 +38,8 @@ const otherSlotProps = computed(() => {
 
 // Created ONCE in setup: `consign` and `children` mint a registration key per call, so calling
 // them inside the ref callback would file a fresh entry on every paint and never release the old
-// one. The wrapper IS the row's token element (issue 08) — no separate row registry entry — and
-// it is ALSO the row's child-sequence host, because the row's children are painted straight into
-// it. One element, two registrations: `bindingsFor` accepts it (`contains` is reflexive) and the
-// row keeps its bare `contenteditable`.
+// one. The wrapper IS the row's token element (issue 08) AND its child-sequence host, so the
+// row's children hang off it directly.
 const consignBlock = store.tokens.consign(props.node.id)
 const hostBlock = store.tokens.children(props.node.id)
 
@@ -47,7 +47,6 @@ const setBlockRef = (el: unknown) => {
 	const element = unwrapEl(el)
 	consignBlock(element)
 	hostBlock(element)
-	blockStore.attachContainer(element)
 }
 
 // The per-row subscription: a RowNode's children are what this component paints, so a
@@ -71,13 +70,9 @@ const rowChildren = computed(() => {
 		:class="[styles.Block, slotProps?.className as string | undefined]"
 		:style="blockStyle"
 	>
-		<DropIndicator :node="node" position="before" />
-		<DragHandle :node="node" />
 		<template v-if="rowChildren">
 			<Token v-for="child in rowChildren" :key="child.id" :node="child" :depth="0" />
 		</template>
 		<Token v-else :node="node" :depth="0" />
-		<DropIndicator :node="node" position="after" />
-		<BlockMenu :node="node" />
 	</component>
 </template>

@@ -35,46 +35,47 @@ const GRIP = {name: 'Drag to reorder or click for options'} as const
 
 /**
  * The rows of a block layout. Under the single-host topology the editing host IS the row
- * container, so a row is one of its element children.
+ * container, so a row is one of its element children — MINUS the chrome layer, which is one
+ * more container child and not a row.
  */
-const rowsOf = (host: HTMLElement) => childrenOf(host)
+const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.matches(CHROME_LAYER))
+
+const CHROME_LAYER = '[class*="ChromeLayer"]'
+
+/**
+ * The ONE grip. It lives in the editor's chrome layer rather than inside a row, so it is found
+ * on the host and follows the pointer: hovering a row is what puts it on that row.
+ */
+async function gripOfRow(host: HTMLElement, rowIndex: number) {
+	await userEvent.hover(rowsOf(host)[rowIndex])
+	return page.elementLocator(host).getByRole('button', GRIP).findElement()
+}
 
 /** Hovers a row, then clicks its grip — the only way the block menu opens. */
 async function openMenuForRow(host: HTMLElement, rowIndex: number) {
-	const row = rowsOf(host)[rowIndex]
-	await userEvent.hover(row)
-	const grip = await page.elementLocator(row).getByRole('button', GRIP).findElement()
-	await userEvent.click(grip)
+	await userEvent.click(await gripOfRow(host, rowIndex))
 }
 
-/** The drag sequence a browser produces: dragstart on the grip, dragover + drop on the target row. */
+/**
+ * The drag sequence a browser produces: dragstart on the grip, then dragover and drop — both on
+ * the CONTAINER, which is where the layer listens, carrying the clientY that names the edge.
+ */
 async function dragRow(
 	host: HTMLElement,
 	sourceIndex: number,
 	targetIndex: number,
 	position: 'before' | 'after' = 'after'
 ) {
-	const rows = rowsOf(host)
-	const sourceRow = rows[sourceIndex]
-	const targetRow = rows[targetIndex]
-
-	await userEvent.hover(sourceRow)
-	const grip = await page.elementLocator(sourceRow).getByRole('button', GRIP).findElement()
+	const grip = await gripOfRow(host, sourceIndex)
+	const targetRow = rowsOf(host)[targetIndex]
 
 	const dt = new DataTransfer()
 	grip.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer: dt}))
 
 	const rect = targetRow.getBoundingClientRect()
-	targetRow.dispatchEvent(
-		new DragEvent('dragover', {
-			bubbles: true,
-			cancelable: true,
-			dataTransfer: dt,
-			clientY: position === 'before' ? rect.top + 1 : rect.bottom - 1,
-		})
-	)
-
-	targetRow.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt}))
+	const clientY = position === 'before' ? rect.top + 1 : rect.bottom - 1
+	host.dispatchEvent(new DragEvent('dragover', {bubbles: true, cancelable: true, dataTransfer: dt, clientY}))
+	host.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt, clientY}))
 	grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))
 }
 
@@ -388,14 +389,34 @@ describe('Feature: drag rows', () => {
 
 	describe('drag & drop', () => {
 		it('keep grip visible when pointer moves from block content to grip button', async () => {
+			// The layer lives INSIDE the container, so a mousemove over the grip still bubbles to
+			// the container's hit-test — and the grip sits in its own row's vertical band, so the
+			// hover it recomputes is the row it is already on.
 			const {host} = await mount(PlainTextDrag)
-			const firstRow = rowsOf(host)[0]
-
-			await userEvent.hover(firstRow)
-			const grip = await page.elementLocator(firstRow).getByRole('button', GRIP).findElement()
+			const grip = await gripOfRow(host, 0)
 
 			await userEvent.hover(grip)
 			expect(grip.parentElement!.matches('[class*="SidePanelVisible"]')).toBe(true)
+		})
+
+		it('hide the grip while its own row is being dragged', async () => {
+			// As the per-row panel did, and for the same reason: the pointer has left with the
+			// drag image, so a grip still painted at full opacity on the source row reads as one
+			// left behind. It stays MOUNTED — its own `dragend` is the pin's release, and
+			// Chromium sends no mouseup for a drag at all.
+			const {host} = await mount(PlainTextDrag)
+			const grip = await gripOfRow(host, 0)
+			const visible = () => grip.parentElement!.matches('[class*="SidePanelVisible"]')
+			expect(visible()).toBe(true)
+
+			grip.dispatchEvent(
+				new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer: new DataTransfer()})
+			)
+			await expect.poll(visible).toBe(false)
+			expect(grip.isConnected).toBe(true)
+
+			grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))
+			await expect.poll(visible).toBe(true)
 		})
 
 		it('reorder rows when dragging row 0 after row 2', async () => {
@@ -434,6 +455,153 @@ describe('Feature: drag rows', () => {
 			await dragRow(host, 1, 1)
 
 			expect(value()).toBe(original)
+		})
+	})
+
+	/**
+	 * The chrome layer paints at coordinates it MEASURES, where the per-row panel inherited them
+	 * from `.Block { position: relative }`. These are the properties that geometry has to hold
+	 * and that no unit test in `ChromeModel.spec.ts` can see, because it paints nothing.
+	 */
+	describe('chrome layer geometry', () => {
+		const centerY = (element: Element) => {
+			const rect = element.getBoundingClientRect()
+			return rect.top + rect.height / 2
+		}
+
+		it('give the layer a positioned container to measure against', async () => {
+			// `.Container { position: relative }` is the layer's containing block, and the whole
+			// coordinate system is silently wrong without it — the layer would size and position
+			// itself against whatever ancestor happens to be positioned.
+			const {host} = await mountComponent({
+				options: [],
+				defaultValue: 'alpha\n\nbeta\n\n',
+				layout: 'block',
+				draggable: true,
+			})
+			expect(getComputedStyle(host).position).toBe('relative')
+		})
+
+		it('hang the grip band LEFT of its row, where core reserves no gutter', async () => {
+			// Core supplies the 24px gutter only for draggable, editable block layout, and Vue
+			// drops it even then (it is a NUMERIC `paddingLeft`). A band anchored to the layer's
+			// own origin therefore covers the first 24px of the hovered row and swallows the
+			// click that should place a caret there.
+			const {host} = await mountComponent({
+				options: [],
+				defaultValue: 'alpha\n\nbeta\n\n',
+				layout: 'block',
+				draggable: false,
+				style: {marginLeft: '64px'},
+			})
+			const row = rowsOf(host)[0]
+			await userEvent.hover(row)
+			const grip = await page.elementLocator(host).getByRole('button', {name: 'Block options'}).findElement()
+
+			const band = grip.parentElement!.getBoundingClientRect()
+			const rect = row.getBoundingClientRect()
+			expect(band.right).toBeLessThanOrEqual(rect.left + 0.5)
+
+			const hit = document.elementFromPoint(rect.left + 2, centerY(row))
+			expect(row.contains(hit)).toBe(true)
+		})
+
+		it('put the grip INSIDE the container gutter, not outside its padding box', async () => {
+			// The other half of the same anchor: WITH a gutter the band has to land in it. A
+			// band placed 24px left of the layer's origin overshoots by exactly the gutter, and
+			// an `overflow: auto` consumer container clips it out of existence.
+			const {host} = await mountComponent({
+				options: [],
+				defaultValue: 'alpha\n\nbeta\n\n',
+				layout: 'block',
+				draggable: true,
+				style: {marginLeft: '64px'},
+				// Written as a STRING because core's own gutter is a numeric `paddingLeft`,
+				// which React turns into `24px` and Vue drops — so only this reserves it in both.
+				slotProps: {container: {style: {paddingLeft: '24px'}}},
+			})
+			const row = rowsOf(host)[0]
+			await userEvent.hover(row)
+			const grip = await page.elementLocator(host).getByRole('button', GRIP).findElement()
+
+			const band = grip.parentElement!.getBoundingClientRect()
+			const rect = row.getBoundingClientRect()
+			const container = host.getBoundingClientRect()
+			expect(rect.left - container.left).toBeCloseTo(24, 0)
+			expect(band.right).toBeCloseTo(rect.left, 0)
+			expect(band.left).toBeGreaterThanOrEqual(container.left - 0.5)
+		})
+
+		it('keep the grip on its row when a commit ABOVE it reflows a fixed-height container', async () => {
+			// The container's own `ResizeObserver` is blind here: a container of fixed height
+			// does not change size when the rows inside it move, so the commit clock is the only
+			// thing that can tell the layer to re-measure. Unfixed the grip stays at the box it
+			// measured before the edit — a whole row's height off its row.
+			const {host} = await mountComponent({
+				options: [],
+				defaultValue: 'r0\n\nr1\n\nr2\n\nr3\n\nr4\n\n',
+				layout: 'block',
+				draggable: true,
+				style: {marginLeft: '64px'},
+				slotProps: {container: {style: {overflow: 'auto', height: '200px'}}},
+			})
+			await focusAtEnd(rowsOf(host)[0])
+			const row = rowsOf(host)[3]
+			const grip = await gripOfRow(host, 3)
+			expect(Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
+
+			// Enter splits row 0 in two, so every row below it moves down by a row.
+			await userEvent.keyboard('{Enter}')
+			expect(rowsOf(host)).toHaveLength(7)
+
+			await expect.poll(() => Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
+		})
+
+		it('paint the row menu above consumer content that outranks the layer', async () => {
+			// `.Popup` is `z-index: 9999` and the layer must not clamp it: a `z-index` on the
+			// layer would make it a stacking context, where the deleted per-row chrome hung off
+			// `.Block` (positioned, `z-index: auto`) and the popup competed at the page level.
+			const {host} = await mountComponent({
+				options: [],
+				defaultValue: 'alpha\n\nbeta\n\n',
+				layout: 'block',
+				draggable: true,
+				style: {marginLeft: '64px'},
+			})
+			await openMenuForRow(host, 0)
+			const item = getElement(page.getByText('Add below'))
+			const rival = document.createElement('div')
+			rival.style.cssText = 'position: fixed; inset: 0; z-index: 100'
+			document.body.append(rival)
+
+			try {
+				const rect = item.getBoundingClientRect()
+				const hit = document.elementFromPoint(rect.left + rect.width / 2, centerY(item))
+				expect(rival.contains(hit)).toBe(false)
+				expect(item.contains(hit) || hit === item).toBe(true)
+			} finally {
+				rival.remove()
+			}
+		})
+
+		it('rest ONE grip on the first row when alwaysShowHandle is set', async () => {
+			// DECLARED BEHAVIOUR CHANGE on a published option: it used to mean a grip on every
+			// row, which one layer cannot paint, so it now means one grip on the row nearest the
+			// pointer — resting on the first row while the pointer is away.
+			const {host} = await mountComponent({
+				options: [],
+				defaultValue: 'alpha\n\nbeta\n\ngamma\n\n',
+				layout: 'block',
+				draggable: {alwaysShowHandle: true},
+				style: {marginLeft: '64px'},
+			})
+
+			// Polled, not read: the box is measured after the paint that created the rows, so
+			// Vue's `flush: 'post'` watcher paints the resting grip one tick after mount.
+			await expect.poll(() => host.querySelectorAll('[class*="GripButton"]').length).toBe(1)
+			const grips = host.querySelectorAll('[class*="GripButton"]')
+			expect(grips[0].parentElement!.matches('[class*="SidePanelAlways"]')).toBe(true)
+			expect(Math.abs(centerY(grips[0]) - centerY(rowsOf(host)[0]))).toBeLessThan(2)
 		})
 	})
 
@@ -845,9 +1013,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('ignores beforeinput inside a drag control', async () => {
 			const {host, value} = await echoPlainText()
 			const before = value()
-			const row = rowsOf(host)[0]
-			await userEvent.hover(row)
-			const handle = await page.elementLocator(row).getByRole('button', GRIP).findElement()
+			const handle = await gripOfRow(host, 0)
 
 			await userEvent.click(handle)
 			await userEvent.keyboard('x')

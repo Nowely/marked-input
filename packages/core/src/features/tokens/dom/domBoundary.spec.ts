@@ -81,8 +81,9 @@ function mountNestedSlot({chrome = false, control = true} = {}) {
  * wrapper as the mark's element, so no row is ever registered and the mark's element becomes its
  * child's text surface.
  *
- * `grip` adds the drag handle the React and Vue `Block` renderers put BEFORE the token, as a
- * registered control.
+ * `grip` puts a registered control BEFORE the token inside the row. Block chrome no longer
+ * renders there — it is one layer beside the rows — but a consumer's own `slots.block` may still
+ * put a control inside a row, and this is the shape that asks whether a boundary can escape it.
  */
 function mountBlockRows({grip = false} = {}) {
 	const store = enableStructuralStore('one\n\ntwo\n\n', {

@@ -207,8 +207,10 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   BORN by the commit has no handle until bind makes one. Consumers re-read
   content via `nodes()` / `find(id)` / `handle(id)`.
   The `{added, removed, updated}` payload and the ledger that derived it are
-  GONE: nothing in core read them once `BlockController` moved to a node-keyed
-  `WeakMap`, which was the last reader. `committed` no longer surfaces publicly
+  GONE: nothing in core read them once the per-row block store moved to a
+  node-keyed `WeakMap`, which was its last reader — and that store is itself
+  gone now, replaced by one editor-level `ChromeModel`. `committed` no longer
+  surfaces publicly
   either — `MarkputHandle.changed` was withdrawn with the rest of the v2 verbs.
 
 ## Element projection (`dom/bind.ts`)

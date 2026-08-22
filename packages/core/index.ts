@@ -28,8 +28,10 @@ export type {MarkToken, Markup} from './src/features/tokens'
 export {cx} from './src/shared/utils/cx'
 export {key} from './src/shared/classes'
 export {filterSuggestions, navigateSuggestions} from './src/features/overlay'
-// `BLOCK_MENU_ITEMS` is the block menu's content contract; both adapters' BlockMenu map it.
+// `BLOCK_MENU_ITEMS` is the block menu's content contract; both adapters' ChromeLayer maps it.
+// `RowBox` is what `store.chrome.boxOf()` answers — the coordinates both layers paint at.
 export {BLOCK_MENU_ITEMS, getAlwaysShowHandle} from './src/features/block'
+export type {RowBox} from './src/features/block'
 export type {
 	OverlayMatch,
 	OverlayTrigger,

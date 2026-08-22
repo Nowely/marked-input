@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import {page} from 'vitest/browser'
+import {page, userEvent} from 'vitest/browser'
 
 import {childrenOf, textSurfaces} from '../../shared/lib/dom'
 import {composePage, mount} from '../../shared/lib/page'
@@ -534,7 +534,11 @@ describe('Clipboard: cut', () => {
 	it('does not cut a selection that crosses a registered control', async () => {
 		const {host} = await mount(Drag)
 		const before = host.textContent
-		const button = host.querySelector<HTMLButtonElement>('button')!
+		// The grip is painted by the editor's chrome layer on the row nearest the pointer, so it
+		// is in the DOM only while a row is hovered — where block layout used to render one per
+		// row, always mounted and merely transparent.
+		await userEvent.hover(childrenOf(host)[0])
+		const button = page.elementLocator(host).getByRole('button').first().element()
 		const textNode = firstTextNode(host)!
 		const selection = window.getSelection()!
 		const range = document.createRange()

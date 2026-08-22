@@ -46,11 +46,12 @@ export const Markdown = story({
  * is echoed back — and `mountEcho` refuses a story that opts into the plain-value panel,
  * because the decorator owns `onChange` there.
  *
- * The left margin is load-bearing for the spec, not decoration: the grip sits at `left: -24px`
- * of its row, and the 24px gutter core asks for is a NUMERIC `paddingLeft`, which React turns
- * into `24px` and Vue drops (it assigns numbers to `style` verbatim). Flush against the
- * viewport the button is unclickable in Vue — `element is outside of the viewport` — so the
- * story reserves the gutter itself, exactly as the pre-migration React harness did.
+ * The left margin is load-bearing for the spec, not decoration: the chrome layer hangs the grip
+ * band off its row's LEFT edge (`.SidePanel { margin-left: -24px }`), and the 24px gutter core
+ * asks for is a NUMERIC `paddingLeft`, which React turns into `24px` and Vue drops (it assigns
+ * numbers to `style` verbatim). Flush against the viewport the button is unclickable in Vue —
+ * `element is outside of the viewport` — so the story reserves the gutter itself, exactly as
+ * the pre-migration React harness did.
  */
 export const PlainTextDrag = story({
 	parameters: {docs: {disable: true}},

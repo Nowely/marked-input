@@ -4,22 +4,40 @@ Manages the block editing mode where each row is rendered as a separate draggabl
 
 ## Components
 
-- **BlockController**: Vends each row's `BlockStore` via `store.block.get(node)`, lazily created and cached in a `WeakMap` keyed by the row NODE — adoption writes surviving nodes in place and allocates an id only at `buildNode`, so within one input "kept its id" and "kept its object" are the same statement, and the object key self-collects instead of needing a prune.
-- **BlockStore**: Per-row UI state (drag/hover/menu signals), DOM wiring (`attachContainer`/`attachGrip`/`attachMenu`), and the row verbs the chrome triggers — `addBlock`/`deleteBlock`/`duplicateBlock` call `insertAfter()`/`remove()`/`duplicate()` on the row it holds, and the container's `drop` handler calls `moveTo()`. One instance per row node, constructed by the controller with that node, `PropsModel` and `TokenModel`, so the adapters attach bare elements and thread no index.
+- **ChromeModel**: THE block chrome owner, one per editor (`store.chrome`) — the hovered row, the dragged row, the drop edge and the open menu, each addressed by row ID. It attaches five listeners to the CONTAINER (mousemove, mouseleave, dragover, dragleave, drop) plus a `ResizeObserver` on it and a watch on the commit clock, owns the row verbs the menu triggers (`addRow`/`duplicateRow`/`deleteRow` call `insertAfter()`/`duplicate()`/`remove()` on the menu's row) and the drop handler that calls `moveTo()`, and answers the geometry the adapters paint at (`boxOf`, `rowAt`).
 - **getAlwaysShowHandle**: Extracts `alwaysShowHandle` from `DraggableConfig`
+- **BLOCK_MENU_ITEMS**: the menu's content contract — label, icon class and a verb taking the chrome model.
+
+## Why chrome is not per-row state
+
+It used to be. A `BlockController` vended a `BlockStore` per row node from a `WeakMap`, each holding five signals and wiring eight DOM handlers to its own row, and each adapter painted a side panel, two drop indicators and a menu INSIDE every row. At 200 rows that is 201 grip buttons, 201 `control()` roots and 1608 listeners; measured mount was 44 ms and 1005 DOM nodes, against 18 ms and 403 for one layer.
+
+Chrome is also not document content, and mixing the two inside the editing host is what made every row need its own atomicity registrations. One layer is one control root, and everything painted in it inherits `isContentEditable === false` from it.
+
+The price is geometry. `.Block { position: relative }` made a per-row grip and indicator free; a layer has to measure row rects itself, in CONTAINER-LOCAL coordinates (`rect.top − containerRect.top − container.clientTop + container.scrollTop`), which are scroll-proof by construction. Hit-testing a mousemove is a binary search over vertically tiled rows: 10 rect reads at 50 rows, 14 at 200, ~12 µs/tick steady and ~38 µs/tick when a DOM write between ticks forces each read to reflow. A measured box goes stale on any reflow, so the model re-measures on two clocks — the container's own size, and every commit, because a row that reflows moves every row BELOW it while the container's box does not change at all.
+
+The grip band is anchored to its ROW (`left` from the measured box, `.SidePanel { margin-left: -24px }`) rather than to the layer's origin. Core reserves the 24px gutter only for draggable, editable block layout; anywhere else the layer's origin IS the row's left edge, and a band there covers the row's first 24px of text and swallows the click that should place a caret.
 
 ## Why the node verbs, and not a composed document
 
-A composed document is diffed back to an edit window by `gapWindow`, a STRING diff — and a string diff cannot tell two byte-identical rows apart. `duplicate` and `add` manufacture exactly those (an added row is the separator string, the same bytes every time), so deleting the first of two identical rows retained the wrong node and announced the wrong id. Both adapters key rows by `node.id` and this feature keys per-row state by the row's identity, so the wrong id unmounted the wrong row.
+A composed document is diffed back to an edit window by `gapWindow`, a STRING diff — and a string diff cannot tell two byte-identical rows apart. `duplicate` and `add` manufacture exactly those (an added row is the separator string, the same bytes every time), so deleting the first of two identical rows retained the wrong node and announced the wrong id. Both adapters key rows by `node.id`, so the wrong id unmounted the wrong row.
 
 Addressing the row's own node removes the ambiguity at the source: the splice window is the row's own span, and adoption's prefix/suffix walks keep every other row.
 
 Reorder is the one operation that needed more than an anchor: a permutation is not derivable from the two strings, so the commit carries a `Pairing` stating it. That work also took the last `.position` read out of `block/`, which is why the directory is no longer on [ADR-0003](../../../../../docs/adr/0003-one-address-space.md)'s allowlist — the allowlist is gone.
 
-## Addressing: the node, except on the drop
+## Addressing: the row id, except on the drop
 
-A `BlockStore` holds its row node, so the three menu verbs need no index at all. The container's `drop` handler is the exception: it learns its source from the drag's own `text/plain` payload, so it resolves that INDEX through `tokens.nodes()`. The payload carries no provenance, so the index is not trusted — a negative one is refused rather than handed to `Array.prototype.at`, which wraps and would address the LAST row.
+The menu holds the ID of the row it opened on and resolves it through `tokens.find` when a verb runs, so a row that has left the tree refuses instead of being written to. The container's `drop` handler is the exception: it learns its source from the drag's own `text/plain` payload, so it resolves that INDEX through `tokens.nodes()`. The payload carries no provenance, so the index is not trusted — a negative one is refused rather than handed to `Array.prototype.at`, which wraps and would address the LAST row.
+
+The drop TARGET is geometric, like hover: `dragover` hit-tests the pointer's Y and snaps a point in the gutter or in the gap between two rows to the nearest row, where the per-row handler received no event there at all. The `drop` listener is on the container in EVERY layout, so it claims the event — `preventDefault` — only once it has a drop edge of its own to honour; cancelling a drop it refuses would suppress core's own `insertFromDrop` edit in inline layout.
+
+## The hover pin
+
+The hovered row FREEZES on the grip's own `mousedown`. This is not polish: between mousedown and Chromium's `dragstart` the pointer travels a few pixels, and an unpinned layer re-points the grip at whatever row that lands in — the grip walks out from under the pointer and no native drag event fires at all. Inside the row the problem could not exist, because the grip moved with its own row.
+
+The pin attaches NOTHING to release itself. It is gesture state, so it expires with the gesture: the only reader is the container mouse handler, which clears it the first time it sees an event with no button held, and `endDrag()` covers the drag path (Chromium delivers no `mouseup` for a drag — the measured order is `pointerdown, mousedown, dragstart, pointercancel, drop, dragend`). A press that never becomes a drag and is released outside the editor therefore heals on re-entry; a container `mouseup` wedged the layer on the pressed row forever.
 
 ## Usage
 
-The feature is registered by the Store and activates when block layout is enabled; `draggable` gates only the reorder path, because the menu and keyboard row edits are block-mode features rather than drag UI. Row operations run through `store.block.get(node)`.
+The feature is registered by the Store and activates when block layout is enabled; `draggable` gates only the reorder path, because the menu and keyboard row edits are block-mode features rather than drag UI. Row operations run through `store.chrome`.

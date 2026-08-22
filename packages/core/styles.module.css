@@ -1,5 +1,10 @@
 .Container {
 	min-height: 1.4em;
+	/* The chrome layer's containing block: it is `position: absolute; inset: 0` inside the
+	   container, and its origin is the container's PADDING box — where the 24px drag gutter
+	   already lives. Always applied via `cx(styles.Container, …)`, so `slots.container` cannot
+	   drop it; a consumer inline `style={{position: 'static'}}` still would. */
+	position: relative;
 }
 
 .Icon {
@@ -74,6 +79,9 @@
 }
 
 .Block {
+	/* Kept after the chrome left the row: markput positions nothing inside a row any more, but
+	   the rule is also a CONSUMER's containing block, and dropping it would silently re-parent
+	   their absolutely-positioned row content to the container. */
 	position: relative;
 	margin-left: 0;
 	transition: opacity 0.2s ease;
@@ -83,11 +91,30 @@
 	outline: none;
 }
 
+/* ONE chrome layer per editor, inside the container: it paints the grip, the drop indicator and
+   the row menu at row boxes it measures. It is therefore a container child that is NOT a row.
+
+   NO `z-index`, deliberately. It is the container's LAST child and it is positioned, so it
+   already paints above every row; a `z-index` here would make it a stacking context and clamp
+   the row menu's `.Popup { z-index: 9999 }` inside it, where the deleted per-row chrome hung
+   off `.Block` (positioned, `z-index: auto`) and the popup competed at the page level. */
+.ChromeLayer {
+	position: absolute;
+	inset: 0;
+	/* Chrome must not eat the pointer; the grip and the menu turn it back on for themselves. */
+	pointer-events: none;
+}
+
+/* Painted by the chrome layer, which supplies `top`/`height`/`left` from the row box it
+   measured — `left` is the row's own left edge and the negative margin puts the band's right
+   edge on it, exactly where the deleted per-row panel's `left: -24px` sat. Anchoring to the
+   ROW and not to the layer's origin is what keeps the band off the text: core reserves the
+   24px gutter only for `draggable` block layout, and without it a band at the layer's origin
+   covers the first 24px of every hovered row and swallows the click that should place a
+   caret. */
 .SidePanel {
 	position: absolute;
-	top: 0;
-	bottom: 0;
-	left: -24px;
+	margin-left: -24px;
 	width: 24px;
 	display: flex;
 	align-items: center;
@@ -129,10 +156,10 @@
 	cursor: grabbing;
 }
 
+/* `left`/`width` come from the chrome layer, which measured the row this marks the edge of;
+   the deleted per-row indicator spanned its own row with `left: 0; right: 0`. */
 .DropIndicator {
 	position: absolute;
-	left: 0;
-	right: 0;
 	height: 2px;
 	background-color: #3b82f6;
 	border-radius: 1px;

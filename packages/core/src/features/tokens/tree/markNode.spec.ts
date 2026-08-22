@@ -550,8 +550,8 @@ describe('row removal and duplication at the document end (review findings)', ()
  * The ADR-0007 oracle for the three verbs that are not `moveTo` (which has its own describe
  * below): the SURVIVORS name which row a verb actually addressed, where the value alone
  * cannot — the two candidates compose to the same string. Both adapters key rendering on
- * `node.id` and `BlockController` keys per-row UI state by the node object, so this is the
- * property those two depend on rather than an internal detail.
+ * `node.id`, and a consumer's own row component and its local state ride that key, so this is
+ * the property they depend on rather than an internal detail.
  */
 describe('row identity across the structural verbs', () => {
 	it('removes the addressed row, not a byte-identical neighbour', () => {

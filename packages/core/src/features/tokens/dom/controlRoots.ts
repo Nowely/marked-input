@@ -8,9 +8,10 @@
  *
  * IT OWNS THE SET, and that is the point of the module. This used to be recomputed inside every
  * `bind` from a registry the model held, so a control's ref cost a whole-tree walk — and block
- * layout registers up to four controls PER ROW (two drop indicators, a drag handle, a menu), which
- * made mounting a block document quadratic: measured at 400 rows, 400 registrations drove 400 binds
- * in 93 ms, growing 3.7x per doubling. Registration is O(depth) here and touches no token.
+ * layout registered up to four controls PER ROW (two drop indicators, a drag handle, a menu),
+ * which made mounting a block document quadratic: measured at 400 rows, 400 registrations drove
+ * 400 binds in 93 ms, growing 3.7x per doubling. Block chrome is ONE layer with one registration
+ * now, but registration stays O(depth) here and touches no token.
  */
 export type ControlRoots = {
 	/** Register a control and mark its ancestor chain. Cheap enough to call from a ref. */
