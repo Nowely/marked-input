@@ -2,7 +2,7 @@
 
 Type: grilling
 Status: open
-Blocked by: 04
+Blocked by: —  (04 resolved; slot-registry sub-question still open here)
 
 ## Question
 

@@ -21,6 +21,12 @@ Implementation is a separate effort after this map.
 - Adapters (React + Vue block components) and the input pipeline are in scope.
 - Skills: /grilling + /domain-modeling on decision tickets; /prototype where
   a ticket names it. Dialog in Russian; artifacts in English.
+- **Execution is carried INSIDE this map** (maintainer, 2026-08-22), overriding
+  the default that a map only decides. Once a ticket's decision is taken and
+  nothing blocks it, it is implemented here rather than deferred to a later
+  effort. The destination is unchanged: the spec still gets assembled in
+  [08](issues/08-assemble-the-spec.md), now describing work partly already
+  landed.
 - Facts baseline: census.md in this directory (2026-08-22, HEAD e6433bce).
 
 ## Decisions so far
@@ -33,6 +39,16 @@ Implementation is a separate effort after this map.
   proposed it independently; no proposal contained it. Unmeasured, so
   [04](issues/04-adapter-convergence.md) is re-scoped as its prototype and the
   blocking edge is inverted: 02 constrains 01, not the reverse.
+- [Chrome-layer prototype](issues/04-adapter-convergence.md) — **CONFIRMED WITH
+  CAVEATS**. Geometry tracks at drift 0 in all seven cases; the row genuinely
+  becomes its own child-sequence host behind ONE self-gating line in `bind.ts`,
+  killing both the extra span and the custom-`slots.block` freeze hazard; the
+  feared 2N fan-out does not exist at HEAD either, and mount drops 44→18 ms /
+  1005→403 DOM nodes / 201→1 control roots at N=200. Two hard requirements it
+  produced: the hovered row must be PINNED on the grip's mousedown or drag
+  never starts, and the pin may not use a `document` listener. Honest cost:
+  React line count is roughly flat — the reduction lands on the second adapter.
+  Asset: branch `prototype/chrome-layer` (`4e041dd0`).
 - [One input pipeline](issues/03-one-input-pipeline.md) — shape A (one listener
   pair, block arms after the shared checks) plus a row-separator expansion in
   `anchorsForDelete`, which kills the 46-line row tier without rewriting
@@ -48,9 +64,13 @@ Implementation is a separate effort after this map.
   `mergeWith` stay row-only) — sharpens after 01/02.
 - Migration order for the implementation — belongs to the spec (08).
 - Storybook Drag page reshaping (name, shared-spec harness) — after 04.
-- Whether BLOCK_MENU_ITEMS stays a core content contract — after 04; its
-  published `run: (store: BlockStore) => void` loses its parameter type if the
-  per-row store dissolves.
+- Where the chrome layer lives: inside the container (then `childrenOf(host)`
+  stops meaning "the rows" and two spec helpers need a filter) or a new wrapper
+  element in `MarkedInput` (a published DOM change). Answered by 04 as a fork,
+  not a decision — neither branch is free.
+- What `alwaysShowHandle: true` means under one layer. It cannot mean what it
+  means today (201 always-visible grips at N=200); one layer shows one grip.
+  The only place the layer cannot reproduce HEAD.
 - Fate of published `slots.block` / `slotProps.block` names — after 02's slot
   registry sub-question; glossary says "not a rename target", and
   `slotProps.block` typechecks on neither adapter today.
@@ -84,4 +104,3 @@ map's destination; recorded so they are not lost.
 - Symmetric unification: draggable/hoverable inline marks — separate effort.
 - Block-selection mode (rows-as-objects UX) — separate feature (2026-08-11).
 - Shift+Enter under separator `'\n'` — ADR-0009's open sub-decision, not ours.
-- Implementing the spec — the next effort, not this map.
