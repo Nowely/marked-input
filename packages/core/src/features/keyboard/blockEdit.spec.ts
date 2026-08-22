@@ -416,9 +416,9 @@ describe('blockEdit row-boundary delete', () => {
 	it('clears the whole value even when the DOM selection is gone', () => {
 		// The block half of `input.spec`'s inline pin, and block only reaches it now that both
 		// layouts share one delete arm. The discriminating case: with the STORED selection
-		// all-selected and no live range, `domAnchors()` declines and `rowEdgeAnchors` cannot
-		// answer a RANGE, so without the all-selected branch ahead of them this returns without
-		// cancelling and the browser mutates the host behind the model's back.
+		// all-selected and no live range, `domAnchors()` declines, so without the all-selected
+		// branch ahead of it this returns without cancelling and the browser mutates the host
+		// behind the model's back.
 		const {store, container} = mountBlock()
 		store.tokens.selection.selectAll()
 		window.getSelection()?.removeAllRanges()
@@ -428,30 +428,6 @@ describe('blockEdit row-boundary delete', () => {
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(store.tokens.value()).toBe('')
-	})
-})
-
-/**
- * A control root (drag handle, block menu button) is not a row: `SelectionDriver`
- * deliberately leaves the stored selection standing when focus lands on one
- * (`SelectionDriver.ts`'s `syncIfInEditor`), so a keypress landing on a control
- * must be judged by its EVENT TARGET, not by whatever selection happens to be
- * stored for some row elsewhere.
- */
-describe('blockEdit trailing row', () => {
-	it('Backspace in the trailing empty row removes it with the previous separator', () => {
-		const {store, container} = mountBlock()
-		const trailing = store.tokens.nodes()[2]
-		store.tokens.selection.selectNode(trailing, 'start')
-		if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-		window.getSelection()?.removeAllRanges()
-
-		const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
-		container.dispatchEvent(event)
-
-		expect(event.defaultPrevented).toBe(true)
-		expect(store.tokens.value()).toBe('one\n\ntwo')
-		expect(store.tokens.nodes()).toHaveLength(2)
 	})
 })
 
@@ -500,6 +476,13 @@ describe('blockEdit mark swallow', () => {
 	})
 })
 
+/**
+ * A control root (drag handle, block menu button) is not a row: `SelectionDriver`
+ * deliberately leaves the stored selection standing when focus lands on one
+ * (`SelectionDriver.ts`'s `syncIfInEditor`), so a keypress landing on a control
+ * must be judged by its EVENT TARGET, not by whatever selection happens to be
+ * stored for some row elsewhere.
+ */
 describe('blockEdit control guard', () => {
 	function mountBlockWithControl(controlRow: 0 | 1) {
 		const store = new Store()

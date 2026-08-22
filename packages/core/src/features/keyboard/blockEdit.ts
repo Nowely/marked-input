@@ -2,66 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'edit' | 'tokens' | 'props'>
-import type {Anchors, NodeAnchor} from '../tokens'
 import {dropUnexpressedInput} from './beforeInput'
-
-/**
- * THE anchor a delete falls back on when the live DOM boundary resolves to none — the near EDGE
- * of the row the stored selection names, measured off that row's own DOM. `undefined` for a
- * caret this layer cannot place on an edge, and for every anchor in inline layout, whose roots
- * are never rows: `valueBoundary.ts` gates `parseRowsValue` on `isBlock`, so a RowNode exists
- * only under it and `rowOfAnchor` declines everything else. No layout test of its own.
- *
- * TWO authorities, each answering the half it can be trusted for. The stored anchors survive an
- * unresolvable boundary — `SelectionDriver`'s sync leaves them standing when `domAnchors()`
- * declines — so they still name the right ROW, but their OFFSET is wherever the last resolvable
- * position was. MEASURED on the vue project: a caret placed at the start of a row whose leading
- * child is a framework placeholder (Vue anchors a fragment on an empty text node) leaves them
- * pointing at that row's END, and a delete taken from them eats the wrong character —
- * `Drag.spec`'s nine `focusAtStart` merges. The row's own DOM text measure is what says which
- * edge the caret is at, and it reads the placeholder correctly.
- *
- * That is the whole of the row tier that survives resolving deletes through anchors, and it is
- * an anchor SOURCE now rather than a merge of its own. The reason written for the tier before
- * ADR-0008's 2026-08-19 amendment was different and is dead: it claimed the tier covered the
- * `pendingStructural` window, where in fact the latch refused every id, so both authorities
- * answered `undefined` there and the fallback bought nothing.
- *
- * A caret INSIDE the row answers `undefined`: naming it would need an offset this layer may not
- * form (ADR-0003), and a mid-row delete arrives again as a `beforeinput` carrying its own
- * target range.
- */
-export function rowEdgeAnchors(store: KbCtx): Anchors | undefined {
-	const stored = store.tokens.selection.anchors()?.anchor
-	const row = stored && rowOfAnchor(store, stored)
-	if (!row) return undefined
-	const handle = store.tokens.handle(row.id)
-	if (!handle) return undefined
-	const caret = handle.caretIndex()
-	if (caret === undefined) return undefined
-	if (caret === 0) return collapsed({before: row})
-	// The row's children END with a text token (`RowBuilder.groupRows`' edge invariant), so its
-	// content end is that child's trailing edge. `{after: row}` would sit PAST the separator.
-	const last = row.children().at(-1)
-	if (!last || caret !== handle.textLength()) return undefined
-	return collapsed({after: last})
-}
-
-function collapsed(anchor: NodeAnchor): Anchors {
-	return {anchor, head: anchor}
-}
-
-/** The ROOT row an anchor's own node belongs to — the tree identity every anchor form carries except the document edges. */
-function rowOfAnchor(store: KbCtx, anchor: NodeAnchor) {
-	if (typeof anchor === 'string') return undefined
-	const owner = 'node' in anchor ? anchor.node : 'before' in anchor ? anchor.before : anchor.after
-	const index = store.tokens.rootIndexOf(owner.id)
-	if (index === undefined) return undefined
-	// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as `TreeNode`
-	// and the out-of-range guard is linted away as an impossible condition.
-	const root = store.tokens.nodes().at(index)
-	return root?.kind === 'row' ? root : undefined
-}
 
 /**
  * Block layout's KEYDOWN arm, called by `enableInput` after the shared consumer-origin and
@@ -93,9 +34,9 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
 	// Over a RANGE this splices at the LOW end and KEEPS what was selected, which is
 	// deliberately not the shared table's replace-the-range rule.
 	//
-	// The stored anchors stand behind the live selection here rather than
-	// {@link rowEdgeAnchors}: a split needs the position itself, which only they carry, where
-	// a delete needs to know which row EDGE it is on.
+	// The stored anchors stand behind the live selection, and this is the one arm that still
+	// wants them: a split needs THE POSITION, which only they carry. The delete arm dropped its
+	// own fallback — an edge measured off the row's DOM — because it could disagree with them.
 	const at = (store.tokens.domAnchors() ?? store.tokens.selection.anchors())?.anchor
 	if (at === undefined) return
 

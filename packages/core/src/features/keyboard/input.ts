@@ -12,7 +12,7 @@ import {
 	isConsumerOrigin,
 	replacementForInput,
 } from './beforeInput'
-import {handleRowEnter, handleRowParagraph, rowEdgeAnchors} from './blockEdit'
+import {handleRowEnter, handleRowParagraph} from './blockEdit'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'paste', e => {
@@ -82,10 +82,10 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	// in this test: Shift+Backspace is a plain delete.
 	if (event.ctrlKey || event.altKey || event.metaKey) return
 
-	// DOM truth, with the row-edge fallback behind it for a boundary this layer declines. That
-	// fallback answers for a ROW and nothing else, so it leaves the discrimination above intact
-	// and inline reaches it never.
-	const anchors = store.tokens.domAnchors() ?? rowEdgeAnchors(store)
+	// DOM TRUTH, and nothing behind it. Both layouts resolve a delete the same way since
+	// `anchorsForDelete` learned the row separator; the row-edge fallback that used to sit here
+	// answered off the STORED anchors, which is not a caret, and no user reached it.
+	const anchors = store.tokens.domAnchors()
 	if (!anchors) return
 
 	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
