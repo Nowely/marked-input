@@ -121,6 +121,31 @@ map's destination; recorded so they are not lost.
   longer exists.** The tier is still load-bearing; the written reason is dead.
 - **`anchorAt`'s `side` parameter is production-dead** — measured, one
   hand-assembled test holds it up. A signature change, so it needs its own yes.
+- **A boundary on a slot mark's own presentation wrapper declines, and the
+  keystroke is dropped.** `domBoundary.ts:98-101` calls
+  `hasEditableAncestorBefore` (`textOffsets.ts:59-72`), which answers true for
+  ANY element inside the single host that is not in a `contenteditable=false`
+  subtree — `isContentEditable` is inherited — while a slot mark's root and
+  slot host go BARE by design (`bind.ts:250-256`). Measured user-reachable in
+  BOTH adapters: in the Markdown story's block layout, clicking at x=3 on a
+  list row whose first content is a mark leaves `domAnchors()` undefined, and
+  typing `X` then Backspace left `host.textContent` identical. **PLAUSIBLE, not
+  confirmed** — the mechanism was verified in source but the browser repro was
+  not re-measured independently. This is the "editable marks never worked"
+  area, not the row cutover, and it wants its own investigation.
+- **A row-interior DOM boundary resolves to nothing** — `anchorFromBoundary`
+  has arms for the container, a text surface, `node === tokenElement` and
+  `owner.kind === 'mark'`, none for a node INSIDE a row. New with ADR-0009 /
+  #291, which deleted the explicit `rowElement` arm while Vue's `Block.vue`
+  gained `v-for` fragment anchors. Latent: no user reaches it (~5100
+  `caretPositionFromPoint` probes plus every gesture and every core-driven
+  placement hit it zero times) and core cannot produce it, since
+  `DomModel.#entryOf` descends a row anchor to its edge child token. Recorded
+  rather than fixed: a candidate arm flips the documented contract at
+  `domBoundary.spec.ts:395`, and the naive version regressed 6 → 13 because
+  `childBoundaryAnchor`'s no-neighbour fallback answers `{after: row}` under
+  `'nearest'` and the driver then physically drags the caret to the row's end.
+  If ever wanted, it lands alone with its own gate.
 - **The keydown delete arm swallowed word and line deletes.** It claimed every
   Backspace/Delete regardless of modifiers and answered with a ONE-CHARACTER
   step, so the browser never emitted the `deleteWordBackward` that carries the
