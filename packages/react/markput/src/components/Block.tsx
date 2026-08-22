@@ -34,13 +34,18 @@ export const Block = memo(({node}: BlockProps) => {
 	// the same job its mark arm does for Token.
 	useMarkput(() => renderSubscription(node))
 
-	// MEMOISED, unlike `setBlockRef` below: `consign` mints a registration key per CALL, so
-	// calling it inline would file a fresh entry on every paint and never release the old one.
-	// The wrapper IS the row's token element (issue 08) — no separate row registry entry.
+	// MEMOISED, unlike `setBlockRef` below: `consign` and `children` mint a registration key per
+	// CALL, so calling them inline would file a fresh entry on every paint and never release the
+	// old one. The wrapper IS the row's token element (issue 08) — no separate row registry entry
+	// — and it is ALSO the row's child-sequence host, because the row's children are painted
+	// straight into it. One element, two registrations: `bindingsFor` accepts it (`contains` is
+	// reflexive) and the row keeps its bare `contenteditable`.
 	const consignBlock = useMemo(() => tokens.consign(node.id), [tokens, node.id])
+	const hostBlock = useMemo(() => tokens.children(node.id), [tokens, node.id])
 
 	const setBlockRef = (el: HTMLElement | null) => {
 		consignBlock(el)
+		hostBlock(el)
 		blockStore.attachContainer(el)
 	}
 

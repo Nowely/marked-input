@@ -142,8 +142,11 @@ export function rebindNode(node: TreeNode, target: BindTarget): void {
 	}
 	handle.bindElements(bindings, node)
 	// A ROW's wrapper stays BARE: it is neither a text surface nor a mark root, and the
-	// mark-root arm would freeze it atomic. Its chrome freezes itself via control() refs.
-	if (node.kind !== 'row') applyMountState(bindings, previous)
+	// mark-root arm would freeze it atomic. SELF-GATING, so an adapter that registers the row
+	// as its OWN child-sequence host takes the slot arm instead of being skipped — that arm
+	// only removes attributes the row never had, and its chrome walk terminates on its first
+	// test because `host === root`. An adapter that registers no host keeps the skip.
+	if (node.kind !== 'row' || bindings.childSequenceHost) applyMountState(bindings, previous)
 	forget(byElement, previous, bindings)
 	byElement.set(bindings.tokenElement, handle)
 	if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
