@@ -70,6 +70,25 @@ describe('blockEdit row identity', () => {
 		expect(store.tokens.value()).toBe('one\n\ntwo\n\n\n\n')
 	})
 
+	it('splits at the stored anchor itself, not at the end of the row holding it', () => {
+		// Tier 2 is the stored ANCHOR now, where it used to be the row that anchor named and a
+		// literal `{after: row}` — the row's end, PAST its own separator. The two agree only
+		// when the stored anchor already is a row edge, which is what the case above stores;
+		// a caret stored mid-row splits there instead of appending an empty row behind it.
+		const {store, container} = mountBlock()
+		const second = store.tokens.nodes()[1]
+		if (second.kind !== 'row') throw new Error('expected a row')
+		const text = second.children()[0]
+		if (text.kind !== 'text') throw new Error('expected a text child')
+		store.tokens.selection.select({node: text, offset: 1})
+		if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+		window.getSelection()?.removeAllRanges()
+
+		container.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true}))
+
+		expect(store.tokens.value()).toBe('one\n\nt\n\nwo\n\n')
+	})
+
 	it('Arrow keys in block mode are left to the browser (no preventDefault)', () => {
 		// One host makes cross-row caret movement NATIVE: the caret walks out of a row the
 		// way it walks out of any inline element, so nothing may cancel an arrow keydown.
