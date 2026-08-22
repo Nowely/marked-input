@@ -208,13 +208,11 @@ adapter, and make its case on the runtime numbers and the concept count.
 1. The drag source must not move between mousedown and dragstart. Not
    optional — without the pin, drag does not work at all.
 2. ~~The pin cannot use a `document` mouse listener
-   (`SelectionDriver.spec.ts:339`).~~ **REOPENED 2026-08-22.** The prototype
-   inferred this from a failing test, and a failing test is not a reason. The
-   assertion may be a stale pin from the single-host migration rather than a
-   live invariant, and container `mouseup` has a real hole a document listener
-   does not: press the grip, leave the container, release outside, and the pin
-   never clears. Under investigation; whatever the answer, it is recorded with
-   its cause rather than with a test number.
+   (`SelectionDriver.spec.ts:339`).~~ **WITHDRAWN — see "The pin releases
+   itself" below.** The prototype inferred the rule from a failing test, and a
+   failing test is not a reason. Investigated and measured 2026-08-22: the rule
+   is vestigial as written, the scope the prototype shipped instead is
+   measurably broken, and the correct answer attaches no listener at all.
 3. `.Container` needs `position: relative`; the layer's origin is the padding
    box (`left: 0`).
 4. A per-mousemove hit-test cost where HEAD had none: ~12 µs/tick steady, ~38
@@ -243,6 +241,113 @@ adapter, and make its case on the runtime numbers and the concept count.
   rejected alternative was letting rows keep rendering their own grip under
   this flag, which would preserve exactly the duplicated branch this whole
   effort exists to delete.
+
+## The pin releases itself — investigated 2026-08-22
+
+The prototype wrote a rule it had invented: `ChromeModel.ts:74-77`, "a live
+invariant that mounting an editor attaches no document mouse listener", citing
+`SelectionDriver.spec.ts`. The maintainer sent it back: a failing test is not a
+reason. Three agents investigated; the maintainer was right, and the answer is
+better than either option under discussion.
+
+### The rule as written is vestigial, and already false in shipped code
+
+There is **no stated reason anywhere** for a general ban — searched every
+commit body on every branch, all nine ADRs, `docs/records/`, `CONTEXT.md`, the
+website docs. What exists is a reason for deleting the FLIP, not for forbidding
+document listeners.
+
+"The flip" was `SelectionDriver.#trackUserSelecting`: three document mouse
+handlers feeding `#applyEditablePolicy`, which wrote `contenteditable=false` on
+EVERY per-token host for the duration of a mouse sweep.
+`docs/records/one-host-migration.md:125`: "The entire `isUserSelecting` sweep
+flip (~64 production lines + 14 spec references) exists to let a drag escape the
+host it started in. One host has nothing to escape." The assertion is a
+**deletion pin, written in the same commit (`9f824829`) that performed the
+deletion** — its own name says so: "the sweep tracker's document listeners went
+WITH THE FLIP".
+
+**The ban is already violated in production core**, verified by code read:
+`BlockStore.ts:80` `attachMenu(el)` calls `wireListeners(document, {mousedown,
+keydown})`, wired by both adapters. `OverlayController.ts:117-133` attaches a
+capture-phase document `click` while a match is live. A lazily attached,
+interaction-scoped document mouse listener is an ESTABLISHED shipped pattern
+here. The mount-time spy simply cannot see one.
+
+**And the assertion encodes a call shape, not a property.** Measured with three
+probes: `document.addEventListener('mouseup', fn, undefined)` fails it, but
+`(…, {capture: false})` and the two-argument form both walk straight past. A
+real mount-time `listen(document, 'mouseup', fn, {capture: false})` was patched
+into `SelectionDriver.ts` and the spec file ran 22 passed / 0 failed. An
+invariant satisfiable by adding an empty options object is not an invariant.
+
+### What survived, narrower
+
+Two properties, both real, neither previously asserted:
+
+1. **Mount takes no page-wide pointer stream.** Measured on a document-level
+   release: every mounted editor's handler runs on every mouseup anywhere,
+   forever — the cost scales with editor count. Harmless for this particular
+   handler (an unpinned model's release is a no-op; two editors measured, the
+   uninvolved one's handler fires but does nothing) but it is coupling with no
+   expiry, and it is exactly what made the deleted sweep flip damaging.
+2. **Unmount gives back what mount took.** Upheld today by `Host.onMounted`'s
+   `effectScope` — and never tested. The old assertion could not see a leak at
+   all; a raw leaked `document.addEventListener('keyup', fn)` at mount passes it.
+
+### The scope: the pin releases itself, attaching nothing
+
+Six scopes were measured across eleven cases in real Chromium (98 tests). The
+winner attaches **no listener anywhere**: the pin is armed by the grip's own
+mousedown and expires inside the one handler that reads it, plus `endDrag()`.
+
+```ts
+#frozen(e: MouseEvent): boolean {
+    // The pin is gesture state, so it expires with the gesture, not with the editor: the
+    // only reader of `#pinned` is a container mouse handler, and it clears the pin the
+    // first time it sees an event with no button held. A press that never becomes a drag
+    // and never releases inside the container therefore heals on re-entry instead of
+    // wedging the layer (measured: draggable:false, release on BODY).
+    if (this.#pinned && e.buttons === 0) this.release('buttons-idle')
+    return this.#pinned
+}
+```
+
+`endDrag()` already calls `release('dragend')` for the drag path, where
+Chromium delivers no mouseup at all — measured event order:
+`pointerdown, mousedown, dragstart, pointercancel, drop, dragend`.
+
+**The scope the prototype actually shipped — container `mouseup` — is
+measurably broken**, and the test had nothing to do with it. Deciding case:
+`draggable: false`, press the grip, leave the container, release on `BODY`.
+Container-scoped and dragend-only both **wedge permanently**
+(`hoverAfterReenter: 1` — the layer is stuck on the pressed row forever). The
+self-healing pin reports `pinnedAtRelease: true` but `pinnedAfterReenter:
+false`, hover correct on the next move.
+
+Ranked behind it: a one-shot document mouseup armed on press is correct in
+every case and is the established lazy pattern, but leaks one closure past
+unmount. Pointer capture is correct and is the platform primitive, but
+retargets compat mouse events to the grip for the whole press — a real side
+effect next to a `contenteditable` — and its release fires mid-drag, correct
+only while the mousemove handler stays gated on `dragging() !== null`.
+
+**`SelectionDriver.spec.ts:328-343` is amended, not loosened** — the
+replacement was written and run: green at HEAD, red against a mount-time
+`{capture:false}` listener the old form passes, red against a leaked `keyup`
+the old form cannot see. It asserts on the event NAME (no options-object escape
+hatch) that mount attaches no `mouse*`/`pointer*`/`drag*`/`touch*` handler to
+`document`, and that unmount removes exactly the handlers mount added.
+
+**Residual risk, stated rather than buried:** the pin can be stale — `true`
+after the physical release, until the next container mouse event. Unobservable
+by construction today, because the only reader is the handler that clears it
+first. But that is a discipline, not a mechanism: a second reader that is not a
+container mouse handler (a keyboard path, a render-time read, a `dragstart`
+guard) would see a pin belonging to a gesture that ended, and nothing asserts
+otherwise. Also unfixed, though not a regression since every scope shares it:
+while the pointer is outside the editor with the pin set, the grip stays painted
+on the pressed row until the pointer returns.
 
 ### Behavior changes measured, beyond those already declared
 

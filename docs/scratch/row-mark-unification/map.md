@@ -54,6 +54,18 @@ Implementation is a separate effort after this map.
   consumer), and `alwaysShowHandle: true` is redefined as "one grip, on the
   row nearest the pointer" — a declared behavior change on a published option,
   since one layer cannot render 201 always-visible grips.
+- [The hover pin releases itself](issues/04-adapter-convergence.md) — the
+  maintainer challenged "the pin cannot use a document listener" and was right.
+  No stated reason for that rule exists anywhere; the assertion behind it is a
+  deletion pin from the one-host migration, it encodes a call SHAPE that
+  `{capture:false}` walks past, and core already ships a document `mousedown`
+  in `BlockStore.attachMenu`. Better still, the scope the prototype shipped
+  instead — container `mouseup` — is measurably broken (press the grip with
+  `draggable:false`, release outside, the layer wedges forever). The answer
+  attaches NOTHING: the pin expires inside the one handler that reads it.
+  `SelectionDriver.spec.ts:328-343` is amended to assert the two properties
+  that actually survived — mount takes no page-wide pointer stream, and unmount
+  gives back what it took.
 - [The slot registry](issues/02-one-render-path.md) — it lands, as its own PR
   AFTER the chrome layer. `slots: {container, text, mark, row}` replaces
   `props.Mark`, `props.Span` and the `'block'` special case. The largest
@@ -75,10 +87,10 @@ Implementation is a separate effort after this map.
   `mergeWith` stay row-only) — sharpens after 01/02.
 - Migration order for the implementation — belongs to the spec (08).
 - Storybook Drag page reshaping (name, shared-spec harness) — after 04.
-- The scope that releases the chrome layer's hover pin. The prototype used a
-  container `mouseup` because a `document` one failed an assertion; that
-  assertion may be a stale pin, and container `mouseup` misses a release
-  outside the editor. Under investigation.
+- Whether the `attachMenu` document `mousedown` and `OverlayController`'s
+  capture-phase document `click` want the same treatment as the hover pin —
+  they are interaction-scoped global listeners, legitimate under the amended
+  assertion, but nobody has asked whether they need to be global either.
 - Fate of published `slots.block` / `slotProps.block` names — after 02's slot
   registry sub-question; glossary says "not a rename target", and
   `slotProps.block` typechecks on neither adapter today.
