@@ -356,7 +356,9 @@ not.
   `findTextBoundary`, `placeRangeAcrossBoundaries`, `getCaretIndex`, `getRect`,
   `focusEditingHost`).
 - `dom/textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
-  `textOffsetWithin`, `hasEditableAncestorBefore`).
+  `textOffsetWithin`). The editable-island test the mark arm asks before it
+  answers is `shared/checkers`' `inExplicitEditableIsland`, shared verbatim with
+  `keyboard/beforeInput.ts`: the two differ only in where they stop.
 
 ## `TokenHandle` — the DOM binding
 
