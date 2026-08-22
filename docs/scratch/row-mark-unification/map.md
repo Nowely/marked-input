@@ -74,8 +74,12 @@ Implementation is a separate effort after this map.
   half-broken: `slotProps.block` typechecks on neither adapter.
 - [One input pipeline](issues/03-one-input-pipeline.md) — shape A (one listener
   pair, block arms after the shared checks) plus a row-separator expansion in
-  `anchorsForDelete`, which kills the 46-line row tier without rewriting
-  `stepAnchor`. Ranged-Enter options C and D died on a measured regression.
+  `anchorsForDelete`, without rewriting `stepAnchor`. Ranged-Enter options C and
+  D died on a measured regression. The 46-line row tier shrank to 28 rather than
+  dying: `rowEdgeAnchors` + `rowOfAnchor` survive as an ANCHOR SOURCE, because
+  `domBoundary.ts` has no arm for a boundary inside a row that lands on no text
+  surface and the stored anchors alone are not a caret (see the round-1 list
+  below). Deleting them turns 7 tests red across core and vue.
 - [Stale premises](issues/07-stale-premises-sweep.md) — the filter is gone; 9
   stale sites fixed (the census found 3), backlog 09 and 15 both closed as
   non-reproducing, and `anchorAt`'s `side` param is now measured
@@ -117,6 +121,19 @@ map's destination; recorded so they are not lost.
   longer exists.** The tier is still load-bearing; the written reason is dead.
 - **`anchorAt`'s `side` parameter is production-dead** — measured, one
   hand-assembled test holds it up. A signature change, so it needs its own yes.
+- **The keydown delete arm swallowed word and line deletes.** It claimed every
+  Backspace/Delete regardless of modifiers and answered with a ONE-CHARACTER
+  step, so the browser never emitted the `deleteWordBackward` that carries the
+  extent. Fixed in 03 rather than reported, because 03 hands block the same arm
+  and a layout-scoped fix would have re-added an `isBlock` fork.
+- **`dom/domBoundary.ts` has no arm for a boundary INSIDE a row's wrapper that
+  lands on no text surface** — a framework placeholder (Vue anchors a fragment on
+  an empty text node), the exact shape `fromContainerAnchor` exists for one level
+  up. It answers `undefined`, `SelectionDriver.sync` bails on `undefined`, and
+  the STORED selection silently keeps a stale offset for as long as the caret
+  sits there. That is why 03's row tier could not die. Needs its own ticket with
+  the caret fixpoint measured — a naive row-interior arm took vue `Drag.spec`
+  from 9 failures to 13.
 
 ## Out of scope
 
