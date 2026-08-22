@@ -109,9 +109,3 @@ export interface CoreSlotProps {
 export interface DraggableConfig {
 	alwaysShowHandle?: boolean
 }
-
-export type DragAction =
-	| {type: 'reorder'; source: number; target: number}
-	| {type: 'add'; afterIndex: number}
-	| {type: 'delete'; index: number}
-	| {type: 'duplicate'; index: number}

@@ -9,7 +9,7 @@ import type {NodeAnchor, TokenModel} from '../tokens'
  *
  * Addressed by NODE ANCHORS since S2.5 (spec S2 §4.5), and now WHOLLY: `setValue`'s
  * `caretOffset` was the one absolute offset left in any core module, and it is gone. It
- * existed because `block/operations.ts` synthesised a whole new string from row positions and
+ * existed for the row operations, which synthesised a whole new string from row positions and
  * computed a caret against THAT string before it was parsed, so no node existed to name it.
  * Row edits address their own nodes now, and the one whole-value site left says which ROW the
  * caret enters (`tokens.setValue`'s `enterRoot`) rather than which character.

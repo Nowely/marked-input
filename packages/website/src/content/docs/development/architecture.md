@@ -215,10 +215,13 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 
 ### Store Events
 
-| Event           | Feature        | When Fired                  | Payload                                  |
-| --------------- | -------------- | --------------------------- | ---------------------------------------- |
-| `close`         | overlay        | Close overlay               | `void`                                   |
-| `action`        | drag           | Drag-and-drop action        | `{type, ...}` (internal `DragAction`)    |
+| Event   | Feature | When Fired    | Payload |
+| ------- | ------- | ------------- | ------- |
+| `close` | overlay | Close overlay | `void`  |
+
+Block row operations are NOT an event. `store.block.action({...})` and its four-verb
+`DragAction` payload are gone: a `BlockStore` holds its row node and calls that node's own
+verbs, so there is no action to lower onto them.
 
 Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
 
@@ -231,8 +234,8 @@ store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(5), 
 // Read the live root nodes (readonly TreeNode[]) — reactive
 store.tokens.nodes()
 
-// Emit a drag action event
-store.block.action({ type: 'delete', index: 0 })
+// Run a row operation through the row's own per-row store
+store.block.get(store.tokens.nodes()[0]).deleteBlock()
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
@@ -314,7 +317,7 @@ class Store {
     readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops
     readonly overlay:   OverlayController  // match, element, slot, select, close
     readonly keyboard:  KeyboardController // input handling and block editing
-    readonly block:     BlockController    // block drag actions and operation helpers
+    readonly block:     BlockController    // per-row UI-state stores, keyed by the row node
     readonly clipboard: ClipboardController // copy/cut handling
     readonly api:       MarkputHandle         // the ref handle: container, focus()
 }
@@ -356,7 +359,7 @@ Signal subscription order is significant: inside its constructor `onMounted` hoo
 | **OverlayController**         | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution, mark resolver |
 | **KeyboardController**        | Text input and block editing                             |
-| **BlockController**           | Drag-and-drop block reordering and operation helpers     |
+| **BlockController**           | Vends the per-row `BlockStore` that owns a row's chrome state and its row verbs |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
 `KeyboardController` internally composes two modules: `enableInput` (the `beforeinput` guard, paste, the delete keys and Ctrl/Cmd+A) and `enableBlockEdit` (row split, merge and delete in block layout). Caret navigation is the browser's: the container is the one editing host, so arrows and Home/End move natively and no core keyboard handler intercepts them. (Core's `SuggestionsModel` does claim ArrowUp/ArrowDown/Enter while the built-in `Suggestions` component is mounted — the adapter component only activates it.) The selection is not a feature of its own: `store.tokens.selection` is the stored anchor pair (see below).
@@ -414,6 +417,13 @@ class BlockStore {
     // ...attachContainer/attachGrip/attachMenu wire DOM listeners that write this state
 }
 ```
+
+A `BlockStore` also holds its row node, so the row operations are calls on that node:
+`addBlock`/`deleteBlock`/`duplicateBlock` are `insertAfter(separator)`/`remove()`/`duplicate()`,
+and the container's `drop` handler is `moveTo(index)`. The drop is the one operation that does
+not address the store's own node — it learns its source from the drag's `text/plain` payload,
+resolves that index through `tokens.nodes()`, and refuses a negative one rather than letting
+`Array.prototype.at` wrap onto the last row.
 
 ## Core-Owned DOM And Cursor Management
 

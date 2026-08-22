@@ -1,391 +1,301 @@
-import {describe, it, expect, vi, beforeEach} from 'vitest'
+import {describe, it, expect, beforeEach} from 'vitest'
 
-import {effect} from '../../shared/signals'
+import {watch} from '../../shared/signals'
+import type {CoreOption} from '../../shared/types'
 import {Store} from '../../store/Store'
 import {anchorsAt, selectionRange} from '../tokens/__testing__/mountFixtures'
 
-describe('BlockController', () => {
-	let store: Store
+const blockProps: Parameters<Store['props']['set']>[0] = {
+	layout: 'block',
+	draggable: true,
+	Mark: () => null,
+	options: [],
+}
 
-	beforeEach(() => {
-		vi.clearAllMocks()
-		store = new Store()
+/**
+ * A bare container is enough: commits settle structurally and the live tree stays the
+ * reconciled parse, so the row verbs resolve without a rendered DOM.
+ */
+function blockSetup(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
+	const store = new Store()
+	store.props.set({...blockProps, ...props})
+	store.host.container(document.createElement('div'))
+	store.tokens.setValue(value)
+	return store
+}
+
+/**
+ * A real drop on a row's own container, which is the only way in: the handler is a DOM
+ * listener `attachContainer` wires, and `source` reaches it as an untrusted `text/plain`
+ * payload rather than as an argument. Split from the dispatch so a case can attach the
+ * container and drop on it under DIFFERENT props.
+ */
+function dropOnRow(store: Store, rowIndex: number, payload: string) {
+	const container = document.createElement('div')
+	store.block.get(store.tokens.nodes()[rowIndex]).attachContainer(container)
+	dropOn(container, payload)
+}
+
+function dropOn(container: HTMLElement, payload: string) {
+	const dataTransfer = new DataTransfer()
+	dataTransfer.setData('text/plain', payload)
+	container.dispatchEvent(new DragEvent('drop', {cancelable: true, dataTransfer}))
+}
+
+describe('BlockStore row verbs', () => {
+	it('adds a row below the row the menu belongs to', () => {
+		const store = blockSetup('alpha\n\nbeta\n\n')
+
+		store.block.get(store.tokens.nodes()[0]).addBlock()
+
+		expect(store.tokens.value()).toBe('alpha\n\n\n\nbeta\n\n')
+		expect(selectionRange(store)).toEqual({start: 7, end: 7})
 	})
 
-	describe('activation via props', () => {
-		it('does not leak a watcher when props toggle', () => {
-			store.props.set({
-				layout: 'block',
-				draggable: true,
-				value: 'test',
-				onChange: () => {},
-			})
-			// disable drag
-			store.props.set({layout: 'inline', draggable: false})
+	it('adds the first row to an empty document', () => {
+		const store = blockSetup('')
 
-			const writeSpy = vi.spyOn(store.edit, 'setValue')
-			store.block.action({type: 'delete', index: 0})
-			expect(writeSpy).not.toHaveBeenCalled()
-		})
+		// An empty document already IS one empty row (issue 08), so there is always a row to
+		// hang the insert on — the composed "add with no anchor" arm the index-addressed
+		// protocol needed has nothing left to answer.
+		expect(store.tokens.nodes()).toHaveLength(1)
+		store.block.get(store.tokens.nodes()[0]).addBlock()
+
+		expect(store.tokens.value()).toBe('\n\n')
+		expect(store.tokens.nodes()).toHaveLength(2)
+		expect(selectionRange(store)).toEqual({start: 2, end: 2})
 	})
 
-	it('block actions apply with draggable:false (menu/keyboard actions are not drag UI)', () => {
-		store.props.set({
-			layout: 'block',
-			draggable: false,
-			Mark: () => null,
-			options: [],
-		})
-		store.host.container(document.createElement('div'))
-		store.tokens.setValue('alpha\n\nbeta\n\n')
+	it('deletes the row the menu belongs to, on the final unterminated row too', () => {
+		// The final row owns no separator; its removal takes the PREVIOUS row's, so Delete
+		// cannot merely convert it into the trailing empty row.
+		const store = blockSetup('alpha\n\nbeta')
 
-		store.block.action({type: 'delete', index: 0})
-
-		expect(store.tokens.value()).toBe('beta\n\n')
-	})
-
-	it('drops reorder with draggable:false (reorder is drag-originated)', () => {
-		store.props.set({
-			layout: 'block',
-			draggable: false,
-			Mark: () => null,
-			options: [],
-		})
-		store.host.container(document.createElement('div'))
-		store.tokens.setValue('alpha\n\nbeta\n\n')
-
-		store.block.action({type: 'reorder', source: 0, target: 2})
-
-		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
-	})
-
-	it('commits drag edits through the live token read and writes caret.selection', () => {
-		store.props.set({
-			layout: 'block',
-			draggable: true,
-			Mark: () => null,
-			options: [],
-		})
-		// Drag actions read the mounted token layer (a bare container is enough:
-		// commits settle structurally and the live tree stays the reconciled parse).
-		store.host.container(document.createElement('div'))
-		store.tokens.setValue('alpha\n\nbeta\n\n')
-
-		store.block.action({type: 'delete', index: 0})
-
-		// The OUTCOME, not the write channel: `applyDragAction` composes a complete new
-		// string from anchor-slice reads of the tree and `edit.setValue` commits it. The
-		// caret lands at the start of the row that replaced the deleted one.
-		expect(store.tokens.value()).toBe('beta\n\n')
-		expect(selectionRange(store)).toEqual({start: 0, end: 0})
-	})
-
-	it('writes value and caret as a single batched tick', () => {
-		store.props.set({
-			layout: 'block',
-			draggable: true,
-			Mark: () => null,
-			options: [],
-		})
-		store.host.container(document.createElement('div'))
-		store.tokens.setValue('alpha\n\nbeta\n\n')
-
-		let runs = 0
-		const dispose = effect(() => {
-			store.tokens.value()
-			selectionRange(store)
-			runs++
-		})
-		const initial = runs
-
-		store.block.action({type: 'delete', index: 0})
-
-		expect(runs - initial).toBe(1)
-		dispose()
-	})
-
-	it('skips writes when reorder is a no-op', () => {
-		store.props.set({
-			layout: 'block',
-			draggable: true,
-			Mark: () => null,
-			options: [],
-		})
-		store.host.container(document.createElement('div'))
-		store.tokens.setValue('alpha\n\nbeta\n\n')
-		const writeSpy = vi.spyOn(store.edit, 'setValue')
-		const selectSpy = vi.spyOn(store.tokens.selection, 'select')
-
-		store.block.action({type: 'reorder', source: 0, target: 0})
-
-		expect(writeSpy).not.toHaveBeenCalled()
-		expect(selectSpy).not.toHaveBeenCalled()
-	})
-
-	describe('adds no anchor can name', () => {
-		const blockProps: Parameters<Store['props']['set']>[0] = {
-			layout: 'block',
-			draggable: true,
-			Mark: () => null,
-			options: [],
-		}
-
-		it('adds a row to an empty document', () => {
-			store.props.set(blockProps)
-			store.host.container(document.createElement('div'))
-			store.tokens.setValue('')
-
-			// An empty document already IS one empty row (issue 08), so the menu add goes
-			// through the anchored path: one separator after it yields two empty rows.
-			store.block.action({type: 'add', afterIndex: 0})
-
-			expect(store.tokens.value()).toBe('\n\n')
-			expect(store.tokens.nodes()).toHaveLength(2)
-			expect(selectionRange(store)).toEqual({start: 2, end: 2})
-		})
-
-		it('inserts BEFORE the first row for a negative afterIndex', () => {
-			store.props.set(blockProps)
-			store.host.container(document.createElement('div'))
-			store.tokens.setValue('alpha\n\nbeta\n\n')
-
-			store.block.action({type: 'add', afterIndex: -1})
-
-			// `insertAfter` cannot express "before the first row", so this stays composed too.
-			expect(store.tokens.value()).toBe('\n\nalpha\n\nbeta\n\n')
-		})
-
-		it('writes nothing for a row index no row answers to', () => {
-			store.props.set(blockProps)
-			store.host.container(document.createElement('div'))
-			store.tokens.setValue('alpha\n\nbeta\n\n')
-
-			store.block.action({type: 'delete', index: 5})
-			// NEGATIVE, which is the case `Array.prototype.at` would wrap onto the LAST row.
-			store.block.action({type: 'duplicate', index: -1})
-			store.block.action({type: 'reorder', source: -1, target: 0})
-
-			expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
-		})
-	})
-
-	it('menu Delete on the final unterminated row shrinks the row count', () => {
-		// The final row owns no separator; its removal takes the PREVIOUS row's, so
-		// Delete cannot merely convert it into the trailing empty row (review finding).
-		store.props.set({
-			layout: 'block',
-			draggable: true,
-			options: [],
-		})
-		store.host.container(document.createElement('div'))
-		store.tokens.setValue('alpha\n\nbeta')
-
-		store.block.action({type: 'delete', index: 1})
+		store.block.get(store.tokens.nodes()[1]).deleteBlock()
 
 		expect(store.tokens.value()).toBe('alpha')
 		expect(store.tokens.nodes()).toHaveLength(1)
 	})
 
-	describe('row identity', () => {
-		it('removes the addressed row, not a byte-identical neighbour', () => {
-			store.props.set({
-				layout: 'block',
-				draggable: true,
-				Mark: () => null,
-				options: [],
-			})
-			store.host.container(document.createElement('div'))
-			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
+	it('duplicates the row the menu belongs to', () => {
+		const store = blockSetup('alpha\n\nbeta\n\n')
 
-			const [first, second, third, tail] = store.tokens.nodes().map(node => node.id)
+		store.block.get(store.tokens.nodes()[0]).duplicateBlock()
 
-			store.block.action({type: 'delete', index: 0})
-
-			// The SURVIVORS name which row actually went — the value alone cannot, because
-			// the two candidates compose to the same string. Row identity is what both
-			// adapters key rendering on and what `BlockController` keys per-row state by.
-			expect(store.tokens.value()).toBe('First\n\nSecond\n\n')
-			expect(store.tokens.nodes().map(node => node.id)).toEqual([second, third, tail])
-			expect(first).not.toBe(second)
-		})
-
-		it('keeps the original row when it is duplicated', () => {
-			store.props.set({
-				layout: 'block',
-				draggable: true,
-				Mark: () => null,
-				options: [],
-			})
-			store.host.container(document.createElement('div'))
-			store.tokens.setValue('alpha\n\nbeta\n\n')
-			const [alpha, beta] = store.tokens.nodes().map(node => node.id)
-
-			store.block.action({type: 'duplicate', index: 0})
-
-			// The composer's answers, unchanged — the copy glues to its original and the caret
-			// lands at the copy's start.
-			expect(store.tokens.value()).toBe('alpha\n\nalpha\n\nbeta\n\n')
-			expect(selectionRange(store)).toEqual({start: 7, end: 7})
-			// ...and only the copy is new: a whole-document rewrite could not promise this.
-			const after = store.tokens.nodes().map(node => node.id)
-			expect(after[0]).toBe(alpha)
-			expect(after[2]).toBe(beta)
-			expect(after[1]).not.toBe(alpha)
-		})
-
-		it('carries a row AND its state to the new index on reorder', () => {
-			store.props.set({
-				layout: 'block',
-				draggable: true,
-				Mark: () => null,
-				options: [],
-			})
-			const container = document.createElement('div')
-			document.body.append(container)
-			store.host.container(container)
-			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
-
-			const [a, b, c, tail] = store.tokens.nodes().map(node => node.id)
-			const dragged = store.block.get(store.tokens.nodes()[0])
-			dragged.state.isDragging(true)
-
-			store.block.action({type: 'reorder', source: 0, target: 2})
-
-			// The document is UNCHANGED, because the two moved-past rows are byte-identical. So
-			// the ids are the only evidence the move happened at all — and the whole reason the
-			// commit carries an identity claim the string cannot.
-			expect(store.tokens.value()).toBe('First\n\nFirst\n\nSecond\n\n')
-			expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c, tail])
-			expect(store.block.get(store.tokens.nodes()[1])).toBe(dragged)
-			expect(dragged.state.isDragging()).toBe(true)
-			document.body.replaceChildren()
-		})
-
-		it('keeps every existing row when one is added below', () => {
-			store.props.set({
-				layout: 'block',
-				draggable: true,
-				Mark: () => null,
-				options: [],
-			})
-			store.host.container(document.createElement('div'))
-			store.tokens.setValue('alpha\n\nbeta\n\n')
-			const [alpha, beta] = store.tokens.nodes().map(node => node.id)
-
-			store.block.action({type: 'add', afterIndex: 0})
-
-			expect(store.tokens.value()).toBe('alpha\n\n\n\nbeta\n\n')
-			expect(selectionRange(store)).toEqual({start: 7, end: 7})
-			const after = store.tokens.nodes().map(node => node.id)
-			expect(after[0]).toBe(alpha)
-			expect(after[2]).toBe(beta)
-		})
+		expect(store.tokens.value()).toBe('alpha\n\nalpha\n\nbeta\n\n')
 	})
 
-	describe('per-row stores (identity-keyed)', () => {
-		it('keeps a row store, and its state, across an operation on another row', () => {
-			// The CONSEQUENCE-level gate for row identity: the id assertions above say which node
-			// survived, this says what that costs a user. Before the row verbs, deleting the first
-			// of two byte-identical rows retained the WRONG node, so the store below was reset
-			// and the open menu closed itself on an unrelated row's deletion. Kept on the
-			// mounted fixture even though the store no longer rides the announcement: the
-			// bind is what an adapter actually does between the two reads.
-			store.props.set({
-				layout: 'block',
-				draggable: true,
-				Mark: () => null,
-				options: [],
-			})
-			const container = document.createElement('div')
-			document.body.append(container)
-			store.host.container(container)
-			store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
+	it('closes the menu after a verb that applies', () => {
+		const store = blockSetup('alpha\n\nbeta\n\n')
+		const first = store.block.get(store.tokens.nodes()[0])
+		first.state.menuOpen(true)
 
-			const survivor = store.block.get(store.tokens.nodes()[1])
-			survivor.state.menuOpen(true)
-			survivor.state.isHovered(true)
+		first.duplicateBlock()
 
-			store.block.action({type: 'delete', index: 0})
+		expect(store.tokens.value()).toBe('alpha\n\nalpha\n\nbeta\n\n')
+		expect(first.state.menuOpen()).toBe(false)
+	})
 
-			expect(store.block.get(store.tokens.nodes()[0])).toBe(survivor)
-			expect(survivor.state.menuOpen()).toBe(true)
-			expect(survivor.state.isHovered()).toBe(true)
-			document.body.replaceChildren()
-		})
+	it('runs the menu verbs with draggable:false — menu and keyboard row edits are not drag UI', () => {
+		const store = blockSetup('alpha\n\nbeta\n\n', {draggable: false})
 
-		it('keeps a row store across an edit above it with NOTHING mounted', () => {
-			// The object key needs no announcement, so this holds with no container and no
-			// a re-bind — the id-keyed Map's prune rode the id lists the old fused
-			// the delta carried, whose removals only ever came from a bind, so an unmounted
-			// input could hand a row a store and never shed it. Both clocks are payload-free now,
-			// so there is no removal list left to ride even where one binds.
-			store.props.set({
-				layout: 'block',
-				draggable: true,
-				Mark: () => null,
-				options: [],
-			})
-			store.host.container(document.createElement('div'))
-			store.tokens.setValue('alpha\n\nbeta\n\n')
+		store.block.get(store.tokens.nodes()[0]).deleteBlock()
 
-			const second = store.block.get(store.tokens.nodes()[1])
-			second.state.menuOpen(true)
+		expect(store.tokens.value()).toBe('beta\n\n')
+	})
 
-			store.edit.replace(...anchorsAt(store, 1, 1), 'X')
+	it('refuses the menu verbs once the layout leaves block, and closes the menu anyway', () => {
+		// A row node cannot outlive block layout, so what refuses the write here is the
+		// transaction layer meeting a dead node; the store's own block check is the second
+		// belt. The menu close is the half this pins alone — it runs on the refused branch.
+		const store = blockSetup('alpha\n\nbeta\n\n')
+		const first = store.block.get(store.tokens.nodes()[0])
+		first.state.menuOpen(true)
 
-			expect(store.tokens.value()).toBe('aXlpha\n\nbeta\n\n')
-			expect(store.block.get(store.tokens.nodes()[1])).toBe(second)
-			expect(second.state.menuOpen()).toBe(true)
-		})
+		store.props.set({layout: 'inline', draggable: false})
+		first.deleteBlock()
 
-		it('hands the row that takes a deleted row’s INDEX its own store', () => {
-			// The prune case restated as what protects a user: an index is not an identity, so
-			// the row that slides into slot 0 must not inherit the deleted row's open menu.
-			store.props.set({
-				layout: 'block',
-				draggable: true,
-				Mark: () => null,
-				options: [],
-			})
-			store.host.container(document.createElement('div'))
-			store.tokens.setValue('alpha\n\nbeta\n\n')
+		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
+		expect(first.state.menuOpen()).toBe(false)
+	})
+})
 
-			const first = store.tokens.nodes()[0]
-			const firstStore = store.block.get(first)
-			firstStore.state.menuOpen(true)
+describe('the row drop handler', () => {
+	it('moves the dragged row onto the drop slot', () => {
+		const store = blockSetup('alpha\n\nbeta\n\ngamma\n\n')
 
-			store.block.action({type: 'delete', index: 0})
+		// No preceding `dragover`, so `dropPosition` is its own default: after row 1.
+		dropOnRow(store, 1, '0')
 
-			const survivor = store.tokens.nodes()[0]
-			expect(survivor).not.toBe(first)
-			expect(store.block.get(survivor)).not.toBe(firstStore)
-			expect(store.block.get(survivor).state.menuOpen()).toBe(false)
-		})
+		expect(store.tokens.value()).toBe('beta\n\nalpha\n\ngamma\n\n')
+	})
 
-		it('still answers for a node that has LEFT the tree — the one WeakMap divergence', () => {
-			// MEASURED COST of object keying, pinned rather than argued. The id-keyed Map pruned
-			// on the `removed` list the old fused `changed` carried, so re-asking with a dead
-			// node built a fresh store;
-			// a WeakMap keeps the entry as long as the caller keeps the node. Harmless here
-			// because every caller (`Block`, `DragHandle`, `BlockMenu`, `DropIndicator` in
-			// both adapters) passes a node straight out of `tokens.nodes()`, and the entry
-			// collects with the node once the caller drops it.
-			store.props.set({
-				layout: 'block',
-				draggable: true,
-				Mark: () => null,
-				options: [],
-			})
-			store.host.container(document.createElement('div'))
-			store.tokens.setValue('alpha\n\nbeta\n\n')
+	it('refuses a NEGATIVE source index instead of wrapping onto the last row', () => {
+		// The payload carries no provenance, so any external drag reaches this handler with
+		// any text at all. `Array.prototype.at` WRAPS: unguarded, `at(-1)` addresses the LAST
+		// row and moves it to the top.
+		const store = blockSetup('First\n\nSecond\n\nThird')
+		const before = store.tokens.nodes().map(node => node.id)
 
-			const dead = store.tokens.nodes()[0]
-			const deadStore = store.block.get(dead)
+		dropOnRow(store, 0, '-1')
 
-			store.block.action({type: 'delete', index: 0})
+		expect(store.tokens.value()).toBe('First\n\nSecond\n\nThird')
+		expect(store.tokens.nodes().map(node => node.id)).toEqual(before)
+	})
 
-			expect(store.tokens.nodes()).not.toContain(dead)
-			expect(store.block.get(dead)).toBe(deadStore)
-		})
+	it('refuses a payload that names no index at all', () => {
+		const store = blockSetup('First\n\nSecond\n\nThird')
+
+		dropOnRow(store, 0, 'not an index')
+
+		expect(store.tokens.value()).toBe('First\n\nSecond\n\nThird')
+	})
+
+	it('refuses a drop once the layout leaves block — the move addresses whatever nodes() holds', () => {
+		// The one gate the menu verbs do NOT get for free from their own node: the move reads
+		// `nodes().at(source)` live, so in inline layout it finds the INLINE nodes and reorders
+		// those. Marks are what makes that visible — plain inline text is a single node.
+		const options: CoreOption[] = [{markup: '@[__value__]'}]
+		const store = blockSetup('alpha @[x] tail\n\nbeta @[y] tail\n\n', {options})
+		const container = document.createElement('div')
+		store.block.get(store.tokens.nodes()[1]).attachContainer(container)
+
+		store.props.set({...blockProps, options, layout: 'inline'})
+		dropOn(container, '2')
+
+		expect(store.tokens.value()).toBe('alpha @[x] tail\n\nbeta @[y] tail\n\n')
+	})
+
+	it('refuses a drop with draggable:false — reorder is drag-originated', () => {
+		const store = blockSetup('alpha\n\nbeta\n\n', {draggable: false})
+
+		dropOnRow(store, 1, '0')
+
+		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
+	})
+
+	it('writes nothing when a row is dropped on its own trailing edge', () => {
+		const store = blockSetup('alpha\n\nbeta\n\n')
+		let committed = 0
+		watch(store.tokens.committed, () => committed++)
+
+		dropOnRow(store, 0, '0')
+
+		// The drop target names a SLOT BETWEEN rows, so this collapses onto `to === from`,
+		// which `movePlan` refuses.
+		expect(committed).toBe(0)
+		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
+	})
+})
+
+describe('per-row stores (identity-keyed)', () => {
+	let store: Store
+
+	beforeEach(() => {
+		store = new Store()
+	})
+
+	it('keeps a row store, and its state, across an operation on another row', () => {
+		// The CONSEQUENCE-level gate for row identity: the id assertions in `markNode.spec`
+		// say which node survived, this says what that costs a user. Before the row verbs,
+		// deleting the first of two byte-identical rows retained the WRONG node, so the store
+		// below was reset and the open menu closed itself on an unrelated row's deletion.
+		// Kept on the mounted fixture even though the store no longer rides the announcement:
+		// the bind is what an adapter actually does between the two reads.
+		store.props.set(blockProps)
+		const container = document.createElement('div')
+		document.body.append(container)
+		store.host.container(container)
+		store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
+
+		const survivor = store.block.get(store.tokens.nodes()[1])
+		survivor.state.menuOpen(true)
+		survivor.state.isHovered(true)
+
+		store.tokens.nodes()[0].remove()
+
+		expect(store.block.get(store.tokens.nodes()[0])).toBe(survivor)
+		expect(survivor.state.menuOpen()).toBe(true)
+		expect(survivor.state.isHovered()).toBe(true)
+		document.body.replaceChildren()
+	})
+
+	it('carries a row store AND its state to the new index on reorder', () => {
+		store.props.set(blockProps)
+		const container = document.createElement('div')
+		document.body.append(container)
+		store.host.container(container)
+		store.tokens.setValue('First\n\nFirst\n\nSecond\n\n')
+
+		const dragged = store.block.get(store.tokens.nodes()[0])
+		dragged.state.isDragging(true)
+
+		// The document is UNCHANGED, because the two moved-past rows are byte-identical — so
+		// the store is the only evidence the move happened at all.
+		expect(store.tokens.nodes()[0].moveTo(1)).toBe(true)
+
+		expect(store.tokens.value()).toBe('First\n\nFirst\n\nSecond\n\n')
+		expect(store.block.get(store.tokens.nodes()[1])).toBe(dragged)
+		expect(dragged.state.isDragging()).toBe(true)
+		document.body.replaceChildren()
+	})
+
+	it('keeps a row store across an edit above it with NOTHING mounted', () => {
+		// The object key needs no announcement, so this holds with no container and no
+		// re-bind — the id-keyed Map's prune rode the id lists the old fused delta carried,
+		// whose removals only ever came from a bind, so an unmounted input could hand a row a
+		// store and never shed it. Both clocks are payload-free now, so there is no removal
+		// list left to ride even where one binds.
+		store.props.set(blockProps)
+		store.host.container(document.createElement('div'))
+		store.tokens.setValue('alpha\n\nbeta\n\n')
+
+		const second = store.block.get(store.tokens.nodes()[1])
+		second.state.menuOpen(true)
+
+		store.edit.replace(...anchorsAt(store, 1, 1), 'X')
+
+		expect(store.tokens.value()).toBe('aXlpha\n\nbeta\n\n')
+		expect(store.block.get(store.tokens.nodes()[1])).toBe(second)
+		expect(second.state.menuOpen()).toBe(true)
+	})
+
+	it('hands the row that takes a deleted row’s INDEX its own store', () => {
+		// An index is not an identity, so the row that slides into slot 0 must not inherit the
+		// deleted row's open menu.
+		store.props.set(blockProps)
+		store.host.container(document.createElement('div'))
+		store.tokens.setValue('alpha\n\nbeta\n\n')
+
+		const first = store.tokens.nodes()[0]
+		const firstStore = store.block.get(first)
+		firstStore.state.menuOpen(true)
+
+		firstStore.deleteBlock()
+
+		const survivor = store.tokens.nodes()[0]
+		expect(survivor).not.toBe(first)
+		expect(store.block.get(survivor)).not.toBe(firstStore)
+		expect(store.block.get(survivor).state.menuOpen()).toBe(false)
+	})
+
+	it('still answers for a node that has LEFT the tree — the one WeakMap divergence', () => {
+		// MEASURED COST of object keying, pinned rather than argued. The id-keyed Map pruned
+		// on the `removed` list the old fused `changed` carried, so re-asking with a dead
+		// node built a fresh store; a WeakMap keeps the entry as long as the caller keeps the
+		// node. Harmless here because every caller (`Block`, `DragHandle`, `BlockMenu`,
+		// `DropIndicator` in both adapters) passes a node straight out of `tokens.nodes()`,
+		// and the entry collects with the node once the caller drops it.
+		store.props.set(blockProps)
+		store.host.container(document.createElement('div'))
+		store.tokens.setValue('alpha\n\nbeta\n\n')
+
+		const dead = store.tokens.nodes()[0]
+		const deadStore = store.block.get(dead)
+
+		dead.remove()
+
+		expect(store.tokens.nodes()).not.toContain(dead)
+		expect(store.block.get(dead)).toBe(deadStore)
 	})
 })
