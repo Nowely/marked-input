@@ -4,7 +4,7 @@ import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
 import {snapshot, stripIds} from './__testing__/snapshot'
 import {adopt} from './adopt'
-import {anchorAt, offsetOfAnchor, stepAnchor} from './anchors'
+import {anchorAt, offsetOfAnchor, separatorSpan, stepAnchor} from './anchors'
 import {entryAnchor} from './siblings'
 import {createTokenTree, sliceNodes} from './tree'
 
@@ -81,6 +81,52 @@ describe('RowNode', () => {
 		// One step right from the end of row 0's content lands inside '\n\n'
 		const from = anchorAt(roots, 1)
 		expect(stepAnchor(roots, from, 1)).toBeUndefined()
+	})
+
+	describe('separatorSpan', () => {
+		// 'a\n\nb': row 0 is 'a' + its separator [0,3), row 1 is the unterminated 'b' [3,4].
+		const span = (value: string, offset: number, direction: -1 | 1) => {
+			const {tree} = rowTree([], value)
+			const roots = tree.roots()
+			const answer = separatorSpan(roots, anchorAt(roots, offset), direction)
+			return answer && [offsetOfAnchor(roots, answer.anchor), offsetOfAnchor(roots, answer.head)]
+		}
+
+		it('expands a backward delete at a row START onto the whole separator', () => {
+			expect(span('a\n\nb', 3, -1)).toEqual([1, 3])
+		})
+
+		it('expands a forward delete at a row CONTENT END onto its own separator', () => {
+			expect(span('a\n\nb', 1, 1)).toEqual([1, 3])
+		})
+
+		it('takes the separator BEHIND a forward delete at a row start', () => {
+			// Not a symmetry — block layout's own answer for Delete pressed at a row start,
+			// which merges that row into the previous one.
+			expect(span('a\n\nb', 3, 1)).toEqual([1, 3])
+		})
+
+		it('leaves a backward delete at a row content end to the character step', () => {
+			expect(span('a\n\nb', 1, -1)).toBeUndefined()
+		})
+
+		it('answers nothing at the document end, where the final row owns no separator', () => {
+			expect(span('a\n\nb', 4, 1)).toBeUndefined()
+			expect(span('a\n\nb', 4, -1)).toBeUndefined()
+		})
+
+		it('prefers the EARLIER separator where an empty row makes both arms match', () => {
+			// 'a\n\n\n\nb': offset 3 is row 1's content end AND row 0's own end. Removing row 0's
+			// separator is what a delete there has always done.
+			expect(span('a\n\n\n\nb', 3, 1)).toEqual([1, 3])
+		})
+
+		it('answers nothing in inline layout, whose roots are never rows', () => {
+			const parser = new Parser([])
+			const tree = createTokenTree(parser.parse('a\n\nb'))
+			const roots = tree.roots()
+			expect(separatorSpan(roots, anchorAt(roots, 3), -1)).toBeUndefined()
+		})
 	})
 
 	it('enters a row at its first text child', () => {

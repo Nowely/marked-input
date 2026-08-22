@@ -4,6 +4,38 @@ import {Store} from '../../store/Store'
 import {mountBlock} from '../tokens/__testing__/mountFixtures'
 
 /**
+ * The Surface of a row's text slot, asked of the model rather than found by shape: the
+ * element belongs to a token because it was consigned under that token's id, and a text
+ * token's element IS its Surface.
+ */
+function rowSurface(store: Store, rowIndex: number): HTMLElement {
+	const row = store.tokens.nodes()[rowIndex]
+	if (row.kind !== 'row') throw new Error('expected a row')
+	const surface = store.tokens.handle(row.children()[0].id)?.element()
+	if (!surface) throw new Error('block row has no consigned element')
+	return surface
+}
+
+/** The row's own text node, with a live DOM Range over [start, end) on it. */
+function selectInRow(store: Store, rowIndex: number, start: number, end: number): Node {
+	const text = rowSurface(store, rowIndex).firstChild
+	if (!text) throw new Error('block row did not render a text node')
+	const selection = window.getSelection()
+	if (!selection) throw new Error('no window selection')
+	const range = document.createRange()
+	range.setStart(text, start)
+	range.setEnd(text, end)
+	selection.removeAllRanges()
+	selection.addRange(range)
+	return text
+}
+
+/** The row's own text node, with a collapsed DOM caret on it. */
+function caretInRow(store: Store, rowIndex: number, offset: number): Node {
+	return selectInRow(store, rowIndex, offset, offset)
+}
+
+/**
  * Row identity comes from the selection (DOM-resolved or stored), not
  * document.activeElement. Under one host activeElement is always the
  * container; these pin the topology-independent path.
@@ -93,6 +125,20 @@ describe('blockEdit row identity', () => {
 		expect(slot.kind).toBe('text')
 	})
 
+	it('splits at the LOW end of a ranged selection and keeps what was selected', () => {
+		// Enter is NOT the shared table's replace-the-range: it splices the separator at the
+		// low end, so 'one' selected [1,3) becomes 'o' + a fresh row holding 'ne'. Pinned
+		// because nothing else in the repo covers Enter over a non-empty selection.
+		const {store, container} = mountBlock()
+		selectInRow(store, 0, 1, 3)
+
+		const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('o\n\nne\n\ntwo\n\n')
+	})
+
 	it('does nothing when there is no selection anywhere', () => {
 		const {store, container} = mountBlock()
 		store.tokens.selection.clear()
@@ -119,41 +165,9 @@ describe('blockEdit beforeinput guard', () => {
 		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
 	})
 
-	/**
-	 * The Surface of a row's text slot, asked of the model rather than found by shape: the
-	 * element belongs to a token because it was consigned under that token's id, and a text
-	 * token's element IS its Surface.
-	 */
-	function rowSurface(store: Store, rowIndex: number): HTMLElement {
-		const row = store.tokens.nodes()[rowIndex]
-		if (row.kind !== 'row') throw new Error('expected a row')
-		const surface = store.tokens.handle(row.children()[0].id)?.element()
-		if (!surface) throw new Error('block row has no consigned element')
-		return surface
-	}
-
-	/** The row's own text node, with a live DOM Range over [start, end) on it. */
-	function selectInRow(store: Store, rowIndex: number, start: number, end: number): Node {
-		const text = rowSurface(store, rowIndex).firstChild
-		if (!text) throw new Error('block row did not render a text node')
-		const selection = window.getSelection()
-		if (!selection) throw new Error('no window selection')
-		const range = document.createRange()
-		range.setStart(text, start)
-		range.setEnd(text, end)
-		selection.removeAllRanges()
-		selection.addRange(range)
-		return text
-	}
-
-	/** The row's own text node, with a collapsed DOM caret on it. */
-	function caretInRow(store: Store, rowIndex: number, offset: number): Node {
-		return selectInRow(store, rowIndex, offset, offset)
-	}
-
 	it('inserts a newline INSIDE the row on insertLineBreak (Shift+Enter)', () => {
 		// Parity with the inline guard: without its own case the closed default would drop
-		// Shift+Enter silently. Plain Enter never arrives — `handleEnter` cancels the keydown.
+		// Shift+Enter silently. Plain Enter never arrives — `handleRowEnter` cancels the keydown.
 		const {store} = mountBlock()
 		const text = caretInRow(store, 0, 1)
 
@@ -226,7 +240,7 @@ describe('blockEdit beforeinput guard', () => {
 	})
 
 	it('drops insertParagraph even with a resolvable row instead of taking the inline mapping', () => {
-		// The one divergence from the shared table: Enter belongs to `handleEnter`'s keydown,
+		// The one divergence from the shared table: Enter belongs to `handleRowEnter`'s keydown,
 		// which inserts the SEPARATOR — the table's '\n' would splice a literal newline
 		// inside the row. Unreachable from a real Enter (the keydown is cancelled first);
 		// pinned so the divergence survives the table.
@@ -240,11 +254,10 @@ describe('blockEdit beforeinput guard', () => {
 		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
 	})
 
-	it('drops an edit that resolves NO row instead of letting the browser split the host', () => {
-		// The row is unresolvable from both tiers (no DOM range, no stored selection), yet
-		// the event still targets model-owned DOM: `handleEnter` bails
-		// on the same missing row and `input.ts` returned on `isBlock`, so this guard is
-		// the last one standing.
+	it('drops an edit that resolves NO caret instead of letting the browser split the host', () => {
+		// Neither authority answers (no DOM range, no stored selection), yet the event still
+		// targets model-owned DOM: `handleRowEnter` bails on the same missing caret, so this
+		// guard is the last one standing.
 		const {store} = mountBlock()
 		const rowText = rowSurface(store, 0)
 		store.tokens.selection.clear()
@@ -255,6 +268,92 @@ describe('blockEdit beforeinput guard', () => {
 		rowText.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
+	})
+})
+
+/**
+ * The row merge, resolved through anchors: a collapsed delete on a row boundary expands onto
+ * the whole SEPARATOR (`anchorsForDelete`), and removing that span is the merge. The fixture is
+ * 'one\n\ntwo\n\n' — row 0 [0,5), row 1 [5,10), the empty document-final row [10,10].
+ */
+describe('blockEdit row-boundary delete', () => {
+	it('Backspace at a row start removes the separator before it', () => {
+		const {store, container} = mountBlock()
+		caretInRow(store, 1, 0)
+
+		const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('onetwo\n\n')
+	})
+
+	it('Delete at a row content end removes the separator that row owns', () => {
+		const {store, container} = mountBlock()
+		caretInRow(store, 0, 3)
+
+		const event = new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('onetwo\n\n')
+	})
+
+	it('Delete at a row START takes the separator BEHIND it', () => {
+		// Block layout's own answer, not a symmetry with Backspace: Delete pressed at the start
+		// of a row merges it into the previous one (`Drag.spec`'s 'Delete at start of row').
+		const {store, container} = mountBlock()
+		caretInRow(store, 1, 0)
+
+		const event = new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('onetwo\n\n')
+	})
+
+	it('Backspace inside a row deletes one character, on the keydown', () => {
+		// The ordinary case, which block used to leave to the `beforeinput` that follows: with
+		// one delete arm it is answered here and the default never runs.
+		const {store, container} = mountBlock()
+		caretInRow(store, 1, 2)
+
+		const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('one\n\nto\n\n')
+	})
+
+	it('Backspace at the first row start is left to the browser', () => {
+		const {store, container} = mountBlock()
+		caretInRow(store, 0, 0)
+
+		const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
+	})
+
+	it('leaves a word delete to the beforeinput that names its own range', () => {
+		// The block half of `input.spec`'s inline pin, and it earns its own case because block
+		// only just started answering deletes on the KEYDOWN: without the modifier decline this
+		// arm would cancel Alt+Backspace and delete ONE character, where it used to fall
+		// through and the browser's ranged `deleteWordBackward` deleted the word.
+		const {store, container} = mountBlock()
+		caretInRow(store, 0, 3)
+
+		const event = new KeyboardEvent('keydown', {
+			key: 'Backspace',
+			altKey: true,
+			bubbles: true,
+			cancelable: true,
+		})
+		container.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(false)
 		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
 	})
 })

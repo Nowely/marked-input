@@ -4,66 +4,15 @@ import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'edit' | 'tokens' | 'props'>
-import type {NodeAnchor, TokenHandle, TreeNode} from '../tokens'
+import type {Anchors, NodeAnchor} from '../tokens'
 import {
+	anchorsForDelete,
 	anchorsForInput,
 	anchorsFromInputEvent,
 	dropUnexpressedInput,
 	isConsumerKeyOrigin,
 	replacementForInput,
 } from './beforeInput'
-
-type ActiveRow = {
-	handle: TokenHandle
-	index: number
-}
-
-function rowHandle(store: KbCtx, rowIndex: number): TokenHandle | undefined {
-	// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as
-	// `TreeNode` and the out-of-range guard is linted away as an impossible condition.
-	// Every caller passes a non-negative index, so `.at`'s wrap-around cannot fire.
-	const row = store.tokens.nodes().at(rowIndex)
-	return row && store.tokens.handle(row.id)
-}
-
-/** The anchor's own node — the tree identity every anchor form carries except the document edges. */
-function anchorOwner(anchor: NodeAnchor): TreeNode | undefined {
-	if (typeof anchor === 'string') return undefined
-	if ('node' in anchor) return anchor.node
-	if ('before' in anchor) return anchor.before
-	return anchor.after
-}
-
-/** The row an anchor names: the root its node belongs to, as handle + index. */
-function rowFromAnchor(store: KbCtx, anchor: NodeAnchor | undefined): ActiveRow | undefined {
-	if (!anchor) return undefined
-	const owner = anchorOwner(anchor)
-	if (!owner) return undefined
-	const index = store.tokens.rootIndexOf(owner.id)
-	if (index === undefined) return undefined
-	const handle = rowHandle(store, index)
-	return handle && {handle, index}
-}
-
-function findActiveRow(store: KbCtx): ActiveRow | undefined {
-	// THE two tiers, and the only ones: row identity is the selection's. DOM truth first;
-	// stored anchors cover the cases the DOM cannot answer — no window selection at all, or a
-	// range this layer declines to resolve.
-	//
-	// That reason is NARROWER than the one written here before ADR-0008, and the old one was
-	// wrong: it claimed tier two covered the pendingStructural window, but `rowFromAnchor`
-	// ends at `tokens.handle`, which the latch refused for EVERY id — so both tiers returned
-	// undefined there and the fallback bought nothing. With the latch gone tier two does now
-	// answer mid-window, for a row whose node survived the commit.
-	//
-	// (The third tier read `document.activeElement` back when each row was its own host and
-	// focus alone could name one. Under the single host activeElement is always the
-	// container, which owns no row.)
-	return (
-		rowFromAnchor(store, store.tokens.domAnchors()?.anchor) ??
-		rowFromAnchor(store, store.tokens.selection.anchors()?.anchor)
-	)
-}
 
 export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'keydown', e => {
@@ -76,7 +25,7 @@ export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 
 		// No arrow arm: one host makes cross-row caret movement native.
 		handleDelete(store, e)
-		handleEnter(store, e)
+		handleRowEnter(store, e)
 	})
 
 	listen(
@@ -91,47 +40,96 @@ export function enableBlockEdit(store: KbCtx, container: HTMLElement): void {
 	)
 }
 
-function handleDelete(store: KbCtx, event: KeyboardEvent) {
-	const active = findActiveRow(store)
-	if (!active) return
-	const {handle, index: blockIndex} = active
-
-	const rows = store.tokens.nodes()
-
-	if (event.key === KEYBOARD.BACKSPACE) {
-		const caretAtStart = (handle.caretIndex() ?? 0) === 0
-
-		if (caretAtStart && blockIndex > 0) {
-			mergeOrFocusNeighbor(store, event, rows, blockIndex, blockIndex - 1, 'end')
-			return
-		}
-	}
-
-	if (event.key === KEYBOARD.DELETE) {
-		const caretIndex = handle.caretIndex() ?? 0
-		const caretAtEnd = caretIndex === handle.textLength()
-		const caretAtStart = caretIndex === 0
-
-		if (caretAtStart && blockIndex > 0) {
-			mergeOrFocusNeighbor(store, event, rows, blockIndex, blockIndex - 1, 'end')
-			return
-		}
-
-		if (caretAtEnd && blockIndex < rows.length - 1) {
-			mergeOrFocusNeighbor(store, event, rows, blockIndex, blockIndex + 1, 'start')
-			return
-		}
-	}
+/**
+ * THE anchor a delete falls back on when the live DOM boundary resolves to none — the near EDGE
+ * of the row the stored selection names, measured off that row's own DOM. `undefined` for a
+ * caret this layer cannot place on an edge, and for every anchor in inline layout, whose roots
+ * are never rows: `valueBoundary.ts` gates `parseRowsValue` on `isBlock`, so a RowNode exists
+ * only under it and `rowOfAnchor` declines everything else. No layout test of its own.
+ *
+ * TWO authorities, each answering the half it can be trusted for. The stored anchors survive an
+ * unresolvable boundary — `SelectionDriver`'s sync leaves them standing when `domAnchors()`
+ * declines — so they still name the right ROW, but their OFFSET is wherever the last resolvable
+ * position was. MEASURED on the vue project: a caret placed at the start of a row whose leading
+ * child is a framework placeholder (Vue anchors a fragment on an empty text node) leaves them
+ * pointing at that row's END, and a delete taken from them eats the wrong character —
+ * `Drag.spec`'s nine `focusAtStart` merges. The row's own DOM text measure is what says which
+ * edge the caret is at, and it reads the placeholder correctly.
+ *
+ * That is the whole of the row tier that survives resolving deletes through anchors, and it is
+ * an anchor SOURCE now rather than a merge of its own. The reason written for the tier before
+ * ADR-0008's 2026-08-19 amendment was different and is dead: it claimed the tier covered the
+ * `pendingStructural` window, where in fact the latch refused every id, so both authorities
+ * answered `undefined` there and the fallback bought nothing.
+ *
+ * A caret INSIDE the row answers `undefined`: naming it would need an offset this layer may not
+ * form (ADR-0003), and a mid-row delete arrives again as a `beforeinput` carrying its own
+ * target range.
+ */
+function rowEdgeAnchors(store: KbCtx): Anchors | undefined {
+	const stored = store.tokens.selection.anchors()?.anchor
+	const row = stored && rowOfAnchor(store, stored)
+	if (!row) return undefined
+	const handle = store.tokens.handle(row.id)
+	const caret = handle?.caretIndex()
+	if (!handle || caret === undefined) return undefined
+	if (caret === 0) return collapsed({before: row})
+	// The row's children END with a text token (`RowBuilder.groupRows`' edge invariant), so its
+	// content end is that child's trailing edge. `{after: row}` would sit PAST the separator.
+	const last = row.children().at(-1)
+	if (!last || caret !== handle.textLength()) return undefined
+	return collapsed({after: last})
 }
 
-function handleEnter(store: KbCtx, event: KeyboardEvent) {
+function collapsed(anchor: NodeAnchor): Anchors {
+	return {anchor, head: anchor}
+}
+
+/** The ROOT row an anchor's own node belongs to — the tree identity every anchor form carries except the document edges. */
+function rowOfAnchor(store: KbCtx, anchor: NodeAnchor) {
+	if (typeof anchor === 'string') return undefined
+	const owner = 'node' in anchor ? anchor.node : 'before' in anchor ? anchor.before : anchor.after
+	const index = store.tokens.rootIndexOf(owner.id)
+	if (index === undefined) return undefined
+	// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as `TreeNode`
+	// and the out-of-range guard is linted away as an impossible condition.
+	const root = store.tokens.nodes().at(index)
+	return root?.kind === 'row' ? root : undefined
+}
+
+/**
+ * Backspace/Delete, resolved entirely through ANCHORS — the same body `input.ts`'s inline arm
+ * runs. A row boundary is no longer a case of its own: {@link anchorsForDelete} expands a
+ * collapsed delete sitting on one onto the whole SEPARATOR, and removing that span IS the merge
+ * `RowNode.mergeWith` used to perform on a row resolved out of the selection.
+ */
+function handleDelete(store: KbCtx, event: KeyboardEvent) {
+	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
+	// The same word/line decline the inline arm takes, and block needs it for the same reason
+	// now that this one answers on the KEYDOWN: the extent of Alt/Ctrl/Cmd+Backspace rides on
+	// the `beforeinput` that follows, so cancelling here would turn a word delete into a
+	// one-character one. It folds into the inline test when the two arms become one.
+	if (event.ctrlKey || event.altKey || event.metaKey) return
+
+	const anchors = store.tokens.domAnchors() ?? rowEdgeAnchors(store)
+	if (!anchors) return
+
+	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
+	const target = anchorsForDelete(store, inputType, anchors)
+	if (!target) return
+
+	event.preventDefault()
+	store.edit.replace(target.anchor, target.head, '')
+}
+
+function handleRowEnter(store: KbCtx, event: KeyboardEvent) {
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
 	// Everything selected: Enter REPLACES the document with one fresh row — the block
-	// analogue of inline's whole-value replace. Ahead of the row lookup, which would
-	// resolve the single row the selection merely STARTS in and split that one instead,
-	// appending an empty row while keeping everything selected.
+	// analogue of inline's whole-value replace. Ahead of the anchor read, which would resolve
+	// the position the selection merely STARTS at and split the row there instead, appending
+	// an empty row while keeping everything selected.
 	if (store.tokens.selection.isAllSelected()) {
 		event.preventDefault()
 		// An empty document IS one empty row (issue 08's trailing convention), so the block
@@ -140,46 +138,31 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 		return
 	}
 
-	const active = findActiveRow(store)
-	if (!active) return
+	// ONE arm (issue 08): Enter inserts the separator at the caret and reparse forms the rows —
+	// no row content is composed, no markup consulted. Over a RANGE it splices at the LOW end
+	// and KEEPS what was selected, which is deliberately not the shared table's replace-the-
+	// range rule.
+	//
+	// The stored anchors stand behind the live selection here rather than
+	// {@link rowEdgeAnchors}: a split needs the position itself, which only they carry, where
+	// a delete needs to know which row EDGE it is on.
+	const at = (store.tokens.domAnchors() ?? store.tokens.selection.anchors())?.anchor
+	if (at === undefined) return
 
 	event.preventDefault()
-	const {index: blockIndex} = active
-
-	const rows = store.tokens.nodes()
-	const row = rows[blockIndex]
-
-	// ONE arm (issue 08): Enter inserts the separator at the caret and reparse forms the
-	// rows — no row content is composed, no markup consulted. The fallback with no
-	// readable DOM selection is the end of this row: `{after: row}` sits past its own
-	// separator, so the fresh empty row lands directly after it.
-	const at: NodeAnchor = store.tokens.domAnchors()?.anchor ?? {after: row}
 	store.edit.replace(at, at, store.props.separator())
-}
-
-function focusRow(store: KbCtx, rowIndex: number, caret: 'start' | 'end'): void {
-	// No focus call ahead of the placement: `placeCaret` focuses the editing host itself,
-	// and under one host that host is the container either way.
-	rowHandle(store, rowIndex)?.placeCaret(caret === 'start' ? 0 : Infinity)
 }
 
 function handleBlockBeforeInput(store: KbCtx, container: HTMLElement, event: InputEvent) {
 	const target = nodeTarget(event)
-	// TWO verdicts, not one. A control root is consumer chrome that owns its own input, so
-	// its event passes through untouched. "No resolvable row" is the opposite: the event
-	// still targets model-owned DOM (Enter would split it into a <div> the tree never
-	// sanctioned — `handleEnter` bails on the same missing row, and `input.ts` has already
-	// returned on `isBlock`), so it fails closed like every other unexpressed edit.
+	// A control root is consumer chrome that owns its own input, so its event passes through
+	// untouched.
 	if (target && store.tokens.handleAt(target) === 'control') return
-	if (!findActiveRow(store)) {
-		dropUnexpressedInput(container, event)
-		return
-	}
 
-	// Enter is `handleEnter`'s: its keydown arm cancels plain Enter and inserts the
+	// Enter is {@link handleRowEnter}'s: its keydown arm cancels plain Enter and inserts the
 	// SEPARATOR, so the shared table's '\n' mapping is wrong for a row — it would splice a
-	// literal newline inside it instead of splitting it. An insertParagraph that still
-	// arrives answered to no keydown, so it fails closed with the rest of the unexpressed.
+	// literal newline inside it instead of splitting it. An insertParagraph that still arrives
+	// answered to no keydown, so it fails closed with the rest of the unexpressed.
 	if (event.inputType === 'insertParagraph') {
 		dropUnexpressedInput(container, event)
 		return
@@ -210,21 +193,4 @@ function replaceBlockRange(store: KbCtx, container: HTMLElement, event: InputEve
 
 	event.preventDefault()
 	store.edit.replace(target.anchor, target.head, replacement)
-}
-
-function mergeOrFocusNeighbor(
-	store: KbCtx,
-	event: KeyboardEvent,
-	rows: readonly TreeNode[],
-	fromIndex: number,
-	toIndex: number,
-	caretOnFocus: 'start' | 'end'
-): void {
-	const a = rows[Math.min(fromIndex, toIndex)]
-	const b = rows[Math.max(fromIndex, toIndex)]
-	event.preventDefault()
-	// The verb ANSWERS whether the pair had a boundary to remove, so the separate
-	// `canMergeRows` predicate is gone: asking and then doing was two readings of one question.
-	if (a.mergeWith(b)) return
-	focusRow(store, toIndex, caretOnFocus)
 }

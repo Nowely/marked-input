@@ -146,13 +146,19 @@ export function anchorsForInput(store: KbCtx, event: InputEvent, anchors: Anchor
 
 /**
  * A collapsed delete EXPANDS: onto the adjacent MARK when the caret sits exactly on one of
- * its boundaries — that is the mark swallow — else by one character in the delete's
- * direction.
+ * its boundaries — that is the mark swallow — onto the adjacent ROW SEPARATOR when it sits on
+ * a row boundary, else by one character in the delete's direction.
  *
- * Both arms resolve against the LIVE tree, so typing right before a mark and then deleting
+ * Every arm resolves against the LIVE tree, so typing right before a mark and then deleting
  * still swallows it. Gated by `input.spec`'s two "mark swallow" cases — MEASURED: inverting
  * `direction` turns BOTH red, and either one alone would only pin "some mark got deleted".
  * The browser suites (`Base/keyboard.{react,vue}.spec`) cover it end to end.
+ *
+ * The separator arm is what makes a delete at a row boundary a MERGE, in one mechanism with
+ * every other delete — where block layout used to resolve a row from the selection and call
+ * `RowNode.mergeWith`. The two expansions cannot both answer: a row's children end with a text
+ * token, so no mark boundary ever coincides with a separator's. See {@link separatorSpan} for
+ * the direction rules, which are block's own and are not symmetric.
  */
 export function anchorsForDelete(store: KbCtx, inputType: string, anchors: Anchors): Anchors | undefined {
 	if (!anchorEquals(anchors.anchor, anchors.head)) return anchors
@@ -160,6 +166,9 @@ export function anchorsForDelete(store: KbCtx, inputType: string, anchors: Ancho
 	const direction = inputType.endsWith('Backward') ? -1 : 1
 	const mark = store.tokens.adjacentMark(anchors.anchor, direction)
 	if (mark) return {anchor: {before: mark}, head: {after: mark}}
+
+	const separator = store.tokens.separatorSpan(anchors.anchor, direction)
+	if (separator) return separator
 
 	const stepped = store.tokens.step(anchors.anchor, direction)
 	if (!stepped) return undefined

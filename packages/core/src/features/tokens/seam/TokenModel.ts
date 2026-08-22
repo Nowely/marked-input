@@ -14,7 +14,13 @@ import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
-import {adjacentMark as findAdjacentMark, anchorAt as anchorAtOffset, offsetOfAnchor, stepAnchor} from '../tree/anchors'
+import {
+	adjacentMark as findAdjacentMark,
+	anchorAt as anchorAtOffset,
+	offsetOfAnchor,
+	separatorSpan as findSeparatorSpan,
+	stepAnchor,
+} from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
@@ -253,6 +259,15 @@ export class TokenModel {
 	/** One character back (`-1`) or forward (`+1`). See {@link stepAnchor} for the fail-closed case. */
 	step(anchor: NodeAnchor, direction: -1 | 1): NodeAnchor | undefined {
 		return untracked(() => stepAnchor(this.#tree.roots(), anchor, direction))
+	}
+
+	/**
+	 * The row separator span a collapsed delete at `anchor` removes — THE row-boundary half of
+	 * the Backspace/Delete expansion, beside {@link adjacentMark}'s swallow. See
+	 * {@link separatorSpan}; `undefined` for every anchor in inline layout, which parses no rows.
+	 */
+	separatorSpan(anchor: NodeAnchor, direction: -1 | 1): Anchors | undefined {
+		return untracked(() => findSeparatorSpan(this.#tree.roots(), anchor, direction))
 	}
 
 	/** The projection of the span between two anchors — {@link value} restricted to a window (see {@link sliceNodes}). */

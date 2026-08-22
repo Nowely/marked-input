@@ -153,9 +153,12 @@ export interface NodeCommands {
 	/**
 	 * Drop the boundary holding `node` and the sibling after it apart; `false` when there is
 	 * none — which is EVERY text node, since only a slot-leading mark carries a trailing
-	 * literal to remove. That answer is load-bearing rather than a degenerate case:
-	 * `keyboard/blockEdit.ts` asks the verb instead of asking a predicate first, and falls
-	 * through to focusing the neighbour when it declines.
+	 * literal to remove.
+	 *
+	 * PUBLISHED API with no in-repo caller since the block keyboard began resolving a row
+	 * merge through anchors (`beforeInput.ts`'s `anchorsForDelete` expands onto the separator
+	 * and the shared delete arm removes it). Kept for that contract — the `api.focus()`
+	 * precedent — and because it is the one verb that answers whether the pair HAD a boundary.
 	 */
 	mergeWith(node: TreeNode, next: TreeNode): boolean
 	/** Move a ROOT to another root index, keeping its identity. `false` for a non-root, a no-op or an out-of-range index. */
