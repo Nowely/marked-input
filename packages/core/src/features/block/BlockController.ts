@@ -327,10 +327,11 @@ export class BlockController {
 	 * had to drift; the container's padding case that proved it — 60px in both adapters — did not
 	 * need frames at all, only the container's OTHER box, and is fixed above. What survives is
 	 * narrower and needs no clock of its own: a reflow that moves row 0 while BOTH container boxes
-	 * and row 0's own box keep their size. Measured, that takes a consumer container laid out so
-	 * its children are not in normal flow from its padding edge — `display: flex;
-	 * justify-content: center` at a fixed height, where growing row 2 by 60px moved row 0 up 30
-	 * and delivered 0 callbacks to all four observations. The pointer does not repair it either,
+	 * and row 0's own box keep their size. Two measured instances, and ordinary layout is enough
+	 * for one of them — inside a fixed-height `overflow: auto` container, consumer content ABOVE
+	 * the rows growing by 60px drifts the resting grip by 60 in both adapters; the same container
+	 * under `display: flex; justify-content: center` drifts it by 30 when row 2 grows by 60. Both
+	 * deliver 0 callbacks to all four observations. The pointer does not repair it either,
 	 * because hover re-measures only when the hovered ROW changes and the resting row is already
 	 * the hovered one. Covering it means these frames for the editor's whole lifetime whenever
 	 * `alwaysShowHandle` is on — the permanent stream this design refuses — so it stays open.
