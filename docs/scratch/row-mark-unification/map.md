@@ -142,10 +142,32 @@ Implementation is a separate effort after this map.
 Pre-existing defects surfaced by the adversarial passes. None belongs to this
 map's destination; recorded so they are not lost.
 
-- **The row drop handler accepts any external drag.**
+- ~~**The row drop handler accepts any external drag.**
   `BlockStore.#onContainerDrop` reads `dataTransfer.getData('text/plain')` and
   refuses only `NaN` — no provenance check. With `draggable` on, dropping the
-  text `0` from another application reorders the document.
+  text `0` from another application reorders the document.~~ **CONFIRMED and
+  FIXED** (2026-08-23). Reproduced in real Chromium in BOTH projects: a
+  `dragover`+`drop` pair carrying only `text/plain: "0"` and no `dragstart` of
+  ours moved row 0, and a drag started in editor A reordered editor B, because
+  A's payload is a bare index B reads as its own. The gate is `state.dragging`,
+  the id the grip's own `dragstart` writes — per-EDITOR by construction, the
+  same shape `captureMarkupPaste` already uses to keep two editors off each
+  other's clipboard. A private MIME type was measured and rejected: Chromium 151
+  does keep a custom format in `dataTransfer.types` through `dragenter`,
+  `dragover` and `drop` (protected mode blanks `getData`, not `types`), but
+  telling editors apart needs an id minted for that one purpose and shipped
+  through the DOM, a second copy of a fact the controller already owns — and one
+  that survives a mid-drag remount the tree does not. BEHAVIOR CHANGES declared:
+  a foreign drop over a row now FALLS THROUGH to the browser's editable drop
+  (measured: an unprevented `dragover` still ends in `beforeinput`/
+  `insertFromDrop`) instead of being swallowed or misread as a reorder, so
+  block layout matches inline; and `text/plain` carries the row's own TEXT
+  instead of its index, since nothing reads the payload back. The recorded
+  companion wart — the indicator left painted by a return that precedes the
+  reset — was already gone from the NaN path at `d2cfb350`, which resets
+  `state.drop` on line 389 and parses on 396; the one return still ahead of it
+  was `if (!e.dataTransfer)`, and that line is deleted here because the handler
+  no longer touches `dataTransfer` at all. Nothing now returns before the reset.
 - **Block layout silently corrupts the model through a consumer's
   contenteditable island** — the behavior change [03](issues/03-one-input-pipeline.md)
   fixes as a side effect. Inline pins the opposite contract.
