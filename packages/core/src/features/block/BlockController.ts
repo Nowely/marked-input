@@ -36,7 +36,7 @@ export interface RowBox {
  * adapter calls and takes back, not in a mount hook. The decisive precedent is `TokenModel`: it
  * owns more state than anything else in core and pushed its DOM I/O OUT, into a class
  * deliberately not called `SelectionModel`. This one takes `host.onMounted`, installs five
- * container listeners plus a `ResizeObserver`, a commit watch and a rAF loop there — two more
+ * container listeners plus two `ResizeObserver`s, a commit watch and a rAF loop there — two more
  * document listeners while a menu is open — and its menu and drop verbs write the TREE, which is
  * also what the per-row owner it replaced did. `store.block` names the concern, as every Store
  * field does.
@@ -119,10 +119,26 @@ export class BlockController {
 			//   the wrapped line's height and nothing told the layer.
 			// A container `scroll` is deliberately NOT a clock: container-local coordinates
 			// already carry `scrollTop`, so scrolling leaves every measured box identical.
+			//
+			// The container is observed on BOTH boxes, and one observer object each because
+			// `observe()` REPLACES a target's existing observation rather than adding to it.
+			// The layer's origin is the container's PADDING box, which a `ResizeObserver`
+			// cannot observe, and neither surrogate sees a `padding-top` change on its own —
+			// measured on the resting grip, pointer away, container padding 0 -> 60px:
+			// - auto height, and fixed height under `content-box` sizing: 0 content-box
+			//   callbacks, 1 border-box callback;
+			// - fixed height under `border-box` sizing: the mirror image, 1 and 0.
+			// Padding moves every row inside the box, so a single observation stranded the
+			// resting grip by the full 60px in two of the three.
 			effect(() => {
-				const observer = new ResizeObserver(() => this.#moved())
-				observer.observe(container)
-				return () => observer.disconnect()
+				const contentBox = new ResizeObserver(() => this.#moved())
+				const borderBox = new ResizeObserver(() => this.#moved())
+				contentBox.observe(container)
+				borderBox.observe(container, {box: 'border-box'})
+				return () => {
+					contentBox.disconnect()
+					borderBox.disconnect()
+				}
 			})
 			watch(this.tokens.committed, () => this.#moved())
 			this.#watchPaintedRows()
@@ -305,17 +321,19 @@ export class BlockController {
 	 * Two rect reads a frame at N=50 and two at N=200: {@link paintedRows} returns at most two ids
 	 * by construction, so nothing here scales with the row count.
 	 *
-	 * WHAT IT DOES NOT COVER, stated because it was once claimed the other way: `alwaysShowHandle`
-	 * paints a grip on row 0 with the pointer AWAY, and this loop does not run then —
-	 * {@link paintedRows} is hover and drag, so a resting grip is watched by nothing. That grip
-	 * can drift, and does: measured in real Chromium, `container.style.paddingTop = '60px'` on an
-	 * auto-height container moved row 0's box by 60px with the clock unchanged (2 -> 2), and the
-	 * container's own `ResizeObserver` stayed silent because padding is not in the CONTENT box it
-	 * observes (1 callback at mount, 1 after — no delivery). The same reflow WHILE hovered bumps
-	 * the clock (2 -> 3), so it is the exclusion and not the mechanism that leaves the gap. It is
-	 * PRE-EXISTING — identical with this loop removed — and closing it means running these frames
-	 * for the editor's whole lifetime whenever `alwaysShowHandle` is on, which is the permanent
-	 * stream this design refuses. Left open deliberately.
+	 * WHAT IT DOES NOT COVER: `alwaysShowHandle` paints a grip on row 0 with the pointer AWAY, and
+	 * this loop does not run then — {@link paintedRows} is hover and drag, so a RESTING grip is
+	 * watched by no loop and never will be. It was once concluded from that that the resting grip
+	 * had to drift; the container's padding case that proved it — 60px in both adapters — did not
+	 * need frames at all, only the container's OTHER box, and is fixed above. What survives is
+	 * narrower and needs no clock of its own: a reflow that moves row 0 while BOTH container boxes
+	 * and row 0's own box keep their size. Measured, that takes a consumer container laid out so
+	 * its children are not in normal flow from its padding edge — `display: flex;
+	 * justify-content: center` at a fixed height, where growing row 2 by 60px moved row 0 up 30
+	 * and delivered 0 callbacks to all four observations. The pointer does not repair it either,
+	 * because hover re-measures only when the hovered ROW changes and the resting row is already
+	 * the hovered one. Covering it means these frames for the editor's whole lifetime whenever
+	 * `alwaysShowHandle` is on — the permanent stream this design refuses — so it stays open.
 	 */
 	#watchPaintedRows(): void {
 		effect(() => {

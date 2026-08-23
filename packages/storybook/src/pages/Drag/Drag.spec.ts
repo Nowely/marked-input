@@ -723,6 +723,51 @@ describe('Feature: drag rows', () => {
 			expect(grips[0].parentElement!.matches('[class*="SidePanelAlways"]')).toBe(true)
 			expect(Math.abs(centerY(grips[0]) - centerY(rowsOf(host)[0]))).toBeLessThan(2)
 		})
+
+		/**
+		 * The RESTING grip — `alwaysShowHandle` with the pointer away — is watched by no rAF
+		 * loop, because the loop follows the HOVERED and DRAGGED rows only. Container padding is
+		 * what strands it: it moves every row inside a box the layer measures against and
+		 * repaints nothing, and the pointer cannot repair it either, since hover re-measures only
+		 * when the hovered ROW changes and the resting row is already that row.
+		 *
+		 * The two runs are the two sides of one decision — the container is observed on BOTH its
+		 * boxes, and neither alone is enough. Each case is the other's blind spot, so a future
+		 * simplification down to one observation fails exactly one of them.
+		 */
+		const restingGrip = async (containerStyle: Record<string, string>) => {
+			const {host} = await mountComponent({
+				options: [],
+				defaultValue: 'alpha\n\nbeta\n\ngamma\n\n',
+				layout: 'block',
+				draggable: {alwaysShowHandle: true},
+				style: {marginLeft: '64px'},
+				slotProps: {container: {style: containerStyle}},
+			})
+			await expect.poll(() => host.querySelectorAll('[class*="GripButton"]').length).toBe(1)
+			const grip = host.querySelector('[class*="GripButton"]')!
+			const row = rowsOf(host)[0]
+			expect(Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
+
+			const topBefore = row.getBoundingClientRect().top
+			host.style.paddingTop = '60px'
+
+			// The reflow really moved the row; without this the drift assertion passes vacuously.
+			await expect.poll(() => row.getBoundingClientRect().top - topBefore).toBeGreaterThan(55)
+			await expect.poll(() => Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
+		}
+
+		it('keep the RESTING grip on its row when padding grows the container', async () => {
+			// Auto height: the content box never changes, so only the BORDER-box observation sees
+			// this one. Measured unfixed: 60px of drift, in both adapters.
+			await restingGrip({})
+		})
+
+		it('keep the RESTING grip on its row when padding shrinks a border-box container', async () => {
+			// The mirror: a fixed `border-box` height pins the border box, so the padding comes
+			// out of the CONTENT box and only the content-box observation sees it.
+			await restingGrip({overflow: 'auto', height: '200px', boxSizing: 'border-box'})
+		})
 	})
 
 	describe('backspace on empty row', () => {

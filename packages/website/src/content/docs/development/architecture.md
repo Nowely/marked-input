@@ -413,7 +413,8 @@ class BlockController {
         menu:     signal<{id: number; top: number; left: number} | null>(...),
         geometry: signal(...),                                     // re-measure clock
     }
-    // ...five container listeners, and three geometry clocks: a ResizeObserver on the container,
+    // ...five container listeners, and three geometry clocks: a ResizeObserver on each of the
+    // container's two boxes (the layer's origin is the PADDING box, which neither one alone reports),
     // a watch on the commit clock, and a rAF loop over the PAINTED rows while the controls are visible
 }
 ```
