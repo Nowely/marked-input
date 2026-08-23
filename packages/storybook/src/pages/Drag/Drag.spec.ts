@@ -725,6 +725,25 @@ describe('Feature: drag rows', () => {
 		})
 
 		/**
+		 * The layer's own container observations deliver once on MOUNT, and under load that
+		 * delivery can still be pending when the run reaches the reflow — it then re-measures for
+		 * free and hides the drift. Measured: without this, deleting the border-box observation
+		 * left `padding grows` GREEN on react and red only on vue.
+		 *
+		 * A fresh observer on the same element is the deterministic wait: `document`'s observer
+		 * list is broadcast in insertion order, so this one — registered last — cannot be called
+		 * before the layer's, and its own first delivery is one cycle rather than a sleep.
+		 */
+		const settleResizeObservers = (target: Element) =>
+			new Promise<void>(resolve => {
+				const settle = new ResizeObserver(() => {
+					settle.disconnect()
+					resolve()
+				})
+				settle.observe(target)
+			})
+
+		/**
 		 * The RESTING grip — `alwaysShowHandle` with the pointer away — is watched by no rAF
 		 * loop, because the loop follows the HOVERED and DRAGGED rows only. Container padding is
 		 * what strands it: it moves every row inside a box the layer measures against and
@@ -749,6 +768,7 @@ describe('Feature: drag rows', () => {
 			const row = rowsOf(host)[0]
 			expect(Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
 
+			await settleResizeObservers(host)
 			const topBefore = row.getBoundingClientRect().top
 			host.style.paddingTop = '60px'
 
