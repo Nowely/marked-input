@@ -164,16 +164,18 @@ describe('Store', () => {
 			expect(store.slots.containerProps().style).toEqual({color: 'red', fontSize: 14})
 		})
 
-		it('add paddingLeft: 24 to style when layout is block and draggable is true', () => {
+		// The gutter is a CSS-ready STRING, not the bare `24` this used to assert: a number is
+		// only CSS under React's JSX convention, and Vue drops it.
+		it("add paddingLeft: '24px' to style when layout is block and draggable is true", () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: true, style: {color: 'red'}})
-			expect(store.slots.containerProps().style).toEqual({paddingLeft: 24, color: 'red'})
+			expect(store.slots.containerProps().style).toEqual({paddingLeft: '24px', color: 'red'})
 		})
 
-		it('add paddingLeft: 24 with no base style when layout is block and draggable is true', () => {
+		it("add paddingLeft: '24px' with no base style when layout is block and draggable is true", () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: true})
-			expect(store.slots.containerProps().style).toEqual({paddingLeft: 24})
+			expect(store.slots.containerProps().style).toEqual({paddingLeft: '24px'})
 		})
 
 		it('NOT add paddingLeft when draggable and block but readOnly is true', () => {
@@ -287,13 +289,13 @@ describe('Store', () => {
 		it('apply drag-handle padding when layout is block and draggable is true', () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: true})
-			expect(store.slots.containerProps().style?.paddingLeft).toBe(24)
+			expect(store.slots.containerProps().style?.paddingLeft).toBe('24px')
 		})
 
 		it('apply drag-handle padding when draggable is a DraggableConfig', () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: {alwaysShowHandle: true}})
-			expect(store.slots.containerProps().style?.paddingLeft).toBe(24)
+			expect(store.slots.containerProps().style?.paddingLeft).toBe('24px')
 		})
 
 		it('skip drag-handle padding in read-only mode', () => {

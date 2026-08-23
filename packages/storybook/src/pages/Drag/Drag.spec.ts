@@ -20,15 +20,13 @@ const MARKDOWN_DRAG_VALUE =
 /**
  * A controlled document whose `onChange` is never echoed, so the DOM must not move. Mounted
  * as the component, not a story: the pre-migration harness was a local component too, and
- * the story args would only get in the way. `marginLeft` reserves the drag gutter — see
- * `Drag.stories.ts`.
+ * the story args would only get in the way.
  */
 const CONTROLLED_ARGS = {
 	Mark,
 	value: 'hello @[world](1)\n\nfoo',
 	layout: 'block',
 	draggable: true,
-	style: {marginLeft: '64px'},
 } as const
 
 const GRIP = {name: 'Drag to reorder or click for options'} as const
@@ -483,10 +481,9 @@ describe('Feature: drag rows', () => {
 		})
 
 		it('hang the grip band LEFT of its row, where core reserves no gutter', async () => {
-			// Core supplies the 24px gutter only for draggable, editable block layout, and Vue
-			// drops it even then (it is a NUMERIC `paddingLeft`). A band anchored to the layer's
-			// own origin therefore covers the first 24px of the hovered row and swallows the
-			// click that should place a caret there.
+			// Core supplies the 24px gutter only for draggable, editable block layout. A band
+			// anchored to the layer's own origin therefore covers the first 24px of the hovered
+			// row and swallows the click that should place a caret there.
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',
@@ -506,20 +503,24 @@ describe('Feature: drag rows', () => {
 			expect(row.contains(hit)).toBe(true)
 		})
 
-		it('put the grip INSIDE the container gutter, not outside its padding box', async () => {
+		it('put the grip INSIDE the container gutter core reserves, in BOTH frameworks', async () => {
 			// The other half of the same anchor: WITH a gutter the band has to land in it. A
 			// band placed 24px left of the layer's origin overshoots by exactly the gutter, and
 			// an `overflow: auto` consumer container clips it out of existence.
+			//
+			// The gutter is core's own here — no `slotProps` stand-in. It used to need one: core
+			// emitted a NUMERIC `paddingLeft`, React's JSX made that `24px` and Vue assigned it
+			// to `element.style` verbatim, where the CSSOM rejects an unitless length. Vue's
+			// computed padding was 0, so the band sat on the row's first 24px of text and every
+			// `draggable: true` editor was laid out as if it were `false`.
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',
 				layout: 'block',
 				draggable: true,
-				style: {marginLeft: '64px'},
-				// Written as a STRING because core's own gutter is a numeric `paddingLeft`,
-				// which React turns into `24px` and Vue drops — so only this reserves it in both.
-				slotProps: {container: {style: {paddingLeft: '24px'}}},
 			})
+			expect(getComputedStyle(host).paddingLeft).toBe('24px')
+
 			const row = rowsOf(host)[0]
 			await userEvent.hover(row)
 			const grip = await page.elementLocator(host).getByRole('button', GRIP).findElement()

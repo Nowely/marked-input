@@ -85,7 +85,7 @@ onScopeDispose(() => observer?.disconnect())
 
 // `left` is the ROW's left edge; `.SidePanel`'s negative margin hangs the band off it. The
 // layer's own origin would put it on top of the text wherever core reserves no gutter
-// (`draggable: false`, and Vue always — core's gutter is a numeric `paddingLeft` Vue drops).
+// (`draggable: false`).
 const gripStyle = computed(() => ({
 	top: `${gripBox.value?.top ?? 0}px`,
 	left: `${gripBox.value?.left ?? 0}px`,
