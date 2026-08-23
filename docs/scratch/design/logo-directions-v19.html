@@ -1,0 +1,3175 @@
+<meta charset="utf-8" />
+<style>
+	.logo-grid {
+		display: grid;
+		gap: 14px;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		margin-bottom: 8px;
+	}
+
+	.card {
+		background: #ffffff;
+		border: 1px solid #d8e2ea;
+		border-radius: 12px;
+		overflow: hidden;
+	}
+
+	.logo-stage {
+		align-items: center;
+		background: #ffffff;
+		border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+		display: flex;
+		justify-content: center;
+		min-height: 168px;
+	}
+
+	.hero-mark {
+		height: 124px;
+		width: 124px;
+	}
+
+	.card-body {
+		padding: 10px 12px 12px;
+	}
+
+	.card-body h3 {
+		font-size: 14px;
+		margin: 0 0 4px;
+	}
+
+	.card-body p {
+		color: #475569;
+		font-size: 12px;
+		line-height: 1.45;
+		margin: 0;
+	}
+
+	.checks {
+		align-items: center;
+		display: flex;
+		gap: 10px;
+		margin-top: 10px;
+	}
+
+	.mini {
+		align-items: center;
+		background: #f8fafc;
+		border: 1px solid rgba(15, 23, 42, 0.1);
+		border-radius: 8px;
+		display: flex;
+		height: 40px;
+		justify-content: center;
+		width: 40px;
+	}
+
+	.mini svg {
+		height: 26px;
+		width: 26px;
+	}
+
+	.mini.tiny {
+		height: 28px;
+		width: 28px;
+	}
+
+	.mini.tiny svg {
+		height: 16px;
+		width: 16px;
+	}
+
+	/* symbols use fill="currentColor"; color inherits into <use> shadow trees, CSS selectors do not */
+	.logo-grid,
+	.saved-card {
+		color: #26313a;
+	}
+
+	.grid-clean {
+		color: #222b3a;
+	}
+
+	.mini.dark {
+		background: #26313a;
+		border-color: #26313a;
+		color: #ffffff;
+	}
+
+	.part {
+		border-top: 2px solid #26313a;
+		font-size: 17px;
+		margin: 34px 0 14px;
+		padding-top: 18px;
+	}
+
+	.part span {
+		color: #64748b;
+		font-size: 13px;
+		font-weight: 500;
+		margin-left: 8px;
+	}
+
+	.family-heading {
+		color: #0f172a;
+		font-size: 14px;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		margin: 22px 0 10px;
+		text-transform: uppercase;
+	}
+
+	.family-heading span {
+		color: #64748b;
+		font-size: 12px;
+		font-weight: 500;
+		letter-spacing: 0;
+		margin-left: 8px;
+		text-transform: none;
+	}
+
+	.saved-section {
+		border-top: 1px solid #d8e2ea;
+		margin-top: 34px;
+		padding-top: 24px;
+	}
+
+	.saved-card {
+		background: #ffffff;
+		border: 2px solid #26313a;
+		border-radius: 16px;
+		max-width: 420px;
+		overflow: hidden;
+	}
+
+	.saved-card .logo-stage {
+		border-radius: 0;
+		min-height: 280px;
+	}
+
+	.saved-card .hero-mark {
+		height: 210px;
+		width: 210px;
+	}
+
+	.saved-label {
+		background: #26313a;
+		color: #ffffff;
+		font-size: 13px;
+		font-weight: 700;
+		padding: 9px 13px;
+		text-transform: uppercase;
+	}
+
+	@media (max-width: 1280px) {
+		.logo-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 980px) {
+		.logo-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
+
+<h2>Revision 19: symbolism, three sources</h2>
+<p class="subtitle">
+	Direction after v18: <strong>97. Block Stack</strong> won; explicit M letterforms are out. Part 1 hybridizes Block
+	Stack&#8217;s chip vocabulary with the Figma logo&#8217;s soft-primitive grid anatomy, the M only implied (rhythm,
+	valley, twin arches). Part 2 keeps the salvaged explicit-M letterforms for breadth &#8212; v18 taught that winners
+	hide in volume. Part 3 is a control group: one agent, empty brief, designing from scratch after studying the repo.
+</p>
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+	<defs>
+		<symbol id="s1" viewBox="0 0 180 180">
+			<rect x="20" y="30" width="40" height="120" rx="14" fill="currentColor" />
+			<rect x="70" y="62" width="40" height="88" rx="14" fill="currentColor" />
+			<rect x="120" y="30" width="40" height="120" rx="14" fill="currentColor" />
+			<circle cx="90" cy="44" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s2" viewBox="0 0 180 180">
+			<rect x="20" y="70" width="20" height="70" rx="10" fill="currentColor" />
+			<rect x="50" y="40" width="20" height="100" rx="10" fill="currentColor" />
+			<rect x="80" y="70" width="20" height="70" rx="10" fill="currentColor" />
+			<rect x="110" y="40" width="20" height="100" rx="10" fill="currentColor" />
+			<rect x="140" y="70" width="20" height="70" rx="10" fill="currentColor" />
+			<circle cx="90" cy="50" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s3" viewBox="0 0 180 180">
+			<rect x="25" y="30" width="40" height="50" rx="10" fill="currentColor" />
+			<rect x="75" y="50" width="30" height="30" rx="10" fill="currentColor" />
+			<rect x="115" y="30" width="40" height="50" rx="10" fill="currentColor" />
+			<rect x="25" y="90" width="130" height="30" rx="12" fill="currentColor" />
+			<rect x="25" y="130" width="80" height="20" rx="10" fill="currentColor" />
+			<circle cx="90" cy="105" r="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s4" viewBox="0 0 180 180">
+			<rect x="30" y="30" width="40" height="30" rx="10" fill="currentColor" />
+			<rect x="110" y="30" width="40" height="30" rx="10" fill="currentColor" />
+			<rect x="30" y="70" width="120" height="80" rx="16" fill="currentColor" />
+			<circle cx="90" cy="110" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s5" viewBox="0 0 180 180">
+			<rect x="30" y="35" width="44" height="30" rx="10" fill="currentColor" />
+			<rect x="106" y="35" width="44" height="30" rx="10" fill="currentColor" />
+			<circle cx="90" cy="50" r="8" data-accent fill="#f5b800" />
+			<rect x="30" y="75" width="120" height="30" rx="10" fill="currentColor" />
+			<rect x="30" y="115" width="70" height="30" rx="10" fill="currentColor" />
+			<rect x="110" y="115" width="40" height="30" rx="10" fill="currentColor" />
+		</symbol>
+		<symbol id="s6" viewBox="0 0 180 180">
+			<path
+				d="M 35 80 A 25 25 0 0 1 85 80 L 85 137 A 8 8 0 0 1 77 145 L 43 145 A 8 8 0 0 1 35 137 Z"
+				fill="currentColor"
+			/>
+			<path
+				d="M 95 80 A 25 25 0 0 1 145 80 L 145 137 A 8 8 0 0 1 137 145 L 103 145 A 8 8 0 0 1 95 137 Z"
+				fill="currentColor"
+			/>
+			<circle cx="90" cy="43" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s7" viewBox="0 0 180 180">
+			<path
+				d="M 20 70 A 20 20 0 0 1 60 70 L 60 122 A 8 8 0 0 1 52 130 L 28 130 A 8 8 0 0 1 20 122 Z"
+				fill="currentColor"
+			/>
+			<rect x="70" y="90" width="40" height="40" rx="12" fill="currentColor" />
+			<path
+				d="M 120 70 A 20 20 0 0 1 160 70 L 160 122 A 8 8 0 0 1 152 130 L 128 130 A 8 8 0 0 1 120 122 Z"
+				fill="currentColor"
+			/>
+			<circle cx="90" cy="72" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s8" viewBox="0 0 180 180">
+			<rect x="30" y="35" width="55" height="30" rx="10" fill="currentColor" />
+			<rect x="95" y="35" width="55" height="30" rx="10" fill="currentColor" />
+			<rect x="30" y="75" width="70" height="30" rx="10" fill="currentColor" />
+			<circle cx="117" cy="90" r="7" data-accent fill="#f5b800" />
+			<rect x="30" y="115" width="120" height="30" rx="10" fill="currentColor" />
+		</symbol>
+		<symbol id="s9" viewBox="0 0 180 180">
+			<rect x="29" y="36" width="34" height="64" rx="17" fill="currentColor" />
+			<circle cx="90" cy="83" r="17" fill="currentColor" />
+			<rect x="117" y="36" width="34" height="64" rx="17" fill="currentColor" />
+			<path d="M63 110 H46 A17 17 0 0 0 46 144 H63 Z" fill="currentColor" />
+			<rect x="73" y="110" width="34" height="34" rx="10" data-accent fill="#f5b800" />
+			<path d="M117 110 H134 A17 17 0 0 1 134 144 H117 Z" fill="currentColor" />
+		</symbol>
+		<symbol id="s10" viewBox="0 0 180 180">
+			<path d="M30 30 A56 56 0 0 1 86 86 H30 Z" fill="currentColor" />
+			<path d="M150 30 A56 56 0 0 0 94 86 H150 Z" fill="currentColor" />
+			<rect x="30" y="94" width="56" height="56" rx="16" fill="currentColor" />
+			<circle cx="122" cy="122" r="28" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s11" viewBox="0 0 180 180">
+			<path d="M51 63 V46 A17 17 0 0 1 85 46 V63 Z" fill="currentColor" />
+			<path d="M95 63 V46 A17 17 0 0 1 129 46 V63 Z" fill="currentColor" />
+			<rect x="51" y="73" width="34" height="34" rx="10" fill="currentColor" />
+			<circle cx="112" cy="90" r="17" data-accent fill="#f5b800" />
+			<rect x="51" y="117" width="78" height="34" rx="17" fill="currentColor" />
+		</symbol>
+		<symbol id="s12" viewBox="0 0 180 180">
+			<rect x="30" y="26" width="34" height="52" rx="16" fill="currentColor" />
+			<rect x="74" y="44" width="32" height="34" rx="12" fill="currentColor" />
+			<rect x="116" y="26" width="34" height="52" rx="16" fill="currentColor" />
+			<rect x="30" y="88" width="120" height="34" rx="12" fill="currentColor" />
+			<rect x="30" y="132" width="76" height="20" rx="10" fill="currentColor" />
+			<circle cx="126" cy="142" r="10" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s13" viewBox="0 0 180 180">
+			<path d="M31 103 V79 A27 27 0 0 1 85 79 V103 Z" fill="currentColor" />
+			<path d="M95 103 V79 A27 27 0 0 1 149 79 V103 Z" fill="currentColor" />
+			<rect x="31" y="113" width="118" height="32" rx="16" fill="currentColor" />
+			<circle cx="90" cy="42" r="10" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s14" viewBox="0 0 180 180">
+			<rect x="30" y="32" width="120" height="34" rx="17" fill="currentColor" />
+			<rect x="30" y="78" width="32" height="68" rx="16" fill="currentColor" />
+			<rect x="74" y="78" width="32" height="44" rx="16" fill="currentColor" />
+			<rect x="118" y="78" width="32" height="68" rx="16" fill="currentColor" />
+			<circle cx="90" cy="138" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s15" viewBox="0 0 180 180">
+			<rect x="38" y="38" width="28" height="104" rx="14" fill="currentColor" />
+			<rect x="76" y="66" width="28" height="76" rx="14" fill="currentColor" />
+			<rect x="114" y="38" width="28" height="104" rx="14" fill="currentColor" />
+			<circle cx="90" cy="48" r="10" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s16" viewBox="0 0 180 180">
+			<rect x="32" y="44" width="44" height="92" rx="16" fill="currentColor" />
+			<rect x="104" y="44" width="44" height="92" rx="16" fill="currentColor" />
+			<rect x="54" y="96" width="72" height="40" rx="14" fill="currentColor" />
+			<circle cx="90" cy="70" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s17" viewBox="0 0 180 180">
+			<path
+				d="M 60 40 L 72 40 A 6 6 0 0 1 78 46 L 78 78 A 12 12 0 0 0 102 78 L 102 46 A 6 6 0 0 1 108 40 L 120 40 A 20 20 0 0 1 140 60 L 140 120 A 20 20 0 0 1 120 140 L 60 140 A 20 20 0 0 1 40 120 L 40 60 A 20 20 0 0 1 60 40 Z"
+				fill="currentColor"
+			/>
+			<circle cx="90" cy="115" r="9" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s18" viewBox="0 0 180 180">
+			<circle cx="62" cy="69" r="32" fill="currentColor" />
+			<circle cx="118" cy="69" r="32" fill="currentColor" />
+			<rect x="30" y="111" width="88" height="32" rx="16" fill="currentColor" />
+			<circle cx="138" cy="127" r="12" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s19" viewBox="0 0 180 180">
+			<rect x="24" y="41" width="40" height="60" rx="14" fill="currentColor" />
+			<rect x="74" y="61" width="32" height="40" rx="12" fill="currentColor" />
+			<rect x="116" y="41" width="40" height="60" rx="14" fill="currentColor" />
+			<rect x="24" y="111" width="132" height="28" rx="14" fill="currentColor" />
+			<circle cx="90" cy="125" r="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s20" viewBox="0 0 180 180">
+			<path
+				d="M 56 40 L 124 40 A 16 16 0 0 1 140 56 L 140 124 A 16 16 0 0 1 124 140 L 118 140 L 118 112 A 11 11 0 0 0 96 112 L 96 140 L 84 140 L 84 112 A 11 11 0 0 0 62 112 L 62 140 L 56 140 A 16 16 0 0 1 40 124 L 40 56 A 16 16 0 0 1 56 40 Z"
+				fill="currentColor"
+			/>
+			<circle cx="90" cy="72" r="9" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s21" viewBox="0 0 180 180">
+			<path
+				d="M 26 64 A 22 22 0 0 1 70 64 L 70 92 A 6 6 0 0 1 64 98 L 32 98 A 6 6 0 0 1 26 92 Z"
+				fill="currentColor"
+			/>
+			<rect x="80" y="72" width="20" height="26" rx="10" data-accent fill="#f5b800" />
+			<path
+				d="M 110 64 A 22 22 0 0 1 154 64 L 154 92 A 6 6 0 0 1 148 98 L 116 98 A 6 6 0 0 1 110 92 Z"
+				fill="currentColor"
+			/>
+			<rect x="26" y="108" width="128" height="30" rx="15" fill="currentColor" />
+		</symbol>
+		<symbol id="s22" viewBox="0 0 180 180">
+			<path
+				d="M 51 35 A 8 8 0 0 1 59 43 L 59 87 A 8 8 0 0 1 51 95 L 25 95 A 8 8 0 0 1 17 87 L 17 69 A 34 34 0 0 1 51 35 Z"
+				fill="currentColor"
+			/>
+			<rect x="69" y="63" width="42" height="32" rx="12" fill="currentColor" />
+			<path
+				d="M 129 35 A 34 34 0 0 1 163 69 L 163 87 A 8 8 0 0 1 155 95 L 129 95 A 8 8 0 0 1 121 87 L 121 43 A 8 8 0 0 1 129 35 Z"
+				fill="currentColor"
+			/>
+			<rect x="17" y="105" width="104" height="40" rx="14" fill="currentColor" />
+			<circle cx="147" cy="125" r="16" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s23" viewBox="0 0 180 180">
+			<rect x="28" y="36" width="56" height="56" rx="16" fill="currentColor" />
+			<rect x="96" y="36" width="56" height="56" rx="16" fill="currentColor" />
+			<rect x="28" y="104" width="124" height="40" rx="16" fill="currentColor" />
+			<circle cx="90" cy="124" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s24" viewBox="0 0 180 180">
+			<rect x="32" y="30" width="32" height="120" rx="16" fill="currentColor" />
+			<rect x="74" y="70" width="32" height="80" rx="16" fill="currentColor" />
+			<rect x="116" y="30" width="32" height="120" rx="16" fill="currentColor" />
+			<circle cx="90" cy="50" r="10" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s25" viewBox="0 0 180 180">
+			<rect x="23" y="34" width="26" height="112" rx="13" fill="currentColor" />
+			<rect x="59" y="70" width="26" height="76" rx="13" fill="currentColor" />
+			<rect x="95" y="34" width="26" height="112" rx="13" fill="currentColor" />
+			<rect x="131" y="70" width="26" height="76" rx="13" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s26" viewBox="0 0 180 180">
+			<rect x="28" y="34" width="36" height="112" rx="18" fill="currentColor" />
+			<rect x="116" y="34" width="36" height="112" rx="18" fill="currentColor" />
+			<circle cx="90" cy="132" r="14" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s27" viewBox="0 0 180 180">
+			<rect x="38" y="30" width="28" height="96" rx="14" fill="currentColor" />
+			<rect x="76" y="66" width="28" height="60" rx="14" fill="currentColor" />
+			<rect x="114" y="30" width="28" height="96" rx="14" fill="currentColor" />
+			<rect x="30" y="136" width="120" height="14" rx="7" fill="currentColor" />
+			<circle cx="90" cy="47" r="9" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s28" viewBox="0 0 180 180">
+			<rect x="35" y="32" width="30" height="116" rx="15" fill="currentColor" />
+			<rect x="75" y="32" width="30" height="72" rx="15" fill="currentColor" />
+			<rect x="115" y="32" width="30" height="116" rx="15" fill="currentColor" />
+			<circle cx="90" cy="124" r="10" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s29" viewBox="0 0 180 180">
+			<ellipse cx="44" cy="90" rx="18" ry="52" fill="currentColor" />
+			<ellipse cx="90" cy="90" rx="18" ry="30" data-accent fill="#f5b800" />
+			<ellipse cx="136" cy="90" rx="18" ry="52" fill="currentColor" />
+		</symbol>
+		<symbol id="s30" viewBox="0 0 180 180">
+			<rect x="20" y="34" width="20" height="112" rx="10" fill="currentColor" />
+			<rect x="50" y="66" width="20" height="80" rx="10" fill="currentColor" />
+			<rect x="80" y="98" width="20" height="48" rx="10" data-accent fill="#f5b800" />
+			<rect x="110" y="66" width="20" height="80" rx="10" fill="currentColor" />
+			<rect x="140" y="34" width="20" height="112" rx="10" fill="currentColor" />
+		</symbol>
+		<symbol id="s31" viewBox="0 0 180 180">
+			<rect x="30" y="46" width="44" height="88" rx="22" fill="currentColor" />
+			<rect x="84" y="30" width="12" height="120" rx="6" data-accent fill="#f5b800" />
+			<rect x="106" y="46" width="44" height="88" rx="22" fill="currentColor" />
+		</symbol>
+		<symbol id="s32" viewBox="0 0 180 180">
+			<path d="M 25 135 A 65 65 0 0 1 85 70.2 V 135 Z" fill="currentColor" />
+			<path d="M 95 70.2 A 65 65 0 0 1 155 135 H 95 Z" fill="currentColor" />
+			<circle cx="90" cy="52" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s33" viewBox="0 0 180 180">
+			<path d="M 20 110 V 68 A 28 28 0 0 1 76 68 V 110 Z" fill="currentColor" />
+			<path d="M 104 110 V 68 A 28 28 0 0 1 160 68 V 110 Z" fill="currentColor" />
+			<rect x="20" y="120" width="140" height="20" rx="10" fill="currentColor" />
+			<circle cx="90" cy="103" r="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s34" viewBox="0 0 180 180">
+			<path d="M 15 91 A 35 35 0 0 1 85 91 Z" fill="currentColor" />
+			<path d="M 95 91 A 35 35 0 0 1 165 91 Z" fill="currentColor" />
+			<rect x="15" y="101" width="150" height="24" rx="12" fill="currentColor" />
+			<circle cx="90" cy="62" r="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s35" viewBox="0 0 180 180">
+			<path
+				d="M 46 20 H 134 A 16 16 0 0 1 150 36 V 124 A 16 16 0 0 1 134 140 H 126 V 80 A 12 12 0 0 0 102 80 V 140 H 78 V 80 A 12 12 0 0 0 54 80 V 140 H 46 A 16 16 0 0 1 30 124 V 36 A 16 16 0 0 1 46 20 Z"
+				fill="currentColor"
+			/>
+			<rect x="30" y="150" width="120" height="14" rx="7" fill="currentColor" />
+			<circle cx="90" cy="46" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s36" viewBox="0 0 180 180">
+			<path
+				d="M 46 32 H 134 A 20 20 0 0 1 154 52 V 104 A 20 20 0 0 1 134 124 H 46 A 20 20 0 0 1 26 104 V 52 A 20 20 0 0 1 46 32 Z M 48 102 H 78 V 73 A 15 15 0 0 0 48 73 Z M 102 102 H 132 V 88 A 15 15 0 0 0 102 88 Z"
+				fill="currentColor"
+			/>
+			<rect x="46" y="134" width="88" height="16" rx="8" fill="currentColor" />
+			<circle cx="117" cy="48" r="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s37" viewBox="0 0 180 180">
+			<path
+				d="M 18 134 V 88 A 34 34 0 0 1 86 88 V 134 H 62 V 88 A 10 10 0 0 0 42 88 V 134 Z"
+				fill="currentColor"
+			/>
+			<path
+				d="M 96 134 V 112 A 34 34 0 0 1 164 112 V 134 H 140 V 112 A 10 10 0 0 0 120 112 V 134 Z"
+				fill="currentColor"
+			/>
+			<circle cx="130" cy="56" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s38" viewBox="0 0 180 180">
+			<ellipse cx="52" cy="93" rx="33" ry="26" fill="currentColor" />
+			<ellipse cx="128" cy="93" rx="33" ry="26" fill="currentColor" />
+			<rect x="19" y="93" width="142" height="36" rx="14" fill="currentColor" />
+			<circle cx="90" cy="59" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s39" viewBox="0 0 180 180">
+			<path d="M 30 75 V 52.5 A 27.5 27.5 0 0 1 85 52.5 V 75 Z" fill="currentColor" />
+			<path d="M 95 75 V 52.5 A 27.5 27.5 0 0 1 150 52.5 V 75 Z" fill="currentColor" />
+			<rect x="30" y="85" width="120" height="40" rx="10" fill="currentColor" />
+			<rect x="30" y="135" width="80" height="20" rx="8" fill="currentColor" />
+			<circle cx="90" cy="105" r="6" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s40" viewBox="0 0 180 180">
+			<rect x="30" y="40" width="40" height="60" rx="10" fill="currentColor" />
+			<rect x="80" y="70" width="20" height="30" rx="8" fill="currentColor" />
+			<rect x="110" y="40" width="40" height="60" rx="10" fill="currentColor" />
+			<rect x="30" y="110" width="120" height="30" rx="10" fill="currentColor" />
+			<circle cx="90" cy="125" r="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s41" viewBox="0 0 180 180">
+			<path d="M30 100 V73 A27 27 0 0 1 84 73 V100 Z" fill="currentColor" />
+			<path d="M96 100 V73 A27 27 0 0 1 150 73 V100 Z" fill="currentColor" />
+			<rect x="30" y="110" width="120" height="30" rx="10" fill="currentColor" />
+			<circle cx="90" cy="125" r="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s42" viewBox="0 0 180 180">
+			<rect x="30" y="46" width="46" height="54" rx="12" fill="currentColor" />
+			<rect x="104" y="46" width="46" height="54" rx="12" fill="currentColor" />
+			<circle cx="90" cy="73" r="7" data-accent fill="#f5b800" />
+			<rect x="30" y="110" width="120" height="30" rx="10" fill="currentColor" />
+		</symbol>
+		<symbol id="s43" viewBox="0 0 180 180">
+			<rect x="30" y="44" width="46" height="56" rx="10" fill="currentColor" />
+			<rect x="86" y="78" width="18" height="22" rx="8" data-accent fill="#f5b800" />
+			<rect x="114" y="56" width="36" height="44" rx="10" fill="currentColor" />
+			<rect x="30" y="110" width="120" height="30" rx="10" fill="currentColor" />
+		</symbol>
+		<symbol id="s44" viewBox="0 0 180 180">
+			<rect x="30" y="68" width="32" height="32" rx="10" fill="currentColor" />
+			<rect x="72" y="40" width="36" height="60" rx="12" fill="currentColor" />
+			<rect x="118" y="68" width="32" height="32" rx="10" fill="currentColor" />
+			<rect x="30" y="110" width="120" height="30" rx="10" fill="currentColor" />
+			<circle cx="90" cy="125" r="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s45" viewBox="0 0 180 180">
+			<path
+				d="M30 92 V56 A12 12 0 0 1 42 44 A42 42 0 0 1 84 86 V92 A8 8 0 0 1 76 100 H38 A8 8 0 0 1 30 92 Z"
+				fill="currentColor"
+			/>
+			<path
+				d="M96 86 A42 42 0 0 1 138 44 A12 12 0 0 1 150 56 V92 A8 8 0 0 1 142 100 H104 A8 8 0 0 1 96 92 Z"
+				fill="currentColor"
+			/>
+			<rect x="30" y="110" width="120" height="30" rx="10" fill="currentColor" />
+			<circle cx="90" cy="60" r="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s46" viewBox="0 0 180 180">
+			<path d="M30 100 V76 A30 30 0 0 1 90 76 V100 Z" fill="currentColor" />
+			<rect x="102" y="68" width="48" height="32" rx="10" fill="currentColor" />
+			<rect x="30" y="110" width="120" height="30" rx="10" fill="currentColor" />
+			<circle cx="126" cy="125" r="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s47" viewBox="0 0 180 180">
+			<circle cx="52" cy="78" r="22" fill="currentColor" />
+			<path d="M86 100 V76 A32 32 0 0 1 150 76 V100 Z" fill="currentColor" />
+			<rect x="30" y="110" width="120" height="30" rx="10" fill="currentColor" />
+			<circle cx="80" cy="54" r="6" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s48" viewBox="0 0 180 180">
+			<polygon points="30,140 30,40 58,40 78,70 78,96 58,66 58,140" fill="currentColor" />
+			<polygon points="150,140 150,40 122,40 102,70 102,96 122,66 122,140" fill="currentColor" />
+			<rect x="84" y="76" width="12" height="64" rx="6" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s49" viewBox="0 0 180 180">
+			<path d="M32 36 H60 V48 H52 V132 H60 V144 H32 V132 H40 V48 H32 Z" data-accent fill="#f5b800" />
+			<polygon points="66,36 94,78 122,36 122,62 94,104 66,62" fill="currentColor" />
+			<rect x="122" y="36" width="28" height="108" fill="currentColor" />
+		</symbol>
+		<symbol id="s50" viewBox="0 0 180 180">
+			<rect x="14" y="94" width="152" height="36" rx="8" data-accent fill="#f5b800" />
+			<rect x="30" y="44" width="28" height="100" fill="currentColor" />
+			<polygon points="58,44 90,90 122,44 122,70 90,116 58,70" fill="currentColor" />
+			<rect x="122" y="44" width="28" height="100" fill="currentColor" />
+		</symbol>
+		<symbol id="s51" viewBox="0 0 180 180">
+			<polygon points="32,128 62,56 92,128 78,128 62,90 46,128" fill="currentColor" />
+			<polygon points="86,128 116,56 146,128 132,128 116,90 100,128" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s52" viewBox="0 0 180 180">
+			<rect x="30" y="36" width="28" height="72" fill="currentColor" />
+			<polygon points="58,36 90,80 122,36 122,62 90,106 58,62" fill="currentColor" />
+			<rect x="122" y="36" width="28" height="72" fill="currentColor" />
+			<rect x="30" y="122" width="66" height="14" rx="7" fill="currentColor" />
+			<rect x="108" y="122" width="42" height="14" rx="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s53" viewBox="0 0 180 180">
+			<rect x="28" y="40" width="28" height="104" fill="currentColor" />
+			<polygon points="56,40 88,84 120,40 120,66 88,110 56,66" fill="currentColor" />
+			<rect x="126" y="40" width="28" height="104" rx="10" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s54" viewBox="0 0 180 180">
+			<rect x="22" y="40" width="26" height="104" fill="currentColor" />
+			<polygon points="48,40 77,84 106,40 106,66 77,110 48,66" fill="currentColor" />
+			<rect x="106" y="40" width="26" height="104" fill="currentColor" />
+			<rect x="144" y="40" width="12" height="104" rx="6" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s55" viewBox="0 0 180 180">
+			<rect x="36" y="56" width="108" height="68" data-accent fill="#f5b800" />
+			<path
+				d="M34 36 H146 A20 20 0 0 1 166 56 V124 A20 20 0 0 1 146 144 H34 A20 20 0 0 1 14 124 V56 A20 20 0 0 1 34 36 Z M38 122 H58 V88 L84 116 H96 L122 88 V122 H142 V58 H122 L90 92 L58 58 H38 Z"
+				fill="currentColor"
+			/>
+		</symbol>
+		<symbol id="s56" viewBox="0 0 180 180">
+			<polygon
+				points="22,150 22,30 48,30 90,90 132,30 158,30 158,150 132,136 132,70 90,130 48,70 48,136"
+				fill="currentColor"
+			/>
+		</symbol>
+		<symbol id="s57" viewBox="0 0 180 180">
+			<polygon
+				points="22,150 22,30 29,30 35,44 41,30 48,30 90,90 132,30 139,30 145,44 151,30 158,30 158,150 132,150 132,70 90,130 48,70 48,150"
+				fill="currentColor"
+			/>
+			<polygon points="139,30 151,30 145,44" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s58" viewBox="0 0 180 180">
+			<polygon
+				points="22,128 22,26 48,26 90,82 132,26 158,26 158,158 22,158 22,136 132,136 132,66 90,122 48,66 48,128"
+				fill="currentColor"
+			/>
+			<rect x="102" y="114" width="20" height="14" rx="5" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s59" viewBox="0 0 180 180">
+			<polygon
+				points="22,150 22,26 48,26 90,92 132,44 158,44 158,150 132,150 132,78 87,129 48,67 48,150"
+				fill="currentColor"
+			/>
+			<rect x="132" y="28" width="26" height="10" rx="4" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s60" viewBox="0 0 180 180">
+			<path
+				d="M 22 150 L 22 44 Q 22 30 36 30 L 48 30 L 83 80 Q 90 90 97 80 L 132 30 L 144 30 Q 158 30 158 44 L 158 150 L 132 150 L 132 70 L 97 120 Q 90 130 83 120 L 48 70 L 48 150 Z"
+				fill="currentColor"
+			/>
+		</symbol>
+		<symbol id="s61" viewBox="0 0 180 180">
+			<rect x="22" y="34" width="26" height="116" rx="4" fill="currentColor" />
+			<polygon points="54,38 87,85 87,125 54,78" fill="currentColor" />
+			<polygon points="93,85 126,38 126,78 93,125" fill="currentColor" />
+			<rect x="132" y="34" width="26" height="78" rx="4" fill="currentColor" />
+			<rect x="132" y="120" width="26" height="30" rx="6" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s62" viewBox="0 0 180 180">
+			<polygon
+				points="22,150 22,30 48,30 90,90 132,30 158,30 158,150 145,136 132,150 132,70 90,130 48,70 48,150 35,136"
+				fill="currentColor"
+			/>
+		</symbol>
+		<symbol id="s63" viewBox="0 0 180 180">
+			<polygon points="25,148 25,32 83,32 83,100 61,100 61,54 47,54 47,148" fill="currentColor" />
+			<polygon points="155,148 155,32 97,32 97,100 119,100 119,54 133,54 133,148" fill="currentColor" />
+			<rect x="61" y="100" width="58" height="22" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s64" viewBox="0 0 180 180">
+			<rect x="26" y="40" width="26" height="100" rx="8" fill="currentColor" />
+			<rect x="128" y="40" width="26" height="100" rx="8" fill="currentColor" />
+			<rect x="58" y="40" width="26" height="26" rx="8" fill="currentColor" />
+			<rect x="96" y="40" width="26" height="26" rx="8" fill="currentColor" />
+			<rect x="77" y="74" width="26" height="26" rx="8" fill="currentColor" />
+			<circle cx="90" cy="124" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s65" viewBox="0 0 180 180">
+			<rect x="26" y="40" width="56" height="30" rx="8" fill="currentColor" />
+			<rect x="98" y="40" width="56" height="30" rx="8" fill="currentColor" />
+			<rect x="26" y="76" width="28" height="30" rx="8" fill="currentColor" />
+			<rect x="76" y="76" width="28" height="30" rx="8" data-accent fill="#f5b800" />
+			<rect x="126" y="76" width="28" height="30" rx="8" fill="currentColor" />
+			<rect x="26" y="112" width="28" height="30" rx="8" fill="currentColor" />
+			<rect x="126" y="112" width="28" height="30" rx="8" fill="currentColor" />
+		</symbol>
+		<symbol id="s66" viewBox="0 0 180 180">
+			<rect x="26" y="29" width="34" height="26" rx="8" fill="currentColor" />
+			<rect x="120" y="29" width="34" height="26" rx="8" fill="currentColor" />
+			<rect x="26" y="61" width="50" height="26" rx="8" fill="currentColor" />
+			<rect x="104" y="61" width="50" height="26" rx="8" fill="currentColor" />
+			<rect x="26" y="93" width="128" height="26" rx="8" fill="currentColor" />
+			<rect x="26" y="125" width="128" height="26" rx="8" fill="currentColor" />
+			<circle cx="90" cy="42" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s67" viewBox="0 0 180 180">
+			<rect x="26" y="44" width="128" height="28" rx="9" fill="currentColor" />
+			<rect x="26" y="78" width="26" height="58" rx="8" fill="currentColor" />
+			<rect x="77" y="78" width="26" height="58" rx="8" fill="currentColor" />
+			<rect x="128" y="78" width="26" height="58" rx="8" fill="currentColor" />
+			<circle cx="64" cy="118" r="6" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s68" viewBox="0 0 180 180">
+			<rect x="26" y="40" width="26" height="100" rx="8" fill="currentColor" />
+			<rect x="128" y="40" width="26" height="100" rx="8" fill="currentColor" />
+			<polygon points="60,40 84,40 102,102 78,102" fill="currentColor" />
+			<polygon points="96,40 120,40 102,102 78,102" fill="currentColor" />
+			<circle cx="90" cy="126" r="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s69" viewBox="0 0 180 180">
+			<rect x="26" y="40" width="28" height="24" rx="8" fill="currentColor" />
+			<rect x="60" y="40" width="26" height="24" rx="8" fill="currentColor" />
+			<rect x="94" y="40" width="26" height="24" rx="8" fill="currentColor" />
+			<rect x="126" y="40" width="28" height="24" rx="8" fill="currentColor" />
+			<rect x="26" y="70" width="28" height="70" rx="8" fill="currentColor" />
+			<rect x="126" y="70" width="28" height="70" rx="8" fill="currentColor" />
+			<rect x="76" y="70" width="28" height="30" rx="8" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s70" viewBox="0 0 180 180">
+			<rect x="26" y="40" width="26" height="100" rx="8" fill="currentColor" />
+			<rect x="128" y="40" width="26" height="100" rx="8" fill="currentColor" />
+			<rect x="58" y="40" width="26" height="40" rx="8" fill="currentColor" />
+			<rect x="96" y="40" width="26" height="40" rx="8" fill="currentColor" />
+			<circle cx="90" cy="100" r="11" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s71" viewBox="0 0 180 180">
+			<rect x="22" y="50" width="24" height="88" rx="8" fill="currentColor" />
+			<rect x="90" y="50" width="24" height="88" rx="8" fill="currentColor" />
+			<rect x="52" y="50" width="32" height="22" rx="8" fill="currentColor" />
+			<rect x="56" y="78" width="24" height="26" rx="8" fill="currentColor" />
+			<rect x="122" y="122" width="40" height="16" rx="7" data-accent fill="#f5b800" />
+		</symbol>
+		<symbol id="s72" viewBox="0 0 180 180">
+			<polygon
+				points="48,50 66,50 90,94 114,50 132,50 132,130 114,130 114,82 90,130 66,82 66,130 48,130"
+				fill="currentColor"
+			/>
+			<polygon points="20,50 40,50 40,62 30,62 30,118 40,118 40,130 20,130" fill="currentColor" />
+			<polygon points="160,50 160,130 140,130 140,118 150,118 150,62 140,62 140,50" fill="#f5b800" />
+		</symbol>
+		<symbol id="s73" viewBox="0 0 180 180">
+			<polygon
+				points="52,50 68,50 90,92 112,50 128,50 128,130 112,130 112,80 90,130 68,80 68,130 52,130"
+				fill="currentColor"
+			/>
+			<path
+				d="M44 52 Q26 52 26 68 L26 82 Q26 90 20 90 Q26 90 26 98 L26 112 Q26 128 44 128 L44 118 Q36 118 36 110 L36 96 Q36 91 32 90 Q36 89 36 84 L36 70 Q36 62 44 62 Z"
+				fill="currentColor"
+			/>
+			<path
+				d="M136 52 Q154 52 154 68 L154 82 Q154 90 160 90 Q154 90 154 98 L154 112 Q154 128 136 128 L136 118 Q144 118 144 110 L144 96 Q144 91 148 90 Q144 89 144 84 L144 70 Q144 62 136 62 Z"
+				fill="currentColor"
+			/>
+		</symbol>
+		<symbol id="s74" viewBox="0 0 180 180">
+			<path d="M154 53 A74 74 0 1 0 154 127 L140 119 A58 58 0 1 1 140 61 Z" fill="currentColor" />
+			<polygon points="150,130 166,107 155,100 140,117" fill="#f5b800" />
+			<polygon
+				points="56,60 71,60 90,96 109,60 124,60 124,124 109,124 109,86 90,124 71,86 71,124 56,124"
+				fill="currentColor"
+			/>
+		</symbol>
+		<symbol id="s75" viewBox="0 0 180 180">
+			<polygon
+				points="36,62 56,62 86,108 116,62 136,62 136,138 116,138 116,94 86,138 56,94 56,138 36,138"
+				fill="currentColor"
+			/>
+			<rect x="118" y="40" width="40" height="26" rx="9" fill="#f5b800" />
+		</symbol>
+		<symbol id="s76" viewBox="0 0 180 180">
+			<polygon
+				points="48,50 66,50 90,94 114,50 132,50 132,130 114,130 114,82 90,130 66,82 66,130 48,130"
+				fill="currentColor"
+			/>
+			<rect x="22" y="70" width="30" height="12" fill="currentColor" />
+			<rect x="22" y="98" width="30" height="12" fill="currentColor" />
+			<rect x="128" y="98" width="30" height="12" fill="currentColor" />
+			<rect x="132" y="70" width="26" height="12" fill="#f5b800" />
+		</symbol>
+		<symbol id="s77" viewBox="0 0 180 180">
+			<polygon
+				points="16,56 31,56 51,92 71,56 86,56 86,124 71,124 71,84 51,124 31,84 31,124 16,124"
+				fill="currentColor"
+			/>
+			<polygon points="116,56 130,56 108,124 94,124" fill="#f5b800" />
+			<polygon points="138,56 152,90 138,124 150,124 164,90 150,56" fill="currentColor" />
+		</symbol>
+		<symbol id="s78" viewBox="0 0 180 180">
+			<polygon
+				points="40,44 60,44 90,88 120,44 140,44 140,116 120,116 120,76 90,116 60,76 60,116 40,116"
+				fill="currentColor"
+			/>
+			<rect x="40" y="128" width="100" height="14" rx="7" fill="#f5b800" />
+		</symbol>
+		<symbol id="s79" viewBox="0 0 180 180">
+			<polygon points="36,48 66,48 66,62 52,62 52,118 66,118 66,132 36,132" fill="currentColor" />
+			<polygon points="144,48 144,132 114,132 114,118 128,118 128,62 114,62 114,48" fill="currentColor" />
+			<polygon points="60,48 74,48 90,100 106,48 120,48 90,124" fill="currentColor" />
+		</symbol>
+		<symbol id="s80" viewBox="0 0 180 180">
+			<rect x="30" y="42" width="120" height="18" rx="9" fill="currentColor" />
+			<rect x="30" y="87" width="30" height="18" rx="9" fill="currentColor" />
+			<rect x="68" y="81" width="52" height="30" rx="15" fill="#FFB020" data-accent />
+			<rect x="128" y="87" width="22" height="18" rx="9" fill="currentColor" />
+			<rect x="30" y="132" width="86" height="18" rx="9" fill="currentColor" />
+		</symbol>
+		<symbol id="s81" viewBox="0 0 180 180">
+			<path
+				d="M107.2 140.6 A56 56 0 1 1 140.6 107.2 L121.8 100.3 A36 36 0 1 0 100.3 121.8 Z"
+				fill="currentColor"
+			/>
+			<rect x="72" y="72" width="32" height="32" rx="10" fill="#FFB020" data-accent />
+			<circle cx="124.8" cy="124.8" r="13" fill="currentColor" />
+		</symbol>
+		<symbol id="s82" viewBox="0 0 180 180">
+			<path d="M34 40 H66 V56 H50 V124 H66 V140 H34 Z" fill="currentColor" />
+			<path d="M146 40 H114 V56 H130 V124 H114 V140 H146 Z" fill="currentColor" />
+			<circle cx="90" cy="90" r="20" fill="#F45B49" data-accent />
+		</symbol>
+		<symbol id="s83" viewBox="0 0 180 180">
+			<polygon points="60,44 28,90 60,136 76,120 48,90 76,60" fill="currentColor" />
+			<polygon points="120,44 152,90 120,136 104,120 132,90 104,60" fill="currentColor" />
+			<rect x="73" y="75" width="34" height="30" rx="15" fill="#FFB020" data-accent />
+		</symbol>
+		<symbol id="s84" viewBox="0 0 180 180">
+			<rect x="42" y="36" width="44" height="14" rx="7" fill="#4F46E5" />
+			<rect x="57" y="42" width="14" height="96" rx="7" fill="#4F46E5" />
+			<rect x="42" y="130" width="44" height="14" rx="7" fill="#4F46E5" />
+			<rect x="94" y="74" width="52" height="32" rx="16" fill="#FFB020" data-accent />
+		</symbol>
+		<symbol id="s85" viewBox="0 0 180 180">
+			<path
+				d="M42 54 H138 A20 20 0 0 1 158 74 V106 A20 20 0 0 1 138 126 H42 A20 20 0 0 1 22 106 V74 A20 20 0 0 1 42 54 Z M47 68 A11 11 0 0 0 36 79 V101 A11 11 0 0 0 47 112 H133 A11 11 0 0 0 144 101 V79 A11 11 0 0 0 133 68 Z"
+				fill="currentColor"
+			/>
+			<rect x="48" y="78" width="42" height="24" rx="12" fill="#FFB020" data-accent />
+			<rect x="102" y="77" width="9" height="26" rx="4.5" fill="currentColor" />
+		</symbol>
+		<symbol id="s86" viewBox="0 0 180 180">
+			<path
+				d="M64 34 H116 A30 30 0 0 1 146 64 V116 A30 30 0 0 1 116 146 H64 A30 30 0 0 1 34 116 V64 A30 30 0 0 1 64 34 Z M72 54 A18 18 0 0 0 54 72 V108 A18 18 0 0 0 72 126 H108 A18 18 0 0 0 126 108 V72 A18 18 0 0 0 108 54 Z"
+				fill="currentColor"
+			/>
+			<path
+				d="M82 68 H98 A14 14 0 0 1 112 82 V98 A14 14 0 0 1 98 112 H82 A14 14 0 0 1 68 98 V82 A14 14 0 0 1 82 68 Z M87 82 A5 5 0 0 0 82 87 V93 A5 5 0 0 0 87 98 H93 A5 5 0 0 0 98 93 V87 A5 5 0 0 0 93 82 Z"
+				fill="#FFB020"
+				data-accent
+			/>
+		</symbol>
+		<symbol id="s87" viewBox="0 0 180 180">
+			<polygon points="88,36 110,36 66,144 44,144" fill="#4F46E5" />
+			<rect x="108" y="64" width="42" height="12" rx="6" fill="#4F46E5" />
+			<rect x="108" y="88" width="42" height="12" rx="6" fill="#FFB020" data-accent />
+			<rect x="108" y="112" width="42" height="12" rx="6" fill="#4F46E5" />
+		</symbol>
+		<symbol id="s88" viewBox="0 0 180 180">
+			<rect x="58" y="32" width="16" height="116" rx="8" fill="currentColor" />
+			<rect x="106" y="32" width="16" height="116" rx="8" fill="currentColor" />
+			<rect x="32" y="62" width="116" height="16" rx="8" fill="currentColor" />
+			<rect x="32" y="102" width="116" height="16" rx="8" fill="currentColor" />
+			<rect x="76" y="80" width="28" height="20" rx="6" fill="#FFB020" data-accent />
+		</symbol>
+		<symbol id="s89" viewBox="0 0 180 180">
+			<rect x="62" y="40" width="56" height="24" rx="12" fill="currentColor" />
+			<rect x="85" y="62" width="10" height="26" fill="currentColor" />
+			<rect x="55" y="84" width="70" height="10" fill="currentColor" />
+			<rect x="55" y="84" width="10" height="28" fill="currentColor" />
+			<rect x="115" y="84" width="10" height="28" fill="currentColor" />
+			<rect x="32" y="108" width="56" height="26" rx="13" fill="currentColor" />
+			<rect x="92" y="108" width="56" height="26" rx="13" fill="#F45B49" data-accent />
+		</symbol>
+		<symbol id="s90" viewBox="0 0 180 180">
+			<polygon points="29,75 143,57 151,105 37,123" fill="#FFB020" data-accent />
+			<polygon points="41,90 136,75 139,90 44,105" fill="currentColor" />
+		</symbol>
+		<symbol id="s91" viewBox="0 0 180 180">
+			<rect x="70" y="58" width="40" height="60" rx="17" fill="#FFB020" data-accent />
+			<rect x="24" y="104" width="34" height="14" rx="7" fill="currentColor" />
+			<rect x="122" y="104" width="34" height="14" rx="7" fill="currentColor" />
+		</symbol>
+		<symbol id="s92" viewBox="0 0 180 180">
+			<rect x="70" y="40" width="40" height="100" rx="13" fill="#FFB020" data-accent />
+			<rect x="30" y="60" width="120" height="16" rx="8" fill="currentColor" />
+			<rect x="30" y="104" width="120" height="16" rx="8" fill="currentColor" />
+		</symbol>
+		<symbol id="s93" viewBox="0 0 180 180">
+			<path
+				d="M50 40 H130 A24 24 0 0 1 154 64 V100 A24 24 0 0 1 130 124 H50 A24 24 0 0 1 26 100 V64 A24 24 0 0 1 50 40 Z M54 54 A14 14 0 0 0 40 68 V96 A14 14 0 0 0 54 110 H126 A14 14 0 0 0 140 96 V68 A14 14 0 0 0 126 54 Z"
+				fill="currentColor"
+			/>
+			<polygon points="52,120 52,150 84,120" fill="currentColor" />
+			<rect x="52" y="68" width="42" height="26" rx="13" fill="#FFB020" data-accent />
+			<rect x="102" y="73" width="26" height="16" rx="8" fill="currentColor" />
+		</symbol>
+		<symbol id="s94" viewBox="0 0 180 180">
+			<path d="M58 40 A10 10 0 0 1 68 30 H112 A10 10 0 0 1 122 40 V150 L90 118 L58 150 Z" fill="currentColor" />
+			<circle cx="90" cy="72" r="16" fill="#F45B49" data-accent />
+		</symbol>
+		<symbol id="s95" viewBox="0 0 180 180">
+			<path d="M40 140 V40 H64 L90 75 L116 40 H140 V140 H118 V74 L90 111 L62 74 V140 Z" fill="#4F46E5" />
+			<circle cx="90" cy="127" r="13" fill="#FFB020" data-accent />
+		</symbol>
+		<symbol id="s96" viewBox="0 0 180 180">
+			<polygon points="90,36 146,58 90,80 34,58" fill="#FFB020" data-accent />
+			<polygon points="34,80 90,102 146,80 146,92 90,114 34,92" fill="#4F46E5" />
+			<polygon points="34,104 90,126 146,104 146,116 90,138 34,116" fill="#4F46E5" />
+		</symbol>
+		<symbol id="s97" viewBox="0 0 180 180">
+			<rect x="28" y="70" width="112" height="40" rx="20" fill="currentColor" />
+			<path
+				d="M150 90 A26 26 0 1 1 98 90 A26 26 0 1 1 150 90 Z M136 90 A12 12 0 1 0 112 90 A12 12 0 1 0 136 90 Z"
+				fill="#FFB020"
+				data-accent
+			/>
+		</symbol>
+		<symbol id="s98" viewBox="0 0 180 180">
+			<path
+				d="M46 34 H134 A16 16 0 0 1 150 50 A16 16 0 0 1 134 66 H46 A16 16 0 0 1 30 50 A16 16 0 0 1 46 34 Z M48 44 A6 6 0 0 0 42 50 A6 6 0 0 0 48 56 H132 A6 6 0 0 0 138 50 A6 6 0 0 0 132 44 Z"
+				fill="currentColor"
+			/>
+			<rect x="42" y="80" width="70" height="16" rx="8" fill="currentColor" />
+			<rect x="36" y="104" width="108" height="22" rx="11" fill="#FFB020" data-accent />
+			<rect x="42" y="134" width="84" height="16" rx="8" fill="currentColor" />
+		</symbol>
+		<symbol id="s99" viewBox="0 0 180 180">
+			<path d="M100 36 L66 144 H62 A26 26 0 0 1 36 118 V62 A26 26 0 0 1 62 36 Z" fill="currentColor" />
+			<path
+				d="M112 36 H118 A26 26 0 0 1 144 62 V118 A26 26 0 0 1 118 144 H78 L112 36 Z"
+				fill="#FFB020"
+				data-accent
+			/>
+			<rect x="48" y="60" width="24" height="11" rx="5.5" fill="#FFB020" data-accent />
+			<circle cx="118" cy="110" r="10" fill="currentColor" />
+		</symbol>
+	</defs>
+</svg>
+
+<h2 class="part">
+	Part 1 — Hybrid symbolism <span>Block Stack × Figma anatomy × implied M; verified, 1 of 48 dropped</span>
+</h2>
+
+<h3 class="family-heading">
+	A — Chip Rhythm <span>Block Stack language — chip rows/columns whose heights pulse up-down-up to whisper M.</span>
+</h3>
+<div class="logo-grid">
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s1" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>1. Chip Triad</h3>
+			<p>
+				Three chip columns with a dipped middle carry the two-peak rhythm; the caret dot hovers in the valley
+				where a chip is about to be typed.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s1" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s1" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s1" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s2" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>2. Pill Rhythm</h3>
+			<p>
+				Five pill columns pulse low-high-low-high-low, tracing two peaks and a valley; the caret dot nests
+				top-center between the tall chips.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s2" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s2" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s2" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s3" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>3. Row Stack Pulse</h3>
+			<p>
+				The Block Stack row grid, but the top-row chips rise at the edges over a sunken center — text lines of
+				chips with the caret inside the long row.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s3" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s3" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s3" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s4" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>4. Edge Risers</h3>
+			<p>
+				Two chips rise from a monolithic field at the edges, leaving a negative-space valley up top; the caret
+				dot sits inside the field, 97-style.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s4" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s4" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s4" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s5" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>5. Brick Valley</h3>
+			<p>
+				A staggered brick grid whose top course splits into two peaks; the caret dot sits in the notch, right at
+				the insertion point between chips.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s5" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s5" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s5" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s6" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>6. Twin Arches</h3>
+			<p>
+				Two soft half-pill arches give lowercase-m energy without a glyph; the caret dot floats in the valley
+				between them like a blinking cursor. (Off-family for Chip Rhythm but kept as an excellent symbol: arch
+				chips share the family's 10-unit gap grid; all arcs verified renderable.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s6" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s6" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s6" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s7" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>7. Soft Skyline</h3>
+			<p>
+				Figma-style primitives on one baseline — dome, chip, dome — a high-low-high skyline of mixed content
+				with the caret hovering over the sunken center chip. (Off-family-leaning but kept: shared 130 baseline,
+				uniform 10-unit gaps, arcs verified renderable.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s7" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s7" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s7" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s8" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>8. Caret Lines</h3>
+			<p>
+				Chip rows as lines of text — the middle line stops short and the yellow caret waits at its end,
+				mid-sentence, where the next chip lands. (Weakest M whisper of the set — no height pulse — but squarely
+				in the chip-row language with a clean uniform grid.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s8" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s8" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s8" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<h3 class="family-heading">
+	B — Figma Grid
+	<span
+		>Tight grid of mixed soft primitives — half-pills, circles, rounded squares — Figma anatomy, M only
+		hinted.</span
+	>
+</h3>
+<div class="logo-grid">
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s9" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>9. Meadow Grid</h3>
+			<p>
+				Figma-style 3x2 grid of mixed chip primitives — tall-low-tall top row implies the M, the yellow square
+				is the inline chip carrying the accent.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s9" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s9" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s9" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s10" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>10. Valley Quarters</h3>
+			<p>
+				A 2x2 Figma grid — two quarter-rounds peak at the outer edges so the negative space carves the M valley;
+				the yellow circle is a full-cell token chip.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s10" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s10" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s10" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s11" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>11. Tall Stack</h3>
+			<p>
+				The Figma logo's tall 2x3 anatomy verbatim — twin half-pill arches give lowercase-m energy, a circle
+				chip carries the accent, and the base pill is the text row.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s11" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s11" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s11" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s12" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>12. Row Cadence</h3>
+			<p>
+				Direct heir of the picked Block Stack — text rows of chips, but the top row rises-dips-rises to hint M,
+				ending in the yellow caret dot.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s12" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s12" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s12" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s13" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>13. Dome Caret</h3>
+			<p>
+				Two dome chips on a text bar form twin arches; the yellow caret dot floats in the valley between them —
+				plain text meeting inline components.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s13" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s13" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s13" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s14" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>14. Chip Comb</h3>
+			<p>
+				A text bar with three chips hanging beneath in long-short-long rhythm — lowercase-m legs abstracted to
+				grid cells, the yellow dot marking the caret in the gap.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s14" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s14" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s14" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s15" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>15. Peak Pills</h3>
+			<p>
+				Three pill chips in up-down-up rhythm — the two peaks imply M and the yellow caret dot completes the
+				short middle column at the insertion point.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s15" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s15" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s15" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<h3 class="family-heading">
+	C — Valley Notch
+	<span
+		>A solid soft cluster with one V/U valley between two rounded peaks — "two peaks, one valley" as pure
+		symbol.</span
+	>
+</h3>
+<div class="logo-grid">
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s16" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>16. Bridge Blob</h3>
+			<p>
+				Two token towers fused by a low bridge form the M valley; the yellow caret dot sits where text meets
+				chips.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s16" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s16" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s16" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s17" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>17. Notch Chip</h3>
+			<p>
+				One soft chip with a caret notch dipping from its top edge — the input field itself, with the token dot
+				inside.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s17" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s17" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s17" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s18" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>18. Twin Arches</h3>
+			<p>
+				Two overlapping circles give lowercase-m arches above a chip pill; the yellow dot completes the row like
+				an inline token.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s18" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s18" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s18" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s19" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>19. Chip Rhythm</h3>
+			<p>
+				Variant 97's chip grammar with a tall-short-tall top row — peaks and valley spell M by rhythm, caret dot
+				on the text bar.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s19" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s19" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s19" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s20" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>20. Arch Gate</h3>
+			<p>
+				Negative space does the work: two arches carved from one chip carry the m energy, with the caret dot
+				hovering above the seam.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s20" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s20" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s20" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s21" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>21. Dome Row</h3>
+			<p>
+				Two half-pill peaks flank a yellow valley chip — plain text on both sides of an inline component, docked
+				on the field bar.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s21" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s21" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s21" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s22" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>22. Shoulder Grid</h3>
+			<p>
+				Figma-style quarter-round shoulders with a low valley chip between them; the bar-plus-circle row below
+				is a line of text ending in a token.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s22" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s22" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s22" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s23" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>23. Stacked Squares</h3>
+			<p>
+				Two square chips over a full-width bar in a strict grid — the gap between them is the M valley, the
+				caret dot rides the text line.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s23" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s23" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s23" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<h3 class="family-heading">
+	D — Pill Trio
+	<span>Three-four vertical pills, outer tall middle short — abstract M rhythm at minimum shape count.</span>
+</h3>
+<div class="logo-grid">
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s24" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>24. Valley Dot</h3>
+			<p>
+				Two tall chips flank a dropped pill — the M valley — with the yellow caret dot hovering where text is
+				being inserted.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s24" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s24" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s24" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s25" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>25. Chip Waveform</h3>
+			<p>
+				Four bottom-aligned pills alternate tall-short like a text waveform, the last chip lit yellow as the
+				active inline component.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s25" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s25" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s25" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s26" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>26. Twin Sentinels</h3>
+			<p>
+				Two tall pills with a small yellow token resting between them — plain text on both sides of an embedded
+				chip, with lowercase-m rhythm.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s26" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s26" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s26" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s27" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>27. Baseline Rhythm</h3>
+			<p>
+				Tall-short-tall pills stand on a thin chip baseline — tokens sitting in one input row — with the caret
+				dot above the valley.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s27" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s27" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s27" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s28" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>28. Hanging Valley</h3>
+			<p>
+				Top-aligned pills with a short middle chip and the yellow dot dropped into the gap below — the M rhythm
+				inverted, caret under the token.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s28" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s28" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s28" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s29" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>29. Lozenge Trio</h3>
+			<p>
+				Three soft lozenges in tall-short-tall M rhythm; the compact yellow middle is the inline chip glowing
+				between two runs of text.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s29" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s29" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s29" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s30" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>30. Five Pill Wave</h3>
+			<p>
+				Five narrow pills step down into a valley and back up — two M peaks — with the deepest, shortest pill in
+				yellow as the insertion point.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s30" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s30" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s30" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s31" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>31. Caret Chips</h3>
+			<p>
+				Two rounded chip blocks split by a tall yellow caret pill — Markput's core gesture of a text cursor
+				standing between components.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s31" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s31" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s31" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<h3 class="family-heading">
+	E — Twin Arches
+	<span>Lowercase-m energy from Figma curves — two soft arches, quarter/half-rounds, no glyph outline.</span>
+</h3>
+<div class="logo-grid">
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s32" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>32. Split Dome</h3>
+			<p>
+				One chip dome sliced by the cursor's gap into twin quarter-round humps, the yellow dot hovering exactly
+				where typing continues.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s32" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s32" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s32" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s33" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>33. Caret Gap</h3>
+			<p>
+				Two dome chips part just enough for the yellow caret dot to sit on the baseline between them — an
+				insertion point between inline components.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s33" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s33" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s33" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s34" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>34. Twin Hump Bar</h3>
+			<p>
+				Two half-circle chip humps ride a wide field bar, the yellow caret dot resting in the m-valley between
+				the peaks.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s34" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s34" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s34" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s35" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>35. Notched Field</h3>
+			<p>
+				A rounded input field with twin arches carved out as negative space over an underline pill — the m
+				emerges from what the text leaves open.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s35" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s35" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s35" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s36" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>36. Arch Windows</h3>
+			<p>
+				A chip slab with two unequal arch slots punched clean through, over an underline — inline component
+				slots in solid text, the dot as the caret above the open one.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s36" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s36" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s36" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s37" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>37. Unequal Arches</h3>
+			<p>
+				Two thick arches at different chip heights give the up-down-up rhythm of mixed content, the caret dot
+				marking the insertion point above the shorter one.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s37" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s37" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s37" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s38" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>38. Fused Hills</h3>
+			<p>
+				Two soft humps grown from one chip slab — plain text and components fused into a single field, the caret
+				hovering in the shared valley.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s38" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s38" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s38" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s39" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>39. Arch Stack</h3>
+			<p>
+				The Block Stack itself with its top row rounded into twin m-arches — chip rows of text below, the caret
+				dot keeping its place on the wide bar.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s39" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s39" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s39" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<h3 class="family-heading">
+	F — Field Peaks
+	<span>A chip-row baseline (the input field) with soft shapes rising above it — content over field.</span>
+</h3>
+<div class="logo-grid">
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s40" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>40. Field Twin Peaks</h3>
+			<p>
+				Tall-short-tall chips over the input bar carry the M rhythm straight from Block Stack, with the caret
+				dot waiting in the field under the valley.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s40" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s40" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s40" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s41" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>41. Twin Arches</h3>
+			<p>
+				Two half-pill chips rise from the field like a lowercase m's shoulders; the caret dot parks in the bar
+				beneath the gap between them.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s41" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s41" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s41" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s42" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>42. Valley Dot</h3>
+			<p>
+				Twin chip blocks make the M's two peaks above the field; the accent dot floats in the valley — the exact
+				spot where typing happens.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s42" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s42" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s42" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s43" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>43. Rising Caret</h3>
+			<p>
+				The caret becomes a small yellow chip climbing out of the field between two blocks — content being born
+				inline, peak-valley-peak keeping the M beat.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s43" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s43" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s43" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s44" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>44. Peak Trio</h3>
+			<p>
+				The low-high-low chip trio rises from the input bar like mixed-height tokens in a line of text, the
+				caret dot in the field directly under the tall chip's column.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s44" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s44" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s44" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s45" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>45. Quarter Shoulders</h3>
+			<p>
+				Mirrored quarter-round chips carve a soft M valley in negative space above the field, the yellow dot
+				hanging at the insertion point inside the notch.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s45" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s45" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s45" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s46" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>46. Dome And Block</h3>
+			<p>
+				One arched chip and one low block over the field — plain text next to a component — with the caret dot
+				tucked in the bar beneath the smaller chip.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s46" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s46" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s46" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s47" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>47. Chip And Dome</h3>
+			<p>
+				Two species of inline chip — a round mention and a half-pill block — sit over the field, the yellow
+				caret blinking in the seam where the next one lands. (Fixed: accent dot nudged cx 78 to 80 to center it
+				in the 74..86 seam between circle and dome.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s47" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s47" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s47" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<h2 class="part">
+	Part 2 — Explicit M, salvaged
+	<span
+		>from the stopped letterform run, before the no-glyph turn; unverified by design agents, XML-checked only</span
+	>
+</h2>
+
+<h3 class="family-heading">Editing-cue M <span>Explicit letterform family — kept for breadth.</span></h3>
+<div class="logo-grid">
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s48" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>48. Valley Caret</h3>
+			<p>
+				The blinking insertion caret stands in as the M's center vertex — Markput's cursor lives inside the
+				letter.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s48" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s48" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s48" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s49" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>49. Cursor Stem</h3>
+			<p>A text I-beam cursor takes the place of the M's first stroke — the letter is mid-edit.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s49" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s49" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s49" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s50" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>50. Selected M</h3>
+			<p>The M sits on a selection-highlight bar, the accent showing through its counters like marked-up text.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s50" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s50" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s50" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s51" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>51. Twin Carets</h3>
+			<p>The M's peaks are two insertion carets side by side, the active insertion point lit in accent.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s51" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s51" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s51" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s52" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>52. Underline M</h3>
+			<p>An underline completes the implied M; its yellow tail is a live selection fragment mid-drag.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s52" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s52" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s52" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s53" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>53. Chip Stem</h3>
+			<p>
+				An inline chip pill stands as the M's final stroke — components living inside the text, Markput's core
+				trick.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s53" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s53" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s53" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s54" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>54. Trailing Caret</h3>
+			<p>The cursor blinks right after a freshly typed M — an editable field caught mid-sentence.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s54" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s54" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s54" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s55" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>55. Chip Window</h3>
+			<p>
+				The M cut through a Markput chip token, the accent glowing through the window — the letter rendered as a
+				chip.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s55" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s55" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s55" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<h3 class="family-heading">Ribbon M <span>Explicit letterform family — kept for breadth.</span></h3>
+<div class="logo-grid">
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s56" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>56. Folded Band</h3>
+			<p>
+				One unbroken band folds into an M with angle-cut ribbon ends — text and inline components flowing as a
+				single stream.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s56" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s56" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s56" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s57" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>57. Tape Fold</h3>
+			<p>
+				Tape-fold notches mark where the band turns; one fold is annotated in yellow, like markup inside plain
+				text.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s57" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s57" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s57" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s58" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>58. Baseline Ribbon</h3>
+			<p>
+				The M's last stroke folds flat into the field's baseline, with a yellow chip resting on the input line.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s58" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s58" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s58" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s59" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>59. Twin Peak Fold</h3>
+			<p>
+				Two folds land at different heights for a typed, human rhythm; the floating bar over the low peak is the
+				insertion caret.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s59" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s59" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s59" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s60" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>60. Rounded Fold</h3>
+			<p>The zigzag band with soft outer folds that borrow the pill radius of Markput's inline chips.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s60" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s60" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s60" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s61" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>61. Split Ribbon</h3>
+			<p>The ribbon splits into tokens at every fold — and the final segment is the highlighted chip.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s61" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s61" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s61" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s62" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>62. Banner Fold</h3>
+			<p>Banner-cut swallowtail ends finish the band like pinned labels — tags living inside running text.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s62" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s62" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s62" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s63" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>63. Switchback Fold</h3>
+			<p>
+				An orthogonal ribbon switchbacks through the M; the yellow bar is the fold where plain text turns into a
+				chip.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s63" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s63" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s63" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<h3 class="family-heading">Chip-built M (recovered) <span>Explicit letterform family — kept for breadth.</span></h3>
+<div class="logo-grid">
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s64" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>64. Stepped Core</h3>
+			<p>
+				Chip-built letterform. (Recovered from the stopped run; the author never titled these — names are the
+				assembler's.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s64" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s64" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s64" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s65" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>65. Chip Grid</h3>
+			<p>
+				Chip-built letterform. (Recovered from the stopped run; the author never titled these — names are the
+				assembler's.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s65" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s65" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s65" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s66" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>66. Stacked Rows</h3>
+			<p>
+				Chip-built letterform. (Recovered from the stopped run; the author never titled these — names are the
+				assembler's.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s66" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s66" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s66" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s67" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>67. Comb Chips</h3>
+			<p>
+				Chip-built letterform. (Recovered from the stopped run; the author never titled these — names are the
+				assembler's.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s67" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s67" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s67" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s68" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>68. Diagonal Chips</h3>
+			<p>
+				Chip-built letterform. (Recovered from the stopped run; the author never titled these — names are the
+				assembler's.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s68" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s68" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s68" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s69" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>69. Gate Chips</h3>
+			<p>
+				Chip-built letterform. (Recovered from the stopped run; the author never titled these — names are the
+				assembler's.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s69" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s69" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s69" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s70" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>70. Portal Columns</h3>
+			<p>
+				Chip-built letterform. (Recovered from the stopped run; the author never titled these — names are the
+				assembler's.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s70" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s70" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s70" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s71" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>71. Tagged Columns</h3>
+			<p>
+				Chip-built letterform. (Recovered from the stopped run; the author never titled these — names are the
+				assembler's.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s71" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s71" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s71" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<h3 class="family-heading">Markup M (recovered) <span>Explicit letterform family — kept for breadth.</span></h3>
+<div class="logo-grid">
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s72" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>72. Bracket Frame</h3>
+			<p>
+				[M] — the letter captured by square brackets, closing bracket in accent. (Recovered from the stopped
+				run's working files; unverified.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s72" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s72" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s72" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s73" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>73. Brace Wrap</h3>
+			<p>{M} — braces hug the letterform. (Recovered from the stopped run's working files; unverified.)</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s73" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s73" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s73" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s74" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>74. Mention Loop</h3>
+			<p>An @-loop sweeping around the M core. (Recovered from the stopped run's working files; unverified.)</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s74" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s74" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s74" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s75" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>75. Tag Peak</h3>
+			<p>
+				A small chip tag hanging on the M's peak. (Recovered from the stopped run's working files; unverified.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s75" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s75" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s75" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s76" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>76. Hash Mark</h3>
+			<p>M growing out of hash tick bars. (Recovered from the stopped run's working files; unverified.)</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s76" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s76" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s76" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s77" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>77. Self Closing M</h3>
+			<p>M/> — the self-closing tag of markup. (Recovered from the stopped run's working files; unverified.)</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s77" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s77" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s77" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s78" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>78. Underscore M</h3>
+			<p>
+				The __M__ placeholder underlined in accent. (Recovered from the stopped run's working files;
+				unverified.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s78" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s78" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s78" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s79" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>79. Bracket Stems</h3>
+			<p>
+				Bracket strokes double as the M's outer stems. (Recovered from the stopped run's working files;
+				unverified.)
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s79" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s79" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s79" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<h2 class="part">
+	Part 3 — Clean slate <span>one agent, empty brief, own palette; it studied the repo and designed from scratch</span>
+</h2>
+
+<h3 class="family-heading">Clean Slate <span>No imposed direction — concepts and colors are the agent's own.</span></h3>
+<div class="logo-grid grid-clean">
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s80" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>80. Inline Pill</h3>
+			<p>
+				The product in one glyph: three lines of running text with one token rendered as a live component pill.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s80" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s80" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s80" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s81" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>81. Mention Aperture</h3>
+			<p>An @-inspired open ring with its tail flicking free, holding a component token at its core.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s81" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s81" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s81" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s82" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>82. Bracket Value</h3>
+			<p>The [value] of the markup pattern: square brackets guarding the live token they capture.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s82" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s82" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s82" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s83" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>83. Tag Chevrons</h3>
+			<p>Custom HTML-like syntax: angle brackets embracing the mark they render.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s83" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s83" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s83" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s84" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>84. Caret Beam</h3>
+			<p>The text caret meets the pill it just created — editing and components side by side.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s84" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s84" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s84" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s85" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>85. Input Chip</h3>
+			<p>The field itself: an input outline holding a chip token and a blinking caret.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s85" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s85" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s85" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s86" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>86. Nested Marks</h3>
+			<p>Mark inside mark: concentric rounded frames for Markput's hierarchical tokens.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s86" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s86" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s86" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s87" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>87. Slash Command</h3>
+			<p>A bold slash summoning its suggestion list, with the active row highlighted.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s87" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s87" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s87" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s88" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>88. Hash Cell</h3>
+			<p>A hashtag grid with its center cell claimed by a token — structure becomes content.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s88" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s88" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s88" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s89" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>89. Token Tree</h3>
+			<p>The core's source of truth: a root token branching into children, one of them a mark.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s89" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s89" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s89" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s90" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>90. Highlight Stroke</h3>
+			<p>A highlighter swipe over a line of running text — text, marked.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s90" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s90" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s90" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s91" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>91. Underscore Token</h3>
+			<p>The __value__ placeholder made physical: a token standing between its underscores.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s91" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s91" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s91" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s92" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>92. Cross Selection</h3>
+			<p>One selection band running seamlessly through multiple lines of text and marks.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s92" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s92" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s92" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s93" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>93. Mention Bubble</h3>
+			<p>Where mentions live: a chat bubble carrying a mark pill mid-sentence.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s93" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s93" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s93" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s94" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>94. Bookmark Dot</h3>
+			<p>A literal mark: a bookmark ribbon holding the point it annotates.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s94" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s94" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s94" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s95" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>95. Marked Monogram</h3>
+			<p>M for Markput with a mark dropped into its valley — the letter itself annotated.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s95" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s95" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s95" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s96" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>96. Value Layers</h3>
+			<p>The string as a projection of the token tree: stacked layers with the live one on top.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s96" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s96" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s96" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s97" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>97. Anchor Ring</h3>
+			<p>An anchor naming a position on a token: a target ring pinned to the pill's edge.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s97" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s97" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s97" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s98" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>98. Overlay Stack</h3>
+			<p>The built-in overlay: an input field above its suggestions, one row selected.</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s98" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s98" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s98" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s99" /></svg>
+		</div>
+		<div class="card-body">
+			<h3>99. Fusion Tile</h3>
+			<p>
+				One field, two natures: plain text and component split by a slash, each carrying a token of the other.
+			</p>
+			<div class="checks">
+				<div class="mini">
+					<svg viewBox="0 0 180 180"><use href="#s99" /></svg>
+				</div>
+				<div class="mini tiny">
+					<svg viewBox="0 0 180 180"><use href="#s99" /></svg>
+				</div>
+				<div class="mini dark">
+					<svg viewBox="0 0 180 180"><use href="#s99" /></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="saved-section">
+	<h2>Saved</h2>
+	<p class="subtitle">Keep this candidate on future boards unless explicitly removed.</p>
+	<div class="saved-card">
+		<div class="saved-label">Saved — 97. Block Stack, picked on the v18 board</div>
+		<div class="logo-stage">
+			<svg class="hero-mark" viewBox="0 0 180 180">
+				<rect x="30" y="30" width="40" height="40" rx="8" fill="currentColor" />
+				<rect x="80" y="30" width="40" height="40" rx="8" fill="currentColor" />
+				<rect x="130" y="30" width="20" height="40" rx="8" fill="currentColor" />
+				<rect x="30" y="80" width="120" height="40" rx="8" fill="currentColor" />
+				<rect x="30" y="130" width="80" height="20" rx="8" fill="currentColor" />
+				<circle cx="90" cy="100" r="6" data-accent fill="#f5b800" />
+			</svg>
+		</div>
+		<div class="card-body">
+			<h3>Block Stack</h3>
+			<p>Stacked blocks &#8212; like input chips. The current best variant.</p>
+		</div>
+	</div>
+</div>
