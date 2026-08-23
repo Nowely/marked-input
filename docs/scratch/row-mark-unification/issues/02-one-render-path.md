@@ -70,35 +70,107 @@ repaint") and `bind.ts:146`'s own comment. Both lenses measured the open popup
 as editable without it. Any approach premised on folding `control()` away is
 dead.
 
-## The slot registry — taken 2026-08-22, sequenced after the layer
+## The component surface — PAUSED 2026-08-23, direction taken, not executed
 
-**Decision: the slot registry lands** — `slots: {container, text, mark, row}`
-with mirrored `slotProps`, killing `props.Mark`, `props.Span`, `slots.block`
-and the `'block'` special case. `options[i].Mark` stays the only per-option
-override.
+**Status: parked by the maintainer. Do not start this without reopening the
+discussion.** The direction below is settled; the design around it is not, and
+two sub-questions are open at the bottom.
 
-**But as its own PR, after the controls layer.** Mixing the two puts two
-breaking changes in one diff, and they break different things for different
-reasons — one moves the controls out of rows, the other renames the consumer-facing
-slot surface.
+### The reframe, and why the first decision was wrong
 
-This is the largest declared break in the effort: ~42 files touch `Mark=`/
-`Mark:`, 14 sites touch `Span`, plus the storybook, the website docs, both
-demo apps and a typedoc regeneration. It renames what `CONTEXT.md:110` calls
-"not a rename target", so that glossary entry is reopened deliberately, and
-[ticket 06](06-is-a-row-a-token.md) is unblocked only once this lands.
+On 2026-08-22 this ticket recorded "the slot registry lands": `slots: {container,
+text, mark, row}` with mirrored `slotProps`, killing `props.Mark` and
+`props.Span`. That decision was reached from the INSIDE — two resolvers, a
+`throw` on `RowNode`, broken typing — and it silently let internals dictate the
+shape of the public API.
 
-The state it is repairing is worse than "published API being renamed" — the
-pair is already half-broken, both verified by typecheck probes: **`slotProps.block`
-typechecks on NEITHER adapter**, and `slots.block` only on React, because Vue
-declares its own `Slots`/`SlotProps` extending neither core type. Meanwhile
-`architecture.md:504` documents `block: MyCustomBlock` to consumers. Vue
-consumers gain slots typing they do not have today.
+The maintainer rejected it on API grounds (2026-08-23): `<Markput Mark={Tag} />`
+is minimal and pleasant, and burying the most-used prop in a registry makes the
+common case worse to fix an uncommon inconsistency.
 
-Three things the registry work must not lose, all found in round 1: it drops
-`resolveOptionSlot` (the published function-form `option.mark` transform) and
-must decide whether `convertDataAttrs` applies to the new `text`/`mark` arms;
-`TokenModel.ts:406-413`'s `#hasMark` gates whether a `Parser` is constructed at
-all, so moving `Mark` into the registry moves the parse gate with it; and
-`CoreSlotProps` is not exported from `packages/core/index.ts`, so "publish it
-for real" also means a new core export.
+**Measured across the storybook and both demo apps:** `Mark=` as a prop appears
+**73** times, `Span` 13, and `slots=` **9**. The flat prop is used an order of
+magnitude more than the registry.
+
+**And flat IS the house convention already.** Component-shaped props at top
+level: `Mark`, `Span`, `Overlay`. In `slots`: `container`, `block`. The registry
+is the minority. "Unify on the registry" meant pulling the majority into the
+exception.
+
+### The boundary `slots` was meant to draw — and why it no longer holds
+
+The maintainer's account of the original intent: `slots` was for overriding
+markput's own INTERNAL components — `container`, the element markput runs
+inside — as opposed to the content components a consumer supplies.
+
+That is a real category, but the code does not honour it. **`Overlay` is an
+internal-component override and it is already a flat prop** — its own docblock
+reads "Global component used for rendering overlays (fallback for
+`option.Overlay`)", i.e. the consumer replacing what markput draws its
+suggestion popup with. By the stated rule it belongs in `slots`. It never went
+there.
+
+So today's split is accidental, not principled: an internal component outside
+(`Overlay`), two internal components inside (`container`, `block`), and content
+components outside (`Mark`, `Span`). There is no rule that predicts which is
+which — that is why the distinction was never written down anywhere.
+
+### Direction taken: flat props
+
+`slots` and `slotProps` dissolve. `container` → `Container`, `block` → `Row`,
+`slotProps.container` → `containerProps`. `Mark={Tag}` is untouched, and with it
+73 of the 82 live call sites.
+
+The internal-vs-content distinction survives — it moves out of the SHAPE and
+into the NAME plus the glossary, the same way `*Model` and `*Controller` carry
+role here. `Container`, `Row`, `Overlay` are self-evidently the editor's
+internals; `Mark` and `Span` are what the consumer supplies. `CONTEXT.md` has no
+entry about slots at all today, which is precisely how the original rule got
+lost; a **Slot** entry should record it when this work lands.
+
+### Open sub-questions, both to settle before any code
+
+- **`Row` or `Block`?** The glossary says the unit is a **Row**, but the
+  published contract carries the wider word (`slots.block`, `slotProps.block`,
+  `isBlock`, and `CONTEXT.md:110` calls those "not a rename target"). This
+  collision has to be decided out loud, not inherited.
+- **Does `Overlay` get renamed** now that the internals sit beside each other?
+  It is already flat, so nothing forces it — but leaving it is a choice too.
+
+### What the internal half changes, under ANY outward shape
+
+This part was never in dispute and can be done independently of the API
+decision: one resolver with an arm per node kind instead of `resolveSlot` +
+`resolveMarkSlot`; the `throw` on `RowNode` disappears; `slots: unknown` and its
+`as`-casts go through the existing `SlotRegistry` augmentation; `CoreSlotProps`
+gets exported. Vue gains typing it does not have today.
+
+### The damage that is already shipped
+
+Verified by typecheck probes, and true right now: **`slotProps.block` typechecks
+on NEITHER adapter**, and `slots.block` only on React — Vue declares its own
+`Slots`/`SlotProps` in `packages/vue/markput/src/types.ts` extending neither core
+type, with `container` alone. React's `Slots extends CoreSlots` but its
+`SlotProps` is declared from scratch, also `container` alone. Meanwhile
+`architecture.md:504` documents `block: MyCustomBlock` to consumers.
+`packages/core/index.ts` exports `CoreSlots` but not `CoreSlotProps`, and
+`resolveSlot` is forced to take `slots: unknown` and cast, with an
+oxlint-disable and a comment blaming Vue `Ref<T>` compatibility.
+
+### Three things this work must not lose, whatever shape it takes
+
+Found in round 1 and still true: it drops `resolveOptionSlot` (the published
+function-form `option.mark` transform) and must decide whether
+`convertDataAttrs` applies to any new arms; `TokenModel`'s `#hasMark` gates
+whether a `Parser` is constructed AT ALL, so moving `Mark` anywhere moves the
+parse gate with it; and `CoreSlotProps` must actually be exported, not merely
+declared.
+
+### Blast radius, for whenever this resumes
+
+~42 files touch `Mark=`/`Mark:`, 14 touch `Span`, plus the storybook, the
+website docs, both demo apps and a typedoc regeneration. Under the flat-props
+direction the `Mark`/`Span` sites do NOT move — only the 9 `slots=` sites and
+their types do — so the break is far smaller than the registry version implied.
+[Ticket 06](06-is-a-row-a-token.md) stays blocked on this only because of the
+`Row`-versus-`Block` naming question above.

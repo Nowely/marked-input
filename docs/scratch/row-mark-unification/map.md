@@ -66,12 +66,19 @@ Implementation is a separate effort after this map.
   `SelectionDriver.spec.ts:328-343` is amended to assert the two properties
   that actually survived — mount takes no page-wide pointer stream, and unmount
   gives back what it took.
-- [The slot registry](issues/02-one-render-path.md) — it lands, as its own PR
-  AFTER the controls layer. `slots: {container, text, mark, row}` replaces
-  `props.Mark`, `props.Span` and the `'block'` special case. The largest
-  declared break here (~42 files), and it deliberately reopens
-  `CONTEXT.md:110`'s "not a rename target". It repairs a pair that is already
-  half-broken: `slotProps.block` typechecks on neither adapter.
+- [The component surface](issues/02-one-render-path.md) — **PAUSED 2026-08-23,
+  direction taken.** The 2026-08-22 decision (a `slots` registry keyed by node
+  kind, absorbing `props.Mark`) was REVERSED: it let internals dictate the
+  public API. Measured, `Mark=` appears 73 times against `slots=` 9, and flat
+  props are already the house convention — `Mark`, `Span` and `Overlay` sit at
+  top level while only `container` and `block` are in `slots`. New direction:
+  `slots`/`slotProps` dissolve into `Container`, `Row`, `containerProps`;
+  `Mark={Tag}` is untouched. The internal-vs-content boundary `slots` was meant
+  to draw does not hold today anyway — `Overlay` overrides an internal component
+  and is already flat — so the distinction moves into names plus a new
+  `CONTEXT.md` **Slot** entry. Two sub-questions open: `Row` versus `Block`, and
+  whether `Overlay` is renamed. Not to be started without reopening the
+  discussion.
 - [One input pipeline](issues/03-one-input-pipeline.md) — shape A (one listener
   pair, block arms after the shared checks) plus a row-separator expansion in
   `anchorsForDelete`, without rewriting `stepAnchor`. Ranged-Enter options C and
