@@ -141,7 +141,7 @@ describe('TokenModel', () => {
 			expect(() => store.host.container(document.createElement('div'))).toThrow('separator must be non-empty')
 		})
 
-		it('does not filter out empty text tokens when layout is inline', () => {
+		it('brackets a leading mark with empty text roots in inline layout', () => {
 			store.props.set({
 				Mark: () => null,
 				layout: 'inline',
@@ -180,9 +180,8 @@ describe('TokenModel', () => {
 			// is a plain signal, so a new array with the same contents propagates, mints a new
 			// `Parser`, and descriptors are interned PER PARSER — `adopt` pairs marks only on
 			// `candidate.descriptor === token.descriptor`, so every mark falls to `buildNode` and
-			// takes a new id. Both adapters key on `node.id` and `BlockController` holds per-row
-			// state in a node-keyed WeakMap, so that is a full remount of every Mark plus lost
-			// row state.
+			// takes a new id. Both adapters key on `node.id`, so that is a full remount of every
+			// Mark and of whatever component state the consumer keeps inside one.
 			//
 			// A consumer cannot avoid it: React's props sync has no dep array, and Vue's
 			// `syncProps` allocates a fresh options array on every run of a watch whose deps

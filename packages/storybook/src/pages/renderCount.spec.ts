@@ -21,9 +21,10 @@ import {markMounts} from './renderCount.fixtures'
 
 /**
  * The rows of a block layout. Under the single-host topology the editing host IS the row host,
- * so its element children are the rows.
+ * so its element children are the rows — MINUS the controls layer, which is one more container
+ * child and not a row.
  */
-const rowsOf = (host: HTMLElement) => childrenOf(host)
+const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.matches('[class*="BlockControls"]'))
 
 /**
  * Design-spec Phase 3 headline gates (commit routing):
@@ -169,6 +170,55 @@ describe('Render-count gates: block layout', () => {
 		await userEvent.keyboard('{Enter}')
 		expect(rowsOf(host)).toHaveLength(4)
 		expect(spanRenders()).toBeGreaterThan(spanBaseline)
+	})
+
+	it('a drag over every row re-renders no Span, however many rows there are', async () => {
+		// THE drag gate the editor-level controls layer owes: row-control state is now one signal per
+		// editor, where per-row stores made a row-control-driven fan-out structurally impossible.
+		// The property is that a drag over the whole document costs the CONSUMER nothing —
+		// every tick re-points one editor-level signal and re-renders the layer alone.
+		//
+		// What it cannot see, measured rather than assumed: subscribing a ROW to `drop` through
+		// the object selector (react `Block.tsx`, vue `Block.vue`) leaves this green in both
+		// projects, because both bridges skip a child whose node object did not change, so the
+		// extra row renders never reach a Mark or a Span. The scalar `dragging` selector both
+		// `Block`s use is therefore a discipline this file states but does not enforce.
+		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
+		const {host} = await mountComponent({
+			Span: CountedSpan,
+			options: [],
+			defaultValue: 'r0\n\nr1\n\nr2\n\nr3\n\nr4\n\n',
+			layout: 'block',
+			draggable: true,
+			style: {marginLeft: '64px'},
+		})
+		const rows = rowsOf(host)
+		expect(rows).toHaveLength(6)
+
+		await userEvent.hover(rows[0])
+		const grip = getElement(page.elementLocator(host).getByRole('button', {name: /Drag to reorder/}))
+		const dataTransfer = new DataTransfer()
+		grip.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer}))
+
+		// Baseline AFTER dragstart: picking the row up is one state change, and the gate is
+		// about the ticks that follow it.
+		const baseline = spanRenders()
+		expect(baseline).toBeGreaterThan(0)
+
+		for (const row of rows) {
+			const rect = row.getBoundingClientRect()
+			for (const clientY of [rect.top + 1, rect.bottom - 1]) {
+				host.dispatchEvent(new DragEvent('dragover', {bubbles: true, cancelable: true, dataTransfer, clientY}))
+				// One tick per assertion-worthy paint: without a yield both bridges batch the
+				// whole loop into a single pass, and the count measures dirty components.
+				await new Promise(resolve => setTimeout(resolve, 0))
+			}
+		}
+		// Not vacuous: the ticks really did drive the layer, and it really did repaint.
+		expect(host.querySelector('[class*="DropIndicator"]')).not.toBeNull()
+		grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))
+
+		expect(spanRenders()).toBe(baseline)
 	})
 
 	it('first keystroke into a freshly-Enter-created empty row rides the text path', async () => {

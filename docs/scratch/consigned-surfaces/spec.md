@@ -36,7 +36,7 @@ it hands that element to core through a ref callback — consignment — instead
 it afterwards by walking.
 
 This is not a new mechanism in this codebase. The Host already accepts exactly this shape twice:
-one registry for a Mark's slot host and one for consumer chrome. Both are ref callbacks keyed by a
+one registry for a Mark's slot host and one for consumer controls. Both are ref callbacks keyed by a
 stable identity, and both already feed the walk. The change generalises that registry to cover
 every Token element and the Block row wrapper, at which point the walk has nothing left to derive
 and is deleted.
@@ -116,11 +116,11 @@ and the instrument caveats are in
 16. As a consumer rendering custom Mark components, I want my component's own re-renders not to
     detach it from the library's model, so that state inside my component survives.
 17. As a consumer rendering custom Mark components, I want my component to keep working when it
-    renders extra chrome inside itself, so that the library's element bookkeeping does not depend
+    renders extra controls inside itself, so that the library's element bookkeeping does not depend
     on my DOM shape.
 18. As a consumer using block layout, I want row drag, duplicate, delete and reorder to behave
     exactly as before, so that the change is invisible to my users.
-19. As a consumer registering chrome through the control registry, I want it to stay excluded from
+19. As a consumer registering controls through the control registry, I want it to stay excluded from
     the editable region, so that my controls do not become editable text.
 20. As a consumer in controlled mode, I want the caret after an echo to be where it is today, so
     that a value round-trip through my state does not move the cursor.
@@ -156,7 +156,7 @@ Deregistration happens on the ref's null call.
 The text Surface needs no separate registration: the walk gives a Surface to text Tokens only, so
 a text Token's element *is* its Surface. That equivalence is preserved.
 
-The slot-host and chrome registries keep their current shape unchanged.
+The slot-host and control registries keep their current shape unchanged.
 
 ### A Mark component must forward its ref — DECIDED, and it is a major break
 
@@ -196,7 +196,7 @@ projection, and is invalid inside the `Nested` fixtures, which render Marks as `
 | create and kill handles | consignment creates; deconsignment plus absence from the tree kills |
 | arm the per-Surface text effect | consignment |
 | apply the editable-state policy to the element | consignment |
-| compute chrome roots by walking each control up to the Container | unchanged — already separate, and it never depended on the Token walk |
+| compute control roots by walking each control up to the Container | unchanged — already separate, and it never depended on the Token walk |
 
 Two properties of the walk are deliberately not preserved, and both must be called out in the PR:
 

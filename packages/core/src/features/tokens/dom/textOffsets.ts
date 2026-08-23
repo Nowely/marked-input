@@ -56,18 +56,3 @@ function elementBoundaryOffset(surface: HTMLElement, offset: number): number | u
 	}
 	return total
 }
-
-export function hasEditableAncestorBefore(node: Node, boundary: HTMLElement): boolean {
-	let current = node instanceof HTMLElement ? node : node.parentElement
-	while (current && current !== boundary) {
-		if (
-			current.isContentEditable ||
-			current.contentEditable === 'true' ||
-			current.contentEditable === 'plaintext-only'
-		) {
-			return true
-		}
-		current = current.parentElement
-	}
-	return false
-}

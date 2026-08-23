@@ -165,7 +165,7 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   no separate mount bind either: a mount always arrives through the props watch,
   which commits, which binds.
 - **A control registration binds nothing.** `dom/controlRoots.ts` owns which
-  elements sit under control chrome and updates in place, because that answer is a
+  elements sit under a control root and updates in place, because that answer is a
   DOM walk from each control up to the host and touches no token. It used to be
   recomputed inside every bind, which made a block mount quadratic — block layout
   registers up to four controls per ROW.
@@ -194,7 +194,7 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   value-only mark root is `contenteditable=false`; a SLOT mark leaves its root
   and its slot host bare — a nested editing host would be a `display: contents`
   element, which cannot take focus and gets no `beforeinput` — and freezes only
-  the chrome hanging off the root→host path. Marks carry no tabindex: Tab leaves
+  the controls hanging off the root→host path. Marks carry no tabindex: Tab leaves
   the field. Controls are frozen where they REGISTER (`control()`), not here,
   because they do not mount on the commit clock. No flags, no per-commit sweep.
 - **TWO CLOCKS**, because one event was answering two questions, and neither
@@ -207,8 +207,10 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   BORN by the commit has no handle until bind makes one. Consumers re-read
   content via `nodes()` / `find(id)` / `handle(id)`.
   The `{added, removed, updated}` payload and the ledger that derived it are
-  GONE: nothing in core read them once `BlockController` moved to a node-keyed
-  `WeakMap`, which was the last reader. `committed` no longer surfaces publicly
+  GONE: nothing in core read them once the per-row block store moved to a
+  node-keyed `WeakMap`, which was its last reader — and that store is itself
+  gone now, replaced by one editor-level `BlockController`. `committed` no longer
+  surfaces publicly
   either — `MarkputHandle.changed` was withdrawn with the rest of the v2 verbs.
 
 ## Element projection (`dom/bind.ts`)
@@ -356,7 +358,9 @@ not.
   `findTextBoundary`, `placeRangeAcrossBoundaries`, `getCaretIndex`, `getRect`,
   `focusEditingHost`).
 - `dom/textOffsets.ts` — `TreeWalker`-based text measurement (`textLength`,
-  `textOffsetWithin`, `hasEditableAncestorBefore`).
+  `textOffsetWithin`). The editable-island test the mark arm asks before it
+  answers is `shared/checkers`' `inExplicitEditableIsland`, shared verbatim with
+  `keyboard/beforeInput.ts`: the two differ only in where they stop.
 
 ## `TokenHandle` — the DOM binding
 
@@ -497,8 +501,8 @@ lands. Nothing searches the bound surfaces for a nearest position.
 ## Parse
 
 Inline and block parse are always a full parse. The boundary parses the whole
-spliced projection (block mode then filters empty text tokens) and hands the
-result to adoption. There is no windowed re-tokenizer: the only incrementality
+spliced projection — `Parser.parseRows` in block layout, `Parser.parse` inline —
+and hands the result to adoption. There is no windowed re-tokenizer: the only incrementality
 is adoption's prefix/suffix retention above. Full-parse cost is tracked by the
 `parser.bench.ts` tripwire.
 

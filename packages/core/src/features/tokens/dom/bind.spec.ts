@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
-import {markToken, textToken} from '../__testing__/tokenFactories'
-import type {Token} from '../parser/types'
+import {markToken, rowToken, textToken} from '../__testing__/tokenFactories'
+import type {RowToken, Token} from '../parser/types'
 import {createTokenTree} from '../tree/tree'
 import type {TokenTree} from '../tree/tree'
 import type {TextNode, TreeNode} from '../tree/types'
@@ -20,7 +20,7 @@ import type {TokenHandle} from './TokenHandle'
  * before recursing), so `nodes.get(1)` is the first root exactly as it was under the
  * deleted `createIds` stand-in.
  */
-function treeOf(tokens: Token[]): {tree: TokenTree; roots: readonly TreeNode[]} {
+function treeOf(tokens: (Token | RowToken)[]): {tree: TokenTree; roots: readonly TreeNode[]} {
 	const tree = createTokenTree(tokens)
 	return {tree, roots: tree.roots()}
 }
@@ -479,10 +479,10 @@ describe('bind', () => {
 			expect(mark.hasAttribute('tabindex')).toBe(false)
 		})
 
-		it('a slot mark leaves root and host BARE and freezes only the chrome beside them', () => {
+		it('a slot mark leaves root and host BARE and freezes only the controls beside them', () => {
 			// The slot lives in the ONE editing host: a nested `contenteditable=true` here
 			// would be a `display: contents` host in both adapters — boxless, unfocusable,
-			// and Chromium fires no beforeinput for it. Atomicity is the chrome's, not the
+			// and Chromium fires no beforeinput for it. Atomicity is the control's, not the
 			// slot's, so the sweep walks host→root and freezes what hangs off that path.
 			const container = document.createElement('div')
 			const outer = document.createElement('mark')
@@ -509,17 +509,49 @@ describe('bind', () => {
 			expect(wrapper.hasAttribute('contenteditable')).toBe(false)
 			expect(host.hasAttribute('contenteditable')).toBe(false)
 			expect(inner.hasAttribute('contenteditable')).toBe(false)
-			// Off the path, at every level up to the root: chrome, hence atomic.
+			// Off the path, at every level up to the root: a control, hence atomic.
 			expect(badge.getAttribute('contenteditable')).toBe('false')
 			expect(label.getAttribute('contenteditable')).toBe('false')
 			expect(outer.hasAttribute('tabindex')).toBe(false)
+		})
+
+		it('a row that hosts its OWN child sequence goes bare, and freezes nothing beside it', () => {
+			// The row wrapper is both the row's token element and its child-sequence host, which
+			// is what lets the row's children live in it directly. Both halves are asserted here
+			// because the skip is self-gating: a row with no host is not touched at all, and a
+			// row with one takes the slot arm — whose control walk terminates on its first test,
+			// since there is no path from host to root to walk.
+			const container = document.createElement('div')
+			const row = document.createElement('div')
+			const surface = spanWith('hi')
+			const sibling = spanWith('!')
+			row.append(surface, sibling)
+			container.append(row)
+			const {roots} = treeOf([rowToken('hi!', 0, [textToken('hi!', 0)])])
+
+			// No host: bind skips the row, so an attribute the adapter wrote survives.
+			row.contentEditable = 'false'
+			bindOf(inputFor(container, roots))
+			expect(row.getAttribute('contenteditable')).toBe('false')
+
+			bindOf(
+				inputFor(container, roots, {
+					childSequenceHostsFor: ownerId => (ownerId === roots[0].id ? [row] : []),
+				})
+			)
+
+			expect(row.hasAttribute('contenteditable')).toBe(false)
+			expect(row.hasAttribute('tabindex')).toBe(false)
+			// A control walk would have frozen these as siblings of the host→root path.
+			expect(surface.hasAttribute('contenteditable')).toBe(false)
+			expect(sibling.hasAttribute('contenteditable')).toBe(false)
 		})
 
 		it('a slot host that appears or is replaced under a surviving root re-applies the policy', () => {
 			// The root element survives the re-render, so the newly-bound-root check alone
 			// would skip it: a mark that GROWS a slot would keep the `ce=false` that made it
 			// atomic — a slot nobody can type in — and a replaced host would leave its new
-			// chrome unfrozen.
+			// controls unfrozen.
 			const container = document.createElement('div')
 			const outer = document.createElement('mark')
 			outer.append(document.createTextNode('x'))
@@ -533,25 +565,25 @@ describe('bind', () => {
 			expect(outer.getAttribute('contenteditable')).toBe('false')
 
 			// A slot appears under the same root element.
-			const chromeA = spanWith('@')
+			const controlA = spanWith('@')
 			const hostA = document.createElement('span')
 			hostA.append(spanWith('a'))
-			outer.replaceChildren(chromeA, hostA)
+			outer.replaceChildren(controlA, hostA)
 			bindOf(inputFor(container, roots, {nodes, childSequenceHostsFor: hostFor(hostA)}))
 
 			expect(outer.hasAttribute('contenteditable')).toBe(false)
 			expect(hostA.hasAttribute('contenteditable')).toBe(false)
-			expect(chromeA.getAttribute('contenteditable')).toBe('false')
+			expect(controlA.getAttribute('contenteditable')).toBe('false')
 
-			// …and is replaced by a fresh one, chrome and all.
-			const chromeB = spanWith('#')
+			// …and is replaced by a fresh one, controls and all.
+			const controlB = spanWith('#')
 			const hostB = document.createElement('span')
 			hostB.append(spanWith('a'))
-			outer.replaceChildren(chromeB, hostB)
+			outer.replaceChildren(controlB, hostB)
 			bindOf(inputFor(container, roots, {nodes, childSequenceHostsFor: hostFor(hostB)}))
 
 			expect(hostB.hasAttribute('contenteditable')).toBe(false)
-			expect(chromeB.getAttribute('contenteditable')).toBe('false')
+			expect(controlB.getAttribute('contenteditable')).toBe('false')
 		})
 
 		it('does not reapply the editable state to a surface that stays bound', () => {

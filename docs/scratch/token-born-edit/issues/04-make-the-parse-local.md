@@ -2,7 +2,35 @@
 
 Status: needs-info
 
-Blocked by: 03
+Blocked by: nothing. Phase 1 (issue 03) landed 2026-08-20 with #291, so this is the only
+remaining phase of the pair — and its ground moved under it.
+
+**Four premises of the deleted `incrementalParse` are now dead** (verified at HEAD 2026-08-22):
+
+1. It returned `[...prev.slice(0, lo), ...windowTokens, ...prev.slice(hi + 1).map(shift)]`, built
+   from `prev: Token[]` objects **that no longer exist**. The tree holds `TreeNode`s, and the only
+   node→token materializer is `tree/__testing__/snapshot.ts`, marked TEST-ONLY and deliberately
+   unmemoized.
+2. `Parser.hasSegments` — the inert-outside guard's predicate — was deleted with it. `Parser`'s
+   whole public surface today is `parse(value)` and `parseRows(value, separator)`; neither takes
+   a window.
+3. The window snap to root-level TEXT tokens has no anchor in block mode, where roots are
+   `RowToken`s (ADR-0009).
+4. One of the property spec's three markups, `'__slot__\n\n'`, now throws at construction.
+
+**And the delivery seam does not exist.** `adopt(tree, window, parsed, selectionBefore)` takes
+`parsed: readonly (Token | RowToken)[]` — the WHOLE document's roots (`tree/adopt.ts:49-54`). A
+windowed parse has nowhere to be delivered. Either adoption gains a windowed-result contract (all
+three of its walks change), or the caller reconstitutes a full root list from nodes, which is
+O(document) and cancels the win. That is two changes, not one.
+
+**What it buys, by this arc's own table: nothing against a surviving goal.** Phase 2's G1/G2/G3
+cells are dashes and its G4 cell reads withdrawn. Speed was measured away 2026-08-19. Schedule
+this on correctness and the parser's standing goal, or not at all.
+
+---
+
+Originally blocked by: 03
 
 > **The full record now lives in
 > [`docs/scratch/incremental-parser/spec.md`](../../incremental-parser/spec.md)** — the deleted

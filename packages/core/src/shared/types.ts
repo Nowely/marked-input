@@ -107,11 +107,12 @@ export interface CoreSlotProps {
 }
 
 export interface DraggableConfig {
+	/**
+	 * Keep the drag grip visible instead of fading it in on hover.
+	 *
+	 * ONE grip, on the row nearest the pointer — resting on the first row while the pointer is
+	 * away from the editor. It used to mean a grip on every row; the editor paints the row
+	 * controls from one layer now, and one layer shows one grip.
+	 */
 	alwaysShowHandle?: boolean
 }
-
-export type DragAction =
-	| {type: 'reorder'; source: number; target: number}
-	| {type: 'add'; afterIndex: number}
-	| {type: 'delete'; index: number}
-	| {type: 'duplicate'; index: number}

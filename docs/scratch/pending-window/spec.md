@@ -24,8 +24,8 @@ Chromium — plain DOM, no markput — puts `ce=false` on the consumer's mark el
 wrapper, and on that wrapper at `display: contents`. All three are identical: the caret cannot step
 in (`ArrowRight` never lands inside) and `Shift+ArrowRight` swallows the mark whole. A fourth shape,
 a SLOT mark with a bare root, behaves differently — the caret enters and the selection grows by the
-chrome character — which is what proves the probe discriminates rather than answering "atomic" to
-everything. Moving `ce=false` onto core's own element therefore costs nothing, and `display:
+mark's own label character — which is what proves the probe discriminates rather than answering
+"atomic" to everything. Moving `ce=false` onto core's own element therefore costs nothing, and `display:
 contents` does not weaken it.
 
 The probe was deleted after recording: it measures Chromium, not markput, and guarding an unbuilt

@@ -1,5 +1,5 @@
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
-import type {Token} from '../parser/types'
+import type {RowToken, Token} from '../parser/types'
 import {createTokenTree, joinNodes} from '../tree/tree'
 import type {TreeNode} from '../tree/types'
 
@@ -19,6 +19,10 @@ export function markToken(value: string, content: string, start: number, childre
 		descriptor,
 		children,
 	}
+}
+/** A block-mode row, `terminated` false so its content needs no trailing separator. */
+export function rowToken(content: string, start: number, children: Token[]): RowToken {
+	return {type: 'row', content, position: {start, end: start + content.length}, children, terminated: false}
 }
 /**
  * The same fixtures as LIVE nodes, for the consumers that address rows and marks as

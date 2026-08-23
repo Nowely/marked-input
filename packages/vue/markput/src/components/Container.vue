@@ -6,6 +6,7 @@ import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 import {unwrapEl} from '../lib/unwrapEl'
 import Block from './Block.vue'
+import BlockControls from './BlockControls.vue'
 import Token from './Token.vue'
 
 const store = useStore()
@@ -48,6 +49,10 @@ const setContainerRef = (el: unknown) => {
 	<component :is="containerComponent" :ref="setContainerRef" v-bind="boundProps">
 		<template v-if="result.isBlock">
 			<Block v-for="node in result.nodes" :key="node.id" :node="node" />
+			<!-- The row controls, as one layer INSIDE the container rather than a copy inside
+			     every row. It is therefore a container child that is not a row —
+			     `styles.BlockControls` is how a caller tells them apart. -->
+			<BlockControls />
 		</template>
 		<template v-else>
 			<Token v-for="node in result.nodes" :key="node.id" :node="node" :depth="0" />

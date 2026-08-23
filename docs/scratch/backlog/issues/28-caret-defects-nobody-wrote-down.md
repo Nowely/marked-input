@@ -18,13 +18,14 @@ one rule.
 | A controlled parent that transforms the value (upper-casing, trimming, format-as-you-type) | the caret jumps to the document end on EVERY keystroke | stay on the character just typed |
 | Removing a mark from a click inside a consumer's own component | moves the caret AND pulls focus into the editor | leave the user where they were |
 | Inserting a mark at an explicit anchor through the API | the caret jumps to the insertion site | the caller named a place, not a cursor — do not move it |
-| Typing at the end of a block document | no clickable target, because a top-level empty text token is filtered away | an appendable last position |
+| Typing at the end of a block document | the trailing row's empty text child is there, but renders a 0px bare span — arrow-reachable, not clickable (ADR-0004) | an appendable last position |
 | Backspace at a Mark edge; Backspace on a non-mergeable row | one press destroys the whole Mark | select it on the first press, delete on the second |
 | Clicking to place the caret | the DOM→model→DOM round trip re-writes it; two writes per mousedown at a mark edge | do not re-place what the DOM just reported |
 | `focus()` on the public API | ignores the stored selection, and can focus nothing at all | restore the last caret, else the document start |
 
-Two of these already have their own items — see `06-api-focus-can-focus-nothing.md` and
-`09-block-gap-caret.md` — and are listed here only so the table is complete.
+One of these already has its own item — see `06-api-focus-can-focus-nothing.md` — and is listed
+here only so the table is complete. `09-block-gap-caret.md` was the second; it closed
+2026-08-22 as not reproducible, and the row above carries its corrected cause.
 
 ## Why it is filed rather than fixed
 

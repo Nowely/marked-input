@@ -46,11 +46,12 @@ export const Markdown = story({
  * is echoed back — and `mountEcho` refuses a story that opts into the plain-value panel,
  * because the decorator owns `onChange` there.
  *
- * The left margin is load-bearing for the spec, not decoration: the grip sits at `left: -24px`
- * of its row, and the 24px gutter core asks for is a NUMERIC `paddingLeft`, which React turns
- * into `24px` and Vue drops (it assigns numbers to `style` verbatim). Flush against the
- * viewport the button is unclickable in Vue — `element is outside of the viewport` — so the
- * story reserves the gutter itself, exactly as the pre-migration React harness did.
+ * They used to carry `style: {marginLeft: '64px'}`, and the note here called it load-bearing:
+ * the controls layer hangs the grip band off its row's LEFT edge
+ * (`.SidePanel { margin-left: -24px }`), and core's 24px gutter was a NUMERIC `paddingLeft`
+ * that React turned into `24px` and Vue dropped, so flush against the viewport Vue's grip was
+ * outside it and unclickable. Core emits `'24px'` now, the gutter exists in both frameworks,
+ * the band sits inside the container's padding box, and the margin is gone.
  */
 export const PlainTextDrag = story({
 	parameters: {docs: {disable: true}},
@@ -60,7 +61,6 @@ export const PlainTextDrag = story({
 		defaultValue: PLAIN_TEXT_VALUE,
 		layout: 'block',
 		draggable: true,
-		style: {marginLeft: '64px'},
 	},
 })
 
@@ -72,7 +72,6 @@ export const MarkdownDrag = story({
 		defaultValue: MARKDOWN_DRAG_VALUE,
 		layout: 'block',
 		draggable: true,
-		style: {marginLeft: '64px'},
 	},
 })
 

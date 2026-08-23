@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
-import {watch} from '../../../shared/signals'
+import {effect, watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {anchorsAt, selectionRange} from '../__testing__/mountFixtures'
 import type {Markup} from '../parser/types'
@@ -543,6 +543,73 @@ describe('row removal and duplication at the document end (review findings)', ()
 
 		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\nbeta')
 		expect(store.tokens.nodes()).toHaveLength(3)
+	})
+})
+
+/**
+ * The ADR-0007 oracle for the three verbs that are not `moveTo` (which has its own describe
+ * below): the SURVIVORS name which row a verb actually addressed, where the value alone
+ * cannot — the two candidates compose to the same string. Both adapters key rendering on
+ * `node.id`, and a consumer's own row component and its local state ride that key, so this is
+ * the property they depend on rather than an internal detail.
+ */
+describe('row identity across the structural verbs', () => {
+	it('removes the addressed row, not a byte-identical neighbour', () => {
+		const store = rowSetup('First\n\nFirst\n\nSecond\n\n')
+		const [first, second, third, tail] = store.tokens.nodes().map(node => node.id)
+
+		expect(store.tokens.nodes()[0].remove()).toBe(true)
+
+		expect(store.tokens.value()).toBe('First\n\nSecond\n\n')
+		expect(store.tokens.nodes().map(node => node.id)).toEqual([second, third, tail])
+		expect(first).not.toBe(second)
+		// A removal takes a position out of the document, so the caret is told where it went:
+		// the start of the row that replaced the deleted one.
+		expect(selectionRange(store)).toEqual({start: 0, end: 0})
+	})
+
+	it('writes value and caret as a single batched tick', () => {
+		const store = rowSetup('alpha\n\nbeta\n\n')
+		let runs = 0
+		const dispose = effect(() => {
+			store.tokens.value()
+			selectionRange(store)
+			runs++
+		})
+		const initial = runs
+
+		expect(store.tokens.nodes()[0].remove()).toBe(true)
+
+		expect(runs - initial).toBe(1)
+		dispose()
+	})
+
+	it('keeps the original row when it is duplicated', () => {
+		const store = rowSetup('alpha\n\nbeta\n\n')
+		const [alpha, beta] = store.tokens.nodes().map(node => node.id)
+
+		expect(store.tokens.nodes()[0].duplicate()).toBe(true)
+
+		expect(store.tokens.value()).toBe('alpha\n\nalpha\n\nbeta\n\n')
+		expect(selectionRange(store)).toEqual({start: 7, end: 7})
+		// ...and only the copy is new: a whole-document rewrite could not promise this.
+		const after = store.tokens.nodes().map(node => node.id)
+		expect(after[0]).toBe(alpha)
+		expect(after[2]).toBe(beta)
+		expect(after[1]).not.toBe(alpha)
+	})
+
+	it('keeps every existing row when one is added below', () => {
+		const store = rowSetup('alpha\n\nbeta\n\n')
+		const [alpha, beta] = store.tokens.nodes().map(node => node.id)
+
+		expect(store.tokens.nodes()[0].insertAfter('\n\n')).toBe(true)
+
+		expect(store.tokens.value()).toBe('alpha\n\n\n\nbeta\n\n')
+		expect(selectionRange(store)).toEqual({start: 7, end: 7})
+		const after = store.tokens.nodes().map(node => node.id)
+		expect(after[0]).toBe(alpha)
+		expect(after[2]).toBe(beta)
 	})
 })
 

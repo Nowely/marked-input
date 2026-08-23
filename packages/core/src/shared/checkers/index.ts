@@ -1,1 +1,1 @@
-export {nextText, nodeTarget} from './domGuards'
+export {inExplicitEditableIsland, nextText, nodeTarget} from './domGuards'

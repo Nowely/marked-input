@@ -61,8 +61,9 @@ describe('anchorAt', () => {
 		const mark = tree.roots()[1]
 		if (mark.kind !== 'mark') throw new Error('expected a mark root')
 		// Probed against the mark ALONE: the inline parse brackets it with empty text tokens
-		// covering [0,4]'s two ends, which would answer first — block layout is exactly the
-		// mode that filters those away.
+		// covering [0,4]'s two ends, which would answer first. No parse produces these roots —
+		// block layout brackets a row's children the same way — so this assembled tree is the
+		// only thing left holding the `'left'` branch up.
 		const roots = [mark]
 
 		expect(anchorAt(roots, 0, 'left')).toEqual({before: mark})

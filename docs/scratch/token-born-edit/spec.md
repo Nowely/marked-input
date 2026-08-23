@@ -56,14 +56,17 @@ Measured against that, these are the current violations — the list is what rec
 because under this criterion the chain is not "slow", it is a hack, and the length sort is not a
 detail, it is a weight that loses data:
 
+Line numbers re-checked 2026-08-22, after #291 and #295 moved this code. The last two rows are
+STRUCK: both were deleted with the chain.
+
 | Site | What it is | Consequence |
 | --- | --- | --- |
-| `SegmentMatcher.ts:88` — statics sorted longest-first into one alternation | priority by literal length | a registered `\n\n` eats another Markup's `\n` terminator; the set `['# __slot__\n\n', '- [__value__] __slot__\n']` loses a whole Row, with no slot-leading Markup involved (measured) |
-| `SegmentMatcher.ts:110` — dynamics sorted longest-first | the same weight | not separately measured |
-| `PatternMatcher.ts:146` — "relies on processing order to determine which match to keep" | priority by registration order | which of two colliding Options survives depends on array position |
-| `PatternMatcher.ts:84-92` — completing states before pending, both LIFO | priority by matcher state | its own docblock calls it "priority" |
-| `PatternMatcher.ts:113-137` — `resolveSlotLeadingMatches` | a post-pass repairing one Markup shape | carries `//TODO need review it` at `:43` |
-| `isSlotLeading` = `segments.length === 1 && hasSlot` | semantics inferred from a **count** | cannot tell a leading marker from a trailing terminator; a marker-only Markup gives its second occurrence the previous Row's text as its Slot (measured) |
+| `SegmentMatcher.ts:85` — statics sorted longest-first into one alternation | priority by literal length | a registered `\n\n` eats another Markup's `\n` terminator; the set `['# __slot__\n\n', '- [__value__] __slot__\n']` loses a whole Row, with no slot-leading Markup involved (measured) |
+| `SegmentMatcher.ts:105` — dynamics sorted longest-first | the same weight | not separately measured |
+| `PatternMatcher.ts:104` — "relies on processing order to determine which match to keep" | priority by registration order | which of two colliding Options survives depends on array position |
+| `PatternMatcher.ts:48-49` — completing states before pending, both LIFO | priority by matcher state | its own docblock calls it "priority" |
+| ~~`PatternMatcher.ts:113-137` — `resolveSlotLeadingMatches`~~ | ~~a post-pass repairing one Markup shape~~ | **GONE 2026-08-20 (#291)** — the file is now 130 lines and holds no chain |
+| ~~`isSlotLeading` = `segments.length === 1 && hasSlot`~~ | ~~semantics inferred from a count~~ | **GONE 2026-08-20 (#291)** — zero hits; a Row is `node.kind === 'row'`, declared, not inferred |
 
 Not everything is like this, and the audit must stay fair: `Match.conflictsWith` is a principled
 rule — overlap is permitted only where it is legal nesting, tested through `hasSlot` and the slot
@@ -109,8 +112,8 @@ below are still real and still upstream — but they are reasons of clarity, not
 
 | What | Why it exists |
 | --- | --- |
-| `resolveSlotLeadingMatches`' document-wide chain | the marker-less paragraph has nothing to bound it |
-| `filterEmptyText`, wired into `tree/valueBoundary.ts` | the same |
+| ~~`resolveSlotLeadingMatches`' document-wide chain~~ | ~~the marker-less paragraph has nothing to bound it~~ — **collected 2026-08-20 (#291)** |
+| ~~`filterEmptyText`, wired into `tree/valueBoundary.ts`~~ | ~~the same~~ — **collected 2026-08-20 (#291)** |
 | two `isSlotLeading` predicates (`tree/siblings.ts:9`, `keyboard/blockEdit.ts:13`) | the same |
 | `gapWindow`, the echo protocol, the `#committed` mirror | [ADR-0001](../../adr/0001-tree-as-source-of-truth.md) names them outright as the price of identity being *recovered* after a splice rather than *preserved* |
 | a full re-parse per keystroke | the parser has no windowed entry point (measured: ~0.41 ms at 1000 marks — a clarity problem, not a cost) |
@@ -127,17 +130,24 @@ Each phase is what makes the next expressible; the order is forced, not preferre
 What ends a Row, and how a marker-less paragraph is bounded. Everything downstream changes shape
 with the answer. See [issue 02](issues/02-decide-the-row-boundary.md).
 
-### Phase 1 — make the Row local
+### Phase 1 — make the Row local — ~~planned~~ **DONE 2026-08-20 (#291)**
 
-Delete the chain. Either as a pure refactor inside `parser/` — the abandoned
-`phase7-first-class-rows-wip` branch did exactly this and `git diff --numstat` over
-`PatternMatcher.ts` reads `0 42`, a deletion replaced by nothing — or it disappears by
-construction if Rows become self-delimiting Marks. `filterEmptyText` and both predicates go with
-it. See [issue 03](issues/03-make-the-row-extent-local.md).
+Delete the chain, so a Row's extent is decided by its own boundaries. It happened by
+CONSTRUCTION, inside phase 0's execution rather than as a step of its own:
+`PatternMatcher.resolveSlotLeadingMatches` is gone (`31fac6d1` numstat `0 42`, the size this
+phase predicted), `filterEmptyText` with it (`0 14`), and every Row predicate the arc named
+returns zero hits today. `RowBuilder.closeTrailingGaps` replaces it — forward to the next
+separator, bounded by the enclosing slot.
 
-*Blocked by phase 0: a chain cannot be deleted before it is known what bounds a paragraph.*
+It took NEITHER route this phase offered: Rows became tree NODES, not self-delimiting Marks, and
+it was not a pure `parser/` refactor. The full ledger, including what the plan got wrong, is in
+[issue 03](issues/03-make-the-row-extent-local.md).
 
-### Phase 2 — make the parse local
+### Phase 2 — make the parse local — the only one of the pair still open
+
+Restore a windowed parse. Since phase 1 landed, four premises of the deleted implementation have
+died with it and the delivery seam into `adopt` does not exist — the ledger is in
+[issue 04](issues/04-make-the-parse-local.md). Read that before costing this.
 
 Restore a windowed parse. One existed: `incrementalParse` (230 lines plus a 199-line property
 spec) was deleted in `8685bc69`, during phase7 and apparently as part of it, not because it
@@ -169,10 +179,18 @@ Only then recount the eight and remove whatever is left without a cause. See
 | | G1 | G2 | G3 | G4 |
 | --- | --- | --- | --- | --- |
 | Phase 0 — decision | — | — | ✓ | — |
-| Phase 1 — local Row | — | the chain, `filterEmptyText`, both predicates | ✓ | — |
+| Phase 1 — local Row ✅ | — | ~~the chain, `filterEmptyText`, both predicates~~ collected 2026-08-20 | ✓ | — |
 | Phase 2 — local parse | — | — | — | ~~half~~ withdrawn |
-| Phase 3 — local address | **✓** | `gapWindow`, the echo protocol, `#committed` | — | ~~half~~ withdrawn |
+| Phase 3 — local address | **✓** | ~~`gapWindow`, the echo protocol, `#committed`~~ — see below | — | ~~half~~ withdrawn |
 | Phase 4 — sweep | — | 1–2 pipeline concepts | — | — |
+
+Phase 3's G2 cell is not payable as written. Those three were attributed to positions being
+STORED state; they are caused by the write path lowering to a string splice plus a full re-parse,
+which phase 3 does not touch. Two are settled independently of this arc: the echo window was
+measured 2026-08-21 to decide the CARET, not merely node identity (`valueBoundary.spec`'s
+"resolves the CARET through the recorded window"), and `#committed` was deleted 2026-08-22 in
+#294 — but only after the real obstacle, a dropped-delivery bug in the event primitive, was
+fixed. Neither outcome came from phase 3.
 
 ## The target surface
 
@@ -235,9 +253,19 @@ person feels is the frame interval.
 
 - ~~Phase 0's answer.~~ Answered 2026-08-20: candidate 3 — the separator is structural, and a
   Row becomes a tree node. Decisions, evidence and the 7-step plan:
-  [issues/08](issues/08-the-separator-is-structural.md). Phases 1 and 2 are unblocked.
+  [issues/08](issues/08-the-separator-is-structural.md). It also EXECUTED phase 1 on the way —
+  see that phase's entry. Phase 2 is the only one of the pair still open.
 - ~~What `incrementalParse` actually cost.~~ Answered: it does not matter, because the parse is
   ~3% of a keystroke. Pursue a local parse for correctness and for the parser's standing goal, not
   for speed.
 - Whether phase 3 is separable from expressing edits as tree operations, or whether they are one
   project. If they are one, the phase ordering above needs correcting.
+- Whether phase 2 is worth doing at all. It buys nothing against a surviving goal by this file's
+  own table, four premises of the implementation it would restore are dead, and the seam to
+  deliver a windowed result into `adopt` does not exist ([issue 04](issues/04-make-the-parse-local.md)).
+  The honest options are: schedule it purely on the parser's standing goal, or close it.
+
+*Status audit 2026-08-22: this file described work that had already shipped. Phase 1 was written
+in the future tense two days after it landed, both its casualties were still billed as savings to
+come, and four issue statuses contradicted their own content. Corrected in place; the arc's shape
+is unchanged.*

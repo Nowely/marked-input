@@ -206,8 +206,8 @@ export function joinNodes(nodes: readonly TreeNode[]): string {
 			continue
 		}
 
-		// A slot mark always parses with >=1 text child, and empty-text filtering is top-level
-		// only — children are the sole slot source; the node stores no slot text.
+		// A slot mark always parses with >=1 text child, so children are the sole slot source;
+		// the node stores no slot text.
 		const slot = node.descriptor.hasSlot ? joinNodes(node.children()) : undefined
 
 		result += annotate(node.descriptor.markup, {value: node.value(), meta: node.meta(), slot})

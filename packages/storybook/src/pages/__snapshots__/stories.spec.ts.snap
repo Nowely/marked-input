@@ -55,19 +55,9 @@ exports[`Component: stories > Base stories > Story Default 1`] = `
 exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
 "<div contenteditable="true">
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span>hello</span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span contenteditable="false">
       <mark>world</mark>
@@ -75,13 +65,9 @@ exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span>foo</span>
   </div>
+  <div contenteditable="false"></div>
 </div>"
 `;
 
@@ -117,11 +103,6 @@ exports[`Component: stories > Clipboard stories > Story PlainText 1`] = `
 exports[`Component: stories > Drag stories > Story Markdown 1`] = `
 "<div contenteditable="true">
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span>
       <span>
@@ -141,19 +122,9 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span>A powerful library for parsing rich text with markdown formatting.</span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span>
       <span>
@@ -165,11 +136,6 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span>
       <span>
@@ -197,11 +163,6 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span>
       <span>
@@ -221,11 +182,6 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span>
       <span>
@@ -241,11 +197,6 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span>
       <span>
@@ -261,11 +212,6 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span>
       <span>
@@ -277,11 +223,6 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span contenteditable="false">
       <span>const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
@@ -289,24 +230,15 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span>Visit our docs for more details.</span>
   </div>
+  <div contenteditable="false"></div>
 </div>"
 `;
 
 exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
 "<div contenteditable="true">
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span>
       <span>
@@ -318,27 +250,12 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span>This is the first paragraph.</span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span>This is the second paragraph.</span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span>
       <span>
@@ -350,11 +267,6 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
     <span>
       <span>
@@ -366,66 +278,33 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
     <span></span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
   </div>
+  <div contenteditable="false"></div>
 </div>"
 `;
 
 exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
 "<div contenteditable="true">
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span>First block of plain text</span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span>Second block of plain text</span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span>Third block of plain text</span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span>Fourth block of plain text</span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span>Fifth block of plain text</span>
   </div>
   <div>
-    <div contenteditable="false">
-      <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-        <span></span>
-      </button>
-    </div>
     <span></span>
   </div>
+  <div contenteditable="false"></div>
 </div>"
 `;
 
@@ -443,6 +322,7 @@ exports[`Component: stories > Drag stories > Story ReadOnlyDrag 1`] = `
   <div>
     <span></span>
   </div>
+  <div contenteditable="false"></div>
 </div>"
 `;
 
@@ -451,19 +331,9 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
   <div>
     <div contenteditable="true">
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <div>
@@ -476,11 +346,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -493,11 +358,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -510,11 +370,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -527,11 +382,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <div>
@@ -544,11 +394,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -561,11 +406,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -578,11 +418,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -595,11 +430,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -612,11 +442,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <div>
@@ -629,11 +454,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -646,11 +466,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -663,11 +478,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -680,11 +490,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -697,11 +502,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -714,11 +514,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <div>
@@ -731,11 +526,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -748,11 +538,6 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
         <span>
           <span>
@@ -765,13 +550,9 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
         <span></span>
       </div>
       <div>
-        <div contenteditable="false">
-          <button type="button" draggable="true" aria-label="Drag to reorder or click for options">
-            <span></span>
-          </button>
-        </div>
         <span></span>
       </div>
+      <div contenteditable="false"></div>
     </div>
   </div>
   <div>

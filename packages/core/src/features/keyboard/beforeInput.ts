@@ -1,4 +1,4 @@
-import {nodeTarget} from '../../shared/checkers'
+import {inExplicitEditableIsland, nodeTarget} from '../../shared/checkers'
 import type {Store} from '../../store/Store'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Anchors} from '../tokens'
@@ -63,11 +63,12 @@ export function dropUnexpressedInput(container: HTMLElement, event: InputEvent):
 }
 
 /**
- * The ONE inputType→replacement table, shared by the inline guard (`input.ts`) and the
- * block guard (`blockEdit.ts`) — a per-guard copy is a drift hazard, not a policy.
- * `undefined` means the type has no expression as a value edit; every caller answers that
- * with {@link dropUnexpressedInput}. Block's single divergence, insertParagraph, is decided
- * BEFORE this table in `handleBlockBeforeInput`, so the mapping itself stays layout-free.
+ * The ONE inputType→replacement table, and since the guards folded into one there is one
+ * caller too — `input.ts`'s `beforeinput` — where a per-guard copy used to be the drift
+ * hazard this shared table answered. `undefined` means the type has no expression as a value
+ * edit; the caller answers that with {@link dropUnexpressedInput}. Block's single divergence,
+ * insertParagraph, is decided BEFORE this table in `blockEdit.ts`'s `handleRowParagraph`, so
+ * the mapping itself stays layout-free.
  */
 export function replacementForInput(container: HTMLElement, event: InputEvent): string | undefined {
 	if (event.inputType.startsWith('delete')) return ''
@@ -84,7 +85,7 @@ export function replacementForInput(container: HTMLElement, event: InputEvent): 
 }
 
 /**
- * DOM the consumer owns, in either sense: a registered control root (chrome that handles
+ * DOM the consumer owns, in either sense: a registered control root (editor UI that handles
  * its own input) or an editable island. The model must not edit on such an event NOR
  * cancel it — most sharply in the all-selected branch, which would otherwise replace the
  * WHOLE value with whatever was typed into a control's `<input>`.
@@ -112,47 +113,20 @@ export function isConsumerKeyOrigin(store: KbCtx, container: HTMLElement, event:
 }
 
 /**
- * The `contentEditable` PROPERTY, never `isContentEditable` — the distinction is the whole
- * test, and it is what `domBoundary`'s twin walk cannot be reused for. That one stops at a
- * MARK, which is `ce=false`, so inherited editability under it can only come from an
- * island. This one stops at the CONTAINER, and every model-owned element below it either
- * inherits `true` from the host (bare text surfaces, slot marks and their slot hosts) or
- * declares `false` (value-only mark roots and mark chrome). So an INHERITED reading calls
- * every ordinary edit an island and fails the guard OPEN, while the property answers
- * `'inherit'` for exactly the bare ones. MEASURED — `input.spec`'s 'fails an unhandled
- * type closed even when it originates BELOW the container' is red under the inherited
- * test and green under this one.
- *
- * The property over the raw attribute because Chromium normalizes the spellings: an
- * island written `contenteditable=""` or `contenteditable="TRUE"` answers `'true'` here
- * (both pinned), where a string compare on `getAttribute` would miss it and cancel the
- * consumer's input.
- */
-function inExplicitEditableIsland(origin: Node, container: HTMLElement): boolean {
-	let current = origin instanceof Element ? origin : origin.parentElement
-	while (current && current !== container) {
-		if (current instanceof HTMLElement) {
-			if (current.contentEditable === 'true' || current.contentEditable === 'plaintext-only') return true
-		}
-		current = current.parentElement
-	}
-	return false
-}
-
-export function anchorsForInput(store: KbCtx, event: InputEvent, anchors: Anchors): Anchors | undefined {
-	if (!event.inputType.startsWith('delete')) return anchors
-	return anchorsForDelete(store, event.inputType, anchors)
-}
-
-/**
  * A collapsed delete EXPANDS: onto the adjacent MARK when the caret sits exactly on one of
- * its boundaries — that is the mark swallow — else by one character in the delete's
- * direction.
+ * its boundaries — that is the mark swallow — onto the adjacent ROW SEPARATOR when it sits on
+ * a row boundary, else by one character in the delete's direction.
  *
- * Both arms resolve against the LIVE tree, so typing right before a mark and then deleting
+ * Every arm resolves against the LIVE tree, so typing right before a mark and then deleting
  * still swallows it. Gated by `input.spec`'s two "mark swallow" cases — MEASURED: inverting
  * `direction` turns BOTH red, and either one alone would only pin "some mark got deleted".
  * The browser suites (`Base/keyboard.{react,vue}.spec`) cover it end to end.
+ *
+ * The separator arm is what makes a delete at a row boundary a MERGE, in one mechanism with
+ * every other delete — where block layout used to resolve a row from the selection and call
+ * `RowNode.mergeWith`. The two expansions cannot both answer: a row's children end with a text
+ * token, so no mark boundary ever coincides with a separator's. See {@link separatorSpan} for
+ * the direction rules, which are block's own and are not symmetric.
  */
 export function anchorsForDelete(store: KbCtx, inputType: string, anchors: Anchors): Anchors | undefined {
 	if (!anchorEquals(anchors.anchor, anchors.head)) return anchors
@@ -160,6 +134,9 @@ export function anchorsForDelete(store: KbCtx, inputType: string, anchors: Ancho
 	const direction = inputType.endsWith('Backward') ? -1 : 1
 	const mark = store.tokens.adjacentMark(anchors.anchor, direction)
 	if (mark) return {anchor: {before: mark}, head: {after: mark}}
+
+	const separator = store.tokens.separatorSpan(anchors.anchor, direction)
+	if (separator) return separator
 
 	const stepped = store.tokens.step(anchors.anchor, direction)
 	if (!stepped) return undefined

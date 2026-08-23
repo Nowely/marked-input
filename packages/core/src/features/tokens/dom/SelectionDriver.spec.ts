@@ -326,19 +326,58 @@ describe('SelectionDriver', () => {
 	})
 
 	describe('lifecycle wiring', () => {
-		it("the sweep tracker's document listeners went with the flip", () => {
-			// A NEGATIVE, and deliberately so: asserting the surviving `selectionchange`
-			// listener pins nothing, because `OverlayController` attaches one to `document`
-			// too — the positive passes with the driver's own listener deleted. What this
-			// commit changed is that mounting no longer reaches for the mouse at all.
+		/**
+		 * The two properties that survive "the sweep tracker's document listeners went with the
+		 * flip", which asserted neither. That form matched a call 3-TUPLE —
+		 * `(type, fn, undefined)` — so `addEventListener(type, fn, {capture: false})` walked
+		 * straight past it, and a real mount-time `listen(document, 'mouseup', fn, {capture:
+		 * false})` patched into the driver ran the file 22 passed / 0 failed. It could not see a
+		 * leak at all either: a raw `document.addEventListener('keyup', fn)` left standing at
+		 * unmount passed it.
+		 *
+		 * Neither replacement forbids document listeners in general. There is no such rule —
+		 * `OverlayController` attaches a capture-phase document `click` while a match is live,
+		 * and that is the shipped pattern: lazily attached, interaction-scoped, released when
+		 * the interaction ends. What mount may not do is take a page-wide stream for the
+		 * lifetime of an editor, which is what made the deleted sweep flip damaging.
+		 */
+		const POINTER_STREAM = /^(?:mouse|pointer|drag|touch)/
+
+		/** `[type, handler]` as a comparable string — handlers are identified by reference. */
+		function listenerKeys(calls: readonly (readonly unknown[])[], ids: Map<unknown, number>): string[] {
+			return calls.map(([type, handler]) => {
+				if (!ids.has(handler)) ids.set(handler, ids.size)
+				return `${String(type)}#${ids.get(handler)}`
+			})
+		}
+
+		it('mounting takes no page-wide pointer stream', () => {
 			const addSpy = vi.spyOn(document, 'addEventListener')
 			const store = new Store()
 			store.host.container(document.createElement('div'))
 
-			for (const type of ['mousedown', 'mousemove', 'mouseup']) {
-				expect(addSpy).not.toHaveBeenCalledWith(type, expect.any(Function), undefined)
-			}
+			const streams = addSpy.mock.calls.map(([type]) => type).filter(type => POINTER_STREAM.test(type))
+			expect(streams).toEqual([])
 			addSpy.mockRestore()
+		})
+
+		it('unmounting removes exactly the document listeners mounting added', () => {
+			const addSpy = vi.spyOn(document, 'addEventListener')
+			const removeSpy = vi.spyOn(document, 'removeEventListener')
+			const store = new Store()
+			store.host.container(document.createElement('div'))
+
+			const ids = new Map<unknown, number>()
+			const added = listenerKeys(addSpy.mock.calls, ids)
+			// Not vacuous: mounting really does attach `selectionchange` handlers.
+			expect(added.length).toBeGreaterThan(0)
+
+			store.host.container(null)
+
+			const removed = listenerKeys(removeSpy.mock.calls, ids)
+			expect(removed.toSorted()).toEqual(added.toSorted())
+			addSpy.mockRestore()
+			removeSpy.mockRestore()
 		})
 	})
 

@@ -1,4 +1,4 @@
-import type {MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from './types'
+import type {Anchors, MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from './types'
 
 /**
  * Right-affinity resolution: the last text node (document order) containing the offset.
@@ -36,11 +36,11 @@ export function anchorAt(roots: readonly TreeNode[], offset: number, side: 'left
 	// `{after}` under the default: the interior and the end have no other reading,
 	// and neither does the start under right affinity.
 	//
-	// `'left'` is what a select-all seed asks for, and only its START seed: block mode filters
-	// the empty text tokens that bracket a mark (valueBoundary.ts), so on a document that OPENS
-	// with a mark NOTHING covers offset 0 but the mark itself — `{after: mark}` projects back to
-	// its END, `isAllSelected` compared that against 0 and answered false, and Ctrl+A was
-	// cancelled having done nothing.
+	// `'left'` is `Selection.selectAll`'s START seed, and NO PARSED document reaches it at
+	// offset 0 any more: the inline parse brackets a leading mark with an empty text token and
+	// a row's children open with one (`RowBuilder.groupRows`), so a text anchor always answers
+	// first. Only `anchors.spec`'s hand-assembled roots still exercise the branch — measured by
+	// deleting it: the whole core suite and the browser suite stay green but that one case.
 	if (owner) return side === 'left' && offset === owner.position.start ? {before: owner} : {after: owner}
 	return offset <= 0 ? 'start' : 'end'
 }
@@ -87,6 +87,40 @@ export function adjacentMark(roots: readonly TreeNode[], anchor: NodeAnchor, dir
 		return undefined
 	}
 	return visit(roots)
+}
+
+/**
+ * The ROW SEPARATOR a collapsed delete at `anchor` removes, as the anchors spanning it —
+ * {@link adjacentMark}'s swallow for the row world. `undefined` when the anchor sits at no row
+ * boundary, which is EVERY anchor in inline layout: only a block parse builds RowNodes, so the
+ * arm is inert there by construction rather than by a layout test.
+ *
+ * It exists because {@link stepAnchor} cannot express this edit: a separator is the row's
+ * `terminator`, it has no anchorable interior, and a step into it fails closed. Removing the
+ * whole span IS the row merge — reparse decides what the joined text becomes (issue 08's
+ * markdown-like policy), which is the same answer `RowNode.mergeWith` gives.
+ *
+ * ASYMMETRIC, and that asymmetry is block layout's own long-standing answer rather than an
+ * oversight. Backspace takes only the separator ENDING at the anchor, so at a row's content end
+ * it still deletes the character before it. Delete takes that one too, ahead of the separator
+ * STARTING at the anchor: Delete pressed at a row START merges that row into the previous one
+ * (`Drag.spec`'s 'Delete at start of row'), and the earlier-row reading is what an empty row
+ * between two separators needs to keep answering the row before it.
+ */
+export function separatorSpan(roots: readonly TreeNode[], anchor: NodeAnchor, direction: -1 | 1): Anchors | undefined {
+	const offset = offsetOfAnchor(roots, anchor)
+	// The document-final row owns no separator, so it can never be the one removed here.
+	const terminated = roots.filter((root): root is RowNode => root.kind === 'row' && root.terminator !== '')
+	const row =
+		terminated.find(candidate => candidate.position.end === offset) ??
+		(direction === 1
+			? terminated.find(candidate => candidate.position.end - candidate.terminator.length === offset)
+			: undefined)
+	if (!row) return undefined
+	// A row's children end with a TEXT token by the parser's edge invariant
+	// (`RowBuilder.groupRows`), so its content end is anchorable and {@link anchorAt} round-trips
+	// on it; the head is the row's own trailing edge, which sits past the separator.
+	return {anchor: anchorAt(roots, row.position.end - row.terminator.length), head: {after: row}}
 }
 
 /**

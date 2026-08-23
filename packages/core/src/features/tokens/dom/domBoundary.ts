@@ -1,5 +1,6 @@
+import {inExplicitEditableIsland} from '../../../shared/checkers'
 import type {Id, NodeAnchor, TreeNode} from '../tree/types'
-import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
+import {textLength, textOffsetWithin} from './textOffsets'
 import type {ElementBindings, TokenHandle} from './TokenHandle'
 
 /**
@@ -96,7 +97,7 @@ export function anchorFromBoundary(
 	}
 
 	if (owner.kind === 'mark' && lookup.bindings.tokenElement.contains(node)) {
-		if (hasEditableAncestorBefore(node, lookup.bindings.tokenElement)) {
+		if (inExplicitEditableIsland(node, lookup.bindings.tokenElement)) {
 			return undefined
 		}
 		if (affinity === 'nearest') return nearestMarkEdge(lookup.bindings.tokenElement, node, offset, owner)

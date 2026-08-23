@@ -14,7 +14,13 @@ import type {TokenHandle} from '../dom/TokenHandle'
 import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
-import {adjacentMark as findAdjacentMark, anchorAt as anchorAtOffset, offsetOfAnchor, stepAnchor} from '../tree/anchors'
+import {
+	adjacentMark as findAdjacentMark,
+	anchorAt as anchorAtOffset,
+	offsetOfAnchor,
+	separatorSpan as findSeparatorSpan,
+	stepAnchor,
+} from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
@@ -118,14 +124,16 @@ export class TokenModel {
 	 *
 	 * NO BIND: a control's ancestor chain is a pure DOM walk that touches no token, so it
 	 * updates in place. Routing a ref through the bind counter makes a block mount quadratic —
-	 * block layout mounts up to four controls per ROW, measured at 400 rows / 400 binds / 93 ms.
+	 * block layout used to mount up to four controls per ROW, measured at 400 rows / 400 binds /
+	 * 93 ms. It mounts ONE now, the controls layer, but a ref that costs a whole-tree walk is
+	 * still the wrong shape.
 	 *
-	 * REGISTRATION is also where the control leaves the editing host: a control is chrome,
+	 * REGISTRATION is also where the control leaves the editing host: a control is editor UI,
 	 * not document content, so inside the one contenteditable container it must be atomic
 	 * or the caret and the browser's own editing walk into grips, menus and overlays. It is
 	 * written HERE and not in `bind` because controls do not mount on the commit clock — a
-	 * menu opening off a block-store signal never sees a re-bind, and would stay editable
-	 * until some unrelated commit happened to repaint.
+	 * menu opening off a row-control signal never sees a re-bind, and would stay editable until
+	 * some unrelated commit happened to repaint.
 	 */
 	control(): DomRef {
 		let registered: HTMLElement | undefined
@@ -210,8 +218,8 @@ export class TokenModel {
 			const end = Math.max(a, b)
 			const value = this.#tree.value()
 			// WHOLE-VALUE ops are re-derived through `gapWindow`: a full window makes both
-			// adoption walks inert and re-pairs every row BY INDEX, moving `BlockController`'s
-			// per-row store onto the wrong row.
+			// adoption walks inert and re-pairs every row BY INDEX, so a row's identity — and
+			// with it whatever a consumer's own row component holds — lands on the wrong row.
 			if (start === 0 && end === value.length) {
 				const window = gapWindow(value, text)
 				return {window, slice: text.slice(window.start, window.start + window.insertedLength)}
@@ -253,6 +261,15 @@ export class TokenModel {
 	/** One character back (`-1`) or forward (`+1`). See {@link stepAnchor} for the fail-closed case. */
 	step(anchor: NodeAnchor, direction: -1 | 1): NodeAnchor | undefined {
 		return untracked(() => stepAnchor(this.#tree.roots(), anchor, direction))
+	}
+
+	/**
+	 * The row separator span a collapsed delete at `anchor` removes — THE row-boundary half of
+	 * the Backspace/Delete expansion, beside {@link adjacentMark}'s swallow. See
+	 * {@link separatorSpan}; `undefined` for every anchor in inline layout, which parses no rows.
+	 */
+	separatorSpan(anchor: NodeAnchor, direction: -1 | 1): Anchors | undefined {
+		return untracked(() => findSeparatorSpan(this.#tree.roots(), anchor, direction))
 	}
 
 	/** The projection of the span between two anchors — {@link value} restricted to a window (see {@link sliceNodes}). */
@@ -394,8 +411,8 @@ export class TokenModel {
 	 * `props.options` is a plain signal with no equality, and a fresh-but-identical array (an
 	 * inline `options={[…]}` prop on every parent render; Vue's `syncProps` allocates one per
 	 * watch run) would mint a new `Parser` here. Descriptors are interned PER PARSER and `adopt`
-	 * pairs marks on descriptor identity, so a new parser remounts every Mark with a NEW ID and
-	 * drops `BlockController`'s node-keyed per-row state — on every keystroke of a controlled
+	 * pairs marks on descriptor identity, so a new parser remounts every Mark with a NEW ID —
+	 * and with it every consumer component keyed by that id, on every keystroke of a controlled
 	 * Vue editor. Gated by `TokenModel.parse.spec`'s "a fresh but identical `options` array".
 	 */
 	readonly #markups: Computed<(Markup | undefined)[]> = computed(() => this.props.options().map(opt => opt.markup), {
@@ -616,7 +633,7 @@ export class TokenModel {
 	}
 
 	/**
-	 * Control chrome's DOM membership. Not a registry beside the other three: nothing here is
+	 * The control roots' DOM membership. Not a registry beside the other three: nothing here is
 	 * keyed by a token, and the only question ever asked of it is whether an element sits under a
 	 * control — so it owns its own answer instead of being recomputed by a walk that has a tree.
 	 */

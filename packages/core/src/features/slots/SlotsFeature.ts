@@ -11,7 +11,18 @@ import type {MarkSlot} from './types'
 
 import styles from '../../../styles.module.css'
 
-const DRAG_HANDLE_WIDTH = 24
+/**
+ * The grip gutter, as a CSS-READY STRING rather than the bare `24` it was.
+ *
+ * `containerProps().style` is one bag handed to two frameworks that disagree about a number:
+ * React's JSX appends `px` for a length property, Vue assigns the value to `element.style`
+ * verbatim and the CSSOM REJECTS an unitless length — so in Vue the gutter never existed and
+ * every `draggable: true` editor laid out as if it were `false` (measured: computed
+ * `padding-left` 24px in React, 0px in Vue, with no `style` attribute written at all). Core is
+ * framework-agnostic, so the only value it may emit is one that needs no framework's
+ * convention to become CSS.
+ */
+const DRAG_HANDLE_WIDTH = '24px'
 
 function buildContainerProps(
 	isDraggableBlock: boolean,
