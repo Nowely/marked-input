@@ -460,7 +460,7 @@ describe('Feature: drag rows', () => {
 	/**
 	 * The chrome layer paints at coordinates it MEASURES, where the per-row panel inherited them
 	 * from `.Block { position: relative }`. These are the properties that geometry has to hold
-	 * and that no unit test in `ChromeModel.spec.ts` can see, because it paints nothing.
+	 * and that no unit test in `ChromeController.spec.ts` can see, because it paints nothing.
 	 */
 	describe('chrome layer geometry', () => {
 		const centerY = (element: Element) => {

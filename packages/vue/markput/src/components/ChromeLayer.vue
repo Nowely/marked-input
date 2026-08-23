@@ -14,7 +14,7 @@ import styles from '@markput/core/styles.module.css'
 
 /**
  * ONE absolutely positioned chrome layer per editor — the Vue mirror of the React
- * `ChromeLayer`, over the SAME `ChromeModel`. Every decision is core's: the hover pin, the
+ * `ChromeLayer`, over the SAME `ChromeController`. Every decision is core's: the hover pin, the
  * hit-test, the drop edge and the menu's row all live there, so this file is a painter.
  */
 const store = useStore()

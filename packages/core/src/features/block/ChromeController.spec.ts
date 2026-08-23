@@ -14,8 +14,8 @@ const blockProps: Parameters<Store['props']['set']>[0] = {
 
 /**
  * A mounted block document with one measurable div per row. The rows carry a real height because
- * the chrome model hit-tests by RECT — where the per-row store it replaced learned its row from
- * DOM containment and needed no geometry at all.
+ * the chrome controller hit-tests by RECT — where the per-row store it replaced learned its row
+ * from DOM containment and needed no geometry at all.
  *
  * Rendered by hand rather than through `consignRendered`, which pairs a parent's element children
  * with its tokens and would file the row wrapper as its own text child's surface.

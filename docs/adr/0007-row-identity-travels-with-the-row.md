@@ -19,7 +19,7 @@ The decision it amends is untouched, and the two are separable because they are 
 state.
 
 What moved: hover, the dragged row, the drop edge and the open menu are one editor-level
-`ChromeModel` (`store.chrome`), painted by one `ChromeLayer` per adapter at row boxes it
+`ChromeController` (`store.chrome`), painted by one `ChromeLayer` per adapter at row boxes it
 MEASURES. The per-row `BlockStore` this record's first paragraph points at is deleted, and so is
 the `BlockController` that vended and pruned them — there is no per-row UI state left to travel
 with a row, so the question this record answered no longer arises for chrome.

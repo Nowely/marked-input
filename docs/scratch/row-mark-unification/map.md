@@ -91,17 +91,21 @@ Implementation is a separate effort after this map.
   `domBoundary.ts` gap in the round-1 list below is therefore real but
   UNREACHABLE from input — it stays a recorded defect, not a blocker.
 - [The chrome layer is BUILT](issues/04-adapter-convergence.md) (2026-08-22) —
-  `ChromeModel` + one `ChromeLayer` per adapter, `BlockStore`/`BlockController`
+  `ChromeController` + one `ChromeLayer` per adapter, `BlockStore`/`BlockController`
   and the three per-row chrome components deleted. ADR-0007 carries the
   amendment it owed: chrome is addressed by POSITION, a Row's own state still
   travels with the Row. Declared behavior changes: geometric hover AND drop
   (the gutter and the gap between rows now answer with the nearest row, where
   DOM containment answered nothing), `alwaysShowHandle` redefined,
-  `BLOCK_MENU_ITEMS.run` takes the chrome model, `store.block` →
+  `BLOCK_MENU_ITEMS.run` takes the chrome controller, `store.block` →
   `store.chrome` with `addRow`/`deleteRow`/`duplicateRow`, one extra
   `contenteditable="false"` container child, and a dead row's menu verb now
   refuses. The grip band stays anchored to its ROW, so it hangs left of the
-  text with or without core's gutter.
+  text with or without core's gutter. The class shipped as `ChromeModel` and
+  was renamed to `ChromeController` on 2026-08-23 — `store.chrome` unchanged,
+  the argument is in `features/block/README.md`. The prototype record
+  ([04](issues/04-adapter-convergence.md)) keeps the old name on purpose: its
+  line references are to the file as it stood.
 - [Stale premises](issues/07-stale-premises-sweep.md) — the filter is gone; 9
   stale sites fixed (the census found 3), backlog 09 and 15 both closed as
   non-reproducing, and `anchorAt`'s `side` param is now measured

@@ -218,7 +218,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `close` | overlay | Close overlay | `void`  |
 
 Block row operations are NOT an event. `store.chrome.action({...})` and its four-verb
-`DragAction` payload are gone: `ChromeModel` resolves the menu's row id to its node and calls
+`DragAction` payload are gone: `ChromeController` resolves the menu's row id to its node and calls
 that node's own verbs, so there is no action to lower onto them.
 
 Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
@@ -232,7 +232,7 @@ store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(5), 
 // Read the live root nodes (readonly TreeNode[]) — reactive
 store.tokens.nodes()
 
-// Run a row operation through the editor's chrome model — it addresses the row the
+// Run a row operation through the editor's chrome controller — it addresses the row the
 // open menu belongs to, so the menu is opened on that row first
 store.chrome.openMenu(store.tokens.nodes()[0].id, gripElement.getBoundingClientRect())
 store.chrome.deleteRow()
@@ -317,7 +317,7 @@ class Store {
     readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops
     readonly overlay:   OverlayController  // match, element, slot, select, close
     readonly keyboard:  KeyboardController // input handling and block editing
-    readonly chrome:    ChromeModel        // block chrome for the whole editor: hover, drag, drop edge, menu
+    readonly chrome:    ChromeController   // block chrome for the whole editor: hover, drag, drop edge, menu
     readonly clipboard: ClipboardController // copy/cut handling
     readonly api:       MarkputHandle         // the ref handle: container, focus()
 }
@@ -359,7 +359,7 @@ Signal subscription order is significant: inside its constructor `onMounted` hoo
 | **OverlayController**         | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution, mark resolver |
 | **KeyboardController**        | Text input and block editing                             |
-| **ChromeModel**               | Block chrome for the whole editor: the hovered/dragged row, the drop edge, the open menu, the row verbs the menu triggers, and the row geometry the layer paints at |
+| **ChromeController**          | Block chrome for the whole editor: the hovered/dragged row, the drop edge, the open menu, the row verbs the menu triggers, and the row geometry the layer paints at |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
 `KeyboardController` registers ONE module: `enableInput` owns the whole keyboard tier — the `beforeinput` guard, paste, the delete keys and Ctrl/Cmd+A — and calls `blockEdit.ts`'s two block arms after its own shared checks. Those arms are all block layout still answers differently: Enter splits a row by inserting the separator, and an `insertParagraph` that reaches the guard anyway is dropped rather than mapped to a newline. A row MERGE is not among them — Backspace/Delete at a row boundary expands onto the separator through `anchorsForDelete`, the same arm that swallows an adjacent mark. Caret navigation is the browser's: the container is the one editing host, so arrows and Home/End move natively and no core keyboard handler intercepts them. (Core's `SuggestionsModel` does claim ArrowUp/ArrowDown/Enter while the built-in `Suggestions` component is mounted — the adapter component only activates it.) The selection is not a feature of its own: `store.tokens.selection` is the stored anchor pair (see below).
@@ -401,11 +401,11 @@ is a ROW, wrapped in a `<Block>` component that renders the row's children and n
 chrome — grip, drop indicator, row menu — is not in the row. One `<ChromeLayer>` per editor
 paints all three, as the container's last child, `position: absolute; inset: 0` over the rows.
 
-`ChromeModel` (`store.chrome`) owns that chrome for the whole editor, as four signals addressed
-by row id:
+`ChromeController` (`store.chrome`) owns that chrome for the whole editor, as four signals
+addressed by row id:
 
 ```typescript
-class ChromeModel {
+class ChromeController {
     readonly state = {
         hovered:  signal<number | null>(...),                      // row id under the pointer
         dragging: signal<number | null>(...),                      // row id being dragged

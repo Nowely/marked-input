@@ -23,10 +23,28 @@ export interface RowBox {
  * THE block chrome owner: one hovered row, one dragged row, one drop edge and one open menu per
  * EDITOR, each addressed by row id.
  *
+ * `*Controller`, not `*Model`, and the suffix is argued rather than assumed — it was contested
+ * once and this paragraph exists so it is not contested again. The class DOES own state: five
+ * signals, {@link menuElement} and the pin, and nothing else in core holds any of it. So does
+ * `OverlayController`, whose shape this one copied down to the lazily attached,
+ * interaction-scoped document listeners below. What separates the two suffixes HERE is DOM
+ * lifecycle taken at MOUNT, and the rule is ONE-WAY — taking it forces `*Controller`; not taking
+ * it forces nothing, which is why `EditController` is one with no listeners, no signals and no
+ * mount hook at all. Measured across the whole population, no `*Model` in core takes a DOM
+ * listener on mount: `PropsModel`, `DomModel` and `TokenModel` call `listen` zero times, and
+ * `SuggestionsModel`'s one `container.addEventListener` sits in an opt-in `activate()` the
+ * adapter calls and takes back, not in a mount hook. The decisive precedent is `TokenModel`: it
+ * owns more state than anything else in core and pushed its DOM I/O OUT, into a class
+ * deliberately not called `SelectionModel`. This one takes `host.onMounted`, installs five
+ * container listeners plus a `ResizeObserver`, a commit watch and a rAF loop there — two more
+ * document listeners while a menu is open — and its menu and drop verbs write the TREE, which is
+ * also what the `BlockController` it replaced did. `store.chrome` is unchanged: the field names
+ * the concern, as every Store field does.
+ *
  * It replaced a per-row store that wired eight DOM handlers and five signals to every row, and
  * the adapters painted a grip, two drop indicators and a menu inside each one. Chrome is not
  * document content and it is not per-row state: at 200 rows that shape mounted 201 grip buttons,
- * 201 control roots and 1608 listeners, where this attaches six listeners to the container and
+ * 201 control roots and 1608 listeners, where this attaches five listeners to the container and
  * the adapter paints one grip.
  *
  * The cost of moving out of the row is geometry. `.Block { position: relative }` made the grip
@@ -38,7 +56,7 @@ export interface RowBox {
  * - hover is geometric Y rather than DOM containment, so the 24px gutter left of a row hovers
  *   that row, and a point in the gap BETWEEN rows snaps to the nearest one.
  */
-export class ChromeModel {
+export class ChromeController {
 	readonly state = {
 		hovered: signal<number | null>({initial: null}),
 		dragging: signal<number | null>({initial: null}),
