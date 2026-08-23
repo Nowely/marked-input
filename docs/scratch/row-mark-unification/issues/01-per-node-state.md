@@ -1,8 +1,7 @@
 # Per-node state: does BlockStore generalize?
 
 Type: grilling
-Status: open
-Blocked by: 02
+Status: resolved
 
 ## Question
 
@@ -70,8 +69,10 @@ same statement. Both lenses killed both.
 
 ## Landed (2026-08-22) — the fold half only
 
-The row-verb fold shipped; the ticket stays `open` because its actual question
-— the per-node state facility — is still behind [02](02-one-render-path.md).
+The row-verb fold shipped first, on its own. At the time this section was
+written the ticket stayed open because its actual question — the per-node state
+facility — was still behind [02](02-one-render-path.md); the Answer below
+records how that question was dissolved rather than answered.
 
 Gone: the `DragAction` type, the `store.block.action` event, `BlockController`'s
 lowering watch, and `features/block/operations.ts`. `BlockStore` takes
@@ -103,3 +104,73 @@ Rehoming: `describe('row identity')` moved to
 `describe('per-row stores (identity-keyed)')` stayed put, because
 `BlockController.spec.ts` was not deleted — the controller survives as the
 WeakMap vendor and `get(node)` is what those cases assert.
+
+## Answer
+
+**Resolved 2026-08-24 by recording what shipped, not by further work.** The
+question — what is the generic per-node state facility, who owns it, does
+`BlockController` survive as its own owner — was overtaken by the row-controls
+layer. The answer is more radical than any of the four approaches round 1
+produced: **there is no per-node state facility, because the per-node record
+stopped existing.**
+
+### The evidence
+
+`packages/core/src/features/block/BlockController.ts` holds five signals for the
+WHOLE editor, and each stores an ID, not a record:
+
+```ts
+readonly state = {
+    hovered:  signal<number | null>({initial: null}),
+    dragging: signal<number | null>({initial: null}),
+    drop:     signal<{id: number; edge: DropEdge} | null>({initial: null, equals: shallow}),
+    menu:     signal<{id: number; top: number; left: number} | null>({initial: null, equals: shallow}),
+    geometry: signal({initial: 0}),
+}
+```
+
+`menuElement` is likewise ONE registration for the editor where the per-row
+store took one per row. Grep for `WeakMap` or `new Map<` in
+`features/block/`: exactly one hit, and it is the docblock at :45 describing
+what the OLD design did (`vended a per-row BlockStore out of a WeakMap and
+pruned them by row id`).
+
+So the keying question this ticket opened with — node object versus id, prune
+versus self-collecting, does the WeakMap silently lose state across adoption —
+is not answered. It is **dissolved**. There is no record to key.
+
+Measured consequence, at 200 rows: 201 grip buttons → 1, 201 control roots → 1,
+1608 DOM listeners → 7, mount 44 ms → 18 ms.
+
+### One honest correction to "nothing is keyed by node"
+
+Two node-keyed structures DO survive in core, and both are `TokenModel`'s:
+`#nodes = new Map<number, TokenHandle>()` (":643", the live node layer keyed by
+stable token id, mutated only through the commit pipeline) and `RefRegistry`'s
+`#byOwner = new Map<number, Map<object, HTMLElement>>()` (":718"). Neither is a
+UI-state facility — they are DOM identity and element registration, they have
+one owner already, and this ticket never proposed touching them. The accurate
+statement is that **no per-node UI-state record exists**, not that nothing is
+keyed by node.
+
+### What died along the way, with the reason
+
+- **The row-verb fold** landed first and separately (`5b408707`): the
+  `DragAction` event, its four-verb protocol and `features/block/operations.ts`
+  are gone; the controller calls the row's own node verbs.
+- **`TokenHandle` as the record** — refuted by ADR-0008 in code before the
+  layer made it moot.
+- **State on the node** — refuted: it writes a mutable member on a published
+  type whose invariant is "ADOPTION IS THE ONLY WRITER".
+- **The per-row store** — deleted outright by the controls layer.
+
+### The one part of the question that survives
+
+Round 1 asked, and the layer did not answer: **would MARKS ever want per-node
+state** — hover for an overlay, say — even though drag stays row-only? Nothing
+in core gives a mark per-node UI state today, and nothing asks for it. That is
+now a question about whether a feature is wanted, not about how to build a
+facility, so it does not belong to this ticket. If it is ever wanted, the
+finding to carry over is that the row case was answered by NOT building the
+facility — five editor-level signals addressed by id beat any keyed record, and
+the same shape is available to marks.

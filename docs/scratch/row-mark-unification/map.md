@@ -118,6 +118,15 @@ Implementation is a separate effort after this map.
   record ([04](issues/04-adapter-convergence.md)) keeps the prototype's own
   names on purpose: its line references are to the file as it stood on branch
   `prototype/chrome-layer`.
+- [Per-node state](issues/01-per-node-state.md) — DISSOLVED, not answered. The
+  row-controls layer removed the per-node record entirely: five editor-level
+  signals holding an ID each, and grep for `WeakMap`/`new Map<` in
+  `features/block/` returns one hit, a docblock describing the old design. So
+  the keying question this map opened with — node object versus id, prune versus
+  self-collecting — has no subject left. Honest correction recorded there: two
+  node-keyed structures do survive, both `TokenModel`'s, and both are DOM
+  identity rather than UI state. The surviving half — whether MARKS want
+  per-node state — is now [09](issues/09-per-node-state-for-marks.md).
 - [Stale premises](issues/07-stale-premises-sweep.md) — the filter is gone; 9
   stale sites fixed (the census found 3), backlog 09 and 15 both closed as
   non-reproducing, and `anchorAt`'s `side` param is now measured

@@ -2,7 +2,7 @@
 
 Type: grilling
 Status: open
-Blocked by: 01, 02
+Blocked by: —  (01 resolved 2026-08-24; 02's paused half is about prop names, not the layout mode)
 
 ## Question
 
