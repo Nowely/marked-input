@@ -179,8 +179,24 @@ map's destination; recorded so they are not lost.
 - **`blockEdit.ts:48-66` justifies the stored-selection tier with a
   `pendingStructural` window that ADR-0008's own 2026-08-19 amendment says no
   longer exists.** The tier is still load-bearing; the written reason is dead.
-- **`anchorAt`'s `side` parameter is production-dead** — measured, one
-  hand-assembled test holds it up. A signature change, so it needs its own yes.
+- ~~**`anchorAt`'s `side` parameter is production-dead** — measured, one
+  hand-assembled test holds it up. A signature change, so it needs its own
+  yes.~~ **CLOSED, parameter deleted.** Re-measured at `d2cfb350` rather than
+  inherited: a throwing probe on the branch's precondition (`text ===
+  undefined && offset === owner.position.start`, either side) fires in 1 of
+  1533 tests — the hand-assembled `roots = [mark]` — and in none of the other
+  79 files; a corpus probe over 326 documents parsed five ways takes the
+  `{after: owner}` fallback 20139 times in 159105 offsets and NEVER at an
+  owner's start. The reachability argument is now in code, not in a test
+  count: `TreeBuilder.buildSinglePass` emits a text token before every match
+  at every nesting level, `RowBuilder.groupRows` opens a row's children with
+  one, and `adopt` keeps the parse's shape — so a node's own START is always
+  covered by text and the fallback can only answer for an interior or an end.
+  BREAKING on type surface only: `TokenModel.anchorAt(offset, side?)` is in
+  both adapters' published `index.d.ts` and reachable via `useMarkput`.
+  The hand-assembled test's live claims keep their pins elsewhere; the
+  invariant that REPLACES the parameter had none and is now pinned in
+  `tree/anchors.spec.ts`.
 - **A boundary on a slot mark's own presentation wrapper declines, and the
   keystroke is dropped** — **CONFIRMED and FIXED.** `domBoundary.ts:99` asked
   `hasEditableAncestorBefore`, which read the INHERITED `isContentEditable`; a
