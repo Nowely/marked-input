@@ -49,13 +49,13 @@ Both framework adapters share the same component structure:
   │ │       └─ <TokenChildren>      # Internal host for __slot__ child sequence
   │ │           └─ <Token node={child}>
   │ │
-  │ └─ (drag=true)
-  │     └─ <Block node={n}>         # Drag-mode wrapper per root node
-  │         ├─ <DropIndicator position="before" />
-  │         ├─ <DragHandle />
-  │         ├─ <Token node={n} />
-  │         ├─ <DropIndicator position="after" />
-  │         └─ <BlockMenu />
+  │ └─ (block layout)
+  │     ├─ <Block node={n}>         # Row wrapper: the RowNode's own element AND
+  │     │   └─ <Token node={child}> #   its child-sequence host
+  │     └─ <ChromeLayer />          # ONE per editor, beside the rows, not inside
+  │         ├─ grip                 #   them: grip, drop indicator and row menu,
+  │         ├─ drop indicator       #   painted at row boxes it measures
+  │         └─ row menu
   │
   <OverlayRenderer>                  # Portal for overlay
       └─ <Overlay />                 # User's custom Overlay component
@@ -69,10 +69,8 @@ Both framework adapters share the same component structure:
 | **Container**        | contenteditable management, renders tokens or blocks         |
 | **Token**            | Unified renderer for both text and mark tokens (recursive)   |
 | **TokenChildren**    | Internal nested token sequence host for slot children        |
-| **Block**            | Block layout's row wrapper — the RowNode's own element; renders the row's children plus handle, menu and drop indicators |
-| **DragHandle**       | Drag grip UI element                                         |
-| **BlockMenu**        | Context menu for block operations (add, delete, duplicate)   |
-| **DropIndicator**    | Visual drop target indicator during drag                     |
+| **Block**            | Block layout's row wrapper — the RowNode's own element and its child-sequence host; renders the row's children and nothing else |
+| **ChromeLayer**      | ONE per editor: the grip, the drop indicator and the row menu, painted at measured row boxes |
 | **OverlayRenderer**  | Portal renderer for overlay component                        |
 | **Span**             | Default text span renderer                                   |
 
@@ -219,9 +217,9 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | ------- | ------- | ------------- | ------- |
 | `close` | overlay | Close overlay | `void`  |
 
-Block row operations are NOT an event. `store.block.action({...})` and its four-verb
-`DragAction` payload are gone: a `BlockStore` holds its row node and calls that node's own
-verbs, so there is no action to lower onto them.
+Block row operations are NOT an event. `store.chrome.action({...})` and its four-verb
+`DragAction` payload are gone: `ChromeModel` resolves the menu's row id to its node and calls
+that node's own verbs, so there is no action to lower onto them.
 
 Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
 
@@ -234,8 +232,10 @@ store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(5), 
 // Read the live root nodes (readonly TreeNode[]) — reactive
 store.tokens.nodes()
 
-// Run a row operation through the row's own per-row store
-store.block.get(store.tokens.nodes()[0]).deleteBlock()
+// Run a row operation through the editor's chrome model — it addresses the row the
+// open menu belongs to, so the menu is opened on that row first
+store.chrome.openMenu(store.tokens.nodes()[0].id, gripElement.getBoundingClientRect())
+store.chrome.deleteRow()
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
@@ -317,7 +317,7 @@ class Store {
     readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops
     readonly overlay:   OverlayController  // match, element, slot, select, close
     readonly keyboard:  KeyboardController // input handling and block editing
-    readonly block:     BlockController    // per-row UI-state stores, keyed by the row node
+    readonly chrome:    ChromeModel        // block chrome for the whole editor: hover, drag, drop edge, menu
     readonly clipboard: ClipboardController // copy/cut handling
     readonly api:       MarkputHandle         // the ref handle: container, focus()
 }
@@ -359,7 +359,7 @@ Signal subscription order is significant: inside its constructor `onMounted` hoo
 | **OverlayController**         | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution, mark resolver |
 | **KeyboardController**        | Text input and block editing                             |
-| **BlockController**           | Vends the per-row `BlockStore` that owns a row's chrome state and its row verbs |
+| **ChromeModel**               | Block chrome for the whole editor: the hovered/dragged row, the drop edge, the open menu, the row verbs the menu triggers, and the row geometry the layer paints at |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
 `KeyboardController` registers ONE module: `enableInput` owns the whole keyboard tier — the `beforeinput` guard, paste, the delete keys and Ctrl/Cmd+A — and calls `blockEdit.ts`'s two block arms after its own shared checks. Those arms are all block layout still answers differently: Enter splits a row by inserting the separator, and an `insertParagraph` that reaches the guard anyway is dropped rather than mapped to a newline. A row MERGE is not among them — Backspace/Delete at a row boundary expands onto the separator through `anchorsForDelete`, the same arm that swallows an adjacent mark. Caret navigation is the browser's: the container is the one editing host, so arrows and Home/End move natively and no core keyboard handler intercepts them. (Core's `SuggestionsModel` does claim ArrowUp/ArrowDown/Enter while the built-in `Suggestions` component is mounted — the adapter component only activates it.) The selection is not a feature of its own: `store.tokens.selection` is the stored anchor pair (see below).
@@ -392,38 +392,50 @@ React/Vue render asynchronously, so initialization order matters:
 //    → Each onMounted scope is disposed (DOM listeners removed, watchers torn down)
 ```
 
-## Block System (Drag Mode)
+## Block System (Block Layout)
 
-Normal mode: tokens render inline as alternating `[text, mark, text, ...]`.
+Inline layout: tokens render in one flow as alternating `[text, mark, text, ...]`.
 
-Drag mode (`drag={true}`): each token is wrapped in a `<Block>` component with:
-- `DragHandle` — grip for initiating drag
-- `DropIndicator` — visual feedback for drop position (before/after)
-- `BlockMenu` — context menu (add, delete, duplicate)
+Block layout (`layout="block"`, with `draggable` adding the reorder affordance): each root node
+is a ROW, wrapped in a `<Block>` component that renders the row's children and nothing else. The
+chrome — grip, drop indicator, row menu — is not in the row. One `<ChromeLayer>` per editor
+paints all three, as the container's last child, `position: absolute; inset: 0` over the rows.
 
-`BlockController` keeps a `WeakMap<TreeNode, BlockStore>` — one `BlockStore` per row, keyed by the row node itself. Object keying is exactly as stable as id keying: ids come from one tree's private counter, so within an input an id is carried by one object forever, and adoption writes surviving nodes in place. Keying on the object makes the map self-collecting, so there is no prune at all — the id-keyed `Map` it replaced could only shed a dead row on an announcement, and an announcement needs a mounted container, so an unmounted row leaked its store for the lifetime of the input.
-
-Each `BlockStore` holds its UI state as a `state` record of signals:
+`ChromeModel` (`store.chrome`) owns that chrome for the whole editor, as four signals addressed
+by row id:
 
 ```typescript
-class BlockStore {
+class ChromeModel {
     readonly state = {
-        isHovered: signal({initial: false}),
-        isDragging: signal({initial: false}),
-        dropPosition: signal<DropPosition>({initial: null}), // 'before' | 'after' | null
-        menuOpen: signal({initial: false}),
-        menuPosition: signal({initial: {top: 0, left: 0}}),
+        hovered:  signal<number | null>(...),                      // row id under the pointer
+        dragging: signal<number | null>(...),                      // row id being dragged
+        drop:     signal<{id: number; edge: 'before' | 'after'} | null>(...),
+        menu:     signal<{id: number; top: number; left: number} | null>(...),
+        geometry: signal(...),                                     // re-measure clock
     }
-    // ...attachContainer/attachGrip/attachMenu wire DOM listeners that write this state
+    // ...five container listeners, a ResizeObserver on it and a watch on the commit clock
 }
 ```
 
-A `BlockStore` also holds its row node, so the row operations are calls on that node:
-`addBlock`/`deleteBlock`/`duplicateBlock` are `insertAfter(separator)`/`remove()`/`duplicate()`,
-and the container's `drop` handler is `moveTo(index)`. The drop is the one operation that does
-not address the store's own node — it learns its source from the drag's `text/plain` payload,
-resolves that index through `tokens.nodes()`, and refuses a negative one rather than letting
-`Array.prototype.at` wrap onto the last row.
+There is no per-row store and no per-row chrome DOM. At 200 rows the shape this replaced mounted
+201 grip buttons, 201 `control()` roots and 1608 listeners; measured mount was 44 ms and 1005 DOM
+nodes, against 18 ms and 403 for one layer.
+
+The price is geometry: `.Block { position: relative }` made a per-row grip free, while a layer
+measures. `boxOf(id)` answers a row's box in CONTAINER-LOCAL coordinates (which carry
+`scrollTop`, so they are scroll-proof), and `rowAt(clientY)` hit-tests a pointer with a binary
+search over the vertically tiled rows. Hover is therefore geometric rather than DOM containment:
+the drag gutter hovers its row, and a point in the gap between two rows snaps to the nearest.
+
+Row operations are calls on the row's own node: `addRow`/`deleteRow`/`duplicateRow` resolve the
+open menu's id through `tokens.find` and call `insertAfter(separator)`/`remove()`/`duplicate()`,
+so a row that has left the tree refuses. The drop is the one operation not addressed by id — it
+learns its source from the drag's `text/plain` payload, resolves that INDEX through
+`tokens.nodes()`, and refuses a negative one rather than letting `Array.prototype.at` wrap onto
+the last row.
+
+Chrome addressed by position rather than by row identity is the narrow exception to ADR-0007,
+amended for it; a row's own state still travels with the row.
 
 ## Core-Owned DOM And Cursor Management
 
@@ -553,13 +565,14 @@ passing `undefined` after a string) keeps what is on screen, because the tree �
 not a remembered string — is what an arrival without a value falls back to. To go
 back to earlier text, pass it.
 
-### Pattern: Drag Mode
+### Pattern: Block Layout With Drag
 
 ```typescript
 function App() {
   return (
     <MarkedInput
-      drag={true}
+      layout="block"
+      draggable
       Mark={MyMark}
     />
   )

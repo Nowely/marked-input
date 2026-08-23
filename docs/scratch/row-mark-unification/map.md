@@ -90,6 +90,18 @@ Implementation is a separate effort after this map.
   `focusout` microtask has already cleared the stored anchors. The
   `domBoundary.ts` gap in the round-1 list below is therefore real but
   UNREACHABLE from input — it stays a recorded defect, not a blocker.
+- [The chrome layer is BUILT](issues/04-adapter-convergence.md) (2026-08-22) —
+  `ChromeModel` + one `ChromeLayer` per adapter, `BlockStore`/`BlockController`
+  and the three per-row chrome components deleted. ADR-0007 carries the
+  amendment it owed: chrome is addressed by POSITION, a Row's own state still
+  travels with the Row. Declared behavior changes: geometric hover AND drop
+  (the gutter and the gap between rows now answer with the nearest row, where
+  DOM containment answered nothing), `alwaysShowHandle` redefined,
+  `BLOCK_MENU_ITEMS.run` takes the chrome model, `store.block` →
+  `store.chrome` with `addRow`/`deleteRow`/`duplicateRow`, one extra
+  `contenteditable="false"` container child, and a dead row's menu verb now
+  refuses. The grip band stays anchored to its ROW, so it hangs left of the
+  text with or without core's gutter.
 - [Stale premises](issues/07-stale-premises-sweep.md) — the filter is gone; 9
   stale sites fixed (the census found 3), backlog 09 and 15 both closed as
   non-reproducing, and `anchorAt`'s `side` param is now measured
@@ -108,8 +120,6 @@ Implementation is a separate effort after this map.
 - Fate of published `slots.block` / `slotProps.block` names — after 02's slot
   registry sub-question; glossary says "not a rename target", and
   `slotProps.block` typechecks on neither adapter today.
-- The ADR-0007 amendment that chrome is addressed by position rather than row
-  identity — decided once, when the chrome layer is measured, not per ticket.
 
 ## Found in round 1, outside every ticket
 
@@ -123,9 +133,11 @@ map's destination; recorded so they are not lost.
 - **Block layout silently corrupts the model through a consumer's
   contenteditable island** — the behavior change [03](issues/03-one-input-pipeline.md)
   fixes as a side effect. Inline pins the opposite contract.
-- **ADR-0007's body says `BlockController` prunes per-row state by node id.**
+- ~~**ADR-0007's body says `BlockController` prunes per-row state by node id.**
   It does not prune at all; `BlockController.ts:11-25` argues object keying is
-  chosen precisely so no prune is needed. Stale ADR text.
+  chosen precisely so no prune is needed. Stale ADR text.~~ CLOSED by the
+  chrome layer's ADR-0007 amendment, which names the class as deleted; the
+  original paragraph stays as the record of the state at the time.
 - **`blockEdit.ts:48-66` justifies the stored-selection tier with a
   `pendingStructural` window that ADR-0008's own 2026-08-19 amendment says no
   longer exists.** The tier is still load-bearing; the written reason is dead.

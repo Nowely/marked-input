@@ -76,6 +76,13 @@ holding the row's inline **Token**s as children. A Row carries no **Markup** —
 Row of plain text — and the piece after the final separator is a Row even when empty (ADR-0009).
 _Avoid_: line, paragraph, block, item
 
+**Chrome**:
+The editor's own UI over the document rather than in it — in **Block layout** the drag grip, the
+drop indicator and the row menu. One layer per editor paints all of it (`store.chrome`), and
+which **Row** each piece decorates is decided by where the pointer is, not by a Row holding
+state of its own (ADR-0007's 2026-08-22 amendment).
+_Avoid_: decorations, adornments, handles (as a category), calling it row state
+
 **Separator**:
 The editor-level string that delimits **Row**s in **Block layout** (`separator` prop, default
 `'\n\n'`). Structural: it belongs to no **Markup**, is that markup's own text inside an opaque
@@ -107,5 +114,5 @@ _Avoid_: internal, self-managed, local
 - **"node" meant both the model unit and a DOM node.** Resolved: the model unit is a **Token**, and `node` is left to the DOM — the published `OverlayMatch.node` is a DOM `Node` (`shared/types.ts:75`), which is the collision the language is avoiding. `TreeNode`, `NodeAnchor`, `nodes()` and `nodeAt` keep the older word inside and around `tree/`; the names are not the language, and none of them is a rename target.
 - **"token" meant both the parser's output and the runtime unit.** Resolved: the runtime unit is a **Token**, the parser's output is a **Lexeme**. `TextToken` and `MarkToken` in `parser/` still carry the wider word — parser-local names, not rename targets.
 - **"host" meant the element, the class owning it, and the DOM spec's concept.** Resolved: the element is the **Container**, the class is the **Host**. Where browser behaviour is under discussion, "editing host" is quoted as the spec's term, not used as ours.
-- **"block" meant both the layout and the row it lays out.** Resolved: the mode is **Block layout**, the unit is a **Row**. The API keeps the wider word by contract — `slots.block` and `slotProps.block` are the published names for the row wrapper, and `BlockStore`, `BlockController`, `blockIndex` and `isBlock` follow them. The names are not the language; none of them is a rename target.
+- **"block" meant both the layout and the row it lays out.** Resolved: the mode is **Block layout**, the unit is a **Row**. The API keeps the wider word by contract — `slots.block` and `slotProps.block` are the published names for the row wrapper, and `isBlock` follows them. The names are not the language; none of them is a rename target. `BlockStore`, `BlockController` and `blockIndex` were on this line too and are simply GONE, 2026-08-22: the chrome layer deleted per-row chrome state outright, so the row verbs they carried are `store.chrome`'s `addRow`/`deleteRow`/`duplicateRow` — a Row is a Row, and nothing was renamed to reach that.
 - **"value" means both the whole document and a mark's own field.** Kept, not renamed: **Value** is the document, and a mark's field appears only in code form — the `__value__` placeholder and `MarkToken.value` — so the shape disambiguates. The document sense is unrenamable anyway; it is the published `value` prop. The two senses coincide today because a mark's field is the text it displays, and they pull apart the moment a field carries structure rather than display text — that is when this entry has to be revisited.
