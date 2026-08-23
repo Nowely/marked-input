@@ -443,10 +443,19 @@ the editor's whole lifetime.
 
 Row operations are calls on the row's own node: `addRow`/`deleteRow`/`duplicateRow` resolve the
 open menu's id through `tokens.find` and call `insertAfter(separator)`/`remove()`/`duplicate()`,
-so a row that has left the tree refuses. The drop is the one operation not addressed by id — it
-learns its source from the drag's `text/plain` payload, resolves that INDEX through
-`tokens.nodes()`, and refuses a negative one rather than letting `Array.prototype.at` wrap onto
-the last row.
+so a row that has left the tree refuses. The drop is addressed by id too: its source is
+`state.dragging`, and both it and the drop edge's row resolve through `rootIndexOf` on the live
+tree.
+
+That signal is also the PROVENANCE test. Only `beginDrag` — the grip's own `dragstart` — sets it,
+and it is per-editor, so `dragover` paints no drop edge for a drag this editor did not start and
+`drop` never claims one; two editors on a page discriminate each other for free, the way
+`captureMarkupPaste` already scopes the clipboard per container. A foreign drop falls through to
+the browser's own editable drop, where `insertFromDrop` inserts the dragged text. Until 2026-08-23
+there was no provenance test at all: the handler parsed `text/plain` as a row index and refused
+only `NaN`, so the bare text `0` dragged in from another application reordered the document, and
+so did a second markput editor's row. Because the drop no longer reads the payload, `text/plain`
+now carries the row's own text — what a drag out of the editor should deliver.
 
 Row controls addressed by position rather than by row identity are the narrow exception to ADR-0007,
 amended for it; a row's own state still travels with the row.

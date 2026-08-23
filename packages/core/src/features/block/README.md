@@ -36,11 +36,23 @@ Addressing the row's own node removes the ambiguity at the source: the splice wi
 
 Reorder is the one operation that needed more than an anchor: a permutation is not derivable from the two strings, so the commit carries a `Pairing` stating it. That work also took the last `.position` read out of `block/`, which is why the directory is no longer on [ADR-0003](../../../../../docs/adr/0003-one-address-space.md)'s allowlist — the allowlist is gone.
 
-## Addressing: the row id, except on the drop
+## Addressing: the row id, everywhere
 
-The menu holds the ID of the row it opened on and resolves it through `tokens.find` when a verb runs, so a row that has left the tree refuses instead of being written to. The container's `drop` handler is the exception: it learns its source from the drag's own `text/plain` payload, so it resolves that INDEX through `tokens.nodes()`. The payload carries no provenance, so the index is not trusted — a negative one is refused rather than handed to `Array.prototype.at`, which wraps and would address the LAST row.
+The menu holds the ID of the row it opened on and resolves it through `tokens.find` when a verb runs, so a row that has left the tree refuses instead of being written to. The drop resolves the same way: its source row is `state.dragging`, the id `beginDrag` wrote, and both it and the drop edge's row go through `rootIndexOf` on the live tree. It used to learn its source from the drag's own `text/plain` payload instead — see below.
 
-The drop TARGET is geometric, like hover: `dragover` hit-tests the pointer's Y and snaps a point in the gutter or in the gap between two rows to the nearest row, where the per-row handler received no event there at all. The `drop` listener is on the container in EVERY layout, so it claims the event — `preventDefault` — only once it has a drop edge of its own to honour; cancelling a drop it refuses would suppress core's own `insertFromDrop` edit in inline layout.
+The drop TARGET is geometric, like hover: `dragover` hit-tests the pointer's Y and snaps a point in the gutter or in the gap between two rows to the nearest row, where the per-row handler received no event there at all. The `drop` listener is on the container in EVERY layout, so it claims the event — `preventDefault` — only once it has a drop edge of its own to honour; cancelling a drop it refuses would suppress the browser's own editable drop.
+
+## Provenance: what makes a drag ours
+
+`state.dragging`, and nothing on the drag itself. Only `beginDrag` — the grip's own `dragstart` — sets it, and it is per-EDITOR, so `dragover` paints no drop edge for a drag this editor did not start and `drop` never claims one. Two editors on a page discriminate each other for free, the same way `captureMarkupPaste` keeps two editors from consuming each other's clipboard: with per-container state rather than an id in the payload.
+
+The handler used to parse `text/plain` as a row index and refuse only `NaN`, with no provenance test at all. Dragging the bare text `0` in from another application reordered the document, and so did a second markput editor's row, whose payload was an equally bare index.
+
+A private MIME type on the drag source is the other standard answer, and it was measured rather than argued: real Chromium 151 keeps a custom format in `dataTransfer.types` through `dragenter`, `dragover` and `drop`, where protected mode makes `getData` answer `''` for every format — so `types` alone can decide at `dragover`, and a format string is lowercased on the way in. It was rejected because telling editors apart needs an id minted for this one purpose and shipped through the DOM, which is a second copy of a fact this class already owns, and because that copy can be the wrong one: an editor remounted mid-drag still matches its own type while its tree, and every row index in flight, is new.
+
+A foreign drop therefore FALLS THROUGH rather than being swallowed. Measured in real Chromium: an unprevented `dragover` still ends in `beforeinput`/`insertFromDrop` on a `contenteditable`, which is the event `replacementForInput` already turns into an insert — so text dragged in from anywhere lands in the row, in block layout exactly as in inline.
+
+Because the drop no longer reads the payload, `text/plain` is free to carry what a drag OUT of the editor should deliver: the row's own text, the same thing `ClipboardController`'s copy puts there and the same thing the drag image shows.
 
 ## The hover pin
 

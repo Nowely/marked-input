@@ -175,14 +175,20 @@ export class BlockController {
 	duplicateRow = (): void => this.#runMenuVerb(row => row.duplicate())
 	deleteRow = (): void => this.#runMenuVerb(row => row.remove())
 
+	/**
+	 * `state.dragging` — not the payload — is what says a drop is this editor's own row,
+	 * so `text/plain` is free to carry what a drag OUT of the editor should deliver: the row's
+	 * own text, the same thing `ClipboardController`'s copy puts there and the same thing the
+	 * drag image shows. It used to carry the row INDEX, which the drop handler read back.
+	 */
 	beginDrag(id: number, e: DragEvent): void {
 		if (!e.dataTransfer) return
 		e.dataTransfer.effectAllowed = 'move'
-		e.dataTransfer.setData('text/plain', String(this.tokens.rootIndexOf(id) ?? -1))
 		this.state.dragging(id)
 		// `setDragImage` needs the ROW element and reaches it through the same registry `bind`
 		// reads — which is why the per-row store's `refs.container` needed no replacement here.
 		const element = this.tokens.handle(id)?.element()
+		e.dataTransfer.setData('text/plain', element?.textContent ?? '')
 		if (element) e.dataTransfer.setDragImage(element, 0, 0)
 	}
 
@@ -373,8 +379,25 @@ export class BlockController {
 		if (row) verb(row)
 	}
 
+	/**
+	 * PROVENANCE, and it is the whole of the gate: a drag this editor did not start paints no
+	 * drop edge, so `#onDrop` never claims it. The question "is this drag ours?" is asked of
+	 * `state.dragging`, which only {@link beginDrag} — the grip's own `dragstart` — ever sets,
+	 * and which is per-EDITOR by construction. Two editors on a page therefore
+	 * discriminate each other for free, the same way `captureMarkupPaste` keeps two editors from
+	 * consuming each other's clipboard: with per-container state, not with an id in the payload.
+	 *
+	 * The alternative was measured rather than argued. A private MIME type on the drag source
+	 * works — real Chromium 151 keeps `application/x-markput-row+7` in `dataTransfer.types`
+	 * through `dragenter`/`dragover`/`drop`, where protected mode makes `getData` answer `''`
+	 * for every format, so `types` alone can decide at `dragover`. It was rejected because
+	 * telling editors apart needs an id MINTED for this one purpose and shipped through the DOM,
+	 * which is a second copy of a fact this class already owns — and because the copy can be the
+	 * WRONG one: an editor remounted mid-drag would still match its own type while its tree, and
+	 * therefore every row index in flight, is new.
+	 */
 	#onDragOver(e: DragEvent): void {
-		if (!e.dataTransfer) return
+		if (!e.dataTransfer || this.state.dragging() === null) return
 		const row = this.rowAt(e.clientY)
 		if (!row) return
 		e.preventDefault()
@@ -384,35 +407,34 @@ export class BlockController {
 	}
 
 	#onDrop(e: DragEvent): void {
-		if (!e.dataTransfer) return
 		const drop = this.state.drop()
+		const source = this.state.dragging()
 		this.state.drop(null)
 		// No painted drop edge means no `dragover` of ours accepted this drag, and cancelling it
-		// would suppress core's own `insertFromDrop` edit. The per-row handler could not reach a
-		// foreign drop at all — it existed only on a row, in block layout — where this one is on
-		// the container in EVERY layout, so the refusal has to be explicit.
-		if (!drop) return
+		// would suppress the browser's own editable drop — measured: an unprevented `dragover`
+		// still ends in `beforeinput`/`insertFromDrop` on a contenteditable, which is the event
+		// `replacementForInput` already turns into an insert. So a FOREIGN drop over a row falls
+		// through and inserts its text, in block layout exactly as in inline. The per-row handler
+		// could not reach a foreign drop at all — it existed only on a row, in block layout —
+		// where this one is on the container in EVERY layout, so the refusal has to be explicit.
+		if (!drop || source === null) return
 		e.preventDefault()
-		const source = Number.parseInt(e.dataTransfer.getData('text/plain'), 10)
-		if (Number.isNaN(source)) return
-		// Reorder is drag-originated, so unlike the menu verbs it stays behind `draggable`.
+		// Reorder is drag-originated, so unlike the menu verbs it stays behind `draggable`. Only
+		// a consumer flipping the prop mid-drag reaches this: the grip carries `draggable` too,
+		// so with it off no `dragstart` fires and no drop edge is ever painted.
 		if (!this.props.draggable()) return
-		// `source` is whatever the drag carried, and this handler asks the payload for no
-		// provenance — so it is not trusted to name a row. `Array.prototype.at` WRAPS on a
-		// negative index, and an unguarded `at(-1)` would move the LAST row to the top.
-		if (source < 0) return
-		// This is also what refuses a drag whose layout left block mid-flight: `nodes()` holds
-		// the INLINE nodes there and `moveTo` would reorder THOSE, but the re-parse mints new
-		// ids, so the drop edge's row id is in no root and `rootIndexOf` answers `undefined`.
+		// Both ends resolve through the LIVE tree, and either answering `undefined` is what
+		// refuses a drag whose layout left block mid-flight: the re-parse mints new ids, so
+		// neither the dragged row nor the drop edge's row is a root any more.
+		const from = this.tokens.rootIndexOf(source)
 		const index = this.tokens.rootIndexOf(drop.id)
-		if (index === undefined) return
+		if (from === undefined || index === undefined) return
 		const target = drop.edge === 'before' ? index : index + 1
 		// The drop target names a SLOT BETWEEN rows, so a target below the source shifts down by
 		// one once the row leaves its old place. Both drag no-ops — dropping on itself, and
 		// dropping on its own trailing edge — collapse onto `to === from`, which `movePlan`
 		// already refuses.
-		const to = target > source ? target - 1 : target
-		this.tokens.nodes().at(source)?.moveTo(to)
+		this.tokens.find(source)?.moveTo(target > from ? target - 1 : target)
 	}
 }
 

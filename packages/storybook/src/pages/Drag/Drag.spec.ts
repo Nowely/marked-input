@@ -56,27 +56,46 @@ async function openMenuForRow(host: HTMLElement, rowIndex: number) {
 }
 
 /**
- * The drag sequence a browser produces: dragstart on the grip, then dragover and drop — both on
- * the CONTAINER, which is where the layer listens, carrying the clientY that names the edge.
+ * The TARGET half of a drag: dragover then drop, both on the CONTAINER, which is where the layer
+ * listens, carrying the clientY that names the edge. Its own helper because the host it aims at
+ * need not be the one the drag started in — that is how a foreign drag arrives.
  */
+function dropOnRow(host: HTMLElement, rowIndex: number, dt: DataTransfer, position: 'before' | 'after' = 'after') {
+	const rect = rowsOf(host)[rowIndex].getBoundingClientRect()
+	const clientY = position === 'before' ? rect.top + 1 : rect.bottom - 1
+	const over = new DragEvent('dragover', {bubbles: true, cancelable: true, dataTransfer: dt, clientY})
+	host.dispatchEvent(over)
+	const drop = new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt, clientY})
+	host.dispatchEvent(drop)
+	return {over, drop}
+}
+
+/** The grip's own `dragstart` — the only thing that makes a later drop this editor's own row. */
+async function beginRowDrag(host: HTMLElement, rowIndex: number) {
+	const grip = await gripOfRow(host, rowIndex)
+	const dt = new DataTransfer()
+	grip.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer: dt}))
+	return {grip, dt, end: () => grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))}
+}
+
+/** The whole sequence a browser produces, start to finish, inside ONE editor. */
 async function dragRow(
 	host: HTMLElement,
 	sourceIndex: number,
 	targetIndex: number,
 	position: 'before' | 'after' = 'after'
 ) {
-	const grip = await gripOfRow(host, sourceIndex)
-	const targetRow = rowsOf(host)[targetIndex]
-
-	const dt = new DataTransfer()
-	grip.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer: dt}))
-
-	const rect = targetRow.getBoundingClientRect()
-	const clientY = position === 'before' ? rect.top + 1 : rect.bottom - 1
-	host.dispatchEvent(new DragEvent('dragover', {bubbles: true, cancelable: true, dataTransfer: dt, clientY}))
-	host.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt, clientY}))
-	grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))
+	const {dt, end} = await beginRowDrag(host, sourceIndex)
+	dropOnRow(host, targetIndex, dt, position)
+	end()
 }
+
+/**
+ * One turn of the event loop, for the assertions that say NOTHING happened. React commits an
+ * echoed `onChange` in a microtask, so reading the harness value straight after a synthetic drop
+ * reports the stale one — an unreordered document and a reordered one look identical there.
+ */
+const settle = () => new Promise(resolve => setTimeout(resolve, 0))
 
 /** The helper stories driven as a controlled field that echoes `onChange` back into `value`. */
 const echoPlainText = () => mountEcho(PlainTextDrag, {value: PLAIN_TEXT_VALUE})
@@ -454,6 +473,56 @@ describe('Feature: drag rows', () => {
 			await dragRow(host, 1, 1)
 
 			expect(value()).toBe(original)
+		})
+
+		it("carry the dragged row's own text as the drag payload", async () => {
+			// DECLARED BEHAVIOUR CHANGE: it used to be the row INDEX, which the drop handler read
+			// back off `text/plain`. Provenance comes from the editor's own drag state now, so the
+			// payload is free to be what a drag OUT of the editor should deliver.
+			const {host} = await mount(PlainTextDrag)
+			const {dt, end} = await beginRowDrag(host, 1)
+
+			expect(dt.getData('text/plain')).toBe('Second block of plain text')
+			end()
+		})
+
+		it('refuse a drop from a drag no grip of ours started', async () => {
+			// PRE-EXISTING DEFECT, closed here: the handler parsed `text/plain` as a row index and
+			// refused only NaN, so the bare text `0` dragged in from ANY other application — a
+			// second browser tab, a text editor, a text selection inside this very field —
+			// reordered the document. Nothing below dispatches a `dragstart` on a grip, which is
+			// the whole of the test.
+			const {host, value} = await echoPlainText()
+			const original = value()
+
+			const dt = new DataTransfer()
+			dt.setData('text/plain', '0')
+			const {over, drop} = dropOnRow(host, 2, dt)
+
+			await settle()
+			expect(value()).toBe(original)
+			// Neither event is claimed, so the browser's own editable drop still runs and core's
+			// `insertFromDrop` path inserts the dragged text instead.
+			expect(over.defaultPrevented).toBe(false)
+			expect(drop.defaultPrevented).toBe(false)
+		})
+
+		it('refuse a row dragged out of a SECOND editor on the same page', async () => {
+			// Nothing on the drag names the editor it came from — it did not when the payload was
+			// a bare row index, where A's "0" and B's "0" are the same three bytes, and it still
+			// does not now that it is the row's text. Each editor answers from its OWN drag
+			// state, which is null in B for the whole of A's gesture.
+			const a = await echoPlainText()
+			const b = await echoPlainText()
+
+			const {dt, end} = await beginRowDrag(a.host, 0)
+			const {drop} = dropOnRow(b.host, 2, dt)
+			end()
+
+			await settle()
+			expect(b.value()).toBe(PLAIN_TEXT_VALUE)
+			expect(a.value()).toBe(PLAIN_TEXT_VALUE)
+			expect(drop.defaultPrevented).toBe(false)
 		})
 	})
 
