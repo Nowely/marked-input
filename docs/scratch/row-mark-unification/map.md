@@ -168,17 +168,31 @@ map's destination; recorded so they are not lost.
   `state.drop` on line 389 and parses on 396; the one return still ahead of it
   was `if (!e.dataTransfer)`, and that line is deleted here because the handler
   no longer touches `dataTransfer` at all. Nothing now returns before the reset.
-- **Block layout silently corrupts the model through a consumer's
+- ~~**Block layout silently corrupts the model through a consumer's
   contenteditable island** — the behavior change [03](issues/03-one-input-pipeline.md)
-  fixes as a side effect. Inline pins the opposite contract.
+  fixes as a side effect. Inline pins the opposite contract.~~ **CLOSED by 03**
+  (verified 2026-08-24), exactly as predicted: block used to take only the
+  control-root half of the consumer-origin check, so an `insertText` originating
+  in the island resolved a caret at the ROW's text end and typed there —
+  `one\n\ntwo\n\n` became `one\n\ntwox\n\n`, cancelled, where inline left the
+  same edit alone. One pipeline means one guard, `inExplicitEditableIsland`,
+  reached by both layouts. Pinned by `blockEdit.spec.ts:187` against
+  `input.spec.ts:432`.
 - ~~**ADR-0007's body says `BlockController` prunes per-row state by node id.**
   It does not prune at all; `BlockController.ts:11-25` argues object keying is
   chosen precisely so no prune is needed. Stale ADR text.~~ CLOSED by the
   controls layer's ADR-0007 amendment, which names the per-row class as deleted; the
   original paragraph stays as the record of the state at the time.
-- **`blockEdit.ts:48-66` justifies the stored-selection tier with a
+- ~~**`blockEdit.ts:48-66` justifies the stored-selection tier with a
   `pendingStructural` window that ADR-0008's own 2026-08-19 amendment says no
-  longer exists.** The tier is still load-bearing; the written reason is dead.
+  longer exists.** The tier is still load-bearing; the written reason is
+  dead.~~ **MOOT** (verified 2026-08-24): the dead justification is gone with
+  the prose that carried it. `blockEdit.ts` is 60 lines, has no line 66, and
+  the word `pendingStructural` appears nowhere in `packages/`. The tier itself
+  survives at `blockEdit.ts:40` and now carries the reason that is actually
+  true — Enter over a range needs THE POSITION, which only the stored anchors
+  carry — with the note that the delete arm dropped its own DOM-measured
+  fallback because it could disagree with them.
 - ~~**`anchorAt`'s `side` parameter is production-dead** — measured, one
   hand-assembled test holds it up. A signature change, so it needs its own
   yes.~~ **CLOSED, parameter deleted.** Re-measured at `d2cfb350` rather than
@@ -218,7 +232,10 @@ map's destination; recorded so they are not lost.
   `domBoundary.spec`'s inherited-editable case. BEHAVIOR CHANGE declared: that
   click plus a key now inserts at the mark's NEAR EDGE, so the row un-lists
   (`XCode snippets and code blocks`) instead of the key evaporating.
-- **A row-interior DOM boundary resolves to nothing** — `anchorFromBoundary`
+- **A row-interior DOM boundary resolves to nothing** — **STANDS, LATENT BY
+  DECISION.** Not closed by the three fixes above and deliberately not attempted
+  by them; the entry two below is the SAME gap filed a second time from the
+  other end. `anchorFromBoundary`
   has arms for the container, a text surface, `node === tokenElement` and
   `owner.kind === 'mark'`, none for a node INSIDE a row. New with ADR-0009 /
   #291, which deleted the explicit `rowElement` arm while Vue's `Block.vue`
@@ -237,7 +254,9 @@ map's destination; recorded so they are not lost.
   extent. Fixed in 03 rather than reported, because 03 hands block the same arm
   and a layout-scoped fix would have re-added an `isBlock` fork.
 - **`dom/domBoundary.ts` has no arm for a boundary INSIDE a row's wrapper that
-  lands on no text surface** — a framework placeholder (Vue anchors a fragment on
+  lands on no text surface** — **STANDS, LATENT BY DECISION**; the same gap as
+  "A row-interior DOM boundary resolves to nothing" above, kept because the two
+  filings record different halves of the evidence. A framework placeholder (Vue anchors a fragment on
   an empty text node), the exact shape `fromContainerAnchor` exists for one level
   up. It answers `undefined`, `SelectionDriver.sync` bails on `undefined`, and
   the STORED selection silently keeps a stale offset for as long as the caret
@@ -250,6 +269,42 @@ map's destination; recorded so they are not lost.
   `'nearest'` and `SelectionDriver.#applySelection` then drags the caret to the
   row's end; 4 of those 13 press no delete key at all. It also flips
   `domBoundary.spec:395`'s documented contract.
+- ~~**The RESTING grip drifts from its row.**~~ **CLOSED** (2026-08-24), and
+  filed here for completeness rather than found in round 1 — its only record was
+  the `#watchPaintedRows` doc comment, which declined it on the grounds that
+  closing it meant running the rAF loop for the editor's whole lifetime. It did
+  not: `alwaysShowHandle` rests a grip on row 0 with the pointer away, and a
+  container `padding-top` change moved that row and left the grip behind by the
+  full 60px in both adapters — because the layer's origin is the container's
+  PADDING box, which no `ResizeObserver` can observe, and each surrogate box is
+  blind to padding in the regime the other sees. Observing BOTH boxes closes it
+  for zero frames. What SURVIVES is narrower and stays open by decision: any
+  reflow that moves row 0 while both container boxes and row 0's own box keep
+  their size — measured at 60px for consumer content growing above the rows in a
+  fixed-height container, 30px under `display: flex; justify-content: center`
+  when a lower row grows. Only polling sees those, which is the cost the layer
+  exists to refuse.
+
+### Repair pass, 2026-08-24
+
+The three fixes above were adversarially reviewed and two shipped DECORATIVE
+pins, both now load-bearing. Recorded because the failure mode is reusable, not
+because the fixes changed:
+
+- `anchors.spec`'s block-row case used `'@[m]\n\nplain'`, whose second row is
+  covered by a parser text token anyway, so it stayed green with
+  `groupRows`'s unshift deleted — it pinned only the half the inline cases
+  already pinned. `'@[x]\n\n@[y]'` is the shape that isolates the unshift: row 1
+  contains no parser text token at all.
+- `Drag.spec`'s resting-grip cases raced the layer's own MOUNT-time
+  `ResizeObserver` delivery. Under load that delivery landed AFTER the test's
+  reflow and re-measured for free, so deleting the border-box observation left
+  the case green on react and red only on vue. The fix waits one observer cycle
+  before mutating; both cases now red on both projects.
+
+A pin asserted against a shape the mechanism does not actually govern reads
+exactly like a pin that works. Mutating the mechanism — not re-reading the test
+— is what tells them apart.
 
 ## Out of scope
 
