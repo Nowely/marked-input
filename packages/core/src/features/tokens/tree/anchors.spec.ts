@@ -72,13 +72,20 @@ describe('anchorAt', () => {
 	})
 
 	it("answers a block row's own start with a text anchor when the row opens with a mark", () => {
-		// Row 0 is '@[m]\n\n' [0,6] and opens with the mark; row 1 is 'plain' [6,11]. Both row
-		// starts are a `groupRows` text child, so neither answers `{after: row}`.
-		const roots = createTokenTree(nestedParser.parseRows('@[m]\n\nplain', '\n\n')).roots()
+		// '@[x]\n\n@[y]' is the shape that separates the two halves. Row 0 [0,6] opens on
+		// `TreeBuilder`'s zero-length pre-match token; row 1 [6,10] has NO parser text token
+		// inside it at all, so its leading text child can only come from `groupRows`'s unshift.
+		// A fixture whose second row is plain text pins that half by accident and stays green
+		// when the unshift is removed.
+		const roots = createTokenTree(nestedParser.parseRows('@[x]\n\n@[y]', '\n\n')).roots()
 		const firstChild = (index: number) => {
 			const row = roots[index]
 			if (row.kind !== 'row') throw new Error('expected a row root')
-			return row.children()[0]
+			const child = row.children()[0]
+			// Narrowed, not just compared: without this the expectation degrades with the tree
+			// it is meant to catch, matching whatever node happens to lead the row.
+			if (child.kind !== 'text') throw new Error(`row ${index} opens with ${child.kind}`)
+			return child
 		}
 
 		expect(anchorAt(roots, 0)).toEqual({node: firstChild(0), offset: 0})
