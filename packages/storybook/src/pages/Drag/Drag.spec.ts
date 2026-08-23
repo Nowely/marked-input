@@ -34,15 +34,15 @@ const GRIP = {name: 'Drag to reorder or click for options'} as const
 
 /**
  * The rows of a block layout. Under the single-host topology the editing host IS the row
- * container, so a row is one of its element children — MINUS the chrome layer, which is one
+ * container, so a row is one of its element children — MINUS the controls layer, which is one
  * more container child and not a row.
  */
-const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.matches(CHROME_LAYER))
+const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.matches(BLOCK_CONTROLS))
 
-const CHROME_LAYER = '[class*="ChromeLayer"]'
+const BLOCK_CONTROLS = '[class*="BlockControls"]'
 
 /**
- * The ONE grip. It lives in the editor's chrome layer rather than inside a row, so it is found
+ * The ONE grip. It lives in the editor's controls layer rather than inside a row, so it is found
  * on the host and follows the pointer: hovering a row is what puts it on that row.
  */
 async function gripOfRow(host: HTMLElement, rowIndex: number) {
@@ -458,11 +458,11 @@ describe('Feature: drag rows', () => {
 	})
 
 	/**
-	 * The chrome layer paints at coordinates it MEASURES, where the per-row panel inherited them
+	 * The controls layer paints at coordinates it MEASURES, where the per-row panel inherited them
 	 * from `.Block { position: relative }`. These are the properties that geometry has to hold
-	 * and that no unit test in `ChromeController.spec.ts` can see, because it paints nothing.
+	 * and that no unit test in `BlockController.spec.ts` can see, because it paints nothing.
 	 */
-	describe('chrome layer geometry', () => {
+	describe('controls layer geometry', () => {
 		const centerY = (element: Element) => {
 			const rect = element.getBoundingClientRect()
 			return rect.top + rect.height / 2
@@ -610,7 +610,7 @@ describe('Feature: drag rows', () => {
 
 		it('paint the row menu above consumer content that outranks the layer', async () => {
 			// `.Popup` is `z-index: 9999` and the layer must not clamp it: a `z-index` on the
-			// layer would make it a stacking context, where the deleted per-row chrome hung off
+			// layer would make it a stacking context, where the deleted per-row controls hung off
 			// `.Block` (positioned, `z-index: auto`) and the popup competed at the page level.
 			const {host} = await mountComponent({
 				options: [],

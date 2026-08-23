@@ -22,7 +22,7 @@ import {offsetOfAnchor} from '../tree/anchors'
  * child's text. Both adapters render the children inside the host (`TokenChildren`), so they are
  * named here one by one.
  */
-function mountNestedSlot({chrome = false, control = true} = {}) {
+function mountNestedSlot({extra = false, control = true} = {}) {
 	const store = enableStructuralStore('@[a @[b] c]', {options: [{markup: '@[__slot__]'}], Mark: () => null})
 	const container = document.createElement('div')
 	const leading = document.createElement('span')
@@ -40,12 +40,12 @@ function mountNestedSlot({chrome = false, control = true} = {}) {
 	const trailing = document.createElement('span')
 	host.style.display = 'contents'
 	host.append(before, inner, after)
-	// `chrome` is a consumer's own presentation AMONG the slot children — a per-item button, say.
+	// `extra` is a consumer's own presentation AMONG the slot children — a per-item button, say.
 	// It is what gives the host an interior boundary whose right-hand neighbour belongs to no
 	// token, and `control` decides whether the button inside it is registered. That one bit is
 	// the whole difference between a neighbour that resolves to a token and one that resolves to
 	// `'control'`, which is what selects the fallback.
-	if (chrome) {
+	if (extra) {
 		const box = document.createElement('span')
 		const button = document.createElement('button')
 		box.append(button)
@@ -81,7 +81,7 @@ function mountNestedSlot({chrome = false, control = true} = {}) {
  * wrapper as the mark's element, so no row is ever registered and the mark's element becomes its
  * child's text surface.
  *
- * `grip` puts a registered control BEFORE the token inside the row. Block chrome no longer
+ * `grip` puts a registered control BEFORE the token inside the row. The block controls no longer
  * renders there — it is one layer beside the rows — but a consumer's own `slots.block` may still
  * put a control inside a row, and this is the shape that asks whether a boundary can escape it.
  */
@@ -276,14 +276,14 @@ describe('anchorFor', () => {
 		// marks every ancestor of a control up to the container. So a neighbour that merely
 		// CONTAINS a registered control resolves to no token, with every node alive, every
 		// element bound and no timing window anywhere.
-		const {store, host} = mountNestedSlot({chrome: true})
+		const {store, host} = mountNestedSlot({extra: true})
 		const owner = store.tokens.nodes()[1]
 		if (owner.kind !== 'mark') throw new Error('expected a mark root')
 
-		// The door, pinned rather than assumed: the chrome among the slot children is a control root.
+		// The door, pinned rather than assumed: the extra element among the slot children is a control root.
 		expect(store.tokens.handleAt(host.children[3])).toBe('control')
 
-		// The boundary between the last slot child and that chrome. The answer LEANS INWARD like
+		// The boundary between the last slot child and that element. The answer LEANS INWARD like
 		// every other arm: a range END asks with 'before' and gets the owner's far side, so a
 		// selection touching this boundary swallows the mark instead of stopping short of it
 		// (`beforeInput.ts`'s `anchorsFromTargetRange` is what asks that way).
@@ -291,10 +291,10 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(host, 3, 'after')).toEqual({before: owner})
 
 		// THE DISCRIMINATOR: byte-identical shape minus the registration. Both neighbours now
-		// resolve — the chrome walks up to the owner — so the PAIRED branch answers with the
+		// resolve — the extra element walks up to the owner — so the PAIRED branch answers with the
 		// slot CHILD, not with the owner. That is what makes the pair above a measurement of the
 		// fallback line and not of some other return.
-		const plain = mountNestedSlot({chrome: true, control: false})
+		const plain = mountNestedSlot({extra: true, control: false})
 		const plainOwner = plain.store.tokens.nodes()[1]
 		if (plainOwner.kind !== 'mark') throw new Error('expected a mark root')
 		expect(plain.store.tokens.anchorFor(plain.host, 3, 'before')).toEqual({after: plainOwner.children()[2]})
@@ -468,13 +468,13 @@ function mountBlockWithGrip() {
 }
 
 /**
- * Inline mount whose container holds chrome the tree does not own: a registered control
+ * Inline mount whose container holds elements the tree does not own: a registered control
  * before the roots, and the framework's own placeholders between them — an EMPTY TEXT
  * NODE (what a Vue fragment anchors on, and the shipped Vue adapter renders one around
  * every token list) plus a comment (`v-if`). Container children therefore do NOT index
  * the roots: `[control, '', text1, <!---->, mark, text2, '']` against three of them.
  */
-function mountInlineWithChrome() {
+function mountInlineWithControl() {
 	const store = enableStructuralStore('hello @[x] tail', {Mark: () => null, options: [{markup: '@[__value__]'}]})
 	const container = document.createElement('div')
 	const control = document.createElement('div')
@@ -493,7 +493,7 @@ function mountInlineWithChrome() {
 	document.body.append(container)
 	store.host.container(container)
 	store.tokens.control()(control)
-	// Consigned by NAME, not by position: the chrome shares the container with the three roots,
+	// Consigned by NAME, not by position: the control shares the container with the three roots,
 	// so pairing container children against them lands every element one slot out.
 	const [first, second, third] = store.tokens.nodes()
 	store.tokens.consign(first.id)(text1)
@@ -502,7 +502,7 @@ function mountInlineWithChrome() {
 	return {store, container, control, text1, mark, text2}
 }
 
-describe('anchorFor across chrome the tree does not own', () => {
+describe('anchorFor across elements the tree does not own', () => {
 	afterEach(() => {
 		document.body.replaceChildren()
 		window.getSelection()?.removeAllRanges()
@@ -536,7 +536,7 @@ describe('anchorFor across chrome the tree does not own', () => {
 
 	it('resolves a container boundary through its nearest TOKEN neighbours', () => {
 		// Seven children, three roots: no index into `roots` answers any of these.
-		const {store, container} = mountInlineWithChrome()
+		const {store, container} = mountInlineWithControl()
 		const [text1, mark, text2] = store.tokens.nodes()
 
 		expect(store.tokens.anchorFor(container, 0)).toEqual({before: text1})
@@ -561,7 +561,7 @@ describe('anchorFor across chrome the tree does not own', () => {
 	})
 
 	it('places a caret after a mark at the mark end, not the document end', () => {
-		const {store, container} = mountInlineWithChrome()
+		const {store, container} = mountInlineWithControl()
 		const roots = store.tokens.nodes()
 		const mark = roots[1]
 

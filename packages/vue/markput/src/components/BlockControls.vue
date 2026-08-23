@@ -13,25 +13,28 @@ import Popup from './Popup/Popup.vue'
 import styles from '@markput/core/styles.module.css'
 
 /**
- * ONE absolutely positioned chrome layer per editor — the Vue mirror of the React
- * `ChromeLayer`, over the SAME `ChromeController`. Every decision is core's: the hover pin, the
+ * ONE absolutely positioned row-controls layer per editor — the Vue mirror of the React
+ * `BlockControls`, over the SAME `BlockController`. Every decision is core's: the hover pin, the
  * hit-test, the drop edge and the menu's row all live there, so this file is a painter.
+ *
+ * `BlockControls`, not `BlockLayer`: `Block.vue` is the row WRAPPER, and two near-identical names
+ * beside each other is the ambiguity this one is named to avoid.
  */
 const store = useStore()
-const chrome = store.chrome
+const block = store.block
 
 const readOnly = useMarkput(s => s.props.readOnly)
 const draggable = useMarkput(s => s.props.draggable)
 const rows = useMarkput(s => s.tokens.nodes)
-const hovered = useMarkput(() => chrome.state.hovered)
-const dragging = useMarkput(() => chrome.state.dragging)
-const drop = useMarkput(() => chrome.state.drop)
-const menu = useMarkput(() => chrome.state.menu)
-const geometry = useMarkput(() => chrome.state.geometry)
+const hovered = useMarkput(() => block.state.hovered)
+const dragging = useMarkput(() => block.state.dragging)
+const drop = useMarkput(() => block.state.drop)
+const menu = useMarkput(() => block.state.menu)
+const geometry = useMarkput(() => block.state.geometry)
 
 const controlRef = store.tokens.control()
 const setLayerRef = (el: unknown) => controlRef(unwrapEl(el))
-const setMenuRef = (el: HTMLElement | null) => chrome.menuElement(el)
+const setMenuRef = (el: HTMLElement | null) => block.menuElement(el)
 
 const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))
 
@@ -49,8 +52,8 @@ const dropRow = computed<number | null>(() => drop.value?.id ?? null)
 const gripBox = ref<RowBox | null>(null)
 const dropBox = ref<RowBox | null>(null)
 const measure = () => {
-	gripBox.value = gripRow.value === null ? null : (chrome.boxOf(gripRow.value) ?? null)
-	dropBox.value = dropRow.value === null ? null : (chrome.boxOf(dropRow.value) ?? null)
+	gripBox.value = gripRow.value === null ? null : (block.boxOf(gripRow.value) ?? null)
+	dropBox.value = dropRow.value === null ? null : (block.boxOf(dropRow.value) ?? null)
 }
 watchEffect(
 	() => {
@@ -75,7 +78,7 @@ watchEffect(
 		const element = store.tokens.handle(id)?.element()
 		if (!element) return
 		observer = new ResizeObserver(() => {
-			gripBox.value = chrome.boxOf(id) ?? null
+			gripBox.value = block.boxOf(id) ?? null
 		})
 		observer.observe(element)
 	},
@@ -104,7 +107,7 @@ const dropStyle = computed(() => {
 </script>
 
 <template>
-	<div :ref="setLayerRef" :class="styles.ChromeLayer">
+	<div :ref="setLayerRef" :class="styles.BlockControls">
 		<!-- Painted but INVISIBLE while its row is being dragged, as the per-row panel was: the
 		     grip stays mounted so its own `dragend` still fires (Chromium sends no mouseup for a
 		     drag), and the pointer is away with the drag image anyway. -->
@@ -123,12 +126,10 @@ const dropStyle = computed(() => {
 				:draggable="!!draggable"
 				:class="[styles.GripButton, dragging !== null && styles.GripButtonDragging]"
 				:aria-label="draggable ? 'Drag to reorder or click for options' : 'Block options'"
-				@mousedown="chrome.pinHover()"
-				@dragstart="e => chrome.beginDrag(gripRow!, e)"
-				@dragend="chrome.endDrag()"
-				@click.prevent="
-					e => chrome.openMenu(gripRow!, (e.currentTarget as HTMLElement).getBoundingClientRect())
-				"
+				@mousedown="block.pinHover()"
+				@dragstart="e => block.beginDrag(gripRow!, e)"
+				@dragend="block.endDrag()"
+				@click.prevent="e => block.openMenu(gripRow!, (e.currentTarget as HTMLElement).getBoundingClientRect())"
 			>
 				<span :class="`${styles.Icon} ${styles.IconGrip}`" />
 			</button>
@@ -142,7 +143,7 @@ const dropStyle = computed(() => {
 			:style="{top: menu.top + 'px', left: menu.left + 'px', pointerEvents: 'auto'}"
 		>
 			<List>
-				<ListItem v-for="item in BLOCK_MENU_ITEMS" :key="item.label" @mousedown.prevent="item.run(chrome)">
+				<ListItem v-for="item in BLOCK_MENU_ITEMS" :key="item.label" @mousedown.prevent="item.run(block)">
 					<span :class="item.iconClass" />
 					<span>{{ item.label }}</span>
 				</ListItem>

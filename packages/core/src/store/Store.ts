@@ -1,4 +1,4 @@
-import {ChromeController} from '../features/block'
+import {BlockController} from '../features/block'
 import {ClipboardController} from '../features/clipboard'
 import {EditController} from '../features/edit'
 import {KeyboardController} from '../features/keyboard'
@@ -22,7 +22,7 @@ export class Store {
 	readonly keyboard = new KeyboardController(this.host, this.edit, this.tokens, this.props)
 
 	readonly overlay = new OverlayController(this.host, this.props, this.edit, this.tokens)
-	readonly chrome = new ChromeController(this.host, this.props, this.tokens)
+	readonly block = new BlockController(this.host, this.props, this.tokens)
 
 	readonly clipboard = new ClipboardController(this.host, this.edit, this.tokens)
 

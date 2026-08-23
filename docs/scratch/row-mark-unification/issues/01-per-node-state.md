@@ -13,7 +13,7 @@ vended lazily by `BlockController`'s WeakMap keyed by the row's TreeNode.
 Nothing analogous exists for marks.
 
 Under one facility set: what is the generic per-node state facility for any
-node kind, who owns it, and is block chrome state an extension of it or a
+node kind, who owns it, and is block row-control state an extension of it or a
 consumer beside it? Does `BlockController` (92 lines: the `DragAction` event +
 one watch lowering actions onto node verbs) survive as a separate owner, or
 does it fold into the generic facility?
@@ -26,12 +26,12 @@ this must fit.
 
 The blocking edge is inverted from what this map assumed: **02 constrains 01**,
 not the reverse. Every option here except "dissolve the state" is an argument
-about where per-row WIRING lives, and wiring exists only because chrome is DOM
-inside the row. The maintainer has taken the chrome-out-of-the-row direction
-in [02](02-one-render-path.md), which dissolves the keying question outright —
-with no chrome in the row there is no per-row record to key by node, by id, or
-by element. Deciding this ticket first would have re-committed to per-row
-chrome.
+about where per-row WIRING lives, and wiring exists only because the controls
+are DOM inside the row. The maintainer has taken the controls-out-of-the-row
+direction in [02](02-one-render-path.md), which dissolves the keying question
+outright — with no controls in the row there is no per-row record to key by
+node, by id, or by element. Deciding this ticket first would have re-committed
+to per-row controls.
 
 Two things survived round 1 independent of that, and one died:
 

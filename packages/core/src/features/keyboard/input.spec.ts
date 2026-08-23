@@ -76,7 +76,7 @@ function mountNestedSlot() {
 	return {store, container, leading, host, before}
 }
 
-/** A registered control root (block menu, custom chrome) holding its own `<input>`. */
+/** A registered control root (block menu, custom control) holding its own `<input>`. */
 function mountInlineWithControl(value = 'hello') {
 	const store = new Store()
 	store.props.set({defaultValue: value})

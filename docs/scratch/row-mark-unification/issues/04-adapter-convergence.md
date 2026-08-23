@@ -1,16 +1,27 @@
-# Chrome-layer prototype
+# Row-controls-layer prototype
 
 Type: prototype
 Status: resolved
 
+> **On the word "chrome" below.** It is banned in this repo — it collides with
+> Chromium, which nearly every measurement here cites, and `block` was already
+> the glossary's word. The prose has been swept. What survives is five literal
+> CITATIONS to artifacts that exist outside this tree, on branch
+> `prototype/chrome-layer` (`4e041dd0`): that branch's name, its
+> `ChromeModel.ts` and `ChromeLayer.tsx`, its
+> `ChromeLayerPrototype.react.spec.tsx`, and a render-counter label the
+> prototype emitted. They are quoted as they are on that branch, with line
+> references into it; renaming them would make the citations false. The shipped
+> names are `BlockController` and `BlockControls`.
+
 ## Question
 
-Re-scoped 2026-08-22, after the maintainer took the chrome-out-of-the-row
+Re-scoped 2026-08-22, after the maintainer took the controls-out-of-the-row
 direction in [ticket 02](02-one-render-path.md). This was "adapter
 convergence, blocked by 01 and 02"; it is now the prototype that validates the
 direction those two tickets wait on.
 
-Build the rough thing and measure it: block chrome — grip, drop indicator,
+Build the rough thing and measure it: the block row controls — grip, drop indicator,
 menu — rendered NOT inside each row, but as one per-editor absolutely
 positioned layer addressed by row id. React only; the Vue mirror is a
 question for afterwards.
@@ -35,7 +46,7 @@ What the prototype must answer, because none of it is measured:
    `slots.block` freeze hazard. Confirm on real DOM, not on paper.
 
 4. **Hit-testing and drag.** The grip is a drag source and the row is a drop
-   target. With chrome outside the row, what listens where, and does HTML5
+   target. With the controls outside the row, what listens where, and does HTML5
    drag still work when the source element is not a descendant of the row?
 
 5. **What actually dies.** Count it: `Block.tsx`, `DragHandle.tsx`,
@@ -87,7 +98,7 @@ so `slots.container` cannot drop it, but a consumer inline
 
 The row registers the SAME element via `tokens.consign(id)` and
 `tokens.children(id)`. `bindingsFor`'s `element.contains(host)` accepts it (a
-node contains itself), and in `applyEditableState` the chrome walk terminates
+node contains itself), and in `applyEditableState` the control walk terminates
 immediately because `host === root`. The bind change is **one self-gating
 line**, leaving HEAD bit-for-bit unchanged:
 
@@ -95,7 +106,7 @@ line**, leaving HEAD bit-for-bit unchanged:
 if (node.kind !== 'row' || bindings.childSequenceHost) applyMountState(bindings, previous)
 ```
 
-Measured row markup with chrome removed: `<div class="Block"><span>Row number
+Measured row markup with the controls removed: `<div class="Block"><span>Row number
 0</span></div>` — one element child, the text token's own surface, **no
 `display:contents` wrapper**, `contenteditable` attribute `null`.
 
@@ -141,7 +152,7 @@ of a frame, but it scales with N and the spec should state a budget.
 
 The drag gate the ticket asked for is expressible with the existing
 `countRenders` helper — the regression a naive editor-level signal causes is
-not indicator churn but a chrome signal read inside `Block`, which re-renders
+not indicator churn but an editor-level signal read inside `Block`, which re-renders
 every row and therefore every consumer `Mark`/`Span`. Measured today,
 `Token` renders per dragover tick = 0 under both architectures, so the gate is
 green at HEAD and pins the property the layer must not lose.
@@ -223,7 +234,7 @@ adapter, and make its case on the runtime numbers and the concept count.
    answer.
 6. ADR-0003's address-space grep matches on `.position` — a `drop.position`
    field tripped `addressSpace.spec.ts` as a false positive, cleared by
-   renaming to `edge`. The chrome layer's vocabulary must dodge
+   renaming to `edge`. The controls layer's vocabulary must dodge
    `position`/`slotRange`, or the gate needs narrowing.
 
 ### Two decisions handed back, both taken 2026-08-22

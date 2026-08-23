@@ -14,7 +14,7 @@ export function nodeTarget(event: {target: EventTarget | null}): Node | null {
  * The `contentEditable` PROPERTY, never `isContentEditable` — that distinction IS the test.
  * Every model-owned element under the container either inherits `true` from the host (bare
  * text surfaces, slot mark roots, their slot hosts, and every element the consumer renders
- * between them) or declares `false` (value-only mark roots and mark chrome). So an INHERITED
+ * between them) or declares `false` (value-only mark roots and mark controls). So an INHERITED
  * reading calls every ordinary edit an island: it failed the input guard OPEN (MEASURED —
  * `input.spec`'s 'fails an unhandled type closed even when it originates BELOW the container'
  * is red under it) and it failed `domBoundary` CLOSED, declining every boundary on a slot

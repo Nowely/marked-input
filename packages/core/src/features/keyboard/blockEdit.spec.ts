@@ -543,7 +543,7 @@ describe('blockEdit control guard', () => {
 
 	it('leaves a control root its own beforeinput even with a row selection stored', () => {
 		// The one verdict that still passes through after the guard started failing
-		// closed: consumer chrome owns its input, and the model owns none of that DOM.
+		// closed: the consumer's own control owns its input, and the model owns none of that DOM.
 		const {store, control} = mountBlockWithControl(0)
 		const row0 = store.tokens.nodes()[0]
 		store.tokens.selection.selectNode(row0, 'end')

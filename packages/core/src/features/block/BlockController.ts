@@ -11,7 +11,7 @@ import type {TokenModel, TreeNode} from '../tokens'
  */
 export type DropEdge = 'before' | 'after'
 
-/** A row's geometry in the chrome layer's own space: the container's PADDING box. */
+/** A row's geometry in the controls layer's own space: the container's PADDING box. */
 export interface RowBox {
 	top: number
 	left: number
@@ -20,7 +20,7 @@ export interface RowBox {
 }
 
 /**
- * THE block chrome owner: one hovered row, one dragged row, one drop edge and one open menu per
+ * THE Block layout owner: one hovered row, one dragged row, one drop edge and one open menu per
  * EDITOR, each addressed by row id.
  *
  * `*Controller`, not `*Model`, and the suffix is argued rather than assumed — it was contested
@@ -38,25 +38,31 @@ export interface RowBox {
  * deliberately not called `SelectionModel`. This one takes `host.onMounted`, installs five
  * container listeners plus a `ResizeObserver`, a commit watch and a rAF loop there — two more
  * document listeners while a menu is open — and its menu and drop verbs write the TREE, which is
- * also what the `BlockController` it replaced did. `store.chrome` is unchanged: the field names
- * the concern, as every Store field does.
+ * also what the per-row owner it replaced did. `store.block` names the concern, as every Store
+ * field does.
+ *
+ * SAME NAME, DIFFERENT DESIGN — `git log` on this filename spans two of them. The earlier
+ * `BlockController` vended a per-row `BlockStore` out of a `WeakMap` and pruned them by row id;
+ * this one owns editor-level row-control state and there is no per-row store at all. The role is
+ * the same — the controller of Block layout — so the name is, and `BlockStore` stays deleted.
  *
  * It replaced a per-row store that wired eight DOM handlers and five signals to every row, and
- * the adapters painted a grip, two drop indicators and a menu inside each one. Chrome is not
- * document content and it is not per-row state: at 200 rows that shape mounted 201 grip buttons,
- * 201 control roots and 1608 listeners, where this attaches five listeners to the container and
- * the adapter paints one grip.
+ * the adapters painted a grip, two drop indicators and a menu inside each one. The row controls
+ * are not document content and they are not per-row state: at 200 rows that shape mounted 201
+ * grip buttons, 201 control roots and 1608 listeners, where this attaches five listeners to the
+ * container and the adapter paints one grip.
  *
  * The cost of moving out of the row is geometry. `.Block { position: relative }` made the grip
  * and the indicator free; a layer has to measure. Hit-testing is therefore a rect read per
  * mousemove, kept logarithmic by {@link rowAt}.
  *
  * BEHAVIOUR THIS CHANGES, all declared rather than absorbed:
- * - chrome is addressed by POSITION, not by row identity (ADR-0007's 2026-08-22 amendment);
+ * - the row controls are addressed by POSITION, not by row identity (ADR-0007's 2026-08-22
+ *   amendment);
  * - hover is geometric Y rather than DOM containment, so the 24px gutter left of a row hovers
  *   that row, and a point in the gap BETWEEN rows snaps to the nearest one.
  */
-export class ChromeController {
+export class BlockController {
 	readonly state = {
 		hovered: signal<number | null>({initial: null}),
 		dragging: signal<number | null>({initial: null}),
@@ -138,7 +144,7 @@ export class ChromeController {
 		})
 	}
 
-	// ═══ Chrome verbs ══════════════════════════════════════════════════════════
+	// ═══ Row-control verbs ═════════════════════════════════════════════════════
 
 	/**
 	 * Freeze the hovered row for the duration of the grip's press. Wired to the grip's own
@@ -150,7 +156,7 @@ export class ChromeController {
 	}
 
 	/**
-	 * `.Popup` is `position: fixed`, so the menu is the one piece of chrome that is NOT in the
+	 * `.Popup` is `position: fixed`, so the menu is the one row control that is NOT in the
 	 * container's coordinate space — it takes viewport coordinates off the grip, exactly as the
 	 * per-row menu did.
 	 */
@@ -286,7 +292,7 @@ export class ChromeController {
 	 *
 	 * The cost is bounded by POINTER PRESENCE, not by the editor's lifetime — a pointer parked
 	 * inside the editor keeps the loop alive, which is not a gesture. One rAF loop per editor,
-	 * alive only while chrome is painted, reading two rects per painted row (the row's and the
+	 * alive only while the controls are painted, reading two rects per painted row (the row's and the
 	 * container's) and bumping the clock only when a box actually moved. Measured: 0.9 µs a frame
 	 * with a clean layout, 20 µs when every read forces a reflow — 0.005% and 0.12% of a 16.7 ms
 	 * frame — and 0 DOM writes over 300 ms of resting hover, because an unmoved box emits nothing.

@@ -17,8 +17,8 @@ interface BlockProps {
 
 /**
  * A row's wrapper and its children — nothing else. The grip, the drop indicators and the menu
- * that used to be painted here live in the editor's one `ChromeLayer`, so a row is no longer a
- * mixture of document content and chrome.
+ * that used to be painted here live in the editor's one `BlockControls`, so a row is no longer a
+ * mixture of document content and editor UI.
  */
 export const Block = memo(({node}: BlockProps) => {
 	const {Component, slotProps, tokens} = useMarkput(s => ({
@@ -29,10 +29,10 @@ export const Block = memo(({node}: BlockProps) => {
 	// A SCALAR subscription, deliberately not a field on the object selector above. The object
 	// form rebuilds a fresh snapshot whenever any of its sources fires, so reading the editor's
 	// one `dragging` signal there would re-render EVERY row the moment any row is picked up —
-	// the exact regression an editor-level chrome signal invites. As a boolean it notifies only
+	// the exact regression an editor-level signal invites. As a boolean it notifies only
 	// when THIS row's own answer flips. The closure is safe for `Token`'s reason: the component
 	// is keyed by `node.id` and ids are never reused.
-	const isDragging = useMarkput(s => () => s.chrome.state.dragging() === node.id)
+	const isDragging = useMarkput(s => () => s.block.state.dragging() === node.id)
 	// The per-row subscription: a RowNode's children are what this component paints, so a
 	// structural edit inside the row must re-render it — `renderSubscription`'s row arm,
 	// the same job its mark arm does for Token.

@@ -125,14 +125,14 @@ export class TokenModel {
 	 * NO BIND: a control's ancestor chain is a pure DOM walk that touches no token, so it
 	 * updates in place. Routing a ref through the bind counter makes a block mount quadratic —
 	 * block layout used to mount up to four controls per ROW, measured at 400 rows / 400 binds /
-	 * 93 ms. It mounts ONE now, the chrome layer, but a ref that costs a whole-tree walk is
+	 * 93 ms. It mounts ONE now, the controls layer, but a ref that costs a whole-tree walk is
 	 * still the wrong shape.
 	 *
-	 * REGISTRATION is also where the control leaves the editing host: a control is chrome,
+	 * REGISTRATION is also where the control leaves the editing host: a control is editor UI,
 	 * not document content, so inside the one contenteditable container it must be atomic
 	 * or the caret and the browser's own editing walk into grips, menus and overlays. It is
 	 * written HERE and not in `bind` because controls do not mount on the commit clock — a
-	 * menu opening off a chrome signal never sees a re-bind, and would stay editable until
+	 * menu opening off a row-control signal never sees a re-bind, and would stay editable until
 	 * some unrelated commit happened to repaint.
 	 */
 	control(): DomRef {
@@ -633,7 +633,7 @@ export class TokenModel {
 	}
 
 	/**
-	 * Control chrome's DOM membership. Not a registry beside the other three: nothing here is
+	 * The control roots' DOM membership. Not a registry beside the other three: nothing here is
 	 * keyed by a token, and the only question ever asked of it is whether an element sits under a
 	 * control — so it owns its own answer instead of being recomputed by a walk that has a tree.
 	 */

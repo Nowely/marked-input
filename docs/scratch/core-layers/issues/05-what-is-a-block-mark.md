@@ -12,7 +12,7 @@ but that is only one of three readings, and they are three different projects:
 
 - **The row-as-mark parse contract.** Concrete open defect underneath it: backlog issue 15, a
   block row whose slot starts with a mark.
-- **`slots.block` chrome ownership** — who renders and owns the row wrapper. Overlaps 03.
+- **`slots.block` row-wrapper ownership** — who renders and owns the row wrapper. Overlaps 03.
 - **First-class rows** — already recorded as Open in `docs/records/tree-core-decisions.md`, with
   `EditController`'s `caretOffset` parameter as its residue.
 

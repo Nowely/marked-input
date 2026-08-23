@@ -60,7 +60,7 @@ function formatElement(element: Element, depth: number): string[] {
 	const children = formatChildren(element, depth + 1)
 	// An element whose children all format to nothing renders as EMPTY, and has to print like a
 	// genuinely empty one — otherwise the frameworks disagree over something no user can see.
-	// The chrome layer with no chrome open is exactly that shape: React leaves it childless,
+	// The controls layer with nothing open is exactly that shape: React leaves it childless,
 	// Vue leaves one `<!--v-if-->` placeholder per unopened piece.
 	if (children.length === 0) return [`${indent(depth)}${openTag}${closeTag}`]
 	return [`${indent(depth)}${openTag}`, ...children, `${indent(depth)}${closeTag}`]

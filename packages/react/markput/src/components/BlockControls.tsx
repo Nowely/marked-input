@@ -10,30 +10,33 @@ import {Popup} from './Popup/Popup'
 import styles from '@markput/core/styles.module.css'
 
 /**
- * ONE absolutely positioned chrome layer per editor: it paints the grip, the drop indicator and
- * the row menu at row boxes it MEASURES, where `.Block { position: relative }` used to make them
- * free inside every row.
+ * ONE absolutely positioned row-controls layer per editor: it paints the grip, the drop indicator
+ * and the row menu at row boxes it MEASURES, where `.Block { position: relative }` used to make
+ * them free inside every row.
+ *
+ * `BlockControls`, not `BlockLayer`: `Block.tsx` is the row WRAPPER, and two near-identical names
+ * beside each other is the ambiguity this one is named to avoid.
  *
  * It lives INSIDE the container — the alternative, a new wrapper element in `MarkedInput`, would
  * impose a published DOM change on every consumer for internal convenience. That puts it inside
  * the editing host, so it registers as a `control()` root: one registration for the whole editor,
- * where the per-row chrome filed up to four PER ROW, and everything painted inside it inherits
+ * where the per-row controls filed up to four PER ROW, and everything painted inside it inherits
  * `isContentEditable === false` from it.
  */
 const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
-export const ChromeLayer = memo(() => {
-	const {chrome, tokens, readOnly, draggable, rows, hovered, dragging, drop, menu, geometry} = useMarkput(s => ({
-		chrome: s.chrome,
+export const BlockControls = memo(() => {
+	const {block, tokens, readOnly, draggable, rows, hovered, dragging, drop, menu, geometry} = useMarkput(s => ({
+		block: s.block,
 		tokens: s.tokens,
 		readOnly: s.props.readOnly,
 		draggable: s.props.draggable,
 		rows: s.tokens.nodes,
-		hovered: s.chrome.state.hovered,
-		dragging: s.chrome.state.dragging,
-		drop: s.chrome.state.drop,
-		menu: s.chrome.state.menu,
-		geometry: s.chrome.state.geometry,
+		hovered: s.block.state.hovered,
+		dragging: s.block.state.dragging,
+		drop: s.block.state.drop,
+		menu: s.block.state.menu,
+		geometry: s.block.state.geometry,
 	}))
 	const controlRef = useMemo(() => tokens.control(), [tokens])
 	const alwaysShowHandle = useMemo(() => getAlwaysShowHandle(draggable), [draggable])
@@ -51,9 +54,9 @@ export const ChromeLayer = memo(() => {
 	const [gripBox, setGripBox] = useState<RowBox | null>(null)
 	const [dropBox, setDropBox] = useState<RowBox | null>(null)
 	useLayoutEffect(() => {
-		setGripBox(gripRow === null ? null : (chrome.boxOf(gripRow) ?? null))
-		setDropBox(dropRow === null ? null : (chrome.boxOf(dropRow) ?? null))
-	}, [chrome, gripRow, dropRow, geometry])
+		setGripBox(gripRow === null ? null : (block.boxOf(gripRow) ?? null))
+		setDropBox(dropRow === null ? null : (block.boxOf(dropRow) ?? null))
+	}, [block, gripRow, dropRow, geometry])
 
 	// A row that GROWS as the user types moves the grip with it, and the container's own observer
 	// says nothing when the container's size is fixed. Observing the ONE decorated row is the
@@ -62,13 +65,13 @@ export const ChromeLayer = memo(() => {
 		if (gripRow === null) return
 		const element = tokens.handle(gripRow)?.element()
 		if (!element) return
-		const observer = new ResizeObserver(() => setGripBox(chrome.boxOf(gripRow) ?? null))
+		const observer = new ResizeObserver(() => setGripBox(block.boxOf(gripRow) ?? null))
 		observer.observe(element)
 		return () => observer.disconnect()
-	}, [chrome, tokens, gripRow])
+	}, [block, tokens, gripRow])
 
 	return (
-		<div ref={controlRef} className={styles.ChromeLayer}>
+		<div ref={controlRef} className={styles.BlockControls}>
 			{!readOnly && gripRow !== null && gripBox !== null && (
 				<div
 					className={cx(
@@ -91,12 +94,12 @@ export const ChromeLayer = memo(() => {
 						draggable={!!draggable}
 						className={cx(styles.GripButton, dragging !== null && styles.GripButtonDragging)}
 						aria-label={draggable ? 'Drag to reorder or click for options' : 'Block options'}
-						onMouseDown={chrome.pinHover}
-						onDragStart={e => chrome.beginDrag(gripRow, e.nativeEvent)}
-						onDragEnd={() => chrome.endDrag()}
+						onMouseDown={block.pinHover}
+						onDragStart={e => block.beginDrag(gripRow, e.nativeEvent)}
+						onDragEnd={() => block.endDrag()}
 						onClick={e => {
 							e.preventDefault()
-							chrome.openMenu(gripRow, e.currentTarget.getBoundingClientRect())
+							block.openMenu(gripRow, e.currentTarget.getBoundingClientRect())
 						}}
 					>
 						<span className={iconGrip} />
@@ -118,13 +121,13 @@ export const ChromeLayer = memo(() => {
 			{menu && (
 				<Popup
 					ref={(el: HTMLElement | null) => {
-						chrome.menuElement(el)
+						block.menuElement(el)
 					}}
 					style={{top: menu.top, left: menu.left, pointerEvents: 'auto'}}
 				>
 					<List>
 						{BLOCK_MENU_ITEMS.map(item => (
-							<ListItem key={item.label} onClick={() => item.run(chrome)}>
+							<ListItem key={item.label} onClick={() => item.run(block)}>
 								<span className={item.iconClass} />
 								<span>{item.label}</span>
 							</ListItem>
@@ -136,4 +139,4 @@ export const ChromeLayer = memo(() => {
 	)
 })
 
-ChromeLayer.displayName = 'ChromeLayer'
+BlockControls.displayName = 'BlockControls'

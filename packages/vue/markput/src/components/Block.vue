@@ -12,7 +12,7 @@ import styles from '@markput/core/styles.module.css'
 
 /**
  * A row's wrapper and its children — nothing else. The grip, the drop indicators and the menu
- * that used to be painted here live in the editor's one `ChromeLayer`.
+ * that used to be painted here live in the editor's one `BlockControls`.
  */
 const props = defineProps<{node: TreeNode}>()
 
@@ -22,7 +22,7 @@ const blockComponent = useMarkput(s => s.slots.blockComponent)
 const slotProps = useMarkput(s => s.slots.blockProps)
 // A SCALAR subscription: read as a boolean, the derivation notifies only when THIS row's own
 // answer flips, so picking a row up does not re-render every other row.
-const isDragging = useMarkput(s => () => s.chrome.state.dragging() === props.node.id)
+const isDragging = useMarkput(s => () => s.block.state.dragging() === props.node.id)
 
 const blockStyle = computed(() => ({
 	opacity: isDragging.value ? 0.4 : 1,

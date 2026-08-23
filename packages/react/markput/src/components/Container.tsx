@@ -4,7 +4,7 @@ import type {Ref} from 'react'
 import {useMarkput} from '../lib/hooks/useMarkput'
 import type {BlockRow} from './Block'
 import {Block} from './Block'
-import {ChromeLayer} from './ChromeLayer'
+import {BlockControls} from './BlockControls'
 import {Token} from './Token'
 
 export const Container = memo(() => {
@@ -38,10 +38,10 @@ export const Container = memo(() => {
 						<Block key={n.id} node={n as BlockRow} />
 					))
 				: nodes.map(n => <Token key={n.id} node={n} depth={0} />)}
-			{/* The block chrome, as one layer INSIDE the container rather than a copy inside every
-			    row. It is therefore a container child that is not a row — `styles.ChromeLayer`
+			{/* The row controls, as one layer INSIDE the container rather than a copy inside every
+			    row. It is therefore a container child that is not a row — `styles.BlockControls`
 			    is how a caller tells them apart. */}
-			{isBlock && <ChromeLayer />}
+			{isBlock && <BlockControls />}
 		</Component>
 	)
 })

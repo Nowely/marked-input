@@ -17,8 +17,8 @@ inherits editability or is explicitly atomic:
 	<span>text</span>
 	<span>
 		<!-- slot mark: root stays BARE -->
-		<i contenteditable="false">chrome</i>
-		<!-- only the chrome around the slot is frozen -->
+		<i contenteditable="false">control</i>
+		<!-- only the controls around the slot are frozen -->
 		<span>slot text</span>
 		<!-- slot content lives in the ONE host -->
 	</span>
@@ -27,8 +27,8 @@ inherits editability or is explicitly atomic:
 ```
 
 Who writes what: `bind.ts` writes the per-token topology (bare text surfaces, `ce=false` value marks, frozen
-chrome around a slot host); `SelectionDriver` owns the container's `contenteditable`, gated only by `readOnly`;
-`TokenModel.control()` marks registered controls (grips, menus, overlays) `ce=false` at registration, because chrome is
+controls around a slot host); `SelectionDriver` owns the container's `contenteditable`, gated only by `readOnly`;
+`TokenModel.control()` marks registered controls (grips, menus, overlays) `ce=false` at registration, because a control is
 not document content.
 
 Every input still goes through the guard: `beforeinput` is cancelled and lowered to a model edit

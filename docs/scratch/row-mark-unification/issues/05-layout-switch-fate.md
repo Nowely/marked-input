@@ -18,7 +18,7 @@ not assumed. A layout flip currently means reparse/remount (ADR-0009's
 declared rule) — whatever the answer, that rule is restated or replaced
 explicitly.
 
-## Round 1 (2026-08-22) — narrower, and the blocker is chrome
+## Round 1 (2026-08-22) — narrower, and the blocker is the row controls
 
 Still genuinely open, but the guard census is now exact and one candidate
 answer is dead.
@@ -37,8 +37,8 @@ all verified in source — `separator` is block-only, defaults to `'\n\n'` and i
 `readonly: true`; `Parser.parseRows` throws on `''`. The naive precondition
 measured 195/1001 core tests red.
 
-**The one concrete blocker a lens found is chrome, not structure.**
+**The one concrete blocker a lens found is the row controls, not structure.**
 `Block.tsx:56-68` renders DragHandle/DropIndicator/BlockMenu unconditionally,
 gated only by `readOnly`, so inline rendered through rows would grow a grip per
-row. If 02's chrome layer lands, that blocker disappears and this ticket
-becomes answerable. If chrome had stayed per-row, it would have stayed shut.
+row. If 02's controls layer lands, that blocker disappears and this ticket
+becomes answerable. If they had stayed per-row, it would have stayed shut.

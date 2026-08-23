@@ -33,13 +33,13 @@ Implementation is a separate effort after this map.
 
 <!-- one line per closed ticket -->
 
-- **Chrome leaves the row** (2026-08-22, direction taken on
+- **The row controls leave the row** (2026-08-22, direction taken on
   [02](issues/02-one-render-path.md)) — grip, drop indicator and menu move out
   of the row element into one per-editor layer. Four of six adversarial passes
   proposed it independently; no proposal contained it. Unmeasured, so
   [04](issues/04-adapter-convergence.md) is re-scoped as its prototype and the
   blocking edge is inverted: 02 constrains 01, not the reverse.
-- [Chrome-layer prototype](issues/04-adapter-convergence.md) — **CONFIRMED WITH
+- [Row-controls-layer prototype](issues/04-adapter-convergence.md) — **CONFIRMED WITH
   CAVEATS**. Geometry tracks at drift 0 in all seven cases; the row genuinely
   becomes its own child-sequence host behind ONE self-gating line in `bind.ts`,
   killing both the extra span and the custom-`slots.block` freeze hazard; the
@@ -67,7 +67,7 @@ Implementation is a separate effort after this map.
   that actually survived — mount takes no page-wide pointer stream, and unmount
   gives back what it took.
 - [The slot registry](issues/02-one-render-path.md) — it lands, as its own PR
-  AFTER the chrome layer. `slots: {container, text, mark, row}` replaces
+  AFTER the controls layer. `slots: {container, text, mark, row}` replaces
   `props.Mark`, `props.Span` and the `'block'` special case. The largest
   declared break here (~42 files), and it deliberately reopens
   `CONTEXT.md:110`'s "not a rename target". It repairs a pair that is already
@@ -90,22 +90,27 @@ Implementation is a separate effort after this map.
   `focusout` microtask has already cleared the stored anchors. The
   `domBoundary.ts` gap in the round-1 list below is therefore real but
   UNREACHABLE from input — it stays a recorded defect, not a blocker.
-- [The chrome layer is BUILT](issues/04-adapter-convergence.md) (2026-08-22) —
-  `ChromeController` + one `ChromeLayer` per adapter, `BlockStore`/`BlockController`
-  and the three per-row chrome components deleted. ADR-0007 carries the
-  amendment it owed: chrome is addressed by POSITION, a Row's own state still
-  travels with the Row. Declared behavior changes: geometric hover AND drop
-  (the gutter and the gap between rows now answer with the nearest row, where
-  DOM containment answered nothing), `alwaysShowHandle` redefined,
-  `BLOCK_MENU_ITEMS.run` takes the chrome controller, `store.block` →
-  `store.chrome` with `addRow`/`deleteRow`/`duplicateRow`, one extra
-  `contenteditable="false"` container child, and a dead row's menu verb now
-  refuses. The grip band stays anchored to its ROW, so it hangs left of the
-  text with or without core's gutter. The class shipped as `ChromeModel` and
-  was renamed to `ChromeController` on 2026-08-23 — `store.chrome` unchanged,
-  the argument is in `features/block/README.md`. The prototype record
-  ([04](issues/04-adapter-convergence.md)) keeps the old name on purpose: its
-  line references are to the file as it stood.
+- [The row-controls layer is BUILT](issues/04-adapter-convergence.md) (2026-08-22) —
+  one editor-level `BlockController` + one `BlockControls` per adapter, with
+  `BlockStore`, the per-row controller and the three per-row control components
+  deleted. ADR-0007 carries the amendment it owed: the controls are addressed
+  by POSITION, a Row's own state still travels with the Row. Declared behavior
+  changes: geometric hover AND drop (the gutter and the gap between rows now
+  answer with the nearest row, where DOM containment answered nothing),
+  `alwaysShowHandle` redefined, `BLOCK_MENU_ITEMS.run` takes the controller,
+  `store.block`'s row verbs are now `addRow`/`deleteRow`/`duplicateRow`
+  addressed by the open menu's row, one extra `contenteditable="false"`
+  container child, and a dead row's menu verb now refuses. The grip band stays
+  anchored to its ROW, so it hangs left of the text with or without core's
+  gutter. NAMING, settled 2026-08-23: the class shipped as `ChromeModel`, was
+  renamed to `ChromeController`, and landed as `BlockController` — the word
+  "chrome" was rejected because it collides with Chromium, which this repo
+  discusses constantly, and because `block` was already the glossary's word.
+  `store.block` therefore SURVIVES rather than being replaced, so the published
+  break is smaller than the intermediate commits suggested. The prototype
+  record ([04](issues/04-adapter-convergence.md)) keeps the prototype's own
+  names on purpose: its line references are to the file as it stood on branch
+  `prototype/chrome-layer`.
 - [Stale premises](issues/07-stale-premises-sweep.md) — the filter is gone; 9
   stale sites fixed (the census found 3), backlog 09 and 15 both closed as
   non-reproducing, and `anchorAt`'s `side` param is now measured
@@ -140,7 +145,7 @@ map's destination; recorded so they are not lost.
 - ~~**ADR-0007's body says `BlockController` prunes per-row state by node id.**
   It does not prune at all; `BlockController.ts:11-25` argues object keying is
   chosen precisely so no prune is needed. Stale ADR text.~~ CLOSED by the
-  chrome layer's ADR-0007 amendment, which names the class as deleted; the
+  controls layer's ADR-0007 amendment, which names the per-row class as deleted; the
   original paragraph stays as the record of the state at the time.
 - **`blockEdit.ts:48-66` justifies the stored-selection tier with a
   `pendingStructural` window that ADR-0008's own 2026-08-19 amendment says no

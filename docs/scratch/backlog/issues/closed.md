@@ -40,7 +40,7 @@ is here.
   `parser.bench.ts`.
 - **Lazy-attach `contentEditable` only when focused.** Rejected, but not for the reason first
   written: per-node `contenteditable` writes *do* exist — `dom/editableState.ts:34` freezes each
-  value-only mark root and `:47-49` freezes every chrome sibling on the slot-host→root path,
+  value-only mark root and `:47-49` freezes every control sibling on the slot-host→root path,
   applied per newly bound node from `applyMountState` (`dom/bind.ts:203-217`). They are atomicity
   markers rather than the host's editability, and they have to be in place whenever a mark is
   bound, focused or not. The host's own attribute is written at mount and thereafter only when

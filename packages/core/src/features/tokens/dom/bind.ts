@@ -144,7 +144,7 @@ export function rebindNode(node: TreeNode, target: BindTarget): void {
 	// A ROW's wrapper stays BARE: it is neither a text surface nor a mark root, and the
 	// mark-root arm would freeze it atomic. SELF-GATING, so an adapter that registers the row
 	// as its OWN child-sequence host takes the slot arm instead of being skipped — that arm
-	// only removes attributes the row never had, and its chrome walk terminates on its first
+	// only removes attributes the row never had, and its control walk terminates on its first
 	// test because `host === root`. An adapter that registers no host keeps the skip.
 	if (node.kind !== 'row' || bindings.childSequenceHost) applyMountState(bindings, previous)
 	forget(byElement, previous, bindings)
@@ -252,7 +252,7 @@ function applyMountState(bindings: ElementBindings, previous: ElementBindings | 
  *   tabindex either way: marks are not tab stops (Tab leaves the field
  *   natively).
  * - Slot mark: the root and the slot host go BARE, so slot content stays in the
- *   ONE host, and only the CHROME around it — every element hanging off the
+ *   ONE host, and only the CONTROLS around it — every element hanging off the
  *   root→host path — becomes atomic. A nested `contenteditable=true` host is
  *   what this policy exists to avoid: the host both adapters render is
  *   `display: contents`, and a boxless element cannot take focus, so Chromium
@@ -261,7 +261,7 @@ function applyMountState(bindings: ElementBindings, previous: ElementBindings | 
  * readOnly lives on the CONTAINER (the selection driver writes it), not here.
  *
  * Called only through {@link applyMountState}, on bindings from {@link bindingsFor},
- * which records a slot host only when the token element `contains` it. The chrome
+ * which records a slot host only when the token element `contains` it. The control
  * walk below relies on that — it climbs host→root and has no other stop condition.
  */
 function applyEditableState(bindings: ElementBindings): void {
@@ -278,7 +278,7 @@ function applyEditableState(bindings: ElementBindings): void {
 	tokenElement.removeAttribute('contenteditable')
 	childSequenceHost.removeAttribute('contenteditable')
 	// Walk the host back up to the root, freezing every sibling of the path: those are
-	// the mark's own chrome, and chrome is not document content.
+	// the mark's own controls, and a control is not document content.
 	let onPath: HTMLElement = childSequenceHost
 	while (onPath !== tokenElement) {
 		const parent = onPath.parentElement

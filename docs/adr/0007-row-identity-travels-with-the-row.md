@@ -1,6 +1,6 @@
 # Per-row state travels with the row, not with its position
 
-Nothing in the repo said which of the two it should be, and under same-index pairing it was the position: a reorder left every node id where it was and rotated the contents underneath, reporting `added: []`, `removed: []`, `structural: false` — a non-event. Both adapters key rows by `node.id` and `BlockController` prunes per-row UI state by it, so the consumer's row component, its local state and its DOM focus all stayed at the index while the text moved to a different row. This needed deciding rather than assuming, because for drag chrome — hover, the drop indicator — following the position is arguably the right answer; the mouse is over a place, not over a row.
+Nothing in the repo said which of the two it should be, and under same-index pairing it was the position: a reorder left every node id where it was and rotated the contents underneath, reporting `added: []`, `removed: []`, `structural: false` — a non-event. Both adapters key rows by `node.id` and the then per-row `BlockController` prunes per-row UI state by it, so the consumer's row component, its local state and its DOM focus all stayed at the index while the text moved to a different row. This needed deciding rather than assuming, because for the drag controls — hover, the drop indicator — following the position is arguably the right answer; the mouse is over a place, not over a row.
 
 Decided: a row owns its state. Dragging a row takes its node, its id and the consumer's component with everything inside it to the new index.
 
@@ -10,21 +10,22 @@ Accepted scope boundaries, all three considered and deferred rather than overloo
 
 Full record: PR #283. The mechanism is in `packages/core/src/features/tokens/README.md`'s adoption section, and the term is in [`CONTEXT.md`](../../CONTEXT.md).
 
-## Amendment, 2026-08-22: drag chrome follows the POSITION
+## Amendment, 2026-08-22: the drag controls follow the POSITION
 
-The paragraph above names drag chrome as the case where following the position "is arguably the
-right answer; the mouse is over a place, not over a row" — and then decides against it for
-everything, chrome included. That half is amended: **block chrome is addressed by position.**
-The decision it amends is untouched, and the two are separable because they are about different
-state.
+The paragraph above names the drag controls as the case where following the position "is arguably
+the right answer; the mouse is over a place, not over a row" — and then decides against it for
+everything, those controls included. That half is amended: **the block row controls are addressed
+by position.** The decision it amends is untouched, and the two are separable because they are
+about different state.
 
 What moved: hover, the dragged row, the drop edge and the open menu are one editor-level
-`ChromeController` (`store.chrome`), painted by one `ChromeLayer` per adapter at row boxes it
+`BlockController` (`store.block`), painted by one `BlockControls` per adapter at row boxes it
 MEASURES. The per-row `BlockStore` this record's first paragraph points at is deleted, and so is
-the `BlockController` that vended and pruned them — there is no per-row UI state left to travel
-with a row, so the question this record answered no longer arises for chrome.
+the per-row controller that vended and pruned them — there is no per-row UI state left to travel
+with a row, so the question this record answered no longer arises for the row controls. The name
+`BlockController` is reused deliberately: same role, editor-level internals, no per-row store.
 
-Each piece of chrome still STORES a row id; what is positional is how that id is chosen. Hover
+Each control still STORES a row id; what is positional is how that id is chosen. Hover
 is the row under the pointer's Y — the 24px gutter now hovers its row, and a point in the gap
 between two rows snaps to the nearest one, where DOM containment showed nothing. The drop edge
 is the same hit-test, so a drop in that gutter or gap now reorders where it previously reached
@@ -39,8 +40,8 @@ What is NOT amended, and is still gated:
 - **The `Pairing` mechanism**, and adoption honouring it only where the parse agrees.
 - **Both adapters key rows by `node.id`.**
 
-Why chrome is the exception rather than a crack in the rule: chrome is not the row's state at
-all. It is one editor's answer to "where is the pointer, and what is it doing" — one hovered row
+Why the row controls are the exception rather than a crack in the rule: they are not the row's
+state at all. They are one editor's answer to "where is the pointer, and what is it doing" — one hovered row
 per editor, one drag, one menu — and a reorder does not move any of it, because the pointer did
 not move. Nothing about it survives a gesture.
 

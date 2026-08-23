@@ -22,7 +22,7 @@ const active = useMarkput(s => s.overlay.suggestions.active)
 // computes. React's DOM layer appends `px` to a numeric `left`/`top`; Vue assigns the number
 // to `style.left` verbatim, the CSSOM rejects the unitless length, and the `position: fixed`
 // popup falls back to its static position at the host's left edge. The unit belongs to the
-// binding, as in `ChromeLayer.vue`'s menu.
+// binding, as in `BlockControls.vue`'s menu.
 const popupStyle = computed(() => ({left: `${overlayStyle.value.left}px`, top: `${overlayStyle.value.top}px`}))
 
 let deactivate: (() => void) | undefined

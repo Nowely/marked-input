@@ -52,7 +52,7 @@ Both framework adapters share the same component structure:
   │ └─ (block layout)
   │     ├─ <Block node={n}>         # Row wrapper: the RowNode's own element AND
   │     │   └─ <Token node={child}> #   its child-sequence host
-  │     └─ <ChromeLayer />          # ONE per editor, beside the rows, not inside
+  │     └─ <BlockControls />        # ONE per editor, beside the rows, not inside
   │         ├─ grip                 #   them: grip, drop indicator and row menu,
   │         ├─ drop indicator       #   painted at row boxes it measures
   │         └─ row menu
@@ -70,7 +70,7 @@ Both framework adapters share the same component structure:
 | **Token**            | Unified renderer for both text and mark tokens (recursive)   |
 | **TokenChildren**    | Internal nested token sequence host for slot children        |
 | **Block**            | Block layout's row wrapper — the RowNode's own element and its child-sequence host; renders the row's children and nothing else |
-| **ChromeLayer**      | ONE per editor: the grip, the drop indicator and the row menu, painted at measured row boxes |
+| **BlockControls**    | ONE per editor: the grip, the drop indicator and the row menu, painted at measured row boxes |
 | **OverlayRenderer**  | Portal renderer for overlay component                        |
 | **Span**             | Default text span renderer                                   |
 
@@ -217,8 +217,8 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | ------- | ------- | ------------- | ------- |
 | `close` | overlay | Close overlay | `void`  |
 
-Block row operations are NOT an event. `store.chrome.action({...})` and its four-verb
-`DragAction` payload are gone: `ChromeController` resolves the menu's row id to its node and calls
+Block row operations are NOT an event. `store.block.action({...})` and its four-verb
+`DragAction` payload are gone: `BlockController` resolves the menu's row id to its node and calls
 that node's own verbs, so there is no action to lower onto them.
 
 Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
@@ -232,10 +232,10 @@ store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(5), 
 // Read the live root nodes (readonly TreeNode[]) — reactive
 store.tokens.nodes()
 
-// Run a row operation through the editor's chrome controller — it addresses the row the
+// Run a row operation through the editor's block controller — it addresses the row the
 // open menu belongs to, so the menu is opened on that row first
-store.chrome.openMenu(store.tokens.nodes()[0].id, gripElement.getBoundingClientRect())
-store.chrome.deleteRow()
+store.block.openMenu(store.tokens.nodes()[0].id, gripElement.getBoundingClientRect())
+store.block.deleteRow()
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
@@ -317,7 +317,7 @@ class Store {
     readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops
     readonly overlay:   OverlayController  // match, element, slot, select, close
     readonly keyboard:  KeyboardController // input handling and block editing
-    readonly chrome:    ChromeController   // block chrome for the whole editor: hover, drag, drop edge, menu
+    readonly block:     BlockController     // Block layout for the whole editor: hover, drag, drop edge, menu
     readonly clipboard: ClipboardController // copy/cut handling
     readonly api:       MarkputHandle         // the ref handle: container, focus()
 }
@@ -359,7 +359,7 @@ Signal subscription order is significant: inside its constructor `onMounted` hoo
 | **OverlayController**         | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution, mark resolver |
 | **KeyboardController**        | Text input and block editing                             |
-| **ChromeController**          | Block chrome for the whole editor: the hovered/dragged row, the drop edge, the open menu, the row verbs the menu triggers, and the row geometry the layer paints at |
+| **BlockController**           | Block layout for the whole editor: the hovered/dragged row, the drop edge, the open menu, the row verbs the menu triggers, and the row geometry the layer paints at |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
 `KeyboardController` registers ONE module: `enableInput` owns the whole keyboard tier — the `beforeinput` guard, paste, the delete keys and Ctrl/Cmd+A — and calls `blockEdit.ts`'s two block arms after its own shared checks. Those arms are all block layout still answers differently: Enter splits a row by inserting the separator, and an `insertParagraph` that reaches the guard anyway is dropped rather than mapped to a newline. A row MERGE is not among them — Backspace/Delete at a row boundary expands onto the separator through `anchorsForDelete`, the same arm that swallows an adjacent mark. Caret navigation is the browser's: the container is the one editing host, so arrows and Home/End move natively and no core keyboard handler intercepts them. (Core's `SuggestionsModel` does claim ArrowUp/ArrowDown/Enter while the built-in `Suggestions` component is mounted — the adapter component only activates it.) The selection is not a feature of its own: `store.tokens.selection` is the stored anchor pair (see below).
@@ -382,7 +382,7 @@ React/Vue render asynchronously, so initialization order matters:
 // 3. Sync the one-host topology (layout effect)
 //    → TokenModel's commit pipeline runs its first bind: walks the DOM, creates
 //      TokenHandle instances, applies the editable state (bare text surfaces,
-//      ce=false value marks and mark chrome, no tabindex anywhere), and arms one
+//      ce=false value marks and mark controls, no tabindex anywhere), and arms one
 //      text effect per bound text surface (which writes its textContent)
 
 // 4. Each token's ref fires as it paints → store.tokens.consign(id)(element)
@@ -398,14 +398,14 @@ Inline layout: tokens render in one flow as alternating `[text, mark, text, ...]
 
 Block layout (`layout="block"`, with `draggable` adding the reorder affordance): each root node
 is a ROW, wrapped in a `<Block>` component that renders the row's children and nothing else. The
-chrome — grip, drop indicator, row menu — is not in the row. One `<ChromeLayer>` per editor
+row controls — grip, drop indicator, row menu — are not in the row. One `<BlockControls>` per editor
 paints all three, as the container's last child, `position: absolute; inset: 0` over the rows.
 
-`ChromeController` (`store.chrome`) owns that chrome for the whole editor, as four signals
+`BlockController` (`store.block`) owns them for the whole editor, as four signals
 addressed by row id:
 
 ```typescript
-class ChromeController {
+class BlockController {
     readonly state = {
         hovered:  signal<number | null>(...),                      // row id under the pointer
         dragging: signal<number | null>(...),                      // row id being dragged
@@ -414,11 +414,11 @@ class ChromeController {
         geometry: signal(...),                                     // re-measure clock
     }
     // ...five container listeners, and three geometry clocks: a ResizeObserver on the container,
-    // a watch on the commit clock, and a rAF loop over the PAINTED rows while chrome is visible
+    // a watch on the commit clock, and a rAF loop over the PAINTED rows while the controls are visible
 }
 ```
 
-There is no per-row store and no per-row chrome DOM. At 200 rows the shape this replaced mounted
+There is no per-row store and no per-row control DOM. At 200 rows the shape this replaced mounted
 201 grip buttons, 201 `control()` roots and 1608 listeners; measured mount was 44 ms and 1005 DOM
 nodes, against 18 ms and 403 for one layer.
 
@@ -430,7 +430,7 @@ the drag gutter hovers its row, and a point in the gap between two rows snaps to
 
 A measured box goes stale on any reflow, so the model tells the layer to re-measure on three
 clocks: the container's own size, every commit (a row that reflows moves every row BELOW it while
-the container's box does not change), and — while chrome is painted — a rAF loop over the painted
+the container's box does not change), and — while the controls are painted — a rAF loop over the painted
 rows, for the reflow that is neither. An image or a webfont landing inside a row ABOVE the painted
 one moves it without changing its size, so both observers stay silent; measured, the grip sat 66px
 off its row and stayed there. The loop reads two rects per painted row per frame (0.9 µs with a
@@ -448,7 +448,7 @@ learns its source from the drag's `text/plain` payload, resolves that INDEX thro
 `tokens.nodes()`, and refuses a negative one rather than letting `Array.prototype.at` wrap onto
 the last row.
 
-Chrome addressed by position rather than by row identity is the narrow exception to ADR-0007,
+Row controls addressed by position rather than by row identity are the narrow exception to ADR-0007,
 amended for it; a row's own state still travels with the row.
 
 ## Core-Owned DOM And Cursor Management
@@ -463,7 +463,7 @@ There is no selection feature and no `store.selection`. `TokenModel` owns both h
 - **DOM I/O — the private `SelectionDriver`** (`dom/SelectionDriver.ts`). It owns the `selectionchange` sync, the `focusout` clear, the caret application and the editing host's `contenteditable`. Its two externally-needed reads are delegated on the model: `tokens.domAnchors()` (the live browser selection as anchors) and `tokens.focusFirst()`.
 - The driver's ONE direct DOM write is the editing host itself — `container.contentEditable`, gated by `props.readOnly`. Everything else goes through the model's own `DomModel` — `placeCaret(anchor)` / `selectRange(anchor, head)` — which the driver holds as a dep. DOM→anchor boundary mapping (`dom/domBoundary.ts`) and caret placement (`dom/caret.ts`) live entirely inside the token layer and are not exported from `@markput/core`.
 - The selection is re-applied after every bind: the driver's `onMounted` hook watches `tokens.bound` (one pulse per bind, so every handle matches an element in the document) and the stored anchors, re-running the placement against the live surfaces. It is the DOM clock and not the commit clock because a caret landing in a node BORN by the commit has no handle until bind makes one.
-- Editable policy is one host deep and nothing sweeps: `props.readOnly` writes the container's own `contenteditable` through the driver, and the topology below it (bare text surfaces, `ce=false` value marks, bare slot marks with frozen chrome) is applied once per bind.
+- Editable policy is one host deep and nothing sweeps: `props.readOnly` writes the container's own `contenteditable` through the driver, and the topology below it (bare text surfaces, `ce=false` value marks, bare slot marks with frozen controls) is applied once per bind.
 
 ### Token layer: `store.tokens`
 

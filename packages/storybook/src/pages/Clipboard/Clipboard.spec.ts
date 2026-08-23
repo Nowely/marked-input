@@ -534,7 +534,7 @@ describe('Clipboard: cut', () => {
 	it('does not cut a selection that crosses a registered control', async () => {
 		const {host} = await mount(Drag)
 		const before = host.textContent
-		// The grip is painted by the editor's chrome layer on the row nearest the pointer, so it
+		// The grip is painted by the editor's controls layer on the row nearest the pointer, so it
 		// is in the DOM only while a row is hovered — where block layout used to render one per
 		// row, always mounted and merely transparent.
 		await userEvent.hover(childrenOf(host)[0])

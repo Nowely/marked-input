@@ -81,7 +81,7 @@ describe('Component: MarkedInput', () => {
 			el => el.textContent === 'Design Phase'
 		)!
 		// Slot text stays in the ONE host: bare, with the container as its editing host. Only
-		// the mark's own chrome — the checkbox — is frozen non-editable.
+		// the mark's own control — the checkbox — is frozen non-editable.
 		expect(textSurface).not.toHaveAttribute('contenteditable')
 		expect(editingHost(textSurface)).toBe(host)
 		expect(getElement(page.getByLabelText('done'))).toHaveAttribute('contenteditable', 'false')

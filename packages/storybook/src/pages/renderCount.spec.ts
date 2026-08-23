@@ -21,10 +21,10 @@ import {markMounts} from './renderCount.fixtures'
 
 /**
  * The rows of a block layout. Under the single-host topology the editing host IS the row host,
- * so its element children are the rows — MINUS the chrome layer, which is one more container
+ * so its element children are the rows — MINUS the controls layer, which is one more container
  * child and not a row.
  */
-const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.matches('[class*="ChromeLayer"]'))
+const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.matches('[class*="BlockControls"]'))
 
 /**
  * Design-spec Phase 3 headline gates (commit routing):
@@ -173,8 +173,8 @@ describe('Render-count gates: block layout', () => {
 	})
 
 	it('a drag over every row re-renders no Span, however many rows there are', async () => {
-		// THE drag gate the editor-level chrome layer owes: chrome state is now one signal per
-		// editor, where per-row stores made a chrome-driven fan-out structurally impossible.
+		// THE drag gate the editor-level controls layer owes: row-control state is now one signal per
+		// editor, where per-row stores made a row-control-driven fan-out structurally impossible.
 		// The property is that a drag over the whole document costs the CONSUMER nothing —
 		// every tick re-points one editor-level signal and re-renders the layer alone.
 		//

@@ -27,7 +27,7 @@ from input.ts.
 
 **Decided 2026-08-22 by the maintainer: shape A, plus the `anchorsForDelete`
 arm for the row tier.** 03 is independent of 01 and 02 — the pipeline touches
-neither chrome nor rendering, and both surviving options were measured green at
+neither the row controls nor rendering, and both surviving options were measured green at
 HEAD by two agents working separately.
 
 ### The shape: one listener pair (A)

@@ -85,7 +85,7 @@ export function replacementForInput(container: HTMLElement, event: InputEvent): 
 }
 
 /**
- * DOM the consumer owns, in either sense: a registered control root (chrome that handles
+ * DOM the consumer owns, in either sense: a registered control root (editor UI that handles
  * its own input) or an editable island. The model must not edit on such an event NOR
  * cancel it — most sharply in the all-selected branch, which would otherwise replace the
  * WHOLE value with whatever was typed into a control's `<input>`.

@@ -47,7 +47,7 @@ export const Markdown = story({
  * because the decorator owns `onChange` there.
  *
  * They used to carry `style: {marginLeft: '64px'}`, and the note here called it load-bearing:
- * the chrome layer hangs the grip band off its row's LEFT edge
+ * the controls layer hangs the grip band off its row's LEFT edge
  * (`.SidePanel { margin-left: -24px }`), and core's 24px gutter was a NUMERIC `paddingLeft`
  * that React turned into `24px` and Vue dropped, so flush against the viewport Vue's grip was
  * outside it and unclickable. Core emits `'24px'` now, the gutter exists in both frameworks,

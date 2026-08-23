@@ -14,17 +14,17 @@ Blocked by: —  (04 resolved; slot-registry sub-question still open here)
 is no `'mark'` slot name.
 
 What is the single resolution path that renders any root node, and what is a
-Row's default component? Where does block chrome (grip, menu, drop indicator)
+Row's default component? Where do the block row controls (grip, menu, drop indicator)
 enter that path — default components, slot layers, or consumer overrides?
 
 Note the published contract: `slots.block` / `slotProps.block` are published
 names and the glossary marks them "not a rename target" — a change here is a
 declared breaking change, listed per the map's behavior-change rule.
 
-## Direction taken 2026-08-22 — chrome leaves the row
+## Direction taken 2026-08-22 — the row controls leave the row
 
 The crux inside this ticket turned out to be a question no proposal asked:
-**does block chrome live inside the row element at all?** The maintainer's
+**do the block row controls live inside the row element at all?** The maintainer's
 answer is **no** — grip, drop indicator and menu move out of the row into one
 per-editor layer. The final render path is settled after [ticket 04](04-adapter-convergence.md)
 prototypes that layer, which is why this ticket is now blocked on it rather
@@ -32,7 +32,7 @@ than blocking it.
 
 Why this and not the measured alternative (A', where the row consigns the block
 wrapper and its children go through a registered child-sequence host): four of
-the six adversarial passes in round 1 independently proposed hoisting chrome —
+the six adversarial passes in round 1 independently proposed hoisting them —
 two on this ticket, two on [01](01-per-node-state.md) — and none of the eight
 proposals contained it. Hoisting dissolves problems the other options pay for:
 
@@ -43,8 +43,8 @@ proposals contained it. Hoisting dissolves problems the other options pay for:
   value-only arm (`bind.ts:271-273`) writes `contenteditable=false` on the
   WHOLE row — measured `null` at HEAD, `'false'` under A, and no test covers a
   custom `slots.block`
-- what killed option B: chrome sitting inside the caret's own host
-- 01's keying question entirely — with no chrome in the row there is no per-row
+- what killed option B: the controls sitting inside the caret's own host
+- 01's keying question entirely — with no controls in the row there is no per-row
   record to key
 - most of this map's remaining adapter duplication
 
@@ -56,9 +56,9 @@ and each instance subscribes to its own row's `dropPosition`
 (`Block.tsx:56,64`), so a naive singleton invalidates 2N components per
 dragover tick and no drag gate exists in `renderCount.spec.ts`.
 
-**BEHAVIOR CHANGE to declare once, here, not per ticket:** chrome becomes
+**BEHAVIOR CHANGE to declare once, here, not per ticket:** the row controls become
 addressed by position rather than by row identity. ADR-0007 §3 named exactly
-this case for drag chrome and decided against it, so this needs a narrow,
+this case for the drag controls and decided against it, so this needs a narrow,
 explicit ADR amendment. Note `.Popup` is already `position: fixed`
 (`styles.module.css:38-39`), so the menu is viewport-positioned today.
 
@@ -77,9 +77,9 @@ with mirrored `slotProps`, killing `props.Mark`, `props.Span`, `slots.block`
 and the `'block'` special case. `options[i].Mark` stays the only per-option
 override.
 
-**But as its own PR, after the chrome layer.** Mixing the two puts two
+**But as its own PR, after the controls layer.** Mixing the two puts two
 breaking changes in one diff, and they break different things for different
-reasons — one moves chrome out of rows, the other renames the consumer-facing
+reasons — one moves the controls out of rows, the other renames the consumer-facing
 slot surface.
 
 This is the largest declared break in the effort: ~42 files touch `Mark=`/

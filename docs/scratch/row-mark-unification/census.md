@@ -246,7 +246,7 @@ wrappers:
 - The consign-once memo discipline — `Block.tsx:40` ≡ `Block.vue:40`, with
   near-identical comments.
 - Layout fork in Container — `Container.tsx:34-39` ≡ `Container.vue:49-54`.
-- Chrome registration as control roots: `tokens.control()` refs in BlockMenu,
+- Control-root registration: `tokens.control()` refs in BlockMenu,
   DragHandle, DropIndicator on both sides.
 
 **Already deduplicated into core:** `BLOCK_MENU_ITEMS`,
@@ -278,7 +278,7 @@ kinds are exactly three: `'text' | 'mark' | 'row'`.
 | `update(patch: MarkPatch)` (`MarkCommands`) | :124, `types.ts:175-177` | none; rows get only the 5 `NodeCommands` |
 | Per-option config: `options[descriptor.index]` → `Mark` component + props | `resolveSlot.ts:77-82` | `resolveMarkSlot` throws on a row (:72-75) |
 | Consumer hooks `useMark()` / `useMarkInfo()` / `toMarkInfo` | throw if `kind !== 'mark'` | no `useRow`/`useBlock` hook in either adapter |
-| Atomicity / editable policy (`ce=false` root, chrome freeze) | `dom/bind.ts:225-291` | skipped: `bind.ts:146` `if (node.kind !== 'row')` |
+| Atomicity / editable policy (`ce=false` root, control freeze) | `dom/bind.ts:225-291` | skipped: `bind.ts:146` `if (node.kind !== 'row')` |
 | Adjacency swallow (`adjacentMark`) for Backspace/Delete | `TokenModel.ts:249` | n/a; blockEdit relies on it being row-safe (:202-204) |
 | `TokenChildren` slot-host registration (`tokens.children(ownerId)`) | `Token.tsx:64`, `Token.vue:59` | a Block renders `node.children()` directly — no child-sequence host |
 | Overlay targeting (options / `showOverlayOn`) | `features/overlay/` | none |
