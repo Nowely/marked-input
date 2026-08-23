@@ -413,7 +413,8 @@ class ChromeModel {
         menu:     signal<{id: number; top: number; left: number} | null>(...),
         geometry: signal(...),                                     // re-measure clock
     }
-    // ...five container listeners, a ResizeObserver on it and a watch on the commit clock
+    // ...five container listeners, and three geometry clocks: a ResizeObserver on the container,
+    // a watch on the commit clock, and a rAF loop over the PAINTED rows while chrome is visible
 }
 ```
 
@@ -426,6 +427,19 @@ measures. `boxOf(id)` answers a row's box in CONTAINER-LOCAL coordinates (which 
 `scrollTop`, so they are scroll-proof), and `rowAt(clientY)` hit-tests a pointer with a binary
 search over the vertically tiled rows. Hover is therefore geometric rather than DOM containment:
 the drag gutter hovers its row, and a point in the gap between two rows snaps to the nearest.
+
+A measured box goes stale on any reflow, so the model tells the layer to re-measure on three
+clocks: the container's own size, every commit (a row that reflows moves every row BELOW it while
+the container's box does not change), and — while chrome is painted — a rAF loop over the painted
+rows, for the reflow that is neither. An image or a webfont landing inside a row ABOVE the painted
+one moves it without changing its size, so both observers stay silent; measured, the grip sat 66px
+off its row and stayed there. The loop reads two rects per painted row per frame (0.9 µs with a
+clean layout, 20 µs when every read forces a reflow), bumps the clock only when a box actually
+moved, and does not exist while the pointer is away. That last property is also its one gap:
+`alwaysShowHandle` paints a grip with no pointer present, so a reflow that moves row 0 without
+resizing it — a container padding change, measured at 60px — leaves that grip behind until the
+pointer arrives. Pre-existing, and left open rather than paid for with frames that would run for
+the editor's whole lifetime.
 
 Row operations are calls on the row's own node: `addRow`/`deleteRow`/`duplicateRow` resolve the
 open menu's id through `tokens.find` and call `insertAfter(separator)`/`remove()`/`duplicate()`,

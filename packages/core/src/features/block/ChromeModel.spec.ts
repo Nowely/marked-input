@@ -22,8 +22,11 @@ const blockProps: Parameters<Store['props']['set']>[0] = {
  */
 const ROW_HEIGHT = 20
 
+const mounted: Store[] = []
+
 function mountRows(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
+	mounted.push(store)
 	store.props.set({...blockProps, ...props})
 	const container = document.createElement('div')
 	container.style.position = 'relative'
@@ -73,7 +76,14 @@ function dropOn(container: HTMLElement, payload: string) {
 	container.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer}))
 }
 
+/** Long enough for the painted-row watcher to have run several frames, or to have run none. */
+const severalFrames = () => new Promise(resolve => setTimeout(resolve, 100))
+
 afterEach(() => {
+	// Detaching the container disposes the mount scope, and the tests below count FRAMES:
+	// emptying the body leaves every previous editor's mount effects — including the painted-row
+	// loop — running against detached elements for the rest of the file.
+	for (const store of mounted.splice(0)) store.host.container(null)
 	document.body.replaceChildren()
 })
 
@@ -211,6 +221,63 @@ describe('geometry', () => {
 	it('answers nothing for a row with no bound element', () => {
 		const {chrome} = mountRows('alpha\n\n')
 		expect(chrome.boxOf(9999)).toBeUndefined()
+	})
+
+	it('re-measures when a row ABOVE the painted one moves with no commit and no container resize', async () => {
+		// The third clock. A fixed-height container does not resize when its rows move, the
+		// painted row keeps its own SIZE so its observer stays silent, and no commit happened —
+		// the two older clocks are both blind, and so is a mousemove that keeps hovering the
+		// same row. Row 0 grows here the way an image, a webfont or an animation grows it.
+		const {chrome, container, rows} = mountRows('alpha\n\nbeta\n\ngamma\n\n')
+		container.style.height = '30px'
+		container.style.overflow = 'auto'
+		mouseMove(container, midOf(rows[2]))
+		// Settled first: the container's own observer delivers once for its initial size, and
+		// again for the height set above, and neither of those is what this test is about.
+		await severalFrames()
+		const before = chrome.state.geometry()
+
+		rows[0].style.height = `${ROW_HEIGHT * 4}px`
+
+		await expect.poll(() => chrome.state.geometry()).toBeGreaterThan(before)
+	})
+
+	it('keeps still while chrome is painted and nothing moves', async () => {
+		// The other half: the loop bumps the clock only when a box actually changed, so a
+		// resting pointer costs frames and no re-render at all.
+		const {chrome, container, rows} = mountRows('alpha\n\nbeta\n\ngamma\n\n')
+		mouseMove(container, midOf(rows[2]))
+		await severalFrames()
+		const before = chrome.state.geometry()
+
+		await severalFrames()
+
+		expect(chrome.state.geometry()).toBe(before)
+	})
+
+	it('requests no frames at all while no chrome is painted', async () => {
+		// The requirement the loop has to keep: bounded by pointer presence, never a
+		// page-lifetime stream per mounted editor. Counted in FRAMES and not in clock bumps —
+		// a loop with nothing painted has nothing to compare, so it bumps the clock either way
+		// and a geometry assertion here passes with the guard deleted.
+		const frames = vi.spyOn(globalThis, 'requestAnimationFrame')
+		try {
+			const {container, rows} = mountRows('alpha\n\nbeta\n\ngamma\n\n')
+			await severalFrames()
+			expect(frames).not.toHaveBeenCalled()
+
+			mouseMove(container, midOf(rows[2]))
+			await severalFrames()
+			expect(frames.mock.calls.length).toBeGreaterThan(0)
+
+			frames.mockClear()
+			container.dispatchEvent(new MouseEvent('mouseleave', {clientY: 0}))
+			await severalFrames()
+
+			expect(frames).not.toHaveBeenCalled()
+		} finally {
+			frames.mockRestore()
+		}
 	})
 })
 

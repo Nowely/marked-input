@@ -95,18 +95,13 @@ export class ChromeModel {
 			//   the wrapped line's height and nothing told the layer.
 			// A container `scroll` is deliberately NOT a clock: container-local coordinates
 			// already carry `scrollTop`, so scrolling leaves every measured box identical.
-			// What the two do not cover, stated rather than hidden: a reflow that is neither a
-			// commit nor a container resize — an image or a webfont landing inside a row ABOVE
-			// the painted one, in a fixed-height container. The grip is stale there until the
-			// next commit, resize or hover change. Observing every row would close it, at one
-			// ResizeObserver target per row, which is the per-row cost this layer exists to
-			// stop paying.
 			effect(() => {
 				const observer = new ResizeObserver(() => this.#moved())
 				observer.observe(container)
 				return () => observer.disconnect()
 			})
 			watch(this.tokens.committed, () => this.#moved())
+			this.#watchPaintedRows()
 
 			// The menu's dismissal listeners live exactly as long as the menu does — the lazily
 			// attached, interaction-scoped shape `OverlayController` already ships for its own
@@ -235,6 +230,81 @@ export class ChromeModel {
 
 	#moved(): void {
 		this.state.geometry(untracked(() => this.state.geometry()) + 1)
+	}
+
+	/** The rows the layer is painting on right now — at most the grip's row and the drop edge's. */
+	#paintedRows(): number[] {
+		const grip = this.state.dragging() ?? this.state.hovered()
+		const drop = this.state.drop()?.id
+		const ids: number[] = []
+		if (grip !== null) ids.push(grip)
+		if (drop !== undefined && drop !== grip) ids.push(drop)
+		return ids
+	}
+
+	/**
+	 * The THIRD geometry clock, and the one neither of the other two can be: a row ABOVE the
+	 * painted one reflowing with no commit and no container resize — an image or a webfont
+	 * landing, a CSS animation finishing, a `details` opening inside a slot. It moves the painted
+	 * row without changing its SIZE, so the container's observer and the adapters' observer on
+	 * the painted row's own element both stay silent, and the pointer does not save it either:
+	 * hover re-measures only when the hovered ROW changes, so a mousemove inside the same row
+	 * leaves the drift exactly where it was. Measured in both adapters — fixed-height
+	 * `overflow: auto` container, an animation growing row 0 by 66px while row 3 was hovered —
+	 * the grip sat 66px off its row, over the row above it, and stayed there.
+	 *
+	 * It POLLS, because the platform has no "this element moved" event. The alternatives were
+	 * measured rather than assumed:
+	 * - a `ResizeObserver` on every row sees it, at 201 targets re-armed on every structural
+	 *   commit at N=200 (measured: 1015 `observe()` calls over five commits) — the per-row cost
+	 *   this layer exists to stop paying;
+	 * - a `MutationObserver` on the container subtree sees NOTHING: the same reflow produced 0
+	 *   records in both adapters, because an image, a font and an animation change layout
+	 *   without touching the DOM;
+	 * - re-measuring at paint time cannot help, because nothing repaints when a row moves;
+	 * - a `ResizeObserver` on the container's CONTENT has no target — the scrollable content is
+	 *   no element's box, and giving it one means a wrapper element inside the container, the
+	 *   published DOM change this layer was placed inside the container to avoid.
+	 *
+	 * The cost is bounded by POINTER PRESENCE, not by the editor's lifetime — a pointer parked
+	 * inside the editor keeps the loop alive, which is not a gesture. One rAF loop per editor,
+	 * alive only while chrome is painted, reading two rects per painted row (the row's and the
+	 * container's) and bumping the clock only when a box actually moved. Measured: 0.9 µs a frame
+	 * with a clean layout, 20 µs when every read forces a reflow — 0.005% and 0.12% of a 16.7 ms
+	 * frame — and 0 DOM writes over 300 ms of resting hover, because an unmoved box emits nothing.
+	 * Two rect reads a frame at N=50 and two at N=200: {@link paintedRows} returns at most two ids
+	 * by construction, so nothing here scales with the row count.
+	 *
+	 * WHAT IT DOES NOT COVER, stated because it was once claimed the other way: `alwaysShowHandle`
+	 * paints a grip on row 0 with the pointer AWAY, and this loop does not run then —
+	 * {@link paintedRows} is hover and drag, so a resting grip is watched by nothing. That grip
+	 * can drift, and does: measured in real Chromium, `container.style.paddingTop = '60px'` on an
+	 * auto-height container moved row 0's box by 60px with the clock unchanged (2 -> 2), and the
+	 * container's own `ResizeObserver` stayed silent because padding is not in the CONTENT box it
+	 * observes (1 callback at mount, 1 after — no delivery). The same reflow WHILE hovered bumps
+	 * the clock (2 -> 3), so it is the exclusion and not the mechanism that leaves the gap. It is
+	 * PRE-EXISTING — identical with this loop removed — and closing it means running these frames
+	 * for the editor's whole lifetime whenever `alwaysShowHandle` is on, which is the permanent
+	 * stream this design refuses. Left open deliberately.
+	 */
+	#watchPaintedRows(): void {
+		effect(() => {
+			const ids = this.#paintedRows()
+			if (ids.length === 0) return
+			// Measured inside the frame, never in the effect body: `boxOf` reads the DOM through
+			// the token registry, and doing it here would make this effect a subscriber to it.
+			let previous: (RowBox | undefined)[] | undefined
+			let frame = 0
+			const tick = (): void => {
+				const last = previous
+				const current = ids.map(id => this.boxOf(id))
+				if (last && current.some((box, index) => !shallow(box, last[index]))) this.#moved()
+				previous = current
+				frame = requestAnimationFrame(tick)
+			}
+			frame = requestAnimationFrame(tick)
+			return () => cancelAnimationFrame(frame)
+		})
 	}
 
 	/**

@@ -1,10 +1,11 @@
+import type {Markup} from '@markput/core'
 import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {caretIsInside, childrenOf, firstChild, getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart, verifyCaretPosition} from '../../shared/lib/focus'
 import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
-import {Mark} from '../../shared/lib/marks'
+import {defineMark, Mark} from '../../shared/lib/marks'
 import {composePage, mount, mountComponent, mountEcho} from '../../shared/lib/page'
 import * as DragStories from './Drag.stories'
 
@@ -556,6 +557,55 @@ describe('Feature: drag rows', () => {
 			expect(rowsOf(host)).toHaveLength(7)
 
 			await expect.poll(() => Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
+		})
+
+		it('keep the grip on its row when a row ABOVE it reflows with no commit at all', async () => {
+			// The hole the two older clocks leave: a reflow that is neither a commit nor a
+			// container resize. An image or a webfont landing inside a row above the painted one
+			// moves that row without changing its SIZE, so the container's observer and the
+			// adapters' observer on the painted row both stay silent — and hovering does not save
+			// it either, because hover re-measures only when the hovered ROW changes.
+			//
+			// A CSS animation stands in for the image here: same reflow, and it needs no network.
+			const keyframes = document.createElement('style')
+			keyframes.textContent = '@keyframes markput-row-grows { to { height: 120px } }'
+			document.head.append(keyframes)
+			const Growing = defineMark({
+				tag: 'span',
+				style: {
+					display: 'inline-block',
+					width: '8px',
+					height: '0px',
+					// Delayed, so the growth lands AFTER the grip has been painted at the old box.
+					animation: 'markput-row-grows 100ms linear 500ms forwards',
+				},
+			})
+
+			try {
+				const {host} = await mountComponent({
+					Mark: Growing,
+					options: [{markup: '@[__value__]' as Markup}],
+					defaultValue: '@[img] r0\n\nr1\n\nr2\n\nr3\n\nr4\n\n',
+					layout: 'block',
+					draggable: true,
+					slotProps: {container: {style: {overflow: 'auto', height: '200px'}}},
+				})
+				const row = rowsOf(host)[3]
+				const grip = await gripOfRow(host, 3)
+				const containerHeight = host.getBoundingClientRect().height
+				expect(Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
+				const topBefore = row.getBoundingClientRect().top
+
+				await expect.poll(() => row.getBoundingClientRect().top - topBefore).toBeGreaterThan(60)
+				// The two facts that make the older clocks blind: no commit ran, and the container
+				// never changed size.
+				expect(rowsOf(host)).toHaveLength(6)
+				expect(host.getBoundingClientRect().height).toBe(containerHeight)
+
+				await expect.poll(() => Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
+			} finally {
+				keyframes.remove()
+			}
 		})
 
 		it('paint the row menu above consumer content that outranks the layer', async () => {
