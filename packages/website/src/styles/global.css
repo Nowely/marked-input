@@ -39,3 +39,25 @@
 .social-icons a:hover {
 	color: var(--sl-color-gray-1);
 }
+
+/* The WIP badge config uses these utility classes; nothing defined them,
+ * so the 🚧 emoji sat on an accent-colored pill. */
+.border-none {
+	border: none;
+}
+
+.bg-transparent {
+	background: transparent;
+}
+
+/* Landing feature cards: one brand tone instead of Starlight's rainbow cycle. */
+.card {
+	--sl-card-border: var(--sl-color-accent);
+	--sl-card-bg: var(--sl-color-accent-low);
+}
+
+/* The search dialog's focused input showed the UA-default blue outline —
+ * the only blue on the page. The accent border already signals focus. */
+#starlight__search input:focus-visible {
+	outline: none;
+}

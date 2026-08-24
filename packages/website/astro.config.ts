@@ -121,14 +121,18 @@ export default defineConfig({
 			},
 			head: [
 				{tag: 'link', attrs: {rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png'}},
+				{tag: 'link', attrs: {rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png'}},
 				{tag: 'link', attrs: {rel: 'manifest', href: '/site.webmanifest'}},
+				{tag: 'meta', attrs: {name: 'theme-color', media: '(prefers-color-scheme: light)', content: '#f6f7f9'}},
+				{tag: 'meta', attrs: {name: 'theme-color', media: '(prefers-color-scheme: dark)', content: '#17181c'}},
 				{tag: 'meta', attrs: {property: 'og:image', content: 'https://markput.vercel.app/og.png'}},
 				// no twitter:image: X falls back to og:image; the card type alone controls the large unfurl
 				{tag: 'meta', attrs: {name: 'twitter:card', content: 'summary_large_image'}},
 			],
 			lastUpdated: true,
 			editLink: {
-				baseUrl: 'https://github.com/Nowely/marked-input/edit/next/packages/website/src/content/docs',
+				// Starlight appends src/content/docs/<file> itself; with it in the base the built URL doubled the segment and 404ed.
+				baseUrl: 'https://github.com/Nowely/marked-input/edit/next/packages/website/',
 			},
 			social: [
 				{
