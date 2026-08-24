@@ -47,12 +47,42 @@ becomes a ticket here.
 
 <!-- one line per closed ticket -->
 
+- **Phase 1 is done and the page runs** (2026-08-25). `Notion/Document` renders
+  the reference document — properties panel, headings, prose, two tables, a
+  fenced code block, a quote, mentions and links — and `Notion/Editor` adds the
+  `@` picker and the `/` block menu. Both are driven by
+  `packages/storybook/src/pages/Notion/Notion.react.spec.tsx`, which types the
+  character a user types and asserts the emitted value.
+- **A whole markdown table CAN be one mark**: `'|__value__'`, a leading literal
+  and a trailing value that closes at the row boundary. Matching is not greedy
+  across separators, so two tables stay two marks. The cost is atomicity —
+  nothing inside a cell is a token.
+- **Option order does not affect matching.** Static segments go into one
+  alternation sorted by literal length, and the earliest-starting match wins, so
+  `@[` beats `[` and a table's leading `|` beats the `- ` inside its own
+  `| --- |` rule. Order DOES decide which `Mark` a match resolves to and which
+  option owns a trigger.
+- **A matched `__value__` interior is never re-parsed**, which is what makes a
+  fence work: `# →` inside the canary code block stays code.
+- **The chrome claim holds, with one hole.** Mentions and the block menu are
+  consumer components over shipped machinery. The hole: the menu writes over the
+  caret's span, so it starts a block on an empty row but cannot convert a row
+  that already has text ([11](issues/11-overlay-inserts-one-markup.md)).
+- **The block controls layer is a sibling of the rows** inside the container, and
+  it is the child carrying `contenteditable="false"` — so "the last row" is not
+  `host.lastElementChild`. Anything walking rows in the DOM has to skip it.
+- Checked and NOT filed: the End key. It moves the caret to the end of the
+  VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
+  not a defect.
+
 ## Fog
 
-- Whether a markdown table can be one atomic mark at all: `__value__` is capped
-  at two per markup, so an N-cell markup is out, and a whole-table blob depends
-  on match greed across rows.
-- Whether the mark components can carry a document's worth of options without
-  the fixture text tripping mid-row matches.
-- Whether an overlay `choose` can replace a whole row's leading markup — the
-  mechanism a slash menu needs to turn a paragraph into a heading.
+- Whether the row model can carry a block TYPE at all, or whether "typed row"
+  stays "a row whose first child is a slot mark". Nothing in the probe settles
+  it; it is the first question phase 2 has to answer.
+- What a package on top of this owns: does it wrap `MarkedInput` and ship
+  options + components, or does it need core changes first? The ticket list here
+  is the input to that decision, not the answer.
+- Caret ergonomics at document scale — atomic tables and code blocks, Tab
+  leaving the field, native undo swallowed (ADR-0002/0006 accepted costs) — are
+  unmeasured over a document this size.
