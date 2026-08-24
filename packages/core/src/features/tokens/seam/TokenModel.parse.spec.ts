@@ -3,6 +3,7 @@ import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest'
 import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {treeShape} from '../__testing__/tokenFactories'
+import type {Markup} from '../parser/types'
 import type {TreeNode} from '../tree/types'
 
 /** The `reportBadProp` channel, silenced and collected for the duration of one test. */
@@ -240,6 +241,66 @@ describe('TokenModel', () => {
 
 			// '@[x]' is no longer a markup, so the whole value is one text token.
 			expect(store.tokens.nodes()).toHaveLength(1)
+		})
+	})
+
+	describe('a markup the parser cannot use', () => {
+		it('reports it and drops that option, keeping the others and their indices', () => {
+			// A leading placeholder is a first-hour typo. It used to throw out of the props watch
+			// `props.set` drains — i.e. out of the adapter's own render hook, which unmounts a
+			// React root and leaves a Vue editor rendering its stale tree.
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				options: [{markup: '__value__ says'}, {markup: '@[__value__]'}],
+				defaultValue: 'hi @[m]',
+			})
+			store.host.container(document.createElement('div'))
+
+			expect(treeShape(store.tokens.nodes())).toMatchObject([
+				{kind: 'text', content: 'hi '},
+				{kind: 'mark'},
+				{kind: 'text', content: ''},
+			])
+			// The dropped option leaves a HOLE, not a gap: the survivor keeps ITS index, which is
+			// what resolves its per-option `Mark`.
+			const mark = store.tokens.nodes()[1]
+			if (mark.kind !== 'mark') throw new Error('expected a mark')
+			expect(mark.value()).toBe('m')
+			expect(mark.descriptor.index).toBe(1)
+			expect(errors()).toEqual([
+				expect.stringContaining('A markup must not begin with a placeholder'),
+				// The half that names the consequence — the message is the parser's, the verdict is not.
+			])
+			expect(errors()[0]).toContain('This option contributes no markup')
+		})
+
+		it('renders a plain-text editor when every markup is unusable', () => {
+			const errors = captureErrors()
+			// No placeholder at all. `Markup` is a template-literal union, so TS already refuses
+			// this LITERAL — the cast is what a computed string, or a JS consumer, arrives as. The
+			// leading-placeholder rule above needs no cast: that shape typechecks.
+			// oxlint-disable-next-line no-unsafe-type-assertion
+			const markup = 'plain' as Markup
+			store.props.set({Mark: () => null, options: [{markup}], defaultValue: 'hi @[m]'})
+			store.host.container(document.createElement('div'))
+
+			expect(treeShape(store.tokens.nodes())).toMatchObject([{kind: 'text', content: 'hi @[m]'}])
+			expect(errors()).toHaveLength(1)
+		})
+
+		it('reports once per distinct markup set, not once per prop sync', () => {
+			// The report sits DOWNSTREAM of `#markups`' shallow-equality gate over the markup
+			// STRINGS. `props.options` compares elements by reference, so the inline array below —
+			// what a JSX prop produces on every render — is never equal to the last one.
+			const errors = captureErrors()
+			store.props.set({Mark: () => null, options: [{markup: '__value__ says'}], defaultValue: 'hi'})
+			store.host.container(document.createElement('div'))
+			for (let i = 0; i < 10; i++) {
+				store.props.set({Mark: () => null, options: [{markup: '__value__ says'}], defaultValue: 'hi'})
+			}
+
+			expect(errors()).toHaveLength(1)
 		})
 	})
 })

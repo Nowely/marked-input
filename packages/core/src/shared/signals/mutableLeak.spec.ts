@@ -18,18 +18,6 @@ async function freshSignals() {
 	return await import('./signal')
 }
 
-async function freshStore() {
-	vi.resetModules()
-	return (await import('../../store/Store')).Store
-}
-
-function mount(store: {host: {container: (el: HTMLElement) => unknown}}) {
-	const container = document.createElement('div')
-	document.body.append(container)
-	store.host.container(container)
-	return container
-}
-
 describe('batch({mutable: true}) when the flush throws', () => {
 	it('leaves every readonly signal in the module still refusing writes', async () => {
 		const {batch, effect, signal} = await freshSignals()
@@ -88,24 +76,10 @@ describe('batch({mutable: true}) when the flush throws', () => {
 		expect(unrelated(99)).toBe(false)
 	})
 
-	// A THIRD REACHABILITY CASE STOOD HERE and is gone with its vehicle:
-	// `<MarkedInput layout="block" separator="" />` drove the leak from a real editor because
-	// `Parser.parseRows` threw out of the props watch `props.set` drains. It does not throw any
-	// more — `TokenModel.rowSeparator` reports an empty separator and answers "no rows" — so the
-	// case can no longer reach the flush at all.
-
-	it('survives an invalid markup pattern', async () => {
-		const Store = await freshStore()
-
-		const store = new Store()
-		store.props.set({defaultValue: 'hello', Mark: () => null, options: [{markup: '@[__value__]'}]})
-		mount(store)
-
-		// A leading placeholder is rejected by MarkupDescriptor, and the parser is rebuilt by the
-		// same props watch — so a typo'd `markup` prop reaches the flush too.
-		expect(() => store.props.set({Mark: () => null, options: [{markup: '__value__ says'}]})).toThrow(/markup/i)
-
-		store.props.readOnly(true)
-		expect(store.props.readOnly()).toBe(false)
-	})
+	// TWO REACHABILITY CASES STOOD HERE and are gone with their vehicle. They drove the leak from
+	// a real editor — `<MarkedInput layout="block" separator="" />` and a typo'd `markup` — because
+	// both prop values threw out of the props watch `props.set` drains. Neither throws any more:
+	// the props boundary reports the value and treats it as absent (`shared/reportBadProp`), so
+	// neither can reach the flush at all. They were the only consumer-reachable routes into this
+	// leak anyone had found; the mechanism keeps its pins above, with throwers of their own.
 })

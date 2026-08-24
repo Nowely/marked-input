@@ -139,6 +139,17 @@ const parser = new Parser([
 ])
 ```
 
+`new Parser` and `createMarkupDescriptor` THROW on a markup that breaks the placeholder rules —
+which is right for `denote` and any other caller that constructs a parser in its own stack.
+`TokenModel.#parser` does not construct one that way: it asks `markupError` first and maps an
+invalid `option.markup` to `undefined`, the hole `MarkupRegistry` already skips while preserving
+the original indices, then reports through `reportBadProp`. The props boundary must not throw
+because both adapters push props from a per-render lifecycle hook (see the re-parse paragraph
+below). The check sits in `#parser` rather than `#markups` deliberately: `props.options` compares
+array elements by reference, so an inline `options={[…]}` prop differs on every render, while
+`#markups` compares the markup STRINGS — reporting downstream of that gate is what makes it once
+per distinct markup set instead of once per render.
+
 ### Stage 3: Tokenization (3-stage pipeline)
 
 1. **SegmentMatcher** — finds all opening/closing bracket positions

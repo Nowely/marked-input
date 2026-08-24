@@ -62,7 +62,7 @@ Per-option component for rendering this mark
 optional markup: Markup;
 ```
 
-Defined in: [core/src/shared/types.ts:55](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L55)
+Defined in: [core/src/shared/types.ts:59](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L59)
 
 Template string in which the mark is rendered.
 Must contain placeholders: `__value__`, `__meta__`, and/or `__slot__`
@@ -71,6 +71,10 @@ Placeholder types:
 - `__value__` - main content (plain text, no nesting)
 - `__meta__` - additional metadata (plain text, no nesting)
 - `__slot__` - content supporting nested structures
+
+A markup that breaks those rules — no placeholder at all, too many of one kind, or a
+LEADING placeholder — is reported to the console and contributes nothing: the option is
+skipped and every other option keeps its index. Omitting `markup` does the same, quietly.
 
 #### Examples
 

@@ -12,6 +12,7 @@ import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
 import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
+import {markupError} from '../parser/core/MarkupDescriptor'
 import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
@@ -456,9 +457,16 @@ export class TokenModel {
 		return Mark != null || this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
 	})
 
+	/**
+	 * DOWNSTREAM OF {@link #markups}' EQUALITY GATE, and that is what makes the validation
+	 * report affordable here: `props.options` compares array ELEMENTS by reference, so an
+	 * inline `options={[…]}` prop is never equal across renders, while `#markups` compares the
+	 * MARKUP STRINGS. Validating in `#markups` reports once per parent render; validating here
+	 * reports once per distinct markup set. Pinned in `TokenModel.parse.spec`.
+	 */
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
 		if (!this.#hasMark()) return
-		const markups = this.#markups()
+		const markups = this.#markups().map(usableMarkup)
 		if (!markups.some(Boolean)) return
 		return new Parser(markups)
 	})
@@ -720,6 +728,24 @@ export class TokenModel {
 			this.#pipeline.rebind(id)
 		}
 	}
+}
+
+/**
+ * An option's `markup` as the parser may take it: the string itself, or `undefined` when it
+ * breaks a markup rule. `undefined` is the shape the parser ALREADY supports for "this option
+ * contributes no markup" — `MarkupRegistry` skips it while preserving the original indices, so
+ * the surviving options keep their `descriptor.index` and their per-option `Mark`.
+ *
+ * Refused rather than thrown for the reason in {@link reportBadProp}: the parser is rebuilt
+ * inside the props watch a per-render `props.set` drains, so the throw would leave the
+ * adapter's own lifecycle hook.
+ */
+function usableMarkup(markup: Markup | undefined): Markup | undefined {
+	if (markup === undefined) return undefined
+	const invalid = markupError(markup)
+	if (invalid === undefined) return markup
+	reportBadProp(`${invalid}. This option contributes no markup.`)
+	return undefined
 }
 
 /**
