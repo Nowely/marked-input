@@ -17,3 +17,21 @@
 	--sl-color-accent: #a97c00;
 	--sl-color-accent-high: #ffce70;
 }
+
+/* Wordmark in ink, not accent: the accent is for interactive elements. */
+.site-title {
+	color: #26313a;
+}
+
+:root[data-theme='dark'] .site-title {
+	color: #f2f5f8;
+}
+
+/* Header utility icons stay neutral gray; ochre there read as decoration. */
+.social-icons a {
+	color: var(--sl-color-gray-3);
+}
+
+.social-icons a:hover {
+	color: var(--sl-color-gray-1);
+}
