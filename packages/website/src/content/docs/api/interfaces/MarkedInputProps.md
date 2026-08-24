@@ -64,7 +64,7 @@ earlier text, pass it.
 optional draggable: boolean | DraggableConfig;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:89](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L89)
+Defined in: [react/markput/src/components/MarkedInput.tsx:92](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L92)
 
 Enable drag interaction on block rows. Only effective when layout='block'.
 
@@ -184,10 +184,13 @@ Ref to the editor API (spec §2.3)
 optional separator: string;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:85](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L85)
+Defined in: [react/markput/src/components/MarkedInput.tsx:88](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L88)
 
 The structural row separator for block layout (issue 08): editor-level, never part of
 any markup. Inline layout ignores it.
+
+An empty string separates nothing: the editor reports it and renders one rowless
+document, with the row controls off.
 
 #### Default
 

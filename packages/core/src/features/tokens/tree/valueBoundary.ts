@@ -63,8 +63,10 @@ export function createBoundary(deps: {
 		// that owes the pre-mutation reading of their positions.
 		const selectionBefore = deps.selection?.()
 		// A separator means the top level is rows (issue 08); its absence is the flat parse.
-		// `!== undefined`, not truthiness: an explicit `separator: ''` must reach parseRows'
-		// own loud throw, not silently downgrade to the flat parse.
+		// `!== undefined`, not truthiness, because `undefined` is the ONE word for "no rows" and
+		// the caller owes it: `TokenModel.rowSeparator` already folds an empty `separator` prop
+		// to `undefined`. A `''` arriving here is therefore a direct-construction mistake, and
+		// parseRows' own loud throw is the right answer to it.
 		const separator = deps.separator?.()
 		const parsed =
 			separator !== undefined ? parseRowsValue(deps.parser(), next, separator) : parseValue(deps.parser(), next)

@@ -1,4 +1,5 @@
 import type {DomRef} from '../../../shared/editorContracts'
+import {reportBadProp} from '../../../shared/reportBadProp'
 import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import {shallow} from '../../../shared/utils/shallow'
@@ -301,10 +302,23 @@ export class TokenModel {
 	 * PROPS-derived, deliberately not tree-derived. `SlotsFeature.containerProps` reads it
 	 * during SERVER rendering, where no container has attached and the tree is therefore still
 	 * empty, so a tree-derived answer would drop block layout's grip gutter from the SSR pass.
+	 *
+	 * AN EMPTY `separator` ANSWERS `undefined`: an empty separator separates nothing, and
+	 * `undefined` is already this seam's word for "no rows" — the row parse, the block feature
+	 * gates, the grip gutter and `BlockController` all turn off together on it. `Parser.parseRows`
+	 * refuses `''` outright, so the alternative is an exception raised inside the adapter's own
+	 * render hook; see {@link reportBadProp}.
 	 */
-	readonly rowSeparator: Computed<string | undefined> = computed(() =>
-		this.props.layout.isBlock() ? this.props.separator() : undefined
-	)
+	readonly rowSeparator: Computed<string | undefined> = computed(() => {
+		if (!this.props.layout.isBlock()) return undefined
+		const separator = this.props.separator()
+		if (separator !== '') return separator
+		reportBadProp(
+			'`separator` is empty in block layout, so this editor has no rows and no row controls. ' +
+				'Pass a non-empty separator (the default is "\\n\\n") or drop `layout="block"`.'
+		)
+		return undefined
+	})
 
 	/**
 	 * The index of the ROOT whose subtree contains `id` — the block ROW index. Off the live

@@ -80,6 +80,9 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	/**
 	 * The structural row separator for block layout (issue 08): editor-level, never part of
 	 * any markup. Inline layout ignores it.
+	 *
+	 * An empty string separates nothing: the editor reports it and renders one rowless
+	 * document, with the row controls off.
 	 * @default '\n\n'
 	 */
 	separator?: string

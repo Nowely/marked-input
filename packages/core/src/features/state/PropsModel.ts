@@ -37,6 +37,10 @@ export class PropsModel {
 	 * The structural row separator (issue 08): editor-level, belongs to no markup,
 	 * applied in BLOCK layout only — inline layout never splits rows. Inside
 	 * `__value__`/`__meta__` gaps it is that markup's own text, never a boundary.
+	 *
+	 * `''` is not a separator: it separates nothing, so `TokenModel.rowSeparator` reports it
+	 * and answers "no rows". The default replaces `undefined` only, which is why an explicit
+	 * empty string reaches that seam at all.
 	 */
 	readonly separator = signal<string>({default: '\n\n', readonly: true})
 	readonly draggable = signal<boolean | DraggableConfig>({default: false, readonly: true})

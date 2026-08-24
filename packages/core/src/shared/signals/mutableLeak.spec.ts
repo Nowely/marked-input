@@ -88,27 +88,11 @@ describe('batch({mutable: true}) when the flush throws', () => {
 		expect(unrelated(99)).toBe(false)
 	})
 
-	it('survives a block editor given an empty separator', async () => {
-		const Store = await freshStore()
-
-		const store = new Store()
-		store.props.set({
-			defaultValue: 'a\n\nb',
-			layout: 'block',
-			options: [{markup: '@[__value__](__meta__)'}],
-		})
-		mount(store)
-
-		// `<MarkedInput layout="block" separator="" />`: the adapter's per-render `props.set` is
-		// the mutable batch, and `Parser.parseRows` throws out of the props watch it drains.
-		// Matched loosely on purpose: the message belongs to the parser, and a signals unit test
-		// must not red because that prose was reworded.
-		expect(() => store.props.set({layout: 'block', separator: ''})).toThrow(/separator/)
-
-		// Outside any batch, so this write to a readonly prop must be refused.
-		store.props.readOnly(true)
-		expect(store.props.readOnly()).toBe(false)
-	})
+	// A THIRD REACHABILITY CASE STOOD HERE and is gone with its vehicle:
+	// `<MarkedInput layout="block" separator="" />` drove the leak from a real editor because
+	// `Parser.parseRows` threw out of the props watch `props.set` drains. It does not throw any
+	// more — `TokenModel.rowSeparator` reports an empty separator and answers "no rows" — so the
+	// case can no longer reach the flush at all.
 
 	it('survives an invalid markup pattern', async () => {
 		const Store = await freshStore()
