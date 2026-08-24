@@ -437,6 +437,24 @@ describe('Feature: drag rows', () => {
 			await expect.poll(visible).toBe(true)
 		})
 
+		it('keep the grip hit-testable while its own row is being dragged', async () => {
+			// The regression this pins killed the feature outright while the whole suite stayed
+			// green: the layer is `pointer-events: none` and the panel turns them back on, so
+			// when `pointer-events: auto` sat on `SidePanelVisible` — which the line above drops
+			// the moment `dragging` is set — the grip stopped being hit-testable INSIDE the
+			// `dragstart` handler. Chromium re-hit-tests the drag origin when that handler
+			// returns and cancels a drag whose origin is no longer in the source, so no drag ever
+			// started. Nothing synthetic can see that; the hit test can, and needs no native drag.
+			const {host} = await mount(PlainTextDrag)
+			const {grip, end} = await beginRowDrag(host, 0)
+
+			const box = grip.getBoundingClientRect()
+			const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+			expect(grip.contains(hit)).toBe(true)
+
+			end()
+		})
+
 		it('reorder rows when dragging row 0 after row 2', async () => {
 			const {host, value} = await echoPlainText()
 
