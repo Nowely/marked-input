@@ -66,12 +66,19 @@ Implementation is a separate effort after this map.
   `SelectionDriver.spec.ts:328-343` is amended to assert the two properties
   that actually survived — mount takes no page-wide pointer stream, and unmount
   gives back what it took.
-- [The slot registry](issues/02-one-render-path.md) — it lands, as its own PR
-  AFTER the controls layer. `slots: {container, text, mark, row}` replaces
-  `props.Mark`, `props.Span` and the `'block'` special case. The largest
-  declared break here (~42 files), and it deliberately reopens
-  `CONTEXT.md:110`'s "not a rename target". It repairs a pair that is already
-  half-broken: `slotProps.block` typechecks on neither adapter.
+- [The component surface](issues/02-one-render-path.md) — **PAUSED 2026-08-23,
+  direction taken.** The 2026-08-22 decision (a `slots` registry keyed by node
+  kind, absorbing `props.Mark`) was REVERSED: it let internals dictate the
+  public API. Measured, `Mark=` appears 73 times against `slots=` 9, and flat
+  props are already the house convention — `Mark`, `Span` and `Overlay` sit at
+  top level while only `container` and `block` are in `slots`. New direction:
+  `slots`/`slotProps` dissolve into `Container`, `Row`, `containerProps`;
+  `Mark={Tag}` is untouched. The internal-vs-content boundary `slots` was meant
+  to draw does not hold today anyway — `Overlay` overrides an internal component
+  and is already flat — so the distinction moves into names plus a new
+  `CONTEXT.md` **Slot** entry. Two sub-questions open: `Row` versus `Block`, and
+  whether `Overlay` is renamed. Not to be started without reopening the
+  discussion.
 - [One input pipeline](issues/03-one-input-pipeline.md) — shape A (one listener
   pair, block arms after the shared checks) plus a row-separator expansion in
   `anchorsForDelete`, without rewriting `stepAnchor`. Ranged-Enter options C and
@@ -111,6 +118,15 @@ Implementation is a separate effort after this map.
   record ([04](issues/04-adapter-convergence.md)) keeps the prototype's own
   names on purpose: its line references are to the file as it stood on branch
   `prototype/chrome-layer`.
+- [Per-node state](issues/01-per-node-state.md) — DISSOLVED, not answered. The
+  row-controls layer removed the per-node record entirely: five editor-level
+  signals holding an ID each, and grep for `WeakMap`/`new Map<` in
+  `features/block/` returns one hit, a docblock describing the old design. So
+  the keying question this map opened with — node object versus id, prune versus
+  self-collecting — has no subject left. Honest correction recorded there: two
+  node-keyed structures do survive, both `TokenModel`'s, and both are DOM
+  identity rather than UI state. The surviving half — whether MARKS want
+  per-node state — is now [09](issues/09-per-node-state-for-marks.md).
 - [Stale premises](issues/07-stale-premises-sweep.md) — the filter is gone; 9
   stale sites fixed (the census found 3), backlog 09 and 15 both closed as
   non-reproducing, and `anchorAt`'s `side` param is now measured
@@ -135,23 +151,75 @@ Implementation is a separate effort after this map.
 Pre-existing defects surfaced by the adversarial passes. None belongs to this
 map's destination; recorded so they are not lost.
 
-- **The row drop handler accepts any external drag.**
+- ~~**The row drop handler accepts any external drag.**
   `BlockStore.#onContainerDrop` reads `dataTransfer.getData('text/plain')` and
   refuses only `NaN` — no provenance check. With `draggable` on, dropping the
-  text `0` from another application reorders the document.
-- **Block layout silently corrupts the model through a consumer's
+  text `0` from another application reorders the document.~~ **CONFIRMED and
+  FIXED** (2026-08-23). Reproduced in real Chromium in BOTH projects: a
+  `dragover`+`drop` pair carrying only `text/plain: "0"` and no `dragstart` of
+  ours moved row 0, and a drag started in editor A reordered editor B, because
+  A's payload is a bare index B reads as its own. The gate is `state.dragging`,
+  the id the grip's own `dragstart` writes — per-EDITOR by construction, the
+  same shape `captureMarkupPaste` already uses to keep two editors off each
+  other's clipboard. A private MIME type was measured and rejected: Chromium 151
+  does keep a custom format in `dataTransfer.types` through `dragenter`,
+  `dragover` and `drop` (protected mode blanks `getData`, not `types`), but
+  telling editors apart needs an id minted for that one purpose and shipped
+  through the DOM, a second copy of a fact the controller already owns — and one
+  that survives a mid-drag remount the tree does not. BEHAVIOR CHANGES declared:
+  a foreign drop over a row now FALLS THROUGH to the browser's editable drop
+  (measured: an unprevented `dragover` still ends in `beforeinput`/
+  `insertFromDrop`) instead of being swallowed or misread as a reorder, so
+  block layout matches inline; and `text/plain` carries the row's own TEXT
+  instead of its index, since nothing reads the payload back. The recorded
+  companion wart — the indicator left painted by a return that precedes the
+  reset — was already gone from the NaN path at `d2cfb350`, which resets
+  `state.drop` on line 389 and parses on 396; the one return still ahead of it
+  was `if (!e.dataTransfer)`, and that line is deleted here because the handler
+  no longer touches `dataTransfer` at all. Nothing now returns before the reset.
+- ~~**Block layout silently corrupts the model through a consumer's
   contenteditable island** — the behavior change [03](issues/03-one-input-pipeline.md)
-  fixes as a side effect. Inline pins the opposite contract.
+  fixes as a side effect. Inline pins the opposite contract.~~ **CLOSED by 03**
+  (verified 2026-08-24), exactly as predicted: block used to take only the
+  control-root half of the consumer-origin check, so an `insertText` originating
+  in the island resolved a caret at the ROW's text end and typed there —
+  `one\n\ntwo\n\n` became `one\n\ntwox\n\n`, cancelled, where inline left the
+  same edit alone. One pipeline means one guard, `inExplicitEditableIsland`,
+  reached by both layouts. Pinned by `blockEdit.spec.ts:187` against
+  `input.spec.ts:432`.
 - ~~**ADR-0007's body says `BlockController` prunes per-row state by node id.**
   It does not prune at all; `BlockController.ts:11-25` argues object keying is
   chosen precisely so no prune is needed. Stale ADR text.~~ CLOSED by the
   controls layer's ADR-0007 amendment, which names the per-row class as deleted; the
   original paragraph stays as the record of the state at the time.
-- **`blockEdit.ts:48-66` justifies the stored-selection tier with a
+- ~~**`blockEdit.ts:48-66` justifies the stored-selection tier with a
   `pendingStructural` window that ADR-0008's own 2026-08-19 amendment says no
-  longer exists.** The tier is still load-bearing; the written reason is dead.
-- **`anchorAt`'s `side` parameter is production-dead** — measured, one
-  hand-assembled test holds it up. A signature change, so it needs its own yes.
+  longer exists.** The tier is still load-bearing; the written reason is
+  dead.~~ **MOOT** (verified 2026-08-24): the dead justification is gone with
+  the prose that carried it. `blockEdit.ts` is 60 lines, has no line 66, and
+  the word `pendingStructural` appears nowhere in `packages/`. The tier itself
+  survives at `blockEdit.ts:40` and now carries the reason that is actually
+  true — Enter over a range needs THE POSITION, which only the stored anchors
+  carry — with the note that the delete arm dropped its own DOM-measured
+  fallback because it could disagree with them.
+- ~~**`anchorAt`'s `side` parameter is production-dead** — measured, one
+  hand-assembled test holds it up. A signature change, so it needs its own
+  yes.~~ **CLOSED, parameter deleted.** Re-measured at `d2cfb350` rather than
+  inherited: a throwing probe on the branch's precondition (`text ===
+  undefined && offset === owner.position.start`, either side) fires in 1 of
+  1533 tests — the hand-assembled `roots = [mark]` — and in none of the other
+  79 files; a corpus probe over 326 documents parsed five ways takes the
+  `{after: owner}` fallback 20139 times in 159105 offsets and NEVER at an
+  owner's start. The reachability argument is now in code, not in a test
+  count: `TreeBuilder.buildSinglePass` emits a text token before every match
+  at every nesting level, `RowBuilder.groupRows` opens a row's children with
+  one, and `adopt` keeps the parse's shape — so a node's own START is always
+  covered by text and the fallback can only answer for an interior or an end.
+  BREAKING on type surface only: `TokenModel.anchorAt(offset, side?)` is in
+  both adapters' published `index.d.ts` and reachable via `useMarkput`.
+  The hand-assembled test's live claims keep their pins elsewhere; the
+  invariant that REPLACES the parameter had none and is now pinned in
+  `tree/anchors.spec.ts`.
 - **A boundary on a slot mark's own presentation wrapper declines, and the
   keystroke is dropped** — **CONFIRMED and FIXED.** `domBoundary.ts:99` asked
   `hasEditableAncestorBefore`, which read the INHERITED `isContentEditable`; a
@@ -173,7 +241,10 @@ map's destination; recorded so they are not lost.
   `domBoundary.spec`'s inherited-editable case. BEHAVIOR CHANGE declared: that
   click plus a key now inserts at the mark's NEAR EDGE, so the row un-lists
   (`XCode snippets and code blocks`) instead of the key evaporating.
-- **A row-interior DOM boundary resolves to nothing** — `anchorFromBoundary`
+- **A row-interior DOM boundary resolves to nothing** — **STANDS, LATENT BY
+  DECISION.** Not closed by the three fixes above and deliberately not attempted
+  by them; the entry two below is the SAME gap filed a second time from the
+  other end. `anchorFromBoundary`
   has arms for the container, a text surface, `node === tokenElement` and
   `owner.kind === 'mark'`, none for a node INSIDE a row. New with ADR-0009 /
   #291, which deleted the explicit `rowElement` arm while Vue's `Block.vue`
@@ -192,7 +263,9 @@ map's destination; recorded so they are not lost.
   extent. Fixed in 03 rather than reported, because 03 hands block the same arm
   and a layout-scoped fix would have re-added an `isBlock` fork.
 - **`dom/domBoundary.ts` has no arm for a boundary INSIDE a row's wrapper that
-  lands on no text surface** — a framework placeholder (Vue anchors a fragment on
+  lands on no text surface** — **STANDS, LATENT BY DECISION**; the same gap as
+  "A row-interior DOM boundary resolves to nothing" above, kept because the two
+  filings record different halves of the evidence. A framework placeholder (Vue anchors a fragment on
   an empty text node), the exact shape `fromContainerAnchor` exists for one level
   up. It answers `undefined`, `SelectionDriver.sync` bails on `undefined`, and
   the STORED selection silently keeps a stale offset for as long as the caret
@@ -205,6 +278,42 @@ map's destination; recorded so they are not lost.
   `'nearest'` and `SelectionDriver.#applySelection` then drags the caret to the
   row's end; 4 of those 13 press no delete key at all. It also flips
   `domBoundary.spec:395`'s documented contract.
+- ~~**The RESTING grip drifts from its row.**~~ **CLOSED** (2026-08-24), and
+  filed here for completeness rather than found in round 1 — its only record was
+  the `#watchPaintedRows` doc comment, which declined it on the grounds that
+  closing it meant running the rAF loop for the editor's whole lifetime. It did
+  not: `alwaysShowHandle` rests a grip on row 0 with the pointer away, and a
+  container `padding-top` change moved that row and left the grip behind by the
+  full 60px in both adapters — because the layer's origin is the container's
+  PADDING box, which no `ResizeObserver` can observe, and each surrogate box is
+  blind to padding in the regime the other sees. Observing BOTH boxes closes it
+  for zero frames. What SURVIVES is narrower and stays open by decision: any
+  reflow that moves row 0 while both container boxes and row 0's own box keep
+  their size — measured at 60px for consumer content growing above the rows in a
+  fixed-height container, 30px under `display: flex; justify-content: center`
+  when a lower row grows. Only polling sees those, which is the cost the layer
+  exists to refuse.
+
+### Repair pass, 2026-08-24
+
+The three fixes above were adversarially reviewed and two shipped DECORATIVE
+pins, both now load-bearing. Recorded because the failure mode is reusable, not
+because the fixes changed:
+
+- `anchors.spec`'s block-row case used `'@[m]\n\nplain'`, whose second row is
+  covered by a parser text token anyway, so it stayed green with
+  `groupRows`'s unshift deleted — it pinned only the half the inline cases
+  already pinned. `'@[x]\n\n@[y]'` is the shape that isolates the unshift: row 1
+  contains no parser text token at all.
+- `Drag.spec`'s resting-grip cases raced the layer's own MOUNT-time
+  `ResizeObserver` delivery. Under load that delivery landed AFTER the test's
+  reflow and re-measured for free, so deleting the border-box observation left
+  the case green on react and red only on vue. The fix waits one observer cycle
+  before mutating; both cases now red on both projects.
+
+A pin asserted against a shape the mechanism does not actually govern reads
+exactly like a pin that works. Mutating the mechanism — not re-reading the test
+— is what tells them apart.
 
 ## Out of scope
 

@@ -413,7 +413,8 @@ class BlockController {
         menu:     signal<{id: number; top: number; left: number} | null>(...),
         geometry: signal(...),                                     // re-measure clock
     }
-    // ...five container listeners, and three geometry clocks: a ResizeObserver on the container,
+    // ...five container listeners, and three geometry clocks: a ResizeObserver on each of the
+    // container's two boxes (the layer's origin is the PADDING box, which neither one alone reports),
     // a watch on the commit clock, and a rAF loop over the PAINTED rows while the controls are visible
 }
 ```
@@ -436,17 +437,31 @@ one moves it without changing its size, so both observers stay silent; measured,
 off its row and stayed there. The loop reads two rects per painted row per frame (0.9 µs with a
 clean layout, 20 µs when every read forces a reflow), bumps the clock only when a box actually
 moved, and does not exist while the pointer is away. That last property is also its one gap:
-`alwaysShowHandle` paints a grip with no pointer present, so a reflow that moves row 0 without
-resizing it — a container padding change, measured at 60px — leaves that grip behind until the
-pointer arrives. Pre-existing, and left open rather than paid for with frames that would run for
-the editor's whole lifetime.
+`alwaysShowHandle` paints a grip with no pointer present, so a reflow that moves row 0 while both
+container boxes and row 0's own box keep their size leaves that grip behind, and the pointer does
+not repair it — hover re-measures only when the hovered ROW changes, and the resting row is
+already that row. The container padding change that used to demonstrate this (60px in both
+adapters) needed no frames after all and is closed by the second container observation; what
+survives is measured at 60px for consumer content growing ABOVE the rows inside a fixed-height
+container, and 30px under `display: flex; justify-content: center` when a lower row grows.
+Pre-existing, and left open rather than paid for with frames that would run for the editor's whole
+lifetime.
 
 Row operations are calls on the row's own node: `addRow`/`deleteRow`/`duplicateRow` resolve the
 open menu's id through `tokens.find` and call `insertAfter(separator)`/`remove()`/`duplicate()`,
-so a row that has left the tree refuses. The drop is the one operation not addressed by id — it
-learns its source from the drag's `text/plain` payload, resolves that INDEX through
-`tokens.nodes()`, and refuses a negative one rather than letting `Array.prototype.at` wrap onto
-the last row.
+so a row that has left the tree refuses. The drop is addressed by id too: its source is
+`state.dragging`, and both it and the drop edge's row resolve through `rootIndexOf` on the live
+tree.
+
+That signal is also the PROVENANCE test. Only `beginDrag` — the grip's own `dragstart` — sets it,
+and it is per-editor, so `dragover` paints no drop edge for a drag this editor did not start and
+`drop` never claims one; two editors on a page discriminate each other for free, the way
+`captureMarkupPaste` already scopes the clipboard per container. A foreign drop falls through to
+the browser's own editable drop, where `insertFromDrop` inserts the dragged text. Until 2026-08-23
+there was no provenance test at all: the handler parsed `text/plain` as a row index and refused
+only `NaN`, so the bare text `0` dragged in from another application reordered the document, and
+so did a second markput editor's row. Because the drop no longer reads the payload, `text/plain`
+now carries the row's own text — what a drag out of the editor should deliver.
 
 Row controls addressed by position rather than by row identity are the narrow exception to ADR-0007,
 amended for it; a row's own state still travels with the row.

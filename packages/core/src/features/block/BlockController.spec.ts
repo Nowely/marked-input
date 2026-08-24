@@ -43,9 +43,24 @@ function mountRows(value: string, props: Parameters<Store['props']['set']>[0] = 
 		container.append(row)
 		rows.push(row)
 		store.tokens.consign(node.id)(row)
-		if (node.kind === 'row' && node.children()[0]) store.tokens.consign(node.children()[0].id)(surface)
+		const child = node.kind === 'row' ? node.children()[0] : undefined
+		if (!child) continue
+		// PAINTED, not just consigned: `beginDrag` hands the row's own text to the drag, so a
+		// fixture whose rows render nothing cannot see what the payload carries.
+		if (child.kind === 'text') surface.textContent = child.text()
+		store.tokens.consign(child.id)(surface)
 	}
 	return {store, block: store.block, container, rows}
+}
+
+/**
+ * The grip's own `dragstart`, and the only thing that tells an editor a later drop is ITS OWN
+ * row. Every drop test goes through it: without one, `dragover` paints no edge at all.
+ */
+function startDrag({block, store}: ReturnType<typeof mountRows>, index: number): number {
+	const id = store.tokens.nodes()[index].id
+	block.beginDrag(id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
+	return id
 }
 
 /** The pointer at a viewport Y inside the container, as a real mouse gesture. */
@@ -70,10 +85,13 @@ function dragOver(container: HTMLElement, row: HTMLElement, edge: 'before' | 'af
 	)
 }
 
-function dropOn(container: HTMLElement, payload: string) {
+/** Returns the event, so a caller can ask whether the editor CLAIMED the drop. */
+function dropOn(container: HTMLElement, payload = 'dropped text') {
 	const dataTransfer = new DataTransfer()
 	dataTransfer.setData('text/plain', payload)
-	container.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer}))
+	const event = new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer})
+	container.dispatchEvent(event)
+	return event
 }
 
 /** Long enough for the painted-row watcher to have run several frames, or to have run none. */
@@ -404,22 +422,26 @@ describe('the row menu', () => {
 })
 
 describe('drag and drop', () => {
-	it('carries the dragged row INDEX as the payload and marks the row dragging', () => {
+	it("carries the dragged row's own TEXT as the payload and marks the row dragging", () => {
 		const {block, store} = mountRows('alpha\n\nbeta\n\ngamma\n\n')
 		const id = store.tokens.nodes()[2].id
 		const dataTransfer = new DataTransfer()
 
 		block.beginDrag(id, new DragEvent('dragstart', {dataTransfer}))
 
-		expect(dataTransfer.getData('text/plain')).toBe('2')
+		// The payload is what a drag OUT of this editor delivers, and nothing more: the drop
+		// handler learns its source row from `state.dragging` instead of reading it back.
+		expect(dataTransfer.getData('text/plain')).toBe('gamma')
 		expect(block.state.dragging()).toBe(id)
 		block.endDrag()
 		expect(block.state.dragging()).toBeNull()
 	})
 
 	it('names the row edge the pointer is over, and clears it when the drag leaves', () => {
-		const {block, container, rows, store} = mountRows('alpha\n\nbeta\n\ngamma\n\n')
+		const mounted = mountRows('alpha\n\nbeta\n\ngamma\n\n')
+		const {block, container, rows, store} = mounted
 		const ids = store.tokens.nodes().map(node => node.id)
+		startDrag(mounted, 0)
 
 		dragOver(container, rows[1], 'before')
 		expect(block.state.drop()).toEqual({id: ids[1], edge: 'before'})
@@ -432,47 +454,60 @@ describe('drag and drop', () => {
 	})
 
 	it('moves the dragged row onto the drop slot', () => {
-		const {block, container, rows, store} = mountRows('alpha\n\nbeta\n\ngamma\n\n')
+		const mounted = mountRows('alpha\n\nbeta\n\ngamma\n\n')
+		const {block, container, rows, store} = mounted
 
+		startDrag(mounted, 0)
 		dragOver(container, rows[1], 'after')
-		dropOn(container, '0')
+		dropOn(container)
 
 		expect(store.tokens.value()).toBe('beta\n\nalpha\n\ngamma\n\n')
 		expect(block.state.drop()).toBeNull()
 	})
 
-	it('refuses a NEGATIVE source index instead of wrapping onto the last row', () => {
-		// The payload carries no provenance, so any external drag reaches this handler with any
-		// text at all. `Array.prototype.at` WRAPS: unguarded, `at(-1)` addresses the LAST row.
-		const {container, rows, store} = mountRows('First\n\nSecond\n\nThird')
-		const before = store.tokens.nodes().map(node => node.id)
+	it('refuses a drop from a drag this editor never started, and does not claim the event', () => {
+		// The defect this replaces: the handler parsed `text/plain` as an index and refused only
+		// NaN, so the bare text `0` dragged in from ANY other application reordered the document.
+		// `state.dragging` is what says a drag is ours, and no `dragover` of ours paints an edge
+		// without one — so the drop falls through to the browser's own editable drop, where
+		// `insertFromDrop` inserts the dragged text.
+		const {block, container, rows, store} = mountRows('First\n\nSecond\n\nThird')
 
 		dragOver(container, rows[0], 'after')
-		dropOn(container, '-1')
+		expect(block.state.drop()).toBeNull()
+		const event = dropOn(container, '0')
 
 		expect(store.tokens.value()).toBe('First\n\nSecond\n\nThird')
-		expect(store.tokens.nodes().map(node => node.id)).toEqual(before)
+		expect(event.defaultPrevented).toBe(false)
 	})
 
-	it('refuses a payload that names no index at all', () => {
-		const {container, rows, store} = mountRows('First\n\nSecond\n\nThird')
+	it("refuses a SECOND editor's row drag — the payload cannot tell two editors apart", () => {
+		// Editor A's drag carries A's row; nothing in it names A. Each editor answers from its
+		// OWN `state.dragging`, which is null in B for the whole of A's gesture.
+		const a = mountRows('A1\n\nA2\n\nA3')
+		const b = mountRows('B1\n\nB2\n\nB3')
 
-		dragOver(container, rows[0], 'after')
-		dropOn(container, 'not an index')
+		startDrag(a, 2)
+		dragOver(b.container, b.rows[0], 'after')
+		const event = dropOn(b.container, '2')
 
-		expect(store.tokens.value()).toBe('First\n\nSecond\n\nThird')
+		expect(b.store.tokens.value()).toBe('B1\n\nB2\n\nB3')
+		expect(b.block.state.drop()).toBeNull()
+		expect(event.defaultPrevented).toBe(false)
 	})
 
-	it('refuses a drop once the layout leaves block — the move addresses whatever nodes() holds', () => {
-		// The one gate the menu verbs get for free from their own row: the move reads
-		// `nodes().at(source)` live, so in inline layout it finds the INLINE nodes and reorders
-		// those. Marks are what makes that visible — plain inline text is a single node.
+	it('refuses a drop once the layout leaves block — both ends resolve through the LIVE tree', () => {
+		// The one gate the menu verbs get for free from their own row: the re-parse mints new
+		// ids, so neither the dragged row nor the drop edge's row is a root any more. Marks are
+		// what makes an inline reorder visible — plain inline text is a single node.
 		const options: CoreOption[] = [{markup: '@[__value__]'}]
-		const {container, rows, store} = mountRows('alpha @[x] tail\n\nbeta @[y] tail\n\n', {options})
+		const mounted = mountRows('alpha @[x] tail\n\nbeta @[y] tail\n\n', {options})
+		const {container, rows, store} = mounted
 
+		startDrag(mounted, 0)
 		dragOver(container, rows[1], 'after')
 		store.props.set({...blockProps, options, layout: 'inline'})
-		dropOn(container, '2')
+		dropOn(container)
 
 		expect(store.tokens.value()).toBe('alpha @[x] tail\n\nbeta @[y] tail\n\n')
 	})
@@ -492,22 +527,30 @@ describe('drag and drop', () => {
 		expect(event.defaultPrevented).toBe(false)
 	})
 
-	it('refuses a drop with draggable:false — reorder is drag-originated', () => {
-		const {container, rows, store} = mountRows('alpha\n\nbeta\n\n', {draggable: false})
+	it('refuses a drop once draggable is turned off MID-DRAG — reorder is drag-originated', () => {
+		// The only way this guard is reached: the grip carries `draggable` too, so with it off
+		// no `dragstart` fires and no drop edge is ever painted. `update` is a PATCH, so the
+		// parse inputs are untouched and the row ids the drag is holding stay live.
+		const mounted = mountRows('alpha\n\nbeta\n\n')
+		const {container, rows, store} = mounted
 
+		startDrag(mounted, 0)
 		dragOver(container, rows[1], 'after')
-		dropOn(container, '0')
+		store.props.update({draggable: false})
+		dropOn(container)
 
 		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
 	})
 
 	it('writes nothing when a row is dropped on its own trailing edge', () => {
-		const {container, rows, store} = mountRows('alpha\n\nbeta\n\n')
+		const mounted = mountRows('alpha\n\nbeta\n\n')
+		const {container, rows, store} = mounted
 		let committed = 0
 		watch(store.tokens.committed, () => committed++)
 
+		startDrag(mounted, 0)
 		dragOver(container, rows[0], 'after')
-		dropOn(container, '0')
+		dropOn(container)
 
 		// The drop target names a SLOT BETWEEN rows, so this collapses onto `to === from`,
 		// which `movePlan` refuses.

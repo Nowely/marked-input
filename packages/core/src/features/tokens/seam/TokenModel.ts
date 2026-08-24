@@ -111,7 +111,7 @@ export class TokenModel {
 		// over-read and `map`'s shift both saturate onto the document end and the two readings
 		// agree by accident.
 		offsetOf: anchor => untracked(() => offsetOfAnchor(this.#tree.roots(), anchor)),
-		anchorAt: (offset, side) => this.anchorAt(offset, side),
+		anchorAt: offset => this.anchorAt(offset),
 		value: () => this.value(),
 	})
 
@@ -308,9 +308,9 @@ export class TokenModel {
 	 * Seeds for the same reason the write verbs do: an unmaterialized tree has no roots, so
 	 * every offset would answer `'end'`.
 	 */
-	anchorAt(offset: number, side?: 'left' | 'right'): NodeAnchor {
+	anchorAt(offset: number): NodeAnchor {
 		this.#ensureSeeded()
-		return untracked(() => anchorAtOffset(this.#tree.roots(), offset, side))
+		return untracked(() => anchorAtOffset(this.#tree.roots(), offset))
 	}
 
 	/** Resolve a DOM node to its handle, 'control' if inside a control root, or undefined if outside the container. */

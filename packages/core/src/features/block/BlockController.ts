@@ -36,7 +36,7 @@ export interface RowBox {
  * adapter calls and takes back, not in a mount hook. The decisive precedent is `TokenModel`: it
  * owns more state than anything else in core and pushed its DOM I/O OUT, into a class
  * deliberately not called `SelectionModel`. This one takes `host.onMounted`, installs five
- * container listeners plus a `ResizeObserver`, a commit watch and a rAF loop there — two more
+ * container listeners plus two `ResizeObserver`s, a commit watch and a rAF loop there — two more
  * document listeners while a menu is open — and its menu and drop verbs write the TREE, which is
  * also what the per-row owner it replaced did. `store.block` names the concern, as every Store
  * field does.
@@ -119,10 +119,26 @@ export class BlockController {
 			//   the wrapped line's height and nothing told the layer.
 			// A container `scroll` is deliberately NOT a clock: container-local coordinates
 			// already carry `scrollTop`, so scrolling leaves every measured box identical.
+			//
+			// The container is observed on BOTH boxes, and one observer object each because
+			// `observe()` REPLACES a target's existing observation rather than adding to it.
+			// The layer's origin is the container's PADDING box, which a `ResizeObserver`
+			// cannot observe, and neither surrogate sees a `padding-top` change on its own —
+			// measured on the resting grip, pointer away, container padding 0 -> 60px:
+			// - auto height, and fixed height under `content-box` sizing: 0 content-box
+			//   callbacks, 1 border-box callback;
+			// - fixed height under `border-box` sizing: the mirror image, 1 and 0.
+			// Padding moves every row inside the box, so a single observation stranded the
+			// resting grip by the full 60px in two of the three.
 			effect(() => {
-				const observer = new ResizeObserver(() => this.#moved())
-				observer.observe(container)
-				return () => observer.disconnect()
+				const contentBox = new ResizeObserver(() => this.#moved())
+				const borderBox = new ResizeObserver(() => this.#moved())
+				contentBox.observe(container)
+				borderBox.observe(container, {box: 'border-box'})
+				return () => {
+					contentBox.disconnect()
+					borderBox.disconnect()
+				}
 			})
 			watch(this.tokens.committed, () => this.#moved())
 			this.#watchPaintedRows()
@@ -175,14 +191,20 @@ export class BlockController {
 	duplicateRow = (): void => this.#runMenuVerb(row => row.duplicate())
 	deleteRow = (): void => this.#runMenuVerb(row => row.remove())
 
+	/**
+	 * `state.dragging` — not the payload — is what says a drop is this editor's own row,
+	 * so `text/plain` is free to carry what a drag OUT of the editor should deliver: the row's
+	 * own text, the same thing `ClipboardController`'s copy puts there and the same thing the
+	 * drag image shows. It used to carry the row INDEX, which the drop handler read back.
+	 */
 	beginDrag(id: number, e: DragEvent): void {
 		if (!e.dataTransfer) return
 		e.dataTransfer.effectAllowed = 'move'
-		e.dataTransfer.setData('text/plain', String(this.tokens.rootIndexOf(id) ?? -1))
 		this.state.dragging(id)
 		// `setDragImage` needs the ROW element and reaches it through the same registry `bind`
 		// reads — which is why the per-row store's `refs.container` needed no replacement here.
 		const element = this.tokens.handle(id)?.element()
+		e.dataTransfer.setData('text/plain', element?.textContent ?? '')
 		if (element) e.dataTransfer.setDragImage(element, 0, 0)
 	}
 
@@ -299,17 +321,20 @@ export class BlockController {
 	 * Two rect reads a frame at N=50 and two at N=200: {@link paintedRows} returns at most two ids
 	 * by construction, so nothing here scales with the row count.
 	 *
-	 * WHAT IT DOES NOT COVER, stated because it was once claimed the other way: `alwaysShowHandle`
-	 * paints a grip on row 0 with the pointer AWAY, and this loop does not run then —
-	 * {@link paintedRows} is hover and drag, so a resting grip is watched by nothing. That grip
-	 * can drift, and does: measured in real Chromium, `container.style.paddingTop = '60px'` on an
-	 * auto-height container moved row 0's box by 60px with the clock unchanged (2 -> 2), and the
-	 * container's own `ResizeObserver` stayed silent because padding is not in the CONTENT box it
-	 * observes (1 callback at mount, 1 after — no delivery). The same reflow WHILE hovered bumps
-	 * the clock (2 -> 3), so it is the exclusion and not the mechanism that leaves the gap. It is
-	 * PRE-EXISTING — identical with this loop removed — and closing it means running these frames
-	 * for the editor's whole lifetime whenever `alwaysShowHandle` is on, which is the permanent
-	 * stream this design refuses. Left open deliberately.
+	 * WHAT IT DOES NOT COVER: `alwaysShowHandle` paints a grip on row 0 with the pointer AWAY, and
+	 * this loop does not run then — {@link paintedRows} is hover and drag, so a RESTING grip is
+	 * watched by no loop and never will be. It was once concluded from that that the resting grip
+	 * had to drift; the container's padding case that proved it — 60px in both adapters — did not
+	 * need frames at all, only the container's OTHER box, and is fixed above. What survives is
+	 * narrower and needs no clock of its own: a reflow that moves row 0 while BOTH container boxes
+	 * and row 0's own box keep their size. Two measured instances, and ordinary layout is enough
+	 * for one of them — inside a fixed-height `overflow: auto` container, consumer content ABOVE
+	 * the rows growing by 60px drifts the resting grip by 60 in both adapters; the same container
+	 * under `display: flex; justify-content: center` drifts it by 30 when row 2 grows by 60. Both
+	 * deliver 0 callbacks to all four observations. The pointer does not repair it either,
+	 * because hover re-measures only when the hovered ROW changes and the resting row is already
+	 * the hovered one. Covering it means these frames for the editor's whole lifetime whenever
+	 * `alwaysShowHandle` is on — the permanent stream this design refuses — so it stays open.
 	 */
 	#watchPaintedRows(): void {
 		effect(() => {
@@ -373,8 +398,25 @@ export class BlockController {
 		if (row) verb(row)
 	}
 
+	/**
+	 * PROVENANCE, and it is the whole of the gate: a drag this editor did not start paints no
+	 * drop edge, so `#onDrop` never claims it. The question "is this drag ours?" is asked of
+	 * `state.dragging`, which only {@link beginDrag} — the grip's own `dragstart` — ever sets,
+	 * and which is per-EDITOR by construction. Two editors on a page therefore
+	 * discriminate each other for free, the same way `captureMarkupPaste` keeps two editors from
+	 * consuming each other's clipboard: with per-container state, not with an id in the payload.
+	 *
+	 * The alternative was measured rather than argued. A private MIME type on the drag source
+	 * works — real Chromium 151 keeps `application/x-markput-row+7` in `dataTransfer.types`
+	 * through `dragenter`/`dragover`/`drop`, where protected mode makes `getData` answer `''`
+	 * for every format, so `types` alone can decide at `dragover`. It was rejected because
+	 * telling editors apart needs an id MINTED for this one purpose and shipped through the DOM,
+	 * which is a second copy of a fact this class already owns — and because the copy can be the
+	 * WRONG one: an editor remounted mid-drag would still match its own type while its tree, and
+	 * therefore every row index in flight, is new.
+	 */
 	#onDragOver(e: DragEvent): void {
-		if (!e.dataTransfer) return
+		if (!e.dataTransfer || this.state.dragging() === null) return
 		const row = this.rowAt(e.clientY)
 		if (!row) return
 		e.preventDefault()
@@ -384,35 +426,34 @@ export class BlockController {
 	}
 
 	#onDrop(e: DragEvent): void {
-		if (!e.dataTransfer) return
 		const drop = this.state.drop()
+		const source = this.state.dragging()
 		this.state.drop(null)
 		// No painted drop edge means no `dragover` of ours accepted this drag, and cancelling it
-		// would suppress core's own `insertFromDrop` edit. The per-row handler could not reach a
-		// foreign drop at all — it existed only on a row, in block layout — where this one is on
-		// the container in EVERY layout, so the refusal has to be explicit.
-		if (!drop) return
+		// would suppress the browser's own editable drop — measured: an unprevented `dragover`
+		// still ends in `beforeinput`/`insertFromDrop` on a contenteditable, which is the event
+		// `replacementForInput` already turns into an insert. So a FOREIGN drop over a row falls
+		// through and inserts its text, in block layout exactly as in inline. The per-row handler
+		// could not reach a foreign drop at all — it existed only on a row, in block layout —
+		// where this one is on the container in EVERY layout, so the refusal has to be explicit.
+		if (!drop || source === null) return
 		e.preventDefault()
-		const source = Number.parseInt(e.dataTransfer.getData('text/plain'), 10)
-		if (Number.isNaN(source)) return
-		// Reorder is drag-originated, so unlike the menu verbs it stays behind `draggable`.
+		// Reorder is drag-originated, so unlike the menu verbs it stays behind `draggable`. Only
+		// a consumer flipping the prop mid-drag reaches this: the grip carries `draggable` too,
+		// so with it off no `dragstart` fires and no drop edge is ever painted.
 		if (!this.props.draggable()) return
-		// `source` is whatever the drag carried, and this handler asks the payload for no
-		// provenance — so it is not trusted to name a row. `Array.prototype.at` WRAPS on a
-		// negative index, and an unguarded `at(-1)` would move the LAST row to the top.
-		if (source < 0) return
-		// This is also what refuses a drag whose layout left block mid-flight: `nodes()` holds
-		// the INLINE nodes there and `moveTo` would reorder THOSE, but the re-parse mints new
-		// ids, so the drop edge's row id is in no root and `rootIndexOf` answers `undefined`.
+		// Both ends resolve through the LIVE tree, and either answering `undefined` is what
+		// refuses a drag whose layout left block mid-flight: the re-parse mints new ids, so
+		// neither the dragged row nor the drop edge's row is a root any more.
+		const from = this.tokens.rootIndexOf(source)
 		const index = this.tokens.rootIndexOf(drop.id)
-		if (index === undefined) return
+		if (from === undefined || index === undefined) return
 		const target = drop.edge === 'before' ? index : index + 1
 		// The drop target names a SLOT BETWEEN rows, so a target below the source shifts down by
 		// one once the row leaves its old place. Both drag no-ops — dropping on itself, and
 		// dropping on its own trailing edge — collapse onto `to === from`, which `movePlan`
 		// already refuses.
-		const to = target > source ? target - 1 : target
-		this.tokens.nodes().at(source)?.moveTo(to)
+		this.tokens.find(source)?.moveTo(target > from ? target - 1 : target)
 	}
 }
 

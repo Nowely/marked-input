@@ -3,15 +3,17 @@ import type {Anchors, MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from '.
 /**
  * Right-affinity resolution: the last text node (document order) containing the offset.
  *
- * `side` reaches ONE branch — the mark fallback below — and defaults to the right affinity
- * every caller but one wants. It is a PARAMETER and not a global rule because the two readings
- * are both correct and both needed: a caret REPAIRED after an edit must keep leaning right (an
- * offset that lands on a mark's start belongs after whatever was just typed), while a select-all
- * SEED at offset 0 must name the mark's own start or the selection begins after it. Making the
- * left reading unconditional regressed controlled-mode typing — the echo's repair re-anchors
- * through here, so the repaired caret was yanked before the preceding mark.
+ * ONE reading, no `side` parameter, and that is a parser invariant rather than a preference:
+ * every non-text node's START offset is covered by a text node, so the fallback below can
+ * only ever answer for an INTERIOR or an END, where no second reading exists. `TreeBuilder`
+ * emits a text token immediately before every match, at every nesting level
+ * (`buildSinglePass`: `roots.push` / `container.token.children.push` of
+ * `createTextToken(textPos, match.start)`), so a mark's start is always the end of its
+ * preceding sibling; `RowBuilder.groupRows` forces a row's first child to be a text token
+ * starting at the row's own start; and `adopt` pairs one node per token in token order, so
+ * the live tree keeps the parse's shape.
  */
-export function anchorAt(roots: readonly TreeNode[], offset: number, side: 'left' | 'right' = 'right'): NodeAnchor {
+export function anchorAt(roots: readonly TreeNode[], offset: number): NodeAnchor {
 	let text: {node: TextNode; offset: number} | undefined
 	let owner: MarkNode | RowNode | undefined
 	const visit = (nodes: readonly TreeNode[]): void => {
@@ -33,15 +35,9 @@ export function anchorAt(roots: readonly TreeNode[], offset: number, side: 'left
 	// A mark interior is not anchorable (spec §2.3), so a slotless mark answers with its
 	// boundary — and a row's separator span answers the same way: no text covers it, so the
 	// row itself does, failing closed exactly like a block row's trailing `\n\n` always has.
-	// `{after}` under the default: the interior and the end have no other reading,
-	// and neither does the start under right affinity.
-	//
-	// `'left'` is `Selection.selectAll`'s START seed, and NO PARSED document reaches it at
-	// offset 0 any more: the inline parse brackets a leading mark with an empty text token and
-	// a row's children open with one (`RowBuilder.groupRows`), so a text anchor always answers
-	// first. Only `anchors.spec`'s hand-assembled roots still exercise the branch — measured by
-	// deleting it: the whole core suite and the browser suite stay green but that one case.
-	if (owner) return side === 'left' && offset === owner.position.start ? {before: owner} : {after: owner}
+	// `{after}` unconditionally: an owner's own START never reaches here (see above), and the
+	// interior and the end have no second reading.
+	if (owner) return {after: owner}
 	return offset <= 0 ? 'start' : 'end'
 }
 

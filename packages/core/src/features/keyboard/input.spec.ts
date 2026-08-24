@@ -229,17 +229,14 @@ describe('handleBeforeInput()', () => {
 	it('types two characters into the gap of a CONTROLLED document, through the echo', async () => {
 		// The controlled path is a different caret owner: `EditController` moves no caret there
 		// (the tree has not changed yet), so the post-edit position comes from the ECHO's
-		// repair — `map` re-anchoring the captured selection through `anchorAt`. That makes the
-		// repair a second consumer of the mark fallback, with the OPPOSITE affinity to
-		// `selectAll`'s seed, and it is why the side is a PARAMETER: a review measured the
-		// globalized left reading landing the second character before the preceding mark
-		// ('aY@[m1](1)X@…').
+		// repair — `map` re-anchoring the captured selection through `anchorAt`. A left-leaning
+		// reading of the mark fallback once landed the second character before the preceding
+		// mark here ('aY@[m1](1)X@…'), which is why `anchorAt` carried a `side` parameter until
+		// the branch it fed was measured unreachable on any parsed tree.
 		//
-		// This case covers the controlled echo end to end; it does NOT discriminate that
-		// affinity — MEASURED: re-applying the unconditional arm leaves it green, because
-		// every offset it maps through IS covered by a text token here (the inline parse keeps
-		// the gap token, and the repair lands inside it). The affinity split is pinned where it
-		// lives, in `tree/anchors.spec.ts`.
+		// This case does NOT discriminate that affinity and never did — MEASURED: the
+		// unconditional arm leaves it green, because every offset it maps through IS covered by
+		// a text token (the inline parse keeps the gap token, and the repair lands inside it).
 		const {store, container, echoed} = mountControlledAdjacentMarks()
 		selectBoundary(container, 2)
 		// The driver's sync and re-place own the caret before the first keystroke, exactly as
@@ -748,15 +745,20 @@ describe('handleBeforeInput()', () => {
 	})
 
 	/**
-	 * SELECT-ALL over a document whose EDGE is a mark — silent data loss until now, and it took
-	 * two roots to reach: `anchorAt`'s mark fallback ignored which SIDE the offset was on, and
-	 * `selectRange` refused an endpoint without a text surface.
+	 * SELECT-ALL over a document whose EDGE is a mark — silent data loss until this pair
+	 * landed, and it took two roots to reach: `anchorAt`'s mark fallback answered offset 0 with
+	 * the mark's END, and `selectRange` refused an endpoint without a text surface.
 	 *
 	 * Mark-LAST lost the DOM half only: stored anchors said all-selected while the DOM
 	 * selection never moved, so the next keystroke replaced a document nothing showed as
 	 * selected. Mark-FIRST lost both: `{after: mark}` projected to the mark's END, so
 	 * `isAllSelected` was false, and the keystroke that follows a cancelled Ctrl+A edited one
 	 * character where the user expected a replacement.
+	 *
+	 * The first root was closed by a `side` parameter and is now closed by the parser: a row's
+	 * children open with a text token (`RowBuilder.groupRows`), so offset 0 resolves inside it
+	 * and never reaches the fallback. THIS is the case that would catch that invariant
+	 * breaking — `tree/anchors.spec` pins it directly.
 	 */
 	describe('select-all over mark-edge block documents', () => {
 		const ctrlA = () => new KeyboardEvent('keydown', {code: 'KeyA', ctrlKey: true, bubbles: true, cancelable: true})

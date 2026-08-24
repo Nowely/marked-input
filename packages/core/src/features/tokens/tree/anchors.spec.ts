@@ -50,33 +50,46 @@ describe('offsetOfAnchor', () => {
 })
 
 describe('anchorAt', () => {
-	it('answers a slotless mark by the SIDE its caller asked for', () => {
-		// The fallback for an offset no text token covers. `side` is a parameter and not a
-		// rule because the two readings are both correct and both wanted: the DEFAULT (right)
-		// is what a post-edit caret repair needs — an offset landing on a mark's start belongs
-		// after whatever was just typed — while `'left'` is what a select-all seed needs, or
-		// the selection begins after the mark it should start at. Globalizing the left reading
-		// regressed controlled-mode typing; only `Selection.selectAll`'s START seed passes it.
-		const tree = createTokenTree(new Parser(['@[__value__]']).parse('@[x]'))
-		const mark = tree.roots()[1]
-		if (mark.kind !== 'mark') throw new Error('expected a mark root')
-		// Probed against the mark ALONE: the inline parse brackets it with empty text tokens
-		// covering [0,4]'s two ends, which would answer first. No parse produces these roots —
-		// block layout brackets a row's children the same way — so this assembled tree is the
-		// only thing left holding the `'left'` branch up.
-		const roots = [mark]
+	/**
+	 * THE invariant that leaves `anchorAt` one reading and no `side` parameter: a node's own
+	 * START is always covered by a text node, so the mark/row fallback can only answer for an
+	 * INTERIOR or an END, where no second reading exists. Both halves are the parser's:
+	 * `TreeBuilder.buildSinglePass` emits a text token immediately before every match at every
+	 * nesting level, and `RowBuilder.groupRows` opens a row's children with one.
+	 *
+	 * `Selection.selectAll`'s START seed is what rides it — it used to ask for a `'left'`
+	 * reading, and the branch that served it was reachable only from hand-assembled roots.
+	 */
+	it.each([
+		['a leading mark', '@[x]cd'],
+		['two leading marks', '@[x]@[y]'],
+		['a nested mark opening a slot', '#[@[x]]'],
+	])('answers offset 0 with a text anchor on a document opening with %s', (_label, value) => {
+		const roots = createTokenTree(nestedParser.parse(value)).roots()
 
-		expect(anchorAt(roots, 0, 'left')).toEqual({before: mark})
-		expect(anchorAt(roots, 0)).toEqual({after: mark})
-		expect(anchorAt(roots, 0, 'right')).toEqual({after: mark})
+		expect(anchorAt(roots, 0)).toEqual({node: roots[0], offset: 0})
+		expect(offsetOfAnchor(roots, anchorAt(roots, 0))).toBe(0)
+	})
 
-		// `'left'` reaches the START only: the end and the interior have no second reading.
-		expect(anchorAt(roots, 4, 'left')).toEqual({after: mark})
-		expect(anchorAt(roots, 2, 'left')).toEqual({after: mark})
+	it("answers a block row's own start with a text anchor when the row opens with a mark", () => {
+		// '@[x]\n\n@[y]' is the shape that separates the two halves. Row 0 [0,6] opens on
+		// `TreeBuilder`'s zero-length pre-match token; row 1 [6,10] has NO parser text token
+		// inside it at all, so its leading text child can only come from `groupRows`'s unshift.
+		// A fixture whose second row is plain text pins that half by accident and stays green
+		// when the unshift is removed.
+		const roots = createTokenTree(nestedParser.parseRows('@[x]\n\n@[y]', '\n\n')).roots()
+		const firstChild = (index: number) => {
+			const row = roots[index]
+			if (row.kind !== 'row') throw new Error('expected a row root')
+			const child = row.children()[0]
+			// Narrowed, not just compared: without this the expectation degrades with the tree
+			// it is meant to catch, matching whatever node happens to lead the row.
+			if (child.kind !== 'text') throw new Error(`row ${index} opens with ${child.kind}`)
+			return child
+		}
 
-		// Each side still projects back to the offset it was formed from.
-		expect(offsetOfAnchor(roots, anchorAt(roots, 0, 'left'))).toBe(0)
-		expect(offsetOfAnchor(roots, anchorAt(roots, 4))).toBe(4)
+		expect(anchorAt(roots, 0)).toEqual({node: firstChild(0), offset: 0})
+		expect(anchorAt(roots, 6)).toEqual({node: firstChild(1), offset: 0})
 	})
 })
 

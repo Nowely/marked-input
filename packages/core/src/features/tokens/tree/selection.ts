@@ -14,7 +14,7 @@ import type {Anchors, NodeAnchor, TransactionResult, TreeNode} from './types'
  */
 export type SelectionDeps = {
 	offsetOf(anchor: NodeAnchor): number
-	anchorAt(offset: number, side?: 'left' | 'right'): NodeAnchor
+	anchorAt(offset: number): NodeAnchor
 	value(): string
 }
 
@@ -90,11 +90,11 @@ export function createSelection(deps: SelectionDeps): Selection {
 		// Node anchors, not the `'start'`/`'end'` edges: a later edit that grows the value
 		// must NOT keep `isAllSelected` true, and edge anchors would.
 		//
-		// The START seed is the ONE caller that asks `anchorAt` for the LEFT reading, and it
-		// has to: on a document opening with a mark nothing covers offset 0 but that mark, and
-		// the default (right) reading answers its END — which is not where a select-all starts.
-		// The END seed keeps the default: `{after: lastMark}` is already the document end.
-		select(deps.anchorAt(0, 'left'), deps.anchorAt(deps.value().length))
+		// A document opening with a MARK is the case this has to survive, and it does without
+		// asking for a left reading: the parse brackets that mark with an empty text token, so
+		// offset 0 resolves inside it rather than to the mark's own end (`keyboard/input.spec`'s
+		// mark-FIRST select-all). The END seed: `{after: lastMark}` is already the document end.
+		select(deps.anchorAt(0), deps.anchorAt(deps.value().length))
 	}
 
 	/**
