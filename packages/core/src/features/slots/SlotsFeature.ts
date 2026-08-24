@@ -5,7 +5,7 @@ import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
 import type {PropsModel} from '../state/PropsModel'
-import type {TreeNode} from '../tokens'
+import type {TokenModel, TreeNode} from '../tokens'
 import {resolveMarkSlot, resolveSlot, resolveSlotProps} from './resolveSlot'
 import type {MarkSlot} from './types'
 
@@ -50,7 +50,7 @@ export class SlotsFeature {
 		computed(
 			() =>
 				buildContainerProps(
-					this.props.layout.isBlock() && !!this.props.draggable(),
+					this.tokens.rowSeparator() !== undefined && !!this.props.draggable(),
 					this.props.readOnly(),
 					this.props.className(),
 					this.props.style(),
@@ -69,5 +69,11 @@ export class SlotsFeature {
 		return (node: TreeNode) => resolveMarkSlot(node, options, Mark, Span)
 	})
 
-	constructor(private readonly props: PropsModel) {}
+	// `tokens` is here for `rowSeparator` alone, and only its PROPS-derived half is wanted:
+	// `containerProps` is read during server rendering, where no container has attached and the
+	// tree is still empty, so a gutter asked of the rows would vanish from the SSR pass.
+	constructor(
+		private readonly props: PropsModel,
+		private readonly tokens: TokenModel
+	) {}
 }

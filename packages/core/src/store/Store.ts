@@ -15,7 +15,7 @@ export class Store {
 
 	readonly tokens = new TokenModel(this.props, this.host)
 
-	readonly slots = new SlotsFeature(this.props)
+	readonly slots = new SlotsFeature(this.props, this.tokens)
 
 	readonly edit = new EditController(this.tokens, this.props)
 
