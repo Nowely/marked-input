@@ -6,8 +6,12 @@ import {describe, expect, it, vi} from 'vitest'
  * `true` as its own `prevMutable` and restores it faithfully. `batch()` therefore restores the
  * flag BEFORE draining, where no user code can skip the restore.
  *
- * Each case takes a FRESH module graph, because a regression here poisons every test after it
- * rather than failing in place.
+ * The cases do NOT get a module graph each: this project runs in browser mode, where
+ * `vi.resetModules()` cannot clear the ESM registry, so every case here shares one `signal.ts`
+ * and one `mutableScope`. That is safe only because every assertion is "the readonly write must
+ * be refused" — a leak carried out of one case can make a later one pass for the wrong reason,
+ * never fail for the wrong reason. The imports stay dynamic so this file works unchanged if the
+ * project ever runs where resetting DOES isolate.
  */
 async function freshSignals() {
 	vi.resetModules()
@@ -97,9 +101,9 @@ describe('batch({mutable: true}) when the flush throws', () => {
 
 		// `<MarkedInput layout="block" separator="" />`: the adapter's per-render `props.set` is
 		// the mutable batch, and `Parser.parseRows` throws out of the props watch it drains.
-		expect(() => store.props.set({layout: 'block', separator: ''})).toThrow(
-			'Parser.parseRows: separator must be non-empty'
-		)
+		// Matched loosely on purpose: the message belongs to the parser, and a signals unit test
+		// must not red because that prose was reworded.
+		expect(() => store.props.set({layout: 'block', separator: ''})).toThrow(/separator/)
 
 		// Outside any batch, so this write to a readonly prop must be refused.
 		store.props.readOnly(true)
@@ -115,9 +119,7 @@ describe('batch({mutable: true}) when the flush throws', () => {
 
 		// A leading placeholder is rejected by MarkupDescriptor, and the parser is rebuilt by the
 		// same props watch — so a typo'd `markup` prop reaches the flush too.
-		expect(() => store.props.set({Mark: () => null, options: [{markup: '__value__ says'}]})).toThrow(
-			'Invalid markup'
-		)
+		expect(() => store.props.set({Mark: () => null, options: [{markup: '__value__ says'}]})).toThrow(/markup/i)
 
 		store.props.readOnly(true)
 		expect(store.props.readOnly()).toBe(false)
