@@ -1,6 +1,6 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest'
+import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest'
 
-import type {OverlayMatch} from '../../shared/types'
+import type {CoreOption, OverlayMatch} from '../../shared/types'
 import {Store} from '../../store/Store'
 import {anchorsAt, caretAt} from '../tokens/__testing__/mountFixtures'
 
@@ -42,6 +42,10 @@ describe('OverlayController', () => {
 	beforeEach(() => {
 		store = new Store()
 		store.host.container(document.createElement('div'))
+	})
+
+	afterEach(() => {
+		vi.restoreAllMocks()
 	})
 
 	describe('activation via overlay trigger', () => {
@@ -239,6 +243,85 @@ describe('OverlayController', () => {
 			expect(store.tokens.value()).toBe('hello @[world]')
 			expect(store.overlay.match()).toBeUndefined()
 			store.props.update({options: []})
+		})
+
+		/**
+		 * A caret sitting on a just-typed '@wo', for ONE option. Its own fixture rather than
+		 * `storeWithCaret`: these cases vary the option, which that one pins at a bare '@' trigger.
+		 * `Mark` is a parameter because whether a `Mark` exists decides whether the PROPS boundary
+		 * ever validated the markup — `TokenModel.#parser` short-circuits on `#hasMark()`.
+		 */
+		function typedTriggerOn(option: CoreOption, withMark = true) {
+			const store = new Store()
+			store.props.set({...(withMark ? {Mark: () => null} : {}), defaultValue: 'hello ', options: [option]})
+			store.host.container(document.createElement('div'))
+			caretAt(store, 6)
+			store.edit.replace(...anchorsAt(store, 6, 6), '@wo')
+			return store
+		}
+
+		/** The `reportBadProp` channel, silenced and collected for the duration of one test. */
+		function captureErrors(): () => string[] {
+			const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+			return () => spy.mock.calls.map(call => String(call[0]))
+		}
+
+		/**
+		 * THE HOLE the props-boundary fix left open, and the reason this guard is not a second belt.
+		 * `usableMarkup` drops an invalid `option.markup` before `Parser` sees it, but `#findTrigger`
+		 * scans `props.options()` RAW — so the overlay still opens on that option, and `choose` fed
+		 * the markup straight into `annotate`. Measured before the guard: the document became
+		 * `"hello world says"`, a single plain `text` root, with the trigger span consumed — text no
+		 * parser reads back as a mark, written by the editor itself.
+		 *
+		 * The open overlay is asserted POSITIVELY: refusing at the insertion instead of at the probe
+		 * is the deliberate half of this design (see `choose`), so a future change that closes the
+		 * probe should have to move this line rather than discover it.
+		 */
+		it('refuses to insert an option whose markup is invalid, and leaves the document alone', () => {
+			const errors = captureErrors()
+			const store = typedTriggerOn({markup: '__value__ says', overlay: {trigger: '@'}})
+			expect(store.overlay.match()?.source).toBe('@wo')
+
+			store.overlay.choose('world')
+
+			expect(store.tokens.value()).toBe('hello @wo')
+			expect(store.tokens.nodes().map(node => node.kind)).toEqual(['text'])
+			expect(errors()).toContainEqual(expect.stringContaining('The overlay selection was discarded'))
+		})
+
+		/**
+		 * WHY `choose` ASKS `markupError` ITSELF instead of trusting the parse-time report. With no
+		 * `Mark` configured there is no parser, so `usableMarkup` never runs and the props boundary
+		 * reports NOTHING — measured here as exactly one report, the one raised at this call. Before
+		 * the guard this shape wrote `"hello world says"` in total silence.
+		 */
+		it('reports the refusal when no Mark ever made the parser validate the markup', () => {
+			const errors = captureErrors()
+			const store = typedTriggerOn({markup: '__value__ says', overlay: {trigger: '@'}}, false)
+
+			store.overlay.choose('world')
+
+			expect(store.tokens.value()).toBe('hello @wo')
+			expect(errors()).toEqual([expect.stringContaining('The overlay selection was discarded')])
+		})
+
+		/**
+		 * THE OVERLAY-ONLY OPTION, and the reason `#findTrigger` cannot be gated on a usable markup:
+		 * `Overlay.stories.ts`'s DefaultOverlay and CustomTrigger are both this shape, and both exist
+		 * to show an overlay. Omitting `markup` is how "this option inserts nothing" is spelled, so
+		 * it stays SILENT — the console is for values the editor cannot use, not for values it was
+		 * asked not to use. Unchanged by the guard above; pinned so it stays that way.
+		 */
+		it('opens for an option with no markup, inserts nothing, and says nothing', () => {
+			const errors = captureErrors()
+			const store = typedTriggerOn({overlay: {trigger: '@'}})
+			expect(store.overlay.match()?.source).toBe('@wo')
+
+			store.overlay.choose('world')
+
+			expect(store.tokens.value()).toBe('hello @wo')
+			expect(errors()).toEqual([])
 		})
 	})
 })

@@ -1,5 +1,6 @@
 import {KEYBOARD} from '../../shared/constants'
 import {escape} from '../../shared/escape'
+import {reportBadProp} from '../../shared/reportBadProp'
 import {signal, computed, event, effect, watch, listen} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, Slot} from '../../shared/types'
@@ -9,7 +10,7 @@ import {resolveOverlaySlot} from '../slots/resolveSlot'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {TokenModel} from '../tokens'
-import {anchorEquals, annotate} from '../tokens'
+import {anchorEquals, annotate, markupError} from '../tokens'
 import {SuggestionsModel} from './SuggestionsModel'
 
 export class OverlayController {
@@ -144,14 +145,37 @@ export class OverlayController {
 		})
 	}
 
-	/** Commit the active overlay match as an annotation of (value, meta), then close. */
+	/**
+	 * Commit the active overlay match as an annotation of (value, meta), then close.
+	 *
+	 * THIS IS WHERE AN UNUSABLE MARKUP IS REFUSED, and it is the only place it can be. The probe
+	 * below scans `props.options()` RAW and opens for any option carrying a `trigger`, which is
+	 * deliberate: an option with NO `markup` is a shipping configuration whose overlay must still
+	 * appear (`Overlay.stories.ts`'s DefaultOverlay and CustomTrigger are both one), so "opens the
+	 * overlay" cannot be gated on a usable markup without splitting the two shapes
+	 * `CoreOption.markup` documents as equivalent. The insertion is the only step a broken markup
+	 * actually breaks, so the insertion is what declines.
+	 *
+	 * IT ASKS `markupError` ITSELF rather than trusting the props boundary to have asked.
+	 * `TokenModel.#parser` short-circuits on `#hasMark()`, so an editor with a trigger option and
+	 * no `Mark` component never validates any markup at all — and would then annotate with one
+	 * `Parser` rejects, writing text nothing reads back as a mark straight into the document.
+	 * Reported for the same reason, and at the moment the consumer's user actually loses a
+	 * selection rather than at a mount they may never have watched.
+	 */
 	choose(value: string, meta?: string): void {
 		// No hasOverlayTrigger guard needed: match is only ever set by #probeTrigger,
 		// which requires a trigger option, so a missing trigger means match() is undefined.
 		const match = this.match()
 		if (!match) return
 		const markup = match.option.markup
-		if (!markup) return
+		// An overlay-only option, and silent by contract: omitting `markup` is how it is spelled.
+		if (markup === undefined) return
+		const invalid = markupError(markup)
+		if (invalid !== undefined) {
+			reportBadProp(`${invalid}. The overlay selection was discarded — this option can insert nothing.`)
+			return
+		}
 		this.edit.replace(match.range.anchor, match.range.head, annotate(markup, {value, meta}))
 		this.match(undefined)
 	}
