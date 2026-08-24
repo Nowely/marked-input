@@ -28,7 +28,7 @@ export const annotationsBase = {
 		options: {
 			storySort: {
 				method: 'alphabetical',
-				order: ['MarkedInput', 'Styled', 'API'],
+				order: ['Markput', 'Styled', 'API'],
 				locales: 'en-US',
 			},
 		},

@@ -15,7 +15,7 @@ const SELECTABLE_VALUE = 'Hello, suggest overlay by trigger @!'
  * nothing else — page constants stay module-private.
  */
 export default {
-	title: 'MarkedInput/Overlay',
+	title: 'Markput/Overlay',
 	tags: ['autodocs'],
 	component,
 } satisfies PageMeta

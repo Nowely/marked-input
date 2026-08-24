@@ -15,7 +15,7 @@ const FOCUSABLE_VALUE = 'Hello, @[focusable](By key operations) abbreviation @[w
  * nothing else — page constants stay module-private.
  */
 export default {
-	title: 'MarkedInput/Mark',
+	title: 'Markput/Mark',
 	tags: ['autodocs'],
 	component,
 } satisfies PageMeta
