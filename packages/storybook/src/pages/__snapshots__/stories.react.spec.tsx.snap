@@ -77,6 +77,260 @@ exports[`Component: stories > Material stories > Story Overridden 1`] = `
 </div>"
 `;
 
+exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
+"<div contenteditable="true">
+  <div>
+    <span>---&#10;type: Product Launch&#10;title: Apollo — Q2 launch plan&#10;status: in_progress&#10;owner: sarah.chen@acme.com&#10;timeline: 2026-03-03 → 2026-06-15&#10;confidence: 0.82&#10;---</span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>Apollo — Q2 launch plan</span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span>Apollo moves our collaboration layer from beta to general availability. Ownership sits with @</span>
+    <span contenteditable="false">
+      <span>Platform</span>
+    </span>
+    <span>, with launch gating on the auth migration — everything downstream assumes it ships first.</span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>Launch tasks</span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span>24 items, 9 done. Individual tasks are separate concepts.</span>
+  </div>
+  <div>
+    <span>| Task | Status | Owner | Due |&#10;| --</span>
+    <span>
+      <span>
+        <span>
+          <span>| --</span>
+          <span>
+            <span>
+              <span>
+                <span>| --</span>
+                <span>
+                  <span>
+                    <span>
+                      <span>| --</span>
+                      <span>
+                        <span>
+                          <span>
+                            <span>|&#10;| Auth service migration | blocked | @</span>
+                            <span contenteditable="false">
+                              <span>Sarah Chen</span>
+                            </span>
+                            <span> | 2026-04-02 |&#10;| Realtime sync engine | in_progress | @</span>
+                            <span contenteditable="false">
+                              <span>Marcus Kane</span>
+                            </span>
+                            <span> | 2026-04-18 |&#10;| Pricing page rewrite | done | @</span>
+                            <span contenteditable="false">
+                              <span>Jia Lin</span>
+                            </span>
+                            <span> | 2026-03-27 |&#10;| Load test at 5× peak | planned | @</span>
+                            <span contenteditable="false">
+                              <span>Amara Reed</span>
+                            </span>
+                            <span> | 2026-05-06 |</span>
+                          </span>
+                        </span>
+                      </span>
+                      <span></span>
+                    </span>
+                  </span>
+                </span>
+                <span></span>
+              </span>
+            </span>
+          </span>
+          <span></span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>Metrics</span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span>| Metric | Value | As of |&#10;| --</span>
+    <span>
+      <span>
+        <span>
+          <span>| --</span>
+          <span>
+            <span>
+              <span>
+                <span>| --</span>
+                <span>
+                  <span>
+                    <span>
+                      <span>|&#10;| Beta users | 4120 | 2026-04-03 |&#10;| p95 latency | 184ms | 2026-04-03 |&#10;| Crash-free sessions | 99.4% | 2026-04-03 |&#10;| Open bugs | 37 | 2026-04-03 |</span>
+                    </span>
+                  </span>
+                </span>
+                <span></span>
+              </span>
+            </span>
+          </span>
+          <span></span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>Risks</span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span></span>
+          <span>
+            <span>
+              <span>
+                <span>Auth migration slipped two weeks.</span>
+              </span>
+            </span>
+          </span>
+          <span> GA holds only if cutover lands by 2026-04-09.&#10;</span>
+          <span>
+            <span>
+              <span>
+                <span>Vendor SLA unsigned.&#10;</span>
+                <span>
+                  <span>
+                    <span>
+                      <span>EU region capacity unconfirmed — awaiting quota approval.&#10;</span>
+                      <span>
+                        <span>
+                          <span>
+                            <span>Support headcount at 60%.</span>
+                          </span>
+                        </span>
+                      </span>
+                      <span></span>
+                    </span>
+                  </span>
+                </span>
+                <span></span>
+              </span>
+            </span>
+          </span>
+          <span></span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>Decision log</span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>2026-04-02 — </span>
+          <span contenteditable="false">
+            <span>Ship without offline mode</span>
+          </span>
+          <span>&#10;</span>
+          <span>
+            <span>
+              <span>
+                <span>2026-03-21 — Single-region GA first&#10;</span>
+                <span>
+                  <span>
+                    <span>
+                      <span>2026-03-12 — Adopt CRDT over OT</span>
+                    </span>
+                  </span>
+                </span>
+                <span></span>
+              </span>
+            </span>
+          </span>
+          <span></span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>Canary procedure</span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span contenteditable="false">
+      <span>apollo deploy --env=staging --canary=5%&#10;# → rollout 5% · healthy · p95 184ms&#10;</span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span>&gt; If the cutover isn't boring, we're not ready to call it GA.</span>
+  </div>
+  <div>
+    <span>See the </span>
+    <span contenteditable="false">
+      <span>Apollo architecture RFC</span>
+    </span>
+    <span> for the conflict-resolution and presence protocols.</span>
+  </div>
+  <div contenteditable="false"></div>
+</div>"
+`;
+
 exports[`Component: stories > Rsuite stories > Story Overridden 1`] = `
 "<div contenteditable="true">
   <span>Type the '@' to begin creating a </span>
