@@ -289,6 +289,22 @@ describe('signal<T> readonly option', () => {
 		expect(s()).toBe(99)
 	})
 
+	it('close the mutable window before the batch drains its effects', () => {
+		const trigger = signal<number>({initial: 0, readonly: true})
+		const target = signal<number>({initial: 1, readonly: true})
+		let accepted: boolean | undefined
+
+		trackedEffect(() => {
+			if (trigger() > 0) accepted = target(99)
+		})
+
+		batch(() => void trigger(1), {mutable: true})
+
+		// The window covers the caller's own writes, not the cascade they trigger.
+		expect(accepted).toBe(false)
+		expect(target()).toBe(1)
+	})
+
 	it('work with custom equals and readonly', () => {
 		const s = signal<{id: number; name: string}>({
 			initial: {id: 1, name: 'a'},

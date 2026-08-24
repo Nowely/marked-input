@@ -1,9 +1,16 @@
-import {describe, it, expect, beforeEach} from 'vitest'
+import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {treeShape} from '../__testing__/tokenFactories'
+import type {Markup} from '../parser/types'
 import type {TreeNode} from '../tree/types'
+
+/** The `reportBadProp` channel, silenced and collected for the duration of one test. */
+function captureErrors(): () => string[] {
+	const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+	return () => spy.mock.calls.map(call => String(call[0]))
+}
 
 /**
  * Parse-pipeline behavior through the Store. The model publishes nothing
@@ -16,6 +23,10 @@ describe('TokenModel', () => {
 
 	beforeEach(() => {
 		store = new Store()
+	})
+
+	afterEach(() => {
+		vi.restoreAllMocks()
 	})
 
 	function mountWith(value: string) {
@@ -133,12 +144,30 @@ describe('TokenModel', () => {
 			expect(row.children().map(child => child.kind)).toEqual(['text', 'mark', 'text'])
 		})
 
-		it('throws loudly on an explicit empty separator instead of degrading to inline', () => {
-			// PropsModel defaults replace only undefined, so '' would flow through; the
-			// truthiness gate used to silently downgrade block to the inline parse
-			// (review finding) — parseRows' own contract is the loud failure.
+		it('reports an explicit empty separator and renders a rowless document', () => {
+			// PropsModel defaults replace only undefined, so '' flows through to `rowSeparator`,
+			// which answers `undefined` — this seam's one word for "no rows". It used to reach
+			// `Parser.parseRows`' throw, which both adapters raise inside a per-render lifecycle
+			// hook: React tore down the whole render root, Vue kept the stale tree.
+			const errors = captureErrors()
+			store.props.set({layout: 'block', separator: '', options: [], defaultValue: 'a\n\nb'})
+			store.host.container(document.createElement('div'))
+
+			expect(treeShape(store.tokens.nodes())).toMatchObject([{kind: 'text', content: 'a\n\nb'}])
+			expect(store.tokens.rowSeparator()).toBeUndefined()
+			expect(errors()).toEqual([expect.stringContaining('`separator` is empty in block layout')])
+		})
+
+		it('reports an empty separator once per distinct value, not once per prop sync', () => {
+			// Both adapters call `props.set` on EVERY render, so a report placed upstream of an
+			// equality gate would flood the console. `rowSeparator` re-evaluates only when
+			// `layout` or `separator` actually moves.
+			const errors = captureErrors()
 			store.props.set({layout: 'block', separator: '', options: []})
-			expect(() => store.host.container(document.createElement('div'))).toThrow('separator must be non-empty')
+			store.host.container(document.createElement('div'))
+			for (let i = 0; i < 10; i++) store.props.set({layout: 'block', separator: '', options: []})
+
+			expect(errors()).toHaveLength(1)
 		})
 
 		it('brackets a leading mark with empty text roots in inline layout', () => {
@@ -212,6 +241,66 @@ describe('TokenModel', () => {
 
 			// '@[x]' is no longer a markup, so the whole value is one text token.
 			expect(store.tokens.nodes()).toHaveLength(1)
+		})
+	})
+
+	describe('a markup the parser cannot use', () => {
+		it('reports it and drops that option, keeping the others and their indices', () => {
+			// A leading placeholder is a first-hour typo. It used to throw out of the props watch
+			// `props.set` drains — i.e. out of the adapter's own render hook, which unmounts a
+			// React root and leaves a Vue editor rendering its stale tree.
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				options: [{markup: '__value__ says'}, {markup: '@[__value__]'}],
+				defaultValue: 'hi @[m]',
+			})
+			store.host.container(document.createElement('div'))
+
+			expect(treeShape(store.tokens.nodes())).toMatchObject([
+				{kind: 'text', content: 'hi '},
+				{kind: 'mark'},
+				{kind: 'text', content: ''},
+			])
+			// The dropped option leaves a HOLE, not a gap: the survivor keeps ITS index, which is
+			// what resolves its per-option `Mark`.
+			const mark = store.tokens.nodes()[1]
+			if (mark.kind !== 'mark') throw new Error('expected a mark')
+			expect(mark.value()).toBe('m')
+			expect(mark.descriptor.index).toBe(1)
+			expect(errors()).toEqual([
+				expect.stringContaining('A markup must not begin with a placeholder'),
+				// The half that names the consequence — the message is the parser's, the verdict is not.
+			])
+			expect(errors()[0]).toContain('This option contributes no markup')
+		})
+
+		it('renders a plain-text editor when every markup is unusable', () => {
+			const errors = captureErrors()
+			// No placeholder at all. `Markup` is a template-literal union, so TS already refuses
+			// this LITERAL — the cast is what a computed string, or a JS consumer, arrives as. The
+			// leading-placeholder rule above needs no cast: that shape typechecks.
+			// oxlint-disable-next-line no-unsafe-type-assertion
+			const markup = 'plain' as Markup
+			store.props.set({Mark: () => null, options: [{markup}], defaultValue: 'hi @[m]'})
+			store.host.container(document.createElement('div'))
+
+			expect(treeShape(store.tokens.nodes())).toMatchObject([{kind: 'text', content: 'hi @[m]'}])
+			expect(errors()).toHaveLength(1)
+		})
+
+		it('reports once per distinct markup set, not once per prop sync', () => {
+			// The report sits DOWNSTREAM of `#markups`' shallow-equality gate over the markup
+			// STRINGS. `props.options` compares elements by reference, so the inline array below —
+			// what a JSX prop produces on every render — is never equal to the last one.
+			const errors = captureErrors()
+			store.props.set({Mark: () => null, options: [{markup: '__value__ says'}], defaultValue: 'hi'})
+			store.host.container(document.createElement('div'))
+			for (let i = 0; i < 10; i++) {
+				store.props.set({Mark: () => null, options: [{markup: '__value__ says'}], defaultValue: 'hi'})
+			}
+
+			expect(errors()).toHaveLength(1)
 		})
 	})
 })

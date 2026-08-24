@@ -238,7 +238,7 @@ export class BlockController {
 	 * which is every commit and every re-wrapped line.
 	 */
 	rowAt(clientY: number): {id: number; rect: DOMRect} | undefined {
-		if (!this.props.layout.isBlock()) return undefined
+		if (this.tokens.rowSeparator() === undefined) return undefined
 		const rows = this.tokens.nodes()
 		let low = 0
 		let high = rows.length - 1
@@ -393,7 +393,7 @@ export class BlockController {
 	#runMenuVerb(verb: (row: TreeNode) => void): void {
 		const menu = this.state.menu()
 		this.closeMenu()
-		if (!menu || !this.props.layout.isBlock()) return
+		if (!menu || this.tokens.rowSeparator() === undefined) return
 		const row = this.tokens.find(menu.id)
 		if (row) verb(row)
 	}

@@ -9,7 +9,7 @@ title: "MarkedInput"
 function MarkedInput<TMarkProps, TOverlayProps>(props): Element;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:92](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L92)
+Defined in: [react/markput/src/components/MarkedInput.tsx:95](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L95)
 
 ## Type Parameters
 

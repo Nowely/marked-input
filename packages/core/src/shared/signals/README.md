@@ -381,6 +381,8 @@ batch(() => {
 })
 ```
 
+The window covers the batch body and nothing else. It closes before the batch drains its queued effects, so a watcher that writes a `readonly` signal while the batch flushes is refused like any other outside write and gets `false` back. That also means a watcher that throws mid-drain cannot strand the scope open — `mutableScope` is module state, and a leak there would disable the readonly gate for the rest of the process.
+
 ### `untracked(fn)`
 
 Runs `fn` without tracking reactive dependencies. Useful inside effects where you need to read a signal without subscribing to it.

@@ -15,11 +15,11 @@ export class Store {
 
 	readonly tokens = new TokenModel(this.props, this.host)
 
-	readonly slots = new SlotsFeature(this.props)
+	readonly slots = new SlotsFeature(this.props, this.tokens)
 
 	readonly edit = new EditController(this.tokens, this.props)
 
-	readonly keyboard = new KeyboardController(this.host, this.edit, this.tokens, this.props)
+	readonly keyboard = new KeyboardController(this.host, this.edit, this.tokens)
 
 	readonly overlay = new OverlayController(this.host, this.props, this.edit, this.tokens)
 	readonly block = new BlockController(this.host, this.props, this.tokens)

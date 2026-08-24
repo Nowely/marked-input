@@ -453,14 +453,13 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 	})
 })
 
-describe('boundary: block mode adopts rows (issue 08)', () => {
-	function blockSetup(source: string, isBlock: () => boolean) {
+describe('boundary: a separator adopts rows (issue 08)', () => {
+	function blockSetup(source: string, separator: () => string | undefined) {
 		const tree = createTokenTree(parseRowsValue(undefined, source, '\n\n'))
 		const boundary = createBoundary({
 			tree,
 			parser: () => undefined,
-			isBlock,
-			separator: () => '\n\n',
+			separator,
 			controlled: () => false,
 			onChange: () => {},
 		})
@@ -469,7 +468,7 @@ describe('boundary: block mode adopts rows (issue 08)', () => {
 	}
 
 	it('adopts rows only — the block top level is RowNodes, trailing empty row included', () => {
-		const {tree, tx} = blockSetup('aaa\n\nbbb\n\n', () => true)
+		const {tree, tx} = blockSetup('aaa\n\nbbb\n\n', () => '\n\n')
 		expect(tree.roots().map(n => n.kind)).toEqual(['row', 'row', 'row'])
 
 		expect(tx.applyRange({start: 1, end: 1, insertedLength: 0}, 'X')).toBe(true)
@@ -480,24 +479,24 @@ describe('boundary: block mode adopts rows (issue 08)', () => {
 	})
 
 	it('an empty row keeps ONE empty text child — its caret target', () => {
-		const {tree} = blockSetup('\n\nbbb\n\n', () => true)
+		const {tree} = blockSetup('\n\nbbb\n\n', () => '\n\n')
 		const row = tree.roots()[0]
 		if (row.kind !== 'row') throw new Error('expected a row')
 		expect(row.children().map(n => n.kind)).toEqual(['text'])
 		expect(row.children()[0].position).toEqual({start: 0, end: 0})
 	})
 
-	it('an isBlock flip reparses the same value to the flat inline shape', () => {
-		const {tree, boundary} = blockSetup('aaa\n\nbbb\n\n', () => false)
-		// The tree was BUILT as rows; the first inline adoption restores the flat parse,
-		// which is exactly what an isBlock flip must do.
+	it('dropping the separator reparses the same value to the flat shape', () => {
+		const {tree, boundary} = blockSetup('aaa\n\nbbb\n\n', () => undefined)
+		// The tree was BUILT as rows; the first rowless adoption restores the flat parse,
+		// which is exactly what leaving block layout must do.
 		boundary.reparse()
 		expect(tree.roots().map(n => n.kind)).toEqual(['text'])
 	})
 
 	it('the projection is identical either way — the separator is literal text in both', () => {
-		const block = blockSetup('aaa\n\nbbb\n\n', () => true)
-		const inline = blockSetup('aaa\n\nbbb\n\n', () => false)
+		const block = blockSetup('aaa\n\nbbb\n\n', () => '\n\n')
+		const inline = blockSetup('aaa\n\nbbb\n\n', () => undefined)
 		inline.boundary.reparse()
 		expect(block.tree.value()).toBe(inline.tree.value())
 	})

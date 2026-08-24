@@ -55,7 +55,8 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		leadingGap,
 	} = scanMarkupStructure(markup)
 
-	validateMarkup(counts, leadingGap, markup)
+	const invalid = validateMarkup(counts, leadingGap, markup)
+	if (invalid) throw new Error(invalid)
 
 	const hasTwoValues = counts.value === 2
 
@@ -148,17 +149,32 @@ function scanMarkupStructure(markup: string) {
 }
 
 /**
+ * The markup's rule violation, or `undefined` when it is well-formed — the same question
+ * {@link createMarkupDescriptor} asks before it throws, for a caller that must NOT throw.
+ *
+ * The props boundary is that caller: both adapters push `options` into core from a per-render
+ * lifecycle hook, where an exception takes down the consumer's render root rather than landing
+ * in their own frame (`shared/reportBadProp`). It drops the offending markup and asks this for
+ * the message. Every other caller reaches the parser in its own stack — the public `denote`,
+ * direct construction — and keeps the throw.
+ */
+export function markupError(markup: Markup): string | undefined {
+	const {counts, leadingGap} = scanMarkupStructure(markup)
+	return validateMarkup(counts, leadingGap, markup)
+}
+
+/**
  * Validates markup placeholder counts and placement
  */
-function validateMarkup(counts: Record<GapType, number>, leadingGap: boolean, markup: string): void {
+function validateMarkup(counts: Record<GapType, number>, leadingGap: boolean, markup: string): string | undefined {
 	// The row separator is structural (issue 08): a leading-gap form like '__slot__\n\n'
 	// has nothing to delimit it on the left — the backwards chain that used to repair it
 	// handed a leading marker the previous row's text, and is gone. Declared invalid
 	// instead of silently misparsed.
 	if (leadingGap) {
-		throw new Error(
+		return (
 			`Invalid markup: "${markup}". A markup must not begin with a placeholder — ` +
-				'the row separator is an editor-level setting, not part of any markup'
+			'the row separator is an editor-level setting, not part of any markup'
 		)
 	}
 
@@ -170,15 +186,15 @@ function validateMarkup(counts: Record<GapType, number>, leadingGap: boolean, ma
 
 	for (const {count, max, name} of rules) {
 		if (count > max) {
-			throw new Error(`Invalid markup: "${markup}". Max ${max} "${name}" placeholders, got ${count}`)
+			return `Invalid markup: "${markup}". Max ${max} "${name}" placeholders, got ${count}`
 		}
 	}
 
 	if (counts.value === 0 && counts.slot === 0) {
-		throw new Error(
-			`Invalid markup: "${markup}". Need at least one "${PLACEHOLDER.Value}" or "${PLACEHOLDER.Slot}"`
-		)
+		return `Invalid markup: "${markup}". Need at least one "${PLACEHOLDER.Value}" or "${PLACEHOLDER.Slot}"`
 	}
+
+	return undefined
 }
 
 /**

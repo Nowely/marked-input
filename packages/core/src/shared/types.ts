@@ -40,6 +40,14 @@ export interface CoreOption {
 	 * - `__meta__` - additional metadata (plain text, no nesting)
 	 * - `__slot__` - content supporting nested structures
 	 *
+	 * A markup that breaks those rules — no placeholder at all, too many of one kind, or a
+	 * LEADING placeholder — is reported to the console and contributes nothing: the option is
+	 * skipped and every other option keeps its index. Omitting `markup` does the same, quietly.
+	 *
+	 * "Contributes nothing" reaches the overlay too. An `overlay.trigger` on such an option still
+	 * OPENS the overlay — that is how an overlay-only option is written — but choosing a
+	 * suggestion inserts nothing rather than writing a markup no parser can read back.
+	 *
 	 * @example
 	 * // Simple value
 	 * "@[__value__]"

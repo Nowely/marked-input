@@ -1,4 +1,5 @@
 import type {DomRef} from '../../../shared/editorContracts'
+import {reportBadProp} from '../../../shared/reportBadProp'
 import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import {shallow} from '../../../shared/utils/shallow'
@@ -11,6 +12,7 @@ import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
 import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
+import {markupError} from '../parser/core/MarkupDescriptor'
 import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
@@ -294,6 +296,32 @@ export class TokenModel {
 	readonly nodes: Computed<readonly TreeNode[]> = computed(() => this.#tree.roots())
 
 	/**
+	 * THE effective row separator: the string rows are split on, or `undefined` for a document
+	 * that has no rows. The one place the `layout` enum is read — every other row question in
+	 * core asks this, or the tree it produced, instead of the mode.
+	 *
+	 * PROPS-derived, deliberately not tree-derived. `SlotsFeature.containerProps` reads it
+	 * during SERVER rendering, where no container has attached and the tree is therefore still
+	 * empty, so a tree-derived answer would drop block layout's grip gutter from the SSR pass.
+	 *
+	 * AN EMPTY `separator` ANSWERS `undefined`: an empty separator separates nothing, and
+	 * `undefined` is already this seam's word for "no rows" — the row parse, the block feature
+	 * gates, the grip gutter and `BlockController` all turn off together on it. `Parser.parseRows`
+	 * refuses `''` outright, so the alternative is an exception raised inside the adapter's own
+	 * render hook; see `shared/reportBadProp`.
+	 */
+	readonly rowSeparator: Computed<string | undefined> = computed(() => {
+		if (!this.props.layout.isBlock()) return undefined
+		const separator = this.props.separator()
+		if (separator !== '') return separator
+		reportBadProp(
+			'`separator` is empty in block layout, so this editor has no rows and no row controls. ' +
+				'Pass a non-empty separator (the default is "\\n\\n") or drop `layout="block"`.'
+		)
+		return undefined
+	})
+
+	/**
 	 * The index of the ROOT whose subtree contains `id` — the block ROW index. Off the live
 	 * tree, which is the only source: a handle carries no positional data.
 	 */
@@ -363,15 +391,19 @@ export class TokenModel {
 			// installed right after can bind a pre-built DOM — the shell is live once the
 			// container attaches.
 			//
-			// ONE watch over the (value, parser, isBlock, separator) tuple: a simultaneous props
+			// ONE watch over the (value, parser, rowSeparator) tuple: a simultaneous props
 			// change is one wave and one commit, where separate watches would adopt (and
 			// announce) several times.
+			//
+			// `rowSeparator`, not the two props behind it: the tuple carries what the PARSE
+			// consumes, so a `separator` a rowless document never reads no longer wakes the
+			// clock. Its dependency on `separator` appears and disappears with `layout`,
+			// which a computed tracks per evaluation.
 			watch(
 				() => ({
 					value: this.props.value(),
 					parser: this.#parser(),
-					isBlock: this.props.layout.isBlock(),
-					separator: this.props.separator(),
+					separator: this.rowSeparator(),
 				}),
 				(next, previous) => {
 					if (previous && next.value === previous.value && this.#seeded()) {
@@ -425,9 +457,16 @@ export class TokenModel {
 		return Mark != null || this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
 	})
 
+	/**
+	 * DOWNSTREAM OF {@link #markups}' EQUALITY GATE, and that is what makes the validation
+	 * report affordable here: `props.options` compares array ELEMENTS by reference, so an
+	 * inline `options={[…]}` prop is never equal across renders, while `#markups` compares the
+	 * MARKUP STRINGS. Validating in `#markups` reports once per parent render; validating here
+	 * reports once per distinct markup set. Pinned in `TokenModel.parse.spec`.
+	 */
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
 		if (!this.#hasMark()) return
-		const markups = this.#markups()
+		const markups = this.#markups().map(usableMarkup)
 		if (!markups.some(Boolean)) return
 		return new Parser(markups)
 	})
@@ -582,8 +621,7 @@ export class TokenModel {
 	readonly #boundary = createBoundary({
 		tree: this.#tree,
 		parser: () => this.#parser(),
-		isBlock: () => this.props.layout.isBlock(),
-		separator: () => this.props.separator(),
+		separator: () => this.rowSeparator(),
 		controlled: () => this.props.value() !== undefined,
 		selection: () => this.selection.anchors(),
 		onChange: next => this.props.onChange()?.(next),
@@ -690,6 +728,24 @@ export class TokenModel {
 			this.#pipeline.rebind(id)
 		}
 	}
+}
+
+/**
+ * An option's `markup` as the parser may take it: the string itself, or `undefined` when it
+ * breaks a markup rule. `undefined` is the shape the parser ALREADY supports for "this option
+ * contributes no markup" — `MarkupRegistry` skips it while preserving the original indices, so
+ * the surviving options keep their `descriptor.index` and their per-option `Mark`.
+ *
+ * Refused rather than thrown for the reason in `shared/reportBadProp`: the parser is rebuilt
+ * inside the props watch a per-render `props.set` drains, so the throw would leave the
+ * adapter's own lifecycle hook.
+ */
+function usableMarkup(markup: Markup | undefined): Markup | undefined {
+	if (markup === undefined) return undefined
+	const invalid = markupError(markup)
+	if (invalid === undefined) return markup
+	reportBadProp(`${invalid}. This option contributes no markup.`)
+	return undefined
 }
 
 /**

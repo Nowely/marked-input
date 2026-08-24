@@ -127,6 +127,21 @@ Implementation is a separate effort after this map.
   node-keyed structures do survive, both `TokenModel`'s, and both are DOM
   identity rather than UI state. The surviving half — whether MARKS want
   per-node state — is now [09](issues/09-per-node-state-for-marks.md).
+- [The layout switch survives as a PROP and dies as a MODE](issues/05-layout-switch-fate.md)
+  (2026-08-24, Option A, implemented) — `TokenModel.rowSeparator`
+  (`layout.isBlock() ? separator() : undefined`) is the SOLE reader of the enum;
+  the parse fork, the four feature gates and the grip gutter all ask it, and
+  React's `Container` picks a wrapper per NODE, which deletes the `n as BlockRow`
+  cast. Grep for `layout.isBlock` outside specs returns one hit, the computed
+  itself. BEHAVIOR CHANGE declared: in a document with no rows a `separator`
+  change no longer pulses the commit clock (measured 1 → 0, identical tree both
+  sides) — and since `OverlayController` re-probes its `'change'` trigger on that
+  pulse, a dismissed overlay no longer re-opens when an inline editor's
+  `separator` moves. Two shapes were REJECTED on measurement and should not be
+  re-proposed — a tree-derived grip gutter (`containerProps` is read during SSR,
+  where the tree is empty), and a per-node `v-if` in Vue's `Container` (Vue gives
+  each `<template v-for>` item its own Fragment, and a Fragment mounts two empty
+  text anchors, so it would push 2N stray text nodes into the editing host).
 - [Stale premises](issues/07-stale-premises-sweep.md) — the filter is gone; 9
   stale sites fixed (the census found 3), backlog 09 and 15 both closed as
   non-reproducing, and `anchorAt`'s `side` param is now measured
@@ -220,8 +235,8 @@ map's destination; recorded so they are not lost.
   The hand-assembled test's live claims keep their pins elsewhere; the
   invariant that REPLACES the parameter had none and is now pinned in
   `tree/anchors.spec.ts`.
-- **A boundary on a slot mark's own presentation wrapper declines, and the
-  keystroke is dropped** — **CONFIRMED and FIXED.** `domBoundary.ts:99` asked
+- ~~**A boundary on a slot mark's own presentation wrapper declines, and the
+  keystroke is dropped**~~ — **CONFIRMED and FIXED.** `domBoundary.ts:99` asked
   `hasEditableAncestorBefore`, which read the INHERITED `isContentEditable`; a
   slot mark's root, its slot host and every consumer element between them go
   BARE by design (`bind.ts`'s `applyEditableState` freezes only the path's
@@ -257,7 +272,7 @@ map's destination; recorded so they are not lost.
   `childBoundaryAnchor`'s no-neighbour fallback answers `{after: row}` under
   `'nearest'` and the driver then physically drags the caret to the row's end.
   If ever wanted, it lands alone with its own gate.
-- **The keydown delete arm swallowed word and line deletes.** It claimed every
+- ~~**The keydown delete arm swallowed word and line deletes.**~~ It claimed every
   Backspace/Delete regardless of modifiers and answered with a ONE-CHARACTER
   step, so the browser never emitted the `deleteWordBackward` that carries the
   extent. Fixed in 03 rather than reported, because 03 hands block the same arm
@@ -314,6 +329,79 @@ because the fixes changed:
 A pin asserted against a shape the mechanism does not actually govern reads
 exactly like a pin that works. Mutating the mechanism — not re-reading the test
 — is what tells them apart.
+
+## Found during ticket 05, all closed
+
+Surfaced while shrinking the layout enum. None belongs to the map's destination;
+recorded here so the effort's ledger is complete.
+
+- ~~**A throw during `flush()` disarmed every readonly signal, process-wide.**~~
+  **FIXED** (`9ab844ca`). `batch` restored `mutableScope` after the drain, so a
+  watcher that threw skipped the restore — and because the flag is module state,
+  the readonly gate stayed open for the rest of the process, survived unmount,
+  and was inherited by a second editor on the page. Unclearable too: every later
+  batch read the leaked `true` as its own `prevMutable`. Three doors measured;
+  the decisive one is a throwing effect CLEANUP inside the signals module, which
+  no call-site guard could have closed. The restore now runs before the drain,
+  which also narrows the mutable window to the batch BODY — measured cost in
+  this repo: zero, by a probe at the gate that counted the writes depending on
+  the wider window across all three projects.
+- ~~**Two prop values crashed the editor outright.**~~ **FIXED**
+  (`c1796e14`, `a252512c`). `layout="block"` with `separator: ''`, and a typo'd
+  `markup`, both threw out of `props.set` — which both adapters call from a hook
+  that runs on every render, so the throw landed in commit phase: React tore
+  down the whole render root, Vue kept a stale tree while the signals already
+  held new values. A tolerance census over 13 bad prop values settled the
+  policy — refuse-and-carry-on was already the house rule, and these two were
+  the ONLY prop values in the whole surface that threw. Both now refuse at the
+  props boundary and report once; the parser keeps its throws for callers that
+  reach it in their own stack.
+- ~~**An unusable markup still reached the overlay.**~~ **FIXED** (`1fdd9280`),
+  after an adversarial review found the fix above incomplete. The parser dropped
+  the markup but `OverlayController` read `props.options()` raw, so `choose()`
+  wrote the `annotate` output into the document as plain text — and with no
+  `Mark` on the option the parser never ran at all, so it happened in silence.
+  `choose()` now refuses and reports. The overlay still OPENS: an option with a
+  trigger and no markup is a shipping configuration, used twice in our own
+  stories.
+- ~~**The caret is destroyed by a runtime layout/separator change.**~~
+  **REFUTED** — see [05](issues/05-layout-switch-fate.md). Measured on three
+  levels; `adopt` already expresses the selection as an offset before it mutates
+  anything. What the reports saw was the raw DOM offset moving, because block
+  renders no separators.
+- ~~**ADR-0009 says a layout flip is a remount.**~~ **REFUTED** — it says
+  reparse. "Remount" was this map's own wording, and re-measurement confirms one
+  commit pulse, the same Store, container and tree object.
+
+## Where to resume
+
+Last worked 2026-08-25. `b0` is at PR #301 (14 commits: ticket 05, the signals
+leak, the prop crashes, the overlay hole). Five tickets resolved, four open.
+
+**Blocked on the maintainer, and blocking the map's own destination:** the
+component surface, [02](issues/02-one-render-path.md), is PAUSED. Direction is
+taken — `slots`/`slotProps` dissolve into `Container` / `Row` / `containerProps`
+and `Mark={Tag}` is untouched — but two sub-questions are deliberately open:
+`Row` versus `Block`, and whether `Overlay` is renamed. [06](issues/06-is-a-row-a-token.md)
+(the glossary) waits on the first of those, and [08](issues/08-assemble-the-spec.md)
+waits on both. Nothing else can finish the map.
+
+**Takeable without unpausing anything:** [09](issues/09-per-node-state-for-marks.md)
+— would a Mark ever want per-node state? It may well close with a record, the way
+01 did. Its one live caveat: a mark can be NESTED, so "the hovered mark" is not
+one id the way "the hovered row" is, and the row-shaped answer may not port.
+
+**Loose ends left with reasons, none urgent:** `{@link anchorEquals}` ships in
+both adapters' `.d.ts` pointing at an unexported symbol (same class as the one
+fixed in `15348640`); `choose()` on `markup: undefined` does not close the
+overlay, so selecting a suggestion is a total no-op; and `captureErrors` is
+duplicated across two specs.
+
+**Method note worth carrying.** Three "known defects" dissolved on measurement
+this week — the row-interior boundary (produced only by a test helper), the
+caret, and the remount claim. All three had travelled several rounds of
+retelling without ever being re-measured. Re-measure an inherited PLAUSIBLE
+before planning work around it, not after.
 
 ## Out of scope
 
