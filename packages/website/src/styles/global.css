@@ -18,9 +18,13 @@
 	--sl-color-accent-high: #ffce70;
 }
 
-/* Wordmark in ink, not accent: the accent is for interactive elements. */
+/* Wordmark in ink, not accent: the accent is for interactive elements.
+ * Tighter gap and heavier tracking-tight face to match the storybook lockup. */
 .site-title {
 	color: #26313a;
+	font-weight: 700;
+	gap: 0.625rem;
+	letter-spacing: -0.02em;
 }
 
 :root[data-theme='dark'] .site-title {
