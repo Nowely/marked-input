@@ -1,7 +1,15 @@
+import {resolve} from 'node:path'
+
 import type {StorybookConfig as ReactConfig} from '@storybook/react-vite'
 import type {StorybookConfig as VueConfig} from '@storybook/vue3-vite'
 import type {Indexer} from 'storybook/internal/types'
 import type {InlineConfig} from 'vite'
+
+// `CACHE_DIR` (set per instance in `package.json`) reaches Vite as an alias replacement in
+// builder-vite's external-globals plugin, and Vite cannot resolve a relative one — it warns on
+// every externalized storybook import instead. Storybook resolves the value against cwd anyway,
+// so this only spells out what it already means.
+process.env.CACHE_DIR &&= resolve(process.env.CACHE_DIR)
 
 // The default CSF indexer only matches `*.stories.tsx`. A page's story file is either
 // framework-free (`Base.stories.ts`, shared by both instances) or carries the framework

@@ -121,16 +121,21 @@
 	align-items: center;
 	opacity: 0;
 	transition: opacity 0.15s ease;
+	/* On the PANEL, never on the visibility variants. The layer turns pointer events off and the
+	   panel is what turns them back on, for as long as it is mounted. Chromium re-hit-tests the
+	   drag origin right after `dragstart`, and kills the drag when the hit no longer lands inside
+	   the drag source — so a panel that goes `pointer-events: none` in the very commit
+	   `dragstart` triggers cannot be dragged at all. `beginDrag` sets `dragging` inside that
+	   handler and both adapters flush the render before it returns, which is exactly that commit. */
+	pointer-events: auto;
 }
 
 .SidePanelVisible {
 	opacity: 1;
-	pointer-events: auto;
 }
 
 .SidePanelAlways {
 	opacity: 1;
-	pointer-events: auto;
 	transition: none;
 }
 
