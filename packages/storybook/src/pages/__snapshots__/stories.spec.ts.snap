@@ -718,7 +718,7 @@ exports[`Component: stories > Nested stories > Story ComplexHtmlDocument 1`] = `
                     <span>
                       <code>
                         <span>
-                          <span>MarkedInput</span>
+                          <span>Markput</span>
                         </span>
                       </code>
                     </span>
@@ -1198,7 +1198,7 @@ exports[`Component: stories > Nested stories > Story ComplexHtmlDocument 1`] = `
                     <span>
                       <small>
                         <span>
-                          <span>© 2025 MarkedInput Library. Built with </span>
+                          <span>© 2025 Markput Library. Built with </span>
                           <span>
                             <strong>
                               <span>
