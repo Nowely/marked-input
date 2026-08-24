@@ -1,17 +1,13 @@
 import {describe, expect, it, vi} from 'vitest'
 
 /**
- * KNOWN DEFECT, PINNED RED. Every case here is `it.fails`: it states the behavior the signals
- * module owes and records that today it does the opposite. `batch()` restores `mutableScope`
- * AFTER `flush()`, so a watcher that throws while the batch drains skips the restore and leaves
- * the flag `true` for the rest of the PROCESS — from then on every readonly signal in the module
- * accepts writes.
+ * `mutableScope` is module state, so a batch that fails to restore it disables the readonly gate
+ * for the rest of the PROCESS — no later batch can clear it, since each one reads the leaked
+ * `true` as its own `prevMutable` and restores it faithfully. `batch()` therefore restores the
+ * flag BEFORE draining, where no user code can skip the restore.
  *
- * When the primitive is fixed, drop the `.fails` — vitest reports a passing `it.fails` as a
- * failure, so the fix cannot land without touching this file.
- *
- * Each case takes a FRESH module graph: `mutableScope` is module-level state and the leak is
- * unrecoverable inside one instance (second case), so a leaked instance would poison the rest.
+ * Each case takes a FRESH module graph, because a regression here poisons every test after it
+ * rather than failing in place.
  */
 async function freshSignals() {
 	vi.resetModules()
@@ -31,7 +27,7 @@ function mount(store: {host: {container: (el: HTMLElement) => unknown}}) {
 }
 
 describe('batch({mutable: true}) when the flush throws', () => {
-	it.fails('leaves readonly signals writable for the rest of the module', async () => {
+	it('leaves every readonly signal in the module still refusing writes', async () => {
 		const {batch, effect, signal} = await freshSignals()
 
 		const trigger = signal<number>({initial: 0, readonly: true})
@@ -48,7 +44,7 @@ describe('batch({mutable: true}) when the flush throws', () => {
 		expect(unrelated()).toBe(1)
 	})
 
-	it.fails('is recoverable by a later well-behaved batch', async () => {
+	it('keeps the gate closed across every later batch', async () => {
 		const {batch, effect, signal} = await freshSignals()
 
 		const trigger = signal<number>({initial: 0, readonly: true})
@@ -60,15 +56,15 @@ describe('batch({mutable: true}) when the flush throws', () => {
 
 		expect(() => batch(() => void trigger(1), {mutable: true})).toThrow('boom')
 
-		// Nothing can clear the flag: every later batch reads the already-true value as its own
-		// `prevMutable` and faithfully restores it.
+		// A leak would be permanent: every later batch reads the leaked `true` as its own
+		// `prevMutable` and faithfully restores it, so neither of these can undo it.
 		batch(() => {})
 		batch(() => {}, {mutable: true})
 
 		expect(unrelated(99)).toBe(false)
 	})
 
-	it.fails('survives a throwing effect cleanup', async () => {
+	it('survives a throwing effect cleanup', async () => {
 		const {batch, effect, signal} = await freshSignals()
 
 		const gate = signal<boolean>({initial: true, readonly: true})
@@ -88,7 +84,7 @@ describe('batch({mutable: true}) when the flush throws', () => {
 		expect(unrelated(99)).toBe(false)
 	})
 
-	it.fails('survives a block editor given an empty separator', async () => {
+	it('survives a block editor given an empty separator', async () => {
 		const Store = await freshStore()
 
 		const store = new Store()
@@ -110,7 +106,7 @@ describe('batch({mutable: true}) when the flush throws', () => {
 		expect(store.props.readOnly()).toBe(false)
 	})
 
-	it.fails('survives an invalid markup pattern', async () => {
+	it('survives an invalid markup pattern', async () => {
 		const Store = await freshStore()
 
 		const store = new Store()

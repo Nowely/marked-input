@@ -710,10 +710,15 @@ export function batch(fn: () => void, opts?: BatchOptions): void {
 	try {
 		fn()
 	} finally {
+		// Restore BEFORE the flush, on both counts. `flush()` runs user code and can throw —
+		// after it, the restore is not guaranteed to run at all, and `mutableScope` is module
+		// state, so one throw would leave every readonly signal in the process writable. And the
+		// window is meant to cover the caller's own writes, not the cascade they trigger: a
+		// watcher writing a prop back is the mirrored state `readonly` exists to refuse.
+		mutableScope = prevMutable
 		if (!--batchDepth) {
 			flush()
 		}
-		mutableScope = prevMutable
 	}
 }
 
