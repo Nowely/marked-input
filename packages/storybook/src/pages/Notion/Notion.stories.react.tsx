@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react-vite'
 import {defineMark, type StyledMarkProps} from '../../shared/lib/marks'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 import {APOLLO_DOC} from './document'
+import {notionOptions} from './options'
 
 /**
  * The notion-like probe (`docs/scratch/notion-like/map.md`). It builds a Notion-shaped
@@ -55,6 +56,23 @@ export const MarkdownPreset: StoryObj<MarkedInputProps<StyledMarkProps>> = {
 	args: {
 		Mark: DocumentMark,
 		options: markdownOptions,
+		defaultValue: APOLLO_DOC,
+		layout: 'block',
+		draggable: true,
+		slotProps: {container: {style: PAGE_STYLE}},
+	},
+}
+
+/**
+ * The same document with the page's own markups added: the frontmatter becomes a properties
+ * panel, each table becomes a table, and the quote gets its rule. All three are whole-block
+ * markups, and two of the three are atomic — the price of a table the parser cannot describe
+ * per cell.
+ */
+export const Document: StoryObj<MarkedInputProps<StyledMarkProps>> = {
+	args: {
+		Mark: DocumentMark,
+		options: notionOptions,
 		defaultValue: APOLLO_DOC,
 		layout: 'block',
 		draggable: true,

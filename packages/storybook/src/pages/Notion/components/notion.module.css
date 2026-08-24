@@ -1,0 +1,57 @@
+.properties {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 4px 16px;
+	margin: 0 0 1.5em;
+	padding: 12px 14px;
+	border: 1px solid #e6e4e1;
+	border-radius: 6px;
+	background: #fbfbfa;
+	font-size: 14px;
+	white-space: normal;
+}
+
+.propertyName {
+	color: #8b8781;
+}
+
+.propertyValue {
+	color: #37352f;
+}
+
+/* Table layout out of `div`s, not `<table>`: a mark renders inside core's
+   `<span contenteditable="false">` wrapper, where table elements are invalid nesting. */
+.table {
+	display: table;
+	width: 100%;
+	margin: 0.5em 0;
+	border-collapse: collapse;
+	font-size: 14px;
+	white-space: normal;
+}
+
+.row {
+	display: table-row;
+}
+
+.cell {
+	display: table-cell;
+	padding: 6px 10px;
+	border: 1px solid #e6e4e1;
+	text-align: left;
+}
+
+.headerCell {
+	composes: cell;
+	background: #fbfbfa;
+	font-weight: 500;
+	color: #8b8781;
+}
+
+.quote {
+	display: block;
+	margin: 0.5em 0;
+	padding-left: 14px;
+	border-left: 3px solid #37352f;
+	font-size: 1.05em;
+}
