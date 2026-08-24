@@ -1,3 +1,16 @@
+<!--
+	Absolute raw URLs: this README is copied into the npm packages by prepack.js,
+	where repo-relative paths resolve to nothing. npm also strips <picture>, so the
+	<img> fallback is the tile variant, readable on both npm themes.
+-->
+<p align="center">
+	<picture>
+		<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Nowely/marked-input/next/docs/brand/mark-dark.svg">
+		<source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Nowely/marked-input/next/docs/brand/mark.svg">
+		<img src="https://raw.githubusercontent.com/Nowely/marked-input/next/docs/brand/mark-tile.svg" alt="Markput logo" width="96" height="96">
+	</picture>
+</p>
+
 # [Marked Input](https://marked-input.vercel.app)
 
 [![npm version](https://img.shields.io/npm/v/@markput/react.svg?style=flat&label=react)](https://www.npmjs.com/package/@markput/react) [![min zipped size](https://img.shields.io/bundlephobia/minzip/@markput/react?label=react+gzip)](https://bundlephobia.com/package/@markput/react) [![React Storybook](https://gw.alipayobjects.com/mdn/ob_info/afts/img/A*CQXNTZfK1vwAAAAAAAAAAABjAQAAAQ/original)](https://markput-react.vercel.app)

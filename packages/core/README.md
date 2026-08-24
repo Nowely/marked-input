@@ -1,3 +1,8 @@
+<picture>
+	<source media="(prefers-color-scheme: dark)" srcset="../../docs/brand/mark-dark.svg">
+	<img src="../../docs/brand/mark.svg" alt="Markput logo" width="64" height="64">
+</picture>
+
 # @markput/core
 
 The dependency-free TypeScript runtime behind Markput: the token tree, the string
