@@ -88,6 +88,7 @@ async function trimMarkdownTrailingWhitespace(directory: string): Promise<void> 
 
 // https://astro.build/config
 export default defineConfig({
+	site: 'https://markput.vercel.app',
 	adapter: vercel({
 		imageService: true,
 		webAnalytics: {enabled: true},
@@ -118,6 +119,13 @@ export default defineConfig({
 				light: './src/assets/logo-light.svg',
 				dark: './src/assets/logo-dark.svg',
 			},
+			head: [
+				{tag: 'link', attrs: {rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png'}},
+				{tag: 'link', attrs: {rel: 'manifest', href: '/site.webmanifest'}},
+				{tag: 'meta', attrs: {property: 'og:image', content: 'https://markput.vercel.app/og.png'}},
+				// no twitter:image: X falls back to og:image; the card type alone controls the large unfurl
+				{tag: 'meta', attrs: {name: 'twitter:card', content: 'summary_large_image'}},
+			],
 			lastUpdated: true,
 			editLink: {
 				baseUrl: 'https://github.com/Nowely/marked-input/edit/next/packages/website/src/content/docs',
