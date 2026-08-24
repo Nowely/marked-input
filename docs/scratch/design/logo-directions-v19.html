@@ -158,6 +158,87 @@
 		text-transform: uppercase;
 	}
 
+	.picks-section {
+		background: #fffbeb;
+		border: 2px solid #f5b800;
+		border-radius: 16px;
+		margin: 0 0 26px;
+		padding: 16px 18px 18px;
+	}
+
+	.picks-section h2 {
+		margin: 0 0 6px;
+	}
+
+	.picks-grid {
+		display: grid;
+		gap: 12px;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+	}
+
+	.pick {
+		background: #ffffff;
+		border: 1px solid #d8e2ea;
+		border-radius: 12px;
+		color: #26313a;
+		display: grid;
+		gap: 6px;
+		justify-items: center;
+		padding: 12px 10px;
+		position: relative;
+		text-align: center;
+		text-decoration: none;
+	}
+
+	.pick:hover {
+		border-color: #26313a;
+	}
+
+	.pick-rank {
+		background: #26313a;
+		border-radius: 999px;
+		color: #ffffff;
+		font-size: 11px;
+		font-weight: 700;
+		height: 18px;
+		left: 8px;
+		line-height: 18px;
+		min-width: 18px;
+		position: absolute;
+		top: 8px;
+	}
+
+	.pick-stage svg {
+		height: 72px;
+		width: 72px;
+	}
+
+	.pick-name {
+		color: #0f172a;
+		font-size: 12px;
+		font-weight: 700;
+	}
+
+	.pick-why {
+		color: #64748b;
+		font-size: 11px;
+		line-height: 1.35;
+	}
+
+	.num-range {
+		background: #eef2f7;
+		border-radius: 4px;
+		color: #0f172a;
+		font-size: 11px;
+		font-weight: 600;
+		margin-left: 8px;
+		padding: 1px 6px;
+	}
+
+	.card {
+		scroll-margin-top: 16px;
+	}
+
 	@media (max-width: 1280px) {
 		.logo-grid {
 			grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -167,6 +248,10 @@
 	@media (max-width: 980px) {
 		.logo-grid {
 			grid-template-columns: 1fr;
+		}
+
+		.picks-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 </style>
@@ -883,15 +968,109 @@
 	</defs>
 </svg>
 
+<div class="picks-section">
+	<h2>Claude&#8217;s Pick</h2>
+	<p class="subtitle">
+		Top 10 after a full review of all 99 plus a three-judge panel (brand craft / brief fit / small-size
+		practicality). #31 and #17 were the only unanimous picks across all three judges. Click a pick to jump to its
+		card.
+	</p>
+	<div class="picks-grid">
+		<a class="pick" href="#c31">
+			<span class="pick-rank">1</span>
+			<span class="pick-stage"
+				><svg viewBox="0 0 180 180"><use href="#s31" /></svg
+			></span>
+			<span class="pick-name">31. Caret Chips</span>
+			<span class="pick-why"
+				>Unanimous across all three judges; the caret-between-chips gesture is the product.</span
+			>
+		</a>
+		<a class="pick" href="#c17">
+			<span class="pick-rank">2</span>
+			<span class="pick-stage"
+				><svg viewBox="0 0 180 180"><use href="#s17" /></svg
+			></span>
+			<span class="pick-name">17. Notch Chip</span>
+			<span class="pick-why">Unanimous; the input field itself as one keyhole silhouette.</span>
+		</a>
+		<a class="pick" href="#c6">
+			<span class="pick-rank">3</span>
+			<span class="pick-stage"
+				><svg viewBox="0 0 180 180"><use href="#s6" /></svg
+			></span>
+			<span class="pick-name">6. Twin Arches</span>
+			<span class="pick-why">Purest Figma-soft implied m; the caret dot reads as a blinking cursor.</span>
+		</a>
+		<a class="pick" href="#c16">
+			<span class="pick-rank">4</span>
+			<span class="pick-stage"
+				><svg viewBox="0 0 180 180"><use href="#s16" /></svg
+			></span>
+			<span class="pick-name">16. Bridge Blob</span>
+			<span class="pick-why">Bulletproof at 16px; the M carried entirely by negative space.</span>
+		</a>
+		<a class="pick" href="#c10">
+			<span class="pick-rank">5</span>
+			<span class="pick-stage"
+				><svg viewBox="0 0 180 180"><use href="#s10" /></svg
+			></span>
+			<span class="pick-name">10. Valley Quarters</span>
+			<span class="pick-why">Most Figma-anatomy mark; the yellow cell reads as a real inline token.</span>
+		</a>
+		<a class="pick" href="#c80">
+			<span class="pick-rank">6</span>
+			<span class="pick-stage"
+				><svg viewBox="0 0 180 180"><use href="#s80" /></svg
+			></span>
+			<span class="pick-name">80. Inline Pill</span>
+			<span class="pick-why">Clearest picture of the actual product: text with one live pill.</span>
+		</a>
+		<a class="pick" href="#c55">
+			<span class="pick-rank">7</span>
+			<span class="pick-stage"
+				><svg viewBox="0 0 180 180"><use href="#s55" /></svg
+			></span>
+			<span class="pick-name">55. Chip Window</span>
+			<span class="pick-why">Practicality judge&#8217;s #1: a ready-made square avatar.</span>
+		</a>
+		<a class="pick" href="#c82">
+			<span class="pick-rank">8</span>
+			<span class="pick-stage"
+				><svg viewBox="0 0 180 180"><use href="#s82" /></svg
+			></span>
+			<span class="pick-name">82. Bracket Value</span>
+			<span class="pick-why">Craft judge&#8217;s #1: [ &#8226; ] &#8212; one idea at minimum means.</span>
+		</a>
+		<a class="pick" href="#c35">
+			<span class="pick-rank">9</span>
+			<span class="pick-stage"
+				><svg viewBox="0 0 180 180"><use href="#s35" /></svg
+			></span>
+			<span class="pick-name">35. Notched Field</span>
+			<span class="pick-why">Best dark badge; negative-space m in a favicon-native tile.</span>
+		</a>
+		<a class="pick" href="#c81">
+			<span class="pick-rank">10</span>
+			<span class="pick-stage"
+				><svg viewBox="0 0 180 180"><use href="#s81" /></svg
+			></span>
+			<span class="pick-name">81. Mention Aperture</span>
+			<span class="pick-why">Most polished clean-slate mark; an @-ring holding a token.</span>
+		</a>
+	</div>
+</div>
+
 <h2 class="part">
 	Part 1 — Hybrid symbolism <span>Block Stack × Figma anatomy × implied M; verified, 1 of 48 dropped</span>
 </h2>
 
 <h3 class="family-heading">
-	A — Chip Rhythm <span>Block Stack language — chip rows/columns whose heights pulse up-down-up to whisper M.</span>
+	A — Chip Rhythm <span class="num-range">№ 1–8</span
+	><span>Block Stack language — chip rows/columns whose heights pulse up-down-up to whisper M.</span>
 </h3>
 <div class="logo-grid">
-	<div class="card">
+	<div class="card" id="c1">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s1" /></svg>
 		</div>
@@ -914,7 +1093,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c2">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s2" /></svg>
 		</div>
@@ -937,7 +1116,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c3">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s3" /></svg>
 		</div>
@@ -960,7 +1139,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c4">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s4" /></svg>
 		</div>
@@ -983,7 +1162,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c5">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s5" /></svg>
 		</div>
@@ -1006,7 +1185,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c6">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s6" /></svg>
 		</div>
@@ -1030,7 +1209,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c7">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s7" /></svg>
 		</div>
@@ -1054,7 +1233,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c8">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s8" /></svg>
 		</div>
@@ -1081,14 +1260,14 @@
 </div>
 
 <h3 class="family-heading">
-	B — Figma Grid
-	<span
+	B — Figma Grid <span class="num-range">№ 9–15</span
+	><span
 		>Tight grid of mixed soft primitives — half-pills, circles, rounded squares — Figma anatomy, M only
 		hinted.</span
 	>
 </h3>
 <div class="logo-grid">
-	<div class="card">
+	<div class="card" id="c9">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s9" /></svg>
 		</div>
@@ -1111,7 +1290,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c10">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s10" /></svg>
 		</div>
@@ -1134,7 +1313,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c11">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s11" /></svg>
 		</div>
@@ -1157,7 +1336,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c12">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s12" /></svg>
 		</div>
@@ -1180,7 +1359,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c13">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s13" /></svg>
 		</div>
@@ -1203,7 +1382,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c14">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s14" /></svg>
 		</div>
@@ -1226,7 +1405,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c15">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s15" /></svg>
 		</div>
@@ -1252,14 +1431,14 @@
 </div>
 
 <h3 class="family-heading">
-	C — Valley Notch
-	<span
+	C — Valley Notch <span class="num-range">№ 16–23</span
+	><span
 		>A solid soft cluster with one V/U valley between two rounded peaks — "two peaks, one valley" as pure
 		symbol.</span
 	>
 </h3>
 <div class="logo-grid">
-	<div class="card">
+	<div class="card" id="c16">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s16" /></svg>
 		</div>
@@ -1282,7 +1461,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c17">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s17" /></svg>
 		</div>
@@ -1305,7 +1484,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c18">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s18" /></svg>
 		</div>
@@ -1328,7 +1507,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c19">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s19" /></svg>
 		</div>
@@ -1351,7 +1530,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c20">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s20" /></svg>
 		</div>
@@ -1374,7 +1553,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c21">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s21" /></svg>
 		</div>
@@ -1397,7 +1576,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c22">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s22" /></svg>
 		</div>
@@ -1420,7 +1599,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c23">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s23" /></svg>
 		</div>
@@ -1446,11 +1625,11 @@
 </div>
 
 <h3 class="family-heading">
-	D — Pill Trio
-	<span>Three-four vertical pills, outer tall middle short — abstract M rhythm at minimum shape count.</span>
+	D — Pill Trio <span class="num-range">№ 24–31</span
+	><span>Three-four vertical pills, outer tall middle short — abstract M rhythm at minimum shape count.</span>
 </h3>
 <div class="logo-grid">
-	<div class="card">
+	<div class="card" id="c24">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s24" /></svg>
 		</div>
@@ -1473,7 +1652,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c25">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s25" /></svg>
 		</div>
@@ -1496,7 +1675,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c26">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s26" /></svg>
 		</div>
@@ -1519,7 +1698,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c27">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s27" /></svg>
 		</div>
@@ -1542,7 +1721,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c28">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s28" /></svg>
 		</div>
@@ -1565,7 +1744,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c29">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s29" /></svg>
 		</div>
@@ -1588,7 +1767,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c30">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s30" /></svg>
 		</div>
@@ -1611,7 +1790,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c31">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s31" /></svg>
 		</div>
@@ -1637,11 +1816,11 @@
 </div>
 
 <h3 class="family-heading">
-	E — Twin Arches
-	<span>Lowercase-m energy from Figma curves — two soft arches, quarter/half-rounds, no glyph outline.</span>
+	E — Twin Arches <span class="num-range">№ 32–39</span
+	><span>Lowercase-m energy from Figma curves — two soft arches, quarter/half-rounds, no glyph outline.</span>
 </h3>
 <div class="logo-grid">
-	<div class="card">
+	<div class="card" id="c32">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s32" /></svg>
 		</div>
@@ -1664,7 +1843,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c33">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s33" /></svg>
 		</div>
@@ -1687,7 +1866,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c34">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s34" /></svg>
 		</div>
@@ -1710,7 +1889,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c35">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s35" /></svg>
 		</div>
@@ -1733,7 +1912,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c36">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s36" /></svg>
 		</div>
@@ -1756,7 +1935,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c37">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s37" /></svg>
 		</div>
@@ -1779,7 +1958,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c38">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s38" /></svg>
 		</div>
@@ -1802,7 +1981,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c39">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s39" /></svg>
 		</div>
@@ -1828,11 +2007,11 @@
 </div>
 
 <h3 class="family-heading">
-	F — Field Peaks
-	<span>A chip-row baseline (the input field) with soft shapes rising above it — content over field.</span>
+	F — Field Peaks <span class="num-range">№ 40–47</span
+	><span>A chip-row baseline (the input field) with soft shapes rising above it — content over field.</span>
 </h3>
 <div class="logo-grid">
-	<div class="card">
+	<div class="card" id="c40">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s40" /></svg>
 		</div>
@@ -1855,7 +2034,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c41">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s41" /></svg>
 		</div>
@@ -1878,7 +2057,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c42">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s42" /></svg>
 		</div>
@@ -1901,7 +2080,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c43">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s43" /></svg>
 		</div>
@@ -1924,7 +2103,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c44">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s44" /></svg>
 		</div>
@@ -1947,7 +2126,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c45">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s45" /></svg>
 		</div>
@@ -1970,7 +2149,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c46">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s46" /></svg>
 		</div>
@@ -1993,7 +2172,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c47">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s47" /></svg>
 		</div>
@@ -2026,9 +2205,11 @@
 	>
 </h2>
 
-<h3 class="family-heading">Editing-cue M <span>Explicit letterform family — kept for breadth.</span></h3>
+<h3 class="family-heading">
+	Editing-cue M <span class="num-range">№ 48–55</span><span>Explicit letterform family — kept for breadth.</span>
+</h3>
 <div class="logo-grid">
-	<div class="card">
+	<div class="card" id="c48">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s48" /></svg>
 		</div>
@@ -2051,7 +2232,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c49">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s49" /></svg>
 		</div>
@@ -2071,7 +2252,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c50">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s50" /></svg>
 		</div>
@@ -2091,7 +2272,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c51">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s51" /></svg>
 		</div>
@@ -2111,7 +2292,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c52">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s52" /></svg>
 		</div>
@@ -2131,7 +2312,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c53">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s53" /></svg>
 		</div>
@@ -2154,7 +2335,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c54">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s54" /></svg>
 		</div>
@@ -2174,7 +2355,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c55">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s55" /></svg>
 		</div>
@@ -2199,9 +2380,11 @@
 	</div>
 </div>
 
-<h3 class="family-heading">Ribbon M <span>Explicit letterform family — kept for breadth.</span></h3>
+<h3 class="family-heading">
+	Ribbon M <span class="num-range">№ 56–63</span><span>Explicit letterform family — kept for breadth.</span>
+</h3>
 <div class="logo-grid">
-	<div class="card">
+	<div class="card" id="c56">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s56" /></svg>
 		</div>
@@ -2224,7 +2407,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c57">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s57" /></svg>
 		</div>
@@ -2247,7 +2430,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c58">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s58" /></svg>
 		</div>
@@ -2269,7 +2452,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c59">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s59" /></svg>
 		</div>
@@ -2292,7 +2475,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c60">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s60" /></svg>
 		</div>
@@ -2312,7 +2495,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c61">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s61" /></svg>
 		</div>
@@ -2332,7 +2515,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c62">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s62" /></svg>
 		</div>
@@ -2352,7 +2535,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c63">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s63" /></svg>
 		</div>
@@ -2377,9 +2560,12 @@
 	</div>
 </div>
 
-<h3 class="family-heading">Chip-built M (recovered) <span>Explicit letterform family — kept for breadth.</span></h3>
+<h3 class="family-heading">
+	Chip-built M (recovered) <span class="num-range">№ 64–71</span
+	><span>Explicit letterform family — kept for breadth.</span>
+</h3>
 <div class="logo-grid">
-	<div class="card">
+	<div class="card" id="c64">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s64" /></svg>
 		</div>
@@ -2402,7 +2588,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c65">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s65" /></svg>
 		</div>
@@ -2425,7 +2611,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c66">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s66" /></svg>
 		</div>
@@ -2448,7 +2634,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c67">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s67" /></svg>
 		</div>
@@ -2471,7 +2657,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c68">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s68" /></svg>
 		</div>
@@ -2494,7 +2680,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c69">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s69" /></svg>
 		</div>
@@ -2517,7 +2703,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c70">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s70" /></svg>
 		</div>
@@ -2540,7 +2726,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c71">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s71" /></svg>
 		</div>
@@ -2565,9 +2751,12 @@
 	</div>
 </div>
 
-<h3 class="family-heading">Markup M (recovered) <span>Explicit letterform family — kept for breadth.</span></h3>
+<h3 class="family-heading">
+	Markup M (recovered) <span class="num-range">№ 72–79</span
+	><span>Explicit letterform family — kept for breadth.</span>
+</h3>
 <div class="logo-grid">
-	<div class="card">
+	<div class="card" id="c72">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s72" /></svg>
 		</div>
@@ -2590,7 +2779,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c73">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s73" /></svg>
 		</div>
@@ -2610,7 +2799,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c74">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s74" /></svg>
 		</div>
@@ -2630,7 +2819,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c75">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s75" /></svg>
 		</div>
@@ -2652,7 +2841,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c76">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s76" /></svg>
 		</div>
@@ -2672,7 +2861,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c77">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s77" /></svg>
 		</div>
@@ -2692,7 +2881,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c78">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s78" /></svg>
 		</div>
@@ -2715,7 +2904,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c79">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s79" /></svg>
 		</div>
@@ -2744,9 +2933,12 @@
 	Part 3 — Clean slate <span>one agent, empty brief, own palette; it studied the repo and designed from scratch</span>
 </h2>
 
-<h3 class="family-heading">Clean Slate <span>No imposed direction — concepts and colors are the agent's own.</span></h3>
+<h3 class="family-heading">
+	Clean Slate <span class="num-range">№ 80–99</span
+	><span>No imposed direction — concepts and colors are the agent's own.</span>
+</h3>
 <div class="logo-grid grid-clean">
-	<div class="card">
+	<div class="card" id="c80">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s80" /></svg>
 		</div>
@@ -2768,7 +2960,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c81">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s81" /></svg>
 		</div>
@@ -2788,7 +2980,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c82">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s82" /></svg>
 		</div>
@@ -2808,7 +3000,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c83">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s83" /></svg>
 		</div>
@@ -2828,7 +3020,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c84">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s84" /></svg>
 		</div>
@@ -2848,7 +3040,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c85">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s85" /></svg>
 		</div>
@@ -2868,7 +3060,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c86">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s86" /></svg>
 		</div>
@@ -2888,7 +3080,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c87">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s87" /></svg>
 		</div>
@@ -2908,7 +3100,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c88">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s88" /></svg>
 		</div>
@@ -2928,7 +3120,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c89">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s89" /></svg>
 		</div>
@@ -2948,7 +3140,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c90">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s90" /></svg>
 		</div>
@@ -2968,7 +3160,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c91">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s91" /></svg>
 		</div>
@@ -2988,7 +3180,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c92">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s92" /></svg>
 		</div>
@@ -3008,7 +3200,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c93">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s93" /></svg>
 		</div>
@@ -3028,7 +3220,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c94">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s94" /></svg>
 		</div>
@@ -3048,7 +3240,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c95">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s95" /></svg>
 		</div>
@@ -3068,7 +3260,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c96">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s96" /></svg>
 		</div>
@@ -3088,7 +3280,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c97">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s97" /></svg>
 		</div>
@@ -3108,7 +3300,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c98">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s98" /></svg>
 		</div>
@@ -3128,7 +3320,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="card">
+	<div class="card" id="c99">
 		<div class="logo-stage">
 			<svg class="hero-mark" viewBox="0 0 180 180"><use href="#s99" /></svg>
 		</div>
