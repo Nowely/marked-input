@@ -68,11 +68,16 @@ export function rowPass(
  * and is never a row boundary.
  */
 function findSeparators(value: string, separator: string, matches: Match[]): PositionRange[] {
+	const extents = mergeExtents(matches)
 	const result: PositionRange[] = []
+	let extentIndex = 0
 	let at = value.indexOf(separator)
 	while (at !== -1) {
 		const end = at + separator.length
-		const overlaps = matches.some(match => match.start < end && match.end > at)
+		// Occurrences only ever move forward, so the cursor into the disjoint
+		// extents never rewinds: one walk covers the whole document.
+		while (extentIndex < extents.length && extents[extentIndex].end <= at) extentIndex++
+		const overlaps = extentIndex < extents.length && extents[extentIndex].start < end
 		if (!overlaps) {
 			result.push({start: at, end})
 			at = value.indexOf(separator, end)
@@ -85,6 +90,49 @@ function findSeparators(value: string, separator: string, matches: Match[]): Pos
 		}
 	}
 	return result
+}
+
+/**
+ * The accepted extents as a disjoint, ascending cover. Matches nest and touch,
+ * so their extents are not disjoint on their own; the union is, and an
+ * occurrence overlaps some match exactly when it overlaps the union.
+ *
+ * Requires `matches` sorted by `start` — `PatternMatcher` keeps its completed
+ * list in that order and nothing downstream moves a `start`.
+ */
+function mergeExtents(matches: Match[]): PositionRange[] {
+	const extents: PositionRange[] = []
+	let current: PositionRange | undefined
+	for (const match of matches) {
+		if (current && match.start <= current.end) {
+			if (match.end > current.end) current.end = match.end
+		} else {
+			current = {start: match.start, end: match.end}
+			extents.push(current)
+		}
+	}
+	return extents
+}
+
+/**
+ * The first row boundary at or after `position`. `findSeparators` emits its
+ * occurrences in ascending order, so the lookup is a lower bound — the match a
+ * linear scan would have stopped at, without walking every earlier boundary.
+ */
+function firstBoundaryFrom(separators: PositionRange[], position: number): PositionRange | undefined {
+	let left = 0
+	let right = separators.length
+
+	while (left < right) {
+		const mid = Math.floor((left + right) / 2)
+		if (separators[mid].start < position) {
+			left = mid + 1
+		} else {
+			right = mid
+		}
+	}
+
+	return separators[left]
 }
 
 /**
@@ -108,7 +156,7 @@ export function closeTrailingGaps(matches: Match[], separators: PositionRange[],
 
 		const {trailingGap} = match.descriptor
 		if (trailingGap) {
-			const boundary = separators.find(separator => separator.start >= match.end)
+			const boundary = firstBoundaryFrom(separators, match.end)
 			// The stack holds slot-gapped matches only, so the parent's slot is always present
 			const scopeEnd = enclosing[enclosing.length - 1]?.gaps.slot?.end ?? valueLength
 			const end = Math.max(match.end, Math.min(boundary?.start ?? valueLength, scopeEnd))
