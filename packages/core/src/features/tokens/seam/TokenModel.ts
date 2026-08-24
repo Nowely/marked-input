@@ -294,6 +294,19 @@ export class TokenModel {
 	readonly nodes: Computed<readonly TreeNode[]> = computed(() => this.#tree.roots())
 
 	/**
+	 * THE effective row separator: the string rows are split on, or `undefined` for a document
+	 * that has no rows. The one place the `layout` enum is read — every other row question in
+	 * core asks this, or the tree it produced, instead of the mode.
+	 *
+	 * PROPS-derived, deliberately not tree-derived. `SlotsFeature.containerProps` reads it
+	 * during SERVER rendering, where no container has attached and the tree is therefore still
+	 * empty, so a tree-derived answer would drop block layout's grip gutter from the SSR pass.
+	 */
+	readonly rowSeparator: Computed<string | undefined> = computed(() =>
+		this.props.layout.isBlock() ? this.props.separator() : undefined
+	)
+
+	/**
 	 * The index of the ROOT whose subtree contains `id` — the block ROW index. Off the live
 	 * tree, which is the only source: a handle carries no positional data.
 	 */

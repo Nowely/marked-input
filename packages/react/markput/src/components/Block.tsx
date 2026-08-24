@@ -8,11 +8,11 @@ import {Token} from './Token'
 
 import styles from '@markput/core/styles.module.css'
 
-// Not exported from core's public index: block layout's only root kind (RowNode), named locally.
-export type BlockRow = Extract<TreeNode, {kind: 'row'}>
-
 interface BlockProps {
-	node: BlockRow
+	// `RowNode` is not exported from core's public index, so the row kind is extracted here.
+	// `Container` narrows on `node.kind` and hands over an already-row node — this used to be
+	// an unchecked cast at that call site.
+	node: Extract<TreeNode, {kind: 'row'}>
 }
 
 /**
