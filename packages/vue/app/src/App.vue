@@ -1,83 +1,53 @@
 <script setup lang="ts">
-import type {MarkProps, Markup} from '@markput/vue'
-import {denote, MarkedInput} from '@markput/vue'
-import {ref, computed, h, type FunctionalComponent} from 'vue'
+import {denote} from '@markput/vue'
+import {computed, ref} from 'vue'
 
-const PrimaryMarkup: Markup = '@[__value__](primary:__meta__)'
-const DefaultMarkup: Markup = '@[__value__](default:__meta__)'
+import {DOCS_URL, GITHUB_URL, INITIAL_VALUE, MentionMarkup, STORYBOOK_URL, TagMarkup} from './content'
+import Editor from './Editor.vue'
 
-const Button: FunctionalComponent<{label: string; primary?: boolean; onClick?: () => void}> = props => {
-	return h(
-		'button',
-		{
-			type: 'button',
-			onClick: props.onClick,
-			style: {
-				backgroundColor: props.primary ? '#1ea7fd' : 'transparent',
-				color: props.primary ? 'white' : '#333',
-				border: props.primary ? 'none' : '1px solid #ccc',
-				borderRadius: '3em',
-				padding: '0.5em 1em',
-				cursor: 'pointer',
-				fontSize: '14px',
-			},
-		},
-		props.label
-	)
-}
+const value = ref(INITIAL_VALUE)
+const status = ref('')
 
-const options = [
-	{
-		markup: PrimaryMarkup,
-		mark: ({value, meta}: MarkProps) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
-		overlay: {
-			trigger: '@',
-			data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-		},
-	},
-	{
-		markup: DefaultMarkup,
-		mark: ({value}: MarkProps) => ({label: value || ''}),
-		overlay: {
-			trigger: '/',
-			data: ['Seventh', 'Eight', 'Ninth'],
-		},
-	},
-]
-
-const value = ref(
-	"Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!\n" +
-		'Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n' +
-		'For found mark used @[annotations](default:123).'
-)
-
-const displayText = computed(() => denote(value.value, mark => mark.value, [PrimaryMarkup, DefaultMarkup]))
-
-function onChange(v: string) {
-	value.value = v
-}
+const displayText = computed(() => denote(value.value, mark => mark.value, [MentionMarkup, TagMarkup]))
 </script>
 
 <template>
-	<MarkedInput
-		:Mark="Button"
-		:options="options"
-		:value="value"
-		:slotProps="{
-			container: {
-				onClick: () => console.log('onClick'),
-				onInput: () => console.log('onInput'),
-				onBlur: () => console.log('onBlur'),
-				onFocus: () => console.log('onFocus'),
-				onKeydown: () => console.log('onKeyDown'),
-			},
-		}"
-		@change="onChange"
-	/>
+	<div class="page">
+		<header class="header">
+			<a class="brand" :href="DOCS_URL">
+				<svg aria-hidden="true" height="28" viewBox="28 28 124 124" width="28">
+					<path d="M105 146A58 58 0 1 1 146 105L122.8 98.8A34 34 0 1 0 98.8 122.8Z" fill="currentColor" />
+					<rect fill="#FFB020" height="32" rx="10" width="32" x="74" y="74" />
+					<circle cx="122.5" cy="122.5" fill="#FFB020" r="14" />
+				</svg>
+				Markput
+			</a>
+			<nav class="nav">
+				<a :href="DOCS_URL">Docs</a>
+				<a :href="GITHUB_URL">GitHub</a>
+			</nav>
+		</header>
 
-	<br />
-	<b>Plain text:</b>
-	<pre>{{ value }}</pre>
-	<b>Display text (denoted):</b>
-	<pre>{{ displayText }}</pre>
+		<main class="hero">
+			<h1>One plain string. Rich inline marks.</h1>
+			<p>
+				The mentions and tags below are ordinary Vue components rendered from markup inside a plain string. Edit
+				the text — the string underneath follows.
+			</p>
+
+			<Editor :value="value" @change="value = $event" @markClick="status = $event" />
+			<p class="status">{{ status }}</p>
+
+			<div class="panel-label">The value — one plain string</div>
+			<pre class="panel">{{ value }}</pre>
+
+			<div class="panel-label">denote() — display text</div>
+			<pre class="panel">{{ displayText }}</pre>
+		</main>
+
+		<footer class="footer">
+			Built with @markput/vue · <a :href="DOCS_URL">Docs</a> · <a :href="STORYBOOK_URL">Storybook</a> ·
+			<a :href="GITHUB_URL">GitHub</a>
+		</footer>
+	</div>
 </template>

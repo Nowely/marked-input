@@ -1,38 +1,224 @@
+/* Keep in sync with packages/vue/app/src/style.css (byte-identical). */
+
 :root {
-	font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-	font-size: 16px;
-	line-height: 24px;
-	font-weight: 400;
-
-	/*color-scheme: light dark;*/
-	/*color: rgba(255, 255, 255, 0.87);*/
-	/*background-color: #242424;*/
-
-	font-synthesis: none;
-	text-rendering: optimizeLegibility;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-	-webkit-text-size-adjust: 100%;
+	color-scheme: light dark;
+	--paper: #ffffff;
+	--paper-raised: #f2f5f8;
+	--ink: #26313a;
+	--ink-soft: #5b6770;
+	--line: #d9e0e6;
+	--amber: #ffb020;
+	/* Ochre: AA on white — brand rule from the website palette. */
+	--accent-text: #9c6a00;
+	--chip-ink: #26313a;
 }
 
-body {
-	margin: 0;
-	display: flex;
-	place-items: center;
-	min-width: 320px;
-	min-height: 100vh;
-}
-
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
 	:root {
-		color: #213547;
-		background-color: #ffffff;
+		--paper: #17181c;
+		--paper-raised: #1f2126;
+		--ink: #f2f5f8;
+		--ink-soft: #9aa4ad;
+		--line: #32363d;
+		--accent-text: #ffb020;
 	}
 }
 
-#root {
-	max-width: 1280px;
+body {
+	background: var(--paper);
+	color: var(--ink);
+	font:
+		16px/1.6 -apple-system,
+		BlinkMacSystemFont,
+		'Segoe UI',
+		Helvetica,
+		Arial,
+		sans-serif;
+	margin: 0;
+}
+
+.page {
 	margin: 0 auto;
-	padding: 2rem;
-	text-align: center;
+	max-width: 780px;
+	padding: 2.5rem 1.5rem 4rem;
+}
+
+.header {
+	align-items: center;
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 2.5rem;
+}
+
+.brand {
+	align-items: center;
+	color: var(--ink);
+	display: flex;
+	font-size: 1.5rem;
+	font-weight: 700;
+	gap: 0.625rem;
+	letter-spacing: -0.02em;
+	text-decoration: none;
+}
+
+.nav {
+	display: flex;
+	gap: 1.25rem;
+}
+
+.nav a {
+	color: var(--ink-soft);
+	font-size: 0.95rem;
+	text-decoration: none;
+}
+
+.nav a:hover {
+	color: var(--accent-text);
+}
+
+.hero h1 {
+	font-size: 1.75rem;
+	letter-spacing: -0.02em;
+	margin: 0 0 0.5rem;
+}
+
+.hero p {
+	color: var(--ink-soft);
+	margin: 0 0 1.5rem;
+}
+
+.editor {
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	caret-color: var(--ink);
+	line-height: 1.7;
+	padding: 0.875rem 1rem;
+}
+
+.editor [contenteditable]:focus {
+	outline: none;
+}
+
+.editor:focus-within {
+	border-color: var(--amber);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 25%, transparent);
+}
+
+.status {
+	color: var(--ink-soft);
+	font-size: 0.85rem;
+	margin: 0.5rem 0 0;
+	min-height: 1.3em;
+}
+
+.chip {
+	border-radius: 999px;
+	display: inline-block;
+	font-size: 0.95em;
+	font-weight: 600;
+	padding: 0.1em 0.6em;
+}
+
+.chip-mention {
+	background: var(--amber);
+	border: 0;
+	color: var(--chip-ink);
+	cursor: pointer;
+	font: inherit;
+	font-size: 0.95em;
+	font-weight: 600;
+	line-height: inherit;
+}
+
+.chip-tag {
+	background: transparent;
+	border: 1px solid var(--amber);
+	color: var(--accent-text);
+}
+
+.overlay {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	box-shadow: 0 8px 24px rgb(38 49 58 / 0.18);
+	min-width: 220px;
+	padding: 4px;
+	position: fixed;
+	z-index: 10;
+}
+
+.overlay-item {
+	align-items: center;
+	background: transparent;
+	border: 0;
+	border-radius: 6px;
+	color: var(--ink);
+	cursor: pointer;
+	display: flex;
+	font: inherit;
+	gap: 0.5rem;
+	padding: 0.4rem 0.6rem;
+	text-align: left;
+	width: 100%;
+}
+
+.overlay-item:hover,
+.overlay-item.active {
+	background: var(--paper-raised);
+}
+
+.overlay-avatar {
+	align-items: center;
+	background: var(--ink);
+	border-radius: 999px;
+	color: var(--amber);
+	display: inline-flex;
+	font-size: 0.75rem;
+	font-weight: 700;
+	height: 1.5rem;
+	justify-content: center;
+	width: 1.5rem;
+}
+
+.overlay-hint {
+	color: var(--ink-soft);
+	font-size: 0.85em;
+	margin-left: auto;
+}
+
+.panel-label {
+	color: var(--ink-soft);
+	font-size: 0.75rem;
+	letter-spacing: 0.08em;
+	margin: 1.75rem 0 0.5rem;
+	text-transform: uppercase;
+}
+
+.panel {
+	background: var(--paper-raised);
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	font:
+		0.85rem/1.6 ui-monospace,
+		'SF Mono',
+		Menlo,
+		Consolas,
+		monospace;
+	margin: 0;
+	overflow-x: auto;
+	padding: 1rem;
+	white-space: pre-wrap;
+}
+
+.footer {
+	border-top: 1px solid var(--line);
+	color: var(--ink-soft);
+	font-size: 0.85rem;
+	margin-top: 3rem;
+	padding-top: 1rem;
+}
+
+.footer a {
+	color: var(--accent-text);
+	text-decoration: none;
 }
