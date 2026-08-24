@@ -114,6 +114,10 @@ export default defineConfig({
 				}),
 			],
 			title: 'Markput',
+			logo: {
+				light: './src/assets/logo-light.svg',
+				dark: './src/assets/logo-dark.svg',
+			},
 			lastUpdated: true,
 			editLink: {
 				baseUrl: 'https://github.com/Nowely/marked-input/edit/next/packages/website/src/content/docs',
