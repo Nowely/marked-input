@@ -1,0 +1,773 @@
+<meta charset="utf-8" />
+<style>
+	body {
+		font-family: system-ui, sans-serif;
+		margin: 24px;
+	}
+
+	h2 {
+		margin: 28px 0 6px;
+	}
+
+	.hint {
+		color: #64748b;
+		font-size: 13px;
+		margin: 0 0 14px;
+	}
+
+	.row {
+		display: grid;
+		gap: 14px;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		margin-bottom: 18px;
+	}
+
+	.cell {
+		border: 1px solid #d8e2ea;
+		border-radius: 12px;
+		overflow: hidden;
+	}
+
+	.cell h3 {
+		font-size: 13px;
+		margin: 10px 12px 2px;
+	}
+
+	.cell p {
+		color: #475569;
+		font-size: 11px;
+		margin: 0 12px 10px;
+	}
+
+	.tiles {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.tile {
+		align-items: center;
+		display: grid;
+		gap: 10px;
+		justify-items: center;
+		padding: 14px 8px;
+	}
+
+	.tile.light {
+		background: #f8fafc;
+	}
+
+	.tile.dark {
+		background: #17181c;
+	}
+
+	.sizes {
+		align-items: center;
+		display: flex;
+		gap: 12px;
+	}
+</style>
+
+<h2>Dot treatment</h2>
+<p class="hint">Each tile: 96 / 32 / 16 px. Light tile #f8fafc, dark tile #17181c (Starlight dark bg).</p>
+<div class="row">
+	<div class="cell">
+		<h3>A. Baseline — dark dot</h3>
+		<p>As shipped: single amber accent, dot is part of the @-glyph.</p>
+		<div class="tiles">
+			<div class="tile light">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#26313a"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#26313a" cx="122.5" cy="122.5" r="12" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#26313a" cx="122.5" cy="122.5" r="12" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#26313a" cx="122.5" cy="122.5" r="12" />
+					</svg>
+				</span>
+			</div>
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#ffffff"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#ffffff" cx="122.5" cy="122.5" r="12" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#ffffff"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#ffffff" cx="122.5" cy="122.5" r="12" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#ffffff"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#ffffff" cx="122.5" cy="122.5" r="12" />
+					</svg>
+				</span>
+			</div>
+		</div>
+	</div>
+	<div class="cell">
+		<h3>B. Amber dot</h3>
+		<p>Dot joins the accent: mention completed, period lit.</p>
+		<div class="tiles">
+			<div class="tile light">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#26313a"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+					</svg>
+				</span>
+			</div>
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#ffffff"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#ffffff"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#ffffff"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+					</svg>
+				</span>
+			</div>
+		</div>
+	</div>
+	<div class="cell">
+		<h3>C. No dot</h3>
+		<p>Silent-ring cut: aperture alone carries the @.</p>
+		<div class="tiles">
+			<div class="tile light">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#26313a"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					</svg>
+				</span>
+			</div>
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#ffffff"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#ffffff"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#ffffff"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					</svg>
+				</span>
+			</div>
+		</div>
+	</div>
+	<div class="cell">
+		<h3>D. Inverted accents</h3>
+		<p>Amber dot, ink token — the tail glows instead of the core.</p>
+		<div class="tiles">
+			<div class="tile light">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#26313a"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#26313a" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#26313a" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#26313a" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+					</svg>
+				</span>
+			</div>
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#ffffff"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#ffffff" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#ffffff"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#ffffff" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#ffffff"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#ffffff" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" />
+					</svg>
+				</span>
+			</div>
+		</div>
+	</div>
+	<div class="cell">
+		<h3>E. Favicon-tuned + amber dot</h3>
+		<p>Band 24u (was 20), aperture 60&deg; (was 50&deg;), dot r14 (was 12).</p>
+		<div class="tiles">
+			<div class="tile light">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path fill="#26313a" d="M105 146A58 58 0 1 1 146 105L122.8 98.8A34 34 0 1 0 98.8 122.8Z" />
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="14" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path fill="#26313a" d="M105 146A58 58 0 1 1 146 105L122.8 98.8A34 34 0 1 0 98.8 122.8Z" />
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="14" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path fill="#26313a" d="M105 146A58 58 0 1 1 146 105L122.8 98.8A34 34 0 1 0 98.8 122.8Z" />
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="14" />
+					</svg>
+				</span>
+			</div>
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path fill="#ffffff" d="M105 146A58 58 0 1 1 146 105L122.8 98.8A34 34 0 1 0 98.8 122.8Z" />
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#ffffff" cx="122.5" cy="122.5" r="14" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path fill="#ffffff" d="M105 146A58 58 0 1 1 146 105L122.8 98.8A34 34 0 1 0 98.8 122.8Z" />
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#ffffff" cx="122.5" cy="122.5" r="14" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path fill="#ffffff" d="M105 146A58 58 0 1 1 146 105L122.8 98.8A34 34 0 1 0 98.8 122.8Z" />
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#ffffff" cx="122.5" cy="122.5" r="14" />
+					</svg>
+				</span>
+			</div>
+		</div>
+	</div>
+</div>
+
+<h2>Dark ink — how white is white?</h2>
+<p class="hint">
+	Same geometry (baseline A), dark tile #17181c. Left to right: pure #ffffff &middot; off-white #f2f5f8 (slate-tinted,
+	mirrors how #26313a isn&#8217;t pure black) &middot; Starlight gray-2 #b3b9c4 (too dim, for reference).
+</p>
+<div class="row">
+	<div class="cell">
+		<h3>W1. Pure #ffffff</h3>
+		<p>GitHub/Vercel school: max contrast, hardest pop.</p>
+		<div class="tiles">
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#ffffff"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#ffffff" cx="122.5" cy="122.5" r="12" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#ffffff"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#ffffff" cx="122.5" cy="122.5" r="12" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#ffffff"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#ffffff" cx="122.5" cy="122.5" r="12" />
+					</svg>
+				</span>
+			</div>
+			<div class="tile dark">
+				<span style="color: #b3b9c4; font-size: 12px">next to wordmark:</span>
+				<span style="align-items: center; display: flex; gap: 8px"
+					><svg width="28" height="28" viewBox="28 28 124 124">
+						<path
+							fill="#ffffff"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#ffffff" cx="122.5" cy="122.5" r="12" /></svg
+					><b style="color: #eceef2; font-size: 18px">Markput</b></span
+				>
+			</div>
+		</div>
+	</div>
+	<div class="cell">
+		<h3>W2. Off-white #f2f5f8</h3>
+		<p>Mirrors the light ink&#8217;s softness; sits with UI grays.</p>
+		<div class="tiles">
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#f2f5f8"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#f2f5f8" cx="122.5" cy="122.5" r="12" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#f2f5f8" cx="122.5" cy="122.5" r="12" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#f2f5f8" cx="122.5" cy="122.5" r="12" />
+					</svg>
+				</span>
+			</div>
+			<div class="tile dark">
+				<span style="color: #b3b9c4; font-size: 12px">next to wordmark:</span>
+				<span style="align-items: center; display: flex; gap: 8px"
+					><svg width="28" height="28" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#f2f5f8" cx="122.5" cy="122.5" r="12" /></svg
+					><b style="color: #eceef2; font-size: 18px">Markput</b></span
+				>
+			</div>
+		</div>
+	</div>
+	<div class="cell">
+		<h3>W3. Gray #b3b9c4</h3>
+		<p>Reference only — visibly dimmer than the wordmark.</p>
+		<div class="tiles">
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#b3b9c4"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#b3b9c4" cx="122.5" cy="122.5" r="12" />
+				</svg>
+				<span class="sizes">
+					<svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#b3b9c4"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#b3b9c4" cx="122.5" cy="122.5" r="12" />
+					</svg>
+					<svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#b3b9c4"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#b3b9c4" cx="122.5" cy="122.5" r="12" />
+					</svg>
+				</span>
+			</div>
+			<div class="tile dark">
+				<span style="color: #b3b9c4; font-size: 12px">next to wordmark:</span>
+				<span style="align-items: center; display: flex; gap: 8px"
+					><svg width="28" height="28" viewBox="28 28 124 124">
+						<path
+							fill="#b3b9c4"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#b3b9c4" cx="122.5" cy="122.5" r="12" /></svg
+					><b style="color: #eceef2; font-size: 18px">Markput</b></span
+				>
+			</div>
+		</div>
+	</div>
+</div>
+<h2>Dot stroke?</h2>
+<p class="hint">
+	Question: does the amber dot need an outline? S3 includes a third tile on an arbitrary colored background &#8212;
+	the failure case for keylines.
+</p>
+<div class="row">
+	<div class="cell">
+		<h3>S1. Current — no stroke</h3>
+		<p>Amber dot as applied; gap to ring ends &#8776; 6&#8211;8u.</p>
+		<div class="tiles">
+			<div class="tile light">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#26313a"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+				><span class="sizes"
+					><svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+					><svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+				></span>
+			</div>
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#f2f5f8"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+				><span class="sizes"
+					><svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+					><svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+				></span>
+			</div>
+		</div>
+	</div>
+	<div class="cell">
+		<h3>S2. Dark stroke on dot</h3>
+		<p>Third edge color; at 16px the stroke is ~0.6px &#8212; dirt, not line.</p>
+		<div class="tiles">
+			<div class="tile light">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#26313a"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" stroke="#26313a" stroke-width="5" /></svg
+				><span class="sizes"
+					><svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" stroke="#26313a" stroke-width="5" /></svg
+					><svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" stroke="#26313a" stroke-width="5" /></svg
+				></span>
+			</div>
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#f2f5f8"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" stroke="#f2f5f8" stroke-width="5" /></svg
+				><span class="sizes"
+					><svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" stroke="#f2f5f8" stroke-width="5" /></svg
+					><svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" stroke="#f2f5f8" stroke-width="5" /></svg
+				></span>
+			</div>
+		</div>
+	</div>
+	<div class="cell">
+		<h3>S3. Keyline (bg-color halo)</h3>
+		<p>Works ONLY when bg is known; on arbitrary bg (right tile) the halo betrays itself.</p>
+		<div class="tiles">
+			<div class="tile light">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#26313a"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle cx="122.5" cy="122.5" r="19" fill="#f8fafc" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+				><span class="sizes"
+					><svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle cx="122.5" cy="122.5" r="19" fill="#f8fafc" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+					><svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle cx="122.5" cy="122.5" r="19" fill="#f8fafc" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+				></span>
+			</div>
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#f2f5f8"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle cx="122.5" cy="122.5" r="19" fill="#17181c" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+				><span class="sizes"
+					><svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle cx="122.5" cy="122.5" r="19" fill="#17181c" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+					><svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle cx="122.5" cy="122.5" r="19" fill="#17181c" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+				></span>
+			</div>
+			<div class="tile dark" style="background: #3d5a80">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#f2f5f8"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle cx="122.5" cy="122.5" r="19" fill="#ffffff" />
+					<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+				><span class="sizes"
+					><svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle cx="122.5" cy="122.5" r="19" fill="#ffffff" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+					><svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle cx="122.5" cy="122.5" r="19" fill="#ffffff" />
+						<circle fill="#FFB020" cx="122.5" cy="122.5" r="12" /></svg
+				></span>
+			</div>
+		</div>
+	</div>
+	<div class="cell">
+		<h3>S4. Geometry instead — dot pushed out</h3>
+		<p>Dot center 46&#8594;50 from ring center: real air, no new devices.</p>
+		<div class="tiles">
+			<div class="tile light">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#26313a"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#FFB020" cx="125.4" cy="125.4" r="12" /></svg
+				><span class="sizes"
+					><svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="125.4" cy="125.4" r="12" /></svg
+					><svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#26313a"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="125.4" cy="125.4" r="12" /></svg
+				></span>
+			</div>
+			<div class="tile dark">
+				<svg width="96" height="96" viewBox="28 28 124 124">
+					<path
+						fill="#f2f5f8"
+						d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+					/>
+					<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+					<circle fill="#FFB020" cx="125.4" cy="125.4" r="12" /></svg
+				><span class="sizes"
+					><svg width="32" height="32" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="125.4" cy="125.4" r="12" /></svg
+					><svg width="16" height="16" viewBox="28 28 124 124">
+						<path
+							fill="#f2f5f8"
+							d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"
+						/>
+						<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020" />
+						<circle fill="#FFB020" cx="125.4" cy="125.4" r="12" /></svg
+				></span>
+			</div>
+		</div>
+	</div>
+</div>
