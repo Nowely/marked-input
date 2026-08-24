@@ -1,0 +1,131 @@
+/* Notion showcase — design tokens, dark set.
+ *
+ * Scoped to `.notionTheme`, never to `:root`, so a story can mount the page inside a
+ * Storybook canvas that has its own colours without repainting the whole iframe.
+ *
+ * This file is plain CSS on purpose (no `.module.css`): CSS Modules would rename
+ * `.notionTheme` per import, and the class has to be spellable as a literal by whichever
+ * component mounts the page shell.
+ *
+ * Names are theme-NEUTRAL — `surface-page`, not `surface-dark`. A light set is a sibling
+ * class (`.notionThemeLight`) declaring the same names with other values; no component
+ * class changes when it is added.
+ *
+ * Every colour in the showcase lives here. `notion.module.css` may not contain a hex, an
+ * `rgb()` or a colour keyword other than `transparent` / `currentColor`.
+ */
+
+.notionTheme {
+	/* --- Surfaces ------------------------------------------------------------ */
+	--notion-surface-page: #191919;
+	--notion-surface-block-hover: rgb(255 255 255 / 4%);
+	--notion-surface-block-selected: rgb(35 131 226 / 22%);
+	--notion-surface-card: #202020;
+	--notion-surface-card-hover: #2a2a2a;
+	--notion-surface-overlay: #252525;
+	--notion-surface-code: #232323;
+	--notion-surface-table-header: #1f1f1f;
+	--notion-surface-cover-band: linear-gradient(115deg, #2f4858 0%, #4d3b5f 100%);
+	--notion-surface-avatar: #3f5f7a;
+	--notion-surface-progress-track: rgb(255 255 255 / 10%);
+	--notion-surface-progress-fill: #529cca;
+
+	/* Callout tints — a wash over the page, not a card. */
+	--notion-surface-callout-neutral: #2b2b2b;
+	--notion-surface-callout-info: #16303d;
+	--notion-surface-callout-success: #1b2f28;
+	--notion-surface-callout-warning: #3a2c17;
+	--notion-surface-callout-danger: #3a201d;
+
+	/* --- Text ---------------------------------------------------------------- */
+	--notion-text-primary: rgb(255 255 255 / 82%);
+	--notion-text-secondary: rgb(255 255 255 / 60%);
+	--notion-text-muted: rgb(255 255 255 / 40%);
+	--notion-text-placeholder: rgb(255 255 255 / 26%);
+	--notion-text-on-chip: rgb(255 255 255 / 90%);
+	--notion-text-link: #529cca;
+	--notion-text-danger: #ff7369;
+	--notion-text-highlight: rgb(255 255 255 / 88%);
+
+	/* --- Borders and rules --------------------------------------------------- */
+	--notion-border-subtle: rgb(255 255 255 / 7%);
+	--notion-border-default: rgb(255 255 255 / 13%);
+	--notion-border-strong: rgb(255 255 255 / 24%);
+	--notion-divider-line: rgb(255 255 255 / 9%);
+
+	/* --- Accent -------------------------------------------------------------- */
+	--notion-accent: #529cca;
+	--notion-accent-strong: #2383e2;
+	--notion-accent-soft: rgb(35 131 226 / 20%);
+	--notion-focus-ring: rgb(35 131 226 / 55%);
+	--notion-drop-indicator: #2383e2;
+	--notion-highlight-background: rgb(255 163 68 / 24%);
+
+	/* --- Chip colour pairs (background + foreground) -------------------------- */
+	--notion-chip-grey-background: #373737;
+	--notion-chip-grey-foreground: #b9b9b7;
+	--notion-chip-red-background: #522e2a;
+	--notion-chip-red-foreground: #ff7369;
+	--notion-chip-amber-background: #5c3b23;
+	--notion-chip-amber-foreground: #ffa344;
+	--notion-chip-green-background: #243d35;
+	--notion-chip-green-foreground: #4dab9a;
+	--notion-chip-blue-background: #143a4e;
+	--notion-chip-blue-foreground: #529cca;
+	--notion-chip-purple-background: #3c2d49;
+	--notion-chip-purple-foreground: #9a6dd7;
+
+	/* --- Shadows ------------------------------------------------------------- */
+	--notion-shadow-card: 0 1px 2px rgb(15 15 15 / 45%);
+	--notion-shadow-overlay: 0 12px 32px rgb(15 15 15 / 60%);
+
+	/* --- Spacing ------------------------------------------------------------- */
+	--notion-space-1: 2px;
+	--notion-space-2: 4px;
+	--notion-space-3: 8px;
+	--notion-space-4: 12px;
+	--notion-space-5: 16px;
+	--notion-space-6: 24px;
+	--notion-space-7: 32px;
+	--notion-space-8: 48px;
+
+	/* One nesting level. `.blockIndent` multiplies it by `--notion-block-depth`, which the
+	   component sets inline, so depth costs no extra class per level. */
+	--notion-indent-step: 24px;
+	--notion-block-depth: 1;
+
+	/* The left gutter markput reserves for the drag grip in block layout
+	   (`packages/core/styles.module.css` `.SidePanel`). The showcase's own gutter has to
+	   line up with it. */
+	--notion-gutter-width: 24px;
+	--notion-content-width: 700px;
+
+	/* --- Radii --------------------------------------------------------------- */
+	--notion-radius-small: 3px;
+	--notion-radius-medium: 6px;
+	--notion-radius-large: 10px;
+	--notion-radius-pill: 999px;
+	--notion-radius-circle: 50%;
+
+	/* --- Typography ---------------------------------------------------------- */
+	--notion-font-family-sans:
+		ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, 'Apple Color Emoji', Arial, sans-serif;
+	--notion-font-family-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+	--notion-font-size-title: 40px;
+	--notion-font-size-heading-1: 30px;
+	--notion-font-size-heading-2: 24px;
+	--notion-font-size-heading-3: 20px;
+	--notion-font-size-body: 16px;
+	--notion-font-size-small: 14px;
+	--notion-font-size-tiny: 12px;
+
+	--notion-font-weight-regular: 400;
+	--notion-font-weight-medium: 500;
+	--notion-font-weight-semibold: 600;
+	--notion-font-weight-bold: 700;
+
+	--notion-line-height-tight: 1.2;
+	--notion-line-height-heading: 1.3;
+	--notion-line-height-body: 1.5;
+}

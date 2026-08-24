@@ -1,0 +1,960 @@
+/* Notion showcase — component classes.
+ *
+ * Built out of `./tokens.css` alone: no hex, no `rgb()`, no named colour. Mount the page
+ * under the literal class `notionTheme` (declared in `tokens.css`) so the variables resolve.
+ *
+ * Caret rules, because every one of these sits INSIDE the single contenteditable host:
+ *   - `user-select: none` and `content:` appear only on furniture that never holds editable
+ *     text (gutter buttons, the list bullet, the toggle arrow, the empty-row placeholder);
+ *   - text runs stay in normal flow — `position: absolute` is for the gutter, the drop
+ *     indicator and the placeholder only;
+ *   - markers (bullets, arrows) are separate empty elements pulled left by a negative
+ *     margin, so the text they precede keeps a single, uninterrupted line box.
+ */
+
+/* --- Page shell ------------------------------------------------------------- */
+
+.page {
+	min-height: 100%;
+	padding-bottom: var(--notion-space-8);
+	background: var(--notion-surface-page);
+	color: var(--notion-text-primary);
+	font-family: var(--notion-font-family-sans);
+	font-size: var(--notion-font-size-body);
+	line-height: var(--notion-line-height-body);
+	/* `pre-wrap` is the consumer's job — core sets none, and a row of soft breaks is
+	   unreadable without it (see `Notion.stories.react.tsx`). */
+	white-space: pre-wrap;
+}
+
+.column {
+	max-width: var(--notion-content-width);
+	/* Room on the left for the gutter, which hangs outside the column. */
+	padding: 0 var(--notion-space-6) 0 calc(var(--notion-gutter-width) * 2);
+	margin: 0 auto;
+}
+
+.topBar {
+	display: flex;
+	gap: var(--notion-space-3);
+	align-items: center;
+	height: 44px;
+	padding: 0 var(--notion-space-4);
+	color: var(--notion-text-secondary);
+	font-size: var(--notion-font-size-small);
+	white-space: normal;
+}
+
+.breadcrumbItem {
+	padding: var(--notion-space-1) var(--notion-space-2);
+	border-radius: var(--notion-radius-small);
+	color: var(--notion-text-secondary);
+}
+
+.breadcrumbSeparator {
+	color: var(--notion-text-muted);
+}
+
+.topBarActions {
+	display: flex;
+	gap: var(--notion-space-2);
+	align-items: center;
+	margin-left: auto;
+}
+
+.topBarButton {
+	padding: var(--notion-space-1) var(--notion-space-3);
+	border: 0;
+	border-radius: var(--notion-radius-small);
+	background: none;
+	color: var(--notion-text-secondary);
+	font: inherit;
+	font-size: var(--notion-font-size-small);
+	cursor: pointer;
+}
+
+.topBarButton:hover {
+	background: var(--notion-surface-block-hover);
+}
+
+/* --- Cover ------------------------------------------------------------------ */
+
+.coverBand {
+	display: block;
+	height: 180px;
+	background: var(--notion-surface-cover-band);
+}
+
+/* The emoji overlaps the band by half its box. A negative margin, not `position: absolute`:
+   the glyph is text and has to keep its line box. */
+.coverIcon {
+	display: block;
+	width: 72px;
+	margin: -36px 0 var(--notion-space-4);
+	font-size: 64px;
+	line-height: var(--notion-line-height-tight);
+}
+
+/* --- Text blocks ------------------------------------------------------------ */
+
+.title {
+	display: block;
+	margin: var(--notion-space-3) 0 var(--notion-space-6);
+	color: var(--notion-text-primary);
+	font-size: var(--notion-font-size-title);
+	font-weight: var(--notion-font-weight-bold);
+	line-height: var(--notion-line-height-tight);
+}
+
+.heading1 {
+	display: block;
+	margin: var(--notion-space-7) 0 var(--notion-space-2);
+	font-size: var(--notion-font-size-heading-1);
+	font-weight: var(--notion-font-weight-semibold);
+	line-height: var(--notion-line-height-heading);
+}
+
+.heading2 {
+	display: block;
+	margin: var(--notion-space-6) 0 var(--notion-space-2);
+	font-size: var(--notion-font-size-heading-2);
+	font-weight: var(--notion-font-weight-semibold);
+	line-height: var(--notion-line-height-heading);
+}
+
+.heading3 {
+	display: block;
+	margin: var(--notion-space-5) 0 var(--notion-space-2);
+	font-size: var(--notion-font-size-heading-3);
+	font-weight: var(--notion-font-weight-semibold);
+	line-height: var(--notion-line-height-heading);
+}
+
+.paragraph {
+	display: block;
+	margin: var(--notion-space-1) 0;
+	color: var(--notion-text-primary);
+}
+
+.caption {
+	display: block;
+	margin: 0 0 var(--notion-space-3);
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-small);
+}
+
+.link {
+	border-bottom: 1px solid var(--notion-border-default);
+	color: var(--notion-text-link);
+	text-decoration: none;
+}
+
+.highlight {
+	padding: 0 var(--notion-space-1);
+	border-radius: var(--notion-radius-small);
+	background: var(--notion-highlight-background);
+	color: var(--notion-text-highlight);
+}
+
+.divider {
+	display: block;
+	height: 0;
+	border: 0;
+	border-top: 1px solid var(--notion-divider-line);
+	margin: var(--notion-space-5) 0;
+}
+
+.quote {
+	display: block;
+	padding-left: var(--notion-space-4);
+	border-left: 3px solid var(--notion-border-strong);
+	margin: var(--notion-space-4) 0;
+	font-size: var(--notion-font-size-heading-3);
+	line-height: var(--notion-line-height-heading);
+}
+
+/* --- Row furniture ---------------------------------------------------------- */
+
+.block {
+	/* Also the gutter's containing block. */
+	position: relative;
+	display: block;
+	padding: var(--notion-space-1) var(--notion-space-2);
+	border-radius: var(--notion-radius-small);
+	margin: 1px 0;
+}
+
+.block:hover {
+	background: var(--notion-surface-block-hover);
+}
+
+.blockSelected {
+	background: var(--notion-surface-block-selected);
+}
+
+/* Depth is a multiplier, not a class per level: the component sets
+   `style={{'--notion-block-depth': depth}}`. */
+.blockIndent {
+	padding-left: calc(var(--notion-indent-step) * var(--notion-block-depth));
+}
+
+.blockGutter {
+	position: absolute;
+	top: var(--notion-space-1);
+	left: calc(var(--notion-gutter-width) * -2);
+	display: flex;
+	gap: var(--notion-space-1);
+	align-items: center;
+	height: calc(var(--notion-font-size-body) * var(--notion-line-height-body));
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.block:hover .blockGutter,
+.blockGutterVisible {
+	opacity: 1;
+}
+
+.dragGrip,
+.addBlockButton {
+	display: flex;
+	width: 20px;
+	height: 20px;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: var(--notion-radius-small);
+	background: none;
+	color: var(--notion-text-muted);
+	font: inherit;
+	line-height: 1;
+	user-select: none;
+}
+
+.dragGrip:hover,
+.addBlockButton:hover {
+	background: var(--notion-surface-block-hover);
+	color: var(--notion-text-secondary);
+}
+
+.dragGrip {
+	cursor: grab;
+}
+
+.addBlockButton {
+	cursor: pointer;
+}
+
+.dropIndicator {
+	position: absolute;
+	right: 0;
+	left: 0;
+	height: 2px;
+	border-radius: 1px;
+	background: var(--notion-drop-indicator);
+	pointer-events: none;
+}
+
+/* The row is empty by construction, so generated content here can never split a text run.
+   The component supplies `data-placeholder`; absolute keeps the caret at offset 0. */
+.emptyRow::before {
+	position: absolute;
+	color: var(--notion-text-placeholder);
+	content: attr(data-placeholder);
+	pointer-events: none;
+	user-select: none;
+}
+
+/* --- Properties grid -------------------------------------------------------- */
+
+.properties {
+	display: grid;
+	grid-template-columns: 160px 1fr;
+	gap: var(--notion-space-2) var(--notion-space-4);
+	align-items: center;
+	margin: var(--notion-space-4) 0;
+	white-space: normal;
+}
+
+.propertyLabel {
+	display: flex;
+	gap: var(--notion-space-2);
+	align-items: center;
+	padding: var(--notion-space-1) var(--notion-space-2);
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-small);
+}
+
+.propertyValue {
+	display: flex;
+	gap: var(--notion-space-2);
+	align-items: center;
+	padding: var(--notion-space-1) var(--notion-space-2);
+	border-radius: var(--notion-radius-small);
+	color: var(--notion-text-primary);
+	font-size: var(--notion-font-size-small);
+}
+
+.propertyValue:hover {
+	background: var(--notion-surface-block-hover);
+}
+
+.addProperty {
+	grid-column: 1 / -1;
+	padding: var(--notion-space-2);
+	border: 0;
+	border-radius: var(--notion-radius-small);
+	background: none;
+	color: var(--notion-text-muted);
+	font: inherit;
+	font-size: var(--notion-font-size-small);
+	text-align: left;
+	cursor: pointer;
+}
+
+.addProperty:hover {
+	background: var(--notion-surface-block-hover);
+	color: var(--notion-text-secondary);
+}
+
+/* --- Chips ------------------------------------------------------------------ */
+
+.chip {
+	display: inline-flex;
+	gap: var(--notion-space-1);
+	align-items: center;
+	max-width: 100%;
+	padding: 1px var(--notion-space-3);
+	border-radius: var(--notion-radius-pill);
+	background: var(--notion-chip-grey-background);
+	color: var(--notion-chip-grey-foreground);
+	font-size: var(--notion-font-size-tiny);
+	line-height: var(--notion-line-height-body);
+	white-space: nowrap;
+}
+
+.chipGrey {
+	composes: chip;
+	background: var(--notion-chip-grey-background);
+	color: var(--notion-chip-grey-foreground);
+}
+
+.chipRed {
+	composes: chip;
+	background: var(--notion-chip-red-background);
+	color: var(--notion-chip-red-foreground);
+}
+
+.chipAmber {
+	composes: chip;
+	background: var(--notion-chip-amber-background);
+	color: var(--notion-chip-amber-foreground);
+}
+
+.chipGreen {
+	composes: chip;
+	background: var(--notion-chip-green-background);
+	color: var(--notion-chip-green-foreground);
+}
+
+.chipBlue {
+	composes: chip;
+	background: var(--notion-chip-blue-background);
+	color: var(--notion-chip-blue-foreground);
+}
+
+.chipPurple {
+	composes: chip;
+	background: var(--notion-chip-purple-background);
+	color: var(--notion-chip-purple-foreground);
+}
+
+/* A mention reads as a chip but keeps the page's text size — it sits mid-sentence. */
+.mention {
+	padding: 0 var(--notion-space-1);
+	border-radius: var(--notion-radius-small);
+	background: var(--notion-accent-soft);
+	color: var(--notion-text-link);
+	white-space: nowrap;
+}
+
+/* --- Avatars ---------------------------------------------------------------- */
+
+.avatar {
+	display: inline-flex;
+	width: 20px;
+	height: 20px;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--notion-radius-circle);
+	background: var(--notion-surface-avatar);
+	color: var(--notion-text-on-chip);
+	font-size: var(--notion-font-size-tiny);
+	line-height: 1;
+}
+
+/* Overlap by negative margin on the children, so no pseudo-element and no absolute box. */
+.avatarStack {
+	display: inline-flex;
+	align-items: center;
+	padding-left: var(--notion-space-2);
+}
+
+.avatarStack .avatar {
+	margin-left: calc(var(--notion-space-2) * -1);
+	border: 2px solid var(--notion-surface-page);
+}
+
+/* --- Table ------------------------------------------------------------------ */
+
+/* `display: table` out of `div`s, not real table elements: a mark renders inside core's
+   `<span contenteditable="false">` wrapper, where `<tr>` is invalid nesting. */
+.table {
+	display: table;
+	width: 100%;
+	border: 1px solid var(--notion-border-subtle);
+	border-radius: var(--notion-radius-medium);
+	border-collapse: collapse;
+	margin: var(--notion-space-3) 0;
+	font-size: var(--notion-font-size-small);
+	white-space: normal;
+}
+
+.tableRow {
+	display: table-row;
+}
+
+.tableRow:hover {
+	background: var(--notion-surface-block-hover);
+}
+
+.tableCell {
+	display: table-cell;
+	padding: var(--notion-space-3) var(--notion-space-4);
+	border-bottom: 1px solid var(--notion-border-subtle);
+	color: var(--notion-text-primary);
+	vertical-align: middle;
+	text-align: left;
+}
+
+.tableHeaderRow {
+	composes: tableRow;
+	background: var(--notion-surface-table-header);
+}
+
+.tableHeaderCell {
+	composes: tableCell;
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-tiny);
+	font-weight: var(--notion-font-weight-medium);
+}
+
+.tableFooter {
+	display: flex;
+	gap: var(--notion-space-3);
+	align-items: center;
+	padding: var(--notion-space-2) var(--notion-space-4);
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-small);
+	white-space: normal;
+}
+
+.tableFooterAction {
+	padding: var(--notion-space-1) var(--notion-space-2);
+	border: 0;
+	border-radius: var(--notion-radius-small);
+	background: none;
+	color: var(--notion-text-muted);
+	font: inherit;
+	font-size: var(--notion-font-size-small);
+	cursor: pointer;
+}
+
+.tableFooterAction:hover {
+	background: var(--notion-surface-block-hover);
+	color: var(--notion-text-secondary);
+}
+
+.tableFooterSummary {
+	margin-left: auto;
+	font-size: var(--notion-font-size-tiny);
+}
+
+/* Cell text states: due dates go red when overdue, muted once the row is done. */
+.valueOverdue {
+	color: var(--notion-text-danger);
+}
+
+.valueMuted {
+	color: var(--notion-text-muted);
+}
+
+/* --- Progress / effort bar --------------------------------------------------- */
+
+.effortBar {
+	display: inline-block;
+	width: 72px;
+	height: 6px;
+	overflow: hidden;
+	border-radius: var(--notion-radius-pill);
+	background: var(--notion-surface-progress-track);
+	vertical-align: middle;
+}
+
+/* Width comes from the component (`style={{width: '60%'}}`) — a value, not a colour. */
+.effortBarFill {
+	display: block;
+	height: 100%;
+	border-radius: var(--notion-radius-pill);
+	background: var(--notion-surface-progress-fill);
+}
+
+/* --- Cards ------------------------------------------------------------------ */
+
+.cardGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: var(--notion-space-3);
+	margin: var(--notion-space-4) 0;
+	white-space: normal;
+}
+
+.metricCard {
+	display: flex;
+	flex-direction: column;
+	gap: var(--notion-space-2);
+	padding: var(--notion-space-4);
+	border: 1px solid var(--notion-border-subtle);
+	border-radius: var(--notion-radius-large);
+	background: var(--notion-surface-card);
+	box-shadow: var(--notion-shadow-card);
+}
+
+.metricLabel {
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-tiny);
+}
+
+.metricValue {
+	color: var(--notion-text-primary);
+	font-size: var(--notion-font-size-heading-2);
+	font-weight: var(--notion-font-weight-semibold);
+	line-height: var(--notion-line-height-tight);
+}
+
+/* --- Callout ---------------------------------------------------------------- */
+
+.callout {
+	display: flex;
+	gap: var(--notion-space-3);
+	align-items: flex-start;
+	padding: var(--notion-space-4);
+	border-radius: var(--notion-radius-medium);
+	background: var(--notion-surface-callout-neutral);
+	margin: var(--notion-space-4) 0;
+}
+
+.calloutInfo {
+	composes: callout;
+	background: var(--notion-surface-callout-info);
+}
+
+.calloutSuccess {
+	composes: callout;
+	background: var(--notion-surface-callout-success);
+}
+
+.calloutWarning {
+	composes: callout;
+	background: var(--notion-surface-callout-warning);
+}
+
+.calloutDanger {
+	composes: callout;
+	background: var(--notion-surface-callout-danger);
+}
+
+.calloutIcon {
+	flex-shrink: 0;
+	font-size: var(--notion-font-size-heading-3);
+	line-height: var(--notion-line-height-body);
+}
+
+.calloutBody {
+	color: var(--notion-text-primary);
+	font-size: var(--notion-font-size-small);
+}
+
+/* --- Bulleted list ----------------------------------------------------------- */
+
+/* The bullet is an empty inline-block pulled into the row's own left padding, so the item's
+   text stays one uninterrupted run and the caret can reach its first character. */
+.listItem {
+	display: block;
+	padding-left: var(--notion-indent-step);
+	margin: var(--notion-space-1) 0;
+}
+
+.listItemNested {
+	composes: listItem;
+	margin-left: var(--notion-indent-step);
+}
+
+.listBullet {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	margin-right: 10px;
+	margin-left: calc(8px - var(--notion-indent-step));
+	border-radius: var(--notion-radius-circle);
+	background: var(--notion-text-primary);
+	vertical-align: 0.2em;
+	user-select: none;
+}
+
+.listBulletHollow {
+	composes: listBullet;
+	border: 1.5px solid var(--notion-text-primary);
+	background: transparent;
+}
+
+/* --- Toggle ------------------------------------------------------------------ */
+
+.toggleRow {
+	display: block;
+	padding-left: var(--notion-indent-step);
+	margin: var(--notion-space-1) 0;
+}
+
+/* Mask + `currentColor`, the same trick `packages/core/styles.module.css` `.Icon` uses, so
+   the arrow needs no generated content and no glyph. */
+.toggleArrow {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	margin-right: var(--notion-space-2);
+	margin-left: calc(var(--notion-space-2) - var(--notion-indent-step));
+	background-color: var(--notion-text-secondary);
+	mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3.5 11.5 8 6 12.5Z'/%3E%3C/svg%3E");
+	mask-repeat: no-repeat;
+	mask-position: center;
+	mask-size: 10px;
+	transform: rotate(0deg);
+	transition: transform 0.15s ease;
+	vertical-align: -0.15em;
+	user-select: none;
+	cursor: pointer;
+}
+
+.toggleArrowOpen {
+	composes: toggleArrow;
+	transform: rotate(90deg);
+}
+
+.toggleChildren {
+	display: block;
+	padding-left: var(--notion-indent-step);
+}
+
+/* --- Code -------------------------------------------------------------------- */
+
+.codeBlock {
+	display: block;
+	padding: var(--notion-space-3) var(--notion-space-4);
+	border: 1px solid var(--notion-border-subtle);
+	border-radius: var(--notion-radius-medium);
+	background: var(--notion-surface-code);
+	margin: var(--notion-space-4) 0;
+	color: var(--notion-text-primary);
+	font-family: var(--notion-font-family-mono);
+	font-size: var(--notion-font-size-small);
+	line-height: var(--notion-line-height-body);
+}
+
+/* In flow above the code, not absolutely placed over it: an absolute label inside the
+   editing host is a caret target sitting on top of the first line. */
+.codeLanguageLabel {
+	display: block;
+	margin-bottom: var(--notion-space-2);
+	color: var(--notion-text-muted);
+	font-family: var(--notion-font-family-sans);
+	font-size: var(--notion-font-size-tiny);
+}
+
+/* --- Bookmark ---------------------------------------------------------------- */
+
+.bookmark {
+	display: flex;
+	overflow: hidden;
+	align-items: stretch;
+	border: 1px solid var(--notion-border-subtle);
+	border-radius: var(--notion-radius-medium);
+	background: var(--notion-surface-card);
+	margin: var(--notion-space-4) 0;
+	white-space: normal;
+}
+
+.bookmark:hover {
+	background: var(--notion-surface-card-hover);
+}
+
+.bookmarkBody {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	flex-direction: column;
+	gap: var(--notion-space-2);
+	padding: var(--notion-space-4);
+}
+
+.bookmarkTitle {
+	color: var(--notion-text-primary);
+	font-size: var(--notion-font-size-small);
+	font-weight: var(--notion-font-weight-medium);
+}
+
+.bookmarkDescription {
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-tiny);
+	line-height: var(--notion-line-height-body);
+}
+
+.bookmarkUrl {
+	color: var(--notion-text-secondary);
+	font-size: var(--notion-font-size-tiny);
+}
+
+.bookmarkThumbnail {
+	width: 140px;
+	flex-shrink: 0;
+	background: var(--notion-surface-cover-band);
+	background-size: cover;
+}
+
+/* --- Comments ---------------------------------------------------------------- */
+
+.commentThread {
+	display: flex;
+	flex-direction: column;
+	gap: var(--notion-space-3);
+	padding: var(--notion-space-4);
+	border-radius: var(--notion-radius-medium);
+	background: var(--notion-surface-card);
+	margin: var(--notion-space-4) 0;
+	white-space: normal;
+}
+
+.comment {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: var(--notion-space-1) var(--notion-space-3);
+}
+
+.commentAvatar {
+	composes: avatar;
+	grid-row: 1 / span 2;
+}
+
+.commentHeader {
+	display: flex;
+	gap: var(--notion-space-2);
+	align-items: baseline;
+}
+
+.commentAuthor {
+	color: var(--notion-text-primary);
+	font-size: var(--notion-font-size-small);
+	font-weight: var(--notion-font-weight-medium);
+}
+
+.commentTimestamp {
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-tiny);
+}
+
+.commentBody {
+	color: var(--notion-text-primary);
+	font-size: var(--notion-font-size-small);
+}
+
+.commentReply {
+	padding: var(--notion-space-2) var(--notion-space-3);
+	border: 0;
+	border-radius: var(--notion-radius-small);
+	background: var(--notion-surface-block-hover);
+	color: var(--notion-text-muted);
+	font: inherit;
+	font-size: var(--notion-font-size-small);
+	text-align: left;
+	cursor: text;
+}
+
+/* --- Board ------------------------------------------------------------------- */
+
+.board {
+	display: grid;
+	grid-auto-columns: minmax(180px, 1fr);
+	grid-auto-flow: column;
+	gap: var(--notion-space-3);
+	overflow-x: auto;
+	margin: var(--notion-space-4) 0;
+	white-space: normal;
+}
+
+.boardColumn {
+	display: flex;
+	min-height: 120px;
+	flex-direction: column;
+	gap: var(--notion-space-2);
+	padding: var(--notion-space-3);
+	border-radius: var(--notion-radius-medium);
+	background: var(--notion-surface-card);
+}
+
+.boardColumnHeader {
+	display: flex;
+	gap: var(--notion-space-2);
+	align-items: center;
+	padding: 0 var(--notion-space-1);
+	font-size: var(--notion-font-size-small);
+	font-weight: var(--notion-font-weight-medium);
+}
+
+.boardColumnCount {
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-tiny);
+	font-weight: var(--notion-font-weight-regular);
+}
+
+.boardCard {
+	display: flex;
+	flex-direction: column;
+	gap: var(--notion-space-2);
+	align-items: flex-start;
+	padding: var(--notion-space-3);
+	border: 1px solid var(--notion-border-subtle);
+	border-radius: var(--notion-radius-medium);
+	background: var(--notion-surface-page);
+	box-shadow: var(--notion-shadow-card);
+}
+
+.boardCard:hover {
+	border-color: var(--notion-border-default);
+}
+
+.boardCardTitle {
+	color: var(--notion-text-primary);
+	font-size: var(--notion-font-size-small);
+}
+
+/* --- View tabs ---------------------------------------------------------------- */
+
+.viewTabBar {
+	display: flex;
+	gap: var(--notion-space-1);
+	align-items: center;
+	border-bottom: 1px solid var(--notion-border-subtle);
+	margin: var(--notion-space-4) 0 0;
+	white-space: normal;
+}
+
+.viewTab {
+	padding: var(--notion-space-2) var(--notion-space-3);
+	border: 0;
+	border-bottom: 2px solid transparent;
+	background: none;
+	color: var(--notion-text-muted);
+	font: inherit;
+	font-size: var(--notion-font-size-small);
+	cursor: pointer;
+}
+
+.viewTab:hover {
+	color: var(--notion-text-secondary);
+}
+
+.viewTabActive {
+	composes: viewTab;
+	border-bottom-color: var(--notion-text-primary);
+	color: var(--notion-text-primary);
+}
+
+.viewTabActions {
+	display: flex;
+	gap: var(--notion-space-1);
+	align-items: center;
+	margin-left: auto;
+}
+
+.viewTabAction {
+	composes: viewTab;
+	border-bottom: 0;
+	font-size: var(--notion-font-size-tiny);
+}
+
+/* --- Table of contents --------------------------------------------------------- */
+
+.tableOfContents {
+	display: flex;
+	flex-direction: column;
+	gap: var(--notion-space-1);
+	padding: var(--notion-space-4);
+	border: 1px solid var(--notion-border-subtle);
+	border-radius: var(--notion-radius-medium);
+	background: var(--notion-surface-card);
+	margin: var(--notion-space-4) 0;
+	font-size: var(--notion-font-size-small);
+	white-space: normal;
+}
+
+.tableOfContentsItem {
+	color: var(--notion-text-secondary);
+}
+
+.tableOfContentsItemNested {
+	composes: tableOfContentsItem;
+	padding-left: var(--notion-indent-step);
+}
+
+/* --- Overlays (slash menu, mention picker) -------------------------------------- */
+
+.overlay {
+	z-index: 1;
+	display: flex;
+	min-width: 260px;
+	flex-direction: column;
+	padding: var(--notion-space-2);
+	border: 1px solid var(--notion-border-default);
+	border-radius: var(--notion-radius-large);
+	background: var(--notion-surface-overlay);
+	box-shadow: var(--notion-shadow-overlay);
+	white-space: normal;
+}
+
+.overlayItem {
+	display: flex;
+	gap: var(--notion-space-3);
+	align-items: center;
+	padding: var(--notion-space-2) var(--notion-space-3);
+	border: 0;
+	border-radius: var(--notion-radius-small);
+	background: none;
+	color: var(--notion-text-primary);
+	font: inherit;
+	font-size: var(--notion-font-size-small);
+	text-align: left;
+	cursor: pointer;
+}
+
+.overlayItem:hover,
+.overlayItemActive {
+	background: var(--notion-surface-block-hover);
+}
+
+.overlayItemHint {
+	margin-left: auto;
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-tiny);
+}
