@@ -1,7 +1,7 @@
 # The layout switch's fate
 
 Type: grilling
-Status: closed — the enum survives as a PROP and dies as a MODE (2026-08-24)
+Status: resolved — the enum survives as a PROP and dies as a MODE (2026-08-24)
 Blocked by: —  (01 resolved 2026-08-24; 02's paused half is about prop names, not the layout mode)
 
 ## Question
