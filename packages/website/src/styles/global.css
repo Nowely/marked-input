@@ -19,12 +19,18 @@
 }
 
 /* Wordmark in ink, not accent: the accent is for interactive elements.
- * Tighter gap and heavier tracking-tight face to match the storybook lockup. */
+ * Face and mark:text ratio (~1.17 mark/font, as in the storybook lockup). */
 .site-title {
 	color: #26313a;
+	font-size: 1.375rem;
 	font-weight: 700;
 	gap: 0.625rem;
 	letter-spacing: -0.02em;
+}
+
+.site-title img {
+	height: 1.6rem;
+	width: auto;
 }
 
 :root[data-theme='dark'] .site-title {
