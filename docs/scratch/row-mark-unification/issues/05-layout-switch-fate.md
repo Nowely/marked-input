@@ -139,9 +139,72 @@ ratified paragraph is left alone.
 
 ### Deliberately left open
 
-- `batch` runs `flush()` in its `finally` before restoring `mutableScope`, so a
-  watcher that throws during flush leaves every readonly prop signal writable
-  process-wide. Untouched here; this work does not make it more reachable.
-- A runtime layout/separator change DESTROYS the caret rather than shifting it.
-  Untouched, and unchanged in reach: the commit that used to be spent on a
-  rowless separator change moved no caret either.
+- ~~`batch` runs `flush()` in its `finally` before restoring `mutableScope`, so
+  a watcher that throws during flush leaves every readonly prop signal writable
+  process-wide.~~ **FIXED** at `9ab844ca`, pinned by
+  `shared/signals/mutableLeak.spec.ts`; `batch` restores `mutableScope` before
+  the flush now. This line said "untouched" and had gone stale.
+- ~~A runtime layout/separator change DESTROYS the caret rather than shifting
+  it.~~ **REFUTED — measured 2026-08-24, see below.** The claim was never
+  measured; it was inherited through two reports and this file repeated it.
+
+### The caret survives a parse-policy change, and the mechanism is `adopt`'s
+
+Measured at `4697043e` on three levels. Nothing was changed to make this true —
+it is what the code already does.
+
+**Tree space.** A `Store` on an attached container, `'first row here\n\nsecond
+row here\n\nthird row here'`, caret collapsed at offset 19 (mid-word, second
+row), then `props.update(…)`:
+
+| change | root kinds | root ids | stored offset |
+| --- | --- | --- | --- |
+| — (block, start) | `row,row,row` | `1,3,5` | 19 |
+| `layout: 'inline'` | `text` | `7` | **19** |
+| `separator: '\n'` | `row` ×5 | — | **19** |
+
+Node identity is destroyed completely — every root id is new and the stored
+`NodeAnchor` object is a different object — and the OFFSET is preserved anyway.
+
+**Why.** `TokenModel`'s props watch takes the reparse arm (the value is
+byte-identical), `valueBoundary.reparse` folds through `gapWindow(v, v)` — the
+empty window `{start: n, end: n, insertedLength: 0}`, delta 0 — and `adopt`
+already expresses the selection as an OFFSET before it mutates anything:
+`beforeOffsets` is formed pre-mutation from `offsetOfAnchor(prev, …)`, and
+`map` re-resolves it with `anchorAt` against the NEW roots. `selection.repair`
+stores that, and `SelectionDriver`'s `bound` watch re-applies it to the DOM once
+bind has made handles for the fresh nodes. So the design the reports asked for —
+"map the caret through the projected value, whose offsets are stable when node
+identity is not" — is the design that shipped.
+
+The pairing question the reports raised does not arise: adoption CANNOT pair a
+row candidate with a text token, and does not try. Preservation does not depend
+on pairing at all.
+
+**Both adapters, real Chromium, through the public surface.** `mountComponent` +
+`rerender`, i.e. the `store.props.set(props)` every render already performs
+(`MarkedInput.tsx:104`, `MarkedInput.vue:35`). Caret placed by a REAL
+`userEvent.click`, then the prop changed, then a REAL `beforeinput/insertText`
+of `'X'`, and the emitted value read off `onChange`:
+
+| scenario | X lands at the pre-change position |
+| --- | --- |
+| block → inline | yes |
+| block → inline, `draggable: true` | yes |
+| block → inline, trailing empty row | yes |
+| block → inline, document with marks | yes |
+| `separator` `'\n\n'` → `'\n'` (3 rows → 5) | yes |
+| block → inline with no task between click and change | yes |
+
+React and Vue printed byte-identical reports. A separate collapsed/ranged sweep
+(11 scenarios: both directions, row start, row end, document end, a document
+with marks, CONTROLLED, and the `readOnly`/`className` controls) agreed: every
+caret and every ranged selection came back at the same position in the
+projection, `document.activeElement` stayed the container throughout, and the
+selected text of a range was unchanged (`"ond "` before and after). The control
+props moved nothing, so the layout arm has no special status here.
+
+**What "shifting" would even mean is worth stating**, because the raw DOM number
+does change: block layout does not render the separators, so a caret at
+`raw=29` in block is `raw=31` in inline. Same position in the projection, and
+the reports appear to have read that as loss.
