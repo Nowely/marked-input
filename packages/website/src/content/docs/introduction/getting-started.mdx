@@ -1,7 +1,7 @@
 ---
 title: Getting Started
 description: Install Markput and build your first @mention editor with autocomplete in minutes
-keywords: [installation, setup, quick start, react component, mentions editor, autocomplete]
+keywords: [installation, setup, quick start, react component, vue component, mentions editor, autocomplete]
 ---
 
 
@@ -23,27 +23,41 @@ Install Markput using your preferred package manager:
 <Tabs syncKey="package-manager">
 	<TabItem label="npm" icon="npm">
     ```bash
+    # React
     npm install @markput/react
+    # Vue
+    npm install @markput/vue
     ```
 	</TabItem>
 	<TabItem label="pnpm" icon="pnpm">
     ```bash
+    # React
     pnpm add @markput/react
+    # Vue
+    pnpm add @markput/vue
     ```
 	</TabItem>
 	<TabItem label="yarn" icon="seti:yarn">
     ```bash
+    # React
     yarn add @markput/react
+    # Vue
+    yarn add @markput/vue
     ```
 	</TabItem>
 	<TabItem label="bun" icon="bun">
     ```bash
+    # React
     bun add @markput/react
+    # Vue
+    bun add @markput/vue
     ```
 	</TabItem>
 </Tabs>
 
-**Requirements**: React 17 or later.
+**Requirements**: React 19+ for `@markput/react`, Vue 3.5+ for `@markput/vue`.
+
+The tutorial below uses React; the Vue API mirrors it — see the [Vue Storybook](https://markput-vue.vercel.app) for live Vue examples.
 
 ## Your First Editor
 
