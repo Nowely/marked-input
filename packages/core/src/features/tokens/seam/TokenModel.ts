@@ -308,7 +308,7 @@ export class TokenModel {
 	 * `undefined` is already this seam's word for "no rows" — the row parse, the block feature
 	 * gates, the grip gutter and `BlockController` all turn off together on it. `Parser.parseRows`
 	 * refuses `''` outright, so the alternative is an exception raised inside the adapter's own
-	 * render hook; see {@link reportBadProp}.
+	 * render hook; see `shared/reportBadProp`.
 	 */
 	readonly rowSeparator: Computed<string | undefined> = computed(() => {
 		if (!this.props.layout.isBlock()) return undefined
@@ -736,7 +736,7 @@ export class TokenModel {
  * contributes no markup" — `MarkupRegistry` skips it while preserving the original indices, so
  * the surviving options keep their `descriptor.index` and their per-option `Mark`.
  *
- * Refused rather than thrown for the reason in {@link reportBadProp}: the parser is rebuilt
+ * Refused rather than thrown for the reason in `shared/reportBadProp`: the parser is rebuilt
  * inside the props watch a per-render `props.set` drains, so the throw would leave the
  * adapter's own lifecycle hook.
  */
