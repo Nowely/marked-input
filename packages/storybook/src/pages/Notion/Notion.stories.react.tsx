@@ -5,7 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react-vite'
 import {defineMark, type StyledMarkProps} from '../../shared/lib/marks'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 import {APOLLO_DOC} from './document'
-import {notionOptions} from './options'
+import {editorOptions, notionOptions} from './options'
 
 /**
  * The notion-like probe (`docs/scratch/notion-like/map.md`). It builds a Notion-shaped
@@ -65,14 +65,30 @@ export const MarkdownPreset: StoryObj<MarkedInputProps<StyledMarkProps>> = {
 
 /**
  * The same document with the page's own markups added: the frontmatter becomes a properties
- * panel, each table becomes a table, and the quote gets its rule. All three are whole-block
- * markups, and two of the three are atomic — the price of a table the parser cannot describe
- * per cell.
+ * panel, each table becomes a table, the quote gets its rule, and `@[Name](id)` becomes a
+ * mention instead of a link with a stray `@` in front of it. Two of the four are atomic — the
+ * price of blocks the parser cannot describe part by part.
  */
 export const Document: StoryObj<MarkedInputProps<StyledMarkProps>> = {
 	args: {
 		Mark: DocumentMark,
 		options: notionOptions,
+		defaultValue: APOLLO_DOC,
+		layout: 'block',
+		draggable: true,
+		slotProps: {container: {style: PAGE_STYLE}},
+	},
+}
+
+/**
+ * The document with its editor chrome: type `@` for the people list, `/` for the block menu,
+ * and hover a row for its drag grip. All three run on machinery that already ships — overlay
+ * triggers, `store.edit`, and `draggable` — which is the claim this story exists to test.
+ */
+export const Editor: StoryObj<MarkedInputProps<StyledMarkProps>> = {
+	args: {
+		Mark: DocumentMark,
+		options: editorOptions,
 		defaultValue: APOLLO_DOC,
 		layout: 'block',
 		draggable: true,
