@@ -1,6 +1,16 @@
 import React from 'react'
 import {Select} from 'storybook/internal/components'
 import {addons, types, useStorybookApi} from 'storybook/manager-api'
+import {create} from 'storybook/theming'
+
+addons.setConfig({
+	theme: create({
+		base: 'light',
+		brandTitle: 'Markput',
+		brandUrl: 'https://markput.vercel.app',
+		brandImage: './markput-lockup.svg',
+	}),
+})
 
 const FRAMEWORKS = [
 	{id: 'react', label: 'React', devPort: 6006},
