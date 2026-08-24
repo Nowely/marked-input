@@ -147,6 +147,10 @@ ratified paragraph is left alone.
 - ~~A runtime layout/separator change DESTROYS the caret rather than shifting
   it.~~ **REFUTED — measured 2026-08-24, see below.** The claim was never
   measured; it was inherited through two reports and this file repeated it.
+- ~~Two prop values crash the editor outright — `layout="block"` with
+  `separator: ''`, and a typo'd `markup`. Both throw out of `props.set`, which is
+  where the leak above was reachable from.~~ **FIXED**, both, answered the same
+  way; see below.
 
 ### The caret survives a parse-policy change, and the mechanism is `adopt`'s
 
