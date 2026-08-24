@@ -17,7 +17,7 @@ const READ_ONLY_VALUE = 'Read-Only Content\n\nSection A\n\nSection B\n\n'
  * nothing else — page constants stay module-private.
  */
 export default {
-	title: 'MarkedInput/Drag',
+	title: 'Markput/Drag',
 	tags: ['autodocs'],
 	component,
 	parameters: {

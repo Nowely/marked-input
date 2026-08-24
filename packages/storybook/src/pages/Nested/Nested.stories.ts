@@ -32,7 +32,7 @@ const HTML_DOCUMENT = `<article>
 
 <section>
 <h2>Introduction</h2>
-<p>This is a <em>comprehensive example</em> of <strong>nested HTML tags</strong> working together. The <code>MarkedInput</code> library can parse and render <mark>complex HTML structures</mark> with multiple levels of nesting.</p>
+<p>This is a <em>comprehensive example</em> of <strong>nested HTML tags</strong> working together. The <code>Markput</code> library can parse and render <mark>complex HTML structures</mark> with multiple levels of nesting.</p>
 
 <blockquote>
 <p>HTML nesting allows us to create <strong>rich, semantic documents</strong> that are both <em>readable</em> and <u>well-structured</u>.</p>
@@ -82,7 +82,7 @@ const HTML_DOCUMENT = `<article>
 </section>
 
 <footer>
-<p><small>© 2025 MarkedInput Library. Built with <strong>React</strong> and <em>TypeScript</em>.</small></p>
+<p><small>© 2025 Markput Library. Built with <strong>React</strong> and <em>TypeScript</em>.</small></p>
 </footer>
 </article>`
 
@@ -91,7 +91,7 @@ const HTML_DOCUMENT = `<article>
  * nothing else — page constants stay module-private.
  */
 export default {
-	title: 'MarkedInput/Nested',
+	title: 'Markput/Nested',
 	tags: ['autodocs'],
 	component,
 	parameters: {

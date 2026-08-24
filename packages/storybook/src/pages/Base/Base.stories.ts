@@ -36,7 +36,7 @@ const sharedContainerHandlers = {
  * nothing else — page constants stay module-private.
  */
 export default {
-	title: 'MarkedInput',
+	title: 'Markput',
 	tags: ['autodocs'],
 	component,
 } satisfies PageMeta

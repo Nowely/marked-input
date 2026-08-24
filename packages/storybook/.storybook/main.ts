@@ -37,12 +37,12 @@ const shared = {
 	addons: ['@storybook/addon-links', '@storybook/addon-docs'],
 	core: {disableTelemetry: true},
 	experimental_indexers: (existing: Indexer[] = []) => existing.map(indexer => ({...indexer, test: storyTest})),
+	staticDirs: ['../public'],
 }
 
 const react: ReactConfig = {
 	...shared,
 	stories: ['../src/pages/**/*.stories.ts', '../src/pages/**/*.stories.react.tsx'],
-	staticDirs: ['../public'],
 	framework: {name: '@storybook/react-vite', options: {}},
 	viteFinal: withFrameworkResolution('react'),
 }

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="118" height="34" viewBox="0 0 432 124">
+	<svg x="0" y="14" width="96" height="96" viewBox="28 28 124 124">
+		<path fill="#26313a" d="M109.2 142.6A56 56 0 1 1 142.6 109.2L123.8 102.3A36 36 0 1 0 102.3 123.8Z"/>
+		<rect x="74" y="74" width="32" height="32" rx="10" fill="#FFB020"/>
+		<circle fill="#FFB020" cx="122.5" cy="122.5" r="12"/>
+	</svg>
+	<text x="114" y="91" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="82" font-weight="700" letter-spacing="-2" fill="#26313a">Markput</text>
+</svg>

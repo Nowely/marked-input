@@ -2,7 +2,8 @@
   "name": "@markput/vue-app",
   "version": "1.0.0",
   "private": true,
-  "description": "E2E test application for marked-input (Vue)",
+  "description": "Demo application for Markput (Vue)",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

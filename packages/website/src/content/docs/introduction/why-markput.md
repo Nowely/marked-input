@@ -1,10 +1,10 @@
 ---
 title: Why Markput?
-description: Lightweight React library for building custom markup text editors with plain text storage and full component control
-keywords: [markput, react mentions, marks, custom markup, text editor, slash commands, autocomplete, typescript]
+description: Lightweight library for React and Vue for building custom markup text editors with plain text storage and full component control
+keywords: [markput, react mentions, vue mentions, marks, custom markup, text editor, slash commands, autocomplete, typescript]
 ---
 
-Markput (marked input) is a React component library for building editors with **custom markup**. It transforms plain text patterns into interactive React components, giving you full control over rendering and behavior.
+Markput is a component library for React and Vue for building editors with **custom markup**. It transforms plain text patterns into interactive components, giving you full control over rendering and behavior.
 
 **The Problem**: Building custom text editors usually means choosing between:
 
@@ -14,7 +14,7 @@ Markput (marked input) is a React component library for building editors with **
 **Our Philosophy**: You shouldn't have to choose. Markput combines:
 
 - **Simple API**: Define patterns like `@[__value__](__meta__)`, pass components - done.
-- **No framework overhead**: Your React components work as-is, no adapters.
+- **No framework overhead**: Your components work as-is, no adapters.
 - **Debuggable state**: Plain text strings, not complex JSON schemas.
 - **Scale naturally**: Start with @mentions, add nested formatting later - same API.
 

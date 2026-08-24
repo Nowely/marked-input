@@ -1,6 +1,22 @@
 import React from 'react'
 import {Select} from 'storybook/internal/components'
 import {addons, types, useStorybookApi} from 'storybook/manager-api'
+import {create} from 'storybook/theming'
+
+// Picked once at load: Storybook's manager cannot switch a custom theme live.
+const brandTheme = (base: 'light' | 'dark') =>
+	create({
+		base,
+		brandTitle: 'Markput',
+		brandUrl: 'https://markput.vercel.app',
+		brandImage: base === 'dark' ? './markput-lockup-dark.svg' : './markput-lockup.svg',
+		colorPrimary: base === 'dark' ? '#ffce70' : '#9c6a00',
+		colorSecondary: base === 'dark' ? '#a97c00' : '#9c6a00',
+	})
+
+addons.setConfig({
+	theme: brandTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+})
 
 const FRAMEWORKS = [
 	{id: 'react', label: 'React', devPort: 6006},

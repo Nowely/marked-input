@@ -1,1 +1,69 @@
 /* Custom styles for Starlight documentation site */
+
+/*
+ * Markput brand palette, derived from the logo: ink #26313a, amber #FFB020.
+ * Light theme shifts amber toward ochre so accent text keeps AA contrast on
+ * white; dark theme lets the true amber glow. Shape follows Starlight's
+ * color-theme convention (accent-low / accent / accent-high per theme).
+ */
+:root {
+	--sl-color-accent-low: #fff1cf;
+	--sl-color-accent: #9c6a00;
+	--sl-color-accent-high: #4a3800;
+}
+
+:root[data-theme='dark'] {
+	--sl-color-accent-low: #453200;
+	--sl-color-accent: #a97c00;
+	--sl-color-accent-high: #ffce70;
+}
+
+/* Wordmark in ink, not accent: the accent is for interactive elements.
+ * Face and mark:text ratio (~1.17 mark/font, as in the storybook lockup). */
+.site-title {
+	color: #26313a;
+	font-size: 1.375rem;
+	font-weight: 700;
+	gap: 0.625rem;
+	letter-spacing: -0.02em;
+}
+
+.site-title img {
+	height: 1.6rem;
+	width: auto;
+}
+
+:root[data-theme='dark'] .site-title {
+	color: #f2f5f8;
+}
+
+/* Header utility icons stay neutral gray; ochre there read as decoration. */
+.social-icons a {
+	color: var(--sl-color-gray-3);
+}
+
+.social-icons a:hover {
+	color: var(--sl-color-gray-1);
+}
+
+/* The WIP badge config uses these utility classes; nothing defined them,
+ * so the 🚧 emoji sat on an accent-colored pill. */
+.border-none {
+	border: none;
+}
+
+.bg-transparent {
+	background: transparent;
+}
+
+/* Landing feature cards: one brand tone instead of Starlight's rainbow cycle. */
+.card {
+	--sl-card-border: var(--sl-color-accent);
+	--sl-card-bg: var(--sl-color-accent-low);
+}
+
+/* The search dialog's focused input showed the UA-default blue outline —
+ * the only blue on the page. The accent border already signals focus. */
+#starlight__search input:focus-visible {
+	outline: none;
+}
