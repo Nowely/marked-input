@@ -17,7 +17,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@markput/vue.svg?style=flat&label=vue)](https://www.npmjs.com/package/@markput/vue) [![min zipped size](https://img.shields.io/bundlephobia/minzip/@markput/vue?label=vue+gzip)](https://bundlephobia.com/package/@markput/vue) [![Vue Storybook](https://gw.alipayobjects.com/mdn/ob_info/afts/img/A*CQXNTZfK1vwAAAAAAAAAAABjAQAAAQ/original)](https://markput-vue.vercel.app)
 
-<img width="640" height="270" alt="Markput editor: text with inline mention and hashtag chips, an autocomplete overlay, and the plain-text string underneath" src="https://raw.githubusercontent.com/Nowely/marked-input/next/docs/brand/editor-demo.png">
+<img width="640" height="328" alt="Markput editor: text with inline mention and hashtag chips, an autocomplete overlay, and the plain-text string underneath" src="https://raw.githubusercontent.com/Nowely/marked-input/next/docs/brand/editor-demo.png">
 
 A set of framework adapters that let you combine editable text with custom components using annotated text.
 
