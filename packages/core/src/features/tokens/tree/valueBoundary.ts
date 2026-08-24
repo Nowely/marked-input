@@ -11,7 +11,7 @@ export interface Boundary {
 	readonly sink: CommitSink
 	/** An external value arrived (props.value, defaultValue). Routes into adoption. */
 	arrive(value: string): void
-	/** Parser or layout changed: re-derive every token from the unchanged projection. */
+	/** Parser or parse policy changed: re-derive every token from the unchanged projection. */
 	reparse(): void
 }
 
@@ -31,15 +31,12 @@ export function createBoundary(deps: {
 	 */
 	controlled: () => boolean
 	/**
-	 * Block mode's parse policy. Read per adoption, so an `isBlock` flip is honored by
-	 * the next `reparse` without a second code path.
+	 * THE parse policy: the effective structural row separator (issue 08), or `undefined` for a
+	 * document that has no rows. Read per adoption, so a change is honored by the next
+	 * `reparse` without a second code path. Layout is not a second input here — the caller
+	 * folds it in (`TokenModel.rowSeparator`).
 	 */
-	isBlock?: () => boolean
-	/**
-	 * The structural row separator (issue 08), read per adoption like `isBlock`.
-	 * Block layout parses through `parseRows` exactly when both are provided.
-	 */
-	separator?: () => string
+	separator?: () => string | undefined
 	/**
 	 * Pre-adoption selection capture. Read once per adoption and by `fold` alone — never
 	 * during construction — see `TransactionResult.selectionAfter` for why the boundary
@@ -65,10 +62,10 @@ export function createBoundary(deps: {
 		// anchors themselves hold no coordinate, so it is adoption — not this call site —
 		// that owes the pre-mutation reading of their positions.
 		const selectionBefore = deps.selection?.()
-		// Block layout's top level is rows (issue 08); inline stays the flat parse.
-		// `!== undefined`, not truthiness: an explicit `separator: ''` must reach
-		// parseRows' own loud throw, not silently downgrade block to the inline parse.
-		const separator = deps.isBlock?.() === true ? deps.separator?.() : undefined
+		// A separator means the top level is rows (issue 08); its absence is the flat parse.
+		// `!== undefined`, not truthiness: an explicit `separator: ''` must reach parseRows'
+		// own loud throw, not silently downgrade to the flat parse.
+		const separator = deps.separator?.()
 		const parsed =
 			separator !== undefined ? parseRowsValue(deps.parser(), next, separator) : parseValue(deps.parser(), next)
 		// THE COMMIT IS ATOMIC. Adoption and everything the result drives — the bind, the

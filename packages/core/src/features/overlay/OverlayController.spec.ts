@@ -118,6 +118,21 @@ describe('OverlayController', () => {
 			expect(store.overlay.match()?.source).toBe('@wor')
 		})
 
+		it('stays closed when an INLINE document changes its separator', () => {
+			// BEHAVIOUR CHANGE (ticket 05), and the UI-visible half of it. This watch is one of
+			// only two production readers of `tokens.committed`, and a rowless `separator` change
+			// used to pulse that clock — so the probe re-ran, found the '@wo' the caret was still
+			// sitting on, and REOPENED an overlay the user had just dismissed. The parse tuple now
+			// carries `rowSeparator`, which an inline document never subscribes to, so no commit
+			// is spent and the dismissal holds. Measured before the switch: `"wo"` here.
+			const store = storeWithCaret('hello @wo', 9)
+			store.overlay.close()
+
+			store.props.update({separator: '\n'})
+
+			expect(store.overlay.match()).toBeUndefined()
+		})
+
 		it('not react to change event when showOverlayOn does not include change', () => {
 			store.props.update({options: [], showOverlayOn: 'selectionChange'})
 			store.props.update({options: [{overlay: {trigger: '@'}}]})

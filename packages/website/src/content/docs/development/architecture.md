@@ -221,7 +221,7 @@ Block row operations are NOT an event. `store.block.action({...})` and its four-
 `DragAction` payload are gone: `BlockController` resolves the menu's row id to its node and calls
 that node's own verbs, so there is no action to lower onto them.
 
-Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, isBlock)` tuple in the `TokenModel` constructor. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
+Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, rowSeparator)` tuple in the `TokenModel` constructor. `rowSeparator` is `TokenModel`'s own computed — `layout.isBlock() ? separator() : undefined` — and it is the one place the `layout` enum is read; everything else asks it, or asks the tree it produced. Because a computed tracks its dependencies per evaluation, a document with no rows is not subscribed to `separator` at all, so changing that prop in inline layout re-derives nothing. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
 
 ### Event Usage
 
@@ -312,9 +312,9 @@ class Store {
     // Features live directly on store, not nested under .feature
     readonly host:      Host               // rendered event + container signal + onMounted lifecycle
     readonly props:     PropsModel         // framework-provided configuration
-    readonly slots:     SlotsFeature       // isBlock, isDragEnabled, slot component/props, mark resolver
+    readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops, and `rowSeparator` — the one reader of the `layout` enum
+    readonly slots:     SlotsFeature       // slot component/props, mark resolver, and the grip gutter (rowSeparator + draggable)
     readonly edit:      EditController     // replace(from, to, text) / setValue(text) — single batched write path
-    readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops
     readonly overlay:   OverlayController  // match, element, slot, select, close
     readonly keyboard:  KeyboardController // input handling and block editing
     readonly block:     BlockController     // Block layout for the whole editor: hover, drag, drop edge, menu
@@ -349,7 +349,7 @@ const {nodes} = useMarkput(s => ({nodes: s.tokens.nodes}))
 
 11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandle` — the public host object the component ref exposes — follows the same rule: it owns nothing and delegates every member to the feature that owns the state.
 
-Signal subscription order is significant: inside its constructor `onMounted` hook, `TokenModel` registers a single `watch` over the `(value, parser, isBlock)` tuple before any other consumer registers a watcher in `onMounted`. When any of the three changes, the watch callback runs the private `#reparse`, so by the time downstream listeners observe a `value.current` change, `tokens.nodes()` already reflects the new value.
+Signal subscription order is significant: inside its constructor `onMounted` hook, `TokenModel` registers a single `watch` over the `(value, parser, rowSeparator)` tuple before any other consumer registers a watcher in `onMounted`. When any of the three changes, the watch callback runs the private `#reparse`, so by the time downstream listeners observe a `value.current` change, `tokens.nodes()` already reflects the new value.
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
@@ -375,7 +375,7 @@ React/Vue render asynchronously, so initialization order matters:
 //      framework swaps to a different container.
 
 // 2. After mount, the string boundary accepts props.value/defaultValue.
-//    TokenModel's constructor watch over (value, parser, isBlock) subscribed
+//    TokenModel's constructor watch over (value, parser, rowSeparator) subscribed
 //    first inside its onMounted hook, so tokens.nodes() reflects the new value
 //    before any other onMounted watcher observes it.
 

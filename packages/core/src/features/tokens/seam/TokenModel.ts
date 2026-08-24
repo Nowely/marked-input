@@ -376,15 +376,19 @@ export class TokenModel {
 			// installed right after can bind a pre-built DOM — the shell is live once the
 			// container attaches.
 			//
-			// ONE watch over the (value, parser, isBlock, separator) tuple: a simultaneous props
+			// ONE watch over the (value, parser, rowSeparator) tuple: a simultaneous props
 			// change is one wave and one commit, where separate watches would adopt (and
 			// announce) several times.
+			//
+			// `rowSeparator`, not the two props behind it: the tuple carries what the PARSE
+			// consumes, so a `separator` a rowless document never reads no longer wakes the
+			// clock. Its dependency on `separator` appears and disappears with `layout`,
+			// which a computed tracks per evaluation.
 			watch(
 				() => ({
 					value: this.props.value(),
 					parser: this.#parser(),
-					isBlock: this.props.layout.isBlock(),
-					separator: this.props.separator(),
+					separator: this.rowSeparator(),
 				}),
 				(next, previous) => {
 					if (previous && next.value === previous.value && this.#seeded()) {
@@ -595,8 +599,7 @@ export class TokenModel {
 	readonly #boundary = createBoundary({
 		tree: this.#tree,
 		parser: () => this.#parser(),
-		isBlock: () => this.props.layout.isBlock(),
-		separator: () => this.props.separator(),
+		separator: () => this.rowSeparator(),
 		controlled: () => this.props.value() !== undefined,
 		selection: () => this.selection.anchors(),
 		onChange: next => this.props.onChange()?.(next),

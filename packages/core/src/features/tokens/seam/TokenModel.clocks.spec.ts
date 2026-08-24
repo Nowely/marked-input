@@ -25,6 +25,19 @@ function mountWithMark(beforeMount?: (store: Store) => void) {
 	return {store, container}
 }
 
+/**
+ * A bare attach for the tuple watch: three separator-delimited pieces, INLINE, with no rendered
+ * surfaces. The watch seeds on mount and needs no DOM of its own.
+ */
+function mountRowless(): Store {
+	const store = new Store()
+	store.props.set({value: 'one\n\n@[m]\n\nthree'})
+	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
+	return store
+}
+
 /** Stable identity of the token at a top-level index, read through its live handle. */
 function handleId(store: Store, index: number): number {
 	const handle = store.tokens.handle(store.tokens.nodes()[index].id!)
@@ -150,7 +163,7 @@ describe('TokenModel commit clocks', () => {
 })
 
 // ---------------------------------------------------------------------------
-// The (value, parser, isBlock) tuple watch
+// The (value, parser, rowSeparator) tuple watch
 // ---------------------------------------------------------------------------
 
 describe('one watch over the props tuple', () => {
@@ -178,6 +191,42 @@ describe('one watch over the props tuple', () => {
 		expect(committedSpy).toHaveBeenCalledTimes(1)
 		expect(store.tokens.value()).toBe('hello!')
 		expect(textSurface.textContent).toBe('hello!')
+	})
+
+	it('a separator change in a document with NO rows does not pulse the clock', () => {
+		// BEHAVIOUR CHANGE (ticket 05). The tuple carries `rowSeparator`, and that computed reads
+		// `separator` only while `layout` is block — so a rowless document is not subscribed to a
+		// prop its parse never consults. The tree was identical across this change before the
+		// switch too; what is gone is the commit, and `committed` is published through
+		// `useMarkput`.
+		const store = mountRowless()
+		const committedSpy = vi.fn()
+		watch(store.tokens.committed, committedSpy)
+		const before = store.tokens.nodes()
+
+		store.props.update({separator: '\n'})
+
+		expect(committedSpy).toHaveBeenCalledTimes(0)
+		expect(store.tokens.nodes()).toBe(before)
+		expect(store.tokens.value()).toBe('one\n\n@[m]\n\nthree')
+	})
+
+	it('a layout flip and then a separator change reparse twice — the computed picks up its new dependency', () => {
+		// The other half of the same claim, and the one that would break if a computed with
+		// DYNAMIC dependencies could not re-subscribe: the flat document never read `separator`,
+		// so going block must both reparse AND start tracking it.
+		const store = mountRowless()
+		const committedSpy = vi.fn()
+		watch(store.tokens.committed, committedSpy)
+		expect(store.tokens.nodes().map(n => n.kind)).toEqual(['text'])
+
+		store.props.update({layout: 'block'})
+		expect(committedSpy).toHaveBeenCalledTimes(1)
+		expect(store.tokens.nodes().map(n => n.kind)).toEqual(['row', 'row', 'row'])
+
+		store.props.update({separator: '\n'})
+		expect(committedSpy).toHaveBeenCalledTimes(2)
+		expect(store.tokens.nodes().map(n => n.kind)).toEqual(['row', 'row', 'row', 'row', 'row'])
 	})
 })
 

@@ -127,6 +127,21 @@ Implementation is a separate effort after this map.
   node-keyed structures do survive, both `TokenModel`'s, and both are DOM
   identity rather than UI state. The surviving half — whether MARKS want
   per-node state — is now [09](issues/09-per-node-state-for-marks.md).
+- [The layout switch survives as a PROP and dies as a MODE](issues/05-layout-switch-fate.md)
+  (2026-08-24, Option A, implemented) — `TokenModel.rowSeparator`
+  (`layout.isBlock() ? separator() : undefined`) is the SOLE reader of the enum;
+  the parse fork, the four feature gates and the grip gutter all ask it, and
+  React's `Container` picks a wrapper per NODE, which deletes the `n as BlockRow`
+  cast. Grep for `layout.isBlock` outside specs returns one hit, the computed
+  itself. BEHAVIOR CHANGE declared: in a document with no rows a `separator`
+  change no longer pulses the commit clock (measured 1 → 0, identical tree both
+  sides) — and since `OverlayController` re-probes its `'change'` trigger on that
+  pulse, a dismissed overlay no longer re-opens when an inline editor's
+  `separator` moves. Two shapes were REJECTED on measurement and should not be
+  re-proposed — a tree-derived grip gutter (`containerProps` is read during SSR,
+  where the tree is empty), and a per-node `v-if` in Vue's `Container` (Vue gives
+  each `<template v-for>` item its own Fragment, and a Fragment mounts two empty
+  text anchors, so it would push 2N stray text nodes into the editing host).
 - [Stale premises](issues/07-stale-premises-sweep.md) — the filter is gone; 9
   stale sites fixed (the census found 3), backlog 09 and 15 both closed as
   non-reproducing, and `anchorAt`'s `side` param is now measured
