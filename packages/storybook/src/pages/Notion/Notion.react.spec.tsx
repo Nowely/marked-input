@@ -433,6 +433,28 @@ describe('the keymap on the showcase kinds', () => {
 
 		await expect.poll(value).toBe('top\n---Z\ntail')
 	})
+
+	/**
+	 * A RAW CLOSED BODY IS BOUNDED BY BYTES NO ANCHOR NAMES — the fence's closing ``` ``` ``` line —
+	 * and the delete machinery had no rule for them, so one `Delete` at the end of the body reached
+	 * straight THROUGH the closing literal and glued the next row onto the code:
+	 * `` '```bash\nls\n```\nplain' `` emitted `` '```bash\nlsplain' ``, with the kind gone and
+	 * ` ```bash ` left painted as a paragraph. One keystroke, from a caret a click puts you at.
+	 *
+	 * The body's own end is where the body ends. Delete there is consumed and does nothing, which
+	 * is the same answer Backspace already gives at a carved piece's start.
+	 */
+	it('refuses a Delete that would reach through a code fence’s closing line', async () => {
+		const doc = '```bash\nls\n```\nplain'
+		const {host, value} = await mountControlled(Showcase, doc)
+
+		// The fence's own body surface — its row element also holds the language `<select>`.
+		await focusAtEnd(host.querySelector<HTMLElement>('[class*="codeBlock"] > span')!)
+		await userEvent.keyboard('{Delete}')
+
+		await expect.poll(value).toBe(doc)
+		expect(host.querySelectorAll('[class*="codeBlock"]')).toHaveLength(1)
+	})
 })
 
 describe('undo', () => {

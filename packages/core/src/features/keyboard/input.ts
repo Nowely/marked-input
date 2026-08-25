@@ -124,9 +124,21 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 
 	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
 	const target = anchorsForDelete(store, inputType, anchors)
-	if (!target) return
 
+	// CANCELLED WHETHER OR NOT THE MODEL CAN EXPRESS IT, which is ADR-0006's rule and the one
+	// place a plain delete was still leaking out of it. `undefined` means the neighbour is not
+	// anchorable — a raw closed body's closing literal, a document edge — and declining here does
+	// not leave the key alone: Chromium then emits its OWN `deleteContentForward` carrying a
+	// RANGED target range, which outranks the live caret downstream and is applied verbatim.
+	// Measured on a fence: `'```bash⏎ls⏎```⏎plain'` with the caret at the end of `ls` emitted
+	// `'```bash⏎lsplain'` — the closing line and the kind gone, from one keystroke. There is no
+	// merge to offer across such a boundary in either direction, so the key is consumed and does
+	// nothing, which is Backspace's answer at a carved piece's start.
+	//
+	// The extents that legitimately need the browser's own event — a word or line delete — never
+	// reach here: the modifier test above declines ahead of this.
 	event.preventDefault()
+	if (!target) return
 	store.edit.replace(target.anchor, target.head, '')
 }
 

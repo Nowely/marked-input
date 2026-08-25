@@ -391,14 +391,20 @@ describe('rowKeys row-boundary delete', () => {
 		expect(store.tokens.value()).toBe('one\n\nto\n\n')
 	})
 
-	it('Backspace at the first row start is left to the browser', () => {
+	it('Backspace at the first row start changes nothing, and is CONSUMED changing nothing', () => {
+		// It used to be left to the browser, on the reading that a delete the model cannot express
+		// is one the browser may as well answer. It may not: Chromium answers an unexpressed
+		// delete with its OWN `beforeinput` carrying a RANGED target range, which outranks the
+		// live caret downstream and is applied verbatim — that is how one `Delete` at the end of a
+		// code fence's body swallowed the closing line and the kind with it. ADR-0006's rule holds
+		// here too, and at a document edge there is nothing for the browser to have done anyway.
 		const {store, container} = mountBlock()
 		caretInRow(store, 0, 0)
 
 		const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
 		container.dispatchEvent(event)
 
-		expect(event.defaultPrevented).toBe(false)
+		expect(event.defaultPrevented).toBe(true)
 		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
 	})
 
