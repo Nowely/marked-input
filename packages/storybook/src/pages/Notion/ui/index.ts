@@ -1,0 +1,38 @@
+/**
+ * The showcase's consumer components (`docs/scratch/notion-like/showcase.md`, final section):
+ * plain props in, theme classes out. None of them imports markput, holds editor state or reaches
+ * for the document — a row component drops them in.
+ */
+
+export {Avatar} from './Avatar'
+export type {AvatarProps} from './Avatar'
+export {AvatarStack} from './AvatarStack'
+export type {AvatarStackProps} from './AvatarStack'
+export {Board} from './Board'
+export type {BoardProps} from './Board'
+export {BoardCard} from './BoardCard'
+export type {BoardCardProps} from './BoardCard'
+export {BoardColumn} from './BoardColumn'
+export type {BoardColumnProps} from './BoardColumn'
+export {BookmarkCard} from './BookmarkCard'
+export type {BookmarkCardProps} from './BookmarkCard'
+export {Callout} from './Callout'
+export type {CalloutProps, CalloutTone} from './Callout'
+export {CardGrid} from './CardGrid'
+export type {CardGridProps} from './CardGrid'
+export {Chip} from './Chip'
+export type {ChipProps, ChipTone} from './Chip'
+export {CommentThread} from './CommentThread'
+export type {CommentThreadProps} from './CommentThread'
+export {CoverBand} from './CoverBand'
+export type {CoverBandProps} from './CoverBand'
+export {EffortBar} from './EffortBar'
+export type {EffortBarProps} from './EffortBar'
+export {MetricCard} from './MetricCard'
+export type {MetricCardProps} from './MetricCard'
+export {PageChrome} from './PageChrome'
+export type {PageChromeProps} from './PageChrome'
+export {PropertiesPanel} from './PropertiesPanel'
+export type {PropertiesPanelProps} from './PropertiesPanel'
+export {ViewTabs} from './ViewTabs'
+export type {ViewTabsProps} from './ViewTabs'

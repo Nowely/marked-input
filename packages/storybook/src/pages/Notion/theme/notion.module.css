@@ -77,6 +77,12 @@
 	background: var(--notion-surface-block-hover);
 }
 
+/* "Edited 14m ago" — a reading, not a control, so it is quieter than the buttons beside it. */
+.topBarStatus {
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-tiny);
+}
+
 /* --- Cover ------------------------------------------------------------------ */
 
 .coverBand {
@@ -405,6 +411,52 @@
 .avatarStack .avatar {
 	margin-left: calc(var(--notion-space-2) * -1);
 	border: 2px solid var(--notion-surface-page);
+}
+
+/* An identity colour picked from the NAME, out of the chip palette rather than a second one:
+   an avatar is the same kind of small coloured token as a chip, and two palettes would drift.
+   Declared after `.avatar` so the tone wins the cascade over the neutral default. */
+.avatarGrey {
+	composes: avatar;
+	background: var(--notion-chip-grey-background);
+	color: var(--notion-chip-grey-foreground);
+}
+
+.avatarRed {
+	composes: avatar;
+	background: var(--notion-chip-red-background);
+	color: var(--notion-chip-red-foreground);
+}
+
+.avatarAmber {
+	composes: avatar;
+	background: var(--notion-chip-amber-background);
+	color: var(--notion-chip-amber-foreground);
+}
+
+.avatarGreen {
+	composes: avatar;
+	background: var(--notion-chip-green-background);
+	color: var(--notion-chip-green-foreground);
+}
+
+.avatarBlue {
+	composes: avatar;
+	background: var(--notion-chip-blue-background);
+	color: var(--notion-chip-blue-foreground);
+}
+
+.avatarPurple {
+	composes: avatar;
+	background: var(--notion-chip-purple-background);
+	color: var(--notion-chip-purple-foreground);
+}
+
+/* The "+4 others" tail of a stack: text, so it does not get the circle's box. */
+.avatarStackTail {
+	margin-left: var(--notion-space-2);
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-small);
 }
 
 /* --- Table ------------------------------------------------------------------ */
@@ -813,6 +865,13 @@
 	background: var(--notion-surface-card);
 }
 
+/* A column under a card being dragged over it. Lifting the surface, not adding a border, so
+   nothing in the column reflows on hover-over and the drop target does not jitter. */
+.boardColumnDropTarget {
+	composes: boardColumn;
+	background: var(--notion-surface-card-hover);
+}
+
 .boardColumnHeader {
 	display: flex;
 	gap: var(--notion-space-2);
@@ -844,6 +903,19 @@
 	border-color: var(--notion-border-default);
 }
 
+.boardCardDraggable {
+	composes: boardCard;
+	cursor: grab;
+}
+
+/* The card stays in place while it is dragged — the browser carries the drag image. Fading it
+   is what says "this one is in flight". */
+.boardCardDragging {
+	composes: boardCardDraggable;
+	opacity: 0.4;
+	cursor: grabbing;
+}
+
 .boardCardTitle {
 	color: var(--notion-text-primary);
 	font-size: var(--notion-font-size-small);
@@ -858,6 +930,14 @@
 	border-bottom: 1px solid var(--notion-border-subtle);
 	margin: var(--notion-space-4) 0 0;
 	white-space: normal;
+}
+
+/* The tabs alone. The bar also holds Filter / Sort / New, which are NOT tabs, so `role=tablist`
+   goes on this inner box instead of on the whole bar. */
+.viewTabList {
+	display: flex;
+	gap: var(--notion-space-1);
+	align-items: center;
 }
 
 .viewTab {
