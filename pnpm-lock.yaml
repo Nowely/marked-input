@@ -137,9 +137,6 @@ importers:
 
   packages/notion:
     devDependencies:
-      '@markput/core':
-        specifier: workspace:*
-        version: link:../core
       '@markput/react':
         specifier: workspace:*
         version: link:../react/markput
