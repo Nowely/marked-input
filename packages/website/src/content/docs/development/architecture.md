@@ -309,8 +309,11 @@ class Store {
         options: Signal<CoreOption[]>
         readOnly: Signal<boolean>
         separator: Signal<string | null>     // the structural row separator (ADR-0009, ADR-0011);
-                                             // `null` = the value never splits, so the document has no rows.
-                                             // `TokenModel.rowConfig` derives the parse policy from it alone
+                                             // `null` = the value never splits, so the document has no rows
+        indent: Signal<string>               // the indent unit a NESTED row leads with (ADR-0010);
+                                             // `''` turns nesting off, and with it row typing on an
+                                             // indented line. `TokenModel.rowConfig` derives the parse
+                                             // policy from these two and nothing else
         draggable: Signal<boolean | DraggableConfig>
         showOverlayOn: Signal<OverlayTrigger>
         Span: Signal<Slot | undefined>
@@ -414,6 +417,18 @@ is a ROW, wrapped in a `<Block>` component that renders the row's children and n
 row controls — grip, drop indicator, row menu — are not in the row. One `<BlockControls>` per editor
 paints all three, as the container's last child, `position: absolute; inset: 0` over the rows.
 
+ROWS NEST, and nesting is indentation and nothing else (ADR-0010). A row whose indent run is deeper
+than the row before it becomes its child, clamped in the tree to one level deeper while the surplus
+bytes stay verbatim in the row's `lead` — so `lead` is the round-trip bytes and depth is the tree,
+and there is no function from one to the other. An empty row takes no children. A row's `children`
+hold its inline tokens FIRST and its child rows after, in one list, so every generic walk stays
+untouched; `inline()` and `rows()` are the two named halves. Its `position` covers its whole
+subtree, which is what keeps sibling positions ascending at every depth, and `lineRange()` is the
+row's own line. The projection joins rows in PRE-ORDER by the separator and each row emits its own
+lead. A sibling list is painted by one `<Rows>` component at every depth, which also folds
+consecutive siblings sharing a `group` component into one wrapper — `resolveRowGroups`, in core, so
+the rule is not written once per adapter.
+
 `BlockController` (`store.block`) owns them for the whole editor, as four signals
 addressed by row id:
 
@@ -497,7 +512,7 @@ There is no selection feature and no `store.selection`. `TokenModel` owns both h
 
 `TokenModel` is the thin public shell over a live-node core — `dom/TokenHandle.ts` (the per-token live binding), `dom/commit.ts` (the one commit pipeline), and `dom/bind.ts` (the DOM walk that binds freshly rendered DOM). It consolidates the DOM responsibilities that were previously split across separate ref/index/surface modules:
 
-- **Adapter ref registries** — `tokens.control()` and `tokens.children(ownerId)` register non-editable control elements and `__slot__` child-sequence hosts, and `tokens.consign(id)` registers a token's own element — a block row's wrapper included, since a row IS a token (ADR-0009). All are keyed by the owning token's stable id. A Mark's registered element is the box-less wrapper markput renders around it, not the consumer's component — so no consumer needs to forward a ref, and core writes attributes only to elements it owns.
+- **Adapter ref registries** — `tokens.control()` and `tokens.children(ownerId, part?)` register non-editable control elements and child-sequence hosts (`'inline'`, the default, is a mark's `__slot__` host or a row's own element; `'rows'` is a row's child-ROWS host), and `tokens.consign(id)` registers a token's own element — a block row's wrapper included, since a row IS a token (ADR-0009). All are keyed by the owning token's stable id. A Mark's registered element is the box-less wrapper markput renders around it, not the consumer's component — so no consumer needs to forward a ref, and core writes attributes only to elements it owns.
 - **Live node map and commit pipeline** — one id-keyed `Map<number, TokenHandle>`, mutated only through the pipeline. Elements are CONSIGNED by the adapters through refs, keyed by token id, rather than derived by walking the painted DOM; `bind` projects those registries onto the node layer. Text never reaches the pipeline: binding arms one conditional-write effect per bound text surface, subscribed to that node's `text` signal, so a text edit repaints no component. `nodes()` is the live tree (consistent with `tokens.value()`) and what both adapters render. There are TWO payload-free clocks, because one event was answering two questions: `committed` fires once per commit — including the commits that move no element, such as a row reorder or a mark value change — and `bound` fires once per bind, which is what the caret needs.
 - **DOM↔model facade** — `handleAt(node)` resolves a DOM node to its handle (or `'control'`), `handle(id)` resolves a stable id to its live handle, `anchorFor(node, offset)` maps a DOM boundary to a node anchor in the live tree, and `caretRect()` / `selectedContent()` read the live selection. The placement commands (`placeCaret`, `selectRange`) and the raw snapshot read live on their owner, `dom/DomModel`, which nothing outside the token layer holds. No member of this facade takes or returns an absolute document offset — `anchorAt` / `offsetOf` are the tree layer's own boundary, kept because that is the one place a coordinate may be formed.
 - **Editable-state application** — `bind` applies the one-host topology to newly mounted surfaces, and that is the whole of it. The container's `contenteditable` belongs to `props.readOnly`, through the selection driver's `{immediate: true}` watch; there is no second writer and no manual override.

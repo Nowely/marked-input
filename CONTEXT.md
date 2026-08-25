@@ -71,11 +71,26 @@ The shape a document takes when its **Separator** splits it: every top-level tok
 _Avoid_: block mode, rows mode, list mode
 
 **Row**:
-Block layout's only top-level node: a span of the document between **Separator** occurrences,
-holding the row's inline **Token**s as children. A Row may have a **Row kind**, whose opener and
-closing literal are structural bytes no caret may enter; a Row with no kind is a paragraph. The
-piece after the final separator is a Row even when empty (ADR-0009).
+Block layout's node: a span of the document between **Separator** occurrences, holding the row's
+inline **Token**s and then its own child Rows, in one list. A Row may have a **Row kind**, whose
+opener and closing literal are structural bytes no caret may enter; a Row with no kind is a
+paragraph. The piece after the final separator is a Row even when empty (ADR-0009). Rows NEST by
+**Lead**: a Row whose lead is deeper than the Row before it is that Row's child, at most one level
+deeper (ADR-0010).
 _Avoid_: line, paragraph, block, item
+
+**Lead**:
+The structural bytes before a Row's own body — the run of **Indent** units it is nested by. It is
+the ROUND-TRIP BYTES, not the depth: an over-indented paste keeps its surplus in the lead and
+merely renders shallower, so there is no function from one to the other. Depth is the recursion
+index the adapters pass down.
+_Avoid_: indentation (as a term for the stored bytes), prefix, margin
+
+**Indent**:
+The editor-level string one nesting level is written with (`indent` prop, default `'\t'`), and
+the only fact that decides whether a document nests at all — `''` turns nesting off, and with it
+Row typing on any line that starts with it.
+_Avoid_: tab, indentation unit, level
 
 **Row kind**:
 The **Markup** a Row is recognised by, matched ONLY at a row's own start and compiled by the same
@@ -107,7 +122,7 @@ _Avoid_: internal, self-managed, local
 
 - A **Value** is the projection of the **Token**s; every write changes tokens and the value follows
 - A **Pairing** is how a **Token** keeps its identity across a write the value alone cannot explain
-- A **Mark** is a **Token**; a **Row** is **Block layout**'s top-level node, formed by the **Separator**
+- A **Mark** is a **Token**; a **Row** is **Block layout**'s node, formed by the **Separator**, and nested under another Row by its **Lead**
 - An **Option** declares the **Markup** a **Mark** serialises to, or — with `row` — the **Row kind** it types a Row as
 - A **Mark** may own a **Slot**, which holds further **Token**s
 - Every **Token** is mirrored into one **Surface**, all of them inside the one **Container**
