@@ -97,7 +97,7 @@ Both framework adapters share the same component structure:
 8. SelectionDriver applies the stored anchors to the DOM after the adapter registers the new DOM
 ```
 
-All user mutations go through `store.edit.replace(from, to, text)`: features name the two NODE ANCHORS that bound the span, and the edit coordinator applies the post-edit caret the token layer answers with, inside a single batch. `store.edit.setValue(text)` is the whole-value form; it is not part of the public export. No absolute offset survives above the token tree — a whole-value rewriter that must place the caret names the ROW it enters (`store.tokens.setValue(text, enterRoot)`), an index into the result the caller genuinely knows. Programmatic writes go through `store.tokens.replaceBetween()` / `setValue()`, and `store.tokens.value()` reads the current projection. DOM→model boundary mapping lives in `store.tokens` (`anchorFor`); its private `SelectionDriver` re-applies the stored anchors to the DOM on `tokens.bound` — the DOM clock, one pulse per bind — and on anchor writes. `TokenModel` owns the token parse, the live node map, and all DOM↔model operations.
+All user mutations go through `store.edit.replace(from, to, text)`: features name the two NODE ANCHORS that bound the span, and the edit coordinator applies the post-edit caret the token layer answers with, inside a single batch. `store.edit.setValue(text)` is the whole-value form; it is not part of the public export. No absolute offset survives above the token tree — a whole-value rewriter that must place the caret names the ROW it enters (`store.tokens.setValue(text, enterRoot)`), an index into the result's rows in PRE-ORDER — falling back to its roots when nothing parses as a row — which the caller genuinely knows. Programmatic writes go through `store.tokens.replaceBetween()` / `setValue()`, and `store.tokens.value()` reads the current projection. DOM→model boundary mapping lives in `store.tokens` (`anchorFor`); its private `SelectionDriver` re-applies the stored anchors to the DOM on `tokens.bound` — the DOM clock, one pulse per bind — and on anchor writes. `TokenModel` owns the token parse, the live node map, and all DOM↔model operations.
 
 ### Trigger Flow (Overlay Opens)
 
@@ -426,6 +426,22 @@ untouched; `inline()` and `rows()` are the two named halves. Its `position` cove
 subtree, which is what keeps sibling positions ascending at every depth, and `lineRange()` is the
 row's own line. The projection joins rows in PRE-ORDER by the separator and each row emits its own
 lead. A sibling list is painted by one `<Rows>` component at every depth.
+
+THE ROW VERBS live on `RowNode` and every one of them is addressed in pre-order, because once rows
+nest a root index stops naming a row. `turnInto(option, patch)` retypes a row: it splices the row's
+own LINE BODY, so the row keeps its id, its element and its child rows, and it takes an OPTION
+rather than a markup because only an option the editor compiled a kind from writes bytes the scan
+reads back. Its `patch.text` replaces the body, which is what makes a menu's strip-and-retype one
+commit. `splitAt(anchor)` opens the tail as a new row — its kind is this one when the kind declares
+`continues`, else a plain row — and places it after the row's whole SUBTREE, because a row written
+at the parent's lead directly under it would adopt every child the parent has. `mergeWith(next)`
+deletes the boundary between two rows adjacent in pre-order — the separator, the next row's lead
+and its opener — which is the same span a Backspace at that boundary removes, so the survivor keeps
+the FIRST row's kind. `remove()` takes the boundary BEFORE a document-final row with it, and
+`duplicate()` puts one back in front of a copy that would otherwise fuse; both ask the pre-order
+walk which row ends the document, since the last root and the last row are different rows once the
+document ends indented. `insertAfter(text)` splices at the row's span end — past its whole subtree
+— and moves the caret into the row that lands there.
 
 `BlockController` (`store.block`) owns them for the whole editor, as four signals
 addressed by row id:
