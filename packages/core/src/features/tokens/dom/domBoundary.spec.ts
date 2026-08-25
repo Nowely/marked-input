@@ -87,7 +87,7 @@ function mountNestedSlot({extra = false, control = true} = {}) {
  */
 function mountBlockRows({grip = false} = {}) {
 	const store = enableStructuralStore('one\n\ntwo\n\n', {
-		layout: 'block',
+		separator: '\n\n',
 		options: [],
 	})
 	const container = document.createElement('div')
@@ -128,7 +128,7 @@ describe('anchorFor', () => {
 	it('anchors an empty block document to its single empty row', () => {
 		// Rootless documents no longer exist (issue 08): an empty block value IS one
 		// empty unterminated row, and the container boundary resolves to it.
-		const {store, container} = mountValue('', {layout: 'block'})
+		const {store, container} = mountValue('', {separator: '\n\n'})
 		expect(store.tokens.anchorFor(container, 0)).toEqual({before: store.tokens.nodes()[0]})
 	})
 
@@ -436,7 +436,7 @@ describe('anchorFor', () => {
 })
 
 function mountStructuralBlockWithControl(value: string) {
-	const store = enableStructuralStore(value, {layout: 'block'})
+	const store = enableStructuralStore(value, {separator: '\n\n'})
 	const container = document.createElement('div')
 	const row = document.createElement('div')
 	const control = document.createElement('button')

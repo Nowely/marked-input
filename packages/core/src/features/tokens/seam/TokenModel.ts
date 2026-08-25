@@ -304,27 +304,30 @@ export class TokenModel {
 
 	/**
 	 * THE block parse policy: how the row skeleton is carved, or `undefined` for a document
-	 * that has no rows. The one place the `layout` enum is read — every other row question in
-	 * core asks this, or the tree it produced, instead of the mode.
+	 * that has no rows. There is no mode beside it (ADR-0011) — every row question in core asks
+	 * this, or the tree it produced.
 	 *
 	 * PROPS-derived, deliberately not tree-derived. `SlotsFeature.containerProps` reads it
 	 * during SERVER rendering, where no container has attached and the tree is therefore still
 	 * empty, so a tree-derived answer would drop block layout's grip gutter from the SSR pass.
 	 *
-	 * AN EMPTY `separator` ANSWERS `undefined`: an empty separator separates nothing, and
-	 * `undefined` is already this seam's word for "no rows" — the row parse, the block feature
-	 * gates, the grip gutter and `BlockController` all turn off together on it. `Parser.parseRows`
-	 * refuses `''` outright, so the alternative is an exception raised inside the adapter's own
-	 * render hook; see `shared/reportBadProp`.
+	 * A NULL `separator` ANSWERS `undefined`: the value never splits, which is one document with
+	 * no rows — the row parse, the block feature gates, the grip gutter and `BlockController` all
+	 * turn off together on it.
+	 *
+	 * AN EMPTY `separator` answers `undefined` too, but reports first: `''` separates nothing
+	 * rather than declining to separate, so it is a bad prop and `null` is how the same shape is
+	 * asked for on purpose. `Parser.parseRows` refuses `''` outright, so the alternative here is
+	 * an exception raised inside the adapter's own render hook; see `shared/reportBadProp`.
 	 */
 	readonly rowConfig: Computed<RowConfig | undefined> = computed(
 		() => {
-			if (!this.props.layout.isBlock()) return undefined
 			const separator = this.props.separator()
+			if (separator === null) return undefined
 			if (separator !== '') return {separator}
 			reportBadProp(
-				'`separator` is empty in block layout, so this editor has no rows and no row controls. ' +
-					'Pass a non-empty separator (the default is "\\n\\n") or drop `layout="block"`.'
+				'`separator` is empty, so this editor has no rows and no row controls. ' +
+					'Pass a non-empty separator, or `separator={null}` for a document that never splits.'
 			)
 			return undefined
 		},

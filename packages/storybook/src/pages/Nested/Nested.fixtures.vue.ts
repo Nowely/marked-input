@@ -66,12 +66,13 @@ const TabbedMarkdown = defineComponent({
 
 		<MarkedInput
 			v-if="activeTab === 'preview'"
+			:separator="null"
 			:Mark="MarkdownMark"
 			:options="inlineMarkdownOptions"
 			:value="value"
 			:readOnly="true"
 		/>
-		<MarkedInput v-else :options="[]" :value="value" @change="value = $event" />
+		<MarkedInput v-else :separator="null" :options="[]" :value="value" @change="value = $event" />
 	`,
 })
 
@@ -96,12 +97,13 @@ const TabbedHtml = defineComponent({
 
 		<MarkedInput
 			v-if="activeTab === 'preview'"
+			:separator="null"
 			:Mark="HtmlDocMark"
 			:value="value"
 			:readOnly="true"
 			:options="options"
 		/>
-		<MarkedInput v-else :value="value" :options="[]" @change="value = $event" />
+		<MarkedInput v-else :separator="null" :value="value" :options="[]" @change="value = $event" />
 	`,
 })
 

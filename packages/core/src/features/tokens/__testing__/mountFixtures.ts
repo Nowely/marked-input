@@ -97,7 +97,7 @@ export function consignRendered(store: Store, container: HTMLElement): void {
 /** A store seeded from props alone: a tree, no container, so nothing below is mounted. */
 export function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
-	store.props.set({defaultValue: value, ...props})
+	store.props.set({separator: null, defaultValue: value, ...props})
 	return store
 }
 
@@ -152,6 +152,7 @@ export function mountStructuralInlineMark(value = 'hello @[world]') {
 export function mountWithMark() {
 	const store = new Store()
 	store.props.set({
+		separator: null,
 		defaultValue: 'he@[x]llo',
 		options: [{markup: '@[__value__]'}],
 		Mark: () => null,
@@ -180,7 +181,7 @@ export function mountWithMark() {
  */
 export function mountValue(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
-	store.props.set({defaultValue: value, ...props})
+	store.props.set({separator: null, defaultValue: value, ...props})
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
@@ -206,6 +207,7 @@ export function mountValue(value: string, props: Parameters<Store['props']['set'
 export function mountNested() {
 	const store = new Store()
 	store.props.set({
+		separator: null,
 		defaultValue: '@[a @[b] c]',
 		options: [{markup: '@[__slot__]'}],
 		Mark: () => null,
@@ -249,7 +251,7 @@ export function mountBlock() {
 	const store = new Store()
 	store.props.set({
 		defaultValue: 'one\n\ntwo\n\n',
-		layout: 'block',
+		separator: '\n\n',
 		options: [],
 	})
 	const container = document.createElement('div')

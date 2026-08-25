@@ -39,6 +39,8 @@ export default {
 	title: 'Markput',
 	tags: ['autodocs'],
 	component,
+	/** A plain annotated field: this page never splits its value into rows (ADR-0011). */
+	args: {separator: null},
 } satisfies PageMeta
 
 export const Default = story({

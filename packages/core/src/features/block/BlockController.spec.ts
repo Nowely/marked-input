@@ -6,7 +6,7 @@ import {Store} from '../../store/Store'
 import {selectionRange} from '../tokens/__testing__/mountFixtures'
 
 const blockProps: Parameters<Store['props']['set']>[0] = {
-	layout: 'block',
+	separator: '\n\n',
 	draggable: true,
 	Mark: () => null,
 	options: [],
@@ -27,7 +27,7 @@ const mounted: Store[] = []
 function mountRows(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
 	mounted.push(store)
-	store.props.set({...blockProps, ...props})
+	store.props.set({separator: null, ...blockProps, ...props})
 	const container = document.createElement('div')
 	container.style.position = 'relative'
 	document.body.append(container)
@@ -144,7 +144,7 @@ describe('hover', () => {
 		mouseMove(container, y)
 		expect(block.state.hovered()).toBe(store.tokens.nodes()[1].id)
 
-		store.props.set({layout: 'inline', options: []})
+		store.props.set({separator: null, options: []})
 		mouseMove(container, y)
 
 		expect(block.rowAt(y)).toBeUndefined()
@@ -362,7 +362,7 @@ describe('the row menu', () => {
 		const {block, rows, store} = mountRows('alpha\n\nbeta\n\n')
 		block.openMenu(store.tokens.nodes()[0].id, rows[0].getBoundingClientRect())
 
-		store.props.set({layout: 'inline', draggable: false})
+		store.props.set({separator: null, draggable: false})
 		block.deleteRow()
 
 		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
@@ -506,7 +506,7 @@ describe('drag and drop', () => {
 
 		startDrag(mounted, 0)
 		dragOver(container, rows[1], 'after')
-		store.props.set({...blockProps, options, layout: 'inline'})
+		store.props.set({...blockProps, options, separator: null})
 		dropOn(container)
 
 		expect(store.tokens.value()).toBe('alpha @[x] tail\n\nbeta @[y] tail\n\n')
@@ -517,7 +517,7 @@ describe('drag and drop', () => {
 		// on a row in block layout. Cancelling the event is how a handler claims the drop, so
 		// claiming one it refuses would suppress core's own `insertFromDrop` edit.
 		const {container, store} = mountRows('alpha\n\nbeta\n\n')
-		store.props.set({layout: 'inline', options: []})
+		store.props.set({separator: null, options: []})
 
 		const dataTransfer = new DataTransfer()
 		dataTransfer.setData('text/plain', 'dropped text')

@@ -43,6 +43,7 @@ function mountStructuralMarkWithDescendant(value = '@[world]', editableSpelling 
 function mountNestedSlot() {
 	const store = new Store()
 	store.props.set({
+		separator: null,
 		defaultValue: '@[a @[b] c]',
 		options: [{markup: '@[__slot__]'}],
 		Mark: () => null,
@@ -79,7 +80,7 @@ function mountNestedSlot() {
 /** A registered control root (block menu, custom control) holding its own `<input>`. */
 function mountInlineWithControl(value = 'hello') {
 	const store = new Store()
-	store.props.set({defaultValue: value})
+	store.props.set({separator: null, defaultValue: value})
 	const container = document.createElement('div')
 	const textSurface = document.createElement('span')
 	const control = document.createElement('div')
@@ -124,6 +125,7 @@ function mountControlledAdjacentMarks() {
 	const store = new Store()
 	const echoed = {value: 'a@[m1](1)@[m2](2)b'}
 	store.props.set({
+		separator: null,
 		value: echoed.value,
 		onChange: (next: string) => {
 			echoed.value = next
@@ -161,7 +163,7 @@ function mountBlockWithMarkEdge(value: string) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: value,
-		layout: 'block',
+		separator: '\n\n',
 		Mark: () => null,
 		options: [{markup: '@[__value__](__meta__)'}],
 	})

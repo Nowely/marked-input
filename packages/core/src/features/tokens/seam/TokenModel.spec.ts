@@ -58,6 +58,7 @@ function boundaryOf(snapshot: SelectionSnapshot | undefined): [Node, number] {
 
 const INLINE_PROPS: CoreProps = {
 	defaultValue: 'he@[x]llo',
+	separator: null,
 	options: [{markup: '@[__value__]'}],
 	Mark: () => null,
 }
@@ -355,7 +356,12 @@ describe('TokenModel shell (seam/)', () => {
 
 		it('a registered child-sequence host lands on its mark handle and opens the mark for editing', () => {
 			// 'he#[ab]llo' → text 'he' [0,2], mark '#[ab]' [2,7] (child text 'ab' [4,6]), text 'llo' [7,10]
-			const setup = createNew({defaultValue: 'he#[ab]llo', options: [{markup: '#[__slot__]'}], Mark: () => null})
+			const setup = createNew({
+				separator: null,
+				defaultValue: 'he#[ab]llo',
+				options: [{markup: '#[__slot__]'}],
+				Mark: () => null,
+			})
 			const container = document.createElement('div')
 			const text1 = document.createElement('span')
 			const markEl = document.createElement('span')

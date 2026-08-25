@@ -67,7 +67,7 @@ _Avoid_: using it for the container element itself, or for the DOM spec's "editi
 ### Layout
 
 **Block layout**:
-The mode in which every top-level token is its own row, draggable and reorderable. The alternative is inline layout, a single run of text.
+The shape a document takes when its **Separator** splits it: every top-level token is its own row, draggable and reorderable. Not a mode and not a prop — `separator: null` is the alternative, a single run of text with no rows at all (ADR-0011).
 _Avoid_: block mode, rows mode, list mode
 
 **Row**:
@@ -85,10 +85,12 @@ read: `__slot__` is inline-parsed, `__value__` is raw and never re-parsed.
 _Avoid_: block type, row type, node type
 
 **Separator**:
-The editor-level string that delimits **Row**s in **Block layout** (`separator` prop, default
-`'\n\n'`). Structural: it belongs to no **Markup**, is that markup's own text inside a Row
-kind's raw body, and bounds an open kind's body at the row's end (ADR-0009, ADR-0010). It is not
-stored on a Row — the projection joins Rows with it, so only the document-final Row lacks one.
+The editor-level string that delimits **Row**s (`separator` prop, default `'\n\n'`), and the only
+fact that decides whether a document has rows at all — `null` says it never splits, `''` is a bad
+prop reported and treated as absent (ADR-0011). Structural: it belongs to no **Markup**, is that
+markup's own text inside a Row kind's raw body, and bounds an open kind's body at the row's end
+(ADR-0009, ADR-0010). It is not stored on a Row — the projection joins Rows with it, so only the
+document-final Row lacks one.
 _Avoid_: terminator, delimiter (as a term; both fine as prose)
 
 ### Value ownership

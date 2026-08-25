@@ -6,7 +6,7 @@ import {joinNodes} from '../tree/tree'
 
 function mountInline(value: string) {
 	const store = new Store()
-	store.props.set({defaultValue: value})
+	store.props.set({separator: null, defaultValue: value})
 	const container = document.createElement('div')
 	const span = document.createElement('span')
 	container.append(span)
@@ -25,7 +25,7 @@ function mountBlock(value: string) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: value,
-		layout: 'block',
+		separator: '\n\n',
 		options: [],
 	})
 	const container = document.createElement('div')

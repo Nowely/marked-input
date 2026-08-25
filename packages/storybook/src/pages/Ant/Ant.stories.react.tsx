@@ -8,6 +8,8 @@ import type {ComponentType} from 'react'
 export default {
 	title: 'Styled/Ant',
 	component: MarkedInput,
+	/** A plain annotated field: this page never splits its value into rows (ADR-0011). */
+	args: {separator: null},
 } satisfies Meta<typeof MarkedInput>
 
 export const Tagged: StoryObj<MarkedInputProps<TagProps>> = {

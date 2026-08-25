@@ -13,6 +13,7 @@ import {anchorsAt, caretAt} from '../tokens/__testing__/mountFixtures'
 function storeWithCaret(value: string, offset: number, controlled = false) {
 	const store = new Store()
 	store.props.set({
+		separator: null,
 		[controlled ? 'value' : 'defaultValue']: value,
 		options: [{overlay: {trigger: '@'}}],
 		onChange: controlled
@@ -122,17 +123,17 @@ describe('OverlayController', () => {
 			expect(store.overlay.match()?.source).toBe('@wor')
 		})
 
-		it('stays closed when an INLINE document changes its separator', () => {
+		it('stays closed when the separator prop is re-sent unchanged', () => {
 			// BEHAVIOUR CHANGE (ticket 05), and the UI-visible half of it. This watch is one of
-			// only two production readers of `tokens.committed`, and a rowless `separator` change
-			// used to pulse that clock — so the probe re-ran, found the '@wo' the caret was still
-			// sitting on, and REOPENED an overlay the user had just dismissed. The parse tuple now
-			// carries `rowConfig`, which an inline document never subscribes to, so no commit
-			// is spent and the dismissal holds. Measured before the switch: `"wo"` here.
+			// only two production readers of `tokens.committed`, and both adapters push every
+			// prop on every parent render — so an unchanged `separator` arrives again and again.
+			// Without `rowConfig`'s equality gate each arrival pulses the clock, the probe re-runs,
+			// finds the '@wo' the caret is still sitting on and REOPENS an overlay the user had
+			// just dismissed. Measured without the gate: `"wo"` here.
 			const store = storeWithCaret('hello @wo', 9)
 			store.overlay.close()
 
-			store.props.update({separator: '\n'})
+			for (let i = 0; i < 5; i++) store.props.update({separator: null})
 
 			expect(store.overlay.match()).toBeUndefined()
 		})
@@ -174,6 +175,7 @@ describe('OverlayController', () => {
 			// including the anchors' own node objects — and the highlight went to NaN anyway.
 			const store = new Store()
 			store.props.set({
+				separator: null,
 				defaultValue: 'hi ',
 				options: [{overlay: {trigger: '@', data: ['alpha', 'beta', 'gamma']}}],
 			})
@@ -226,7 +228,7 @@ describe('OverlayController', () => {
 			// A store of its own: the shared fixture is seeded EMPTY (its container attaches
 			// before any defaultValue), so it has no text node to anchor into.
 			const store = new Store()
-			store.props.set({defaultValue: 'hello @wo', options: [{overlay: {trigger: '@'}}]})
+			store.props.set({separator: null, defaultValue: 'hello @wo', options: [{overlay: {trigger: '@'}}]})
 			store.host.container(document.createElement('div'))
 			const replace = vi.spyOn(store.edit, 'replace')
 			const node = store.tokens.nodes()[0]
@@ -253,7 +255,12 @@ describe('OverlayController', () => {
 		 */
 		function typedTriggerOn(option: CoreOption, withMark = true) {
 			const store = new Store()
-			store.props.set({...(withMark ? {Mark: () => null} : {}), defaultValue: 'hello ', options: [option]})
+			store.props.set({
+				separator: null,
+				...(withMark ? {Mark: () => null} : {}),
+				defaultValue: 'hello ',
+				options: [option],
+			})
 			store.host.container(document.createElement('div'))
 			caretAt(store, 6)
 			store.edit.replace(...anchorsAt(store, 6, 6), '@wo')

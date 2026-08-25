@@ -37,7 +37,6 @@ function syncProps() {
 		defaultValue: props.defaultValue,
 		onChange: (v: string) => emit('change', v),
 		readOnly: props.readOnly,
-		layout: props.layout,
 		separator: props.separator,
 		draggable: props.draggable,
 		options: props.options?.map(opt => ({
@@ -72,7 +71,6 @@ watch(
 		props.style,
 		props.slots,
 		props.slotProps,
-		props.layout,
 		props.separator,
 		props.draggable,
 	],

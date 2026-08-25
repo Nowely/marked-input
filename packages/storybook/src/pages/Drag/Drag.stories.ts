@@ -35,7 +35,7 @@ export const Markdown = story({
 		Mark: fixtures.MarkdownMark,
 		options: markdownOptions,
 		defaultValue: DRAG_MARKDOWN,
-		layout: 'block',
+		separator: '\n\n',
 		draggable: true,
 	},
 })
@@ -59,7 +59,7 @@ export const PlainTextDrag = story({
 		Mark: fixtures.ParagraphMark,
 		options: fixtures.paragraphOptions,
 		defaultValue: PLAIN_TEXT_VALUE,
-		layout: 'block',
+		separator: '\n\n',
 		draggable: true,
 	},
 })
@@ -70,7 +70,7 @@ export const MarkdownDrag = story({
 		Mark: fixtures.MarkdownMark,
 		options: markdownOptions,
 		defaultValue: MARKDOWN_DRAG_VALUE,
-		layout: 'block',
+		separator: '\n\n',
 		draggable: true,
 	},
 })
@@ -82,7 +82,7 @@ export const ReadOnlyDrag = story({
 		options: fixtures.paragraphOptions,
 		value: READ_ONLY_VALUE,
 		readOnly: true,
-		layout: 'block',
+		separator: '\n\n',
 		draggable: true,
 	},
 })
@@ -92,7 +92,6 @@ export const TodoList = story({
 	args: {
 		options: TODO_OPTIONS,
 		value: TODO_VALUE,
-		layout: 'block',
 		separator: '\n',
 		draggable: true,
 	},

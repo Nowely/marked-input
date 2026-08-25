@@ -93,7 +93,7 @@ describe('createSelection', () => {
 			// `'end'` against a real last root, so there the two forms are indistinguishable and
 			// the mutation survives.
 			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			store.tokens.selection.selectAll()
 			expect(store.tokens.selection.isAllSelected()).toBe(true)
 		})
@@ -190,7 +190,7 @@ describe('createSelection', () => {
 			//   left affinity answers 3 → range {2,2} after the echo;
 			//   keeping the optimistic write answers {4,4} (the captured caret is already 3).
 			const store = new Store()
-			store.props.set({value: 'hello', onChange: next => store.props.set({value: next})})
+			store.props.set({separator: null, value: 'hello', onChange: next => store.props.set({value: next})})
 			const {container} = mountInline(store)
 			caretAt(store, 2)
 
@@ -204,7 +204,7 @@ describe('createSelection', () => {
 		it('a rejecting parent moves no caret at all', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			store.props.set({value: 'hello', onChange})
+			store.props.set({separator: null, value: 'hello', onChange})
 			const {container} = mountInline(store)
 			caretAt(store, 2)
 
@@ -226,7 +226,7 @@ describe('createSelection', () => {
 			//   correct: capture 5 → window {0,1,0} → map(5) = 4;
 			//   props-length read: capture 4 → map(4) = 3.
 			const store = new Store()
-			store.props.set({value: 'hello', onChange: next => store.props.set({value: next})})
+			store.props.set({separator: null, value: 'hello', onChange: next => store.props.set({value: next})})
 			const {container} = mountInline(store)
 			caretAt(store, 999)
 
@@ -239,7 +239,11 @@ describe('createSelection', () => {
 
 		it('a transforming parent still repairs, through the gap window', () => {
 			const store = new Store()
-			store.props.set({value: 'hello', onChange: next => store.props.set({value: next.toUpperCase()})})
+			store.props.set({
+				separator: null,
+				value: 'hello',
+				onChange: next => store.props.set({value: next.toUpperCase()}),
+			})
 			const {container} = mountInline(store)
 			caretAt(store, 2)
 

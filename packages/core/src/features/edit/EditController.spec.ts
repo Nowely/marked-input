@@ -6,7 +6,7 @@ import {anchorsAt, caretAt, selectionRange} from '../tokens/__testing__/mountFix
 describe('EditController', () => {
 	it('replaces value and places caret after replacement', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello world'})
+		store.props.set({separator: null, defaultValue: 'hello world'})
 		store.edit.replace(...anchorsAt(store, 6, 11), 'markput')
 
 		expect(store.tokens.value()).toBe('hello markput')
@@ -15,7 +15,7 @@ describe('EditController', () => {
 
 	it('places caret at range start when deleting', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello world'})
+		store.props.set({separator: null, defaultValue: 'hello world'})
 		store.edit.replace(...anchorsAt(store, 5, 11), '')
 
 		expect(store.tokens.value()).toBe('hello')
@@ -28,7 +28,7 @@ describe('EditController', () => {
 		// `MarkputHandle.replaceRange` already documented.
 		const store = new Store()
 		const onChange = vi.fn()
-		store.props.set({defaultValue: 'hello', onChange})
+		store.props.set({separator: null, defaultValue: 'hello', onChange})
 
 		store.edit.replace(...anchorsAt(store, 4, 2), 'x')
 
@@ -40,7 +40,7 @@ describe('EditController', () => {
 	it('does not move caret or change value when readOnly', () => {
 		const store = new Store()
 		const onChange = vi.fn()
-		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
+		store.props.set({separator: null, defaultValue: 'hello', readOnly: true, onChange})
 		caretAt(store, 1)
 
 		store.edit.replace(...anchorsAt(store, 1, 4), 'i')
@@ -56,7 +56,7 @@ describe('EditController', () => {
 		// repaired once, at the echo's adoption, through selectionBefore + map.
 		const store = new Store()
 		const onChange = vi.fn()
-		store.props.set({value: 'hello', onChange})
+		store.props.set({separator: null, value: 'hello', onChange})
 		caretAt(store, 1)
 
 		store.edit.replace(...anchorsAt(store, 0, 5), 'world')
@@ -72,7 +72,7 @@ describe('EditController', () => {
 		// `tokens.setValue`'s `enterRoot`; the measurement that justified the exemption had gone
 		// stale, so nothing is left asking `setValue` to write a caret the echo will re-map.
 		const store = new Store()
-		store.props.set({value: 'hello', onChange: vi.fn()})
+		store.props.set({separator: null, value: 'hello', onChange: vi.fn()})
 		caretAt(store, 0)
 
 		store.edit.setValue('world')
@@ -82,7 +82,7 @@ describe('EditController', () => {
 
 	it('setValue replaces the whole value and lands the caret at its end', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello world'})
+		store.props.set({separator: null, defaultValue: 'hello world'})
 		store.edit.setValue('replaced')
 
 		expect(store.tokens.value()).toBe('replaced')

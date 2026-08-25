@@ -13,7 +13,7 @@ const MARKUP: Markup = '@[__value__](__meta__)'
  */
 function setup(value: string) {
 	const store = new Store()
-	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: MARKUP}]})
+	store.props.set({separator: null, defaultValue: value, Mark: () => null, options: [{markup: MARKUP}]})
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)

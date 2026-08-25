@@ -26,7 +26,7 @@ const MARKDOWN_DRAG_VALUE =
 const CONTROLLED_ARGS = {
 	Mark,
 	value: 'hello @[world](1)\n\nfoo',
-	layout: 'block',
+	separator: '\n\n',
 	draggable: true,
 } as const
 
@@ -562,7 +562,7 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: true,
 			})
 			expect(getComputedStyle(host).position).toBe('relative')
@@ -575,7 +575,7 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: false,
 				style: {marginLeft: '64px'},
 			})
@@ -604,7 +604,7 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: true,
 			})
 			expect(getComputedStyle(host).paddingLeft).toBe('24px')
@@ -629,7 +629,7 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'r0\n\nr1\n\nr2\n\nr3\n\nr4\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: true,
 				style: {marginLeft: '64px'},
 				slotProps: {container: {style: {overflow: 'auto', height: '200px'}}},
@@ -673,7 +673,7 @@ describe('Feature: drag rows', () => {
 					Mark: Growing,
 					options: [{markup: '@[__value__]' as Markup}],
 					defaultValue: '@[img] r0\n\nr1\n\nr2\n\nr3\n\nr4\n\n',
-					layout: 'block',
+					separator: '\n\n',
 					draggable: true,
 					slotProps: {container: {style: {overflow: 'auto', height: '200px'}}},
 				})
@@ -702,7 +702,7 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: true,
 				style: {marginLeft: '64px'},
 			})
@@ -729,7 +729,7 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\ngamma\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: {alwaysShowHandle: true},
 				style: {marginLeft: '64px'},
 			})
@@ -776,7 +776,7 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\ngamma\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: {alwaysShowHandle: true},
 				style: {marginLeft: '64px'},
 				slotProps: {container: {style: containerStyle}},

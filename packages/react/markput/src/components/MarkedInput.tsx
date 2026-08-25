@@ -73,20 +73,20 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	onChange?: (value: string) => void
 	/** Read-only mode */
 	readOnly?: boolean
-	/** Layout mode: 'inline' renders tokens in a single flow, 'block' stacks each token as its own row.
-	 * @default 'inline'
-	 */
-	layout?: 'inline' | 'block'
 	/**
-	 * The structural row separator for block layout (issue 08): editor-level, never part of
-	 * any markup. Inline layout ignores it.
+	 * The structural row separator (issue 08, ADR-0011): editor-level, never part of any markup,
+	 * and the whole of what makes a document rows. Each piece between two separators is a row,
+	 * with its own drag grip and row menu.
 	 *
-	 * An empty string separates nothing: the editor reports it and renders one rowless
-	 * document, with the row controls off.
+	 * `null` says the value never splits: one document, no rows, no row controls — a plain
+	 * annotated text field.
+	 *
+	 * An empty string separates nothing: the editor reports it and renders the document as if it
+	 * were `null`.
 	 * @default '\n\n'
 	 */
-	separator?: string
-	/** Enable drag interaction on block rows. Only effective when layout='block'.
+	separator?: string | null
+	/** Enable drag interaction on rows. Ineffective when `separator` is `null`.
 	 * @default false
 	 */
 	draggable?: boolean | DraggableConfig

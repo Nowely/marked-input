@@ -438,7 +438,7 @@ describe('blockEdit mark swallow', () => {
 		const store = new Store()
 		store.props.set({
 			defaultValue: 'a @[m](1) b\n\nnext',
-			layout: 'block',
+			separator: '\n\n',
 			Mark: () => null,
 			options: [{markup: '@[__value__](__meta__)'}],
 		})
@@ -488,7 +488,7 @@ describe('blockEdit control guard', () => {
 		const store = new Store()
 		store.props.set({
 			defaultValue: 'one\n\ntwo\n\n',
-			layout: 'block',
+			separator: '\n\n',
 			draggable: true,
 			options: [],
 		})

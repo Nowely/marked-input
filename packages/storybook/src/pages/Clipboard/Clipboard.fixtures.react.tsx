@@ -24,7 +24,7 @@ const NestedMark = ({value = ''}: MarkProps) => {
 /** The `PlainText` story's harness: a controlled editor whose value starts markless. */
 function PlainTextInput() {
 	const [value, setValue] = useState('abc')
-	return <MarkedInput Mark={Mark} value={value} onChange={setValue} />
+	return <MarkedInput separator={null} Mark={Mark} value={value} onChange={setValue} />
 }
 
 export const fixtures = {

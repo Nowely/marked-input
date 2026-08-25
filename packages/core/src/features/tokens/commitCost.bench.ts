@@ -333,7 +333,7 @@ function storeFor(doc: Doc): Store {
 		defaultValue: doc.value,
 		options: doc.markup === undefined ? [] : [{markup: doc.markup}],
 		Mark: () => null,
-		...(doc.isBlock ? {layout: 'block' as const} : {}),
+		...(doc.isBlock ? {} : {separator: null}),
 	})
 	return store
 }

@@ -55,15 +55,17 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	value?: string
 	defaultValue?: string
 	readOnly?: boolean
-	layout?: 'inline' | 'block'
 	/**
-	 * The structural row separator for block layout (issue 08): editor-level, never part of
-	 * any markup. Inline layout ignores it. Default '\n\n'.
+	 * The structural row separator (issue 08, ADR-0011): editor-level, never part of any markup,
+	 * and the whole of what makes a document rows. Default '\n\n'.
 	 *
-	 * An empty string separates nothing: the editor reports it and renders one rowless
-	 * document, with the row controls off.
+	 * `null` says the value never splits: one document, no rows, no row controls — a plain
+	 * annotated text field.
+	 *
+	 * An empty string separates nothing: the editor reports it and renders the document as if it
+	 * were `null`.
 	 */
-	separator?: string
+	separator?: string | null
 	draggable?: boolean | DraggableConfig
 }
 

@@ -29,10 +29,10 @@ describe('SlotsFeature', () => {
 		const store = new Store()
 		const option: CoreOption = {markup: '@[__value__]'}
 
-		store.props.set({options: [option]})
+		store.props.set({separator: null, options: [option]})
 		const first = store.slots.node()
 
-		store.props.set({options: [option]})
+		store.props.set({separator: null, options: [option]})
 
 		expect(store.slots.node()).toBe(first)
 	})

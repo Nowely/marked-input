@@ -66,30 +66,12 @@ optional draggable: boolean | DraggableConfig;
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:92](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L92)
 
-Enable drag interaction on block rows. Only effective when layout='block'.
+Enable drag interaction on rows. Ineffective when `separator` is `null`.
 
 #### Default
 
 ```ts
 false
-```
-
-***
-
-### layout?
-
-```ts
-optional layout: "inline" | "block";
-```
-
-Defined in: [react/markput/src/components/MarkedInput.tsx:79](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L79)
-
-Layout mode: 'inline' renders tokens in a single flow, 'block' stacks each token as its own row.
-
-#### Default
-
-```ts
-'inline'
 ```
 
 ***
@@ -181,16 +163,20 @@ Ref to the editor API (spec §2.3)
 ### separator?
 
 ```ts
-optional separator: string;
+optional separator: string | null;
 ```
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:88](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L88)
 
-The structural row separator for block layout (issue 08): editor-level, never part of
-any markup. Inline layout ignores it.
+The structural row separator (issue 08, ADR-0011): editor-level, never part of any markup,
+and the whole of what makes a document rows. Each piece between two separators is a row,
+with its own drag grip and row menu.
 
-An empty string separates nothing: the editor reports it and renders one rowless
-document, with the row controls off.
+`null` says the value never splits: one document, no rows, no row controls — a plain
+annotated text field.
+
+An empty string separates nothing: the editor reports it and renders the document as if it
+were `null`.
 
 #### Default
 

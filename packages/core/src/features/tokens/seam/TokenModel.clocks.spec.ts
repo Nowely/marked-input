@@ -7,11 +7,7 @@ import {anchorsAt, consignRendered, enableStructuralStore, mountInline} from '..
 /** Inline fixture (from TokenModel.facade.spec.ts): text 'he' [0,2], mark '@[x]' [2,6], text 'llo' [6,9]. */
 function mountWithMark(beforeMount?: (store: Store) => void) {
 	const store = new Store()
-	store.props.set({
-		defaultValue: 'he@[x]llo',
-		options: [{markup: '@[__value__]'}],
-		Mark: () => null,
-	})
+	store.props.set({separator: null, defaultValue: 'he@[x]llo', options: [{markup: '@[__value__]'}], Mark: () => null})
 	const container = document.createElement('div')
 	const text1 = document.createElement('span')
 	const mark = document.createElement('span')
@@ -31,7 +27,7 @@ function mountWithMark(beforeMount?: (store: Store) => void) {
  */
 function mountRowless(): Store {
 	const store = new Store()
-	store.props.set({value: 'one\n\n@[m]\n\nthree'})
+	store.props.set({separator: null, value: 'one\n\n@[m]\n\nthree'})
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
@@ -186,41 +182,39 @@ describe('one watch over the props tuple', () => {
 		// the pair is one arrival and one commit. Measured on a probe that split the tuple into
 		// a watch per prop: the value arrival commits, then the parser watch's reparse commits
 		// again — 2 pulses.
-		store.props.set({value: 'hello!', options: [{markup: '@[__value__]'}]})
+		store.props.set({separator: null, value: 'hello!', options: [{markup: '@[__value__]'}]})
 
 		expect(committedSpy).toHaveBeenCalledTimes(1)
 		expect(store.tokens.value()).toBe('hello!')
 		expect(textSurface.textContent).toBe('hello!')
 	})
 
-	it('a separator change in a document with NO rows does not pulse the clock', () => {
-		// BEHAVIOUR CHANGE (ticket 05). The tuple carries `rowConfig`, and that computed reads
-		// `separator` only while `layout` is block — so a rowless document is not subscribed to a
-		// prop its parse never consults. The tree was identical across this change before the
-		// switch too; what is gone is the commit, and `committed` is published through
-		// `useMarkput`.
+	it('a separator re-sent unchanged does not pulse the clock', () => {
+		// `rowConfig` builds a fresh record on every evaluation, and both adapters push props on
+		// every render — so under reference equality each parent render would re-announce the
+		// parse policy and commit. The `{equals: shallow}` gate is what keeps that at one pulse
+		// per DISTINCT policy, and `committed` is published through `useMarkput`.
 		const store = mountRowless()
 		const committedSpy = vi.fn()
 		watch(store.tokens.committed, committedSpy)
 		const before = store.tokens.nodes()
 
-		store.props.update({separator: '\n'})
+		for (let i = 0; i < 5; i++) store.props.update({separator: null})
 
 		expect(committedSpy).toHaveBeenCalledTimes(0)
 		expect(store.tokens.nodes()).toBe(before)
 		expect(store.tokens.value()).toBe('one\n\n@[m]\n\nthree')
 	})
 
-	it('a layout flip and then a separator change reparse twice — the computed picks up its new dependency', () => {
-		// The other half of the same claim, and the one that would break if a computed with
-		// DYNAMIC dependencies could not re-subscribe: the flat document never read `separator`,
-		// so going block must both reparse AND start tracking it.
+	it('two separator changes reparse twice — the parse policy is live', () => {
+		// A document that never splits has one text root; giving it a separator has to reparse
+		// it into rows, and moving that separator has to reparse it again.
 		const store = mountRowless()
 		const committedSpy = vi.fn()
 		watch(store.tokens.committed, committedSpy)
 		expect(store.tokens.nodes().map(n => n.kind)).toEqual(['text'])
 
-		store.props.update({layout: 'block'})
+		store.props.update({separator: '\n\n'})
 		expect(committedSpy).toHaveBeenCalledTimes(1)
 		expect(store.tokens.nodes().map(n => n.kind)).toEqual(['row', 'row', 'row'])
 

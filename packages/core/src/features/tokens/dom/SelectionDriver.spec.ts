@@ -113,7 +113,7 @@ describe('SelectionDriver', () => {
 		// `anchorAt` rebuilds a fresh `{node, offset}` object each time, so only the stored
 		// signal's value equality collapses the second write.
 		const store = new Store()
-		store.props.set({defaultValue: 'hello'})
+		store.props.set({separator: null, defaultValue: 'hello'})
 		const notify = vi.fn()
 		const stop = watch(() => store.tokens.selection.anchors(), notify)
 		caretAt(store, 5)
@@ -297,7 +297,7 @@ describe('SelectionDriver', () => {
 	describe('selectAll', () => {
 		it('sets range to full value range and applies it to DOM', () => {
 			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			const container = document.createElement('div')
 			const span = document.createElement('span')
 			span.appendChild(document.createTextNode('hello'))
@@ -317,7 +317,7 @@ describe('SelectionDriver', () => {
 		})
 		it('retains range intent when the DOM has no target yet', () => {
 			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			// No container set → no DOM index has been committed → placement is deferred
 			// until the next render. The range signal still reflects user intent.
 			store.tokens.selection.selectAll()
@@ -395,7 +395,7 @@ describe('SelectionDriver', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			store.host.container(container)
 			consignRendered(store, container)
 			caretAt(store, 5)
@@ -413,7 +413,7 @@ describe('SelectionDriver', () => {
 			const store = new Store()
 			const container = document.createElement('div')
 			document.body.appendChild(container)
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			store.host.container(container)
 			caretAt(store, 3)
 			expect(selectionRange(store)).toEqual({start: 3, end: 3})
@@ -425,7 +425,7 @@ describe('SelectionDriver', () => {
 			// unchanged: `anchorAt(999)` finds no node containing the offset, so it answers
 			// `'end'`, which resolves to the last root's end.
 			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			const container = document.createElement('div')
 			const span = document.createElement('span')
 			span.appendChild(document.createTextNode('hello'))
@@ -441,7 +441,7 @@ describe('SelectionDriver', () => {
 
 		it('resolves an out-of-range selection to the document end', () => {
 			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			const container = document.createElement('div')
 			const span = document.createElement('span')
 			span.appendChild(document.createTextNode('hello'))
@@ -482,10 +482,10 @@ describe('SelectionDriver', () => {
 
 			expect(container.getAttribute('contenteditable')).toBe('true')
 
-			store.props.set({readOnly: true})
+			store.props.set({separator: null, readOnly: true})
 			expect(container.getAttribute('contenteditable')).toBe('false')
 
-			store.props.set({readOnly: false})
+			store.props.set({separator: null, readOnly: false})
 			expect(container.getAttribute('contenteditable')).toBe('true')
 			container.remove()
 		})

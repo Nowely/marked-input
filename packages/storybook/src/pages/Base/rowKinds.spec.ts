@@ -14,7 +14,7 @@ import {mountComponent} from '../../shared/lib/page'
 const Heading = defineMark({tag: 'h1', class: 'heading'})
 const Quote = defineMark({tag: 'blockquote'})
 
-const BLOCK = {layout: 'block', separator: '\n', Mark} as const
+const BLOCK = {separator: '\n', Mark} as const
 
 describe('row kinds', () => {
 	it('paints a typed row through its own component and a paragraph through the block slot', async () => {

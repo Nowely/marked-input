@@ -37,7 +37,7 @@ describe('TokenModel value boundary', () => {
 
 	it('initializes from controlled value on enable', () => {
 		const store = new Store()
-		store.props.update({value: 'hello'})
+		store.props.update({separator: null, value: 'hello'})
 		mount(store)
 		expect(store.tokens.value()).toBe('hello')
 		expect(treeShape(store.tokens.nodes())).toMatchObject([
@@ -52,13 +52,13 @@ describe('TokenModel value boundary', () => {
 		// reducing the getter to `props.value() ?? this.#committed()` returns '' here,
 		// because nothing has committed yet.
 		const store = new Store()
-		store.props.set({defaultValue: 'hello'})
+		store.props.set({separator: null, defaultValue: 'hello'})
 		expect(store.tokens.value()).toBe('hello')
 	})
 
 	it('initializes from defaultValue when uncontrolled', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello'})
+		store.props.set({separator: null, defaultValue: 'hello'})
 		mount(store)
 		expect(store.tokens.value()).toBe('hello')
 		expect(treeShape(store.tokens.nodes())).toMatchObject([
@@ -68,7 +68,7 @@ describe('TokenModel value boundary', () => {
 
 	it('controlled prop echo commits current and tokens', () => {
 		const store = new Store()
-		store.props.update({value: 'hello'})
+		store.props.update({separator: null, value: 'hello'})
 		mount(store)
 		store.props.update({value: 'world'})
 
@@ -84,7 +84,7 @@ describe('TokenModel value boundary', () => {
 		// which the user last saw before the parent took over (or never saw at all). The seed
 		// answers only before the tree holds anything; here it holds 'hello'.
 		const store = new Store()
-		store.props.update({value: 'hello', defaultValue: 'default'})
+		store.props.update({separator: null, value: 'hello', defaultValue: 'default'})
 		mount(store)
 		store.props.update({value: undefined})
 
@@ -98,7 +98,7 @@ describe('TokenModel value boundary', () => {
 	it('readOnly rejects editor-originated range replacement', () => {
 		const store = new Store()
 		const onChange = vi.fn()
-		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
+		store.props.set({separator: null, defaultValue: 'hello', readOnly: true, onChange})
 		mount(store)
 		store.tokens.setValue('world')
 
@@ -112,7 +112,7 @@ describe('TokenModel value boundary', () => {
 	it('readOnly allows controlled prop updates to replace accepted value', () => {
 		const store = new Store()
 		const onChange = vi.fn()
-		store.props.update({value: 'hello', readOnly: true, onChange})
+		store.props.update({separator: null, value: 'hello', readOnly: true, onChange})
 		mount(store)
 		store.props.update({value: 'world'})
 
@@ -126,7 +126,7 @@ describe('TokenModel value boundary', () => {
 	describe('replaceBetween()', () => {
 		it('commits uncontrolled range replacement', () => {
 			const store = new Store()
-			store.props.set({defaultValue: 'hello world'})
+			store.props.set({separator: null, defaultValue: 'hello world'})
 			store.tokens.replaceBetween(store.tokens.anchorAt(6), store.tokens.anchorAt(11), 'markput')
 
 			expect(store.tokens.value()).toBe('hello markput')
@@ -161,7 +161,7 @@ describe('TokenModel value boundary', () => {
 			// screen. An editor that wants 'edited' back can pass it: dropping control is not
 			// an undo.
 			const store = new Store()
-			store.props.set({defaultValue: 'default'})
+			store.props.set({separator: null, defaultValue: 'default'})
 			mount(store)
 			store.tokens.setValue('edited')
 			expect(store.tokens.value()).toBe('edited')
@@ -179,7 +179,7 @@ describe('TokenModel value boundary', () => {
 			// always takes the arrival arm — with `value === undefined` on an uncontrolled store,
 			// which is the only arm that can fall back to the seed.
 			const store = new Store()
-			store.props.set({defaultValue: 'default'})
+			store.props.set({separator: null, defaultValue: 'default'})
 			mount(store)
 			store.tokens.setValue('edited')
 			expect(store.tokens.value()).toBe('edited')
@@ -201,7 +201,7 @@ describe('TokenModel value boundary', () => {
 			// recorded only on the controlled edge it is still `undefined` here, and the
 			// arrival falls back to `#seed()` — 'default', discarding the edit.
 			const store = new Store()
-			store.props.set({defaultValue: 'default'})
+			store.props.set({separator: null, defaultValue: 'default'})
 			store.tokens.setValue('edited')
 			expect(store.tokens.value()).toBe('edited')
 
@@ -220,6 +220,7 @@ describe('TokenModel value boundary', () => {
 			const store = new Store()
 			const seen: {value: string; tokens: string}[] = []
 			store.props.set({
+				separator: null,
 				defaultValue: 'he@[x]llo',
 				options: [{markup: '@[__value__]'}],
 				Mark: () => null,
@@ -246,7 +247,7 @@ describe('TokenModel value boundary', () => {
 			// discriminating tests (a capture moved after adoption) live at the boundary,
 			// which is the only layer where the TransactionResult is observable.
 			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			expect(() => mount(store)).not.toThrow()
 			expect(() => store.edit.replace(...anchorsAt(store, 0, 0), 'X')).not.toThrow()
 			expect(store.tokens.value()).toBe('Xhello')
@@ -267,7 +268,7 @@ describe('TokenModel value boundary', () => {
 	 * joined by the OLD separator while every read reaches for the new one.
 	 */
 	describe('the separator that joins the current roots', () => {
-		const BLOCK = {layout: 'block' as const, Mark: () => null, options: [], defaultValue: 'a\n\nb'}
+		const BLOCK = {separator: '\n\n', Mark: () => null, options: [], defaultValue: 'a\n\nb'}
 
 		const detachedAfterSeparatorMove = (): Store => {
 			const store = new Store()
@@ -317,6 +318,7 @@ describe('TokenModel value boundary', () => {
 		const inlineStore = (): Store => {
 			const store = new Store()
 			store.props.set({
+				separator: null,
 				defaultValue: INLINE,
 				options: [{markup: '@[__value__](__meta__)'}],
 				Mark: () => null,
@@ -394,6 +396,7 @@ describe('TokenModel value boundary', () => {
 			// a truncated one.
 			const store = new Store()
 			store.props.set({
+				separator: null,
 				defaultValue: 'a#[hello]b',
 				options: [{markup: '#[__slot__]'}],
 				Mark: () => null,

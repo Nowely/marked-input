@@ -13,6 +13,8 @@ export default {
 	title: 'Styled/Rsuite',
 	component: MarkedInput,
 	decorators: [withStyle('rsuite.min.css')],
+	/** A plain annotated field: this page never splits its value into rows (ADR-0011). */
+	args: {separator: null},
 } as Meta<typeof MarkedInput>
 
 const Overlay = () => {
@@ -51,6 +53,7 @@ export const Overridden = () => {
 	return (
 		<Input
 			as={MarkedInputStory}
+			separator={null}
 			Mark={Tag as ComponentType<MarkProps>}
 			Overlay={Overlay}
 			value={value}

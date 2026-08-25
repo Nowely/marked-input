@@ -26,23 +26,18 @@ export class PropsModel {
 	readonly options = signal<CoreOption[]>({default: DEFAULT_OPTIONS, equals: shallow, readonly: true})
 	readonly readOnly = signal({default: false, readonly: true})
 
-	readonly layout = signal({
-		default: 'inline' as 'inline' | 'block',
-		readonly: true,
-		computed: self => ({
-			isBlock: () => self() === 'block',
-		}),
-	})
 	/**
-	 * The structural row separator (issue 08): editor-level, belongs to no markup,
-	 * applied in BLOCK layout only — inline layout never splits rows. Inside
-	 * `__value__`/`__meta__` gaps it is that markup's own text, never a boundary.
+	 * The structural row separator (issue 08, ADR-0011): editor-level, belongs to no markup, and
+	 * the ONE fact that decides whether a document has rows at all. Inside `__value__`/`__meta__`
+	 * gaps it is that markup's own text, never a boundary.
 	 *
-	 * `''` is not a separator: it separates nothing, so `TokenModel.rowConfig` reports it
-	 * and answers "no rows". The default replaces `undefined` only, which is why an explicit
-	 * empty string reaches that seam at all.
+	 * `null` says the value never splits: one document, no rows, no row controls.
+	 *
+	 * `''` is not `null`: it separates nothing rather than declining to separate, so
+	 * `TokenModel.rowConfig` reports it and answers "no rows". The default replaces `undefined`
+	 * only, which is why both an explicit `null` and an explicit `''` reach that seam at all.
 	 */
-	readonly separator = signal<string>({default: '\n\n', readonly: true})
+	readonly separator = signal<string | null>({default: '\n\n', readonly: true})
 	readonly draggable = signal<boolean | DraggableConfig>({default: false, readonly: true})
 
 	readonly showOverlayOn = signal<OverlayTrigger>({default: 'change', readonly: true})

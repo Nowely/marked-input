@@ -164,7 +164,7 @@ describe('RowNode', () => {
 			const store = new Store()
 			store.props.set({
 				defaultValue: '# Title\n\nBody',
-				layout: 'block',
+				separator: '\n\n',
 				Mark: () => null,
 				options: [{markup: '# __slot__', row: {Component: 'h1'}}],
 			})
@@ -187,7 +187,6 @@ describe('RowNode', () => {
 			const store = new Store()
 			store.props.set({
 				defaultValue,
-				layout: 'block',
 				separator: '\n',
 				Mark: () => null,
 				options: [{markup, row: {Component}}],

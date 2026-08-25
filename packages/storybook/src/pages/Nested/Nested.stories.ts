@@ -102,6 +102,8 @@ export default {
 			},
 		},
 	},
+	/** A plain annotated field: this page never splits its value into rows (ADR-0011). */
+	args: {separator: null},
 } satisfies PageMeta
 
 export const SimpleNesting = story<StyledMarkProps>({
@@ -183,11 +185,11 @@ export const InteractiveNested = story({
  * the story that has to be written twice.
  */
 export const ComplexMarkdown = story({
-	args: {defaultValue: COMPLEX_MARKDOWN},
+	args: {separator: null, defaultValue: COMPLEX_MARKDOWN},
 	render: fixtures.renderTabbedMarkdown,
 })
 
 export const ComplexHtmlDocument = story({
-	args: {defaultValue: HTML_DOCUMENT, options: [{markup: HtmlMarkup}]},
+	args: {separator: null, defaultValue: HTML_DOCUMENT, options: [{markup: HtmlMarkup}]},
 	render: fixtures.renderTabbedHtml,
 })

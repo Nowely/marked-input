@@ -60,13 +60,13 @@ describe('Store', () => {
 	describe('props.set()', () => {
 		it('sets individual prop signals', () => {
 			const store = new Store()
-			store.props.set({value: 'hello'})
+			store.props.set({separator: null, value: 'hello'})
 			expect(store.props.value()).toBe('hello')
 		})
 
 		it('sets multiple prop signals atomically', () => {
 			const store = new Store()
-			store.props.set({value: 'foo', readOnly: true, className: 'bar'})
+			store.props.set({separator: null, value: 'foo', readOnly: true, className: 'bar'})
 			expect(store.props.value()).toBe('foo')
 			expect(store.props.readOnly()).toBe(true)
 			expect(store.props.className()).toBe('bar')
@@ -76,21 +76,21 @@ describe('Store', () => {
 			const store = new Store()
 			// TypeScript prevents this at compile time, but guard handles JS callers
 			// oxlint-disable-next-line no-unsafe-type-assertion
-			expect(() => store.props.set({nonExistentKey: 'x'} as never)).not.toThrow()
+			expect(() => store.props.set({separator: null, nonExistentKey: 'x'} as never)).not.toThrow()
 		})
 
 		it('reflects controlled value via tokens without changing internal state', () => {
 			const store = new Store()
 			store.tokens.setValue('internal')
-			store.props.set({value: 'controlled'})
+			store.props.set({separator: null, value: 'controlled'})
 			expect(store.tokens.value()).toBe('controlled')
-			store.props.set({value: undefined})
+			store.props.set({separator: null, value: undefined})
 			expect(store.tokens.value()).toBe('internal')
 		})
 
 		it('ignores direct signal writes on props (readonly guard)', () => {
 			const store = new Store()
-			store.props.set({value: 'initial'})
+			store.props.set({separator: null, value: 'initial'})
 			store.props.value('hacked')
 			expect(store.props.value()).toBe('initial')
 		})
@@ -101,6 +101,7 @@ describe('Store', () => {
 		// commit settles structurally and the live tree is the parse of the accepted value.
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
+			store.props.set({separator: null})
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('hello')
 			expect(treeShape(store.tokens.nodes())).toMatchObject([
@@ -112,7 +113,7 @@ describe('Store', () => {
 		it('calls onChange when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			store.props.set({onChange})
+			store.props.set({separator: null, onChange})
 			store.tokens.setValue('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
@@ -122,7 +123,7 @@ describe('Store', () => {
 			const store = new Store()
 			store.host.container(document.createElement('div'))
 			const onChange = vi.fn()
-			store.props.set({value: 'hello', onChange})
+			store.props.set({separator: null, value: 'hello', onChange})
 			store.tokens.setValue('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.tokens.value()).toBe('hello')
@@ -145,7 +146,7 @@ describe('Store', () => {
 
 		it('merge user className into containerProps.className', () => {
 			const store = new Store()
-			store.props.set({className: 'my-editor'})
+			store.props.set({separator: null, className: 'my-editor'})
 			const {className} = store.slots.containerProps()
 			expect(className).toContain('my-editor')
 			expect(className).toContain('Container')
@@ -153,42 +154,39 @@ describe('Store', () => {
 
 		it('merge slotProps.container.className into containerProps.className', () => {
 			const store = new Store()
-			store.props.set({slotProps: {container: {className: 'slot-class'}}})
+			store.props.set({separator: null, slotProps: {container: {className: 'slot-class'}}})
 			expect(store.slots.containerProps().className).toContain('slot-class')
 		})
 
 		it('merge style and slotProps.container.style into containerProps.style', () => {
 			const store = new Store()
-			store.props.set({
-				style: {color: 'red'},
-				slotProps: {container: {style: {fontSize: 14}}},
-			})
+			store.props.set({separator: null, style: {color: 'red'}, slotProps: {container: {style: {fontSize: 14}}}})
 			expect(store.slots.containerProps().style).toEqual({color: 'red', fontSize: 14})
 		})
 
 		// The gutter is a CSS-ready STRING, not the bare `24` this used to assert: a number is
 		// only CSS under React's JSX convention, and Vue drops it.
-		it("add paddingLeft: '24px' to style when layout is block and draggable is true", () => {
+		it("add paddingLeft: '24px' to style when the document has rows and draggable is true", () => {
 			const store = new Store()
-			store.props.set({layout: 'block', draggable: true, style: {color: 'red'}})
+			store.props.set({separator: '\n\n', draggable: true, style: {color: 'red'}})
 			expect(store.slots.containerProps().style).toEqual({paddingLeft: '24px', color: 'red'})
 		})
 
-		it("add paddingLeft: '24px' with no base style when layout is block and draggable is true", () => {
+		it("add paddingLeft: '24px' with no base style when the document has rows and draggable is true", () => {
 			const store = new Store()
-			store.props.set({layout: 'block', draggable: true})
+			store.props.set({separator: '\n\n', draggable: true})
 			expect(store.slots.containerProps().style).toEqual({paddingLeft: '24px'})
 		})
 
-		it('NOT add paddingLeft when draggable and block but readOnly is true', () => {
+		it('NOT add paddingLeft when draggable and rowed but readOnly is true', () => {
 			const store = new Store()
-			store.props.set({layout: 'block', draggable: true, readOnly: true, style: {color: 'red'}})
+			store.props.set({separator: '\n\n', draggable: true, readOnly: true, style: {color: 'red'}})
 			expect(store.slots.containerProps().style).toEqual({color: 'red'})
 		})
 
 		it('not include className or style keys from slotProps in otherSlotProps spread', () => {
 			const store = new Store()
-			store.props.set({slotProps: {container: {className: 'x', style: {color: 'red'}}}})
+			store.props.set({separator: null, slotProps: {container: {className: 'x', style: {color: 'red'}}}})
 			const props = store.slots.containerProps()
 			// className and style handled explicitly — no duplicate keys at the same level
 			const keys = Object.keys(props)
@@ -198,13 +196,13 @@ describe('Store', () => {
 
 		it('include data-* slotProps in containerProps', () => {
 			const store = new Store()
-			store.props.set({slotProps: {container: {dataTestId: 'root'}}})
+			store.props.set({separator: null, slotProps: {container: {dataTestId: 'root'}}})
 			expect(store.slots.containerProps()).toMatchObject({'data-test-id': 'root'})
 		})
 
 		it('return same reference when values unchanged (shallow stable)', () => {
 			const store = new Store()
-			store.props.set({style: {color: 'red'}})
+			store.props.set({separator: null, style: {color: 'red'}})
 			const first = store.slots.containerProps()
 			const second = store.slots.containerProps()
 			expect(first).toBe(second)
@@ -212,9 +210,9 @@ describe('Store', () => {
 
 		it('react to style changes', () => {
 			const store = new Store()
-			store.props.set({style: {color: 'red'}})
+			store.props.set({separator: null, style: {color: 'red'}})
 			expect(store.slots.containerProps().style).toEqual({color: 'red'})
-			store.props.set({style: {color: 'blue'}})
+			store.props.set({separator: null, style: {color: 'blue'}})
 			expect(store.slots.containerProps().style).toEqual({color: 'blue'})
 		})
 	})
@@ -227,7 +225,7 @@ describe('Store', () => {
 
 		it('return user-provided slot component', () => {
 			const store = new Store()
-			store.props.set({slots: {container: 'section'}})
+			store.props.set({separator: null, slots: {container: 'section'}})
 			expect(store.slots.containerComponent()).toBe('section')
 		})
 	})
@@ -241,14 +239,14 @@ describe('Store', () => {
 
 		it('resolves it to the user-provided slot component', () => {
 			const store = new Store()
-			store.props.set({slots: {block: 'article'}})
+			store.props.set({separator: null, slots: {block: 'article'}})
 			const [node] = nodesOf([rowToken('hello', 0, [textToken('hello', 0)])])
 			expect(store.slots.node()(node)[0]).toBe('article')
 		})
 
 		it('carries the block slotProps onto the row, class and style merged', () => {
 			const store = new Store()
-			store.props.set({slotProps: {block: {dataBlock: 'true', className: 'mine'}}})
+			store.props.set({separator: null, slotProps: {block: {dataBlock: 'true', className: 'mine'}}})
 			const [node] = nodesOf([rowToken('hello', 0, [textToken('hello', 0)])])
 			expect(store.slots.node()(node)[1]).toMatchObject({
 				'data-block': 'true',
@@ -260,7 +258,7 @@ describe('Store', () => {
 			const store = new Store()
 			store.props.set({
 				defaultValue: '# Title',
-				layout: 'block',
+				separator: '\n\n',
 				options: [{markup: '# __slot__', row: {Component: 'h1'}}],
 			})
 			store.host.container(document.createElement('div'))
@@ -269,53 +267,34 @@ describe('Store', () => {
 		})
 	})
 
-	describe('isBlock', () => {
-		it('return false when layout is inline', () => {
-			const store = new Store()
-			store.props.set({layout: 'inline'})
-			expect(store.props.layout.isBlock()).toBe(false)
-		})
-
-		it('return true when layout is block', () => {
-			const store = new Store()
-			store.props.set({layout: 'block'})
-			expect(store.props.layout.isBlock()).toBe(true)
-		})
-
-		it('default to false', () => {
-			const store = new Store()
-			expect(store.props.layout.isBlock()).toBe(false)
-		})
-	})
-
 	describe('drag-enabled container padding', () => {
-		it('skip drag-handle padding when layout is inline even if draggable is true', () => {
+		it('skip drag-handle padding when the value never splits, even if draggable is true', () => {
 			const store = new Store()
-			store.props.set({layout: 'inline', draggable: true})
+			store.props.set({separator: null, draggable: true})
 			expect(store.slots.containerProps().style?.paddingLeft).toBeUndefined()
 		})
 
 		it('skip drag-handle padding when draggable is false', () => {
 			const store = new Store()
-			store.props.set({layout: 'block', draggable: false})
+			store.props.set({separator: '\n\n', draggable: false})
 			expect(store.slots.containerProps().style?.paddingLeft).toBeUndefined()
 		})
 
-		it('apply drag-handle padding when layout is block and draggable is true', () => {
+		it('apply drag-handle padding when the document has rows and draggable is true', () => {
 			const store = new Store()
-			store.props.set({layout: 'block', draggable: true})
+			store.props.set({separator: '\n\n', draggable: true})
 			expect(store.slots.containerProps().style?.paddingLeft).toBe('24px')
 		})
 
 		it('apply drag-handle padding when draggable is a DraggableConfig', () => {
 			const store = new Store()
-			store.props.set({layout: 'block', draggable: {alwaysShowHandle: true}})
+			store.props.set({separator: '\n\n', draggable: {alwaysShowHandle: true}})
 			expect(store.slots.containerProps().style?.paddingLeft).toBe('24px')
 		})
 
 		it('skip drag-handle padding in read-only mode', () => {
 			const store = new Store()
-			store.props.set({layout: 'block', draggable: true, readOnly: true})
+			store.props.set({separator: '\n\n', draggable: true, readOnly: true})
 			expect(store.slots.containerProps().style?.paddingLeft).toBeUndefined()
 		})
 	})
@@ -332,7 +311,7 @@ describe('Store', () => {
 		it('pass value prop to custom Span component for text node', () => {
 			const CustomSpan = () => null
 			const store = new Store()
-			store.props.set({Span: CustomSpan})
+			store.props.set({separator: null, Span: CustomSpan})
 			const [node] = nodesOf([textToken('hello', 0)])
 			const [component, props] = store.slots.node()(node)
 			expect(component).toBe(CustomSpan)
@@ -348,7 +327,7 @@ describe('Store', () => {
 		it('resolve overlay from global Overlay component', () => {
 			const CustomOverlay = () => null
 			const store = new Store()
-			store.props.set({Overlay: CustomOverlay})
+			store.props.set({separator: null, Overlay: CustomOverlay})
 			const [Component, props] = store.overlay.slot()()
 			expect(Component).toBe(CustomOverlay)
 			expect(props).toEqual({})
@@ -379,9 +358,9 @@ describe('Store', () => {
 
 		it('reacts to props.value changes when controlled', () => {
 			const store = new Store()
-			store.props.set({value: 'initial'})
+			store.props.set({separator: null, value: 'initial'})
 			expect(store.tokens.value()).toBe('initial')
-			store.props.set({value: 'changed'})
+			store.props.set({separator: null, value: 'changed'})
 			expect(store.tokens.value()).toBe('changed')
 		})
 	})

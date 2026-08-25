@@ -15,7 +15,7 @@ export default {
 } satisfies PageMeta
 
 export const Inline = story({
-	args: {Mark, defaultValue: INLINE_VALUE},
+	args: {separator: null, Mark, defaultValue: INLINE_VALUE},
 })
 
 /** The one story with a `render`: React returns an element, Vue a component. */
@@ -24,9 +24,9 @@ export const PlainText = story({
 })
 
 export const Drag = story({
-	args: {layout: 'block', separator: '\n', draggable: true, Mark, defaultValue: BLOCK_VALUE},
+	args: {separator: '\n', draggable: true, Mark, defaultValue: BLOCK_VALUE},
 })
 
 export const NestedMarkStory = story({
-	args: {Mark: fixtures.NestedMark, defaultValue: INLINE_VALUE},
+	args: {separator: null, Mark: fixtures.NestedMark, defaultValue: INLINE_VALUE},
 })

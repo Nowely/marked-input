@@ -30,7 +30,7 @@ describe('TokenModel', () => {
 	})
 
 	function mountWith(value: string) {
-		store.props.set({Mark: () => null, defaultValue: value})
+		store.props.set({separator: null, Mark: () => null, defaultValue: value})
 		store.host.container(document.createElement('div'))
 	}
 
@@ -63,7 +63,7 @@ describe('TokenModel', () => {
 		})
 
 		it('does not parse markup when Mark is not set', () => {
-			store.props.set({options: [{markup: '@[__value__]'}]})
+			store.props.set({separator: null, options: [{markup: '@[__value__]'}]})
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('@[test]')
 			expect(treeShape(store.tokens.nodes())).toMatchObject([
@@ -72,7 +72,7 @@ describe('TokenModel', () => {
 		})
 
 		it('parses markup when Mark is set', () => {
-			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
+			store.props.set({separator: null, Mark: () => null, options: [{markup: '@[__value__]'}]})
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('@[test]')
 			expect(store.tokens.nodes()).toEqual(expect.arrayContaining([expect.objectContaining({kind: 'mark'})]))
@@ -82,7 +82,7 @@ describe('TokenModel', () => {
 	describe('reactive parse', () => {
 		it('re-parses when parser changes', () => {
 			mountWith('hello @[world]')
-			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
+			store.props.set({separator: null, Mark: () => null, options: [{markup: '@[__value__]'}]})
 			expect(treeShape(store.tokens.nodes())).toEqual([
 				expect.objectContaining({kind: 'text', content: 'hello '}),
 				expect.objectContaining({kind: 'mark', content: '@[world]'}),
@@ -94,9 +94,9 @@ describe('TokenModel', () => {
 
 		it('re-parses when Mark is added or removed', () => {
 			mountWith('first')
-			store.props.set({Mark: undefined})
+			store.props.set({separator: null, Mark: undefined})
 			store.tokens.setValue('second')
-			store.props.set({Mark: () => null})
+			store.props.set({separator: null, Mark: () => null})
 			expect(treeShape(store.tokens.nodes())).toMatchObject([
 				{kind: 'text', content: 'second', position: {start: 0, end: 6}},
 			])
@@ -109,7 +109,7 @@ describe('TokenModel', () => {
 			// watcher added afterwards, so by the time downstream listeners observe
 			// value.current, the tree reflects the new value (the structural commit
 			// self-heals synchronously against the bare container).
-			store.props.set({Mark: () => null, defaultValue: ''})
+			store.props.set({separator: null, Mark: () => null, defaultValue: ''})
 			store.host.container(document.createElement('div'))
 			let treeAtChangeTime: readonly TreeNode[] | undefined
 			const stop = watch(store.tokens.value, () => {
@@ -126,11 +126,11 @@ describe('TokenModel', () => {
 		})
 	})
 
-	describe('block layout rows (issue 08)', () => {
-		it('wraps the block top level into rows', () => {
+	describe('rows (issue 08)', () => {
+		it('wraps the top level into rows', () => {
 			store.props.set({
 				Mark: () => null,
-				layout: 'block',
+				separator: '\n\n',
 				options: [{markup: '@[__value__]'}],
 				defaultValue: '@[hello]',
 			})
@@ -150,30 +150,30 @@ describe('TokenModel', () => {
 			// `Parser.parseRows`' throw, which both adapters raise inside a per-render lifecycle
 			// hook: React tore down the whole render root, Vue kept the stale tree.
 			const errors = captureErrors()
-			store.props.set({layout: 'block', separator: '', options: [], defaultValue: 'a\n\nb'})
+			store.props.set({separator: '', options: [], defaultValue: 'a\n\nb'})
 			store.host.container(document.createElement('div'))
 
 			expect(treeShape(store.tokens.nodes())).toMatchObject([{kind: 'text', content: 'a\n\nb'}])
 			expect(store.tokens.rowConfig()).toBeUndefined()
-			expect(errors()).toEqual([expect.stringContaining('`separator` is empty in block layout')])
+			expect(errors()).toEqual([expect.stringContaining('`separator` is empty')])
 		})
 
 		it('reports an empty separator once per distinct value, not once per prop sync', () => {
 			// Both adapters call `props.set` on EVERY render, so a report placed upstream of an
 			// equality gate would flood the console. `rowConfig` re-evaluates only when
-			// `layout` or `separator` actually moves.
+			// `separator` actually moves.
 			const errors = captureErrors()
-			store.props.set({layout: 'block', separator: '', options: []})
+			store.props.set({separator: '', options: []})
 			store.host.container(document.createElement('div'))
-			for (let i = 0; i < 10; i++) store.props.set({layout: 'block', separator: '', options: []})
+			for (let i = 0; i < 10; i++) store.props.set({separator: '', options: []})
 
 			expect(errors()).toHaveLength(1)
 		})
 
-		it('brackets a leading mark with empty text roots in inline layout', () => {
+		it('brackets a leading mark with empty text roots when the value never splits', () => {
 			store.props.set({
 				Mark: () => null,
-				layout: 'inline',
+				separator: null,
 				options: [{markup: '@[__value__]'}],
 				defaultValue: '@[hello]',
 			})
@@ -187,7 +187,12 @@ describe('TokenModel', () => {
 
 	describe('framework identity (adapter SPI)', () => {
 		it('a suffix-shifted mark keeps its node, and therefore its key', () => {
-			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.props.set({
+				separator: null,
+				Mark: () => null,
+				options: [{markup: '@[__value__]'}],
+				defaultValue: 'he@[x]llo',
+			})
 			store.host.container(document.createElement('div'))
 			const mark = store.tokens.nodes()[1]
 			const markKey = mark.id
@@ -216,13 +221,13 @@ describe('TokenModel', () => {
 			// `syncProps` allocates a fresh options array on every run of a watch whose deps
 			// include `props.value` — so a controlled Vue editor tripped this on every keystroke.
 			const Mark = () => null
-			store.props.set({Mark, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.props.set({separator: null, Mark, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
 			store.host.container(document.createElement('div'))
 			const before = store.tokens.nodes()
 			const ids = before.map(node => node.id)
 
 			// Same content, new array and new option objects — what an inline prop produces.
-			store.props.set({Mark, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.props.set({separator: null, Mark, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
 
 			const after = store.tokens.nodes()
 			expect(after.map(node => node.id)).toEqual(ids)
@@ -233,11 +238,21 @@ describe('TokenModel', () => {
 
 		it('a CHANGED markup still re-parses', () => {
 			// The other half of the gate above: memoizing the parser must not make it deaf.
-			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.props.set({
+				separator: null,
+				Mark: () => null,
+				options: [{markup: '@[__value__]'}],
+				defaultValue: 'he@[x]llo',
+			})
 			store.host.container(document.createElement('div'))
 			expect(store.tokens.nodes()).toHaveLength(3)
 
-			store.props.set({Mark: () => null, options: [{markup: '#[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.props.set({
+				separator: null,
+				Mark: () => null,
+				options: [{markup: '#[__value__]'}],
+				defaultValue: 'he@[x]llo',
+			})
 
 			// '@[x]' is no longer a markup, so the whole value is one text token.
 			expect(store.tokens.nodes()).toHaveLength(1)
@@ -251,6 +266,7 @@ describe('TokenModel', () => {
 			// React root and leaves a Vue editor rendering its stale tree.
 			const errors = captureErrors()
 			store.props.set({
+				separator: null,
 				Mark: () => null,
 				options: [{markup: '__value__ says'}, {markup: '@[__value__]'}],
 				defaultValue: 'hi @[m]',
@@ -282,7 +298,7 @@ describe('TokenModel', () => {
 			// leading-placeholder rule above needs no cast: that shape typechecks.
 			// oxlint-disable-next-line no-unsafe-type-assertion
 			const markup = 'plain' as Markup
-			store.props.set({Mark: () => null, options: [{markup}], defaultValue: 'hi @[m]'})
+			store.props.set({separator: null, Mark: () => null, options: [{markup}], defaultValue: 'hi @[m]'})
 			store.host.container(document.createElement('div'))
 
 			expect(treeShape(store.tokens.nodes())).toMatchObject([{kind: 'text', content: 'hi @[m]'}])
@@ -300,7 +316,6 @@ describe('TokenModel', () => {
 			expect(() => {
 				store.props.set({
 					Mark: () => null,
-					layout: 'block',
 					separator: '\n',
 					// A leading placeholder, which makes line-start recognition undecidable.
 					options: [
@@ -325,7 +340,6 @@ describe('TokenModel', () => {
 			const errors = captureErrors()
 			store.props.set({
 				Mark: () => null,
-				layout: 'block',
 				separator: '\n',
 				options: [
 					{markup: '# __slot__', row: {Component: 'h1'}},
@@ -346,10 +360,20 @@ describe('TokenModel', () => {
 			// STRINGS. `props.options` compares elements by reference, so the inline array below —
 			// what a JSX prop produces on every render — is never equal to the last one.
 			const errors = captureErrors()
-			store.props.set({Mark: () => null, options: [{markup: '__value__ says'}], defaultValue: 'hi'})
+			store.props.set({
+				separator: null,
+				Mark: () => null,
+				options: [{markup: '__value__ says'}],
+				defaultValue: 'hi',
+			})
 			store.host.container(document.createElement('div'))
 			for (let i = 0; i < 10; i++) {
-				store.props.set({Mark: () => null, options: [{markup: '__value__ says'}], defaultValue: 'hi'})
+				store.props.set({
+					separator: null,
+					Mark: () => null,
+					options: [{markup: '__value__ says'}],
+					defaultValue: 'hi',
+				})
 			}
 
 			expect(errors()).toHaveLength(1)

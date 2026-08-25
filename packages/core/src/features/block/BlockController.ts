@@ -2,7 +2,7 @@ import {effect, listen, signal, untracked, watch} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
-import type {TokenModel, TreeNode} from '../tokens'
+import type {RowConfig, TokenModel, TreeNode} from '../tokens'
 
 /**
  * Which side of a row a drop lands on. Named `edge` rather than `position` on purpose:
@@ -187,7 +187,7 @@ export class BlockController {
 	// A fresh row IS the separator (issue 08): spliced after the anchor row's own separator it
 	// reads as an empty row, and on the document-final unterminated row it first terminates
 	// that row.
-	addRow = (): void => this.#runMenuVerb(row => row.insertAfter(this.props.separator()))
+	addRow = (): void => this.#runMenuVerb((row, config) => row.insertAfter(config.separator))
 	duplicateRow = (): void => this.#runMenuVerb(row => row.duplicate())
 	deleteRow = (): void => this.#runMenuVerb(row => row.remove())
 
@@ -387,15 +387,20 @@ export class BlockController {
 	 * commit would announce the WRONG id as removed.
 	 *
 	 * `draggable` gates the DRAG UI (the grip's drag affordance), not these — menu and keyboard
-	 * row edits are block-mode features, so block mode alone admits them. The menu closes either
-	 * way, so a refused verb does not leave it open.
+	 * row edits are row features, so a document with rows alone admits them. The menu closes
+	 * either way, so a refused verb does not leave it open.
+	 *
+	 * The parse policy travels INTO the verb rather than being read again beside it: the gate
+	 * below is what makes a separator available at all, and reading `props.separator` here would
+	 * be a second answer to the question the gate just asked.
 	 */
-	#runMenuVerb(verb: (row: TreeNode) => void): void {
+	#runMenuVerb(verb: (row: TreeNode, config: RowConfig) => void): void {
 		const menu = this.state.menu()
 		this.closeMenu()
-		if (!menu || this.tokens.rowConfig() === undefined) return
+		const config = this.tokens.rowConfig()
+		if (!menu || config === undefined) return
 		const row = this.tokens.find(menu.id)
-		if (row) verb(row)
+		if (row) verb(row, config)
 	}
 
 	/**

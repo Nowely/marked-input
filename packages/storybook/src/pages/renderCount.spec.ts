@@ -35,7 +35,7 @@ const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.ma
 describe('Render-count gates: commit routing', () => {
 	it('pure text keystroke does not re-render Span; structural edit does', async () => {
 		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
-		await mountComponent({Mark: PlainMark, Span: CountedSpan, defaultValue: 'Hello @[mark](1)!'})
+		await mountComponent({separator: null, Mark: PlainMark, Span: CountedSpan, defaultValue: 'Hello @[mark](1)!'})
 
 		await focusAtEnd(getElement(page.getByText('!')))
 
@@ -87,7 +87,7 @@ describe('Render-count gates: structural fan-out', () => {
 
 	it('a head insert at 100 marks re-renders exactly the inserted mark', async () => {
 		const [CountedMark, markRenders] = countRenders()
-		await mountComponent({Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
+		await mountComponent({separator: null, Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
 		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
 
 		await focusAtEnd(getElement(page.getByText('HEAD ')))
@@ -111,7 +111,7 @@ describe('Render-count gates: structural fan-out', () => {
 			tag: 'mark',
 			on: {click: ({mark}) => (captured = mark)},
 		})
-		await mountComponent({Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
+		await mountComponent({separator: null, Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
 		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
 
 		// The FIRST mark, so the write also suffix-shifts the other 99 (the replacement is a
@@ -144,7 +144,7 @@ describe('Render-count gates: block layout', () => {
 			Span: CountedSpan,
 			options: [{markup: '@[__value__](__meta__)', Mark: CountedMark}],
 			defaultValue: 'First @[m](1) row\n\nSecond row\n\n',
-			layout: 'block',
+			separator: '\n\n',
 			draggable: true,
 		})
 		// Two content rows plus the trailing empty row (issue 08)
@@ -188,7 +188,7 @@ describe('Render-count gates: block layout', () => {
 			Span: CountedSpan,
 			options: [],
 			defaultValue: 'r0\n\nr1\n\nr2\n\nr3\n\nr4\n\n',
-			layout: 'block',
+			separator: '\n\n',
 			draggable: true,
 			style: {marginLeft: '64px'},
 		})
@@ -227,7 +227,7 @@ describe('Render-count gates: block layout', () => {
 			Span: CountedSpan,
 			options: [],
 			defaultValue: 'First row\n\n',
-			layout: 'block',
+			separator: '\n\n',
 			draggable: true,
 		})
 		// One content row plus the trailing empty row (issue 08)
@@ -259,6 +259,7 @@ describe('Remount gates: identity keys', () => {
 	it('a structural edit before a mark does not remount the suffix marks', async () => {
 		const log = markMounts()
 		await mountComponent({
+			separator: null,
 			Mark: log.Mark,
 			Span: PlainSpan,
 			defaultValue: 'Hello @[a](1) and @[b](2)!',

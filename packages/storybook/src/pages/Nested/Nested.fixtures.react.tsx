@@ -53,9 +53,15 @@ function TabbedMarkdown({defaultValue}: PageArgs) {
 			<Tab />
 
 			{activeTab === 'preview' ? (
-				<MarkedInput Mark={MarkdownMark} options={inlineMarkdownOptions} value={value} readOnly={true} />
+				<MarkedInput
+					separator={null}
+					Mark={MarkdownMark}
+					options={inlineMarkdownOptions}
+					value={value}
+					readOnly={true}
+				/>
 			) : (
-				<MarkedInput options={[]} value={value} onChange={setValue} />
+				<MarkedInput separator={null} options={[]} value={value} onChange={setValue} />
 			)}
 		</>
 	)
@@ -71,9 +77,16 @@ function TabbedHtml({defaultValue, options}: PageArgs) {
 			<Tab />
 
 			{activeTab === 'preview' ? (
-				<MarkedInput key={activeTab} Mark={HtmlDocMark} value={value} readOnly={true} options={options} />
+				<MarkedInput
+					separator={null}
+					key={activeTab}
+					Mark={HtmlDocMark}
+					value={value}
+					readOnly={true}
+					options={options}
+				/>
 			) : (
-				<MarkedInput key={activeTab} value={value} onChange={setValue} options={[]} />
+				<MarkedInput separator={null} key={activeTab} value={value} onChange={setValue} options={[]} />
 			)}
 		</>
 	)

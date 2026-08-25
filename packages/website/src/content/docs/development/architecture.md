@@ -233,7 +233,7 @@ Block row operations are NOT an event. `store.block.action({...})` and its four-
 `DragAction` payload are gone: `BlockController` resolves the menu's row id to its node and calls
 that node's own verbs, so there is no action to lower onto them.
 
-Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, rowConfig)` tuple in the `TokenModel` constructor. `rowConfig` is `TokenModel`'s own computed — the block parse policy, `undefined` everywhere else — and it is the one place the `layout` enum is read; everything else asks it, or asks the tree it produced. Because a computed tracks its dependencies per evaluation, a document with no rows is not subscribed to `separator` at all, so changing that prop in inline layout re-derives nothing. An EMPTY `separator` also answers `undefined`: an empty separator separates nothing, and `undefined` is already the seam's word for "no rows", so the row parse, the block feature gates, the grip gutter and `BlockController` turn off together. It is reported through `reportBadProp` rather than thrown, because both adapters push props from a per-render lifecycle hook — React unmounts the whole render root on a throw there, Vue keeps rendering the stale tree — while `Parser.parseRows` keeps refusing `''` for callers that reach it directly. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
+Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, rowConfig)` tuple in the `TokenModel` constructor. `rowConfig` is `TokenModel`'s own computed — the block parse policy, `undefined` for a document with no rows — and it is the one place `separator` is read as a policy; everything else asks it, or asks the tree it produced. There is no mode beside it (ADR-0011): a `null` `separator` says the value never splits and answers `undefined`, which is already the seam's word for "no rows", so the row parse, the block feature gates, the grip gutter and `BlockController` turn off together. Its `{equals: shallow}` gate is what keeps a per-render prop sync at one evaluation per DISTINCT policy. An EMPTY `separator` answers `undefined` too, but reports first: it separates nothing rather than declining to separate. It is reported through `reportBadProp` rather than thrown, because both adapters push props from a per-render lifecycle hook — React unmounts the whole render root on a throw there, Vue keeps rendering the stale tree — while `Parser.parseRows` keeps refusing `''` for callers that reach it directly. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
 
 ### Event Usage
 
@@ -308,9 +308,9 @@ class Store {
         onChange: Signal<((value: string) => void) | undefined>
         options: Signal<CoreOption[]>
         readOnly: Signal<boolean>
-        layout: Signal<'inline' | 'block'>
-        separator: Signal<string>            // block layout's structural row separator (ADR-0009)
-                                             // `TokenModel.rowConfig` folds it with `layout` into the parse policy
+        separator: Signal<string | null>     // the structural row separator (ADR-0009, ADR-0011);
+                                             // `null` = the value never splits, so the document has no rows.
+                                             // `TokenModel.rowConfig` derives the parse policy from it alone
         draggable: Signal<boolean | DraggableConfig>
         showOverlayOn: Signal<OverlayTrigger>
         Span: Signal<Slot | undefined>
@@ -325,7 +325,7 @@ class Store {
     // Features live directly on store, not nested under .feature
     readonly host:      Host               // rendered event + container signal + onMounted lifecycle
     readonly props:     PropsModel         // framework-provided configuration
-    readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops, and `rowConfig` — the one reader of the `layout` enum
+    readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops, and `rowConfig` — the one place `separator` is read as a parse policy
     readonly slots:     SlotsFeature       // slot component/props, the NODE resolver, and the grip gutter (rowConfig + draggable)
     readonly edit:      EditController     // replace(from, to, text) / setValue(text) — single batched write path
     readonly overlay:   OverlayController  // match, element, slot, select, close
@@ -407,9 +407,9 @@ React/Vue render asynchronously, so initialization order matters:
 
 ## Block System (Block Layout)
 
-Inline layout: tokens render in one flow as alternating `[text, mark, text, ...]`.
+A document that never splits (`separator={null}`): tokens render in one flow as alternating `[text, mark, text, ...]`.
 
-Block layout (`layout="block"`, with `draggable` adding the reorder affordance): each root node
+Block layout (any non-empty `separator`, with `draggable` adding the reorder affordance): each root node
 is a ROW, wrapped in a `<Block>` component that renders the row's children and nothing else. The
 row controls — grip, drop indicator, row menu — are not in the row. One `<BlockControls>` per editor
 paints all three, as the container's last child, `position: absolute; inset: 0` over the rows.
@@ -613,7 +613,7 @@ back to earlier text, pass it.
 function App() {
   return (
     <MarkedInput
-      layout="block"
+      separator={'\n'}
       draggable
       Mark={MyMark}
     />

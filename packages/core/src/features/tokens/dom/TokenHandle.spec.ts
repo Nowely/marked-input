@@ -56,7 +56,7 @@ function mountBlock(value: string) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: value,
-		layout: 'block',
+		separator: '\n\n',
 		options: [],
 	})
 	const container = document.createElement('div')

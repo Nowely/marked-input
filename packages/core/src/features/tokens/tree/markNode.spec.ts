@@ -26,7 +26,7 @@ function firstMark(store: Store): MarkNode {
  */
 function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {
 	const store = new Store()
-	store.props.set({defaultValue: value, Mark: () => null, options: [{markup}]})
+	store.props.set({separator: null, defaultValue: value, Mark: () => null, options: [{markup}]})
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
@@ -41,11 +41,7 @@ function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {
  */
 function mountedSetup() {
 	const store = new Store()
-	store.props.set({
-		defaultValue: 'he@[x]llo',
-		options: [{markup: '@[__value__]'}],
-		Mark: () => null,
-	})
+	store.props.set({separator: null, defaultValue: 'he@[x]llo', options: [{markup: '@[__value__]'}], Mark: () => null})
 	const container = document.createElement('div')
 	const text1 = document.createElement('span')
 	const mark = document.createElement('span')
@@ -170,7 +166,7 @@ describe('MarkNode verbs', () => {
 
 	it('does not mutate in read-only mode', () => {
 		const {store, node} = setup()
-		store.props.set({readOnly: true})
+		store.props.set({separator: null, readOnly: true})
 
 		node.remove()
 		expect(store.tokens.value()).toBe('hello @[world]')
@@ -335,6 +331,7 @@ describe('MarkNode live-read parity', () => {
 	it('meta and slot are live reads (parity table)', () => {
 		const store = new Store()
 		store.props.set({
+			separator: null,
 			defaultValue: 'a @[v](m)',
 			options: [{markup: '@[__value__](__meta__)'}],
 			Mark: () => null,
@@ -355,7 +352,7 @@ describe('MarkNode live-read parity', () => {
 		// `readOnly` LEFT the mark surface at S1.7 (§2.3 does not put editor state on a node),
 		// so what is left to pin is the gating itself, which lives in the transaction layer.
 		const {store, node} = mountedSetup()
-		store.props.set({readOnly: true})
+		store.props.set({separator: null, readOnly: true})
 		expect(node.update({value: 'bad'})).toBe(false)
 		expect(node.remove()).toBe(false)
 		expect(store.tokens.value()).toBe('he@[x]llo')
@@ -438,7 +435,7 @@ describe('MarkNode live-read parity', () => {
  */
 function rowSetup(value: string) {
 	const store = new Store()
-	store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: []})
+	store.props.set({defaultValue: value, separator: '\n\n', Mark: () => null, options: []})
 	store.host.container(document.createElement('div'))
 	return store
 }
@@ -492,7 +489,12 @@ describe('mergeWith', () => {
 
 	it('answers false when the pair has no boundary to remove', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'he@[x]llo', Mark: () => null, options: [{markup: '@[__value__]'}]})
+		store.props.set({
+			separator: null,
+			defaultValue: 'he@[x]llo',
+			Mark: () => null,
+			options: [{markup: '@[__value__]'}],
+		})
 		store.host.container(document.createElement('div'))
 		const rows = store.tokens.nodes()
 
@@ -707,7 +709,7 @@ describe('moveTo', () => {
 
 		store.props.set({
 			defaultValue: 'alpha\n\nbeta\n\n',
-			layout: 'block',
+			separator: '\n\n',
 			readOnly: true,
 			Mark: () => null,
 			options: [],
@@ -725,7 +727,7 @@ describe('entering a fresh row', () => {
 		const store = new Store()
 		store.props.set({
 			defaultValue: value,
-			layout: 'block',
+			separator: '\n\n',
 			Mark: () => null,
 			options: [{markup: '# __slot__', row: {Component: 'h1'}}],
 		})
