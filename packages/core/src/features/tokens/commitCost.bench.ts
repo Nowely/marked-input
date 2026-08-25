@@ -167,15 +167,21 @@ function inlineDoc(marks: number): string {
 	return out + ' end of text'
 }
 
+/** The row docs' own separator, read by BOTH the raw parse and the Store parse below. */
+const ROW_SEPARATOR = '\n\n'
+
 function blockDoc(rows: number): string {
 	let out = ''
-	for (let i = 0; i < rows; i++) out += `row ${i} with some plain text in it\n\n`
+	for (let i = 0; i < rows; i++) out += `row ${i} with some plain text in it${ROW_SEPARATOR}`
 	return out
 }
 
-function tokensFor(parser: Parser | undefined, value: string, isBlock: boolean): (Token | RowToken)[] {
-	// Block mode is rows (issue 08): the structural separator forms them, no markup needed
-	return isBlock ? parseRowsValue(parser, value, {separator: '\n\n'}) : parseValue(parser, value)
+function tokensFor(parser: Parser | undefined, value: string, separator: string | null): (Token | RowToken)[] {
+	// A row is a span between separators (issue 08): the structural separator forms them, no
+	// markup needed. ONE reading of the doc's own separator, because the STORE parses at the
+	// same policy — hardcoding `'\n\n'` here while the store took the `'\n'` default made every
+	// printed `roots`/`tokens` count and every caret offset describe a different tree.
+	return separator === null ? parseValue(parser, value) : parseRowsValue(parser, value, {separator})
 }
 
 function textNodesOf(nodes: readonly TreeNode[], out: TextNode[] = []): TextNode[] {
@@ -219,7 +225,8 @@ type Doc = {
 	name: string
 	value: string
 	markup: Markup | undefined
-	isBlock: boolean
+	/** The parse policy this doc is measured at; `null` is a document that never splits. */
+	separator: string | null
 	parser: Parser | undefined
 	/** Simulated caret offsets; `pos` (the ladder's) is `mid`. */
 	pos: number
@@ -229,9 +236,9 @@ type Doc = {
 	tokens: number
 }
 
-function describeDoc(name: string, value: string, markup: Markup | undefined, isBlock: boolean): Doc {
+function describeDoc(name: string, value: string, markup: Markup | undefined, separator: string | null): Doc {
 	const parser = markup === undefined ? undefined : new Parser([markup])
-	const tokens = tokensFor(parser, value, isBlock)
+	const tokens = tokensFor(parser, value, separator)
 	const tree = createTokenTree(tokens)
 	const roots = tree.roots()
 	let total = 0
@@ -247,7 +254,7 @@ function describeDoc(name: string, value: string, markup: Markup | undefined, is
 		name,
 		value,
 		markup,
-		isBlock,
+		separator,
 		parser,
 		pos: carets.mid,
 		head: carets.head,
@@ -258,11 +265,11 @@ function describeDoc(name: string, value: string, markup: Markup | undefined, is
 }
 
 const docs: Doc[] = [
-	describeDoc('inline 10 marks', inlineDoc(10), INLINE_MARKUP, false),
-	describeDoc('inline 100 marks', inlineDoc(100), INLINE_MARKUP, false),
-	describeDoc('inline 1000 marks', inlineDoc(1000), INLINE_MARKUP, false),
-	describeDoc('block 100 rows', blockDoc(100), undefined, true),
-	describeDoc('block 1000 rows', blockDoc(1000), undefined, true),
+	describeDoc('inline 10 marks', inlineDoc(10), INLINE_MARKUP, null),
+	describeDoc('inline 100 marks', inlineDoc(100), INLINE_MARKUP, null),
+	describeDoc('inline 1000 marks', inlineDoc(1000), INLINE_MARKUP, null),
+	describeDoc('block 100 rows', blockDoc(100), undefined, ROW_SEPARATOR),
+	describeDoc('block 1000 rows', blockDoc(1000), undefined, ROW_SEPARATOR),
 ]
 
 console.log(
@@ -308,12 +315,12 @@ function parseKeystroke(doc: Doc): Keystroke {
 			? current.slice(0, doc.pos) + current.slice(doc.pos + 1)
 			: current.slice(0, doc.pos) + 'x' + current.slice(doc.pos)
 		inserted = !inserted
-		sink += tokensFor(doc.parser, current, doc.isBlock).length
+		sink += tokensFor(doc.parser, current, doc.separator).length
 	}
 }
 
 function adoptKeystroke(doc: Doc, pos: number = doc.pos): Keystroke {
-	const tree = createTokenTree(tokensFor(doc.parser, doc.value, doc.isBlock))
+	const tree = createTokenTree(tokensFor(doc.parser, doc.value, doc.separator))
 	let current = doc.value
 	let inserted = false
 	return () => {
@@ -322,7 +329,7 @@ function adoptKeystroke(doc: Doc, pos: number = doc.pos): Keystroke {
 			? current.slice(0, pos) + current.slice(pos + 1)
 			: current.slice(0, pos) + 'x' + current.slice(pos)
 		inserted = !inserted
-		adopt(tree, window, tokensFor(doc.parser, current, doc.isBlock))
+		adopt(tree, window, tokensFor(doc.parser, current, doc.separator))
 		sink += tree.roots().length
 	}
 }
@@ -333,7 +340,7 @@ function storeFor(doc: Doc): Store {
 		defaultValue: doc.value,
 		options: doc.markup === undefined ? [] : [{markup: doc.markup}],
 		Mark: () => null,
-		...(doc.isBlock ? {} : {separator: null}),
+		separator: doc.separator,
 	})
 	return store
 }
@@ -454,7 +461,7 @@ function mountDom(store: Store, doc: Doc): readonly (() => void)[] {
 	store.host.container(container)
 	const consignments: (() => void)[] = []
 	for (const root of store.tokens.nodes()) {
-		if (doc.isBlock) {
+		if (doc.separator !== null) {
 			// A ROW and a TOKEN ELEMENT are different elements of the same token, registered
 			// separately — the same pairing `mountBlock` documents in `__testing__/mountFixtures.ts`.
 			const row = document.createElement('div')
