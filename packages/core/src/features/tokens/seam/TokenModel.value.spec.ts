@@ -256,7 +256,7 @@ describe('TokenModel value boundary', () => {
 
 	/**
 	 * The clipboard's markup entry (`ClipboardController`'s markput MIME) and the block rows'
-	 * text read (`keyboard/blockEdit.ts`). `block/operations.spec` stubs the read with a plain
+	 * text read (`keyboard/rowKeys.ts`). `block/operations.spec` stubs the read with a plain
 	 * `doc.slice`, so the delegation to `tree/sliceNodes` — and the anchor resolution in front
 	 * of it — is pinned only here.
 	 */
@@ -358,7 +358,7 @@ describe('TokenModel value boundary', () => {
 		it('answers exactly the markup for a window on the mark boundaries', () => {
 			const store = inlineStore()
 			const mark = store.tokens.nodes()[1]
-			// `{before}`/`{after}` is the form `blockEdit` reads a row with; the offsets are the
+			// `{before}`/`{after}` is the form `rowKeys` reads a row with; the offsets are the
 			// same window through `anchorAt`.
 			expect(store.tokens.valueBetween({before: mark}, {after: mark})).toBe('@[world](1)')
 			expect(store.tokens.valueBetween(...anchorsAt(store, 6, 17))).toBe('@[world](1)')

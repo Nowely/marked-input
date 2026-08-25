@@ -12,7 +12,7 @@ import {
 	isConsumerOrigin,
 	replacementForInput,
 } from './beforeInput'
-import {handleRowEnter, handleRowParagraph} from './blockEdit'
+import {handleRowEnter, handleRowParagraph} from './rowKeys'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'paste', e => {

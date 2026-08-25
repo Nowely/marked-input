@@ -77,7 +77,7 @@ describe('createTokenTree', () => {
 
 describe('rootIndexOf', () => {
 	it('answers the ROOT index for a nested node, not the node index', () => {
-		// The block row index (`keyboard/blockEdit.ts`): a caret inside a row's slot child
+		// The block row index (`keyboard/rowKeys.ts`): a caret inside a row's slot child
 		// must resolve to the ROW.
 		const tree = createTokenTree(parser.parse('a#[bc]d'))
 		const mark = tree.roots()[1]

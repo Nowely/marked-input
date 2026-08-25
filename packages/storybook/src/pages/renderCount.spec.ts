@@ -158,7 +158,7 @@ describe('Render-count gates: block layout', () => {
 		expect(spanRenders()).toBe(spanBaseline)
 		expect(markRenders()).toBe(markBaseline)
 
-		// Gate: Enter splits the row (blockEdit inserts the separator) — a structural edit
+		// Gate: Enter splits the row (`rowKeys` splits the row) — a structural edit
 		// that publishes a new tree and re-renders through the framework.
 		await userEvent.keyboard('{Enter}')
 		expect(rowsOf(host)).toHaveLength(4)

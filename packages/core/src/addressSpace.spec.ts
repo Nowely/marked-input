@@ -5,9 +5,8 @@ import {describe, expect, it} from 'vitest'
  *
  * The ADR states the rule as "a grep with a fixed allowlist", but no such grep existed
  * anywhere — not in CI, not in `oxlint.config.ts`, not in a script, and there is no
- * `scripts/` directory. The rule was enforced by review alone, which is how
- * `keyboard/blockEdit.ts` stayed on the allowlist after its last real read had become a
- * comment.
+ * `scripts/` directory. The rule was enforced by review alone, which is how the block keymap
+ * stayed on the allowlist after its last real read had become a comment.
  *
  * The rule: only `features/tokens/` may read a node's `position`, `slotRange` or `lead`.
  * Everything above it names positions with a `NodeAnchor`. Inside that directory both `tree/`
@@ -29,9 +28,10 @@ const sources: Record<string, string> = import.meta.glob('./**/*.ts', {
 })
 
 /**
- * Comments are stripped before scanning, and that is not cosmetic: `keyboard/blockEdit.ts`
- * carries `row.position.end` inside a comment explaining why it does NOT form that offset.
- * A check that failed on prose would be a check nobody could keep green honestly.
+ * Comments are stripped before scanning, and that is not cosmetic — MEASURED, not assumed:
+ * without the strip this check fails on `features/block/BlockController.ts:9`, whose comment
+ * explains why its `drop.position` field is NOT one of these reads. A check that failed on prose
+ * would be a check nobody could keep green honestly.
  */
 function stripComments(source: string): string {
 	return source.replaceAll(/\/\*[\s\S]*?\*\//g, '').replaceAll(/\/\/[^\n]*/g, '')

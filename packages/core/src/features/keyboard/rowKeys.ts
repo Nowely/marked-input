@@ -10,7 +10,7 @@ import {dropUnexpressedInput} from './beforeInput'
  * rows — no row content is composed, no markup consulted (issue 08).
  *
  * It is the only key block answers differently. There is no arrow arm: one host makes cross-row
- * caret movement native, and nothing may cancel an arrow keydown (`blockEdit.spec`'s two arrow
+ * caret movement native, and nothing may cancel an arrow keydown (`rowKeys.spec`'s two arrow
  * cases). Delete is not here either — a row boundary is an ANCHOR question since
  * `anchorsForDelete` learned the separator, so both layouts run one delete arm.
  */
@@ -58,7 +58,7 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
  * the keydown through, so its `insertLineBreak` takes the table's `'\n'` — which at the DEFAULT
  * separator is the separator, so Shift+Enter splits the row like Enter, minus Enter's
  * all-selected arm and its range-keeps-the-selection rule. At any other separator it splices a
- * literal newline inside the row. Pinned both ways in `blockEdit.spec`. A row-local `softBreak`
+ * literal newline inside the row. Pinned both ways in `rowKeys.spec`. A row-local `softBreak`
  * is the follow-up that gives it a meaning of its own (ADR-0011).
  */
 export function handleRowParagraph(store: KbCtx, container: HTMLElement, event: InputEvent): boolean {

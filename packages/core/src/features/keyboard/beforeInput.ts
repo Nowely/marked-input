@@ -67,7 +67,7 @@ export function dropUnexpressedInput(container: HTMLElement, event: InputEvent):
  * caller too — `input.ts`'s `beforeinput` — where a per-guard copy used to be the drift
  * hazard this shared table answered. `undefined` means the type has no expression as a value
  * edit; the caller answers that with {@link dropUnexpressedInput}. Block's single divergence,
- * insertParagraph, is decided BEFORE this table in `blockEdit.ts`'s `handleRowParagraph`, so
+ * insertParagraph, is decided BEFORE this table in `rowKeys.ts`'s `handleRowParagraph`, so
  * the mapping itself stays layout-free.
  */
 export function replacementForInput(container: HTMLElement, event: InputEvent): string | undefined {

@@ -40,7 +40,7 @@ function caretInRow(store: Store, rowIndex: number, offset: number): Node {
  * document.activeElement. Under one host activeElement is always the
  * container; these pin the topology-independent path.
  */
-describe('blockEdit row identity', () => {
+describe('rowKeys row identity', () => {
 	it('Enter with a DOM-resolvable selection (tier 1) splits the selected row', () => {
 		const {store, container} = mountBlock()
 		const second = store.tokens.nodes()[1]
@@ -169,7 +169,7 @@ describe('blockEdit row identity', () => {
 	})
 })
 
-describe('blockEdit beforeinput guard', () => {
+describe('rowKeys beforeinput guard', () => {
 	it('drops an unhandled cancelable inputType instead of letting the browser edit the row', () => {
 		// Same contract as `input.ts`: block rows live in the SAME single host, so an
 		// inputType the shared table cannot express would edit model-owned DOM.
@@ -349,7 +349,7 @@ describe('blockEdit beforeinput guard', () => {
  * the whole SEPARATOR (`anchorsForDelete`), and removing that span is the merge. The fixture is
  * 'one\n\ntwo\n\n' — row 0 [0,5), row 1 [5,10), the empty document-final row [10,10].
  */
-describe('blockEdit row-boundary delete', () => {
+describe('rowKeys row-boundary delete', () => {
 	it('Backspace at a row start removes the separator before it', () => {
 		const {store, container} = mountBlock()
 		caretInRow(store, 1, 0)
@@ -447,7 +447,7 @@ describe('blockEdit row-boundary delete', () => {
 	})
 })
 
-describe('blockEdit mark swallow', () => {
+describe('rowKeys mark swallow', () => {
 	it('deletes the adjacent inline mark inside a row on Backspace', () => {
 		// Safe since issue 08: a block row is a RowNode, never a MarkNode, so the swallow
 		// can only grab an INLINE mark inside the row — never a whole row.
@@ -499,7 +499,7 @@ describe('blockEdit mark swallow', () => {
  * must be judged by its EVENT TARGET, not by whatever selection happens to be
  * stored for some row elsewhere.
  */
-describe('blockEdit control guard', () => {
+describe('rowKeys control guard', () => {
 	function mountBlockWithControl(controlRow: 0 | 1) {
 		const store = new Store()
 		store.props.set({
