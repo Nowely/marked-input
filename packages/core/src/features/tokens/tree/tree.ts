@@ -224,7 +224,7 @@ function sliceWithin(nodes: readonly TreeNode[], start: number, end: number, sep
 }
 
 /**
- * A row subtree, restricted to a window — {@link sliceRowLines}'s rule with each line cut.
+ * A row subtree, restricted to a window — {@link rowLineSpans}'s rule with each line cut.
  * `followed` says whether a row follows this whole subtree, which is what decides the last
  * line's separator.
  */
