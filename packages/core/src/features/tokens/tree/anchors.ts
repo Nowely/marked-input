@@ -230,7 +230,7 @@ export function slotWithout(roots: readonly TreeNode[], row: RowNode, span: Anch
 	const slot = row.slotRange()
 	const from = offsetOfAnchor(roots, span.anchor)
 	const to = offsetOfAnchor(roots, span.head)
-	if (from > to || from < slot.start || to > slot.end) return undefined
+	if (from < slot.start || to > slot.end) return undefined
 	const body = row.slot()
 	return body.slice(0, from - slot.start) + body.slice(to - slot.start)
 }
