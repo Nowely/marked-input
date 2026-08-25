@@ -611,7 +611,9 @@ export class TokenModel {
 		 *
 		 * No {@link #applyCaret}, for {@link moveTo}'s reason with one addition: a retype rewrites
 		 * the row's structural bytes around a body it leaves alone, so an anchor inside that body
-		 * still names the same character and adoption's own repair moves it by the delta.
+		 * still names the same character and adoption's own repair moves it by the delta. That
+		 * holds because {@link turnIntoPlan} trims the window to the changed bytes — an untrimmed
+		 * one puts the body INSIDE the window, where the repair collapses every anchor onto its end.
 		 */
 		turnInto: (node, option, patch) => {
 			this.#ensureSeeded()

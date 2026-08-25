@@ -217,13 +217,20 @@ export function depthPlan(
 }
 
 /**
- * Retyping one row, as the splice that rewrites ITS OWN LINE BODY and nothing else.
+ * Retyping one row, as the splice over ITS OWN LINE BODY that rewrites only the bytes that
+ * actually CHANGE.
  *
- * The window stops at the row's own bytes on both sides, and both bounds are load-bearing under
- * nesting. It starts past the LEAD, so a re-typed row keeps the indent that says where it sits.
- * It ends at the row's own content end — `position` would take the whole SUBTREE, which is how a
- * retype comes to delete a row's children, and the row's own line is exactly the bytes the
- * projection emits for it.
+ * The line body is the bound, and both of its edges are load-bearing under nesting. It starts past
+ * the LEAD, so a re-typed row keeps the indent that says where it sits. It ends at the row's own
+ * content end — `position` would take the whole SUBTREE, which is how a retype comes to delete a
+ * row's children, and the row's own line is exactly the bytes the projection emits for it.
+ *
+ * Inside that bound the window is TRIMMED to the shared prefix and suffix, and that is a caret
+ * rule rather than an economy: `resolveMappedAnchor` collapses every offset INSIDE a window onto
+ * the window's end, so a window spanning the body sent a caret in the middle of a retyped row to
+ * the row's end — caret 1 of `'abcdef'` answered 8 after a heading retype. Trimming emits the same
+ * value with the untouched body OUTSIDE the window, where the map shifts the caret by the delta
+ * and the character it named stays named.
  *
  * NO {@link Pairing}: a pairing is refused when a pair's kinds disagree (`pairEquals`), which is
  * precisely what a retype changes. The row survives on adoption's own index pairing instead — a
@@ -247,7 +254,30 @@ export function turnIntoPlan(
 	if (text === current) return undefined
 
 	const start = node.position.start + node.lead().length
-	return {window: {start, end: start + current.length, insertedLength: text.length}, text}
+	const head = sharedPrefix(current, text)
+	const tail = sharedSuffix(current, text, head)
+	return {
+		window: {
+			start: start + head,
+			end: start + current.length - tail,
+			insertedLength: text.length - head - tail,
+		},
+		text: text.slice(head, text.length - tail),
+	}
+}
+
+/** Leading characters the two strings agree on. */
+function sharedPrefix(a: string, b: string): number {
+	let at = 0
+	while (at < a.length && at < b.length && a[at] === b[at]) at++
+	return at
+}
+
+/** Trailing characters the two strings agree on, never reaching back into the shared `prefix`. */
+function sharedSuffix(a: string, b: string, prefix: number): number {
+	let at = 0
+	while (at < a.length - prefix && at < b.length - prefix && a[a.length - 1 - at] === b[b.length - 1 - at]) at++
+	return at
 }
 
 /**

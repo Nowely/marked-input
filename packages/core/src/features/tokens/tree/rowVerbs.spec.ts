@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest'
 
 import type {CoreOption} from '../../../shared/types'
 import {Store} from '../../../store/Store'
-import {selectionRange} from '../__testing__/mountFixtures'
+import {caretAt, selectionRange} from '../__testing__/mountFixtures'
 import type {NodeAnchor, RowNode, TreeNode} from './types'
 
 /**
@@ -304,6 +304,34 @@ describe('turnInto', () => {
 		expect(child.turnInto(todo, {meta: null})).toBe(true)
 		expect(store.tokens.value()).toBe('a\n\t- [] done')
 		expect(rowsOf(store)[1]).toBe(child)
+	})
+
+	/**
+	 * A retype leaves the body alone, so the caret has to keep naming the character it named —
+	 * shifted by the structural delta and nothing more. The window is what decides it: adoption
+	 * collapses every anchor INSIDE a window onto the window's end, so a window spanning the body
+	 * put the caret at the row's end on every heading retype and every checkbox toggle.
+	 */
+	it('leaves the caret on its own character, moved by the structural delta', () => {
+		const store = rowStore('a\n\tbcdef', [heading])
+		const child = rowsOf(store)[1]
+		caretAt(store, 4)
+
+		expect(child.turnInto(heading)).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\t# bcdef')
+		expect(selectionRange(store)).toEqual({start: 6, end: 6})
+	})
+
+	it('does not move the caret at all when only META changes', () => {
+		const store = rowStore('- [ ] task', [todo])
+		const row = rowsOf(store)[0]
+		caretAt(store, 8)
+
+		expect(row.turnInto(todo, {meta: 'x'})).toBe(true)
+
+		expect(store.tokens.value()).toBe('- [x] task')
+		expect(selectionRange(store)).toEqual({start: 8, end: 8})
 	})
 
 	it('types an EMPTY nested row, which is the slash menu insert gesture', () => {
