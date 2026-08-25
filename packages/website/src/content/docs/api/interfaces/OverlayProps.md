@@ -14,7 +14,7 @@ Props for Overlay components.
 ### data?
 
 ```ts
-optional data: string[];
+optional data: readonly Suggestion[];
 ```
 
 Defined in: [react/markput/src/types.ts:64](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L64)

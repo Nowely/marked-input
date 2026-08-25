@@ -1,3 +1,4 @@
+import {suggestionLabel} from '@markput/core'
 import {useEffect} from 'react'
 
 import {useMarkput} from '../../lib/hooks/useMarkput'
@@ -22,8 +23,12 @@ export const Suggestions = () => {
 		<Popup ref={ref} style={style}>
 			<List>
 				{filtered.map((suggestion, index) => (
-					<ListItem key={suggestion} active={index === active} onClick={() => suggestions.select(index)}>
-						{suggestion}
+					<ListItem
+						key={suggestionLabel(suggestion)}
+						active={index === active}
+						onClick={() => suggestions.select(index)}
+					>
+						{suggestionLabel(suggestion)}
 					</ListItem>
 				))}
 			</List>

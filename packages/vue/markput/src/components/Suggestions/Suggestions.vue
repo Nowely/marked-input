@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {suggestionLabel} from '@markput/core'
 import {computed, onMounted, onUnmounted} from 'vue'
 
 import {useMarkput} from '../../lib/hooks/useMarkput'
@@ -41,11 +42,11 @@ function setOverlayRef(el: HTMLElement | null) {
 		<List>
 			<ListItem
 				v-for="(suggestion, index) in filtered"
-				:key="suggestion"
+				:key="suggestionLabel(suggestion)"
 				:active="index === active"
 				@click="suggestions.select(index)"
 			>
-				{{ suggestion }}
+				{{ suggestionLabel(suggestion) }}
 			</ListItem>
 		</List>
 	</Popup>

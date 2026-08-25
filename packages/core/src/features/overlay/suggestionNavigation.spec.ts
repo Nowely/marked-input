@@ -2,7 +2,7 @@ import {faker} from '@faker-js/faker'
 import {beforeEach, describe, expect, it} from 'vitest'
 
 import {KEYBOARD} from '../../shared/constants'
-import {filterSuggestions} from './filterSuggestions'
+import {filterSuggestions, suggestionLabel} from './filterSuggestions'
 import {navigateSuggestions} from './suggestionNavigation'
 
 const FAKER_SEED = 12345
@@ -113,5 +113,22 @@ describe('filterSuggestions', () => {
 
 		expect(data).toEqual(before)
 		expect(filtered).not.toBe(data)
+	})
+
+	it('matches a row carrying an identity by the label it shows, not by what it writes', () => {
+		const data = [
+			{value: 'Sarah Chen', meta: 'sarah.chen'},
+			{value: 'Marcus Kane', meta: 'marcus.kane'},
+		]
+
+		// `marcus.kane` is a substring of nothing shown: the id must not be part of the haystack.
+		expect(filterSuggestions(data, 'kane')).toEqual([data[1]])
+		expect(filterSuggestions(data, '.')).toEqual([])
+	})
+
+	it('prefers an explicit label over the value, which is the row a user reads', () => {
+		expect(suggestionLabel('Alice')).toBe('Alice')
+		expect(suggestionLabel({value: 'sarah.chen'})).toBe('sarah.chen')
+		expect(suggestionLabel({value: 'sarah.chen', label: 'Sarah Chen'})).toBe('Sarah Chen')
 	})
 })

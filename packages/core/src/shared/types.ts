@@ -75,9 +75,18 @@ export interface CoreOption {
 	overlay?: {
 		trigger?: string
 		/** Rows the built-in Suggestions overlay filters against the match value. */
-		data?: string[]
+		data?: readonly Suggestion[]
 	}
 }
+
+/**
+ * A row of the built-in Suggestions overlay. A bare string is label and value at once, which is
+ * every list whose text IS what the document stores; the object form separates them, so a row can
+ * carry the identity that goes in the `__meta__` gap of `@[__value__](__meta__)` and a `label`
+ * that is neither. Without it any list with an id behind it had to drop the built-in overlay and
+ * write its own component.
+ */
+export type Suggestion = string | {value: string; meta?: string; label?: string}
 
 /** A row KIND's declaration: what an option adds to make its markup a row rather than a mark. */
 export interface RowSpec {

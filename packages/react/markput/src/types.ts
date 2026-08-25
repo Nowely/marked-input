@@ -1,4 +1,4 @@
-import type {CoreOption, CoreSlots, CSSProperties, DataAttributes, RowNode} from '@markput/core'
+import type {CoreOption, CoreSlots, CSSProperties, DataAttributes, RowNode, Suggestion} from '@markput/core'
 import type {ComponentType, ElementType, ReactNode, RefCallback} from 'react'
 
 /**
@@ -61,7 +61,7 @@ export interface OverlayProps {
 	/** Trigger character(s) that activate the overlay */
 	trigger?: string
 	/** Data array for suggestions/autocomplete */
-	data?: string[]
+	data?: readonly Suggestion[]
 }
 
 // ============================================================================

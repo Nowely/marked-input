@@ -33,7 +33,9 @@ export type {RowConfig} from './src/features/tokens'
 // Adapter utilities (spec §2.3: keep)
 export {cx} from './src/shared/utils/cx'
 export {key} from './src/shared/classes'
-export {filterSuggestions, navigateSuggestions} from './src/features/overlay'
+// `suggestionLabel` rides with `filterSuggestions`: `overlay.data` rows may separate the label
+// from the value they write, and both adapters' Suggestions render and key by the label.
+export {filterSuggestions, navigateSuggestions, suggestionLabel} from './src/features/overlay'
 // `BLOCK_MENU_ITEMS` is the block menu's content contract; both adapters' BlockControls maps it.
 // `RowBox` is what `store.block.boxOf()` answers — the coordinates both layers paint at.
 export {BLOCK_MENU_ITEMS, getAlwaysShowHandle} from './src/features/block'
@@ -48,6 +50,8 @@ export type {
 	CoreSlots,
 	DataAttributes,
 	DraggableConfig,
+	// `CoreOption.overlay.data`'s row type: a consumer building that list separately needs it.
+	Suggestion,
 	Slot,
 	// NOT dead, and invisible to grep: both adapters carry
 	// `declare module '@markput/core' { interface SlotRegistry {…} }` (react/vue

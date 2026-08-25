@@ -1,4 +1,12 @@
-import type {CoreOption, DataAttributes, DraggableConfig, OverlayTrigger, RowNode, Slot} from '@markput/core'
+import type {
+	CoreOption,
+	DataAttributes,
+	DraggableConfig,
+	OverlayTrigger,
+	RowNode,
+	Slot,
+	Suggestion,
+} from '@markput/core'
 import type {Component, CSSProperties, VNodeChild} from 'vue'
 
 export interface MarkProps {
@@ -40,7 +48,7 @@ export interface RowProps {
 
 export interface OverlayProps {
 	trigger?: string
-	data?: string[]
+	data?: readonly Suggestion[]
 }
 
 export interface Option<

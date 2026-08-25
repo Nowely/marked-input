@@ -1,9 +1,9 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
-import type {OverlayMatch} from '../../shared/types'
+import type {OverlayMatch, Suggestion} from '../../shared/types'
 import {Store} from '../../store/Store'
 
-function matchWith(value: string, data: string[]): OverlayMatch {
+function matchWith(value: string, data: readonly Suggestion[]): OverlayMatch {
 	return {
 		value,
 		source: `@${value}`,
@@ -51,6 +51,15 @@ describe('SuggestionsModel', () => {
 		store.overlay.suggestions.select(1)
 
 		expect(choose).toHaveBeenCalledWith({value: 'word', meta: '1'})
+	})
+
+	it('writes the identity a row carries, where a bare string can only write its index', () => {
+		const choose = vi.spyOn(store.overlay, 'choose')
+		store.overlay.match(matchWith('kane', [{value: 'Marcus Kane', meta: 'marcus.kane'}]))
+
+		store.overlay.suggestions.select(0)
+
+		expect(choose).toHaveBeenCalledWith({value: 'Marcus Kane', meta: 'marcus.kane'})
 	})
 
 	it('chooses nothing for an out-of-range index', () => {

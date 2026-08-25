@@ -1,5 +1,6 @@
 import {computed, effect, signal, watch} from '../../shared/signals'
 import type {Computed, Signal} from '../../shared/signals'
+import type {Suggestion} from '../../shared/types'
 import type {Host} from '../state/Host'
 import {filterSuggestions} from './filterSuggestions'
 import type {OverlayController} from './OverlayController'
@@ -17,7 +18,7 @@ export class SuggestionsModel {
 	 */
 	readonly active: Signal<number> = signal({initial: NaN, equals: Object.is})
 
-	readonly filtered: Computed<string[]> = computed(() => {
+	readonly filtered: Computed<Suggestion[]> = computed(() => {
 		const match = this.overlay.match()
 		return match ? filterSuggestions(match.option.overlay?.data ?? [], match.value) : []
 	})
@@ -31,13 +32,22 @@ export class SuggestionsModel {
 		watch(this.overlay.match, () => this.active(NaN))
 	}
 
-	/** Choose `filtered[index]` with the index as meta. Out of range chooses nothing. */
+	/**
+	 * Choose `filtered[index]`. Out of range chooses nothing.
+	 *
+	 * A row that carries its own identity writes it; a bare string has none, so the row's INDEX
+	 * stands in — which is what the string-only shape always wrote, and the only meta a list of
+	 * labels can offer.
+	 */
 	select(index: number): void {
 		const rows = this.filtered()
 		// `in`, not `rows[index] === undefined`: without noUncheckedIndexedAccess the indexed
-		// read is typed plain `string`, which folds that comparison into a constant.
+		// read is typed plain `Suggestion`, which folds that comparison into a constant.
 		if (!(index in rows)) return
-		this.overlay.choose({value: rows[index], meta: String(index)})
+		const row = rows[index]
+		this.overlay.choose(
+			typeof row === 'string' ? {value: row, meta: String(index)} : {value: row.value, meta: row.meta}
+		)
 	}
 
 	/**
