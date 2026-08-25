@@ -81,9 +81,10 @@ export const Document: StoryObj<MarkedInputProps<StyledMarkProps>> = {
 }
 
 /**
- * The document with its editor chrome: type `@` for the people list, `/` for the block menu,
- * and hover a row for its drag grip. All three run on machinery that already ships — overlay
- * triggers, `store.edit`, and `draggable` — which is the claim this story exists to test.
+ * The document with its editor chrome: type `@` for the people list, `/` for the row menu, and
+ * hover a row for its drag grip. All three are SHIPPED machinery now, with no consumer component
+ * behind any of them — `overlay.data` carries each person's id, and the `/` menu is `BlockMenu`
+ * over the entries the options themselves declare.
  */
 export const Editor: StoryObj<MarkedInputProps<StyledMarkProps>> = {
 	args: {

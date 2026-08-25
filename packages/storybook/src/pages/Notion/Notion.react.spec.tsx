@@ -127,12 +127,12 @@ describe('Notion probe: the chrome', () => {
 	})
 
 	/**
-	 * The gesture Notion has and this does not. The menu writes over the TRIGGER's span
-	 * (`OverlayController.ts:169-176`), which is wherever the caret is — so on a row that
-	 * already has text the markup lands mid-row instead of converting the row. See
-	 * `docs/scratch/notion-like/issues/11-overlay-inserts-one-markup.md`.
+	 * TICKET 11, driven end to end. The menu used to write over the TRIGGER's span — wherever the
+	 * caret is — so a row that already had text got `'plain row# '`, a heading opener dropped
+	 * mid-row. `choose({option})` converts the ROW instead: the trigger leaves and the kind
+	 * arrives in one splice, and the text the user typed is what the heading holds.
 	 */
-	it('cannot convert a row that already has text: the markup lands at the caret', async () => {
+	it('converts a row that already has text into the chosen kind, keeping the text', async () => {
 		const onChange = onChangeSpy()
 		const {host} = await mount(Editor, {defaultValue: 'Intro paragraph\n\nplain row', onChange})
 
@@ -143,10 +143,24 @@ describe('Notion probe: the chrome', () => {
 		await expect.element(item).toBeVisible()
 		await item.click()
 
-		expect(onChange.mock.lastCall?.[0]).toBe('Intro paragraph\n\nplain row# ')
+		expect(onChange.mock.lastCall?.[0]).toBe('Intro paragraph\n\n# plain row')
 	})
 
-	it('writes a mention with its id through the people list', async () => {
+	/**
+	 * The menu is `overlay.entries`, so what a query narrows to is core's answer and not a
+	 * component's: `codeBlock` declares `keywords: ['fence', …]` and no label contains it.
+	 */
+	it('narrows the menu by a keyword that appears in no label', async () => {
+		const {host} = await mount(Editor, {defaultValue: 'Intro paragraph\n\n'})
+
+		focusLastRow(host)
+		dispatchInsertText(editingHost(host), '/fence')
+
+		await expect.element(page.getByText('Code')).toBeVisible()
+		expect(page.getByText('Heading 1').elements()).toHaveLength(0)
+	})
+
+	it('writes a mention with its id through the built-in suggestion list', async () => {
 		const onChange = onChangeSpy()
 		const {host} = await mount(Editor, {defaultValue: 'Owned by ', onChange})
 

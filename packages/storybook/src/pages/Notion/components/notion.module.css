@@ -56,58 +56,6 @@
 	white-space: nowrap;
 }
 
-.overlay {
-	z-index: 1;
-	display: flex;
-	flex-direction: column;
-	min-width: 260px;
-	padding: 6px;
-	border: 1px solid #e6e4e1;
-	border-radius: 8px;
-	background: #fff;
-	box-shadow: 0 8px 24px rgb(15 15 15 / 12%);
-	white-space: normal;
-}
-
-.overlayItem {
-	display: flex;
-	gap: 8px;
-	align-items: baseline;
-	padding: 6px 8px;
-	border: 0;
-	border-radius: 4px;
-	background: none;
-	font: inherit;
-	font-size: 14px;
-	text-align: left;
-	cursor: pointer;
-}
-
-.overlayItem:hover {
-	background: #f1f0ee;
-}
-
-.itemLabel {
-	color: #37352f;
-}
-
-.itemHint {
-	color: #8b8781;
-	font-size: 12px;
-}
-
-.avatar {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 18px;
-	height: 18px;
-	border-radius: 50%;
-	background: #d9e7f5;
-	color: #1f6feb;
-	font-size: 11px;
-}
-
 .quote {
 	display: block;
 	margin: 0.5em 0;

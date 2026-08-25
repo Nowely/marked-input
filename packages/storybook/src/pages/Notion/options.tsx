@@ -1,11 +1,10 @@
-import type {CSSProperties, Markup} from '@markput/core'
+import type {CSSProperties, Markup, MenuSpec, Suggestion} from '@markput/core'
+import {BlockMenu} from '@markput/react'
 import type {Option, RowProps} from '@markput/react'
 
 import {defineMark} from '../../shared/lib/marks'
 import {defaultMarkdownTheme, markdownOptions} from '../Nested/MarkdownOptions'
-import {MentionOverlay} from './components/MentionOverlay'
 import {PropertiesRow} from './components/PropertiesRow'
-import {SlashMenu} from './components/SlashMenu'
 import {TableRow} from './components/TableRow'
 
 import styles from './components/notion.module.css'
@@ -61,9 +60,26 @@ const styledRow = (ownStyle: CSSProperties) =>
  */
 const ROW_KEYS = new Set(['h1', 'h2', 'h3', 'list', 'codeBlock'])
 
+/**
+ * What each preset kind contributes to the `/` menu. Declaring it is the WHOLE registration: the
+ * menu is `overlay.entries`, assembled from the options that carry one, so nothing here is
+ * repeated in a component and no component filters it.
+ */
+const PRESET_MENU: Record<string, MenuSpec> = {
+	h1: {label: 'Heading 1', section: 'Basic', keywords: ['h1', 'title']},
+	h2: {label: 'Heading 2', section: 'Basic', keywords: ['h2']},
+	h3: {label: 'Heading 3', section: 'Basic', keywords: ['h3']},
+	list: {label: 'Bulleted list', section: 'Basic', keywords: ['ul', 'list']},
+	codeBlock: {label: 'Code', section: 'Media', keywords: ['fence', 'snippet']},
+}
+
 const presetKinds: Option[] = Object.entries(defaultMarkdownTheme)
 	.filter(([key]) => ROW_KEYS.has(key))
-	.map(([, preset]) => ({markup: preset.markup, row: {Component: styledRow(preset.style ?? {})}}))
+	.map(([key, preset]) => ({
+		markup: preset.markup,
+		row: {Component: styledRow(preset.style ?? {})},
+		menu: PRESET_MENU[key],
+	}))
 
 const quoteStyle: CSSProperties = {
 	display: 'block',
@@ -83,9 +99,15 @@ const quoteStyle: CSSProperties = {
  * components.
  */
 export const notionOptions: Option[] = [
-	{markup: PROPERTIES_MARKUP, row: {Component: PropertiesRow}},
-	{markup: TABLE_MARKUP, row: {Component: TableRow}},
-	{markup: QUOTE_MARKUP, row: {Component: styledRow(quoteStyle)}},
+	{markup: PROPERTIES_MARKUP, row: {Component: PropertiesRow}, menu: {label: 'Page properties', section: 'Page'}},
+	{
+		markup: TABLE_MARKUP,
+		row: {Component: TableRow},
+		// `menu.text` SEEDS the row this entry writes, and only where there is nothing to keep —
+		// choosing Table on a row that already has text keeps that text as the table's first line.
+		menu: {label: 'Table', section: 'Database', text: 'Task | Status | Owner | Due | Effort'},
+	},
+	{markup: QUOTE_MARKUP, row: {Component: styledRow(quoteStyle)}, menu: {label: 'Quote', section: 'Basic'}},
 	{markup: MENTION_MARKUP, Mark: MentionMark},
 	...presetKinds,
 	...(markdownOptions.filter(option => !ROW_KEYS.has(markupKey(option.markup))) as Option[]),
@@ -96,17 +118,31 @@ function markupKey(markup: Markup): string {
 	return Object.entries(defaultMarkdownTheme).find(([, preset]) => preset.markup === markup)?.[0] ?? ''
 }
 
+/** The people a `@` can name. `meta` is the id the document stores, `value` is what it shows. */
+const TEAM: Suggestion[] = [
+	{value: 'Sarah Chen', meta: 'sarah.chen'},
+	{value: 'Marcus Kane', meta: 'marcus.kane'},
+	{value: 'Jia Lin', meta: 'jia.lin'},
+	{value: 'Amara Reed', meta: 'amara.reed'},
+	{value: 'Platform', meta: 'team-platform'},
+]
+
 /**
- * The same document plus its editor chrome: `@` opens the people list, `/` opens the block
- * menu. Trigger lookup — unlike matching — IS order-sensitive: `#findTrigger` answers with the
- * FIRST option carrying the trigger character
- * (`packages/core/src/features/overlay/OverlayController.ts:218-224`).
+ * The same document plus its editor chrome, and NEITHER overlay is written here any more.
+ *
+ * `@` is the built-in suggestion list: a row of `overlay.data` carries the id beside the name,
+ * so the picker that used to filter its own array and call `select({value, meta})` is gone.
+ * `/` is `BlockMenu` over the entries the options above declare, so the component that used to
+ * hold a list of nine markdown strings and write them through `store.edit` is gone with it.
+ *
+ * Trigger lookup — unlike matching — IS order-sensitive: `#findTrigger` answers with the FIRST
+ * option carrying the trigger character.
  *
  * The `/` option carries no markup at all. A markup-less option is legal, and this one exists
- * only to own a trigger, because the menu writes its own text rather than the option's.
+ * only to own a trigger: what it writes is the kind the chosen entry names, never its own.
  */
 export const editorOptions: Option[] = [
-	{markup: MENTION_MARKUP, Mark: MentionMark, Overlay: MentionOverlay, overlay: {trigger: '@'}},
-	{Overlay: SlashMenu, overlay: {trigger: '/'}},
+	{markup: MENTION_MARKUP, Mark: MentionMark, overlay: {trigger: '@', data: TEAM}},
+	{Overlay: BlockMenu, overlay: {trigger: '/'}},
 	...notionOptions.filter(option => option.markup !== MENTION_MARKUP),
 ]
