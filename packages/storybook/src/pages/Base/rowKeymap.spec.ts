@@ -4,8 +4,11 @@ import {userEvent} from 'vitest/browser'
 import {rowsOf} from '../../shared/lib/dom'
 import {focusAtStart} from '../../shared/lib/focus'
 import {Mark} from '../../shared/lib/marks'
-import {mountComponent} from '../../shared/lib/page'
+import {composePage, mountComponent, mountEcho} from '../../shared/lib/page'
 import {rows} from './Base.fixtures'
+import * as BaseStories from './Base.stories'
+
+const {Default} = composePage(BaseStories)
 
 /**
  * THE ROW KEYMAP through real keystrokes, in both adapters. Framework-free on purpose: the two
@@ -88,5 +91,23 @@ describe('the row keymap', () => {
 		// beside it.
 		expect(rowsOf(host)).toHaveLength(1)
 		expect(host.querySelector('li [class*="Block"]')?.textContent).toBe('second line')
+	})
+
+	/**
+	 * CONTROLLED, which is the mode the whole seam is designed around and the reason the
+	 * continuation is ONE splice: a commit there emits and waits for the echo, so the tree has not
+	 * moved when a verb returns, and a second verb in the same tick would address the document as
+	 * it was. A soft break composed of a split and a re-indent passes uncontrolled and fails here.
+	 */
+	it('opens the continuation in CONTROLLED mode too', async () => {
+		const {host, value} = await mountEcho(Default, {...BLOCK, options: [BULLET], value: '- a'})
+
+		await focusAtStart(rowsOf(host)[0])
+		await userEvent.keyboard('{End}')
+		await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
+		await expect.poll(value).toBe('- a\n\t')
+
+		await userEvent.keyboard('x')
+		await expect.poll(value).toBe('- a\n\tx')
 	})
 })
