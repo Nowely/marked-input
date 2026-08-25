@@ -1,7 +1,7 @@
 import type {Option, RowProps} from '@markput/react'
 import {useControlRef} from '@markput/react'
 import type {ReactNode} from 'react'
-import {useCallback, useEffect, useRef, useState} from 'react'
+import {useCallback, useState} from 'react'
 
 import {Due, Effort, Highlight, Link, Mention, Status, Who} from './marks'
 import {theme} from './theme'
@@ -416,12 +416,12 @@ export const todo: Option = {
 }
 
 /**
- * THE COLLAPSED TOGGLE, and the one design question this page had to answer.
+ * THE COLLAPSED TOGGLE, and the one design question this page had to answer. Two halves.
  *
- * A row that is not painted has left the DOM layer and taken its anchors with it, so a toggle
- * that renders no children when closed is a caret defect: `End`, select-all and every arrow that
- * resolves through the last row walk into a row with no element. The children are therefore
- * always rendered, and `hidden` is what closes them.
+ * WHY THE CHILDREN ARE ALWAYS PAINTED. A row that is not painted has left the DOM layer and
+ * taken its anchors with it, so a toggle that renders no children when closed is a caret defect:
+ * `End`, select-all and every arrow that resolves through the last row walk into a row with no
+ * element. The children are therefore always rendered, and `hidden` is what closes them.
  *
  * `hidden="until-found"` rather than plain `hidden`, because plain `hidden` loses three things a
  * user expects: find-in-page cannot see the closed text, the browser cannot scroll to it, and a
@@ -430,53 +430,69 @@ export const todo: Option = {
  * the caret: a closed subtree generates no boxes, so arrowing down from the title jumps over it
  * to the next visible row — which is Notion's own behaviour, and the price of not unmounting.
  *
- * The open flag is the CONSUMER'S state, keyed by nothing: the component is keyed by the row's
- * published `node.id` and a row keeps its id across a retype, so `useState` here survives a
- * turn-into. It does not survive a drop into a DIFFERENT parent — that re-parents the element
- * between two framework parents and neither adapter can carry a component instance across it.
+ * WHO OWNS "OPEN". The document does, and the arrow is what it is drawn with: `▸` closed, `▾`
+ * open, which is how a reader would draw it anyway. Openness was `useState` and that made it a
+ * fact only the component knew — so it could not be authored (the reference page's first toggle
+ * is open and no document could say so), could not be undone, and did not survive a drop into a
+ * different parent, because that re-parents the element between two framework parents and
+ * neither adapter carries a component instance across it. As a KIND it is none of those things:
+ * clicking the arrow is `turnInto` onto the sibling kind, exactly the shape `todo` and `callout`
+ * already use, and the row keeps its id, its text, its children and its caret.
+ *
+ * WHAT THAT COSTS, stated rather than argued: find-in-page landing inside a closed toggle now
+ * EDITS the document — `beforematch` opens the row, and opening it is a retype. A consumer who
+ * would rather a search not dirty the value should not use `until-found`, and then pays the
+ * three things it buys.
+ *
+ * TWO OPTIONS, ONE COMPONENT: `meta` is not usable here, because a row's markup may not begin
+ * with a gap and `'▸-'` would be the only spelling left. Only the closed one carries a `menu`:
+ * a new toggle has nothing inside it to show.
  */
-export const toggle: Option = {
-	markup: '▸ __slot__',
-	row: {
-		continues: true,
-		indents: true,
-		Component: ({children, rows: childRows, ref, className, style}: RowProps) => {
-			const controlRef = useControlRef()
-			const [open, setOpen] = useState(false)
-			// `beforematch` reaches no synthetic event system and `until-found` is a value React's
-			// `hidden` typing does not carry, so the closed state is written straight onto the
-			// element. The listener is attached once, on mount, and released with it.
-			const body = useRef<HTMLElement | null>(null)
-			const bodyRef = useCallback((element: HTMLElement | null) => {
-				body.current = element
+const toggleRow = (open: boolean) =>
+	function Toggle({children, rows: childRows, node, ref, className, style}: RowProps) {
+		const controlRef = useControlRef()
+		// `until-found` is a value React's `hidden` typing does not carry — it serialises
+		// `hidden="until-found"` as plain `hidden`, whose `display: none` loses the search — and
+		// `beforematch` reaches no synthetic event system. Both go straight onto the element.
+		// A flip of `open` is a flip of the row's KIND, so this element is minted fresh each time.
+		const bodyRef = useCallback(
+			(element: HTMLElement | null) => {
 				if (!element) return undefined
-				const reveal = () => setOpen(true)
+				if (open) return undefined
+				element.setAttribute('hidden', 'until-found')
+				const reveal = () => node.turnInto(toggleOpen)
 				element.addEventListener('beforematch', reveal)
 				return () => element.removeEventListener('beforematch', reveal)
-			}, [])
-			useEffect(() => {
-				if (open) body.current?.removeAttribute('hidden')
-				else body.current?.setAttribute('hidden', 'until-found')
-			}, [open])
-			return (
-				<div ref={ref} className={cls(className, theme.block, theme.toggleRow)} style={style}>
-					<button
-						aria-expanded={open}
-						aria-label={open ? 'Collapse' : 'Expand'}
-						className={open ? theme.toggleArrowOpen : theme.toggleArrow}
-						onClick={() => setOpen(!open)}
-						ref={controlRef}
-						type="button"
-					/>
-					{children}
-					<div className={theme.toggleChildren} ref={bodyRef}>
-						{childRows}
-					</div>
+			},
+			[node, open]
+		)
+		return (
+			<div ref={ref} className={cls(className, theme.block, theme.toggleRow)} style={style}>
+				<button
+					aria-expanded={open}
+					aria-label={open ? 'Collapse' : 'Expand'}
+					className={open ? theme.toggleArrowOpen : theme.toggleArrow}
+					onClick={() => node.turnInto(open ? toggle : toggleOpen)}
+					ref={controlRef}
+					type="button"
+				/>
+				{children}
+				<div className={theme.toggleChildren} ref={bodyRef}>
+					{childRows}
 				</div>
-			)
-		},
-	},
+			</div>
+		)
+	}
+
+export const toggle: Option = {
+	markup: '▸ __slot__',
+	row: {continues: true, indents: true, Component: toggleRow(false)},
 	menu: {label: 'Toggle list', keywords: ['collapse', 'details', 'fold']},
+}
+
+export const toggleOpen: Option = {
+	markup: '▾ __slot__',
+	row: {continues: true, indents: true, Component: toggleRow(true)},
 }
 
 /* ── the inline database ────────────────────────────────────────────────── */
@@ -761,6 +777,7 @@ export const notionOptions: Option[] = [
 	numbered,
 	todo,
 	toggle,
+	toggleOpen,
 	cell,
 	headerCell,
 	tableHeader,

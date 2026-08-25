@@ -812,9 +812,9 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
         <span>Decision log</span>
       </div>
       <div>
-        <button aria-expanded="false" aria-label="Expand" type="button" contenteditable="false"></button>
+        <button aria-expanded="true" aria-label="Collapse" type="button" contenteditable="false"></button>
         <span>Why we cut the Android target</span>
-        <div hidden="until-found">
+        <div>
           <span>
             <div data-placeholder="Type / for commands…">
               <span>Shipping three platforms at once puts the auth migration on the critical path twice.</span>

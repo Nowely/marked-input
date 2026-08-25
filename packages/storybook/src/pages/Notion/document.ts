@@ -66,7 +66,7 @@ Open bugs|37
 - [ ] Confirm the EU quota with the vendor
 - [x] Signed off by Platform
 ## Decision log
-▸ Why we cut the Android target
+▾ Why we cut the Android target
 	Shipping three platforms at once puts the auth migration on the critical path twice.
 	1. Auth migration owns the critical path.
 	1. Three platforms at once doubles the QA matrix.

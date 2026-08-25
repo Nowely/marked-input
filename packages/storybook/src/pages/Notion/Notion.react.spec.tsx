@@ -448,17 +448,52 @@ describe('the toggle', () => {
 	 * THE COLLAPSED ROW, and the hazard the design carried since P3: a row that is not painted has
 	 * left `bind` and taken its anchors with it. A closed toggle therefore RENDERS its children and
 	 * hides them, and the value it holds is proof they are still in the document.
+	 *
+	 * THE COLLAPSE IS ASSERTED AS GEOMETRY, not as the attribute that causes it. `until-found` hides
+	 * through the UA's `content-visibility`, which one author declaration defeats while the
+	 * attribute stays exactly where it was — and `checkVisibility()` answers `true` for a subtree
+	 * hidden that way, so it is not usable either. `offsetHeight` is what a user sees.
 	 */
-	it('keeps a closed toggle’s children in the DOM, hidden until found', async () => {
+	it('collapses a closed toggle’s children while keeping them findable', async () => {
 		const {host} = await mount(Showcase)
-		const bodyOf = () => toggleStarting(host, 'Why we cut').querySelector('[class*="toggleChildren"]')
+		const bodyOf = () =>
+			toggleStarting(host, 'Single-region').querySelector<HTMLElement>('[class*="toggleChildren"]')
 
-		expect(bodyOf()?.textContent).toContain('puts the auth migration on the critical path twice')
+		expect(bodyOf()?.textContent).toContain('EU capacity is unconfirmed')
 		expect(bodyOf()?.getAttribute('hidden')).toBe('until-found')
+		expect(bodyOf()?.offsetHeight).toBe(0)
 
-		await page.elementLocator(toggleStarting(host, 'Why we cut')).getByRole('button', {name: 'Expand'}).click()
+		await page.elementLocator(toggleStarting(host, 'Single-region')).getByRole('button', {name: 'Expand'}).click()
 
 		await expect.poll(() => bodyOf()?.hasAttribute('hidden')).toBe(false)
+		expect(bodyOf()?.offsetHeight).toBeGreaterThan(0)
+	})
+
+	/**
+	 * OPEN IS THE DOCUMENT'S FACT, not the component's: `▾` is an open toggle and `▸` a closed one,
+	 * so the reference page can ASK for its first toggle to be open, and clicking the arrow is a
+	 * retype that the value carries and undo takes back. The child row is untouched by the flip —
+	 * a toggle keeps its id, its text and its children across it.
+	 */
+	it('writes the toggle’s own state into the value, both ways', async () => {
+		const {host, value} = await mountControlled(Showcase, 'intro\n▸ closed\n\tchild')
+
+		await page.elementLocator(host).getByRole('button', {name: 'Expand'}).click()
+		await expect.poll(value).toBe('intro\n▾ closed\n\tchild')
+
+		await page.elementLocator(host).getByRole('button', {name: 'Collapse'}).click()
+		await expect.poll(value).toBe('intro\n▸ closed\n\tchild')
+	})
+
+	/** The reference page's first toggle is OPEN, and it is the document that says so. */
+	it('paints the showcase’s first toggle open and the two below it closed', async () => {
+		const {host} = await mount(Showcase)
+		const heightOf = (title: string) =>
+			toggleStarting(host, title).querySelector<HTMLElement>('[class*="toggleChildren"]')?.offsetHeight
+
+		expect(heightOf('Why we cut')).toBeGreaterThan(0)
+		expect(heightOf('Single-region')).toBe(0)
+		expect(heightOf('Adopt CRDT')).toBe(0)
 	})
 
 	/**
