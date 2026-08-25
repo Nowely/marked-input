@@ -11,8 +11,11 @@ export function rowsToDebugTree(rows: RowToken[]): string {
 	return rows
 		.map((row, index) => {
 			const paddedPrefix = index > 0 ? ` ${index}` : `${index}`
-			const terminated = row.terminated ? '' : ' unterminated'
-			const header = `${paddedPrefix}: ROW "${escapeString(row.content)}" [${row.position.start}-${row.position.end}]${terminated}`
+			// The kind and its meta, when the row has one: a paragraph prints neither, so the
+			// snapshots stay readable and a row's TYPE is visible where it matters.
+			const kind = row.descriptor ? ` kind=${row.descriptor.index}` : ''
+			const meta = row.meta === undefined ? '' : ` meta="${escapeString(row.meta)}"`
+			const header = `${paddedPrefix}: ROW "${escapeString(row.content)}" [${row.position.start}-${row.position.end}]${kind}${meta}`
 			const children = tokensToDebugTree(row.children, 1, String(index))
 			return children ? `${header}\n${children}` : header
 		})

@@ -19,6 +19,7 @@ function build(source: string) {
 	const selection = createSelection({
 		offsetOf: anchor => offsetOfAnchor(tree.roots(), anchor),
 		anchorAt: offset => anchorAt(tree.roots(), offset),
+		contentStart: () => offsetOfAnchor(tree.roots(), anchorAt(tree.roots(), 0)),
 		value: () => tree.value(),
 	})
 	return {tree, selection}

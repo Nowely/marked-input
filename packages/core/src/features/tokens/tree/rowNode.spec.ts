@@ -1,40 +1,43 @@
 import {describe, expect, it} from 'vitest'
 
+import {computed, watch} from '../../../shared/signals'
+import {Store} from '../../../store/Store'
+import {selectionRange} from '../__testing__/mountFixtures'
 import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
 import {snapshot, stripIds} from './__testing__/snapshot'
 import {adopt} from './adopt'
-import {anchorAt, offsetOfAnchor, separatorSpan, stepAnchor} from './anchors'
-import {entryAnchor} from './siblings'
+import {anchorAt, entryAnchor, offsetOfAnchor, separatorSpan, stepAnchor} from './anchors'
+import {renderSubscription} from './renderSubscription'
 import {createTokenTree, sliceNodes} from './tree'
 
 const SEPARATOR = {separator: '\n\n'}
 
-const rowTree = (markups: Markup[], value: string) => {
-	const parser = new Parser(markups)
-	return {parser, tree: createTokenTree(parser.parseRows(value, SEPARATOR))}
+const rowTree = (markups: Markup[], value: string, rows: boolean[] = []) => {
+	const parser = new Parser(markups, rows)
+	return {parser, tree: createTokenTree(parser.parseRows(value, SEPARATOR), undefined, SEPARATOR.separator)}
 }
 
 describe('RowNode', () => {
 	it('projects rows back to the value byte-for-byte', () => {
 		const value = '# a **b**\n\nplain\n\n'
-		const {tree} = rowTree(['# __slot__', '**__slot__**'], value)
+		const {tree} = rowTree(['# __slot__', '**__slot__**'], value, [true, false])
 
 		expect(tree.value()).toBe(value)
 	})
 
 	it('materializes rows back into tokens the parse agrees with', () => {
 		const value = '# a\n\ntext **b** tail\n\nlast'
-		const {parser, tree} = rowTree(['# __slot__', '**__slot__**'], value)
+		const {parser, tree} = rowTree(['# __slot__', '**__slot__**'], value, [true, false])
 
-		expect(stripIds(snapshot(tree.roots()))).toStrictEqual(parser.parseRows(value, SEPARATOR))
+		expect(stripIds(snapshot(tree.roots(), SEPARATOR.separator))).toStrictEqual(parser.parseRows(value, SEPARATOR))
 	})
 
 	it('slices across rows with the separator as plain text', () => {
 		const value = '# a\n\nb'
-		const {tree} = rowTree(['# __slot__'], value)
+		const {tree} = rowTree(['# __slot__'], value, [true])
 
-		expect(sliceNodes(tree.roots(), 'start', 'end')).toBe(value)
+		expect(sliceNodes(tree.roots(), 'start', 'end', SEPARATOR.separator)).toBe(value)
 	})
 
 	it('retains every row object across an in-row edit', () => {
@@ -88,7 +91,7 @@ describe('RowNode', () => {
 		const span = (value: string, offset: number, direction: -1 | 1) => {
 			const {tree} = rowTree([], value)
 			const roots = tree.roots()
-			const answer = separatorSpan(roots, anchorAt(roots, offset), direction)
+			const answer = separatorSpan(roots, anchorAt(roots, offset), direction, SEPARATOR.separator)
 			return answer && [offsetOfAnchor(roots, answer.anchor), offsetOfAnchor(roots, answer.head)]
 		}
 
@@ -125,16 +128,81 @@ describe('RowNode', () => {
 			const parser = new Parser([])
 			const tree = createTokenTree(parser.parse('a\n\nb'))
 			const roots = tree.roots()
-			expect(separatorSpan(roots, anchorAt(roots, 3), -1)).toBeUndefined()
+			expect(separatorSpan(roots, anchorAt(roots, 3), -1, SEPARATOR.separator)).toBeUndefined()
 		})
 	})
 
 	it('enters a row at its first text child', () => {
-		const {tree} = rowTree(['# __slot__'], '# a\n\nplain')
+		const {tree} = rowTree(['# __slot__'], '# a\n\nplain', [true])
 		const roots = tree.roots()
 
 		const anchor = entryAnchor(roots[1])
 		expect(anchor).toEqual({node: roots[1].kind === 'row' ? roots[1].children()[0] : undefined, offset: 0})
 		expect(offsetOfAnchor(roots, anchor)).toBe(5)
+	})
+
+	/**
+	 * A TYPED row's opener is structural, so no text child covers the row's own start — the one
+	 * shape that breaks `anchorAt`'s "every owner's start is covered by a text node" reading.
+	 * Without the row arm offset 0 falls through to `{after: row}`, which is the END of the
+	 * heading, and `selection.selectAll` inherits the mistake through its `anchorAt(0)` seed.
+	 */
+	describe('an offset inside a row opener', () => {
+		it('answers the row body start, not the row end', () => {
+			const {tree} = rowTree(['# __slot__'], '# Title', [true])
+			const roots = tree.roots()
+			const body = roots[0].kind === 'row' ? roots[0].children()[0] : undefined
+
+			expect(anchorAt(roots, 0)).toEqual({node: body, offset: 0})
+			expect(anchorAt(roots, 1)).toEqual({node: body, offset: 0})
+			expect(offsetOfAnchor(roots, anchorAt(roots, 0))).toBe(2)
+		})
+
+		it('carries select-all from the top of the document', () => {
+			const store = new Store()
+			store.props.set({
+				defaultValue: '# Title\n\nBody',
+				layout: 'block',
+				Mark: () => null,
+				options: [{markup: '# __slot__', row: {Component: 'h1'}}],
+			})
+			store.host.container(document.createElement('div'))
+
+			store.tokens.selection.selectAll()
+
+			expect(selectionRange(store)).toEqual({start: 2, end: 13})
+			expect(store.tokens.selection.isAllSelected()).toBe(true)
+		})
+	})
+
+	/**
+	 * The row's REPAINT contract. A retype that leaves the body untouched — a todo's checkbox,
+	 * a callout's tone, a fence's language — changes only the row's kind and meta, and adoption
+	 * re-uses the same text child object, so a subscription over `children()` alone never fires
+	 * and the row keeps painting its old markup while the value already carries the new one.
+	 */
+	it('notifies a row subscriber when only its kind and meta change', () => {
+		const store = new Store()
+		store.props.set({
+			defaultValue: '- [ ] task',
+			layout: 'block',
+			separator: '\n',
+			Mark: () => null,
+			options: [{markup: '- [__meta__] __slot__', row: {Component: 'li'}}],
+		})
+		store.host.container(document.createElement('div'))
+
+		const row = store.tokens.nodes()[0]
+		const repaint = computed(renderSubscription(row))
+		let repaints = 0
+		const stop = watch(repaint, () => repaints++)
+
+		// The one keystroke a row control makes: the body text is byte-identical either side.
+		store.tokens.setValue('- [x] task')
+
+		expect(store.tokens.value()).toBe('- [x] task')
+		expect(store.tokens.nodes()[0]).toBe(row)
+		expect(repaints).toBe(1)
+		stop()
 	})
 })

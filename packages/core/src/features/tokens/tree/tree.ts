@@ -1,25 +1,25 @@
 import type {Computed, Signal} from '../../../shared/signals'
 import {computed, signal} from '../../../shared/signals'
+import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import type {RowToken, Token} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
 import {offsetOfAnchor} from './anchors'
 import type {Id, MarkNode, NodeAnchor, RowNode, TextNode, TreeCommands, TreeNode} from './types'
 
-/**
- * The separator text a RowToken consumed: everything past its last child. The
- * token stores `content` (a mirror the node does not keep), so the terminator
- * is derived rather than carried as a second field.
- */
-export function rowTokenTerminator(token: RowToken): string {
-	if (!token.terminated) return ''
-	const lastChild = token.children[token.children.length - 1]
-	return token.content.slice(lastChild.position.end - token.position.start)
-}
-
 export interface TokenTree {
 	// NOT ReturnType<typeof signal<...>> — instantiation picks the last overload
 	// (Signal<T | undefined>) and poisons every consumer with `| undefined`.
 	readonly roots: Signal<readonly TreeNode[]>
+	/**
+	 * The separator the CURRENT roots were parsed under, which is what joins them back — not the
+	 * props policy, which describes the NEXT parse. The two disagree for exactly one moment, and
+	 * it is a moment that matters: on a layout flip the boundary reads this projection to decide
+	 * what to re-parse, and reading the new policy there would fuse every row before anything had
+	 * a chance to re-derive them.
+	 *
+	 * Written by the boundary at each fold, beside adoption's own writes.
+	 */
+	readonly separator: Signal<string | undefined>
 	readonly value: Computed<string>
 	/** Allocates fresh ids from the tree-local counter; adoption builds its new nodes through it. */
 	readonly buildNode: (token: Token | RowToken) => TreeNode
@@ -33,7 +33,12 @@ export function createTokenTree(
 	 * through; an unwired node's verbs answer `false`, which is the same fail-closed answer a
 	 * dead node gives.
 	 */
-	commands?: () => TreeCommands | undefined
+	commands?: () => TreeCommands | undefined,
+	/**
+	 * The separator `tokens` were parsed under. Optional because an inline tree has no rows to
+	 * join; see {@link TokenTree.separator}.
+	 */
+	initialSeparator?: string
 ): TokenTree {
 	let nextId = 1
 	const alloc = (): Id => nextId++
@@ -43,9 +48,16 @@ export function createTokenTree(
 			const node: RowNode = {
 				kind: 'row',
 				id: alloc(),
+				descriptor: signal<MarkupDescriptor | undefined>({initial: token.descriptor}),
+				meta: signal({initial: token.meta}),
 				children: signal<readonly TreeNode[]>({initial: token.children.map(buildNode)}),
-				terminator: rowTokenTerminator(token),
+				option: () => node.descriptor()?.index,
 				position: {...token.position},
+				// DERIVED from the children's outer edges rather than stored: a row's body is
+				// exactly what its inline children cover, so a stored range would be a second
+				// reading of one fact — and the one adoption would have to keep in step.
+				slotRange: () => outerEdges(node.children()),
+				slot: () => joinNodes(node.children()),
 				range: () => ({...node.position}),
 				remove: () => commands?.()?.remove(node) ?? false,
 				duplicate: () => commands?.()?.duplicate(node) ?? false,
@@ -104,9 +116,20 @@ export function createTokenTree(
 	// Explicit generic for the same reason as `children` above.
 	const roots = signal<readonly TreeNode[]>({initial: tokens.map(buildNode)})
 
-	const value = computed(() => joinNodes(roots()))
+	const separator = signal<string | undefined>({initial: initialSeparator})
+	const value = computed(() => joinNodes(roots(), separator()))
 
-	return {roots, value, buildNode}
+	return {roots, separator, value, buildNode}
+}
+
+/** The outer edges of a sibling list — a row's slot range, and the parse's own body span. */
+function outerEdges(nodes: readonly TreeNode[]): {start: number; end: number} {
+	const first = nodes.at(0)
+	const last = nodes.at(-1)
+	// A parsed body always has at least one text child (`TreeBuilder.build`), so the empty
+	// answer is unreachable from a parse; it is what a hand-built node would get.
+	if (!first || !last) return {start: 0, end: 0}
+	return {start: first.position.start, end: last.position.end}
 }
 
 /** Depth-first id lookup over live nodes (spec §2.3's `input.find`). */
@@ -149,16 +172,17 @@ function containsNode(node: TreeNode, id: Id): boolean {
  * a position inside a mark's markup is not anchorable — and the old answer was an accident
  * of the fallback, not a rule anyone stated.
  */
-export function sliceNodes(roots: readonly TreeNode[], from: NodeAnchor, to: NodeAnchor): string {
+export function sliceNodes(roots: readonly TreeNode[], from: NodeAnchor, to: NodeAnchor, separator?: string): string {
 	const a = offsetOfAnchor(roots, from)
 	const b = offsetOfAnchor(roots, to)
-	return sliceWithin(roots, Math.min(a, b), Math.max(a, b))
+	return sliceWithin(roots, Math.min(a, b), Math.max(a, b), separator)
 }
 
-function sliceWithin(nodes: readonly TreeNode[], start: number, end: number): string {
+function sliceWithin(nodes: readonly TreeNode[], start: number, end: number, separator?: string): string {
 	let result = ''
+	const lastRow = lastRowIndex(nodes)
 
-	for (const node of nodes) {
+	for (const [index, node] of nodes.entries()) {
 		// Half-open overlap: a node touching the window only at a boundary contributes nothing.
 		if (node.position.end <= start || node.position.start >= end) continue
 
@@ -172,46 +196,86 @@ function sliceWithin(nodes: readonly TreeNode[], start: number, end: number): st
 		}
 
 		if (node.kind === 'row') {
-			result += sliceWithin(node.children(), start, end)
-			// The separator span is plain text for slicing: [position.end - terminator, position.end)
-			if (node.terminator) {
-				const terminatorStart = node.position.end - node.terminator.length
-				result += node.terminator.slice(
-					Math.max(0, start - terminatorStart),
-					Math.min(node.terminator.length, end - terminatorStart)
-				)
+			const separatorText = index < lastRow ? (separator ?? '') : ''
+			const contentEnd = node.position.end - separatorText.length
+			// A row whose BODY the window reaches is re-annotated from its kind, exactly as a
+			// partly covered mark is: copying half a heading yields '# half'. A window touching
+			// only the separator gets the separator alone — re-annotating there would invent an
+			// empty row of that kind.
+			if (start < contentEnd) {
+				result += rowBody(node, sliceWithin(node.children(), start, end, separator))
 			}
+			result += separatorText.slice(
+				Math.max(0, start - contentEnd),
+				Math.min(separatorText.length, end - contentEnd)
+			)
 			continue
 		}
 
-		const slot = node.descriptor.hasSlot ? sliceWithin(node.children(), start, end) : undefined
+		const slot = node.descriptor.hasSlot ? sliceWithin(node.children(), start, end, separator) : undefined
 		result += annotate(node.descriptor.markup, {value: node.value(), meta: node.meta(), slot})
 	}
 
 	return result
 }
 
-/** The string projection: mirrors parser/__testing__/toString over live nodes. */
-export function joinNodes(nodes: readonly TreeNode[]): string {
+/**
+ * The string projection: mirrors parser/__testing__/toString over live nodes.
+ *
+ * ROWS ARE JOINED BY THE SEPARATOR, which is what replaced the terminator each row used to
+ * store. One separator between every adjacent pair and none after the last, so
+ * "the final row carries none" is structural rather than stored and normalized.
+ */
+export function joinNodes(nodes: readonly TreeNode[], separator?: string): string {
 	let result = ''
+	const lastRow = lastRowIndex(nodes)
 
-	for (const node of nodes) {
+	for (const [index, node] of nodes.entries()) {
 		if (node.kind === 'text') {
 			result += node.text()
 			continue
 		}
 
 		if (node.kind === 'row') {
-			result += joinNodes(node.children()) + node.terminator
+			result += rowContent(node)
+			if (index < lastRow) result += separator ?? ''
 			continue
 		}
 
 		// A slot mark always parses with >=1 text child, so children are the sole slot source;
 		// the node stores no slot text.
-		const slot = node.descriptor.hasSlot ? joinNodes(node.children()) : undefined
+		const slot = node.descriptor.hasSlot ? joinNodes(node.children(), separator) : undefined
 
 		result += annotate(node.descriptor.markup, {value: node.value(), meta: node.meta(), slot})
 	}
 
 	return result
+}
+
+/** A row's own bytes, separator excluded: its kind's markup wrapped around its body. */
+export function rowContent(node: RowNode): string {
+	return rowBody(node, joinNodes(node.children()))
+}
+
+/**
+ * A row's kind applied to a body string. A paragraph IS its body; a typed row re-annotates,
+ * putting the body in the placeholder its kind declared — `__slot__` for an inline-parsed body,
+ * `__value__` for a raw one.
+ */
+function rowBody(node: RowNode, body: string): string {
+	const descriptor = node.descriptor()
+	if (!descriptor) return body
+	return annotate(descriptor.markup, {
+		value: body,
+		slot: body,
+		meta: node.meta(),
+	})
+}
+
+/** The last ROW in a sibling list: the one the join gives no separator. */
+function lastRowIndex(nodes: readonly TreeNode[]): number {
+	for (let index = nodes.length - 1; index >= 0; index--) {
+		if (nodes[index].kind === 'row') return index
+	}
+	return -1
 }

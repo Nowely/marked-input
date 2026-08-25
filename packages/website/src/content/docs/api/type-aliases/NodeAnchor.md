@@ -21,6 +21,6 @@ type NodeAnchor =
   | "end";
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:184](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L184)
+Defined in: [core/src/features/tokens/tree/types.ts:201](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L201)
 
 The addressing model. Mark interiors are addressed via slot text nodes.

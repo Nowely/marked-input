@@ -1,9 +1,11 @@
+import {acceptMatches, closeTrailingGaps} from './core/InlineRules'
 import {MarkupRegistry} from './core/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
-import {acceptMatches, closeTrailingGaps, groupRows, rowPass} from './core/RowBuilder'
+import {scanRows} from './core/RowScanner'
 import {SegmentMatcher} from './core/SegmentMatcher'
 import {TreeBuilder} from './core/TreeBuilder'
 import type {Markup, RowConfig, RowToken, Token} from './types'
+import {createTextToken} from './utils/createTextToken'
 
 /**
  * Parser - High-performance tree-based markup parser
@@ -31,6 +33,8 @@ export class Parser {
 	 *   - `__meta__` - metadata (plain text, no nesting)
 	 *   - `__slot__` - content supporting nested structures
 	 *   - `undefined` - skipped, but original array indices are preserved for descriptor matching
+	 * @param rows - Parallel flags: a `true` compiles that markup as a ROW KIND, matched only at a
+	 *   row's own start and never entered into the inline alternation.
 	 *
 	 * @example
 	 * ```typescript
@@ -42,8 +46,8 @@ export class Parser {
 	 * ])
 	 * ```
 	 */
-	constructor(markups: (Markup | undefined)[]) {
-		this.registry = new MarkupRegistry(markups)
+	constructor(markups: (Markup | undefined)[], rows: readonly boolean[] = []) {
+		this.registry = new MarkupRegistry(markups, rows)
 		this.segmentMatcher = new SegmentMatcher(this.registry.segments)
 		this.patternMatcher = new PatternMatcher(this.registry)
 		this.treeBuilder = new TreeBuilder()
@@ -76,43 +80,79 @@ export class Parser {
 		const segments = this.segmentMatcher.search(value)
 		const matches = acceptMatches(this.patternMatcher.process(segments))
 		// Inline is one implicit row (issue 08): an open trailing gap closes at end of input
-		closeTrailingGaps(matches, [], value.length)
+		closeTrailingGaps(matches, value.length)
 		// Closure extends `end`, which can put two accepted matches back in conflict
 		return this.treeBuilder.build(acceptMatches(matches), value)
 	}
 
 	/**
-	 * Parses text into separator-delimited rows — block layout's top level
-	 * (issue 08: the separator is structural).
+	 * Parses text into rows — block layout's top level (ADR-0011: the skeleton is scanned
+	 * before the inlines are parsed).
 	 *
-	 * The same match pipeline as {@link parse}, then the row pass: separator
-	 * occurrences outside every match extent become row boundaries (an opaque
-	 * `__value__`/`__meta__` interior hides its separators), open trailing gaps
-	 * close forward to the next boundary, and the top level is grouped into
-	 * {@link RowToken}s. The piece after the final separator is a row even when
-	 * empty, so Enter at the document end always yields a visible row.
+	 * TWO passes, no fixpoint. {@link scanRows} carves the rows by reading each row's own start,
+	 * so a row's kind, its structural bytes and its body edges are known before any inline
+	 * matching happens; then the UNCHANGED inline chain runs per row over that row's body alone.
+	 * An inline match therefore cannot span a row boundary, and a separator inside a row's raw
+	 * body is that row's own text rather than a boundary.
+	 *
+	 * The piece after the final separator is a row even when empty, so Enter at the document end
+	 * always yields a visible row.
 	 *
 	 * @param value - Text to parse
 	 * @param config - The block parse policy; its separator is never part of any markup
 	 *
 	 * @example
 	 * ```typescript
-	 * const parser = new Parser(['# __slot__'])
+	 * const parser = new Parser(['# __slot__'], [true])
 	 * const rows = parser.parseRows('# Title\n\nBody', {separator: '\n\n'})
 	 * // Returns: [
-	 * //   RowToken('# Title\n\n', terminated, children=[TextToken(''), MarkToken('# Title'), TextToken('')]),
-	 * //   RowToken('Body', unterminated, children=[TextToken('Body')])
+	 * //   RowToken('# Title\n\n', kind '# __slot__', children=[TextToken('Title')]),
+	 * //   RowToken('Body', paragraph, children=[TextToken('Body')])
 	 * // ]
 	 * ```
 	 */
 	parseRows(value: string, config: RowConfig): RowToken[] {
-		const {separator} = config
-		if (separator.length === 0) {
+		if (config.separator.length === 0) {
 			throw new Error('Parser.parseRows: separator must be non-empty')
 		}
-		const segments = this.segmentMatcher.search(value)
-		const {accepted, separators} = rowPass(this.patternMatcher.process(segments), value, separator)
-		const tokens = this.treeBuilder.build(accepted, value)
-		return groupRows(tokens, separators, value)
+		const rows = scanRows(value, this.registry.rowKinds, config)
+		for (const row of rows) row.children = this.parseBody(row, value)
+		return rows
+	}
+
+	/**
+	 * A row's own inline tokens, at absolute positions. The chain is byte-identical to
+	 * {@link parse}'s — it just runs over the row's body instead of the whole value, which is
+	 * what bounds every match to one row.
+	 *
+	 * A RAW body (`__value__`) is one text token and is never re-parsed: that is the whole
+	 * difference the two body placeholders express.
+	 */
+	private parseBody(row: RowToken, value: string): Token[] {
+		const {start, end, content} = row.slot
+		if (row.descriptor && !row.descriptor.hasSlot) return [createTextToken(value, start, end)]
+
+		const segments = this.segmentMatcher.search(content)
+		const matches = acceptMatches(this.patternMatcher.process(segments))
+		// One row is one scope: an open trailing gap closes at the body's end, exactly as inline
+		// parsing closes one at end of input.
+		closeTrailingGaps(matches, content.length)
+		const tokens = this.treeBuilder.build(acceptMatches(matches), content)
+		if (start !== 0) shiftTokens(tokens, start)
+		return tokens
+	}
+}
+
+/** Body-relative positions become absolute ones. */
+function shiftTokens(tokens: Token[], delta: number): void {
+	for (const token of tokens) {
+		token.position.start += delta
+		token.position.end += delta
+		if (token.type === 'text') continue
+		if (token.slot) {
+			token.slot.start += delta
+			token.slot.end += delta
+		}
+		shiftTokens(token.children, delta)
 	}
 }

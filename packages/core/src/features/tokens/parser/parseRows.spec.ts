@@ -2,9 +2,17 @@ import {describe, expect, it} from 'vitest'
 
 import {rowsToDebugTree} from './__testing__/tokensToDebugTree'
 import {Parser} from './Parser'
-import type {RowConfig} from './types'
+import type {Markup, RowConfig} from './types'
 
 const SEPARATOR: RowConfig = {separator: '\n\n'}
+const LINE: RowConfig = {separator: '\n'}
+
+/** Every markup a row kind, which is what an option carrying `row` compiles to. */
+const rowParser = (markups: Markup[]) =>
+	new Parser(
+		markups,
+		markups.map(() => true)
+	)
 
 describe('parseRows', () => {
 	describe('plain text', () => {
@@ -14,27 +22,27 @@ describe('parseRows', () => {
 			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
 				"0: ROW "alpha↲↲" [0-7]
 					0.0: TEXT "alpha" [0-5]
-				 1: ROW "beta" [7-11] unterminated
+				 1: ROW "beta" [7-11]
 					1.0: TEXT "beta" [7-11]"
 			`)
 		})
 
-		it('keeps the piece after a final separator as an empty unterminated row', () => {
+		it('keeps the piece after a final separator as an empty row', () => {
 			const rows = new Parser([]).parseRows('alpha\n\n', SEPARATOR)
 
 			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
 				"0: ROW "alpha↲↲" [0-7]
 					0.0: TEXT "alpha" [0-5]
-				 1: ROW "" [7-7] unterminated
+				 1: ROW "" [7-7]
 					1.0: TEXT "" [7-7]"
 			`)
 		})
 
-		it('yields one empty unterminated row for an empty document', () => {
+		it('yields one empty row for an empty document', () => {
 			const rows = new Parser([]).parseRows('', SEPARATOR)
 
 			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
-				"0: ROW "" [0-0] unterminated
+				"0: ROW "" [0-0]
 					0.0: TEXT "" [0-0]"
 			`)
 		})
@@ -47,110 +55,231 @@ describe('parseRows', () => {
 					0.0: TEXT "alpha" [0-5]
 				 1: ROW "↲↲" [7-9]
 					1.0: TEXT "" [7-7]
-				 2: ROW "beta" [9-13] unterminated
+				 2: ROW "beta" [9-13]
 					2.0: TEXT "beta" [9-13]"
 			`)
 		})
 	})
 
-	describe('open trailing gaps', () => {
-		it('closes an open trailing slot at the row boundary', () => {
-			const rows = new Parser(['# __slot__']).parseRows('# Title\n\nBody', SEPARATOR)
+	describe('row kinds', () => {
+		it('types a row from its opener and keeps only the body as children', () => {
+			const rows = rowParser(['# __slot__']).parseRows('# Title\n\nBody', SEPARATOR)
 
 			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
-				"0: ROW "# Title↲↲" [0-9]
-					0.0: TEXT "" [0-0]
-					0.1: MARK "# Title" [0-7] [value="", slot="Title"]
-						0.1.0: TEXT "Title" [2-7]
-					0.2: TEXT "" [7-7]
-				 1: ROW "Body" [9-13] unterminated
+				"0: ROW "# Title↲↲" [0-9] kind=0
+					0.0: TEXT "Title" [2-7]
+				 1: ROW "Body" [9-13]
 					1.0: TEXT "Body" [9-13]"
 			`)
 		})
 
-		it('never extends a leading marker backwards', () => {
-			const rows = new Parser(['# __slot__']).parseRows('lead\n\n# Title\n\n', SEPARATOR)
+		it('types a row wherever a row starts, not only at offset 0', () => {
+			const rows = rowParser(['# __slot__']).parseRows('lead\n\n# Title\n\n', SEPARATOR)
 
 			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
 				"0: ROW "lead↲↲" [0-6]
 					0.0: TEXT "lead" [0-4]
-				 1: ROW "# Title↲↲" [6-15]
-					1.0: TEXT "" [6-6]
-					1.1: MARK "# Title" [6-13] [value="", slot="Title"]
-						1.1.0: TEXT "Title" [8-13]
-					1.2: TEXT "" [13-13]
-				 2: ROW "" [15-15] unterminated
+				 1: ROW "# Title↲↲" [6-15] kind=0
+					1.0: TEXT "Title" [8-13]
+				 2: ROW "" [15-15]
 					2.0: TEXT "" [15-15]"
 			`)
 		})
 
-		it('closes the trailing slot of the document-final row at end of input', () => {
-			const rows = new Parser(['# __slot__']).parseRows('# Last', SEPARATOR)
+		it('closes an open body at end of input on the document-final row', () => {
+			const rows = rowParser(['# __slot__']).parseRows('# Last', SEPARATOR)
 
 			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
-				"0: ROW "# Last" [0-6] unterminated
-					0.0: TEXT "" [0-0]
-					0.1: MARK "# Last" [0-6] [value="", slot="Last"]
-						0.1.0: TEXT "Last" [2-6]
-					0.2: TEXT "" [6-6]"
+				"0: ROW "# Last" [0-6] kind=0
+					0.0: TEXT "Last" [2-6]"
 			`)
 		})
 
-		it('closes an open trailing value at the row boundary', () => {
-			const rows = new Parser(['- __value__']).parseRows('- alpha\n- beta\n', {separator: '\n'})
+		it('never re-parses a RAW body, and reads the kind meta beside it', () => {
+			const rows = new Parser(['- [__meta__] __value__', '**__slot__**'], [true, false]).parseRows(
+				'- [x] a **b**',
+				LINE
+			)
 
 			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
-				"0: ROW "- alpha↲" [0-8]
-					0.0: TEXT "" [0-0]
-					0.1: MARK "- alpha" [0-7] [value="alpha"]
-					0.2: TEXT "" [7-7]
-				 1: ROW "- beta↲" [8-15]
-					1.0: TEXT "" [8-8]
-					1.1: MARK "- beta" [8-14] [value="beta"]
-					1.2: TEXT "" [14-14]
-				 2: ROW "" [15-15] unterminated
-					2.0: TEXT "" [15-15]"
+				"0: ROW "- [x] a **b**" [0-13] kind=0 meta="x"
+					0.0: TEXT "a **b**" [6-13]"
 			`)
 		})
 
-		it('nests inline marks inside a closed trailing slot', () => {
-			const rows = new Parser(['# __slot__', '**__slot__**']).parseRows('# a **b** c\n\nrest', SEPARATOR)
+		it('prefers the LONGEST opener, so a todo beats the bullet it starts like', () => {
+			const rows = rowParser(['- [__meta__] __slot__', '- __slot__']).parseRows('- [x] done\n- plain', LINE)
 
 			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
-				"0: ROW "# a **b** c↲↲" [0-13]
-					0.0: TEXT "" [0-0]
-					0.1: MARK "# a **b** c" [0-11] [value="", slot="a **b** c"]
-						0.1.0: TEXT "a " [2-4]
-						0.1.1: MARK "**b**" [4-9] [value="", slot="b"]
-							0.1.1.0: TEXT "b" [6-7]
-						0.1.2: TEXT " c" [9-11]
-					0.2: TEXT "" [11-11]
-				 1: ROW "rest" [13-17] unterminated
+				"0: ROW "- [x] done↲" [0-11] kind=0 meta="x"
+					0.0: TEXT "done" [6-10]
+				 1: ROW "- plain" [11-18] kind=1
+					1.0: TEXT "plain" [13-18]"
+			`)
+		})
+
+		it('parses inline marks inside a typed row, at absolute positions', () => {
+			const rows = new Parser(['# __slot__', '**__slot__**'], [true, false]).parseRows(
+				'# a **b** c\n\nrest',
+				SEPARATOR
+			)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "# a **b** c↲↲" [0-13] kind=0
+					0.0: TEXT "a " [2-4]
+					0.1: MARK "**b**" [4-9] [value="", slot="b"]
+						0.1.0: TEXT "b" [6-7]
+					0.2: TEXT " c" [9-11]
+				 1: ROW "rest" [13-17]
 					1.0: TEXT "rest" [13-17]"
-			`)
-		})
-
-		it('closes adjacent same-markup rows without loss', () => {
-			const rows = new Parser(['# __slot__']).parseRows('# a\n\n# b\n\n', SEPARATOR)
-
-			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
-				"0: ROW "# a↲↲" [0-5]
-					0.0: TEXT "" [0-0]
-					0.1: MARK "# a" [0-3] [value="", slot="a"]
-						0.1.0: TEXT "a" [2-3]
-					0.2: TEXT "" [3-3]
-				 1: ROW "# b↲↲" [5-10]
-					1.0: TEXT "" [5-5]
-					1.1: MARK "# b" [5-8] [value="", slot="b"]
-						1.1.0: TEXT "b" [7-8]
-					1.2: TEXT "" [8-8]
-				 2: ROW "" [10-10] unterminated
-					2.0: TEXT "" [10-10]"
 			`)
 		})
 	})
 
-	describe('separator precedence', () => {
+	/**
+	 * The four defects the inversion closes, each one a ticket in
+	 * `docs/scratch/notion-like/issues/`. Snapshots rather than round-trip assertions on purpose:
+	 * every one of these documents round-trips under a scanner that types nothing at all, so only
+	 * the tree shape tells the two apart.
+	 */
+	describe('the recognizer only ever looks at a row start (tickets 01, 06, 07, 09)', () => {
+		it('leaves a mid-line opener as plain text (01)', () => {
+			const rows = rowParser(['# __slot__']).parseRows('load 5# peak', SEPARATOR)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "load 5# peak" [0-12]
+					0.0: TEXT "load 5# peak" [0-12]"
+			`)
+		})
+
+		it('gives a tight list one row per item instead of a staircase (06)', () => {
+			const rows = rowParser(['- __slot__']).parseRows('- a\n- b', LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "- a↲" [0-4] kind=0
+					0.0: TEXT "a" [2-3]
+				 1: ROW "- b" [4-7] kind=0
+					1.0: TEXT "b" [6-7]"
+			`)
+		})
+
+		it('matches a fence away from offset 0 (07)', () => {
+			const rows = rowParser(['```__meta__\n__value__\n```']).parseRows('x\n```js\nq\n```', LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "x↲" [0-2]
+					0.0: TEXT "x" [0-1]
+				 1: ROW "\`\`\`js↲q↲\`\`\`" [2-13] kind=0 meta="js"
+					1.0: TEXT "q" [8-9]"
+			`)
+		})
+
+		it('matches frontmatter away from offset 0 (09)', () => {
+			const rows = rowParser(['---\n__value__\n---']).parseRows('pre\n---\na: 1\n---', LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "pre↲" [0-4]
+					0.0: TEXT "pre" [0-3]
+				 1: ROW "---↲a: 1↲---" [4-16] kind=0
+					1.0: TEXT "a: 1" [8-12]"
+			`)
+		})
+	})
+
+	describe('the two bounds on a candidate', () => {
+		/**
+		 * ONLY THE BODY GAP MAY CROSS A SEPARATOR. Without the rule the todo's `__meta__` closes
+		 * at the `]` on the next line and one row swallows two.
+		 */
+		it('refuses a candidate whose META closes past the row own separator', () => {
+			const rows = rowParser(['- [__meta__] __slot__']).parseRows('- [x hi\nthere] more', LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "- [x hi↲" [0-8]
+					0.0: TEXT "- [x hi" [0-7]
+				 1: ROW "there] more" [8-19]
+					1.0: TEXT "there] more" [8-19]"
+			`)
+		})
+
+		/**
+		 * A CLOSED KIND MUST END AT A SEPARATOR OR AT END OF INPUT. The fence closes mid-line
+		 * here, so the candidate is refused and every row still starts at a line start — without
+		 * the rule the fence takes [0,11) and the next row opens at the space before `tail`,
+		 * which contradicts the premise the whole scan rests on.
+		 */
+		it('refuses a candidate that would end mid-line', () => {
+			const rows = rowParser(['```__meta__\n__value__\n```']).parseRows('```ts\nq\n``` tail\nnext', LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "\`\`\`ts↲" [0-6]
+					0.0: TEXT "\`\`\`ts" [0-5]
+				 1: ROW "q↲" [6-8]
+					1.0: TEXT "q" [6-7]
+				 2: ROW "\`\`\` tail↲" [8-17]
+					2.0: TEXT "\`\`\` tail" [8-16]
+				 3: ROW "next" [17-21]
+					3.0: TEXT "next" [17-21]"
+			`)
+		})
+
+		it('accepts a candidate whose meta closes ON the row own separator', () => {
+			// The fence's `__meta__` closer IS the separator, so the bound is where the closer
+			// STARTS — testing its end would refuse every fence ever written.
+			const rows = rowParser(['```__meta__\n__value__\n```']).parseRows('```js\nq\n```', LINE)
+
+			expect(rows.map(row => row.descriptor?.index)).toEqual([0])
+		})
+	})
+
+	/**
+	 * BEHAVIOUR CHANGE (ADR-0011). An inline mark can no longer span a row boundary: the rows are
+	 * carved first and each body is matched on its own. What used to make these shapes work — a
+	 * match hiding the separator occurrences inside its extent — is exactly the mutual dependence
+	 * the inversion removes. A markup that means to span rows declares `row` and gets a closing
+	 * literal instead, which then matches ANYWHERE rather than only at offset 0.
+	 */
+	describe('an inline mark is bounded by its row', () => {
+		it('leaves a fence whose interior crosses a separator as plain text', () => {
+			const rows = new Parser(['```__meta__\n__value__```']).parseRows(
+				'```js\ncode\n\nmore```\n\nafter',
+				SEPARATOR
+			)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "\`\`\`js↲code↲↲" [0-12]
+					0.0: TEXT "\`\`\`js↲code" [0-10]
+				 1: ROW "more\`\`\`↲↲" [12-21]
+					1.0: TEXT "more\`\`\`" [12-19]
+				 2: ROW "after" [21-26]
+					2.0: TEXT "after" [21-26]"
+			`)
+		})
+
+		it('leaves a meta gap that crosses a separator as plain text', () => {
+			const rows = new Parser(['@[__value__](__meta__)']).parseRows('@[a](x\n\ny)\n\nnext', SEPARATOR)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "@[a](x↲↲" [0-8]
+					0.0: TEXT "@[a](x" [0-6]
+				 1: ROW "y)↲↲" [8-12]
+					1.0: TEXT "y)" [8-10]
+				 2: ROW "next" [12-16]
+					2.0: TEXT "next" [12-16]"
+			`)
+		})
+
+		it('leaves a closed slot that crosses a separator as plain text', () => {
+			const rows = new Parser(['**__slot__**']).parseRows('**a\n\nb**', SEPARATOR)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "**a↲↲" [0-5]
+					0.0: TEXT "**a" [0-3]
+				 1: ROW "b**" [5-8]
+					1.0: TEXT "b**" [5-8]"
+			`)
+		})
+
 		it('keeps a paragraph with inline marks as one row', () => {
 			const rows = new Parser(['**__slot__**']).parseRows('text **bold** tail\n\nnext', SEPARATOR)
 
@@ -160,75 +289,9 @@ describe('parseRows', () => {
 					0.1: MARK "**bold**" [5-13] [value="", slot="bold"]
 						0.1.0: TEXT "bold" [7-11]
 					0.2: TEXT " tail" [13-18]
-				 1: ROW "next" [20-24] unterminated
+				 1: ROW "next" [20-24]
 					1.0: TEXT "next" [20-24]"
 			`)
-		})
-
-		it('hides a separator inside an opaque value gap', () => {
-			const rows = new Parser(['```__meta__\n__value__```']).parseRows(
-				'```js\ncode\n\nmore```\n\nafter',
-				SEPARATOR
-			)
-
-			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
-				"0: ROW "\`\`\`js↲code↲↲more\`\`\`↲↲" [0-21]
-					0.0: TEXT "" [0-0]
-					0.1: MARK "\`\`\`js↲code↲↲more\`\`\`" [0-19] [value="code↲↲more", meta="js"]
-					0.2: TEXT "" [19-19]
-				 1: ROW "after" [21-26] unterminated
-					1.0: TEXT "after" [21-26]"
-			`)
-		})
-
-		it('hides a separator inside an opaque meta gap', () => {
-			const rows = new Parser(['@[__value__](__meta__)']).parseRows('@[a](x\n\ny)\n\nnext', SEPARATOR)
-
-			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
-				"0: ROW "@[a](x↲↲y)↲↲" [0-12]
-					0.0: TEXT "" [0-0]
-					0.1: MARK "@[a](x↲↲y)" [0-10] [value="a", meta="x↲↲y"]
-					0.2: TEXT "" [10-10]
-				 1: ROW "next" [12-16] unterminated
-					1.0: TEXT "next" [12-16]"
-			`)
-		})
-
-		it('keeps a closed slot interior whole across a separator', () => {
-			const rows = new Parser(['**__slot__**']).parseRows('**a\n\nb**', SEPARATOR)
-
-			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
-				"0: ROW "**a↲↲b**" [0-8] unterminated
-					0.0: TEXT "" [0-0]
-					0.1: MARK "**a↲↲b**" [0-8] [value="", slot="a↲↲b"]
-						0.1.0: TEXT "a↲↲b" [2-6]
-					0.2: TEXT "" [8-8]"
-			`)
-		})
-	})
-
-	describe('separator precedence under conflicts (review findings)', () => {
-		it('keeps a boundary that starts inside a hidden straddling occurrence', () => {
-			// The occurrence at [7,9) straddles the todo's trailing '\n' literal and is
-			// hidden; the fully-plain-text occurrence at [8,10) is still a boundary — a
-			// hidden occurrence advances the scan by one char, not by its own length.
-			const rows = new Parser(['- [__value__] __slot__\n']).parseRows('- [x] a\n\n\nnext', SEPARATOR)
-
-			expect(rows.map(row => row.content)).toEqual(['- [x] a\n\n\n', 'next'])
-		})
-
-		it('recomputes boundaries when closure drops the match that hid one', () => {
-			// The mention passes the single-lookback filter, hides the separator at [14,16),
-			// and is then dropped by the tree after closure extends the heading into a
-			// conflict — the row pass must re-derive boundaries over the surviving set, or
-			// the separator lands as plain row text with no boundary (fixpoint rowPass).
-			const rows = new Parser(['**__slot__**', '# __value__', '@[__value__](__meta__)']).parseRows(
-				'**# t @[a](x**\n\ny)\n\nend',
-				SEPARATOR
-			)
-
-			expect(rows.map(row => row.content)).toEqual(['**# t @[a](x**\n\n', 'y)\n\n', 'end'])
-			expect(rows.map(row => row.content).join('')).toBe('**# t @[a](x**\n\ny)\n\nend')
 		})
 	})
 
@@ -238,7 +301,7 @@ describe('parseRows', () => {
 		})
 
 		it('reproduces the value from row contents byte-for-byte', () => {
-			const parser = new Parser(['# __slot__', '**__slot__**'])
+			const parser = new Parser(['# __slot__', '**__slot__**'], [true, false])
 			const value = '# a **b**\n\nplain\n\n'
 
 			const rows = parser.parseRows(value, SEPARATOR)
@@ -254,6 +317,17 @@ describe('parseRows', () => {
 			parser.parseRows(value, SEPARATOR)
 
 			expect(parser.parse(value)).toEqual(inline)
+		})
+
+		it('keeps a row markup out of the inline alternation', () => {
+			// The same markup as a row kind and as an inline mark: as a kind it must never be
+			// matched inside a line, which is what registering its literals in the alternation
+			// would do.
+			const asRow = rowParser(['# __slot__']).parse('load 5# peak')
+			const asMark = new Parser(['# __slot__']).parse('load 5# peak')
+
+			expect(asRow.map(token => token.type)).toEqual(['text'])
+			expect(asMark.map(token => token.type)).toEqual(['text', 'mark', 'text'])
 		})
 	})
 })

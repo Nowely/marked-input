@@ -39,6 +39,8 @@ export type {
 	OverlayMatch,
 	OverlayTrigger,
 	CoreOption,
+	// `CoreOption.row`'s type: a consumer declaring a row kind separately needs the name.
+	RowSpec,
 	CSSProperties,
 	CoreSlots,
 	DataAttributes,

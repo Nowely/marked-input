@@ -61,11 +61,31 @@ export interface CoreOption {
 	 * "@[__slot__]"
 	 */
 	markup?: Markup
+	/**
+	 * Presence makes this a ROW option: its `markup` is matched ONLY at a row's own start, never
+	 * anywhere inside a line, and matching it TYPES the row — the row renders through this
+	 * option's own component instead of the paragraph slot.
+	 *
+	 * A row markup obeys the mark rules plus three of its own: exactly one body placeholder
+	 * (`__slot__` for an inline-parsed body, `__value__` for a raw one), no second `__value__`,
+	 * and no two placeholders touching. A markup that breaks one, or that compiles to an opener
+	 * an earlier row option already claims, is reported and contributes no row kind.
+	 */
+	row?: RowSpec
 	overlay?: {
 		trigger?: string
 		/** Rows the built-in Suggestions overlay filters against the match value. */
 		data?: string[]
 	}
+}
+
+/** A row KIND's declaration: what an option adds to make its markup a row rather than a mark. */
+export interface RowSpec {
+	/**
+	 * REQUIRED. Every row kind renders through its own component; `slots.block` is the PARAGRAPH
+	 * component — the row with no kind — and the only fallback left.
+	 */
+	Component: Slot
 }
 
 export type OverlayMatch<TOption = CoreOption> = {

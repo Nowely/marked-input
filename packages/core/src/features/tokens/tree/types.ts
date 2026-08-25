@@ -49,25 +49,42 @@ export type Window = {
 export type TreeNode = TextNode | MarkNode | RowNode
 
 /**
- * A first-class block row (issue 08): block layout's only root kind, formed by
- * `Parser.parseRows` from the structural separator rather than matched by any
- * markup. Never a child of a mark or another row. A paragraph is a Row whose
- * children are plain text and inline marks — no markup, no descriptor.
+ * A first-class block row (issue 08): block layout's only root kind, carved by the row scanner
+ * from the structural separator and TYPED by its own opener (ADR-0011). Never a child of a mark
+ * or another row. A paragraph is a Row with no kind at all — its children are the plain text and
+ * inline marks of the whole line.
  */
 export interface RowNode {
 	readonly kind: 'row'
 	readonly id: Id
+	/**
+	 * THE row's kind: the compiled markup its opener matched, `undefined` for a paragraph.
+	 *
+	 * A SIGNAL, unlike {@link MarkNode.descriptor}, and that difference is the design: a mark IS
+	 * its markup, so adopting across descriptors would leave a node disagreeing with the parse; a
+	 * row HAS a kind, and a turn-into must keep the row's identity — its id, its element, its
+	 * drag grip — while the kind changes underneath it.
+	 */
+	readonly descriptor: Signal<MarkupDescriptor | undefined>
+	/** The kind's metadata gap — a todo's checked flag, a fence's language. */
+	readonly meta: Signal<string | undefined>
 	/** The row's inline content — Text and Mark nodes only, at least one text child. */
 	readonly children: Signal<readonly TreeNode[]>
 	/**
-	 * The separator text this row consumed — `''` only for the document-final row.
-	 * A plain field written by adoption, like `position`: every observable flip
-	 * co-occurs with a roots or children write, so the projection recomputes
-	 * without a signal here.
+	 * The public view of the kind: the index of the option that declared it, which is the same
+	 * identity `resolveSlot` already resolves a mark's component by. `undefined` for a paragraph.
+	 * Derived from {@link descriptor}, so the two cannot disagree.
 	 */
-	terminator: string
-	/** INCLUDES the trailing separator when terminated, so rows keep tiling the document. */
+	option(): number | undefined
+	/** INCLUDES the trailing separator on every row but the document-final one. */
 	position: {start: number; end: number}
+	/**
+	 * The row's own editable interior — everything its opener and closing literal enclose.
+	 * DERIVED from the children's outer edges, which is exactly what the parse put there.
+	 */
+	slotRange(): {start: number; end: number}
+	/** The interior's TEXT, joined from the live children. */
+	slot(): string
 	/** See {@link TextNode.range}. */
 	range(): {start: number; end: number}
 	/** See {@link NodeCommands}. */

@@ -79,6 +79,10 @@ export function createBoundary(deps: {
 		// derived from the tree had to be routed around: `value` read a mirrored string
 		// written after the fact rather than the tree itself.
 		batch(() => {
+			// The roots and the separator that joins them move together: written HERE rather than
+			// read live off the props, so the projection always describes the parse behind it.
+			// See `TokenTree.separator`.
+			deps.tree.separator(rowConfig?.separator)
 			const result = adopt(deps.tree, window, parsed, selectionBefore)
 			// Adoption is the commit; it must not sit inside the optional call's argument,
 			// which JS skips evaluating when no listener is registered.

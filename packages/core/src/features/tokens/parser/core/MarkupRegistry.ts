@@ -2,6 +2,7 @@ import type {Markup} from '../types'
 import {getOrCreate} from '../utils/getOrCreate'
 import type {MarkupDescriptor} from './MarkupDescriptor'
 import {createMarkupDescriptor} from './MarkupDescriptor'
+import {orderRowKinds} from './RowKind'
 import type {SegmentDefinition} from './SegmentMatcher'
 
 /**
@@ -14,9 +15,18 @@ export class MarkupRegistry {
 	readonly segments: SegmentDefinition[] = []
 	/** Map from first segment index to descriptors that start with this segment (for O(1) lookup) */
 	readonly firstSegmentIndexMap: Map<number, MarkupDescriptor[]> = new Map()
+	/**
+	 * The ROW kinds, in scan order. Compiled by the same compiler as a mark and held on the same
+	 * registry — one registry per option set, so a row kind and a mark share the option index a
+	 * component is resolved by — but deliberately OUTSIDE `segments` and `descriptors`: a row
+	 * literal must never enter the inline alternation. Registering a fence's opener and closer
+	 * there was measured to yield zero marks, because the closing literal eats the opening one.
+	 */
+	readonly rowKinds: MarkupDescriptor[]
 
-	constructor(markups: (Markup | undefined)[]) {
+	constructor(markups: (Markup | undefined)[], rows: readonly boolean[] = []) {
 		const segmentIndexMap = new Map<string, number>()
+		const rowKinds: MarkupDescriptor[] = []
 
 		this.descriptors = markups
 			.map((markup, index) => {
@@ -26,6 +36,11 @@ export class MarkupRegistry {
 				}
 
 				const descriptor = createMarkupDescriptor(markup, index)
+
+				if (rows[index]) {
+					rowKinds.push(descriptor)
+					return null
+				}
 
 				// Process segments and register them
 				descriptor.segments.forEach((segment, segmentIndex) => {
@@ -37,6 +52,8 @@ export class MarkupRegistry {
 				return descriptor
 			})
 			.filter((descriptor): descriptor is MarkupDescriptor => descriptor !== null)
+
+		this.rowKinds = orderRowKinds(rowKinds)
 	}
 
 	/**

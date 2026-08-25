@@ -4,7 +4,6 @@ import type {MarkToken, RowConfig, RowToken, TextToken, Token} from '../parser/t
 import {createTextToken} from '../parser/utils/createTextToken'
 import {anchorAt, offsetOfAnchor} from './anchors'
 import type {TokenTree} from './tree'
-import {rowTokenTerminator} from './tree'
 import type {
 	Anchors,
 	MarkNode,
@@ -89,9 +88,10 @@ export function adopt(
 					adoptMark(candidate, token)
 					result.push(candidate)
 				} else if (candidate?.kind === 'row' && token.type === 'row') {
-					// KIND match only: a row carries no descriptor, so any row candidate can
-					// adopt any row token — this is what keeps the row object (and the block
-					// state keyed on it) alive when its content changes shape.
+					// KIND match only, and deliberately NOT on the row's own kind: a row HAS a
+					// descriptor rather than being one, so any row candidate adopts any row
+					// token. That is what keeps the row object — and the block state keyed on
+					// it — alive across a retype (ADR-0007).
 					adoptRow(candidate, token)
 					result.push(candidate)
 				} else {
@@ -109,7 +109,8 @@ export function adopt(
 
 		function adoptRow(node: RowNode, token: RowToken): void {
 			adoptPosition(node, token)
-			node.terminator = rowTokenTerminator(token)
+			node.descriptor(token.descriptor)
+			node.meta(token.meta)
 			const children = node.children()
 			const next = adoptSiblings(children, token.children)
 			if (!sameNodes(next, children)) node.children(next)
@@ -273,7 +274,10 @@ function snapshotNodeEquals(node: TreeNode, token: Token | RowToken, delta: numb
 	if (node.kind === 'text') return token.type === 'text' && node.text() === token.content
 	if (node.kind === 'row') {
 		if (token.type !== 'row') return false
-		if (node.terminator !== rowTokenTerminator(token)) return false
+		// The row's own kind, so a same-length retype can never be accepted by the prefix or
+		// suffix walk and keep the old markup in the projection.
+		if (node.descriptor() !== token.descriptor) return false
+		if (node.meta() !== token.meta) return false
 		const rowChildren = node.children()
 		if (rowChildren.length !== token.children.length) return false
 		return rowChildren.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
@@ -344,18 +348,26 @@ function resolvePairing(
 }
 
 /**
- * The pairing gate's equality — {@link snapshotNodeEquals} under the pair's own delta,
- * except for a ROW pair: a permutation legally flips `terminated` on the rows entering
- * and leaving the document-final position, so a row pair matches on CHILDREN alone and
- * `adoptRow` writes the new terminator. Strict equality here silently rejected the
- * pairing and dropped identity to index pairing — the exact ADR-0007 failure mode.
+ * The pairing gate's equality — {@link snapshotNodeEquals} under the pair's own delta, except
+ * for a ROW pair, which is compared on its kind, its meta and its CHILDREN under the pair's own
+ * CONTENT delta.
+ *
+ * The row arm is load-bearing rather than lenient. A permutation moves which row sits
+ * document-final, and only that row carries no separator, so the rows entering and leaving that
+ * position change SPAN LENGTH while their content is untouched: comparing the row's own
+ * `position` rejects every such pairing and drops identity to index pairing — the exact ADR-0007
+ * failure mode. The children still have to agree, under the delta between the two BODIES rather
+ * than between the two row starts, which is the reading that survives a row's structural bytes
+ * changing size.
  */
 function pairEquals(node: TreeNode, token: Token | RowToken): boolean {
-	const delta = token.position.start - node.position.start
 	if (node.kind === 'row' && token.type === 'row') {
+		if (node.descriptor() !== token.descriptor) return false
+		if (node.meta() !== token.meta) return false
+		const delta = token.slot.start - node.slotRange().start
 		const children = node.children()
 		if (children.length !== token.children.length) return false
 		return children.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
 	}
-	return snapshotNodeEquals(node, token, delta)
+	return snapshotNodeEquals(node, token, token.position.start - node.position.start)
 }

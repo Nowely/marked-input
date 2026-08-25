@@ -723,7 +723,12 @@ describe('entering a fresh row', () => {
 	 */
 	function headingSetup(value: string) {
 		const store = new Store()
-		store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: [{markup: '# __slot__'}]})
+		store.props.set({
+			defaultValue: value,
+			layout: 'block',
+			Mark: () => null,
+			options: [{markup: '# __slot__', row: {Component: 'h1'}}],
+		})
 		store.host.container(document.createElement('div'))
 		return store
 	}

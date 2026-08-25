@@ -170,7 +170,9 @@ describe('TokenHandle', () => {
 
 		// The same handle object now lives at the shifted path
 		expect(handle.alive()).toBe(true)
-		expect(joinNodes([store.tokens.nodes()[2]])).toBe('beta\n\n')
+		// A row's own projection is its content alone: the separator between rows comes from
+		// the JOIN, so a one-row list carries none.
+		expect(joinNodes([store.tokens.nodes()[2]])).toBe('beta')
 
 		// Resolving the shifted id returns the SAME handle object
 		expect(store.tokens.handle(store.tokens.nodes()[2].id!)).toBe(handle)

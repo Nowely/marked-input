@@ -11,7 +11,7 @@ import type {Id, TreeNode} from '../types'
  */
 export type TreeCapture = Map<Id, string>
 
-/** Per id, everything a signal write on that node could change: text, or value+meta. */
+/** Per id, everything a signal write on that node could change: text, kind+meta, or value+meta. */
 export function captureTree(nodes: readonly TreeNode[], into: TreeCapture = new Map()): TreeCapture {
 	for (const node of nodes) {
 		into.set(
@@ -19,7 +19,7 @@ export function captureTree(nodes: readonly TreeNode[], into: TreeCapture = new 
 			node.kind === 'text'
 				? node.text()
 				: node.kind === 'row'
-					? node.terminator
+					? JSON.stringify([node.descriptor()?.markup, node.meta()])
 					: JSON.stringify([node.value(), node.meta()])
 		)
 		if (node.kind !== 'text') captureTree(node.children(), into)

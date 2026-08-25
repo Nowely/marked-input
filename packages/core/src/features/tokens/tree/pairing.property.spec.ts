@@ -29,9 +29,10 @@ const BASE_SEED = 17_082_026
 const ITERATIONS = 200
 
 /** Paragraph rows (issue 08): the structural separator forms the rows, no markup needed. */
-const parseRows = (value: string) => parser.parseRows(value, {separator: '\n\n'})
+const ROW_CONFIG = {separator: '\n\n'}
+const parseRows = (value: string) => parser.parseRows(value, ROW_CONFIG)
 
-const buildTree = (value: string) => createTokenTree(parseRows(value))
+const buildTree = (value: string) => createTokenTree(parseRows(value), undefined, ROW_CONFIG.separator)
 
 interface Case {
 	seed: number
@@ -70,7 +71,7 @@ function planned(c: Case): {tree: ReturnType<typeof buildTree>; window: Window; 
 	const tree = buildTree(c.source)
 	const roots = tree.roots()
 	const ids = roots.map(node => node.id)
-	const plan = movePlan(roots, roots[c.from], c.to)
+	const plan = movePlan(roots, roots[c.from], c.to, ROW_CONFIG.separator)
 	if (!plan) throw new Error(`movePlan refused a legal move: ${label(c)}`)
 	const value = tree.value()
 	const next = value.slice(0, plan.window.start) + plan.text + value.slice(plan.window.end)
@@ -116,7 +117,7 @@ describe('pairing: a verified claim moves identity', () => {
 			// The §7.1 output-equivalence oracle. It is what catches a position the permuted
 			// branch forgot to rewrite: ids aside, the whole tree must equal a fresh parse of
 			// its own projection.
-			expect(stripIds(snapshot(tree.roots())), label(c)).toEqual(parseRows(tree.value()))
+			expect(stripIds(snapshot(tree.roots(), ROW_CONFIG.separator)), label(c)).toEqual(parseRows(tree.value()))
 			expect(tree.value(), label(c)).toBe(next)
 		}
 	})
@@ -192,7 +193,7 @@ describe('pairing: the content gate', () => {
 		const tree = buildTree(source)
 		const roots = tree.roots()
 		const ids = roots.map(node => node.id)
-		const plan = movePlan(roots, roots[0], 2)
+		const plan = movePlan(roots, roots[0], 2, ROW_CONFIG.separator)
 		if (!plan?.window.pairing) throw new Error('expected a plan carrying a pairing')
 		const value = tree.value()
 		const next = value.slice(0, plan.window.start) + plan.text + value.slice(plan.window.end)

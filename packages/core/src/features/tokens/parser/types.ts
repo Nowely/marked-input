@@ -35,13 +35,15 @@ export interface MarkToken {
 }
 
 /**
- * A first-class block-mode row. `parseRows` splits the document at separator
- * occurrences that lie outside every match extent and wraps each span as a Row;
- * block layout's top level is `RowToken[]`. `content`/`position` INCLUDE the
- * trailing separator when `terminated`, so joining row contents reproduces the
- * value byte-for-byte; `children` are the row's inline tokens (absolute
- * positions, separator excluded). A Row is never an inline child — `Token`
- * stays `TextToken | MarkToken`.
+ * A first-class block-mode row, and block layout's top level. `parseRows` carves the skeleton
+ * first: each row is recognised at its OWN start, by its kind's opener or by nothing at all, and
+ * its body is inline-parsed afterwards.
+ *
+ * `content`/`position` INCLUDE the trailing separator on every row but the document-final one, so
+ * rows keep tiling the value. There is no stored terminator: which rows carry a separator is
+ * structural — the pre-order join puts one between every adjacent pair and none after the last.
+ *
+ * A Row is never an inline child — `Token` stays `TextToken | MarkToken`.
  */
 export interface RowToken {
 	type: 'row'
@@ -52,10 +54,26 @@ export interface RowToken {
 	}
 	/** Stable identity id, stamped by the tree's snapshot (`tree/snapshot.ts`) — NOT by the parser. Absent on freshly parsed trees. */
 	id?: number
-	/** Inline tokens of the row content (the same shape `parse()` emits), always edged by text tokens. */
+	/**
+	 * The row's KIND: the compiled markup its opener matched, `undefined` for a paragraph. The
+	 * descriptor rather than its index, for `MarkToken.descriptor`'s reason — the projection
+	 * re-annotates the row from its markup, and an index alone is not resolvable without a
+	 * registry the tree does not have.
+	 */
+	descriptor?: MarkupDescriptor
+	/** The kind's metadata gap, `undefined` when the kind has none. */
+	meta?: string
+	/**
+	 * The row's own editable interior: the body gap for a typed row, the whole row content for a
+	 * paragraph. A row's structural bytes — its opener and closing literal — lie outside it, and
+	 * no caret may enter them.
+	 */
+	slot: {content: string; start: number; end: number}
+	/**
+	 * Inline tokens of the row's SLOT (the same shape `parse()` emits, at absolute positions),
+	 * always edged by text tokens. A raw body (`__value__`) is one text token, never re-parsed.
+	 */
 	children: Token[]
-	/** False only for the document-final row, which no separator terminates. */
-	terminated: boolean
 }
 
 /**

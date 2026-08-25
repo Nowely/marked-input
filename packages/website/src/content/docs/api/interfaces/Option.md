@@ -132,3 +132,28 @@ optional Overlay: ComponentType<TOverlayProps>;
 Defined in: [react/markput/src/types.ts:54](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L54)
 
 Per-option component for rendering this overlay
+
+***
+
+### row?
+
+```ts
+optional row: RowSpec;
+```
+
+Defined in: [core/src/shared/types.ts:74](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L74)
+
+Presence makes this a ROW option: its `markup` is matched ONLY at a row's own start, never
+anywhere inside a line, and matching it TYPES the row — the row renders through this
+option's own component instead of the paragraph slot.
+
+A row markup obeys the mark rules plus three of its own: exactly one body placeholder
+(`__slot__` for an inline-parsed body, `__value__` for a raw one), no second `__value__`,
+and no two placeholders touching. A markup that breaks one, or that compiles to an opener
+an earlier row option already claims, is reported and contributes no row kind.
+
+#### Inherited from
+
+```ts
+CoreOption.row
+```

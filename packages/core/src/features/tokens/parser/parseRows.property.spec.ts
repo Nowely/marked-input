@@ -1,8 +1,9 @@
 import {faker} from '@faker-js/faker'
 import {beforeEach, describe, expect, it} from 'vitest'
 
+import {createTokenTree} from '../tree/tree'
 import {Parser} from './Parser'
-import type {RowConfig, RowToken, Token} from './types'
+import type {Markup, RowConfig, RowToken, Token} from './types'
 
 /**
  * The two properties the row pipeline must never lose (issue 08; re-hosted from
@@ -16,7 +17,9 @@ const FAKER_SEED = 6_122_026
 const ITERATIONS = 200
 const SEPARATOR = '\n\n'
 const ROW_CONFIG: RowConfig = {separator: SEPARATOR}
-const MARKUPS = ['# __slot__', '**__slot__**', '@[__value__](__meta__)'] as const
+const MARKUPS = ['**__slot__**', '@[__value__](__meta__)'] as const
+/** The ROW kinds, ahead of the inline markups so their option indices are stable. */
+const ROW_MARKUPS: Markup[] = ['# __slot__', '- [__meta__] __slot__', '> __slot__']
 
 beforeEach(() => {
 	faker.seed(FAKER_SEED)
@@ -60,6 +63,7 @@ function shiftRow(row: RowToken, delta: number): RowToken {
 	return {
 		...row,
 		position: {start: row.position.start + delta, end: row.position.end + delta},
+		slot: {...row.slot, start: row.slot.start + delta, end: row.slot.end + delta},
 		children: row.children.map(child => shiftToken(child, delta)),
 	}
 }
@@ -88,7 +92,7 @@ describe('parseRows properties', () => {
 			// a single alpha char cannot form or break a '\n\n' separator.
 			const rowIndex = faker.number.int({min: 0, max: rows.length - 1})
 			const row = rows[rowIndex]
-			const contentLength = row.content.length - (row.terminated ? SEPARATOR.length : 0)
+			const contentLength = row.content.length - (rowIndex < rows.length - 1 ? SEPARATOR.length : 0)
 			const offset = row.position.start + faker.number.int({min: 0, max: contentLength})
 			const inserted = faker.string.alpha(1)
 			const edited = value.slice(0, offset) + inserted + value.slice(offset)
@@ -105,4 +109,107 @@ describe('parseRows properties', () => {
 			}
 		}
 	})
+
+	/**
+	 * The TREE's round trip, which the two properties above cannot see: a typed row keeps no
+	 * copy of its opener, so the projection has to re-annotate it from the kind. The corpus is
+	 * scoped on purpose — its inline part is a pinned alphabet rather than arbitrary text,
+	 * because the unrestricted property is false today for reasons that predate this parse and
+	 * belong to the inline layer (`'==<status:>===='` re-annotates as `'==<status:>========'`,
+	 * from `joinNodes`, `toString` and `parseRows` alike).
+	 */
+	it('re-annotates every typed row back to the bytes it was parsed from', () => {
+		const parser = new Parser(
+			[...ROW_MARKUPS, ...MARKUPS],
+			ROW_MARKUPS.map(() => true)
+		)
+
+		for (let i = 0; i < ITERATIONS; i++) {
+			const value = generateTypedDocument()
+			const tree = createTokenTree(parser.parseRows(value, ROW_CONFIG), undefined, SEPARATOR)
+
+			expect(tree.value(), `iteration ${i}, value ${JSON.stringify(value)}`).toBe(value)
+		}
+	})
+
+	/**
+	 * A GROWTH factor, not a millisecond budget — re-homed from the row pass's own guard, whose
+	 * reference implementation went with the fixpoint. Absolutes move ±35% between runs of the
+	 * same code and further between machines, so a budget would either be flaky or so loose it
+	 * pins nothing; what a quadratic pass costs is growth with rows × matches, which shows as
+	 * cost outrunning its input.
+	 */
+	it('costs no more than its input grows', () => {
+		const parser = new Parser(
+			[...ROW_MARKUPS, ...MARKUPS],
+			ROW_MARKUPS.map(() => true)
+		)
+
+		const base = costOf(parser, generateLargeDocument(1000))
+		const quadruple = costOf(parser, generateLargeDocument(4000))
+		const octuple = costOf(parser, generateLargeDocument(8000))
+
+		const scale = `1000 rows ${base.toFixed(2)}ms, 4000 rows ${quadruple.toFixed(2)}ms, 8000 rows ${octuple.toFixed(2)}ms`
+		expect(quadruple / base, scale).toBeLessThan(10)
+		expect(octuple / base, scale).toBeLessThan(20)
+	})
 })
+
+function generateTypedDocument(): string {
+	const rows = Array.from({length: faker.number.int({min: 1, max: 8})}, () => {
+		const words = () => faker.lorem.words({min: 1, max: 4})
+		switch (faker.number.int({min: 0, max: 4})) {
+			case 0:
+				return `# ${words()}`
+			case 1:
+				return `- [${faker.helpers.arrayElement(['x', ' '])}] ${words()}`
+			case 2:
+				return `> ${words()} **${words()}**`
+			case 3:
+				return ''
+			default:
+				return `${words()} @[${faker.string.alpha(4)}](${faker.string.alpha(3)})`
+		}
+	})
+	return rows.join(SEPARATOR) + (faker.datatype.boolean() ? SEPARATOR : '')
+}
+
+function generateLargeDocument(count: number): string {
+	const rows: string[] = []
+	for (let index = 0; index < count; index++) {
+		switch (index % 5) {
+			case 0:
+				rows.push(`# Heading ${index}`)
+				break
+			case 1:
+				rows.push(`text ${index} **bold ${index}** tail`)
+				break
+			case 2:
+				rows.push(`hi @[user${index}](id${index}) there`)
+				break
+			case 3:
+				rows.push(`- [ ] task ${index}`)
+				break
+			default:
+				rows.push(`plain paragraph number ${index} with some filler words`)
+		}
+	}
+	return rows.join(SEPARATOR)
+}
+
+/**
+ * Median per-parse cost. Each sample times a batch: `performance.now()` is coarsened to 0.1 ms
+ * in the browser, which alone would put ±20% on the thousand-row reading the ratios divide by.
+ */
+function costOf(parser: Parser, value: string): number {
+	const BATCH = 4
+	for (let round = 0; round < 3; round++) parser.parseRows(value, ROW_CONFIG)
+
+	const samples: number[] = []
+	for (let round = 0; round < 7; round++) {
+		const started = performance.now()
+		for (let call = 0; call < BATCH; call++) parser.parseRows(value, ROW_CONFIG)
+		samples.push((performance.now() - started) / BATCH)
+	}
+	return samples.toSorted((a, b) => a - b)[3]
+}

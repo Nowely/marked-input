@@ -19,20 +19,30 @@ import type {TreeNode} from '../types'
  * Ids are included; {@link stripIds} takes them off for the comparison against a parse,
  * which carries none.
  */
-export function snapshot(nodes: readonly TreeNode[]): (Token | RowToken)[] {
-	return nodes.map(materializeNode)
+export function snapshot(nodes: readonly TreeNode[], separator?: string): (Token | RowToken)[] {
+	const lastRow = nodes.findLastIndex(node => node.kind === 'row')
+	return nodes.map((node, index) => materializeNode(node, index < lastRow ? (separator ?? '') : ''))
 }
 
-function materializeNode(node: TreeNode): Token | RowToken {
+function materializeNode(node: TreeNode, separator: string): Token | RowToken {
 	if (node.kind === 'row') {
 		const children = node.children().map(materializeInline)
+		const body = children.map(child => child.content).join('')
+		const descriptor = node.descriptor()
+		const slotStart = children[0]?.position.start ?? node.position.start
 		const token: RowToken = {
 			type: 'row',
-			content: children.map(child => child.content).join('') + node.terminator,
+			// Same rule as `joinNodes`' row arm: the kind's markup wrapped around the body, and
+			// the separator supplied by the JOIN rather than by the row.
+			content:
+				(descriptor ? annotate(descriptor.markup, {value: body, slot: body, meta: node.meta()}) : body) +
+				separator,
 			position: {...node.position},
 			id: node.id,
+			descriptor,
+			meta: node.meta(),
+			slot: {content: body, start: slotStart, end: children[children.length - 1]?.position.end ?? slotStart},
 			children,
-			terminated: node.terminator !== '',
 		}
 		return token
 	}

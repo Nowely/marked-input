@@ -20,9 +20,15 @@ export function markToken(value: string, content: string, start: number, childre
 		children,
 	}
 }
-/** A block-mode row, `terminated` false so its content needs no trailing separator. */
+/** A block-mode PARAGRAPH row: no kind, and its body is the whole span it covers. */
 export function rowToken(content: string, start: number, children: Token[]): RowToken {
-	return {type: 'row', content, position: {start, end: start + content.length}, children, terminated: false}
+	return {
+		type: 'row',
+		content,
+		position: {start, end: start + content.length},
+		slot: {content, start, end: start + content.length},
+		children,
+	}
 }
 /**
  * The same fixtures as LIVE nodes, for the consumers that address rows and marks as

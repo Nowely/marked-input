@@ -13,12 +13,14 @@ import {DomModel} from '../dom/DomModel'
 import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {markupError} from '../parser/core/MarkupDescriptor'
+import {rowMarkupError, rowOpener} from '../parser/core/RowKind'
 import {Parser} from '../parser/Parser'
 import type {Markup, RowConfig} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
 import {
 	adjacentMark as findAdjacentMark,
 	anchorAt as anchorAtOffset,
+	entryAnchor,
 	offsetOfAnchor,
 	separatorSpan as findSeparatorSpan,
 	stepAnchor,
@@ -26,7 +28,7 @@ import {
 import {gapWindow} from '../tree/gapWindow'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
-import {entryAnchor, mergePlan, movePlan, removePlan} from '../tree/siblings'
+import {mergePlan, movePlan, removePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkNode, MarkPatch, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
@@ -114,6 +116,11 @@ export class TokenModel {
 		// agree by accident.
 		offsetOf: anchor => untracked(() => offsetOfAnchor(this.#tree.roots(), anchor)),
 		anchorAt: offset => this.anchorAt(offset),
+		contentStart: () =>
+			untracked(() => {
+				const roots = this.#tree.roots()
+				return offsetOfAnchor(roots, anchorAtOffset(roots, 0))
+			}),
 		value: () => this.value(),
 	})
 
@@ -271,12 +278,12 @@ export class TokenModel {
 	 * {@link separatorSpan}; `undefined` for every anchor in inline layout, which parses no rows.
 	 */
 	separatorSpan(anchor: NodeAnchor, direction: -1 | 1): Anchors | undefined {
-		return untracked(() => findSeparatorSpan(this.#tree.roots(), anchor, direction))
+		return untracked(() => findSeparatorSpan(this.#tree.roots(), anchor, direction, this.rowConfig()?.separator))
 	}
 
 	/** The projection of the span between two anchors — {@link value} restricted to a window (see {@link sliceNodes}). */
 	valueBetween(from: NodeAnchor, to: NodeAnchor): string {
-		return untracked(() => sliceNodes(this.#tree.roots(), from, to))
+		return untracked(() => sliceNodes(this.#tree.roots(), from, to, this.rowConfig()?.separator))
 	}
 
 	/** Resolve a stable id to its live node. */
@@ -464,6 +471,15 @@ export class TokenModel {
 	})
 
 	/**
+	 * Which options declare a ROW KIND, compared SHALLOWLY beside {@link #markups} and for the
+	 * same reason: the pair is what the parser is built from, and a fresh-but-identical
+	 * `options` array must not mint a new one.
+	 */
+	readonly #rowFlags: Computed<boolean[]> = computed(() => this.props.options().map(opt => opt.row !== undefined), {
+		equals: shallow,
+	})
+
+	/**
 	 * DOWNSTREAM OF {@link #markups}' EQUALITY GATE, and that is what makes the validation
 	 * report affordable here: `props.options` compares array ELEMENTS by reference, so an
 	 * inline `options={[…]}` prop is never equal across renders, while `#markups` compares the
@@ -471,10 +487,13 @@ export class TokenModel {
 	 * reports once per distinct markup set. Pinned in `TokenModel.parse.spec`.
 	 */
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
-		if (!this.#hasMark()) return
-		const markups = this.#markups().map(usableMarkup)
+		const rows = this.#rowFlags()
+		// A row kind needs a parser of its own even with no Mark anywhere: it is the scanner,
+		// not the alternation, that recognises it.
+		if (!this.#hasMark() && !rows.some(Boolean)) return
+		const markups = usableMarkups(this.#markups(), rows)
 		if (!markups.some(Boolean)) return
-		return new Parser(markups)
+		return new Parser(markups, rows)
 	})
 
 	/** THE tree, and the only representation of the value. */
@@ -505,7 +524,7 @@ export class TokenModel {
 				// The document-final row owns no separator, so its removal takes the PREVIOUS
 				// row's — a span-only splice would just convert it into the trailing empty row
 				// (issue 08 review finding). removePlan's root indexOf is the liveness check.
-				const plan = untracked(() => removePlan(this.#tree.roots(), node))
+				const plan = untracked(() => removePlan(this.#tree.roots(), node, this.rowConfig()?.separator))
 				if (plan) {
 					if (!this.#tx.applyRange({start: plan.start, end: plan.end, insertedLength: 0}, '')) return
 					removed = true
@@ -525,10 +544,11 @@ export class TokenModel {
 		duplicate: node => {
 			const projection = this.valueBetween({before: node}, {after: node})
 			// The document-final row carries no separator; without one between the copies
-			// they fuse into a single row (issue 08 review finding) — the same
-			// normalization movePlan applies to a moved span.
+			// they fuse into a single row (issue 08 review finding).
 			const text = untracked(() =>
-				node.kind === 'row' && node.terminator === '' ? this.props.separator() + projection : projection
+				node.kind === 'row' && this.#tree.roots().at(-1) === node
+					? (this.rowConfig()?.separator ?? '') + projection
+					: projection
 			)
 			return this.#insertAfter(node, text)
 		},
@@ -543,7 +563,7 @@ export class TokenModel {
 		mergeWith: (node, next) => {
 			let merged = false
 			batch(() => {
-				const plan = untracked(() => mergePlan(this.#tree.roots(), node, next))
+				const plan = untracked(() => mergePlan(this.#tree.roots(), node, next, this.rowConfig()?.separator))
 				if (!plan) return
 				if (!this.#applyStructural(node, plan.kept)) return
 				merged = true
@@ -560,7 +580,7 @@ export class TokenModel {
 		 */
 		moveTo: (node, index) => {
 			this.#ensureSeeded()
-			const plan = untracked(() => movePlan(this.#tree.roots(), node, index))
+			const plan = untracked(() => movePlan(this.#tree.roots(), node, index, this.rowConfig()?.separator))
 			if (!plan) return false
 			return this.#tx.applyRange(plan.window, plan.text)
 		},
@@ -737,21 +757,45 @@ export class TokenModel {
 }
 
 /**
- * An option's `markup` as the parser may take it: the string itself, or `undefined` when it
- * breaks a markup rule. `undefined` is the shape the parser ALREADY supports for "this option
+ * The options' markups as the parser may take them: each string itself, or `undefined` when it
+ * breaks a rule. `undefined` is the shape the parser ALREADY supports for "this option
  * contributes no markup" — `MarkupRegistry` skips it while preserving the original indices, so
- * the surviving options keep their `descriptor.index` and their per-option `Mark`.
+ * the surviving options keep their `descriptor.index` and their per-option component.
  *
  * Refused rather than thrown for the reason in `shared/reportBadProp`: the parser is rebuilt
  * inside the props watch a per-render `props.set` drains, so the throw would leave the
  * adapter's own lifecycle hook.
+ *
+ * A ROW markup answers to `rowMarkupError` as well, and to one rule no single markup can decide
+ * alone: two kinds compiling to the same opener are indistinguishable at a row's start, so the
+ * later one is dropped rather than shadowed silently.
  */
-function usableMarkup(markup: Markup | undefined): Markup | undefined {
-	if (markup === undefined) return undefined
-	const invalid = markupError(markup)
-	if (invalid === undefined) return markup
-	reportBadProp(`${invalid}. This option contributes no markup.`)
-	return undefined
+function usableMarkups(markups: readonly (Markup | undefined)[], rows: readonly boolean[]): (Markup | undefined)[] {
+	const openers = new Set<string>()
+	return markups.map((markup, index) => {
+		if (markup === undefined) return undefined
+		if (!rows[index]) {
+			const invalid = markupError(markup)
+			if (invalid === undefined) return markup
+			reportBadProp(`${invalid}. This option contributes no markup.`)
+			return undefined
+		}
+		const invalid = rowMarkupError(markup)
+		if (invalid !== undefined) {
+			reportBadProp(`${invalid}. This option contributes no row kind.`)
+			return undefined
+		}
+		const opener = rowOpener(markup)
+		if (openers.has(opener)) {
+			reportBadProp(
+				`Duplicate row opener "${opener}" in "${markup}". An earlier row option already claims it, ` +
+					'so this option contributes no row kind.'
+			)
+			return undefined
+		}
+		openers.add(opener)
+		return markup
+	})
 }
 
 /**

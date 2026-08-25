@@ -15,6 +15,13 @@ import type {Anchors, NodeAnchor, TransactionResult, TreeNode} from './types'
 export type SelectionDeps = {
 	offsetOf(anchor: NodeAnchor): number
 	anchorAt(offset: number): NodeAnchor
+	/**
+	 * The first offset a caret may occupy — 0 in every document except one opening with a typed
+	 * row, whose opener is structural. Beside {@link SelectionDeps.anchorAt} rather than derived
+	 * from it because the READ must not seed: {@link Selection.isAllSelected} evaluates inside a
+	 * computed, and seeding writes signals.
+	 */
+	contentStart(): number
 	value(): string
 }
 
@@ -83,7 +90,10 @@ export function createSelection(deps: SelectionDeps): Selection {
 		if (!current || v.length === 0) return false
 		const anchor = deps.offsetOf(current.anchor)
 		const head = deps.offsetOf(current.head)
-		return Math.min(anchor, head) === 0 && Math.max(anchor, head) === v.length
+		// Against the first SELECTABLE offset, not against 0: a document opening with a typed row
+		// starts with structural bytes no caret may enter, so {@link selectAll}'s own seed lands
+		// past 0 and comparing with 0 would make "everything is selected" unsatisfiable there.
+		return Math.min(anchor, head) === deps.contentStart() && Math.max(anchor, head) === v.length
 	})
 
 	const selectAll = (): void => {
