@@ -173,6 +173,23 @@ describe('history: what is one step', () => {
 		expect(store.tokens.value()).toBe('plain row')
 	})
 
+	it('gives every Backspace its own step, where a typing run gets one', () => {
+		// DECLARED rather than desired (ADR-0012 cost (f)): the run test is an INSERTION test, so
+		// nothing a delete produces can satisfy it. Three characters typed are one undo; three
+		// taken back are three.
+		const store = mount('hello')
+		for (const at of [5, 4, 3]) {
+			caretAt(store, at)
+			store.edit.replace(...anchorsAt(store, at - 1, at), '')
+		}
+		expect(store.tokens.value()).toBe('he')
+
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hel')
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hell')
+	})
+
 	it('keeps a paste out of the typing run it lands in the middle of', () => {
 		// One gesture, one entry, however many characters it carries — and the character typed
 		// right before it does not join it just because the two are adjacent.

@@ -88,7 +88,18 @@ one does not foreclose it.
 **(e) One `EditRecord` is allocated per commit, whether or not anything is listening.** A commit
 already parses and adopts the whole document; the record is four fields beside it.
 
-## Two departures from the phase's spec, and why
+**(f) A delete run does not coalesce, where a typing run does.** The run test is an insertion test
+— two one-character insertions, the second where the first ended — and nothing a delete produces
+satisfies it, so three characters typed are one undo and three taken back are three. Recognising
+runs from the records is what buys "every structural verb is its own step" without a list of verbs;
+this is the same rule read from the other side. A deletion run is a rule of its own if someone
+wants it, not a bug in this one.
+
+**(g) `canUndo`/`canRedo` answer `false` while `readOnly` is true.** `replay` has always refused
+there; the two reads now say so instead of offering an entry that cannot be replayed. The entries
+survive the flip and are offered again when it comes off.
+
+## Three departures from the phase's spec, and why
 
 **`EditRecord` carries no `origin`.** The spec's record had two — `'edit'` and `'foreign'` — with
 foreign arrivals emitted so the stack could clear its redo branch and close its typing run on them.
@@ -100,4 +111,13 @@ and 'stops offering an entry once the parent writes the value itself'.
 
 **`replay` takes the window.** The spec wrote `replay(value, selection?)`. It cannot be that: the
 window is the only thing carrying the `Pairing`, and a replay that re-derived its own window is
-exactly the `setValue` defect measured above. The signature is `replay(value, window, caret?)`.
+exactly the `setValue` defect measured above. The signature is `replay(value, window, landing?)`.
+
+**`EditRecord` and `HistoryModel` are not exported from `packages/core/index.ts`.** The spec listed
+both among the phase's new core exports. That file's own rule is that the list is what a consumer
+RECEIVES, not everything they might want to name, and nothing outside the package receives either:
+`store.history` is reached through the public `Store` exactly as `store.block` and `store.tokens`
+are, and neither `BlockModel` nor `TokenModel` is exported. A record reaches a consumer only as the
+parameter of a `store.tokens.edits` callback, where inference names it. When undo and redo get a
+public verb — `MarkputHandle` has none today, so a consumer's own toolbar cannot drive them — that
+is the change that decides these exports, from the outside.
