@@ -73,6 +73,7 @@ export function createTokenTree(
 				slot: () => joinNodes(node.inline()),
 				range: () => ({...node.position}),
 				setDepth: depth => commands?.()?.setDepth(node, depth) ?? false,
+				turnInto: (option, patch) => commands?.()?.turnInto(node, option, patch) ?? false,
 				remove: () => commands?.()?.remove(node) ?? false,
 				duplicate: () => commands?.()?.duplicate(node) ?? false,
 				insertAfter: text => commands?.()?.insertAfter(node, text) ?? false,
@@ -310,18 +311,22 @@ function rowLine(node: RowNode): string {
 }
 
 /**
- * A row's kind applied to a body string. A paragraph IS its body; a typed row re-annotates,
- * putting the body in the placeholder its kind declared — `__slot__` for an inline-parsed body,
- * `__value__` for a raw one.
+ * A ROW KIND applied to a body string — THE one place a row's own bytes are formed. A paragraph
+ * (`undefined`) IS its body; a typed row re-annotates, putting the body in the placeholder its
+ * kind declared, `__slot__` for an inline-parsed body and `__value__` for a raw one.
+ *
+ * Takes the three fields rather than the node, because `turnInto` forms the bytes of a kind the
+ * row does not have yet and a second spelling of this rule is how the projection and a retype
+ * come to disagree.
  */
-function rowBody(node: RowNode, body: string): string {
-	const descriptor = node.descriptor()
+export function rowMarkup(descriptor: MarkupDescriptor | undefined, meta: string | undefined, body: string): string {
 	if (!descriptor) return body
-	return annotate(descriptor.markup, {
-		value: body,
-		slot: body,
-		meta: node.meta(),
-	})
+	return annotate(descriptor.markup, {value: body, slot: body, meta})
+}
+
+/** {@link rowMarkup} for a live row's own kind. */
+function rowBody(node: RowNode, body: string): string {
+	return rowMarkup(node.descriptor(), node.meta(), body)
 }
 
 /** The last ROW in a sibling list: the one the join gives no separator. */

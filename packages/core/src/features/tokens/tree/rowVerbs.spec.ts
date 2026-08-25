@@ -208,3 +208,113 @@ describe('mergeWith', () => {
 		expect(store.tokens.value()).toBe('a\n\tb\nc')
 	})
 })
+describe('turnInto', () => {
+	const heading: CoreOption = {markup: '# __slot__', row: {Component: 'h1'}}
+	const todo: CoreOption = {markup: '- [__meta__] __slot__', row: {Component: 'li'}}
+
+	/**
+	 * THE identity claim a retype exists for: the splice is the row's own LINE, so the child rows
+	 * are outside it and the row itself is adopted kind-blind. Splicing its `position` instead —
+	 * the whole-node window every other structural verb takes — would delete the children outright.
+	 */
+	it('retypes a row with two children and keeps all three objects', () => {
+		const store = rowStore('a\n\tb\n\tc', [heading])
+		const [root, first, second] = rowsOf(store)
+		const body = root.inline()[0]
+
+		expect(root.turnInto(heading)).toBe(true)
+
+		expect(store.tokens.value()).toBe('# a\n\tb\n\tc')
+		expect(rowsOf(store)).toEqual([root, first, second])
+		expect(root.inline()[0]).toBe(body)
+	})
+
+	it('keeps a nested row LEAD, which the window starts past', () => {
+		const store = rowStore('a\n\t# b', [heading])
+		const child = rowsOf(store)[1]
+
+		expect(child.turnInto(undefined)).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\tb')
+		expect(rowsOf(store)[1]).toBe(child)
+	})
+
+	/**
+	 * Ticket 11's gesture: a row that already reads `'plain row/'` becomes a heading whose body is
+	 * the text minus the trigger, in ONE splice. Two verbs could not do it — the intermediate
+	 * state is a document the parse would see and the caret would be repaired against.
+	 */
+	it('takes the new body TEXT, so a strip-and-retype is one splice', () => {
+		const store = rowStore('a\n\tplain row/', [heading])
+		const child = rowsOf(store)[1]
+
+		expect(child.turnInto(heading, {text: 'plain row'})).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\t# plain row')
+		expect(rowsOf(store)[1]).toBe(child)
+	})
+
+	/** The showcase's checkbox: only the kind's meta moves, and the body is byte-identical. */
+	it('sets, keeps and clears META without touching the body', () => {
+		const store = rowStore('a\n\t- [ ] task', [todo])
+		const child = rowsOf(store)[1]
+
+		expect(child.turnInto(todo, {meta: 'x'})).toBe(true)
+		expect(store.tokens.value()).toBe('a\n\t- [x] task')
+
+		expect(child.turnInto(todo, {text: 'done'})).toBe(true)
+		expect(store.tokens.value()).toBe('a\n\t- [x] done')
+
+		expect(child.turnInto(todo, {meta: null})).toBe(true)
+		expect(store.tokens.value()).toBe('a\n\t- [] done')
+		expect(rowsOf(store)[1]).toBe(child)
+	})
+
+	it('types an EMPTY nested row, which is the slash menu insert gesture', () => {
+		const store = rowStore('a\n\t', [heading])
+		const child = rowsOf(store)[1]
+
+		expect(child.turnInto(heading)).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\t# ')
+		expect(rowsOf(store)[1]).toBe(child)
+	})
+
+	it('retypes a RAW body, which the parse never re-enters', () => {
+		const table: CoreOption = {markup: '|__value__', row: {Component: 'div'}}
+		const store = rowStore('a\n\tx | y', [table])
+		const child = rowsOf(store)[1]
+
+		expect(child.turnInto(table)).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\t|x | y')
+		expect(rowsOf(store)[1]).toBe(child)
+		expect(child.slot()).toBe('x | y')
+	})
+
+	/**
+	 * A kind is not a markup a caller may invent: an option this editor compiles no row kind from
+	 * would write bytes the scan reads back as a paragraph, so the verb declines instead.
+	 */
+	it('refuses a mark option, a foreign option and a no-op', () => {
+		const mark: CoreOption = {markup: '**__slot__**'}
+		const foreign: CoreOption = {markup: '# __slot__', row: {Component: 'h1'}}
+		const store = rowStore('# a', [heading, mark])
+		const row = rowsOf(store)[0]
+
+		expect(row.turnInto(mark)).toBe(false)
+		expect(row.turnInto(foreign)).toBe(false)
+		expect(row.turnInto(heading)).toBe(false)
+		expect(store.tokens.value()).toBe('# a')
+	})
+
+	/** Declared, not fixed: the reparse owns the answer, exactly as it does for a merge. */
+	it('lets the reparse decide, so a body carrying the separator becomes two rows', () => {
+		const store = rowStore('a')
+
+		expect(rowsOf(store)[0].turnInto(undefined, {text: 'x\ny'})).toBe(true)
+
+		expect(store.tokens.value()).toBe('x\ny')
+		expect(rowsOf(store).length).toBe(2)
+	})
+})

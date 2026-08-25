@@ -1,4 +1,5 @@
 import {acceptMatches, closeTrailingGaps} from './core/InlineRules'
+import type {MarkupDescriptor} from './core/MarkupDescriptor'
 import {MarkupRegistry} from './core/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
 import {scanRows} from './core/RowScanner'
@@ -128,6 +129,19 @@ export class Parser {
 	 * // ]
 	 * ```
 	 */
+	/**
+	 * The compiled ROW KIND an option index declares, or `undefined` when this parser took none
+	 * from it — a mark option, an option with no markup, or one whose markup broke a row rule and
+	 * was dropped at the props boundary.
+	 *
+	 * The index is the OPTION's own, which is the same identity a component is resolved by, so a
+	 * caller holding an option can ask what its rows are made of without re-compiling the markup
+	 * and getting a descriptor the scan has never seen.
+	 */
+	rowKind(index: number): MarkupDescriptor | undefined {
+		return this.registry.rowKinds.find(descriptor => descriptor.index === index)
+	}
+
 	parseRows(value: string, config: RowConfig): RowToken[] {
 		if (config.separator.length === 0) {
 			throw new Error('Parser.parseRows: separator must be non-empty')

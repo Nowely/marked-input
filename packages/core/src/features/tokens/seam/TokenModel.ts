@@ -2,6 +2,7 @@ import type {DomRef} from '../../../shared/editorContracts'
 import {reportBadProp} from '../../../shared/reportBadProp'
 import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
+import type {CoreOption} from '../../../shared/types'
 import {shallow} from '../../../shared/utils/shallow'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
@@ -12,6 +13,7 @@ import type {BoundaryAffinity} from '../dom/domBoundary'
 import {DomModel} from '../dom/DomModel'
 import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
+import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import {markupError} from '../parser/core/MarkupDescriptor'
 import {rowMarkupError, rowOpener} from '../parser/core/RowKind'
 import {Parser} from '../parser/Parser'
@@ -29,7 +31,7 @@ import {gapWindow} from '../tree/gapWindow'
 import {preorderRows} from '../tree/rows'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
-import {depthPlan, endsDocument, mergePlan, movePlan, removePlan} from '../tree/siblings'
+import {depthPlan, endsDocument, mergePlan, movePlan, removePlan, turnIntoPlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkNode, MarkPatch, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
@@ -601,6 +603,31 @@ export class TokenModel {
 			if (!plan) return false
 			return this.#tx.applyRange(plan.window, plan.text)
 		},
+		/**
+		 * The one verb that takes an OPTION rather than a string, because a kind is not a markup a
+		 * caller may invent: writing an unregistered markup would emit bytes the scan reads back as
+		 * a paragraph, so the option is resolved to the descriptor the scan itself holds and the
+		 * verb declines when there is none.
+		 *
+		 * No {@link #applyCaret}, for {@link moveTo}'s reason with one addition: a retype rewrites
+		 * the row's structural bytes around a body it leaves alone, so an anchor inside that body
+		 * still names the same character and adoption's own repair moves it by the delta.
+		 */
+		turnInto: (node, option, patch) => {
+			this.#ensureSeeded()
+			const descriptor = option && untracked(() => this.#rowKind(option))
+			if (option !== undefined && descriptor === undefined) return false
+			const plan = untracked(() => turnIntoPlan(this.#tree.roots(), node, descriptor, patch))
+			if (!plan) return false
+			return this.#tx.applyRange(plan.window, plan.text)
+		},
+	}
+
+	/** The compiled row kind an option declares, resolved by the option's INDEX — see {@link Parser.rowKind}. */
+	#rowKind(option: CoreOption): MarkupDescriptor | undefined {
+		const index = this.props.options().indexOf(option)
+		if (index < 0) return undefined
+		return this.#parser()?.rowKind(index)
 	}
 
 	/**

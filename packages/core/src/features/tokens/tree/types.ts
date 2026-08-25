@@ -1,4 +1,5 @@
 import type {Signal} from '../../../shared/signals'
+import type {CoreOption} from '../../../shared/types'
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import type {Markup} from '../parser/types'
 
@@ -122,6 +123,22 @@ export interface RowNode {
 	 * the first time a row is re-indented, which is the price of depth having one reading.
 	 */
 	setDepth(depth: number): boolean
+	/**
+	 * Retype this row: its kind becomes the one `option` declares, or a paragraph for `undefined`.
+	 * The splice is the row's own LINE, so its id, its element and its child rows are untouched —
+	 * which is what a row HAVING a kind rather than being one buys (ADR-0007).
+	 *
+	 * `patch.text` REPLACES the body, and it exists so a caller can strip a span and retype in ONE
+	 * splice: the slash menu removes its own trigger and applies the kind in a single commit,
+	 * which two verbs could not do without an intermediate state the parse would see.
+	 *
+	 * `false` for an option this editor compiles no row kind from — a mark option, one whose
+	 * markup was reported and dropped, or one that is not in `options` at all — and for a no-op.
+	 *
+	 * REPARSE DECIDES what comes back, as it does for a merge: a body carrying the separator
+	 * becomes two rows, and a body whose own start matches a longer opener types as THAT kind.
+	 */
+	turnInto(option: CoreOption | undefined, patch?: RowPatch): boolean
 	/** See {@link NodeCommands}. */
 	remove(): boolean
 	duplicate(): boolean
@@ -182,6 +199,16 @@ export interface MarkNode {
 }
 
 /**
+ * The row patch: the two fields a retype may carry beside the kind. `meta` has the same three
+ * states {@link MarkPatch} spells — absent leaves it, `null` clears it, a string sets it — and
+ * `text` replaces the row's body, which is what makes a strip-and-retype one splice.
+ */
+export type RowPatch = {
+	readonly meta?: string | null
+	readonly text?: string
+}
+
+/**
  * The mark patch. Three states per optional field, expressed without a discriminator:
  * absent/`undefined` leaves the field alone, `null` clears it, a string sets it.
  */
@@ -218,6 +245,8 @@ export interface NodeCommands {
 	moveTo(node: TreeNode, index: number): boolean
 	/** Re-indent a ROW, keeping every row's identity. See {@link RowNode.setDepth}. */
 	setDepth(node: TreeNode, depth: number): boolean
+	/** Retype a ROW, keeping its identity. See {@link RowNode.turnInto}. */
+	turnInto(node: RowNode, option: CoreOption | undefined, patch?: RowPatch): boolean
 }
 
 /**

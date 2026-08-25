@@ -1,9 +1,10 @@
+import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import {depthCeiling} from '../parser/core/RowScanner'
 import type {RowConfig} from '../parser/types'
 import {rowBoundary} from './anchors'
 import {preorderRows} from './rows'
-import {rowContent, sliceNodes} from './tree'
-import type {Pairing, RowNode, TreeNode, Window} from './types'
+import {rowContent, rowMarkup, sliceNodes} from './tree'
+import type {Pairing, RowNode, RowPatch, TreeNode, Window} from './types'
 
 /**
  * Removing the boundary between two rows, as the window that holds them apart — see
@@ -213,6 +214,40 @@ export function depthPlan(
 		},
 		text: lead,
 	}
+}
+
+/**
+ * Retyping one row, as the splice that rewrites ITS OWN LINE BODY and nothing else.
+ *
+ * The window stops at the row's own bytes on both sides, and both bounds are load-bearing under
+ * nesting. It starts past the LEAD, so a re-typed row keeps the indent that says where it sits.
+ * It ends at the row's own content end — `position` would take the whole SUBTREE, which is how a
+ * retype comes to delete a row's children, and the row's own line is exactly the bytes the
+ * projection emits for it.
+ *
+ * NO {@link Pairing}: a pairing is refused when a pair's kinds disagree (`pairEquals`), which is
+ * precisely what a retype changes. The row survives on adoption's own index pairing instead — a
+ * row candidate adopts any row token, kind-blind, which is the mechanism ADR-0007 keeps for this.
+ *
+ * `undefined` — fail closed — for a non-row, a dead node (the pre-order lookup is that check) and
+ * a no-op, which is what a row control re-selecting the value it already has looks like.
+ */
+export function turnIntoPlan(
+	roots: readonly TreeNode[],
+	node: TreeNode,
+	descriptor: MarkupDescriptor | undefined,
+	patch: RowPatch | undefined
+): {window: Window; text: string} | undefined {
+	if (node.kind !== 'row') return undefined
+	if (!preorderRows(roots).some(entry => entry.row === node)) return undefined
+
+	const meta = patch?.meta === null ? undefined : (patch?.meta ?? node.meta())
+	const text = rowMarkup(descriptor, meta, patch?.text ?? node.slot())
+	const current = rowMarkup(node.descriptor(), node.meta(), node.slot())
+	if (text === current) return undefined
+
+	const start = node.position.start + node.lead().length
+	return {window: {start, end: start + current.length, insertedLength: text.length}, text}
 }
 
 /** The scan's own emptiness, read off the node: a row whose whole LINE is empty. */
