@@ -231,35 +231,21 @@ exports[`Component: stories > Notion stories > Story Comments 1`] = `
 exports[`Component: stories > Notion stories > Story Document 1`] = `
 "<div contenteditable="true">
   <div>
-    <span></span>
-    <span contenteditable="false">
-      <div>
-        <span>type</span>
-        <span>Product Launch</span>
-        <span>title</span>
-        <span>Apollo — Q2 launch plan</span>
-        <span>status</span>
-        <span>in_progress</span>
-        <span>owner</span>
-        <span>sarah.chen@acme.com</span>
-        <span>timeline</span>
-        <span>2026-03-03 → 2026-06-15</span>
-        <span>confidence</span>
-        <span>0.82</span>
-      </div>
-    </span>
-    <span></span>
+    <span>type</span>
+    <span>Product Launch</span>
+    <span>title</span>
+    <span>Apollo — Q2 launch plan</span>
+    <span>status</span>
+    <span>in_progress</span>
+    <span>owner</span>
+    <span>sarah.chen@acme.com</span>
+    <span>timeline</span>
+    <span>2026-03-03 → 2026-06-15</span>
+    <span>confidence</span>
+    <span>0.82</span>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Apollo — Q2 launch plan</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Apollo — Q2 launch plan</span>
   </div>
   <div>
     <span>Apollo moves our collaboration layer from beta to general availability. Ownership sits with </span>
@@ -269,111 +255,75 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
     <span>, with launch gating on the auth migration — everything downstream assumes it ships first.</span>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Launch tasks</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Launch tasks</span>
   </div>
   <div>
     <span>24 items, 9 done. Individual tasks are separate concepts.</span>
   </div>
   <div>
-    <span></span>
-    <span contenteditable="false">
-      <div>
-        <div>
-          <div>Task</div>
-          <div>Status</div>
-          <div>Owner</div>
-          <div>Due</div>
-        </div>
-        <div>
-          <div>Auth service migration</div>
-          <div>blocked</div>
-          <div>@[Sarah Chen](sarah.chen)</div>
-          <div>2026-04-02</div>
-        </div>
-        <div>
-          <div>Realtime sync engine</div>
-          <div>in_progress</div>
-          <div>@[Marcus Kane](marcus.kane)</div>
-          <div>2026-04-18</div>
-        </div>
-        <div>
-          <div>Pricing page rewrite</div>
-          <div>done</div>
-          <div>@[Jia Lin](jia.lin)</div>
-          <div>2026-03-27</div>
-        </div>
-        <div>
-          <div>Load test at 5× peak</div>
-          <div>planned</div>
-          <div>@[Amara Reed](amara.reed)</div>
-          <div>2026-05-06</div>
-        </div>
-      </div>
-    </span>
-    <span></span>
+    <div>
+      <div>Task</div>
+      <div>Status</div>
+      <div>Owner</div>
+      <div>Due</div>
+    </div>
+    <div>
+      <div>Auth service migration</div>
+      <div>blocked</div>
+      <div>@[Sarah Chen](sarah.chen)</div>
+      <div>2026-04-02</div>
+    </div>
+    <div>
+      <div>Realtime sync engine</div>
+      <div>in_progress</div>
+      <div>@[Marcus Kane](marcus.kane)</div>
+      <div>2026-04-18</div>
+    </div>
+    <div>
+      <div>Pricing page rewrite</div>
+      <div>done</div>
+      <div>@[Jia Lin](jia.lin)</div>
+      <div>2026-03-27</div>
+    </div>
+    <div>
+      <div>Load test at 5× peak</div>
+      <div>planned</div>
+      <div>@[Amara Reed](amara.reed)</div>
+      <div>2026-05-06</div>
+    </div>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Metrics</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Metrics</span>
   </div>
   <div>
-    <span></span>
-    <span contenteditable="false">
-      <div>
-        <div>
-          <div>Metric</div>
-          <div>Value</div>
-          <div>As of</div>
-        </div>
-        <div>
-          <div>Beta users</div>
-          <div>4120</div>
-          <div>2026-04-03</div>
-        </div>
-        <div>
-          <div>p95 latency</div>
-          <div>184ms</div>
-          <div>2026-04-03</div>
-        </div>
-        <div>
-          <div>Crash-free sessions</div>
-          <div>99.4%</div>
-          <div>2026-04-03</div>
-        </div>
-        <div>
-          <div>Open bugs</div>
-          <div>37</div>
-          <div>2026-04-03</div>
-        </div>
-      </div>
-    </span>
-    <span></span>
+    <div>
+      <div>Metric</div>
+      <div>Value</div>
+      <div>As of</div>
+    </div>
+    <div>
+      <div>Beta users</div>
+      <div>4120</div>
+      <div>2026-04-03</div>
+    </div>
+    <div>
+      <div>p95 latency</div>
+      <div>184ms</div>
+      <div>2026-04-03</div>
+    </div>
+    <div>
+      <div>Crash-free sessions</div>
+      <div>99.4%</div>
+      <div>2026-04-03</div>
+    </div>
+    <div>
+      <div>Open bugs</div>
+      <div>37</div>
+      <div>2026-04-03</div>
+    </div>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Risks</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Risks</span>
   </div>
   <div>
     <span></span>
@@ -419,15 +369,7 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
     <span></span>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Decision log</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Decision log</span>
   </div>
   <div>
     <span></span>
@@ -461,15 +403,7 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
     <span></span>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Canary procedure</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Canary procedure</span>
   </div>
   <div>
     <span></span>
@@ -479,15 +413,7 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
     <span></span>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>If the cutover isn't boring, we're not ready to call it GA.</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>If the cutover isn't boring, we're not ready to call it GA.</span>
   </div>
   <div>
     <span>See the </span>
@@ -503,35 +429,21 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
 exports[`Component: stories > Notion stories > Story Editor 1`] = `
 "<div contenteditable="true">
   <div>
-    <span></span>
-    <span contenteditable="false">
-      <div>
-        <span>type</span>
-        <span>Product Launch</span>
-        <span>title</span>
-        <span>Apollo — Q2 launch plan</span>
-        <span>status</span>
-        <span>in_progress</span>
-        <span>owner</span>
-        <span>sarah.chen@acme.com</span>
-        <span>timeline</span>
-        <span>2026-03-03 → 2026-06-15</span>
-        <span>confidence</span>
-        <span>0.82</span>
-      </div>
-    </span>
-    <span></span>
+    <span>type</span>
+    <span>Product Launch</span>
+    <span>title</span>
+    <span>Apollo — Q2 launch plan</span>
+    <span>status</span>
+    <span>in_progress</span>
+    <span>owner</span>
+    <span>sarah.chen@acme.com</span>
+    <span>timeline</span>
+    <span>2026-03-03 → 2026-06-15</span>
+    <span>confidence</span>
+    <span>0.82</span>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Apollo — Q2 launch plan</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Apollo — Q2 launch plan</span>
   </div>
   <div>
     <span>Apollo moves our collaboration layer from beta to general availability. Ownership sits with </span>
@@ -541,111 +453,75 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
     <span>, with launch gating on the auth migration — everything downstream assumes it ships first.</span>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Launch tasks</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Launch tasks</span>
   </div>
   <div>
     <span>24 items, 9 done. Individual tasks are separate concepts.</span>
   </div>
   <div>
-    <span></span>
-    <span contenteditable="false">
-      <div>
-        <div>
-          <div>Task</div>
-          <div>Status</div>
-          <div>Owner</div>
-          <div>Due</div>
-        </div>
-        <div>
-          <div>Auth service migration</div>
-          <div>blocked</div>
-          <div>@[Sarah Chen](sarah.chen)</div>
-          <div>2026-04-02</div>
-        </div>
-        <div>
-          <div>Realtime sync engine</div>
-          <div>in_progress</div>
-          <div>@[Marcus Kane](marcus.kane)</div>
-          <div>2026-04-18</div>
-        </div>
-        <div>
-          <div>Pricing page rewrite</div>
-          <div>done</div>
-          <div>@[Jia Lin](jia.lin)</div>
-          <div>2026-03-27</div>
-        </div>
-        <div>
-          <div>Load test at 5× peak</div>
-          <div>planned</div>
-          <div>@[Amara Reed](amara.reed)</div>
-          <div>2026-05-06</div>
-        </div>
-      </div>
-    </span>
-    <span></span>
+    <div>
+      <div>Task</div>
+      <div>Status</div>
+      <div>Owner</div>
+      <div>Due</div>
+    </div>
+    <div>
+      <div>Auth service migration</div>
+      <div>blocked</div>
+      <div>@[Sarah Chen](sarah.chen)</div>
+      <div>2026-04-02</div>
+    </div>
+    <div>
+      <div>Realtime sync engine</div>
+      <div>in_progress</div>
+      <div>@[Marcus Kane](marcus.kane)</div>
+      <div>2026-04-18</div>
+    </div>
+    <div>
+      <div>Pricing page rewrite</div>
+      <div>done</div>
+      <div>@[Jia Lin](jia.lin)</div>
+      <div>2026-03-27</div>
+    </div>
+    <div>
+      <div>Load test at 5× peak</div>
+      <div>planned</div>
+      <div>@[Amara Reed](amara.reed)</div>
+      <div>2026-05-06</div>
+    </div>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Metrics</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Metrics</span>
   </div>
   <div>
-    <span></span>
-    <span contenteditable="false">
-      <div>
-        <div>
-          <div>Metric</div>
-          <div>Value</div>
-          <div>As of</div>
-        </div>
-        <div>
-          <div>Beta users</div>
-          <div>4120</div>
-          <div>2026-04-03</div>
-        </div>
-        <div>
-          <div>p95 latency</div>
-          <div>184ms</div>
-          <div>2026-04-03</div>
-        </div>
-        <div>
-          <div>Crash-free sessions</div>
-          <div>99.4%</div>
-          <div>2026-04-03</div>
-        </div>
-        <div>
-          <div>Open bugs</div>
-          <div>37</div>
-          <div>2026-04-03</div>
-        </div>
-      </div>
-    </span>
-    <span></span>
+    <div>
+      <div>Metric</div>
+      <div>Value</div>
+      <div>As of</div>
+    </div>
+    <div>
+      <div>Beta users</div>
+      <div>4120</div>
+      <div>2026-04-03</div>
+    </div>
+    <div>
+      <div>p95 latency</div>
+      <div>184ms</div>
+      <div>2026-04-03</div>
+    </div>
+    <div>
+      <div>Crash-free sessions</div>
+      <div>99.4%</div>
+      <div>2026-04-03</div>
+    </div>
+    <div>
+      <div>Open bugs</div>
+      <div>37</div>
+      <div>2026-04-03</div>
+    </div>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Risks</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Risks</span>
   </div>
   <div>
     <span></span>
@@ -691,15 +567,7 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
     <span></span>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Decision log</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Decision log</span>
   </div>
   <div>
     <span></span>
@@ -733,15 +601,7 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
     <span></span>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>Canary procedure</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>Canary procedure</span>
   </div>
   <div>
     <span></span>
@@ -751,15 +611,7 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
     <span></span>
   </div>
   <div>
-    <span></span>
-    <span>
-      <span>
-        <span>
-          <span>If the cutover isn't boring, we're not ready to call it GA.</span>
-        </span>
-      </span>
-    </span>
-    <span></span>
+    <span>If the cutover isn't boring, we're not ready to call it GA.</span>
   </div>
   <div>
     <span>See the </span>

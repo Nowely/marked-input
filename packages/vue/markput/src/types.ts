@@ -18,6 +18,13 @@ export interface RowProps {
 	meta?: string
 	/** The live row node: its id, its own text and its verbs. */
 	node: RowNode
+	/**
+	 * A row kind's component is a SLOT component: `class` and `style` fall through onto its root
+	 * element unless it declares `inheritAttrs: false`, and the editor's own `ref` resolves
+	 * through the component instance. Its default slot is the row's rendered inline content.
+	 */
+	class?: string
+	style?: CSSProperties
 }
 
 export interface OverlayProps {

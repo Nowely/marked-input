@@ -1,63 +1,95 @@
-import type {Markup} from '@markput/core'
-import type {Option} from '@markput/react'
+import type {CSSProperties, Markup} from '@markput/core'
+import type {Option, RowProps} from '@markput/react'
 
 import {defineMark} from '../../shared/lib/marks'
-import {markdownOptions} from '../Nested/MarkdownOptions'
+import {defaultMarkdownTheme, markdownOptions} from '../Nested/MarkdownOptions'
 import {MentionOverlay} from './components/MentionOverlay'
-import {PropertiesMark} from './components/PropertiesMark'
+import {PropertiesRow} from './components/PropertiesRow'
 import {SlashMenu} from './components/SlashMenu'
-import {TableMark} from './components/TableMark'
+import {TableRow} from './components/TableRow'
 
 import styles from './components/notion.module.css'
 
 /**
- * The document's own markups, on top of the markdown preset the `Nested` and `Drag` pages
- * already share.
+ * The document's own kinds and marks, on top of the markdown preset the `Nested` and `Drag`
+ * pages already share.
  *
- * Every one of them is a fence or a prefix around ONE placeholder, because that is all a markup
- * can be: at most two `__value__`, one `__meta__`, one `__slot__`, and never a leading
- * placeholder (`packages/core/src/features/tokens/parser/core/MarkupDescriptor.ts:169-198`).
+ * A ROW OPTION carries `row`, and its markup is matched only at a row's own start. That is what
+ * lets the frontmatter and the table be described at all: both are closed or open kinds whose
+ * body spans lines, and both used to be inline marks that could only ever match at offset 0.
  */
 
-/** Frontmatter. The closing literal is `\n---`, and a closing literal that STARTS with `\n`
- * would match nothing at all (notion-like issue 07) — this one survives because its first
- * character is `-`. It also matches ONLY at offset 0: anywhere else the separator's second
- * newline opens the closing literal before the opening one is read (notion-like issue 09). */
+/** Frontmatter. A closed kind with a RAW body, so its interior keeps its newlines verbatim. */
 const PROPERTIES_MARKUP: Markup = '---\n__value__\n---'
 
-/** A whole markdown table. The trailing value closes at the row boundary, so it takes every
- * line of the table; a bounded value could not cross a newline. */
+/** A whole markdown table: an OPEN kind, so its raw body runs to the row's own separator. */
 const TABLE_MARKUP: Markup = '|__value__'
 
-/** A quote keeps a `__slot__`, so unlike the table its text stays editable in place. Multi-line
- * quotes nest rather than continue (notion-like issue 06). */
+/** A quote keeps a `__slot__`, so unlike the table its text stays editable in place. */
 const QUOTE_MARKUP: Markup = '> __slot__'
 
 /** Registering this is what stops the preset's link markup from taking `@[Name](id)`'s bracket
  * half and leaving a bare `@` behind — the first story on this page shows that damage. */
 const MENTION_MARKUP: Markup = '@[__value__](__meta__)'
 
-const QuoteMark = defineMark({tag: 'span', class: styles.quote})
 const MentionMark = defineMark({tag: 'span', class: styles.mention})
 
+/** A row kind's component: the preset's styling, wrapped around the row's own inline content. */
+const styledRow = (ownStyle: CSSProperties) =>
+	function StyledRow({children, ref, className, style}: RowProps) {
+		return (
+			<div ref={ref} className={className} style={{...style, ...ownStyle}}>
+				{children}
+			</div>
+		)
+	}
+
 /**
- * Order does NOT decide matching. The parser puts every static segment in one alternation
- * sorted by literal length and keeps the earliest-starting match
- * (`packages/core/src/features/tokens/parser/core/SegmentMatcher.ts:83-88`, `RowBuilder`'s
- * `acceptMatches`), so `@[` beats `[` and a table's leading `|` beats the `- ` inside its own
- * `| --- |` rule — by position, not by index.
+ * The preset's HEADINGS become row kinds. `'# __slot__'` matched anywhere used to take the `#`
+ * out of the middle of a line (notion-like issue 01); as a kind it is read at a row's start and
+ * nowhere else.
  *
- * What the index DOES decide is which `Mark` component a match resolves to
- * (`packages/core/src/features/slots/resolveSlot.ts:77`), so reordering these reorders the
+ * `list` deliberately stays an inline mark. Under the `'\n\n'` separator this document uses, a
+ * tight list is ONE row, so a `'- __slot__'` KIND would swallow all four items into a single
+ * bullet whose body is their flat text — worse than the nesting it replaces. It becomes a kind
+ * when one line is one row, which is the phase that changes the separator default.
+ */
+const HEADING_KEYS = new Set(['h1', 'h2', 'h3'])
+
+const headingKinds: Option[] = Object.entries(defaultMarkdownTheme)
+	.filter(([key]) => HEADING_KEYS.has(key))
+	.map(([, preset]) => ({markup: preset.markup, row: {Component: styledRow(preset.style ?? {})}}))
+
+const quoteStyle: CSSProperties = {
+	display: 'block',
+	borderLeft: '3px solid #d0d0d0',
+	paddingLeft: '0.75em',
+	color: '#5f5f5f',
+	fontStyle: 'italic',
+}
+
+/**
+ * Order does NOT decide inline matching: the parser puts every static segment in one alternation
+ * sorted by literal length and keeps the earliest-starting match. Among ROW KINDS it breaks ties
+ * only after opener length, so a longer opener always wins.
+ *
+ * What the index DOES decide is which component a match resolves to
+ * (`packages/core/src/features/slots/resolveSlot.ts`), so reordering these reorders the
  * components.
  */
 export const notionOptions: Option[] = [
-	{markup: PROPERTIES_MARKUP, Mark: PropertiesMark},
-	{markup: TABLE_MARKUP, Mark: TableMark},
-	{markup: QUOTE_MARKUP, Mark: QuoteMark},
+	{markup: PROPERTIES_MARKUP, row: {Component: PropertiesRow}},
+	{markup: TABLE_MARKUP, row: {Component: TableRow}},
+	{markup: QUOTE_MARKUP, row: {Component: styledRow(quoteStyle)}},
 	{markup: MENTION_MARKUP, Mark: MentionMark},
-	...(markdownOptions as Option[]),
+	...headingKinds,
+	...(markdownOptions.filter(option => !HEADING_KEYS.has(markupKey(option.markup))) as Option[]),
 ]
+
+/** The preset entry a markup came from, so the heading markups are not registered twice. */
+function markupKey(markup: Markup): string {
+	return Object.entries(defaultMarkdownTheme).find(([, preset]) => preset.markup === markup)?.[0] ?? ''
+}
 
 /**
  * The same document plus its editor chrome: `@` opens the people list, `/` opens the block

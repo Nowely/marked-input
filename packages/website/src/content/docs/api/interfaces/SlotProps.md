@@ -5,7 +5,7 @@ prev: false
 title: "SlotProps"
 ---
 
-Defined in: [react/markput/src/types.ts:84](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L84)
+Defined in: [react/markput/src/types.ts:93](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L93)
 
 ## Properties
 
@@ -15,4 +15,4 @@ Defined in: [react/markput/src/types.ts:84](https://github.com/Nowely/marked-inp
 optional container: Record<string, unknown> & DataAttributes;
 ```
 
-Defined in: [react/markput/src/types.ts:85](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L85)
+Defined in: [react/markput/src/types.ts:94](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L94)

@@ -53,23 +53,36 @@ function focusLastRow(host: HTMLElement) {
 }
 
 describe('Notion probe: the document', () => {
-	it('renders the frontmatter, both tables and the quote as marks', async () => {
+	it('renders the frontmatter, both tables and the quote as ROW KINDS', async () => {
 		const {host} = await mount(Document)
 
-		// The properties panel is the document's first block, and it is atomic.
-		const properties = host.firstElementChild?.querySelector('[contenteditable="false"]')
-		expect(properties?.textContent).toContain('Product Launch')
+		// The properties panel IS the document's first row — the kind's own component, not a
+		// mark hidden inside a generic block wrapper.
+		expect(host.firstElementChild?.textContent).toContain('Product Launch')
 
 		// Both tables became tables: cells the parser never saw as cells.
 		expect(host.textContent).toContain('Auth service migration')
 		expect(host.textContent).toContain('Crash-free sessions')
 
-		// The quote keeps its text editable — a slot mark, so NOT inside an atomic.
+		// The quote keeps its text editable — a `__slot__` body, inline-parsed in place.
 		const quote = [...host.querySelectorAll('span')].find(
 			element => element.textContent === "If the cutover isn't boring, we're not ready to call it GA."
 		)
 		expect(quote).toBeDefined()
 		expect(quote?.closest('[contenteditable="false"]')).toBeNull()
+	})
+
+	/**
+	 * The structural bytes never reach the document. A heading's `'# '`, the frontmatter fences
+	 * and the table's leading `'|'` are the editor's, not the text's — which is what makes
+	 * `textContent` a usable reading of what the user sees.
+	 */
+	it('keeps every row opener out of the painted text', async () => {
+		const {host} = await mount(Document)
+
+		expect(host.textContent).toContain('Apollo — Q2 launch plan')
+		expect(host.textContent).not.toContain('# Apollo')
+		expect(host.textContent).not.toContain('## Launch tasks')
 	})
 })
 

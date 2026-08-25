@@ -1,5 +1,5 @@
-import type {CoreOption, CoreSlots, DataAttributes, RowNode} from '@markput/core'
-import type {ComponentType, ElementType, ReactNode} from 'react'
+import type {CoreOption, CoreSlots, CSSProperties, DataAttributes, RowNode} from '@markput/core'
+import type {ComponentType, ElementType, ReactNode, RefCallback} from 'react'
 
 /**
  * Props passed to Mark components.
@@ -26,6 +26,15 @@ export interface RowProps {
 	children?: ReactNode
 	/** The live row node: its id, its own text and its verbs. */
 	node: RowNode
+	/**
+	 * A row kind's component is a SLOT component: spread `ref`, `className` and `style` onto the
+	 * element it renders, the way `slots.container` and `slots.block` consumers already do. The
+	 * ref is how the editor finds the row's element; a component that drops it leaves the row
+	 * unbound, and the caret cannot resolve into it.
+	 */
+	ref?: RefCallback<HTMLElement>
+	className?: string
+	style?: CSSProperties
 }
 
 /**
