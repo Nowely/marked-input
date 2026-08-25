@@ -72,14 +72,23 @@ _Avoid_: block mode, rows mode, list mode
 
 **Row**:
 Block layout's only top-level node: a span of the document between **Separator** occurrences,
-holding the row's inline **Token**s as children. A Row carries no **Markup** — a paragraph is a
-Row of plain text — and the piece after the final separator is a Row even when empty (ADR-0009).
+holding the row's inline **Token**s as children. A Row may have a **Row kind**, whose opener and
+closing literal are structural bytes no caret may enter; a Row with no kind is a paragraph. The
+piece after the final separator is a Row even when empty (ADR-0009).
 _Avoid_: line, paragraph, block, item
+
+**Row kind**:
+The **Markup** a Row is recognised by, matched ONLY at a row's own start and compiled by the same
+compiler a **Mark**'s markup is (ADR-0010). Declared by an **Option**'s `row`, which also names
+the component the Row renders through. A kind's body placeholder decides how its interior is
+read: `__slot__` is inline-parsed, `__value__` is raw and never re-parsed.
+_Avoid_: block type, row type, node type
 
 **Separator**:
 The editor-level string that delimits **Row**s in **Block layout** (`separator` prop, default
-`'\n\n'`). Structural: it belongs to no **Markup**, is that markup's own text inside an opaque
-`__value__`/`__meta__` gap, and closes an open trailing gap at the row boundary (ADR-0009).
+`'\n\n'`). Structural: it belongs to no **Markup**, is that markup's own text inside a Row
+kind's raw body, and bounds an open kind's body at the row's end (ADR-0009, ADR-0010). It is not
+stored on a Row — the projection joins Rows with it, so only the document-final Row lacks one.
 _Avoid_: terminator, delimiter (as a term; both fine as prose)
 
 ### Value ownership
@@ -97,7 +106,7 @@ _Avoid_: internal, self-managed, local
 - A **Value** is the projection of the **Token**s; every write changes tokens and the value follows
 - A **Pairing** is how a **Token** keeps its identity across a write the value alone cannot explain
 - A **Mark** is a **Token**; a **Row** is **Block layout**'s top-level node, formed by the **Separator**
-- An **Option** declares the **Markup** a **Mark** serialises to
+- An **Option** declares the **Markup** a **Mark** serialises to, or — with `row` — the **Row kind** it types a Row as
 - A **Mark** may own a **Slot**, which holds further **Token**s
 - Every **Token** is mirrored into one **Surface**, all of them inside the one **Container**
 - An **Anchor** names a position by **Token**

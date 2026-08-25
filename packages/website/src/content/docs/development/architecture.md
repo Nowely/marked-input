@@ -50,8 +50,9 @@ Both framework adapters share the same component structure:
   │ │           └─ <Token node={child}>
   │ │
   │ └─ (block layout)
-  │     ├─ <Block node={n}>         # Row wrapper: the RowNode's own element AND
-  │     │   └─ <Token node={child}> #   its child-sequence host
+  │     ├─ <Block node={n}>         # Row: painted by its KIND's component, or by
+  │     │   └─ <Token node={child}> #   slots.block when it has none. The row's own
+  │     │                           #   element AND its child-sequence host
   │     └─ <BlockControls />        # ONE per editor, beside the rows, not inside
   │         ├─ grip                 #   them: grip, drop indicator and row menu,
   │         ├─ drop indicator       #   painted at row boxes it measures
@@ -69,7 +70,7 @@ Both framework adapters share the same component structure:
 | **Container**        | contenteditable management, renders tokens or blocks         |
 | **Token**            | Unified renderer for both text and mark tokens (recursive)   |
 | **TokenChildren**    | Internal nested token sequence host for slot children        |
-| **Block**            | Block layout's row wrapper — the RowNode's own element and its child-sequence host; renders the row's children and nothing else |
+| **Block**            | Block layout's row — resolved through `slots.node` to the kind's own component (or `slots.block` for a paragraph); the row's own element and its child-sequence host |
 | **BlockControls**    | ONE per editor: the grip, the drop indicator and the row menu, painted at measured row boxes |
 | **OverlayRenderer**  | Portal renderer for overlay component                        |
 | **Span**             | Default text span renderer                                   |
@@ -232,7 +233,7 @@ Block row operations are NOT an event. `store.block.action({...})` and its four-
 `DragAction` payload are gone: `BlockController` resolves the menu's row id to its node and calls
 that node's own verbs, so there is no action to lower onto them.
 
-Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, rowSeparator)` tuple in the `TokenModel` constructor. `rowSeparator` is `TokenModel`'s own computed — block layout's `separator`, `undefined` everywhere else — and it is the one place the `layout` enum is read; everything else asks it, or asks the tree it produced. Because a computed tracks its dependencies per evaluation, a document with no rows is not subscribed to `separator` at all, so changing that prop in inline layout re-derives nothing. An EMPTY `separator` also answers `undefined`: an empty separator separates nothing, and `undefined` is already the seam's word for "no rows", so the row parse, the block feature gates, the grip gutter and `BlockController` turn off together. It is reported through `reportBadProp` rather than thrown, because both adapters push props from a per-render lifecycle hook — React unmounts the whole render root on a throw there, Vue keeps rendering the stale tree — while `Parser.parseRows` keeps refusing `''` for callers that reach it directly. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
+Re-parsing is not a store event: it is the string boundary's `reparse()`, driven by a single `watch` over the `(value, parser, rowConfig)` tuple in the `TokenModel` constructor. `rowConfig` is `TokenModel`'s own computed — the block parse policy, `undefined` everywhere else — and it is the one place the `layout` enum is read; everything else asks it, or asks the tree it produced. Because a computed tracks its dependencies per evaluation, a document with no rows is not subscribed to `separator` at all, so changing that prop in inline layout re-derives nothing. An EMPTY `separator` also answers `undefined`: an empty separator separates nothing, and `undefined` is already the seam's word for "no rows", so the row parse, the block feature gates, the grip gutter and `BlockController` turn off together. It is reported through `reportBadProp` rather than thrown, because both adapters push props from a per-render lifecycle hook — React unmounts the whole render root on a throw there, Vue keeps rendering the stale tree — while `Parser.parseRows` keeps refusing `''` for callers that reach it directly. Mount/unmount is not an event either: the adapter writes the `host.container` signal, and `host.onMounted(setup)` runs `setup` (with auto-disposal) whenever a container attaches, swaps, or detaches. The selection driver's `props.readOnly` watch (which writes the container's `contenteditable`) is a reactive effect hook, not a store event; binding is not reactive at all — `apply()` calls it directly on every commit.
 
 ### Event Usage
 
@@ -309,6 +310,7 @@ class Store {
         readOnly: Signal<boolean>
         layout: Signal<'inline' | 'block'>
         separator: Signal<string>            // block layout's structural row separator (ADR-0009)
+                                             // `TokenModel.rowConfig` folds it with `layout` into the parse policy
         draggable: Signal<boolean | DraggableConfig>
         showOverlayOn: Signal<OverlayTrigger>
         Span: Signal<Slot | undefined>
@@ -323,8 +325,8 @@ class Store {
     // Features live directly on store, not nested under .feature
     readonly host:      Host               // rendered event + container signal + onMounted lifecycle
     readonly props:     PropsModel         // framework-provided configuration
-    readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops, and `rowSeparator` — the one reader of the `layout` enum
-    readonly slots:     SlotsFeature       // slot component/props, mark resolver, and the grip gutter (rowSeparator + draggable)
+    readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops, and `rowConfig` — the one reader of the `layout` enum
+    readonly slots:     SlotsFeature       // slot component/props, the NODE resolver, and the grip gutter (rowConfig + draggable)
     readonly edit:      EditController     // replace(from, to, text) / setValue(text) — single batched write path
     readonly overlay:   OverlayController  // match, element, slot, select, close
     readonly keyboard:  KeyboardController // input handling and block editing
@@ -360,7 +362,7 @@ const {nodes} = useMarkput(s => ({nodes: s.tokens.nodes}))
 
 11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandle` — the public host object the component ref exposes — follows the same rule: it owns nothing and delegates every member to the feature that owns the state.
 
-Signal subscription order is significant: inside its constructor `onMounted` hook, `TokenModel` registers a single `watch` over the `(value, parser, rowSeparator)` tuple before any other consumer registers a watcher in `onMounted`. When any of the three changes, the watch callback runs the private `#reparse`, so by the time downstream listeners observe a `value.current` change, `tokens.nodes()` already reflects the new value.
+Signal subscription order is significant: inside its constructor `onMounted` hook, `TokenModel` registers a single `watch` over the `(value, parser, rowConfig)` tuple before any other consumer registers a watcher in `onMounted`. When any of the three changes, the watch callback runs the private `#reparse`, so by the time downstream listeners observe a `value.current` change, `tokens.nodes()` already reflects the new value.
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
@@ -386,7 +388,7 @@ React/Vue render asynchronously, so initialization order matters:
 //      framework swaps to a different container.
 
 // 2. After mount, the string boundary accepts props.value/defaultValue.
-//    TokenModel's constructor watch over (value, parser, rowSeparator) subscribed
+//    TokenModel's constructor watch over (value, parser, rowConfig) subscribed
 //    first inside its onMounted hook, so tokens.nodes() reflects the new value
 //    before any other onMounted watcher observes it.
 

@@ -33,6 +33,15 @@ the consignment key moved from the top-level token's id to the Row's id, and the
 `rowElement` registry died with it. A separator span has no DOM and is unanchorable — a boundary
 inside it fails closed to the row's own edge, exactly as the trailing `\n\n` always had.
 
+**Partly superseded by [ADR-0010](0010-the-block-skeleton-is-scanned-first.md).** The separator
+is still structural and still one editor-level setting, and a Row is still block layout's only
+root kind. What changed: a Row is TYPED by its own opener rather than by a mark hidden inside it,
+the separator is no longer stored on the Row (the projection joins Rows with it), and the row
+derivation is a linear scan rather than a fixpoint — so "a matched interior hides its separators"
+now reads "a row kind's RAW body keeps its own newlines", and an inline match can no longer cross
+a row boundary at all. The pairing gate's row arm survives, for the span-length reason rather
+than for a stored `terminated` flag.
+
 Accepted scope boundaries: nested rows inside slots are deferred (a separator inside a CLOSED
 slot interior does not split; only a trailing open slot closes at the row boundary), and the
 separator does not apply in inline layout — the same value parses to a different tree per
