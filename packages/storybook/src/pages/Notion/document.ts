@@ -8,8 +8,11 @@
  * (`docs/scratch/notion-like/`): the point of the probe is to find those places, so the
  * fixture may not dodge them.
  *
- * Rows are separated by `'\n\n'` (the default), and a single `'\n'` is a soft break INSIDE a
- * row — which is what the table, the frontmatter and the tight list are made of.
+ * The exporter's own shape puts a blank line between blocks and a single `'\n'` inside a table,
+ * the frontmatter and a tight list. Under the `'\n'` default every LINE is a row, so a blank
+ * line reads as an empty row and each list line, each table line and each fenced line is its
+ * own row — except where a kind's closing literal carries the body across, which is what keeps
+ * the frontmatter and the code block whole.
  */
 export const APOLLO_DOC = `---
 type: Product Launch

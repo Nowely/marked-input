@@ -245,7 +245,13 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
     <span>0.82</span>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>Apollo — Q2 launch plan</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <span>Apollo moves our collaboration layer from beta to general availability. Ownership sits with </span>
@@ -255,10 +261,19 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
     <span>, with launch gating on the auth migration — everything downstream assumes it ships first.</span>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>Launch tasks</span>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>24 items, 9 done. Individual tasks are separate concepts.</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <div>
@@ -267,24 +282,33 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
       <div>Owner</div>
       <div>Due</div>
     </div>
+  </div>
+  <div></div>
+  <div>
     <div>
       <div>Auth service migration</div>
       <div>blocked</div>
       <div>@[Sarah Chen](sarah.chen)</div>
       <div>2026-04-02</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>Realtime sync engine</div>
       <div>in_progress</div>
       <div>@[Marcus Kane](marcus.kane)</div>
       <div>2026-04-18</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>Pricing page rewrite</div>
       <div>done</div>
       <div>@[Jia Lin](jia.lin)</div>
       <div>2026-03-27</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>Load test at 5× peak</div>
       <div>planned</div>
@@ -293,7 +317,13 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
     </div>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>Metrics</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <div>
@@ -301,21 +331,30 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
       <div>Value</div>
       <div>As of</div>
     </div>
+  </div>
+  <div></div>
+  <div>
     <div>
       <div>Beta users</div>
       <div>4120</div>
       <div>2026-04-03</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>p95 latency</div>
       <div>184ms</div>
       <div>2026-04-03</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>Crash-free sessions</div>
       <div>99.4%</div>
       <div>2026-04-03</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>Open bugs</div>
       <div>37</div>
@@ -323,49 +362,35 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
     </div>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>Risks</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <span></span>
     <span>
       <span>
         <span>
-          <span></span>
-          <span>
-            <span>
-              <span>
-                <span>Auth migration slipped two weeks.</span>
-              </span>
-            </span>
-          </span>
-          <span> GA holds only if cutover lands by 2026-04-09.&#10;</span>
-          <span>
-            <span>
-              <span>
-                <span>Vendor SLA unsigned.&#10;</span>
-                <span>
-                  <span>
-                    <span>
-                      <span>EU region capacity unconfirmed — awaiting quota approval.&#10;</span>
-                      <span>
-                        <span>
-                          <span>
-                            <span>Support headcount at 60%.</span>
-                          </span>
-                        </span>
-                      </span>
-                      <span></span>
-                    </span>
-                  </span>
-                </span>
-                <span></span>
-              </span>
-            </span>
-          </span>
-          <span></span>
+          <span>Auth migration slipped two weeks.</span>
         </span>
       </span>
     </span>
+    <span> GA holds only if cutover lands by 2026-04-09.</span>
+  </div>
+  <div>
+    <span>Vendor SLA unsigned.</span>
+  </div>
+  <div>
+    <span>EU region capacity unconfirmed — awaiting quota approval.</span>
+  </div>
+  <div>
+    <span>Support headcount at 60%.</span>
+  </div>
+  <div>
     <span></span>
   </div>
   <div>
@@ -373,33 +398,21 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
   </div>
   <div>
     <span></span>
-    <span>
-      <span>
-        <span>
-          <span>2026-04-02 — </span>
-          <span contenteditable="false">
-            <span>Ship without offline mode</span>
-          </span>
-          <span>&#10;</span>
-          <span>
-            <span>
-              <span>
-                <span>2026-03-21 — Single-region GA first&#10;</span>
-                <span>
-                  <span>
-                    <span>
-                      <span>2026-03-12 — Adopt CRDT over OT</span>
-                    </span>
-                  </span>
-                </span>
-                <span></span>
-              </span>
-            </span>
-          </span>
-          <span></span>
-        </span>
-      </span>
+  </div>
+  <div>
+    <span>2026-04-02 — </span>
+    <span contenteditable="false">
+      <span>Ship without offline mode</span>
     </span>
+    <span></span>
+  </div>
+  <div>
+    <span>2026-03-21 — Single-region GA first</span>
+  </div>
+  <div>
+    <span>2026-03-12 — Adopt CRDT over OT</span>
+  </div>
+  <div>
     <span></span>
   </div>
   <div>
@@ -407,13 +420,18 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
   </div>
   <div>
     <span></span>
-    <span contenteditable="false">
-      <span>apollo deploy --env=staging --canary=5%&#10;# → rollout 5% · healthy · p95 184ms&#10;</span>
-    </span>
+  </div>
+  <div>
+    <span>apollo deploy --env=staging --canary=5%&#10;# → rollout 5% · healthy · p95 184ms&#10;</span>
+  </div>
+  <div>
     <span></span>
   </div>
   <div>
     <span>If the cutover isn't boring, we're not ready to call it GA.</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <span>See the </span>
@@ -443,7 +461,13 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
     <span>0.82</span>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>Apollo — Q2 launch plan</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <span>Apollo moves our collaboration layer from beta to general availability. Ownership sits with </span>
@@ -453,10 +477,19 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
     <span>, with launch gating on the auth migration — everything downstream assumes it ships first.</span>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>Launch tasks</span>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>24 items, 9 done. Individual tasks are separate concepts.</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <div>
@@ -465,24 +498,33 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
       <div>Owner</div>
       <div>Due</div>
     </div>
+  </div>
+  <div></div>
+  <div>
     <div>
       <div>Auth service migration</div>
       <div>blocked</div>
       <div>@[Sarah Chen](sarah.chen)</div>
       <div>2026-04-02</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>Realtime sync engine</div>
       <div>in_progress</div>
       <div>@[Marcus Kane](marcus.kane)</div>
       <div>2026-04-18</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>Pricing page rewrite</div>
       <div>done</div>
       <div>@[Jia Lin](jia.lin)</div>
       <div>2026-03-27</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>Load test at 5× peak</div>
       <div>planned</div>
@@ -491,7 +533,13 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
     </div>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>Metrics</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <div>
@@ -499,21 +547,30 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
       <div>Value</div>
       <div>As of</div>
     </div>
+  </div>
+  <div></div>
+  <div>
     <div>
       <div>Beta users</div>
       <div>4120</div>
       <div>2026-04-03</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>p95 latency</div>
       <div>184ms</div>
       <div>2026-04-03</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>Crash-free sessions</div>
       <div>99.4%</div>
       <div>2026-04-03</div>
     </div>
+  </div>
+  <div>
     <div>
       <div>Open bugs</div>
       <div>37</div>
@@ -521,49 +578,35 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
     </div>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>Risks</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <span></span>
     <span>
       <span>
         <span>
-          <span></span>
-          <span>
-            <span>
-              <span>
-                <span>Auth migration slipped two weeks.</span>
-              </span>
-            </span>
-          </span>
-          <span> GA holds only if cutover lands by 2026-04-09.&#10;</span>
-          <span>
-            <span>
-              <span>
-                <span>Vendor SLA unsigned.&#10;</span>
-                <span>
-                  <span>
-                    <span>
-                      <span>EU region capacity unconfirmed — awaiting quota approval.&#10;</span>
-                      <span>
-                        <span>
-                          <span>
-                            <span>Support headcount at 60%.</span>
-                          </span>
-                        </span>
-                      </span>
-                      <span></span>
-                    </span>
-                  </span>
-                </span>
-                <span></span>
-              </span>
-            </span>
-          </span>
-          <span></span>
+          <span>Auth migration slipped two weeks.</span>
         </span>
       </span>
     </span>
+    <span> GA holds only if cutover lands by 2026-04-09.</span>
+  </div>
+  <div>
+    <span>Vendor SLA unsigned.</span>
+  </div>
+  <div>
+    <span>EU region capacity unconfirmed — awaiting quota approval.</span>
+  </div>
+  <div>
+    <span>Support headcount at 60%.</span>
+  </div>
+  <div>
     <span></span>
   </div>
   <div>
@@ -571,33 +614,21 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
   </div>
   <div>
     <span></span>
-    <span>
-      <span>
-        <span>
-          <span>2026-04-02 — </span>
-          <span contenteditable="false">
-            <span>Ship without offline mode</span>
-          </span>
-          <span>&#10;</span>
-          <span>
-            <span>
-              <span>
-                <span>2026-03-21 — Single-region GA first&#10;</span>
-                <span>
-                  <span>
-                    <span>
-                      <span>2026-03-12 — Adopt CRDT over OT</span>
-                    </span>
-                  </span>
-                </span>
-                <span></span>
-              </span>
-            </span>
-          </span>
-          <span></span>
-        </span>
-      </span>
+  </div>
+  <div>
+    <span>2026-04-02 — </span>
+    <span contenteditable="false">
+      <span>Ship without offline mode</span>
     </span>
+    <span></span>
+  </div>
+  <div>
+    <span>2026-03-21 — Single-region GA first</span>
+  </div>
+  <div>
+    <span>2026-03-12 — Adopt CRDT over OT</span>
+  </div>
+  <div>
     <span></span>
   </div>
   <div>
@@ -605,13 +636,18 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
   </div>
   <div>
     <span></span>
-    <span contenteditable="false">
-      <span>apollo deploy --env=staging --canary=5%&#10;# → rollout 5% · healthy · p95 184ms&#10;</span>
-    </span>
+  </div>
+  <div>
+    <span>apollo deploy --env=staging --canary=5%&#10;# → rollout 5% · healthy · p95 184ms&#10;</span>
+  </div>
+  <div>
     <span></span>
   </div>
   <div>
     <span>If the cutover isn't boring, we're not ready to call it GA.</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <span>See the </span>
@@ -654,7 +690,31 @@ exports[`Component: stories > Notion stories > Story Effort 1`] = `
 exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
 "<div contenteditable="true">
   <div>
-    <span>---&#10;type: Product Launch&#10;title: Apollo — Q2 launch plan&#10;status: in_progress&#10;owner: sarah.chen@acme.com&#10;timeline: 2026-03-03 → 2026-06-15&#10;confidence: 0.82&#10;---</span>
+    <span>---</span>
+  </div>
+  <div>
+    <span>type: Product Launch</span>
+  </div>
+  <div>
+    <span>title: Apollo — Q2 launch plan</span>
+  </div>
+  <div>
+    <span>status: in_progress</span>
+  </div>
+  <div>
+    <span>owner: sarah.chen@acme.com</span>
+  </div>
+  <div>
+    <span>timeline: 2026-03-03 → 2026-06-15</span>
+  </div>
+  <div>
+    <span>confidence: 0.82</span>
+  </div>
+  <div>
+    <span>---</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <span></span>
@@ -668,11 +728,17 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
     <span></span>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>Apollo moves our collaboration layer from beta to general availability. Ownership sits with @</span>
     <span contenteditable="false">
       <span>Platform</span>
     </span>
     <span>, with launch gating on the auth migration — everything downstream assumes it ships first.</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <span></span>
@@ -686,10 +752,19 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
     <span></span>
   </div>
   <div>
+    <span></span>
+  </div>
+  <div>
     <span>24 items, 9 done. Individual tasks are separate concepts.</span>
   </div>
   <div>
-    <span>| Task | Status | Owner | Due |&#10;| --</span>
+    <span></span>
+  </div>
+  <div>
+    <span>| Task | Status | Owner | Due |</span>
+  </div>
+  <div>
+    <span>| --</span>
     <span>
       <span>
         <span>
@@ -705,23 +780,7 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
                       <span>
                         <span>
                           <span>
-                            <span>|&#10;| Auth service migration | blocked | @</span>
-                            <span contenteditable="false">
-                              <span>Sarah Chen</span>
-                            </span>
-                            <span> | 2026-04-02 |&#10;| Realtime sync engine | in_progress | @</span>
-                            <span contenteditable="false">
-                              <span>Marcus Kane</span>
-                            </span>
-                            <span> | 2026-04-18 |&#10;| Pricing page rewrite | done | @</span>
-                            <span contenteditable="false">
-                              <span>Jia Lin</span>
-                            </span>
-                            <span> | 2026-03-27 |&#10;| Load test at 5× peak | planned | @</span>
-                            <span contenteditable="false">
-                              <span>Amara Reed</span>
-                            </span>
-                            <span> | 2026-05-06 |</span>
+                            <span>|</span>
                           </span>
                         </span>
                       </span>
@@ -740,6 +799,37 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
     <span></span>
   </div>
   <div>
+    <span>| Auth service migration | blocked | @</span>
+    <span contenteditable="false">
+      <span>Sarah Chen</span>
+    </span>
+    <span> | 2026-04-02 |</span>
+  </div>
+  <div>
+    <span>| Realtime sync engine | in_progress | @</span>
+    <span contenteditable="false">
+      <span>Marcus Kane</span>
+    </span>
+    <span> | 2026-04-18 |</span>
+  </div>
+  <div>
+    <span>| Pricing page rewrite | done | @</span>
+    <span contenteditable="false">
+      <span>Jia Lin</span>
+    </span>
+    <span> | 2026-03-27 |</span>
+  </div>
+  <div>
+    <span>| Load test at 5× peak | planned | @</span>
+    <span contenteditable="false">
+      <span>Amara Reed</span>
+    </span>
+    <span> | 2026-05-06 |</span>
+  </div>
+  <div>
+    <span></span>
+  </div>
+  <div>
     <span></span>
     <span>
       <span>
@@ -751,7 +841,13 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
     <span></span>
   </div>
   <div>
-    <span>| Metric | Value | As of |&#10;| --</span>
+    <span></span>
+  </div>
+  <div>
+    <span>| Metric | Value | As of |</span>
+  </div>
+  <div>
+    <span>| --</span>
     <span>
       <span>
         <span>
@@ -763,7 +859,7 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
                 <span>
                   <span>
                     <span>
-                      <span>|&#10;| Beta users | 4120 | 2026-04-03 |&#10;| p95 latency | 184ms | 2026-04-03 |&#10;| Crash-free sessions | 99.4% | 2026-04-03 |&#10;| Open bugs | 37 | 2026-04-03 |</span>
+                      <span>|</span>
                     </span>
                   </span>
                 </span>
@@ -775,6 +871,21 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
+  </div>
+  <div>
+    <span>| Beta users | 4120 | 2026-04-03 |</span>
+  </div>
+  <div>
+    <span>| p95 latency | 184ms | 2026-04-03 |</span>
+  </div>
+  <div>
+    <span>| Crash-free sessions | 99.4% | 2026-04-03 |</span>
+  </div>
+  <div>
+    <span>| Open bugs | 37 | 2026-04-03 |</span>
+  </div>
+  <div>
     <span></span>
   </div>
   <div>
@@ -790,6 +901,9 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
   </div>
   <div>
     <span></span>
+  </div>
+  <div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -801,34 +915,46 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
               </span>
             </span>
           </span>
-          <span> GA holds only if cutover lands by 2026-04-09.&#10;</span>
-          <span>
-            <span>
-              <span>
-                <span>Vendor SLA unsigned.&#10;</span>
-                <span>
-                  <span>
-                    <span>
-                      <span>EU region capacity unconfirmed — awaiting quota approval.&#10;</span>
-                      <span>
-                        <span>
-                          <span>
-                            <span>Support headcount at 60%.</span>
-                          </span>
-                        </span>
-                      </span>
-                      <span></span>
-                    </span>
-                  </span>
-                </span>
-                <span></span>
-              </span>
-            </span>
-          </span>
-          <span></span>
+          <span> GA holds only if cutover lands by 2026-04-09.</span>
         </span>
       </span>
     </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>Vendor SLA unsigned.</span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>EU region capacity unconfirmed — awaiting quota approval.</span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>Support headcount at 60%.</span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
     <span></span>
   </div>
   <div>
@@ -844,6 +970,9 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
   </div>
   <div>
     <span></span>
+  </div>
+  <div>
+    <span></span>
     <span>
       <span>
         <span>
@@ -851,26 +980,35 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
           <span contenteditable="false">
             <span>Ship without offline mode</span>
           </span>
-          <span>&#10;</span>
-          <span>
-            <span>
-              <span>
-                <span>2026-03-21 — Single-region GA first&#10;</span>
-                <span>
-                  <span>
-                    <span>
-                      <span>2026-03-12 — Adopt CRDT over OT</span>
-                    </span>
-                  </span>
-                </span>
-                <span></span>
-              </span>
-            </span>
-          </span>
           <span></span>
         </span>
       </span>
     </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>2026-03-21 — Single-region GA first</span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>2026-03-12 — Adopt CRDT over OT</span>
+        </span>
+      </span>
+    </span>
+    <span></span>
+  </div>
+  <div>
     <span></span>
   </div>
   <div>
@@ -886,13 +1024,35 @@ exports[`Component: stories > Notion stories > Story MarkdownPreset 1`] = `
   </div>
   <div>
     <span></span>
-    <span contenteditable="false">
-      <span>apollo deploy --env=staging --canary=5%&#10;# → rollout 5% · healthy · p95 184ms&#10;</span>
+  </div>
+  <div>
+    <span>\`\`\`bash</span>
+  </div>
+  <div>
+    <span>apollo deploy --env=staging --canary=5%</span>
+  </div>
+  <div>
+    <span></span>
+    <span>
+      <span>
+        <span>
+          <span>→ rollout 5% · healthy · p95 184ms</span>
+        </span>
+      </span>
     </span>
     <span></span>
   </div>
   <div>
+    <span>\`\`\`</span>
+  </div>
+  <div>
+    <span></span>
+  </div>
+  <div>
     <span>&gt; If the cutover isn't boring, we're not ready to call it GA.</span>
+  </div>
+  <div>
+    <span></span>
   </div>
   <div>
     <span>See the </span>

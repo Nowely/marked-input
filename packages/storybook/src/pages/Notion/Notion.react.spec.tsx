@@ -60,7 +60,7 @@ describe('Notion probe: the document', () => {
 		// mark hidden inside a generic block wrapper.
 		expect(host.firstElementChild?.textContent).toContain('Product Launch')
 
-		// Both tables became tables: cells the parser never saw as cells.
+		// Both tables became table rows: cells the parser never saw as cells, one row per line.
 		expect(host.textContent).toContain('Auth service migration')
 		expect(host.textContent).toContain('Crash-free sessions')
 
@@ -70,6 +70,31 @@ describe('Notion probe: the document', () => {
 		)
 		expect(quote).toBeDefined()
 		expect(quote?.closest('[contenteditable="false"]')).toBeNull()
+	})
+
+	/**
+	 * Issue 05 on the reference document. Under `'\n\n'` the four risks were ONE row — one grip,
+	 * one menu, no way to move an item — and a `'- __slot__'` kind would have swallowed all four
+	 * into a single bullet. A line is a row now, so each item is its own row with its own kind.
+	 */
+	it('gives every risk-list item a row of its own', async () => {
+		const {host} = await mount(Document)
+
+		const items = [...host.children].filter(
+			(row): row is HTMLElement => row instanceof HTMLElement && row.textContent.startsWith('Vendor SLA')
+		)
+		expect(items).toHaveLength(1)
+
+		const [row] = items
+		expect(row.previousElementSibling?.textContent).toBe(
+			'Auth migration slipped two weeks. GA holds only if cutover lands by 2026-04-09.'
+		)
+		expect(row.nextElementSibling?.textContent).toBe('EU region capacity unconfirmed — awaiting quota approval.')
+
+		// The ROW is the bullet, not a mark inside a paragraph: the preset's indent sits on the
+		// row's own element. Left as an inline mark the text reads the same from `textContent`
+		// and the indent lands on an inner span instead — which is what this line separates.
+		expect(row.style.paddingLeft).toBe('1em')
 	})
 
 	/**

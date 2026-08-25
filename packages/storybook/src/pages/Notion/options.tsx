@@ -45,19 +45,24 @@ const styledRow = (ownStyle: CSSProperties) =>
 	}
 
 /**
- * The preset's HEADINGS become row kinds. `'# __slot__'` matched anywhere used to take the `#`
- * out of the middle of a line (notion-like issue 01); as a kind it is read at a row's start and
- * nowhere else.
+ * The preset's BLOCK-LEVEL entries become row kinds. `'# __slot__'` matched anywhere used to take
+ * the `#` out of the middle of a line (notion-like issue 01); as a kind it is read at a row's
+ * start and nowhere else.
  *
- * `list` deliberately stays an inline mark. Under the `'\n\n'` separator this document uses, a
- * tight list is ONE row, so a `'- __slot__'` KIND would swallow all four items into a single
- * bullet whose body is their flat text — worse than the nesting it replaces. It becomes a kind
- * when one line is one row, which is the phase that changes the separator default.
+ * `list` held out until the separator default became `'\n'` (ADR-0011): under `'\n\n'` a tight
+ * list is ONE row, so a `'- __slot__'` KIND swallowed all four items into a single bullet whose
+ * body was their flat text — worse than the nesting it replaced. One line is one row now, so each
+ * item is a row of its own with its own grip and menu, which is issue 05.
+ *
+ * `codeBlock` follows it for the opposite reason. It spans lines, and an inline mark cannot span
+ * a row boundary (ADR-0010) — left inline it shattered into four rows whose `'# → rollout'` line
+ * was then read as a heading. Its body is `__value__`, so the fence's interior is raw and no
+ * markup inside it is matched, which is what a code block means.
  */
-const HEADING_KEYS = new Set(['h1', 'h2', 'h3'])
+const ROW_KEYS = new Set(['h1', 'h2', 'h3', 'list', 'codeBlock'])
 
-const headingKinds: Option[] = Object.entries(defaultMarkdownTheme)
-	.filter(([key]) => HEADING_KEYS.has(key))
+const presetKinds: Option[] = Object.entries(defaultMarkdownTheme)
+	.filter(([key]) => ROW_KEYS.has(key))
 	.map(([, preset]) => ({markup: preset.markup, row: {Component: styledRow(preset.style ?? {})}}))
 
 const quoteStyle: CSSProperties = {
@@ -82,11 +87,11 @@ export const notionOptions: Option[] = [
 	{markup: TABLE_MARKUP, row: {Component: TableRow}},
 	{markup: QUOTE_MARKUP, row: {Component: styledRow(quoteStyle)}},
 	{markup: MENTION_MARKUP, Mark: MentionMark},
-	...headingKinds,
-	...(markdownOptions.filter(option => !HEADING_KEYS.has(markupKey(option.markup))) as Option[]),
+	...presetKinds,
+	...(markdownOptions.filter(option => !ROW_KEYS.has(markupKey(option.markup))) as Option[]),
 ]
 
-/** The preset entry a markup came from, so the heading markups are not registered twice. */
+/** The preset entry a markup came from, so a kind's markup is not registered twice. */
 function markupKey(markup: Markup): string {
 	return Object.entries(defaultMarkdownTheme).find(([, preset]) => preset.markup === markup)?.[0] ?? ''
 }

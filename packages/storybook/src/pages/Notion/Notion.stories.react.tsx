@@ -48,33 +48,33 @@ export default {
 } satisfies Meta<typeof MarkedInput>
 
 /**
- * What the existing markdown preset alone makes of the document: headings, the tight list,
- * bold, links and the fenced code block. The frontmatter, both tables and the blockquote have
- * no markup yet and stay raw text — the later stories on this page give them one.
+ * What the existing markdown preset alone makes of the document: every markup here is an inline
+ * MARK, so under the `'\n'` default none of them can span a row and each line stands alone. The
+ * frontmatter, both tables, the fence and the blockquote come out as raw lines — the later
+ * stories give them row kinds, which is the only way a construct spans lines.
  */
 export const MarkdownPreset: StoryObj<MarkedInputProps<StyledMarkProps>> = {
 	args: {
 		Mark: DocumentMark,
 		options: markdownOptions,
 		defaultValue: APOLLO_DOC,
-		separator: '\n\n',
 		draggable: true,
 		slotProps: {container: {style: PAGE_STYLE}},
 	},
 }
 
 /**
- * The same document with the page's own markups added: the frontmatter becomes a properties
- * panel, each table becomes a table, the quote gets its rule, and `@[Name](id)` becomes a
- * mention instead of a link with a stray `@` in front of it. Two of the four are atomic — the
- * price of blocks the parser cannot describe part by part.
+ * The same document with the page's own row kinds added: the frontmatter becomes a properties
+ * panel, each table LINE becomes a table row of its own, the quote gets its rule, the fence
+ * keeps its interior raw, and `@[Name](id)` becomes a mention instead of a link with a stray
+ * `@` in front of it. What a line is a row costs is visible here too — a table has no header
+ * row, because which line is the header is a fact about the line after it.
  */
 export const Document: StoryObj<MarkedInputProps<StyledMarkProps>> = {
 	args: {
 		Mark: DocumentMark,
 		options: notionOptions,
 		defaultValue: APOLLO_DOC,
-		separator: '\n\n',
 		draggable: true,
 		slotProps: {container: {style: PAGE_STYLE}},
 	},
@@ -90,7 +90,6 @@ export const Editor: StoryObj<MarkedInputProps<StyledMarkProps>> = {
 		Mark: DocumentMark,
 		options: editorOptions,
 		defaultValue: APOLLO_DOC,
-		separator: '\n\n',
 		draggable: true,
 		slotProps: {container: {style: PAGE_STYLE}},
 	},
