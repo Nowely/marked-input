@@ -444,6 +444,19 @@ subtree, which is what keeps sibling positions ascending at every depth, and `li
 row's own line. The projection joins rows in PRE-ORDER by the separator and each row emits its own
 lead. A sibling list is painted by one `<Rows>` component at every depth.
 
+A KIND'S COMPONENT IS A SLOT COMPONENT and it takes three things it must pass on: the `ref` that
+binds the row's element, the `className` and the `style` core resolved for it. It also decides
+where the row's own inline `children` and its child `rows` go, and a component that paints neither
+is a contract rather than a bug — core cannot see whether a component reads a prop, so a kind that
+drops `rows` keeps its children in the value and off the screen, and a kind that drops `children`
+is an ATOMIC row whose text round-trips and drags but takes no caret. Anything ELSE such a
+component paints is document content until it says otherwise: every element inside the one editing
+host is text the caret can enter and the browser can edit, and `bind`'s sibling freeze does not
+reach it — that walk runs from a MARK's root down to its slot host, and a row IS its own host. A
+checkbox, a toggle arrow or a language `<select>` therefore takes `useControlRef()`, the adapter
+hook over `TokenModel.control()`, which writes the `contenteditable="false"` that makes it atomic
+and puts it on the path the DOM→model walk stops at.
+
 A ROW MAY CARVE ITS OWN BODY instead of nesting under it. A kind declaring `split: {at, as}` has
 its body taken apart at the literal, and each piece is an ordinary Row of the option `as` names —
 a table cell is not a node kind of its own. The delimiter a piece was carved at is its `lead`,
