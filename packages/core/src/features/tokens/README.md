@@ -255,9 +255,9 @@ find(id) // the live TreeNode by stable id
 selection: Selection // THE stored anchors and their derivations (see below)
 
 // writes
-replaceBetween(from, to, text) / setValue(text, enterRoot?)
-// `enterRoot` puts the caret INTO that row of the RESULT, so a caller never forms an
-// absolute offset into a string that does not exist yet (ADR-0003)
+replaceBetween(from, to, text) / setValue(text)
+// neither names a caret: the splice's own post-edit anchor answers one, and a caller
+// never forms an absolute offset into a string that does not exist yet (ADR-0003)
 // per-node writes are MarkNode.update / MarkNode.remove, which ride a transaction
 
 // tree reads, in tree coordinates

@@ -11,8 +11,8 @@ import type {NodeAnchor, TokenModel} from '../tokens'
  * `caretOffset` was the one absolute offset left in any core module, and it is gone. It
  * existed for the row operations, which synthesised a whole new string from row positions and
  * computed a caret against THAT string before it was parsed, so no node existed to name it.
- * Row edits address their own nodes now, and the one whole-value site left says which ROW the
- * caret enters (`tokens.setValue`'s `enterRoot`) rather than which character.
+ * Row edits address their own nodes now, and `setValue` names no caret at all: its own
+ * post-edit anchor already resolves inside the row the replacement produced.
  */
 export class EditController {
 	constructor(
