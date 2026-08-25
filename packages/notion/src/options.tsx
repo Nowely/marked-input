@@ -55,6 +55,17 @@ const chipTone = (name: string): ChipTone => CHIP_TONES.find(tone => tone === na
  * grid and every keystroke after it is swallowed. `useControlRef()` is what says otherwise and
  * `contenteditable="false"` is what it writes, so an atomic kind wraps its whole interior in
  * ONE {@link Atomic} rather than repeating the hook seven times.
+ *
+ * AND IT MUST BE SEEDED. `/` turns THIS ROW into the chosen kind, so a menu entry with no
+ * `menu.text` inserts an EMPTY body — which for an atomic kind is a block that can never be
+ * filled, because there is no surface to fill it through. Seven entries used to insert a blank
+ * panel, a blank grid or a blank card; every atomic kind below now carries a seed.
+ *
+ * WHAT THE OPTION API STILL CANNOT EXPRESS, named rather than worked around: after inserting an
+ * atomic kind the caret has nowhere to go. An atomic row generates no caret position, and the
+ * menu's contract is turn-this-row rather than insert-a-row, so nothing a consumer can write
+ * asks for the empty paragraph Notion leaves below such a block. On a one-row document that
+ * means the editor has no caret target at all until the user clicks elsewhere.
  */
 const Atomic = ({className, children}: {className?: string; children?: ReactNode}) => {
 	const controlRef = useControlRef()
@@ -117,7 +128,7 @@ export const properties: Option = {
 			</div>
 		),
 	},
-	menu: {label: 'Page properties', keywords: ['frontmatter', 'meta']},
+	menu: {label: 'Page properties', keywords: ['frontmatter', 'meta'], text: 'Status: chip:grey:Not started'},
 }
 
 /** `Name: value`, where a value is one or more comma-separated cells of the small vocabulary below. */
@@ -207,7 +218,7 @@ export const toc: Option = {
 			</div>
 		),
 	},
-	menu: {label: 'Table of contents', keywords: ['toc', 'outline']},
+	menu: {label: 'Table of contents', keywords: ['toc', 'outline'], text: 'Section'},
 }
 
 /* ── prose ──────────────────────────────────────────────────────────────── */
@@ -569,7 +580,7 @@ export const views: Option = {
 			)
 		},
 	},
-	menu: {label: 'View tabs', keywords: ['database', 'views', 'tabs']},
+	menu: {label: 'View tabs', keywords: ['database', 'views', 'tabs'], text: 'Table|Timeline'},
 }
 
 /* ── the board ──────────────────────────────────────────────────────────── */
@@ -594,7 +605,7 @@ export const board: Option = {
 			</div>
 		),
 	},
-	menu: {label: 'Board', keywords: ['kanban', 'database', 'columns']},
+	menu: {label: 'Board', keywords: ['kanban', 'database', 'columns'], text: 'To do\n- First card'},
 }
 
 type BoardColumn = {
@@ -642,7 +653,7 @@ export const metrics: Option = {
 			</div>
 		),
 	},
-	menu: {label: 'Metric cards', keywords: ['metrics', 'stats', 'numbers']},
+	menu: {label: 'Metric cards', keywords: ['metrics', 'stats', 'numbers'], text: 'Metric|0'},
 }
 
 /** `meta` is `url|description`; the row's own text is the card's title. */
@@ -660,7 +671,12 @@ export const bookmark: Option = {
 			)
 		},
 	},
-	menu: {label: 'Bookmark', keywords: ['link', 'preview', 'url']},
+	menu: {
+		label: 'Bookmark',
+		keywords: ['link', 'preview', 'url'],
+		meta: 'https://example.com|What this page is about.',
+		text: 'Bookmark',
+	},
 }
 
 export const comments: Option = {
@@ -682,7 +698,7 @@ export const comments: Option = {
 			</div>
 		),
 	},
-	menu: {label: 'Comment thread', keywords: ['comment', 'discussion', 'reply']},
+	menu: {label: 'Comment thread', keywords: ['comment', 'discussion', 'reply'], text: 'You|now|Start the thread'},
 }
 
 /* ── the paragraph, which is the row with NO kind ───────────────────────── */

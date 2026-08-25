@@ -1,3 +1,4 @@
+import {notionOptions} from '@markput/notion'
 import type {MarkedInputProps} from '@markput/react'
 import {composeStories} from '@storybook/react-vite'
 import {useState} from 'react'
@@ -94,6 +95,9 @@ async function choose(label: string) {
 	await expect.element(item).toBeVisible()
 	await item.click()
 }
+
+/** The same pick, named by the popup it is in — for a test that mounts more than one editor. */
+const menuItem = (label: string) => page.getByRole('listitem').getByText(label, {exact: true})
 
 describe('the showcase page', () => {
 	it('paints every block kind of the reference page', async () => {
@@ -202,6 +206,44 @@ describe('the slash menu', () => {
 
 		await expect.poll(value).toBe(`${APOLLO_DOC}---`)
 		expect(rowsOf(host)).toHaveLength(before)
+	})
+
+	/**
+	 * EVERY ENTRY, driven — the census as a pin rather than as a spot check, and derived from
+	 * `notionOptions` so a kind added without a seed fails here rather than shipping.
+	 *
+	 * The rule it holds: an ATOMIC kind's menu entry must carry `menu.text`. Its row has no
+	 * editable surface, so an empty body can never be filled through the editor — seven entries
+	 * used to insert a blank panel, a blank grid or a blank card and leave the user nothing to do
+	 * with it. `tableHeader` was the only one of the seven that had the seed.
+	 *
+	 * WHAT IS STILL TRUE AND IS NOT A DEFECT: the keystroke after an atomic insert goes nowhere.
+	 * The `/` menu's contract is turn THIS ROW into that kind, and an atomic row generates no
+	 * caret position, so there is no seam through which a consumer could ask for a row below. That
+	 * is the one block-kind gesture the option API cannot express, and it is named here rather
+	 * than worked around.
+	 */
+	it('inserts a block that paints something, for every entry it offers', async () => {
+		const labels = notionOptions.map(option => option.menu?.label).filter(label => label !== undefined)
+		const blank: string[] = []
+
+		for (const label of labels) {
+			const {host, value} = await mountControlled(Empty, '')
+			await focusAtStart(rowsOf(host)[0])
+			dispatchInsertText(editingHost(host), '/')
+			// Named inside the OPEN POPUP rather than by page text: this loop leaves its earlier
+			// editors mounted, and one of the seeds paints a view tab that reads like a menu label.
+			await menuItem(label).click()
+			await expect.poll(value).not.toBe('')
+
+			const inserted = value()
+			await userEvent.keyboard('Z')
+			const fillable = value() !== inserted
+			if (!fillable && host.textContent.trim() === '') blank.push(label)
+		}
+
+		expect(labels.length).toBeGreaterThan(20)
+		expect(blank).toEqual([])
 	})
 
 	/** The menu is `overlay.entries`, so a keyword no label contains still narrows it. */
