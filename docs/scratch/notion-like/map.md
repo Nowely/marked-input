@@ -105,7 +105,7 @@ becomes a ticket here.
   the head's whole SUBTREE, because a row at the parent's lead written directly under it adopts
   the parent's children; a merge into a typed row removes that row's opener, so the survivor keeps
   the FIRST row's kind; and a retype that changes a row's emptiness can re-parent the row after it,
-  which no `Pairing` can express. `moveTo` is untouched — P5 owns the common-ancestor splice.
+  which no `Pairing` can express. `moveTo` was left untouched for P5.
   Ticket [11](issues/11-overlay-inserts-one-markup.md)'s missing half is now reachable:
   `turnInto` takes the new body text, so strip-and-retype is one commit.
 - **P4's review found four real defects, all in the same shape: a reading that was widened but not
@@ -122,6 +122,38 @@ becomes a ticket here.
   checks. The dead-node lesson generalizes — the obvious case pins nothing, because a dead LAST
   row's stale window points past the shortened document and the transaction's own bound refuses it.
   Only a dead FIRST row's window still lands on live bytes.
+- **A row moves to a PLACEMENT, and there is exactly ONE mover** (2026-08-25, P5).
+  `moveTo(to: number)` became `moveTo({parent, index})`, `TextNode.moveTo` and `MarkNode.moveTo`
+  are gone, and `BlockController` drops through the same verb — grep confirms `movePlan` has two
+  callers, the model and its own property. There is NO common ancestor: a subtree is contiguous in
+  pre-order, so a move is "cut this run, paste it before that index", and the splice is the
+  narrowest CHANGED RANGE of lines rather than the ancestor's span. The spec's `store.block.move`
+  over a SET of ids did not land and is not owed yet — nothing multi-selects rows, so it would be
+  published surface with no caller.
+- **P5's review found ONE defect, in three faces, and the third was found by the corpus rather
+  than by a reviewer** (2026-08-25). A row whose lead carries a SURPLUS indent run is held at its
+  depth by the row ABOVE it and by nothing else, so any splice that raises that ceiling re-parses
+  it without touching its bytes. The mover asked `depthCeiling` about its own run's root and about
+  nothing else, so: an untouched row after the span re-parented (`'x⏎⏎⇥⇥b'` → `b` became `x`'s
+  child, reachable from the shipped drag); an untouched row re-emitted INSIDE the span did the
+  same; and a moved blank row re-led to `''` became EMPTY, which takes no children, so the subtree
+  it was carrying was promoted out of it. All three collapse into one answer — replay the SCAN over
+  the span the splice rewrites, plus one row — and the mover refuses rather than widening, because
+  normalizing another row's lead cascades into the row after it.
+- **`setDepth` shares the same hole and is NOT fixed** (2026-08-25). Measured: `'x⏎⏎⇥⇥b'`,
+  `blank.setDepth(1)` emits `'x⏎⇥⏎⇥⇥b'` and the untouched root `b` lands two levels down as a
+  grandchild. It rewrites one row's lead and re-emits nothing else, so it has no span to replay the
+  scan over. Declared on the architecture page; its own step.
+- **A property exhaustive over PLACEMENTS is not exhaustive over DOCUMENTS.** P5's generator
+  rendered every row at `INDENT.repeat(depth)`, so the corpus was canonical-only and structurally
+  incapable of holding the class all three defects lived in. Widening it — surplus leads at 25%,
+  blank rows allowed children — found the third defect immediately. The legality predicate is now
+  the ENCODING and not a copy of the mover's rules: the intended tree is projected to bytes and
+  PARSED BACK, and the placement is legal exactly when the parse agrees.
+- **The mover's window narrowness was a docstring paragraph and nothing else.** Splicing the whole
+  document instead left all 91 files / 1691 tests green, because `moveTo` carries the caret through
+  adoption's verified-move short-circuit rather than through the window map. Restored and pinned
+  rather than deleted — the answer to an unpinned claim you want to keep is a pin.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
