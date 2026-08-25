@@ -883,3 +883,40 @@ describe('moveRows', () => {
 		expect(store.tokens.value()).toBe('a\nb')
 	})
 })
+
+describe('dropPlacements', () => {
+	/**
+	 * THE FLOOR IS THE LINE THE MOVE LEAVES AFTER THE GAP, not the one standing there now — and the
+	 * difference is the commonest drag there is: picking a row up and dropping it at its own gap to
+	 * change only its depth. Reading the floor off the current list makes the row in flight its own
+	 * outdent's obstacle, and the mover accepting the placement is the oracle that says so.
+	 */
+	it('offers the depths a row in flight vacates, and the mover takes them', () => {
+		const store = rowStore('a\n\tb\n\tc\nd')
+		const [, b, c] = rowsOf(store)
+
+		expect(store.tokens.dropPlacements([c], b, 'after').map(each => each.depth)).toEqual([0, 2])
+		expect(store.tokens.moveRows([c], {parent: null, index: 1})).toBe(true)
+		expect(store.tokens.value()).toBe('a\n\tb\nc\nd')
+	})
+
+	/** The whole remainder of the gap may be in flight, and then the floor is the document's own. */
+	it('offers root depth when every line after the gap is leaving', () => {
+		const store = rowStore('a\n\tb\n\tc')
+		const [a, b, c] = rowsOf(store)
+
+		expect(store.tokens.dropPlacements([b, c], a, 'after').map(each => each.depth)).toEqual([0])
+		expect(store.tokens.moveRows([b, c], {parent: null, index: 1})).toBe(true)
+		expect(store.tokens.value()).toBe('a\nb\nc')
+	})
+
+	/** A line that STAYS after the gap still holds the floor up, which is the rule's own half. */
+	it('refuses to go shallower than a line that is not leaving', () => {
+		const store = rowStore('a\n\tb\n\tc\nd\ne')
+		const [, b, , , e] = rowsOf(store)
+
+		// `c` stays and sits at depth 1, so the gap before it offers nothing shallower: root depth
+		// there addresses the slot AFTER `a`'s whole subtree, which is not the gap pointed at.
+		expect(store.tokens.dropPlacements([e], b, 'after').map(each => each.depth)).toEqual([1, 2])
+	})
+})

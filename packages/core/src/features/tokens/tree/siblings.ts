@@ -423,6 +423,12 @@ export function movePlan(
  * not offered. That is the difference between a drop indicator that predicts and one that
  * promises — what is painted and what will happen are the same call.
  *
+ * THE LINE AFTER THE GAP IS THE ONE THE MOVE LEAVES THERE, so the rows in flight are stepped over
+ * before the floor is read: a row that is leaving cannot become a child of what lands where it
+ * was. Read off the current list instead, the commonest drag there is — pick a row up and drop it
+ * at its own gap to change only its depth — offers no outdent at all, and a gap whose whole
+ * remainder is in flight offers nothing.
+ *
  * `index` is counted with the moved rows TAKEN OUT, which is what {@link RowPlacement} means, so a
  * gap whose preceding siblings are themselves in flight still addresses the slot it looks like.
  */
@@ -442,7 +448,10 @@ export function dropPlacements(
 	const at = edge === 'after' ? found : found - 1
 	const previous = at < 0 ? undefined : rows[at]
 	const ceiling = depthCeiling(previous && scannedAs(previous.row, previous.depth))
-	const floor = rows[at + 1]?.depth ?? 0
+	const runs = maximalRuns(rows, nodes) ?? []
+	let after = at + 1
+	while (runs.some(run => after >= run.from && after < run.from + run.span)) after++
+	const floor = rows[after]?.depth ?? 0
 
 	const moved = new Set(nodes)
 	const out: {depth: number; placement: RowPlacement}[] = []
