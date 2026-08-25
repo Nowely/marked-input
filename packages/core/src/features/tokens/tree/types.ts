@@ -137,16 +137,24 @@ export interface RowNode {
 	 *
 	 * REPARSE DECIDES what comes back, as it does for a merge: a body carrying the separator
 	 * becomes two rows, and a body whose own start matches a longer opener types as THAT kind.
+	 * ONE consequence is worth naming, because it is the one case where the child rows are NOT
+	 * untouched: retyping a row at depth 0 whose body is empty leaves an empty LINE, and an empty
+	 * row takes no children, so the scan promotes them to roots. The encoding cannot express an
+	 * empty parent; the surplus indent survives verbatim in each child's `lead`.
 	 */
 	turnInto(option: CoreOption | undefined, patch?: RowPatch): boolean
 	/**
 	 * Split this row at `at`: the body before the anchor stays, the body after it becomes a new row
 	 * at the same lead, whose kind is this one when the kind `continues` and a plain row otherwise.
+	 * A continuing kind carries its `meta` into the tail with it, so splitting a checked to-do
+	 * gives two checked to-dos.
 	 *
 	 * The tail lands after this row's whole SUBTREE, not after its line, and that is forced rather
 	 * than chosen: nesting is indentation and nothing else, so a row written directly under this
 	 * one at this one's lead would adopt every child it has. Placing it past the subtree is the
-	 * only reading under which a split never re-parents a row it was not asked about.
+	 * only reading under which a split never re-parents a row it was not asked about. The one
+	 * exception is the head that EMPTIES — an empty row takes no children — where the subtree
+	 * follows the tail instead, which is Enter at a row's start.
 	 *
 	 * `false` for a non-row, for an editor with no separator to split at, and for an anchor outside
 	 * this row's own body — a caret in another row cannot address this one's split point.

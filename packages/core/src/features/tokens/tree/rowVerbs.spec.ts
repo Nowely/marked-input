@@ -413,6 +413,27 @@ describe('turnInto', () => {
 		expect(store.tokens.value()).toBe('x\ny')
 		expect(rowsOf(store).length).toBe(2)
 	})
+
+	/**
+	 * The one case where "the child rows are untouched" is FALSE, and it is the encoding rather
+	 * than the splice: a paragraph at depth 0 with an empty body is an empty LINE, an empty row
+	 * takes no children (`depthCeiling`), and the scan promotes them. Nothing the verb can write
+	 * expresses an empty parent — `splitAt` meets the same wall and gives the subtree to its tail.
+	 * The surplus indent survives verbatim in each promoted child's `lead`.
+	 */
+	it('promotes the children of a row it empties, which the encoding cannot avoid', () => {
+		const store = rowStore('# \n\tb\nz', [heading])
+		const [root, , last] = rowsOf(store)
+
+		expect(root.turnInto(undefined)).toBe(true)
+
+		expect(store.tokens.value()).toBe('\n\tb\nz')
+		const after = rowsOf(store)
+		expect(after.map(row => row.slot())).toEqual(['', 'b', 'z'])
+		expect(after.map(row => row.rows().length)).toEqual([0, 0, 0])
+		expect(after[1].lead()).toBe('\t')
+		expect([after[0], after[2]]).toEqual([root, last])
+	})
 })
 describe('splitAt', () => {
 	const bullet: CoreOption = {markup: '- __slot__', row: {Component: 'li', continues: true}}
@@ -457,6 +478,21 @@ describe('splitAt', () => {
 
 		expect(list.tokens.value()).toBe('a\n\t- b\n\t- c')
 		expect(title.tokens.value()).toBe('a\n\t# b\n\tc')
+	})
+
+	/**
+	 * A continuing kind carries its META into the tail with it, so splitting a checked to-do gives
+	 * two checked to-dos. Declared rather than derived: `continues` says "the tail gets the same
+	 * kind" and meta is not kind, so the reading is stated here and can be argued with.
+	 */
+	it('carries the kind META into the tail of a continuing row', () => {
+		const todo: CoreOption = {markup: '- [__meta__] __slot__', row: {Component: 'li', continues: true}}
+		const store = rowStore('- [x] ab', [todo])
+		const row = rowsOf(store)[0]
+
+		expect(row.splitAt(inBody(row, 1))).toBe(true)
+
+		expect(store.tokens.value()).toBe('- [x] a\n- [x] b')
 	})
 
 	it('splits at the row START, which pushes the row down under an empty one', () => {
