@@ -7,7 +7,7 @@ import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
 import {snapshot, stripIds} from './__testing__/snapshot'
 import {adopt} from './adopt'
-import {anchorAt, entryAnchor, offsetOfAnchor, separatorSpan, stepAnchor} from './anchors'
+import {anchorAt, boundarySpan, entryAnchor, offsetOfAnchor, stepAnchor} from './anchors'
 import {renderSubscription} from './renderSubscription'
 import {createTokenTree, sliceNodes} from './tree'
 import type {TreeNode} from './types'
@@ -89,12 +89,12 @@ describe('RowNode', () => {
 		expect(stepAnchor(roots, from, 1)).toBeUndefined()
 	})
 
-	describe('separatorSpan', () => {
+	describe('boundarySpan', () => {
 		// 'a\n\nb': row 0 is 'a' + its separator [0,3), row 1 is the unterminated 'b' [3,4].
 		const span = (value: string, offset: number, direction: -1 | 1) => {
 			const {tree} = rowTree([], value)
 			const roots = tree.roots()
-			const answer = separatorSpan(roots, anchorAt(roots, offset), direction, SEPARATOR.separator)
+			const answer = boundarySpan(roots, anchorAt(roots, offset), direction, SEPARATOR)
 			return answer && [offsetOfAnchor(roots, answer.anchor), offsetOfAnchor(roots, answer.head)]
 		}
 
@@ -131,7 +131,29 @@ describe('RowNode', () => {
 			const parser = new Parser([])
 			const tree = createTokenTree(parser.parse('a\n\nb'))
 			const roots = tree.roots()
-			expect(separatorSpan(roots, anchorAt(roots, 3), -1, SEPARATOR.separator)).toBeUndefined()
+			expect(boundarySpan(roots, anchorAt(roots, 3), -1, SEPARATOR)).toBeUndefined()
+		})
+
+		/**
+		 * The boundary between a row and its FIRST CHILD, which the flat reading could not see: a
+		 * parent's `position.end` covers its subtree, so a walk over roots finds no boundary there
+		 * at all. The span takes the child's LEAD with the separator — a merge that left the indent
+		 * behind would put it in the joined row as text.
+		 */
+		it('spans the separator AND the next row lead, at every depth', () => {
+			const parser = new Parser([])
+			const config = {separator: '\n', indent: '\t'}
+			const tree = createTokenTree(parser.parseRows('a\n\tb\nc', config))
+			tree.config(config)
+			const roots = tree.roots()
+
+			// 'a\n\tb\nc': 'a' [0,4] with child '\tb' [2,4], then 'c' [4,5].
+			expect(boundarySpan(roots, anchorAt(roots, 3), -1, config)).toEqual({
+				anchor: anchorAt(roots, 1),
+				head: anchorAt(roots, 3),
+			})
+			const span = boundarySpan(roots, anchorAt(roots, 3), -1, config)
+			expect(span && [offsetOfAnchor(roots, span.anchor), offsetOfAnchor(roots, span.head)]).toEqual([1, 3])
 		})
 	})
 

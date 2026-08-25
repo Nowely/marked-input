@@ -218,11 +218,15 @@ export class DomModel {
 	 * wrapper, whose parent-index coordinates would put the caret between rows rather
 	 * than inside one, and the separator has no DOM to land in. Text and mark nodes
 	 * answer themselves, as before.
+	 *
+	 * RECURSIVELY, since rows nest: a row's last child is itself a row whenever it has any, so
+	 * one level down would answer with another block wrapper and `'end'` would resolve to a
+	 * handle no caret can sit in.
 	 */
 	#entryOf(node: TreeNode, side: 'start' | 'end'): {id: Id; offset: number} {
 		if (node.kind === 'row') {
 			const child = side === 'start' ? node.children().at(0) : node.children().at(-1)
-			if (child) return {id: child.id, offset: side === 'start' ? 0 : Infinity}
+			if (child) return this.#entryOf(child, side)
 		}
 		return {id: node.id, offset: side === 'start' ? 0 : Infinity}
 	}

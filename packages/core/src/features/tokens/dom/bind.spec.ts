@@ -70,6 +70,7 @@ type BindOverrides = {
 	byElement?: WeakMap<HTMLElement, TokenHandle>
 	consigned?: Map<number, HTMLElement>
 	childSequenceHostsFor?: (ownerId: number) => readonly HTMLElement[]
+	rowSequenceHostFor?: (ownerId: number) => HTMLElement | undefined
 }
 
 function inputFor(container: HTMLElement, roots: readonly TreeNode[], overrides: BindOverrides = {}): BindInput {
@@ -87,6 +88,7 @@ function inputFor(container: HTMLElement, roots: readonly TreeNode[], overrides:
 				const hosts = childSequenceHostsFor(ownerId)
 				return hosts.length === 1 ? hosts[0] : undefined
 			},
+			rowSequenceHost: ownerId => overrides.rowSequenceHostFor?.(ownerId),
 		},
 	}
 }

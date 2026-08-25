@@ -135,6 +135,7 @@ function createHarness(markups: Markup[] = ['@[__value__]']) {
 		source: {
 			tokenElement: id => consigned.get(id),
 			childSequenceHost: () => undefined,
+			rowSequenceHost: () => undefined,
 		},
 	})
 	const boundary = createBoundary({

@@ -125,7 +125,7 @@ export function isConsumerKeyOrigin(store: KbCtx, container: HTMLElement, event:
  * The separator arm is what makes a delete at a row boundary a MERGE, in one mechanism with
  * every other delete — where block layout used to resolve a row from the selection and call
  * `RowNode.mergeWith`. The two expansions cannot both answer: a row's children end with a text
- * token, so no mark boundary ever coincides with a separator's. See {@link separatorSpan} for
+ * token, so no mark boundary ever coincides with a separator's. See {@link boundarySpan} for
  * the direction rules, which are block's own and are not symmetric.
  */
 export function anchorsForDelete(store: KbCtx, inputType: string, anchors: Anchors): Anchors | undefined {
@@ -135,8 +135,8 @@ export function anchorsForDelete(store: KbCtx, inputType: string, anchors: Ancho
 	const mark = store.tokens.adjacentMark(anchors.anchor, direction)
 	if (mark) return {anchor: {before: mark}, head: {after: mark}}
 
-	const separator = store.tokens.separatorSpan(anchors.anchor, direction)
-	if (separator) return separator
+	const boundary = store.tokens.boundarySpan(anchors.anchor, direction)
+	if (boundary) return boundary
 
 	const stepped = store.tokens.step(anchors.anchor, direction)
 	if (!stepped) return undefined

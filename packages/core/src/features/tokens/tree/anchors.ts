@@ -1,3 +1,5 @@
+import type {RowConfig} from '../parser/types'
+import {preorderRows} from './rows'
 import type {Anchors, MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from './types'
 
 /**
@@ -91,44 +93,62 @@ export function adjacentMark(roots: readonly TreeNode[], anchor: NodeAnchor, dir
 }
 
 /**
- * The ROW SEPARATOR a collapsed delete at `anchor` removes, as the anchors spanning it —
+ * The ROW BOUNDARY a collapsed delete at `anchor` removes, as the anchors spanning it —
  * {@link adjacentMark}'s swallow for the row world. `undefined` when the anchor sits at no row
  * boundary, which is EVERY anchor in a document with no rows: only a row parse builds RowNodes,
  * so the arm is inert there by construction rather than by a mode test.
  *
- * It exists because {@link stepAnchor} cannot express this edit: a separator is the row's
- * separator, it has no anchorable interior, and a step into it fails closed. Removing the
- * whole span IS the row merge — reparse decides what the joined text becomes (issue 08's
- * markdown-like policy), which is the same answer `RowNode.mergeWith` gives.
+ * THE BOUNDARY IS THE SEPARATOR PLUS THE FOLLOWING ROW'S LEAD. Both are structural bytes between
+ * one row's content and the next one's, and a merge that took only the separator would leave the
+ * indent behind as text in the joined row. It walks PRE-ORDER rows at every depth, because that
+ * is the order the join puts the separators in — a parent's boundary is with its first child,
+ * not with its next sibling.
+ *
+ * It exists because {@link stepAnchor} cannot express this edit: the boundary has no anchorable
+ * interior, and a step into it fails closed. Removing the whole span IS the row merge — reparse
+ * decides what the joined text becomes (issue 08's markdown-like policy), which is the same
+ * answer `RowNode.mergeWith` gives.
  *
  * ASYMMETRIC, and that asymmetry is block layout's own long-standing answer rather than an
- * oversight. Backspace takes only the separator ENDING at the anchor, so at a row's content end
- * it still deletes the character before it. Delete takes that one too, ahead of the separator
+ * oversight. Backspace takes only the boundary ENDING at the anchor, so at a row's content end
+ * it still deletes the character before it. Delete takes that one too, ahead of the boundary
  * STARTING at the anchor: Delete pressed at a row START merges that row into the previous one
  * (`Drag.spec`'s 'Delete at start of row'), and the earlier-row reading is what an empty row
- * between two separators needs to keep answering the row before it.
+ * between two boundaries needs to keep answering the row before it.
  */
-export function separatorSpan(
+export function boundarySpan(
 	roots: readonly TreeNode[],
 	anchor: NodeAnchor,
 	direction: -1 | 1,
-	separator: string | undefined
+	config: RowConfig | undefined
 ): Anchors | undefined {
-	if (separator === undefined) return undefined
+	if (config === undefined) return undefined
 	const offset = offsetOfAnchor(roots, anchor)
-	// The document-final row owns no separator, so it can never be the one removed here — which
-	// is structural now that the join, not the row, decides who carries one.
-	const rows = roots.filter((root): root is RowNode => root.kind === 'row')
-	const terminated = rows.slice(0, -1)
-	const contentEnd = (row: RowNode): number => row.position.end - separator.length
-	const row =
-		terminated.find(candidate => candidate.position.end === offset) ??
-		(direction === 1 ? terminated.find(candidate => contentEnd(candidate) === offset) : undefined)
-	if (!row) return undefined
-	// A row's children end with a TEXT token by the parser's edge invariant, so its content end
-	// is anchorable and {@link anchorAt} round-trips on it; the head is the row's own trailing
-	// edge, which sits past the separator.
-	return {anchor: anchorAt(roots, contentEnd(row)), head: {after: row}}
+	const rows = preorderRows(roots).map(entry => entry.row)
+	// The document-final row is followed by nothing, so it can never open a boundary here —
+	// structural now that the join, not the row, decides who carries a separator.
+	const boundaries = rows.slice(0, -1).map((row, index) => ({
+		// A row's own line ends where its first child row starts, or at its own span's end; either
+		// way the separator is the last thing in it.
+		end: row.lineRange().end - config.separator.length,
+		next: rows[index + 1],
+	}))
+	const startOf = (row: RowNode): number => row.position.start + row.lead().length
+	const boundary =
+		boundaries.find(candidate => startOf(candidate.next) === offset) ??
+		(direction === 1 ? boundaries.find(candidate => candidate.end === offset) : undefined)
+	if (!boundary) return undefined
+	// A row's inline children end with a TEXT token by the parser's edge invariant, so its content
+	// end is anchorable and {@link anchorAt} round-trips on it.
+	const head = anchorAt(roots, startOf(boundary.next))
+	// The head names where the next row's own CONTENT begins. `anchorAt` reaches that position
+	// only for a paragraph; a typed row's opener sits there and is not anchorable, so the span
+	// falls back to the row's own start and the opener survives the merge exactly as it does
+	// today — the same fail-closed round-trip test {@link stepAnchor} makes.
+	return {
+		anchor: anchorAt(roots, boundary.end),
+		head: offsetOfAnchor(roots, head) === startOf(boundary.next) ? head : {before: boundary.next},
+	}
 }
 
 /**
@@ -178,10 +198,15 @@ export function anchorEquals(a: NodeAnchor | undefined, b: NodeAnchor | undefine
  * structural, so the offsets inside it resolve to the row's entry.
  */
 export function entryAnchor(node: TreeNode): NodeAnchor {
-	const hasBody = node.kind === 'row' || (node.kind === 'mark' && node.descriptor.hasSlot)
+	// A row enters its own INLINE content, never a nested row: a caret entering a row belongs on
+	// that row's line, and its child rows are separate rows with entries of their own.
+	if (node.kind === 'row') {
+		const first = node.inline().at(0)
+		return first?.kind === 'text' ? {node: first, offset: 0} : {before: node}
+	}
 	// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as
 	// non-nullable and the empty-children guard would be linted away as impossible.
-	const first = hasBody ? node.children().at(0) : undefined
+	const first = node.kind === 'mark' && node.descriptor.hasSlot ? node.children().at(0) : undefined
 	if (first?.kind === 'text') return {node: first, offset: 0}
 	return {before: node}
 }

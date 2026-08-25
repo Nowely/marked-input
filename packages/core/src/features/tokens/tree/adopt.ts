@@ -3,8 +3,8 @@ import {Parser} from '../parser/Parser'
 import type {MarkToken, RowConfig, RowToken, TextToken, Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {anchorAt, offsetOfAnchor} from './anchors'
+import {preorderRows} from './rows'
 import type {TokenTree} from './tree'
-import {preorderRows} from './tree'
 import type {
 	Anchors,
 	MarkNode,

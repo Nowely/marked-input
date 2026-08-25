@@ -9,6 +9,12 @@ export type ElementBindings = {
 	readonly tokenElement: HTMLElement
 	readonly textElement?: HTMLElement
 	readonly childSequenceHost?: HTMLElement
+	/**
+	 * A ROW's child-ROWS host, beside the inline one above. Two NAMED parts rather than one list,
+	 * because the caret mapping needs the split between a row's `inline()` and its `rows()` to be
+	 * deterministic, and registration order cannot give it.
+	 */
+	readonly rowSequenceHost?: HTMLElement
 }
 
 /**

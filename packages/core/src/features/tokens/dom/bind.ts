@@ -37,6 +37,8 @@ export type ElementSource = {
 	 * are on the page and neither can be trusted to be this one's.
 	 */
 	childSequenceHost(ownerId: number): HTMLElement | undefined
+	/** The same, for a ROW's child-rows host. See {@link ElementBindings.rowSequenceHost}. */
+	rowSequenceHost(ownerId: number): HTMLElement | undefined
 }
 
 /** The mutable node-layer state both binding paths share. */
@@ -150,6 +152,7 @@ export function rebindNode(node: TreeNode, target: BindTarget): void {
 	forget(byElement, previous, bindings)
 	byElement.set(bindings.tokenElement, handle)
 	if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
+	if (bindings.rowSequenceHost) byElement.set(bindings.rowSequenceHost, handle)
 }
 
 /**
@@ -165,9 +168,12 @@ function forget(
 	next?: ElementBindings
 ): void {
 	if (!previous) return
-	for (const element of [previous.tokenElement, previous.childSequenceHost]) {
+	for (const element of [previous.tokenElement, previous.childSequenceHost, previous.rowSequenceHost]) {
 		if (!element) continue
-		if (next && (element === next.tokenElement || element === next.childSequenceHost)) {
+		if (
+			next &&
+			(element === next.tokenElement || element === next.childSequenceHost || element === next.rowSequenceHost)
+		) {
 			continue
 		}
 		byElement.delete(element)
@@ -202,12 +208,15 @@ function bindingsFor(node: TreeNode, source: ElementSource): ElementBindings | u
 	// The `contains` test survives the walk's deletion: a host registered under this owner
 	// but sitting outside its element belongs to a generation that has not been torn down.
 	const childSequenceHost = host && element.contains(host) ? host : undefined
+	const rowHost = source.rowSequenceHost(node.id)
+	const rowSequenceHost = rowHost && element.contains(rowHost) ? rowHost : undefined
 	return {
 		tokenElement: element,
 		// A Surface is a TEXT token's own element — the walk gave one to text nodes only, and
 		// that equivalence is what lets the text effect write straight into it.
 		textElement: node.kind === 'text' ? element : undefined,
 		childSequenceHost,
+		rowSequenceHost,
 	}
 }
 
@@ -237,7 +246,10 @@ function applyMountState(bindings: ElementBindings, previous: ElementBindings | 
 	// atomic, or the slot it just grew is uneditable.
 	const sameRoot = previous?.tokenElement === bindings.tokenElement
 	const sameHost = previous?.childSequenceHost === bindings.childSequenceHost
-	if (sameRoot && sameHost) return
+	// The ROW host counts too: a row that GAINS one has just been nested into, and the newly
+	// mounted host must be cleared rather than left with whatever attribute it mounted with.
+	const sameRowHost = previous?.rowSequenceHost === bindings.rowSequenceHost
+	if (sameRoot && sameHost && sameRowHost) return
 	applyEditableState(bindings)
 }
 
@@ -269,7 +281,7 @@ function applyEditableState(bindings: ElementBindings): void {
 		bindings.textElement.removeAttribute('contenteditable')
 		return
 	}
-	const {tokenElement, childSequenceHost} = bindings
+	const {tokenElement, childSequenceHost, rowSequenceHost} = bindings
 	tokenElement.removeAttribute('tabindex')
 	if (!childSequenceHost) {
 		if (tokenElement.contentEditable !== 'false') tokenElement.contentEditable = 'false'
@@ -277,6 +289,12 @@ function applyEditableState(bindings: ElementBindings): void {
 	}
 	tokenElement.removeAttribute('contenteditable')
 	childSequenceHost.removeAttribute('contenteditable')
+	// A ROW's child-rows host is document content, and it is cleared on EVERY apply rather than
+	// only when it appears — a row can gain one at runtime, under a walk that already ran.
+	rowSequenceHost?.removeAttribute('contenteditable')
+	// Every element from the row host up to the root is on a content path too: the freeze walk
+	// below must not take one of them for a control just because it sits beside the inline host.
+	const onRowPath = pathToRoot(rowSequenceHost, tokenElement)
 	// Walk the host back up to the root, freezing every sibling of the path: those are
 	// the mark's own controls, and a control is not document content.
 	let onPath: HTMLElement = childSequenceHost
@@ -286,10 +304,24 @@ function applyEditableState(bindings: ElementBindings): void {
 		// walk and this write — a host detached in between must not spin.
 		if (!parent) break
 		for (const child of parent.children) {
-			if (child !== onPath && child instanceof HTMLElement && child.contentEditable !== 'false') {
+			if (child === onPath || !(child instanceof HTMLElement)) continue
+			if (onRowPath.has(child)) {
+				child.removeAttribute('contenteditable')
+			} else if (child.contentEditable !== 'false') {
 				child.contentEditable = 'false'
 			}
 		}
 		onPath = parent
 	}
+}
+
+/** The elements from `from` up to and excluding `root`; empty when there is no `from`. */
+function pathToRoot(from: HTMLElement | undefined, root: HTMLElement): Set<HTMLElement> {
+	const path = new Set<HTMLElement>()
+	let current = from
+	while (current && current !== root) {
+		path.add(current)
+		current = current.parentElement ?? undefined
+	}
+	return path
 }

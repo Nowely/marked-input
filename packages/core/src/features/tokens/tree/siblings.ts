@@ -1,5 +1,6 @@
 import type {RowConfig} from '../parser/types'
-import {preorderRows, rowContent, sliceNodes} from './tree'
+import {preorderRows} from './rows'
+import {rowContent, sliceNodes} from './tree'
 import type {Pairing, TreeNode, Window} from './types'
 
 /**

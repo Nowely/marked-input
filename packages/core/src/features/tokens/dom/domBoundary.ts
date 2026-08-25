@@ -72,8 +72,14 @@ export function anchorFromBoundary(
 	// ABOVE the text-surface branch below: a token bound with both a `textElement` and a
 	// `childSequenceHost` must resolve host boundaries here, or a host boundary on a
 	// text-bearing token would be read as a text offset.
+	//
+	// The ROW host is tested FIRST: a row registers its own element as its inline host, so the
+	// two coincide, and the child-rows host must not be read as that same sequence.
+	if (node instanceof HTMLElement && node === lookup.bindings.rowSequenceHost) {
+		return fromHostAnchor(ctx, node, offset, owner, affinity, owner.kind === 'row' ? owner.rows() : [])
+	}
 	if (node instanceof HTMLElement && node === lookup.bindings.childSequenceHost) {
-		return fromHostAnchor(ctx, node, offset, owner, affinity)
+		return fromHostAnchor(ctx, node, offset, owner, affinity, owner.kind === 'mark' ? owner.children() : [])
 	}
 
 	const textElement = lookup.bindings.textElement
@@ -164,11 +170,11 @@ function fromHostAnchor(
 	host: HTMLElement,
 	offset: number,
 	owner: TreeNode,
-	affinity: BoundaryAffinity
+	affinity: BoundaryAffinity,
+	children: readonly TreeNode[]
 ): NodeAnchor | undefined {
 	const childCount = host.childNodes.length
 	if (offset > 0 && offset < childCount) return childBoundaryAnchor(ctx, host, offset, owner, affinity)
-	const children = owner.kind === 'mark' ? owner.children() : []
 	// `.at`, not an index read: `noUncheckedIndexedAccess` is off, so the empty case would
 	// type as a `TreeNode` and the fallback below would be linted away as impossible.
 	const edge = offset <= 0 ? children.at(0) : children.at(-1)

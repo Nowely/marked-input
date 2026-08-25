@@ -20,9 +20,9 @@ import {annotate} from '../parser/utils/annotate'
 import {
 	adjacentMark as findAdjacentMark,
 	anchorAt as anchorAtOffset,
+	boundarySpan as findBoundarySpan,
 	entryAnchor,
 	offsetOfAnchor,
-	separatorSpan as findSeparatorSpan,
 	stepAnchor,
 } from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
@@ -162,9 +162,13 @@ export class TokenModel {
 	 * Ref callback for the element hosting a token's child sequence. Keyed per REGISTRATION like
 	 * {@link control}; the owner rides in the VALUE, named by stable id rather than by index, so
 	 * it does not go stale when a sibling above the owner is added or removed mid-render.
+	 *
+	 * `part` names WHICH sequence: a row has two, its inline content and its child rows, and the
+	 * caret mapping needs the split between them to be deterministic. Named parts rather than one
+	 * list because registration order cannot give that.
 	 */
-	children(ownerId: number): DomRef {
-		return this.#refInto(this.#childSequenceHosts, ownerId)
+	children(ownerId: number, part: 'inline' | 'rows' = 'inline'): DomRef {
+		return this.#refInto(part === 'rows' ? this.#rowSequenceHosts : this.#childSequenceHosts, ownerId)
 	}
 
 	/**
@@ -273,12 +277,12 @@ export class TokenModel {
 	}
 
 	/**
-	 * The row separator span a collapsed delete at `anchor` removes — THE row-boundary half of
-	 * the Backspace/Delete expansion, beside {@link adjacentMark}'s swallow. See
-	 * {@link separatorSpan}; `undefined` for every anchor in a document that parses no rows.
+	 * The row boundary a collapsed delete at `anchor` removes — THE row half of the
+	 * Backspace/Delete expansion, beside {@link adjacentMark}'s swallow. See
+	 * {@link boundarySpan}; `undefined` for every anchor in a document that parses no rows.
 	 */
-	separatorSpan(anchor: NodeAnchor, direction: -1 | 1): Anchors | undefined {
-		return untracked(() => findSeparatorSpan(this.#tree.roots(), anchor, direction, this.#tree.config()?.separator))
+	boundarySpan(anchor: NodeAnchor, direction: -1 | 1): Anchors | undefined {
+		return untracked(() => findBoundarySpan(this.#tree.roots(), anchor, direction, this.#tree.config()))
 	}
 
 	/** The projection of the span between two anchors — {@link value} restricted to a window (see {@link sliceNodes}). */
@@ -721,6 +725,7 @@ export class TokenModel {
 		source: {
 			tokenElement: id => this.#tokenElements.latest(id),
 			childSequenceHost: ownerId => this.#childSequenceHosts.sole(ownerId),
+			rowSequenceHost: ownerId => this.#rowSequenceHosts.sole(ownerId),
 		},
 	})
 
@@ -749,6 +754,7 @@ export class TokenModel {
 	// mount and a quadratic one, measured.
 	readonly #tokenElements = new RefRegistry()
 	readonly #childSequenceHosts = new RefRegistry()
+	readonly #rowSequenceHosts = new RefRegistry()
 
 	/** The shared ref-callback body: one key per registration, filed into `registry` under `id`. */
 	#refInto(registry: RefRegistry, id: number): DomRef {

@@ -4,6 +4,7 @@ import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import type {RowConfig, RowToken, Token} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
 import {offsetOfAnchor} from './anchors'
+import {preorderRows} from './rows'
 import type {Id, MarkNode, NodeAnchor, RowNode, TextNode, TreeCommands, TreeNode} from './types'
 
 export interface TokenTree {
@@ -145,25 +146,6 @@ function outerEdges(nodes: readonly TreeNode[]): {start: number; end: number} {
 	// answer is unreachable from a parse; it is what a hand-built node would get.
 	if (!first || !last) return {start: 0, end: 0}
 	return {start: first.position.start, end: last.position.end}
-}
-
-/**
- * Every row in document order with its DEPTH — the recursion index, which is the tree's own
- * reading of depth and the only one. It is deliberately NOT derived from `lead`: the two
- * disagree on an over-indented paste, and two facts under one name is what the clamp exists to
- * keep apart.
- *
- * The pre-order walk is what the value's join, the row boundaries and the identity pairing all
- * speak, because a row's subtree is contiguous in document order.
- */
-export function preorderRows(nodes: readonly TreeNode[], depth = 0): {row: RowNode; depth: number}[] {
-	const out: {row: RowNode; depth: number}[] = []
-	for (const node of nodes) {
-		if (node.kind !== 'row') continue
-		out.push({row: node, depth})
-		out.push(...preorderRows(node.rows(), depth + 1))
-	}
-	return out
 }
 
 /** Depth-first id lookup over live nodes (spec §2.3's `input.find`). */
