@@ -37,10 +37,12 @@ there would fuse every row before anything could re-derive them.
 
 **The case is the concept count, not speed.** Measured, the inversion's own margin is about 1.2×;
 the 12× that the design was once sold on belongs to a defect in the old pass's two quadratic
-loops, and it was fixed separately before this landed. The parser layer GROWS by roughly a
-hundred lines. What shrinks is what has to be held in the head: one fixpoint, one mutual
-dependence and two functions are gone, and a row's kind is now a thing a consumer declares rather
-than a shape the parser infers.
+loops, and it was fixed separately before this landed. **It is not a code reduction.** Measured in
+production lines only (`*.spec.*`, `__testing__`, `__snapshots__` and docs excluded): parser +136,
+tree +115, seam +50, slots +26, shared +20, storybook +31, React +21, Vue +14 — **net +418**. What
+shrinks is what has to be held in the head: one fixpoint, one mutual dependence and two functions
+are gone, and a row's kind is now a thing a consumer declares rather than a shape the parser
+infers.
 
 Costs, accepted and declared. An inline mark can no longer span a row boundary — a markup that
 means to must declare `row`, and it then matches anywhere instead of at offset 0 alone. A typed

@@ -233,7 +233,7 @@ describe('parseRows', () => {
 	})
 
 	/**
-	 * BEHAVIOUR CHANGE (ADR-0011). An inline mark can no longer span a row boundary: the rows are
+	 * BEHAVIOUR CHANGE (ADR-0010). An inline mark can no longer span a row boundary: the rows are
 	 * carved first and each body is matched on its own. What used to make these shapes work — a
 	 * match hiding the separator occurrences inside its extent — is exactly the mutual dependence
 	 * the inversion removes. A markup that means to span rows declares `row` and gets a closing

@@ -8,7 +8,7 @@ title: "RowNode"
 Defined in: [core/src/features/tokens/tree/types.ts:57](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L57)
 
 A first-class block row (issue 08): block layout's only root kind, carved by the row scanner
-from the structural separator and TYPED by its own opener (ADR-0011). Never a child of a mark
+from the structural separator and TYPED by its own opener (ADR-0010). Never a child of a mark
 or another row. A paragraph is a Row with no kind at all — its children are the plain text and
 inline marks of the whole line.
 

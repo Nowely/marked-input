@@ -86,7 +86,7 @@ export class Parser {
 	}
 
 	/**
-	 * Parses text into rows — block layout's top level (ADR-0011: the skeleton is scanned
+	 * Parses text into rows — block layout's top level (ADR-0010: the skeleton is scanned
 	 * before the inlines are parsed).
 	 *
 	 * TWO passes, no fixpoint. {@link scanRows} carves the rows by reading each row's own start,

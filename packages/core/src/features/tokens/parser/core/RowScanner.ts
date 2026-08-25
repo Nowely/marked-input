@@ -4,7 +4,7 @@ import type {RowConfig, RowToken} from '../types'
 import type {MarkupDescriptor} from './MarkupDescriptor'
 
 /**
- * The block skeleton, carved BEFORE any inline matching (ADR-0011). One linear pass over the
+ * The block skeleton, carved BEFORE any inline matching (ADR-0010). One linear pass over the
  * value: at each row's own start it reads the row's kind from the literals there, and everything
  * between that row's body edges is left for the inline pass to parse.
  *

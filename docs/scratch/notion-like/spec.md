@@ -837,6 +837,8 @@ structural, and a row's *lead* and *opener* join it as structural bytes no caret
 is no longer deferred. **New ADR-0011, "The block skeleton is scanned before inlines are parsed"** —
 and its case is the concept count, with the measured split stated: the 12× belongs to P0's loop fix,
 the inversion's own margin is ~1.2×, and the parser layer grows ~+100 lines.
+*(Landed in P1 as ONE record, `ADR-0010`, merging the two above; the parser grew +136 and the whole
+change +418 production lines. `0011` is unused — the next new ADR takes it, not `0012`.)*
 **ADR-0006 amended by ADR-0012, "The editor owns undo"**: the guard stays fail-closed, and
 `historyUndo`/`historyRedo` become expressed rather than dropped. **ADR-0007 is upheld and
 strengthened** — row pairing stays kind-only, and `Pairing` widens to pre-order so a re-parent and a
