@@ -118,10 +118,19 @@ _Avoid_: managed, bound, external
 The state in which the editor owns the value, seeded once from a default. An edit lands immediately.
 _Avoid_: internal, self-managed, local
 
+**Edit record**:
+One edit the document actually took: the two **Value**s it moved between, the splice that did it,
+and the selection it was made from. Recorded when the value MOVES, not when the edit is made — in
+**Controlled** mode those are a round trip apart, and an emission the parent never echoes is not an
+edit record at all ([ADR-0012](docs/adr/0012-the-editor-owns-undo.md)). Undo and redo are a record
+replayed, backwards or forwards; the editor keeps no other history state.
+_Avoid_: undo entry, transaction, change, patch, delta
+
 ## Relationships
 
 - A **Value** is the projection of the **Token**s; every write changes tokens and the value follows
 - A **Pairing** is how a **Token** keeps its identity across a write the value alone cannot explain
+- An **Edit record** holds the **Pairing** its edit claimed, which is what an undo replays it by
 - A **Mark** is a **Token**; a **Row** is **Block layout**'s node, formed by the **Separator**, and nested under another Row by its **Lead**
 - An **Option** declares the **Markup** a **Mark** serialises to, or — with `row` — the **Row kind** it types a Row as
 - A **Mark** may own a **Slot**, which holds further **Token**s

@@ -29,6 +29,24 @@ if (anchors) store.edit.replace(anchors.anchor, anchors.head, text)
 
 Controlled editors emit `onChange` first and update the accepted value after the matching prop echo.
 
+## Undo and Redo
+
+The editor keeps its own stack, in both value modes. `Ctrl/Cmd+Z` undoes and `Shift+Ctrl/Cmd+Z` redoes; so do the `historyUndo` and `historyRedo` input types, which is how the Edit menu and trackpad gestures arrive. Native browser undo stays swallowed — every input path cancels its default, so the browser's own stack is empty by construction.
+
+An undo restores the value AND the caret the edit was made from, and it replays the edit's own splice, so a row keeps its identity across an undone move. Consecutive characters typed forward within 500ms are one entry; every row verb — a move, a duplicate, a turn-into — is its own entry, and so is a paste.
+
+Wire your own controls to the same stack:
+
+```ts
+store.history.canUndo() // reactive: safe to read inside a computed
+store.history.undo()    // answers whether the document moved
+store.history.redo()
+```
+
+In a controlled editor an entry is recorded only once your `onChange` has echoed the value back. An emission you decline leaves nothing behind, and a value you write yourself — a reset, a change from elsewhere — leaves `canUndo()` false until the document is back at an entry the editor recorded.
+
+Pass `history={false}` to turn both keys back into no-ops.
+
 ## Deleting Around Marks
 
 Collapsed Backspace/Delete asks the tree for the mark ADJACENT to the caret anchor. If there is one, core deletes the whole mark. Otherwise it steps the anchor one character and deletes that span.
