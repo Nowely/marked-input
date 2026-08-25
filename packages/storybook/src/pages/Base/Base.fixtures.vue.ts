@@ -32,3 +32,19 @@ export const marks = {
 }
 
 export const Overlay = defineComponent({template: `<span>I'm here!</span>`})
+
+/**
+ * Spec fixtures: a row KIND that paints its own child rows. React delivers them as the `rows`
+ * PROP and Vue as the `rows` SLOT, which is the one place the two adapters' row contract
+ * differs — so the shared spec needs one fixture per framework to read it at all.
+ *
+ * The row props are DECLARED for `marks.vue.ts`'s reason: vue puts every undeclared prop onto
+ * the root element, so `node` and `depth` would face React's bare `<li>` as attributes.
+ */
+export const rows = {
+	Bullet: defineComponent({
+		inheritAttrs: false,
+		props: {meta: String, node: {type: null}, depth: Number, index: Number},
+		template: '<li><slot /><slot name="rows" /></li>',
+	}),
+}

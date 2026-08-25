@@ -6,6 +6,7 @@ import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import {dispatchInsertText} from '../../shared/lib/inputEvents'
 import {Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
+import {rows} from './Base.fixtures'
 
 /**
  * Nesting, driven through the DOM in both adapters. Framework-free on purpose: the two `Rows`
@@ -72,5 +73,44 @@ describe('nested rows', () => {
 
 		await userEvent.keyboard('Y')
 		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('alphaYbeta')
+	})
+
+	/**
+	 * THE ROW KIND'S OWN HALF of the contract, which the paragraph cases above cannot reach: a
+	 * paragraph takes its child rows as ordinary children of `slots.block`, while a KIND takes
+	 * them through the `rows` prop (React) or the `rows` slot (Vue). A kind that never receives
+	 * them paints nothing where they should be — the rows stay in the value, off the screen, and
+	 * out of `bind` with their anchors.
+	 *
+	 * The child nested here is a PARAGRAPH on purpose. A lead is written as text at the row's own
+	 * start, and a typed row has no anchorable position there — its opener sits in the way — so
+	 * indenting a bullet under a bullet needs `setDepth`, whose gesture is the keymap phase's.
+	 * Indenting a paragraph under a bullet is reachable today and exercises the same delivery.
+	 */
+	it("paints a kind's child rows inside the kind's own element, and types into them", async () => {
+		const onChange = vi.fn<(value: string) => void>()
+		const {host} = await mountComponent({
+			defaultValue: '- alpha\nbeta',
+			...BLOCK,
+			options: [{markup: '- __slot__', row: {Component: rows.Bullet}}],
+			onChange,
+		})
+		expect(rowsOf(host)).toHaveLength(2)
+		expect(host.querySelector('li')?.textContent).toBe('alpha')
+
+		await focusAtStart(rowsOf(host)[1])
+		dispatchInsertText(host, '\t')
+
+		await expect.poll(() => rowsOf(host)).toHaveLength(1)
+		expect(onChange).toHaveBeenLastCalledWith('- alpha\n\tbeta')
+
+		const nested = host.querySelector('li [class*="Block"]')
+		if (!(nested instanceof HTMLElement)) throw new Error('the kind painted no child row')
+		expect(nested.textContent).toBe('beta')
+
+		await focusAtEnd(nested)
+		await userEvent.keyboard('X')
+
+		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('- alpha\n\tbetaX')
 	})
 })

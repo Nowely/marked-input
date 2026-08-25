@@ -1,4 +1,4 @@
-import type {MarkProps} from '@markput/react'
+import type {MarkProps, RowProps} from '@markput/react'
 
 import {Button} from '../../shared/components/Button'
 
@@ -22,3 +22,17 @@ export const marks = {
 }
 
 export const Overlay = () => <span>I'm here!</span>
+
+/**
+ * Spec fixtures: a row KIND that paints its own child rows. React delivers them as the `rows`
+ * PROP and Vue as the `rows` SLOT, which is the one place the two adapters' row contract
+ * differs — so the shared spec needs one fixture per framework to read it at all.
+ */
+export const rows = {
+	Bullet: ({children, rows: childRows, ref}: RowProps) => (
+		<li ref={ref}>
+			{children}
+			{childRows}
+		</li>
+	),
+}
