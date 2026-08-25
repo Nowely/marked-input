@@ -65,15 +65,70 @@ export function adopt(
 			head: offsetOfAnchor(prev, selectionBefore.head),
 		}
 
-		const out: TreeNode[] = []
-
 		/**
-		 * Same-index pairing over one sibling list (spec §4.2 step 3). Pairing on the
-		 * descriptor is not decoration: `descriptor` is readonly, so adopting across
-		 * descriptors would leave a node whose markup disagrees with the parse and
-		 * `snapshot` would re-annotate with the old one, breaking output equivalence.
+		 * ONE SIBLING LIST, at any depth: the nodes entirely before the window, the nodes entirely
+		 * after it, and index pairing for what is left between them.
+		 *
+		 * The two bounds are load-bearing rather than an economy. Content that repeats with the
+		 * edited span's own period keeps comparing equal past the edit, so equality alone walks
+		 * THROUGH the changed nodes and pushes the removals onto untouched ones instead — deleting
+		 * the middle of `'@[a](m)'` ×3 removed the third mark, and the mirrored walk deleting
+		 * `{1,8}` killed the first instead of the second (both in `adopt.spec.ts`).
+		 *
+		 * It runs at EVERY depth, which is what the root list used to have to itself. A slot's or a
+		 * row's children were paired by index alone, so an insertion in the middle of one re-labelled
+		 * every sibling after it: typing a cell delimiter into column 2 of a five-column row handed
+		 * columns 3–5 the node objects of the columns before them, and everything a consumer keys by
+		 * node identity moved with them.
 		 */
 		function adoptSiblings(candidates: readonly TreeNode[], tokens: readonly (Token | RowToken)[]): TreeNode[] {
+			// A verified permutation REPLACES the walks rather than composing with them: every
+			// hinted pair is already proven byte-equal under its own shift, so a positional bound
+			// has nothing left to claim.
+			if (rowPairs) return pairByIndex(candidates, tokens)
+
+			let head = 0
+			while (
+				head < candidates.length &&
+				head < tokens.length &&
+				candidates[head].position.end <= window.start &&
+				snapshotNodeEquals(candidates[head], tokens[head], 0)
+			) {
+				head++
+			}
+
+			let candidateTail = candidates.length - 1
+			let tokenTail = tokens.length - 1
+			const tail: TreeNode[] = []
+			while (
+				candidateTail >= head &&
+				tokenTail >= head &&
+				candidates[candidateTail].position.start >= window.end &&
+				snapshotNodeEquals(candidates[candidateTail], tokens[tokenTail], delta)
+			) {
+				if (delta !== 0) shiftPositions(candidates[candidateTail], delta)
+				tail.unshift(candidates[candidateTail])
+				candidateTail--
+				tokenTail--
+			}
+
+			return [
+				...candidates.slice(0, head),
+				...pairByIndex(candidates.slice(head, candidateTail + 1), tokens.slice(head, tokenTail + 1)),
+				...tail,
+			]
+		}
+
+		/**
+		 * Same-index pairing over one sibling list (spec §4.2 step 3), which is what the window
+		 * bounds above leave undecided: a merged or unrelated token landing at the same index
+		 * inherits the id, and §7.1 permits that because it gates identity only OUTSIDE the window.
+		 *
+		 * Pairing on the descriptor is not decoration: `descriptor` is readonly, so adopting across
+		 * descriptors would leave a node whose markup disagrees with the parse and `snapshot` would
+		 * re-annotate with the old one, breaking output equivalence.
+		 */
+		function pairByIndex(candidates: readonly TreeNode[], tokens: readonly (Token | RowToken)[]): TreeNode[] {
 			const result: TreeNode[] = []
 			for (let index = 0; index < tokens.length; index++) {
 				const token = tokens[index]
@@ -149,75 +204,11 @@ export function adopt(
 			if (!sameNodes(next, children)) node.children(next)
 		}
 
-		// A verified permutation REPLACES the three walks rather than composing with them, and
-		// that is forced rather than chosen: all three pair by INDEX — prefix `prev[p]↔parsed[p]`,
-		// suffix decrementing both tails together, middle slicing both arrays from the same `p` —
-		// which is exactly why today's reorder outcome does not depend on the window at all. Once
-		// every hinted pair is proven byte-equal under its own shift, the walks have nothing left
-		// to claim.
 		const rowPairs = window.pairing && resolvePairing(prev, parsed, window.pairing)
 
+		let out: readonly TreeNode[] = prev
 		batch(() => {
-			if (rowPairs) {
-				// `adoptSiblings` over the whole parse, with the keyed lookup deciding every row:
-				// it writes each node's new position from its token, recurses into slots and child
-				// rows, and — because a verified pair is equal in content — writes no signal.
-				out.push(...adoptSiblings(prev, parsed))
-				if (!sameNodes(out, prev)) tree.roots(out)
-				return
-			}
-			// 1. Prefix: byte/position-equal AND entirely before the window. The window
-			// bound is load-bearing: content that repeats with the deleted span's own period
-			// keeps matching past the edit, so equality alone walks THROUGH the deleted nodes
-			// and pushes the removals onto nodes outside the window instead (deleting the
-			// middle of '@[a](m)' x3 removes the third mark — AC-3.1; see adopt.spec.ts).
-			let p = 0
-			while (
-				p < prev.length &&
-				p < parsed.length &&
-				prev[p].position.end <= window.start &&
-				snapshotNodeEquals(prev[p], parsed[p], 0)
-			) {
-				out.push(prev[p])
-				p++
-			}
-
-			// 2. Suffix: equal under +delta AND entirely after the window. Mirrored bound and
-			// mirrored consequence: on repeated content the walk otherwise runs THROUGH the
-			// edit, pairing prev[tail] with a token it did not come from, so the removal lands
-			// on the wrong repeat (deleting {1,8} of '@[a](m)' x3 kills the first mark instead
-			// of the second — see adopt.spec.ts). Same-index pairing below cannot undo that:
-			// what the suffix walk claims is out of the middle's reach.
-			let prevTail = prev.length - 1
-			let nextTail = parsed.length - 1
-			const suffix: TreeNode[] = []
-			while (
-				prevTail >= p &&
-				nextTail >= p &&
-				prev[prevTail].position.start >= window.end &&
-				snapshotNodeEquals(prev[prevTail], parsed[nextTail], delta)
-			) {
-				if (delta !== 0) shiftPositions(prev[prevTail], delta)
-				suffix.unshift(prev[prevTail])
-				prevTail--
-				nextTail--
-			}
-
-			// 3. Middle: same-index pairing, recursing into slots. At THIS level pairing is
-			// best-effort continuity — a merged or unrelated token landing at the same index
-			// inherits the id — and §7.1 permits that because it gates identity only OUTSIDE
-			// the window, which is exactly what the two walks already claimed.
-			//
-			// The slot recursion carries no such bound: §4.2's gap-derived slot-local window
-			// is deliberately NOT implemented in this phase, so in-slot pairing is unbounded
-			// index pairing. Measured cost — '#[@[a](m) @[a](m) tail]' with the FIRST inner
-			// mark deleted (window {2,9}) retains that mark and drops the SECOND one
-			// instead, taking ' tail' at [17,22] — a node entirely past window.end — out of
-			// the tree with it (pinned in adopt.spec.ts). Diffing this file against §4.2
-			// must read that as a scoped omission, not an oversight.
-			out.push(...adoptSiblings(prev.slice(p, prevTail + 1), parsed.slice(p, nextTail + 1)))
-
-			out.push(...suffix)
+			out = adoptSiblings(prev, parsed)
 			if (!sameNodes(out, prev)) tree.roots(out)
 		})
 

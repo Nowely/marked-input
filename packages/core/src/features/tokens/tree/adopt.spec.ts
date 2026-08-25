@@ -270,28 +270,51 @@ describe('adopt: middle pairing and descend', () => {
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('#[@[a](m) ]')))
 	})
 
-	it('in-slot deletion of the FIRST of two identical child marks kills the wrong sibling', () => {
-		// PINS A KNOWN-IMPERFECT OUTCOME, mirroring the test above. §4.2's gap-derived
-		// slot-local window is not implemented, so the slot recursion is unbounded index
-		// pairing with no bound to refuse the wrong repeat: deleting the FIRST inner mark
-		// retains it and removes the SECOND, and ' tail' at [17,22] — entirely past
-		// window.end = 9 — is dropped with it. Output equivalence still holds, which is why
-		// nothing else catches this. Implementing the slot-local window must flip this test
-		// deliberately.
+	it('in-slot deletion of the FIRST of two identical child marks keeps the SECOND and the tail', () => {
+		// The mirror of the test above, and the case the window bounds exist for: on repeated
+		// content, equality alone pairs the surviving mark with the token the DELETED one produced.
+		// Unbounded, this retained the first mark, removed the second, and took ' tail' at [17,22]
+		// — entirely past window.end = 9 — out of the tree with it. Output equivalence held either
+		// way, which is why nothing but an identity oracle catches it.
 		const tree = createTokenTree(parser.parse('#[@[a](m) @[a](m) tail]'))
 		const captured = captureTree(tree.roots())
 		const outer = tree.roots()[1]
 		if (outer.kind !== 'mark') throw new Error('expected mark')
-		const [, first, , second, tail] = outer.children()
+		const [edge, first, gap, second, tail] = outer.children()
 		expect(tail.position).toEqual({start: 17, end: 22})
 
 		adopt(tree, {start: 2, end: 9, insertedLength: 0}, parser.parse('#[ @[a](m) tail]'))
 
 		const after = tree.roots()[1]
 		if (after.kind !== 'mark') throw new Error('expected mark')
-		expect(after.children()[1].id).toBe(first.id)
-		expect(diffTree(captured, tree.roots()).removed).toEqual([second.id, tail.id])
+		// The separating text between the two marks is what survives as the slot's new leading
+		// text: it sits past the window and matches byte for byte, so the walk claims it and the
+		// zero-width text the deleted mark was edged by is what leaves with the mark.
+		expect(after.children().map(child => child.id)).toEqual([gap.id, second.id, tail.id])
+		expect(diffTree(captured, tree.roots()).removed).toEqual([edge.id, first.id])
 		expect(stripIds(snapshot(tree.roots()))).toEqual(stripIds(parser.parse('#[ @[a](m) tail]')))
+	})
+
+	it('an insertion in the MIDDLE of a nested list leaves every later child its own node', () => {
+		// THE identity oracle for the in-slot bound, on the shape a document reaches it by: a row's
+		// child rows are a sibling list like any other, so an item written between two of them used
+		// to hand every item after it the node of the item before — ids shifted by one down the
+		// whole list, and with them everything a consumer keys by node identity.
+		const listParser = new Parser(['- __slot__'], [true])
+		const config = {separator: '\n', indent: '\t'}
+		const source = '- a\n\t- b\n\t- c\n\t- d'
+		const tree = createTokenTree(listParser.parseRows(source, config))
+		const root = tree.roots()[0]
+		if (root.kind !== 'row') throw new Error('expected row')
+		const [b, c, d] = root.rows()
+
+		const next = '- a\n\t- b\n\t- X\n\t- c\n\t- d'
+		adopt(tree, {start: 8, end: 8, insertedLength: 5}, listParser.parseRows(next, config))
+
+		const after = tree.roots()[0]
+		if (after.kind !== 'row') throw new Error('expected row')
+		expect(after.rows().map(row => row.slot())).toEqual(['b', 'X', 'c', 'd'])
+		expect([after.rows()[0], after.rows()[2], after.rows()[3]]).toEqual([b, c, d])
 	})
 })
 

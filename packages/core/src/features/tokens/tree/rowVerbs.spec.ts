@@ -211,10 +211,13 @@ describe('mergeWith', () => {
 		const after = rowsOf(store)
 		expect(after.length).toBe(2)
 		expect(after[0]).toBe(root)
-		// MEASURED COST, not a claim: the grandchild shifts up one slot in the parent's child
-		// list, and in-slot pairing is unbounded index pairing (`adopt.ts`), so the node that
-		// continues as the grandchild is the merged-away CHILD's. Bounding that walk is P9's,
-		// and this is the pin that turns red when it lands.
+		// MEASURED COST, not a claim, and NOT the one bounding the in-slot walk answers — that
+		// landed and this stayed green. The boundary is `{1,3}` and the merged-away child spans
+		// `[2,8]`, so it is INSIDE the window: no positional bound can pair the grandchild's token
+		// with the grandchild's node, because that node sits one level DOWN, inside the child the
+		// merge is deleting, while its token is now a sibling of the survivor's own text. Only a
+		// cross-level claim could say so, and `Pairing` is a permutation — equal lengths on both
+		// sides — which a merge that removes a row cannot be.
 		expect(after[1]).toBe(child)
 		expect(after[1]).not.toBe(grand)
 	})
