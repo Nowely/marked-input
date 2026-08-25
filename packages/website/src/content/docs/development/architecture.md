@@ -449,13 +449,22 @@ binds the row's element, the `className` and the `style` core resolved for it. I
 where the row's own inline `children` and its child `rows` go, and a component that paints neither
 is a contract rather than a bug — core cannot see whether a component reads a prop, so a kind that
 drops `rows` keeps its children in the value and off the screen, and a kind that drops `children`
-is an ATOMIC row whose text round-trips and drags but takes no caret. Anything ELSE such a
-component paints is document content until it says otherwise: every element inside the one editing
-host is text the caret can enter and the browser can edit, and `bind`'s sibling freeze does not
-reach it — that walk runs from a MARK's root down to its slot host, and a row IS its own host. A
-checkbox, a toggle arrow or a language `<select>` therefore takes `useControlRef()`, the adapter
+is an ATOMIC row whose text round-trips and drags and has no editable surface. Anything ELSE such
+a component paints is document content until it says otherwise: every element inside the one
+editing host is text the caret can enter and the browser can edit, and `bind`'s sibling freeze does
+not reach it — that walk runs from a MARK's root down to its slot host, and a row IS its own host.
+A checkbox, a toggle arrow or a language `<select>` therefore takes `useControlRef()`, the adapter
 hook over `TokenModel.control()`, which writes the `contenteditable="false"` that makes it atomic
 and puts it on the path the DOM→model walk stops at.
+
+TAKING NO CARET IS A CALL AND NOT A CONSEQUENCE, and the difference is what a user meets. Dropping
+`children` is what makes a row atomic in the VALUE; it does nothing to the DOM, so an unfrozen
+atomic row is a panel a click or an ArrowDown parks a blinking caret inside, where every keystroke
+is silently swallowed. An atomic kind wraps its whole interior in one element carrying
+`useControlRef()`. It also OWES ITS OWN CONTENT A SEED — `menu.text` on its `/` entry — because an
+empty atomic body can never be filled through the editor, and after such an insert the caret has
+nowhere to go at all: `choose` turns THIS ROW into the kind, so nothing a consumer writes asks for
+the empty row underneath.
 
 A ROW MAY CARVE ITS OWN BODY instead of nesting under it. A kind declaring `split: {at, as}` has
 its body taken apart at the literal, and each piece is an ordinary Row of the option `as` names —
