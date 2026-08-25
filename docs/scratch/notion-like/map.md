@@ -96,6 +96,18 @@ becomes a ticket here.
 - **Half of [03](issues/03-row-node-not-nameable.md) landed**: `RowNode` and
   `RowProps` are exported from core and both adapters. `Store` still is not, so
   the ticket stays open.
+- **The row verbs are addressed in PRE-ORDER, and each one splices the narrowest span it can**
+  (2026-08-25, P4). `turnInto(option, patch)` and `splitAt(anchor)` are new; `remove`,
+  `duplicate`, `insertAfter` and `mergeWith` were each wrong under nesting for the same reason —
+  they read the ROOT list, where the last root and the last row are different rows and a parent's
+  span covers its children's. Three answers of "final" and two of "the boundary between two rows"
+  collapsed into `endsDocument` and `rowBoundary`. Costs declared: a split places its tail after
+  the head's whole SUBTREE, because a row at the parent's lead written directly under it adopts
+  the parent's children; a merge into a typed row removes that row's opener, so the survivor keeps
+  the FIRST row's kind; and a retype that changes a row's emptiness can re-parent the row after it,
+  which no `Pairing` can express. `moveTo` is untouched — P5 owns the common-ancestor splice.
+  Ticket [11](issues/11-overlay-inserts-one-markup.md)'s missing half is now reachable:
+  `turnInto` takes the new body text, so strip-and-retype is one commit.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
