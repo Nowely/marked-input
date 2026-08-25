@@ -67,9 +67,10 @@
  *
  * The same column template on every line is what aligns a run of them, and no wrapper element
  * exists in the tree to hang a real table off. A `display: table-row` line would align too — CSS
- * wraps consecutive table-row siblings in one anonymous table box — but it was MEASURED to cost
- * the caret: in controlled mode, typing at the end of a cell of a table-display line puts the
- * caret back at the cell's start, and the same is true of a flex line. A grid line keeps it.
+ * wraps consecutive table-row siblings in one anonymous table box — and either is available: the
+ * caret does not read a formatting context, which is pinned per display in
+ * `storybook/src/pages/Base/caret.spec.ts`. The reading that once said otherwise was a stale one:
+ * a shrunk table cell simply puts a CLICK where a full-width block does not.
  *
  * The template is the SHOWCASE's, the way its chip tones are: five columns, the first one wide.
  */

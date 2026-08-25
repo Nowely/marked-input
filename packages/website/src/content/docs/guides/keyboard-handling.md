@@ -27,6 +27,8 @@ if (anchors) store.edit.replace(anchors.anchor, anchors.head, text)
 
 `store.edit.replace(from, to, replacement)` moves the caret for you, to the end of what it inserted; the pair is normalized, so `from` after `to` is legal. To move the caret without editing, write `store.tokens.selection.select(anchor)`.
 
+It also reads the live selection into `store.tokens.selection` before it commits, because `selectionchange` is delivered on a task of its own: a caret that has moved since the last one leaves the stored anchors naming where it was, and an edit is addressed from the DOM. So "where the caret was" — the position an undo goes back to, and the one a controlled echo maps into a post-edit caret — is always the browser's reading at the moment of the edit. A selection the editor cannot resolve, one inside a registered control root or a consumer's own `contenteditable` island, leaves the stored anchors standing.
+
 Controlled editors emit `onChange` first and update the accepted value after the matching prop echo.
 
 ## Undo and Redo

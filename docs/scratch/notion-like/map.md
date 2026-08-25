@@ -454,23 +454,25 @@ becomes a ticket here.
   rather than "the first line of a run". What stays unreachable is the ACCESSIBLE
   SEMANTICS: `role="row"` without a `role="table"` ancestor is a lie, so the showcase
   carries neither, and the table announces itself as a stack of rows.
-- **A grid line, not a table line, and the caret is why.** Measured on a minimal editor
-  with no package code in it, in CONTROLLED mode: typing at the end of a cell of a
-  `display: table-row` line puts the caret back at that cell's START, so the `@` picker
-  never opens there. `table-row`/`table-cell`, `table-row`/`block`, `block`/`table-cell`
-  and `flex`/`block` all reset it; `grid`/`block` and plain blocks keep it. Not filed as
-  a core defect because the fix is a consumer's CSS choice and the mechanism is
-  Chromium's own caret repair over a non-block formatting context — but it is the reason
-  the showcase's database is a grid, and any consumer reaching for `display: table` is
-  reaching for a caret bug.
-- **An UNDO restores the value and not the caret, in a real browser.** `HistoryModel`'s
-  own spec pins the caret to the offset the edit was made from, against core's selection
-  state; driven through the React adapter — controlled and uncontrolled, with and
-  without a row kind — the DOM caret lands at the END of the restored text. Reproduced
-  on a plain editor with no options at all, so it is neither the showcase's nor the
-  package's, and it is unpinned in both adapters: the P8 browser spec asserts values
-  only. Whoever picks it up owns the seam between `replay`'s caret write and the paint
-  that follows it.
+- ~~**A grid line, not a table line, and the caret is why.**~~ and ~~**An UNDO restores the
+  value and not the caret.**~~ P11 filed these as two defects with two mechanisms —
+  Chromium's caret repair over a non-block formatting context, and a seam between
+  `replay`'s caret write and the paint after it. **Both readings are wrong, and they were
+  ONE defect** (P11.5). The caret was written, and it reached the DOM; it was written to
+  the position the editor last BELIEVED the caret was at. `selectionchange` is delivered
+  on a task, so between a caret moving and the browser saying so the stored anchors name
+  where it WAS — and an edit is addressed from the DOM, because a `beforeinput` names its
+  own span. Core then took two more readings for the same edit off the stale mirror: the
+  history entry's `selectionBefore`, and the pre-image a controlled echo maps into a
+  post-edit caret. The display value chose nothing: it chose where `userEvent.click`
+  landed, since a shrunk `table-cell` box puts a click mid-text where a full-width `block`
+  box puts it at the end. Forcing ONE `selectionchange` before the edit takes all six
+  display pairs to the same right answer, which is the measurement that separates the two
+  stories. Fixed by having `EditController.replace` re-read the DOM into the stored
+  anchors before it commits; pinned per display and per mode in
+  `pages/Base/caret.spec.ts` and `pages/Base/history.spec.ts`, both run by both adapters,
+  and at core's own layer in `EditController.spec.ts`. The showcase's database stays a
+  grid — the template aligns the run, which was always the other half of the reason.
 - **A kind whose component paints no `{children}` is an ATOMIC row, and saying so is a
   CALL.** The properties panel, the table of contents, the metric grid, the board, the
   bookmark, the view bar and the comment thread all render leaves that take STRINGS, so
