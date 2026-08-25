@@ -6,16 +6,6 @@ import type {PropsModel} from '../state/PropsModel'
 import {hasCells} from '../tokens'
 import type {RowConfig, RowNode, RowPlacement, TokenModel, TreeNode} from '../tokens'
 
-/**
- * Which side of a row's own LINE a drop lands on. Named `edge` rather than `position` on purpose:
- * ADR-0003's address-space check greps for `.position`, and a `drop.position` field trips it as
- * a false positive — dodging the word is cheaper than narrowing the gate.
- *
- * The LINE and not the box, and nesting is what makes the difference: a parent's box covers its
- * whole subtree, so its lower half is its children rather than its own trailing edge.
- */
-export type DropEdge = 'before' | 'after'
-
 /** One answer of {@link BlockController.rowAt}'s search: which row, its box, and whether it HOLDS the point. */
 type Hit = {id: number; rect: DOMRect; contained: boolean}
 
@@ -637,7 +627,9 @@ export class BlockController {
 		if (row?.kind !== 'row') return undefined
 
 		const lineBottom = this.#lineBottom(row, hit.rect)
-		const edge: DropEdge = clientY < (hit.rect.top + lineBottom) / 2 ? 'before' : 'after'
+		// Which side of the row's own LINE — the LINE and not the box, because a parent's box covers
+		// its subtree, so its lower half is its children rather than its own trailing edge.
+		const edge = clientY < (hit.rect.top + lineBottom) / 2 ? 'before' : 'after'
 		const candidates = this.tokens.dropPlacements(moved, row, edge)
 		if (candidates.length === 0) return undefined
 

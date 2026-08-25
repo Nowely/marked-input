@@ -47,6 +47,21 @@ In a controlled editor an entry is recorded only once your `onChange` has echoed
 
 Pass `history={false}` to turn both keys back into no-ops.
 
+## Selecting Rows
+
+Where the value splits into rows, `Esc` turns the caret into a ROW SELECTION: the whole row it sits in, and one level wider on each press after that. `Shift+ArrowUp`/`Shift+ArrowDown` grow the selection by a row — absorbing that row whole, so growing past a first child reaches its parent — and `Ctrl/Cmd+A` widens a nested row selection to the row it is nested in before it selects the whole document.
+
+There is no separate row-selection state: a row is selected exactly while the text selection spans it whole, so the browser paints it and every read is one call.
+
+```ts
+store.block.selected() // reactive: the ids of the selected rows, in document order
+store.block.move({parent: null, index: 2}) // move them, as one splice
+```
+
+An arrow key is only ever intercepted once a row selection stands, and `Esc` defers to an open overlay. An EMPTY row cannot be row-selected on its own — its content is zero-width, so a caret resting in one sits at both of its edges — but it is selected as part of a range that spans its neighbours.
+
+Dragging a row's grip carries the whole row selection when the gripped row is part of it, and that row alone otherwise. Where the drop lands — including how DEEP — comes from the pointer: its vertical position names the gap between two lines, its horizontal position names one of the depths that gap legally admits, and every candidate is planned before it is offered, so the drop indicator promises rather than predicts.
+
 ## Deleting Around Marks
 
 Collapsed Backspace/Delete asks the tree for the mark ADJACENT to the caret anchor. If there is one, core deletes the whole mark. Otherwise it steps the anchor one character and deletes that span.

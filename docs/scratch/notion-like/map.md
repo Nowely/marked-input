@@ -333,6 +333,70 @@ becomes a ticket here.
   equal-length permutation, which a merge that removes a row cannot be, and the grandchild's node
   is one level below the row being deleted while its token is now a sibling of the survivor's text.
   Only a cross-level claim could pair them.
+- **A ROW SELECTION IS THE TEXT SELECTION, read at row granularity** (2026-08-25, P10).
+  `store.block.selected` is a `Computed` over `(nodes(), selection.anchors())` — the maximal rows
+  the selection covers WHOLE — and there is no second store. That is what makes Esc, Shift+arrows
+  and Mod+A one `select` call each and nothing else: a store of selected ids would need pruning on
+  every commit, re-pairing across every adoption and reconciling with the caret, three clocks for a
+  fact the selection already carries, and the DOM paints it for free. All four gestures ask
+  `tokens.rowScope(anchors, scope)`, so no two keys can disagree about what one level wider means.
+  Declared costs: an EMPTY row cannot be row-selected on its own (its content is zero-width, so a
+  caret in one sits at both of its edges — `isAllSelected`'s own refusal read at the row); Esc
+  defers to an open overlay; and Shift+arrows are consumed only once a row selection stands, by the
+  same test that says there is nothing to grow.
+- **The hit test is two searches, and the nearest fallback is ROOT-ONLY.** A parent's box CONTAINS
+  its children's, so the flat binary search over roots always answered the outermost row and every
+  nested drag would have been a root drag. `rowAt` binary-searches the roots and then runs the same
+  search over the hit row's own child rows. Inside a parent the leftover space IS the parent's own
+  line, so a nearest CHILD would claim a point its parent owns — a distinction the flat search never
+  had to make. A CARVED row is a leaf: pointing anywhere in a table line answers the LINE.
+- **The collapse hazard is answered by walking, not by giving up.** A row hidden by a collapsed
+  ancestor is still in the tree and still bound, and it has no box to be ordered by; the old code
+  abandoned the whole document the moment one row on its path was unbound. A probe that lands on an
+  unpainted row now walks outward to the nearest painted one. Paintedness is
+  `getClientRects().length === 0`, measured: `getBoundingClientRect()` answers all zeros for a
+  hidden element and cannot be told from a real box at the origin, and without the distinction a
+  hidden row among painted siblings sends the search the wrong way and the row above it becomes
+  unhoverable.
+- **A drop RESOLVES a placement at `dragover`, and the indicator promises rather than predicts.**
+  The pointer's Y names a gap — read off the hit row's own LINE, since a parent's box covers its
+  children — and its X names a depth inside it. Which depths a gap offers is bounded by the scan's
+  ceiling above and the next line's depth below (go shallower and that line becomes a CHILD of what
+  was dropped), and then every candidate is PLANNED by P5's mover; the refused ones are never
+  painted. `state.drop` therefore holds the placement that will happen together with the line that
+  says so, and `rootIndexOf` is deleted with its last caller. The indent unit is MEASURED off the
+  document — the hit row is inset from the parent the descent came through — so core reads a depth
+  out of a horizontal position without knowing one CSS rule.
+- **The mover took a SET, and that could not be a loop.** Two verbs cannot compose in controlled
+  mode, so `movePlan` widened rather than being called repeatedly: the set is normalized to maximal
+  subtrees inside the plan (the pre-order list is the only place "is this row inside that one" is
+  answerable), each run carries its own depth delta, and every named root lands as a sibling of the
+  others in document order. One observable consequence: a row NAMED in a move is re-led even when it
+  keeps its position and its depth, which normalizes a surplus indent run — the verb's documented
+  behaviour, previously unreachable.
+- **A CELL is not draggable, and that is the whole answer for a carved row.** A piece has no line of
+  its own and the pre-order walk names none, so a cell can be neither moved nor made a destination;
+  the hit test stops at the line and Esc inside a cell selects the LINE. Nothing about this is a new
+  rule — it is `rowOf`'s and `preorderRows`' existing reading, now stated at the mover.
+- **A cross-parent drop keeps the NODE and loses the COMPONENT, measured in both adapters** (P10).
+  The deferred experiment the spec owed came back negative: a row that changes parent moves between
+  two different framework parents, and neither React nor Vue can carry a DOM element or a component
+  instance across that boundary, so consumer state held in a row component resets while `node.id`
+  comes through unchanged. That is the measurement the spec said would buy
+  `store.block.collapsed` — a core-owned, node-keyed store of per-row view state. NOT built here:
+  this phase is selection and drag, and a keyed signal registry is its own change with its own
+  pruning clock.
+- **Driving the pin in Vue found a defect one layer down.** `DomModel.selectRange` normalizes its
+  pair with `Range.comparePoint`, whose premise is that both boundaries live under the one editing
+  host; a framework re-parenting a row replaces its element and `bound` pulses per registration, so
+  a pulse can land while one end has just left the document. `comparePoint` throws there, and in Vue
+  it escaped as an unhandled rejection with no selection applied at all. Both ends are checked for
+  being connected now, and the refusal is self-healing — the last registration of the same patch
+  pulses `bound` again.
+- **`rowAtPoint(clientX, clientY)` was NOT built, and the spec's own paragraph is why.** P10 puts
+  cross-axis hit-testing explicitly out of scope in the same breath, which leaves `clientX` a
+  parameter with no reader; the depth the pointer's X chooses is a DROP question, answered where the
+  X is already in hand. `rowAt(clientY)` keeps its name and gains the descent.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
