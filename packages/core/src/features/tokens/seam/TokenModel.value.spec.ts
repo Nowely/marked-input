@@ -267,7 +267,7 @@ describe('TokenModel value boundary', () => {
 	 * joined by the OLD separator while every read reaches for the new one.
 	 */
 	describe('the separator that joins the current roots', () => {
-		const BLOCK = {layout: 'block', Mark: () => null, options: [], defaultValue: 'a\n\nb'} as const
+		const BLOCK = {layout: 'block' as const, Mark: () => null, options: [], defaultValue: 'a\n\nb'}
 
 		const detachedAfterSeparatorMove = (): Store => {
 			const store = new Store()

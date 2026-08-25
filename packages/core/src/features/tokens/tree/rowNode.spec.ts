@@ -15,7 +15,9 @@ const SEPARATOR = {separator: '\n\n'}
 
 const rowTree = (markups: Markup[], value: string, rows: boolean[] = []) => {
 	const parser = new Parser(markups, rows)
-	return {parser, tree: createTokenTree(parser.parseRows(value, SEPARATOR), undefined, SEPARATOR.separator)}
+	const tree = createTokenTree(parser.parseRows(value, SEPARATOR))
+	tree.separator(SEPARATOR.separator)
+	return {parser, tree}
 }
 
 describe('RowNode', () => {

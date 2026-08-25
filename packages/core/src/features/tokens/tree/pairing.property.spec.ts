@@ -32,7 +32,11 @@ const ITERATIONS = 200
 const ROW_CONFIG = {separator: '\n\n'}
 const parseRows = (value: string) => parser.parseRows(value, ROW_CONFIG)
 
-const buildTree = (value: string) => createTokenTree(parseRows(value), undefined, ROW_CONFIG.separator)
+const buildTree = (value: string) => {
+	const tree = createTokenTree(parseRows(value))
+	tree.separator(ROW_CONFIG.separator)
+	return tree
+}
 
 interface Case {
 	seed: number

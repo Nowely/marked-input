@@ -37,12 +37,7 @@ export function createTokenTree(
 	 * through; an unwired node's verbs answer `false`, which is the same fail-closed answer a
 	 * dead node gives.
 	 */
-	commands?: () => TreeCommands | undefined,
-	/**
-	 * The separator `tokens` were parsed under. Optional because an inline tree has no rows to
-	 * join; see {@link TokenTree.separator}.
-	 */
-	initialSeparator?: string
+	commands?: () => TreeCommands | undefined
 ): TokenTree {
 	let nextId = 1
 	const alloc = (): Id => nextId++
@@ -120,7 +115,9 @@ export function createTokenTree(
 	// Explicit generic for the same reason as `children` above.
 	const roots = signal<readonly TreeNode[]>({initial: tokens.map(buildNode)})
 
-	const separator = signal<string | undefined>({initial: initialSeparator})
+	// No initial: an inline tree has no rows to join, and the boundary writes this at the first
+	// fold. See {@link TokenTree.separator}.
+	const separator = signal<string>()
 	const value = computed(() => joinNodes(roots(), separator()))
 
 	return {roots, separator, value, buildNode}

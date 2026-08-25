@@ -456,7 +456,8 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 
 describe('boundary: a separator adopts rows (issue 08)', () => {
 	function blockSetup(source: string, rowConfig: () => RowConfig | undefined) {
-		const tree = createTokenTree(parseRowsValue(undefined, source, {separator: '\n\n'}), undefined, '\n\n')
+		const tree = createTokenTree(parseRowsValue(undefined, source, {separator: '\n\n'}))
+		tree.separator('\n\n')
 		const boundary = createBoundary({
 			tree,
 			parser: () => undefined,

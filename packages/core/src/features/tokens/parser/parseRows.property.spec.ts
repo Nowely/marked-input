@@ -126,7 +126,8 @@ describe('parseRows properties', () => {
 
 		for (let i = 0; i < ITERATIONS; i++) {
 			const value = generateTypedDocument()
-			const tree = createTokenTree(parser.parseRows(value, ROW_CONFIG), undefined, SEPARATOR)
+			const tree = createTokenTree(parser.parseRows(value, ROW_CONFIG))
+			tree.separator(SEPARATOR)
 
 			expect(tree.value(), `iteration ${i}, value ${JSON.stringify(value)}`).toBe(value)
 		}
