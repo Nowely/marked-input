@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
 import {Parser} from '../parser/Parser'
-import {adjacentMark, anchorAt, anchorEquals, offsetOfAnchor, stepAnchor} from './anchors'
+import {adjacentMark, anchorAt, anchorEquals, offsetOfAnchor, slotWithout, stepAnchor} from './anchors'
 import {createTokenTree} from './tree'
 
 const parser = new Parser(['@[__value__]'])
@@ -225,5 +225,56 @@ describe('stepAnchor', () => {
 		expect(anchorAt(roots, 3)).toEqual({after: mark})
 		expect(stepAnchor(roots, {node: ab, offset: 2}, 1)).toBeUndefined()
 		expect(stepAnchor(roots, {node: cd, offset: 0}, -1)).toBeUndefined()
+	})
+})
+
+describe('slotWithout', () => {
+	const rowParser = new Parser(['# __slot__'], [true])
+	const rows = (source: string) =>
+		createTokenTree(rowParser.parseRows(source, {separator: '\n', indent: '\t'})).roots()
+
+	it('cuts the span out of the row it sits in', () => {
+		const roots = rows('plain row/')
+		const row = roots[0]
+		if (row.kind !== 'row') throw new Error('expected a row')
+		const text = row.inline()[0]
+		if (text.kind !== 'text') throw new Error('expected a row text child')
+
+		expect(slotWithout(roots, row, {anchor: {node: text, offset: 9}, head: {node: text, offset: 10}})).toBe(
+			'plain row'
+		)
+	})
+
+	it("answers the whole body for an empty span, and '' for the whole body", () => {
+		const roots = rows('# heading')
+		const row = roots[0]
+		if (row.kind !== 'row') throw new Error('expected a row')
+		const text = row.inline()[0]
+		if (text.kind !== 'text') throw new Error('expected a row text child')
+
+		expect(slotWithout(roots, row, {anchor: {node: text, offset: 3}, head: {node: text, offset: 3}})).toBe(
+			'heading'
+		)
+		expect(slotWithout(roots, row, {anchor: {node: text, offset: 0}, head: {node: text, offset: 7}})).toBe('')
+	})
+
+	/**
+	 * FAIL CLOSED, which is {@link splitPlan}'s rule at the other end: a caret in another row
+	 * cannot address this one's content, and a span reaching past the body would otherwise slice
+	 * with an offset the body does not have.
+	 */
+	it('refuses a span that is not inside this row', () => {
+		const roots = rows('one\ntwo')
+		const first = roots[0]
+		if (first.kind !== 'row') throw new Error('expected a row')
+		const other = roots[1]
+		if (other.kind !== 'row') throw new Error('expected a row')
+		const otherText = other.inline()[0]
+		if (otherText.kind !== 'text') throw new Error('expected a row text child')
+
+		expect(slotWithout(roots, first, {anchor: 'start', head: 'end'})).toBeUndefined()
+		expect(
+			slotWithout(roots, first, {anchor: {node: otherText, offset: 0}, head: {node: otherText, offset: 1}})
+		).toBeUndefined()
 	})
 })

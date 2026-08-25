@@ -46,6 +46,10 @@ export type {
 	CoreOption,
 	// `CoreOption.row`'s type: a consumer declaring a row kind separately needs the name.
 	RowSpec,
+	// `CoreOption.menu`'s type and what `overlay.entries` hands a menu component: a consumer
+	// writing that component declares both.
+	MenuSpec,
+	MenuEntry,
 	CSSProperties,
 	CoreSlots,
 	DataAttributes,

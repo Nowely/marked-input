@@ -25,6 +25,7 @@ import {
 	boundarySpan as findBoundarySpan,
 	entryAnchor,
 	offsetOfAnchor,
+	slotWithout,
 	stepAnchor,
 } from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
@@ -323,6 +324,14 @@ export class TokenModel {
 			const index = node.option()
 			return index === undefined ? undefined : this.props.options()[index]?.row
 		})
+	}
+
+	/**
+	 * A row's body once `span` is cut out of it — see {@link slotWithout}. What a caller with a
+	 * span to remove hands to `turnInto`'s `text`, so the removal and the retype are one splice.
+	 */
+	slotWithout(row: RowNode, span: Anchors): string | undefined {
+		return untracked(() => slotWithout(this.#tree.roots(), row, span))
 	}
 
 	/** The projection of the span between two anchors — {@link value} restricted to a window (see {@link sliceNodes}). */

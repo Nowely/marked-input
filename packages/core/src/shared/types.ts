@@ -77,7 +77,38 @@ export interface CoreOption {
 		/** Rows the built-in Suggestions overlay filters against the match value. */
 		data?: readonly Suggestion[]
 	}
+	/**
+	 * ONE contribution to the row menu an overlay offers, and its PRESENCE is what puts the option
+	 * there — an option that declares a menu entry IS the menu, so no list of kinds is written
+	 * anywhere else and no consumer component filters one.
+	 */
+	menu?: MenuSpec
 }
+
+/** What an option declares to appear in {@link OverlayController.entries}. */
+export interface MenuSpec {
+	/** What the row shows, and the only text the typed query is matched against. */
+	label: string
+	/** A heading a consumer may group entries under. Core neither sorts nor groups by it. */
+	section?: string
+	/** Extra query terms that never appear on screen — `'h1'` for Heading 1. */
+	keywords?: readonly string[]
+	/**
+	 * SEEDS for the row this entry writes, and both are DATA rather than a callback: the entry
+	 * says what the row starts as, and `choose` is the only thing that writes it. They apply only
+	 * where there is nothing to keep — a row that already has text keeps its own body, since a
+	 * turn-into must not discard what the user typed.
+	 */
+	meta?: string
+	text?: string
+}
+
+/**
+ * A row-menu entry, as an overlay hands it out: the option that contributed it, plus what to
+ * paint. `mode` is NOT here — insert-versus-turn-into is a fact about the CARET'S ROW, one per
+ * open overlay rather than one per entry, so it lives on {@link OverlayController.mode}.
+ */
+export type MenuEntry = {option: CoreOption; label: string; section?: string}
 
 /**
  * A row of the built-in Suggestions overlay. A bare string is label and value at once, which is

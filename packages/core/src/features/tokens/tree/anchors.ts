@@ -213,3 +213,24 @@ export function entryAnchor(node: TreeNode): NodeAnchor {
 	if (first?.kind === 'text') return {node: first, offset: 0}
 	return {before: node}
 }
+
+/**
+ * A row's own body with `span` CUT OUT of it — the body text a retype writes when the caller has
+ * a span to remove in the same splice. The slash menu is that caller: it strips its own trigger
+ * and applies a kind at once, because two verbs cannot compose in controlled mode.
+ *
+ * Anchors in, TEXT out, so the arithmetic stays here (ADR-0003): the caller holds a span it got
+ * from a match and a row it got from {@link rowOf}, and neither of those is an offset.
+ *
+ * `undefined` — fail closed — for a span that is not inside this row's own body, which is
+ * {@link splitPlan}'s rule read at the other end: a caret in another row cannot address this
+ * one's content.
+ */
+export function slotWithout(roots: readonly TreeNode[], row: RowNode, span: Anchors): string | undefined {
+	const slot = row.slotRange()
+	const from = offsetOfAnchor(roots, span.anchor)
+	const to = offsetOfAnchor(roots, span.head)
+	if (from > to || from < slot.start || to > slot.end) return undefined
+	const body = row.slot()
+	return body.slice(0, from - slot.start) + body.slice(to - slot.start)
+}
