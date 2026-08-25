@@ -24,6 +24,10 @@ const rowStore = (defaultValue: string, options: CoreOption[] = []) => {
 	return store
 }
 
+/** A kind that CARVES its body, and the anonymous kind its pieces take — a table line and a cell. */
+const CELL: CoreOption = {row: {Component: 'td'}}
+const TABLE: CoreOption = {markup: '|__slot__', row: {Component: 'tr', continues: true, split: {at: ' | ', as: CELL}}}
+
 /** The anchor at `offset` inside a row's own body, which is what a caret in that row is. */
 const inBody = (row: RowNode, offset: number): NodeAnchor => {
 	const text = row.inline()[0]
@@ -768,6 +772,40 @@ describe('moveTo', () => {
 		// An editor with no separator has no rows to rejoin and no row list to place into.
 		store.props.set({separator: null})
 		expect(first.moveTo({parent: null, index: 1})).toBe(false)
+	})
+
+	/**
+	 * THE CARVED HALF of the clamp above: a row whose kind carves its body takes no children
+	 * either, for the same reason an empty one does not — the scan reads its lead run and grants
+	 * none. Its `rows()` are its own PIECES, so a placement naming it as the parent asks to become
+	 * a cell, and the lead the splice would write parses back one level shallower.
+	 */
+	it('refuses a placement under a CARVED row, whose children are its own body', () => {
+		const store = rowStore('| a | b\nx', [TABLE, CELL])
+		const [line, , , x] = rowsOf(store)
+
+		expect(x.moveTo({parent: line, index: 0})).toBe(false)
+		expect(x.setDepth(1)).toBe(false)
+
+		expect(store.tokens.value()).toBe('| a | b\nx')
+		expect(line.rows().map(cell => cell.slot())).toEqual([' a', 'b'])
+	})
+
+	/**
+	 * A MOVED table line keeps its own node AND its cells', which is the pairing read at a depth
+	 * the pre-order walk must not descend into: the pieces of a carved row are not rows of the
+	 * document, so counting them on the token side alone leaves the two sides of the bijection
+	 * disagreeing, the pairing refused, and the moved lines re-labelled by index — byte-identical
+	 * either way, which is why only an object oracle sees it.
+	 */
+	it('carries a carved row and its pieces through a move with their nodes', () => {
+		const store = rowStore('| a | b\n| c | d', [TABLE, CELL])
+		const [first, a, b, second, c, d] = rowsOf(store)
+
+		expect(second.moveTo({parent: null, index: 0})).toBe(true)
+
+		expect(store.tokens.value()).toBe('| c | d\n| a | b')
+		expect(rowsOf(store)).toEqual([second, c, d, first, a, b])
 	})
 
 	/** With nesting off there is no indent unit to write a lead with, so only root moves exist. */
