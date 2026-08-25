@@ -189,6 +189,30 @@ describe('Shift+arrows grow the row selection', () => {
 		expect(selectionRange(store)).toEqual({start: 0, end: 10})
 	})
 
+	/**
+	 * AT THE DOCUMENT'S EDGE THERE IS NOTHING TO ABSORB, and that is not the same "nothing" as no
+	 * row selection: leaving the key native lets the browser move the focus end off the row
+	 * boundary, which collapses the very selection the gesture was extending. The press consumes
+	 * the key and changes nothing.
+	 */
+	it('consumes the key at both document edges rather than letting the browser take it', () => {
+		const {store, container} = mount()
+		caretAt(store, 1)
+		press(store, container, 'Escape')
+		expect(selectedSlots(store)).toEqual(['aa'])
+
+		expect(press(store, container, 'ArrowUp', {shiftKey: true}).defaultPrevented).toBe(true)
+		expect(selectedSlots(store)).toEqual(['aa'])
+		expect(selectionRange(store)).toEqual({start: 0, end: 10})
+
+		caretAt(store, 12)
+		press(store, container, 'Escape')
+		expect(selectedSlots(store)).toEqual(['dd'])
+
+		expect(press(store, container, 'ArrowDown', {shiftKey: true}).defaultPrevented).toBe(true)
+		expect(selectedSlots(store)).toEqual(['dd'])
+	})
+
 	it('leaves an arrow alone until a row selection stands', () => {
 		const {store, container} = mount()
 		caretAt(store, 5)

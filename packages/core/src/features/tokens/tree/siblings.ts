@@ -178,7 +178,8 @@ export function rowsWithin(
  * - `'up'` / `'down'` — the covered span with the neighbouring row ABSORBED WHOLE. It only grows,
  *   and absorbing whole is what keeps it from getting stuck: extending up from a first child
  *   reaches its parent, whose subtree already covers the child, so the selection becomes the
- *   parent rather than an impossible span that covers neither.
+ *   parent rather than an impossible span that covers neither. At the document's edge there is no
+ *   neighbour and the answer is the span already held — the key is still the gesture's.
  *
  * Every arm but `'row'` answers `undefined` when the span covers no whole row, which is what keeps
  * an arrow key native until a row selection actually stands (ADR-0002's rule that nothing may
@@ -225,7 +226,11 @@ export function rowScope(
 	// would wrap a grow upward from the document's first row onto its last.
 	const step = scope === 'up' ? first - 1 : last + preorderRows([rows[last].row]).length
 	const neighbour = step < 0 ? undefined : rows.at(step)
-	if (!neighbour) return undefined
+	// AT THE DOCUMENT'S EDGE THE ANSWER IS WHAT IS HELD, not `undefined`: a row selection stands
+	// and there is simply no row left to absorb. Declining here left the key native, and the
+	// browser's own Shift+Arrow then moves the focus end off the row boundary — so a gesture that
+	// should do nothing DESTROYED the selection instead.
+	if (!neighbour) return held
 	const absorbed = rowSpan(roots, neighbour.row, separator)
 	return {start: Math.min(held.start, absorbed.start), end: Math.max(held.end, absorbed.end)}
 }
