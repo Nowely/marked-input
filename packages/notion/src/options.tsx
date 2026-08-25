@@ -565,11 +565,16 @@ export const tableLine: Option = {
 export const tableFooter: Option = {
 	markup: '|+ __slot__',
 	row: {
-		Component: ({children, ref, className, style}: RowProps) => {
+		Component: ({children, node, ref, className, style}: RowProps) => {
 			const controlRef = useControlRef()
 			return (
 				<div ref={ref} className={cls(className, theme.block, theme.tableFooter)} style={style}>
-					<button className={theme.tableFooterAction} ref={controlRef} type="button">
+					<button
+						className={theme.tableFooterAction}
+						onClick={() => node.turnInto(tableLine, {text: `\n|+ ${node.slot()}`})}
+						ref={controlRef}
+						type="button"
+					>
 						+ New
 					</button>
 					<span className={theme.tableFooterSummary}>{children}</span>

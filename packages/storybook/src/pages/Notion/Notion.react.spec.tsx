@@ -345,6 +345,32 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * THE PAYOFF OF `useControlRef`, driven: a control a row's component painted calls a verb on
+	 * its OWN node and the document is what changes. Three of them, each asserted through the
+	 * emitted value — the callout's tone, the fence's language, and the footer's `+ New`.
+	 *
+	 * `+ New` is the interesting one. A row's component sees only its own row and the published
+	 * verbs insert AFTER a row, so a footer cannot add a line above itself with `insertAfter`.
+	 * What it can do is retype ITSELF as the new line and let the reparse put the footer back:
+	 * `turnInto` takes a body, a body carrying the separator becomes two rows, and that is one
+	 * splice — which is what controlled mode needs, since the tree has not moved when a verb
+	 * returns.
+	 */
+	it('drives the document from a consumer’s own controls', async () => {
+		const callout = await mountControlled(Showcase, '> [!warning] Careful\n\tchild')
+		await page.elementLocator(callout.host).getByRole('button').first().click()
+		await expect.poll(callout.value).toBe('> [!danger] Careful\n\tchild')
+
+		const fence = await mountControlled(Showcase, '```bash\nls\n```')
+		await page.elementLocator(fence.host).getByRole('combobox').selectOptions('sql')
+		await expect.poll(fence.value).toBe('```sql\nls\n```')
+
+		const table = await mountControlled(Showcase, '|= Task | Owner\n| a | b\n|+ Count 1\nafter')
+		await page.elementLocator(table.host).getByRole('button', {name: '+ New'}).click()
+		await expect.poll(table.value).toBe('|= Task | Owner\n| a | b\n| \n|+ Count 1\nafter')
+	})
+
+	/**
 	 * THE WHOLE ATOMIC SET, read as a set rather than as two elements. A kind whose component
 	 * paints no `{children}` has no document surface inside it, so everything it paints must sit
 	 * under a `contenteditable="false"` root — otherwise a click or an arrow parks a blinking
@@ -431,6 +457,11 @@ describe('undo', () => {
 		await userEvent.keyboard('{Meta>}z{/Meta}')
 		await expect.poll(value).toBe('- alpha\n- beta')
 		expect(window.getSelection()?.focusNode?.textContent).toBe('beta')
+		// THE LIMIT, PINNED AS A NUMBER. `focusNode` alone reads the same under the defect and
+		// under its fix, so it recorded nothing. 4 is the end of the restored text; 2 is where the
+		// edit was made from and is what core's own selection state says. The day the DOM follows
+		// core here, this line reddens and the comment above it stops being true.
+		expect(window.getSelection()?.focusOffset).toBe(4)
 
 		await userEvent.keyboard('{Meta>}{Shift>}z{/Shift}{/Meta}')
 		await expect.poll(value).toBe('- alpha\n- beXYta')
