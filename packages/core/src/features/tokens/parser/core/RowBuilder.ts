@@ -115,9 +115,9 @@ function mergeExtents(matches: Match[]): PositionRange[] {
 }
 
 /**
- * The first row boundary at or after `position`. `findSeparators` emits its
- * occurrences in ascending order, so the lookup is a lower bound — the match a
- * linear scan would have stopped at, without walking every earlier boundary.
+ * The first row boundary at or after `position`. Requires `separators` ascending
+ * by `start`, which is how `findSeparators` emits them, so the lookup is a lower
+ * bound.
  */
 function firstBoundaryFrom(separators: PositionRange[], position: number): PositionRange | undefined {
 	let left = 0
@@ -143,7 +143,9 @@ function firstBoundaryFrom(separators: PositionRange[], position: number): Posit
  * leading marker from a trailing delimiter and extends the wrong way.
  *
  * Mutates `gaps` and `end` in place; matches arrive sorted by start, so every
- * enclosing slot is already closed when its children are visited.
+ * enclosing slot is already closed when its children are visited. `separators`
+ * must be ascending by `start` too — the boundary lookup is a binary search, and
+ * an unsorted list answers with whatever element the halving lands on.
  */
 export function closeTrailingGaps(matches: Match[], separators: PositionRange[], valueLength: number): void {
 	const enclosing: Match[] = []

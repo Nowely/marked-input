@@ -16,6 +16,13 @@ import {TreeBuilder} from './TreeBuilder'
  * once a scan of the whole other list. This file is the oracle for the walk and
  * the binary search that replaced those scans: the naive shape is kept here, so
  * equivalence is asserted against runnable code rather than against a claim.
+ *
+ * RETIRE THIS FILE WITH THE ROW PASS. The oracle is a copy of `rowPass` whole, not
+ * of the two answers alone, so it also pins rules P0 never touched: change the
+ * closure scope or the fixpoint and it reddens under a name that blames the walk.
+ * Once the parser carves the block skeleton first, `rowPass` is gone and this
+ * asserts equality with a pass that no longer exists — delete it then, do not
+ * re-copy the production code into it.
  */
 
 const FAKER_SEED = 8_252_026
@@ -173,27 +180,27 @@ function serialize(rows: RowToken[]): string {
 
 // ── Cost corpus ─────────────────────────────────────────────────────────────
 
-function generateLargeDocument(rows: number, separator: string): string {
-	const lines: string[] = []
-	for (let index = 0; index < rows; index++) {
+function generateLargeDocument(count: number, separator: string): string {
+	const rows: string[] = []
+	for (let index = 0; index < count; index++) {
 		switch (index % 7) {
 			case 0:
-				lines.push(`# Heading ${index}`)
+				rows.push(`# Heading ${index}`)
 				break
 			case 1:
-				lines.push(`text ${index} **bold ${index}** tail`)
+				rows.push(`text ${index} **bold ${index}** tail`)
 				break
 			case 2:
-				lines.push(`hi @[user${index}](id${index}) there`)
+				rows.push(`hi @[user${index}](id${index}) there`)
 				break
 			case 3:
-				lines.push('- ')
+				rows.push('- ')
 				break
 			default:
-				lines.push(`plain paragraph number ${index} with some filler words`)
+				rows.push(`plain paragraph number ${index} with some filler words`)
 		}
 	}
-	return lines.join(separator)
+	return rows.join(separator)
 }
 
 /**
