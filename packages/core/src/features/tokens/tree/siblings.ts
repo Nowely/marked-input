@@ -1,37 +1,39 @@
 import {depthCeiling} from '../parser/core/RowScanner'
 import type {RowConfig} from '../parser/types'
+import {rowBoundary} from './anchors'
 import {preorderRows} from './rows'
 import {rowContent, sliceNodes} from './tree'
 import type {Pairing, RowNode, TreeNode, Window} from './types'
 
 /**
- * Removing the boundary between two adjacent ROWS, expressed as a REPLACEMENT OF THE FIRST:
- * the boundary is the separator between them, and deleting it is the whole merge — reparse
- * decides what the joined text becomes (issue 08's markdown-like policy: a paragraph merging
- * into a heading is absorbed by its trailing slot). No kind gate on the merged CONTENT: any
- * adjacent rows merge.
+ * Removing the boundary between two rows, as the window that holds them apart — see
+ * {@link rowBoundary} for what is in it. Deleting it is the whole merge; reparse decides what the
+ * joined text becomes (issue 08's markdown-like policy). No kind gate on the merged CONTENT: any
+ * adjacent rows merge, and the survivor keeps the FIRST row's kind because the second row's
+ * opener is part of the boundary.
+ *
+ * ADJACENT IN PRE-ORDER, not in the root list, and the difference is the whole of nesting: a
+ * parent's boundary is with its FIRST CHILD, whose span starts inside the parent's own. Reading
+ * the spans as `node.position.end === next.position.start` refused every parent/child pair, which
+ * is every Backspace at the start of an indented row.
  *
  * `undefined` when the pair has no boundary to remove, fail-closed: either side is not a row
  * (only rows are separated), there is no configured separator, or the two are not actually
- * adjacent. The last cannot arise from a parse — roots TILE the document — and is checked
- * rather than assumed so a caller cannot splice across a gap it never looked at.
+ * adjacent. The last is checked rather than assumed so a caller cannot splice across a gap it
+ * never looked at, and the pre-order lookup is the liveness check with it.
  */
 export function mergePlan(
 	roots: readonly TreeNode[],
 	node: TreeNode,
 	next: TreeNode,
 	separator: string | undefined
-): {kept: string; at: number} | undefined {
+): {start: number; end: number} | undefined {
 	if (node.kind !== 'row' || next.kind !== 'row') return undefined
 	if (separator === undefined) return undefined
-	if (node.position.end !== next.position.start) return undefined
-	// Adjacency already proves the first row is not the document-final one, so its span carries
-	// exactly one separator — the one after its LAST descendant, since a row's span covers its
-	// subtree and the boundary between the pair sits at the end of it.
-	const contentEnd = node.position.end - separator.length
-	// The caret goes where the two halves join, which is the first row's content end in the
-	// PRE-splice coordinates — the caller resolves it against the post-splice tree.
-	return {kept: rowContent(node, separator), at: contentEnd}
+	const rows = preorderRows(roots)
+	const at = rows.findIndex(entry => entry.row === node)
+	if (at < 0 || rows[at + 1]?.row !== next) return undefined
+	return rowBoundary(node, next, separator)
 }
 
 /**

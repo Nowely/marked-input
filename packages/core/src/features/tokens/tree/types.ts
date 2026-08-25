@@ -203,12 +203,13 @@ export interface NodeCommands {
 	/** Raw markup spliced in at the node's trailing edge — the caller owns serialization. */
 	insertAfter(node: TreeNode, text: string): boolean
 	/**
-	 * Drop the boundary holding `node` and the sibling after it apart; `false` when there is
-	 * none — which is EVERY text node, since only a slot-leading mark carries a trailing
-	 * literal to remove.
+	 * Drop the boundary holding `node` and the row after it in PRE-ORDER apart — the separator,
+	 * that row's lead and its opener, so the survivor keeps `node`'s own kind. `false` when there
+	 * is no boundary: a non-row on either side, no configured separator, or a pair that is not
+	 * actually adjacent.
 	 *
 	 * PUBLISHED API with no in-repo caller since the block keyboard began resolving a row
-	 * merge through anchors (`beforeInput.ts`'s `anchorsForDelete` expands onto the separator
+	 * merge through anchors (`beforeInput.ts`'s `anchorsForDelete` expands onto the boundary
 	 * and the shared delete arm removes it). Kept for that contract — the `api.focus()`
 	 * precedent — and because it is the one verb that answers whether the pair HAD a boundary.
 	 */

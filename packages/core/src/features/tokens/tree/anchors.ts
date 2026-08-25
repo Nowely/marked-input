@@ -115,6 +115,10 @@ export function adjacentMark(roots: readonly TreeNode[], anchor: NodeAnchor, dir
  * STARTING at the anchor: Delete pressed at a row START merges that row into the previous one
  * (`Drag.spec`'s 'Delete at start of row'), and the earlier-row reading is what an empty row
  * between two boundaries needs to keep answering the row before it.
+ *
+ * "Ending at the anchor" is the next row's CONTENT start, not its line start: for a typed row the
+ * two differ by the opener, and the caret can only ever sit at the first of them — so matching on
+ * the line start left a Backspace at a typed row's first position matching no boundary at all.
  */
 export function boundarySpan(
 	roots: readonly TreeNode[],
@@ -127,22 +131,29 @@ export function boundarySpan(
 	const rows = preorderRows(roots).map(entry => entry.row)
 	// The document-final row is followed by nothing, so it can never open a boundary here —
 	// structural now that the join, not the row, decides who carries a separator.
-	const boundaries = rows.slice(0, -1).map((row, index) => ({
-		// A row's own line ends where its first child row starts, or at its own span's end; either
-		// way the separator is the last thing in it.
-		end: row.lineRange().end - separator.length,
-		next: rows[index + 1],
-	}))
-	const startOf = (row: RowNode): number => row.position.start + row.lead().length
+	const boundaries = rows.slice(0, -1).map((row, index) => rowBoundary(row, rows[index + 1], separator))
 	const boundary =
-		boundaries.find(candidate => startOf(candidate.next) === offset) ??
-		(direction === 1 ? boundaries.find(candidate => candidate.end === offset) : undefined)
+		boundaries.find(candidate => candidate.end === offset) ??
+		(direction === 1 ? boundaries.find(candidate => candidate.start === offset) : undefined)
 	if (!boundary) return undefined
-	// The head is WHERE THE NEXT ROW'S CONTENT BEGINS, and {@link entryAnchor} is the one reading
-	// of that the tree has. For a paragraph it is `startOf` exactly. For a typed row it is past
-	// the opener as well, because the lead and the opener together have no anchor between them —
-	// so the merge takes the whole structural run rather than half of it.
-	return {anchor: anchorAt(roots, boundary.end), head: entryAnchor(boundary.next)}
+	return {anchor: anchorAt(roots, boundary.start), head: anchorAt(roots, boundary.end)}
+}
+
+/**
+ * THE bytes between two rows adjacent in PRE-ORDER: the separator, the next row's LEAD and its
+ * OPENER — everything before the next row's own content, and none of it text the joined row may
+ * keep. Removing this span IS the row merge, which is why it is one function rather than a rule
+ * written twice: {@link boundarySpan} and `RowNode.mergeWith` address the same boundary from
+ * different ends, and answering differently is what let a Delete and a `mergeWith` at one
+ * boundary produce two documents.
+ *
+ * The start is the first row's own content end: a row's line ends where its first child row
+ * starts, or at its own span's end, and either way the separator is the last thing in it. The end
+ * is the next row's SLOT start, which is exactly where its first inline child — the one
+ * {@link entryAnchor} names — begins, so the caret has an anchor on both edges.
+ */
+export function rowBoundary(row: RowNode, next: RowNode, separator: string): {start: number; end: number} {
+	return {start: row.lineRange().end - separator.length, end: next.slotRange().start}
 }
 
 /**

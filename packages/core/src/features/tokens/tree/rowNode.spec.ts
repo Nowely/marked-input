@@ -180,6 +180,23 @@ describe('RowNode', () => {
 			// A paragraph is unchanged: its content begins right after the lead.
 			expect(merged('a\n\tb')).toBe('ab')
 		})
+
+		/**
+		 * BACKSPACE at a typed row's first caret position. The caret cannot sit in the opener, so
+		 * the only position it has in that row is its CONTENT start — and matching the boundary on
+		 * the row's LINE start meant no boundary was ever found there and Backspace fell through to
+		 * the character step, which fails closed against structural bytes and did nothing at all.
+		 */
+		it('finds the boundary from the next row CONTENT start, not its line start', () => {
+			const config = {separator: '\n', indent: '\t'}
+			const tree = createTokenTree(new Parser(['- __slot__'], [true]).parseRows('a\n- b', config))
+			tree.config(config)
+			const roots = tree.roots()
+
+			// '- b' spans [2,5]; its lead is empty and its body starts at 4, past the opener.
+			const span = boundarySpan(roots, anchorAt(roots, 4), -1, config.separator)
+			expect(span && [offsetOfAnchor(roots, span.anchor), offsetOfAnchor(roots, span.head)]).toEqual([1, 4])
+		})
 	})
 
 	it('enters a row at its first text child', () => {

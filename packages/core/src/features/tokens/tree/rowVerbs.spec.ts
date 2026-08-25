@@ -155,3 +155,56 @@ describe('insertAfter', () => {
 		expect(selectionRange(store)).toEqual({start: 12, end: 12})
 	})
 })
+
+describe('mergeWith', () => {
+	/**
+	 * A parent's boundary is with its FIRST CHILD, whose span begins INSIDE the parent's own —
+	 * so the span-adjacency test refused every parent/child pair, which is every Backspace at the
+	 * start of an indented row.
+	 */
+	it('merges a parent with its first CHILD', () => {
+		const store = rowStore('a\n\tb\n\t\tc')
+		const [root, child, grand] = rowsOf(store)
+
+		expect(root.mergeWith(child)).toBe(true)
+
+		// The grandchild re-parents onto the survivor at the clamp, keeping its surplus indent.
+		expect(store.tokens.value()).toBe('ab\n\t\tc')
+		expect(selectionRange(store)).toEqual({start: 1, end: 1})
+
+		const after = rowsOf(store)
+		expect(after.length).toBe(2)
+		expect(after[0]).toBe(root)
+		// MEASURED COST, not a claim: the grandchild shifts up one slot in the parent's child
+		// list, and in-slot pairing is unbounded index pairing (`adopt.ts`), so the node that
+		// continues as the grandchild is the merged-away CHILD's. Bounding that walk is P9's,
+		// and this is the pin that turns red when it lands.
+		expect(after[1]).toBe(child)
+		expect(after[1]).not.toBe(grand)
+	})
+
+	/**
+	 * The next row's OPENER leaves with the boundary, because the lead and the opener are one
+	 * structural run with no anchor between them. Keeping it turned the merged row's markup into
+	 * literal text — `'a# b'` — where the Backspace boundary at the same place answered `'ab'`.
+	 */
+	it('takes the next row KIND with the boundary, so the survivor keeps its own', () => {
+		const heading: CoreOption = {markup: '# __slot__', row: {Component: 'h1'}}
+		const into = rowStore('a\n# b', [heading])
+		const from = rowStore('# a\nb', [heading])
+
+		expect(rowsOf(into)[0].mergeWith(rowsOf(into)[1])).toBe(true)
+		expect(rowsOf(from)[0].mergeWith(rowsOf(from)[1])).toBe(true)
+
+		expect(into.tokens.value()).toBe('ab')
+		expect(from.tokens.value()).toBe('# ab')
+	})
+
+	it('refuses a pair that is not adjacent in pre-order', () => {
+		const store = rowStore('a\n\tb\nc')
+		const [root, , last] = rowsOf(store)
+
+		expect(root.mergeWith(last)).toBe(false)
+		expect(store.tokens.value()).toBe('a\n\tb\nc')
+	})
+})

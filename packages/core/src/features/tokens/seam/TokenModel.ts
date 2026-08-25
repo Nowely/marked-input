@@ -557,20 +557,22 @@ export class TokenModel {
 		},
 		insertAfter: (node, text) => this.#insertAfter(node, text),
 		/**
-		 * The boundary between the pair, removed by replacing the FIRST node with what survives
-		 * it. `next` keeps its own markup, so the merged row is `next`'s wrapping both slots, and
-		 * `node` is the one that survives adoption — it re-pairs at its own index, same
-		 * descriptor, so the merged row keeps the FIRST row's identity and `next`'s id is what
-		 * the commit reports removed.
+		 * The boundary between the pair, removed as the window that holds them apart. `node` is the
+		 * one that survives adoption — it re-pairs at its own index, same descriptor — so the merged
+		 * row keeps the FIRST row's identity AND its kind, and `next`'s id is what the commit
+		 * reports removed.
+		 *
+		 * The caret goes where the two halves join, which is the boundary's start read in the
+		 * PRE-splice coordinates and resolved against the post-splice tree.
 		 */
 		mergeWith: (node, next) => {
 			let merged = false
 			batch(() => {
 				const plan = untracked(() => mergePlan(this.#tree.roots(), node, next, this.#tree.config()?.separator))
 				if (!plan) return
-				if (!this.#applyStructural(node, plan.kept)) return
+				if (!this.#tx.applyRange({start: plan.start, end: plan.end, insertedLength: 0}, '')) return
 				merged = true
-				this.#applyCaret(this.anchorAt(plan.at))
+				this.#applyCaret(this.anchorAt(plan.start))
 			})
 			return merged
 		},
