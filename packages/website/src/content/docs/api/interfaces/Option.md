@@ -105,6 +105,26 @@ CoreOption.markup
 
 ***
 
+### menu?
+
+```ts
+optional menu: MenuSpec;
+```
+
+Defined in: [core/src/shared/types.ts:85](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L85)
+
+ONE contribution to the row menu an overlay offers, and its PRESENCE is what puts the option
+there — an option that declares a menu entry IS the menu, so no list of kinds is written
+anywhere else and no consumer component filters one.
+
+#### Inherited from
+
+```ts
+CoreOption.menu
+```
+
+***
+
 ### overlay?
 
 ```ts

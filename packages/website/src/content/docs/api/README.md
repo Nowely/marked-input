@@ -15,6 +15,7 @@ title: "@markput/react"
 - [MarkNode](/api/interfaces/marknode/)
 - [MarkProps](/api/interfaces/markprops/)
 - [MarkToken](/api/interfaces/marktoken/)
+- [MenuSpec](/api/interfaces/menuspec/)
 - [Option](/api/interfaces/option/)
 - [OverlayHandler](/api/interfaces/overlayhandler/)
 - [OverlayProps](/api/interfaces/overlayprops/)
@@ -28,6 +29,7 @@ title: "@markput/react"
 ## Type Aliases
 
 - [Markup](/api/type-aliases/markup/)
+- [MenuEntry](/api/type-aliases/menuentry/)
 - [NodeAnchor](/api/type-aliases/nodeanchor/)
 - [RowPlacement](/api/type-aliases/rowplacement/)
 - [TreeNode](/api/type-aliases/treenode/)
@@ -35,6 +37,7 @@ title: "@markput/react"
 ## Functions
 
 - [annotate](/api/functions/annotate/)
+- [BlockMenu](/api/functions/blockmenu/)
 - [denote](/api/functions/denote/)
 - [MarkedInput](/api/functions/markedinput/)
 - [useMark](/api/functions/usemark/)

@@ -206,8 +206,11 @@ export class OverlayController {
 	 * {text})`, and it is why the verb takes the body text at all. On a row holding nothing but
 	 * the trigger the entry's own `menu.text`/`menu.meta` seed the empty body; on a row that
 	 * already has text the body is kept, because a turn-into must not discard what was typed.
+	 *
+	 * An arrow for {@link select}'s reason: both adapters hand it straight to a menu component,
+	 * unbound.
 	 */
-	choose(pick: {option?: CoreOption; value?: string; meta?: string}): boolean {
+	readonly choose = (pick: {option?: CoreOption; value?: string; meta?: string}): boolean => {
 		// No hasOverlayTrigger guard needed: match is only ever set by #probeTrigger,
 		// which requires a trigger option, so a missing trigger means match() is undefined.
 		const match = this.match()

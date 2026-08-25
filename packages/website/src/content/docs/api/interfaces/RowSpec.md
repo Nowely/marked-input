@@ -5,7 +5,7 @@ prev: false
 title: "RowSpec"
 ---
 
-Defined in: [core/src/shared/types.ts:92](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L92)
+Defined in: [core/src/shared/types.ts:123](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L123)
 
 A row KIND's declaration: what an option adds to make its markup a row rather than a mark.
 
@@ -17,7 +17,7 @@ A row KIND's declaration: what an option adds to make its markup a row rather th
 Component: ElementType;
 ```
 
-Defined in: [core/src/shared/types.ts:97](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L97)
+Defined in: [core/src/shared/types.ts:128](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L128)
 
 REQUIRED. Every row kind renders through its own component; `slots.block` is the PARAGRAPH
 component — the row with no kind — and the only fallback left.
@@ -30,7 +30,7 @@ component — the row with no kind — and the only fallback left.
 optional continues: boolean;
 ```
 
-Defined in: [core/src/shared/types.ts:107](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L107)
+Defined in: [core/src/shared/types.ts:138](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L138)
 
 Does this kind CONTINUE into the row a split produces: splitting a row of this kind gives the
 tail the same kind AND the same `meta`, where by default the tail is a plain row. A list item
@@ -48,7 +48,7 @@ positions.
 optional indents: boolean;
 ```
 
-Defined in: [core/src/shared/types.ts:117](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L117)
+Defined in: [core/src/shared/types.ts:148](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L148)
 
 Does Tab / Shift+Tab re-indent a row of this kind, and does Tab belong to the editor at all
 while the caret is in one. Default false, so Tab still LEAVES THE FIELD everywhere else —
