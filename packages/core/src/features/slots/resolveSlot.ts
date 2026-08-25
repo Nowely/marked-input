@@ -1,4 +1,4 @@
-import type {CoreOption, CoreSlotProps, CoreSlots, RowSpec, Slot} from '../../shared/types'
+import type {CoreOption, CoreSlotProps, CoreSlots, Slot} from '../../shared/types'
 import {cx} from '../../shared/utils/cx'
 import {convertDataAttrs} from '../../shared/utils/dataAttributes'
 import type {TreeNode} from '../tokens'
@@ -36,8 +36,7 @@ type SlotProp = Record<string, unknown> | ((base: Record<string, unknown>) => Re
  * Internal view of a framework-specific Option for slot resolution.
  * Framework Option types (React, Vue) extend CoreOption with these properties.
  */
-export interface SlotOption extends Omit<CoreOption, 'overlay' | 'row'> {
-	row?: {Component?: Slot} & Omit<RowSpec, 'Component'>
+export interface SlotOption extends Omit<CoreOption, 'overlay'> {
 	Mark?: Slot
 	mark?: SlotProp
 	Overlay?: Slot
