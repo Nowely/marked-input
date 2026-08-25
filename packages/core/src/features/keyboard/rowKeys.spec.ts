@@ -865,6 +865,33 @@ describe('rowKeys the row keymap', () => {
 
 			expect(store.tokens.value()).toBe('- b')
 		})
+
+		it('PROMOTES the children of an empty row it un-types, which the encoding cannot avoid', () => {
+			// The kind rung on an EMPTY row empties the whole line, an empty row takes no children
+			// (`depthCeiling`), and the scan promotes them — declared for the verb at
+			// `rowVerbs.spec`'s "promotes the children of a row it empties", and pinned here
+			// because P6 is what turns it into a one-keystroke gesture. The children's bytes never
+			// change; the surplus indent survives in each promoted row's lead.
+			const {store, container} = keymap('- \n\t- b')
+			expect(store.tokens.nodes()).toHaveLength(1)
+			caretIn(store, 0, 0)
+
+			press(container, 'Backspace')
+
+			expect(store.tokens.value()).toBe('\n\t- b')
+			expect(store.tokens.nodes()).toHaveLength(2)
+			expect(rowsOf(store)[1].lead()).toBe('\t')
+		})
+
+		it('answers the same on ENTER, because there is one ladder', () => {
+			const {store, container} = keymap('- \n\t- b')
+			caretIn(store, 0, 0)
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('\n\t- b')
+			expect(store.tokens.nodes()).toHaveLength(2)
+		})
 	})
 
 	describe('Tab', () => {
