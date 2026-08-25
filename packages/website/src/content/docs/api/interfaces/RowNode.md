@@ -127,7 +127,7 @@ start: number;
 duplicate(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:157](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L157)
+Defined in: [core/src/features/tokens/tree/types.ts:165](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L165)
 
 #### Returns
 
@@ -157,7 +157,7 @@ readonly [`TreeNode`](/api/type-aliases/treenode/)[]
 insertAfter(text): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:158](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L158)
+Defined in: [core/src/features/tokens/tree/types.ts:166](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L166)
 
 #### Parameters
 
@@ -206,7 +206,7 @@ start: number;
 mergeWith(next): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:159](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L159)
+Defined in: [core/src/features/tokens/tree/types.ts:167](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L167)
 
 #### Parameters
 
@@ -226,7 +226,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:159](https://github.com/Nowe
 moveTo(index): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:160](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L160)
+Defined in: [core/src/features/tokens/tree/types.ts:168](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L168)
 
 #### Parameters
 
@@ -292,7 +292,7 @@ start: number;
 remove(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:156](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L156)
+Defined in: [core/src/features/tokens/tree/types.ts:164](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L164)
 
 See NodeCommands.
 
@@ -395,15 +395,19 @@ start: number;
 splitAt(at): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:154](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L154)
+Defined in: [core/src/features/tokens/tree/types.ts:162](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L162)
 
 Split this row at `at`: the body before the anchor stays, the body after it becomes a new row
 at the same lead, whose kind is this one when the kind `continues` and a plain row otherwise.
+A continuing kind carries its `meta` into the tail with it, so splitting a checked to-do
+gives two checked to-dos.
 
 The tail lands after this row's whole SUBTREE, not after its line, and that is forced rather
 than chosen: nesting is indentation and nothing else, so a row written directly under this
 one at this one's lead would adopt every child it has. Placing it past the subtree is the
-only reading under which a split never re-parents a row it was not asked about.
+only reading under which a split never re-parents a row it was not asked about. The one
+exception is the head that EMPTIES — an empty row takes no children — where the subtree
+follows the tail instead, which is Enter at a row's start.
 
 `false` for a non-row, for an editor with no separator to split at, and for an anchor outside
 this row's own body — a caret in another row cannot address this one's split point.
@@ -426,7 +430,7 @@ this row's own body — a caret in another row cannot address this one's split p
 turnInto(option, patch?): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:141](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L141)
+Defined in: [core/src/features/tokens/tree/types.ts:145](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L145)
 
 Retype this row: its kind becomes the one `option` declares, or a paragraph for `undefined`.
 The splice is the row's own LINE, so its id, its element and its child rows are untouched —
@@ -441,6 +445,10 @@ markup was reported and dropped, or one that is not in `options` at all — and 
 
 REPARSE DECIDES what comes back, as it does for a merge: a body carrying the separator
 becomes two rows, and a body whose own start matches a longer opener types as THAT kind.
+ONE consequence is worth naming, because it is the one case where the child rows are NOT
+untouched: retyping a row at depth 0 whose body is empty leaves an empty LINE, and an empty
+row takes no children, so the scan promotes them to roots. The encoding cannot express an
+empty parent; the surplus indent survives verbatim in each child's `lead`.
 
 #### Parameters
 

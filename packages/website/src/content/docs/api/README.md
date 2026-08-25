@@ -20,6 +20,7 @@ title: "@markput/react"
 - [OverlayProps](/api/interfaces/overlayprops/)
 - [RowNode](/api/interfaces/rownode/)
 - [RowProps](/api/interfaces/rowprops/)
+- [RowSpec](/api/interfaces/rowspec/)
 - [SlotProps](/api/interfaces/slotprops/)
 - [Slots](/api/interfaces/slots/)
 - [TextNode](/api/interfaces/textnode/)

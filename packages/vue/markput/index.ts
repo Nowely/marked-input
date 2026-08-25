@@ -20,3 +20,7 @@ export {watch} from '@markput/core'
 // S2.8 dropped it with `Token`/`TextToken`; S2.9 restores this one, and only it.
 export type {MarkToken, Markup} from '@markput/core'
 export type {MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from '@markput/core'
+// `Option.row`'s type. `@markput/core` already publishes it for the same reason; without it
+// here the published package's own `Option` page links a name nothing exports, and `continues`
+// is documented nowhere a consumer looks.
+export type {RowSpec} from '@markput/core'

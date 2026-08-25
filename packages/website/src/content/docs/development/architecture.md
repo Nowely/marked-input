@@ -428,20 +428,29 @@ row's own line. The projection joins rows in PRE-ORDER by the separator and each
 lead. A sibling list is painted by one `<Rows>` component at every depth.
 
 THE ROW VERBS live on `RowNode` and every one of them is addressed in pre-order, because once rows
-nest a root index stops naming a row. `turnInto(option, patch)` retypes a row: it splices the row's
-own LINE BODY, so the row keeps its id, its element and its child rows, and it takes an OPTION
+nest a root index stops naming a row. `turnInto(option, patch)` retypes a row: it splices inside the
+row's own LINE BODY, so the row keeps its id, its element and its child rows, and it takes an OPTION
 rather than a markup because only an option the editor compiled a kind from writes bytes the scan
-reads back. Its `patch.text` replaces the body, which is what makes a menu's strip-and-retype one
-commit. `splitAt(anchor)` opens the tail as a new row — its kind is this one when the kind declares
-`continues`, else a plain row — and places it after the row's whole SUBTREE, because a row written
-at the parent's lead directly under it would adopt every child the parent has. `mergeWith(next)`
-deletes the boundary between two rows adjacent in pre-order — the separator, the next row's lead
-and its opener — which is the same span a Backspace at that boundary removes, so the survivor keeps
-the FIRST row's kind. `remove()` takes the boundary BEFORE a document-final row with it, and
-`duplicate()` puts one back in front of a copy that would otherwise fuse; both ask the pre-order
-walk which row ends the document, since the last root and the last row are different rows once the
-document ends indented. `insertAfter(text)` splices at the row's span end — past its whole subtree
-— and moves the caret into the row that lands there.
+reads back — resolved by that option's MARKUP, the one identity that survives an adapter rebuilding
+its option objects. Inside the line the window is trimmed to the bytes that actually change, so the
+caret keeps naming its own character instead of collapsing onto the window's end. Its `patch.text`
+replaces the body, which is what makes a menu's strip-and-retype one commit. `splitAt(anchor)` opens
+the tail as a new row — its kind, and its `meta`, are this row's when the kind declares `continues`,
+else a plain row — and places it after the row's whole SUBTREE, because a row written at the
+parent's lead directly under it would adopt every child the parent has. The one exception is a head
+that EMPTIES: an empty row takes no children, so there the subtree follows the tail instead, which
+is Enter at a row's start. `mergeWith(next)` deletes the boundary between two rows adjacent in
+pre-order — the separator, the next row's lead and its opener — which is the same span a Backspace
+at that boundary removes, so the survivor keeps the FIRST row's kind. `remove()` takes the boundary
+BEFORE a row with it, and `duplicate()` puts one back in front of a copy that would otherwise fuse;
+both ask the pre-order walk whether the row's SUBTREE ends the document, since a removal takes the
+subtree and every ancestor of the last row carries no trailing separator either. `insertAfter(text)`
+splices at the row's span end — past its whole subtree — and moves the caret into the row that lands
+there.
+
+Two answers the encoding forces rather than chooses, both from "an empty row takes no children":
+retyping a depth-0 row to an empty paragraph PROMOTES its children to roots (their surplus indent
+survives verbatim in `lead`), and no verb can write an empty parent.
 
 `BlockController` (`store.block`) owns them for the whole editor, as four signals
 addressed by row id:

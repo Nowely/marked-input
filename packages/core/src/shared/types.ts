@@ -88,8 +88,8 @@ export interface RowSpec {
 	Component: Slot
 	/**
 	 * Does this kind CONTINUE into the row a split produces: splitting a row of this kind gives the
-	 * tail the same kind, where by default the tail is a plain row. A list item continues, a heading
-	 * does not.
+	 * tail the same kind AND the same `meta`, where by default the tail is a plain row. A list item
+	 * continues, a heading does not; a checked to-do splits into two checked to-dos.
 	 *
 	 * ONE field for the whole rule, and it is the same one Enter at a row's end will read: "another
 	 * row of this kind" and "the tail keeps this kind" are the same question asked at two caret
