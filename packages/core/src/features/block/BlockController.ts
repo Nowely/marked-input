@@ -42,8 +42,9 @@ export interface RowBox {
 const ASSUMED_INDENT = 24
 
 /**
- * THE Block layout owner: one hovered row, one dragged row, one drop edge and one open menu per
- * EDITOR, each addressed by row id.
+ * THE Block layout owner: one hovered row, one dragged row, one RESOLVED DROP and one open menu
+ * per EDITOR, each addressed by row id — plus {@link selected}, the row selection, which is
+ * derived rather than held.
  *
  * `*Controller`, not `*Model`, and the suffix is argued rather than assumed — it was contested
  * once and this paragraph exists so it is not contested again. The class DOES own state: five
@@ -482,8 +483,9 @@ export class BlockController {
 	 * container's) and bumping the clock only when a box actually moved. Measured: 0.9 µs a frame
 	 * with a clean layout, 20 µs when every read forces a reflow — 0.005% and 0.12% of a 16.7 ms
 	 * frame — and 0 DOM writes over 300 ms of resting hover, because an unmoved box emits nothing.
-	 * Two rect reads a frame at N=50 and two at N=200: {@link paintedRows} returns at most two ids
-	 * by construction, so nothing here scales with the row count.
+	 * Two rect reads a frame at N=50 and two at N=200 — the painted row's own box and the
+	 * container's: {@link paintedRows} returns at most ONE id by construction, so nothing here
+	 * scales with the row count.
 	 *
 	 * WHAT IT DOES NOT COVER: `alwaysShowHandle` paints a grip on row 0 with the pointer AWAY, and
 	 * this loop does not run then — {@link paintedRows} is hover and drag, so a RESTING grip is
@@ -569,7 +571,7 @@ export class BlockController {
 
 	/**
 	 * PROVENANCE, and it is the whole of the gate: a drag this editor did not start paints no
-	 * drop edge, so `#onDrop` never claims it. The question "is this drag ours?" is asked of
+	 * drop line, so `#onDrop` never claims it. The question "is this drag ours?" is asked of
 	 * `state.dragging`, which only {@link beginDrag} — the grip's own `dragstart` — ever sets,
 	 * and which is per-EDITOR by construction. Two editors on a page therefore
 	 * discriminate each other for free, the same way `captureMarkupPaste` keeps two editors from
@@ -615,10 +617,12 @@ export class BlockController {
 		// a consumer flipping the prop mid-drag reaches this: the grip carries `draggable` too,
 		// so with it off no `dragstart` fires and no drop line is ever painted.
 		if (!this.props.draggable()) return
-		// NOTHING IS RE-DERIVED HERE, and that is what makes the indicator a promise: the placement
-		// is the one `dragover` already had the mover accept. A drag whose layout left block
-		// mid-flight still fails closed, one level down — the re-parse mints new ids, so
-		// {@link acting} resolves none of them and the mover is handed an empty set.
+		// THE PLACEMENT IS NOT RE-RESOLVED, and that is what makes the indicator a promise: it is the
+		// one `dragover` already had the mover accept, off coordinates this event does not carry.
+		// The SET is read again — `move` asks {@link acting}, which resolves every id through the
+		// live tree — and that is the liveness check rather than a second opinion: a drag whose
+		// layout left block mid-flight meets a re-parse that minted new ids, resolves none of them,
+		// and hands the mover an empty set.
 		this.move(drop.placement)
 	}
 
@@ -646,8 +650,6 @@ export class BlockController {
 		if (row?.kind !== 'row') return undefined
 
 		const lineBottom = this.#lineBottom(row, hit.rect)
-		// Which side of the row's own LINE — the LINE and not the box, because a parent's box covers
-		// its subtree, so its lower half is its children rather than its own trailing edge.
 		const edge = clientY < (hit.rect.top + lineBottom) / 2 ? 'before' : 'after'
 		const candidates = this.tokens.dropPlacements(moved, row, edge)
 		if (candidates.length === 0) return undefined
@@ -676,10 +678,11 @@ export class BlockController {
 	 * THE ROWS A VERB HERE ACTS ON: the row selection, or the gripped row alone when a drag started
 	 * outside it.
 	 *
-	 * One rule, so a drag and a menu cannot disagree about what "these rows" means. Picking up a
-	 * row that is NOT part of the selection drags that row and nothing else — the alternative,
-	 * rewriting the text selection on `dragstart`, moves the caret inside a live native drag for a
-	 * fact the layer can simply read.
+	 * THE DRAG'S RULE, and only the drag's: the menu verbs act on the row their menu was opened on,
+	 * which {@link runMenuVerb} resolves from `state.menu` alone. Picking up a row that is NOT part
+	 * of the selection drags that row and nothing else — the alternative, rewriting the text
+	 * selection on `dragstart`, moves the caret inside a live native drag for a fact the layer can
+	 * simply read.
 	 *
 	 * Resolving each id through the LIVE tree is also the liveness check: a re-parse mid-drag mints
 	 * new ids, so the set empties and every verb behind it fails closed.
