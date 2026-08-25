@@ -2,7 +2,7 @@ import type {MarkNode} from '@markput/core'
 import {describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {childrenOf, getElement} from '../shared/lib/dom'
+import {getElement, rowsOf} from '../shared/lib/dom'
 import {focusAtEnd} from '../shared/lib/focus'
 import {countRenders, Mark as PlainMark, Span as PlainSpan} from '../shared/lib/marks'
 import {mountComponent} from '../shared/lib/page'
@@ -18,13 +18,6 @@ import {markMounts} from './renderCount.fixtures'
  * gate asserts a DELTA from a baseline taken after mount and focus — so click- or hover-induced
  * renders, and React's double-invoked mount renders, cannot skew any of them.
  */
-
-/**
- * The rows of a block layout. Under the single-host topology the editing host IS the row host,
- * so its element children are the rows — MINUS the controls layer, which is one more container
- * child and not a row.
- */
-const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.matches('[class*="BlockControls"]'))
 
 /**
  * Design-spec Phase 3 headline gates (commit routing):

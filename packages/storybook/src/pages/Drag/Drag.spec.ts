@@ -2,7 +2,7 @@ import type {Markup} from '@markput/core'
 import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {caretIsInside, childrenOf, firstChild, getElement} from '../../shared/lib/dom'
+import {caretIsInside, firstChild, getElement, rowsOf} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart, verifyCaretPosition} from '../../shared/lib/focus'
 import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
 import {defineMark, Mark} from '../../shared/lib/marks'
@@ -31,15 +31,6 @@ const CONTROLLED_ARGS = {
 } as const
 
 const GRIP = {name: 'Drag to reorder or click for options'} as const
-
-/**
- * The rows of a block layout. Under the single-host topology the editing host IS the row
- * container, so a row is one of its element children — MINUS the controls layer, which is one
- * more container child and not a row.
- */
-const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.matches(BLOCK_CONTROLS))
-
-const BLOCK_CONTROLS = '[class*="BlockControls"]'
 
 /**
  * The ONE grip. It lives in the editor's controls layer rather than inside a row, so it is found

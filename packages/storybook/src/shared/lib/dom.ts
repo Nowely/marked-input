@@ -20,6 +20,18 @@ export function childrenOf(element: Element): HTMLElement[] {
 	return Array.from(element.children).filter((c): c is HTMLElement => c instanceof HTMLElement)
 }
 
+/** The row-controls layer: one more container child, and NOT a row (ADR-0007). */
+export const BLOCK_CONTROLS = '[class*="BlockControls"]'
+
+/**
+ * The Rows of an editor. Under the single-host topology the editing host IS the row host, so its
+ * element children are the rows — minus {@link BLOCK_CONTROLS}, which is a child of the same
+ * parent and would otherwise count as a trailing row in every assertion.
+ */
+export function rowsOf(host: HTMLElement): HTMLElement[] {
+	return childrenOf(host).filter(child => !child.matches(BLOCK_CONTROLS))
+}
+
 export function getActiveElement(): HTMLElement | null {
 	return document.activeElement instanceof HTMLElement ? document.activeElement : null
 }

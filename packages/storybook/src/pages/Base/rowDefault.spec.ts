@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import {childrenOf} from '../../shared/lib/dom'
+import {BLOCK_CONTROLS, rowsOf} from '../../shared/lib/dom'
 import {defineMark, Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
 
@@ -17,10 +17,6 @@ import {mountComponent} from '../../shared/lib/page'
 
 const BULLET = '- __slot__'
 const Bullet = defineMark({tag: 'li', class: 'bullet'})
-
-/** One more container child is the row-controls layer (ADR-0007), and it is not a row. */
-const rowsOf = (host: HTMLElement) => childrenOf(host).filter(row => !row.matches(BLOCK_CONTROLS))
-const BLOCK_CONTROLS = '[class*="BlockControls"]'
 
 describe('the default separator', () => {
 	it('splits an unconfigured editor at every newline', async () => {
