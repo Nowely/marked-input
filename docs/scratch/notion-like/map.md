@@ -278,6 +278,19 @@ becomes a ticket here.
   declaration carries a default, and this is the first boolean prop in `MarkedInput` whose core
   default is `true` — `readOnly` and `draggable` default to `false`, so the cast had agreed with
   them by coincidence. Undo worked in React and did nothing in Vue.
+- **P8's review pass found the two places an undo stack rots, and both were real.** IDENTITY: the
+  record held live `Anchors`, so undoing an edit that destroyed the nodes the caret sat in — a
+  Backspace row merge, a delete across a mark — restored the right string with a caret in a
+  detached node, which keeps the `position` it died with. Every caret pin in the phase read that
+  position and passed; only `placeCaret` disagreed. Records carry OFFSETS now, resolved after
+  adoption. REFUSAL: the stack moved on the call rather than on the landing, so a controlled parent
+  declining the undo consumed the entry into a redo stack that could never offer it — one refusal
+  cost every entry underneath. The move rides on `Landing` with the record and the caret.
+- **P8's two "irreducible" mechanisms were deleted and measured.** `replay`'s `#ensureSeeded` is
+  gone: a replay needs a record, a record needs an edit that landed, and landing seeds. `#push`'s
+  `history` read survived the same treatment for the opposite reason — the suite stayed green
+  because it had no pin, not because it does nothing, and the off-then-ON case is now a test that
+  reddens without it. `canUndo` also learned about `readOnly`, which `replay` had always refused.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
