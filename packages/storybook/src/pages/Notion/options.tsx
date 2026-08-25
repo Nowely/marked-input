@@ -5,7 +5,7 @@ import type {Option, RowProps} from '@markput/react'
 import {defineMark} from '../../shared/lib/marks'
 import {defaultMarkdownTheme, markdownOptions} from '../Nested/MarkdownOptions'
 import {PropertiesRow} from './components/PropertiesRow'
-import {TableRow} from './components/TableRow'
+import {TableCell, TableRow} from './components/TableRow'
 
 import styles from './components/notion.module.css'
 
@@ -21,8 +21,18 @@ import styles from './components/notion.module.css'
 /** Frontmatter. A closed kind with a RAW body, so its interior keeps its newlines verbatim. */
 const PROPERTIES_MARKUP: Markup = '---\n__value__\n---'
 
-/** A whole markdown table: an OPEN kind, so its raw body runs to the row's own separator. */
-const TABLE_MARKUP: Markup = '|__value__'
+/**
+ * ONE LINE of a markdown table: an OPEN kind, so its body runs to the row's own separator, and a
+ * CARVED one, so the body is taken apart at `' | '` and every cell is a Row of its own.
+ */
+const TABLE_MARKUP: Markup = '| __slot__'
+
+/**
+ * The cell kind, which carries NO markup: nothing scans it, and it exists only as the table
+ * line's split target. Its own option index is what resolves this component, exactly as a scanned
+ * kind's does.
+ */
+const tableCell: Option = {row: {Component: TableCell}}
 
 /** A quote keeps a `__slot__`, so unlike the table its text stays editable in place. */
 const QUOTE_MARKUP: Markup = '> __slot__'
@@ -106,11 +116,12 @@ export const notionOptions: Option[] = [
 	{markup: PROPERTIES_MARKUP, row: {Component: PropertiesRow}, menu: {label: 'Page properties'}},
 	{
 		markup: TABLE_MARKUP,
-		row: {Component: TableRow},
+		row: {Component: TableRow, continues: true, split: {at: ' | ', as: tableCell}},
 		// `menu.text` SEEDS the row this entry writes, and only where there is nothing to keep —
 		// choosing Table on a row that already has text keeps that text as the table's first line.
 		menu: {label: 'Table', text: 'Task | Status | Owner | Due | Effort'},
 	},
+	tableCell,
 	{markup: QUOTE_MARKUP, row: {Component: styledRow(quoteStyle)}, menu: {label: 'Quote'}},
 	{markup: MENTION_MARKUP, Mark: MentionMark},
 	...presetKinds,

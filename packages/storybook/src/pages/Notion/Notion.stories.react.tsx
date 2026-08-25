@@ -65,10 +65,10 @@ export const MarkdownPreset: StoryObj<MarkedInputProps<StyledMarkProps>> = {
 
 /**
  * The same document with the page's own row kinds added: the frontmatter becomes a properties
- * panel, each table LINE becomes a table row of its own, the quote gets its rule, the fence
- * keeps its interior raw, and `@[Name](id)` becomes a mention instead of a link with a stray
- * `@` in front of it. What a line is a row costs is visible here too — a table has no header
- * row, because which line is the header is a fact about the line after it.
+ * panel, each table LINE becomes a table row whose CELLS are Rows of their own, the quote gets
+ * its rule, the fence keeps its interior raw, and `@[Name](id)` becomes a mention instead of a
+ * link with a stray `@` in front of it. The header is the first line of a run, which the page
+ * reads in CSS — a row is recognised by its own first bytes, so no kind can say it.
  */
 export const Document: StoryObj<MarkedInputProps<StyledMarkProps>> = {
 	args: {

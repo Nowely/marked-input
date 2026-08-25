@@ -3,42 +3,39 @@ import type {RowProps} from '@markput/react'
 import styles from './notion.module.css'
 
 /**
- * ONE LINE of a markdown table, rendered as one table row.
+ * ONE LINE of a markdown table — and its CELLS are Rows of their own.
  *
- * A ROW KIND, not a mark: `'|__value__'` is an OPEN kind, so its raw body runs to the row's own
- * separator — and under the `'\n'` default that bound is the end of the line. Each line is
- * therefore a row of its own, with its own grip and its own row menu, which is the gesture a
- * whole-table row could not offer.
+ * The kind declares `split: {at: ' | ', as: tableCell}`, so the parse takes the line's body apart
+ * at the delimiter and each piece is an ordinary Row: it renders through the cell option's
+ * component, holds ordinary inline marks, and takes the caret. That is what closes the cost this
+ * component used to carry — the whole line was one raw body, so nothing inside a cell was a token
+ * and no mention could live in one.
  *
- * Two things that costs, both visible in the story. The HEADER is gone: which line is the header
- * is a fact about the line AFTER it, and a row component sees only its own row. And the alignment
- * line renders as an empty row rather than disappearing — an unpainted row leaves `bind` with no
- * element for it.
+ * THE HEADER is the first line of a consecutive run, and it stays a CONSUMER-side reading: which
+ * line is the header is a fact about the line after it, and a row is recognised by its own first
+ * bytes alone. What the split changed is where the reading can live — the cells are elements now,
+ * so `.table + .table` says "not the first of a run" in CSS and no component asks about a sibling.
  *
- * The cells are still raw text, so none of them is editable and none can hold a mention. Cells
- * become rows of their own when a kind can declare a split — the phase that does it is P9.
+ * Two costs are still visible on the reference document, and both are the delimiter model rather
+ * than this component. A markdown line ends with `' |'`, which is not a delimiter and therefore
+ * belongs to the last cell's own text. And each line is its own `display: table`, so columns do
+ * not align between lines: one wrapper around consecutive lines is `RowSpec.group`, which is not
+ * built. The alignment line (`| --- | --- |`) paints its dashes like any other line now, where
+ * this component used to drop its cells and leave an empty row behind.
  */
-export const TableRow = ({node, ref, className, style}: RowProps) => {
-	// The kind's leading `|` is structural, so the body starts after it: put it back before
-	// splitting, exactly as the mark version had to.
-	const cells = ('|' + node.slot())
-		.trim()
-		.replace(/^\||\|$/g, '')
-		.split('|')
-		.map(cell => cell.trim())
-	const isAlignment = cells.every(cell => /^:?-+:?$/.test(cell))
+export const TableRow = ({rows, ref, className, style}: RowProps) => (
+	<div ref={ref} data-table className={`${className ?? ''} ${styles.table}`} style={style}>
+		<div className={styles.row}>{rows}</div>
+	</div>
+)
 
-	return (
-		<div ref={ref} className={`${className ?? ''} ${styles.table}`} style={style}>
-			{!isAlignment && (
-				<div className={styles.row}>
-					{cells.map(cell => (
-						<div key={cell} className={styles.cell}>
-							{cell}
-						</div>
-					))}
-				</div>
-			)}
-		</div>
-	)
-}
+/**
+ * ONE CELL, which is a Row born from the line's own split — never a node kind of its own. Its
+ * structural bytes are the delimiter it was carved at, so the component paints nothing but the
+ * cell's own inline content, and its column is the position among its siblings the mapper passes.
+ */
+export const TableCell = ({children, index, ref, className, style}: RowProps) => (
+	<div ref={ref} data-cell={index} className={`${className ?? ''} ${styles.cell}`} style={style}>
+		{children}
+	</div>
+)
