@@ -275,45 +275,128 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
   <div>
     <span></span>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Task</div>
-      <div>Status</div>
-      <div>Owner</div>
-      <div>Due</div>
+      <span>
+        <div data-cell="0">
+          <span>Task</span>
+        </div>
+        <div data-cell="1">
+          <span>Status</span>
+        </div>
+        <div data-cell="2">
+          <span>Owner</span>
+        </div>
+        <div data-cell="3">
+          <span>Due |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div></div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Auth service migration</div>
-      <div>blocked</div>
-      <div>@[Sarah Chen](sarah.chen)</div>
-      <div>2026-04-02</div>
+      <span>
+        <div data-cell="0">
+          <span>---</span>
+        </div>
+        <div data-cell="1">
+          <span>---</span>
+        </div>
+        <div data-cell="2">
+          <span>---</span>
+        </div>
+        <div data-cell="3">
+          <span>--- |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Realtime sync engine</div>
-      <div>in_progress</div>
-      <div>@[Marcus Kane](marcus.kane)</div>
-      <div>2026-04-18</div>
+      <span>
+        <div data-cell="0">
+          <span>Auth service migration</span>
+        </div>
+        <div data-cell="1">
+          <span>blocked</span>
+        </div>
+        <div data-cell="2">
+          <span></span>
+          <span contenteditable="false">
+            <span>Sarah Chen</span>
+          </span>
+          <span></span>
+        </div>
+        <div data-cell="3">
+          <span>2026-04-02 |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Pricing page rewrite</div>
-      <div>done</div>
-      <div>@[Jia Lin](jia.lin)</div>
-      <div>2026-03-27</div>
+      <span>
+        <div data-cell="0">
+          <span>Realtime sync engine</span>
+        </div>
+        <div data-cell="1">
+          <span>in_progress</span>
+        </div>
+        <div data-cell="2">
+          <span></span>
+          <span contenteditable="false">
+            <span>Marcus Kane</span>
+          </span>
+          <span></span>
+        </div>
+        <div data-cell="3">
+          <span>2026-04-18 |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Load test at 5× peak</div>
-      <div>planned</div>
-      <div>@[Amara Reed](amara.reed)</div>
-      <div>2026-05-06</div>
+      <span>
+        <div data-cell="0">
+          <span>Pricing page rewrite</span>
+        </div>
+        <div data-cell="1">
+          <span>done</span>
+        </div>
+        <div data-cell="2">
+          <span></span>
+          <span contenteditable="false">
+            <span>Jia Lin</span>
+          </span>
+          <span></span>
+        </div>
+        <div data-cell="3">
+          <span>2026-03-27 |</span>
+        </div>
+      </span>
+    </div>
+  </div>
+  <div data-table="true">
+    <div>
+      <span>
+        <div data-cell="0">
+          <span>Load test at 5× peak</span>
+        </div>
+        <div data-cell="1">
+          <span>planned</span>
+        </div>
+        <div data-cell="2">
+          <span></span>
+          <span contenteditable="false">
+            <span>Amara Reed</span>
+          </span>
+          <span></span>
+        </div>
+        <div data-cell="3">
+          <span>2026-05-06 |</span>
+        </div>
+      </span>
     </div>
   </div>
   <div>
@@ -325,40 +408,94 @@ exports[`Component: stories > Notion stories > Story Document 1`] = `
   <div>
     <span></span>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Metric</div>
-      <div>Value</div>
-      <div>As of</div>
+      <span>
+        <div data-cell="0">
+          <span>Metric</span>
+        </div>
+        <div data-cell="1">
+          <span>Value</span>
+        </div>
+        <div data-cell="2">
+          <span>As of |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div></div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Beta users</div>
-      <div>4120</div>
-      <div>2026-04-03</div>
+      <span>
+        <div data-cell="0">
+          <span>---</span>
+        </div>
+        <div data-cell="1">
+          <span>---</span>
+        </div>
+        <div data-cell="2">
+          <span>--- |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>p95 latency</div>
-      <div>184ms</div>
-      <div>2026-04-03</div>
+      <span>
+        <div data-cell="0">
+          <span>Beta users</span>
+        </div>
+        <div data-cell="1">
+          <span>4120</span>
+        </div>
+        <div data-cell="2">
+          <span>2026-04-03 |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Crash-free sessions</div>
-      <div>99.4%</div>
-      <div>2026-04-03</div>
+      <span>
+        <div data-cell="0">
+          <span>p95 latency</span>
+        </div>
+        <div data-cell="1">
+          <span>184ms</span>
+        </div>
+        <div data-cell="2">
+          <span>2026-04-03 |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Open bugs</div>
-      <div>37</div>
-      <div>2026-04-03</div>
+      <span>
+        <div data-cell="0">
+          <span>Crash-free sessions</span>
+        </div>
+        <div data-cell="1">
+          <span>99.4%</span>
+        </div>
+        <div data-cell="2">
+          <span>2026-04-03 |</span>
+        </div>
+      </span>
+    </div>
+  </div>
+  <div data-table="true">
+    <div>
+      <span>
+        <div data-cell="0">
+          <span>Open bugs</span>
+        </div>
+        <div data-cell="1">
+          <span>37</span>
+        </div>
+        <div data-cell="2">
+          <span>2026-04-03 |</span>
+        </div>
+      </span>
     </div>
   </div>
   <div>
@@ -491,45 +628,128 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
   <div>
     <span></span>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Task</div>
-      <div>Status</div>
-      <div>Owner</div>
-      <div>Due</div>
+      <span>
+        <div data-cell="0">
+          <span>Task</span>
+        </div>
+        <div data-cell="1">
+          <span>Status</span>
+        </div>
+        <div data-cell="2">
+          <span>Owner</span>
+        </div>
+        <div data-cell="3">
+          <span>Due |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div></div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Auth service migration</div>
-      <div>blocked</div>
-      <div>@[Sarah Chen](sarah.chen)</div>
-      <div>2026-04-02</div>
+      <span>
+        <div data-cell="0">
+          <span>---</span>
+        </div>
+        <div data-cell="1">
+          <span>---</span>
+        </div>
+        <div data-cell="2">
+          <span>---</span>
+        </div>
+        <div data-cell="3">
+          <span>--- |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Realtime sync engine</div>
-      <div>in_progress</div>
-      <div>@[Marcus Kane](marcus.kane)</div>
-      <div>2026-04-18</div>
+      <span>
+        <div data-cell="0">
+          <span>Auth service migration</span>
+        </div>
+        <div data-cell="1">
+          <span>blocked</span>
+        </div>
+        <div data-cell="2">
+          <span></span>
+          <span contenteditable="false">
+            <span>Sarah Chen</span>
+          </span>
+          <span></span>
+        </div>
+        <div data-cell="3">
+          <span>2026-04-02 |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Pricing page rewrite</div>
-      <div>done</div>
-      <div>@[Jia Lin](jia.lin)</div>
-      <div>2026-03-27</div>
+      <span>
+        <div data-cell="0">
+          <span>Realtime sync engine</span>
+        </div>
+        <div data-cell="1">
+          <span>in_progress</span>
+        </div>
+        <div data-cell="2">
+          <span></span>
+          <span contenteditable="false">
+            <span>Marcus Kane</span>
+          </span>
+          <span></span>
+        </div>
+        <div data-cell="3">
+          <span>2026-04-18 |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Load test at 5× peak</div>
-      <div>planned</div>
-      <div>@[Amara Reed](amara.reed)</div>
-      <div>2026-05-06</div>
+      <span>
+        <div data-cell="0">
+          <span>Pricing page rewrite</span>
+        </div>
+        <div data-cell="1">
+          <span>done</span>
+        </div>
+        <div data-cell="2">
+          <span></span>
+          <span contenteditable="false">
+            <span>Jia Lin</span>
+          </span>
+          <span></span>
+        </div>
+        <div data-cell="3">
+          <span>2026-03-27 |</span>
+        </div>
+      </span>
+    </div>
+  </div>
+  <div data-table="true">
+    <div>
+      <span>
+        <div data-cell="0">
+          <span>Load test at 5× peak</span>
+        </div>
+        <div data-cell="1">
+          <span>planned</span>
+        </div>
+        <div data-cell="2">
+          <span></span>
+          <span contenteditable="false">
+            <span>Amara Reed</span>
+          </span>
+          <span></span>
+        </div>
+        <div data-cell="3">
+          <span>2026-05-06 |</span>
+        </div>
+      </span>
     </div>
   </div>
   <div>
@@ -541,40 +761,94 @@ exports[`Component: stories > Notion stories > Story Editor 1`] = `
   <div>
     <span></span>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Metric</div>
-      <div>Value</div>
-      <div>As of</div>
+      <span>
+        <div data-cell="0">
+          <span>Metric</span>
+        </div>
+        <div data-cell="1">
+          <span>Value</span>
+        </div>
+        <div data-cell="2">
+          <span>As of |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div></div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Beta users</div>
-      <div>4120</div>
-      <div>2026-04-03</div>
+      <span>
+        <div data-cell="0">
+          <span>---</span>
+        </div>
+        <div data-cell="1">
+          <span>---</span>
+        </div>
+        <div data-cell="2">
+          <span>--- |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>p95 latency</div>
-      <div>184ms</div>
-      <div>2026-04-03</div>
+      <span>
+        <div data-cell="0">
+          <span>Beta users</span>
+        </div>
+        <div data-cell="1">
+          <span>4120</span>
+        </div>
+        <div data-cell="2">
+          <span>2026-04-03 |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Crash-free sessions</div>
-      <div>99.4%</div>
-      <div>2026-04-03</div>
+      <span>
+        <div data-cell="0">
+          <span>p95 latency</span>
+        </div>
+        <div data-cell="1">
+          <span>184ms</span>
+        </div>
+        <div data-cell="2">
+          <span>2026-04-03 |</span>
+        </div>
+      </span>
     </div>
   </div>
-  <div>
+  <div data-table="true">
     <div>
-      <div>Open bugs</div>
-      <div>37</div>
-      <div>2026-04-03</div>
+      <span>
+        <div data-cell="0">
+          <span>Crash-free sessions</span>
+        </div>
+        <div data-cell="1">
+          <span>99.4%</span>
+        </div>
+        <div data-cell="2">
+          <span>2026-04-03 |</span>
+        </div>
+      </span>
+    </div>
+  </div>
+  <div data-table="true">
+    <div>
+      <span>
+        <div data-cell="0">
+          <span>Open bugs</span>
+        </div>
+        <div data-cell="1">
+          <span>37</span>
+        </div>
+        <div data-cell="2">
+          <span>2026-04-03 |</span>
+        </div>
+      </span>
     </div>
   </div>
   <div>
