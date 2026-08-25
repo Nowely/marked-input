@@ -626,3 +626,90 @@ describe('awkward inputs', () => {
 		expect(store.tokens.value()).toBe('a\nb')
 	})
 })
+
+describe('moveTo', () => {
+	/**
+	 * The narrow splice, read at the value: only the lines between the source and the destination
+	 * change, and the whole subtree travels with the row that was named.
+	 */
+	it('carries the subtree under a new parent and re-indents every descendant', () => {
+		const store = rowStore('host\nmover\n\tkid\ntail')
+		const [host, mover, kid, tail] = rowsOf(store)
+
+		expect(mover.moveTo({parent: host, index: 0})).toBe(true)
+
+		expect(store.tokens.value()).toBe('host\n\tmover\n\t\tkid\ntail')
+		expect(rowsOf(store)).toEqual([host, mover, kid, tail])
+		expect(host.rows()).toEqual([mover])
+		expect(mover.rows()).toEqual([kid])
+	})
+
+	/**
+	 * A DEPTH-CHANGING move still carries the selection through untouched, which is the answer to
+	 * the one doubt this verb raised: re-indenting rewrites bytes inside the moved span, so the
+	 * question was whether adoption's verified-move short-circuit still holds there. It does, and
+	 * the reason is structural rather than lucky — a lead is the ROW's bytes and lives in no text
+	 * node, so no anchor can name one, and the row's own text child keeps its object and its
+	 * content. The alternative, mapping the offset through the window, is strictly worse: the
+	 * caret sits INSIDE the window, where the map collapses every offset onto its end.
+	 */
+	it('keeps the caret on its character when the move changes the row depth', () => {
+		const store = rowStore('parent\nmover\nother')
+		const [parent, mover] = rowsOf(store)
+		const text = mover.inline()[0]
+		if (text.kind !== 'text') throw new Error('expected a row text child')
+		store.tokens.selection.select({node: text, offset: 3})
+
+		expect(mover.moveTo({parent, index: 0})).toBe(true)
+
+		// The same character, one byte further along because a tab went in before it.
+		expect(store.tokens.value()).toBe('parent\n\tmover\nother')
+		expect(selectionRange(store)).toEqual({start: 11, end: 11})
+		const anchor = store.tokens.selection.anchors()?.anchor
+		if (!anchor || typeof anchor === 'string' || !('node' in anchor)) throw new Error('expected a text anchor')
+		expect(anchor.node).toBe(text)
+		expect(anchor.offset).toBe(3)
+	})
+
+	/**
+	 * A row cannot become its own descendant, and the refusal is what keeps the document whole:
+	 * the splice re-emits the affected span from the moved rows, so accepting it would emit the
+	 * subtree inside itself.
+	 */
+	it('refuses a placement inside the moved subtree, and changes nothing', () => {
+		const store = rowStore('a\n\tb\n\t\tc')
+		const [root, child, grandchild] = rowsOf(store)
+
+		expect(root.moveTo({parent: root, index: 0})).toBe(false)
+		expect(root.moveTo({parent: child, index: 0})).toBe(false)
+		expect(root.moveTo({parent: grandchild, index: 0})).toBe(false)
+
+		expect(store.tokens.value()).toBe('a\n\tb\n\t\tc')
+		expect(rowsOf(store)).toEqual([root, child, grandchild])
+	})
+
+	/**
+	 * AN EMPTY ROW TAKES NO CHILDREN — the scan's own clamp — so a placement under one is not
+	 * expressible at all: the written lead would parse back one level shallower and the row would
+	 * land beside its intended parent instead of under it. Refused rather than written and
+	 * silently demoted.
+	 */
+	it('refuses a placement under an empty row', () => {
+		const store = rowStore('\nb')
+		const [empty, row] = rowsOf(store)
+
+		expect(row.moveTo({parent: empty, index: 0})).toBe(false)
+		expect(store.tokens.value()).toBe('\nb')
+	})
+
+	/** With nesting off there is no indent unit to write a lead with, so only root moves exist. */
+	it('refuses a nested placement when the editor has no indent', () => {
+		const store = rowStore('a\nb')
+		store.props.set({indent: ''})
+		const [first, second] = rowsOf(store)
+
+		expect(second.moveTo({parent: first, index: 0})).toBe(false)
+		expect(second.moveTo({parent: null, index: 0})).toBe(true)
+		expect(store.tokens.value()).toBe('b\na')
+	})
+})
