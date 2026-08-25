@@ -44,11 +44,26 @@ const CHIP_TONES: ChipTone[] = ['grey', 'red', 'amber', 'green', 'blue', 'purple
 const chipTone = (name: string): ChipTone => CHIP_TONES.find(tone => tone === name) ?? 'grey'
 
 /**
- * A kind whose component paints no `{children}` is an ATOMIC row: its text round-trips, it drags
- * and selects as a row, and the caret cannot enter it — there is no surface to enter. Every card
- * below is one, because the leaves they render take strings rather than nodes, and Notion's own
- * bookmark, board and properties panel behave the same way.
+ * A kind whose component paints no `{children}` is an ATOMIC row: its text round-trips and it
+ * drags and selects as a row, but nothing it paints is document surface. Every card below is
+ * one, because the leaves they render take strings rather than nodes, and Notion's own bookmark,
+ * board and properties panel behave the same way.
+ *
+ * SAYING SO IS A CALL, NOT A CONVENTION. Everything a row's component paints sits inside the one
+ * contenteditable container, so a panel the editor knows nothing about is content the caret
+ * enters and the browser edits — a click or an ArrowDown parks a blinking caret in a properties
+ * grid and every keystroke after it is swallowed. `useControlRef()` is what says otherwise and
+ * `contenteditable="false"` is what it writes, so an atomic kind wraps its whole interior in
+ * ONE {@link Atomic} rather than repeating the hook seven times.
  */
+const Atomic = ({className, children}: {className?: string; children?: ReactNode}) => {
+	const controlRef = useControlRef()
+	return (
+		<div className={className} ref={controlRef}>
+			{children}
+		</div>
+	)
+}
 
 /* ── page furniture ─────────────────────────────────────────────────────── */
 
@@ -89,7 +104,9 @@ export const properties: Option = {
 	row: {
 		Component: ({node, ref, className, style}: RowProps) => (
 			<div ref={ref} className={className} style={style}>
-				<PropertiesPanel properties={readProperties(node.slot())} />
+				<Atomic>
+					<PropertiesPanel properties={readProperties(node.slot())} />
+				</Atomic>
 			</div>
 		),
 	},
@@ -144,12 +161,17 @@ function readPropertyCell(cell: string): ReactNode {
 export const divider: Option = {
 	markup: '---__slot__',
 	row: {
-		Component: ({children, ref, className, style}: RowProps) => (
-			<div ref={ref} className={cls(className, theme.block)} style={style}>
-				<span className={theme.divider} />
-				{children}
-			</div>
-		),
+		Component: ({children, ref, className, style}: RowProps) => {
+			// The rule is the row's only large target, so without this a click on it — or an arrow
+			// that lands on it — resolves to no anchor and the next keystroke is dropped.
+			const controlRef = useControlRef()
+			return (
+				<div ref={ref} className={cls(className, theme.block)} style={style}>
+					<span className={theme.divider} ref={controlRef} />
+					{children}
+				</div>
+			)
+		},
 	},
 	menu: {label: 'Divider', keywords: ['hr', 'rule', 'line']},
 }
@@ -159,20 +181,22 @@ export const toc: Option = {
 	markup: '@toc\n__value__\n@end',
 	row: {
 		Component: ({node, ref, className, style}: RowProps) => (
-			<div ref={ref} className={cls(className, theme.block, theme.tableOfContents)} style={style}>
-				{node
-					.slot()
-					.split('\n')
-					.map(entry => (
-						<span
-							className={
-								entry.startsWith('\t') ? theme.tableOfContentsItemNested : theme.tableOfContentsItem
-							}
-							key={entry}
-						>
-							{entry.trim()}
-						</span>
-					))}
+			<div ref={ref} className={cls(className, theme.block)} style={style}>
+				<Atomic className={theme.tableOfContents}>
+					{node
+						.slot()
+						.split('\n')
+						.map(entry => (
+							<span
+								className={
+									entry.startsWith('\t') ? theme.tableOfContentsItemNested : theme.tableOfContentsItem
+								}
+								key={entry}
+							>
+								{entry.trim()}
+							</span>
+						))}
+				</Atomic>
 			</div>
 		),
 	},
@@ -181,10 +205,10 @@ export const toc: Option = {
 
 /* ── prose ──────────────────────────────────────────────────────────────── */
 
-const heading = (className: string) =>
-	function Heading({children, ref, style}: RowProps) {
+const heading = (kindClassName: string) =>
+	function Heading({children, ref, className, style}: RowProps) {
 		return (
-			<div ref={ref} className={className} style={style}>
+			<div ref={ref} className={cls(className, kindClassName)} style={style}>
 				{children}
 			</div>
 		)
@@ -527,14 +551,13 @@ export const views: Option = {
 	markup: '@views __slot__',
 	row: {
 		Component: ({node, ref, className, style}: RowProps) => {
-			const controlRef = useControlRef()
 			const tabs = node.slot().split('|')
 			const [active, setActive] = useState(tabs[0] ?? '')
 			return (
 				<div className={className} ref={ref} style={style}>
-					<span ref={controlRef}>
+					<Atomic>
 						<ViewTabs active={active} onSelect={setActive} tabs={tabs} />
-					</span>
+					</Atomic>
 				</div>
 			)
 		},
@@ -556,16 +579,13 @@ export const views: Option = {
 export const board: Option = {
 	markup: '@board\n__value__\n@end',
 	row: {
-		Component: ({node, ref, className, style}: RowProps) => {
-			const controlRef = useControlRef()
-			return (
-				<div className={className} ref={ref} style={style}>
-					<span ref={controlRef}>
-						<Board columns={readBoard(node.slot())} />
-					</span>
-				</div>
-			)
-		},
+		Component: ({node, ref, className, style}: RowProps) => (
+			<div className={className} ref={ref} style={style}>
+				<Atomic>
+					<Board columns={readBoard(node.slot())} />
+				</Atomic>
+			</div>
+		),
 	},
 	menu: {label: 'Board', keywords: ['kanban', 'database', 'columns']},
 }
@@ -601,15 +621,17 @@ export const metrics: Option = {
 	row: {
 		Component: ({node, ref, className, style}: RowProps) => (
 			<div className={className} ref={ref} style={style}>
-				<CardGrid>
-					{node
-						.slot()
-						.split('\n')
-						.map(line => {
-							const [label = '', value = ''] = line.split('|')
-							return <MetricCard key={label} label={label} value={value} />
-						})}
-				</CardGrid>
+				<Atomic>
+					<CardGrid>
+						{node
+							.slot()
+							.split('\n')
+							.map(line => {
+								const [label = '', value = ''] = line.split('|')
+								return <MetricCard key={label} label={label} value={value} />
+							})}
+					</CardGrid>
+				</Atomic>
 			</div>
 		),
 	},
@@ -624,7 +646,9 @@ export const bookmark: Option = {
 			const [url = '', description = ''] = meta.split('|')
 			return (
 				<div className={className} ref={ref} style={style}>
-					<BookmarkCard description={description} title={node.slot()} url={url} />
+					<Atomic>
+						<BookmarkCard description={description} title={node.slot()} url={url} />
+					</Atomic>
 				</div>
 			)
 		},
@@ -635,24 +659,21 @@ export const bookmark: Option = {
 export const comments: Option = {
 	markup: '@comments\n__value__\n@end',
 	row: {
-		Component: ({node, ref, className, style}: RowProps) => {
-			const controlRef = useControlRef()
-			return (
-				<div className={className} ref={ref} style={style}>
-					<span ref={controlRef}>
-						<CommentThread
-							comments={node
-								.slot()
-								.split('\n')
-								.map(line => {
-									const [author = '', timestamp = '', body = ''] = line.split('|')
-									return {author, timestamp, body}
-								})}
-						/>
-					</span>
-				</div>
-			)
-		},
+		Component: ({node, ref, className, style}: RowProps) => (
+			<div className={className} ref={ref} style={style}>
+				<Atomic>
+					<CommentThread
+						comments={node
+							.slot()
+							.split('\n')
+							.map(line => {
+								const [author = '', timestamp = '', body = ''] = line.split('|')
+								return {author, timestamp, body}
+							})}
+					/>
+				</Atomic>
+			</div>
+		),
 	},
 	menu: {label: 'Comment thread', keywords: ['comment', 'discussion', 'reply']},
 }

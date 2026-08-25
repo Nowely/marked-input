@@ -376,60 +376,62 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
         <span>Apollo — Q2 launch plan</span>
       </div>
       <div>
-        <div>
-          <span>Status</span>
-          <span>
+        <div contenteditable="false">
+          <div>
+            <span>Status</span>
             <span>
-              <span>In progress</span>
+              <span>
+                <span>In progress</span>
+              </span>
             </span>
-          </span>
-          <span>Owner</span>
-          <span>
-            <span>
-              <span title="Kara Vance">KV</span>
-              Kara Vance
-            </span>
-          </span>
-          <span>Team</span>
-          <span>
+            <span>Owner</span>
             <span>
               <span>
                 <span title="Kara Vance">KV</span>
-                <span title="Ines Duarte">ID</span>
-                <span title="Milo Freeman">MF</span>
-                <span>+3 others</span>
+                Kara Vance
               </span>
             </span>
-          </span>
-          <span>Timeline</span>
-          <span>
-            <span>Apr 8 → Jun 30</span>
-          </span>
-          <span>Tags</span>
-          <span>
+            <span>Team</span>
             <span>
-              <span>Platform</span>
+              <span>
+                <span>
+                  <span title="Kara Vance">KV</span>
+                  <span title="Ines Duarte">ID</span>
+                  <span title="Milo Freeman">MF</span>
+                  <span>+3 others</span>
+                </span>
+              </span>
             </span>
+            <span>Timeline</span>
             <span>
-              <span>Design</span>
+              <span>Apr 8 → Jun 30</span>
             </span>
-            <span>Q2</span>
-          </span>
-          <span>Spec</span>
-          <span>
+            <span>Tags</span>
             <span>
-              <span title="https://example.com/apollo/spec">apollo/spec</span>
+              <span>
+                <span>Platform</span>
+              </span>
+              <span>
+                <span>Design</span>
+              </span>
+              <span>Q2</span>
             </span>
-          </span>
-          <span>Confidence</span>
-          <span>
-            <span>82%</span>
-          </span>
-          <button type="button">+ Add a property</button>
+            <span>Spec</span>
+            <span>
+              <span>
+                <span title="https://example.com/apollo/spec">apollo/spec</span>
+              </span>
+            </span>
+            <span>Confidence</span>
+            <span>
+              <span>82%</span>
+            </span>
+            <button type="button">+ Add a property</button>
+          </div>
         </div>
       </div>
       <div>
-        <span></span>
+        <span contenteditable="false"></span>
         <span></span>
       </div>
       <div data-placeholder="Type / for commands…">
@@ -448,10 +450,12 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
         <span> is what everything downstream assumes.</span>
       </div>
       <div>
-        <span>Launch tasks</span>
-        <span>Sprint board</span>
-        <span>Metrics &amp; risks</span>
-        <span>Decision log</span>
+        <div contenteditable="false">
+          <span>Launch tasks</span>
+          <span>Sprint board</span>
+          <span>Metrics &amp; risks</span>
+          <span>Decision log</span>
+        </div>
       </div>
       <div>
         <span>Launch tasks</span>
@@ -460,7 +464,7 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
         <span>Inline database · 24 items</span>
       </div>
       <div>
-        <span contenteditable="false">
+        <div contenteditable="false">
           <div>
             <div role="tablist">
               <button aria-selected="true" role="tab" type="button">Table</button>
@@ -474,7 +478,7 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
               <button type="button">New</button>
             </div>
           </div>
-        </span>
+        </div>
       </div>
       <div>
         <span>
@@ -690,7 +694,7 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
         <span>Sprint board</span>
       </div>
       <div>
-        <span contenteditable="false">
+        <div contenteditable="false">
           <div>
             <div>
               <div>
@@ -734,28 +738,30 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
               </div>
             </div>
           </div>
-        </span>
+        </div>
       </div>
       <div>
         <span>Metrics &amp; risks</span>
       </div>
       <div>
-        <div>
+        <div contenteditable="false">
           <div>
-            <span>Beta users</span>
-            <span>4,120</span>
-          </div>
-          <div>
-            <span>p95 latency</span>
-            <span>184ms</span>
-          </div>
-          <div>
-            <span>Crash-free</span>
-            <span>99.4%</span>
-          </div>
-          <div>
-            <span>Open bugs</span>
-            <span>37</span>
+            <div>
+              <span>Beta users</span>
+              <span>4,120</span>
+            </div>
+            <div>
+              <span>p95 latency</span>
+              <span>184ms</span>
+            </div>
+            <div>
+              <span>Crash-free</span>
+              <span>99.4%</span>
+            </div>
+            <div>
+              <span>Open bugs</span>
+              <span>37</span>
+            </div>
           </div>
         </div>
       </div>
@@ -862,17 +868,19 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
         <span>If the cutover isn't boring, we're not ready to call it GA.</span>
       </div>
       <div>
-        <div>
-          <span>
-            <span>Auth migration — rollout plan</span>
-            <span>How the auth migration changes token lifetimes, and what breaks if it slips.</span>
-            <span>https://example.com/apollo/auth-migration</span>
-          </span>
-          <span></span>
+        <div contenteditable="false">
+          <div>
+            <span>
+              <span>Auth migration — rollout plan</span>
+              <span>How the auth migration changes token lifetimes, and what breaks if it slips.</span>
+              <span>https://example.com/apollo/auth-migration</span>
+            </span>
+            <span></span>
+          </div>
         </div>
       </div>
       <div>
-        <span contenteditable="false">
+        <div contenteditable="false">
           <div>
             <div>
               <span title="Kara Vance">KV</span>
@@ -892,7 +900,7 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
             </div>
             <button type="button">Reply…</button>
           </div>
-        </span>
+        </div>
       </div>
       <div data-placeholder="Type / for commands…">
         <span></span>

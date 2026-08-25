@@ -237,6 +237,70 @@ describe('the keymap on the showcase kinds', () => {
 
 		await expect.poll(value).toBe('- [x] Confirm the EU quota')
 	})
+
+	/**
+	 * THE WHOLE ATOMIC SET, read as a set rather than as two elements. A kind whose component
+	 * paints no `{children}` has no document surface inside it, so everything it paints must sit
+	 * under a `contenteditable="false"` root — otherwise a click or an arrow parks a blinking
+	 * caret in a properties grid and every keystroke after it is swallowed. Written as a loop so
+	 * it reddens for any kind that drifts, not only for the two it was written against.
+	 */
+	it('keeps every atomic kind out of the editable document', async () => {
+		const {host} = await mount(Showcase)
+		const frozen = (selector: string) => {
+			const painted = host.querySelector(selector)
+			if (!painted) throw new Error(`nothing painted for ${selector}`)
+			return painted.closest('[contenteditable="false"]') !== null
+		}
+
+		expect({
+			properties: frozen('[class*="propertyLabel"]'),
+			toc: frozen('[class*="tableOfContentsItem"]'),
+			views: frozen('[class*="viewTabList"]'),
+			board: frozen('[class*="boardColumn"]'),
+			metrics: frozen('[class*="metricCard"]'),
+			bookmark: frozen('[class*="bookmarkTitle"]'),
+			comments: frozen('[class*="commentBody"]'),
+		}).toEqual({
+			properties: true,
+			toc: true,
+			views: true,
+			board: true,
+			metrics: true,
+			bookmark: true,
+			comments: true,
+		})
+	})
+
+	/**
+	 * The same claim as a GESTURE: an atomic row generates no caret position, so ArrowDown walks
+	 * past a whole run of them to the next row that has one, and the keystroke after it lands
+	 * there. That is Notion's own behaviour, and it is what the freeze above buys.
+	 */
+	it('arrows past a run of atomic rows rather than parking a dead caret in one', async () => {
+		const doc = '@title Head\n@toc\nOne\n@end\n@metrics\nA|1\n@end\n@bookmark(u|d) Book\ntail'
+		const {host, value} = await mountControlled(Showcase, doc)
+
+		await focusAtStart(rowAt(host, 'Head'))
+		await userEvent.keyboard('{ArrowDown}')
+		dispatchInsertText(editingHost(host), 'X')
+
+		await expect.poll(value).toBe(doc.replace('tail', 'Xtail'))
+	})
+
+	/**
+	 * The DIVIDER's rule is the row's only large target, and it is not document content either:
+	 * without the freeze a click on it resolves to no anchor at all and the keystroke after it is
+	 * dropped. The row's own text — normally empty — is what a keystroke there writes.
+	 */
+	it('writes into the divider row rather than swallowing the keystroke', async () => {
+		const {host, value} = await mountControlled(Showcase, 'top\n---\ntail')
+
+		await userEvent.click(host.querySelector<HTMLElement>('[class*="divider"]')!)
+		await userEvent.keyboard('Z')
+
+		await expect.poll(value).toBe('top\n---Z\ntail')
+	})
 })
 
 describe('undo', () => {
@@ -394,6 +458,18 @@ describe('drag', () => {
 })
 
 describe('the empty row', () => {
+	/**
+	 * A KIND'S COMPONENT PASSES ON WHAT CORE RESOLVED FOR IT. `className` carries the editor's own
+	 * `min-height`, so a component that drops it leaves a row the user just created with `/` as a
+	 * four-pixel sliver: no line box, nothing to click at, and no containing block for the gutter.
+	 * Asserted as geometry rather than as a class name, because the geometry is what a user meets.
+	 */
+	it('gives an empty heading a line box the size of its own type', async () => {
+		const {host} = await mount(Showcase, {defaultValue: '## \n\nplain'})
+
+		expect(rowsOf(host)[0].offsetHeight).toBeGreaterThan(rowsOf(host)[1].offsetHeight)
+	})
+
 	it('carries the placeholder while it is empty and drops it once it is not', async () => {
 		const {host} = await mount(Empty)
 		const row = rowsOf(host)[0]
