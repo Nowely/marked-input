@@ -6,12 +6,10 @@ import styles from '@markput/core/styles.module.css'
 
 export const ListItem = ({
 	onClick,
-	onMouseDown,
 	active,
 	children,
 }: {
 	onClick?: (e: MouseEvent<HTMLLIElement>) => void
-	onMouseDown?: (e: MouseEvent<HTMLLIElement>) => void
 	active?: boolean
 	children: ReactNode
 }) => {
@@ -22,12 +20,7 @@ export const ListItem = ({
 	}, [active])
 
 	return (
-		<li
-			ref={ref}
-			className={cx(styles.PopupItem, active && styles.PopupItemActive)}
-			onClick={onClick}
-			onMouseDown={onMouseDown}
-		>
+		<li ref={ref} className={cx(styles.PopupItem, active && styles.PopupItemActive)} onClick={onClick}>
 			{children}
 		</li>
 	)

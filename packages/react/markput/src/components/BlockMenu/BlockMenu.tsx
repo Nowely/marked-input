@@ -10,9 +10,6 @@ import {Popup} from '../Popup/Popup'
  * A consumer wires it with one line — `{overlay: {trigger: '/'}, Overlay: BlockMenu}` — and a
  * consumer replacing it writes no filtering and no insert logic either: `entries` and `choose`
  * are core's, and this component is the paint over them.
- *
- * `mousedown` is cancelled so the click does not move the caret out of the row the menu is
- * about before `choose` runs.
  */
 export const BlockMenu = () => {
 	const {entries, choose, style, ref} = useOverlay()
@@ -23,11 +20,7 @@ export const BlockMenu = () => {
 		<Popup ref={ref} style={style}>
 			<List>
 				{entries.map(entry => (
-					<ListItem
-						key={entry.label}
-						onMouseDown={event => event.preventDefault()}
-						onClick={() => choose({option: entry.option})}
-					>
+					<ListItem key={entry.label} onClick={() => choose({option: entry.option})}>
 						{entry.label}
 					</ListItem>
 				))}

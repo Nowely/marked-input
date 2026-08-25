@@ -35,12 +35,7 @@ function setOverlayRef(el: HTMLElement | null) {
 <template>
 	<Popup v-if="entries.length" :style="popupStyle" :attach-ref="setOverlayRef">
 		<List>
-			<ListItem
-				v-for="entry in entries"
-				:key="entry.label"
-				@mousedown.prevent
-				@click="choose({option: entry.option})"
-			>
+			<ListItem v-for="entry in entries" :key="entry.label" @click="choose({option: entry.option})">
 				{{ entry.label }}
 			</ListItem>
 		</List>
