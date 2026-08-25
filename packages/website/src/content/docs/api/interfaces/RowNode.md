@@ -127,7 +127,7 @@ start: number;
 duplicate(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:144](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L144)
+Defined in: [core/src/features/tokens/tree/types.ts:157](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L157)
 
 #### Returns
 
@@ -157,7 +157,7 @@ readonly [`TreeNode`](/api/type-aliases/treenode/)[]
 insertAfter(text): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:145](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L145)
+Defined in: [core/src/features/tokens/tree/types.ts:158](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L158)
 
 #### Parameters
 
@@ -206,7 +206,7 @@ start: number;
 mergeWith(next): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:146](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L146)
+Defined in: [core/src/features/tokens/tree/types.ts:159](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L159)
 
 #### Parameters
 
@@ -226,7 +226,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:146](https://github.com/Nowe
 moveTo(index): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:147](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L147)
+Defined in: [core/src/features/tokens/tree/types.ts:160](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L160)
 
 #### Parameters
 
@@ -292,7 +292,7 @@ start: number;
 remove(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:143](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L143)
+Defined in: [core/src/features/tokens/tree/types.ts:156](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L156)
 
 See NodeCommands.
 
@@ -386,6 +386,37 @@ end: number;
 ```ts
 start: number;
 ```
+
+***
+
+### splitAt()
+
+```ts
+splitAt(at): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:154](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L154)
+
+Split this row at `at`: the body before the anchor stays, the body after it becomes a new row
+at the same lead, whose kind is this one when the kind `continues` and a plain row otherwise.
+
+The tail lands after this row's whole SUBTREE, not after its line, and that is forced rather
+than chosen: nesting is indentation and nothing else, so a row written directly under this
+one at this one's lead would adopt every child it has. Placing it past the subtree is the
+only reading under which a split never re-parents a row it was not asked about.
+
+`false` for a non-row, for an editor with no separator to split at, and for an anchor outside
+this row's own body — a caret in another row cannot address this one's split point.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `at` | [`NodeAnchor`](/api/type-aliases/nodeanchor/) |
+
+#### Returns
+
+`boolean`
 
 ***
 

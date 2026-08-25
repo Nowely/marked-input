@@ -139,6 +139,19 @@ export interface RowNode {
 	 * becomes two rows, and a body whose own start matches a longer opener types as THAT kind.
 	 */
 	turnInto(option: CoreOption | undefined, patch?: RowPatch): boolean
+	/**
+	 * Split this row at `at`: the body before the anchor stays, the body after it becomes a new row
+	 * at the same lead, whose kind is this one when the kind `continues` and a plain row otherwise.
+	 *
+	 * The tail lands after this row's whole SUBTREE, not after its line, and that is forced rather
+	 * than chosen: nesting is indentation and nothing else, so a row written directly under this
+	 * one at this one's lead would adopt every child it has. Placing it past the subtree is the
+	 * only reading under which a split never re-parents a row it was not asked about.
+	 *
+	 * `false` for a non-row, for an editor with no separator to split at, and for an anchor outside
+	 * this row's own body — a caret in another row cannot address this one's split point.
+	 */
+	splitAt(at: NodeAnchor): boolean
 	/** See {@link NodeCommands}. */
 	remove(): boolean
 	duplicate(): boolean
@@ -247,6 +260,8 @@ export interface NodeCommands {
 	setDepth(node: TreeNode, depth: number): boolean
 	/** Retype a ROW, keeping its identity. See {@link RowNode.turnInto}. */
 	turnInto(node: RowNode, option: CoreOption | undefined, patch?: RowPatch): boolean
+	/** Split a ROW at an anchor in its own body. See {@link RowNode.splitAt}. */
+	splitAt(node: RowNode, at: NodeAnchor): boolean
 }
 
 /**

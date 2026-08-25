@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest'
 import type {CoreOption} from '../../../shared/types'
 import {Store} from '../../../store/Store'
 import {selectionRange} from '../__testing__/mountFixtures'
-import type {RowNode, TreeNode} from './types'
+import type {NodeAnchor, RowNode, TreeNode} from './types'
 
 /**
  * THE row verbs under nesting, and every case here is stated over a NESTED document on purpose.
@@ -316,5 +316,85 @@ describe('turnInto', () => {
 
 		expect(store.tokens.value()).toBe('x\ny')
 		expect(rowsOf(store).length).toBe(2)
+	})
+})
+describe('splitAt', () => {
+	const bullet: CoreOption = {markup: '- __slot__', row: {Component: 'li', continues: true}}
+	const heading: CoreOption = {markup: '# __slot__', row: {Component: 'h1'}}
+
+	/** The anchor at `offset` inside a row's own body, which is what a caret in that row is. */
+	const inBody = (row: RowNode, offset: number): NodeAnchor => {
+		const text = row.inline()[0]
+		if (text.kind !== 'text') throw new Error('expected a row text child')
+		return {node: text, offset}
+	}
+
+	it('leaves the head, opens the tail, and puts the caret in it', () => {
+		const store = rowStore('a\n\tbcd')
+		const child = rowsOf(store)[1]
+
+		expect(child.splitAt(inBody(child, 2))).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\tbc\n\td')
+		expect(rowsOf(store)[1]).toBe(child)
+		expect(selectionRange(store)).toEqual({start: 7, end: 7})
+	})
+
+	/**
+	 * A row written directly under a parent AT THE PARENT'S LEAD adopts every child the parent
+	 * has, because nesting is indentation and nothing else — so the tail lands past the subtree
+	 * and the split re-parents nothing. Every surviving row keeps its object across it: the
+	 * descendants are re-emitted at the same indices in the row's child list.
+	 */
+	it('never re-parents the head CHILDREN: the tail follows the whole subtree', () => {
+		const store = rowStore('ab\n\tc\n\t\td')
+		const [root, child, grand] = rowsOf(store)
+
+		expect(root.splitAt(inBody(root, 1))).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\tc\n\t\td\nb')
+		const after = rowsOf(store)
+		expect([after[0], after[1], after[2]]).toEqual([root, child, grand])
+		expect(after.length).toBe(4)
+		expect(selectionRange(store)).toEqual({start: 9, end: 9})
+	})
+
+	it('gives the tail THIS kind when the kind continues, and a plain row when it does not', () => {
+		const list = rowStore('a\n\t- bc', [bullet])
+		const title = rowStore('a\n\t# bc', [heading])
+
+		expect(rowsOf(list)[1].splitAt(inBody(rowsOf(list)[1], 1))).toBe(true)
+		expect(rowsOf(title)[1].splitAt(inBody(rowsOf(title)[1], 1))).toBe(true)
+
+		expect(list.tokens.value()).toBe('a\n\t- b\n\t- c')
+		expect(title.tokens.value()).toBe('a\n\t# b\n\tc')
+	})
+
+	it('splits at the row START, which pushes the row down under an empty one', () => {
+		const store = rowStore('a\n\t- b', [bullet])
+		const child = rowsOf(store)[1]
+
+		expect(child.splitAt(inBody(child, 0))).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\t- \n\t- b')
+	})
+
+	it('splits the document-final row, which has no separator of its own', () => {
+		const store = rowStore('ab')
+		const row = rowsOf(store)[0]
+
+		expect(row.splitAt(inBody(row, 1))).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\nb')
+		expect(rowsOf(store)[0]).toBe(row)
+	})
+
+	it('refuses an anchor that is not in this row own body', () => {
+		const store = rowStore('a\nb')
+		const [first, second] = rowsOf(store)
+
+		expect(first.splitAt(inBody(second, 0))).toBe(false)
+		expect(first.splitAt('end')).toBe(false)
+		expect(store.tokens.value()).toBe('a\nb')
 	})
 })

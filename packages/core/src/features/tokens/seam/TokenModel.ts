@@ -31,10 +31,10 @@ import {gapWindow} from '../tree/gapWindow'
 import {preorderRows} from '../tree/rows'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
-import {depthPlan, endsDocument, mergePlan, movePlan, removePlan, turnIntoPlan} from '../tree/siblings'
+import {depthPlan, endsDocument, mergePlan, movePlan, removePlan, splitPlan, turnIntoPlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
-import type {Anchors, MarkNode, MarkPatch, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
+import type {Anchors, MarkNode, MarkPatch, NodeAnchor, RowNode, TreeCommands, TreeNode} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 
 /**
@@ -621,6 +621,25 @@ export class TokenModel {
 			if (!plan) return false
 			return this.#tx.applyRange(plan.window, plan.text)
 		},
+		/**
+		 * A split PUTS A POSITION IN, so unlike a retype it moves the caret — into the row it
+		 * produced, named by the pre-order index the plan answers. {@link splitPlan} forms that
+		 * index because it is the one layer that may.
+		 */
+		splitAt: (node, at) => {
+			this.#ensureSeeded()
+			let split = false
+			batch(() => {
+				const plan = untracked(() =>
+					splitPlan(this.#tree.roots(), node, at, this.#tree.config()?.separator, this.#continues(node))
+				)
+				if (!plan) return
+				if (!this.#tx.applyRange(plan.window, plan.text)) return
+				split = true
+				this.#enterRow(plan.tail)
+			})
+			return split
+		},
 	}
 
 	/** The compiled row kind an option declares, resolved by the option's INDEX — see {@link Parser.rowKind}. */
@@ -628,6 +647,17 @@ export class TokenModel {
 		const index = this.props.options().indexOf(option)
 		if (index < 0) return undefined
 		return this.#parser()?.rowKind(index)
+	}
+
+	/**
+	 * Does this row's kind carry into the row a split produces — `RowSpec.continues`, read off the
+	 * OPTION the row's descriptor index names. A paragraph continues into nothing: it has no kind
+	 * to carry.
+	 */
+	#continues(node: RowNode): boolean {
+		const index = node.option()
+		if (index === undefined) return false
+		return this.props.options()[index]?.row?.continues === true
 	}
 
 	/**

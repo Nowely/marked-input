@@ -86,6 +86,16 @@ export interface RowSpec {
 	 * component — the row with no kind — and the only fallback left.
 	 */
 	Component: Slot
+	/**
+	 * Does this kind CONTINUE into the row a split produces: splitting a row of this kind gives the
+	 * tail the same kind, where by default the tail is a plain row. A list item continues, a heading
+	 * does not.
+	 *
+	 * ONE field for the whole rule, and it is the same one Enter at a row's end will read: "another
+	 * row of this kind" and "the tail keeps this kind" are the same question asked at two caret
+	 * positions.
+	 */
+	continues?: boolean
 }
 
 export type OverlayMatch<TOption = CoreOption> = {

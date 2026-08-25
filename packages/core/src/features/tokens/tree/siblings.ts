@@ -1,10 +1,10 @@
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import {depthCeiling} from '../parser/core/RowScanner'
 import type {RowConfig} from '../parser/types'
-import {rowBoundary} from './anchors'
+import {offsetOfAnchor, rowBoundary} from './anchors'
 import {preorderRows} from './rows'
 import {rowContent, rowMarkup, sliceNodes} from './tree'
-import type {Pairing, RowNode, RowPatch, TreeNode, Window} from './types'
+import type {NodeAnchor, Pairing, RowNode, RowPatch, TreeNode, Window} from './types'
 
 /**
  * Removing the boundary between two rows, as the window that holds them apart — see
@@ -248,6 +248,59 @@ export function turnIntoPlan(
 
 	const start = node.position.start + node.lead().length
 	return {window: {start, end: start + current.length, insertedLength: text.length}, text}
+}
+
+/**
+ * Splitting one row at an anchor in its own body, as ONE splice plus the PRE-ORDER index of the
+ * row it produces.
+ *
+ * The window covers the row's LINE BODY AND ITS WHOLE SUBTREE, and re-emits the descendants
+ * unchanged in the middle, because the tail row lands AFTER them. That placement is forced by the
+ * encoding rather than preferred: a row written directly under this one at this one's lead adopts
+ * every child it has, since nesting is indentation and nothing else. Re-emitting the subtree also
+ * costs nothing in identity — the descendants sit at the same indices in the row's child list, so
+ * adoption's index pairing carries every one of them.
+ *
+ * The tail's kind is the row's own when the kind `continues`, else a plain row; the caller reads
+ * that field, because `tree/` knows a descriptor and not the option that declared it.
+ *
+ * `undefined` — fail closed — for a non-row, a dead node, an editor with no separator to split at,
+ * and an anchor outside the row's own body.
+ */
+export function splitPlan(
+	roots: readonly TreeNode[],
+	node: TreeNode,
+	at: NodeAnchor,
+	separator: string | undefined,
+	continues: boolean
+): {window: Window; text: string; tail: number} | undefined {
+	if (node.kind !== 'row' || separator === undefined) return undefined
+	const rows = preorderRows(roots)
+	const index = rows.findIndex(entry => entry.row === node)
+	if (index < 0) return undefined
+
+	const slot = node.slotRange()
+	const offset = offsetOfAnchor(roots, at)
+	if (offset < slot.start || offset > slot.end) return undefined
+
+	const body = node.slot()
+	const cut = offset - slot.start
+	const children = node.rows()
+	const descendants =
+		children.length === 0 ? undefined : children.map(child => rowContent(child, separator)).join(separator)
+
+	const text =
+		rowMarkup(node.descriptor(), node.meta(), body.slice(0, cut)) +
+		(descendants === undefined ? '' : separator + descendants) +
+		separator +
+		node.lead() +
+		rowMarkup(continues ? node.descriptor() : undefined, continues ? node.meta() : undefined, body.slice(cut))
+
+	const start = node.position.start + node.lead().length
+	// The subtree's last line carries a separator unless it ends the document, and the window
+	// stops before it — the join puts one back between the tail and whatever follows.
+	const end = node.position.end - (endsDocument(roots, node) ? 0 : separator.length)
+	return {window: {start, end, insertedLength: text.length}, text, tail: index + preorderRows([node]).length}
 }
 
 /** The scan's own emptiness, read off the node: a row whose whole LINE is empty. */
