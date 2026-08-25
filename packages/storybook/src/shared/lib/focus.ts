@@ -67,6 +67,20 @@ export async function focusAtOffset(element: HTMLElement, offset: number) {
 	verifyCaretPosition(element, offset)
 }
 
+/**
+ * Move the caret and RETURN, awaiting nothing — the editor hears about it on the next
+ * `selectionchange`, which Chromium delivers on a task of its own.
+ *
+ * That gap is the premise of every spec that uses this: whatever runs before control returns to
+ * the event loop sees a DOM caret the editor has not been told about yet. A real browser opens
+ * the same gap on its own — a `beforeinput` names the span it is about to edit, and that reading
+ * can be newer than the last `selectionchange` — and this is the deterministic spelling of it.
+ */
+export function moveDomCaret(element: HTMLElement, offset: number) {
+	setCaretPosition(element, offset)
+	verifyCaretPosition(element, offset)
+}
+
 export function verifyCaretPosition(element: HTMLElement, expectedOffset: number) {
 	const position = getCaretPosition()
 	expect(position, 'Caret position not available').not.toBeNull()

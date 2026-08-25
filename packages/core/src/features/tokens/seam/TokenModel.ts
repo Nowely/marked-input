@@ -514,6 +514,11 @@ export class TokenModel {
 		return this.#selectionDriver.domAnchors()
 	}
 
+	/** And the write it feeds: see {@link SelectionDriver.syncFromDom}. */
+	syncSelectionFromDom(): void {
+		this.#selectionDriver.syncFromDom()
+	}
+
 	/** Move focus (and the caret) into the first root token; see {@link SelectionDriver.focusFirst}. */
 	focusFirst(): void {
 		this.#selectionDriver.focusFirst()

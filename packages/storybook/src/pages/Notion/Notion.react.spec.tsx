@@ -441,11 +441,9 @@ describe('undo', () => {
 	 * back. Driven in the CONTROLLED mode, which is the one the round trip has to survive: the tree
 	 * has not moved when the keystroke returns, and the entry lands on the echo.
 	 *
-	 * The CARET is asserted as the row it comes back to and not as an offset inside it, and that is
-	 * a MEASURED limit rather than a loose assertion: in a real browser, through either adapter and
-	 * with or without a row kind, the DOM caret after an undo sits at the end of the restored text
-	 * rather than at the position the edit was made from. Core's own `HistoryModel` spec pins the
-	 * offset against core's selection state, so the gap is below this page and not in it.
+	 * The CARET is asserted as an OFFSET, because the row alone reads the same whether the undo
+	 * restored the position the edit was made from or the end of the text it restored — which is
+	 * the shape this line was measuring while the two disagreed.
 	 */
 	it('restores the value a keystroke changed, and puts it back on redo', async () => {
 		const {host, value} = await mountControlled(Showcase, '- alpha\n- beta')
@@ -457,11 +455,7 @@ describe('undo', () => {
 		await userEvent.keyboard('{Meta>}z{/Meta}')
 		await expect.poll(value).toBe('- alpha\n- beta')
 		expect(window.getSelection()?.focusNode?.textContent).toBe('beta')
-		// THE LIMIT, PINNED AS A NUMBER. `focusNode` alone reads the same under the defect and
-		// under its fix, so it recorded nothing. 4 is the end of the restored text; 2 is where the
-		// edit was made from and is what core's own selection state says. The day the DOM follows
-		// core here, this line reddens and the comment above it stops being true.
-		expect(window.getSelection()?.focusOffset).toBe(4)
+		expect(window.getSelection()?.focusOffset).toBe(2)
 
 		await userEvent.keyboard('{Meta>}{Shift>}z{/Shift}{/Meta}')
 		await expect.poll(value).toBe('- alpha\n- beXYta')

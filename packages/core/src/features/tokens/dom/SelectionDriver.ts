@@ -165,7 +165,16 @@ export class SelectionDriver {
 	 * ONE EXIT, and it LEAVES THE ANCHORS STANDING (spec S2 D4 — `undefined` means "the
 	 * DOM cannot be read here", and the next `selectionchange` corrects it). Gated by
 	 * `SelectionDriver.spec`'s "a half-outside range leaves the stored anchors standing".
-	 * Dropping the selection entirely is the `focusout` clear, not this path.
+	 * That exit covers a boundary inside a consumer's control or editable island too —
+	 * `anchorFor` declines both by construction — so the ON-DEMAND caller inherits the refusal
+	 * the listener spells out for itself. Dropping the selection entirely is the `focusout`
+	 * clear, not this path.
+	 *
+	 * ON DEMAND as well as on `selectionchange`, because that event is delivered on a TASK:
+	 * between a caret moving and the browser saying so, the stored anchors name where the caret
+	 * WAS. An edit arriving in that gap is addressed from the DOM — a `beforeinput` names the
+	 * span it is about to change — so whatever else reads the selection for that same edit has
+	 * to read the DOM too. `EditController` calls this first for exactly that reason.
 	 */
 	syncFromDom(): void {
 		const anchors = this.domAnchors()

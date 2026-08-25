@@ -1,7 +1,9 @@
 import {describe, it, expect, vi} from 'vitest'
 
+import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
-import {anchorsAt, caretAt, selectionRange} from '../tokens/__testing__/mountFixtures'
+import type {EditRecord} from '../tokens'
+import {anchorsAt, caretAt, mountStructuralInline, selectionRange} from '../tokens/__testing__/mountFixtures'
 
 describe('EditController', () => {
 	it('replaces value and places caret after replacement', () => {
@@ -95,5 +97,25 @@ describe('EditController', () => {
 
 		expect(store.tokens.value()).toBe('first')
 		expect(selectionRange(store)).toEqual({start: 5, end: 5})
+	})
+
+	it('records the caret the DOM holds, not the reading a selectionchange has yet to deliver', () => {
+		// The gap is REAL and it is the browser's: `selectionchange` arrives on a task, so a
+		// caret that has moved since the last one leaves the stored anchors naming where it was.
+		// The edit itself is addressed from DOM truth — `beforeinput` names its own span — so
+		// the two readings disagree exactly here, and the record is what carries the difference
+		// forward: an undo goes back to the caret its edit was made from.
+		const {store, textNode, container} = mountStructuralInline('Undo me')
+		caretAt(store, 0)
+		window.getSelection()?.collapse(textNode, 4)
+
+		const records: EditRecord[] = []
+		const stop = watch(store.tokens.edits, record => records.push(record))
+		store.edit.replace(...anchorsAt(store, 4, 4), 'X')
+		stop()
+
+		expect(store.tokens.value()).toBe('UndoX me')
+		expect(records.at(-1)?.selectionBefore).toEqual({anchor: 4, head: 4})
+		container.remove()
 	})
 })
