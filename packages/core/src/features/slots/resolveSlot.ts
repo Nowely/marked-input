@@ -70,13 +70,16 @@ export interface NodeSlotContext {
 
 /**
  * What only the parent that MAPPED a row knows, and the tree therefore cannot answer: the row's
- * place among its siblings, and its child rows ALREADY RENDERED by the framework. `rows` is
- * framework-opaque here — core ships no components — so it travels as `unknown`.
+ * place among its siblings.
+ *
+ * The RENDERED CHILD ROWS are deliberately not here. They are framework values with no use in
+ * core — it ships no components — and routing them through would put an `unknown` on this
+ * interface for a spread straight back out. Each adapter hands them to the kind itself, off the
+ * same `'node' in props` test core already answers below.
  */
 export interface RowRender {
 	depth: number
 	index: number
-	rows?: unknown
 }
 
 /**

@@ -72,11 +72,17 @@ export const Block = memo(({node, depth, index}: BlockProps) => {
 			</span>
 		) : undefined
 
-	const [Component, props] = resolveNodeSlot(node, {depth, index, rows})
+	const [Component, props] = resolveNodeSlot(node, {depth, index})
+	// `node` in the resolved props is core's answer for "this row paints through its KIND's own
+	// component", and the kind is the one that takes `rows` as a PROP. A paragraph's is
+	// `slots.block`, whose default is a bare `div` that would stringify a React node onto the
+	// element, so its child rows go in as ordinary children instead.
+	const isKind = 'node' in props
 
 	return (
 		<Component
 			{...props}
+			{...(isKind ? {rows} : {})}
 			ref={setBlockRef}
 			// oxlint-disable-next-line no-unsafe-type-assertion -- props.style is raw and needs casting to CSSProperties
 			style={{opacity: isDragging ? 0.4 : 1, ...(props.style as CSSProperties | undefined)}}
@@ -84,9 +90,7 @@ export const Block = memo(({node, depth, index}: BlockProps) => {
 			{node.inline().map(child => (
 				<Token key={child.id} node={child} depth={0} />
 			))}
-			{/* `node` in the resolved props is core's answer for "this row paints through its KIND's
-			    own component", which is the one that takes `rows` as a prop. */}
-			{'node' in props ? undefined : rows}
+			{isKind ? undefined : rows}
 		</Component>
 	)
 })
