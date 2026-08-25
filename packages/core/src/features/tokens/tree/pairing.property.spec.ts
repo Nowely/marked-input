@@ -212,3 +212,28 @@ describe('pairing: the content gate', () => {
 		expect(tree.roots().map(node => node.id)).toEqual(ids)
 	})
 })
+/**
+ * The docstring's central claim about the mover, made checkable: the splice is the narrowest
+ * CHANGED RANGE of lines, which under nesting is tighter than the common ancestor's span. Nothing
+ * else in the suite sees it — `moveTo` carries the caret through adoption's verified-move
+ * short-circuit rather than through the window map, so widening `low`/`high` to the whole
+ * pre-order emits the same bytes, keeps every id and leaves the full suite at 1691 green. Measured,
+ * then pinned here rather than left as a paragraph.
+ */
+describe('move: the window is the narrowest changed range', () => {
+	it('splices two sibling lines, not the parent whose span covers them all', () => {
+		const tree = buildTree('p\n\n\tq\n\n\tr\n\n\ts\n\n\tt')
+		const parent = tree.roots()[0]
+		if (parent.kind !== 'row') throw new Error('expected a row')
+		const [, r, s] = parent.rows()
+
+		// `r` and `s` trade places: two of the parent's four children move, and the other two do not.
+		const plan = movePlan(tree.roots(), r, {parent, index: 2}, ROW_CONFIG)
+
+		expect(plan?.window.start).toBe(r.lineRange().start)
+		expect(plan?.window.end).toBe(s.lineRange().end)
+		expect(plan?.text).toBe('\ts\n\n\tr\n\n')
+		// The ancestor's span is the whole document, which is what the narrow window is tighter than.
+		expect(parent.position).toEqual({start: 0, end: tree.value().length})
+	})
+})

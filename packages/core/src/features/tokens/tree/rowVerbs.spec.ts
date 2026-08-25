@@ -744,6 +744,29 @@ describe('moveTo', () => {
 		expect(r.rows()).toEqual([s])
 	})
 
+	/**
+	 * Three refusals the verb's own docblock states and nothing exercised — each consumer-reachable
+	 * through the published method, and two of them the difference between `false` and a TypeError:
+	 * the planner destructures the row config, and it indexes the pre-order list by the position it
+	 * found the parent at.
+	 */
+	it('answers false for a dead parent, a fractional index and a separatorless editor', () => {
+		const store = rowStore('a\nb\nc')
+		const [first, , third] = rowsOf(store)
+
+		// A fractional index is IN range and names no sibling: `siblings[0.5]` is `undefined`, and
+		// without the guard the run is spliced to the FRONT and the verb answers `true`.
+		expect(third.moveTo({parent: null, index: 0.5})).toBe(false)
+
+		expect(third.remove()).toBe(true)
+		expect(first.moveTo({parent: third, index: 0})).toBe(false)
+		expect(store.tokens.value()).toBe('a\nb')
+
+		// An editor with no separator has no rows to rejoin and no row list to place into.
+		store.props.set({separator: null})
+		expect(first.moveTo({parent: null, index: 1})).toBe(false)
+	})
+
 	/** With nesting off there is no indent unit to write a lead with, so only root moves exist. */
 	it('refuses a nested placement when the editor has no indent', () => {
 		const store = rowStore('a\nb')
