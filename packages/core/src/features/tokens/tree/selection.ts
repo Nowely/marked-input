@@ -172,6 +172,11 @@ export function createSelection(deps: SelectionDeps): Selection {
 	 * re-derives it.
 	 * `map` resolves against the post-adoption roots and is property-proven never to
 	 * answer with a dead node (`tree/adopt.property.spec.ts`).
+	 *
+	 * A REPLAYED caret does not come from that capture — it comes off an `EditRecord`, which
+	 * outlives the nodes its edit was made in — and it does not dangle either, by the same route
+	 * rather than by exception: the record carries OFFSETS, and `valueBoundary`'s fold resolves
+	 * them with `anchorAt` against the roots the replay leaves behind.
 	 */
 	const repair = (result: TransactionResult): void => {
 		const next = result.selectionAfter
