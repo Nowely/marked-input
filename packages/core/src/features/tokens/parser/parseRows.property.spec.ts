@@ -21,29 +21,20 @@ const MARKUPS = ['**__slot__**', '@[__value__](__meta__)'] as const
 /** The ROW kinds, ahead of the inline markups so their option indices are stable. */
 const ROW_MARKUPS: Markup[] = ['# __slot__', '- [__meta__] __slot__', '> __slot__']
 
+/**
+ * THE parser every property below runs on: the row kinds ARE the subject. Built kindless, the
+ * round-trip and locality properties never see an opener or a closing literal, so neither could
+ * catch one leaking across a row boundary — which is the one thing they exist to catch.
+ */
+const typedParser = (): Parser =>
+	new Parser(
+		[...ROW_MARKUPS, ...MARKUPS],
+		ROW_MARKUPS.map(() => true)
+	)
+
 beforeEach(() => {
 	faker.seed(FAKER_SEED)
 })
-
-function generateRowContent(): string {
-	const words = () => faker.lorem.words({min: 1, max: 4})
-	switch (faker.number.int({min: 0, max: 3})) {
-		case 0:
-			return words()
-		case 1:
-			return `# ${words()}`
-		case 2:
-			return `${words()} **${words()}** ${words()}`
-		default:
-			return `@[${faker.string.alpha(4)}](${faker.string.alpha(3)}) ${words()}`
-	}
-}
-
-function generateDocument(): string {
-	const rows = Array.from({length: faker.number.int({min: 1, max: 8})}, generateRowContent)
-	const trailing = faker.datatype.boolean() ? SEPARATOR : ''
-	return rows.join(SEPARATOR) + trailing
-}
 
 function shiftToken(token: Token, delta: number): Token {
 	const shifted: Token = {
@@ -70,22 +61,27 @@ function shiftRow(row: RowToken, delta: number): RowToken {
 
 describe('parseRows properties', () => {
 	it('reproduces any document from row contents byte-for-byte', () => {
-		const parser = new Parser([...MARKUPS])
+		const parser = typedParser()
+		let typedRows = 0
 
 		for (let i = 0; i < ITERATIONS; i++) {
-			const value = generateDocument()
+			const value = generateTypedDocument()
 			const rows = parser.parseRows(value, ROW_CONFIG)
+			typedRows += rows.filter(row => row.descriptor !== undefined).length
 
 			const joined = rows.map(row => row.content).join('')
 			expect(joined, `iteration ${i}, value ${JSON.stringify(value)}`).toBe(value)
 		}
+
+		// The corpus is generated, so the property degrades silently if it stops producing kinds.
+		expect(typedRows).toBeGreaterThan(ITERATIONS)
 	})
 
 	it('keeps every other row byte-identical across an in-row edit', () => {
-		const parser = new Parser([...MARKUPS])
+		const parser = typedParser()
 
 		for (let i = 0; i < ITERATIONS; i++) {
-			const value = generateDocument()
+			const value = generateTypedDocument()
 			const rows = parser.parseRows(value, ROW_CONFIG)
 
 			// An insertion strictly inside one row's content (never into its separator):
@@ -119,10 +115,7 @@ describe('parseRows properties', () => {
 	 * from `joinNodes`, `toString` and `parseRows` alike).
 	 */
 	it('re-annotates every typed row back to the bytes it was parsed from', () => {
-		const parser = new Parser(
-			[...ROW_MARKUPS, ...MARKUPS],
-			ROW_MARKUPS.map(() => true)
-		)
+		const parser = typedParser()
 
 		for (let i = 0; i < ITERATIONS; i++) {
 			const value = generateTypedDocument()
@@ -141,10 +134,7 @@ describe('parseRows properties', () => {
 	 * cost outrunning its input.
 	 */
 	it('costs no more than its input grows', () => {
-		const parser = new Parser(
-			[...ROW_MARKUPS, ...MARKUPS],
-			ROW_MARKUPS.map(() => true)
-		)
+		const parser = typedParser()
 
 		const base = costOf(parser, generateLargeDocument(1000))
 		const quadruple = costOf(parser, generateLargeDocument(4000))
