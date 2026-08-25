@@ -348,4 +348,42 @@ describe('history: the prop', () => {
 		expect(store.history.undo()).toBe(false)
 		expect(store.tokens.value()).toBe('hello!')
 	})
+
+	it('does not make an edit taken while history was off undoable when it comes back on', () => {
+		// The other half of the prop, and the one the query-side read cannot cover: an editor
+		// that was not recording has nothing to give back, so turning history on offers the
+		// document it finds rather than the edits that reached it unrecorded.
+		const store = mount('hello', {history: false})
+		type(store, 5, '!')
+
+		store.props.update({history: true})
+		expect(store.history.canUndo()).toBe(false)
+		expect(store.history.undo()).toBe(false)
+		expect(store.tokens.value()).toBe('hello!')
+
+		// And it starts recording from there, so the next edit is undoable.
+		type(store, 6, '?')
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hello!')
+	})
+
+	it('offers nothing while the editor is read-only, and everything again after', () => {
+		// `replay` refuses under `readOnly`, so an offer this does not share would be a button
+		// the user may press and nothing happens. Refusing is not forgetting: the entries were
+		// recorded while the editor was writable and are still there when it is again.
+		const store = mount('hello')
+		type(store, 5, '!')
+		expect(store.history.canUndo()).toBe(true)
+
+		store.props.update({readOnly: true})
+		expect(store.history.canUndo()).toBe(false)
+		expect(store.history.undo()).toBe(false)
+		expect(store.tokens.value()).toBe('hello!')
+
+		store.props.update({readOnly: false})
+		expect(store.history.canUndo()).toBe(true)
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hello')
+		expect(store.history.canRedo()).toBe(true)
+	})
 })

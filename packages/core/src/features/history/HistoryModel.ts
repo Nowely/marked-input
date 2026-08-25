@@ -78,8 +78,15 @@ export class HistoryModel {
 	/** When the entry on top of {@link #past} was typed — the only state a coalescing rule cannot derive. */
 	#typedAt = 0
 
+	/**
+	 * `readOnly` rides beside `history` here because {@link TokenModel.replay} refuses under it:
+	 * an offer this did not share would be a menu item the user may press to no effect. It
+	 * REFUSES rather than forgets — the entries outlive the flip, exactly as they outlive a
+	 * value the parent wrote.
+	 */
 	#holds(projection: string | undefined): boolean {
-		return this.props.history() && projection !== undefined && projection === this.tokens.value()
+		if (!this.props.history() || this.props.readOnly()) return false
+		return projection !== undefined && projection === this.tokens.value()
 	}
 
 	/**
