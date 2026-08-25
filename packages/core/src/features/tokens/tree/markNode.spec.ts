@@ -4,7 +4,7 @@ import {effect, watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {anchorsAt, selectionRange} from '../__testing__/mountFixtures'
 import type {Markup} from '../parser/types'
-import type {MarkNode} from './types'
+import type {MarkNode, RowNode, RowPlacement} from './types'
 
 /**
  * Ported from the deleted `MarkController.spec.ts` at S1.7 (plan decision D-d): the class
@@ -616,11 +616,18 @@ describe('row identity across the structural verbs', () => {
 })
 
 describe('moveTo', () => {
+	/** The root rows, narrowed: `moveTo` is a ROW verb, and `nodes()` answers `TreeNode`. */
+	const rootRows = (store: Store): RowNode[] =>
+		store.tokens.nodes().filter((node): node is RowNode => node.kind === 'row')
+
+	/** A root-level placement, which is every placement a flat document has. */
+	const atRoot = (index: number): RowPlacement => ({parent: null, index})
+
 	it('carries the row identity to its new index', () => {
 		const store = rowSetup('alpha\n\nbeta\n\ngamma\n\n')
 		const [a, b, c, tail] = store.tokens.nodes().map(node => node.id)
 
-		expect(store.tokens.nodes()[0].moveTo(2)).toBe(true)
+		expect(rootRows(store)[0].moveTo(atRoot(2))).toBe(true)
 
 		expect(store.tokens.value()).toBe('beta\n\ngamma\n\nalpha\n\n')
 		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, c, a, tail])
@@ -633,7 +640,7 @@ describe('moveTo', () => {
 		const store = rowSetup('First\n\nFirst\n\nSecond\n\n')
 		const [a, b, c, tail] = store.tokens.nodes().map(node => node.id)
 
-		expect(store.tokens.nodes()[0].moveTo(1)).toBe(true)
+		expect(rootRows(store)[0].moveTo(atRoot(1))).toBe(true)
 
 		expect(store.tokens.value()).toBe('First\n\nFirst\n\nSecond\n\n')
 		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c, tail])
@@ -651,20 +658,19 @@ describe('moveTo', () => {
 		watch(store.tokens.committed, () => committed++)
 		watch(store.tokens.bound, () => bound++)
 
-		expect(store.tokens.nodes()[0].moveTo(1)).toBe(true)
+		expect(rootRows(store)[0].moveTo(atRoot(1))).toBe(true)
 
 		expect([committed, bound]).toEqual([1, 1])
 	})
 
 	it('keeps the selection anchored to the character it was on', () => {
 		const store = rowSetup('alpha\n\nbeta\n\n')
-		const first = store.tokens.nodes()[0]
-		if (first.kind !== 'row') throw new Error('expected a row')
+		const first = rootRows(store)[0]
 		const slot = first.children()[0]
 		if (slot.kind !== 'text') throw new Error('expected a row text child')
 		store.tokens.selection.select({node: slot, offset: 2})
 
-		expect(first.moveTo(1)).toBe(true)
+		expect(first.moveTo(atRoot(1))).toBe(true)
 
 		// The anchor is node-relative and the node travelled, so the caret is still inside
 		// 'alpha' at 2 — now at a different document offset.
@@ -683,9 +689,10 @@ describe('moveTo', () => {
 		const before = store.tokens.nodes()
 		expect(before.map(node => node.kind)).toEqual(['row', 'row', 'row'])
 
-		expect(before[2].moveTo(0)).toBe(true)
+		expect(rootRows(store)[2].moveTo(atRoot(0))).toBe(true)
 
-		// movePlan re-emits the span separator-normalized, so no pair of rows fuses.
+		// The join puts one separator between every adjacent pair and none after the last, so no
+		// pair of rows fuses and the row landing document-final drops the one it arrived with.
 		expect(store.tokens.value()).toBe('gamma\n\nalpha\n\nbeta')
 		const after = store.tokens.nodes()
 		expect(after[0]).toBe(before[2])
@@ -693,18 +700,14 @@ describe('moveTo', () => {
 		expect(after[2]).toBe(before[1])
 	})
 
-	it('refuses a no-op, an out-of-range index, a non-root and read-only', () => {
+	it('refuses a no-op, an out-of-range index and read-only', () => {
 		const store = rowSetup('alpha\n\nbeta\n\n')
-		const rows = store.tokens.nodes()
-		const first = rows[0]
-		if (first.kind !== 'row') throw new Error('expected a row')
+		const first = rootRows(store)[0]
 
-		expect(first.moveTo(0)).toBe(false)
-		expect(first.moveTo(3)).toBe(false)
-		expect(first.moveTo(-1)).toBe(false)
-		// A row child is not a root, so `indexOf` answers -1 — the liveness check and the
-		// index in one read.
-		expect(first.children()[0].moveTo(1)).toBe(false)
+		expect(first.moveTo(atRoot(0))).toBe(false)
+		// Three root rows, so the moved one has two siblings and index 3 is past the append slot.
+		expect(first.moveTo(atRoot(3))).toBe(false)
+		expect(first.moveTo(atRoot(-1))).toBe(false)
 		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
 
 		store.props.set({
@@ -714,7 +717,7 @@ describe('moveTo', () => {
 			Mark: () => null,
 			options: [],
 		})
-		expect(store.tokens.nodes()[0].moveTo(1)).toBe(false)
+		expect(rootRows(store)[0].moveTo(atRoot(1))).toBe(false)
 	})
 })
 describe('entering a fresh row', () => {

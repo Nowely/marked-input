@@ -3,8 +3,8 @@ import {depthCeiling} from '../parser/core/RowScanner'
 import type {RowConfig} from '../parser/types'
 import {offsetOfAnchor, rowBoundary} from './anchors'
 import {preorderRows} from './rows'
-import {rowContent, rowMarkup, sliceNodes} from './tree'
-import type {NodeAnchor, Pairing, RowNode, RowPatch, TreeNode, Window} from './types'
+import {rowContent, rowLine, rowMarkup} from './tree'
+import type {NodeAnchor, Pairing, RowNode, RowPatch, RowPlacement, TreeNode, Window} from './types'
 
 /**
  * Removing the boundary between two rows, as the window that holds them apart — see
@@ -83,92 +83,127 @@ export function endsDocument(roots: readonly TreeNode[], node: TreeNode): boolea
 }
 
 /**
- * Moving a root to another root index, as ONE splice over the affected span plus the
- * {@link Pairing} that says which sibling went where. Roots outside
- * `[min(from,to), max(from,to)]` are not touched, so the splice is as narrow as a rotation can
- * be.
+ * Moving a row AND ITS SUBTREE to a {@link RowPlacement}, as ONE splice over the pre-order LINES
+ * whose bytes actually change, plus the {@link Pairing} that says which row went where.
  *
- * `undefined` — fail closed — when the node is not a root (`indexOf` is the liveness check and
- * the index in one read, so there is no second `reachable`), when `to` is out of range or equal
- * to `from`, when the affected roots do not TILE, or when rows are moved with no separator to
- * rejoin them by. The tiling check cannot come from a parse and is checked rather than assumed,
- * because the splice re-emits the span from those roots alone: any text between them would be
- * silently dropped.
+ * The whole plan lives in ONE coordinate space: the pre-order row list, whose lines tile the
+ * value with a separator between every adjacent pair. A subtree is a contiguous RUN in it, so a
+ * move is "cut this run, paste it before that index", the destination reduces to a single
+ * pre-order position, and there is no common ancestor to find — the narrowest splice is the
+ * narrowest changed range of lines, which is tighter than the ancestor's span whenever the
+ * ancestor has untouched children before or after the move.
  *
- * THE ROW NORMALIZATION IS GONE, with the stored terminator it compensated for. Rows re-emit
- * their own content and the join puts the separators back, so "the row landing document-final
- * carries none" falls out of where the span ends instead of out of a per-row fixup and its
- * fail-closed door.
+ * TWO things change bytes, and the affected range is the union: a line where a DIFFERENT row now
+ * sits, and a moved row whose LEAD is rewritten. The re-lead is `indent.repeat(depth)` rather
+ * than the old lead shifted, for {@link depthPlan}'s reason plus one the mover adds: a surplus
+ * indent run carried into a destination with a deeper ceiling would land the row at the surplus
+ * depth instead of the requested one, so preserving those bytes cannot express the placement.
  *
- * The pairing spans the WHOLE root list, not just the moved span — `resolvePairing` needs a
- * total bijection over the roots, and the untouched ones are the identity part of it.
+ * `undefined` — fail closed — for a non-row, a dead row on either end (the pre-order lookup is
+ * that check for both), a PLACEMENT INSIDE THE MOVED SUBTREE, an index outside the destination's
+ * child list, a no-op, an editor with no separator to rejoin rows by, a nested placement with
+ * nesting off, a destination whose {@link depthCeiling} the moved row cannot reach — an empty row
+ * takes no children, so nothing can be placed under one — and an affected span whose lines do not
+ * TILE. That last cannot come from a parse and is checked rather than assumed, because the splice
+ * re-emits the span from those rows alone: anything between them would be silently dropped.
+ *
+ * The subtree test is the run, and it is the reason the run is computed before anything else: the
+ * tree carries no parent pointers, so "is this parent inside what I am moving" has no answer
+ * except "is its pre-order index in the moved run".
+ *
+ * The pairing spans EVERY pre-order row, not just the moved span — `resolvePairing` needs a total
+ * bijection, and the untouched rows are the identity part of it.
  */
 export function movePlan(
 	roots: readonly TreeNode[],
 	node: TreeNode,
-	to: number,
-	separator: string | undefined
+	placement: RowPlacement,
+	config: RowConfig | undefined
 ): {window: Window; text: string} | undefined {
-	const from = roots.indexOf(node)
+	if (node.kind !== 'row' || config === undefined) return undefined
+	const {separator, indent} = config
+	const {parent, index} = placement
+	// A nested placement has to be WRITTEN, and with no indent unit there is nothing to write it
+	// with — every lead would be empty and every row a root.
+	if (parent !== null && indent === '') return undefined
+
+	const rows = preorderRows(roots)
+	const from = rows.findIndex(entry => entry.row === node)
 	if (from < 0) return undefined
-	if (!Number.isInteger(to) || to < 0 || to >= roots.length || to === from) return undefined
+	const span = preorderRows([node]).length
 
-	const low = Math.min(from, to)
-	const high = Math.max(from, to)
-	for (let index = low; index < high; index++) {
-		if (roots[index].position.end !== roots[index + 1].position.start) return undefined
+	let parentDepth = -1
+	if (parent !== null) {
+		const parentAt = rows.findIndex(entry => entry.row === parent)
+		if (parentAt < 0) return undefined
+		// THE refusal that keeps a move from eating the document: a row cannot become a
+		// descendant of itself, and the run is where that question is answerable.
+		if (parentAt >= from && parentAt < from + span) return undefined
+		parentDepth = rows[parentAt].depth
+	}
+	const depth = parentDepth + 1
+
+	// The destination's child rows WITHOUT the moved one, which is what makes `index` the position
+	// the row takes after the move rather than a slot in a list it is still in.
+	const siblings = (
+		parent === null ? rows.filter(entry => entry.depth === 0).map(entry => entry.row) : parent.rows()
+	).filter(row => row !== node)
+	if (!Number.isInteger(index) || index < 0 || index > siblings.length) return undefined
+
+	// Where the run lands, as a pre-order index in the CURRENT list: before the sibling that will
+	// follow it, or past the whole subtree of the one it will follow.
+	const preIndexOf = (row: RowNode): number => rows.findIndex(entry => entry.row === row)
+	const before =
+		index < siblings.length
+			? preIndexOf(siblings[index])
+			: siblings.length > 0
+				? preIndexOf(siblings[index - 1]) + preorderRows([siblings[index - 1]]).length
+				: parent === null
+					? 0
+					: preIndexOf(parent) + 1
+
+	const kept = rows.map((_, at) => at).filter(at => at < from || at >= from + span)
+	const at = kept.filter(old => old < before).length
+	const run = Array.from({length: span}, (_, offset) => from + offset)
+	// The claim itself: new pre-order row index → the previous row that becomes it.
+	const order: Pairing = [...kept.slice(0, at), ...run, ...kept.slice(at)]
+
+	const delta = depth - rows[from].depth
+
+	// The scan's own ceiling, asked of the row the run will follow — see {@link depthCeiling}.
+	const previous = at === 0 ? undefined : rows[kept[at - 1]]
+	if (depth > depthCeiling(previous && {depth: previous.depth, empty: isEmptyRow(previous.row)})) return undefined
+
+	const moved = (old: number): boolean => old >= from && old < from + span
+	const changed = (position: number): boolean =>
+		order[position] !== position || (delta !== 0 && moved(order[position]))
+	let low = 0
+	while (low < order.length && !changed(low)) low++
+	// A move that rewrites no line is the row already being where it was asked to go, and THIS is
+	// the whole of that reading — an order comparison alone misses the re-indent, since outdenting
+	// the last child to a root directly after its parent leaves the pre-order intact.
+	if (low === order.length) return undefined
+	let high = order.length - 1
+	while (high > low && !changed(high)) high--
+
+	for (let position = low; position < high; position++) {
+		if (rows[position].row.lineRange().end !== rows[position + 1].row.lineRange().start) return undefined
 	}
 
-	const rotate = <T>(items: readonly T[]): T[] => {
-		const next = [...items]
-		next.splice(to - low, 0, ...next.splice(from - low, 1))
-		return next
-	}
-
-	const span = rotate(roots.slice(low, high + 1))
-	const movesRows = span.some(spanNode => spanNode.kind === 'row')
-	if (movesRows && separator === undefined) return undefined
-	const glue = movesRows ? (separator ?? '') : ''
-
-	const parts = span.map(spanNode =>
-		spanNode.kind === 'row'
-			? rowContent(spanNode, separator)
-			: sliceNodes(roots, {before: spanNode}, {after: spanNode})
-	)
-	// The replaced span reaches to `roots[high].position.end`, which carries that row's own
-	// separator unless the span ends the document.
-	const spanEndsDocument = high === roots.length - 1
-	const text = parts.join(glue) + (spanEndsDocument ? '' : glue)
-
-	// The pairing is over PRE-ORDER ROWS, so each root contributes the whole run of indices its
-	// subtree occupies and a move carries every nested row's identity with its parent. It spans
-	// the WHOLE document, not just the moved span — `resolvePairing` needs a total bijection, and
-	// the untouched rows are the identity part of it. A document with no rows carries no claim at
-	// all: the domain is rows, and there is nothing for it to name.
-	const runs = rowIndexRuns(roots)
-	const rootOrder = [
-		...roots.slice(0, low).map((_, index) => index),
-		...rotate(roots.slice(low, high + 1).map((_, index) => low + index)),
-		...roots.slice(high + 1).map((_, index) => high + 1 + index),
-	]
-	const pairing: Pairing = rootOrder.flatMap(index => runs[index])
+	const lines = order
+		.slice(low, high + 1)
+		.map(old => rowLine(rows[old].row, moved(old) ? indent.repeat(rows[old].depth + delta) : undefined))
+	// Every line but the document-final one carries a separator, and the span holds as many lines
+	// as it did — so it ends with one exactly when the row it replaces did.
+	const text = lines.join(separator) + (high < rows.length - 1 ? separator : '')
 
 	const window: Window = {
-		start: roots[low].position.start,
-		end: roots[high].position.end,
+		start: rows[low].row.lineRange().start,
+		end: rows[high].row.lineRange().end,
 		insertedLength: text.length,
-		pairing: pairing.length > 0 ? pairing : undefined,
+		pairing: order,
 	}
 	return {window, text}
-}
-
-/** Per root, the run of pre-order row indices its subtree occupies; empty for a non-row root. */
-function rowIndexRuns(roots: readonly TreeNode[]): number[][] {
-	let next = 0
-	return roots.map(root => {
-		if (root.kind !== 'row') return []
-		return preorderRows([root]).map(() => next++)
-	})
 }
 
 /**

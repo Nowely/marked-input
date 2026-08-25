@@ -79,7 +79,7 @@ export function createTokenTree(
 				duplicate: () => commands?.()?.duplicate(node) ?? false,
 				insertAfter: text => commands?.()?.insertAfter(node, text) ?? false,
 				mergeWith: next => commands?.()?.mergeWith(node, next) ?? false,
-				moveTo: index => commands?.()?.moveTo(node, index) ?? false,
+				moveTo: placement => commands?.()?.moveTo(node, placement) ?? false,
 			}
 			return node
 		}
@@ -94,7 +94,6 @@ export function createTokenTree(
 				duplicate: () => commands?.()?.duplicate(node) ?? false,
 				insertAfter: text => commands?.()?.insertAfter(node, text) ?? false,
 				mergeWith: next => commands?.()?.mergeWith(node, next) ?? false,
-				moveTo: index => commands?.()?.moveTo(node, index) ?? false,
 			}
 			return node
 		}
@@ -124,7 +123,6 @@ export function createTokenTree(
 			duplicate: () => commands?.()?.duplicate(node) ?? false,
 			insertAfter: text => commands?.()?.insertAfter(node, text) ?? false,
 			mergeWith: next => commands?.()?.mergeWith(node, next) ?? false,
-			moveTo: index => commands?.()?.moveTo(node, index) ?? false,
 		}
 		return node
 	}
@@ -306,9 +304,14 @@ export function rowContent(node: RowNode, separator?: string): string {
 		.join(separator ?? '')
 }
 
-/** A row's OWN bytes: its lead, then its kind's markup wrapped around its body. */
-function rowLine(node: RowNode): string {
-	return node.lead() + rowBody(node, joinNodes(node.inline()))
+/**
+ * A row's OWN bytes: its lead, then its kind's markup wrapped around its body.
+ *
+ * `lead` is a parameter because a MOVE re-emits a row at a depth it does not have yet, and a
+ * second spelling of "a row's own bytes" is how the projection and a mover come to disagree.
+ */
+export function rowLine(node: RowNode, lead: string = node.lead()): string {
+	return lead + rowBody(node, joinNodes(node.inline()))
 }
 
 /**

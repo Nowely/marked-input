@@ -582,11 +582,12 @@ export class TokenModel {
 		 * insertion takes a position out of the document or puts one in, so the caret has to be
 		 * told where it went. A move takes NONE out — every node keeps its content and its
 		 * identity — so the anchors the selection already holds still name the same characters,
-		 * and adoption carries them through untouched.
+		 * and adoption carries them through untouched. RE-INDENTING does not change that: a lead
+		 * is the ROW's structural bytes and lives in no text node, so no anchor can name one.
 		 */
-		moveTo: (node, index) => {
+		moveTo: (node, placement) => {
 			this.#ensureSeeded()
-			const plan = untracked(() => movePlan(this.#tree.roots(), node, index, this.#tree.config()?.separator))
+			const plan = untracked(() => movePlan(this.#tree.roots(), node, placement, this.#tree.config()))
 			if (!plan) return false
 			return this.#tx.applyRange(plan.window, plan.text)
 		},

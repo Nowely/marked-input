@@ -18,5 +18,5 @@ export {anchorEquals} from './tree/anchors'
 // The repaint-field contract both adapters pass to `useMarkput` — core knowledge (which node
 // fields reach a framework component), so it lives with the node model, not in an adapter.
 export {renderSubscription} from './tree/renderSubscription'
-export type {Anchors, MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from './tree/types'
+export type {Anchors, MarkNode, NodeAnchor, RowNode, RowPlacement, TextNode, TreeNode} from './tree/types'
 export {TokenHandle} from './dom/TokenHandle'

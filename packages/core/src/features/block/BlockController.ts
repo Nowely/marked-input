@@ -456,9 +456,13 @@ export class BlockController {
 		const target = drop.edge === 'before' ? index : index + 1
 		// The drop target names a SLOT BETWEEN rows, so a target below the source shifts down by
 		// one once the row leaves its old place. Both drag no-ops — dropping on itself, and
-		// dropping on its own trailing edge — collapse onto `to === from`, which `movePlan`
-		// already refuses.
-		this.tokens.find(source)?.moveTo(target > from ? target - 1 : target)
+		// dropping on its own trailing edge — collapse onto the row's current index, which
+		// `movePlan` already refuses.
+		//
+		// `{parent: null}`: {@link rowAt} hit-tests ROOTS alone, so a drop can only ever name a
+		// root slot. Depth is a drop's to give once the hit test descends into nested rows.
+		const row = this.tokens.find(source)
+		if (row?.kind === 'row') row.moveTo({parent: null, index: target > from ? target - 1 : target})
 	}
 }
 

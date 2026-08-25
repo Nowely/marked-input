@@ -165,8 +165,29 @@ export interface RowNode {
 	duplicate(): boolean
 	insertAfter(text: string): boolean
 	mergeWith(next: TreeNode): boolean
-	moveTo(index: number): boolean
+	/**
+	 * Move this row AND ITS SUBTREE to `placement`, keeping every row's identity — the moved
+	 * subtree's, its old siblings' and its new siblings'. The subtree is re-indented to sit under
+	 * its new parent, which NORMALIZES a surplus indent run exactly as {@link setDepth} does.
+	 *
+	 * `false` for a placement inside the moved row's OWN subtree — a row cannot become its own
+	 * descendant — and for a dead row on either end, an index outside the destination's child
+	 * list, a no-op, an editor with no separator to rejoin rows by, and a nested placement in an
+	 * editor with nesting off.
+	 */
+	moveTo(placement: RowPlacement): boolean
 }
+
+/**
+ * WHERE a row goes: the row it becomes a child of (`null` for the document's own root list) and
+ * the index it takes among that parent's child rows AFTER the move, counted with the moved row
+ * itself taken out. So `parent.rows()[index] === row` is the postcondition, and `index ===
+ * rows().length` appends.
+ *
+ * A parent NODE rather than a depth, because depth alone cannot say which of two same-depth
+ * parents a row joins, and the tree carries no parent pointers to disambiguate it afterwards.
+ */
+export type RowPlacement = {parent: RowNode | null; index: number}
 
 export interface TextNode {
 	readonly kind: 'text'
@@ -185,7 +206,6 @@ export interface TextNode {
 	duplicate(): boolean
 	insertAfter(text: string): boolean
 	mergeWith(next: TreeNode): boolean
-	moveTo(index: number): boolean
 }
 
 export interface MarkNode {
@@ -216,7 +236,6 @@ export interface MarkNode {
 	duplicate(): boolean
 	insertAfter(text: string): boolean
 	mergeWith(next: TreeNode): boolean
-	moveTo(index: number): boolean
 }
 
 /**
@@ -262,8 +281,8 @@ export interface NodeCommands {
 	 * precedent — and because it is the one verb that answers whether the pair HAD a boundary.
 	 */
 	mergeWith(node: TreeNode, next: TreeNode): boolean
-	/** Move a ROOT to another root index, keeping its identity. `false` for a non-root, a no-op or an out-of-range index. */
-	moveTo(node: TreeNode, index: number): boolean
+	/** Move a ROW and its subtree, keeping every row's identity. See {@link RowNode.moveTo}. */
+	moveTo(node: RowNode, placement: RowPlacement): boolean
 	/** Re-indent a ROW, keeping every row's identity. See {@link RowNode.setDepth}. */
 	setDepth(node: TreeNode, depth: number): boolean
 	/** Retype a ROW, keeping its identity. See {@link RowNode.turnInto}. */

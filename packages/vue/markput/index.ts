@@ -24,3 +24,6 @@ export type {MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from '@markput/c
 // here the published package's own `Option` page links a name nothing exports, and `continues`
 // is documented nowhere a consumer looks.
 export type {RowSpec} from '@markput/core'
+// `RowNode.moveTo`'s parameter, published for `RowSpec`'s reason: without it the built
+// `.d.ts` names a type a consumer of this package cannot import.
+export type {RowPlacement} from '@markput/core'
