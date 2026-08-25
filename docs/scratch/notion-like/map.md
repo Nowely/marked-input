@@ -108,6 +108,20 @@ becomes a ticket here.
   which no `Pairing` can express. `moveTo` is untouched — P5 owns the common-ancestor splice.
   Ticket [11](issues/11-overlay-inserts-one-markup.md)'s missing half is now reachable:
   `turnInto` takes the new body text, so strip-and-retype is one commit.
+- **P4's review found four real defects, all in the same shape: a reading that was widened but not
+  widened enough** (2026-08-25). Finality was read of the last ROW where a removal takes the whole
+  SUBTREE, so the last root with children lost its boundary. A retype spliced the whole line body,
+  and adoption collapses every anchor inside a window onto its end, so every retype threw the caret
+  to the row's end — the window is trimmed to the changed bytes now. A split always gave the
+  subtree to the head, which fails for the one head that cannot hold it: the EMPTY one. And a row
+  kind was resolved by option REFERENCE, which the Vue adapter breaks on every prop sync by
+  rebuilding its option objects — `turnInto` could never succeed in Vue, and no adapter test called
+  it. Resolution is by MARKUP now.
+- **Four P4 mechanisms were load-bearing and unpinned**, found by deleting each and running the
+  suite: `rowSequence`'s no-row fallback, `#insertAfter`'s non-row step, and both new dead-node
+  checks. The dead-node lesson generalizes — the obvious case pins nothing, because a dead LAST
+  row's stale window points past the shortened document and the transaction's own bound refuses it.
+  Only a dead FIRST row's window still lands on live bytes.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
