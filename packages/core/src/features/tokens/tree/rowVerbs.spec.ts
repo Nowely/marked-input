@@ -718,6 +718,32 @@ describe('moveTo', () => {
 		expect(blank.rows()).toEqual([kid])
 	})
 
+	/**
+	 * A SURPLUS lead — one asking for more depth than the clamp granted — is held down by the row
+	 * before it and by nothing else, so a splice that raises that ceiling re-parents a row the
+	 * caller never named. Both documents here reached it, one through the shipped root-level drag
+	 * and one through a nested placement: `'x⏎⏎⇥⇥b'` emitted `'⏎x⏎⇥⇥b'`, where the untouched root
+	 * `b` became `x`'s child, and `'p⏎⇥q⏎r⏎⇥⇥s'` emitted `r[p[q, s]]` instead of `r[p[q], s]`.
+	 */
+	it('refuses a move that would re-parse the row after the splice', () => {
+		const flat = rowStore('x\n\n\t\tb')
+		const [x, blank, b] = rowsOf(flat)
+
+		expect(x.moveTo({parent: null, index: 1})).toBe(false)
+
+		expect(flat.tokens.value()).toBe('x\n\n\t\tb')
+		expect(rowsOf(flat)).toEqual([x, blank, b])
+
+		const nested = rowStore('p\n\tq\nr\n\t\ts')
+		const [p, q, r, s] = rowsOf(nested)
+
+		expect(p.moveTo({parent: r, index: 0})).toBe(false)
+
+		expect(nested.tokens.value()).toBe('p\n\tq\nr\n\t\ts')
+		expect(rowsOf(nested)).toEqual([p, q, r, s])
+		expect(r.rows()).toEqual([s])
+	})
+
 	/** With nesting off there is no indent unit to write a lead with, so only root moves exist. */
 	it('refuses a nested placement when the editor has no indent', () => {
 		const store = rowStore('a\nb')

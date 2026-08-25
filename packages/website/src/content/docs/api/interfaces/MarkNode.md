@@ -5,7 +5,7 @@ prev: false
 title: "MarkNode"
 ---
 
-Defined in: [core/src/features/tokens/tree/types.ts:213](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L213)
+Defined in: [core/src/features/tokens/tree/types.ts:215](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L215)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:213](https://github.com/Nowe
 readonly children: Signal<readonly TreeNode[]>;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:221](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L221)
+Defined in: [core/src/features/tokens/tree/types.ts:223](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L223)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:221](https://github.com/Nowe
 readonly descriptor: MarkupDescriptor;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:216](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L216)
+Defined in: [core/src/features/tokens/tree/types.ts:218](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L218)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:216](https://github.com/Nowe
 readonly id: number;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:215](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L215)
+Defined in: [core/src/features/tokens/tree/types.ts:217](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L217)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:215](https://github.com/Nowe
 readonly kind: "mark";
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:214](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L214)
+Defined in: [core/src/features/tokens/tree/types.ts:216](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L216)
 
 ***
 
@@ -55,7 +55,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:214](https://github.com/Nowe
 readonly markup: Markup;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:218](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L218)
+Defined in: [core/src/features/tokens/tree/types.ts:220](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L220)
 
 The public view of the descriptor, which is not a public type.
 
@@ -67,7 +67,7 @@ The public view of the descriptor, which is not a public type.
 readonly meta: Signal<string | undefined>;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:220](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L220)
+Defined in: [core/src/features/tokens/tree/types.ts:222](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L222)
 
 ***
 
@@ -77,7 +77,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:220](https://github.com/Nowe
 position: object;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:229](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L229)
+Defined in: [core/src/features/tokens/tree/types.ts:231](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L231)
 
 #### end
 
@@ -104,7 +104,7 @@ slotRange:
   | undefined;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:228](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L228)
+Defined in: [core/src/features/tokens/tree/types.ts:230](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L230)
 
 Live slot POSITIONS, written by adoption like `position`; `slot()` is the public read
 of the slot's TEXT, which is why the two carry different names. Slot text is
@@ -119,7 +119,7 @@ children, so a stored copy would be an unread mirror nothing resyncs.
 readonly value: Signal<string>;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:219](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L219)
+Defined in: [core/src/features/tokens/tree/types.ts:221](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L221)
 
 ## Methods
 
@@ -129,7 +129,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:219](https://github.com/Nowe
 duplicate(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:238](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L238)
+Defined in: [core/src/features/tokens/tree/types.ts:240](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L240)
 
 #### Returns
 
@@ -143,7 +143,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:238](https://github.com/Nowe
 insertAfter(text): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:239](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L239)
+Defined in: [core/src/features/tokens/tree/types.ts:241](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L241)
 
 #### Parameters
 
@@ -163,7 +163,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:239](https://github.com/Nowe
 mergeWith(next): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:240](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L240)
+Defined in: [core/src/features/tokens/tree/types.ts:242](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L242)
 
 #### Parameters
 
@@ -183,7 +183,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:240](https://github.com/Nowe
 range(): object;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:233](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L233)
+Defined in: [core/src/features/tokens/tree/types.ts:235](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L235)
 
 See [TextNode.range](/api/interfaces/textnode/#range).
 
@@ -211,7 +211,7 @@ start: number;
 remove(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:237](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L237)
+Defined in: [core/src/features/tokens/tree/types.ts:239](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L239)
 
 See NodeCommands.
 
@@ -227,7 +227,7 @@ See NodeCommands.
 slot(): string | undefined;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:231](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L231)
+Defined in: [core/src/features/tokens/tree/types.ts:233](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L233)
 
 The slot's TEXT, joined from the live children. `undefined` for a slotless markup.
 
@@ -243,7 +243,7 @@ The slot's TEXT, joined from the live children. `undefined` for a slotless marku
 update(patch): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:235](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L235)
+Defined in: [core/src/features/tokens/tree/types.ts:237](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L237)
 
 Rides a transaction; `false` in read-only mode or off the tree.
 

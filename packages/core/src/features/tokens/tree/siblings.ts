@@ -106,6 +106,12 @@ export function endsDocument(roots: readonly TreeNode[], node: TreeNode): boolea
  * one is "an empty row takes no children" read at both ends: nothing can be placed UNDER an empty
  * row, and a row carrying children cannot be re-led into an empty one.
  *
+ * And one refusal that is about a row the caller never named: the row directly AFTER the span
+ * re-parses against a new predecessor, so if its lead is SURPLUS — asking for more depth than the
+ * clamp granted it — a splice that raises the ceiling above it would silently re-parent it. The
+ * mover refuses instead of widening the span, because normalizing that row's lead rewrites bytes
+ * outside the move and cascades into the row after it.
+ *
  * The subtree test is the run, and it is the reason the run is computed before anything else: the
  * tree carries no parent pointers, so "is this parent inside what I am moving" has no answer
  * except "is its pre-order index in the moved run".
@@ -190,6 +196,20 @@ export function movePlan(
 	if (low === order.length) return undefined
 	let high = order.length - 1
 	while (high > low && !changed(high)) high--
+
+	// The row AFTER the span re-parses against a new predecessor while its own bytes stay put, and
+	// a SURPLUS lead — one asking for more depth than the row was granted — is held down by the
+	// ceiling above it alone. A splice that raises that ceiling re-parents a row nobody moved:
+	// `'x⏎⏎⇥⇥b'` moving `x` below the blank row emitted `'⏎x⏎⇥⇥b'`, where the untouched root `b`
+	// became `x`'s child. Refused rather than widened — normalizing that lead would rewrite a row
+	// the caller never named, and the rewrite cascades into the row after THAT one.
+	const follower = rows.at(high + 1)
+	if (follower !== undefined && follower.row.lead() !== indent.repeat(follower.depth)) {
+		const last = rows[order[high]]
+		const landed = moved(order[high]) ? last.depth + delta : last.depth
+		const lead = moved(order[high]) ? indent.repeat(landed) : last.row.lead()
+		if (fitsUnder({row: last.row, depth: landed, lead}, follower.depth + 1)) return undefined
+	}
 
 	const lines = order
 		.slice(low, high + 1)
@@ -395,10 +415,13 @@ function isEmptyRow(row: RowNode, lead: string = row.lead()): boolean {
 
 /**
  * Can a row sit at `depth` when it is written directly after `previous` — {@link depthCeiling}
- * asked of a live pre-order entry, and the ONE owner of that question for every verb that writes a
+ * asked of a pre-order entry, and the ONE owner of that question for every verb that writes a
  * lead. `undefined` is the document's first row, which is always a root.
  *
+ * `previous` is read AS THE SPLICE LEAVES IT, which is why its `lead` is a parameter and its
+ * `depth` is passed rather than trusted: a re-lead moves a row and can empty it, and the row the
+ * scan will read back is the row the verb is about to write, not the one on the tree now.
  */
-function fitsUnder(previous: {row: RowNode; depth: number} | undefined, depth: number): boolean {
-	return depth <= depthCeiling(previous && {depth: previous.depth, empty: isEmptyRow(previous.row)})
+function fitsUnder(previous: {row: RowNode; depth: number; lead?: string} | undefined, depth: number): boolean {
+	return depth <= depthCeiling(previous && {depth: previous.depth, empty: isEmptyRow(previous.row, previous.lead)})
 }
