@@ -190,10 +190,13 @@ describe('one watch over the props tuple', () => {
 	})
 
 	it('a separator re-sent unchanged does not pulse the clock', () => {
-		// `rowConfig` builds a fresh record on every evaluation, and both adapters push props on
-		// every render — so under reference equality each parent render would re-announce the
-		// parse policy and commit. The `{equals: shallow}` gate is what keeps that at one pulse
-		// per DISTINCT policy, and `committed` is published through `useMarkput`.
+		// Both adapters push every prop on every parent render, so an unchanged `separator`
+		// arrives again and again, and `committed` is published through `useMarkput`. What holds
+		// here is the SIGNAL's own identity check: `signalOper` returns before propagating when
+		// `current === v`, so `rowConfig` is not even evaluated (measured: 0 evaluations over the
+		// five re-sends below) and nothing downstream wakes. `rowConfig` needs no equality gate of
+		// its own for this — a `{equals: shallow}` one stood here and was deleted after the whole
+		// suite stayed green without it.
 		const store = mountRowless()
 		const committedSpy = vi.fn()
 		watch(store.tokens.committed, committedSpy)

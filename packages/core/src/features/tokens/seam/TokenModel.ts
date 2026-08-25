@@ -320,22 +320,16 @@ export class TokenModel {
 	 * asked for on purpose. `Parser.parseRows` refuses `''` outright, so the alternative here is
 	 * an exception raised inside the adapter's own render hook; see `shared/reportBadProp`.
 	 */
-	readonly rowConfig: Computed<RowConfig | undefined> = computed(
-		() => {
-			const separator = this.props.separator()
-			if (separator === null) return undefined
-			if (separator !== '') return {separator}
-			reportBadProp(
-				'`separator` is empty, so this editor has no rows and no row controls. ' +
-					'Pass a non-empty separator, or `separator={null}` for a document that never splits.'
-			)
-			return undefined
-		},
-		// A record, so reference equality would call every dependent awake on each evaluation —
-		// including the props watch below, whose whole job is to adopt only when the parse
-		// policy actually moved.
-		{equals: shallow}
-	)
+	readonly rowConfig: Computed<RowConfig | undefined> = computed(() => {
+		const separator = this.props.separator()
+		if (separator === null) return undefined
+		if (separator !== '') return {separator}
+		reportBadProp(
+			'`separator` is empty, so this editor has no rows and no row controls. ' +
+				'Pass a non-empty separator, or `separator={null}` for a document that never splits.'
+		)
+		return undefined
+	})
 
 	/**
 	 * The index of the ROOT whose subtree contains `id` — the block ROW index. Off the live

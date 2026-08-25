@@ -124,12 +124,12 @@ describe('OverlayController', () => {
 		})
 
 		it('stays closed when the separator prop is re-sent unchanged', () => {
-			// BEHAVIOUR CHANGE (ticket 05), and the UI-visible half of it. This watch is one of
-			// only two production readers of `tokens.committed`, and both adapters push every
-			// prop on every parent render — so an unchanged `separator` arrives again and again.
-			// Without `rowConfig`'s equality gate each arrival pulses the clock, the probe re-runs,
-			// finds the '@wo' the caret is still sitting on and REOPENS an overlay the user had
-			// just dismissed. Measured without the gate: `"wo"` here.
+			// The UI-visible half of the case above. This watch is one of only two production
+			// readers of `tokens.committed`, and both adapters push every prop on every parent
+			// render — so an unchanged `separator` arrives again and again. If any of those
+			// arrivals pulsed the clock the probe would re-run, find the '@wo' the caret is still
+			// sitting on and REOPEN an overlay the user had just dismissed. It does not, because
+			// the `separator` SIGNAL drops an identical write before it propagates.
 			const store = storeWithCaret('hello @wo', 9)
 			store.overlay.close()
 
