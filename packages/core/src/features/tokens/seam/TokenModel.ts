@@ -28,7 +28,7 @@ import {
 import {gapWindow} from '../tree/gapWindow'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
-import {depthPlan, mergePlan, movePlan, removePlan} from '../tree/siblings'
+import {depthPlan, endsDocument, mergePlan, movePlan, removePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkNode, MarkPatch, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
@@ -543,10 +543,12 @@ export class TokenModel {
 		},
 		duplicate: node => {
 			const projection = this.valueBetween({before: node}, {after: node})
-			// The document-final row carries no separator; without one between the copies
-			// they fuse into a single row (issue 08 review finding).
+			// A row whose subtree ends the document carries no separator; without one between the
+			// copies they fuse into a single row (issue 08 review finding). Asked of the SPAN and
+			// not of the root list, because under nesting the last root and the last row are two
+			// different rows and both of them end the document.
 			const text = untracked(() =>
-				node.kind === 'row' && this.#tree.roots().at(-1) === node
+				endsDocument(this.#tree.roots(), node)
 					? (this.#tree.config()?.separator ?? '') + projection
 					: projection
 			)
