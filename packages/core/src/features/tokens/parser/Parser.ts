@@ -77,12 +77,28 @@ export class Parser {
 	 * ```
 	 */
 	parse(value: string): Token[] {
-		const segments = this.segmentMatcher.search(value)
+		// Inline is one implicit row (issue 08), starting at offset 0.
+		return this.parseInline(value, 0)
+	}
+
+	/**
+	 * THE inline chain, and the only one: segments, patterns, trailing-gap closure, tree. Both
+	 * entries run it — `parse` over the whole value, `parseRows` over one row's body — because
+	 * the scan-first inversion changed WHAT the chain is given, not what it does. Written once so
+	 * a rule added here cannot reach one caller and miss the other.
+	 *
+	 * `start` is where `content` sits in the value; body-relative positions become absolute ones.
+	 */
+	private parseInline(content: string, start: number): Token[] {
+		const segments = this.segmentMatcher.search(content)
 		const matches = acceptMatches(this.patternMatcher.process(segments))
-		// Inline is one implicit row (issue 08): an open trailing gap closes at end of input
-		closeTrailingGaps(matches, value.length)
+		// One scope is one gap closure: an open trailing gap closes at the end of the content it
+		// was opened in — end of input for `parse`, the body's end for a row.
+		closeTrailingGaps(matches, content.length)
 		// Closure extends `end`, which can put two accepted matches back in conflict
-		return this.treeBuilder.build(acceptMatches(matches), value)
+		const tokens = this.treeBuilder.build(acceptMatches(matches), content)
+		if (start !== 0) shiftTokens(tokens, start)
+		return tokens
 	}
 
 	/**
@@ -121,25 +137,16 @@ export class Parser {
 	}
 
 	/**
-	 * A row's own inline tokens, at absolute positions. The chain is byte-identical to
-	 * {@link parse}'s — it just runs over the row's body instead of the whole value, which is
-	 * what bounds every match to one row.
+	 * A row's own inline tokens, at absolute positions — {@link parseInline} over the row's body
+	 * instead of the whole value, which is what bounds every match to one row.
 	 *
 	 * A RAW body (`__value__`) is one text token and is never re-parsed: that is the whole
-	 * difference the two body placeholders express.
+	 * difference the two body placeholders express, and the only thing this arm adds.
 	 */
 	private parseBody(row: RowToken, value: string): Token[] {
 		const {start, end, content} = row.slot
 		if (row.descriptor && !row.descriptor.hasSlot) return [createTextToken(value, start, end)]
-
-		const segments = this.segmentMatcher.search(content)
-		const matches = acceptMatches(this.patternMatcher.process(segments))
-		// One row is one scope: an open trailing gap closes at the body's end, exactly as inline
-		// parsing closes one at end of input.
-		closeTrailingGaps(matches, content.length)
-		const tokens = this.treeBuilder.build(acceptMatches(matches), content)
-		if (start !== 0) shiftTokens(tokens, start)
-		return tokens
+		return this.parseInline(content, start)
 	}
 }
 
