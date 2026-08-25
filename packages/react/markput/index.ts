@@ -6,6 +6,10 @@ export {MarkedInput} from './src/components/MarkedInput'
 // slash-menu paint lives here beside `Suggestions`; `{overlay: {trigger: '/'}, Overlay: BlockMenu}`
 // is the whole of a consumer's wiring.
 export {BlockMenu} from './src/components/BlockMenu/BlockMenu'
+// What a consumer's own control — a toggle arrow, a checkbox, a `<select>` — takes so the
+// caret and the browser's own editing stay out of it. `TokenModel.control()` is the SPI behind
+// it, and reaching for that means reaching through `store.tokens`.
+export {useControlRef} from './src/lib/hooks/useControlRef'
 export {useMark} from './src/lib/hooks/useMark'
 export {useMarkInfo} from './src/lib/hooks/useMarkInfo'
 export {useOverlay} from './src/lib/hooks/useOverlay'
