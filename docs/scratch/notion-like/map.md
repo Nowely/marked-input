@@ -349,7 +349,12 @@ becomes a ticket here.
   nested drag would have been a root drag. `rowAt` binary-searches the roots and then runs the same
   search over the hit row's own child rows. Inside a parent the leftover space IS the parent's own
   line, so a nearest CHILD would claim a point its parent owns — a distinction the flat search never
-  had to make. A CARVED row is a leaf: pointing anywhere in a table line answers the LINE.
+  had to make. A CARVED row is a leaf: pointing anywhere in a table line answers the LINE. AMENDED
+  in review: root-only was right sideways and wrong downward. A point PAST a root's box is past its
+  whole subtree, and answering the root there reads the gap off the root's own line — which for a
+  parent is its first child's slot, so a drop below the document landed above the very children the
+  pointer was below. The walk continues to the subtree's last PAINTED line, which is also the
+  nearest painted row to a point below everything.
 - **The collapse hazard is answered by walking, not by giving up.** A row hidden by a collapsed
   ancestor is still in the tree and still bound, and it has no box to be ordered by; the old code
   abandoned the whole document the moment one row on its path was unbound. A probe that lands on an
@@ -362,7 +367,9 @@ becomes a ticket here.
   The pointer's Y names a gap — read off the hit row's own LINE, since a parent's box covers its
   children — and its X names a depth inside it. Which depths a gap offers is bounded by the scan's
   ceiling above and the next line's depth below (go shallower and that line becomes a CHILD of what
-  was dropped), and then every candidate is PLANNED by P5's mover; the refused ones are never
+  was dropped) — the line the MOVE leaves after the gap, since a row in flight is not there to be
+  re-parented, which the first cut of the floor missed — and then every candidate is PLANNED by
+  P5's mover; the refused ones are never
   painted. `state.drop` therefore holds the placement that will happen together with the line that
   says so, and `rootIndexOf` is deleted with its last caller. The indent unit is MEASURED off the
   document — the hit row is inset from the parent the descent came through — so core reads a depth
@@ -397,6 +404,27 @@ becomes a ticket here.
   cross-axis hit-testing explicitly out of scope in the same breath, which leaves `clientX` a
   parameter with no reader; the depth the pointer's X chooses is a DROP question, answered where the
   X is already in hand. `rowAt(clientY)` keeps its name and gains the descent.
+- **P10's review round: five real defects, all in the same seam between a gesture and its span.**
+  (1) the drop floor read a line that was itself in flight, so the commonest drag there is — pick a
+  row up, drop it at its own gap to change only its depth — offered no outdent, and a gap whose
+  whole remainder was leaving offered nothing at all; (2) the widening rung answered the FIRST
+  covered row's parent verbatim, so Esc and Mod+A both SHRANK a selection spanning two parents, and
+  Esc's `'row'` fallback shrank it again at depth 0; (3) Shift+arrow at a document edge fell through
+  to the browser, whose own gesture then collapsed the selection it was extending — the arm's
+  `undefined` meant two opposite things; (4) a drop below the document nested into the last root;
+  (5) Esc with the row menu open did both, since the menu's dismissal is on `document` and cannot
+  see this arm's `defaultPrevented`. Four mechanisms survived deletion with the suite green and are
+  now pinned rather than deleted, each seen to redden: `#indentStep`'s own-child arm,
+  `ASSUMED_INDENT`, `#lineBottom`'s carved-row return, and `state.drop`'s own equality.
+  `ASSUMED_INDENT` was NOT derived from `SlotsFeature`'s gutter width — same number, different
+  fact, and tying them would move drop depths on a restyle. The `dragover` cost the phase never
+  stated is measured and written down: ~1.5 ms a tick at 4000 rows, 9% of a frame, kept because the
+  alternative is a depth rule restated outside the mover.
+- **Undeclared, not undesigned: a row gesture needs no Esc.** Because `selected` is derived, a plain
+  text selection covering one row WHOLE already holds that row, so the next Shift+arrow grows by a
+  ROW. That is what "a row selection IS the text selection" means, and it was true from the first
+  commit; only the docs implied otherwise by saying "once a row selection stands". Now pinned and
+  written.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
