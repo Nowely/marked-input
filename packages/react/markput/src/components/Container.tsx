@@ -2,8 +2,8 @@ import {memo, useCallback} from 'react'
 import type {Ref} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-import {Block} from './Block'
 import {BlockControls} from './BlockControls'
+import {Rows} from './Rows'
 import {Token} from './Token'
 
 export const Container = memo(() => {
@@ -31,10 +31,15 @@ export const Container = memo(() => {
 
 	return (
 		<Component {...props} ref={setRef}>
-			{/* The NODE decides its own wrapper — no mode is consulted, and the row kind narrows
-			    `Block`'s prop where a cast used to stand in for it. */}
-			{nodes.map(n =>
-				n.kind === 'row' ? <Block key={n.id} node={n} /> : <Token key={n.id} node={n} depth={0} />
+			{/* Branched on the PROPS-derived separator rather than per node, matching Vue's
+			    Container: a configured separator is exactly when the parse yields rows. The roots
+			    are then ONE sibling list of rows, painted by the same component a row's own
+			    children are, so the group wrapper and the depth index have one implementation at
+			    every depth. */}
+			{rowConfig === undefined ? (
+				nodes.map(n => <Token key={n.id} node={n} depth={0} />)
+			) : (
+				<Rows rows={nodes.filter(n => n.kind === 'row')} depth={0} />
 			)}
 			{/* The row controls, as one layer INSIDE the container rather than a copy inside every
 			    row. It is therefore a container child that is not a row — `styles.BlockControls`

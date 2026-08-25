@@ -32,7 +32,31 @@ The row's own inline content, already rendered.
 optional className: string;
 ```
 
-Defined in: [react/markput/src/types.ts:36](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L36)
+Defined in: [react/markput/src/types.ts:53](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L53)
+
+***
+
+### depth
+
+```ts
+depth: number;
+```
+
+Defined in: [react/markput/src/types.ts:41](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L41)
+
+Nesting depth, counted from the roots.
+
+***
+
+### index
+
+```ts
+index: number;
+```
+
+Defined in: [react/markput/src/types.ts:43](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L43)
+
+Position among the row's own SIBLINGS — a group wrapper does not renumber the list.
 
 ***
 
@@ -54,7 +78,7 @@ The kind's metadata gap — a todo's checked flag, a fence's language.
 node: RowNode;
 ```
 
-Defined in: [react/markput/src/types.ts:28](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L28)
+Defined in: [react/markput/src/types.ts:45](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L45)
 
 The live row node: its id, its own text and its verbs.
 
@@ -66,12 +90,33 @@ The live row node: its id, its own text and its verbs.
 optional ref: RefCallback<HTMLElement>;
 ```
 
-Defined in: [react/markput/src/types.ts:35](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L35)
+Defined in: [react/markput/src/types.ts:52](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L52)
 
 A row kind's component is a SLOT component: spread `ref`, `className` and `style` onto the
 element it renders, the way `slots.container` and `slots.block` consumers already do. The
 ref is how the editor finds the row's element; a component that drops it leaves the row
 unbound, and the caret cannot resolve into it.
+
+***
+
+### rows?
+
+```ts
+optional rows: ReactNode;
+```
+
+Defined in: [react/markput/src/types.ts:39](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L39)
+
+The row's CHILD ROWS, already rendered; `undefined` when there are none. A kind that renders
+them decides where they go — a toggle hides them, a bullet nests a list inside its `<li>`.
+
+A kind that renders NEITHER them nor a wrapper for them keeps the rows in the value and off
+the screen: they round-trip and reappear when the row is outdented. That is Notion's own
+behaviour for a heading, and it is what declaring no "can this nest" flag costs.
+
+A collapsed row is HIDDEN, never unmounted: an unpainted row leaves `bind` and takes its
+anchors with it, so `End`, select-all and every arrow that resolves through the last row
+would walk into a row with no element.
 
 ***
 
@@ -81,4 +126,4 @@ unbound, and the caret cannot resolve into it.
 optional style: CSSProperties;
 ```
 
-Defined in: [react/markput/src/types.ts:37](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L37)
+Defined in: [react/markput/src/types.ts:54](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L54)

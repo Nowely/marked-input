@@ -5,8 +5,8 @@ import type {Ref} from 'vue'
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 import {unwrapEl} from '../lib/unwrapEl'
-import Block from './Block.vue'
 import BlockControls from './BlockControls.vue'
+import Rows from './Rows.vue'
 import Token from './Token.vue'
 
 const store = useStore()
@@ -35,6 +35,9 @@ const boundProps = computed(() => {
 	return rest
 })
 
+/** The roots as ROWS, which they all are when a separator is configured. */
+const rowRoots = computed(() => result.value.nodes.filter(node => node.kind === 'row'))
+
 const setContainerRef = (el: unknown) => {
 	const element = unwrapEl(el)
 	store.host.container(element)
@@ -50,11 +53,12 @@ const setContainerRef = (el: unknown) => {
 		<!-- Branched on the PROPS-derived separator rather than per node: Vue gives a per-item
 		     `v-if` its own Fragment, and a Fragment mounts two empty text anchors, so the
 		     per-node form would push 2N stray text nodes into the editing host. The branch is
-		     equivalent — a configured separator is exactly when the parse yields rows. -->
+		     equivalent — a configured separator is exactly when the parse yields rows.
+		     The roots are then ONE sibling list of rows, painted by the same component a row's
+		     own children are, so the group wrapper and the depth index have one implementation
+		     at every depth. -->
 		<template v-if="result.rowConfig !== undefined">
-			<template v-for="node in result.nodes" :key="node.id">
-				<Block v-if="node.kind === 'row'" :node="node" />
-			</template>
+			<Rows :rows="rowRoots" :depth="0" />
 			<!-- The row controls, as one layer INSIDE the container rather than a copy inside
 			     every row. It is therefore a container child that is not a row —
 			     `styles.BlockControls` is how a caller tells them apart. -->

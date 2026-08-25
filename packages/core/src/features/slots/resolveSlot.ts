@@ -1,7 +1,7 @@
 import type {CoreOption, CoreSlotProps, CoreSlots, Slot} from '../../shared/types'
 import {cx} from '../../shared/utils/cx'
 import {convertDataAttrs} from '../../shared/utils/dataAttributes'
-import type {TreeNode} from '../tokens'
+import type {RowNode, TreeNode} from '../tokens'
 
 import styles from '../../../styles.module.css'
 
@@ -69,6 +69,17 @@ export interface NodeSlotContext {
 }
 
 /**
+ * What only the parent that MAPPED a row knows, and the tree therefore cannot answer: the row's
+ * place among its siblings, and its child rows ALREADY RENDERED by the framework. `rows` is
+ * framework-opaque here — core ships no components — so it travels as `unknown`.
+ */
+export interface RowRender {
+	depth: number
+	index: number
+	rows?: unknown
+}
+
+/**
  * THE node's framework component and props — for text, mark and ROW alike. Reads the node's
  * signals, and its callers are render bodies rather than reactive scopes, so nothing subscribes
  * here; the subscription that makes a node repaint is the component's own (spec D8).
@@ -78,21 +89,28 @@ export interface NodeSlotContext {
  * it: both adapters used to cast and merge those by hand beside their own `blockComponent` and
  * `blockProps` reads, which was one rule written twice.
  */
-export function resolveNodeSlot(node: TreeNode, ctx: NodeSlotContext): readonly [Slot, Record<string, unknown>] {
+export function resolveNodeSlot(
+	node: TreeNode,
+	ctx: NodeSlotContext,
+	row?: RowRender
+): readonly [Slot, Record<string, unknown>] {
 	if (node.kind === 'text') {
 		const fallback = (ctx.Span ?? 'span') as Slot
 		return [fallback, ctx.Span ? {value: node.text()} : {}]
 	}
 	if (node.kind === 'row') {
-		const option = node.option()
-		const Kind = option === undefined ? undefined : ctx.options?.[option]?.row?.Component
+		const Kind = rowComponent(node, ctx)
 		const {className, style, ...rest} = resolveSlotProps('block', ctx.slotProps) ?? {}
 		// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.className is raw consumer input
 		const base = {...rest, className: cx(styles.Block, className as string | undefined), style}
 		// The row's own data goes ONLY to a kind's component, which is the consumer's. The
 		// paragraph fallback is `slots.block`, whose default is a bare `div`: handing a `node`
-		// to that writes a stringified attribute onto the element.
-		return Kind ? [Kind, {...base, meta: node.meta(), node}] : [resolveSlot('block', ctx.slots), base]
+		// to that writes a stringified attribute onto the element — and the same is true of the
+		// rendered child rows, which is why a paragraph's go in as ordinary children instead.
+		//
+		// `node` in the returned props is therefore also THE test a caller reads for "this row
+		// paints through its kind's own component"; both adapters ask it that way.
+		return Kind ? [Kind, {...base, meta: node.meta(), node, ...row}] : [resolveSlot('block', ctx.slots), base]
 	}
 	const option = ctx.options?.[node.descriptor.index]
 	const baseProps = {value: node.value(), meta: node.meta()}
@@ -100,4 +118,37 @@ export function resolveNodeSlot(node: TreeNode, ctx: NodeSlotContext): readonly 
 	const Component = option?.Mark ?? ctx.Mark
 	if (!Component) throw new Error('No mark component found. Provide either option.Mark or global Mark.')
 	return [Component, props]
+}
+
+/** The component a row's KIND declares, or `undefined` for a paragraph. */
+function rowComponent(node: RowNode, ctx: NodeSlotContext): Slot | undefined {
+	const option = node.option()
+	return option === undefined ? undefined : ctx.options?.[option]?.row?.Component
+}
+
+/** A run of consecutive sibling rows sharing one wrapper — `Group: undefined` is the bare run. */
+export type RowGroup = {Group: Slot | undefined; rows: readonly RowNode[]}
+
+/**
+ * A sibling list as RUNS: consecutive rows agreeing on their `group` component, folded together.
+ * Agreeing on NOTHING counts, so a list that declares no group at all is one bare run rather than
+ * one run per row — which is what keeps the adapters from wrapping every row in a fragment of its
+ * own (Vue mounts two empty text anchors per fragment, measured).
+ *
+ * In CORE and not in each adapter: grouping at render time in both is the same defect `9024586b`
+ * fixed for suggestions, one rule written twice. The group itself is not a node — it has zero
+ * bytes in the value and tiles nothing, so folding it here keeps `anchorAt`, `sliceWithin`,
+ * `removePlan`, `movePlan` and `boundarySpan` free of a node that addresses nothing.
+ */
+export function resolveRowGroups(rows: readonly RowNode[], ctx: NodeSlotContext): readonly RowGroup[] {
+	const groups: {Group: Slot | undefined; rows: RowNode[]}[] = []
+	for (const row of rows) {
+		const option = row.option()
+		const Group = option === undefined ? undefined : ctx.options?.[option]?.row?.group
+		const open = groups.at(-1)
+		// Reference identity is the key: two kinds share a wrapper by sharing one `const`.
+		if (open && open.Group === Group) open.rows.push(row)
+		else groups.push({Group, rows: [row]})
+	}
+	return groups
 }

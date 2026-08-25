@@ -5,9 +5,10 @@ import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
 import type {PropsModel} from '../state/PropsModel'
-import type {TokenModel, TreeNode} from '../tokens'
-import {resolveNodeSlot, resolveSlot, resolveSlotProps} from './resolveSlot'
-import type {NodeSlot} from './types'
+import type {RowNode, TokenModel, TreeNode} from '../tokens'
+import {resolveNodeSlot, resolveRowGroups, resolveSlot, resolveSlotProps} from './resolveSlot'
+import type {RowRender} from './resolveSlot'
+import type {NodeSlot, RowGroupSlot} from './types'
 
 import styles from '../../../styles.module.css'
 
@@ -64,15 +65,28 @@ export class SlotsFeature {
 	 * exactly as it answers a mark.
 	 */
 	readonly node: NodeSlot = computed(() => {
-		const ctx = {
+		const ctx = this.#context()
+		return (node: TreeNode, row?: RowRender) => resolveNodeSlot(node, ctx, row)
+	})
+	/**
+	 * The wrapper runs a sibling list folds into — a `<ul>` around a run of bullets. Beside
+	 * {@link node} rather than inside it, because a group belongs to the LIST and not to any one
+	 * row, and the mapping parent is the only caller that holds the list.
+	 */
+	readonly rowGroups: RowGroupSlot = computed(() => {
+		const ctx = this.#context()
+		return (rows: readonly RowNode[]) => resolveRowGroups(rows, ctx)
+	})
+
+	#context() {
+		return {
 			options: this.props.options(),
 			Mark: this.props.Mark(),
 			Span: this.props.Span(),
 			slots: this.props.slots(),
 			slotProps: this.props.slotProps(),
 		}
-		return (node: TreeNode) => resolveNodeSlot(node, ctx)
-	})
+	}
 
 	// `tokens` is here for `rowConfig` alone, and only its PROPS-derived half is wanted:
 	// `containerProps` is read during server rendering, where no container has attached and the

@@ -16,12 +16,23 @@ export interface MarkProps {
 export interface RowProps {
 	/** The kind's metadata gap — a todo's checked flag, a fence's language. */
 	meta?: string
+	/** Nesting depth, counted from the roots. */
+	depth: number
+	/** Position among the row's own SIBLINGS — a group wrapper does not renumber the list. */
+	index: number
 	/** The live row node: its id, its own text and its verbs. */
 	node: RowNode
 	/**
 	 * A row kind's component is a SLOT component: `class` and `style` fall through onto its root
 	 * element unless it declares `inheritAttrs: false`, and the editor's own `ref` resolves
 	 * through the component instance. Its default slot is the row's rendered inline content.
+	 *
+	 * Its `rows` SLOT is the row's CHILD ROWS, already rendered, and is absent when there are
+	 * none — React passes the same thing as a `rows` PROP, which is the one place the two
+	 * adapters' row contract differs, because a rendered node is a slot in Vue and a node in
+	 * React. A kind that renders neither them nor a wrapper keeps its child rows in the value and
+	 * off the screen: they round-trip and reappear when the row is outdented. A collapsed row is
+	 * HIDDEN, never unmounted — an unpainted row leaves `bind` and takes its anchors with it.
 	 */
 	class?: string
 	style?: CSSProperties

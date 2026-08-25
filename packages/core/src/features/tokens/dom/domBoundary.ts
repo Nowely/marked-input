@@ -1,4 +1,5 @@
 import {inExplicitEditableIsland} from '../../../shared/checkers'
+import {entryAnchor} from '../tree/anchors'
 import type {Id, NodeAnchor, TreeNode} from '../tree/types'
 import {textLength, textOffsetWithin} from './textOffsets'
 import type {ElementBindings, TokenHandle} from './TokenHandle'
@@ -179,7 +180,11 @@ function fromHostAnchor(
 	// type as a `TreeNode` and the fallback below would be linted away as impossible.
 	const edge = offset <= 0 ? children.at(0) : children.at(-1)
 	if (!edge) return offset <= 0 ? {before: owner} : {after: owner}
-	return offset <= 0 ? {before: edge} : {after: edge}
+	// A ROW edge answers where a caret may legally SIT in that row, not where the row begins: a
+	// row's lead and opener are structural bytes, so `{before: row}` puts the caret ahead of the
+	// indent and an edit at the host's leading edge lands outside the row it is inside.
+	if (offset <= 0) return edge.kind === 'row' ? entryAnchor(edge) : {before: edge}
+	return {after: edge}
 }
 
 /** The interior of {@link fromChildAnchor}, including its inverted-affinity fallback. */

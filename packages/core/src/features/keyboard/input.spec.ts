@@ -77,6 +77,42 @@ function mountNestedSlot() {
 	return {store, container, leading, host, before}
 }
 
+/**
+ * A NESTED document as an adapter paints it: the parent row's own element is both its token
+ * element and its INLINE child-sequence host, and a separate `display: contents` span hosts its
+ * child rows — the two named parts `TokenModel.children(id, part)` registers.
+ */
+function mountNestedRows() {
+	const store = new Store()
+	store.props.set({separator: '\n', indent: '\t', defaultValue: 'a\n\tb', options: [], Mark: () => null})
+	const container = document.createElement('div')
+	const parent = document.createElement('div')
+	const parentText = document.createElement('span')
+	const rowsHost = document.createElement('span')
+	const child = document.createElement('div')
+	const childText = document.createElement('span')
+	rowsHost.style.display = 'contents'
+	child.append(childText)
+	rowsHost.append(child)
+	parent.append(parentText, rowsHost)
+	container.append(parent)
+	document.body.append(container)
+	store.host.container(container)
+	const roots = store.tokens.nodes()
+	const row = roots[0]
+	if (row.kind !== 'row') throw new Error('expected a row root')
+	const nested = row.rows()[0]
+	const consign = (id: number, element: HTMLElement) => store.tokens.consign(id)(element)
+	consign(row.id, parent)
+	store.tokens.children(row.id)(parent)
+	store.tokens.children(row.id, 'rows')(rowsHost)
+	consign(row.inline()[0].id, parentText)
+	consign(nested.id, child)
+	store.tokens.children(nested.id)(child)
+	consign(nested.inline()[0].id, childText)
+	return {store, container, rowsHost, nested}
+}
+
 /** A registered control root (block menu, custom control) holding its own `<input>`. */
 function mountInlineWithControl(value = 'hello') {
 	const store = new Store()
@@ -319,6 +355,23 @@ describe('handleBeforeInput()', () => {
 		const {store, container, host} = mountNestedSlot()
 
 		container.dispatchEvent(inputEvent('insertText', selectBoundary(host, offset), {data: 'X'}))
+
+		expect(store.tokens.value()).toBe(expected)
+		container.remove()
+	})
+
+	it.each([
+		['leading', 0, 'a\n\tXb'],
+		['trailing', 1, 'a\n\tbX'],
+	])('types INTO a nested row at its %s ROW-host edge', (_label, offset, expected) => {
+		// The row twin of the slot-host pin above. A row's child-rows host holds its `rows()`, so
+		// its edges are the FIRST child row's start and the LAST child row's end — not the parent
+		// row's own boundary, which sits outside the whole subtree and would type into the parent
+		// instead. Named parts are what make the answer decidable: a row's own element is its
+		// INLINE host, so an unnamed second registration would be indistinguishable from it.
+		const {store, container, rowsHost} = mountNestedRows()
+
+		container.dispatchEvent(inputEvent('insertText', selectBoundary(rowsHost, offset), {data: 'X'}))
 
 		expect(store.tokens.value()).toBe(expected)
 		container.remove()

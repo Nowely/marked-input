@@ -4,11 +4,19 @@ import type {CSSProperties} from 'react'
 import {memo, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
+// oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Block` paints one row and its own list. The cycle is the recursion, both sides are used only inside a render body, and the alternative is the grouping rule written twice.
+import {Rows} from './Rows'
 import {Token} from './Token'
 
 interface BlockProps {
 	node: RowNode
+	/** Nesting depth and position among siblings — both known by the parent that mapped them. */
+	depth: number
+	index: number
 }
+
+/** `display: contents` for `TokenChildren`'s reason: the host must generate no box of its own. */
+const rowsHostStyle: CSSProperties = {display: 'contents'}
 
 /**
  * A row, painted by its KIND's component — a paragraph falls back to `slots.block`. The grip,
@@ -17,8 +25,13 @@ interface BlockProps {
  *
  * The component and its props come from `slots.node`, the same resolver `Token` asks: a row is a
  * node, and the class/style merge that used to sit here by hand is the resolver's answer now.
+ *
+ * A row's CHILD ROWS reach a kind's component as the `rows` prop, so it decides where they go —
+ * a toggle hides them, a bullet nests a list inside its `<li>`. A PARAGRAPH gets none: its
+ * component is `slots.block`, whose default is a bare `div` that would stringify a React node
+ * onto the element, so its child rows go in as ordinary children after the inline ones.
  */
-export const Block = memo(({node}: BlockProps) => {
+export const Block = memo(({node, depth, index}: BlockProps) => {
 	const {resolveNodeSlot, tokens} = useMarkput(s => ({
 		resolveNodeSlot: s.slots.node,
 		tokens: s.tokens,
@@ -37,17 +50,29 @@ export const Block = memo(({node}: BlockProps) => {
 
 	// MEMOISED, unlike `setBlockRef` below: `consign` and `children` mint a registration key per
 	// CALL, so calling them inline would file a fresh entry on every paint and never release the
-	// old one. The wrapper IS the row's token element (issue 08) AND its child-sequence host, so
-	// the row's children hang off it directly.
+	// old one. The wrapper IS the row's token element (issue 08) AND its INLINE child-sequence
+	// host, so the row's own content hangs off it directly.
 	const consignBlock = useMemo(() => tokens.consign(node.id), [tokens, node.id])
 	const hostBlock = useMemo(() => tokens.children(node.id), [tokens, node.id])
+	const hostRows = useMemo(() => tokens.children(node.id, 'rows'), [tokens, node.id])
 
 	const setBlockRef = (el: HTMLElement | null) => {
 		consignBlock(el)
 		hostBlock(el)
 	}
 
-	const [Component, props] = resolveNodeSlot(node)
+	const childRows = node.rows()
+	// HIDDEN rather than absent is the consumer's contract for a collapsed row: an unpainted row
+	// leaves `bind` and takes its anchors with it. What is absent here is the HOST, and only when
+	// the row genuinely has no children.
+	const rows =
+		childRows.length > 0 ? (
+			<span ref={hostRows} style={rowsHostStyle}>
+				<Rows rows={childRows} depth={depth + 1} />
+			</span>
+		) : undefined
+
+	const [Component, props] = resolveNodeSlot(node, {depth, index, rows})
 
 	return (
 		<Component
@@ -56,9 +81,12 @@ export const Block = memo(({node}: BlockProps) => {
 			// oxlint-disable-next-line no-unsafe-type-assertion -- props.style is raw and needs casting to CSSProperties
 			style={{opacity: isDragging ? 0.4 : 1, ...(props.style as CSSProperties | undefined)}}
 		>
-			{node.children().map(child => (
+			{node.inline().map(child => (
 				<Token key={child.id} node={child} depth={0} />
 			))}
+			{/* `node` in the resolved props is core's answer for "this row paints through its KIND's
+			    own component", which is the one that takes `rows` as a prop. */}
+			{'node' in props ? undefined : rows}
 		</Component>
 	)
 })

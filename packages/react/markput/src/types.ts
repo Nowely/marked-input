@@ -24,6 +24,23 @@ export interface RowProps {
 	meta?: string
 	/** The row's own inline content, already rendered. */
 	children?: ReactNode
+	/**
+	 * The row's CHILD ROWS, already rendered; `undefined` when there are none. A kind that renders
+	 * them decides where they go — a toggle hides them, a bullet nests a list inside its `<li>`.
+	 *
+	 * A kind that renders NEITHER them nor a wrapper for them keeps the rows in the value and off
+	 * the screen: they round-trip and reappear when the row is outdented. That is Notion's own
+	 * behaviour for a heading, and it is what declaring no "can this nest" flag costs.
+	 *
+	 * A collapsed row is HIDDEN, never unmounted: an unpainted row leaves `bind` and takes its
+	 * anchors with it, so `End`, select-all and every arrow that resolves through the last row
+	 * would walk into a row with no element.
+	 */
+	rows?: ReactNode
+	/** Nesting depth, counted from the roots. */
+	depth: number
+	/** Position among the row's own SIBLINGS — a group wrapper does not renumber the list. */
+	index: number
 	/** The live row node: its id, its own text and its verbs. */
 	node: RowNode
 	/**
