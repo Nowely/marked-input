@@ -105,8 +105,8 @@ describe('OverlayController', () => {
 			expect(store.overlay.match()?.value).toBe('')
 			expect(store.overlay.match()?.source).toBe('@')
 			// The span the pick replaces is the TRIGGER, and nothing else of the row.
-			const range = store.overlay.match()?.range
-			expect(range && 'offset' in range.head ? range.head.offset : undefined).toBe(1)
+			const head = store.overlay.match()?.range.head
+			expect(typeof head === 'object' && 'offset' in head ? head.offset : undefined).toBe(1)
 		})
 
 		it('clear match when close is emitted', () => {
