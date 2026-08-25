@@ -1,10 +1,10 @@
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import {depthCeiling} from '../parser/core/RowScanner'
 import type {RowConfig} from '../parser/types'
-import {offsetOfAnchor, rowBoundary} from './anchors'
+import {anchorEquals, entryAnchor, offsetOfAnchor, rowBoundary} from './anchors'
 import {preorderRows} from './rows'
 import {rowContent, rowLine, rowMarkup} from './tree'
-import type {NodeAnchor, Pairing, RowNode, RowPatch, RowPlacement, TreeNode, Window} from './types'
+import type {AnchoredRow, NodeAnchor, Pairing, RowNode, RowPatch, RowPlacement, TreeNode, Window} from './types'
 
 /**
  * Removing the boundary between two rows, as the window that holds them apart — see
@@ -63,6 +63,47 @@ export function removePlan(
 	// trailing one: the pre-order join puts one between every adjacent pair at every depth, so
 	// the row a nested final row is preceded by may be its own parent.
 	return {start: node.position.start - separator.length, end: node.position.end}
+}
+
+/**
+ * THE ROW AN ANCHOR SITS IN — the innermost one containing the node the anchor names — with the
+ * facts about it a keybinding cannot ask for itself: its depth, the depth a row written directly
+ * under it would land at, and whether the anchor is that row's own entry.
+ *
+ * Node identity rather than an offset, and that is the whole reason it is a walk: two rows share a
+ * boundary offset at every nesting level, so a positional answer would have to pick a side, while
+ * the node an anchor names belongs to exactly one row.
+ *
+ * `undefined` for a document that parses no rows, for a node no longer in the tree, and for the
+ * `'start'`/`'end'` edges — which name a document rather than a row, and every caller here has a
+ * live caret or nothing.
+ */
+export function rowOf(roots: readonly TreeNode[], anchor: NodeAnchor): AnchoredRow | undefined {
+	if (typeof anchor === 'string') return undefined
+	const target = 'node' in anchor ? anchor.node : 'before' in anchor ? anchor.before : anchor.after
+
+	const search = (
+		nodes: readonly TreeNode[],
+		depth: number,
+		inside: {row: RowNode; depth: number} | undefined
+	): {row: RowNode; depth: number} | undefined => {
+		for (const node of nodes) {
+			const here = node.kind === 'row' ? {row: node, depth} : inside
+			if (node === target) return here
+			if (node.kind === 'text') continue
+			const found = search(node.children(), node.kind === 'row' ? depth + 1 : depth, here)
+			if (found) return found
+		}
+		return undefined
+	}
+
+	const found = search(roots, 0, undefined)
+	if (!found) return undefined
+	return {
+		...found,
+		childDepth: depthCeiling(scannedAs(found.row, found.depth)),
+		atEntry: anchorEquals(anchor, entryAnchor(found.row)),
+	}
 }
 
 /**

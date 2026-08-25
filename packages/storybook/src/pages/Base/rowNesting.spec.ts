@@ -63,16 +63,25 @@ describe('nested rows', () => {
 
 		const nested = rowsOf(host)[0].querySelector('[class*="Block"]')
 		if (!(nested instanceof HTMLElement)) throw new Error('expected a nested row element')
-		// Backspace at the nested row's first caret position takes the boundary — the separator
-		// AND the lead — so the two rows merge rather than the indent surviving as text.
+		// Backspace at a row's first caret position DEMOTES before it merges, so the first press
+		// gives up the depth and the two rows become siblings.
 		await focusAtStart(nested)
 		await userEvent.keyboard('{Backspace}')
 
-		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('alphabeta')
-		await expect.poll(() => rowsOf(host)).toHaveLength(1)
+		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('alpha\nbeta')
+		await expect.poll(() => rowsOf(host)).toHaveLength(2)
 
+		// AND THEN TYPE, into the row the outdent just moved: the caret rode the re-indent
+		// through, so the character lands at its own entry rather than wherever the splice ended.
 		await userEvent.keyboard('Y')
+		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('alpha\nYbeta')
+
+		// Only once the row has no depth left to give does Backspace take the boundary — the
+		// separator and the lead with it — and merge the two.
+		await focusAtStart(rowsOf(host)[1])
+		await userEvent.keyboard('{Backspace}')
 		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('alphaYbeta')
+		await expect.poll(() => rowsOf(host)).toHaveLength(1)
 	})
 
 	/**

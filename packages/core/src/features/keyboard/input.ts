@@ -12,7 +12,7 @@ import {
 	isConsumerOrigin,
 	replacementForInput,
 } from './beforeInput'
-import {handleRowEnter, handleRowParagraph} from './rowKeys'
+import {demoteAtRowEntry, handleRowEnter, handleRowIndent, handleRowParagraph} from './rowKeys'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'paste', e => {
@@ -49,9 +49,12 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 			store.tokens.selection.selectAll()
 			return
 		}
-		// The block ARM, after the shared checks and answering only in block layout. It used to
-		// be a second keydown listener on this same container that repeated both of them.
+		// The ROW arms, after the shared checks and answering only where the value parses into
+		// rows. They used to be a second keydown listener on this same container that repeated
+		// both checks; Backspace's row arm is the one that is not here, because it belongs INSIDE
+		// the delete arm rather than beside it.
 		handleRowEnter(store, e)
+		handleRowIndent(store, e)
 		handleDeleteKey(store, e)
 	})
 }
@@ -87,6 +90,14 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	// answered off the STORED anchors, which is not a caret, and no user reached it.
 	const anchors = store.tokens.domAnchors()
 	if (!anchors) return
+
+	// The ROW arm, and it sits HERE rather than beside this one so it inherits every check above:
+	// at a row's own entry Backspace DEMOTES — depth first, then kind — and only once the row has
+	// neither left does the expansion below take the boundary and merge the two rows.
+	if (event.key === KEYBOARD.BACKSPACE && demoteAtRowEntry(store, anchors)) {
+		event.preventDefault()
+		return
+	}
 
 	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
 	const target = anchorsForDelete(store, inputType, anchors)

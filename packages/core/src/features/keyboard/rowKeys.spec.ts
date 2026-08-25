@@ -1,7 +1,9 @@
 import {describe, it, expect} from 'vitest'
 
+import type {CoreOption} from '../../shared/types'
 import {Store} from '../../store/Store'
-import {mountBlock} from '../tokens/__testing__/mountFixtures'
+import type {RowNode, TreeNode} from '../tokens'
+import {mountBlock, mountNestedBlock, selectionRange} from '../tokens/__testing__/mountFixtures'
 
 /**
  * The Surface of a row's text slot, asked of the model rather than found by shape: the
@@ -59,10 +61,16 @@ describe('rowKeys row identity', () => {
 	it('Enter with only a stored selection (tier 2) splits the selected row', () => {
 		const {store, container} = mountBlock()
 		const second = store.tokens.nodes()[1]
-		store.tokens.selection.selectNode(second, 'end')
+		if (second.kind !== 'row') throw new Error('expected a row')
+		const body = second.children()[0]
+		if (body.kind !== 'text') throw new Error('expected a text child')
+		// The row's own BODY end, not `selectNode(second, 'end')`: that stores `{after: row}`,
+		// which is the row's span end — past its separator, and outside the body a split may
+		// address. The verb refuses it now, where the old separator splice happily wrote there.
+		store.tokens.selection.select({node: body, offset: 3})
 		if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-		// Kill tier 1: no live DOM Range at all, so only the model-stored anchor
-		// `selectNode` wrote above can resolve the row.
+		// Kill tier 1: no live DOM Range at all, so only the model-stored anchor above can
+		// resolve the row.
 		window.getSelection()?.removeAllRanges()
 
 		container.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true}))
@@ -71,10 +79,8 @@ describe('rowKeys row identity', () => {
 	})
 
 	it('splits at the stored anchor itself, not at the end of the row holding it', () => {
-		// Tier 2 is the stored ANCHOR now, where it used to be the row that anchor named and a
-		// literal `{after: row}` — the row's end, PAST its own separator. The two agree only
-		// when the stored anchor already is a row edge, which is what the case above stores;
-		// a caret stored mid-row splits there instead of appending an empty row behind it.
+		// Tier 2 is the stored ANCHOR, and it is the position rather than the row it sits in: a
+		// caret stored mid-row splits there instead of appending an empty row behind it.
 		const {store, container} = mountBlock()
 		const second = store.tokens.nodes()[1]
 		if (second.kind !== 'row') throw new Error('expected a row')
@@ -221,9 +227,12 @@ describe('rowKeys beforeinput guard', () => {
 		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
 	})
 
-	it('inserts a newline INSIDE the row on insertLineBreak (Shift+Enter)', () => {
-		// Parity with the inline guard: without its own case the closed default would drop
-		// Shift+Enter silently. Plain Enter never arrives — `handleRowEnter` cancels the keydown.
+	it('drops insertLineBreak, which the Shift+Enter keydown owns', () => {
+		// Shift+Enter answers to `handleRowEnter` now, so an `insertLineBreak` reaching the guard
+		// answered to no keydown of ours and fails closed with the rest of the unexpressed. It used
+		// to take the shared table's `'\n'`, which at the default separator SPLIT the row — by the
+		// generic path, so with none of the row rules — and inside a row at any other separator
+		// spliced a bare newline.
 		const {store} = mountBlock()
 		const text = caretInRow(store, 0, 1)
 
@@ -231,23 +240,7 @@ describe('rowKeys beforeinput guard', () => {
 		text.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(true)
-		expect(store.tokens.value()).toBe('o\nne\n\ntwo\n\n')
-	})
-
-	it('SPLITS the row on insertLineBreak at the default separator', () => {
-		// The same `'\n'` from the same table, at the separator every unconfigured editor gets:
-		// the newline it splices IS the boundary, so Shift+Enter splits. Not a soft break, and
-		// not the unbound key ADR-0011 first claimed — it just reaches the split by the generic
-		// path, so it takes none of `handleRowEnter`'s rules (all-selected, range-keeps-selection).
-		const {store} = mountBlock({defaultValue: 'one\ntwo', separator: '\n'})
-		const text = caretInRow(store, 0, 1)
-
-		const event = new InputEvent('beforeinput', {inputType: 'insertLineBreak', bubbles: true, cancelable: true})
-		text.dispatchEvent(event)
-
-		expect(event.defaultPrevented).toBe(true)
-		expect(store.tokens.value()).toBe('o\nne\ntwo')
-		expect(store.tokens.nodes().map(node => node.kind)).toEqual(['row', 'row', 'row'])
+		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
 	})
 
 	it('inserts the dropped text in the row on insertFromDrop', () => {
@@ -586,5 +579,281 @@ describe('rowKeys control guard', () => {
 		control.dispatchEvent(event)
 
 		expect(store.tokens.value()).toBe('one\n\ntwo\n\n')
+	})
+})
+/**
+ * THE ROW KEYMAP, one case per rule × caret position × depth. Every case is stated over a
+ * document with KINDS and, where the rule is about depth, over a NESTED one: the ladder's two
+ * rungs are indistinguishable on a flat paragraph document, where both answers are "insert".
+ *
+ * Driven through real key events on the container rather than by calling the arms, because the
+ * wiring is half of what is under test — an arm that never runs, or runs after the shared delete
+ * expansion, passes every direct call.
+ */
+describe('rowKeys the row keymap', () => {
+	const BULLET: CoreOption = {markup: '- __slot__', row: {Component: 'li', continues: true, indents: true}}
+	const HEADING: CoreOption = {markup: '# __slot__', row: {Component: 'h1'}}
+	/** A raw CLOSED body: `hasSlot` false and a closing literal, so its interior holds separators. */
+	const FENCE: CoreOption = {markup: '```__meta__\n__value__\n```', row: {Component: 'pre'}}
+
+	const keymap = (defaultValue: string, props: Parameters<Store['props']['set']>[0] = {}) =>
+		mountNestedBlock({defaultValue, options: [BULLET, HEADING, FENCE], Mark: () => null, ...props})
+
+	/** Every row in pre-order — the space the verbs and the projection both speak. */
+	const rowsOf = (store: Store): RowNode[] => {
+		const out: RowNode[] = []
+		const collect = (node: TreeNode): void => {
+			if (node.kind !== 'row') return
+			out.push(node)
+			node.rows().forEach(collect)
+		}
+		store.tokens.nodes().forEach(collect)
+		return out
+	}
+
+	/**
+	 * A live DOM caret at `offset` of a pre-order row's own body. An EMPTY row's surface holds no
+	 * `Text` node at all (`TokenHandle.writeSurface`), so the range anchors on the surface element
+	 * itself — which is the shape a real caret in an empty row has.
+	 */
+	function caretIn(store: Store, row: number, offset: number): void {
+		const body = rowsOf(store)[row].inline()[0]
+		const surface = store.tokens.handle(body.id)?.element()
+		if (!surface) throw new Error('row body has no consigned element')
+		const range = document.createRange()
+		const text = surface.firstChild
+		if (text) range.setStart(text, offset)
+		else range.setStart(surface, 0)
+		range.collapse(true)
+		const selection = window.getSelection()
+		selection?.removeAllRanges()
+		selection?.addRange(range)
+	}
+
+	function press(container: HTMLElement, key: string, modifiers: {shiftKey?: boolean} = {}): KeyboardEvent {
+		const event = new KeyboardEvent('keydown', {key, ...modifiers, bubbles: true, cancelable: true})
+		container.dispatchEvent(event)
+		return event
+	}
+
+	describe('Enter', () => {
+		it('opens another row of the SAME kind at the end of a row whose kind continues', () => {
+			const {store, container} = keymap('- a')
+			caretIn(store, 0, 1)
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('- a\n- ')
+			// The caret is INSIDE the fresh row's body, past its opener.
+			expect(selectionRange(store)).toEqual({start: 6, end: 6})
+		})
+
+		it('opens a PLAIN row at the end of a row whose kind does not continue', () => {
+			const {store, container} = keymap('# a')
+			caretIn(store, 0, 1)
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('# a\n')
+		})
+
+		it('splits mid-row and gives the tail the kind', () => {
+			const {store, container} = keymap('- ab')
+			caretIn(store, 0, 1)
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('- a\n- b')
+		})
+
+		it('leaves an empty row above when pressed at a row start', () => {
+			const {store, container} = keymap('- ab')
+			caretIn(store, 0, 0)
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('- \n- ab')
+		})
+
+		it('gives up the KIND on an empty row at depth 0', () => {
+			const {store, container} = keymap('- a\n- ')
+			caretIn(store, 1, 0)
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('- a\n')
+		})
+
+		it('gives up the DEPTH on an empty NESTED row, before its kind', () => {
+			const {store, container} = keymap('- a\n\t- ')
+			expect(rowsOf(store)).toHaveLength(2)
+			caretIn(store, 1, 0)
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('- a\n- ')
+			expect(store.tokens.nodes()).toHaveLength(2)
+		})
+
+		it('INSERTS on an empty row that has neither depth nor kind to give up', () => {
+			const {store, container} = keymap('a\n')
+			caretIn(store, 1, 0)
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('a\n\n')
+		})
+
+		it('inserts a literal newline inside a RAW CLOSED body', () => {
+			const {store, container} = keymap('```ts\nq\n```')
+			caretIn(store, 0, 1)
+
+			press(container, 'Enter')
+
+			// One row still, and one line longer: a fence's body already holds separators.
+			expect(store.tokens.value()).toBe('```ts\nq\n\n```')
+			expect(rowsOf(store)).toHaveLength(1)
+		})
+	})
+
+	describe('Shift+Enter', () => {
+		it('opens a CONTINUATION line as a child row', () => {
+			const {store, container} = keymap('- a')
+			caretIn(store, 0, 1)
+
+			press(container, 'Enter', {shiftKey: true})
+
+			expect(store.tokens.value()).toBe('- a\n\t')
+			// A CHILD of the row it was typed in, so it travels with it on a drag and copies with
+			// it — the whole reason a soft break is a child rather than a sibling.
+			expect(store.tokens.nodes()).toHaveLength(1)
+			expect(rowsOf(store)).toHaveLength(2)
+			expect(selectionRange(store)).toEqual({start: 5, end: 5})
+		})
+
+		it('carries the rest of the body into the continuation', () => {
+			const {store, container} = keymap('- ab')
+			caretIn(store, 0, 1)
+
+			press(container, 'Enter', {shiftKey: true})
+
+			expect(store.tokens.value()).toBe('- a\n\tb')
+			expect(store.tokens.nodes()).toHaveLength(1)
+		})
+
+		it('lands the continuation BEFORE the rows already nested under it', () => {
+			const {store, container} = keymap('- a\n\t- child')
+			caretIn(store, 0, 1)
+
+			press(container, 'Enter', {shiftKey: true})
+
+			expect(store.tokens.value()).toBe('- a\n\t\n\t- child')
+		})
+
+		it('SPLITS instead on a row that can take no children', () => {
+			// An EMPTY row takes none, so `childDepth` is the row's own depth and the continuation
+			// is written at it. Without that reading the indent run would be written anyway and the
+			// scan would hand back a sibling carrying bytes it never granted.
+			const {store, container} = keymap('a\n')
+			caretIn(store, 1, 0)
+
+			press(container, 'Enter', {shiftKey: true})
+
+			expect(store.tokens.value()).toBe('a\n\n')
+			expect(store.tokens.nodes()).toHaveLength(3)
+		})
+
+		it('SPLITS instead when nesting is off', () => {
+			const {store, container} = keymap('- a', {indent: ''})
+			caretIn(store, 0, 1)
+
+			press(container, 'Enter', {shiftKey: true})
+
+			expect(store.tokens.value()).toBe('- a\n')
+			expect(store.tokens.nodes()).toHaveLength(2)
+		})
+	})
+
+	describe('Backspace at a row entry', () => {
+		it('gives up the DEPTH of a nested row', () => {
+			const {store, container} = keymap('- a\n\t- b')
+			caretIn(store, 1, 0)
+
+			const event = press(container, 'Backspace')
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('- a\n- b')
+		})
+
+		it('gives up the KIND at depth 0', () => {
+			const {store, container} = keymap('x\n- a')
+			caretIn(store, 1, 0)
+
+			press(container, 'Backspace')
+
+			expect(store.tokens.value()).toBe('x\na')
+		})
+
+		it('MERGES once the row has neither left, through the shared delete arm', () => {
+			const {store, container} = keymap('x\na')
+			caretIn(store, 1, 0)
+
+			press(container, 'Backspace')
+
+			expect(store.tokens.value()).toBe('xa')
+		})
+
+		it('deletes one character when the caret is not at the entry', () => {
+			const {store, container} = keymap('- ab')
+			caretIn(store, 0, 1)
+
+			press(container, 'Backspace')
+
+			expect(store.tokens.value()).toBe('- b')
+		})
+	})
+
+	describe('Tab', () => {
+		it('indents a row whose kind declares it', () => {
+			const {store, container} = keymap('- a\n- b')
+			caretIn(store, 1, 1)
+
+			const event = press(container, 'Tab')
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('- a\n\t- b')
+		})
+
+		it('outdents on Shift+Tab', () => {
+			const {store, container} = keymap('- a\n\t- b')
+			caretIn(store, 1, 1)
+
+			press(container, 'Tab', {shiftKey: true})
+
+			expect(store.tokens.value()).toBe('- a\n- b')
+		})
+
+		it('consumes the key even where the depth cannot change', () => {
+			// The declaration gates the KEY: a Tab that indents on one row and moves focus on the
+			// next is worse than either.
+			const {store, container} = keymap('- a')
+			caretIn(store, 0, 1)
+
+			const event = press(container, 'Tab', {shiftKey: true})
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('- a')
+		})
+
+		it('LEAVES THE FIELD on a kind that does not declare it, and on a paragraph', () => {
+			const {store, container} = keymap('# a\nplain')
+
+			caretIn(store, 0, 1)
+			expect(press(container, 'Tab').defaultPrevented).toBe(false)
+
+			caretIn(store, 1, 1)
+			expect(press(container, 'Tab').defaultPrevented).toBe(false)
+			expect(store.tokens.value()).toBe('# a\nplain')
+		})
 	})
 })

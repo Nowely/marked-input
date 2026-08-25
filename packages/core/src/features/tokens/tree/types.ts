@@ -205,6 +205,27 @@ export interface RowNode {
  */
 export type RowPlacement = {parent: RowNode | null; index: number}
 
+/**
+ * The row an anchor sits in, with the three facts about it that only the tree can answer. Every
+ * row keybinding asks this one question and then calls a verb; the alternative is the keyboard
+ * layer walking the tree, measuring a lead and re-deriving the scan's own rules.
+ */
+export type AnchoredRow = {
+	row: RowNode
+	/** The recursion index — the tree's own reading of depth, and the only one. */
+	depth: number
+	/**
+	 * The depth a row written DIRECTLY UNDER this one lands at: one deeper, unless this row's
+	 * whole line is empty, because an empty row takes no children (`RowScanner.depthCeiling`).
+	 */
+	childDepth: number
+	/**
+	 * Is the anchor this row's ENTRY — the first position a caret may occupy in it, which for a
+	 * typed row is past its opener rather than at its line start.
+	 */
+	atEntry: boolean
+}
+
 export interface TextNode {
 	readonly kind: 'text'
 	readonly id: Id

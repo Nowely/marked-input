@@ -2,7 +2,7 @@ import type {DomRef} from '../../../shared/editorContracts'
 import {reportBadProp} from '../../../shared/reportBadProp'
 import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
-import type {CoreOption} from '../../../shared/types'
+import type {CoreOption, RowSpec} from '../../../shared/types'
 import {shallow} from '../../../shared/utils/shallow'
 import type {Host} from '../../state/Host'
 import type {PropsModel} from '../../state/PropsModel'
@@ -31,10 +31,28 @@ import {gapWindow} from '../tree/gapWindow'
 import {preorderRows} from '../tree/rows'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
-import {depthPlan, endsDocument, mergePlan, movePlan, removePlan, splitPlan, turnIntoPlan} from '../tree/siblings'
+import {
+	depthPlan,
+	endsDocument,
+	mergePlan,
+	movePlan,
+	removePlan,
+	rowOf,
+	splitPlan,
+	turnIntoPlan,
+} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
-import type {Anchors, MarkNode, MarkPatch, NodeAnchor, RowNode, TreeCommands, TreeNode} from '../tree/types'
+import type {
+	AnchoredRow,
+	Anchors,
+	MarkNode,
+	MarkPatch,
+	NodeAnchor,
+	RowNode,
+	TreeCommands,
+	TreeNode,
+} from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 
 /**
@@ -254,16 +272,14 @@ export class TokenModel {
 	 * length, which {@link value} outruns mid-flight — missing it splices a foreign window.
 	 * Deliberately kept: spec-facing and public-reachable through the exported Store (`store.tokens`) — the `api.focus()` precedent.
 	 *
-	 * `enterRoot` puts the caret INTO that row of the RESULT, named by its index in
-	 * {@link rowSequence} rather than by a character offset into a string that does not exist yet
-	 * — that offset was the last absolute coordinate above `tree/` (ADR-0003), while an index
-	 * names a node the commit is about to produce, which the caller genuinely knows. A separate
-	 * verb until the API-surface cut; the block callers are the only ones that pass it.
+	 * It names no caret. `enterRoot` — an index into {@link rowSequence}, put here when a row edit
+	 * had no node to name the caret with — had one caller, the row keymap's all-selected Enter, and
+	 * that call was measured redundant: the replacement's own post-edit anchor already resolves
+	 * INSIDE the fresh row, because {@link entryAnchor} is what `anchorAt` answers for an offset in
+	 * a row's structural bytes.
 	 */
-	setValue(text: string, enterRoot?: number): boolean {
-		if (this.replaceBetween('start', 'end', text) === undefined) return false
-		if (enterRoot !== undefined) this.#enterRow(enterRoot)
-		return true
+	setValue(text: string): boolean {
+		return this.replaceBetween('start', 'end', text) !== undefined
 	}
 
 	/**
@@ -286,6 +302,27 @@ export class TokenModel {
 	 */
 	boundarySpan(anchor: NodeAnchor, direction: -1 | 1): Anchors | undefined {
 		return untracked(() => findBoundarySpan(this.#tree.roots(), anchor, direction, this.#tree.config()?.separator))
+	}
+
+	/**
+	 * THE ROW A CARET IS IN, and what a keybinding needs to know about it — see {@link rowOf}.
+	 * `undefined` for an anchor in no row, which is every anchor in a document that parses none.
+	 */
+	rowOf(anchor: NodeAnchor): AnchoredRow | undefined {
+		return untracked(() => rowOf(this.#tree.roots(), anchor))
+	}
+
+	/**
+	 * The {@link RowSpec} a row's KIND was declared with, or `undefined` for a paragraph and for a
+	 * kind whose option has since left `options`. The row's OPTION INDEX is the identity — the same
+	 * one `resolveSlot` resolves the component by — so this is the one place a row's declared
+	 * behavior is read, rather than each caller walking from the descriptor to the option itself.
+	 */
+	rowSpec(node: RowNode): RowSpec | undefined {
+		return untracked(() => {
+			const index = node.option()
+			return index === undefined ? undefined : this.props.options()[index]?.row
+		})
 	}
 
 	/** The projection of the span between two anchors — {@link value} restricted to a window (see {@link sliceNodes}). */
@@ -650,15 +687,9 @@ export class TokenModel {
 		return this.#parser()?.rowKind(option.markup)
 	}
 
-	/**
-	 * Does this row's kind carry into the row a split produces — `RowSpec.continues`, read off the
-	 * OPTION the row's descriptor index names. A paragraph continues into nothing: it has no kind
-	 * to carry.
-	 */
+	/** Does this row's kind carry into the row a split produces — see {@link rowSpec}. */
 	#continues(node: RowNode): boolean {
-		const index = node.option()
-		if (index === undefined) return false
-		return this.props.options()[index]?.row?.continues === true
+		return this.rowSpec(node)?.continues === true
 	}
 
 	/**

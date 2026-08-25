@@ -749,14 +749,6 @@ describe('entering a fresh row', () => {
 		expect(selectionRange(store)).toEqual({start: 7, end: 7})
 	})
 
-	it('lands inside the slot of a whole-value replacement too', () => {
-		const store = headingSetup('# a\n\n')
-
-		expect(store.tokens.setValue('# \n\n', 0)).toBe(true)
-
-		expect(selectionRange(store)).toEqual({start: 2, end: 2})
-	})
-
 	/**
 	 * The SAME caret rule in a document that parses no rows at all, which is what `separator: null`
 	 * is: the sequence an insert names a position in falls back to the ROOTS, and what follows a

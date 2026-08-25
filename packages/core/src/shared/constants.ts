@@ -10,6 +10,8 @@ export const KEYBOARD = {
 	BACKSPACE: 'Backspace',
 	DELETE: 'Delete',
 
+	TAB: 'Tab',
+
 	ESC: 'Escape',
 } as const
 export type KEYBOARD = (typeof KEYBOARD)[keyof typeof KEYBOARD]

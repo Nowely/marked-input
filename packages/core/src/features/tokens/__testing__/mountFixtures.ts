@@ -276,15 +276,17 @@ export function mountBlock(props: Parameters<Store['props']['set']>[0] = {}) {
 }
 
 /**
- * {@link mountBlock} with a NESTED row: `'a\n\tb'` is one root whose child row is painted
- * inside it, off the row's own `'rows'` child-sequence host — the shape both adapters paint.
+ * {@link mountBlock} with NESTED rows: every row is painted inside its parent, off the parent's
+ * own `'rows'` child-sequence host — the shape both adapters paint. The default `'a\n\tb'` is one
+ * root with one child; `props` overrides the value and everything else, which is what the keymap
+ * cases need — one document per rule, at the depth the rule is about.
  *
  * Its own fixture rather than a flag on `mountBlock`: the row elements nest, so the flat
  * one-div-per-root loop cannot express it.
  */
-export function mountNestedBlock() {
+export function mountNestedBlock(props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
-	store.props.set({defaultValue: 'a\n\tb', separator: '\n', indent: '\t', options: []})
+	store.props.set({defaultValue: 'a\n\tb', separator: '\n', indent: '\t', options: [], ...props})
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
