@@ -76,14 +76,16 @@ inline **Token**s and then its own child Rows, in one list. A Row may have a **R
 opener and closing literal are structural bytes no caret may enter; a Row with no kind is a
 paragraph. The piece after the final separator is a Row even when empty (ADR-0009). Rows NEST by
 **Lead**: a Row whose lead is deeper than the Row before it is that Row's child, at most one level
-deeper (ADR-0010).
+deeper (ADR-0010). A Row is also what a **Row kind**'s `split` carves that kind's own body into —
+a table cell is a Row, not a node kind of its own — and such a Row's children are its body rather
+than rows of the document, so no separator is written between them.
 _Avoid_: line, paragraph, block, item
 
 **Lead**:
-The structural bytes before a Row's own body — the run of **Indent** units it is nested by. It is
-the ROUND-TRIP BYTES, not the depth: an over-indented paste keeps its surplus in the lead and
-merely renders shallower, so there is no function from one to the other. Depth is the recursion
-index the adapters pass down.
+The structural bytes before a Row's own body — the run of **Indent** units it is nested by, or the
+delimiter a carved piece was split at. It is the ROUND-TRIP BYTES, not the depth: an over-indented
+paste keeps its surplus in the lead and merely renders shallower, so there is no function from one
+to the other. Depth is the recursion index the adapters pass down.
 _Avoid_: indentation (as a term for the stored bytes), prefix, margin
 
 **Indent**:
@@ -96,7 +98,9 @@ _Avoid_: tab, indentation unit, level
 The **Markup** a Row is recognised by, matched ONLY at a row's own start and compiled by the same
 compiler a **Mark**'s markup is (ADR-0010). Declared by an **Option**'s `row`, which also names
 the component the Row renders through. A kind's body placeholder decides how its interior is
-read: `__slot__` is inline-parsed, `__value__` is raw and never re-parsed.
+read: `__slot__` is inline-parsed, `__value__` is raw and never re-parsed, and a kind declaring
+`split` carves that body at a literal into Rows of the kind it names. A kind may carry no markup
+at all when nothing but a `split` reaches it.
 _Avoid_: block type, row type, node type
 
 **Separator**:
