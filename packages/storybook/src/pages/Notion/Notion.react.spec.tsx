@@ -291,6 +291,26 @@ describe('the slash menu', () => {
 	})
 
 	/**
+	 * A RAW CLOSED BODY TAKES NO TRIGGER. Its content is bytes the parse never re-enters — that is
+	 * why Enter inside a fence is a literal newline — so a `/` there is a character, exactly as it
+	 * is in Notion. It used to open the menu, and the pick then retyped the ROW: `'```bash⏎ls
+	 * -la⏎```⏎tail'` with the caret at the end of `ls -la`, then **Divider**, emitted
+	 * `'---ls -la⏎tail'`. Both fence markers and the language gone, and the command text now the
+	 * divider's body.
+	 */
+	it('leaves a slash literal inside a code fence', async () => {
+		const doc = '```bash\nls -la\n```\ntail'
+		const {host, value} = await mountControlled(Showcase, doc)
+
+		await focusAtEnd(host.querySelector<HTMLElement>('[class*="codeBlock"] > span')!)
+		dispatchInsertText(editingHost(host), '/')
+
+		await expect.poll(value).toBe('```bash\nls -la/\n```\ntail')
+		expect(page.getByText('Divider', {exact: true}).elements()).toHaveLength(0)
+		expect(host.querySelectorAll('[class*="codeBlock"]')).toHaveLength(1)
+	})
+
+	/**
 	 * AN OPEN MENU BELONGS TO THE CARET THAT OPENED IT. Clicking another row left it standing —
 	 * `showOverlayOn` defaults to `'change'`, so nothing re-probed on a caret move, and the
 	 * outside-click listener returns early for any click INSIDE the container. The pick that

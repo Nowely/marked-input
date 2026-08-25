@@ -23,6 +23,24 @@ export function tokenHasCells(token: RowToken): boolean {
 }
 
 /**
+ * IS THIS ROW'S BODY RAW AND CLOSED — a body the parse never re-enters, bounded by a closing
+ * literal rather than by the row's own separator. A fence and frontmatter are the shapes; their
+ * content already spans separators, so what is inside is CONTENT and not structure.
+ *
+ * Read off the COMPILED markup rather than declared on the option: a kind that declared one and
+ * compiled to the other would be a second answer to a question the compiler settles.
+ *
+ * Two arms read it, and they say the same thing about the same body: Enter inside one writes a
+ * literal newline, and an overlay TRIGGER inside one is a literal character. The second was
+ * missing, and a `/` at the end of a fence's body opened the block menu — whose pick then retyped
+ * the whole ROW, destroying the fence, its language and its closing line at once.
+ */
+export function hasRawBody(row: RowNode): boolean {
+	const descriptor = row.descriptor()
+	return descriptor !== undefined && !descriptor.hasSlot && descriptor.trailingGap === undefined
+}
+
+/**
  * Every row in document order with its DEPTH — the recursion index, which is the tree's own
  * reading of depth and the only one. It is deliberately NOT derived from `lead`: the two
  * disagree on an over-indented paste, and two facts under one name is what the clamp exists to

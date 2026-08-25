@@ -10,7 +10,7 @@ import {resolveOverlaySlot} from '../slots/resolveSlot'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {RowNode, TokenModel} from '../tokens'
-import {anchorEquals, annotate, markupError} from '../tokens'
+import {anchorEquals, annotate, hasRawBody, markupError} from '../tokens'
 import {filterSuggestions} from './filterSuggestions'
 import {SuggestionsModel} from './SuggestionsModel'
 
@@ -322,6 +322,15 @@ export class OverlayController {
 
 			const match = left.match(new RegExp(`${escape(trigger)}(\\w*)$`))
 			if (!match) continue
+
+			// A RAW CLOSED BODY takes no trigger, the same rule `handleRowEnter` reads off the same
+			// compiled markup: what is inside a fence is CONTENT the parse never re-enters, so a `/`
+			// there is a character. It used to open the menu, and the pick then retyped the whole ROW
+			// — `'```bash⏎ls -la⏎```⏎tail'` + Divider emitted `'---ls -la⏎tail'`, fence, language and
+			// closing line all gone. Asked HERE, past the regex, so the walk costs nothing until a
+			// trigger actually matched.
+			const row = this.tokens.rowOf(caret)?.row
+			if (row && hasRawBody(row)) return
 
 			const [source, value] = match
 			return {

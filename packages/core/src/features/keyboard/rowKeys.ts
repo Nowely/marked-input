@@ -1,7 +1,7 @@
 import {KEYBOARD} from '../../shared/constants'
 import type {Store} from '../../store/Store'
 import type {AnchoredRow, Anchors} from '../tokens'
-import {anchorEquals, entryAnchor} from '../tokens'
+import {anchorEquals, entryAnchor, hasRawBody} from '../tokens'
 import {dropUnexpressedInput} from './beforeInput'
 
 type KbCtx = Pick<Store, 'block' | 'edit' | 'overlay' | 'tokens'>
@@ -87,7 +87,7 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
 	// default left standing here edits model-owned DOM whatever the verb decides.
 	event.preventDefault()
 
-	if (isRawBody(caret)) {
+	if (hasRawBody(caret.row)) {
 		store.edit.replace(at, at, '\n')
 		return
 	}
@@ -268,20 +268,6 @@ function continuationDepth(caret: AnchoredRow): number {
  */
 function demote(caret: AnchoredRow): boolean {
 	return caret.depth > 0 ? caret.row.setDepth(caret.depth - 1) : caret.row.turnInto(undefined)
-}
-
-/**
- * Is this row's body RAW AND CLOSED — a body the parse never re-enters, bounded by a closing
- * literal rather than by the row's own separator. Such a body already spans separators, so a
- * newline inside it is content.
- *
- * Read off the compiled markup (`!hasSlot && trailingGap === undefined`) rather than declared on
- * the option: it had exactly one user, and a kind that declares one and compiles to the other would
- * be a second answer to a question the compiler settles.
- */
-function isRawBody(caret: AnchoredRow): boolean {
-	const descriptor = caret.row.descriptor()
-	return descriptor !== undefined && !descriptor.hasSlot && descriptor.trailingGap === undefined
 }
 
 /**
