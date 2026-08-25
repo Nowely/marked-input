@@ -105,11 +105,12 @@ export class Parser {
 	 * Parses text into rows — block layout's top level (ADR-0010: the skeleton is scanned
 	 * before the inlines are parsed).
 	 *
-	 * TWO passes, no fixpoint. {@link scanRows} carves the rows by reading each row's own start,
-	 * so a row's kind, its structural bytes and its body edges are known before any inline
-	 * matching happens; then the UNCHANGED inline chain runs per row over that row's body alone.
-	 * An inline match therefore cannot span a row boundary, and a separator inside a row's raw
-	 * body is that row's own text rather than a boundary.
+	 * THREE passes, no fixpoint. {@link scanRows} carves the rows by reading each row's own start
+	 * and folds them into a tree by their indent, so a row's kind, its structural bytes, its body
+	 * edges and its children are known before any inline matching happens; then the UNCHANGED
+	 * inline chain runs per row over that row's body alone. An inline match therefore cannot span
+	 * a row boundary, and a separator inside a row's raw body is that row's own text rather than
+	 * a boundary.
 	 *
 	 * The piece after the final separator is a row even when empty, so Enter at the document end
 	 * always yields a visible row.
@@ -120,7 +121,7 @@ export class Parser {
 	 * @example
 	 * ```typescript
 	 * const parser = new Parser(['# __slot__'], [true])
-	 * const rows = parser.parseRows('# Title\n\nBody', {separator: '\n\n'})
+	 * const rows = parser.parseRows('# Title\n\nBody', {separator: '\n\n', indent: '\t'})
 	 * // Returns: [
 	 * //   RowToken('# Title\n\n', kind '# __slot__', children=[TextToken('Title')]),
 	 * //   RowToken('Body', paragraph, children=[TextToken('Body')])
@@ -132,8 +133,16 @@ export class Parser {
 			throw new Error('Parser.parseRows: separator must be non-empty')
 		}
 		const rows = scanRows(value, this.registry.rowKinds, config)
-		for (const row of rows) row.children = this.parseBody(row, value)
+		this.#fillBodies(rows, value)
 		return rows
+	}
+
+	/** Every row's own body, at every depth — the scan decided the shape, this fills it. */
+	#fillBodies(rows: readonly RowToken[], value: string): void {
+		for (const row of rows) {
+			row.children = this.parseBody(row, value)
+			this.#fillBodies(row.rows, value)
+		}
 	}
 
 	/**

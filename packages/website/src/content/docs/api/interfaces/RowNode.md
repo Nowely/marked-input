@@ -20,9 +20,11 @@ inline marks of the whole line.
 readonly children: Signal<readonly TreeNode[]>;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:72](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L72)
+Defined in: [core/src/features/tokens/tree/types.ts:76](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L76)
 
-The row's inline content — Text and Mark nodes only, at least one text child.
+INLINE children first, then CHILD ROWS. ONE list, so every generic walk in `tree/`, `bind`
+and `transactions` stays untouched by nesting; [inline](/api/interfaces/rownode/#inline) and [rows](/api/interfaces/rownode/#rows) are the two
+named halves the caret mapping and the renderer need.
 
 ***
 
@@ -63,6 +65,21 @@ Defined in: [core/src/features/tokens/tree/types.ts:58](https://github.com/Nowel
 
 ***
 
+### lead
+
+```ts
+lead: string;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:93](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L93)
+
+Structural bytes BEFORE the body: the indent run this row is nested by. Adoption-written,
+like [position](/api/interfaces/rownode/#position). It is the ROUND-TRIP BYTES and depth is the TREE, and there is no
+function from one to the other — an over-indented paste keeps its surplus here while the
+clamp renders it shallower.
+
+***
+
 ### meta
 
 ```ts
@@ -81,9 +98,10 @@ The kind's metadata gap — a todo's checked flag, a fence's language.
 position: object;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:80](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L80)
+Defined in: [core/src/features/tokens/tree/types.ts:98](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L98)
 
-INCLUDES the trailing separator on every row but the document-final one.
+INCLUDES the trailing separator on every row but the document-final one, and the row's
+whole SUBTREE. See [lineRange](/api/interfaces/rownode/#linerange) for the row's own line alone.
 
 #### end
 
@@ -105,11 +123,27 @@ start: number;
 duplicate(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:92](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L92)
+Defined in: [core/src/features/tokens/tree/types.ts:115](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L115)
 
 #### Returns
 
 `boolean`
+
+***
+
+### inline()
+
+```ts
+inline(): readonly TreeNode[];
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:78](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L78)
+
+The row's own inline content — Text and Mark nodes only, at least one text child.
+
+#### Returns
+
+readonly [`TreeNode`](/api/type-aliases/treenode/)[]
 
 ***
 
@@ -119,7 +153,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:92](https://github.com/Nowel
 insertAfter(text): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:93](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L93)
+Defined in: [core/src/features/tokens/tree/types.ts:116](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L116)
 
 #### Parameters
 
@@ -133,13 +167,42 @@ Defined in: [core/src/features/tokens/tree/types.ts:93](https://github.com/Nowel
 
 ***
 
+### lineRange()
+
+```ts
+lineRange(): object;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:103](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L103)
+
+The row's own LINE — its lead, its body and its own separator, the nested subtree
+excluded. Derived, because a row's line ends exactly where its first child row begins.
+
+#### Returns
+
+`object`
+
+##### end
+
+```ts
+end: number;
+```
+
+##### start
+
+```ts
+start: number;
+```
+
+***
+
 ### mergeWith()
 
 ```ts
 mergeWith(next): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:94](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L94)
+Defined in: [core/src/features/tokens/tree/types.ts:117](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L117)
 
 #### Parameters
 
@@ -159,7 +222,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:94](https://github.com/Nowel
 moveTo(index): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:95](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L95)
+Defined in: [core/src/features/tokens/tree/types.ts:118](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L118)
 
 #### Parameters
 
@@ -179,7 +242,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:95](https://github.com/Nowel
 option(): number | undefined;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:78](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L78)
+Defined in: [core/src/features/tokens/tree/types.ts:86](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L86)
 
 The public view of the kind: the index of the option that declared it, which is the same
 identity `resolveSlot` already resolves a mark's component by. `undefined` for a paragraph.
@@ -197,7 +260,7 @@ Derived from [descriptor](/api/interfaces/rownode/#descriptor), so the two canno
 range(): object;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:89](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L89)
+Defined in: [core/src/features/tokens/tree/types.ts:112](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L112)
 
 See [TextNode.range](/api/interfaces/textnode/#range).
 
@@ -225,7 +288,7 @@ start: number;
 remove(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:91](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L91)
+Defined in: [core/src/features/tokens/tree/types.ts:114](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L114)
 
 See NodeCommands.
 
@@ -235,15 +298,31 @@ See NodeCommands.
 
 ***
 
+### rows()
+
+```ts
+rows(): readonly RowNode[];
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:80](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L80)
+
+The rows nested under this one.
+
+#### Returns
+
+readonly `RowNode`[]
+
+***
+
 ### slot()
 
 ```ts
 slot(): string;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:87](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L87)
+Defined in: [core/src/features/tokens/tree/types.ts:110](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L110)
 
-The interior's TEXT, joined from the live children.
+The interior's TEXT, joined from the live inline children.
 
 #### Returns
 
@@ -257,10 +336,10 @@ The interior's TEXT, joined from the live children.
 slotRange(): object;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:85](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L85)
+Defined in: [core/src/features/tokens/tree/types.ts:108](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L108)
 
 The row's own editable interior — everything its opener and closing literal enclose.
-DERIVED from the children's outer edges, which is exactly what the parse put there.
+DERIVED from the INLINE children's outer edges, which is exactly what the parse put there.
 
 #### Returns
 

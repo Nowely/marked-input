@@ -111,8 +111,11 @@ export function adopt(
 			adoptPosition(node, token)
 			node.descriptor(token.descriptor)
 			node.meta(token.meta)
+			// A plain field beside `position`, for the same reason: the lead is structural bytes,
+			// not content, and no consumer subscribes to a row's indent changing.
+			node.lead = token.lead
 			const children = node.children()
-			const next = adoptSiblings(children, token.children)
+			const next = adoptSiblings(children, rowTokenChildren(token))
 			if (!sameNodes(next, children)) node.children(next)
 		}
 
@@ -275,12 +278,15 @@ function snapshotNodeEquals(node: TreeNode, token: Token | RowToken, delta: numb
 	if (node.kind === 'row') {
 		if (token.type !== 'row') return false
 		// The row's own kind, so a same-length retype can never be accepted by the prefix or
-		// suffix walk and keep the old markup in the projection.
+		// suffix walk and keep the old markup in the projection. Same for the LEAD: re-indenting
+		// a row leaves its content untouched, so nothing else here would notice.
 		if (node.descriptor() !== token.descriptor) return false
 		if (node.meta() !== token.meta) return false
+		if (node.lead !== token.lead) return false
 		const rowChildren = node.children()
-		if (rowChildren.length !== token.children.length) return false
-		return rowChildren.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
+		const tokenChildren = rowTokenChildren(token)
+		if (rowChildren.length !== tokenChildren.length) return false
+		return rowChildren.every((child, index) => snapshotNodeEquals(child, tokenChildren[index], delta))
 	}
 	if (token.type !== 'mark') return false
 	if (node.descriptor !== token.descriptor) return false
@@ -294,6 +300,11 @@ function snapshotNodeEquals(node: TreeNode, token: Token | RowToken, delta: numb
 	const children = node.children()
 	if (children.length !== token.children.length) return false
 	return children.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
+}
+
+/** A row token's children as the tree holds them: INLINE first, then the child rows. */
+function rowTokenChildren(token: RowToken): (Token | RowToken)[] {
+	return [...token.children, ...token.rows]
 }
 
 /** Recursive position shift for retained suffix nodes (plain field writes). */
@@ -364,8 +375,10 @@ function pairEquals(node: TreeNode, token: Token | RowToken): boolean {
 	if (node.kind === 'row' && token.type === 'row') {
 		if (node.descriptor() !== token.descriptor) return false
 		if (node.meta() !== token.meta) return false
+		// The INLINE children only, never `children()`: dragging a paired child row into this
+		// comparison would make a pair's verdict depend on rows the pairing itself claims.
 		const delta = token.slot.start - node.slotRange().start
-		const children = node.children()
+		const children = node.inline()
 		if (children.length !== token.children.length) return false
 		return children.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
 	}

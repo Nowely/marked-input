@@ -29,7 +29,7 @@ const BASE_SEED = 17_082_026
 const ITERATIONS = 200
 
 /** Paragraph rows (issue 08): the structural separator forms the rows, no markup needed. */
-const ROW_CONFIG = {separator: '\n\n'}
+const ROW_CONFIG = {separator: '\n\n', indent: '\t'}
 const parseRows = (value: string) => parser.parseRows(value, ROW_CONFIG)
 
 const buildTree = (value: string) => {

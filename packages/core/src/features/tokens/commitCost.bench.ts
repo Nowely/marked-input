@@ -181,7 +181,7 @@ function tokensFor(parser: Parser | undefined, value: string, separator: string 
 	// markup needed. ONE reading of the doc's own separator, because the STORE parses at the
 	// same policy — hardcoding `'\n\n'` here while the store took the `'\n'` default made every
 	// printed `roots`/`tokens` count and every caret offset describe a different tree.
-	return separator === null ? parseValue(parser, value) : parseRowsValue(parser, value, {separator})
+	return separator === null ? parseValue(parser, value) : parseRowsValue(parser, value, {separator, indent: '\t'})
 }
 
 function textNodesOf(nodes: readonly TreeNode[], out: TextNode[] = []): TextNode[] {

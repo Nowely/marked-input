@@ -39,8 +39,9 @@ export interface MarkToken {
  * first: each row is recognised at its OWN start, by its kind's opener or by nothing at all, and
  * its body is inline-parsed afterwards.
  *
- * `content`/`position` INCLUDE the trailing separator on every row but the document-final one, so
- * rows keep tiling the value. There is no stored terminator: which rows carry a separator is
+ * `content`/`position` INCLUDE the trailing separator on every row but the document-final one and,
+ * after the nest pass, the row's whole SUBTREE — so rows keep tiling the value at every depth and
+ * sibling positions still ascend. There is no stored terminator: which rows carry a separator is
  * structural — the pre-order join puts one between every adjacent pair and none after the last.
  *
  * A Row is never an inline child — `Token` stays `TextToken | MarkToken`.
@@ -70,10 +71,18 @@ export interface RowToken {
 	 */
 	slot: {content: string; start: number; end: number}
 	/**
+	 * Structural bytes BEFORE the body: the indent run a nested row is recognised by. Verbatim,
+	 * so a surplus run survives the depth clamp and round-trips — `lead` is the bytes, depth is
+	 * the tree, and there is no function from one to the other.
+	 */
+	lead: string
+	/**
 	 * Inline tokens of the row's SLOT (the same shape `parse()` emits, at absolute positions),
 	 * always edged by text tokens. A raw body (`__value__`) is one text token, never re-parsed.
 	 */
 	children: Token[]
+	/** The row's CHILD ROWS: the rows the nest pass put under it. */
+	rows: RowToken[]
 }
 
 /**
@@ -84,6 +93,11 @@ export interface RowToken {
 export interface RowConfig {
 	/** The structural row separator. Never part of any markup (ADR-0009). */
 	separator: string
+	/**
+	 * The indent unit a nested row leads with. `''` turns nesting off — and with it row TYPING on
+	 * every indented line, because a line whose first character is not the opener is a paragraph.
+	 */
+	indent: string
 }
 
 /**

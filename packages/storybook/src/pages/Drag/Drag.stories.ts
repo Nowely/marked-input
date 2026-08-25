@@ -87,12 +87,20 @@ export const ReadOnlyDrag = story({
 	},
 })
 
-/** A single-newline separator: each todo line is its own draggable row. */
+/**
+ * A single-newline separator: each todo line is its own draggable row.
+ *
+ * `indent: ''` because this document stores its leading tabs as CONTENT — the indented markup
+ * begins with one. At the default `'\t'` that tab is a row's lead, which is structural, so the
+ * markup would never match and the nested items would lose their checkboxes. This is the lever
+ * ADR-0010 names for exactly that consumer, and it turns off nesting for this editor.
+ */
 export const TodoList = story({
 	args: {
 		options: TODO_OPTIONS,
 		value: TODO_VALUE,
 		separator: '\n',
+		indent: '',
 		draggable: true,
 	},
 	parameters: {plainValue: 'right'},

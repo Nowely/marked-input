@@ -64,7 +64,7 @@ earlier text, pass it.
 optional draggable: boolean | DraggableConfig;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:92](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L92)
+Defined in: [react/markput/src/components/MarkedInput.tsx:103](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L103)
 
 Enable drag interaction on rows. Ineffective when `separator` is `null`.
 
@@ -72,6 +72,30 @@ Enable drag interaction on rows. Ineffective when `separator` is `null`.
 
 ```ts
 false
+```
+
+***
+
+### indent?
+
+```ts
+optional indent: string;
+```
+
+Defined in: [react/markput/src/components/MarkedInput.tsx:99](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L99)
+
+The indent unit a NESTED row leads with (ADR-0010): editor-level like `separator`, and
+structural in the same sense — a leading run of it at a row's own start belongs to no
+markup and no caret may enter it.
+
+`''` turns nesting off, and with it row TYPING on every indented line: a line whose first
+character is not an opener is a paragraph. Pass it when the document stores leading
+indentation as content.
+
+#### Default
+
+```ts
+'\t'
 ```
 
 ***

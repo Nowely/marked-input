@@ -323,7 +323,7 @@ export class TokenModel {
 	readonly rowConfig: Computed<RowConfig | undefined> = computed(() => {
 		const separator = this.props.separator()
 		if (separator === null) return undefined
-		if (separator !== '') return {separator}
+		if (separator !== '') return {separator, indent: this.props.indent()}
 		reportBadProp(
 			'`separator` is empty, so this editor has no rows and no row controls. ' +
 				'Pass a non-empty separator, or `separator={null}` for a document that never splits.'

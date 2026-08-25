@@ -27,7 +27,9 @@ export function rowToken(content: string, start: number, children: Token[]): Row
 		content,
 		position: {start, end: start + content.length},
 		slot: {content, start, end: start + content.length},
+		lead: '',
 		children,
+		rows: [],
 	}
 }
 /**

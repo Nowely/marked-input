@@ -4,9 +4,10 @@ import type {RowConfig, RowToken} from '../types'
 import type {MarkupDescriptor} from './MarkupDescriptor'
 
 /**
- * The block skeleton, carved BEFORE any inline matching (ADR-0010). One linear pass over the
- * value: at each row's own start it reads the row's kind from the literals there, and everything
- * between that row's body edges is left for the inline pass to parse.
+ * The block skeleton, carved BEFORE any inline matching (ADR-0010). Two linear passes over the
+ * value: at each row's own start it reads the row's lead and its kind from the literals there,
+ * then {@link nest} folds the flat run into a tree. Everything between a row's body edges is left
+ * for the inline pass to parse.
  *
  * The inversion is what removes the mutual dependence the row pass existed to resolve. Separators
  * and matches used to decide each other — a match hid the separators inside its extent, and a
@@ -17,8 +18,8 @@ import type {MarkupDescriptor} from './MarkupDescriptor'
  * Emits `children: []`; `Parser.parseRows` fills them per row.
  */
 export function scanRows(value: string, kinds: readonly MarkupDescriptor[], config: RowConfig): RowToken[] {
-	const {separator} = config
-	const rows: RowToken[] = []
+	const {separator, indent} = config
+	const flat: Scanned[] = []
 	let at = 0
 
 	for (;;) {
@@ -27,29 +28,94 @@ export function scanRows(value: string, kinds: readonly MarkupDescriptor[], conf
 		const found = value.indexOf(separator, at)
 		const rowEnd = found === -1 ? value.length : found
 
-		const match = matchKind(value, at, rowEnd, kinds, separator)
-		const slot = match?.slot ?? {start: at, end: rowEnd}
+		// THE LEAD: the maximal run of whole indent units at the row's own start. Bounded by the
+		// row's own separator, so an indent that happens to contain one cannot swallow a boundary
+		// and leave the scan unable to advance.
+		let bodyStart = at
+		if (indent.length > 0) {
+			while (bodyStart + indent.length <= rowEnd && value.startsWith(indent, bodyStart)) {
+				bodyStart += indent.length
+			}
+		}
+
+		const match = matchKind(value, bodyStart, rowEnd, kinds, separator)
+		const slot = match?.slot ?? {start: bodyStart, end: rowEnd}
 		const contentEnd = match?.end ?? rowEnd
 		// A closed kind may have carried the body across separators, so the row's own end is read
 		// at the match's end rather than at `rowEnd`.
 		const terminated = value.startsWith(separator, contentEnd)
 		const end = terminated ? contentEnd + separator.length : contentEnd
 
-		rows.push({
-			type: 'row',
-			content: value.slice(at, end),
-			position: {start: at, end},
-			descriptor: match?.descriptor,
-			meta: match?.meta,
-			slot: {content: value.slice(slot.start, slot.end), start: slot.start, end: slot.end},
-			children: [],
+		flat.push({
+			row: {
+				type: 'row',
+				content: value.slice(at, end),
+				position: {start: at, end},
+				descriptor: match?.descriptor,
+				meta: match?.meta,
+				lead: value.slice(at, bodyStart),
+				slot: {content: value.slice(slot.start, slot.end), start: slot.start, end: slot.end},
+				children: [],
+				rows: [],
+			},
+			// The lead is a run of whole units, so the division is exact; with nesting off every
+			// row is a root.
+			depth: indent.length > 0 ? (bodyStart - at) / indent.length : 0,
+			empty: contentEnd === at,
 		})
 
 		// The piece after the final separator is a row even when empty (ADR-0009's trailing
 		// convention): Enter at the document end always yields a visible row.
-		if (!terminated) return rows
+		if (!terminated) break
 		at = end
 	}
+
+	return nest(flat, value)
+}
+
+type Scanned = {row: RowToken; depth: number; empty: boolean}
+
+/**
+ * The stack pass: a flat run of scanned rows becomes a tree, and nesting is indentation and
+ * nothing else.
+ *
+ * Two rules, both measured rather than assumed. A row descends AT MOST ONE LEVEL past the row
+ * before it, so an over-indented paste renders shallower while its surplus bytes stay verbatim in
+ * `lead` and round-trip. And AN EMPTY ROW TAKES NO CHILDREN — without it `'- a⏎⏎⇥- b'` makes the
+ * blank paragraph the parent of the bullet, which under a one-newline separator is one keystroke
+ * away.
+ */
+function nest(flat: readonly Scanned[], value: string): RowToken[] {
+	const roots: RowToken[] = []
+	// The open ancestors, `stack[d]` being the row currently at depth `d`.
+	const stack: RowToken[] = []
+	let previous: Scanned | undefined
+
+	for (const scanned of flat) {
+		const ceiling = previous === undefined ? 0 : previous.empty ? stack.length - 1 : stack.length
+		const depth = Math.min(scanned.depth, ceiling)
+		stack.length = depth
+		const parent = stack.at(-1)
+		if (parent) parent.rows.push(scanned.row)
+		else roots.push(scanned.row)
+		stack.push(scanned.row)
+		previous = scanned
+	}
+
+	// A parent's span covers its subtree, so rows keep TILING the value at every depth — which is
+	// what leaves every walk that relies on ascending sibling positions untouched.
+	for (const root of roots) extendOverSubtree(root, value)
+	return roots
+}
+
+function extendOverSubtree(row: RowToken, value: string): number {
+	let end = row.position.end
+	for (const child of row.rows) end = extendOverSubtree(child, value)
+	if (end !== row.position.end) {
+		row.position.end = end
+		row.content = value.slice(row.position.start, end)
+	}
+	return end
 }
 
 type KindMatch = {descriptor: MarkupDescriptor; end: number; slot: {start: number; end: number}; meta?: string}

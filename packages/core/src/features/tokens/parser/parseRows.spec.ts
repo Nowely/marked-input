@@ -4,8 +4,8 @@ import {rowsToDebugTree} from './__testing__/tokensToDebugTree'
 import {Parser} from './Parser'
 import type {Markup, RowConfig} from './types'
 
-const SEPARATOR: RowConfig = {separator: '\n\n'}
-const LINE: RowConfig = {separator: '\n'}
+const SEPARATOR: RowConfig = {separator: '\n\n', indent: '\t'}
+const LINE: RowConfig = {separator: '\n', indent: '\t'}
 
 /** Every markup a row kind, which is what an option carrying `row` compiles to. */
 const rowParser = (markups: Markup[]) =>
@@ -186,6 +186,86 @@ describe('parseRows', () => {
 		})
 	})
 
+	/**
+	 * SNAPSHOTS, not a round trip. `[A, B]` and `[A[B]]` join to the SAME string, so the
+	 * round-trip property is structurally blind to every assertion in this block; the debug tree
+	 * is the only thing that sees depth at all.
+	 */
+	describe('nesting is indentation and nothing else', () => {
+		it('makes a deeper indent run a child of the row before it', () => {
+			const rows = rowParser(['- __slot__']).parseRows('- a\n\t- b\n\t\t- c\n- d', LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "- a↲⇥- b↲⇥⇥- c↲" [0-15] kind=0
+					0.0: TEXT "a" [2-3]
+					0.1: ROW "⇥- b↲⇥⇥- c↲" [4-15] lead="⇥" kind=0
+						0.1.0: TEXT "b" [7-8]
+						0.1.1: ROW "⇥⇥- c↲" [9-15] lead="⇥⇥" kind=0
+							0.1.1.0: TEXT "c" [13-14]
+				 1: ROW "- d" [15-18] kind=0
+					1.0: TEXT "d" [17-18]"
+			`)
+		})
+
+		it('clamps an over-indented row to one level and keeps its surplus bytes in the lead', () => {
+			// The two children are SIBLINGS at the same depth with DIFFERENT leads — the whole
+			// reason `lead` is the round-trip bytes and depth is the tree, with no function
+			// from one to the other.
+			const rows = rowParser(['- __slot__']).parseRows('- a\n\t\t- b\n\t- c', LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "- a↲⇥⇥- b↲⇥- c" [0-14] kind=0
+					0.0: TEXT "a" [2-3]
+					0.1: ROW "⇥⇥- b↲" [4-10] lead="⇥⇥" kind=0
+						0.1.0: TEXT "b" [8-9]
+					0.2: ROW "⇥- c" [10-14] lead="⇥" kind=0
+						0.2.0: TEXT "c" [13-14]"
+			`)
+		})
+
+		it('gives an empty row no children, so a blank line does not adopt the row below it', () => {
+			const rows = rowParser(['- __slot__']).parseRows('- a\n\n\t- b', LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "- a↲" [0-4] kind=0
+					0.0: TEXT "a" [2-3]
+				 1: ROW "↲" [4-5]
+					1.0: TEXT "" [4-4]
+				 2: ROW "⇥- b" [5-9] lead="⇥" kind=0
+					2.0: TEXT "b" [8-9]"
+			`)
+		})
+
+		it('turns nesting AND row typing off on an indented line at an empty indent', () => {
+			// Declared cost, not an oversight: with no indent unit a line whose first character
+			// is not the opener is a paragraph, so a consumer storing leading tabs as content
+			// loses the kind on those lines too.
+			const rows = rowParser(['- __slot__']).parseRows('- a\n\t- b', {separator: '\n', indent: ''})
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "- a↲" [0-4] kind=0
+					0.0: TEXT "a" [2-3]
+				 1: ROW "⇥- b" [4-8]
+					1.0: TEXT "⇥- b" [4-8]"
+			`)
+		})
+
+		it('nests a paragraph under a typed row, and a typed row under a paragraph', () => {
+			const rows = rowParser(['> __slot__']).parseRows('> quote\n\tloose line\nplain\n\t> deep', LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "> quote↲⇥loose line↲" [0-20] kind=0
+					0.0: TEXT "quote" [2-7]
+					0.1: ROW "⇥loose line↲" [8-20] lead="⇥"
+						0.1.0: TEXT "loose line" [9-19]
+				 1: ROW "plain↲⇥> deep" [20-33]
+					1.0: TEXT "plain" [20-25]
+					1.1: ROW "⇥> deep" [26-33] lead="⇥" kind=0
+						1.1.0: TEXT "deep" [29-33]"
+			`)
+		})
+	})
+
 	describe('the two bounds on a candidate', () => {
 		/**
 		 * ONLY THE BODY GAP MAY CROSS A SEPARATOR. Without the rule the todo's `__meta__` closes
@@ -297,7 +377,9 @@ describe('parseRows', () => {
 
 	describe('contract', () => {
 		it('rejects an empty separator', () => {
-			expect(() => new Parser([]).parseRows('alpha', {separator: ''})).toThrow('separator must be non-empty')
+			expect(() => new Parser([]).parseRows('alpha', {separator: '', indent: '\t'})).toThrow(
+				'separator must be non-empty'
+			)
 		})
 
 		it('reproduces the value from row contents byte-for-byte', () => {

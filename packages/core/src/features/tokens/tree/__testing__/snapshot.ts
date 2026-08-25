@@ -1,6 +1,6 @@
 import type {MarkToken, RowToken, TextToken, Token} from '../../parser/types'
 import {annotate} from '../../parser/utils/annotate'
-import type {TreeNode} from '../types'
+import type {RowNode, TreeNode} from '../types'
 
 /**
  * TEST-ONLY, and it earns that: this is S1 §7.1's output-equivalence ORACLE — after every
@@ -21,32 +21,43 @@ import type {TreeNode} from '../types'
  */
 export function snapshot(nodes: readonly TreeNode[], separator?: string): (Token | RowToken)[] {
 	const lastRow = nodes.findLastIndex(node => node.kind === 'row')
-	return nodes.map((node, index) => materializeNode(node, index < lastRow ? (separator ?? '') : ''))
+	return nodes.map((node, index) =>
+		node.kind === 'row' ? materializeRow(node, separator ?? '', index < lastRow) : materializeInline(node)
+	)
 }
 
-function materializeNode(node: TreeNode, separator: string): Token | RowToken {
-	if (node.kind === 'row') {
-		const children = node.children().map(materializeInline)
-		const body = children.map(child => child.content).join('')
-		const descriptor = node.descriptor()
-		const slotStart = children[0]?.position.start ?? node.position.start
-		const token: RowToken = {
-			type: 'row',
-			// Same rule as `joinNodes`' row arm: the kind's markup wrapped around the body, and
-			// the separator supplied by the JOIN rather than by the row.
-			content:
-				(descriptor ? annotate(descriptor.markup, {value: body, slot: body, meta: node.meta()}) : body) +
-				separator,
-			position: {...node.position},
-			id: node.id,
-			descriptor,
-			meta: node.meta(),
-			slot: {content: body, start: slotStart, end: children[children.length - 1]?.position.end ?? slotStart},
-			children,
-		}
-		return token
+/**
+ * One row and its subtree. `followed` says whether another row comes after this whole subtree,
+ * which is the only thing that decides whether its last line carries a separator — the same
+ * pre-order rule the projection joins by.
+ */
+function materializeRow(node: RowNode, separator: string, followed: boolean): RowToken {
+	const children = node.inline().map(materializeInline)
+	const body = children.map(child => child.content).join('')
+	const descriptor = node.descriptor()
+	const slotStart = children[0]?.position.start ?? node.position.start
+	const childRows = node.rows()
+	const rows = childRows.map((child, index) =>
+		materializeRow(child, separator, index < childRows.length - 1 || followed)
+	)
+	// Same rule as `joinNodes`' row arm: the lead, the kind's markup wrapped around the body,
+	// then a separator when any row follows, then the subtree.
+	const line =
+		node.lead +
+		(descriptor ? annotate(descriptor.markup, {value: body, slot: body, meta: node.meta()}) : body) +
+		(childRows.length > 0 || followed ? separator : '')
+	return {
+		type: 'row',
+		content: line + rows.map(row => row.content).join(''),
+		position: {...node.position},
+		id: node.id,
+		descriptor,
+		meta: node.meta(),
+		lead: node.lead,
+		slot: {content: body, start: slotStart, end: children[children.length - 1]?.position.end ?? slotStart},
+		children,
+		rows,
 	}
-	return materializeInline(node)
 }
 
 /** A Row is never an inline child, so everything below a root materializes to `Token`. */

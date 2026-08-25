@@ -41,6 +41,17 @@ export class PropsModel {
 	 * at the price of a list item never being one, which is the trade issue 05 measured.
 	 */
 	readonly separator = signal<string | null>({default: '\n', readonly: true})
+	/**
+	 * The indent unit a NESTED row leads with (ADR-0010): editor-level like the separator, and
+	 * structural in the same sense — a leading run of it at a row's own start belongs to no
+	 * markup and no caret may enter it.
+	 *
+	 * `''` turns nesting off, and it turns off more than that: a line whose first character is
+	 * not an opener is a paragraph, so a consumer storing leading tabs as content also loses row
+	 * kinds on those lines. Declared rather than guarded — the alternative reading, rejecting
+	 * `''` outright, would leave no way to ask for a flat document at all.
+	 */
+	readonly indent = signal<string>({default: '\t', readonly: true})
 	readonly draggable = signal<boolean | DraggableConfig>({default: false, readonly: true})
 
 	readonly showOverlayOn = signal<OverlayTrigger>({default: 'change', readonly: true})

@@ -133,7 +133,7 @@ describe('TokenModel', () => {
 			store.props.set({Mark: () => null, options: [], defaultValue: 'a\nb'})
 			store.host.container(document.createElement('div'))
 
-			expect(store.tokens.rowConfig()).toEqual({separator: '\n'})
+			expect(store.tokens.rowConfig()).toEqual({separator: '\n', indent: '\t'})
 			expect(store.tokens.nodes().map(node => node.kind)).toEqual(['row', 'row'])
 		})
 

@@ -45,6 +45,7 @@ describe('row kind order', () => {
 		// read as a bullet whose text begins with a bracket.
 		const kinds = new Parser(['- __slot__', '- [__meta__] __slot__'], [true, true]).parseRows('- [x] a', {
 			separator: '\n',
+			indent: '\t',
 		})
 
 		expect(kinds.map(row => row.descriptor?.index)).toEqual([1])

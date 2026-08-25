@@ -77,7 +77,7 @@ describe('anchorAt', () => {
 		// its own, so both rows open on `TreeBuilder`'s zero-length pre-match token rather than on
 		// a token the whole-document pass happened to leave there. A fixture whose second row is
 		// plain text pins that half by accident.
-		const roots = createTokenTree(nestedParser.parseRows('@[x]\n\n@[y]', {separator: '\n\n'})).roots()
+		const roots = createTokenTree(nestedParser.parseRows('@[x]\n\n@[y]', {separator: '\n\n', indent: '\t'})).roots()
 		const firstChild = (index: number) => {
 			const row = roots[index]
 			if (row.kind !== 'row') throw new Error('expected a row root')

@@ -11,7 +11,7 @@ import {anchorAt, entryAnchor, offsetOfAnchor, separatorSpan, stepAnchor} from '
 import {renderSubscription} from './renderSubscription'
 import {createTokenTree, sliceNodes} from './tree'
 
-const SEPARATOR = {separator: '\n\n'}
+const SEPARATOR = {separator: '\n\n', indent: '\t'}
 
 const rowTree = (markups: Markup[], value: string, rows: boolean[] = []) => {
 	const parser = new Parser(markups, rows)

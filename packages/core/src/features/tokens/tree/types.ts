@@ -68,22 +68,45 @@ export interface RowNode {
 	readonly descriptor: Signal<MarkupDescriptor | undefined>
 	/** The kind's metadata gap — a todo's checked flag, a fence's language. */
 	readonly meta: Signal<string | undefined>
-	/** The row's inline content — Text and Mark nodes only, at least one text child. */
+	/**
+	 * INLINE children first, then CHILD ROWS. ONE list, so every generic walk in `tree/`, `bind`
+	 * and `transactions` stays untouched by nesting; {@link inline} and {@link rows} are the two
+	 * named halves the caret mapping and the renderer need.
+	 */
 	readonly children: Signal<readonly TreeNode[]>
+	/** The row's own inline content — Text and Mark nodes only, at least one text child. */
+	inline(): readonly TreeNode[]
+	/** The rows nested under this one. */
+	rows(): readonly RowNode[]
 	/**
 	 * The public view of the kind: the index of the option that declared it, which is the same
 	 * identity `resolveSlot` already resolves a mark's component by. `undefined` for a paragraph.
 	 * Derived from {@link descriptor}, so the two cannot disagree.
 	 */
 	option(): number | undefined
-	/** INCLUDES the trailing separator on every row but the document-final one. */
+	/**
+	 * Structural bytes BEFORE the body: the indent run this row is nested by. Adoption-written,
+	 * like {@link position}. It is the ROUND-TRIP BYTES and depth is the TREE, and there is no
+	 * function from one to the other — an over-indented paste keeps its surplus here while the
+	 * clamp renders it shallower.
+	 */
+	lead: string
+	/**
+	 * INCLUDES the trailing separator on every row but the document-final one, and the row's
+	 * whole SUBTREE. See {@link lineRange} for the row's own line alone.
+	 */
 	position: {start: number; end: number}
 	/**
+	 * The row's own LINE — its lead, its body and its own separator, the nested subtree
+	 * excluded. Derived, because a row's line ends exactly where its first child row begins.
+	 */
+	lineRange(): {start: number; end: number}
+	/**
 	 * The row's own editable interior — everything its opener and closing literal enclose.
-	 * DERIVED from the children's outer edges, which is exactly what the parse put there.
+	 * DERIVED from the INLINE children's outer edges, which is exactly what the parse put there.
 	 */
 	slotRange(): {start: number; end: number}
-	/** The interior's TEXT, joined from the live children. */
+	/** The interior's TEXT, joined from the live inline children. */
 	slot(): string
 	/** See {@link TextNode.range}. */
 	range(): {start: number; end: number}

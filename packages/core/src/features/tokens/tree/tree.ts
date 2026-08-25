@@ -49,14 +49,27 @@ export function createTokenTree(
 				id: alloc(),
 				descriptor: signal<MarkupDescriptor | undefined>({initial: token.descriptor}),
 				meta: signal({initial: token.meta}),
-				children: signal<readonly TreeNode[]>({initial: token.children.map(buildNode)}),
+				// INLINE first, then the child rows: one list, and the ORDER is what
+				// {@link RowNode.inline} and {@link RowNode.rows} read it back by.
+				children: signal<readonly TreeNode[]>({
+					initial: [...token.children.map(buildNode), ...token.rows.map(buildNode)],
+				}),
+				inline: () => node.children().filter(child => child.kind !== 'row'),
+				rows: () => node.children().filter((child): child is RowNode => child.kind === 'row'),
 				option: () => node.descriptor()?.index,
+				lead: token.lead,
 				position: {...token.position},
-				// DERIVED from the children's outer edges rather than stored: a row's body is
-				// exactly what its inline children cover, so a stored range would be a second
-				// reading of one fact — and the one adoption would have to keep in step.
-				slotRange: () => outerEdges(node.children()),
-				slot: () => joinNodes(node.children()),
+				// A row's own line ends exactly where its first child row starts, so the split is
+				// derived from the children rather than stored beside them.
+				lineRange: () => ({
+					start: node.position.start,
+					end: node.rows().at(0)?.position.start ?? node.position.end,
+				}),
+				// DERIVED from the inline children's outer edges rather than stored: a row's body
+				// is exactly what they cover, so a stored range would be a second reading of one
+				// fact — and the one adoption would have to keep in step.
+				slotRange: () => outerEdges(node.inline()),
+				slot: () => joinNodes(node.inline()),
 				range: () => ({...node.position}),
 				remove: () => commands?.()?.remove(node) ?? false,
 				duplicate: () => commands?.()?.duplicate(node) ?? false,
@@ -133,6 +146,25 @@ function outerEdges(nodes: readonly TreeNode[]): {start: number; end: number} {
 	return {start: first.position.start, end: last.position.end}
 }
 
+/**
+ * Every row in document order with its DEPTH — the recursion index, which is the tree's own
+ * reading of depth and the only one. It is deliberately NOT derived from `lead`: the two
+ * disagree on an over-indented paste, and two facts under one name is what the clamp exists to
+ * keep apart.
+ *
+ * The pre-order walk is what the value's join, the row boundaries and the identity pairing all
+ * speak, because a row's subtree is contiguous in document order.
+ */
+export function preorderRows(nodes: readonly TreeNode[], depth = 0): {row: RowNode; depth: number}[] {
+	const out: {row: RowNode; depth: number}[] = []
+	for (const node of nodes) {
+		if (node.kind !== 'row') continue
+		out.push({row: node, depth})
+		out.push(...preorderRows(node.rows(), depth + 1))
+	}
+	return out
+}
+
 /** Depth-first id lookup over live nodes (spec §2.3's `input.find`). */
 export function findNode(nodes: readonly TreeNode[], id: Id): TreeNode | undefined {
 	for (const node of nodes) {
@@ -197,19 +229,7 @@ function sliceWithin(nodes: readonly TreeNode[], start: number, end: number, sep
 		}
 
 		if (node.kind === 'row') {
-			const separatorText = index < lastRow ? (separator ?? '') : ''
-			const contentEnd = node.position.end - separatorText.length
-			// A row whose BODY the window reaches is re-annotated from its kind, exactly as a
-			// partly covered mark is: copying half a heading yields '# half'. A window touching
-			// only the separator gets the separator alone — re-annotating there would invent an
-			// empty row of that kind.
-			if (start < contentEnd) {
-				result += rowBody(node, sliceWithin(node.children(), start, end, separator))
-			}
-			result += separatorText.slice(
-				Math.max(0, start - contentEnd),
-				Math.min(separatorText.length, end - contentEnd)
-			)
+			result += sliceRowSubtree(node, start, end, separator ?? '', index < lastRow)
 			continue
 		}
 
@@ -221,11 +241,49 @@ function sliceWithin(nodes: readonly TreeNode[], start: number, end: number, sep
 }
 
 /**
+ * A row subtree, restricted to a window — {@link sliceRowLines}'s rule with each line cut.
+ * `followed` says whether a row follows this whole subtree, which is what decides the last
+ * line's separator.
+ */
+function sliceRowSubtree(root: RowNode, start: number, end: number, separator: string, followed: boolean): string {
+	let result = ''
+	const lines = rowLineSpans(root, separator, followed)
+	for (const {row, lineEnd, ownSeparator} of lines) {
+		// A row whose BODY the window reaches is re-annotated from its kind, exactly as a partly
+		// covered mark is: copying half a heading yields '# half'. A window touching only the
+		// separator gets the separator alone — re-annotating there would invent an empty row.
+		if (start < lineEnd && end > row.position.start) {
+			result += row.lead + rowBody(row, sliceWithin(row.inline(), start, end, separator))
+		}
+		result += ownSeparator.slice(Math.max(0, start - lineEnd), Math.min(ownSeparator.length, end - lineEnd))
+	}
+	return result
+}
+
+/**
+ * A row subtree's own lines in PRE-ORDER, each with where its body ends and whether a separator
+ * follows it. One rule for both projections: a row carries a separator exactly when another row
+ * follows it, so only the document-final row lacks one.
+ */
+function rowLineSpans(
+	root: RowNode,
+	separator: string,
+	followed: boolean
+): {row: RowNode; lineEnd: number; ownSeparator: string}[] {
+	const rows = preorderRows([root])
+	return rows.map(({row}, index) => {
+		const ownSeparator = index < rows.length - 1 || followed ? separator : ''
+		return {row, lineEnd: row.lineRange().end - ownSeparator.length, ownSeparator}
+	})
+}
+
+/**
  * The string projection: mirrors parser/__testing__/toString over live nodes.
  *
- * ROWS ARE JOINED BY THE SEPARATOR, which is what replaced the terminator each row used to
- * store. One separator between every adjacent pair and none after the last, so
- * "the final row carries none" is structural rather than stored and normalized.
+ * ROWS ARE JOINED BY THE SEPARATOR IN PRE-ORDER, which is what replaced the terminator each row
+ * used to store. One separator between every adjacent pair and none after the last, so "the final
+ * row carries none" is structural rather than stored and normalized — and a nested row's LEAD is
+ * emitted by the row itself, which is why depth need not be reconstructed here.
  */
 export function joinNodes(nodes: readonly TreeNode[], separator?: string): string {
 	let result = ''
@@ -238,7 +296,7 @@ export function joinNodes(nodes: readonly TreeNode[], separator?: string): strin
 		}
 
 		if (node.kind === 'row') {
-			result += rowContent(node)
+			result += rowContent(node, separator)
 			if (index < lastRow) result += separator ?? ''
 			continue
 		}
@@ -253,9 +311,19 @@ export function joinNodes(nodes: readonly TreeNode[], separator?: string): strin
 	return result
 }
 
-/** A row's own bytes, separator excluded: its kind's markup wrapped around its body. */
-export function rowContent(node: RowNode): string {
-	return rowBody(node, joinNodes(node.children()))
+/**
+ * A row AND ITS SUBTREE, its own trailing separator excluded: the pre-order join every splice
+ * that replaces a whole row re-emits, since a row's `position` covers its children.
+ */
+export function rowContent(node: RowNode, separator?: string): string {
+	return preorderRows([node])
+		.map(({row}) => rowLine(row))
+		.join(separator ?? '')
+}
+
+/** A row's OWN bytes: its lead, then its kind's markup wrapped around its body. */
+function rowLine(node: RowNode): string {
+	return node.lead + rowBody(node, joinNodes(node.inline()))
 }
 
 /**

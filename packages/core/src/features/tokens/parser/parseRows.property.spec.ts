@@ -16,7 +16,8 @@ import type {Markup, RowConfig, RowToken, Token} from './types'
 const FAKER_SEED = 6_122_026
 const ITERATIONS = 200
 const SEPARATOR = '\n'
-const ROW_CONFIG: RowConfig = {separator: SEPARATOR}
+const INDENT = '\t'
+const ROW_CONFIG: RowConfig = {separator: SEPARATOR, indent: INDENT}
 const MARKUPS = ['**__slot__**', '@[__value__](__meta__)'] as const
 /** The ROW kinds, ahead of the inline markups so their option indices are stable. */
 const ROW_MARKUPS: Markup[] = ['# __slot__', '- [__meta__] __slot__', '> __slot__']
@@ -56,7 +57,18 @@ function shiftRow(row: RowToken, delta: number): RowToken {
 		position: {start: row.position.start + delta, end: row.position.end + delta},
 		slot: {...row.slot, start: row.slot.start + delta, end: row.slot.end + delta},
 		children: row.children.map(child => shiftToken(child, delta)),
+		rows: row.rows.map(child => shiftRow(child, delta)),
 	}
+}
+
+/** Every row in document order, at every depth — what the value's pre-order join walks. */
+function preorder(rows: readonly RowToken[]): RowToken[] {
+	return rows.flatMap(row => [row, ...preorder(row.rows)])
+}
+
+/** A row with no bytes of its own — the one the nest pass refuses to make a parent. */
+function isEmptyRow(row: RowToken): boolean {
+	return row.lead === '' && row.descriptor === undefined && row.slot.start === row.slot.end
 }
 
 describe('parseRows properties', () => {
@@ -77,31 +89,42 @@ describe('parseRows properties', () => {
 		expect(typedRows).toBeGreaterThan(ITERATIONS)
 	})
 
-	it('keeps every other row byte-identical across an in-row edit', () => {
+	/**
+	 * Stated over ROOTS and their whole subtrees, which is what nesting made of it: a parent's
+	 * span covers its children, so an edit inside a nested row necessarily rewrites its
+	 * ancestors' `content` too. Excluding the root that CONTAINS the edit is the same claim the
+	 * flat property made — everything the edit is not inside is untouched.
+	 */
+	it('keeps every other row subtree byte-identical across an in-row edit', () => {
 		const parser = typedParser()
 
 		for (let i = 0; i < ITERATIONS; i++) {
 			const value = generateTypedDocument()
-			const rows = parser.parseRows(value, ROW_CONFIG)
+			const roots = parser.parseRows(value, ROW_CONFIG)
 
-			// An insertion strictly inside one row's content (never into its separator):
-			// a single alpha char cannot form or break a '\n' separator.
-			const rowIndex = faker.number.int({min: 0, max: rows.length - 1})
-			const row = rows[rowIndex]
-			const contentLength = row.content.length - (rowIndex < rows.length - 1 ? SEPARATOR.length : 0)
-			const offset = row.position.start + faker.number.int({min: 0, max: contentLength})
+			// An insertion strictly inside one row's own BODY: never into a separator, never into
+			// a lead, and a single alpha char can neither form nor break a '\n' or an opener.
+			// EMPTY rows are excluded, and that exclusion is the nesting rule rather than a
+			// convenience — an empty row takes no children, so filling one in re-parents the row
+			// after it and the edit is legitimately not local.
+			const all = preorder(roots).filter(row => !isEmptyRow(row))
+			if (all.length === 0) continue
+			const rowIndex = faker.number.int({min: 0, max: all.length - 1})
+			const row = all[rowIndex]
+			const offset = faker.number.int({min: row.slot.start, max: row.slot.end})
 			const inserted = faker.string.alpha(1)
 			const edited = value.slice(0, offset) + inserted + value.slice(offset)
 
-			const editedRows = parser.parseRows(edited, ROW_CONFIG)
+			const editedRoots = parser.parseRows(edited, ROW_CONFIG)
 			const context = `iteration ${i}, row ${rowIndex}, offset ${offset}, value ${JSON.stringify(value)}`
+			const hit = roots.findIndex(root => root.position.start <= offset && offset <= root.position.end)
 
-			expect(editedRows.length, context).toBe(rows.length)
-			for (let k = 0; k < rowIndex; k++) {
-				expect(editedRows[k], context).toEqual(rows[k])
+			expect(editedRoots.length, context).toBe(roots.length)
+			for (let k = 0; k < hit; k++) {
+				expect(editedRoots[k], context).toEqual(roots[k])
 			}
-			for (let k = rowIndex + 1; k < rows.length; k++) {
-				expect(editedRows[k], context).toEqual(shiftRow(rows[k], inserted.length))
+			for (let k = hit + 1; k < roots.length; k++) {
+				expect(editedRoots[k], context).toEqual(shiftRow(roots[k], inserted.length))
 			}
 		}
 	})
@@ -146,43 +169,51 @@ describe('parseRows properties', () => {
 	})
 })
 
+/**
+ * The corpus is INDENTED, deliberately over-indented part of the time: the clamp and the surplus
+ * bytes it leaves in `lead` are what the round trip has to survive, and a flat generator sees
+ * neither.
+ */
 function generateTypedDocument(): string {
 	const rows = Array.from({length: faker.number.int({min: 1, max: 8})}, () => {
 		const words = () => faker.lorem.words({min: 1, max: 4})
+		const lead = INDENT.repeat(faker.number.int({min: 0, max: 3}))
 		switch (faker.number.int({min: 0, max: 4})) {
 			case 0:
-				return `# ${words()}`
+				return `${lead}# ${words()}`
 			case 1:
-				return `- [${faker.helpers.arrayElement(['x', ' '])}] ${words()}`
+				return `${lead}- [${faker.helpers.arrayElement(['x', ' '])}] ${words()}`
 			case 2:
-				return `> ${words()} **${words()}**`
+				return `${lead}> ${words()} **${words()}**`
 			case 3:
 				return ''
 			default:
-				return `${words()} @[${faker.string.alpha(4)}](${faker.string.alpha(3)})`
+				return `${lead}${words()} @[${faker.string.alpha(4)}](${faker.string.alpha(3)})`
 		}
 	})
 	return rows.join(SEPARATOR) + (faker.datatype.boolean() ? SEPARATOR : '')
 }
 
+/** Re-baselined at P3 (spec risk 7): a generator with no indent pins an intermediate shape. */
 function generateLargeDocument(count: number): string {
 	const rows: string[] = []
 	for (let index = 0; index < count; index++) {
+		const lead = INDENT.repeat(index % 3)
 		switch (index % 5) {
 			case 0:
 				rows.push(`# Heading ${index}`)
 				break
 			case 1:
-				rows.push(`text ${index} **bold ${index}** tail`)
+				rows.push(`${lead}text ${index} **bold ${index}** tail`)
 				break
 			case 2:
-				rows.push(`hi @[user${index}](id${index}) there`)
+				rows.push(`${lead}hi @[user${index}](id${index}) there`)
 				break
 			case 3:
-				rows.push(`- [ ] task ${index}`)
+				rows.push(`${lead}- [ ] task ${index}`)
 				break
 			default:
-				rows.push(`plain paragraph number ${index} with some filler words`)
+				rows.push(`${lead}plain paragraph number ${index} with some filler words`)
 		}
 	}
 	return rows.join(SEPARATOR)

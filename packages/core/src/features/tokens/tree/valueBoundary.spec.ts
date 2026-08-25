@@ -456,7 +456,7 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 
 describe('boundary: a separator adopts rows (issue 08)', () => {
 	function blockSetup(source: string, rowConfig: () => RowConfig | undefined) {
-		const tree = createTokenTree(parseRowsValue(undefined, source, {separator: '\n\n'}))
+		const tree = createTokenTree(parseRowsValue(undefined, source, {separator: '\n\n', indent: '\t'}))
 		tree.separator('\n\n')
 		const boundary = createBoundary({
 			tree,
@@ -470,7 +470,7 @@ describe('boundary: a separator adopts rows (issue 08)', () => {
 	}
 
 	it('adopts rows only — the block top level is RowNodes, trailing empty row included', () => {
-		const {tree, tx} = blockSetup('aaa\n\nbbb\n\n', () => ({separator: '\n\n'}))
+		const {tree, tx} = blockSetup('aaa\n\nbbb\n\n', () => ({separator: '\n\n', indent: '\t'}))
 		expect(tree.roots().map(n => n.kind)).toEqual(['row', 'row', 'row'])
 
 		expect(tx.applyRange({start: 1, end: 1, insertedLength: 0}, 'X')).toBe(true)
@@ -478,12 +478,12 @@ describe('boundary: a separator adopts rows (issue 08)', () => {
 		expect(tree.roots().map(n => n.kind)).toEqual(['row', 'row', 'row'])
 		expect(tree.value()).toBe('aXaa\n\nbbb\n\n')
 		expect(stripIds(snapshot(tree.roots(), '\n\n'))).toEqual(
-			parseRowsValue(undefined, 'aXaa\n\nbbb\n\n', {separator: '\n\n'})
+			parseRowsValue(undefined, 'aXaa\n\nbbb\n\n', {separator: '\n\n', indent: '\t'})
 		)
 	})
 
 	it('an empty row keeps ONE empty text child — its caret target', () => {
-		const {tree} = blockSetup('\n\nbbb\n\n', () => ({separator: '\n\n'}))
+		const {tree} = blockSetup('\n\nbbb\n\n', () => ({separator: '\n\n', indent: '\t'}))
 		const row = tree.roots()[0]
 		if (row.kind !== 'row') throw new Error('expected a row')
 		expect(row.children().map(n => n.kind)).toEqual(['text'])
@@ -499,7 +499,7 @@ describe('boundary: a separator adopts rows (issue 08)', () => {
 	})
 
 	it('the projection is identical either way — the separator is literal text in both', () => {
-		const block = blockSetup('aaa\n\nbbb\n\n', () => ({separator: '\n\n'}))
+		const block = blockSetup('aaa\n\nbbb\n\n', () => ({separator: '\n\n', indent: '\t'}))
 		const inline = blockSetup('aaa\n\nbbb\n\n', () => undefined)
 		inline.boundary.reparse()
 		expect(block.tree.value()).toBe(inline.tree.value())
