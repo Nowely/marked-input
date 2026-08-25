@@ -425,6 +425,76 @@ becomes a ticket here.
   ROW. That is what "a row selection IS the text selection" means, and it was true from the first
   commit; only the docs implied otherwise by saying "once a row selection stands". Now pinned and
   written.
+- **The package is options and components, and the grep says so** (2026-08-25, P11).
+  `@markput/notion` is twenty-five row kinds and seven marks, and
+  `packages/notion/src/boundary.spec.ts` is the acceptance test the whole effort was
+  aimed at: every import resolves to `react`, to `@markput/react` or to a file inside
+  the package; no relative path climbs out of it; `store.edit` and `store.tokens`
+  appear nowhere. All three arms were seen to redden — a `@markput/core/src` import,
+  a `../../storybook/…` import and a `store.tokens.value()` call each turn one red.
+  The theme and the sixteen presentational leaves MOVED into the package rather than
+  being copied: a status chip is what a `<status:…>` mark renders, so a package that
+  could not reach them would have to grow a second chip. The move is pure — the
+  twenty `Notion/UI kit` snapshots did not shift a byte.
+- **P11 needed exactly ONE new piece of surface: `useControlRef()`.** A row kind's
+  component paints inside the one contenteditable container, so a checkbox, a toggle
+  arrow or a language `<select>` is document content until something says otherwise —
+  and `bind`'s sibling freeze does not say it: that walk runs from a MARK's root down
+  to its slot host, and a ROW is its own host, so it terminates before its first step.
+  `TokenModel.control()` already answered this and reaching it means reaching through
+  `store.tokens`, which is the seam the grep forbids. Three lines in the React adapter.
+  Vue's is owed by P12, with its caller.
+- **`RowSpec.group` was NOT built, and P11 did not need it.** The three wants the fog
+  hung off it were answered without a wrapper in the tree: columns align because
+  consecutive `display: table-row` siblings are wrapped by CSS in ONE anonymous table
+  box (and, after the caret measurement below, because every line declares the same
+  grid template); a numbered run counts from one through a CSS counter reset on
+  `:not(.numbered + .numbered)`, since `RowProps.index` is the position among ALL
+  siblings; and the header is a KIND of its own (`'|= '`, a longer opener than `'| '`)
+  rather than "the first line of a run". What stays unreachable is the ACCESSIBLE
+  SEMANTICS: `role="row"` without a `role="table"` ancestor is a lie, so the showcase
+  carries neither, and the table announces itself as a stack of rows.
+- **A grid line, not a table line, and the caret is why.** Measured on a minimal editor
+  with no package code in it, in CONTROLLED mode: typing at the end of a cell of a
+  `display: table-row` line puts the caret back at that cell's START, so the `@` picker
+  never opens there. `table-row`/`table-cell`, `table-row`/`block`, `block`/`table-cell`
+  and `flex`/`block` all reset it; `grid`/`block` and plain blocks keep it. Not filed as
+  a core defect because the fix is a consumer's CSS choice and the mechanism is
+  Chromium's own caret repair over a non-block formatting context — but it is the reason
+  the showcase's database is a grid, and any consumer reaching for `display: table` is
+  reaching for a caret bug.
+- **An UNDO restores the value and not the caret, in a real browser.** `HistoryModel`'s
+  own spec pins the caret to the offset the edit was made from, against core's selection
+  state; driven through the React adapter — controlled and uncontrolled, with and
+  without a row kind — the DOM caret lands at the END of the restored text. Reproduced
+  on a plain editor with no options at all, so it is neither the showcase's nor the
+  package's, and it is unpinned in both adapters: the P8 browser spec asserts values
+  only. Whoever picks it up owns the seam between `replay`'s caret write and the paint
+  that follows it.
+- **A kind whose component paints no `{children}` is an ATOMIC row.** The properties
+  panel, the table of contents, the metric grid, the board, the bookmark, the view bar
+  and the comment thread all render leaves that take STRINGS, so their text round-trips
+  and drags and selects but takes no caret. That is Notion's own behaviour for the same
+  blocks, and it is the same shape of contract as "a kind that ignores `rows` paints no
+  child rows": core cannot see whether a component reads a prop.
+- **The COLLAPSED TOGGLE is `hidden="until-found"`, not an unmount and not plain
+  `hidden`.** An unpainted row leaves `bind` and takes its anchors with it, so the
+  children are always rendered. Plain `hidden` would cost three things a user expects —
+  find-in-page cannot see the closed text, the browser cannot scroll to it, and a match
+  cannot open the toggle — and `until-found` buys all three back through `beforematch`,
+  which the component listens for and opens itself on. What it still costs is declared:
+  a closed subtree generates no boxes, so an arrow from the title jumps over it and a
+  selection dragged across it takes the closed text with it.
+- **The BOARD is one row, not the nested column-and-card rows the spec drew, and the
+  three documents disagree.** `spec.md` has `board`/`column`/`card` as row kinds; P10
+  puts cross-axis hit-testing explicitly out of scope in the same breath, and a board's
+  columns share one Y span, so a card dragged between columns would land in an arbitrary
+  one; `showcase.md`'s final section assigns the board's columns and cards to the
+  CONSUMER. The showcase follows `showcase.md`: the board is a raw closed kind whose
+  body describes its columns, so the data round-trips and the row drags, while the
+  card-between-columns drag is the `Board` component's own. A nested-row board becomes
+  available the day a per-kind drag axis does.
+
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
@@ -462,6 +532,12 @@ becomes a ticket here.
   way to say which trigger owns the menu — new surface with no caller today, or a
   heuristic ("the option with no `data`") that would be worse than the hole. P11 is
   the phase that will have a caller.
+- **The showcase's `/` menu is still a flat list of labels.** P11 shipped the page
+  without bringing `MenuSpec.section` or an icon back, because the shipped `BlockMenu`
+  paints neither and the exit criterion — "the showcase's menu component contains no
+  filtering and no insert logic" — is met by there being no such component. Twenty-five
+  entries in one unsectioned list is the cost, and it is the first thing a painter would
+  fix. `icon?: Slot` is still the version that keeps the criterion.
 - **P11 owes a per-entry icon, and `MenuSpec.icon` is not the shape to bring back.**
   The spec's `icon?: unknown` was unrenderable and was rightly dropped inside P7.
   But a showcase menu that wants icons and has no field for one keeps an
