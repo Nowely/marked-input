@@ -206,7 +206,7 @@ export interface RowNode {
 export type RowPlacement = {parent: RowNode | null; index: number}
 
 /**
- * The row an anchor sits in, with the three facts about it that only the tree can answer. Every
+ * The row an anchor sits in, with the four facts about it that only the tree can answer. Every
  * row keybinding asks this one question and then calls a verb; the alternative is the keyboard
  * layer walking the tree, measuring a lead and re-deriving the scan's own rules.
  */
@@ -224,6 +224,13 @@ export type AnchoredRow = {
 	 * typed row is past its opener rather than at its line start.
 	 */
 	atEntry: boolean
+	/**
+	 * The row this one is nested in, `undefined` at depth 0. Free from the walk that found the
+	 * row — the tree carries no parent pointers, so a caller wanting it would repeat that walk.
+	 * A row with no kind takes its parent's row DECLARATION, which is what makes a soft break's
+	 * second line part of the item it was typed in rather than a Tab that leaves the field.
+	 */
+	parent: RowNode | undefined
 }
 
 export interface TextNode {

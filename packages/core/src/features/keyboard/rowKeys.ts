@@ -104,12 +104,20 @@ export function demoteAtRowEntry(store: KbCtx, anchors: Anchors): boolean {
 }
 
 /**
- * TAB and SHIFT+TAB, on the keydown: the row's depth, when its kind declares `indents`.
+ * TAB and SHIFT+TAB, on the keydown: the row's depth, when the kind that owns its line declares
+ * `indents`.
  *
  * The declaration gates the KEY and not the verb — a Tab that indents on one row and moves focus on
  * the next is worse than either — so a row of an indenting kind consumes Tab even where the scan
  * refuses the depth (at depth 0 with Shift, or under a row that grants no more). Everywhere else
  * Tab still leaves the field, which is ADR-0002's accepted cost, preserved.
+ *
+ * OWNS THE LINE, not "is the row": a continuation carries no kind of its own, so reading the
+ * declaration off the caret's own row let Tab eject focus from the SECOND line of a list item and
+ * keep it on the first — the very split the sentence above calls worse than either. The row it is
+ * nested in is the one that declared anything, so a kindless row asks it. It re-indents ITSELF, as
+ * every other row does; Shift+Tab there detaches the line from its item, which is the answer
+ * Backspace at its entry already gives (ADR-0011's declared cost (a)).
  */
 export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 	if (event.key !== KEYBOARD.TAB) return
@@ -117,7 +125,8 @@ export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 	if (at === undefined) return
 	const caret = store.tokens.rowOf(at)
 	if (caret === undefined) return
-	if (store.tokens.rowSpec(caret.row)?.indents !== true) return
+	const owner = caret.row.descriptor() === undefined ? (caret.parent ?? caret.row) : caret.row
+	if (store.tokens.rowSpec(owner)?.indents !== true) return
 
 	event.preventDefault()
 	caret.row.setDepth(event.shiftKey ? caret.depth - 1 : caret.depth + 1)

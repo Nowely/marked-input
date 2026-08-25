@@ -887,6 +887,22 @@ describe('rowKeys the row keymap', () => {
 			expect(store.tokens.value()).toBe('- a\n- b')
 		})
 
+		it('stays in the field inside a CONTINUATION, which carries no kind of its own', () => {
+			// The second line of a list item asks the item's declaration. Reading it off the
+			// caret's own row let Tab eject focus from line 2 and keep it on line 1.
+			const {store, container} = keymap('- a\n\tcont')
+			caretIn(store, 1, 2)
+
+			expect(press(container, 'Tab').defaultPrevented).toBe(true)
+			// Refused by the scan — the bullet above grants one level, not two — so the key is
+			// consumed and the document stands.
+			expect(store.tokens.value()).toBe('- a\n\tcont')
+
+			// Shift+Tab detaches the line from its item, which is Backspace-at-entry's answer too.
+			press(container, 'Tab', {shiftKey: true})
+			expect(store.tokens.value()).toBe('- a\ncont')
+		})
+
 		it('consumes the key even where the depth cannot change', () => {
 			// The declaration gates the KEY: a Tab that indents on one row and moves focus on the
 			// next is worse than either.

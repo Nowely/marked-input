@@ -68,7 +68,9 @@ export function removePlan(
 /**
  * THE ROW AN ANCHOR SITS IN — the innermost one containing the node the anchor names — with the
  * facts about it a keybinding cannot ask for itself: its depth, the depth a row written directly
- * under it would land at, and whether the anchor is that row's own entry.
+ * under it would land at, whether the anchor is that row's own entry, and the row it is nested in.
+ * The last one is the walk's own by-product — the tree carries no parent pointers, so a caller
+ * asking for it separately would be a second walk.
  *
  * Node identity rather than an offset, and that is the whole reason it is a walk: two rows share a
  * boundary offset at every nesting level, so a positional answer would have to pick a side, while
@@ -85,10 +87,10 @@ export function rowOf(roots: readonly TreeNode[], anchor: NodeAnchor): AnchoredR
 	const search = (
 		nodes: readonly TreeNode[],
 		depth: number,
-		inside: {row: RowNode; depth: number} | undefined
-	): {row: RowNode; depth: number} | undefined => {
+		inside: {row: RowNode; depth: number; parent: RowNode | undefined} | undefined
+	): {row: RowNode; depth: number; parent: RowNode | undefined} | undefined => {
 		for (const node of nodes) {
-			const here = node.kind === 'row' ? {row: node, depth} : inside
+			const here = node.kind === 'row' ? {row: node, depth, parent: inside?.row} : inside
 			if (node === target) return here
 			if (node.kind === 'text') continue
 			const found = search(node.children(), node.kind === 'row' ? depth + 1 : depth, here)
