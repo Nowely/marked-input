@@ -311,10 +311,13 @@ export class TokenModel {
 	 *
 	 * READ-ONLY REFUSES, for the flip that a stack outlives: the entries were recorded while the
 	 * editor was writable, and nothing else would stop them being replayed into one that is not.
+	 *
+	 * NO `#ensureSeeded`, unlike every other write here: a replay needs a recorded edit, a record
+	 * needs an edit that LANDED, and landing seeds the tree — which never empties back, since even
+	 * the empty document parses to one root. The guard was measured out rather than argued about.
 	 */
 	replay(value: string, window: Window, caret?: Anchors): boolean {
 		if (untracked(() => this.props.readOnly())) return false
-		this.#ensureSeeded()
 		return this.#boundary.replay(value, window, caret)
 	}
 
