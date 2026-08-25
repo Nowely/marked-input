@@ -102,10 +102,8 @@ export function endsDocument(roots: readonly TreeNode[], node: TreeNode): boolea
  * `undefined` — fail closed — for a non-row, a dead row on either end (the pre-order lookup is
  * that check for both), a PLACEMENT INSIDE THE MOVED SUBTREE, an index outside the destination's
  * child list, a no-op, an editor with no separator to rejoin rows by, a nested placement with
- * nesting off, a destination whose {@link depthCeiling} the moved row cannot reach — an empty row
- * takes no children, so nothing can be placed under one — and an affected span whose lines do not
- * TILE. That last cannot come from a parse and is checked rather than assumed, because the splice
- * re-emits the span from those rows alone: anything between them would be silently dropped.
+ * nesting off, and a destination whose {@link depthCeiling} the moved row cannot reach — an empty
+ * row takes no children, so nothing can be placed under one.
  *
  * The subtree test is the run, and it is the reason the run is computed before anything else: the
  * tree carries no parent pointers, so "is this parent inside what I am moving" has no answer
@@ -185,10 +183,6 @@ export function movePlan(
 	if (low === order.length) return undefined
 	let high = order.length - 1
 	while (high > low && !changed(high)) high--
-
-	for (let position = low; position < high; position++) {
-		if (rows[position].row.lineRange().end !== rows[position + 1].row.lineRange().start) return undefined
-	}
 
 	const lines = order
 		.slice(low, high + 1)
