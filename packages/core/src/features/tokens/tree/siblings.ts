@@ -168,9 +168,8 @@ export function movePlan(
 
 	const delta = depth - rows[from].depth
 
-	// The scan's own ceiling, asked of the row the run will follow — see {@link depthCeiling}.
-	const previous = at === 0 ? undefined : rows[kept[at - 1]]
-	if (depth > depthCeiling(previous && {depth: previous.depth, empty: isEmptyRow(previous.row)})) return undefined
+	// The scan's own ceiling, asked of the row the run will follow — see {@link fitsUnder}.
+	if (!fitsUnder(at === 0 ? undefined : rows[kept[at - 1]], depth)) return undefined
 
 	const moved = (old: number): boolean => old >= from && old < from + span
 	const changed = (position: number): boolean =>
@@ -211,9 +210,10 @@ export function movePlan(
  * which rows are nested where while leaving the document order alone.
  *
  * `undefined` — fail closed — for a non-row, a negative or non-integer depth, a no-op, an editor
- * with nesting off, and a depth past {@link depthCeiling}. That last is the SCAN's own clamp,
- * asked of the scan rather than re-derived: asking for more would emit a lead the parse reads as
- * something shallower, and the row would gain an indent without gaining a parent.
+ * with nesting off, and a depth the row before it does not {@link fitsUnder}. That last is the
+ * SCAN's own clamp, asked of the scan rather than re-derived: asking for more would emit a lead
+ * the parse reads as something shallower, and the row would gain an indent without gaining a
+ * parent.
  *
  * It rewrites the whole lead rather than splicing it, which NORMALIZES a surplus indent run a
  * paste preserved — observable, and the alternative is two disagreeing readings of "depth".
@@ -230,8 +230,7 @@ export function depthPlan(
 	const rows = preorderRows(roots)
 	const at = rows.findIndex(entry => entry.row === node)
 	if (at < 0) return undefined
-	const before = at === 0 ? undefined : rows[at - 1]
-	if (depth > depthCeiling(before && {depth: before.depth, empty: isEmptyRow(before.row)})) return undefined
+	if (!fitsUnder(at === 0 ? undefined : rows[at - 1], depth)) return undefined
 
 	const lead = config.indent.repeat(depth)
 	if (lead === node.lead()) return undefined
@@ -380,4 +379,13 @@ export function splitPlan(
 /** The scan's own emptiness, read off the node: a row whose whole LINE is empty. */
 function isEmptyRow(row: RowNode): boolean {
 	return row.lead() === '' && row.descriptor() === undefined && row.slot() === ''
+}
+
+/**
+ * Can a row sit at `depth` when it is written directly after `previous` — {@link depthCeiling}
+ * asked of a live pre-order entry, and the ONE owner of that question for every verb that writes a
+ * lead. `undefined` is the document's first row, which is always a root.
+ */
+function fitsUnder(previous: {row: RowNode; depth: number} | undefined, depth: number): boolean {
+	return depth <= depthCeiling(previous && {depth: previous.depth, empty: isEmptyRow(previous.row)})
 }
