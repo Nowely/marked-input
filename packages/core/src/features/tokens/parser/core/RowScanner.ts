@@ -21,7 +21,7 @@ export function scanRows(
 	value: string,
 	kinds: readonly MarkupDescriptor[],
 	config: RowConfig,
-	splits: ReadonlyMap<MarkupDescriptor, RowCarve> = new Map()
+	splits: ReadonlyMap<MarkupDescriptor, RowCarve>
 ): RowToken[] {
 	const {separator, indent} = config
 	const flat: Scanned[] = []
