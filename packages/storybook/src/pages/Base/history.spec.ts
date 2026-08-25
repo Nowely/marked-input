@@ -12,9 +12,6 @@ const {Default} = composePage(BaseStories)
 /** No mark and nothing repeated, so `getByText` names exactly one surface to type into. */
 const VALUE = 'Undo me'
 
-/** One task, which is what `selectionchange` costs: after it the editor holds what the DOM holds. */
-const settle = () => new Promise(resolve => setTimeout(resolve, 0))
-
 const undo = () => userEvent.keyboard('{ControlOrMeta>}z{/ControlOrMeta}')
 const redo = () => userEvent.keyboard('{Shift>}{ControlOrMeta>}z{/ControlOrMeta}{/Shift}')
 
@@ -65,7 +62,6 @@ describe('API: history', () => {
 		const onChange = vi.fn()
 		const {host} = await mount(Default, {defaultValue: VALUE, onChange})
 		await focusAtOffset(getElement(page.getByText(VALUE)), 0)
-		await settle()
 
 		moveDomCaret(getElement(page.getByText(VALUE)), 4)
 		dispatchInsertText(editingHost(host), 'X')
@@ -79,7 +75,6 @@ describe('API: history', () => {
 	it('restores it through the parent too, in a CONTROLLED editor', async () => {
 		const {host, value} = await mountEcho(Default, {value: VALUE})
 		await focusAtOffset(getElement(page.getByText(VALUE)), 0)
-		await settle()
 
 		moveDomCaret(getElement(page.getByText(VALUE)), 4)
 		dispatchInsertText(editingHost(host), 'X')
@@ -104,7 +99,6 @@ describe('API: history', () => {
 		const onChange = vi.fn()
 		const {host} = await mount(Default, {defaultValue: VALUE, onChange})
 		await focusAtEnd(getElement(page.getByText(VALUE)))
-		await settle()
 
 		await userEvent.keyboard('{ArrowLeft}{ArrowLeft}{ArrowLeft}X')
 		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('UndoX me')
@@ -123,7 +117,6 @@ describe('API: history', () => {
 	it('restores the caret an ENTER was pressed at', async () => {
 		const {host, value} = await mountEcho(Default, {value: VALUE, separator: '\n'})
 		await focusAtOffset(getElement(page.getByText(VALUE)), 0)
-		await settle()
 
 		moveDomCaret(getElement(page.getByText(VALUE)), 4)
 		editingHost(host).dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true}))

@@ -3,7 +3,7 @@ import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {caretIsInside, firstChild, getElement, rowsOf} from '../../shared/lib/dom'
-import {focusAtEnd, focusAtStart, verifyCaretPosition} from '../../shared/lib/focus'
+import {focusAtEnd, focusAtStart, settle, verifyCaretPosition} from '../../shared/lib/focus'
 import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
 import {defineMark, Mark} from '../../shared/lib/marks'
 import {composePage, mount, mountComponent, mountEcho} from '../../shared/lib/page'
@@ -80,13 +80,6 @@ async function dragRow(
 	dropOnRow(host, targetIndex, dt, position)
 	end()
 }
-
-/**
- * One turn of the event loop, for the assertions that say NOTHING happened. React commits an
- * echoed `onChange` in a microtask, so reading the harness value straight after a synthetic drop
- * reports the stale one — an unreordered document and a reordered one look identical there.
- */
-const settle = () => new Promise(resolve => setTimeout(resolve, 0))
 
 /** The helper stories driven as a controlled field that echoes `onChange` back into `value`. */
 const echoPlainText = () => mountEcho(PlainTextDrag, {value: PLAIN_TEXT_VALUE})

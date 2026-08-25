@@ -67,10 +67,12 @@
  *
  * The same column template on every line is what aligns a run of them, and no wrapper element
  * exists in the tree to hang a real table off. A `display: table-row` line would align too — CSS
- * wraps consecutive table-row siblings in one anonymous table box — and either is available: the
- * caret does not read a formatting context, which is pinned per display in
- * `storybook/src/pages/Base/caret.spec.ts`. The reading that once said otherwise was a stale one:
- * a shrunk table cell simply puts a CLICK where a full-width block does not.
+ * wraps consecutive table-row siblings in one anonymous table box — and either is available: a
+ * caret the browser's own hit test puts inside a row is the caret the editor keeps and edits at,
+ * whatever the row's display, which `storybook/src/pages/Base/caret.spec.ts` pins per display by
+ * clicking. What a display DOES change is where a click lands — a shrink-to-fit box puts one
+ * mid-text where a stretched box puts it at the end — and that is a fact about the box, not about
+ * the caret.
  *
  * The template is the SHOWCASE's, the way its chip tones are: five columns, the first one wide.
  */

@@ -81,29 +81,64 @@ export function moveDomCaret(element: HTMLElement, offset: number) {
 	verifyCaretPosition(element, offset)
 }
 
+/**
+ * ONE TASK. Two things cost one and are asserted across: `selectionchange`, after which the editor
+ * holds what the DOM holds and has done whatever it does with that reading, and React's microtask
+ * commit of an echoed `onChange`, without which a value read straight after a synthetic gesture is
+ * the stale one.
+ *
+ * It is NOT a blanket "let things settle": the gesture helpers above already await, so a `settle`
+ * before an edit measures nothing. Its two callers assert across the boundary — `Base/caret` on
+ * what the editor does to a caret once told about it, `Drag` on a document that must NOT have
+ * moved.
+ */
+export const settle = () => new Promise(resolve => setTimeout(resolve, 0))
+
+/** A DOM boundary as a text offset inside `element`. */
+function offsetOfBoundary(element: HTMLElement, node: Node, offset: number): number {
+	const range = document.createRange()
+	range.selectNodeContents(element)
+	range.setEnd(node, offset)
+	return range.toString().length
+}
+
+/**
+ * WHERE THE CARET IS, as a text offset inside `element` — `undefined` when there is no range.
+ *
+ * A TEXT-DOMAIN measurement, which is why a spec asserting a fixed number here cannot fail for a
+ * formatting reason. A spec that means to test a layout has to compare it against something the
+ * LAYOUT produced — see {@link caretOffsetFromPoint}.
+ */
+function caretOffsetIn(element: HTMLElement): number | undefined {
+	const selection = window.getSelection()
+	if (!selection || selection.rangeCount === 0) return undefined
+
+	const {startContainer, startOffset} = selection.getRangeAt(0)
+	return offsetOfBoundary(element, startContainer, startOffset)
+}
+
+/**
+ * WHERE THE LAYOUT PUTS A CARET at a viewport point, as a text offset inside `element`.
+ *
+ * The editor is not involved: this is the browser's own hit test, so it answers what a click at
+ * that point WOULD select. That is what makes it the other half of a display test — compared
+ * against the caret AFTER a real click at the same point, it separates "the box moved the click"
+ * from "something moved the caret afterwards".
+ */
+export function caretOffsetFromPoint(element: HTMLElement, x: number, y: number): number | undefined {
+	const hit = document.caretRangeFromPoint(x, y)
+	if (!hit) return undefined
+	return offsetOfBoundary(element, hit.startContainer, hit.startOffset)
+}
+
+/** The point `userEvent.click` uses when given an element: the centre of its box. */
+export function centreOf(element: HTMLElement): {x: number; y: number} {
+	const box = element.getBoundingClientRect()
+	return {x: box.left + box.width / 2, y: box.top + box.height / 2}
+}
+
 export function verifyCaretPosition(element: HTMLElement, expectedOffset: number) {
-	const position = getCaretPosition()
-	expect(position, 'Caret position not available').not.toBeNull()
-	if (!position) return
-
-	const length = measureTextLength(element, position.node, position.offset)
-	expect(length).toBe(expectedOffset)
-
-	function getCaretPosition() {
-		const selection = window.getSelection()
-		if (!selection || selection.rangeCount === 0) return null
-
-		const range = selection.getRangeAt(0)
-		return {
-			node: range.startContainer,
-			offset: range.startOffset,
-		}
-	}
-
-	function measureTextLength(containerElement: HTMLElement, endNode: Node, endOffset: number) {
-		const range = document.createRange()
-		range.selectNodeContents(containerElement)
-		range.setEnd(endNode, endOffset)
-		return range.toString().length
-	}
+	const offset = caretOffsetIn(element)
+	expect(offset, 'Caret position not available').not.toBeUndefined()
+	expect(offset).toBe(expectedOffset)
 }
