@@ -105,3 +105,43 @@ Enter's own rules — no all-selected arm, and a range is replaced rather than k
 separator it splices a literal newline inside the row, which is what the follow-up will give a
 meaning to. Both halves are pinned in `blockEdit.spec`; measured green, and both redden when
 `insertLineBreak` is dropped from the table.
+
+## Amendment, 2026-08-25: a soft break is a CONTINUATION ROW, and `softBreak` is not built
+
+The open item above named one reading of a soft break — a `softBreak` string scanned inside a
+row's body — and the row keymap takes the other, because it adds no primitive. One line is one row,
+so a second line inside a row has to BE a row, and the only question is whose: Shift+Enter writes
+the separator plus one indent unit more than the row the caret is in, which makes the continuation
+a CHILD ROW with no kind. The scan already parses that shape and the tree already pins it.
+
+It is ONE splice rather than a split followed by a re-indent, and that is forced rather than
+preferred: in controlled mode the tree has not moved when the first verb returns, so a second verb
+in the same tick would address the document as it was. The depth it asks for is the tree's own
+answer to "what would a row written directly under this one land at" — `depthCeiling` — so on a row
+that can take no children (an EMPTY one) the continuation is written at the row's own depth and
+Shift+Enter is a plain split, with no rule restated in the keymap and no indent run the scan never
+granted left in the value. With `indent: ''` every continuation is a plain split for the same
+reason.
+
+Tested against what a soft break has to do, rather than argued. It travels with its row on a drag
+and copies with it, because it is inside its parent's span. It renders through the paragraph
+component inside the parent's own child-row slot, so a consumer paints it without a bullet by
+styling that slot. The caret walks in and out of it natively, because one host makes every row
+boundary a native step.
+
+Three costs, declared:
+
+- Backspace at its start OUTDENTS before it merges, so rejoining the line takes two presses. That
+  is the demote ladder answering, and it is the same answer any nested row gives.
+- A consumer cannot tell a continuation from a row the user indented with Tab, because there is
+  nothing to tell apart: the two are the same document.
+- Typed into a row that already has children, the continuation lands BEFORE them, and in-slot
+  pairing is unbounded index pairing — so those children's ids shift by one. That is the gap the
+  split-cells phase owns; it is not new here.
+
+`softBreak` is therefore not built, and nothing forecloses it: the fallback stated above still
+stands if a case turns up that the continuation cannot carry.
+
+**Shift+Enter is no longer the generic path.** The paragraph above describing it as an
+`insertLineBreak` that reaches the shared table is superseded — the guard drops both Enter
+inputTypes now, and the keydown owns them.

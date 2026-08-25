@@ -21,7 +21,7 @@ Available slots for customizing MarkedInput internal components
 optional block: ElementType;
 ```
 
-Defined in: [core/src/shared/types.ts:139](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L139)
+Defined in: [core/src/shared/types.ts:149](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L149)
 
 #### Inherited from
 
