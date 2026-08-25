@@ -452,14 +452,22 @@ the position it takes among that parent's child rows once it is out of its old o
 splice over the narrowest run of pre-order LINES whose bytes change — a subtree is contiguous in
 pre-order, so a move is "cut this run, paste it before that index" — and it re-indents every moved
 descendant by the depth delta, which normalizes a surplus indent run exactly as `setDepth` does. It
-refuses a placement INSIDE the moved subtree, because a row cannot become its own descendant, and a
-placement under an EMPTY row, because an empty row takes no children and the lead it would write
-parses back one level shallower. A move leaves the caret alone: every node keeps its content and its
-identity, and a lead is the ROW's bytes and lives in no text node, so no anchor can name one.
+refuses a placement INSIDE the moved subtree, because a row cannot become its own descendant. Every
+other refusal is one question asked once: the scan is REPLAYED over the span the splice rewrites,
+plus the row after it, and a placement whose bytes the scan would read back as a different tree is
+declined. That covers a placement under an EMPTY row, a move that would re-lead a row carrying
+children into an empty one, and a move that would change where a row it never touched parses — the
+last reachable only past a row whose lead carries a surplus indent run, which is held at its depth
+by the row above it and by nothing else. Refused rather than widened: normalizing that row's lead
+rewrites bytes outside the move, and it cascades into the row after it. A move leaves the caret
+alone: every node keeps its content and its identity, and a lead is the ROW's bytes and lives in no
+text node, so no anchor can name one.
 
 Two answers the encoding forces rather than chooses, both from "an empty row takes no children":
 retyping a depth-0 row to an empty paragraph PROMOTES its children to roots (their surplus indent
-survives verbatim in `lead`), and no verb can write an empty parent.
+survives verbatim in `lead`), and no verb can write an empty parent. `setDepth` shares the mover's
+third case and does NOT refuse it: it rewrites one row's lead and re-emits nothing else, so a
+surplus-lead row after it can re-parse deeper.
 
 `BlockController` (`store.block`) owns them for the whole editor, as four signals
 addressed by row id:

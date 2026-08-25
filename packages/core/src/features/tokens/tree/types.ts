@@ -173,11 +173,14 @@ export interface RowNode {
 	 * `false` for a placement inside the moved row's OWN subtree — a row cannot become its own
 	 * descendant — and for a dead row on either end, an index outside the destination's child
 	 * list, a no-op, an editor with no separator to rejoin rows by, and a nested placement in an
-	 * editor with nesting off. "An empty row takes no children" refuses at both ends: a placement
-	 * UNDER an empty row, and a move that would re-lead a row carrying children into an empty one
-	 * — a blank row is non-empty only while it carries an indent. It also refuses a move that
-	 * would change where the row AFTER it parses, which is reachable only for a row whose lead
-	 * carries a surplus indent run some earlier paste left on it.
+	 * editor with nesting off.
+	 *
+	 * And `false` for a placement the ENCODING cannot express, which is one answer with three
+	 * faces: nothing can be placed under an EMPTY row, a row carrying children cannot be re-led
+	 * into an empty one — a blank row is non-empty only while it carries an indent — and a move
+	 * cannot change where a row it never touched parses. The last is reachable only past a row
+	 * whose lead carries a surplus indent run some earlier paste left on it, and the move is
+	 * refused rather than allowed to rewrite that row.
 	 */
 	moveTo(placement: RowPlacement): boolean
 }

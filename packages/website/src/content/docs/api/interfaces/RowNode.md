@@ -226,7 +226,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:167](https://github.com/Nowe
 moveTo(placement): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:182](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L182)
+Defined in: [core/src/features/tokens/tree/types.ts:185](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L185)
 
 Move this row AND ITS SUBTREE to `placement`, keeping every row's identity — the moved
 subtree's, its old siblings' and its new siblings'. The subtree is re-indented to sit under
@@ -235,11 +235,14 @@ its new parent, which NORMALIZES a surplus indent run exactly as [setDepth](/api
 `false` for a placement inside the moved row's OWN subtree — a row cannot become its own
 descendant — and for a dead row on either end, an index outside the destination's child
 list, a no-op, an editor with no separator to rejoin rows by, and a nested placement in an
-editor with nesting off. "An empty row takes no children" refuses at both ends: a placement
-UNDER an empty row, and a move that would re-lead a row carrying children into an empty one
-— a blank row is non-empty only while it carries an indent. It also refuses a move that
-would change where the row AFTER it parses, which is reachable only for a row whose lead
-carries a surplus indent run some earlier paste left on it.
+editor with nesting off.
+
+And `false` for a placement the ENCODING cannot express, which is one answer with three
+faces: nothing can be placed under an EMPTY row, a row carrying children cannot be re-led
+into an empty one — a blank row is non-empty only while it carries an indent — and a move
+cannot change where a row it never touched parses. The last is reachable only past a row
+whose lead carries a surplus indent run some earlier paste left on it, and the move is
+refused rather than allowed to rewrite that row.
 
 #### Parameters
 

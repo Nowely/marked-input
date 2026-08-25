@@ -102,15 +102,8 @@ export function endsDocument(roots: readonly TreeNode[], node: TreeNode): boolea
  * `undefined` — fail closed — for a non-row, a dead row on either end (the pre-order lookup is
  * that check for both), a PLACEMENT INSIDE THE MOVED SUBTREE, an index outside the destination's
  * child list, a no-op, an editor with no separator to rejoin rows by, a nested placement with
- * nesting off, and a destination whose {@link depthCeiling} the moved row cannot reach. The last
- * one is "an empty row takes no children" read at both ends: nothing can be placed UNDER an empty
- * row, and a row carrying children cannot be re-led into an empty one.
- *
- * And one refusal that is about a row the caller never named: the row directly AFTER the span
- * re-parses against a new predecessor, so if its lead is SURPLUS — asking for more depth than the
- * clamp granted it — a splice that raises the ceiling above it would silently re-parent it. The
- * mover refuses instead of widening the span, because normalizing that row's lead rewrites bytes
- * outside the move and cascades into the row after it.
+ * nesting off, and — the one answer that covers the rest — a splice the SCAN would read back as a
+ * different tree, which is asked by replaying the scan over the span the splice rewrites.
  *
  * The subtree test is the run, and it is the reason the run is computed before anything else: the
  * tree carries no parent pointers, so "is this parent inside what I am moving" has no answer
@@ -147,13 +140,6 @@ export function movePlan(
 		parentDepth = rows[parentAt].depth
 	}
 	const depth = parentDepth + 1
-	// A moved row keeps its own subtree only while it stays NON-EMPTY, and the re-lead is what can
-	// empty one: a blank row is non-empty only while it carries an indent. Written at depth 0 it
-	// becomes the empty row {@link depthCeiling} gives no children, so every descendant the move
-	// was carrying would be promoted out of it — `'a⏎⇥⏎⇥⇥b'` moving the blank row to a root
-	// emitted `'a⏎⏎⇥b'`, where `b` is a root beside the row it travelled with. Refused, because a
-	// depth-0 empty row with children is not a document that can be written.
-	if (span > 1 && isEmptyRow(node, indent.repeat(depth))) return undefined
 
 	// The destination's child rows WITHOUT the moved one, which is what makes `index` the position
 	// the row takes after the move rather than a slot in a list it is still in.
@@ -182,9 +168,6 @@ export function movePlan(
 
 	const delta = depth - rows[from].depth
 
-	// The scan's own ceiling, asked of the row the run will follow — see {@link fitsUnder}.
-	if (!fitsUnder(at === 0 ? undefined : rows[kept[at - 1]], depth)) return undefined
-
 	const moved = (old: number): boolean => old >= from && old < from + span
 	const changed = (position: number): boolean =>
 		order[position] !== position || (delta !== 0 && moved(order[position]))
@@ -197,18 +180,28 @@ export function movePlan(
 	let high = order.length - 1
 	while (high > low && !changed(high)) high--
 
-	// The row AFTER the span re-parses against a new predecessor while its own bytes stay put, and
-	// a SURPLUS lead — one asking for more depth than the row was granted — is held down by the
-	// ceiling above it alone. A splice that raises that ceiling re-parents a row nobody moved:
-	// `'x⏎⏎⇥⇥b'` moving `x` below the blank row emitted `'⏎x⏎⇥⇥b'`, where the untouched root `b`
-	// became `x`'s child. Refused rather than widened — normalizing that lead would rewrite a row
-	// the caller never named, and the rewrite cascades into the row after THAT one.
-	const follower = rows.at(high + 1)
-	if (follower !== undefined && follower.row.lead() !== indent.repeat(follower.depth)) {
-		const last = rows[order[high]]
-		const landed = moved(order[high]) ? last.depth + delta : last.depth
-		const lead = moved(order[high]) ? indent.repeat(landed) : last.row.lead()
-		if (fitsUnder({row: last.row, depth: landed, lead}, follower.depth + 1)) return undefined
+	// WHAT THE SPLICE RE-PARSES, walked once. Every line in the span is re-emitted and the row
+	// after it meets a new predecessor, so the scan has to be replayed over `low..high + 1`; past
+	// that every row's predecessor is unchanged and so is its parse. A MOVED row is written at its
+	// own new depth, but an UNMOVED one keeps its bytes — and a SURPLUS lead, one asking for more
+	// depth than the clamp granted, is held at its depth by the row above it and by nothing else.
+	//
+	// This one walk is what THREE separate refusals reduce to: the destination's own ceiling (the
+	// moved root asks for `depth` and must be granted it), a moved row re-led to `''` and thereby
+	// emptied, which takes the children the move was carrying — `'a⏎⇥⏎⇥⇥b'` emitted `'a⏎⏎⇥b'` — and
+	// an untouched row re-parenting under a ceiling the splice raised: `'x⏎⏎⇥⇥b'` emitted
+	// `'⏎x⏎⇥⇥b'`, where the root `b` became `x`'s child.
+	//
+	// Refused rather than widened, and that is the declared choice: normalizing a surplus lead
+	// rewrites bytes outside the move, and it cascades — a lead normalized to `''` on a blank body
+	// empties THAT row and moves the ceiling again for the row after it.
+	let previous = low === 0 ? undefined : scannedAs(rows[low - 1].row, rows[low - 1].depth)
+	for (let position = low; position <= Math.min(high + 1, order.length - 1); position++) {
+		const entry = rows[order[position]]
+		const landed = moved(order[position]) ? entry.depth + delta : entry.depth
+		const lead = moved(order[position]) ? indent.repeat(landed) : entry.row.lead()
+		if (landsAt(previous, leadDepth(lead, indent)) !== landed) return undefined
+		previous = scannedAs(entry.row, landed, lead)
 	}
 
 	const lines = order
@@ -238,7 +231,7 @@ export function movePlan(
  * which rows are nested where while leaving the document order alone.
  *
  * `undefined` — fail closed — for a non-row, a negative or non-integer depth, a no-op, an editor
- * with nesting off, and a depth the row before it does not {@link fitsUnder}. That last is the
+ * with nesting off, and a depth the row before it does not {@link landsAt}. That last is the
  * SCAN's own clamp, asked of the scan rather than re-derived: asking for more would emit a lead
  * the parse reads as something shallower, and the row would gain an indent without gaining a
  * parent.
@@ -258,7 +251,8 @@ export function depthPlan(
 	const rows = preorderRows(roots)
 	const at = rows.findIndex(entry => entry.row === node)
 	if (at < 0) return undefined
-	if (!fitsUnder(at === 0 ? undefined : rows[at - 1], depth)) return undefined
+	const previous = at === 0 ? undefined : rows[at - 1]
+	if (landsAt(previous && scannedAs(previous.row, previous.depth), depth) !== depth) return undefined
 
 	const lead = config.indent.repeat(depth)
 	if (lead === node.lead()) return undefined
@@ -390,7 +384,7 @@ export function splitPlan(
 		rowMarkup(continues ? node.descriptor() : undefined, continues ? node.meta() : undefined, body.slice(cut))
 	const subtree = descendants === undefined ? '' : separator + descendants
 	// The scan's own emptiness, asked of the head this split is about to write — see
-	// {@link isEmptyRow} for the same test over a live row.
+	// {@link scannedAs} for the same test over a row a verb is about to emit.
 	const headKeepsChildren = node.lead() + head !== ''
 
 	const text = headKeepsChildren ? head + subtree + separator + tailLine : head + separator + tailLine + subtree
@@ -405,23 +399,25 @@ export function splitPlan(
 }
 
 /**
- * The scan's own emptiness, read off the node: a row whose whole LINE is empty. The `lead` is a
- * parameter because a verb that REWRITES one changes the answer, and the row it is about to write
- * is the row the scan will read.
+ * A row AS THE SCAN WILL READ IT once it is written at `depth` carrying `lead`: the depth it landed
+ * at, and whether its whole LINE is empty. Both are parameters rather than reads off the node,
+ * because a verb that re-leads a row changes both, and the row the scan reads back is the one the
+ * verb is about to write — a blank row is non-empty only while it carries an indent.
  */
-function isEmptyRow(row: RowNode, lead: string = row.lead()): boolean {
-	return lead === '' && row.descriptor() === undefined && row.slot() === ''
+function scannedAs(row: RowNode, depth: number, lead: string = row.lead()): {depth: number; empty: boolean} {
+	return {depth, empty: lead === '' && row.descriptor() === undefined && row.slot() === ''}
+}
+
+/** The depth a LEAD asks for — `RowScanner`'s own division, over bytes not yet in the value. */
+function leadDepth(lead: string, indent: string): number {
+	return indent === '' ? 0 : lead.length / indent.length
 }
 
 /**
- * Can a row sit at `depth` when it is written directly after `previous` — {@link depthCeiling}
- * asked of a pre-order entry, and the ONE owner of that question for every verb that writes a
- * lead. `undefined` is the document's first row, which is always a root.
- *
- * `previous` is read AS THE SPLICE LEAVES IT, which is why its `lead` is a parameter and its
- * `depth` is passed rather than trusted: a re-lead moves a row and can empty it, and the row the
- * scan will read back is the row the verb is about to write, not the one on the tree now.
+ * The depth a row LANDS at when its lead asks for `asked` and it is written directly after a row
+ * the scan read as `previous` — {@link depthCeiling}'s clamp, and the ONE owner of that question
+ * for every verb that writes a lead. `undefined` is the document's first row, always a root.
  */
-function fitsUnder(previous: {row: RowNode; depth: number; lead?: string} | undefined, depth: number): boolean {
-	return depth <= depthCeiling(previous && {depth: previous.depth, empty: isEmptyRow(previous.row, previous.lead)})
+function landsAt(previous: {depth: number; empty: boolean} | undefined, asked: number): number {
+	return Math.min(asked, depthCeiling(previous))
 }

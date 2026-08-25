@@ -36,6 +36,13 @@ import type {RowNode, TreeNode} from './types'
  * byte-identical documents — recur by construction. That is the adversarial class the identity
  * channel exists for: a permutation of identical rows leaves the string unchanged, so nothing in
  * the bytes distinguishes it from a refusal.
+ *
+ * The corpus is NOT canonical, and that is the lesson P5's review cost: it renders SURPLUS leads
+ * and blank rows carrying children, the two classes where a row's depth is held by the row above
+ * it rather than by its own bytes. Exhaustive over placements is not exhaustive over documents,
+ * and three accepted-but-wrong moves lived only in the documents the generator could not write.
+ * Which of them are legal is asked of the ENCODING, by parsing the projection back — see
+ * {@link legal}, because a hand-written list of refusals is a copy of the mover's own rules.
  */
 
 const SEPARATOR = '\n'
@@ -47,22 +54,32 @@ const BODIES = ['alpha', 'beta', 'alpha', '# head', ''] as const
 
 const BASE_SEED = 25_082_026
 const DOCUMENTS = 24
+/** How often a draft is written with MORE indent than its position asks for. */
+const SURPLUS = 0.25
 
-/** A row as the generator means it, before any parse has seen it. */
-type Draft = {body: string; rows: Draft[]}
+/**
+ * A row as the generator means it, before any parse has seen it — and `lead` is separate from
+ * position on purpose. A draft is a way to make a STRING, not a claim about the tree: every oracle
+ * here reads the parse, so the generator is free to write documents the parse re-reads differently
+ * from the way they were built.
+ */
+type Draft = {body: string; lead: number; rows: Draft[]}
 
 function buildDrafts(count: number, depth: number): Draft[] {
 	return Array.from({length: count}, () => {
 		const body = faker.helpers.arrayElement(BODIES)
-		// An empty row takes no children (`RowScanner`'s clamp), so the generator never gives it
-		// any: the parse would promote them and the document would not be the one generated.
-		const children = body === '' || depth === 2 ? 0 : faker.number.int({min: 0, max: 2})
-		return {body, rows: buildDrafts(children, depth + 1)}
+		const children = depth === 2 ? 0 : faker.number.int({min: 0, max: 2})
+		// A SURPLUS lead — one asking for more depth than the clamp will grant — is what a paste
+		// leaves behind, and its bytes round-trip verbatim. It is the input class both P5
+		// correctness defects lived in: such a row is held at its depth by the row ABOVE it and by
+		// nothing else, so a splice that raises that ceiling re-parents it without touching it.
+		const lead = faker.datatype.boolean(SURPLUS) ? depth + 1 : depth
+		return {body, lead, rows: buildDrafts(children, depth + 1)}
 	})
 }
 
-function render(drafts: readonly Draft[], depth = 0): string[] {
-	return drafts.flatMap(draft => [INDENT.repeat(depth) + draft.body, ...render(draft.rows, depth + 1)])
+function render(drafts: readonly Draft[]): string[] {
+	return drafts.flatMap(draft => [INDENT.repeat(draft.lead) + draft.body, ...render(draft.rows)])
 }
 
 const DOCS = Array.from({length: DOCUMENTS}, (_, index) => {
@@ -121,16 +138,50 @@ const hasParent = (rows: readonly RowNode[], row: RowNode): boolean =>
 const CASES = DOCS.flatMap(casesOf)
 
 /**
- * Is this placement expressible at all — asked of the ENCODING, not of the planner. Three rules,
- * each with a source outside the mover: a row cannot become its own descendant, because no
- * document expresses that; an empty row takes no children (`RowScanner`'s own clamp), so nothing
- * can be placed under one; and a row already sitting there is not a move.
+ * Is this placement expressible at all — asked of the ENCODING ITSELF rather than restated from
+ * the mover's rules: the intended tree is projected to bytes and PARSED BACK, and the placement is
+ * legal exactly when the parse agrees with the intent. That is what lets the corpus carry SURPLUS
+ * leads and blank rows with children, the two classes where a hand-written list of refusals had
+ * gone stale — and a list copied off the mover would only assert the mover against itself.
+ *
+ * Two rules stay outside it, because a projection cannot express either: a row cannot become its
+ * own descendant, so there is no intended tree to project at all, and a row already sitting where
+ * it was asked to go is not a move.
  */
-function legal(created: Store, moved: RowNode, parent: RowNode | null, index: number): boolean {
+function legal(entry: Case, created: Store, moved: RowNode, parent: RowNode | null): boolean {
 	if (parent !== null && preorder([moved]).includes(parent)) return false
-	if (parent?.lead() === '' && parent.option() === undefined && parent.slot() === '') return false
 	const siblings = parent === null ? rootRows(created) : parent.rows()
-	return siblings.indexOf(moved) !== index
+	if (siblings.indexOf(moved) === entry.index) return false
+	const {expected, projected} = intended(entry, created, moved, parent)
+	return outlineOfRows(rootRows(store(projected.join(SEPARATOR)))) === outlineOfShape(expected)
+}
+
+/** Nesting alone, as a comparable string: a re-parse mints fresh ids, so shape is all there is. */
+const outlineOfShape = (rows: readonly Shape[]): string => `[${rows.map(row => outlineOfShape(row.rows)).join(',')}]`
+const outlineOfRows = (rows: readonly RowNode[]): string => `[${rows.map(row => outlineOfRows(row.rows())).join(',')}]`
+
+/**
+ * The intended tree and the bytes it projects — the accept path's oracles, and what the legality
+ * test parses back. Neither calls the mover's own emitter: each row's line is sliced out of the
+ * ORIGINAL value, and only a MOVED row's lead is recomputed.
+ */
+function intended(
+	entry: Case,
+	created: Store,
+	moved: RowNode,
+	parent: RowNode | null
+): {expected: Shape[]; projected: string[]} {
+	const rows = preorder(rootRows(created))
+	const lines = new Map(
+		rows.map((row, at) => {
+			const {start, end} = row.lineRange()
+			const line = entry.value.slice(start, end - (at === rows.length - 1 ? 0 : SEPARATOR.length))
+			return [row.id, {lead: row.lead(), body: line.slice(row.lead().length)}]
+		})
+	)
+	const subtree = new Set(preorder([moved]).map(row => row.id))
+	const expected = relocate(shapeOf(rootRows(created)), moved.id, parent?.id ?? null, entry.index)
+	return {expected, projected: project(expected, lines, subtree)}
 }
 
 /** What a case looks like once it is bound to a live document. */
@@ -196,22 +247,11 @@ describe('move: a placement lands the subtree, or is refused', () => {
 		let ran = 0
 		for (const entry of CASES) {
 			const {created, moved, parent} = resolve(entry)
-			if (!legal(created, moved, parent, entry.index)) continue
+			if (!legal(entry, created, moved, parent)) continue
 			ran++
 
-			const rows = preorder(rootRows(created))
-			const before = shapeOf(rootRows(created))
 			const objects = new Map(everyNode(rootRows(created)).map(node => [node.id, node]))
-			const lines = new Map(
-				rows.map((row, at) => {
-					const {start, end} = row.lineRange()
-					const line = entry.value.slice(start, end - (at === rows.length - 1 ? 0 : SEPARATOR.length))
-					return [row.id, {lead: row.lead(), body: line.slice(row.lead().length)}]
-				})
-			)
-			const subtree = new Set(preorder([moved]).map(row => row.id))
-			const expected = relocate(before, moved.id, parent?.id ?? null, entry.index)
-			const projected = project(expected, lines, subtree)
+			const {expected, projected} = intended(entry, created, moved, parent)
 
 			expect(moved.moveTo({parent, index: entry.index}), entry.label).toBe(true)
 
@@ -230,7 +270,7 @@ describe('move: a placement lands the subtree, or is refused', () => {
 		let ran = 0
 		for (const entry of CASES) {
 			const {created, moved, parent} = resolve(entry)
-			if (legal(created, moved, parent, entry.index)) continue
+			if (legal(entry, created, moved, parent)) continue
 			ran++
 
 			const before = shapeOf(rootRows(created))
