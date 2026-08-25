@@ -64,7 +64,7 @@ earlier text, pass it.
 optional draggable: boolean | DraggableConfig;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:103](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L103)
+Defined in: [react/markput/src/components/MarkedInput.tsx:115](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L115)
 
 Enable drag interaction on rows. Ineffective when `separator` is `null`.
 
@@ -72,6 +72,31 @@ Enable drag interaction on rows. Ineffective when `separator` is `null`.
 
 ```ts
 false
+```
+
+***
+
+### history?
+
+```ts
+optional history: boolean;
+```
+
+Defined in: [react/markput/src/components/MarkedInput.tsx:111](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L111)
+
+Does the editor keep its own undo stack (ADR-0012). Ctrl/Cmd+Z undoes and Shift+Ctrl/Cmd+Z
+redoes, in both value modes — in a controlled editor an entry is recorded only once the
+parent has echoed the value back, so an emission your `onChange` declines leaves nothing
+behind.
+
+`false` turns both keys back into no-ops. It does NOT hand undo to the browser: the input
+guard has swallowed native undo since ADR-0006, because a native undo would edit DOM the
+model owns.
+
+#### Default
+
+```ts
+true
 ```
 
 ***

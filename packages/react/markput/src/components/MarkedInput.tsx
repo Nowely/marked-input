@@ -97,6 +97,18 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	 * @default '\t'
 	 */
 	indent?: string
+	/**
+	 * Does the editor keep its own undo stack (ADR-0012). Ctrl/Cmd+Z undoes and Shift+Ctrl/Cmd+Z
+	 * redoes, in both value modes — in a controlled editor an entry is recorded only once the
+	 * parent has echoed the value back, so an emission your `onChange` declines leaves nothing
+	 * behind.
+	 *
+	 * `false` turns both keys back into no-ops. It does NOT hand undo to the browser: the input
+	 * guard has swallowed native undo since ADR-0006, because a native undo would edit DOM the
+	 * model owns.
+	 * @default true
+	 */
+	history?: boolean
 	/** Enable drag interaction on rows. Ineffective when `separator` is `null`.
 	 * @default false
 	 */

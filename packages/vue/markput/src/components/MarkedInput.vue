@@ -7,7 +7,12 @@ import type {MarkedInputProps, MarkProps, OverlayProps} from '../types'
 import Container from './Container.vue'
 import OverlayRenderer from './OverlayRenderer.vue'
 
-const props = defineProps<MarkedInputProps<TMarkProps, TOverlayProps>>()
+// `history` is DECLARED with an undefined default, and it is the only prop that needs to be:
+// Vue casts an absent Boolean-typed prop to `false` unless the declaration carries a default, so
+// a prop the caller omitted would arrive as `false` and turn the feature off. It is the first
+// boolean prop whose core default is `true` — `readOnly` and `draggable` default to `false`, so
+// the cast has agreed with them by coincidence.
+const props = withDefaults(defineProps<MarkedInputProps<TMarkProps, TOverlayProps>>(), {history: undefined})
 
 const emit = defineEmits<{
 	change: [value: string]
@@ -39,6 +44,7 @@ function syncProps() {
 		readOnly: props.readOnly,
 		separator: props.separator,
 		indent: props.indent,
+		history: props.history,
 		draggable: props.draggable,
 		options: props.options?.map(opt => ({
 			...opt,
@@ -74,6 +80,7 @@ watch(
 		props.slotProps,
 		props.separator,
 		props.indent,
+		props.history,
 		props.draggable,
 	],
 	syncProps
