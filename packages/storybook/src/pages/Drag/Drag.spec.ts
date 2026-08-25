@@ -226,6 +226,25 @@ describe('Feature: drag rows', () => {
 	})
 
 	describe('delete row', () => {
+		/**
+		 * THE EDITOR TAKES ITS FOCUS BACK AFTER ITS OWN VERB. The grip is a `<button>` inside the
+		 * container, so a click on a menu item leaves `document.activeElement` on it — and the whole
+		 * keydown tier declines for a consumer control root, which made the `Mod+Z` that follows a
+		 * Delete a dead key. The entry was there the whole time: click back into the text and the
+		 * same press restores the row. The stack was never the problem; reaching it was.
+		 */
+		it('leaves focus in the editor after a row verb, so the undo that follows reaches it', async () => {
+			const {host, value} = await echoPlainText()
+			await openMenuForRow(host, 2)
+			await userEvent.click(getElement(page.getByText('Delete')))
+			await expect.poll(value).not.toContain('Third block of plain text')
+
+			expect(document.activeElement).toBe(host)
+
+			await userEvent.keyboard('{Control>}z{/Control}')
+			await expect.poll(value).toBe(PLAIN_TEXT_VALUE)
+		})
+
 		it('drop the middle row with its separator and leave the rest in place', async () => {
 			const {host, value} = await echoPlainText()
 			await openMenuForRow(host, 2)

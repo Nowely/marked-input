@@ -601,6 +601,18 @@ export class BlockController {
 		if (!menu || config === undefined) return
 		const row = this.tokens.find(menu.id)
 		if (row) verb(row, config)
+
+		// AND THE EDITOR TAKES ITS FOCUS BACK. The grip is a `<button>` inside the container, so
+		// after a menu click `document.activeElement` is the grip — which is a registered control
+		// root, and the whole keydown tier declines for one (`isConsumerKeyOrigin`). Every key the
+		// user pressed next went nowhere: the `Mod+Z` after a Delete was a dead key, and the `X`
+		// after an Add below landed in no row. The entry existed and the row existed; only focus
+		// was in the wrong place, and a click back into the text made both work.
+		//
+		// AFTER the verb, so the caret it named is already stored and the driver's own placement
+		// wins over whatever `focus()` would otherwise leave. Unconditional, because the guard that
+		// would read naturally here — "focus is already inside the host" — is TRUE of the grip.
+		untracked(() => this.host.container())?.focus()
 	}
 
 	/**
