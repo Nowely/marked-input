@@ -285,11 +285,18 @@ function sharedSuffix(a: string, b: string, prefix: number): number {
  * row it produces.
  *
  * The window covers the row's LINE BODY AND ITS WHOLE SUBTREE, and re-emits the descendants
- * unchanged in the middle, because the tail row lands AFTER them. That placement is forced by the
- * encoding rather than preferred: a row written directly under this one at this one's lead adopts
- * every child it has, since nesting is indentation and nothing else. Re-emitting the subtree also
- * costs nothing in identity — the descendants sit at the same indices in the row's child list, so
- * adoption's index pairing carries every one of them.
+ * unchanged in the middle, because the tail row normally lands AFTER them. That placement is
+ * forced by the encoding rather than preferred: a row written directly under this one at this
+ * one's lead adopts every child it has, since nesting is indentation and nothing else. Re-emitting
+ * the subtree also costs nothing in identity — the descendants sit at the same indices in the
+ * row's child list, so adoption's index pairing carries every one of them.
+ *
+ * ONE EXCEPTION, and it is the same rule read at the other row: a head that empties keeps no
+ * children, because `depthCeiling` gives an EMPTY row none. Written under it the descendants clamp
+ * to depth 0 and the tail lands BELOW its own former children — `'ab⏎⇥c'` split at offset 0 emitted
+ * `'⏎⇥c⏎ab'`, which un-nests `c` and reorders the document. So when the head's whole line would be
+ * empty the subtree follows the TAIL, which is Enter at a row's start: an empty row above, and the
+ * row with its children below it, intact.
  *
  * The tail's kind is the row's own when the kind `continues`, else a plain row; the caller reads
  * that field, because `tree/` knows a descriptor and not the option that declared it.
@@ -319,18 +326,24 @@ export function splitPlan(
 	const descendants =
 		children.length === 0 ? undefined : children.map(child => rowContent(child, separator)).join(separator)
 
-	const text =
-		rowMarkup(node.descriptor(), node.meta(), body.slice(0, cut)) +
-		(descendants === undefined ? '' : separator + descendants) +
-		separator +
+	const head = rowMarkup(node.descriptor(), node.meta(), body.slice(0, cut))
+	const tailLine =
 		node.lead() +
 		rowMarkup(continues ? node.descriptor() : undefined, continues ? node.meta() : undefined, body.slice(cut))
+	const subtree = descendants === undefined ? '' : separator + descendants
+	// The scan's own emptiness, asked of the head this split is about to write — see
+	// {@link isEmptyRow} for the same test over a live row.
+	const headKeepsChildren = node.lead() + head !== ''
+
+	const text = headKeepsChildren ? head + subtree + separator + tailLine : head + separator + tailLine + subtree
 
 	const start = node.position.start + node.lead().length
 	// The subtree's last line carries a separator unless it ends the document, and the window
 	// stops before it — the join puts one back between the tail and whatever follows.
 	const end = node.position.end - (endsDocument(roots, node) ? 0 : separator.length)
-	return {window: {start, end, insertedLength: text.length}, text, tail: index + preorderRows([node]).length}
+	// The tail sits past the whole subtree, or directly after the head when the subtree followed it.
+	const tail = index + (headKeepsChildren ? preorderRows([node]).length : 1)
+	return {window: {start, end, insertedLength: text.length}, text, tail}
 }
 
 /** The scan's own emptiness, read off the node: a row whose whole LINE is empty. */

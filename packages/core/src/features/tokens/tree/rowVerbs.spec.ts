@@ -436,6 +436,32 @@ describe('splitAt', () => {
 		expect(store.tokens.value()).toBe('a\n\t- \n\t- b')
 	})
 
+	/**
+	 * Enter at the start of a PLAIN row that has children, where the head empties. An empty row
+	 * takes no children (`depthCeiling`), so the subtree cannot stay under the head: written there
+	 * it clamps to depth 0 and the tail lands below its own former children — `'⏎⇥c⏎⇥⇥d⏎ab'`. The
+	 * subtree follows the TAIL instead, and the nesting survives.
+	 *
+	 * MEASURED COST, not a claim: the split adds a row, so no {@link Pairing} can describe it
+	 * (`resolvePairing` needs a total bijection) and identity rests on adoption's index pairing —
+	 * which hands the caller's node to the EMPTY row and re-mints the one that carries the content.
+	 * Stated so the pin turns red if it ever stops being true.
+	 */
+	it('gives the SUBTREE to the tail when the head empties, and keeps it nested', () => {
+		const store = rowStore('ab\n\tc\n\t\td')
+		const root = rowsOf(store)[0]
+
+		expect(root.splitAt(inBody(root, 0))).toBe(true)
+
+		expect(store.tokens.value()).toBe('\nab\n\tc\n\t\td')
+		const after = rowsOf(store)
+		expect(after.length).toBe(4)
+		expect(after[0]).toBe(root)
+		expect(after[1].slot()).toBe('ab')
+		expect(after[1].rows().map(row => row.slot())).toEqual(['c'])
+		expect(selectionRange(store)).toEqual({start: 1, end: 1})
+	})
+
 	it('splits the document-final row, which has no separator of its own', () => {
 		const store = rowStore('ab')
 		const row = rowsOf(store)[0]
