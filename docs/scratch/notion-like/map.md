@@ -166,21 +166,54 @@ becomes a ticket here.
   rung is NOT a `mergeWith` call: it falls through to the shared delete arm, whose boundary
   expansion already is the merge, so the keymap has 0 of the 2 possible merge implementations. Tab
   is `setDepth`, gated by the new `RowSpec.indents`, which gates the KEY rather than the verb.
+  The two rules the keymap DOES hold are the two the verbs cannot answer, and both were wrong on
+  the first pass: whose line a continuation joins, and whose declaration Tab reads (below).
 - **The soft break is a CONTINUATION ROW, and `softBreak` is not built** (2026-08-25, P6). Tested
   against what a soft break must do rather than argued: it travels with its parent on a drag and
-  copies with it (it is inside the parent's span), it renders inside the parent's own component,
-  and the caret walks in and out natively. Three costs, all declared in ADR-0011's amendment:
+  copies with it (it is inside the parent's span), it reaches the parent's component as the `rows`
+  prop, and the caret walks in and out natively. FOUR costs, all declared in ADR-0011's amendment:
   Backspace at its start outdents before it merges, so rejoining takes two presses; a consumer
-  cannot tell it from a Tab-nested row, because the two ARE the same document; and typed into a row
+  cannot tell it from a Tab-nested row, because the two ARE the same document; typed into a row
   that already has children it lands before them, where unbounded in-slot index pairing shifts
-  those children's ids. It is ONE splice — `separator + indent.repeat(childDepth)` — and that is
-  forced rather than preferred: two verbs cannot compose in controlled mode, where the tree has not
-  moved when the first returns.
+  those children's ids; and a kind whose component ignores the `rows` prop paints no child rows at
+  all, continuation or otherwise — a contract on the kind, since core cannot see whether a
+  component reads a prop. It is ONE splice — `separator + indent.repeat(continuationDepth)` — and
+  that is forced rather than preferred: two verbs cannot compose in controlled mode, where the tree
+  has not moved when the first returns.
 - **`childDepth` is the scan's ceiling, asked instead of re-derived.** The continuation needs "how
   deep may a row written under this one sit", and an EMPTY row takes no children — so
   `depth + 1` would write an indent run the scan never grants and hand back a sibling carrying
   stray bytes. `rowOf` answers `depthCeiling` directly, which makes Shift+Enter on an empty row a
   plain split with no rule restated above the tree.
+- **The continuation asks WHOSE line it is, and the first draft did not** (2026-08-25, P6 review).
+  Measuring from the caret's own row built a staircase: after the first Shift+Enter the caret is IN
+  the continuation, so `'- a'` soft-broken three times emitted `'- a⏎⇥one⏎⇥⇥two⏎⇥⇥⇥'` — four levels
+  for one list item, with only line 2 landing in the bullet's own slot. `continuationDepth` now
+  reads a row with a KIND, or a ROOT with none, as the owner of its lines (child), and a NESTED row
+  with neither as an interior line already (sibling). The paragraph half is not cosmetic: the first
+  repair made a root paragraph's soft break a sibling, and `Drag.spec`'s "not create a new row when
+  pressing Shift+Enter" caught it — a paragraph receives its child rows as ordinary children, so
+  its continuation really does paint inside it and stays one draggable block.
+- **A row with no kind inherits `indents` from the row it is nested in** (2026-08-25, P6 review).
+  Reading the declaration off the caret's own row let Tab EJECT FOCUS from the second line of a
+  list item while indenting the first — the exact split `handleRowIndent`'s own docblock calls
+  worse than either. `AnchoredRow` gained `parent`, free from `rowOf`'s existing walk. Cost (b)
+  above is therefore a RULE, not an ambiguity: a Tab-nested paragraph answers the same way, because
+  it is the same document.
+- **Three verbs, three answers to the empty-row wall, and that is policy rather than duplication.**
+  The rule has one owner (`depthCeiling`); what differs is the reaction. `setDepth` REFUSES, since
+  a re-indent that silently un-nests is a surprise with no gain and the children can be outdented
+  first. `splitAt` RELOCATES the subtree to its tail, which a split has a home for. `turnInto` lets
+  the scan PROMOTE, because refusing would leave no way to un-type an empty parent — the keystroke
+  would be a no-op with no escape. The last one is now pinned at the keymap as well as at the verb,
+  because P6 is what made it one keystroke.
+- **P6's honest cost: `+370 / −103` production lines, net +267** (excluding specs, READMEs and the
+  website), across the eight phase commits plus this review's six. Rule 14 asks for the number even
+  when the change grows the code, and no P6 commit body stated it. What came OUT: `blockEdit.ts`
+  (a pure move), `setValue`'s `enterRoot` with its sole caller, `depthPlan`'s own `landsAt` clamp,
+  `movePlan`'s inline scan walk, `scannedAs`'s field-wise restatement of an empty line, and two
+  guards no answer of `rowOf` can reach. Runtime: `rowOf` is a full pre-order walk now run on every
+  Enter, Tab and Backspace — no benchmark, and not on a documented hot path either.
 - **The keymap's own browser spec found a two-keystroke data-loss bug that predates it.** Typing
   `'- '` into an empty editor and then any character REPLACED the whole document: a document whose
   content is one empty-bodied typed row has its first selectable offset AT its length, so a plain
