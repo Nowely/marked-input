@@ -264,3 +264,22 @@ becomes a ticket here.
 - Caret ergonomics at document scale — atomic tables and code blocks, Tab
   leaving the field, native undo swallowed (ADR-0002/0006 accepted costs) — are
   unmeasured over a document this size.
+- **Nothing scopes the row menu to the trigger that owns it, and that needs a
+  decision rather than a default.** `overlay.entries` reads only "is an overlay
+  open", never `match.option`, so the two overlay protocols share one state.
+  REPRODUCED on the tip: with a `@` mention overlay open on `'hi @'` and four menu
+  kinds registered, `entries()` answers `['Heading 1', 'To-do list']`, and
+  `choose({option: HEADING})` returns `true` — it cuts the `@` span out of the row
+  and retypes the row as a heading. No shipped configuration hits it (each trigger
+  option carries its own `Overlay`, and `Suggestions` ignores `entries`), but a
+  documented path does: `<MarkedInput Overlay={BlockMenu}>` is a global override
+  that paints the row menu on EVERY trigger. Not patched, because every fix needs a
+  way to say which trigger owns the menu — new surface with no caller today, or a
+  heuristic ("the option with no `data`") that would be worse than the hole. P11 is
+  the phase that will have a caller.
+- **P11 owes a per-entry icon, and `MenuSpec.icon` is not the shape to bring back.**
+  The spec's `icon?: unknown` was unrenderable and was rightly dropped inside P7.
+  But a showcase menu that wants icons and has no field for one keeps an
+  option-to-icon map in the consumer component — which is precisely the shape P7's
+  exit criterion forbids. `icon?: Slot` is the version that keeps the criterion, and
+  it lands with the painter, as `section` now does.
