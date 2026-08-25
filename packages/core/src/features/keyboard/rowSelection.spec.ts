@@ -105,6 +105,42 @@ describe('Esc escalates, one level per press', () => {
 		expect(selectedSlots(store)).toEqual(['aa'])
 	})
 
+	/**
+	 * A SELECTION MAY SPAN TWO PARENTS, and then the widening rung's own parent — the FIRST covered
+	 * row's — covers only part of what is held. Answering it verbatim drops every covered row
+	 * outside it, so the answer is the union: Esc may climb, and may not lose a row.
+	 */
+	it('keeps the rows outside the parent it climbs to', () => {
+		const {store, container} = mount()
+		caretAt(store, 5)
+		press(store, container, 'Escape')
+		press(store, container, 'ArrowDown', {shiftKey: true})
+		press(store, container, 'ArrowDown', {shiftKey: true})
+		expect(selectedSlots(store)).toEqual(['bb', 'cc', 'dd'])
+
+		press(store, container, 'Escape')
+		expect(selectedSlots(store)).toEqual(['aa', 'dd'])
+		expect(selectionRange(store)).toEqual({start: 0, end: 13})
+	})
+
+	/**
+	 * Once every covered row is a root there is nothing above them, and the ENTRY rung is not a
+	 * fallback for that: re-stating the anchor's own row would shrink a selection of two roots to
+	 * one. The press does nothing and does not claim the key.
+	 */
+	it('leaves a root-level selection alone rather than falling back to the anchor row', () => {
+		const {store, container} = mount()
+		caretAt(store, 5)
+		press(store, container, 'Escape')
+		press(store, container, 'ArrowDown', {shiftKey: true})
+		press(store, container, 'ArrowDown', {shiftKey: true})
+		press(store, container, 'Escape')
+		expect(selectedSlots(store)).toEqual(['aa', 'dd'])
+
+		expect(press(store, container, 'Escape').defaultPrevented).toBe(false)
+		expect(selectedSlots(store)).toEqual(['aa', 'dd'])
+	})
+
 	it('defers to an open overlay, whose own Escape closes it', () => {
 		const {store, container} = mount()
 		caretAt(store, 5)
@@ -185,6 +221,23 @@ describe('Mod+A widens before it reaches for the document', () => {
 		const {store, container} = mount()
 		caretAt(store, 5)
 
+		press(store, container, 'a', {code: 'KeyA', metaKey: true})
+		expect(store.tokens.selection.isAllSelected()).toBe(true)
+	})
+
+	/** The rung Esc shares, and it may not lose a row here either — a widening that narrows is not one. */
+	it('never answers less than the selection it was given', () => {
+		const {store, container} = mount()
+		caretAt(store, 5)
+		press(store, container, 'Escape')
+		press(store, container, 'ArrowDown', {shiftKey: true})
+		press(store, container, 'ArrowDown', {shiftKey: true})
+
+		press(store, container, 'a', {code: 'KeyA', metaKey: true})
+		expect(selectedSlots(store)).toEqual(['aa', 'dd'])
+		expect(selectionRange(store)).toEqual({start: 0, end: 13})
+
+		// And the rung above it still reaches the whole document.
 		press(store, container, 'a', {code: 'KeyA', metaKey: true})
 		expect(store.tokens.selection.isAllSelected()).toBe(true)
 	})

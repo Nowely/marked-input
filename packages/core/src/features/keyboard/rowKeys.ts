@@ -189,7 +189,12 @@ export function handleRowSelection(store: KbCtx, event: KeyboardEvent): void {
 	if (event.key === KEYBOARD.ESC) {
 		if (store.overlay.match()) return
 		// The widening rung FIRST, so a second Esc climbs rather than re-selecting the same row.
-		const span = store.tokens.rowScope(anchors, 'out') ?? store.tokens.rowScope(anchors, 'row')
+		// The `'row'` rung is the ENTRY into a row selection and runs only while none stands: with
+		// whole rows already held and nothing above them to climb to, re-stating the ANCHOR's row
+		// alone SHRINKS a selection that spans several, which is the one thing Esc must not do.
+		const entering = store.tokens.rowsWithin(anchors).length === 0
+		const span =
+			store.tokens.rowScope(anchors, 'out') ?? (entering ? store.tokens.rowScope(anchors, 'row') : undefined)
 		if (selectSpan(store, span)) event.preventDefault()
 		return
 	}

@@ -171,9 +171,10 @@ export function rowsWithin(
  * - `'row'` — the row the anchor's line belongs to, whole. Esc's first rung: it turns a caret or a
  *   partial text selection into a row selection. In a CARVED piece it answers the LINE, which is
  *   {@link rowOf}'s rule and the whole of what selecting inside a table means.
- * - `'out'` — the PARENT of the first covered row, whole. The widening rung, shared by Esc and
- *   Mod+A; `undefined` when no row is covered or the covered scope is already at depth 0, which is
- *   what leaves Mod+A meaning select-all everywhere it always did.
+ * - `'out'` — the PARENT of the first covered row, whole, UNIONED with what is already held so the
+ *   widening rung can never answer less than it was given. The rung is shared by Esc and Mod+A;
+ *   `undefined` when no row is covered or the covered scope is already at depth 0, which is what
+ *   leaves Mod+A meaning select-all everywhere it always did.
  * - `'up'` / `'down'` — the covered span with the neighbouring row ABSORBED WHOLE. It only grows,
  *   and absorbing whole is what keeps it from getting stuck: extending up from a first child
  *   reaches its parent, whose subtree already covers the child, so the selection becomes the
@@ -212,7 +213,12 @@ export function rowScope(
 
 	if (scope === 'out') {
 		const parent = rows.slice(0, first).findLast(entry => entry.depth < rows[first].depth)
-		return parent && rowSpan(roots, parent.row, separator)
+		if (!parent) return undefined
+		const outer = rowSpan(roots, parent.row, separator)
+		// UNIONED WITH WHAT IS HELD, because the parent is the first covered row's and a selection
+		// may span several: answering the parent verbatim drops every covered row outside it, and a
+		// widening rung that loses rows is worse than one that declines.
+		return {start: Math.min(held.start, outer.start), end: Math.max(held.end, outer.end)}
 	}
 	// `.at`, and the negative guard with it: `noUncheckedIndexedAccess` is off, so an index read
 	// types as non-nullable and the no-neighbour guard reads as impossible — while `.at(-1)` alone
