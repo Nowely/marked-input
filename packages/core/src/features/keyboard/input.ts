@@ -2,7 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'edit' | 'tokens'>
+type KbCtx = Pick<Store, 'edit' | 'history' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import {
 	anchorsForDelete,
@@ -47,6 +47,18 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
 			e.preventDefault()
 			store.tokens.selection.selectAll()
+			return
+		}
+
+		// THE EDITOR'S OWN UNDO (ADR-0012), and it cancels whether or not there is anything to
+		// undo: the browser's stack is empty by construction — every input path prevents its
+		// default (ADR-0006) — so leaving the key alone would produce nothing anyway, and letting
+		// it through would be a promise this editor cannot keep. `code`, like select-all above,
+		// because the physical key is the shortcut.
+		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
+			e.preventDefault()
+			if (e.shiftKey) store.history.redo()
+			else store.history.undo()
 			return
 		}
 		// The ROW arms, after the shared checks and answering only where the value parses into
@@ -113,6 +125,18 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 	// event came from, so a character typed into a control's own `<input>` would replace
 	// the entire value with that character.
 	if (isConsumerOrigin(store, container, event)) return
+
+	// The same two commands as the keydown arm, in the spelling that does NOT come from a key: the
+	// Edit menu, a trackpad gesture, a touch keyboard's own undo. Ahead of the all-selected branch,
+	// which would otherwise read them as a replacement of the whole value, and ahead of the
+	// replacement table, which has no expression for them — so this is what stops both types
+	// failing closed through `dropUnexpressedInput` (ADR-0012 amends ADR-0006).
+	if (event.inputType === 'historyUndo' || event.inputType === 'historyRedo') {
+		event.preventDefault()
+		if (event.inputType === 'historyUndo') store.history.undo()
+		else store.history.redo()
+		return
+	}
 
 	if (store.tokens.selection.isAllSelected()) {
 		// The `paste` listener owns this one end-to-end: it consumes the markup

@@ -892,6 +892,89 @@ describe('handleBeforeInput()', () => {
 			container.remove()
 		})
 
+		it('undoes and redoes on Mod+Z, and on Shift+Mod+Z', () => {
+			const {store, container, textNode} = mountStructuralInline('hello')
+			selectBoundary(textNode, 5)
+			store.edit.replace(store.tokens.anchorAt(5), store.tokens.anchorAt(5), '!')
+			expect(store.tokens.value()).toBe('hello!')
+
+			const undo = new KeyboardEvent('keydown', {code: 'KeyZ', ctrlKey: true, bubbles: true, cancelable: true})
+			container.dispatchEvent(undo)
+			expect(undo.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('hello')
+
+			const redo = new KeyboardEvent('keydown', {
+				code: 'KeyZ',
+				ctrlKey: true,
+				shiftKey: true,
+				bubbles: true,
+				cancelable: true,
+			})
+			container.dispatchEvent(redo)
+			expect(redo.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('hello!')
+			container.remove()
+		})
+
+		it('leaves Mod+Z to a consumer editable island', () => {
+			// The keydown tier's one consumer-origin test covers this arm too: an island runs the
+			// browser's own undo over its own DOM, and the model must neither act nor cancel.
+			const {store, container, descendantText} = mountStructuralMarkWithDescendant()
+			const event = new KeyboardEvent('keydown', {code: 'KeyZ', ctrlKey: true, bubbles: true, cancelable: true})
+
+			descendantText.parentElement?.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(false)
+			expect(store.tokens.value()).toBe('@[world]')
+			container.remove()
+		})
+
+		it('EXPRESSES a historyUndo beforeinput instead of dropping it', () => {
+			// ADR-0012's structural claim, stated the only way it can be observed: the value moved.
+			// `dropUnexpressedInput` cancels and nothing else, so a document that came back cannot
+			// have gone through it.
+			const {store, container} = mountStructuralInline('hello')
+			store.edit.replace(store.tokens.anchorAt(5), store.tokens.anchorAt(5), '!')
+
+			const event = new InputEvent('beforeinput', {inputType: 'historyUndo', bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('hello')
+
+			const redo = new InputEvent('beforeinput', {inputType: 'historyRedo', bubbles: true, cancelable: true})
+			container.dispatchEvent(redo)
+			expect(store.tokens.value()).toBe('hello!')
+			container.remove()
+		})
+
+		it('undoes on a historyUndo with everything selected, rather than replacing the value', () => {
+			// The arm has to sit AHEAD of the all-selected branch: that branch keys on the stored
+			// selection and would read an undo as "replace the document with nothing".
+			const {store, container} = mountStructuralInline('hello')
+			store.edit.replace(store.tokens.anchorAt(5), store.tokens.anchorAt(5), '!')
+			store.tokens.selection.selectAll()
+
+			const event = new InputEvent('beforeinput', {inputType: 'historyUndo', bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+
+			expect(store.tokens.value()).toBe('hello')
+			container.remove()
+		})
+
+		it('still cancels a historyUndo with nothing to undo', () => {
+			// The guard stays fail-closed (ADR-0006): the browser's own stack is empty, and an
+			// uncancelled default would edit DOM the model owns.
+			const {store, container} = mountStructuralInline('hello')
+
+			const event = new InputEvent('beforeinput', {inputType: 'historyUndo', bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('hello')
+			container.remove()
+		})
+
 		it('leaves a word delete to the beforeinput that names its own range', () => {
 			// The extent of Alt/Ctrl/Cmd+Backspace belongs to the platform, and only the
 			// `beforeinput` carries it. Answering the keydown cancelled that event before it
