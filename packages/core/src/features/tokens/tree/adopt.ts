@@ -4,6 +4,7 @@ import type {MarkToken, RowConfig, RowToken, TextToken, Token} from '../parser/t
 import {createTextToken} from '../parser/utils/createTextToken'
 import {anchorAt, offsetOfAnchor} from './anchors'
 import type {TokenTree} from './tree'
+import {preorderRows} from './tree'
 import type {
 	Anchors,
 	MarkNode,
@@ -76,7 +77,12 @@ export function adopt(
 			const result: TreeNode[] = []
 			for (let index = 0; index < tokens.length; index++) {
 				const token = tokens[index]
-				const candidate = index < candidates.length ? candidates[index] : undefined
+				// The KEYED lookup, beside the positional walk: a verified pairing names which
+				// previous row each parsed row continues, at any depth and in any order, so it
+				// overrides the index for a row token and leaves every other token to the walk.
+				const candidate =
+					(token.type === 'row' ? rowPairs?.get(token) : undefined) ??
+					(index < candidates.length ? candidates[index] : undefined)
 				if (candidate?.kind === 'text' && token.type === 'text') {
 					adoptText(candidate, token)
 					result.push(candidate)
@@ -111,9 +117,9 @@ export function adopt(
 			adoptPosition(node, token)
 			node.descriptor(token.descriptor)
 			node.meta(token.meta)
-			// A plain field beside `position`, for the same reason: the lead is structural bytes,
-			// not content, and no consumer subscribes to a row's indent changing.
-			node.lead = token.lead
+			// A SIGNAL write: the projection emits the lead, so a re-indent that keeps every
+			// child object in place has nothing else to notify `value` with.
+			node.lead(token.lead)
 			const children = node.children()
 			const next = adoptSiblings(children, rowTokenChildren(token))
 			if (!sameNodes(next, children)) node.children(next)
@@ -149,14 +155,14 @@ export function adopt(
 		// which is exactly why today's reorder outcome does not depend on the window at all. Once
 		// every hinted pair is proven byte-equal under its own shift, the walks have nothing left
 		// to claim.
-		const order = window.pairing && resolvePairing(prev, parsed, window.pairing)
+		const rowPairs = window.pairing && resolvePairing(prev, parsed, window.pairing)
 
 		batch(() => {
-			if (order) {
-				// `adoptSiblings` over the PERMUTED candidates: it writes each node's new position
-				// from its token, recurses into slots, and — because a verified pair is equal in
-				// content — writes no signal.
-				out.push(...adoptSiblings(order, parsed))
+			if (rowPairs) {
+				// `adoptSiblings` over the whole parse, with the keyed lookup deciding every row:
+				// it writes each node's new position from its token, recurses into slots and child
+				// rows, and — because a verified pair is equal in content — writes no signal.
+				out.push(...adoptSiblings(prev, parsed))
 				if (!sameNodes(out, prev)) tree.roots(out)
 				return
 			}
@@ -215,7 +221,7 @@ export function adopt(
 			if (!sameNodes(out, prev)) tree.roots(out)
 		})
 
-		const moved = order !== undefined
+		const moved = rowPairs !== undefined
 		const map = (offset: number): NodeAnchor => resolveMappedAnchor(out, offset, window, delta)
 
 		// A verified move carries the selection through UNCHANGED, and coordinate-free: every
@@ -282,7 +288,7 @@ function snapshotNodeEquals(node: TreeNode, token: Token | RowToken, delta: numb
 		// a row leaves its content untouched, so nothing else here would notice.
 		if (node.descriptor() !== token.descriptor) return false
 		if (node.meta() !== token.meta) return false
-		if (node.lead !== token.lead) return false
+		if (node.lead() !== token.lead) return false
 		const rowChildren = node.children()
 		const tokenChildren = rowTokenChildren(token)
 		if (rowChildren.length !== tokenChildren.length) return false
@@ -320,16 +326,20 @@ function shiftPositions(node: TreeNode, delta: number): void {
 }
 
 /**
- * A {@link Pairing} resolved against the parse, or `undefined` — in which case adoption runs
- * its ordinary walks and the hint changes nothing. FAIL CLOSED by construction: the caller can
- * only ever confirm a permutation the string already permits, never invent a change it does
- * not have.
+ * A {@link Pairing} resolved against the parse, as the row token → row node map adoption looks
+ * every row up in — or `undefined`, in which case adoption runs its ordinary walks and the hint
+ * changes nothing. FAIL CLOSED by construction: the caller can only ever confirm a permutation
+ * the string already permits, never invent a change it does not have.
+ *
+ * PRE-ORDER ROWS on both sides, not roots. A row's subtree is contiguous in document order, so
+ * pre-order is the one enumeration a move, a re-parent and a re-indent all speak; a root index
+ * stops naming a row the moment rows nest.
  *
  * Three gates, and the BIJECTION one is not implied by the others. Counter-example, on the very
  * shape this channel exists for: two byte-identical rows `A@[0,7]`, `B@[7,14]` with
  * `pairing = [0, 0]`. Both pairs pass the equality check — pair 0 at delta 0, pair 1 at delta
  * +7, same content — so a range-only gate accepts it. Adoption would then adopt the SAME node
- * object into both root slots: `B` leaves the tree silently while `A`'s id appears twice, so
+ * object into both row slots: `B` leaves the tree silently while `A`'s id appears twice, so
  * every consumer keyed by node identity is corrupted.
  *
  * Equality is checked under EACH PAIR'S OWN delta rather than one window delta: in a
@@ -340,36 +350,49 @@ function resolvePairing(
 	prev: readonly TreeNode[],
 	parsed: readonly (Token | RowToken)[],
 	pairing: Pairing
-): readonly TreeNode[] | undefined {
-	if (pairing.length !== prev.length || pairing.length !== parsed.length) return undefined
+): Map<RowToken, RowNode> | undefined {
+	const rows = preorderRows(prev).map(({row}) => row)
+	const tokens = preorderRowTokens(parsed)
+	if (pairing.length !== rows.length || pairing.length !== tokens.length) return undefined
 
 	const claimed = new Set<number>()
-	const order: TreeNode[] = []
+	const pairs = new Map<RowToken, RowNode>()
 	for (const [index, previous] of pairing.entries()) {
-		if (!Number.isInteger(previous) || previous < 0 || previous >= prev.length) return undefined
+		if (!Number.isInteger(previous) || previous < 0 || previous >= rows.length) return undefined
 		if (claimed.has(previous)) return undefined
 		claimed.add(previous)
 
-		const node = prev[previous]
-		const token = parsed[index]
+		const node = rows[previous]
+		const token = tokens[index]
 		if (!pairEquals(node, token)) return undefined
-		order.push(node)
+		pairs.set(token, node)
 	}
-	return order
+	return pairs
+}
+
+/** The parse's rows in the same pre-order the tree's {@link preorderRows} walks. */
+function preorderRowTokens(tokens: readonly (Token | RowToken)[]): RowToken[] {
+	const out: RowToken[] = []
+	for (const token of tokens) {
+		if (token.type !== 'row') continue
+		out.push(token)
+		out.push(...preorderRowTokens(token.rows))
+	}
+	return out
 }
 
 /**
  * The pairing gate's equality — {@link snapshotNodeEquals} under the pair's own delta, except
- * for a ROW pair, which is compared on its kind, its meta and its CHILDREN under the pair's own
- * CONTENT delta.
+ * for a ROW pair, which is compared on its kind, its meta and its INLINE children under the
+ * pair's own CONTENT delta.
  *
- * The row arm is load-bearing rather than lenient. A permutation moves which row sits
- * document-final, and only that row carries no separator, so the rows entering and leaving that
- * position change SPAN LENGTH while their content is untouched: comparing the row's own
- * `position` rejects every such pairing and drops identity to index pairing — the exact ADR-0007
- * failure mode. The children still have to agree, under the delta between the two BODIES rather
- * than between the two row starts, which is the reading that survives a row's structural bytes
- * changing size.
+ * The row arm is load-bearing rather than lenient, and for TWO reasons now. A permutation moves
+ * which row sits document-final, and only that row carries no separator, so the rows entering
+ * and leaving that position change SPAN LENGTH while their content is untouched. And a
+ * re-indent changes a row's own start delta by zero while its children's is the indent's
+ * length, so a position-delta comparison fails every pair and identity degrades to index
+ * pairing — the exact ADR-0007 failure mode, measured. Comparing the children under the delta
+ * between the two BODIES is the reading that survives a row's structural bytes changing size.
  */
 function pairEquals(node: TreeNode, token: Token | RowToken): boolean {
 	if (node.kind === 'row' && token.type === 'row') {

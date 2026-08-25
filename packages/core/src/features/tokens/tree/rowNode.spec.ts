@@ -10,13 +10,14 @@ import {adopt} from './adopt'
 import {anchorAt, entryAnchor, offsetOfAnchor, separatorSpan, stepAnchor} from './anchors'
 import {renderSubscription} from './renderSubscription'
 import {createTokenTree, sliceNodes} from './tree'
+import type {TreeNode} from './types'
 
 const SEPARATOR = {separator: '\n\n', indent: '\t'}
 
 const rowTree = (markups: Markup[], value: string, rows: boolean[] = []) => {
 	const parser = new Parser(markups, rows)
 	const tree = createTokenTree(parser.parseRows(value, SEPARATOR))
-	tree.separator(SEPARATOR.separator)
+	tree.config(SEPARATOR)
 	return {parser, tree}
 }
 
@@ -174,6 +175,88 @@ describe('RowNode', () => {
 
 			expect(selectionRange(store)).toEqual({start: 2, end: 13})
 			expect(store.tokens.selection.isAllSelected()).toBe(true)
+		})
+	})
+
+	/**
+	 * THE IDENTITY ORACLE for nesting, and it asserts OBJECTS rather than counts on purpose. A
+	 * re-indent is an ordinary splice — nothing about the two strings says a row was re-parented —
+	 * so without the pre-order `Pairing` adoption's prefix walk stops at the edit and rebuilds the
+	 * moved row and everything under it with fresh ids, taking the consumer's per-row state with
+	 * them. A count assertion cannot see that; only the object can.
+	 */
+	describe('setDepth', () => {
+		const nestStore = (defaultValue: string) => {
+			const store = new Store()
+			store.props.set({defaultValue, separator: '\n', Mark: () => null, options: []})
+			store.host.container(document.createElement('div'))
+			return store
+		}
+
+		/** Every node in the document, roots and their text children alike, in document order. */
+		const objectsOf = (store: Store): unknown[] => {
+			const out: unknown[] = []
+			const collect = (node: TreeNode): void => {
+				out.push(node)
+				if (node.kind !== 'text') node.children().forEach(collect)
+			}
+			store.tokens.nodes().forEach(collect)
+			return out
+		}
+
+		it('keeps every node object when a row is indented under the row above it', () => {
+			const store = nestStore('a\nb\nc')
+			const before = objectsOf(store)
+			expect(before.length).toBe(6)
+
+			const row = store.tokens.nodes()[1]
+			expect(row.kind === 'row' && row.setDepth(1)).toBe(true)
+
+			expect(store.tokens.value()).toBe('a\n\tb\nc')
+			// 'b' is now 'a''s child, so the document has two ROOTS and the same six objects.
+			const roots = store.tokens.nodes()
+			expect(roots.length).toBe(2)
+			expect(roots[0].kind === 'row' && roots[0].rows().length).toBe(1)
+			expect(objectsOf(store)).toEqual(before)
+		})
+
+		it('keeps every node object when the same row is outdented again', () => {
+			const store = nestStore('a\n\tb\nc')
+			const before = objectsOf(store)
+			const nested = store.tokens.nodes()[0]
+			const child = nested.kind === 'row' ? nested.rows()[0] : undefined
+
+			expect(child?.setDepth(0)).toBe(true)
+
+			expect(store.tokens.value()).toBe('a\nb\nc')
+			expect(store.tokens.nodes().length).toBe(3)
+			expect(objectsOf(store)).toEqual(before)
+		})
+
+		it('NORMALIZES a surplus indent run, which is the price of depth having one reading', () => {
+			const store = nestStore('a\n\t\t\tb')
+			const nested = store.tokens.nodes()[0]
+			const child = nested.kind === 'row' ? nested.rows()[0] : undefined
+
+			expect(child?.setDepth(1)).toBe(true)
+
+			expect(store.tokens.value()).toBe('a\n\tb')
+		})
+
+		it('refuses a depth deeper than one past the row before it, a no-op and nesting off', () => {
+			const store = nestStore('a\nb')
+			const rows = store.tokens.nodes()
+			expect(rows[0].kind === 'row' && rows[0].setDepth(1)).toBe(false)
+			expect(rows[1].kind === 'row' && rows[1].setDepth(2)).toBe(false)
+			expect(rows[1].kind === 'row' && rows[1].setDepth(0)).toBe(false)
+			expect(rows[1].kind === 'row' && rows[1].setDepth(-1)).toBe(false)
+			expect(store.tokens.value()).toBe('a\nb')
+
+			const flat = new Store()
+			flat.props.set({defaultValue: 'a\nb', separator: '\n', indent: '', Mark: () => null, options: []})
+			flat.host.container(document.createElement('div'))
+			const nested = flat.tokens.nodes()[1]
+			expect(nested.kind === 'row' && nested.setDepth(1)).toBe(false)
 		})
 	})
 

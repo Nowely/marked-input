@@ -9,11 +9,15 @@ import {describe, expect, it} from 'vitest'
  * `keyboard/blockEdit.ts` stayed on the allowlist after its last real read had become a
  * comment.
  *
- * The rule: only `features/tokens/` may read a node's `position` or `slotRange`. Everything
- * above it names positions with a `NodeAnchor`. Inside that directory both `tree/` (which owns
- * the coordinate space) and `parser/` (whose `Token.position` is a different, parse-local
- * record) read them freely, so the directory boundary IS the allowlist — there is nothing left
- * to enumerate.
+ * The rule: only `features/tokens/` may read a node's `position`, `slotRange` or `lead`.
+ * Everything above it names positions with a `NodeAnchor`. Inside that directory both `tree/`
+ * (which owns the coordinate space) and `parser/` (whose `Token.position` is a different,
+ * parse-local record) read them freely, so the directory boundary IS the allowlist — there is
+ * nothing left to enumerate.
+ *
+ * `lead` joined the list when rows began to nest: it is a row's structural bytes, so reading it
+ * outside is the same escape as reading a raw offset — a caller could measure a depth from it and
+ * disagree with the tree's own.
  *
  * Sources are read through `import.meta.glob`, not `node:fs`: the core project runs in
  * Chromium, so there is no filesystem at test time.
@@ -43,14 +47,14 @@ function isGoverned(path: string): boolean {
 }
 
 describe('one address space (ADR-0003)', () => {
-	it('forms no node position outside features/tokens/', () => {
+	it('forms no node position and reads no lead outside features/tokens/', () => {
 		const offenders = Object.entries(sources)
 			.filter(([path]) => isGoverned(path))
 			.flatMap(([path, source]) =>
 				stripComments(source)
 					.split('\n')
 					.map((line, index) => ({path, line: index + 1, text: line}))
-					.filter(entry => /\.(?:position|slotRange)\b/.test(entry.text))
+					.filter(entry => /\.(?:position|slotRange|lead)\b/.test(entry.text))
 					.map(entry => `${entry.path}:${entry.line} ${entry.text.trim()}`)
 			)
 

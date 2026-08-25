@@ -28,7 +28,7 @@ import {
 import {gapWindow} from '../tree/gapWindow'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
-import {mergePlan, movePlan, removePlan} from '../tree/siblings'
+import {depthPlan, mergePlan, movePlan, removePlan} from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
 import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
 import type {Anchors, MarkNode, MarkPatch, NodeAnchor, TreeCommands, TreeNode} from '../tree/types'
@@ -278,12 +278,12 @@ export class TokenModel {
 	 * {@link separatorSpan}; `undefined` for every anchor in a document that parses no rows.
 	 */
 	separatorSpan(anchor: NodeAnchor, direction: -1 | 1): Anchors | undefined {
-		return untracked(() => findSeparatorSpan(this.#tree.roots(), anchor, direction, this.#tree.separator()))
+		return untracked(() => findSeparatorSpan(this.#tree.roots(), anchor, direction, this.#tree.config()?.separator))
 	}
 
 	/** The projection of the span between two anchors — {@link value} restricted to a window (see {@link sliceNodes}). */
 	valueBetween(from: NodeAnchor, to: NodeAnchor): string {
-		return untracked(() => sliceNodes(this.#tree.roots(), from, to, this.#tree.separator()))
+		return untracked(() => sliceNodes(this.#tree.roots(), from, to, this.#tree.config()?.separator))
 	}
 
 	/** Resolve a stable id to its live node. */
@@ -520,7 +520,7 @@ export class TokenModel {
 				// The document-final row owns no separator, so its removal takes the PREVIOUS
 				// row's — a span-only splice would just convert it into the trailing empty row
 				// (issue 08 review finding). removePlan's root indexOf is the liveness check.
-				const plan = untracked(() => removePlan(this.#tree.roots(), node, this.#tree.separator()))
+				const plan = untracked(() => removePlan(this.#tree.roots(), node, this.#tree.config()?.separator))
 				if (plan) {
 					if (!this.#tx.applyRange({start: plan.start, end: plan.end, insertedLength: 0}, '')) return
 					removed = true
@@ -543,7 +543,7 @@ export class TokenModel {
 			// they fuse into a single row (issue 08 review finding).
 			const text = untracked(() =>
 				node.kind === 'row' && this.#tree.roots().at(-1) === node
-					? (this.#tree.separator() ?? '') + projection
+					? (this.#tree.config()?.separator ?? '') + projection
 					: projection
 			)
 			return this.#insertAfter(node, text)
@@ -559,7 +559,7 @@ export class TokenModel {
 		mergeWith: (node, next) => {
 			let merged = false
 			batch(() => {
-				const plan = untracked(() => mergePlan(this.#tree.roots(), node, next, this.#tree.separator()))
+				const plan = untracked(() => mergePlan(this.#tree.roots(), node, next, this.#tree.config()?.separator))
 				if (!plan) return
 				if (!this.#applyStructural(node, plan.kept)) return
 				merged = true
@@ -576,7 +576,19 @@ export class TokenModel {
 		 */
 		moveTo: (node, index) => {
 			this.#ensureSeeded()
-			const plan = untracked(() => movePlan(this.#tree.roots(), node, index, this.#tree.separator()))
+			const plan = untracked(() => movePlan(this.#tree.roots(), node, index, this.#tree.config()?.separator))
+			if (!plan) return false
+			return this.#tx.applyRange(plan.window, plan.text)
+		},
+		/**
+		 * {@link moveTo}'s rule for the caret applies verbatim: a re-indent takes no position out
+		 * of the document and puts none in — every text node keeps its content — so the anchors
+		 * the selection already holds still name the same characters, and the verified pairing
+		 * carries them through untouched.
+		 */
+		setDepth: (node, depth) => {
+			this.#ensureSeeded()
+			const plan = untracked(() => depthPlan(this.#tree.roots(), node, depth, this.#tree.config()))
 			if (!plan) return false
 			return this.#tx.applyRange(plan.window, plan.text)
 		},

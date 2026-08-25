@@ -85,12 +85,16 @@ export interface RowNode {
 	 */
 	option(): number | undefined
 	/**
-	 * Structural bytes BEFORE the body: the indent run this row is nested by. Adoption-written,
-	 * like {@link position}. It is the ROUND-TRIP BYTES and depth is the TREE, and there is no
-	 * function from one to the other — an over-indented paste keeps its surplus here while the
-	 * clamp renders it shallower.
+	 * Structural bytes BEFORE the body: the indent run this row is nested by. It is the ROUND-TRIP
+	 * BYTES and depth is the TREE, and there is no function from one to the other — an
+	 * over-indented paste keeps its surplus here while the clamp renders it shallower.
+	 *
+	 * A SIGNAL rather than a plain field beside {@link position}, and the difference is not
+	 * cosmetic: the projection EMITS the lead, so a re-indent that leaves every child object in
+	 * place would otherwise change no signal at all and `value` would keep answering the string
+	 * from before the Tab.
 	 */
-	lead: string
+	readonly lead: Signal<string>
 	/**
 	 * INCLUDES the trailing separator on every row but the document-final one, and the row's
 	 * whole SUBTREE. See {@link lineRange} for the row's own line alone.
@@ -110,6 +114,14 @@ export interface RowNode {
 	slot(): string
 	/** See {@link TextNode.range}. */
 	range(): {start: number; end: number}
+	/**
+	 * Re-indent this row to `depth`, rewriting its whole lead. `false` for a depth deeper than
+	 * one past the row before it, for a no-op, and for an editor with nesting off.
+	 *
+	 * It NORMALIZES a surplus indent run — see {@link lead}: the bytes a paste preserved are lost
+	 * the first time a row is re-indented, which is the price of depth having one reading.
+	 */
+	setDepth(depth: number): boolean
 	/** See {@link NodeCommands}. */
 	remove(): boolean
 	duplicate(): boolean
@@ -203,6 +215,8 @@ export interface NodeCommands {
 	mergeWith(node: TreeNode, next: TreeNode): boolean
 	/** Move a ROOT to another root index, keeping its identity. `false` for a non-root, a no-op or an out-of-range index. */
 	moveTo(node: TreeNode, index: number): boolean
+	/** Re-indent a ROW, keeping every row's identity. See {@link RowNode.setDepth}. */
+	setDepth(node: TreeNode, depth: number): boolean
 }
 
 /**

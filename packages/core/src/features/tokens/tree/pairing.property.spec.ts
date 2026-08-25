@@ -34,7 +34,7 @@ const parseRows = (value: string) => parser.parseRows(value, ROW_CONFIG)
 
 const buildTree = (value: string) => {
 	const tree = createTokenTree(parseRows(value))
-	tree.separator(ROW_CONFIG.separator)
+	tree.config(ROW_CONFIG)
 	return tree
 }
 

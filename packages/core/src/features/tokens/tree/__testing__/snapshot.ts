@@ -43,7 +43,7 @@ function materializeRow(node: RowNode, separator: string, followed: boolean): Ro
 	// Same rule as `joinNodes`' row arm: the lead, the kind's markup wrapped around the body,
 	// then a separator when any row follows, then the subtree.
 	const line =
-		node.lead +
+		node.lead() +
 		(descriptor ? annotate(descriptor.markup, {value: body, slot: body, meta: node.meta()}) : body) +
 		(childRows.length > 0 || followed ? separator : '')
 	return {
@@ -53,7 +53,7 @@ function materializeRow(node: RowNode, separator: string, followed: boolean): Ro
 		id: node.id,
 		descriptor,
 		meta: node.meta(),
-		lead: node.lead,
+		lead: node.lead(),
 		slot: {content: body, start: slotStart, end: children[children.length - 1]?.position.end ?? slotStart},
 		children,
 		rows,

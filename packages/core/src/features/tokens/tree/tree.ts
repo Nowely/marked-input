@@ -1,7 +1,7 @@
 import type {Computed, Signal} from '../../../shared/signals'
 import {computed, signal} from '../../../shared/signals'
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
-import type {RowToken, Token} from '../parser/types'
+import type {RowConfig, RowToken, Token} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
 import {offsetOfAnchor} from './anchors'
 import type {Id, MarkNode, NodeAnchor, RowNode, TextNode, TreeCommands, TreeNode} from './types'
@@ -11,11 +11,11 @@ export interface TokenTree {
 	// (Signal<T | undefined>) and poisons every consumer with `| undefined`.
 	readonly roots: Signal<readonly TreeNode[]>
 	/**
-	 * The separator the CURRENT roots were parsed under, which is what joins them back — not the
-	 * props policy, which describes the NEXT parse. The two disagree for exactly one moment, and
-	 * it is a moment that matters: on a layout flip the boundary reads this projection to decide
-	 * what to re-parse, and reading the new policy there would fuse every row before anything had
-	 * a chance to re-derive them.
+	 * The policy the CURRENT roots were parsed under, which is what joins them back and what a
+	 * re-indent has to write a lead with — not the props policy, which describes the NEXT parse.
+	 * The two disagree for exactly one moment, and it is a moment that matters: on a layout flip
+	 * the boundary reads this projection to decide what to re-parse, and reading the new policy
+	 * there would fuse every row before anything had a chance to re-derive them.
 	 *
 	 * Written by the boundary at each fold, beside adoption's own writes.
 	 *
@@ -23,7 +23,7 @@ export interface TokenTree {
 	 * `TokenModel.rowConfig` there answers the next parse's policy about the current roots — see
 	 * the pins in `TokenModel.value.spec.ts` for the three documents that produced.
 	 */
-	readonly separator: Signal<string | undefined>
+	readonly config: Signal<RowConfig | undefined>
 	readonly value: Computed<string>
 	/** Allocates fresh ids from the tree-local counter; adoption builds its new nodes through it. */
 	readonly buildNode: (token: Token | RowToken) => TreeNode
@@ -57,7 +57,7 @@ export function createTokenTree(
 				inline: () => node.children().filter(child => child.kind !== 'row'),
 				rows: () => node.children().filter((child): child is RowNode => child.kind === 'row'),
 				option: () => node.descriptor()?.index,
-				lead: token.lead,
+				lead: signal({initial: token.lead}),
 				position: {...token.position},
 				// A row's own line ends exactly where its first child row starts, so the split is
 				// derived from the children rather than stored beside them.
@@ -71,6 +71,7 @@ export function createTokenTree(
 				slotRange: () => outerEdges(node.inline()),
 				slot: () => joinNodes(node.inline()),
 				range: () => ({...node.position}),
+				setDepth: depth => commands?.()?.setDepth(node, depth) ?? false,
 				remove: () => commands?.()?.remove(node) ?? false,
 				duplicate: () => commands?.()?.duplicate(node) ?? false,
 				insertAfter: text => commands?.()?.insertAfter(node, text) ?? false,
@@ -129,11 +130,11 @@ export function createTokenTree(
 	const roots = signal<readonly TreeNode[]>({initial: tokens.map(buildNode)})
 
 	// No initial: an inline tree has no rows to join, and the boundary writes this at the first
-	// fold. See {@link TokenTree.separator}.
-	const separator = signal<string>()
-	const value = computed(() => joinNodes(roots(), separator()))
+	// fold. See {@link TokenTree.config}.
+	const config = signal<RowConfig>()
+	const value = computed(() => joinNodes(roots(), config()?.separator))
 
-	return {roots, separator, value, buildNode}
+	return {roots, config, value, buildNode}
 }
 
 /** The outer edges of a sibling list — a row's slot range, and the parse's own body span. */
@@ -253,7 +254,7 @@ function sliceRowSubtree(root: RowNode, start: number, end: number, separator: s
 		// covered mark is: copying half a heading yields '# half'. A window touching only the
 		// separator gets the separator alone — re-annotating there would invent an empty row.
 		if (start < lineEnd && end > row.position.start) {
-			result += row.lead + rowBody(row, sliceWithin(row.inline(), start, end, separator))
+			result += row.lead() + rowBody(row, sliceWithin(row.inline(), start, end, separator))
 		}
 		result += ownSeparator.slice(Math.max(0, start - lineEnd), Math.min(ownSeparator.length, end - lineEnd))
 	}
@@ -323,7 +324,7 @@ export function rowContent(node: RowNode, separator?: string): string {
 
 /** A row's OWN bytes: its lead, then its kind's markup wrapped around its body. */
 function rowLine(node: RowNode): string {
-	return node.lead + rowBody(node, joinNodes(node.inline()))
+	return node.lead() + rowBody(node, joinNodes(node.inline()))
 }
 
 /**

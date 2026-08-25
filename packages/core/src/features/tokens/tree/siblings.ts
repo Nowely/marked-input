@@ -1,4 +1,5 @@
-import {rowContent, sliceNodes} from './tree'
+import type {RowConfig} from '../parser/types'
+import {preorderRows, rowContent, sliceNodes} from './tree'
 import type {Pairing, TreeNode, Window} from './types'
 
 /**
@@ -23,11 +24,12 @@ export function mergePlan(
 	if (separator === undefined) return undefined
 	if (node.position.end !== next.position.start) return undefined
 	// Adjacency already proves the first row is not the document-final one, so its span carries
-	// exactly one separator.
+	// exactly one separator — the one after its LAST descendant, since a row's span covers its
+	// subtree and the boundary between the pair sits at the end of it.
 	const contentEnd = node.position.end - separator.length
 	// The caret goes where the two halves join, which is the first row's content end in the
 	// PRE-splice coordinates — the caller resolves it against the post-splice tree.
-	return {kept: rowContent(node), at: contentEnd}
+	return {kept: rowContent(node, separator), at: contentEnd}
 }
 
 /**
@@ -101,24 +103,88 @@ export function movePlan(
 	const glue = movesRows ? (separator ?? '') : ''
 
 	const parts = span.map(spanNode =>
-		spanNode.kind === 'row' ? rowContent(spanNode) : sliceNodes(roots, {before: spanNode}, {after: spanNode})
+		spanNode.kind === 'row'
+			? rowContent(spanNode, separator)
+			: sliceNodes(roots, {before: spanNode}, {after: spanNode})
 	)
 	// The replaced span reaches to `roots[high].position.end`, which carries that row's own
 	// separator unless the span ends the document.
 	const spanEndsDocument = high === roots.length - 1
 	const text = parts.join(glue) + (spanEndsDocument ? '' : glue)
 
-	const pairing: Pairing = [
+	// The pairing is over PRE-ORDER ROWS, so each root contributes the whole run of indices its
+	// subtree occupies and a move carries every nested row's identity with its parent. It spans
+	// the WHOLE document, not just the moved span — `resolvePairing` needs a total bijection, and
+	// the untouched rows are the identity part of it. A document with no rows carries no claim at
+	// all: the domain is rows, and there is nothing for it to name.
+	const runs = rowIndexRuns(roots)
+	const rootOrder = [
 		...roots.slice(0, low).map((_, index) => index),
 		...rotate(roots.slice(low, high + 1).map((_, index) => low + index)),
 		...roots.slice(high + 1).map((_, index) => high + 1 + index),
 	]
+	const pairing: Pairing = rootOrder.flatMap(index => runs[index])
 
 	const window: Window = {
 		start: roots[low].position.start,
 		end: roots[high].position.end,
 		insertedLength: text.length,
-		pairing,
+		pairing: pairing.length > 0 ? pairing : undefined,
 	}
 	return {window, text}
+}
+
+/** Per root, the run of pre-order row indices its subtree occupies; empty for a non-row root. */
+function rowIndexRuns(roots: readonly TreeNode[]): number[][] {
+	let next = 0
+	return roots.map(root => {
+		if (root.kind !== 'row') return []
+		return preorderRows([root]).map(() => next++)
+	})
+}
+
+/**
+ * Re-indenting one row, as the splice that REWRITES ITS WHOLE LEAD plus the {@link Pairing} that
+ * keeps every row's identity across it.
+ *
+ * The pairing is the identity permutation and is still load-bearing: a Tab is an ordinary splice,
+ * so without a hint adoption's prefix walk stops at the edit and the indented row's node — and
+ * its text child — are rebuilt with fresh ids, taking the consumer's per-row state with them.
+ * Pre-order is what makes the identity claim expressible at all, because the re-indent changes
+ * which rows are nested where while leaving the document order alone.
+ *
+ * `undefined` — fail closed — for a non-row, a negative or non-integer depth, a no-op, an editor
+ * with nesting off, and a depth deeper than one past the row before it. That last is the scan's
+ * own clamp: asking for more would emit a lead the parse reads as something shallower.
+ *
+ * It rewrites the whole lead rather than splicing it, which NORMALIZES a surplus indent run a
+ * paste preserved — observable, and the alternative is two disagreeing readings of "depth".
+ */
+export function depthPlan(
+	roots: readonly TreeNode[],
+	node: TreeNode,
+	depth: number,
+	config: RowConfig | undefined
+): {window: Window; text: string} | undefined {
+	if (node.kind !== 'row' || config === undefined || config.indent === '') return undefined
+	if (!Number.isInteger(depth) || depth < 0) return undefined
+
+	const rows = preorderRows(roots)
+	const at = rows.findIndex(entry => entry.row === node)
+	if (at < 0) return undefined
+	const ceiling = at === 0 ? 0 : rows[at - 1].depth + 1
+	if (depth > ceiling) return undefined
+
+	const lead = config.indent.repeat(depth)
+	if (lead === node.lead()) return undefined
+
+	return {
+		window: {
+			start: node.position.start,
+			end: node.position.start + node.lead().length,
+			insertedLength: lead.length,
+			pairing: rows.map((_, index) => index),
+		},
+		text: lead,
+	}
 }
