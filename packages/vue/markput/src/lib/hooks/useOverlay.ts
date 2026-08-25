@@ -18,11 +18,6 @@ export interface OverlayHandler {
 	 */
 	entries: Ref<readonly MenuEntry[]>
 	/**
-	 * Which gesture choosing an entry is on THIS row — `'insert'` on a row holding only the
-	 * trigger, `'turnInto'` on a row with text. A label: `choose` runs the same splice either way.
-	 */
-	mode: Ref<'insert' | 'turnInto' | undefined>
-	/**
 	 * The one accept path. `{option}` turns the caret's row into that option's row kind and
 	 * removes the trigger in the same splice; `{value, meta}` writes the trigger option's markup,
 	 * which is what {@link OverlayHandler.select} does.
@@ -39,16 +34,14 @@ export function useOverlay(): OverlayHandler {
 	const {overlay} = useStore()
 	const matchRef = useMarkput(s => s.overlay.match) as Ref<OverlayMatch<Option> | undefined>
 	const entries = useMarkput(s => s.overlay.entries)
-	const mode = useMarkput(s => s.overlay.mode)
 
 	const style = computed(() => overlay.position())
 
 	// close/select/choose/ref are framework-free glue and live on the controller; only the
-	// reactive match/entries/mode/style bindings are Vue's.
+	// reactive match/entries/style bindings are Vue's.
 	return {
 		match: matchRef,
 		entries,
-		mode,
 		style,
 		select: overlay.select,
 		choose: overlay.choose,

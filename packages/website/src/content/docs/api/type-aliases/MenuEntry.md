@@ -9,11 +9,12 @@ title: "MenuEntry"
 type MenuEntry = object;
 ```
 
-Defined in: [core/src/shared/types.ts:111](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L111)
+Defined in: [core/src/shared/types.ts:110](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L110)
 
 A row-menu entry, as an overlay hands it out: the option that contributed it, plus what to
-paint. `mode` is NOT here — insert-versus-turn-into is a fact about the CARET'S ROW, one per
-open overlay rather than one per entry, so it lives on OverlayController.mode.
+paint. Insert-versus-turn-into is NOT here and is not anywhere else either — it is a fact
+about the caret's row that `choose` reads for itself, so no entry and no overlay member
+carries a second copy of it.
 
 ## Properties
 
@@ -23,7 +24,7 @@ open overlay rather than one per entry, so it lives on OverlayController.mode.
 label: string;
 ```
 
-Defined in: [core/src/shared/types.ts:111](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L111)
+Defined in: [core/src/shared/types.ts:110](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L110)
 
 ***
 
@@ -33,14 +34,4 @@ Defined in: [core/src/shared/types.ts:111](https://github.com/Nowely/marked-inpu
 option: CoreOption;
 ```
 
-Defined in: [core/src/shared/types.ts:111](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L111)
-
-***
-
-### section?
-
-```ts
-optional section: string;
-```
-
-Defined in: [core/src/shared/types.ts:111](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L111)
+Defined in: [core/src/shared/types.ts:110](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L110)

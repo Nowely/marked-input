@@ -128,11 +128,11 @@ an option carrying a `menu: MenuSpec` is in `store.overlay.entries`, already nar
 was typed after the trigger (label plus hidden keywords, through `filterSuggestions`), so no
 component holds a list of kinds and none filters one. `choose({option})` then removes the
 trigger span and calls `RowNode.turnInto(option, {text})` on the caret's row — ONE splice for
-both gestures, because two verbs cannot compose in controlled mode. `store.overlay.mode` names
-the gesture for the menu's own paint: `'insert'` on a row holding nothing but the trigger,
-`'turnInto'` on a row that already has text; the entry's `menu.text`/`menu.meta` seed only the
-first, since a turn-into must not discard what was typed. Each adapter ships `BlockMenu` as the
-default paint.
+both gestures, because two verbs cannot compose in controlled mode. Which gesture it is lives
+in ONE place and is not published: `choose` reads the caret row's body and, if it is empty,
+seeds it from the entry's `menu.text`/`menu.meta`; a row that already has text keeps it, since
+a turn-into must not discard what was typed. Each adapter ships `BlockMenu` as the default
+paint.
 
 ## Parsing Pipeline
 
@@ -342,7 +342,7 @@ class Store {
     readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops, and `rowConfig` — the one place `separator` is read as a parse policy
     readonly slots:     SlotsFeature       // slot component/props, the NODE resolver, and the grip gutter (rowConfig + draggable)
     readonly edit:      EditController     // replace(from, to, text) / setValue(text) — single batched write path
-    readonly overlay:   OverlayController  // match, element, slot, entries, mode, choose/select, close
+    readonly overlay:   OverlayController  // match, element, slot, entries, choose/select, close
     readonly keyboard:  KeyboardController // input handling and block editing
     readonly block:     BlockController     // Block layout for the whole editor: hover, drag, drop edge, menu
     readonly clipboard: ClipboardController // copy/cut handling
@@ -603,7 +603,7 @@ Use `useMarkInfo()` for structural metadata: `depth` and `hasNestedMarks`.
 Available in both React and Vue. Provides overlay state and actions:
 
 ```typescript
-const { style, close, select, choose, entries, mode, match, ref } = useOverlay()
+const { style, close, select, choose, entries, match, ref } = useOverlay()
 ```
 
 | Property  | Type                                          | Description                                    |
@@ -611,9 +611,8 @@ const { style, close, select, choose, entries, mode, match, ref } = useOverlay()
 | `style`   | `{ left, top }`                               | Positioning coordinates                        |
 | `close`   | `() => void`                                  | Close the overlay                              |
 | `select`  | `(value: { value, meta? }) => void`           | Select an overlay item                         |
-| `choose`  | `(pick: { option?, value?, meta? }) => bool`  | The one accept path; `{option}` retypes the row |
+| `choose`  | `(pick: OverlayPick) => bool`                 | The one accept path; `{option}` retypes the row |
 | `entries` | `readonly MenuEntry[]`                        | The row menu, already narrowed by the query    |
-| `mode`    | `'insert' \| 'turnInto' \| undefined`         | Which gesture choosing an entry is             |
 | `match`   | `OverlayMatch`                                | Current trigger match                          |
 | `ref`     | `RefObject<HTMLElement>`                      | Ref to attach to overlay DOM                   |
 

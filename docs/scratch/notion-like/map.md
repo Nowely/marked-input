@@ -243,8 +243,15 @@ becomes a ticket here.
   overlay members, one tree read and the `data` widening.
 - **`BlockMenu` has no keyboard navigation, and that is stated rather than hidden.** The
   arrow/Enter protocol is `SuggestionsModel`'s and is bound to `overlay.data`; giving the menu its
-  own highlight is a second piece of list state, and P7 did not need one. `MenuSpec.section` ships
-  with no painter for the same reason — the showcase groups by it at P11.
+  own highlight is a second piece of list state, and P7 did not need one.
+- **P7's review pass deleted three members and one dead guard, each by measurement.**
+  `overlay.mode` (spec'd by P7, and the one deviation from the spec text) and `MenuSpec.section`
+  / `MenuEntry.section` both shipped with ZERO readers — no shipped menu paints either, and the
+  same "no caller" rule had already killed `MenuSpec.icon` inside the phase. Deleting them left
+  the suite green, so they come back with the painter that needs them (P11's grouped showcase
+  menu) and not before. `choose`'s `meta` on the option arm had no caller either, and
+  `slotWithout`'s `from > to` arm guarded a span `#findTrigger` cannot build. Two arms that had
+  been pinned only THROUGH `mode` got pins of their own in the same commit.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.

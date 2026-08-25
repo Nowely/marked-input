@@ -11,8 +11,8 @@ import Popup from '../Popup/Popup.vue'
  * the user typed after the trigger, and a click turns the caret's row into that kind.
  *
  * A consumer wires it with one line — `{overlay: {trigger: '/'}, Overlay: BlockMenu}` — and a
- * consumer replacing it writes no filtering and no insert logic either: `entries`, `mode` and
- * `choose` are core's, and this component is the paint over them.
+ * consumer replacing it writes no filtering and no insert logic either: `entries` and `choose`
+ * are core's, and this component is the paint over them.
  */
 
 // The option's config (`trigger`, `data`, …) arrives as props from `OverlayRenderer`, and this

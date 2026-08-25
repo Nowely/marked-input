@@ -5,7 +5,7 @@ prev: false
 title: "RowSpec"
 ---
 
-Defined in: [core/src/shared/types.ts:136](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L136)
+Defined in: [core/src/shared/types.ts:135](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L135)
 
 A row KIND's declaration: what an option adds to make its markup a row rather than a mark.
 
@@ -17,7 +17,7 @@ A row KIND's declaration: what an option adds to make its markup a row rather th
 Component: ElementType;
 ```
 
-Defined in: [core/src/shared/types.ts:141](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L141)
+Defined in: [core/src/shared/types.ts:140](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L140)
 
 REQUIRED. Every row kind renders through its own component; `slots.block` is the PARAGRAPH
 component — the row with no kind — and the only fallback left.
@@ -30,7 +30,7 @@ component — the row with no kind — and the only fallback left.
 optional continues: boolean;
 ```
 
-Defined in: [core/src/shared/types.ts:151](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L151)
+Defined in: [core/src/shared/types.ts:150](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L150)
 
 Does this kind CONTINUE into the row a split produces: splitting a row of this kind gives the
 tail the same kind AND the same `meta`, where by default the tail is a plain row. A list item
@@ -48,7 +48,7 @@ positions.
 optional indents: boolean;
 ```
 
-Defined in: [core/src/shared/types.ts:161](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L161)
+Defined in: [core/src/shared/types.ts:160](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L160)
 
 Does Tab / Shift+Tab re-indent a row of this kind, and does Tab belong to the editor at all
 while the caret is in one. Default false, so Tab still LEAVES THE FIELD everywhere else —

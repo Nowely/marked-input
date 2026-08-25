@@ -89,8 +89,6 @@ export interface CoreOption {
 export interface MenuSpec {
 	/** What the row shows, and the only text the typed query is matched against. */
 	label: string
-	/** A heading a consumer may group entries under. Core neither sorts nor groups by it. */
-	section?: string
 	/** Extra query terms that never appear on screen — `'h1'` for Heading 1. */
 	keywords?: readonly string[]
 	/**
@@ -105,10 +103,11 @@ export interface MenuSpec {
 
 /**
  * A row-menu entry, as an overlay hands it out: the option that contributed it, plus what to
- * paint. `mode` is NOT here — insert-versus-turn-into is a fact about the CARET'S ROW, one per
- * open overlay rather than one per entry, so it lives on {@link OverlayController.mode}.
+ * paint. Insert-versus-turn-into is NOT here and is not anywhere else either — it is a fact
+ * about the caret's row that `choose` reads for itself, so no entry and no overlay member
+ * carries a second copy of it.
  */
-export type MenuEntry = {option: CoreOption; label: string; section?: string}
+export type MenuEntry = {option: CoreOption; label: string}
 
 /**
  * WHAT AN OVERLAY ACCEPTS, and a UNION because the two arms are exclusive in fact: naming a row

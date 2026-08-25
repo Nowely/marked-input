@@ -66,11 +66,11 @@ const ROW_KEYS = new Set(['h1', 'h2', 'h3', 'list', 'codeBlock'])
  * repeated in a component and no component filters it.
  */
 const PRESET_MENU: Record<string, MenuSpec> = {
-	h1: {label: 'Heading 1', section: 'Basic', keywords: ['h1', 'title']},
-	h2: {label: 'Heading 2', section: 'Basic', keywords: ['h2']},
-	h3: {label: 'Heading 3', section: 'Basic', keywords: ['h3']},
-	list: {label: 'Bulleted list', section: 'Basic', keywords: ['ul', 'list']},
-	codeBlock: {label: 'Code', section: 'Media', keywords: ['fence', 'snippet']},
+	h1: {label: 'Heading 1', keywords: ['h1', 'title']},
+	h2: {label: 'Heading 2', keywords: ['h2']},
+	h3: {label: 'Heading 3', keywords: ['h3']},
+	list: {label: 'Bulleted list', keywords: ['ul', 'list']},
+	codeBlock: {label: 'Code', keywords: ['fence', 'snippet']},
 }
 
 const presetKinds: Option[] = Object.entries(defaultMarkdownTheme)
@@ -99,15 +99,15 @@ const quoteStyle: CSSProperties = {
  * components.
  */
 export const notionOptions: Option[] = [
-	{markup: PROPERTIES_MARKUP, row: {Component: PropertiesRow}, menu: {label: 'Page properties', section: 'Page'}},
+	{markup: PROPERTIES_MARKUP, row: {Component: PropertiesRow}, menu: {label: 'Page properties'}},
 	{
 		markup: TABLE_MARKUP,
 		row: {Component: TableRow},
 		// `menu.text` SEEDS the row this entry writes, and only where there is nothing to keep —
 		// choosing Table on a row that already has text keeps that text as the table's first line.
-		menu: {label: 'Table', section: 'Database', text: 'Task | Status | Owner | Due | Effort'},
+		menu: {label: 'Table', text: 'Task | Status | Owner | Due | Effort'},
 	},
-	{markup: QUOTE_MARKUP, row: {Component: styledRow(quoteStyle)}, menu: {label: 'Quote', section: 'Basic'}},
+	{markup: QUOTE_MARKUP, row: {Component: styledRow(quoteStyle)}, menu: {label: 'Quote'}},
 	{markup: MENTION_MARKUP, Mark: MentionMark},
 	...presetKinds,
 	...(markdownOptions.filter(option => !ROW_KEYS.has(markupKey(option.markup))) as Option[]),

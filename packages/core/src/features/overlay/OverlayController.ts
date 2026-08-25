@@ -82,19 +82,9 @@ export class OverlayController {
 			if (!menu) return []
 			const haystack = [menu.label, ...(menu.keywords ?? [])]
 			if (filterSuggestions(haystack, match.value).length === 0) return []
-			return [{option, label: menu.label, section: menu.section}]
+			return [{option, label: menu.label}]
 		})
 	})
-
-	/**
-	 * WHICH GESTURE choosing an entry is, as a fact about the CARET'S ROW rather than about any
-	 * entry: `'insert'` where the row holds nothing but the trigger, `'turnInto'` where it already
-	 * has text, `undefined` where there is no open overlay or the caret is in no row.
-	 *
-	 * It is a LABEL for the menu and nothing else — `choose` runs the same one splice either way.
-	 * Both readings come from {@link #target}, so "the row is empty" is decided once.
-	 */
-	readonly mode: Computed<'insert' | 'turnInto' | undefined> = computed(() => this.#target()?.mode)
 
 	readonly position: Computed<{left: number; top: number}> = computed(() => {
 		if (!this.match()) return {left: 0, top: 0}
@@ -241,21 +231,20 @@ export class OverlayController {
 	}
 
 	/**
-	 * THE ROW THE OPEN OVERLAY ACTS ON, with the trigger already taken out of its body — the one
-	 * read behind both {@link mode} and {@link choose}'s option arm, so what the menu says it will
-	 * do and what it does cannot disagree.
+	 * THE ROW THE OPEN OVERLAY ACTS ON, with the trigger already taken out of its body. An EMPTY
+	 * body is the insert gesture and a non-empty one is turn-into, decided at this one read.
 	 *
 	 * `undefined` for no open overlay, for a caret in no row (a document that parses none), and
 	 * for a span the row's body does not contain, which {@link slotWithout} refuses.
 	 */
-	#target(): {row: RowNode; body: string; mode: 'insert' | 'turnInto'} | undefined {
+	#target(): {row: RowNode; body: string} | undefined {
 		const match = this.match()
 		if (!match) return undefined
 		const row = this.tokens.rowOf(match.range.anchor)?.row
 		if (!row) return undefined
 		const body = this.tokens.slotWithout(row, match.range)
 		if (body === undefined) return undefined
-		return {row, body, mode: body === '' ? 'insert' : 'turnInto'}
+		return {row, body}
 	}
 
 	/** {@link choose}'s option arm. `false` when there is no row to retype, or the verb refuses. */
@@ -264,7 +253,9 @@ export class OverlayController {
 		if (!target) return false
 		const menu = option.menu
 		return target.row.turnInto(option, {
-			text: target.mode === 'insert' ? (menu?.text ?? '') : target.body,
+			// An EMPTY body is the insert gesture: the row held nothing but the trigger, so there is
+			// nothing to keep and the entry's own seed writes it.
+			text: target.body === '' ? (menu?.text ?? '') : target.body,
 			meta: menu?.meta,
 		})
 	}

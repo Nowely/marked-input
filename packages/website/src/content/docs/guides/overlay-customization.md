@@ -103,7 +103,6 @@ trigger — and what a choice writes is the ROW KIND the chosen entry names.
 | `MenuSpec` field | Meaning                                                                |
 | ---------------- | ---------------------------------------------------------------------- |
 | `label`          | What the row shows, and the only text the query matches                |
-| `section`        | A heading a consumer may group by; core neither sorts nor groups       |
 | `keywords`       | Extra query terms that never appear on screen                          |
 | `meta`           | Seeds the meta of the row this entry writes                            |
 | `text`           | Seeds the body of the row this entry writes                            |
@@ -115,15 +114,16 @@ because a turn-into must not discard what the user typed. Both run
 `RowNode.turnInto(option, {text})` once — a single splice, which is what controlled mode
 requires of a gesture that removes a span and retypes a row at the same time.
 
-`useOverlay().mode` names which gesture it is (`'insert'` or `'turnInto'`), for the menu's own
-labelling. It changes nothing about what `choose` does.
+Which gesture it is is not published, because nothing paints it: `choose` decides it from the
+caret row's own body and no menu component asks. An entry that wants to say "Turn into" needs
+core to answer, so the member comes back with the reader that needs it and not before.
 
-**Replacing `BlockMenu`.** A consumer's own menu reads the same three things and still writes no
+**Replacing `BlockMenu`.** A consumer's own menu reads the same two things and still writes no
 filtering and no insert logic:
 
 ```tsx
 function MyMenu() {
-    const {entries, mode, choose, style, ref} = useOverlay()
+    const {entries, choose, style, ref} = useOverlay()
     if (entries.length === 0) return null
 
     return (
@@ -134,7 +134,7 @@ function MyMenu() {
                     onMouseDown={event => event.preventDefault()}
                     onClick={() => choose({option: entry.option})}
                 >
-                    {mode === 'insert' ? 'Insert' : 'Turn into'} {entry.label}
+                    {entry.label}
                 </li>
             ))}
         </ul>
@@ -165,7 +165,6 @@ function CustomOverlay() {
 | `select()`  | `function`                          | Insert a mark                                   |
 | `choose()`  | `function`                          | The one accept path; `{option}` retypes the row |
 | `entries`   | `readonly MenuEntry[]`              | The row menu, already narrowed by the query     |
-| `mode`      | `'insert' \| 'turnInto' \| undefined`| Which gesture choosing an entry is              |
 | `match`     | `OverlayMatch`                      | Match details (value, source, trigger)          |
 | `ref`       | `RefObject`                         | Ref for outside click detection                 |
 
@@ -180,11 +179,9 @@ interface OverlayHandler {
     close: () => void
     select: (value: {value: string; meta?: string}) => void
     /** `{option}` turns the caret's row into that option's kind; `{value, meta}` is `select`. */
-    choose: (pick: {option?: Option; value?: string; meta?: string}) => boolean
+    choose: (pick: OverlayPick) => boolean
     /** One entry per option declaring a `menu`, filtered by what was typed after the trigger. */
     entries: readonly MenuEntry[]
-    /** `'insert'` on a row holding only the trigger, `'turnInto'` on a row with text. */
-    mode: 'insert' | 'turnInto' | undefined
     match: {
         value: string // Typed text after trigger
         source: string // Full matched text including trigger

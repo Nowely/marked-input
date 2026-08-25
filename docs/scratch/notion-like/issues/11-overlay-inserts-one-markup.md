@@ -67,10 +67,10 @@ tree layer under ADR-0003) and calls `RowNode.turnInto(option, {text})`. ONE spl
 cannot compose in controlled mode, where the tree has not moved when the first returns. The pin
 this ticket named is inverted rather than deleted —
 `Notion.react.spec.tsx`'s "converts a row that already has text into the chosen kind" now asserts
-`'Intro paragraph\n\n# plain row'`, and the old `'plain row# '` fails it. `overlay.mode` names
-which gesture it is (`'insert'` on a row holding only the trigger, `'turnInto'` on a row with
-text) for a menu's own labelling; it changes nothing about what `choose` does, and both readings
-come from one private target read so the label and the write cannot disagree.
+`'Intro paragraph\n\n# plain row'`, and the old `'plain row# '` fails it. Which gesture it is —
+insert on a row holding only the trigger, turn-into on a row with text — lives at ONE private
+read and is not published: P7 first shipped it as `overlay.mode`, the review measured zero
+readers in either shipped menu, and the review pass deleted it (see the map's P7 review note).
 
 **Suggestions carry no identity** → `overlay.data` widened from `string[]` to
 `readonly Suggestion[]`, where a `Suggestion` is a string or `{value, meta?, label?}`. Filtering

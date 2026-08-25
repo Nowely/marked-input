@@ -15,7 +15,7 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:7](https://github.com/No
 choose: (pick) => boolean;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:29](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L29)
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:24](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L24)
 
 The one accept path. `{option}` turns the caret's row into that option's row kind and
 removes the trigger in the same splice; `{value, meta}` writes the trigger option's markup,
@@ -68,20 +68,7 @@ match:
   | undefined;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:30](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L30)
-
-***
-
-### mode
-
-```ts
-mode: "insert" | "turnInto" | undefined;
-```
-
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:23](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L23)
-
-Which gesture choosing an entry is on THIS row — `'insert'` on a row holding only the
-trigger, `'turnInto'` on a row with text. A label: `choose` runs the same splice either way.
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:25](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L25)
 
 ***
 
@@ -91,7 +78,7 @@ trigger, `'turnInto'` on a row with text. A label: `choose` runs the same splice
 ref: RefObject<HTMLElement | null>;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:31](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L31)
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:26](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L26)
 
 ***
 

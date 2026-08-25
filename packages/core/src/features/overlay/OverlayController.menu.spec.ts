@@ -18,17 +18,17 @@ import {anchorsAt, caretAt, selectionRange} from '../tokens/__testing__/mountFix
 const HEADING: CoreOption = {
 	markup: '# __slot__',
 	row: {Component: 'h1'},
-	menu: {label: 'Heading 1', section: 'Basic', keywords: ['h1', 'title']},
+	menu: {label: 'Heading 1', keywords: ['h1', 'title']},
 }
 const BULLET: CoreOption = {
 	markup: '- __slot__',
 	row: {Component: 'li', continues: true, indents: true},
-	menu: {label: 'Bulleted list', section: 'Basic', keywords: ['ul']},
+	menu: {label: 'Bulleted list', keywords: ['ul']},
 }
 const TABLE: CoreOption = {
 	markup: '|__value__',
 	row: {Component: 'table'},
-	menu: {label: 'Table', section: 'Database', text: 'Task | Status | Owner'},
+	menu: {label: 'Table', text: 'Task | Status | Owner'},
 }
 /** A kind with a META gap, which is what `menu.meta` exists to seed. */
 const TODO: CoreOption = {
@@ -73,7 +73,6 @@ describe('entries', () => {
 			'Table',
 			'To-do list',
 		])
-		expect(store.overlay.entries().map(entry => entry.section)).toEqual(['Basic', 'Basic', 'Database', undefined])
 	})
 
 	it('carries the option itself, which is what `choose` names a kind by', () => {
@@ -108,35 +107,6 @@ describe('entries', () => {
 		store.edit.replace(...anchorsAt(store, 1, 1), 'h1')
 
 		expect(store.overlay.entries().map(entry => entry.label)).toEqual(['Heading 1'])
-	})
-})
-
-describe('mode', () => {
-	it('is insert on a row holding nothing but the trigger', () => {
-		expect(typedSlash('Intro paragraph\n\n', 17).overlay.mode()).toBe('insert')
-	})
-
-	it('is turnInto on a row that already has text', () => {
-		expect(typedSlash('Intro paragraph\n\nplain row', 26).overlay.mode()).toBe('turnInto')
-	})
-
-	it('is undefined with no overlay open', () => {
-		const store = typedSlash('plain row', 9)
-
-		store.overlay.close()
-
-		expect(store.overlay.mode()).toBeUndefined()
-	})
-
-	it('is undefined in a document that parses no rows', () => {
-		const store = new Store()
-		store.props.set({defaultValue: 'plain row', separator: null, Mark: () => null, options: MENU_OPTIONS})
-		store.host.container(document.createElement('div'))
-		caretAt(store, 9)
-		store.edit.replace(...anchorsAt(store, 9, 9), '/')
-
-		expect(store.overlay.match()?.source).toBe('/')
-		expect(store.overlay.mode()).toBeUndefined()
 	})
 })
 
@@ -212,7 +182,6 @@ describe('choose an option', () => {
 	it('puts the caret inside the new row on an empty NESTED row', () => {
 		const store = typedSlash('- a\n\t', 5)
 
-		expect(store.overlay.mode()).toBe('insert')
 		expect(store.overlay.choose({option: HEADING})).toBe(true)
 
 		expect(store.tokens.value()).toBe('- a\n\t# ')
@@ -245,6 +214,24 @@ describe('choose an option', () => {
 
 	it('refuses an option that is not in this editor at all', () => {
 		const store = typedSlash('plain row', 9, [SLASH, BULLET])
+
+		expect(store.overlay.choose({option: HEADING})).toBe(false)
+
+		expect(store.tokens.value()).toBe('plain row/')
+	})
+
+	/**
+	 * `#target`'s no-row arm, and the only case that reaches it. A `null` separator says the value
+	 * never splits, so the document parses NO rows at all — the trigger still matches and the
+	 * overlay still opens, but there is nothing to retype and the write declines.
+	 */
+	it('refuses in a document that parses no rows, and leaves the value alone', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'plain row', separator: null, Mark: () => null, options: MENU_OPTIONS})
+		store.host.container(document.createElement('div'))
+		caretAt(store, 9)
+		store.edit.replace(...anchorsAt(store, 9, 9), '/')
+		expect(store.overlay.match()?.source).toBe('/')
 
 		expect(store.overlay.choose({option: HEADING})).toBe(false)
 

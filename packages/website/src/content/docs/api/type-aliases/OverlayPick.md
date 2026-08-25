@@ -19,7 +19,7 @@ type OverlayPick =
 };
 ```
 
-Defined in: [core/src/shared/types.ts:122](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L122)
+Defined in: [core/src/shared/types.ts:121](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L121)
 
 WHAT AN OVERLAY ACCEPTS, and a UNION because the two arms are exclusive in fact: naming a row
 KIND retypes the caret's row, naming a VALUE writes the trigger option's markup, and no call
