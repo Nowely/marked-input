@@ -2,7 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'edit' | 'history' | 'overlay' | 'tokens'>
+type KbCtx = Pick<Store, 'block' | 'edit' | 'history' | 'overlay' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import {
 	anchorsForDelete,

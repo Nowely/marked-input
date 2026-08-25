@@ -158,6 +158,21 @@ describe('Esc escalates, one level per press', () => {
 		expect(press(store, container, 'Escape').defaultPrevented).toBe(false)
 		expect(selectedSlots(store)).toEqual([])
 	})
+
+	/**
+	 * The SAME deferral for the block row menu, whose own Escape closes it from a `document`
+	 * listener this container one runs before — so without the guard one press both dismissed the
+	 * menu and row-selected underneath it, leaving the next character typed to replace the row.
+	 */
+	it('defers to an open row menu the same way', () => {
+		const {store, container} = mount()
+		const rows = store.tokens.nodes()
+		caretAt(store, 5)
+		store.block.openMenu(rows[0].id, new DOMRect(0, 0, 24, 20))
+
+		expect(press(store, container, 'Escape').defaultPrevented).toBe(false)
+		expect(selectedSlots(store)).toEqual([])
+	})
 })
 
 describe('Shift+arrows grow the row selection', () => {

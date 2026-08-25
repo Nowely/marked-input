@@ -4,7 +4,7 @@ import type {AnchoredRow, Anchors} from '../tokens'
 import {anchorEquals, entryAnchor} from '../tokens'
 import {dropUnexpressedInput} from './beforeInput'
 
-type KbCtx = Pick<Store, 'edit' | 'overlay' | 'tokens'>
+type KbCtx = Pick<Store, 'block' | 'edit' | 'overlay' | 'tokens'>
 
 /**
  * THE ROW KEYMAP: the keys that mean something different when the value parses into rows. Every
@@ -176,10 +176,12 @@ export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
  * `undefined` until a whole row is covered, so the key falls through to the browser by the same
  * test that decides there is nothing to grow.
  *
- * ESC DEFERS TO AN OPEN OVERLAY, which is the one place two features want the same key: the
- * overlay closes on Escape from its own window listener, and escalating underneath it would move
- * the selection out from under a menu the user was dismissing — one keystroke from replacing the
- * row, since the next character typed replaces whatever is selected.
+ * ESC DEFERS TO ANYTHING ALREADY OPEN — the suggestions overlay and the block row menu — which is
+ * where two features want the same key: each closes on Escape from a listener of its own, on
+ * `window` and on `document`, so BOTH run after this container one and neither can see that this
+ * arm consumed the key. Escalating underneath them moves the selection out from under a menu the
+ * user was dismissing — one keystroke from replacing the row, since the next character typed
+ * replaces whatever is selected.
  */
 export function handleRowSelection(store: KbCtx, event: KeyboardEvent): void {
 	if (store.tokens.rowConfig() === undefined) return
@@ -187,7 +189,7 @@ export function handleRowSelection(store: KbCtx, event: KeyboardEvent): void {
 	if (!anchors) return
 
 	if (event.key === KEYBOARD.ESC) {
-		if (store.overlay.match()) return
+		if (store.overlay.match() || store.block.state.menu()) return
 		// The widening rung FIRST, so a second Esc climbs rather than re-selecting the same row.
 		// The `'row'` rung is the ENTRY into a row selection and runs only while none stands: with
 		// whole rows already held and nothing above them to climb to, re-stating the ANCHOR's row
