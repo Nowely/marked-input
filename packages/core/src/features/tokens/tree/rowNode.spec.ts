@@ -155,6 +155,31 @@ describe('RowNode', () => {
 			const span = boundarySpan(roots, anchorAt(roots, 3), -1, config)
 			expect(span && [offsetOfAnchor(roots, span.anchor), offsetOfAnchor(roots, span.head)]).toEqual([1, 3])
 		})
+
+		/**
+		 * A TYPED next row: its lead and its opener are ONE structural run with no anchor between
+		 * them, so the merge takes both. Taking only the separator — which is what naming the row's
+		 * own start did — left an indented row's tab behind as text in the joined row, the exact
+		 * thing this span exists to prevent.
+		 */
+		it('takes the lead AND the opener of a typed next row', () => {
+			const config = {separator: '\n', indent: '\t'}
+			const merged = (value: string) => {
+				const tree = createTokenTree(new Parser(['- __slot__'], [true]).parseRows(value, config))
+				tree.config(config)
+				const roots = tree.roots()
+				const span = boundarySpan(roots, anchorAt(roots, 1), 1, config)
+				if (!span) return undefined
+				const start = offsetOfAnchor(roots, span.anchor)
+				const end = offsetOfAnchor(roots, span.head)
+				return value.slice(0, start) + value.slice(end)
+			}
+
+			expect(merged('a\n\t- b')).toBe('ab')
+			expect(merged('a\n- b')).toBe('ab')
+			// A paragraph is unchanged: its content begins right after the lead.
+			expect(merged('a\n\tb')).toBe('ab')
+		})
 	})
 
 	it('enters a row at its first text child', () => {

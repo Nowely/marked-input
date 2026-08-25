@@ -98,11 +98,12 @@ export function adjacentMark(roots: readonly TreeNode[], anchor: NodeAnchor, dir
  * boundary, which is EVERY anchor in a document with no rows: only a row parse builds RowNodes,
  * so the arm is inert there by construction rather than by a mode test.
  *
- * THE BOUNDARY IS THE SEPARATOR PLUS THE FOLLOWING ROW'S LEAD. Both are structural bytes between
- * one row's content and the next one's, and a merge that took only the separator would leave the
- * indent behind as text in the joined row. It walks PRE-ORDER rows at every depth, because that
- * is the order the join puts the separators in — a parent's boundary is with its first child,
- * not with its next sibling.
+ * THE BOUNDARY IS THE SEPARATOR PLUS EVERY STRUCTURAL BYTE BEFORE THE NEXT ROW'S CONTENT — its
+ * LEAD, and its OPENER when it has one. None of them is text the joined row may keep: a merge
+ * that took only the separator left the indent behind as text, and one that took lead but not
+ * opener could not be named at all, because no anchor sits between the two. It walks PRE-ORDER
+ * rows at every depth, because that is the order the join puts the separators in — a parent's
+ * boundary is with its first child, not with its next sibling.
  *
  * It exists because {@link stepAnchor} cannot express this edit: the boundary has no anchorable
  * interior, and a step into it fails closed. Removing the whole span IS the row merge — reparse
@@ -138,17 +139,11 @@ export function boundarySpan(
 		boundaries.find(candidate => startOf(candidate.next) === offset) ??
 		(direction === 1 ? boundaries.find(candidate => candidate.end === offset) : undefined)
 	if (!boundary) return undefined
-	// A row's inline children end with a TEXT token by the parser's edge invariant, so its content
-	// end is anchorable and {@link anchorAt} round-trips on it.
-	const head = anchorAt(roots, startOf(boundary.next))
-	// The head names where the next row's own CONTENT begins. `anchorAt` reaches that position
-	// only for a paragraph; a typed row's opener sits there and is not anchorable, so the span
-	// falls back to the row's own start and the opener survives the merge exactly as it does
-	// today — the same fail-closed round-trip test {@link stepAnchor} makes.
-	return {
-		anchor: anchorAt(roots, boundary.end),
-		head: offsetOfAnchor(roots, head) === startOf(boundary.next) ? head : {before: boundary.next},
-	}
+	// The head is WHERE THE NEXT ROW'S CONTENT BEGINS, and {@link entryAnchor} is the one reading
+	// of that the tree has. For a paragraph it is `startOf` exactly. For a typed row it is past
+	// the opener as well, because the lead and the opener together have no anchor between them —
+	// so the merge takes the whole structural run rather than half of it.
+	return {anchor: anchorAt(roots, boundary.end), head: entryAnchor(boundary.next)}
 }
 
 /**
