@@ -337,6 +337,59 @@ describe('RowNode', () => {
 			expect(store.tokens.value()).toBe('a\n\nb')
 			expect(store.tokens.nodes().length).toBe(3)
 		})
+
+		/**
+		 * THE SUBTREE TRAVELS. Nesting is indentation and nothing else, so a child left at its old
+		 * lead is measured against a parent that moved: writing only the row's own lead emitted
+		 * `'a⏎⇥b⏎⇥c'` here, where `c` stopped being `b`'s child and became its sibling — the tree
+		 * changed under a row nobody asked about, while the value looked plausible.
+		 */
+		it('carries the row it re-indents WITH its subtree', () => {
+			const store = nestStore('a\nb\n\tc')
+			const before = objectsOf(store)
+			const row = store.tokens.nodes()[1]
+
+			expect(row.kind === 'row' && row.setDepth(1)).toBe(true)
+
+			expect(store.tokens.value()).toBe('a\n\tb\n\t\tc')
+			const [root] = store.tokens.nodes()
+			const moved = root.kind === 'row' ? root.rows()[0] : undefined
+			expect(moved).toBe(row)
+			expect(moved?.rows().length).toBe(1)
+			expect(objectsOf(store)).toEqual(before)
+		})
+
+		/**
+		 * The mover's own refusal, at the verb that shares its hole: a row whose lead carries a
+		 * SURPLUS indent run is held at its depth by the row above it and by nothing else, so a
+		 * re-indent that raises that ceiling re-parses it without touching its bytes. Measured
+		 * before the scan replay landed: this emitted `'x⏎⇥⏎⇥⇥b'` and the untouched ROOT `b` came
+		 * back two levels down as a grandchild.
+		 */
+		it('refuses a re-indent that would re-parse the row AFTER it', () => {
+			const store = nestStore('x\n\n\t\tb')
+			const blank = store.tokens.nodes()[1]
+
+			expect(blank.kind === 'row' && blank.setDepth(1)).toBe(false)
+			expect(store.tokens.value()).toBe('x\n\n\t\tb')
+			expect(store.tokens.nodes().length).toBe(3)
+		})
+
+		/**
+		 * The same refusal read at the row being re-led: a blank row is non-empty only while it
+		 * carries an indent, so outdenting one to a root EMPTIES it — and an empty row takes no
+		 * children. Measured: this emitted `'a⏎⏎⇥⇥b'` and promoted the child the row was carrying
+		 * out of it.
+		 */
+		it('refuses to outdent a blank row that would lose the children it carries', () => {
+			const store = nestStore('a\n\t\n\t\tb')
+			const root = store.tokens.nodes()[0]
+			const blank = root.kind === 'row' ? root.rows()[0] : undefined
+
+			expect(blank?.setDepth(0)).toBe(false)
+			expect(store.tokens.value()).toBe('a\n\t\n\t\tb')
+			expect(blank?.rows().length).toBe(1)
+		})
 	})
 
 	/**

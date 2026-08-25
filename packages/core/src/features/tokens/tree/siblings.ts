@@ -180,36 +180,23 @@ export function movePlan(
 	let high = order.length - 1
 	while (high > low && !changed(high)) high--
 
-	// WHAT THE SPLICE RE-PARSES, walked once. Every line in the span is re-emitted and the row
-	// after it meets a new predecessor, so the scan has to be replayed over `low..high + 1`; past
-	// that every row's predecessor is unchanged and so is its parse. A MOVED row is written at its
-	// own new depth, but an UNMOVED one keeps its bytes — and a SURPLUS lead, one asking for more
-	// depth than the clamp granted, is held at its depth by the row above it and by nothing else.
-	//
 	// This one walk is what THREE separate refusals reduce to: the destination's own ceiling (the
 	// moved root asks for `depth` and must be granted it), a moved row re-led to `''` and thereby
 	// emptied, which takes the children the move was carrying — `'a⏎⇥⏎⇥⇥b'` emitted `'a⏎⏎⇥b'` — and
 	// an untouched row re-parenting under a ceiling the splice raised: `'x⏎⏎⇥⇥b'` emitted
 	// `'⏎x⏎⇥⇥b'`, where the root `b` became `x`'s child.
-	//
-	// Refused rather than widened, and that is the declared choice: normalizing a surplus lead
-	// rewrites bytes outside the move, and it cascades — a lead normalized to `''` on a blank body
-	// empties THAT row and moves the ceiling again for the row after it.
-	let previous = low === 0 ? undefined : scannedAs(rows[low - 1].row, rows[low - 1].depth)
-	for (let position = low; position <= Math.min(high + 1, order.length - 1); position++) {
+	const written = (position: number): Written => {
 		const entry = rows[order[position]]
 		const landed = moved(order[position]) ? entry.depth + delta : entry.depth
-		const lead = moved(order[position]) ? indent.repeat(landed) : entry.row.lead()
-		if (landsAt(previous, leadDepth(lead, indent)) !== landed) return undefined
-		previous = scannedAs(entry.row, landed, lead)
+		return {
+			row: entry.row,
+			depth: landed,
+			lead: moved(order[position]) ? indent.repeat(landed) : entry.row.lead(),
+		}
 	}
+	if (!scanAgrees(rows, low, high, written, indent)) return undefined
 
-	const lines = order
-		.slice(low, high + 1)
-		.map(old => rowLine(rows[old].row, moved(old) ? indent.repeat(rows[old].depth + delta) : undefined))
-	// Every line but the document-final one carries a separator, and the span holds as many lines
-	// as it did — so it ends with one exactly when the row it replaces did.
-	const text = lines.join(separator) + (high < rows.length - 1 ? separator : '')
+	const text = spliceLines(rows, low, high, written, separator)
 
 	const window: Window = {
 		start: rows[low].row.lineRange().start,
@@ -221,8 +208,14 @@ export function movePlan(
 }
 
 /**
- * Re-indenting one row, as the splice that REWRITES ITS WHOLE LEAD plus the {@link Pairing} that
- * keeps every row's identity across it.
+ * Re-indenting one row, as the splice that REWRITES ITS OWN LEAD AND ITS SUBTREE'S plus the
+ * {@link Pairing} that keeps every row's identity across it.
+ *
+ * THE SUBTREE TRAVELS, and it has to be written for that to happen: nesting is indentation and
+ * nothing else, so a child left at its old lead is measured against a parent that moved and lands
+ * somewhere else — indenting `'a⏎b⏎⇥c'`'s middle row emitted `'a⏎⇥b⏎⇥c'`, where `c` stopped being
+ * `b`'s child and became its sibling. Every descendant is therefore re-led by the same depth delta,
+ * exactly as {@link movePlan} re-leads what it carries.
  *
  * The pairing is the identity permutation and is still load-bearing: a Tab is an ordinary splice,
  * so without a hint adoption's prefix walk stops at the edit and the indented row's node — and
@@ -231,13 +224,16 @@ export function movePlan(
  * which rows are nested where while leaving the document order alone.
  *
  * `undefined` — fail closed — for a non-row, a negative or non-integer depth, a no-op, an editor
- * with nesting off, and a depth the row before it does not {@link landsAt}. That last is the
- * SCAN's own clamp, asked of the scan rather than re-derived: asking for more would emit a lead
- * the parse reads as something shallower, and the row would gain an indent without gaining a
- * parent.
+ * with nesting off, and — the one answer the rest reduce to — a splice the SCAN would read back as
+ * a different tree, which is {@link scanAgrees} replaying it over the lines this rewrites plus the
+ * row after them. That covers the row's own clamp (asking for more than the row above grants would
+ * emit a lead the parse reads as something shallower), a row re-led to `''` on a blank body, which
+ * EMPTIES it so it can no longer carry the children it had, and an untouched row after the subtree
+ * re-parenting under a ceiling this splice raised — `'x⏎⏎⇥⇥b'` with the blank row indented emitted
+ * `'x⏎⇥⏎⇥⇥b'`, where the root `b` landed two levels down as a grandchild.
  *
- * It rewrites the whole lead rather than splicing it, which NORMALIZES a surplus indent run a
- * paste preserved — observable, and the alternative is two disagreeing readings of "depth".
+ * It rewrites whole leads rather than splicing them, which NORMALIZES a surplus indent run a paste
+ * preserved — observable, and the alternative is two disagreeing readings of "depth".
  */
 export function depthPlan(
 	roots: readonly TreeNode[],
@@ -251,20 +247,27 @@ export function depthPlan(
 	const rows = preorderRows(roots)
 	const at = rows.findIndex(entry => entry.row === node)
 	if (at < 0) return undefined
-	const previous = at === 0 ? undefined : rows[at - 1]
-	if (landsAt(previous && scannedAs(previous.row, previous.depth), depth) !== depth) return undefined
+	if (config.indent.repeat(depth) === node.lead()) return undefined
 
-	const lead = config.indent.repeat(depth)
-	if (lead === node.lead()) return undefined
+	const delta = depth - rows[at].depth
+	const high = at + preorderRows([node]).length - 1
+	const written = (position: number): Written => {
+		const entry = rows[position]
+		const carried = position >= at && position <= high
+		const landed = carried ? entry.depth + delta : entry.depth
+		return {row: entry.row, depth: landed, lead: carried ? config.indent.repeat(landed) : entry.row.lead()}
+	}
+	if (!scanAgrees(rows, at, high, written, config.indent)) return undefined
 
+	const text = spliceLines(rows, at, high, written, config.separator)
 	return {
 		window: {
-			start: node.position.start,
-			end: node.position.start + node.lead().length,
-			insertedLength: lead.length,
+			start: rows[at].row.lineRange().start,
+			end: rows[high].row.lineRange().end,
+			insertedLength: text.length,
 			pairing: rows.map((_, index) => index),
 		},
-		text: lead,
+		text,
 	}
 }
 
@@ -396,6 +399,68 @@ export function splitPlan(
 	// The tail sits past the whole subtree, or directly after the head when the subtree followed it.
 	const tail = index + (headKeepsChildren ? preorderRows([node]).length : 1)
 	return {window: {start, end, insertedLength: text.length}, text, tail}
+}
+
+/**
+ * ONE LINE A SPLICE IS ABOUT TO WRITE: which row sits at that pre-order position, the depth the
+ * plan intends it to land at, and the lead bytes it is written with. A row the splice merely
+ * re-emits carries its own lead and its own depth; a row it re-indents carries `indent.repeat` of
+ * where it is going.
+ */
+type Written = {row: RowNode; depth: number; lead: string}
+
+/**
+ * THE SCAN, replayed over the lines `low..high` rewrite plus the row after them: does every row in
+ * that stretch land where the plan intends it to?
+ *
+ * Every line in the span is re-emitted and the row after it meets a new predecessor, so `high + 1`
+ * is where the replay stops; past that every row's predecessor is unchanged and so is its parse.
+ * A rewritten row is written at its own new depth, but an untouched one keeps its bytes — and a
+ * SURPLUS lead, one asking for more depth than the clamp granted, is held at its depth by the row
+ * above it and by nothing else.
+ *
+ * ONE owner for both verbs that write a lead: a move and a re-indent differ in which rows they put
+ * where, not in what the scan will make of the result, and answering that question twice is how a
+ * fix for one of them leaves the other with the hole ({@link depthPlan}'s own history).
+ *
+ * A false answer is a REFUSAL rather than a widening, and that is the declared choice: normalizing
+ * some other row's lead rewrites bytes outside the edit, and it cascades — a lead normalized to
+ * `''` on a blank body empties THAT row and moves the ceiling again for the row after it.
+ */
+function scanAgrees(
+	rows: readonly {row: RowNode; depth: number}[],
+	low: number,
+	high: number,
+	written: (position: number) => Written,
+	indent: string
+): boolean {
+	let previous = low === 0 ? undefined : scannedAs(rows[low - 1].row, rows[low - 1].depth)
+	for (let position = low; position <= Math.min(high + 1, rows.length - 1); position++) {
+		const line = written(position)
+		if (landsAt(previous, leadDepth(line.lead, indent)) !== line.depth) return false
+		previous = scannedAs(line.row, line.depth, line.lead)
+	}
+	return true
+}
+
+/**
+ * The LINES `low..high` re-emits, joined. Every line but the document-final one carries a
+ * separator, and a splice holds as many lines as it replaces — so it ends with one exactly when
+ * the last line it replaces did.
+ */
+function spliceLines(
+	rows: readonly {row: RowNode; depth: number}[],
+	low: number,
+	high: number,
+	written: (position: number) => Written,
+	separator: string
+): string {
+	const lines: string[] = []
+	for (let position = low; position <= high; position++) {
+		const line = written(position)
+		lines.push(rowLine(line.row, line.lead))
+	}
+	return lines.join(separator) + (high < rows.length - 1 ? separator : '')
 }
 
 /**

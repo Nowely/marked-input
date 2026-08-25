@@ -463,11 +463,20 @@ rewrites bytes outside the move, and it cascades into the row after it. A move l
 alone: every node keeps its content and its identity, and a lead is the ROW's bytes and lives in no
 text node, so no anchor can name one.
 
+`setDepth(depth)` re-indents a row and asks the same question the same way. It rewrites the row's
+whole lead AND ITS SUBTREE'S, by the same depth delta the mover uses, because nesting is indentation
+and nothing else: a child left at its old lead is measured against a parent that moved, so writing
+only the row's own lead detached the children of every row a Tab indented. The scan is replayed over
+the lines it rewrites plus the row after them, so a re-indent whose bytes the scan would read back as
+a different tree is declined — a blank row outdented to a root EMPTIES itself and cannot keep the
+children it was carrying, and a surplus-lead row after the subtree cannot be re-parented by a ceiling
+this splice raised. What it does NOT refuse is a following SIBLING becoming a child: outdenting a row
+leaves the rows after it at a depth its own new depth now grants, which is the encoding's answer and
+the outliner's.
+
 Two answers the encoding forces rather than chooses, both from "an empty row takes no children":
 retyping a depth-0 row to an empty paragraph PROMOTES its children to roots (their surplus indent
-survives verbatim in `lead`), and no verb can write an empty parent. `setDepth` shares the mover's
-third case and does NOT refuse it: it rewrites one row's lead and re-emits nothing else, so a
-surplus-lead row after it can re-parse deeper.
+survives verbatim in `lead`), and no verb can write an empty parent.
 
 `BlockController` (`store.block`) owns them for the whole editor, as four signals
 addressed by row id:

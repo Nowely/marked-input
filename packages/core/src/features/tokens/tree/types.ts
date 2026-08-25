@@ -116,11 +116,20 @@ export interface RowNode {
 	/** See {@link TextNode.range}. */
 	range(): {start: number; end: number}
 	/**
-	 * Re-indent this row to `depth`, rewriting its whole lead. `false` for a depth deeper than
-	 * one past the row before it, for a no-op, and for an editor with nesting off.
+	 * Re-indent this row to `depth`, rewriting its whole lead AND ITS SUBTREE'S — the descendants
+	 * travel with it, re-led by the same depth delta, because nesting is indentation and nothing
+	 * else and a child left at its old lead is measured against a parent that moved.
+	 *
+	 * `false` for a no-op, for an editor with nesting off, and for a re-indent the SCAN would read
+	 * back as a different tree: a depth deeper than the row before it grants, a blank row outdented
+	 * to a root — which EMPTIES it, and an empty row takes no children — and a row after the subtree
+	 * that a raised ceiling would re-parent. The rows AFTER the subtree are not otherwise protected:
+	 * outdenting a row leaves the siblings following it at a depth its new depth now grants, so they
+	 * become its children, which is the encoding's answer rather than a choice.
 	 *
 	 * It NORMALIZES a surplus indent run — see {@link lead}: the bytes a paste preserved are lost
-	 * the first time a row is re-indented, which is the price of depth having one reading.
+	 * the first time a row or its ancestor is re-indented, which is the price of depth having one
+	 * reading.
 	 */
 	setDepth(depth: number): boolean
 	/**

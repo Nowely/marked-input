@@ -127,7 +127,7 @@ start: number;
 duplicate(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:165](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L165)
+Defined in: [core/src/features/tokens/tree/types.ts:174](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L174)
 
 #### Returns
 
@@ -157,7 +157,7 @@ readonly [`TreeNode`](/api/type-aliases/treenode/)[]
 insertAfter(text): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:166](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L166)
+Defined in: [core/src/features/tokens/tree/types.ts:175](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L175)
 
 #### Parameters
 
@@ -206,7 +206,7 @@ start: number;
 mergeWith(next): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:167](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L167)
+Defined in: [core/src/features/tokens/tree/types.ts:176](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L176)
 
 #### Parameters
 
@@ -226,7 +226,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:167](https://github.com/Nowe
 moveTo(placement): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:185](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L185)
+Defined in: [core/src/features/tokens/tree/types.ts:194](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L194)
 
 Move this row AND ITS SUBTREE to `placement`, keeping every row's identity — the moved
 subtree's, its old siblings' and its new siblings'. The subtree is re-indented to sit under
@@ -308,7 +308,7 @@ start: number;
 remove(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:164](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L164)
+Defined in: [core/src/features/tokens/tree/types.ts:173](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L173)
 
 See NodeCommands.
 
@@ -340,13 +340,22 @@ readonly `RowNode`[]
 setDepth(depth): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:125](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L125)
+Defined in: [core/src/features/tokens/tree/types.ts:134](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L134)
 
-Re-indent this row to `depth`, rewriting its whole lead. `false` for a depth deeper than
-one past the row before it, for a no-op, and for an editor with nesting off.
+Re-indent this row to `depth`, rewriting its whole lead AND ITS SUBTREE'S — the descendants
+travel with it, re-led by the same depth delta, because nesting is indentation and nothing
+else and a child left at its old lead is measured against a parent that moved.
+
+`false` for a no-op, for an editor with nesting off, and for a re-indent the SCAN would read
+back as a different tree: a depth deeper than the row before it grants, a blank row outdented
+to a root — which EMPTIES it, and an empty row takes no children — and a row after the subtree
+that a raised ceiling would re-parent. The rows AFTER the subtree are not otherwise protected:
+outdenting a row leaves the siblings following it at a depth its new depth now grants, so they
+become its children, which is the encoding's answer rather than a choice.
 
 It NORMALIZES a surplus indent run — see [lead](/api/interfaces/rownode/#lead): the bytes a paste preserved are lost
-the first time a row is re-indented, which is the price of depth having one reading.
+the first time a row or its ancestor is re-indented, which is the price of depth having one
+reading.
 
 #### Parameters
 
@@ -411,7 +420,7 @@ start: number;
 splitAt(at): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:162](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L162)
+Defined in: [core/src/features/tokens/tree/types.ts:171](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L171)
 
 Split this row at `at`: the body before the anchor stays, the body after it becomes a new row
 at the same lead, whose kind is this one when the kind `continues` and a plain row otherwise.
@@ -446,7 +455,7 @@ this row's own body — a caret in another row cannot address this one's split p
 turnInto(option, patch?): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:145](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L145)
+Defined in: [core/src/features/tokens/tree/types.ts:154](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L154)
 
 Retype this row: its kind becomes the one `option` declares, or a paragraph for `undefined`.
 The splice is the row's own LINE, so its id, its element and its child rows are untouched —
