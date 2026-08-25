@@ -259,6 +259,56 @@ describe('TokenModel value boundary', () => {
 	 * `doc.slice`, so the delegation to `tree/sliceNodes` — and the anchor resolution in front
 	 * of it — is pinned only here.
 	 */
+	/**
+	 * ONE OWNER for the separator that joins the CURRENT roots. `TokenTree.separator` records what
+	 * the roots were parsed under; `rowConfig` is the policy for the NEXT parse. The two agree only
+	 * while the props watch is live, and a DETACHED editor's is not — its scope dies with the
+	 * container. A `separator` prop that moves while detached therefore leaves the tree holding rows
+	 * joined by the OLD separator while every read reaches for the new one.
+	 */
+	describe('the separator that joins the current roots', () => {
+		const BLOCK = {layout: 'block', Mark: () => null, options: [], defaultValue: 'a\n\nb'} as const
+
+		const detachedAfterSeparatorMove = (): Store => {
+			const store = new Store()
+			store.props.set({...BLOCK, separator: '\n\n'})
+			mount(store)
+			store.host.container(null)
+			store.props.set({...BLOCK, separator: '\n'})
+			return store
+		}
+
+		it('slices the whole document back to its own projection', () => {
+			const store = detachedAfterSeparatorMove()
+
+			expect(store.tokens.value()).toBe('a\n\nb')
+			// Read off `rowConfig` this answered 'a\nb' — a copy of the whole document that is not
+			// the document.
+			expect(store.tokens.valueBetween('start', 'end')).toBe('a\n\nb')
+		})
+
+		it('duplicates the document-final row without fusing the copies', () => {
+			const store = detachedAfterSeparatorMove()
+
+			store.tokens.nodes()[1].duplicate()
+
+			// Off `rowConfig` this was 'a\n\nb\nb': a single '\n' is no boundary here, so the copy
+			// landed INSIDE the row it was copied from.
+			expect(store.tokens.value()).toBe('a\n\nb\n\nb')
+		})
+
+		it('removes the document-final row together with the separator before it', () => {
+			const store = detachedAfterSeparatorMove()
+
+			store.tokens.nodes()[1].remove()
+
+			// Off `rowConfig` this was 'a\n': the wrong length came off, leaving a stray byte and a
+			// phantom trailing row.
+			expect(store.tokens.value()).toBe('a')
+			expect(store.tokens.nodes()).toHaveLength(1)
+		})
+	})
+
 	describe('valueBetween()', () => {
 		// The browser `Clipboard.spec`'s own fixture value, so the answers below are the unit
 		// side of its end-to-end assertions.

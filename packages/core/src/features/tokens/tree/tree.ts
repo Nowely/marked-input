@@ -18,6 +18,10 @@ export interface TokenTree {
 	 * a chance to re-derive them.
 	 *
 	 * Written by the boundary at each fold, beside adoption's own writes.
+	 *
+	 * THE RULE FOR CALLERS: anything that reads `roots()` reads THIS. Reaching for
+	 * `TokenModel.rowConfig` there answers the next parse's policy about the current roots — see
+	 * the pins in `TokenModel.value.spec.ts` for the three documents that produced.
 	 */
 	readonly separator: Signal<string | undefined>
 	readonly value: Computed<string>
