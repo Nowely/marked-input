@@ -574,6 +574,19 @@ becomes a ticket here.
 - What a package on top of this owns: does it wrap `MarkedInput` and ship
   options + components, or does it need core changes first? The ticket list here
   is the input to that decision, not the answer.
+- **The row menu's "Add below" opens the row at depth 0, whatever depth the pointer was at.**
+  MEASURED on the tip, controlled and uncontrolled: `'- parent⏎⇥- child⏎- tail'`, grip on `child`,
+  **Add below** → `'- parent⏎⇥- child⏎⏎- tail'`. The new row leaves the subtree and cuts the list
+  in two; one undo takes it back. `BlockController.addRow` splices the bare `config.separator`,
+  which carries no lead. The text that WOULD carry it needs two things that live in
+  `features/tokens/` by ADR-0003 — the row's `lead()`, and whether its subtree `endsDocument`,
+  which decides whether the lead is written before the separator (an ordinary row, whose
+  `position.end` is already past its own separator) or after it (the document-final row, which the
+  splice must terminate first). `addressSpace.spec` pins that boundary by name, so the fix is a
+  ROW VERB in the tokens layer — published surface on `NodeCommands` and three node interfaces —
+  and not a longer string in `BlockController`. Not taken here; it is an API addition, not a repair.
+  The KIND should stay uncarried either way: "add a row" opens a blank one, and whether a kind
+  continues is Enter's question.
 - **One split shape a single window cannot place the caret in: MID-BODY, on a row that KEEPS a
   subtree.** `splitPlan`'s window is trimmed to the changed bytes now, which is what put the caret
   at the tail's start for every childless split (the ordinary Enter). It cannot be trimmed when the

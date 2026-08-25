@@ -237,7 +237,11 @@ export class BlockController {
 
 	// A fresh row IS the separator (issue 08): spliced after the anchor row's own separator it
 	// reads as an empty row, and on the document-final unterminated row it first terminates
-	// that row.
+	// that row. It carries NO DEPTH, so "Add below" on a nested row opens the row at depth 0 and
+	// cuts the list in two — measured and recorded in `docs/scratch/notion-like/map.md`. The text
+	// that would carry it needs the row's LEAD and whether its subtree ENDS THE DOCUMENT (the two
+	// decide the order of lead and separator), and both live in `features/tokens/` by ADR-0003, so
+	// closing it is a verb there rather than a longer string here.
 	addRow = (): void => this.#runMenuVerb((row, config) => row.insertAfter(config.separator))
 	duplicateRow = (): void => this.#runMenuVerb(row => row.duplicate())
 	deleteRow = (): void => this.#runMenuVerb(row => row.remove())
