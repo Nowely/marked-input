@@ -1,6 +1,7 @@
 import {BlockController} from '../features/block'
 import {ClipboardController} from '../features/clipboard'
 import {EditController} from '../features/edit'
+import {HistoryModel} from '../features/history'
 import {KeyboardController} from '../features/keyboard'
 import {OverlayController} from '../features/overlay'
 import {SlotsFeature} from '../features/slots'
@@ -18,6 +19,8 @@ export class Store {
 	readonly slots = new SlotsFeature(this.props, this.tokens)
 
 	readonly edit = new EditController(this.tokens, this.props)
+
+	readonly history = new HistoryModel(this.props, this.tokens)
 
 	readonly keyboard = new KeyboardController(this.host, this.edit, this.tokens)
 

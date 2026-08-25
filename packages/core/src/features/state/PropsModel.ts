@@ -53,6 +53,15 @@ export class PropsModel {
 	 */
 	readonly indent = signal<string>({default: '\t', readonly: true})
 	readonly draggable = signal<boolean | DraggableConfig>({default: false, readonly: true})
+	/**
+	 * Does the editor keep its own undo stack (ADR-0012). ON by default: the `beforeinput` guard
+	 * swallows the browser's native undo (ADR-0006), so `false` is the state where Mod+Z does
+	 * nothing at all — which is what every editor built on this did before the stack existed.
+	 *
+	 * Read at both ends of `HistoryModel`, so turning it off both stops recording and makes
+	 * whatever an earlier `true` recorded unreachable.
+	 */
+	readonly history = signal({default: true, readonly: true})
 
 	readonly showOverlayOn = signal<OverlayTrigger>({default: 'change', readonly: true})
 

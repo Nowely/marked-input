@@ -15,8 +15,22 @@ export {TokenModel} from './seam/TokenModel'
 // `anchorEquals` joined them at S2.5, when "is this selection collapsed?" stopped being a
 // numeric comparison for the four keyboard and overlay call sites above this layer.
 export {anchorEquals} from './tree/anchors'
+// Undo/redo's two halves, and neither is nameable without the other: `TokenModel.replay` takes a
+// `Window`, and the one window it can be handed is an `EditRecord`'s read backwards.
+export {invertWindow} from './tree/gapWindow'
 // The repaint-field contract both adapters pass to `useMarkput` — core knowledge (which node
 // fields reach a framework component), so it lives with the node model, not in an adapter.
 export {renderSubscription} from './tree/renderSubscription'
-export type {AnchoredRow, Anchors, MarkNode, NodeAnchor, RowNode, RowPlacement, TextNode, TreeNode} from './tree/types'
+export type {
+	AnchoredRow,
+	Anchors,
+	EditRecord,
+	MarkNode,
+	NodeAnchor,
+	RowNode,
+	RowPlacement,
+	TextNode,
+	TreeNode,
+	Window,
+} from './tree/types'
 export {TokenHandle} from './dom/TokenHandle'
