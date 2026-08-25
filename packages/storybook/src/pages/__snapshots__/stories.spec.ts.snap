@@ -1594,6 +1594,21 @@ exports[`Component: stories > Overlay stories > Story PositionedOverlay 1`] = `
 </div>"
 `;
 
+exports[`Component: stories > Overlay stories > Story RowMenu 1`] = `
+"<div contenteditable="true">
+  <div>
+    <span>Intro</span>
+  </div>
+  <div>
+    <span></span>
+  </div>
+  <div>
+    <span>plain row</span>
+  </div>
+  <div contenteditable="false"></div>
+</div>"
+`;
+
 exports[`Component: stories > Overlay stories > Story SelectableOverlay 1`] = `
 "<div contenteditable="true">
   <span>Hello, suggest overlay by trigger @!</span>

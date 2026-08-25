@@ -2,7 +2,7 @@ import type {Markup} from '@markput/core'
 import {describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {getElement, textSurfaces} from '../../shared/lib/dom'
+import {getElement, rowsOf, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
 import {Mark} from '../../shared/lib/marks'
 import {composePage, mount, mountEcho} from '../../shared/lib/page'
@@ -10,7 +10,7 @@ import * as BaseStories from '../Base/Base.stories'
 import * as OverlayStories from './Overlay.stories'
 
 const {Default} = composePage(BaseStories)
-const {DefaultOverlay} = composePage(OverlayStories)
+const {DefaultOverlay, RowMenu} = composePage(OverlayStories)
 
 const ECHO_OPTIONS = [
 	{
@@ -235,5 +235,55 @@ describe('API: Overlay and Triggers', () => {
 		// Focus should be on span("") at childIndex + 2 = 4, NOT tail at index 6.
 		// Caret position: "Start " (6) + "A" (1) + " mid " (5) + "Item" (4) = 16
 		verifyCaretPosition(host, 16)
+	})
+})
+
+/**
+ * THE ROW MENU, driven through the SHIPPED `BlockMenu` in both projects. The probe page that
+ * proved ticket 11 is React-only until P12, so without these two the Vue component's `entries`
+ * binding, its ref wiring and its click path never ran anywhere.
+ *
+ * Both cases go through `mountEcho`: a menu writes a row, and the value the editor emits is the
+ * only thing that says which of the two gestures it ran.
+ */
+describe('API: the row menu', () => {
+	/** INSERT: the row holds nothing but the trigger, so the kind seeds an empty body. */
+	it('start a kind from the menu on an empty row', async () => {
+		const {host, value} = await mountEcho(RowMenu, {value: 'Intro\n\n'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/')
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+
+		await page.getByText('Heading 1').click()
+
+		await expect.poll(value).toBe('Intro\n\n# ')
+	})
+
+	/**
+	 * CONVERT, which is ticket 11: the menu must retype the ROW rather than write over the
+	 * trigger's span, so the text the user typed is what the heading holds.
+	 */
+	it('convert a row that already has text, keeping the text', async () => {
+		const {host, value} = await mountEcho(RowMenu, {value: 'Intro\n\nplain row'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/')
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+
+		await page.getByText('Heading 1').click()
+
+		await expect.poll(value).toBe('Intro\n\n# plain row')
+	})
+
+	/** The query pass is core's, so a keyword that appears in no label still narrows the list. */
+	it('narrow the menu by a keyword that appears in no label', async () => {
+		const {host} = await mountEcho(RowMenu, {value: 'Intro\n\nplain row'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/h1')
+
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+		await expect.element(page.getByText('Bulleted list')).not.toBeInTheDocument()
 	})
 })
