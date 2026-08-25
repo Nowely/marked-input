@@ -471,12 +471,21 @@ becomes a ticket here.
   package's, and it is unpinned in both adapters: the P8 browser spec asserts values
   only. Whoever picks it up owns the seam between `replay`'s caret write and the paint
   that follows it.
-- **A kind whose component paints no `{children}` is an ATOMIC row.** The properties
-  panel, the table of contents, the metric grid, the board, the bookmark, the view bar
-  and the comment thread all render leaves that take STRINGS, so their text round-trips
-  and drags and selects but takes no caret. That is Notion's own behaviour for the same
-  blocks, and it is the same shape of contract as "a kind that ignores `rows` paints no
-  child rows": core cannot see whether a component reads a prop.
+- **A kind whose component paints no `{children}` is an ATOMIC row, and saying so is a
+  CALL.** The properties panel, the table of contents, the metric grid, the board, the
+  bookmark, the view bar and the comment thread all render leaves that take STRINGS, so
+  their text round-trips and drags and selects. Taking no caret is NOT automatic, and P11
+  shipped believing it was: four of the seven had no control root, and measured, a click
+  or an ArrowDown put a blinking caret inside a properties grid where every keystroke was
+  swallowed. All seven go through one `Atomic` wrapper now, so the rule is a call rather
+  than a convention. The rest of the contract is the same shape as "a kind that ignores
+  `rows` paints no child rows": core cannot see whether a component reads a prop.
+- **An atomic kind's `/` entry must carry `menu.text`, and after it the caret has nowhere
+  to go.** An empty atomic body can never be filled, because there is no surface to fill it
+  through — seven entries inserted a blank panel or a blank card. Seeds fix that half. The
+  half that stays is the one gesture the option API cannot express: `choose` turns THIS ROW
+  into the kind, and an atomic row generates no caret position, so nothing a consumer writes
+  asks for the trailing empty paragraph Notion leaves under such a block.
 - **The COLLAPSED TOGGLE is `hidden="until-found"`, not an unmount and not plain
   `hidden`.** An unpainted row leaves `bind` and takes its anchors with it, so the
   children are always rendered. Plain `hidden` would cost three things a user expects —
@@ -485,6 +494,14 @@ becomes a ticket here.
   which the component listens for and opens itself on. What it still costs is declared:
   a closed subtree generates no boxes, so an arrow from the title jumps over it and a
   selection dragged across it takes the closed text with it.
+- **OPEN is the DOCUMENT'S fact: `▸` closed, `▾` open.** It was `useState`, which made it a
+  fact only the component knew — so `showcase.md`'s open first toggle could not be authored
+  (all three rendered closed), openness could not be undone, and it did not survive a drop into
+  a different parent. As a KIND it is none of those: the arrow calls `turnInto` onto the sibling
+  kind, the shape `todo` and `callout` already use, and the row keeps its id, text, children and
+  caret. `meta` is not usable — a row's markup may not begin with a gap, so `'▸-'` is the only
+  spelling left. NEW COST, declared: find-in-page landing inside a closed toggle now EDITS the
+  document, because `beforematch` opens the row and opening it is a retype.
 - **The BOARD is one row, not the nested column-and-card rows the spec drew, and the
   three documents disagree.** `spec.md` has `board`/`column`/`card` as row kinds; P10
   puts cross-axis hit-testing explicitly out of scope in the same breath, and a board's
@@ -494,6 +511,34 @@ becomes a ticket here.
   body describes its columns, so the data round-trips and the row drags, while the
   card-between-columns drag is the `Board` component's own. A nested-row board becomes
   available the day a per-kind drag axis does.
+
+- **THREE SPEC DEVIATIONS P11 made and did not declare**, filed here beside the four it
+  did. `toc` was spec'd as a SLOT kind (`'@toc __slot__'`, `<nav>{children}</nav>`, editable) and
+  shipped as a raw closed kind, which is what makes it atomic; `comment` was spec'd as one
+  editable comment per row (`'@comment(__meta__) __slot__'` with `continues`/`indents`) and shipped
+  as `comments`, a raw closed thread, which is what `showcase.md` item 16 actually asks for; and
+  `bookmark`'s `meta` went from a bare url to `url|description`. All three are defensible and none
+  of them was written down.
+- **P11's REVIEW closed seven defects the phase's own suite reported as green**, and the
+  common shape is worth keeping: every one of the failing gestures was pinned by the VALUE the
+  editor emits and by nothing else. The value was right in all seven cases. What was wrong was
+  the caret, the focus, the freeze or the row count. A page's proving spec needs at least one
+  reading per gesture that only a live caret can produce — "type the next character and assert
+  the value" is the cheapest one, and it is what caught the slash menu blurring its own editor.
+- **`RowProps.index` has no reader anywhere in the repo, and is KEPT.** P11 was the phase that
+  was meant to be its caller and declined it — a numbered run counts through a CSS counter,
+  because `index` is the position among ALL siblings. Measured removable: deleting it from
+  `RowRender`, both adapters' `RowProps` and both `Rows`/`Block` pairs leaves `pnpm run typecheck`
+  at 0 and the suite at 101 files / 1909 passed. Not removed, because it is PUBLISHED consumer
+  surface — it has its own page under `docs/api/interfaces/RowProps.md` — and AGENTS.md's rule is
+  that published API goes only when its removal is the agreed change. The measurement is here so
+  the decision is one word rather than another afternoon.
+- **The metric cards are NOT beside the callout, and that is the board's reason again.**
+  `showcase.md` item 10 asks for the grid "beside a callout"; they render stacked. Two ROWS cannot
+  sit side by side: a document is a vertical list of rows and the drop resolution tiles it by Y, so
+  a horizontal composition would offer drags that land in an arbitrary one of the two. CSS could
+  fake it and would poison the hit test. It becomes available with a per-kind drag axis, exactly as
+  the nested-row board does.
 
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
