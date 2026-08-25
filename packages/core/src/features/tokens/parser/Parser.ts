@@ -129,19 +129,6 @@ export class Parser {
 	 * // ]
 	 * ```
 	 */
-	/**
-	 * The compiled ROW KIND an option index declares, or `undefined` when this parser took none
-	 * from it — a mark option, an option with no markup, or one whose markup broke a row rule and
-	 * was dropped at the props boundary.
-	 *
-	 * The index is the OPTION's own, which is the same identity a component is resolved by, so a
-	 * caller holding an option can ask what its rows are made of without re-compiling the markup
-	 * and getting a descriptor the scan has never seen.
-	 */
-	rowKind(index: number): MarkupDescriptor | undefined {
-		return this.registry.rowKinds.find(descriptor => descriptor.index === index)
-	}
-
 	parseRows(value: string, config: RowConfig): RowToken[] {
 		if (config.separator.length === 0) {
 			throw new Error('Parser.parseRows: separator must be non-empty')
@@ -149,6 +136,23 @@ export class Parser {
 		const rows = scanRows(value, this.registry.rowKinds, config)
 		this.#fillBodies(rows, value)
 		return rows
+	}
+
+	/**
+	 * The compiled ROW KIND this markup declares, or `undefined` when this parser took none from
+	 * it — a mark markup, an absent one, or one that broke a row rule and was dropped at the props
+	 * boundary. It is how a caller holding an option asks what its rows are made of without
+	 * re-compiling the markup and getting a descriptor the scan has never seen.
+	 *
+	 * Keyed by the MARKUP and not by the option's index, because the option a consumer holds is
+	 * not always the option the store holds: the Vue adapter rebuilds every option object on every
+	 * prop sync, so a reference lookup answered `-1` there for options React resolved fine. The
+	 * markup is what the scan compiled and what the row's bytes are made of — the one identity
+	 * that survives the boundary.
+	 */
+	rowKind(markup: Markup | undefined): MarkupDescriptor | undefined {
+		if (markup === undefined) return undefined
+		return this.registry.rowKinds.find(descriptor => descriptor.markup === markup)
 	}
 
 	/** Every row's own body, at every depth — the scan decided the shape, this fills it. */

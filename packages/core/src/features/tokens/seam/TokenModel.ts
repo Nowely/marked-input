@@ -605,9 +605,10 @@ export class TokenModel {
 		},
 		/**
 		 * The one verb that takes an OPTION rather than a string, because a kind is not a markup a
-		 * caller may invent: writing an unregistered markup would emit bytes the scan reads back as
+		 * caller may invent: writing an UNREGISTERED markup would emit bytes the scan reads back as
 		 * a paragraph, so the option is resolved to the descriptor the scan itself holds and the
-		 * verb declines when there is none.
+		 * verb declines when there is none. Registration is the whole test — an option carrying a
+		 * markup this editor compiled is accepted whatever object it arrived in.
 		 *
 		 * No {@link #applyCaret}, for {@link moveTo}'s reason with one addition: a retype rewrites
 		 * the row's structural bytes around a body it leaves alone, so an anchor inside that body
@@ -644,11 +645,9 @@ export class TokenModel {
 		},
 	}
 
-	/** The compiled row kind an option declares, resolved by the option's INDEX — see {@link Parser.rowKind}. */
+	/** The compiled row kind an option declares, resolved by its MARKUP — see {@link Parser.rowKind}. */
 	#rowKind(option: CoreOption): MarkupDescriptor | undefined {
-		const index = this.props.options().indexOf(option)
-		if (index < 0) return undefined
-		return this.#parser()?.rowKind(index)
+		return this.#parser()?.rowKind(option.markup)
 	}
 
 	/**

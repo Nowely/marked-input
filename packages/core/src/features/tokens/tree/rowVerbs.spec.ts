@@ -360,9 +360,9 @@ describe('turnInto', () => {
 	 * A kind is not a markup a caller may invent: an option this editor compiles no row kind from
 	 * would write bytes the scan reads back as a paragraph, so the verb declines instead.
 	 */
-	it('refuses a mark option, a foreign option and a no-op', () => {
+	it('refuses a mark option, an unregistered markup and a no-op', () => {
 		const mark: CoreOption = {markup: '**__slot__**'}
-		const foreign: CoreOption = {markup: '# __slot__', row: {Component: 'h1'}}
+		const foreign: CoreOption = {markup: '> __slot__', row: {Component: 'blockquote'}}
 		const store = rowStore('# a', [heading, mark])
 		const row = rowsOf(store)[0]
 
@@ -370,6 +370,38 @@ describe('turnInto', () => {
 		expect(row.turnInto(foreign)).toBe(false)
 		expect(row.turnInto(heading)).toBe(false)
 		expect(store.tokens.value()).toBe('# a')
+	})
+
+	/**
+	 * The option is resolved by its MARKUP, not by object identity — because the object a consumer
+	 * holds is not always the object the store holds. The Vue adapter rebuilds every option on
+	 * every prop sync (`MarkedInput.vue`'s `options: props.options?.map(opt => ({...opt, …}))`),
+	 * so a reference lookup answered `-1` there and this verb returned `false` in Vue for the
+	 * consumer code that returns `true` in React.
+	 */
+	it('resolves an option the adapter re-built, which is every option in Vue', () => {
+		const store = rowStore('a', [heading])
+		store.props.set({options: [{...heading, row: {...heading.row!}}]})
+
+		expect(rowsOf(store)[0].turnInto(heading)).toBe(true)
+		expect(store.tokens.value()).toBe('# a')
+	})
+
+	/**
+	 * The scan orders its kinds by OPENER LENGTH so `'- [ ] x'` is read as a todo and not as a
+	 * bullet with a bracket, which means a kind's position in the scan's list is not its option's
+	 * index. Every other row spec in the repo registers ONE row option, where the two agree.
+	 */
+	it('picks the right kind when two are registered and the scan reorders them', () => {
+		const bullet: CoreOption = {markup: '- __slot__', row: {Component: 'li'}}
+		const todo: CoreOption = {markup: '- [__meta__] __slot__', row: {Component: 'li'}}
+		const store = rowStore('x\ny', [bullet, todo])
+		const [first, second] = rowsOf(store)
+
+		expect(first.turnInto(bullet)).toBe(true)
+		expect(second.turnInto(todo, {meta: ' '})).toBe(true)
+
+		expect(store.tokens.value()).toBe('- x\n- [ ] y')
 	})
 
 	/** Declared, not fixed: the reparse owns the answer, exactly as it does for a merge. */
