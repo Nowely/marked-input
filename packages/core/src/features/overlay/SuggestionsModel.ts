@@ -51,6 +51,21 @@ export class SuggestionsModel {
 	}
 
 	/**
+	 * Will the protocol below take this key? Asked by the ROW KEYMAP, which is bound to the same
+	 * container at editor setup and therefore runs FIRST — {@link activate} adds its listener when
+	 * the popup mounts, later, same element, same phase. Without this, Enter over a highlighted
+	 * name split the row instead of choosing it (`'ping @Mi'` + ArrowDown + Enter emitted
+	 * `'ping @Mi⏎'`, no mention), because by the time the protocol ran there was no match left.
+	 *
+	 * It is `navigateSuggestions` and nothing else, so the answer cannot drift from what the
+	 * handler does with the same key: `'none'` — no rows, or Enter with nothing highlighted — means
+	 * the key is free, which is what keeps the `/` menu's declared "no keyboard navigation" intact.
+	 */
+	consumes(key: string): boolean {
+		return navigateSuggestions(key, this.active(), this.filtered().length).action !== 'none'
+	}
+
+	/**
 	 * Bind the keyboard protocol (arrows move `active`, Enter selects) to the host container
 	 * and return the unbind. The default Suggestions component calls this on mount, so the
 	 * listener exists exactly while the built-in overlay is shown.

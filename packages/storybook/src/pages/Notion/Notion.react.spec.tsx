@@ -579,6 +579,30 @@ describe('the inline database', () => {
 
 		await expect.poll(value).toBe('| Auth migration | Kara@[Milo Freeman](milo.freeman)\nnext')
 	})
+
+	/**
+	 * THE PICKER'S OWN KEYBOARD, finished with the key that finishes it. `SuggestionsModel`
+	 * registers its keydown when the popup MOUNTS and the row keymap registered its own at editor
+	 * setup, both on the container — so the keymap ran first, `handleRowEnter` had no overlay check
+	 * at all, and Enter split the row out from under the highlighted name: `'ping @Mi⏎'`, no
+	 * mention. Its neighbour `handleRowSelection` already defers to an open overlay on Esc; this is
+	 * the same deference on the key the protocol actually claims.
+	 *
+	 * (The `/` menu is NOT this case and stays as declared — `BlockMenu` has no keyboard, so
+	 * nothing highlights, and `navigateSuggestions` answers `'none'` for a key no one will take.)
+	 */
+	it('finishes a mention on Enter after the arrow keys chose it', async () => {
+		const {host, value} = await mountControlled(Showcase, 'ping ')
+
+		await focusAtEnd(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '@Mi')
+		await expect.element(page.getByText('Milo Freeman', {exact: true})).toBeVisible()
+
+		await userEvent.keyboard('{ArrowDown}')
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(value).toBe('ping @[Milo Freeman](milo.freeman)')
+	})
 })
 
 describe('the toggle', () => {

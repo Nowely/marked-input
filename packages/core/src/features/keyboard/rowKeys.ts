@@ -50,6 +50,15 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
 	if (rowConfig === undefined) return
 	if (event.key !== KEYBOARD.ENTER) return
 
+	// THE SUGGESTIONS PROTOCOL GETS ITS OWN KEY BACK. Both listeners sit on the container, and this
+	// keymap is bound at editor setup while `SuggestionsModel.activate` binds when the popup mounts
+	// — later, same element, same phase — so this arm ran first and split the row out from under a
+	// highlighted name. {@link handleRowSelection} already defers to an open overlay on Esc; one arm
+	// deferring and its neighbour not is the asymmetry this closes. `consumes` is
+	// `navigateSuggestions` itself, so a key nothing will take (the `/` menu, which declares no
+	// keyboard navigation) still reaches the split.
+	if (store.overlay.suggestions.consumes(event.key)) return
+
 	// Everything selected: Enter REPLACES the document with one fresh row — the block analogue of
 	// inline's whole-value replace. Ahead of the anchor read, which would resolve the position the
 	// selection merely STARTS at and split the row there instead, appending an empty row while
