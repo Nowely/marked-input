@@ -36,8 +36,11 @@ export class PropsModel {
 	 * `''` is not `null`: it separates nothing rather than declining to separate, so
 	 * `TokenModel.rowConfig` reports it and answers "no rows". The default replaces `undefined`
 	 * only, which is why both an explicit `null` and an explicit `''` reach that seam at all.
+	 *
+	 * The default is ONE newline: a line is a row. `'\n\n'` would keep a soft break inside a row
+	 * at the price of a list item never being one, which is the trade issue 05 measured.
 	 */
-	readonly separator = signal<string | null>({default: '\n\n', readonly: true})
+	readonly separator = signal<string | null>({default: '\n', readonly: true})
 	readonly draggable = signal<boolean | DraggableConfig>({default: false, readonly: true})
 
 	readonly showOverlayOn = signal<OverlayTrigger>({default: 'change', readonly: true})

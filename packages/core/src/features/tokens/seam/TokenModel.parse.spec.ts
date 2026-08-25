@@ -127,6 +127,28 @@ describe('TokenModel', () => {
 	})
 
 	describe('rows (issue 08)', () => {
+		it('splits at a newline when nothing configures a separator', () => {
+			// THE default (ADR-0011), so nothing here may spell it out: an editor that configures
+			// nothing is a row editor whose rows are lines.
+			store.props.set({Mark: () => null, options: [], defaultValue: 'a\nb'})
+			store.host.container(document.createElement('div'))
+
+			expect(store.tokens.rowConfig()).toEqual({separator: '\n'})
+			expect(store.tokens.nodes().map(node => node.kind)).toEqual(['row', 'row'])
+		})
+
+		it('answers no rows for a null separator, and never reports it', () => {
+			// `null` DECLINES to separate, where `''` separates nothing — so this arm is silent
+			// and the empty-string arm below is not.
+			const errors = captureErrors()
+			store.props.set({Mark: () => null, separator: null, options: [], defaultValue: 'a\nb'})
+			store.host.container(document.createElement('div'))
+
+			expect(store.tokens.rowConfig()).toBeUndefined()
+			expect(store.tokens.nodes().map(node => node.kind)).toEqual(['text'])
+			expect(errors()).toEqual([])
+		})
+
 		it('wraps the top level into rows', () => {
 			store.props.set({
 				Mark: () => null,

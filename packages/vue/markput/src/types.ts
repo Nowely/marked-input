@@ -57,7 +57,7 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	readOnly?: boolean
 	/**
 	 * The structural row separator (issue 08, ADR-0011): editor-level, never part of any markup,
-	 * and the whole of what makes a document rows. Default '\n\n'.
+	 * and the whole of what makes a document rows. Default '\n'.
 	 *
 	 * `null` says the value never splits: one document, no rows, no row controls — a plain
 	 * annotated text field.

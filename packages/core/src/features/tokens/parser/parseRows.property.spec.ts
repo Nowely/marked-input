@@ -15,7 +15,7 @@ import type {Markup, RowConfig, RowToken, Token} from './types'
 
 const FAKER_SEED = 6_122_026
 const ITERATIONS = 200
-const SEPARATOR = '\n\n'
+const SEPARATOR = '\n'
 const ROW_CONFIG: RowConfig = {separator: SEPARATOR}
 const MARKUPS = ['**__slot__**', '@[__value__](__meta__)'] as const
 /** The ROW kinds, ahead of the inline markups so their option indices are stable. */
@@ -85,7 +85,7 @@ describe('parseRows properties', () => {
 			const rows = parser.parseRows(value, ROW_CONFIG)
 
 			// An insertion strictly inside one row's content (never into its separator):
-			// a single alpha char cannot form or break a '\n\n' separator.
+			// a single alpha char cannot form or break a '\n' separator.
 			const rowIndex = faker.number.int({min: 0, max: rows.length - 1})
 			const row = rows[rowIndex]
 			const contentLength = row.content.length - (rowIndex < rows.length - 1 ? SEPARATOR.length : 0)

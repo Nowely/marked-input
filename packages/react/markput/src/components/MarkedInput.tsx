@@ -83,7 +83,7 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	 *
 	 * An empty string separates nothing: the editor reports it and renders the document as if it
 	 * were `null`.
-	 * @default '\n\n'
+	 * @default '\n'
 	 */
 	separator?: string | null
 	/** Enable drag interaction on rows. Ineffective when `separator` is `null`.

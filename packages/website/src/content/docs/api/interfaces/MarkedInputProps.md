@@ -181,7 +181,7 @@ were `null`.
 #### Default
 
 ```ts
-'\n\n'
+'\n'
 ```
 
 ***
