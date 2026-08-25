@@ -442,6 +442,15 @@ export function movePlan(
  *
  * `index` is counted with the moved rows TAKEN OUT, which is what {@link RowPlacement} means, so a
  * gap whose preceding siblings are themselves in flight still addresses the slot it looks like.
+ *
+ * WHAT IT COSTS, stated because a `dragover` tick calls it and the hit test beside it defends a
+ * 0.2%-of-a-frame budget this does not meet. Planning is LINEAR in the document — every candidate
+ * replays `movePlan`, which walks the whole pre-order list twice — and there are 1–3 candidates a
+ * gap. Measured (darwin arm64, Chromium, median of 20 after 5 warmups, one-in-three nested):
+ * 0.1 ms a tick at 200 rows, 0.4 ms at 1000, ~1.5 ms at 4000 — 9% of a 16.7 ms frame at 4000 rows.
+ * Bought deliberately: the alternative is a depth rule restated outside the mover, which is the
+ * one thing a promising indicator may not have. The invariant part is hoistable if it ever bites —
+ * `preorderRows(roots)` and the `kept` projection are identical across one tick's candidates.
  */
 export function dropPlacements(
 	roots: readonly TreeNode[],
