@@ -1,5 +1,6 @@
 import {describe, expect, it, vi} from 'vitest'
 
+import type {CoreOption} from '../../shared/types'
 import {Store} from '../../store/Store'
 import type {RowNode} from '../tokens'
 import {anchorsAt, caretAt, selectionRange} from '../tokens/__testing__/mountFixtures'
@@ -44,6 +45,9 @@ function type(store: Store, offset: number, character: string): void {
 const rowsOf = (store: Store): RowNode[] => store.tokens.nodes().filter((node): node is RowNode => node.kind === 'row')
 
 const rowTexts = (store: Store): string[] => rowsOf(store).map(row => row.slot())
+
+/** A row kind the slash menu can name — the shape `OverlayController.menu.spec` drives. */
+const HEADING: CoreOption = {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1'}}
 
 describe('history: undo and redo', () => {
 	for (const mode of ['uncontrolled', 'controlled'] as const) {
@@ -129,6 +133,28 @@ describe('history: what is one step', () => {
 		expect(store.history.undo()).toBe(true)
 		expect(rowTexts(store)).toEqual(['one', 'two'])
 		expect(store.history.canUndo()).toBe(false)
+	})
+
+	it('makes a slash-menu turn-into ONE step, the trigger and the kind together', () => {
+		// The gesture the user made is "pick a kind", and it must cost ONE undo however many
+		// things the splice changed — the trigger comes back and the kind goes, together. It is
+		// one entry because it is one splice, which is what `turnInto` taking the body text buys.
+		const store = mount('plain row', {
+			separator: '\n',
+			Mark: () => null,
+			options: [{overlay: {trigger: '/'}}, HEADING],
+		})
+		caretAt(store, 9)
+		store.edit.replace(...anchorsAt(store, 9, 9), '/')
+		expect(store.overlay.choose({option: HEADING})).toBe(true)
+		expect(store.tokens.value()).toBe('# plain row')
+
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('plain row/')
+
+		// And the trigger keystroke is its own step, as any other typed character is.
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('plain row')
 	})
 
 	it('keeps a paste out of the typing run it lands in the middle of', () => {
