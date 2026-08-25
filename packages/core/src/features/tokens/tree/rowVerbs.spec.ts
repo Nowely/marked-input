@@ -24,6 +24,13 @@ const rowStore = (defaultValue: string, options: CoreOption[] = []) => {
 	return store
 }
 
+/** The anchor at `offset` inside a row's own body, which is what a caret in that row is. */
+const inBody = (row: RowNode, offset: number): NodeAnchor => {
+	const text = row.inline()[0]
+	if (text.kind !== 'text') throw new Error('expected a row text child')
+	return {node: text, offset}
+}
+
 /** Every row in the document, in pre-order — the space the verbs and the projection both speak. */
 const rowsOf = (store: Store): RowNode[] => {
 	const out: RowNode[] = []
@@ -322,13 +329,6 @@ describe('splitAt', () => {
 	const bullet: CoreOption = {markup: '- __slot__', row: {Component: 'li', continues: true}}
 	const heading: CoreOption = {markup: '# __slot__', row: {Component: 'h1'}}
 
-	/** The anchor at `offset` inside a row's own body, which is what a caret in that row is. */
-	const inBody = (row: RowNode, offset: number): NodeAnchor => {
-		const text = row.inline()[0]
-		if (text.kind !== 'text') throw new Error('expected a row text child')
-		return {node: text, offset}
-	}
-
 	it('leaves the head, opens the tail, and puts the caret in it', () => {
 		const store = rowStore('a\n\tbcd')
 		const child = rowsOf(store)[1]
@@ -395,6 +395,58 @@ describe('splitAt', () => {
 
 		expect(first.splitAt(inBody(second, 0))).toBe(false)
 		expect(first.splitAt('end')).toBe(false)
+		expect(store.tokens.value()).toBe('a\nb')
+	})
+})
+/**
+ * The inputs a verb meets once and gets wrong forever. Each one is a shape the flat world could
+ * not produce, so none of them is covered by the per-verb cases above.
+ */
+describe('awkward inputs', () => {
+	/**
+	 * A re-parented row keeps its OBJECT (that is P3's whole mechanism) while its `position` and
+	 * `lead` are rewritten under it by adoption — so a verb that cached anything off the node
+	 * before the Tab would splice against a document that no longer exists.
+	 */
+	it('answers for a row that has just been re-parented by a Tab', () => {
+		const store = rowStore('a\nb\nc')
+		const [first, second, third] = rowsOf(store)
+
+		expect(second.setDepth(1)).toBe(true)
+		expect(store.tokens.value()).toBe('a\n\tb\nc')
+
+		expect(second.duplicate()).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\tb\n\tb\nc')
+		const after = rowsOf(store)
+		expect([after[0], after[1], after[3]]).toEqual([first, second, third])
+		expect(selectionRange(store)).toEqual({start: 6, end: 6})
+	})
+
+	it('splits an EMPTY nested row into two empty rows', () => {
+		const store = rowStore('a\n\t')
+		const child = rowsOf(store)[1]
+
+		expect(child.splitAt('start')).toBe(false)
+		expect(child.splitAt(inBody(child, 0))).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\t\n\t')
+		expect(rowsOf(store).length).toBe(3)
+	})
+
+	/**
+	 * The document-final row is UNTERMINATED — it owns no separator — and every verb that writes
+	 * one has to put it back on the correct side. Read at depth 0, where the row is also the last
+	 * sibling and the last root.
+	 */
+	it('writes the missing separator on the correct side of the final row', () => {
+		const store = rowStore('a\nb')
+		const last = rowsOf(store)[1]
+
+		expect(last.duplicate()).toBe(true)
+		expect(store.tokens.value()).toBe('a\nb\nb')
+
+		expect(rowsOf(store)[2].remove()).toBe(true)
 		expect(store.tokens.value()).toBe('a\nb')
 	})
 })
