@@ -1,0 +1,27 @@
+{
+  "name": "@markput/notion",
+  "private": true,
+  "description": "A Notion-shaped editor as markput OPTIONS and COMPONENTS — no core fork",
+  "type": "module",
+  "module": "index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "import": "./index.ts"
+    },
+    "./theme.css": "./src/theme/tokens.css"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@markput/core": "workspace:*",
+    "@markput/react": "workspace:*",
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0"
+  }
+}

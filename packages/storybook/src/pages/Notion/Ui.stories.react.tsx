@@ -1,9 +1,3 @@
-import type {Meta, StoryObj} from '@storybook/react-vite'
-import type {ReactNode} from 'react'
-import {useState} from 'react'
-
-import '../theme/tokens.css'
-
 import {
 	Avatar,
 	AvatarStack,
@@ -16,12 +10,15 @@ import {
 	CoverBand,
 	EffortBar,
 	MetricCard,
+	NOTION_THEME,
 	PageChrome,
 	PropertiesPanel,
+	theme as styles,
 	ViewTabs,
-} from './index'
-
-import styles from '../theme/notion.module.css'
+} from '@markput/notion'
+import type {Meta, StoryObj} from '@storybook/react-vite'
+import type {ReactNode} from 'react'
+import {useState} from 'react'
 
 /**
  * The showcase's consumer components on their own (`docs/scratch/notion-like/showcase.md`, final
@@ -62,7 +59,7 @@ export default {
 	},
 	decorators: [
 		Story => (
-			<div className={`notionTheme ${styles.page}`} style={{minHeight: '100vh'}}>
+			<div className={`${NOTION_THEME} ${styles.page}`} style={{minHeight: '100vh'}}>
 				<div className={styles.column} style={{paddingTop: '24px'}}>
 					<Story />
 				</div>
