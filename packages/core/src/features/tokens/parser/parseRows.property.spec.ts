@@ -20,17 +20,25 @@ const INDENT = '\t'
 const ROW_CONFIG: RowConfig = {separator: SEPARATOR, indent: INDENT}
 const MARKUPS = ['**__slot__**', '@[__value__](__meta__)'] as const
 /** The ROW kinds, ahead of the inline markups so their option indices are stable. */
-const ROW_MARKUPS: Markup[] = ['# __slot__', '- [__meta__] __slot__', '> __slot__']
+const ROW_MARKUPS: Markup[] = ['# __slot__', '- [__meta__] __slot__', '> __slot__', '| __slot__']
+const CELL_AT = ' | '
+/** The option index of the table line, and of the anonymous kind its body is carved into. */
+const TABLE = 3
+const CELL = 4
 
 /**
  * THE parser every property below runs on: the row kinds ARE the subject. Built kindless, the
  * round-trip and locality properties never see an opener or a closing literal, so neither could
  * catch one leaking across a row boundary — which is the one thing they exist to catch.
+ *
+ * The table line CARVES its body, and it is here for the same reason the corpus is indented: a
+ * carved row's pieces are joined by concatenation while every other row is joined by the
+ * separator, so a corpus without one pins a projection that has only met the easy rule.
  */
 const typedParser = (): Parser =>
 	new Parser(
-		[...ROW_MARKUPS, ...MARKUPS],
-		ROW_MARKUPS.map(() => true)
+		[...ROW_MARKUPS, undefined, ...MARKUPS],
+		[...ROW_MARKUPS.map((_, index) => (index === TABLE ? {at: CELL_AT, as: CELL} : true)), true]
 	)
 
 beforeEach(() => {
@@ -178,7 +186,7 @@ function generateTypedDocument(): string {
 	const rows = Array.from({length: faker.number.int({min: 1, max: 8})}, () => {
 		const words = () => faker.lorem.words({min: 1, max: 4})
 		const lead = INDENT.repeat(faker.number.int({min: 0, max: 3}))
-		switch (faker.number.int({min: 0, max: 4})) {
+		switch (faker.number.int({min: 0, max: 5})) {
 			case 0:
 				return `${lead}# ${words()}`
 			case 1:
@@ -187,6 +195,10 @@ function generateTypedDocument(): string {
 				return `${lead}> ${words()} **${words()}**`
 			case 3:
 				return ''
+			case 4: {
+				const cells = Array.from({length: faker.number.int({min: 1, max: 5})}, words)
+				return `${lead}| ${cells.join(CELL_AT)}`
+			}
 			default:
 				return `${lead}${words()} @[${faker.string.alpha(4)}](${faker.string.alpha(3)})`
 		}
@@ -194,12 +206,17 @@ function generateTypedDocument(): string {
 	return rows.join(SEPARATOR) + (faker.datatype.boolean() ? SEPARATOR : '')
 }
 
-/** Re-baselined at P3 (spec risk 7): a generator with no indent pins an intermediate shape. */
+/**
+ * Re-baselined at P3 and again at P9 (spec risk 7): a generator with no indent, or with no carved
+ * row, pins an intermediate shape. The table lines matter here beyond coverage — the carve is a
+ * third pass over every matched body, so a document of them is where a per-delimiter rescan would
+ * show as growth.
+ */
 function generateLargeDocument(count: number): string {
 	const rows: string[] = []
 	for (let index = 0; index < count; index++) {
 		const lead = INDENT.repeat(index % 3)
-		switch (index % 5) {
+		switch (index % 6) {
 			case 0:
 				rows.push(`# Heading ${index}`)
 				break
@@ -211,6 +228,9 @@ function generateLargeDocument(count: number): string {
 				break
 			case 3:
 				rows.push(`${lead}- [ ] task ${index}`)
+				break
+			case 4:
+				rows.push(`${lead}| task ${index}${CELL_AT}owner ${index}${CELL_AT}due ${index}${CELL_AT}effort`)
 				break
 			default:
 				rows.push(`${lead}plain paragraph number ${index} with some filler words`)
