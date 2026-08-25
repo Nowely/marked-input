@@ -5,7 +5,7 @@ prev: false
 title: "Option"
 ---
 
-Defined in: [react/markput/src/types.ts:42](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L42)
+Defined in: [react/markput/src/types.ts:57](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L57)
 
 React-specific markup option for defining mark behavior and styling.
 
@@ -37,7 +37,7 @@ const option: Option<ChipProps> = {
 optional mark: TMarkProps | (props) => TMarkProps;
 ```
 
-Defined in: [react/markput/src/types.ts:52](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L52)
+Defined in: [react/markput/src/types.ts:67](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L67)
 
 Props for the mark component.
 Can be a static object or a function that transforms MarkProps.
@@ -50,7 +50,7 @@ Can be a static object or a function that transforms MarkProps.
 optional Mark: ComponentType<TMarkProps>;
 ```
 
-Defined in: [react/markput/src/types.ts:47](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L47)
+Defined in: [react/markput/src/types.ts:62](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L62)
 
 Per-option component for rendering this mark
 
@@ -111,7 +111,7 @@ CoreOption.markup
 optional overlay: TOverlayProps;
 ```
 
-Defined in: [react/markput/src/types.ts:58](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L58)
+Defined in: [react/markput/src/types.ts:73](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L73)
 
 Props for the overlay component.
 
@@ -129,7 +129,7 @@ CoreOption.overlay
 optional Overlay: ComponentType<TOverlayProps>;
 ```
 
-Defined in: [react/markput/src/types.ts:54](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L54)
+Defined in: [react/markput/src/types.ts:69](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L69)
 
 Per-option component for rendering this overlay
 

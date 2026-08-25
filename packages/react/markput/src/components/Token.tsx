@@ -41,8 +41,8 @@ import {TokenChildren} from './TokenChildren'
 const markWrapperStyle: CSSProperties = {display: 'contents'}
 
 export const Token = memo(({node, depth}: {node: TreeNode; depth: number}) => {
-	const {resolveMarkSlot, store} = useMarkput(s => ({
-		resolveMarkSlot: s.slots.mark,
+	const {resolveNodeSlot, store} = useMarkput(s => ({
+		resolveNodeSlot: s.slots.node,
 		store: s,
 	}))
 	// The selector closes over THIS render's `node` and `useMarkput` never re-runs it. Safe
@@ -51,7 +51,7 @@ export const Token = memo(({node, depth}: {node: TreeNode; depth: number}) => {
 	// so a different node is a different key and a fresh component.
 	useMarkput(() => renderSubscription(node))
 
-	const [Component, props] = resolveMarkSlot(node)
+	const [Component, props] = resolveNodeSlot(node)
 
 	// The token's element, handed to core instead of core re-deriving it by walking the painted
 	// DOM. Stable per node id for `TokenChildren`'s reason: a fresh callback each render would

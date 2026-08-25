@@ -1,7 +1,7 @@
 import type {CoreOption, Slot} from '../../shared/types'
 import type {TreeNode} from '../tokens'
 
-export interface MarkSlot {
+export interface NodeSlot {
 	(): (node: TreeNode) => readonly [Slot, Record<string, unknown>]
 }
 

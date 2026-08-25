@@ -33,7 +33,7 @@ const Token = defineComponent({
 			toRef(() => ({depth: props.depth, node: props.node}))
 		)
 
-		const resolveMarkSlot = useMarkput(s => s.slots.mark)
+		const resolveNodeSlot = useMarkput(s => s.slots.node)
 		// Captured ONCE, as every `useMarkput` target is: safe because the component is keyed
 		// by `node.id` and a node keeps its object for exactly as long as it keeps its id.
 		const rendered = useMarkput(() => renderSubscription(props.node))
@@ -51,7 +51,7 @@ const Token = defineComponent({
 			// value changed while its node object, and therefore its props, stayed put.
 			void rendered.value
 			const node = props.node
-			const [Comp, compProps] = resolveMarkSlot.value(node)
+			const [Comp, compProps] = resolveNodeSlot.value(node)
 			const childNodes = node.kind === 'mark' ? node.children() : []
 			const children =
 				childNodes.length > 0

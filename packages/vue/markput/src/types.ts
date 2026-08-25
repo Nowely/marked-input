@@ -1,10 +1,23 @@
-import type {CoreOption, DataAttributes, DraggableConfig, OverlayTrigger, Slot} from '@markput/core'
+import type {CoreOption, DataAttributes, DraggableConfig, OverlayTrigger, RowNode, Slot} from '@markput/core'
 import type {Component, CSSProperties, VNodeChild} from 'vue'
 
 export interface MarkProps {
 	value?: string
 	meta?: string
 	children?: VNodeChild
+}
+
+/**
+ * Props passed to a ROW KIND's component — what `option.row.Component` receives.
+ *
+ * A row's structural bytes are not among them: its opener and closing literal are the editor's,
+ * not the document's, so they never reach a component and no caret may enter them.
+ */
+export interface RowProps {
+	/** The kind's metadata gap — a todo's checked flag, a fence's language. */
+	meta?: string
+	/** The live row node: its id, its own text and its verbs. */
+	node: RowNode
 }
 
 export interface OverlayProps {

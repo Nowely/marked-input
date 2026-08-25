@@ -11,14 +11,13 @@ describe('SlotsFeature', () => {
 		expect('container' in store.slots).toBe(false)
 	})
 
-	it('defaults container props to the core class alone, and block props to undefined', () => {
+	it('defaults container props to the core class alone', () => {
 		const store = new Store()
 		expect(store.slots.containerProps()).toEqual({className: styles.Container, style: undefined})
-		expect(store.slots.blockProps()).toBeUndefined()
 	})
 
-	it('keeps the mark resolver stable when a re-render hands over the same options in a fresh array', () => {
-		// `mark` ALLOCATES — it returns a closure — so its identity is what an adapter's selector
+	it('keeps the node resolver stable when a re-render hands over the same options in a fresh array', () => {
+		// `node` ALLOCATES — it returns a closure — so its identity is what an adapter's selector
 		// compares, and a change re-renders every Token. `props.options` is written on every
 		// parent render (Vue's syncProps writes unconditionally; React hands over whatever the
 		// prop holds), so without an equality on the signal a parent that memoised its option
@@ -31,10 +30,10 @@ describe('SlotsFeature', () => {
 		const option: CoreOption = {markup: '@[__value__]'}
 
 		store.props.set({options: [option]})
-		const first = store.slots.mark()
+		const first = store.slots.node()
 
 		store.props.set({options: [option]})
 
-		expect(store.slots.mark()).toBe(first)
+		expect(store.slots.node()).toBe(first)
 	})
 })

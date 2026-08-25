@@ -13,7 +13,7 @@ export {Store} from './src/store'
 // patch literal at the call site, `Parameters<MarkNode['update']>[0]` covers a declaration, and
 // nothing in this repo or either adapter imported the name. Both are still declared inline in the
 // built `.d.ts`, so no shape a consumer sees changed — only the ability to import the name.
-export type {Anchors, MarkNode, NodeAnchor, TextNode, TreeNode} from './src/features/tokens'
+export type {Anchors, MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from './src/features/tokens'
 
 // String-domain utilities (spec §2.3: keep)
 export {annotate, denote} from './src/features/tokens'

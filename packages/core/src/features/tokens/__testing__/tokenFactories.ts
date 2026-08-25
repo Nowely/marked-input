@@ -37,7 +37,7 @@ export function rowToken(content: string, start: number, children: Token[]): Row
  * `slot` — rather than a hand-forged literal that would drift from `TreeNode`.
  * Unwired, so `update`/`remove` answer `false` (see `createTokenTree`).
  */
-export function nodesOf(tokens: readonly Token[]): readonly TreeNode[] {
+export function nodesOf(tokens: readonly (Token | RowToken)[]): readonly TreeNode[] {
 	return createTokenTree(tokens).roots()
 }
 /**

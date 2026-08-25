@@ -6,8 +6,8 @@ import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
 import type {PropsModel} from '../state/PropsModel'
 import type {TokenModel, TreeNode} from '../tokens'
-import {resolveMarkSlot, resolveSlot, resolveSlotProps} from './resolveSlot'
-import type {MarkSlot} from './types'
+import {resolveNodeSlot, resolveSlot, resolveSlotProps} from './resolveSlot'
+import type {NodeSlot} from './types'
 
 import styles from '../../../styles.module.css'
 
@@ -58,15 +58,20 @@ export class SlotsFeature {
 				),
 			{equals: shallow}
 		)
-	readonly blockComponent: Computed<Slot> = computed(() => resolveSlot('block', this.props.slots()))
-	readonly blockProps: Computed<Record<string, unknown> | undefined> = computed(() =>
-		resolveSlotProps('block', this.props.slotProps())
-	)
-	readonly mark: MarkSlot = computed(() => {
-		const options = this.props.options()
-		const Mark = this.props.Mark()
-		const Span = this.props.Span()
-		return (node: TreeNode) => resolveMarkSlot(node, options, Mark, Span)
+	/**
+	 * THE node resolver, for every node kind. `blockComponent`/`blockProps` used to sit beside it
+	 * and answer the row half; both are gone — a row is a node, and `resolveNodeSlot` answers it
+	 * exactly as it answers a mark.
+	 */
+	readonly node: NodeSlot = computed(() => {
+		const ctx = {
+			options: this.props.options(),
+			Mark: this.props.Mark(),
+			Span: this.props.Span(),
+			slots: this.props.slots(),
+			slotProps: this.props.slotProps(),
+		}
+		return (node: TreeNode) => resolveNodeSlot(node, ctx)
 	})
 
 	// `tokens` is here for `rowConfig` alone, and only its PROPS-derived half is wanted:

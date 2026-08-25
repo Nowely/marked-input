@@ -1,8 +1,10 @@
 import {describe, it, expect, vi} from 'vitest'
 
-import {markToken, nodesOf, textToken, treeShape} from '../features/tokens/__testing__/tokenFactories'
+import {markToken, nodesOf, rowToken, textToken, treeShape} from '../features/tokens/__testing__/tokenFactories'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {Store} from './Store'
+
+import styles from '../../styles.module.css'
 
 describe('Store', () => {
 	it('construct with no arguments', () => {
@@ -230,27 +232,40 @@ describe('Store', () => {
 		})
 	})
 
-	describe('blockComponent / blockProps (computed)', () => {
-		it('return "div" for blockComponent by default', () => {
+	describe('the paragraph slot', () => {
+		it('resolves a row with no kind to "div" by default', () => {
 			const store = new Store()
-			expect(store.slots.blockComponent()).toBe('div')
+			const [node] = nodesOf([rowToken('hello', 0, [textToken('hello', 0)])])
+			expect(store.slots.node()(node)[0]).toBe('div')
 		})
 
-		it('return user-provided slot component', () => {
+		it('resolves it to the user-provided slot component', () => {
 			const store = new Store()
 			store.props.set({slots: {block: 'article'}})
-			expect(store.slots.blockComponent()).toBe('article')
+			const [node] = nodesOf([rowToken('hello', 0, [textToken('hello', 0)])])
+			expect(store.slots.node()(node)[0]).toBe('article')
 		})
 
-		it('return undefined for blockProps by default', () => {
+		it('carries the block slotProps onto the row, class and style merged', () => {
 			const store = new Store()
-			expect(store.slots.blockProps()).toBeUndefined()
+			store.props.set({slotProps: {block: {dataBlock: 'true', className: 'mine'}}})
+			const [node] = nodesOf([rowToken('hello', 0, [textToken('hello', 0)])])
+			expect(store.slots.node()(node)[1]).toMatchObject({
+				'data-block': 'true',
+				className: `${styles.Block} mine`,
+			})
 		})
 
-		it('resolve block slotProps', () => {
+		it('resolves a TYPED row through its own kind component', () => {
 			const store = new Store()
-			store.props.set({slotProps: {block: {dataBlock: 'true'}}})
-			expect(store.slots.blockProps()).toMatchObject({'data-block': 'true'})
+			store.props.set({
+				defaultValue: '# Title',
+				layout: 'block',
+				options: [{markup: '# __slot__', row: {Component: 'h1'}}],
+			})
+			store.host.container(document.createElement('div'))
+			const [node] = store.tokens.nodes()
+			expect(store.slots.node()(node)[0]).toBe('h1')
 		})
 	})
 
@@ -309,7 +324,7 @@ describe('Store', () => {
 		it('resolve mark slot for text node using span fallback', () => {
 			const store = new Store()
 			const [node] = nodesOf([textToken('hello', 0)])
-			const [component, props] = store.slots.mark()(node)
+			const [component, props] = store.slots.node()(node)
 			expect(component).toBe('span')
 			expect(props).toEqual({})
 		})
@@ -319,7 +334,7 @@ describe('Store', () => {
 			const store = new Store()
 			store.props.set({Span: CustomSpan})
 			const [node] = nodesOf([textToken('hello', 0)])
-			const [component, props] = store.slots.mark()(node)
+			const [component, props] = store.slots.node()(node)
 			expect(component).toBe(CustomSpan)
 			expect(props).toEqual({value: 'hello'})
 		})
@@ -327,7 +342,7 @@ describe('Store', () => {
 		it('throw for mark node without Mark component', () => {
 			const store = new Store()
 			const [node] = nodesOf([markToken('@john', '@[@john]', 0)])
-			expect(() => store.slots.mark()(node)).toThrow('No mark component found')
+			expect(() => store.slots.node()(node)).toThrow('No mark component found')
 		})
 
 		it('resolve overlay from global Overlay component', () => {

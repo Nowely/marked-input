@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {CSSProperties, TreeNode} from '@markput/core'
+import type {CSSProperties, RowNode} from '@markput/core'
 import {renderSubscription} from '@markput/core'
 import {computed} from 'vue'
 
@@ -8,33 +8,22 @@ import {useStore} from '../lib/hooks/useStore'
 import {unwrapEl} from '../lib/unwrapEl'
 import Token from './Token.vue'
 
-import styles from '@markput/core/styles.module.css'
-
 /**
- * A row's wrapper and its children — nothing else. The grip, the drop indicators and the menu
- * that used to be painted here live in the editor's one `BlockControls`.
+ * A row, painted by its KIND's component — a paragraph falls back to `slots.block`. The grip,
+ * the drop indicators and the menu that used to be painted here live in the editor's one
+ * `BlockControls`.
+ *
+ * The component and its props come from `slots.node`, the same resolver `Token` asks: a row is a
+ * node, and the class/style merge that used to sit here by hand is the resolver's answer now.
  */
-const props = defineProps<{node: TreeNode}>()
+const props = defineProps<{node: RowNode}>()
 
 const store = useStore()
 
-const blockComponent = useMarkput(s => s.slots.blockComponent)
-const slotProps = useMarkput(s => s.slots.blockProps)
+const resolveNodeSlot = useMarkput(s => s.slots.node)
 // A SCALAR subscription: read as a boolean, the derivation notifies only when THIS row's own
 // answer flips, so picking a row up does not re-render every other row.
 const isDragging = useMarkput(s => () => s.block.state.dragging() === props.node.id)
-
-const blockStyle = computed(() => ({
-	opacity: isDragging.value ? 0.4 : 1,
-	...(slotProps.value?.style as CSSProperties | undefined),
-}))
-
-// Strip style and className before v-bind to avoid double-application
-const otherSlotProps = computed(() => {
-	if (!slotProps.value) return undefined
-	const {style: _s, className: _c, ...rest} = slotProps.value
-	return Object.keys(rest).length > 0 ? rest : undefined
-})
 
 // Created ONCE in setup: `consign` and `children` mint a registration key per call, so calling
 // them inside the ref callback would file a fresh entry on every paint and never release the old
@@ -49,30 +38,33 @@ const setBlockRef = (el: unknown) => {
 	hostBlock(element)
 }
 
-// The per-row subscription: a RowNode's children are what this component paints, so a
-// structural edit inside the row must re-render it — `renderSubscription`'s row arm,
-// the same job its mark arm does for Token.
+// The per-row subscription: a row's kind, its meta and its children are what this component
+// paints, so an edit to any of them must re-render it — `renderSubscription`'s row arm, the same
+// job its mark arm does for Token.
 const rendered = useMarkput(() => renderSubscription(props.node))
-// READ so the computed depends on it — core's `children` signal is not Vue-reactive, so the
-// subscription ref is what carries the change across. The kind check stays here because the
-// template forks on it: a row paints its children, anything else falls back to one Token.
+
+// READ so the computeds depend on it — core's signals are not Vue-reactive, so the subscription
+// ref is what carries the change across.
+const resolved = computed(() => {
+	void rendered.value
+	return resolveNodeSlot.value(props.node)
+})
 const rowChildren = computed(() => {
 	void rendered.value
-	return props.node.kind === 'row' ? props.node.children() : undefined
+	return props.node.children()
+})
+const blockStyle = computed(() => ({
+	opacity: isDragging.value ? 0.4 : 1,
+	...(resolved.value[1].style as CSSProperties | undefined),
+}))
+const blockProps = computed(() => {
+	const {style: _s, ...rest} = resolved.value[1]
+	return rest
 })
 </script>
 
 <template>
-	<component
-		:is="blockComponent"
-		:ref="setBlockRef"
-		v-bind="otherSlotProps"
-		:class="[styles.Block, slotProps?.className as string | undefined]"
-		:style="blockStyle"
-	>
-		<template v-if="rowChildren">
-			<Token v-for="child in rowChildren" :key="child.id" :node="child" :depth="0" />
-		</template>
-		<Token v-else :node="node" :depth="0" />
+	<component :is="resolved[0]" :ref="setBlockRef" v-bind="blockProps" :style="blockStyle">
+		<Token v-for="child in rowChildren" :key="child.id" :node="child" :depth="0" />
 	</component>
 </template>

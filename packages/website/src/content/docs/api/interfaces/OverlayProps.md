@@ -5,7 +5,7 @@ prev: false
 title: "OverlayProps"
 ---
 
-Defined in: [react/markput/src/types.ts:19](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L19)
+Defined in: [react/markput/src/types.ts:34](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L34)
 
 Props for Overlay components.
 
@@ -17,7 +17,7 @@ Props for Overlay components.
 optional data: string[];
 ```
 
-Defined in: [react/markput/src/types.ts:23](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L23)
+Defined in: [react/markput/src/types.ts:38](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L38)
 
 Data array for suggestions/autocomplete
 
@@ -29,6 +29,6 @@ Data array for suggestions/autocomplete
 optional trigger: string;
 ```
 
-Defined in: [react/markput/src/types.ts:21](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L21)
+Defined in: [react/markput/src/types.ts:36](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L36)
 
 Trigger character(s) that activate the overlay

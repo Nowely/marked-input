@@ -1,29 +1,26 @@
-import type {TreeNode} from '@markput/core'
-import {cx, renderSubscription} from '@markput/core'
+import type {RowNode} from '@markput/core'
+import {renderSubscription} from '@markput/core'
 import type {CSSProperties} from 'react'
 import {memo, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {Token} from './Token'
 
-import styles from '@markput/core/styles.module.css'
-
 interface BlockProps {
-	// `RowNode` is not exported from core's public index, so the row kind is extracted here.
-	// `Container` narrows on `node.kind` and hands over an already-row node — this used to be
-	// an unchecked cast at that call site.
-	node: Extract<TreeNode, {kind: 'row'}>
+	node: RowNode
 }
 
 /**
- * A row's wrapper and its children — nothing else. The grip, the drop indicators and the menu
- * that used to be painted here live in the editor's one `BlockControls`, so a row is no longer a
- * mixture of document content and editor UI.
+ * A row, painted by its KIND's component — a paragraph falls back to `slots.block`. The grip,
+ * the drop indicators and the menu that used to be painted here live in the editor's one
+ * `BlockControls`, so a row is no longer a mixture of document content and editor UI.
+ *
+ * The component and its props come from `slots.node`, the same resolver `Token` asks: a row is a
+ * node, and the class/style merge that used to sit here by hand is the resolver's answer now.
  */
 export const Block = memo(({node}: BlockProps) => {
-	const {Component, slotProps, tokens} = useMarkput(s => ({
-		Component: s.slots.blockComponent,
-		slotProps: s.slots.blockProps,
+	const {resolveNodeSlot, tokens} = useMarkput(s => ({
+		resolveNodeSlot: s.slots.node,
 		tokens: s.tokens,
 	}))
 	// A SCALAR subscription, deliberately not a field on the object selector above. The object
@@ -33,9 +30,9 @@ export const Block = memo(({node}: BlockProps) => {
 	// when THIS row's own answer flips. The closure is safe for `Token`'s reason: the component
 	// is keyed by `node.id` and ids are never reused.
 	const isDragging = useMarkput(s => () => s.block.state.dragging() === node.id)
-	// The per-row subscription: a RowNode's children are what this component paints, so a
-	// structural edit inside the row must re-render it — `renderSubscription`'s row arm,
-	// the same job its mark arm does for Token.
+	// The per-row subscription: a row's kind, its meta and its children are what this component
+	// paints, so an edit to any of them must re-render it — `renderSubscription`'s row arm, the
+	// same job its mark arm does for Token.
 	useMarkput(() => renderSubscription(node))
 
 	// MEMOISED, unlike `setBlockRef` below: `consign` and `children` mint a registration key per
@@ -50,14 +47,14 @@ export const Block = memo(({node}: BlockProps) => {
 		hostBlock(el)
 	}
 
+	const [Component, props] = resolveNodeSlot(node)
+
 	return (
 		<Component
+			{...props}
 			ref={setBlockRef}
-			{...slotProps}
-			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.className is raw and needs casting to string
-			className={cx(styles.Block, slotProps?.className as string | undefined)}
-			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.style is raw and needs casting to CSSProperties
-			style={{opacity: isDragging ? 0.4 : 1, ...(slotProps?.style as CSSProperties | undefined)}}
+			// oxlint-disable-next-line no-unsafe-type-assertion -- props.style is raw and needs casting to CSSProperties
+			style={{opacity: isDragging ? 0.4 : 1, ...(props.style as CSSProperties | undefined)}}
 		>
 			{node.children().map(child => (
 				<Token key={child.id} node={child} depth={0} />

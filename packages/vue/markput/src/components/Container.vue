@@ -52,7 +52,9 @@ const setContainerRef = (el: unknown) => {
 		     per-node form would push 2N stray text nodes into the editing host. The branch is
 		     equivalent — a configured separator is exactly when the parse yields rows. -->
 		<template v-if="result.rowConfig !== undefined">
-			<Block v-for="node in result.nodes" :key="node.id" :node="node" />
+			<template v-for="node in result.nodes" :key="node.id">
+				<Block v-if="node.kind === 'row'" :node="node" />
+			</template>
 			<!-- The row controls, as one layer INSIDE the container rather than a copy inside
 			     every row. It is therefore a container child that is not a row —
 			     `styles.BlockControls` is how a caller tells them apart. -->
