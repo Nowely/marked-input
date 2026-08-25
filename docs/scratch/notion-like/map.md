@@ -306,7 +306,11 @@ becomes a ticket here.
   kind naming itself terminates. In the keymap: Enter splits the LINE and the pieces after the
   caret move into the row it produces, Backspace at the first piece un-types the line, Tab at the
   first or last piece leaves the field (ADR-0002's accepted cost), and a slash menu opened in a
-  piece converts the line.
+  piece converts the line. Shift+Enter is REFUSED there, found by the review pass: a continuation
+  is a row nested under the line's own row and a carved row is granted none, so the separator went
+  INSIDE the body — `'| a | b'` broken at the first piece emitted `'| ⏎a | b'`, one empty cell above
+  a paragraph holding the rest. Consumed and doing nothing, which is Backspace's answer at a piece's
+  start.
 - **The spec's rule that `split` excludes `indents` was NOT added, because the defect behind it is
   closed at its source.** The rule existed to stop a row holding both cells and indented children
   from losing the indented ones from the projection. A carved row now takes no indent-nested
