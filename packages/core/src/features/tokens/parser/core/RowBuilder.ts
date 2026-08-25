@@ -66,18 +66,24 @@ export function rowPass(
  * text — an opaque `__value__`/`__meta__` interior (a code block's internal
  * `'\n\n'`), a closed slot's interior, or a literal the occurrence straddles —
  * and is never a row boundary.
+ *
+ * Requires `matches` ascending by `start` — `PatternMatcher` keeps its completed
+ * list in that order and nothing downstream moves a `start`. Ends need no order:
+ * a nested match ends before its parent and the cursor simply does not skip the
+ * parent yet.
  */
 function findSeparators(value: string, separator: string, matches: Match[]): PositionRange[] {
-	const extents = mergeExtents(matches)
 	const result: PositionRange[] = []
-	let extentIndex = 0
+	let matchIndex = 0
 	let at = value.indexOf(separator)
 	while (at !== -1) {
 		const end = at + separator.length
-		// Occurrences only ever move forward, so the cursor into the disjoint
-		// extents never rewinds: one walk covers the whole document.
-		while (extentIndex < extents.length && extents[extentIndex].end <= at) extentIndex++
-		const overlaps = extentIndex < extents.length && extents[extentIndex].start < end
+		// Occurrences only ever move forward, so the cursor never rewinds: a match
+		// ending at or before this occurrence cannot reach a later one either. What
+		// is left at the cursor is the earliest-starting match that still can, so
+		// its start alone decides — no match after it starts earlier.
+		while (matchIndex < matches.length && matches[matchIndex].end <= at) matchIndex++
+		const overlaps = matchIndex < matches.length && matches[matchIndex].start < end
 		if (!overlaps) {
 			result.push({start: at, end})
 			at = value.indexOf(separator, end)
@@ -90,28 +96,6 @@ function findSeparators(value: string, separator: string, matches: Match[]): Pos
 		}
 	}
 	return result
-}
-
-/**
- * The accepted extents as a disjoint, ascending cover. Matches nest and touch,
- * so their extents are not disjoint on their own; the union is, and an
- * occurrence overlaps some match exactly when it overlaps the union.
- *
- * Requires `matches` sorted by `start` — `PatternMatcher` keeps its completed
- * list in that order and nothing downstream moves a `start`.
- */
-function mergeExtents(matches: Match[]): PositionRange[] {
-	const extents: PositionRange[] = []
-	let current: PositionRange | undefined
-	for (const match of matches) {
-		if (current && match.start <= current.end) {
-			if (match.end > current.end) current.end = match.end
-		} else {
-			current = {start: match.start, end: match.end}
-			extents.push(current)
-		}
-	}
-	return extents
 }
 
 /**
