@@ -148,43 +148,43 @@ export class SelectionDriver {
 		this.deps.dom.selectRange(anchors.anchor, anchors.head)
 	}
 
-	#trackSelection(container: HTMLElement): void {
-		/**
-		 * THE DOM→model direction, and the whole of it: the DOM's own boundaries resolved
-		 * straight into anchors in the live tree. No offset is formed anywhere on this path,
-		 * so the anchor the DOM produces IS the anchor stored and `anchorEquals` dedupes on
-		 * identity.
-		 *
-		 * That is what retired the numeric-equality guard this used to open with. The guard
-		 * existed only because `anchorAt(offsetOf(a)) !== a` at a shared boundary — `anchorAt`
-		 * is right-affine, so every deliberately far-side anchor (`{before}`, `{after}`, an
-		 * end-of-text offset) came back as a DIFFERENT anchor with the SAME number and dragged
-		 * focus onto the neighbouring text node. With no round-trip the premise is gone, and
-		 * with it the guard's cost: a caret that MOVES ACROSS a shared boundary without moving
-		 * its offset now updates the stored anchor, where the guard suppressed it.
-		 *
-		 * ONE EXIT, and it LEAVES THE ANCHORS STANDING (spec S2 D4 — `undefined` means "the
-		 * DOM cannot be read here", and the next `selectionchange` corrects it). Gated by
-		 * `SelectionDriver.spec`'s "a half-outside range leaves the stored anchors standing".
-		 * Dropping the selection entirely is the `focusout` clear below, not this path.
-		 */
-		const sync = (): void => {
-			const anchors = this.domAnchors()
-			if (!anchors) return
-			this.deps.selection.select(anchors.anchor, anchors.head)
-		}
+	/**
+	 * THE DOM→model direction, and the whole of it: the DOM's own boundaries resolved
+	 * straight into anchors in the live tree. No offset is formed anywhere on this path,
+	 * so the anchor the DOM produces IS the anchor stored and `anchorEquals` dedupes on
+	 * identity.
+	 *
+	 * That is what retired the numeric-equality guard this used to open with. The guard
+	 * existed only because `anchorAt(offsetOf(a)) !== a` at a shared boundary — `anchorAt`
+	 * is right-affine, so every deliberately far-side anchor (`{before}`, `{after}`, an
+	 * end-of-text offset) came back as a DIFFERENT anchor with the SAME number and dragged
+	 * focus onto the neighbouring text node. With no round-trip the premise is gone, and
+	 * with it the guard's cost: a caret that MOVES ACROSS a shared boundary without moving
+	 * its offset now updates the stored anchor, where the guard suppressed it.
+	 *
+	 * ONE EXIT, and it LEAVES THE ANCHORS STANDING (spec S2 D4 — `undefined` means "the
+	 * DOM cannot be read here", and the next `selectionchange` corrects it). Gated by
+	 * `SelectionDriver.spec`'s "a half-outside range leaves the stored anchors standing".
+	 * Dropping the selection entirely is the `focusout` clear, not this path.
+	 */
+	syncFromDom(): void {
+		const anchors = this.domAnchors()
+		if (!anchors) return
+		this.deps.selection.select(anchors.anchor, anchors.head)
+	}
 
+	#trackSelection(container: HTMLElement): void {
 		const syncIfInEditor = (node: Node): void => {
 			// The container IS the editor, and it owns no token: `handleAt` answers
 			// `undefined` for it, which is the "outside" verdict. Its own boundaries are
 			// where a caret before or after a top-level mark lives, so they must SYNC.
 			if (node === container) {
-				sync()
+				this.syncFromDom()
 				return
 			}
 			const at = this.deps.dom.handleAt(node)
 			if (at && at !== 'control') {
-				sync()
+				this.syncFromDom()
 				return
 			}
 			if (at === 'control') return
