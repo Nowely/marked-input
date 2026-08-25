@@ -58,9 +58,11 @@ store.block.selected() // reactive: the ids of the selected rows, in document or
 store.block.move({parent: null, index: 2}) // move them, as one splice
 ```
 
-An arrow key is only ever intercepted once a row selection stands, and `Esc` defers to an open overlay. An EMPTY row cannot be row-selected on its own — its content is zero-width, so a caret resting in one sits at both of its edges — but it is selected as part of a range that spans its neighbours.
+An arrow key is only ever intercepted once a row selection stands — which follows from the selection being derived and is not a synonym for "after `Esc`": a plain text selection that happens to span one row WHOLE already holds that row, so `Shift+ArrowDown` from it grows by a row rather than by a line. At the document's edges the key is still the gesture's and does nothing, rather than falling back to the browser and collapsing the selection it was extending. `Esc` defers to anything already open — the suggestions overlay and the row menu — each of which closes on that press instead. An EMPTY row cannot be row-selected on its own — its content is zero-width, so a caret resting in one sits at both of its edges — but it is selected as part of a range that spans its neighbours.
 
-Dragging a row's grip carries the whole row selection when the gripped row is part of it, and that row alone otherwise. Where the drop lands — including how DEEP — comes from the pointer: its vertical position names the gap between two lines, its horizontal position names one of the depths that gap legally admits, and every candidate is planned before it is offered, so the drop indicator promises rather than predicts.
+Widening never narrows: where a selection spans two parents, `Esc` and `Ctrl/Cmd+A` climb to the parent AND keep the rows outside it, and once every selected row is a root `Esc` leaves the selection alone.
+
+Dragging a row's grip carries the whole row selection when the gripped row is part of it, and that row alone otherwise. Where the drop lands — including how DEEP — comes from the pointer: its vertical position names the gap between two lines, its horizontal position names one of the depths that gap legally admits, and every candidate is planned before it is offered, so the drop indicator promises rather than predicts. A pointer below a nested subtree names the gap after that subtree's LAST line, not the slot under the root it started at.
 
 ## Deleting Around Marks
 

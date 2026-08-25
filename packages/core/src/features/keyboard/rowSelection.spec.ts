@@ -228,6 +228,21 @@ describe('Shift+arrows grow the row selection', () => {
 		expect(selectedSlots(store)).toEqual(['dd'])
 	})
 
+	/**
+	 * A DERIVED SELECTION HAS NO ESC IN IT, and this is the declared consequence: a plain text
+	 * selection that happens to cover one row WHOLE already holds that row, so the next Shift+arrow
+	 * is a row gesture. Nothing escalated it — "once a row selection stands" is a fact about the
+	 * span, not a mode the user entered.
+	 */
+	it('is a row gesture from a text selection that covers a row whole, with no Esc', () => {
+		const {store, container} = mountNestedBlock({defaultValue: 'aaa\nbbb\nccc'})
+		store.tokens.selection.select(store.tokens.anchorAt(0), store.tokens.anchorAt(3))
+		expect(store.block.selected()).toHaveLength(1)
+
+		expect(press(store, container, 'ArrowDown', {shiftKey: true}).defaultPrevented).toBe(true)
+		expect(selectionRange(store)).toEqual({start: 0, end: 7})
+	})
+
 	it('leaves an arrow alone until a row selection stands', () => {
 		const {store, container} = mount()
 		caretAt(store, 5)
