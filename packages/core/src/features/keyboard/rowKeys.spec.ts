@@ -779,6 +779,44 @@ describe('rowKeys the row keymap', () => {
 			expect(store.tokens.nodes()).toHaveLength(3)
 		})
 
+		it('opens the SECOND continuation beside the first, not under it', () => {
+			// N soft breaks in one item are N lines at ONE level. Measured from the caret's own row
+			// this built a staircase — `'- a⏎⇥one'` answered `'- a⏎⇥one⏎⇥⇥'` and every further press
+			// went one deeper.
+			const {store, container} = keymap('- a\n\tone')
+			caretIn(store, 1, 3)
+
+			press(container, 'Enter', {shiftKey: true})
+
+			expect(store.tokens.value()).toBe('- a\n\tone\n\t')
+			// Still one root, and both lines are the bullet's own children.
+			expect(store.tokens.nodes()).toHaveLength(1)
+			expect(rowsOf(store)[0].rows()).toHaveLength(2)
+		})
+
+		it('opens a continuation under a ROOT paragraph, which is its own block', () => {
+			// A root with no kind still owns its lines — it is one block, and a paragraph gets its
+			// child rows as ordinary children, so the second line paints inside it. The nesting
+			// test above is about a row that is ALREADY an interior line.
+			const {store, container} = keymap('a')
+			caretIn(store, 0, 1)
+
+			press(container, 'Enter', {shiftKey: true})
+
+			expect(store.tokens.value()).toBe('a\n\t')
+			expect(store.tokens.nodes()).toHaveLength(1)
+		})
+
+		it('opens the second continuation of a PARAGRAPH beside the first too', () => {
+			const {store, container} = keymap('a\n\tone')
+			caretIn(store, 1, 3)
+
+			press(container, 'Enter', {shiftKey: true})
+
+			expect(store.tokens.value()).toBe('a\n\tone\n\t')
+			expect(store.tokens.nodes()).toHaveLength(1)
+		})
+
 		it('SPLITS instead when nesting is off', () => {
 			const {store, container} = keymap('- a', {indent: ''})
 			caretIn(store, 0, 1)

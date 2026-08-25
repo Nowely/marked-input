@@ -27,13 +27,14 @@ type KbCtx = Pick<Store, 'edit' | 'tokens'>
  * stays above and the subtree follows the tail. On an EMPTY row it DEMOTES instead, and only falls
  * through to the split when the ladder has nothing left to give.
  *
- * Shift+Enter opens a CONTINUATION LINE — a child row with no kind — which is the soft break this
- * encoding can express: one line is one row (ADR-0011), so a second line inside a row has to be a
- * row, and the only question is whose. As a CHILD it travels with its parent on a drag, copies
- * with it, and renders inside the parent's own component; as a sibling it would be a block of its
- * own. It is an insert and a depth rather than a verb, and both are written in ONE splice, because
- * two verbs cannot compose here: in controlled mode the tree has not moved when the first returns,
- * so the second would address the document as it was.
+ * Shift+Enter opens a CONTINUATION LINE — a row with no kind, under the row whose kind owns the
+ * line — which is the soft break this encoding can express: one line is one row (ADR-0011), so a
+ * second line inside a row has to be a row, and the only question is whose. Inside the KIND's
+ * subtree it travels with it on a drag, copies with it, and reaches its component as the `rows`
+ * prop; outside, it would be a row of its own. It is an insert and a depth rather than a verb, and
+ * both are written in ONE splice, because two verbs cannot compose here: in controlled mode the
+ * tree has not moved when the first returns, so the second would address the document as it was.
+ * {@link continuationDepth} is the whole of which row it joins.
  *
  * A RAW CLOSED body — a fence, frontmatter — takes neither: its interior already holds separators,
  * so Enter there is a literal newline. Derived from the compiled markup rather than declared,
@@ -77,10 +78,7 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
 		return
 	}
 	if (event.shiftKey) {
-		// `childDepth`, not `depth + 1`: an EMPTY row takes no children, so the continuation would
-		// come back as a sibling carrying an indent run the scan never granted. Asking the tree for
-		// the depth a child would land at makes that case a plain split, with no rule restated here.
-		store.edit.replace(at, at, rowConfig.separator + rowConfig.indent.repeat(caret.childDepth))
+		store.edit.replace(at, at, rowConfig.separator + rowConfig.indent.repeat(continuationDepth(caret)))
 		return
 	}
 	if (caret.row.slot() === '' && demote(caret)) return
@@ -123,6 +121,28 @@ export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 
 	event.preventDefault()
 	caret.row.setDepth(event.shiftKey ? caret.depth - 1 : caret.depth + 1)
+}
+
+/**
+ * THE DEPTH A CONTINUATION LINE IS WRITTEN AT, which is the whole of WHOSE line it becomes: N soft
+ * breaks in one row are N lines at ONE level, never a chain N deep.
+ *
+ * The caret's row is the row that OWNS the lines when it has a kind, or when it is a root — a root
+ * with no kind is a paragraph, and a paragraph IS its own block. The continuation goes under it, at
+ * `childDepth` rather than `depth + 1`: an EMPTY row takes no children, so asking the tree keeps
+ * that case a plain split instead of writing an indent run the scan never granted.
+ *
+ * A NESTED row with no kind is already an interior line of the row above it, so the next line is
+ * its SIBLING. Measuring from the caret's row unconditionally built a staircase — `'- a'` soft
+ * broken three times emitted `'- a⏎⇥one⏎⇥⇥two⏎⇥⇥⇥'`, four levels deep for one list item, and only
+ * the second line rendered where the amendment said it would.
+ *
+ * A row the user NESTED with Tab answers the same way, because it is the same document — ADR-0011's
+ * declared cost (b), read here as the rule it always was.
+ */
+function continuationDepth(caret: AnchoredRow): number {
+	const ownsItsLines = caret.row.descriptor() !== undefined || caret.depth === 0
+	return ownsItsLines ? caret.childDepth : caret.depth
 }
 
 /**

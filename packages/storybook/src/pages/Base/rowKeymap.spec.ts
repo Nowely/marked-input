@@ -91,6 +91,15 @@ describe('the row keymap', () => {
 		// beside it.
 		expect(rowsOf(host)).toHaveLength(1)
 		expect(host.querySelector('li [class*="Block"]')?.textContent).toBe('second line')
+
+		// The SECOND soft break lands BESIDE the first, not under it: N presses are N lines at one
+		// level. Typed here rather than asserted in the unit spec alone because the staircase this
+		// replaces was invisible in the value until the third press.
+		await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
+		await expect.poll(emitted).toBe('- a\n\tsecond line\n\t')
+		await userEvent.keyboard('third')
+		await expect.poll(emitted).toBe('- a\n\tsecond line\n\tthird')
+		expect(rowsOf(host)).toHaveLength(1)
 	})
 
 	/**
