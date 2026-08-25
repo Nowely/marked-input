@@ -1,6 +1,7 @@
 import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals'
+import type {CoreOption} from '../../../shared/types'
 import {Store} from '../../../store/Store'
 import {treeShape} from '../__testing__/tokenFactories'
 import type {Markup} from '../parser/types'
@@ -399,6 +400,86 @@ describe('TokenModel', () => {
 			}
 
 			expect(errors()).toHaveLength(1)
+		})
+
+		/**
+		 * A SPLIT answers to two rules of its own, and both cost the kind its CARVE rather than its
+		 * existence — an empty delimiter would match at every offset, and a target this editor does
+		 * not carry has no kind to give the pieces. Without these the row arm reports nothing and
+		 * the kind silently stops carving, which reads to a consumer as a table that is not a table.
+		 */
+		it('reports an unusable split and leaves the kind parsing its own body whole', () => {
+			const errors = captureErrors()
+			const cell = {row: {Component: 'td'}}
+			store.props.set({
+				Mark: () => null,
+				separator: '\n',
+				options: [{markup: '|__slot__', row: {Component: 'tr', split: {at: '', as: cell}}}, cell],
+				defaultValue: '| a | b',
+			})
+			store.host.container(document.createElement('div'))
+
+			const row = store.tokens.nodes()[0]
+			if (row.kind !== 'row') throw new Error('expected a row')
+			expect(row.option()).toBe(0)
+			expect(row.rows()).toEqual([])
+			expect(row.slot()).toBe(' a | b')
+			expect(errors()).toEqual([expect.stringContaining('A row `split.at` is empty')])
+		})
+
+		it('reports a split target this editor does not carry', () => {
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				separator: '\n',
+				// The target is an option of the same SHAPE, and not one of these options.
+				options: [
+					{markup: '|__slot__', row: {Component: 'tr', split: {at: ' | ', as: {row: {Component: 'td'}}}}},
+				],
+				defaultValue: '| a | b',
+			})
+			store.host.container(document.createElement('div'))
+
+			const row = store.tokens.nodes()[0]
+			if (row.kind !== 'row') throw new Error('expected a row')
+			expect(row.rows()).toEqual([])
+			expect(errors()).toEqual([
+				expect.stringContaining('A row `split.as` names an option this editor does not carry'),
+			])
+		})
+
+		/**
+		 * THE SAME GATE AS THE MARKUPS' ABOVE, read on a split: a split record is allocated per
+		 * evaluation, so comparing the declarations by reference makes every prop sync a fresh
+		 * parser — and a fresh parser re-parses, which re-mints every node the document has. The
+		 * ORACLE is the node objects, since the value is byte-identical either way.
+		 */
+		it('keeps one parser across a fresh-but-identical options array carrying a split', () => {
+			// Fresh objects on every call, including the `row` specs — a JSX prop built inline.
+			const options = (): CoreOption[] => {
+				const cell: CoreOption = {row: {Component: 'td'}}
+				return [
+					{markup: '|__slot__', row: {Component: 'tr', split: {at: ' | ', as: cell}}},
+					cell,
+					{markup: '@[__value__]'},
+				]
+			}
+			const props = () => ({Mark: () => null, separator: '\n', options: options(), defaultValue: '| @[x] | b'})
+			store.props.set(props())
+			store.host.container(document.createElement('div'))
+			const row = store.tokens.nodes()[0]
+			if (row.kind !== 'row') throw new Error('expected a row')
+			const cells = row.rows()
+			const mention = cells[0].children()[1]
+
+			for (let i = 0; i < 10; i++) store.props.set(props())
+
+			expect(store.tokens.nodes()[0]).toBe(row)
+			expect(row.rows()).toEqual(cells)
+			// A fresh parser mints fresh DESCRIPTORS, and adoption refuses a mark whose descriptor
+			// is not the same object — so the mark inside a cell is what a re-minted parser loses.
+			expect(cells[0].children()[1]).toBe(mention)
+			expect(store.tokens.value()).toBe('| @[x] | b')
 		})
 	})
 })
