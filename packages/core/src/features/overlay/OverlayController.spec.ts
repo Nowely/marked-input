@@ -91,6 +91,24 @@ describe('OverlayController', () => {
 			expect(store.overlay.match()?.value).toBe('f')
 		})
 
+		it('QUERIES what was typed after the trigger, never the word the caret sits in FRONT of', () => {
+			// The trigger opened at the START of an existing word, which is where a user reaches
+			// for the menu on a row they have already written. The probe used to stretch its span
+			// over the word to the RIGHT and report it as the query — so the menu filtered on text
+			// nobody typed, and `choose` then cut that word out of the row: `'Quote of the day'`
+			// converted to a quote emitted `'>  of the day'`. `value` is "typed text after
+			// trigger", which the overlay guide documents and this asserts.
+			const store = storeWithCaret('Quote of the day', 0)
+
+			store.edit.replace(...anchorsAt(store, 0, 0), '@')
+
+			expect(store.overlay.match()?.value).toBe('')
+			expect(store.overlay.match()?.source).toBe('@')
+			// The span the pick replaces is the TRIGGER, and nothing else of the row.
+			const range = store.overlay.match()?.range
+			expect(range && 'offset' in range.head ? range.head.offset : undefined).toBe(1)
+		})
+
 		it('clear match when close is emitted', () => {
 			store.props.update({options: []})
 			store.props.update({options: [{overlay: {trigger: '@'}}]})

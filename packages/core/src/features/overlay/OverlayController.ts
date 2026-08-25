@@ -286,6 +286,13 @@ export class OverlayController {
 	 * the caret, so it only ever looks at characters immediately left of it, and those are in
 	 * the caret's own node unless the caret sits at its start — where a whole-value read would
 	 * see a preceding mark's markup, which ends in `]` or `)` and matches no `trigger(\w*)$`.
+	 *
+	 * LEFT OF THE CARET AND NOTHING ELSE, which is also the whole of what `match.value` promises
+	 * ("typed text after trigger"). The span used to be stretched over the word to the RIGHT as
+	 * well, on the theory that a trigger typed into an existing word means to complete it — but
+	 * the query is what the user TYPED, and the pick cuts the whole span out: opening the menu at
+	 * the start of `'Quote of the day'` filtered on `Quote`, and choosing emitted `'>  of the
+	 * day'`. Nothing right of the caret is the user's answer to a menu they have not seen yet.
 	 */
 	#findTrigger(): OverlayMatch | undefined {
 		const anchors = this.tokens.selection.anchors()
@@ -296,8 +303,6 @@ export class OverlayController {
 
 		const text = caret.node.text()
 		const left = text.slice(0, caret.offset)
-		const right = text.slice(caret.offset)
-		const rightWord = right.match(/^\w*/)?.[0] ?? ''
 
 		for (const option of this.props.options()) {
 			const trigger = option.overlay?.trigger
@@ -306,13 +311,13 @@ export class OverlayController {
 			const match = left.match(new RegExp(`${escape(trigger)}(\\w*)$`))
 			if (!match) continue
 
-			const [sourceLeft, wordLeft] = match
+			const [source, value] = match
 			return {
-				value: wordLeft + rightWord,
-				source: sourceLeft + rightWord,
+				value,
+				source,
 				range: {
-					anchor: {node: caret.node, offset: caret.offset - sourceLeft.length},
-					head: {node: caret.node, offset: caret.offset + rightWord.length},
+					anchor: {node: caret.node, offset: caret.offset - source.length},
+					head: {node: caret.node, offset: caret.offset},
 				},
 				span: text,
 				node: this.tokens.handle(caret.node.id)?.element() ?? this.host.container() ?? document.body,
