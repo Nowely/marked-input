@@ -1,7 +1,7 @@
 import type {MarkedInputProps} from '@markput/react'
 import {composeStories} from '@storybook/react-vite'
 import {useState} from 'react'
-import {describe, expect, it, vi} from 'vitest'
+import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
@@ -147,30 +147,42 @@ describe('the showcase page', () => {
 })
 
 describe('the slash menu', () => {
-	it('inserts a kind on an empty row', async () => {
-		const onChange = vi.fn<(value: string) => void>()
-		const {host} = await mount(Empty, {onChange})
+	/**
+	 * THE GESTURE CONTINUES, and that half is the point: a value assertion alone passes while the
+	 * pick blurs the editor, and a user who cannot type the heading's text has not inserted a
+	 * heading. So the claim is the insert AND the next character — asserted through the emitted
+	 * value, which only a live caret in the new row can produce.
+	 */
+	it('inserts a kind on an empty row, and the next keystroke lands in it', async () => {
+		const {host, value} = await mountControlled(Empty, '')
 
 		await focusAtStart(rowsOf(host)[0])
 		dispatchInsertText(editingHost(host), '/')
 		await choose('Heading 2')
+		await expect.poll(value).toBe('## ')
 
-		expect(onChange.mock.lastCall?.[0]).toBe('## ')
+		await userEvent.keyboard('a')
+
+		await expect.poll(value).toBe('## a')
 	})
 
 	/**
 	 * The other half of the same gesture: on a row that already has text the menu CONVERTS it, and
-	 * the text the user typed is what the new kind holds. The trigger leaves in the same splice.
+	 * the text the user typed is what the new kind holds. The trigger leaves in the same splice,
+	 * and the caret stays where the trigger was — so the next character lands AFTER the text and
+	 * not in front of it, which is the reading that separates a live caret from a restored one.
 	 */
-	it('converts a row that already has text, keeping the text', async () => {
-		const onChange = vi.fn<(value: string) => void>()
-		const {host} = await mount(Showcase, {defaultValue: 'plain row', onChange})
+	it('converts a row that already has text, keeping the text and the caret', async () => {
+		const {host, value} = await mountControlled(Showcase, 'plain row')
 
 		await focusAtEnd(rowsOf(host)[0])
 		dispatchInsertText(editingHost(host), '/')
 		await choose('Quote')
+		await expect.poll(value).toBe('> plain row')
 
-		expect(onChange.mock.lastCall?.[0]).toBe('> plain row')
+		await userEvent.keyboard('!')
+
+		await expect.poll(value).toBe('> plain row!')
 	})
 
 	/** The menu is `overlay.entries`, so a keyword no label contains still narrows it. */
