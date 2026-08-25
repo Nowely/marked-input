@@ -113,6 +113,31 @@ export function isConsumerKeyOrigin(store: KbCtx, container: HTMLElement, event:
 }
 
 /**
+ * Does the key's origin keep an undo stack the PLATFORM owns — a text entry field, or an editable
+ * island? Those are the only origins where `Mod+Z` means something other than the editor's own
+ * history, and they are the whole of the exception `input.ts` runs the undo arm ahead of the
+ * consumer gate for.
+ *
+ * A control that is NOT one of them cannot answer the key at all, and the ones a row component
+ * paints — a checkbox, a `<select>`, a toggle button — edit the DOCUMENT, so the user is left
+ * holding an edit that only this stack can take back. Measured: ticking a to-do left focus on the
+ * `<input type=checkbox>` (the browser's own default), and the `Mod+Z` after it was swallowed
+ * whole; the entry was on the stack and replayed the moment focus returned to a text row.
+ *
+ * `selectionStart` is the PLATFORM's own test for "this input holds text" — a number for text,
+ * search, url, tel, password and email, and `null` for a checkbox, a radio, a colour or a date.
+ * Enumerating the type strings here would be a second copy of that table.
+ */
+export function ownsPlatformUndo(container: HTMLElement, event: KeyboardEvent): boolean {
+	const target = nodeTarget(event)
+	if (!target) return false
+	if (inExplicitEditableIsland(target, container)) return true
+	const element = target instanceof Element ? target : target.parentElement
+	if (element instanceof HTMLTextAreaElement) return true
+	return element instanceof HTMLInputElement && element.selectionStart !== null
+}
+
+/**
  * A collapsed delete EXPANDS: onto the adjacent MARK when the caret sits exactly on one of
  * its boundaries — that is the mark swallow — onto the adjacent ROW SEPARATOR when it sits on
  * a row boundary, else by one character in the delete's direction.

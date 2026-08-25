@@ -10,6 +10,7 @@ import {
 	dropUnexpressedInput,
 	isConsumerKeyOrigin,
 	isConsumerOrigin,
+	ownsPlatformUndo,
 	replacementForInput,
 } from './beforeInput'
 import {
@@ -37,6 +38,27 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 	)
 
 	listen(container, 'keydown', e => {
+		// THE EDITOR'S OWN UNDO (ADR-0012), and it is the ONE arm that runs ahead of the
+		// consumer-origin gate below, because a consumer control's edit is an edit to the
+		// DOCUMENT and this stack is the only thing that can take it back. Ticking a to-do
+		// leaves focus on the `<input type=checkbox>` — the browser's own default, reached by
+		// the plainest gesture the page has — and the gate then swallowed the `Mod+Z` after it
+		// whole. The entry was on the stack the whole time and replayed the moment focus
+		// returned to a text row; only the key was dead.
+		//
+		// It cancels whether or not there is anything to undo: the browser's stack is empty by
+		// construction — every input path prevents its default (ADR-0006) — so leaving the key
+		// alone would produce nothing anyway, and letting it through would be a promise this
+		// editor cannot keep. `code`, like select-all below, because the physical key is the
+		// shortcut. {@link ownsPlatformUndo} is the exception: a text field or an editable island
+		// has a stack of its own, and that one is not ours to take.
+		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && !ownsPlatformUndo(container, e)) {
+			e.preventDefault()
+			if (e.shiftKey) store.history.redo()
+			else store.history.undo()
+			return
+		}
+
 		// ONE consumer-origin test for the WHOLE keydown tier, matching what
 		// `handleBeforeInput` does on its own: DOM the consumer owns — a registered control
 		// root, or an explicit `contenteditable` island — handles its own keys, and the model
@@ -60,17 +82,6 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 			return
 		}
 
-		// THE EDITOR'S OWN UNDO (ADR-0012), and it cancels whether or not there is anything to
-		// undo: the browser's stack is empty by construction — every input path prevents its
-		// default (ADR-0006) — so leaving the key alone would produce nothing anyway, and letting
-		// it through would be a promise this editor cannot keep. `code`, like select-all above,
-		// because the physical key is the shortcut.
-		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
-			e.preventDefault()
-			if (e.shiftKey) store.history.redo()
-			else store.history.undo()
-			return
-		}
 		// The ROW arms, after the shared checks and answering only where the value parses into
 		// rows. They used to be a second keydown listener on this same container that repeated
 		// both checks; Backspace's row arm is the one that is not here, because it belongs INSIDE

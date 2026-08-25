@@ -363,6 +363,26 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * A CHECKBOX KEEPS DOM FOCUS — that is the browser's own default for `<input type=checkbox>`,
+	 * and it is the state a user is left in by the ordinary gesture of ticking a to-do. The
+	 * keydown tier declines wholesale for a consumer control root, so the `Mod+Z` after the tick
+	 * was swallowed: the entry was on the stack and replayed fine once you clicked back into a
+	 * text row, but from where the user actually stood the edit could not be taken back. The
+	 * editor's own undo is not the control's key.
+	 */
+	it('undoes an edit a consumer control made while that control still holds focus', async () => {
+		const {host, value} = await mountControlled(Showcase, '- [ ] Confirm the EU quota')
+
+		await page.elementLocator(host).getByRole('checkbox').click()
+		await expect.poll(value).toBe('- [x] Confirm the EU quota')
+		expect(document.activeElement?.tagName).toBe('INPUT')
+
+		await userEvent.keyboard('{Meta>}z{/Meta}')
+
+		await expect.poll(value).toBe('- [ ] Confirm the EU quota')
+	})
+
+	/**
 	 * THE PAYOFF OF `useControlRef`, driven: a control a row's component painted calls a verb on
 	 * its OWN node and the document is what changes. Three of them, each asserted through the
 	 * emitted value — the callout's tone, the fence's language, and the footer's `+ New`.
