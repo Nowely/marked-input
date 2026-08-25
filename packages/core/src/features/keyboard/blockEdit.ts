@@ -50,9 +50,16 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
  * `beforeinput` arm still is. Answers whether it consumed the event.
  *
  * Enter belongs to {@link handleRowEnter}'s keydown, which cancels plain Enter and inserts the
- * SEPARATOR, so the table's `'\n'` mapping is wrong for a row — it would splice a literal
- * newline INSIDE the row instead of splitting it. An insertParagraph that still arrives
- * answered to no keydown, so it fails closed with the rest of the unexpressed.
+ * SEPARATOR, so an insertParagraph reaching here answered to no keydown and fails closed with
+ * the rest of the unexpressed — where the table's `'\n'` would splice a literal newline into a
+ * row whose separator is anything but `'\n'`.
+ *
+ * SHIFT+ENTER is deliberately NOT here, and is not a soft break either. `handleRowEnter` lets
+ * the keydown through, so its `insertLineBreak` takes the table's `'\n'` — which at the DEFAULT
+ * separator is the separator, so Shift+Enter splits the row like Enter, minus Enter's
+ * all-selected arm and its range-keeps-the-selection rule. At any other separator it splices a
+ * literal newline inside the row. Pinned both ways in `blockEdit.spec`. A row-local `softBreak`
+ * is the follow-up that gives it a meaning of its own (ADR-0011).
  */
 export function handleRowParagraph(store: KbCtx, container: HTMLElement, event: InputEvent): boolean {
 	if (store.tokens.rowConfig() === undefined) return false

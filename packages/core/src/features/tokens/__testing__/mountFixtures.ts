@@ -246,13 +246,18 @@ export function mountNested() {
  * row's own token element (the Block wrapper's role), holding one text surface per
  * row text child; the rows are returned because they are the only handle on the
  * row binding.
+ *
+ * The separator is SPELLED OUT rather than defaulted, and `props` overrides it: a case about
+ * the shipped `'\n'` default needs a row whose separator is one newline, and every case here
+ * needs one where a newline inside a row is not a boundary.
  */
-export function mountBlock() {
+export function mountBlock(props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: 'one\n\ntwo\n\n',
 		separator: '\n\n',
 		options: [],
+		...props,
 	})
 	const container = document.createElement('div')
 	document.body.append(container)

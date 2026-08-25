@@ -33,9 +33,12 @@ matches what every other editor does.
 ## Comments
 
 **2026-08-25, P2.** The premise changed under this ticket and it is now worse than it reads. With
-`'\n'` as the default separator (ADR-0011) Shift+Enter has nothing to insert: the newline it would
-write IS a row boundary, so the gesture is unbound rather than invisible. `white-space` is no
-longer what stands between the user and the break.
+`'\n'` as the default separator (ADR-0011) the newline Shift+Enter writes IS a row boundary, so
+the gesture SPLITS THE ROW rather than making an invisible break. (An earlier version of this
+comment said it was unbound. Measured: `handleRowEnter` returns on `shiftKey`, the
+`insertLineBreak` behind it takes the shared table's `'\n'`, and the row splits — minus Enter's
+own all-selected and range-keeps-selection rules, since it never reaches that arm. Pinned in
+`blockEdit.spec`.) `white-space` is no longer what stands between the user and the break.
 
 Both halves are still live and they are now two different tickets' worth of work:
 

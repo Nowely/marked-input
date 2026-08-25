@@ -234,6 +234,22 @@ describe('blockEdit beforeinput guard', () => {
 		expect(store.tokens.value()).toBe('o\nne\n\ntwo\n\n')
 	})
 
+	it('SPLITS the row on insertLineBreak at the default separator', () => {
+		// The same `'\n'` from the same table, at the separator every unconfigured editor gets:
+		// the newline it splices IS the boundary, so Shift+Enter splits. Not a soft break, and
+		// not the unbound key ADR-0011 first claimed — it just reaches the split by the generic
+		// path, so it takes none of `handleRowEnter`'s rules (all-selected, range-keeps-selection).
+		const {store} = mountBlock({defaultValue: 'one\ntwo', separator: '\n'})
+		const text = caretInRow(store, 0, 1)
+
+		const event = new InputEvent('beforeinput', {inputType: 'insertLineBreak', bubbles: true, cancelable: true})
+		text.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('o\nne\ntwo')
+		expect(store.tokens.nodes().map(node => node.kind)).toEqual(['row', 'row', 'row'])
+	})
+
 	it('inserts the dropped text in the row on insertFromDrop', () => {
 		const {store} = mountBlock()
 		const text = caretInRow(store, 0, 1)

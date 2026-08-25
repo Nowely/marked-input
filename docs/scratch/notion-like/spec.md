@@ -864,9 +864,11 @@ difference between an enforced rule and a paragraph.
 5. **Keeping `separator: '\n\n'` is now worse than the staircase it replaced.** Under `'\n\n'` a
    tight list scans as ONE bullet row whose slot is the flat text `'a\n- b\n- c'` — the inner items
    are not nested, they are invisible. Declared, not fixed: `'\n'` is the default.
-6. **Shift+Enter is unbound in block layout.** Under one line per row a soft break has no
-   representation that does not make some byte significant in every stored document; deferred to a
-   named follow-up (a `softBreak` string scanned only inside a row's body).
+6. **Shift+Enter splits the row instead of breaking inside it.** Under one line per row a soft
+   break has no representation that does not make some byte significant in every stored document,
+   so the `'\n'` the generic `insertLineBreak` path writes lands as a boundary — a split that takes
+   none of Enter's own rules. Deferred to a named follow-up (a `softBreak` string scanned only
+   inside a row's body). Measured at P2, where this item first read "unbound".
 7. `indent` is a new prop defaulting to `'\t'`: a leading tab run at a row start becomes structural.
 8. **`indent: ''` turns off row TYPING on every indented line, not just nesting** — a line whose
    first character is not the opener is a paragraph. A consumer storing leading tabs as content

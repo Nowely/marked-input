@@ -87,8 +87,9 @@ becomes a ticket here.
   so each item of the risk list and the decision log is a row with its own grip and menu. The
   fence had to become a kind with it, because an inline mark cannot span a row (ADR-0010) and it
   was shattering into four rows. The price is the one [05](issues/05-per-item-rows.md) named as its
-  alternative: a soft break has no representation under `'\n'`, so Shift+Enter is unbound until the
-  keymap phase adds `softBreak` — recorded on [08](issues/08-soft-breaks-are-invisible.md).
+  alternative: a soft break has no representation under `'\n'`, so Shift+Enter SPLITS THE ROW —
+  through the generic `insertLineBreak` path, so without Enter's own rules — until the keymap
+  phase adds `softBreak`; recorded on [08](issues/08-soft-breaks-are-invisible.md).
 - **A markdown table has no header row on the probe.** An OPEN kind's body runs to the row's own
   separator, so a table line is a row; which line is the header is a fact about the line AFTER it,
   and a row component sees only its own row. It comes back with cells-as-rows at P9.

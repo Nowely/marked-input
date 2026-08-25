@@ -66,7 +66,15 @@ asking for rows or not, and `rowConfig` answers that once for the whole editor.
 
 ## What stays open
 
-Under `'\n'` a soft break inside a row has no representation, so Shift+Enter is unbound. That is
-named as a follow-up (a `softBreak` string scanned only inside a row's body) and nothing here
-forecloses it: `RowConfig` is already a record rather than a bare separator, and the scanner reads
-its policy from that record alone.
+Under `'\n'` a soft break inside a row has no representation. The follow-up is a `softBreak`
+string scanned only inside a row's body, and nothing here forecloses it: `RowConfig` is already a
+record rather than a bare separator, and the scanner reads its policy from that record alone.
+
+**Shift+Enter is not unbound in the meantime** — an earlier draft of this record said it was, and
+that was wrong. `handleRowEnter` lets the keydown through on `shiftKey`, so the `insertLineBreak`
+behind it takes the shared table's `'\n'`; at the default separator that newline IS the boundary,
+so Shift+Enter splits the row. It reaches the split by the generic path, so it takes none of
+Enter's own rules — no all-selected arm, and a range is replaced rather than kept. At any other
+separator it splices a literal newline inside the row, which is what the follow-up will give a
+meaning to. Both halves are pinned in `blockEdit.spec`; measured green, and both redden when
+`insertLineBreak` is dropped from the table.
