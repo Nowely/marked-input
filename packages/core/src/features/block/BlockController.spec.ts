@@ -744,6 +744,98 @@ describe('drag and drop', () => {
 	})
 
 	/**
+	 * THE INDENT UNIT IS MEASURED OFF THE ROW'S OWN CHILD when the hit came through no parent — the
+	 * second of `#indentStep`'s two pairs, and the one a hit at depth 0 needs. Reached here through
+	 * a gap whose ceiling is two levels deep, which is what gives the X more than one depth to
+	 * choose between at depth 0.
+	 */
+	it('measures the indent off the hit row own child when the descent came through no parent', () => {
+		const mounted = mountNestedRows('alpha\n\tkid\nbeta\n\tbkid\ngamma')
+		const {block, container, painted, store} = mounted
+		const [alpha, beta] = store.tokens.nodes()
+		if (alpha.kind !== 'row' || beta.kind !== 'row') throw new Error('expected rows')
+		block.beginDrag(store.tokens.nodes()[2].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
+
+		const betaBox = painted.get(beta.id)!.getBoundingClientRect()
+		const y = betaBox.top + 1
+
+		// Past the ASSUMED 24 but short of the 30 this document actually paints: still a root.
+		dragOverAt(container, betaBox.left + 25, y)
+		expect(block.state.drop()?.placement).toEqual({parent: null, index: 1})
+
+		// One MEASURED unit right: `alpha`'s second child, after `kid`.
+		dragOverAt(container, betaBox.left + NESTED_INDENT, y)
+		expect(block.state.drop()?.placement).toEqual({parent: alpha, index: 1})
+	})
+
+	/**
+	 * THE ASSUMED UNIT, and it is live rather than defensive: a FLAT document paints no parent and
+	 * no child to measure against, so the only horizontal unit core owns is what decides whether
+	 * the pointer is asking for depth 0 or depth 1 — the ordinary drag in the ordinary document.
+	 */
+	it('falls back to the assumed indent where the document paints nothing to measure', () => {
+		const mounted = mountNestedRows('alpha\nbeta\ngamma')
+		const {block, container, painted, store} = mounted
+		const [alpha] = store.tokens.nodes()
+		if (alpha.kind !== 'row') throw new Error('expected a row')
+		block.beginDrag(store.tokens.nodes()[2].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
+
+		const box = painted.get(alpha.id)!.getBoundingClientRect()
+		const y = box.bottom - 1
+
+		dragOverAt(container, box.left + 23, y)
+		expect(block.state.drop()?.placement).toEqual({parent: null, index: 1})
+
+		dragOverAt(container, box.left + 24, y)
+		expect(block.state.drop()?.placement).toEqual({parent: alpha, index: 0})
+	})
+
+	/**
+	 * A CARVED ROW'S WHOLE BOX IS ITS LINE, because its children are its own body rather than rows
+	 * under it. Read the way an ordinary parent is read, the first CELL's top ends the line and the
+	 * gap before a table line becomes unreachable — every point in it is called "after".
+	 */
+	it('takes a carved row own box as its line, so both of its gaps stay reachable', () => {
+		const cell: CoreOption = {row: {Component: 'td'}}
+		const table: CoreOption = {markup: '|__slot__', row: {Component: 'tr', split: {at: ' | ', as: cell}}}
+		const mounted = mountNestedRows('| a | b\nplain\ntail', {options: [table, cell]})
+		const {block, container, painted, store} = mounted
+		const [line] = store.tokens.nodes()
+		block.beginDrag(store.tokens.nodes()[2].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
+
+		const box = painted.get(line.id)!.getBoundingClientRect()
+		// Three stacked boxes — the line's own surface and its two cells — so the box middle is a
+		// long way below where the first cell starts.
+		expect(box.height).toBe(ROW_HEIGHT * 3)
+
+		dragOverAt(container, 0, box.top + box.height / 2 - 1)
+		expect(block.state.drop()?.placement).toEqual({parent: null, index: 0})
+
+		dragOverAt(container, 0, box.top + box.height / 2 + 1)
+		expect(block.state.drop()?.placement).toEqual({parent: null, index: 1})
+	})
+
+	/**
+	 * THE RESOLVED DROP IS A VALUE, not the objects it was built from: `placement` and `line` are
+	 * freshly constructed every `dragover` tick, so a shallow compare of the two nested references
+	 * calls every tick a change and re-renders both adapters' control layers at pointer-move rate.
+	 */
+	it('reports no change for a tick that resolves to the same placement and line', () => {
+		const mounted = mountRows('alpha\n\nbeta\n\ngamma\n\n')
+		const {block, container, rows} = mounted
+		startDrag(mounted, 0)
+
+		let ticks = 0
+		watch(block.state.drop, () => ticks++)
+		const rect = rows[2].getBoundingClientRect()
+
+		dragOverAt(container, 0, rect.top + 1)
+		expect(ticks).toBe(1)
+		dragOverAt(container, 0, rect.top + 2)
+		expect(ticks).toBe(1)
+	})
+
+	/**
 	 * THE EDGE IS READ OFF THE ROW'S OWN LINE, not its box, and nesting is what makes the two
 	 * different: a parent's box covers its whole subtree, so its lower half is its CHILDREN. Read
 	 * from the box, the lower half of a parent's own line is called the upper half of the parent
