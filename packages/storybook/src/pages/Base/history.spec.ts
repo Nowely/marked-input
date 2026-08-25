@@ -26,15 +26,20 @@ describe('API: history', () => {
 		await mount(Default, {defaultValue: VALUE, onChange})
 		await focusAtEnd(getElement(page.getByText(VALUE)))
 
-		await userEvent.keyboard('XY')
-		expect(onChange).toHaveBeenLastCalledWith('Undo meXY')
+		// SIX characters, not two. At two the defect this length catches is invisible: coalescing
+		// merged in PAIRS — the merged window carries `insertedLength: 2`, which the keystroke test
+		// then refused — so an eleven-character run came off in six presses, one then two at a time.
+		// The module's own contract is "consecutive characters typed forward inside this window are
+		// ONE entry".
+		await userEvent.keyboard('XYZABC')
+		expect(onChange).toHaveBeenLastCalledWith('Undo meXYZABC')
 
-		// One entry for the run, so one press takes both characters.
+		// One entry for the run, so one press takes every character of it.
 		await undo()
 		expect(onChange).toHaveBeenLastCalledWith(VALUE)
 
 		await redo()
-		expect(onChange).toHaveBeenLastCalledWith('Undo meXY')
+		expect(onChange).toHaveBeenLastCalledWith('Undo meXYZABC')
 	})
 
 	it('undoes through the parent, in a CONTROLLED editor', async () => {

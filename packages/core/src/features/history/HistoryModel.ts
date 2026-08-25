@@ -86,7 +86,16 @@ export class HistoryModel {
 	/** What an undo took back off it, in the order a redo puts them back. */
 	readonly #future: Signal<readonly EditRecord[]> = signal<readonly EditRecord[]>({default: []})
 
-	/** When the entry on top of {@link #past} was typed — the only state a coalescing rule cannot derive. */
+	/**
+	 * When the OPEN TYPING RUN on top of {@link #past} last grew, or `0` when the top entry is not
+	 * one — the only state a coalescing rule cannot derive.
+	 *
+	 * It has to say "is a run open" as well as "when", because after the first merge the entry no
+	 * longer LOOKS like a keystroke: its window carries `insertedLength: 2`, and a paste is a pure
+	 * insertion of many characters too. Reading openness off the window's shape is what made
+	 * coalescing pairwise — an eleven-character run came off in six presses — and reading it off
+	 * `insertedLength >= 1` alone would swallow the keystroke after a paste into the paste's entry.
+	 */
 	#typedAt = 0
 
 	/**
@@ -114,7 +123,9 @@ export class HistoryModel {
 		const past = this.#past()
 		const previous = past.at(-1)
 		const run = previous && Date.now() - this.#typedAt < TYPING_RUN_MS ? typedTogether(previous, record) : undefined
-		this.#typedAt = Date.now()
+		// `0` is the sentinel and no clock reaches back to it, so the window test above reads it as
+		// "no run is open" without a second comparison.
+		this.#typedAt = run !== undefined || isKeystroke(record.window) ? Date.now() : 0
 		batch(() => {
 			this.#past(run ? [...past.slice(0, -1), run] : [...past, record])
 			this.#future([])
@@ -144,7 +155,7 @@ export class HistoryModel {
  */
 function typedTogether(previous: EditRecord, next: EditRecord): EditRecord | undefined {
 	if (previous.next !== next.base) return undefined
-	if (!isKeystroke(previous.window) || !isKeystroke(next.window)) return undefined
+	if (!isInsertionAtAPoint(previous.window) || !isKeystroke(next.window)) return undefined
 	if (next.window.start !== previous.window.start + previous.window.insertedLength) return undefined
 	return {
 		base: previous.base,
@@ -161,10 +172,18 @@ function typedTogether(previous: EditRecord, next: EditRecord): EditRecord | und
 }
 
 /**
+ * A pure insertion at a POINT, of any length — the shape a growing typing run keeps. Whether such
+ * a window is a run or a paste is not written on it; `HistoryModel.#typedAt` is what answers that.
+ */
+function isInsertionAtAPoint(window: Window): boolean {
+	return window.start === window.end && window.insertedLength >= 1
+}
+
+/**
  * A pure one-character insertion: what a key produces, and nothing else. No test for a
  * {@link Window.pairing} beside it — the two verbs that claim one rewrite whole lines, so such a
  * window always replaces a span and never satisfies the insertion test above it.
  */
 function isKeystroke(window: Window): boolean {
-	return window.start === window.end && window.insertedLength === 1
+	return isInsertionAtAPoint(window) && window.insertedLength === 1
 }

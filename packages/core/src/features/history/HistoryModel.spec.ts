@@ -132,20 +132,26 @@ describe('history: undo and redo', () => {
 
 describe('history: what is one step', () => {
 	it('coalesces a typing run into one entry, and gives a structural verb its own', () => {
+		// FOUR characters, not two. Two is the one length at which pairwise coalescing looks like
+		// coalescing: the merged window carries `insertedLength: 2`, which the keystroke test then
+		// refused, so the THIRD character started a fresh entry and an eleven-character run came
+		// off in six presses.
 		const store = mount('one\ntwo', {separator: '\n'})
-		type(store, 3, 'X')
-		type(store, 4, 'Y')
-		expect(store.tokens.value()).toBe('oneXY\ntwo')
+		type(store, 3, 'W')
+		type(store, 4, 'X')
+		type(store, 5, 'Y')
+		type(store, 6, 'Z')
+		expect(store.tokens.value()).toBe('oneWXYZ\ntwo')
 
 		const duplicated = rowsOf(store)[0].duplicate()
 		expect(duplicated).toBe(true)
-		expect(rowTexts(store)).toEqual(['oneXY', 'oneXY', 'two'])
+		expect(rowTexts(store)).toEqual(['oneWXYZ', 'oneWXYZ', 'two'])
 
 		// The verb first, alone: it is not a keystroke, so nothing merged it into the run above.
 		expect(store.history.undo()).toBe(true)
-		expect(rowTexts(store)).toEqual(['oneXY', 'two'])
+		expect(rowTexts(store)).toEqual(['oneWXYZ', 'two'])
 
-		// Then BOTH characters at once — one entry for the run.
+		// Then EVERY character at once — one entry for the run.
 		expect(store.history.undo()).toBe(true)
 		expect(rowTexts(store)).toEqual(['one', 'two'])
 		expect(store.history.canUndo()).toBe(false)
@@ -201,6 +207,24 @@ describe('history: what is one step', () => {
 
 		expect(store.history.undo()).toBe(true)
 		expect(store.tokens.value()).toBe('helloX')
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hello')
+	})
+
+	it('keeps the character typed AFTER a paste out of the paste', () => {
+		// The other direction, and the one a run's shape cannot tell apart on its own: a paste IS a
+		// pure insertion at a point of several characters, which is exactly what a growing typing
+		// run looks like. `#typedAt` is what separates them — it is `0` after a paste — and without
+		// that the next keystroke would be swallowed into the paste's entry and undo would take the
+		// pasted text back with it.
+		const store = mount('hello')
+		caretAt(store, 5)
+		store.edit.replace(...anchorsAt(store, 5, 5), 'YZ')
+		type(store, 7, 'X')
+		expect(store.tokens.value()).toBe('helloYZX')
+
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('helloYZ')
 		expect(store.history.undo()).toBe(true)
 		expect(store.tokens.value()).toBe('hello')
 	})
