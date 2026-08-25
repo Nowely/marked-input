@@ -468,11 +468,34 @@ becomes a ticket here.
   landed, since a shrunk `table-cell` box puts a click mid-text where a full-width `block`
   box puts it at the end. Forcing ONE `selectionchange` before the edit takes all six
   display pairs to the same right answer, which is the measurement that separates the two
-  stories. Fixed by having `EditController.replace` re-read the DOM into the stored
-  anchors before it commits; pinned per display and per mode in
+  stories. Fixed by re-reading the DOM into the stored anchors at the WRITE GATE
+  (`createTransactions`' `submit`); pinned per display and per mode in
   `pages/Base/caret.spec.ts` and `pages/Base/history.spec.ts`, both run by both adapters,
-  and at core's own layer in `EditController.spec.ts`. The showcase's database stays a
-  grid — the template aligns the run, which was always the other half of the reason.
+  and at core's own layer in `transactions.spec.ts` and `EditController.spec.ts`. The
+  showcase's database stays a grid — the template aligns the run, which was always the
+  other half of the reason.
+- **Three things P11.5's own record got wrong, corrected by measurement.** Kept because a
+  later phase will read that commit body and trust it.
+  - **The fix reached ONE of the two commit entry points.** It sat on
+    `EditController.replace`, and every ROW verb — `splitAt` (Enter), `setDepth` (Tab), a
+    retype, a move — reaches `sink.commit` without passing through it. Measured in both
+    adapters: split at the DOM's caret 4, undo, caret lands at 0. It sits at the gate every
+    verb passes now, and `pages/Base/history.spec.ts`'s Enter case reddens — only it — when
+    the old placement is restored.
+  - **"The keydown row arms still read the stored anchors" is FALSE for three of its four
+    items.** `rowKeys.ts:72`, `:140`, `:188` and `:218` all read
+    `domAnchors() ?? selection.anchors()` — DOM first, and have since before the phase. Only
+    `isAllSelected` (`input.ts:92`, `:158`) matches the description; the other genuinely
+    mirror-only reader, `OverlayController.#findTrigger`, is not in the list. `isAllSelected`
+    stays mirror-only DELIBERATELY: its whole reason is that `domAnchors()` declines when the
+    DOM selection is gone, which is what lets Backspace clear a fully-selected value instead
+    of letting the browser mutate contenteditable behind the model — pinned in `input.spec`.
+    Making it DOM-first would delete that.
+  - **"No measurement forces it, since real keys arrive a task apart" is FALSE.** Real keys
+    reproduce the gap on their own: `{ArrowLeft}{ArrowLeft}{ArrowLeft}X` in ONE
+    `userEvent.keyboard` call, then Mod+Z, lands the caret 2-3 characters past where the edit
+    was made, in both modes and both adapters, with nothing writing a DOM caret by hand. Now
+    a case in `pages/Base/history.spec.ts`.
 - **A kind whose component paints no `{children}` is an ATOMIC row, and saying so is a
   CALL.** The properties panel, the table of contents, the metric grid, the board, the
   bookmark, the view bar and the comment thread all render leaves that take STRINGS, so
