@@ -80,6 +80,29 @@ describe('createSelection', () => {
 			caret(harness, 2)
 			expect(harness.selection.isAllSelected()).toBe(false)
 		})
+		it('returns false for a caret that COINCIDES with both document edges', () => {
+			// The case the assertion above cannot reach, and the one that made this rule
+			// load-bearing rather than decorative: a document whose whole content is a typed row
+			// with an EMPTY body has its first selectable offset at its own length, so a caret
+			// there satisfies both equalities. Measured before the collapsed test landed — typing
+			// `'- '` into an empty editor and then any character REPLACED the document with that
+			// character, because every reader of this treats it as "replace everything".
+			const store = new Store()
+			store.props.set({
+				defaultValue: '- ',
+				separator: '\n',
+				Mark: () => null,
+				options: [{markup: '- __slot__', row: {Component: 'li'}}],
+			})
+			store.host.container(document.createElement('div'))
+			const row = store.tokens.nodes()[0]
+			if (row.kind !== 'row') throw new Error('expected a row')
+			const body = row.children()[0]
+			if (body.kind !== 'text') throw new Error('expected a text child')
+			store.tokens.selection.select({node: body, offset: 0})
+
+			expect(store.tokens.selection.isAllSelected()).toBe(false)
+		})
 		it('returns false for a partial range', () => {
 			const {tree, selection} = build('hello')
 			selection.select(anchorAt(tree.roots(), 1), anchorAt(tree.roots(), 3))

@@ -90,6 +90,12 @@ export function createSelection(deps: SelectionDeps): Selection {
 		if (!current || v.length === 0) return false
 		const anchor = deps.offsetOf(current.anchor)
 		const head = deps.offsetOf(current.head)
+		// A COLLAPSED selection selects nothing, whatever offsets it coincides with, and the two
+		// equalities below cannot say so on their own: a document whose whole content is a typed
+		// row with an EMPTY body — `'- '`, one keystroke into a fresh list — has its first
+		// selectable offset AT its length, so the caret sitting there satisfied both. Every
+		// consumer of this reads it as "replace the document", so the next character typed did.
+		if (anchor === head) return false
 		// Against the first SELECTABLE offset, not against 0: a document opening with a typed row
 		// starts with structural bytes no caret may enter, so {@link selectAll}'s own seed lands
 		// past 0 and comparing with 0 would make "everything is selected" unsatisfiable there.
