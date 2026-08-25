@@ -13,11 +13,9 @@ export interface Boundary {
 	readonly sink: CommitSink
 	/**
 	 * Undo/redo's write: the same commit policy as {@link Boundary.sink}, with no edit recorded —
-	 * a replay is not an edit path — and the caret named by the caller rather than mapped through
-	 * the window. Named as OFFSETS in the projection being restored, because the caller has held
-	 * them across every edit since; they are resolved against the roots this write leaves behind.
+	 * a replay is not an edit path. What it owes on landing is {@link ReplayLanding}.
 	 */
-	replay(value: string, window: Window, caret?: Offsets): boolean
+	replay(value: string, window: Window, landing?: ReplayLanding): boolean
 	/** An external value arrived (props.value, defaultValue). Routes into adoption. */
 	arrive(value: string): void
 	/** Parser or parse policy changed: re-derive every token from the unchanged projection. */
@@ -25,16 +23,26 @@ export interface Boundary {
 }
 
 /**
- * WHAT AN EMISSION OWES once the tree actually holds it — one or the other, never both, because
- * an emission is either a commit or a replay:
- * - a COMMIT owes its {@link EditRecord}, which is why the record is not emitted at `commit`: in
- *   controlled mode nothing has landed there yet, and an emission the parent declines to echo
- *   must leave no trace at all;
- * - a REPLAY owes the caret the record it replayed was captured with. Named rather than mapped:
- *   the window arithmetic collapses every offset inside the window onto its end, which is right
- *   for an edit and wrong for the position an edit was made FROM.
+ * WHAT A REPLAY OWES once the tree actually holds the value it replayed:
+ * - the CARET the record it replayed was captured with, as OFFSETS in the projection being
+ *   restored — the caller has held them across every edit since, so they are resolved against the
+ *   roots this write leaves behind. Named rather than mapped: the window arithmetic collapses
+ *   every offset inside the window onto its end, which is right for an edit and wrong for the
+ *   position an edit was made FROM;
+ * - `landed`, the caller's own bookkeeping. An undo moves its entry between two stacks, and that
+ *   move is owed at exactly this moment for the same reason the record is: in controlled mode a
+ *   parent may decline the undo — a length validator, a permission check — and an entry consumed
+ *   on the emission is stranded in a redo stack that names a document that never appeared.
  */
-type Landing = {edit: EditRecord} | {caret: Offsets}
+export type ReplayLanding = {caret?: Offsets; landed?: () => void}
+
+/**
+ * WHAT AN EMISSION OWES once the tree actually holds it — one or the other, never both, because
+ * an emission is either a commit or a replay. A COMMIT owes its {@link EditRecord}, which is why
+ * the record is not emitted at `commit`: in controlled mode nothing has landed there yet, and an
+ * emission the parent declines to echo must leave no trace at all.
+ */
+type Landing = {edit: EditRecord} | ReplayLanding
 
 /**
  * The emission a controlled commit is waiting to see echoed. `base` is the projection it
@@ -92,7 +100,8 @@ export function createBoundary(deps: {
 		// A REPLAY names where the caret lands, so it neither captures nor maps: the offsets it
 		// names were captured before the edit this is undoing, and mapping them through the window
 		// that undoes it would collapse them onto the restored span's end.
-		const caret = landing !== undefined && 'caret' in landing ? landing.caret : undefined
+		const replay = landing !== undefined && !('edit' in landing) ? landing : undefined
+		const caret = replay?.caret
 		// A config means the top level is rows (issue 08); its absence is the flat parse.
 		// `!== undefined`, not truthiness, because `undefined` is the ONE word for "no rows" and
 		// the caller owes it: `TokenModel.rowConfig` already folds an empty `separator` prop
@@ -124,8 +133,9 @@ export function createBoundary(deps: {
 			const restored = caret && resolveOffsets(deps.tree.roots(), caret)
 			deps.onResult?.(restored ? {selectionAfter: restored} : result)
 		})
-		// AFTER the batch, so a subscriber that reads the value sees the one the record describes.
+		// AFTER the batch, so a subscriber that reads the value sees the one the landing describes.
 		if (landing !== undefined && 'edit' in landing) deps.onEdit?.(landing.edit)
+		else replay?.landed?.()
 	}
 
 	/**
@@ -174,8 +184,8 @@ export function createBoundary(deps: {
 	return {
 		sink,
 
-		replay(value, window, caret) {
-			return apply(value, window, caret && {caret})
+		replay(value, window, landing) {
+			return apply(value, window, landing)
 		},
 
 		arrive(value) {

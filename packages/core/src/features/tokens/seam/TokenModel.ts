@@ -51,13 +51,13 @@ import type {
 	MarkNode,
 	MarkPatch,
 	NodeAnchor,
-	Offsets,
 	RowNode,
 	TreeCommands,
 	TreeNode,
 	Window,
 } from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
+import type {ReplayLanding} from '../tree/valueBoundary'
 
 /**
  * The value owner: it holds THE token tree, the string boundary that decides commit policy
@@ -299,8 +299,10 @@ export class TokenModel {
 
 	/**
 	 * @internal UNDO/REDO'S WRITE: put the document back to `value` through the exact `window` the
-	 * recorded edit moved it by, and put the caret where `caret` names rather than where the window
-	 * arithmetic would send it.
+	 * recorded edit moved it by. What the caller is owed once the document HAS it — the caret to
+	 * restore, and the caller's own bookkeeping — rides in `landing`, for the reason an
+	 * {@link EditRecord} does: in controlled mode this write is an emission, and the parent may
+	 * decline it.
 	 *
 	 * NOT AN EDIT PATH, and that is the whole shape of it: it bypasses the sink that captures
 	 * {@link EditRecord}s, so a replay writes no record and the stack cannot re-enter itself.
@@ -317,9 +319,9 @@ export class TokenModel {
 	 * needs an edit that LANDED, and landing seeds the tree — which never empties back, since even
 	 * the empty document parses to one root. The guard was measured out rather than argued about.
 	 */
-	replay(value: string, window: Window, caret?: Offsets): boolean {
+	replay(value: string, window: Window, landing?: ReplayLanding): boolean {
 		if (untracked(() => this.props.readOnly())) return false
-		return this.#boundary.replay(value, window, caret)
+		return this.#boundary.replay(value, window, landing)
 	}
 
 	/**

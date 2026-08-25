@@ -246,7 +246,7 @@ describe('boundary: the edit feed', () => {
 				selection: () => ({anchor, head: anchor}),
 				onResult: result => results.push(result),
 			})
-			boundary.replay('hello', {start: 0, end: 5, insertedLength: 5}, {anchor: 1, head: 1})
+			boundary.replay('hello', {start: 0, end: 5, insertedLength: 5}, {caret: {anchor: 1, head: 1}})
 			if (controlled) boundary.arrive('hello')
 			const landed = results[0].selectionAfter
 			return landed && offsetOfAnchor(tree.roots(), landed.anchor)
@@ -268,7 +268,7 @@ describe('boundary: the edit feed', () => {
 			onChange: () => {},
 			onResult: result => results.push(result),
 		})
-		boundary.replay('he@[x](m)llo', {start: 1, end: 1, insertedLength: 9}, {anchor: 10, head: 10})
+		boundary.replay('he@[x](m)llo', {start: 1, end: 1, insertedLength: 9}, {caret: {anchor: 10, head: 10}})
 		const landed = results[0].selectionAfter
 		expect(landed).toBeDefined()
 		expect(tree.roots()).toContain(textAnchor(landed!.anchor).node)

@@ -47,13 +47,24 @@ export class HistoryModel {
 	/** The mirror image: a redo re-applies its record's own splice, so the document must be its base. */
 	readonly canRedo: Computed<boolean> = computed(() => this.#holds(this.#future().at(-1)?.base))
 
-	/** Take the last edit off the document, restoring the caret it was made from. Answers whether it moved. */
+	/**
+	 * Take the last edit off the document, restoring the caret it was made from. Answers whether
+	 * the replay was ACCEPTED, which in controlled mode is the emission — the same reading every
+	 * other controlled verb has.
+	 *
+	 * THE STACK MOVES ON LANDING, not on the call: a controlled parent may decline the undo, and
+	 * an entry consumed on an emission the document never took is stranded in `#future` — where
+	 * its own base does not match either, so it is offered by neither side and the next edit
+	 * discards it. Deferred, a refused undo leaves the stack exactly as it found it and the user
+	 * may press again.
+	 */
 	undo(): boolean {
 		const entry = this.#past().at(-1)
 		if (!entry || !this.canUndo()) return false
-		if (!this.tokens.replay(entry.base, invertWindow(entry.window), entry.selectionBefore)) return false
-		this.#move(entry, this.#past, this.#future)
-		return true
+		return this.tokens.replay(entry.base, invertWindow(entry.window), {
+			caret: entry.selectionBefore,
+			landed: () => this.#move(entry, this.#past, this.#future),
+		})
 	}
 
 	/**
@@ -64,9 +75,9 @@ export class HistoryModel {
 	redo(): boolean {
 		const entry = this.#future().at(-1)
 		if (!entry || !this.canRedo()) return false
-		if (!this.tokens.replay(entry.next, entry.window)) return false
-		this.#move(entry, this.#future, this.#past)
-		return true
+		return this.tokens.replay(entry.next, entry.window, {
+			landed: () => this.#move(entry, this.#future, this.#past),
+		})
 	}
 
 	/** The edits the document took, oldest first. */

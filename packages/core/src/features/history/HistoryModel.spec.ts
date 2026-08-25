@@ -356,6 +356,51 @@ describe('history: a parent that does not echo', () => {
 		expect(store.tokens.value()).toBe('hello')
 	})
 
+	it('leaves the entry where it was when the parent refuses the UNDO', () => {
+		// The mirror of a refused edit, and the same rule: an emission the document never takes
+		// moves nothing. Consumed on the emission, the entry lands in the redo stack naming a
+		// document that never appeared — unusable there, unreachable back here — so one refusal
+		// costs the user every entry underneath it too.
+		let floor = 0
+		const store = mountControlled('hello', (self, emitted) => {
+			if (emitted.length >= floor) echoes(self, emitted)
+		})
+		type(store, 5, 'X')
+		expect(store.tokens.value()).toBe('helloX')
+
+		floor = 6 // a parent that validates a minimum length: the undo would take the value under it
+		store.history.undo()
+		expect(store.tokens.value()).toBe('helloX')
+		expect(store.history.canUndo()).toBe(true)
+		expect(store.history.canRedo()).toBe(false)
+
+		floor = 0 // and it is still there to press again
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hello')
+		expect(store.history.canRedo()).toBe(true)
+	})
+
+	it('moves the entry on an echo that arrives LATER, not only on one inside the call', () => {
+		// Why the move rides on the landing rather than on a value comparison after the call: a
+		// React parent's echo is a render apart, so at the moment `undo` returns, "refused" and
+		// "not yet" look exactly alike.
+		let pending: string | undefined
+		const store = mountControlled('hello', (_self, emitted) => {
+			pending = emitted
+		})
+		type(store, 5, 'X')
+		store.props.update({value: pending})
+		expect(store.tokens.value()).toBe('helloX')
+
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('helloX') // the parent has not answered yet
+		store.props.update({value: pending})
+
+		expect(store.tokens.value()).toBe('hello')
+		expect(store.history.canUndo()).toBe(false)
+		expect(store.history.canRedo()).toBe(true)
+	})
+
 	it('stops offering an entry once the parent writes the value itself', () => {
 		const store = mountControlled('hello', echoes)
 		type(store, 5, '!')

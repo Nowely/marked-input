@@ -30,6 +30,14 @@ What an emission owes on landing rides WITH the emission, in `valueBoundary`'s `
 the same channel `Window.pairing` rides on, and released by the same test, so there is nothing to
 clear when an echo turns out not to be one.
 
+**An UNDO's own stack move is owed at that same moment**, for the same reason and against the same
+refusal: a parent may decline the undo where it accepted the edit — a length validator, a
+permission check — and an entry consumed on the emission is stranded in the redo stack naming a
+document that never appeared, where its base does not match either. Neither side offers it again
+and the next edit discards it, so one refusal costs every entry underneath it too. It cannot be a
+value comparison after the call: a controlled parent's echo is a render apart, and at the moment
+`undo` returns, "refused" and "not yet" are indistinguishable.
+
 **An undo replays the recorded window backwards, it does not write a value.** A `setValue`-shaped
 undo restores the right string and re-pairs the rows by index, because a permutation is invisible
 to any diff of two strings: measured on `'a\nb\nc'` with the first row rotated to the end, the row
