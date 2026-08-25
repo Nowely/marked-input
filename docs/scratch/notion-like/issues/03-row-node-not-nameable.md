@@ -1,7 +1,7 @@
 # A consumer cannot name a Row
 
 Type: task
-Status: needs-triage
+Status: needs-triage (half landed in P1 — see the note at the bottom)
 Blocked by: —
 
 ## Problem
@@ -30,3 +30,11 @@ each row". Today that code is either untyped or dual-dependent.
 This is a barrel question, not a design question: the values are already
 reachable and already shipped. Cheap to fix, and worth checking against
 `docs/scratch/api-v2/spec.md` first so the export list is settled once.
+
+## Note — half of this landed in P1 (2026-08-25)
+
+`RowNode` is now exported from `packages/core/index.ts:16` and re-exported from both adapter
+barrels (`packages/react/markput/index.ts:23`, `packages/vue/markput/index.ts:22`), together with
+a new `RowProps` in each. The second half is UNTOUCHED: `Store` is still not re-exported from
+either adapter, so a react consumer selecting through `useMarkput(s => …)` still has to add
+`@markput/core` to name the type it already receives. Stays open for that.

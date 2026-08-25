@@ -1,7 +1,7 @@
 # A row-level markup re-matches inside its own slot, so repeats nest
 
 Type: task
-Status: needs-triage
+Status: resolved — P1 answers it with a row kind (2026-08-25)
 Blocked by: —
 
 ## Problem
@@ -40,3 +40,17 @@ Distinct from [01](01-row-start-anchoring.md): anchoring stops `- ` matching
 mid-sentence, but a list item's `- ` IS at the start of its line, so anchoring
 alone still produces this nesting. What is missing is a way to say "this markup
 repeats at sibling level within its row", or nested rows (deferred, ADR-0009).
+
+## Answer
+
+Resolved by P1's scan-first parse (ADR-0010). A row kind's body is bounded by the row's own
+separator before any inline matching runs, so the kind cannot re-match inside its own body: the
+staircase has nowhere to form.
+
+Probed at `e0595ca6`, markup `'- __slot__'` declared `row`, separator `'\n'`:
+
+    '- a\n- b\n- c'  ->  three SIBLING rows of kind '- __slot__', bodies 'a', 'b', 'c',
+                          no mark child in any of them
+
+The Notion page's risk list is now three rows rather than three nesting levels, and its snapshot
+was diffed rather than regenerated.

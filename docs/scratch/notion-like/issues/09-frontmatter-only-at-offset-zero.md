@@ -1,7 +1,7 @@
 # A `\n`-delimited fence matches only at the start of the document
 
 Type: task
-Status: needs-triage
+Status: resolved — P1 answers it with a row kind (2026-08-25)
 Blocked by: —
 
 ## Problem
@@ -34,3 +34,15 @@ Related to [07](07-closing-literal-newline.md) — both are the parser treating 
 The position-independent alternative `'---__value__---'` was probed and is
 worse: any two lone `---` rows in the document pair into one mark and swallow
 everything between them.
+
+## Answer
+
+Resolved by P1, at `e0595ca6`, and by the same mechanism as [07](07-closing-literal-newline.md): a
+row kind is recognised by a literal walk at each row's own start, so the closer can no longer be
+read before the opener.
+
+    markup '---\n__value__\n---' declared `row`, separator '\n'
+    'lead\n---\na: 1\n---\ntail'  ->  paragraph 'lead' + kind body 'a: 1' + paragraph 'tail'
+
+`PropertiesRow` in the Notion page is that kind, and the page no longer depends on its frontmatter
+sitting at offset 0.

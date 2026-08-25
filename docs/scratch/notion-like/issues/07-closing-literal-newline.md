@@ -1,7 +1,7 @@
 # A markup's closing literal may not begin with a newline
 
 Type: task
-Status: needs-triage
+Status: resolved — P1 answers it with a row kind (2026-08-25)
 Blocked by: —
 
 ## Problem
@@ -37,3 +37,16 @@ Whether the fix is a parser change or a documented rule is open. At minimum a
 markup whose value can never match should be reported the way an invalid one is
 (`markupError`, `MarkupDescriptor.ts:161-198`) rather than matching nothing in
 silence.
+
+## Answer
+
+Resolved FOR A ROW KIND, at `e0595ca6`. The row scanner finds every literal with `indexOf`, never
+with a regex, so a closing literal that begins with `\n` costs nothing:
+
+    markup '```__meta__\n__value__\n```' declared `row`, separator '\n'
+    'intro\n```ts\nq\n```\ntail'  ->  paragraph 'intro' + fence meta 'ts' body 'q' + paragraph 'tail'
+
+NOT fixed, and deliberately: the INLINE compiler still folds a closing literal's characters into
+the value's negated class (`createDynamicDefinition`), so an inline mark whose closer starts with
+`\n` still matches nothing. A markup that means to span lines declares `row`; that is the answer
+this effort needed, and the inline limitation is untouched.

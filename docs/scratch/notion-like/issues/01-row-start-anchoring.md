@@ -1,7 +1,7 @@
 # A markup cannot be anchored to the start of a row
 
 Type: task
-Status: needs-triage
+Status: resolved — P1 answers it with a row kind (2026-08-25)
 Blocked by: —
 
 ## Problem
@@ -33,3 +33,16 @@ consumers to escape, which pushes markdown's own problem onto them.
 Note the interaction with [02](02-variadic-placeholders.md) and with the
 `'\n'`-inside-a-row model: anchoring must mean "row start OR after a literal
 newline inside the row", or a multi-line list inside one row loses its items.
+
+## Answer
+
+Resolved by P1's scan-first parse (ADR-0010). A markup declared `row` is recognised at a row's
+OWN start and nowhere else — `RowScanner.tryKind` tests `value.startsWith(opener, at)` — while a
+markup left undeclared keeps matching anywhere, which is what an inline mark should do.
+
+Probed at `e0595ca6`, markup `'# __slot__'` declared `row`, separator `'\n'`:
+
+    'load 5# peak\n# Real'  ->  paragraph 'load 5# peak' + kind '# __slot__' body 'Real'
+
+Pinned by `parseRows.spec.ts` and by the row-locality property in `parseRows.property.spec.ts`,
+which reddens when the opener is matched anywhere instead of at a row start.

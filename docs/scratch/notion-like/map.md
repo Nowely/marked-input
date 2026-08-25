@@ -53,10 +53,10 @@ becomes a ticket here.
   `@` picker and the `/` block menu. Both are driven by
   `packages/storybook/src/pages/Notion/Notion.react.spec.tsx`, which types the
   character a user types and asserts the emitted value.
-- **A whole markdown table CAN be one mark**: `'|__value__'`, a leading literal
-  and a trailing value that closes at the row boundary. Matching is not greedy
-  across separators, so two tables stay two marks. The cost is atomicity —
-  nothing inside a cell is a token.
+- **A whole markdown table is one ROW KIND**: `'|__value__'`, a leading literal
+  and a raw body that closes at the row's own separator. It was a mark when this
+  was written; P1 made it a kind, and the cost is unchanged — atomicity, nothing
+  inside a cell is a token. Cells become rows when a kind can declare a split (P9).
 - **Option order does not affect matching.** Static segments go into one
   alternation sorted by literal length, and the earliest-starting match wins, so
   `@[` beats `[` and a table's leading `|` beats the `- ` inside its own
@@ -71,15 +71,24 @@ becomes a ticket here.
 - **The block controls layer is a sibling of the rows** inside the container, and
   it is the child carrying `contenteditable="false"` — so "the last row" is not
   `host.lastElementChild`. Anything walking rows in the DOM has to skip it.
+- **A Row carries a KIND** (2026-08-25, P1, ADR-0010). The parser carves the row
+  skeleton first and parses inlines per row, so a row kind is recognised at a
+  row's own start and its body is bounded before any match runs. That closes
+  [01](issues/01-row-start-anchoring.md), [06](issues/06-repeats-nest-instead-of-continuing.md),
+  [07](issues/07-closing-literal-newline.md) and
+  [09](issues/09-frontmatter-only-at-offset-zero.md), and answers the fog item
+  that asked whether the model could carry a row type at all. The costs are
+  declared in ADR-0010: an inline mark can no longer span a row boundary, and a
+  typed row's opener and closing literal are structural bytes no caret enters.
+- **Half of [03](issues/03-row-node-not-nameable.md) landed**: `RowNode` and
+  `RowProps` are exported from core and both adapters. `Store` still is not, so
+  the ticket stays open.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
 
 ## Fog
 
-- Whether the row model can carry a block TYPE at all, or whether "typed row"
-  stays "a row whose first child is a slot mark". Nothing in the probe settles
-  it; it is the first question phase 2 has to answer.
 - What a package on top of this owns: does it wrap `MarkedInput` and ship
   options + components, or does it need core changes first? The ticket list here
   is the input to that decision, not the answer.
