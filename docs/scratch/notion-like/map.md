@@ -574,6 +574,39 @@ becomes a ticket here.
 - What a package on top of this owns: does it wrap `MarkedInput` and ship
   options + components, or does it need core changes first? The ticket list here
   is the input to that decision, not the answer.
+- **Six confirmed defects from the 2026-08-26 hardening pass are still open, each measured and
+  none taken here.** They are listed so the next phase inherits the readings rather than the hunt.
+  - **A `\n` inside PASTED text is spliced raw and takes none of Enter's row rules.** Into a table
+    cell: `'| a | b⏎after'`, caret at the end of cell `a`, paste `'one⏎two'` → `'| aone⏎two | b⏎after'`
+    and the page paints ONE body cell. The editor's own Enter from that caret gives `'| a⏎|  | b⏎after'`
+    and keeps every cell in the table. Into a nested row: `'- parent⏎⇥- child⏎- after'` + `'one⏎two'`
+    → `'- parent⏎⇥- childone⏎two⏎- after'`, `two` at depth 0. Enter there keeps depth via
+    `continuationDepth`. `map.md`'s P9 entry already records this exact shape as a defect closed for
+    Shift+Enter; paste reaches it through `replacementForInput`'s raw string and was never covered.
+    One undo each.
+  - **A row selection COVERS the body and PROJECTS the opener, so replacing one never replaces its
+    kind.** `rowSpan()` starts at `entryAnchor(row)`, while `sliceNodes()` re-annotates the same span
+    back to `'- alpha'`. Copy `'- one⏎- two'`, Esc-select `'- target'`, paste →
+    `'- one⏎- two⏎- - one⏎- two⏎tail'`, and `[class*="heading"]` still counts 1 for a copied `'## Head'`.
+    The editor's own answer for the same clip into an EMPTY row is the wanted one. Cut and plain
+    Backspace over the same selection leave the identical husk `'- ⏎tail'`, so it is the keymap's
+    span and not the clipboard's.
+  - **Enter over a ROW selection slides the highlight onto a row the user never named.** The
+    declared rule (`rowKeys.ts:66-68`) says it keeps what was selected, and over a TEXT range it
+    does — collapsed. Over a row selection the anchors slide under the insert and come to rest on
+    `'⏎beta'`; the next character then deletes `beta`. Two undos recover.
+  - **A drop into a row's OWN gap has no "leave it where it was" outcome.** `#resolveDrop` seeds
+    `candidates[0]` and only moves the pick rightwards, and at a row's own gap the identity
+    placement is a refused no-op — so every X indents (`'- alpha⏎⇥- beta⏎- gamma'` at three
+    horizontal positions). The indicator does promise the indent (+24px), and the decline exists
+    wherever no deeper candidate survives.
+  - **A partial row-selection delete leaves the first row's OPENER as an empty row of that kind**
+    (`'## Head⏎- alpha⏎- beta⏎- gamma'`, Esc + Shift+Down ×2, Backspace → `'## ⏎- gamma'`). One
+    undo, caret live in the residue.
+  - **Tab and Shift+Tab ignore a standing row selection and re-indent the ANCHOR row alone**
+    (`handleRowIndent` reads `store.tokens.rowOf(at)` and never `block.selected`). `spec.md` item 20
+    makes only the DRAG set-aware, so this is a wiring gap rather than a design hole; the set-aware
+    verb already exists (`TokenModel.moveRows`).
 - **The row menu's "Add below" opens the row at depth 0, whatever depth the pointer was at.**
   MEASURED on the tip, controlled and uncontrolled: `'- parent⏎⇥- child⏎- tail'`, grip on `child`,
   **Add below** → `'- parent⏎⇥- child⏎⏎- tail'`. The new row leaves the subtree and cuts the list
