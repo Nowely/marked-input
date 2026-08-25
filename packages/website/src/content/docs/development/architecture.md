@@ -114,14 +114,25 @@ All user mutations go through `store.edit.replace(from, to, text)`: features nam
 5. Overlay renders at cursor position
         ↓
 6. User selects item:
-   - Overlay calls select({ value, meta })
+   - Overlay calls choose({ value, meta }), or select({ value, meta }) for the same thing
         ↓
-7. store.overlay.choose(value, meta) annotates and replaces the trigger range
+7. store.overlay.choose annotates the trigger option's markup and replaces the trigger range
         ↓
 8. Markup inserted, onChange called with new text
         ↓
 9. store.overlay.close() closes overlay
 ```
+
+A `/` menu takes the other arm of the same accept path. Options contribute their own entries:
+an option carrying a `menu: MenuSpec` is in `store.overlay.entries`, already narrowed by what
+was typed after the trigger (label plus hidden keywords, through `filterSuggestions`), so no
+component holds a list of kinds and none filters one. `choose({option})` then removes the
+trigger span and calls `RowNode.turnInto(option, {text})` on the caret's row — ONE splice for
+both gestures, because two verbs cannot compose in controlled mode. `store.overlay.mode` names
+the gesture for the menu's own paint: `'insert'` on a row holding nothing but the trigger,
+`'turnInto'` on a row that already has text; the entry's `menu.text`/`menu.meta` seed only the
+first, since a turn-into must not discard what was typed. Each adapter ships `BlockMenu` as the
+default paint.
 
 ## Parsing Pipeline
 
@@ -331,7 +342,7 @@ class Store {
     readonly tokens:    TokenModel         // the token tree (the value's source of truth), the SELECTION, live node map, DOM↔model facade, ref registries, caret/selection DOM ops, and `rowConfig` — the one place `separator` is read as a parse policy
     readonly slots:     SlotsFeature       // slot component/props, the NODE resolver, and the grip gutter (rowConfig + draggable)
     readonly edit:      EditController     // replace(from, to, text) / setValue(text) — single batched write path
-    readonly overlay:   OverlayController  // match, element, slot, select, close
+    readonly overlay:   OverlayController  // match, element, slot, entries, mode, choose/select, close
     readonly keyboard:  KeyboardController // input handling and block editing
     readonly block:     BlockController     // Block layout for the whole editor: hover, drag, drop edge, menu
     readonly clipboard: ClipboardController // copy/cut handling
@@ -592,16 +603,19 @@ Use `useMarkInfo()` for structural metadata: `depth` and `hasNestedMarks`.
 Available in both React and Vue. Provides overlay state and actions:
 
 ```typescript
-const { style, close, select, match, ref } = useOverlay()
+const { style, close, select, choose, entries, mode, match, ref } = useOverlay()
 ```
 
-| Property | Type                                     | Description                    |
-| -------- | ---------------------------------------- | ------------------------------ |
-| `style`  | `{ left, top }`                          | Positioning coordinates        |
-| `close`  | `() => void`                             | Close the overlay              |
-| `select` | `(value: { value, meta? }) => void`      | Select an overlay item         |
-| `match`  | `OverlayMatch`                           | Current trigger match          |
-| `ref`    | `RefObject<HTMLElement>`                  | Ref to attach to overlay DOM   |
+| Property  | Type                                          | Description                                    |
+| --------- | --------------------------------------------- | ---------------------------------------------- |
+| `style`   | `{ left, top }`                               | Positioning coordinates                        |
+| `close`   | `() => void`                                  | Close the overlay                              |
+| `select`  | `(value: { value, meta? }) => void`           | Select an overlay item                         |
+| `choose`  | `(pick: { option?, value?, meta? }) => bool`  | The one accept path; `{option}` retypes the row |
+| `entries` | `readonly MenuEntry[]`                        | The row menu, already narrowed by the query    |
+| `mode`    | `'insert' \| 'turnInto' \| undefined`         | Which gesture choosing an entry is             |
+| `match`   | `OverlayMatch`                                | Current trigger match                          |
+| `ref`     | `RefObject<HTMLElement>`                      | Ref to attach to overlay DOM                   |
 
 ### useStore
 

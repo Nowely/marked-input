@@ -64,10 +64,10 @@ becomes a ticket here.
   option owns a trigger.
 - **A matched `__value__` interior is never re-parsed**, which is what makes a
   fence work: `# →` inside the canary code block stays code.
-- **The chrome claim holds, with one hole.** Mentions and the block menu are
-  consumer components over shipped machinery. The hole: the menu writes over the
-  caret's span, so it starts a block on an empty row but cannot convert a row
-  that already has text ([11](issues/11-overlay-inserts-one-markup.md)).
+- **The chrome claim held with one hole, and P7 closed it by deleting both consumer
+  components.** Mentions and the row menu were consumer components over shipped machinery; the
+  hole was that the menu wrote over the CARET's span, so it started a row on an empty row but
+  could not convert a row that already had text. Both are gone now — see the P7 line below.
 - **The block controls layer is a sibling of the rows** inside the container, and
   it is the child carrying `contenteditable="false"` — so "the last row" is not
   `host.lastElementChild`. Anything walking rows in the DOM has to skip it.
@@ -220,6 +220,31 @@ becomes a ticket here.
   caret there satisfied both of `isAllSelected`'s equalities. A collapsed selection selects nothing
   now. The collapsed case had a test, and it was decorative — its fixture was a caret mid-'hello',
   which the equalities already refuse.
+- **An option that declares a menu entry IS the menu** (2026-08-25, P7). `CoreOption.menu` is the
+  whole registration: `overlay.entries` is assembled from the options carrying one and narrowed by
+  the typed query through `filterSuggestions`, so the "does this row match" rule has ONE owner
+  across both overlays. `choose` gained an `option` arm beside its value arm rather than a second
+  write path, and that arm cuts the trigger out of the caret's row and retypes the row in ONE
+  splice — forced, not preferred: two verbs cannot compose in controlled mode. That closes
+  [11](issues/11-overlay-inserts-one-markup.md) in all three of its halves, the third being
+  `overlay.data` widening to carry an identity beside a label.
+- **`mode` is a label, not a switch.** `'insert'` versus `'turnInto'` is a fact about the CARET'S
+  ROW, so it lives on the overlay and not on every entry, and `choose` runs the same splice either
+  way — the only thing it decides is whether `menu.text`/`menu.meta` seed the body, which they do
+  exactly where there is nothing to keep. Both readings come from one private target read, so what
+  the menu says it will do and what it does cannot disagree.
+- **The measurement is the deletion.** `SlashMenu.tsx` (60 lines) and `MentionOverlay.tsx` (54)
+  are gone from the probe: `/` is the adapters' new `BlockMenu` and `@` is the built-in
+  Suggestions over `overlay.data`. The phase's exit criterion — "the showcase's menu component
+  contains no filtering and no insert logic" — is satisfied by there being no such component. Six
+  CSS blocks went with them (52 lines). Honest cost: `+447 / −217` production lines across the six
+  commits (excluding specs and the website), net +230 — and 166 of the deletions are the probe's,
+  so core and the adapters grew by roughly 390 lines for two shipped menu components, three new
+  overlay members, one tree read and the `data` widening.
+- **`BlockMenu` has no keyboard navigation, and that is stated rather than hidden.** The
+  arrow/Enter protocol is `SuggestionsModel`'s and is bound to `overlay.data`; giving the menu its
+  own highlight is a second piece of list state, and P7 did not need one. `MenuSpec.section` ships
+  with no painter for the same reason — the showcase groups by it at P11.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.

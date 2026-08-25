@@ -58,6 +58,90 @@ function BasicSuggestions() {
 - Esc to close
 - Click to select
 
+### Suggestions with an identity
+
+A row of `data` may be a string or `{value, meta?, label?}`. The object form is what a list with
+an id behind it needs — the `__meta__` half of `@[__value__](__meta__)` — so a mention picker no
+longer has to abandon the built-in overlay and write its own component:
+
+```tsx
+{
+    markup: '@[__value__](__meta__)',
+    overlay: {
+        trigger: '@',
+        data: [
+            {value: 'Sarah Chen', meta: 'sarah.chen'},
+            {value: 'Marcus Kane', meta: 'marcus.kane'},
+        ],
+    },
+}
+```
+
+Filtering matches the LABEL and nothing else — `label` when given, otherwise `value` — so an id
+the user cannot see never matches a query. A bare string still writes the row's index as its
+meta, because a label is the only identity it has.
+
+## The Row Menu
+
+A `/` menu is not a custom overlay: an option that declares a `menu` IS in the menu, and each
+adapter ships the paint.
+
+```tsx
+import {BlockMenu} from '@markput/react'
+
+const options = [
+    {overlay: {trigger: '/'}, Overlay: BlockMenu},
+    {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1', keywords: ['h1', 'title']}},
+    {markup: '- __slot__', row: {Component: 'li', continues: true}, menu: {label: 'Bulleted list'}},
+    {markup: '> __slot__', row: {Component: 'blockquote'}, menu: {label: 'Quote'}},
+]
+```
+
+That is the whole wiring. The `/` option carries no markup of its own — it exists to own the
+trigger — and what a choice writes is the ROW KIND the chosen entry names.
+
+| `MenuSpec` field | Meaning                                                                |
+| ---------------- | ---------------------------------------------------------------------- |
+| `label`          | What the row shows, and the only text the query matches                |
+| `section`        | A heading a consumer may group by; core neither sorts nor groups       |
+| `keywords`       | Extra query terms that never appear on screen                          |
+| `meta`           | Seeds the meta of the row this entry writes                            |
+| `text`           | Seeds the body of the row this entry writes                            |
+
+**Two gestures, one splice.** On a row holding nothing but the trigger the entry INSERTS: the
+row becomes that kind, seeded from `menu.text`/`menu.meta`. On a row that already has text it
+CONVERTS: `'plain row'` + `/` + Heading 1 emits `'# plain row'`, and the seeds are not applied,
+because a turn-into must not discard what the user typed. Both run
+`RowNode.turnInto(option, {text})` once — a single splice, which is what controlled mode
+requires of a gesture that removes a span and retypes a row at the same time.
+
+`useOverlay().mode` names which gesture it is (`'insert'` or `'turnInto'`), for the menu's own
+labelling. It changes nothing about what `choose` does.
+
+**Replacing `BlockMenu`.** A consumer's own menu reads the same three things and still writes no
+filtering and no insert logic:
+
+```tsx
+function MyMenu() {
+    const {entries, mode, choose, style, ref} = useOverlay()
+    if (entries.length === 0) return null
+
+    return (
+        <ul ref={ref} style={{position: 'absolute', ...style}}>
+            {entries.map(entry => (
+                <li
+                    key={entry.label}
+                    onMouseDown={event => event.preventDefault()}
+                    onClick={() => choose({option: entry.option})}
+                >
+                    {mode === 'insert' ? 'Insert' : 'Turn into'} {entry.label}
+                </li>
+            ))}
+        </ul>
+    )
+}
+```
+
 ## The useOverlay Hook
 
 Build custom overlays with the `useOverlay()` hook:
@@ -74,13 +158,16 @@ function CustomOverlay() {
 
 ### useOverlay API
 
-| Property   | Type           | Description                            |
-| ---------- | -------------- | -------------------------------------- |
-| `style`    | `{left, top}`  | Absolute position for overlay          |
-| `close()`  | `function`     | Close the overlay                      |
-| `select()` | `function`     | Insert a mark                          |
-| `match`    | `OverlayMatch` | Match details (value, source, trigger) |
-| `ref`      | `RefObject`    | Ref for outside click detection        |
+| Property    | Type                                | Description                                     |
+| ----------- | ----------------------------------- | ----------------------------------------------- |
+| `style`     | `{left, top}`                       | Absolute position for overlay                   |
+| `close()`   | `function`                          | Close the overlay                               |
+| `select()`  | `function`                          | Insert a mark                                   |
+| `choose()`  | `function`                          | The one accept path; `{option}` retypes the row |
+| `entries`   | `readonly MenuEntry[]`              | The row menu, already narrowed by the query     |
+| `mode`      | `'insert' \| 'turnInto' \| undefined`| Which gesture choosing an entry is              |
+| `match`     | `OverlayMatch`                      | Match details (value, source, trigger)          |
+| `ref`       | `RefObject`                         | Ref for outside click detection                 |
 
 **Complete interface:**
 
@@ -92,6 +179,12 @@ interface OverlayHandler {
     }
     close: () => void
     select: (value: {value: string; meta?: string}) => void
+    /** `{option}` turns the caret's row into that option's kind; `{value, meta}` is `select`. */
+    choose: (pick: {option?: Option; value?: string; meta?: string}) => boolean
+    /** One entry per option declaring a `menu`, filtered by what was typed after the trigger. */
+    entries: readonly MenuEntry[]
+    /** `'insert'` on a row holding only the trigger, `'turnInto'` on a row with text. */
+    mode: 'insert' | 'turnInto' | undefined
     match: {
         value: string // Typed text after trigger
         source: string // Full matched text including trigger
@@ -586,63 +679,19 @@ function RichUserOverlay() {
 
 ### Example: Notion-style Slash Commands
 
+This one is no longer an example of a custom overlay, because it is not custom any more — see
+[The Row Menu](#the-row-menu). The list, the filtering and the write all moved into core:
+
 ```tsx
-function CommandOverlay() {
-    const {select, match, style, ref} = useOverlay()
-    const [selected, setSelected] = useState(0)
+import {BlockMenu} from '@markput/react'
 
-    const commands = [
-        {value: 'h1', label: 'Heading 1', icon: '📝', description: 'Large heading'},
-        {value: 'h2', label: 'Heading 2', icon: '📄', description: 'Medium heading'},
-        {value: 'bold', label: 'Bold', icon: '🔤', description: 'Make text bold'},
-        {value: 'italic', label: 'Italic', icon: '📐', description: 'Italicize text'},
-        {value: 'code', label: 'Code', icon: '💻', description: 'Code block'},
-    ]
-
-    const filtered = commands.filter(
-        cmd =>
-            cmd.label.toLowerCase().includes(match.value.toLowerCase()) ||
-            cmd.value.toLowerCase().includes(match.value.toLowerCase())
-    )
-
-    return (
-        <div
-            ref={ref}
-            style={{
-                position: 'absolute',
-                left: style.left,
-                top: style.top,
-                background: 'white',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                minWidth: '300px',
-                zIndex: 1000,
-            }}
-        >
-            {filtered.map((cmd, index) => (
-                <div
-                    key={cmd.value}
-                    onClick={() => select({value: cmd.value, meta: cmd.label})}
-                    style={{
-                        padding: '10px 14px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        background: index === selected ? '#f0f0f0' : 'transparent',
-                    }}
-                >
-                    <span style={{fontSize: '20px'}}>{cmd.icon}</span>
-                    <div style={{flex: 1}}>
-                        <div style={{fontWeight: 500, marginBottom: '2px'}}>{cmd.label}</div>
-                        <div style={{fontSize: '12px', color: '#666'}}>{cmd.description}</div>
-                    </div>
-                </div>
-            ))}
-        </div>
-    )
-}
+const options = [
+    {overlay: {trigger: '/'}, Overlay: BlockMenu},
+    {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1', keywords: ['h1']}},
+    {markup: '## __slot__', row: {Component: 'h2'}, menu: {label: 'Heading 2', keywords: ['h2']}},
+    {markup: '- __slot__', row: {Component: 'li', continues: true}, menu: {label: 'Bulleted list'}},
+    {markup: '```__meta__\n__value__```', row: {Component: 'pre'}, menu: {label: 'Code', keywords: ['fence']}},
+]
 ```
 
 ## Best Practices
