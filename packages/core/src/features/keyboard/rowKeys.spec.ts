@@ -704,6 +704,22 @@ describe('rowKeys the row keymap', () => {
 			expect(store.tokens.value()).toBe('a\n\n')
 		})
 
+		it('replaces everything with one fresh row when all is selected, Shift or not', () => {
+			// The all-selected arm sits AHEAD of the anchor read for both, so Shift+Enter answers
+			// here rather than opening a continuation at the position the selection merely starts
+			// at. It used to fall to the shared table's `'\n'`, which left TWO empty rows.
+			for (const shiftKey of [false, true]) {
+				const {store, container} = keymap('- a\n- b')
+				store.tokens.selection.selectAll()
+
+				const event = press(container, 'Enter', {shiftKey})
+
+				expect(event.defaultPrevented).toBe(true)
+				expect(store.tokens.value()).toBe('')
+				expect(store.tokens.nodes()).toHaveLength(1)
+			}
+		})
+
 		it('inserts a literal newline inside a RAW CLOSED body', () => {
 			const {store, container} = keymap('```ts\nq\n```')
 			caretIn(store, 0, 1)
