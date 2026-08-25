@@ -193,15 +193,13 @@ export function anchorEquals(a: NodeAnchor | undefined, b: NodeAnchor | undefine
  * structural, so the offsets inside it resolve to the row's entry.
  */
 export function entryAnchor(node: TreeNode): NodeAnchor {
-	// A row enters its own INLINE content, never a nested row: a caret entering a row belongs on
-	// that row's line, and its child rows are separate rows with entries of their own.
-	if (node.kind === 'row') {
-		const first = node.inline().at(0)
-		return first?.kind === 'text' ? {node: first, offset: 0} : {before: node}
-	}
+	// A ROW has a body too, and one arm answers it: `children()` is INLINE-THEN-ROWS, so a row's
+	// first child IS its first inline child — a caret entering a row belongs on that row's line,
+	// and its child rows are separate rows with entries of their own.
+	const hasBody = node.kind === 'row' || (node.kind === 'mark' && node.descriptor.hasSlot)
 	// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as
 	// non-nullable and the empty-children guard would be linted away as impossible.
-	const first = node.kind === 'mark' && node.descriptor.hasSlot ? node.children().at(0) : undefined
+	const first = hasBody ? node.children().at(0) : undefined
 	if (first?.kind === 'text') return {node: first, offset: 0}
 	return {before: node}
 }
