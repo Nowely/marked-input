@@ -552,8 +552,10 @@ There is no per-row store and no per-row control DOM. At 200 rows the shape this
 nodes, against 18 ms and 403 for one layer.
 
 The price is geometry: `.Block { position: relative }` made a per-row grip free, while a layer
-measures. `boxOf(id)` answers a row's box in CONTAINER-LOCAL coordinates (which carry
-`scrollTop`, so they are scroll-proof), and `rowAt(clientY)` hit-tests a pointer with a binary
+measures. `boxOf(id)` answers a row's OWN LINE in CONTAINER-LOCAL coordinates (which carry
+`scrollTop`, so they are scroll-proof) — the element's box, stopped at its first painted child
+row, because a parent's element encloses its subtree and a grip band the height of a subtree
+centres its button on the child's line. `rowAt(clientY)` hit-tests a pointer with a binary
 search over the vertically tiled ROOTS and then a recursive descent into the hit row's own child
 rows — nesting takes the flat search's only sorted axis away, because a parent's box CONTAINS its
 children's, and the row under the pointer is the deepest one whose box holds it. Past a root's box

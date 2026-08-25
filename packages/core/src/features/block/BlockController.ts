@@ -281,12 +281,46 @@ export class BlockController {
 
 	// ═══ Geometry ══════════════════════════════════════════════════════════════
 
-	/** A row's box in the layer's space, measured NOW; `undefined` for an unbound or unmounted row. */
+	/**
+	 * A row's OWN LINE in the layer's space, measured NOW; `undefined` for an unbound or unmounted
+	 * row.
+	 *
+	 * THE OWN LINE, not the element's box, and the difference is the whole of nesting: a parent's
+	 * element ENCLOSES its children, so its box is the subtree's. The layer's one painting consumer
+	 * is the grip band, and a band the height of a subtree centres its 24px button on the SUBTREE's
+	 * midpoint — 14 of those pixels landed on the child's line, where aiming at the grip flipped
+	 * hover onto the child and the menu's Delete removed a row nobody pointed at. The own line is
+	 * what `rowAt` already resolves the pointer against ("the parent's own LINE is what is left over
+	 * once no child claims the point"), so this is the same boundary read from above.
+	 *
+	 * A CARVED row is a leaf here for `rowAt`'s reason: its children are cells laid out ACROSS the
+	 * line, not under it, so none of them bounds the line from below.
+	 */
 	boxOf(id: number): RowBox | undefined {
 		const element = this.tokens.handle(id)?.element()
 		const container = this.#container()
 		if (!element || !container) return undefined
-		return toLocal(element.getBoundingClientRect(), container)
+		const rect = element.getBoundingClientRect()
+		return {...toLocal(rect, container), height: this.#ownLineHeight(id, rect)}
+	}
+
+	/**
+	 * How far a row's own line reaches down: to its first PAINTED child row, else to the end of
+	 * its own element. A collapsed subtree paints none, so a closed toggle keeps its whole box —
+	 * which is its own line anyway. A non-positive answer means a consumer's layout put the child
+	 * beside or above the line rather than under it, and there the element's own box is the only
+	 * reading left.
+	 */
+	#ownLineHeight(id: number, rect: DOMRect): number {
+		const row = this.tokens.find(id)
+		if (row?.kind !== 'row' || hasCells(row)) return rect.height
+		for (const child of row.rows()) {
+			const childRect = this.#rectOf(child.id)
+			if (!childRect) continue
+			const own = childRect.top - rect.top
+			return own > 0 ? own : rect.height
+		}
+		return rect.height
 	}
 
 	/**

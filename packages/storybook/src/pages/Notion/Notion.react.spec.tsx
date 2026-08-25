@@ -623,6 +623,40 @@ describe('drag', () => {
 	})
 })
 
+describe('the row grip', () => {
+	/**
+	 * A PARENT'S GRIP BELONGS ON THE PARENT'S OWN LINE. The band takes its height from
+	 * `block.boxOf`, which for a parent is its whole SUBTREE box, so a centred grip was painted
+	 * over the CHILD's line: aiming at it — which is what `userEvent.click` and a person both do
+	 * — moved the pointer onto the child, the container re-resolved hover, the grip re-painted on
+	 * the child, and **Delete** removed the child while the parent stayed. A row disappeared that
+	 * no gesture named.
+	 *
+	 * The geometry is asserted first because it is the cause: the grip must not reach past the
+	 * parent's own line, whatever the subtree below it does.
+	 */
+	it('paints a parent’s grip on the parent’s own line, so Delete takes the row aimed at', async () => {
+		const {host, value} = await mountControlled(Showcase, '- parent line\n\t- child line\n- tail')
+
+		const parent = rowsOf(host)[0]
+		const child = rowAt(host, 'child line')
+		const ownLine = {top: parent.getBoundingClientRect().top, bottom: child.getBoundingClientRect().top}
+		host.dispatchEvent(
+			new MouseEvent('mousemove', {bubbles: true, clientY: (ownLine.top + ownLine.bottom) / 2, clientX: 0})
+		)
+
+		const grip = await page.elementLocator(host).getByRole('button', GRIP).findElement()
+		const gripBox = grip.getBoundingClientRect()
+		expect(gripBox.top).toBeGreaterThanOrEqual(ownLine.top)
+		expect(gripBox.bottom).toBeLessThanOrEqual(ownLine.bottom)
+
+		await userEvent.click(grip)
+		await choose('Delete')
+
+		await expect.poll(value).toBe('- tail')
+	})
+})
+
 describe('the empty row', () => {
 	/**
 	 * A KIND'S COMPONENT PASSES ON WHAT CORE RESOLVED FOR IT. `className` carries the editor's own
