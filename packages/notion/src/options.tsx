@@ -95,12 +95,19 @@ export const caption: Option = {
  * The page properties. A CLOSED kind with a RAW body, so its interior keeps its newlines and is
  * never re-parsed — the panel reads its own `key: value` lines, exactly as a YAML block is read.
  *
- * `'---\n'` is a LONGER opener than `'---'`, so a `---` line that finds a matching close below it
- * is frontmatter and a lone one is a divider. That collision is deliberate and the ordering is
- * what resolves it.
+ * IT DOES NOT SHARE THE DIVIDER'S OPENER, and that is a correction rather than a choice.
+ * `'---\n'` and `'---'` resolve deterministically — the longer opener wins — but "deterministic"
+ * is not "correct": a raw body may cross separators, because that is what makes a closed kind
+ * closed, so a SECOND `---` line anywhere below the first was read as this kind's close. Picking
+ * **Divider** from the `/` menu at the end of the showcase page collapsed it from 36 rows to 3,
+ * with every row between the two rules swallowed into one panel the caret could not enter. The
+ * text survived in the value; nothing on the screen did.
+ *
+ * `'@properties\n…\n@end'` is the shape the four other closed kinds already use, and it collides
+ * with nothing.
  */
 export const properties: Option = {
-	markup: '---\n__value__\n---',
+	markup: '@properties\n__value__\n@end',
 	row: {
 		Component: ({node, ref, className, style}: RowProps) => (
 			<div ref={ref} className={className} style={style}>

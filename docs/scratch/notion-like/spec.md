@@ -169,13 +169,13 @@ import s from './theme.module.css'
 /* ── page furniture ─────────────────────────────────────────────────────── */
 
 export const properties: Option = {
-	markup: '---\n__value__\n---',                  // raw + closed ⇒ spans lines, matches anywhere
+	markup: '@properties\n__value__\n@end',         // raw + closed ⇒ spans lines, matches anywhere
 	row: {Component: ({node}: RowProps) => <PropertiesPanel yaml={node.slot()} node={node} />},
 	menu: {label: 'Page properties', section: 'Page'},
 }
 
 export const divider: Option = {
-	markup: '---__slot__',                          // collides with `properties` BY DESIGN — see risk 8
+	markup: '---__slot__',                          // shares no prefix with `properties` — see risk 8
 	row: {Component: () => <hr className={s.hr} />},
 	menu: {label: 'Divider', section: 'Basic', keywords: ['hr', 'rule']},
 }
@@ -1193,10 +1193,12 @@ divergence between the adapters is a failing test rather than a difference nobod
 3. **A stray closing literal fuses unbounded rows on one keystroke.** This is the dangerous
    direction, and the old text named the harmless one. `'a⏎---⏎b⏎c⏎d⏎---⏎e'` is 7 rows today and 3
    under a naive scan, with `b c d` swallowed as raw frontmatter — typing `---` above an existing
-   `---` collapses everything between them into one uneditable row. *Mitigation:* the body-gap-only
-   rule plus end-at-a-separator bound the damage to one row's body; a closing literal *inside* a raw
-   body still ends the row early, which is the same declared limitation `__value__` has today, with
-   a pinned spec.
+   `---` collapses everything between them into one uneditable row. *Mitigation:* ~~the body-gap-only
+   rule plus end-at-a-separator bound the damage to one row's body~~ — **falsified in P11**: the
+   body gap IS the crossing gap, so nothing bounds it. Measured, one **Divider** click at the end of
+   the showcase page took the page from 36 rows to 3. The mitigation that holds is risk 8's, below:
+   do not give two kinds a shared opener prefix. A closing literal *inside* a raw body still ends
+   the row early, which is the same declared limitation `__value__` has today, with a pinned spec.
 4. **A split cell cannot contain its delimiter.** *Mitigation:* declared; the follow-up (a per-kind
    escape scoped to the cell body) is named and deliberately not built.
 5. **Soft breaks are lost under `separator: '\n'`, and `'\n\n'` is now a worse fallback than it
@@ -1212,11 +1214,16 @@ divergence between the adapters is a failing test rather than a difference nobod
 8. **Two row kinds sharing an opener prefix.** The showcase does **not** avoid this — the old text's
    claim that it did was wrong twice over: its "safe" divider `'***__slot__'` swallows
    `'***emphasis*** here'` into an `<hr/>` that drops the text from the render while the value keeps
-   it. The showcase now uses `'---__slot__'`, which collides with `properties`
-   (`'---\n__value__\n---'`) **by design**. *Mitigation:* longest-opener-first is deterministic and
-   correct here — `'---\n'` beats `'---'`, so a `---` line followed by a matching close is
-   frontmatter and a lone `---` is a divider; `rowMarkupError` rejects two kinds compiling to an
-   *identical* opener; pinned by a spec over both shapes.
+   it. The showcase used `'---__slot__'` against a `properties` spelled `'---\n__value__\n---'`
+   **by design**. *Mitigation:* ~~longest-opener-first is deterministic and correct here~~ —
+   **corrected in P11.** It is deterministic and it is not correct: a raw body may cross separators,
+   so `properties`' `__value__` reached forward to the NEXT `---` line anywhere in the document and
+   swallowed every row between. `properties` is now `'@properties\n__value__\n@end'`, the shape the
+   four other closed kinds already use, and the two kinds share no prefix. The standing rule is
+   therefore the plain one: **two row kinds must not share an opener prefix when either has a raw
+   body**. `rowMarkupError` still rejects only an *identical* opener, which is a weaker check than
+   the rule; pinned instead by a browser spec that adds a divider to the whole showcase page and
+   counts its rows.
 9. **Snapshot churn across every block-layout story.** *Mitigation:* AGENTS.md's rule, enforced per
    phase — diff the old and new structure, explain the diff, never regenerate.
 10. **Collapsed rows must be hidden, not unmounted.** An unpainted row leaves `bind`

@@ -11,7 +11,7 @@
  * declared behaviour rather than a bug to work around here.
  */
 export const APOLLO_DOC = `@title Apollo — Q2 launch plan
----
+@properties
 Status: chip:amber:In progress
 Owner: person:Kara Vance
 Team: people:Kara Vance;Ines Duarte;Milo Freeman;Priya Raman;Tomas Alvarez;Wen Li
@@ -19,7 +19,7 @@ Timeline: Apr 8 → Jun 30
 Tags: chip:blue:Platform, chip:purple:Design, Q2
 Spec: link:apollo/spec https://example.com/apollo/spec
 Confidence: 82%
----
+@end
 ---
 Apollo moves the collaboration layer from beta to general availability. Ownership sits with @[Platform](team-platform), and ==launch gating on the auth migration== is what everything downstream assumes.
 @toc

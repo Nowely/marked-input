@@ -185,6 +185,25 @@ describe('the slash menu', () => {
 		await expect.poll(value).toBe('> plain row!')
 	})
 
+	/**
+	 * NO ENTRY OF THIS MENU MAY EAT THE PAGE. A closed kind's raw body is allowed to cross
+	 * separators — that is what makes it closed — so a kind whose opener is a PREFIX of another
+	 * kind's reaches forward to the next line that spells it and swallows everything between.
+	 * `properties` and `divider` were that pair: one click on **Divider** at the end of the
+	 * showcase took it from 36 rows to 3, and the assertion that catches it is the row count.
+	 */
+	it('leaves every row of the page standing when a divider is added to it', async () => {
+		const {host, value} = await mountControlled(Showcase, APOLLO_DOC)
+		const before = rowsOf(host).length
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		dispatchInsertText(editingHost(host), '/')
+		await choose('Divider')
+
+		await expect.poll(value).toBe(`${APOLLO_DOC}---`)
+		expect(rowsOf(host)).toHaveLength(before)
+	})
+
 	/** The menu is `overlay.entries`, so a keyword no label contains still narrows it. */
 	it('narrows by a keyword that appears in no label', async () => {
 		const {host} = await mount(Empty)
