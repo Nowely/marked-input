@@ -38,7 +38,7 @@ export class PropsModel {
 	 * applied in BLOCK layout only — inline layout never splits rows. Inside
 	 * `__value__`/`__meta__` gaps it is that markup's own text, never a boundary.
 	 *
-	 * `''` is not a separator: it separates nothing, so `TokenModel.rowSeparator` reports it
+	 * `''` is not a separator: it separates nothing, so `TokenModel.rowConfig` reports it
 	 * and answers "no rows". The default replaces `undefined` only, which is why an explicit
 	 * empty string reaches that seam at all.
 	 */

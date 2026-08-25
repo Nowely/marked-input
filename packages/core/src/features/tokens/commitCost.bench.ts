@@ -175,7 +175,7 @@ function blockDoc(rows: number): string {
 
 function tokensFor(parser: Parser | undefined, value: string, isBlock: boolean): (Token | RowToken)[] {
 	// Block mode is rows (issue 08): the structural separator forms them, no markup needed
-	return isBlock ? parseRowsValue(parser, value, '\n\n') : parseValue(parser, value)
+	return isBlock ? parseRowsValue(parser, value, {separator: '\n\n'}) : parseValue(parser, value)
 }
 
 function textNodesOf(nodes: readonly TreeNode[], out: TextNode[] = []): TextNode[] {

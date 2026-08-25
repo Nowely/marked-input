@@ -14,7 +14,7 @@ import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import {markupError} from '../parser/core/MarkupDescriptor'
 import {Parser} from '../parser/Parser'
-import type {Markup} from '../parser/types'
+import type {Markup, RowConfig} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
 import {
 	adjacentMark as findAdjacentMark,
@@ -296,7 +296,7 @@ export class TokenModel {
 	readonly nodes: Computed<readonly TreeNode[]> = computed(() => this.#tree.roots())
 
 	/**
-	 * THE effective row separator: the string rows are split on, or `undefined` for a document
+	 * THE block parse policy: how the row skeleton is carved, or `undefined` for a document
 	 * that has no rows. The one place the `layout` enum is read — every other row question in
 	 * core asks this, or the tree it produced, instead of the mode.
 	 *
@@ -310,16 +310,22 @@ export class TokenModel {
 	 * refuses `''` outright, so the alternative is an exception raised inside the adapter's own
 	 * render hook; see `shared/reportBadProp`.
 	 */
-	readonly rowSeparator: Computed<string | undefined> = computed(() => {
-		if (!this.props.layout.isBlock()) return undefined
-		const separator = this.props.separator()
-		if (separator !== '') return separator
-		reportBadProp(
-			'`separator` is empty in block layout, so this editor has no rows and no row controls. ' +
-				'Pass a non-empty separator (the default is "\\n\\n") or drop `layout="block"`.'
-		)
-		return undefined
-	})
+	readonly rowConfig: Computed<RowConfig | undefined> = computed(
+		() => {
+			if (!this.props.layout.isBlock()) return undefined
+			const separator = this.props.separator()
+			if (separator !== '') return {separator}
+			reportBadProp(
+				'`separator` is empty in block layout, so this editor has no rows and no row controls. ' +
+					'Pass a non-empty separator (the default is "\\n\\n") or drop `layout="block"`.'
+			)
+			return undefined
+		},
+		// A record, so reference equality would call every dependent awake on each evaluation —
+		// including the props watch below, whose whole job is to adopt only when the parse
+		// policy actually moved.
+		{equals: shallow}
+	)
 
 	/**
 	 * The index of the ROOT whose subtree contains `id` — the block ROW index. Off the live
@@ -391,11 +397,11 @@ export class TokenModel {
 			// installed right after can bind a pre-built DOM — the shell is live once the
 			// container attaches.
 			//
-			// ONE watch over the (value, parser, rowSeparator) tuple: a simultaneous props
+			// ONE watch over the (value, parser, rowConfig) tuple: a simultaneous props
 			// change is one wave and one commit, where separate watches would adopt (and
 			// announce) several times.
 			//
-			// `rowSeparator`, not the two props behind it: the tuple carries what the PARSE
+			// `rowConfig`, not the props behind it: the tuple carries what the PARSE
 			// consumes, so a `separator` a rowless document never reads no longer wakes the
 			// clock. Its dependency on `separator` appears and disappears with `layout`,
 			// which a computed tracks per evaluation.
@@ -403,7 +409,7 @@ export class TokenModel {
 				() => ({
 					value: this.props.value(),
 					parser: this.#parser(),
-					separator: this.rowSeparator(),
+					rowConfig: this.rowConfig(),
 				}),
 				(next, previous) => {
 					if (previous && next.value === previous.value && this.#seeded()) {
@@ -621,7 +627,7 @@ export class TokenModel {
 	readonly #boundary = createBoundary({
 		tree: this.#tree,
 		parser: () => this.#parser(),
-		separator: () => this.rowSeparator(),
+		rowConfig: () => this.rowConfig(),
 		controlled: () => this.props.value() !== undefined,
 		selection: () => this.selection.anchors(),
 		onChange: next => this.props.onChange()?.(next),

@@ -145,7 +145,7 @@ describe('TokenModel', () => {
 		})
 
 		it('reports an explicit empty separator and renders a rowless document', () => {
-			// PropsModel defaults replace only undefined, so '' flows through to `rowSeparator`,
+			// PropsModel defaults replace only undefined, so '' flows through to `rowConfig`,
 			// which answers `undefined` — this seam's one word for "no rows". It used to reach
 			// `Parser.parseRows`' throw, which both adapters raise inside a per-render lifecycle
 			// hook: React tore down the whole render root, Vue kept the stale tree.
@@ -154,13 +154,13 @@ describe('TokenModel', () => {
 			store.host.container(document.createElement('div'))
 
 			expect(treeShape(store.tokens.nodes())).toMatchObject([{kind: 'text', content: 'a\n\nb'}])
-			expect(store.tokens.rowSeparator()).toBeUndefined()
+			expect(store.tokens.rowConfig()).toBeUndefined()
 			expect(errors()).toEqual([expect.stringContaining('`separator` is empty in block layout')])
 		})
 
 		it('reports an empty separator once per distinct value, not once per prop sync', () => {
 			// Both adapters call `props.set` on EVERY render, so a report placed upstream of an
-			// equality gate would flood the console. `rowSeparator` re-evaluates only when
+			// equality gate would flood the console. `rowConfig` re-evaluates only when
 			// `layout` or `separator` actually moves.
 			const errors = captureErrors()
 			store.props.set({layout: 'block', separator: '', options: []})

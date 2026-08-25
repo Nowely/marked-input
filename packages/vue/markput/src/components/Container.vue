@@ -11,7 +11,7 @@ import Token from './Token.vue'
 
 const store = useStore()
 const result = useMarkput(s => ({
-	rowSeparator: s.tokens.rowSeparator,
+	rowConfig: s.tokens.rowConfig,
 	nodes: s.tokens.nodes,
 }))
 
@@ -51,7 +51,7 @@ const setContainerRef = (el: unknown) => {
 		     `v-if` its own Fragment, and a Fragment mounts two empty text anchors, so the
 		     per-node form would push 2N stray text nodes into the editing host. The branch is
 		     equivalent — a configured separator is exactly when the parse yields rows. -->
-		<template v-if="result.rowSeparator !== undefined">
+		<template v-if="result.rowConfig !== undefined">
 			<Block v-for="node in result.nodes" :key="node.id" :node="node" />
 			<!-- The row controls, as one layer INSIDE the container rather than a copy inside
 			     every row. It is therefore a container child that is not a row —

@@ -7,9 +7,9 @@ import {BlockControls} from './BlockControls'
 import {Token} from './Token'
 
 export const Container = memo(() => {
-	const {host, rowSeparator, nodes, Component, props} = useMarkput(s => ({
+	const {host, rowConfig, nodes, Component, props} = useMarkput(s => ({
 		host: s.host,
-		rowSeparator: s.tokens.rowSeparator,
+		rowConfig: s.tokens.rowConfig,
 		nodes: s.tokens.nodes,
 		Component: s.slots.containerComponent,
 		props: s.slots.containerProps,
@@ -42,7 +42,7 @@ export const Container = memo(() => {
 			    rows themselves: the tree is empty until the container attaches, so a tree-derived
 			    gate would leave the layer out of the server pass and out of the first client
 			    render. */}
-			{rowSeparator !== undefined && <BlockControls />}
+			{rowConfig !== undefined && <BlockControls />}
 		</Component>
 	)
 })

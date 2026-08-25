@@ -77,7 +77,7 @@ describe('anchorAt', () => {
 		// inside it at all, so its leading text child can only come from `groupRows`'s unshift.
 		// A fixture whose second row is plain text pins that half by accident and stays green
 		// when the unshift is removed.
-		const roots = createTokenTree(nestedParser.parseRows('@[x]\n\n@[y]', '\n\n')).roots()
+		const roots = createTokenTree(nestedParser.parseRows('@[x]\n\n@[y]', {separator: '\n\n'})).roots()
 		const firstChild = (index: number) => {
 			const row = roots[index]
 			if (row.kind !== 'row') throw new Error('expected a row root')

@@ -3,7 +3,7 @@ import {PatternMatcher} from './core/PatternMatcher'
 import {acceptMatches, closeTrailingGaps, groupRows, rowPass} from './core/RowBuilder'
 import {SegmentMatcher} from './core/SegmentMatcher'
 import {TreeBuilder} from './core/TreeBuilder'
-import type {Markup, RowToken, Token} from './types'
+import type {Markup, RowConfig, RowToken, Token} from './types'
 
 /**
  * Parser - High-performance tree-based markup parser
@@ -93,19 +93,20 @@ export class Parser {
 	 * empty, so Enter at the document end always yields a visible row.
 	 *
 	 * @param value - Text to parse
-	 * @param separator - The editor-level row separator; never part of any markup
+	 * @param config - The block parse policy; its separator is never part of any markup
 	 *
 	 * @example
 	 * ```typescript
 	 * const parser = new Parser(['# __slot__'])
-	 * const rows = parser.parseRows('# Title\n\nBody', '\n\n')
+	 * const rows = parser.parseRows('# Title\n\nBody', {separator: '\n\n'})
 	 * // Returns: [
 	 * //   RowToken('# Title\n\n', terminated, children=[TextToken(''), MarkToken('# Title'), TextToken('')]),
 	 * //   RowToken('Body', unterminated, children=[TextToken('Body')])
 	 * // ]
 	 * ```
 	 */
-	parseRows(value: string, separator: string): RowToken[] {
+	parseRows(value: string, config: RowConfig): RowToken[] {
+		const {separator} = config
 		if (separator.length === 0) {
 			throw new Error('Parser.parseRows: separator must be non-empty')
 		}

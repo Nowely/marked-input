@@ -1,5 +1,6 @@
 import {batch, untracked} from '../../../shared/signals'
 import type {Parser} from '../parser/Parser'
+import type {RowConfig} from '../parser/types'
 import {adopt, parseRowsValue, parseValue} from './adopt'
 import {gapWindow} from './gapWindow'
 import type {TokenTree} from './tree'
@@ -31,12 +32,12 @@ export function createBoundary(deps: {
 	 */
 	controlled: () => boolean
 	/**
-	 * THE parse policy: the effective structural row separator (issue 08), or `undefined` for a
+	 * THE parse policy: how the block skeleton is carved (issue 08), or `undefined` for a
 	 * document that has no rows. Read per adoption, so a change is honored by the next
 	 * `reparse` without a second code path. Layout is not a second input here — the caller
-	 * folds it in (`TokenModel.rowSeparator`).
+	 * folds it in (`TokenModel.rowConfig`).
 	 */
-	separator?: () => string | undefined
+	rowConfig?: () => RowConfig | undefined
 	/**
 	 * Pre-adoption selection capture. Read once per adoption and by `fold` alone — never
 	 * during construction — see `TransactionResult.selectionAfter` for why the boundary
@@ -62,14 +63,14 @@ export function createBoundary(deps: {
 		// anchors themselves hold no coordinate, so it is adoption — not this call site —
 		// that owes the pre-mutation reading of their positions.
 		const selectionBefore = deps.selection?.()
-		// A separator means the top level is rows (issue 08); its absence is the flat parse.
+		// A config means the top level is rows (issue 08); its absence is the flat parse.
 		// `!== undefined`, not truthiness, because `undefined` is the ONE word for "no rows" and
-		// the caller owes it: `TokenModel.rowSeparator` already folds an empty `separator` prop
-		// to `undefined`. A `''` arriving here is therefore a direct-construction mistake, and
-		// parseRows' own loud throw is the right answer to it.
-		const separator = deps.separator?.()
+		// the caller owes it: `TokenModel.rowConfig` already folds an empty `separator` prop
+		// to `undefined`. A `''` separator arriving here is therefore a direct-construction
+		// mistake, and parseRows' own loud throw is the right answer to it.
+		const rowConfig = deps.rowConfig?.()
 		const parsed =
-			separator !== undefined ? parseRowsValue(deps.parser(), next, separator) : parseValue(deps.parser(), next)
+			rowConfig !== undefined ? parseRowsValue(deps.parser(), next, rowConfig) : parseValue(deps.parser(), next)
 		// THE COMMIT IS ATOMIC. Adoption and everything the result drives — the bind, the
 		// clocks, the selection repair — land inside ONE batch, so nothing observes a half
 		// applied commit: no subscriber wakes between the tree moving and the DOM catching up.

@@ -23,6 +23,9 @@ export {annotate, denote} from './src/features/tokens'
 // dropped it with `Token`/`TextToken` and that was a public-API weakening the spec did not
 // intend; S2.9 restores this one only — see the note at the bottom of this file.
 export type {MarkToken, Markup} from './src/features/tokens'
+// `RowConfig` is `TokenModel.rowConfig`'s type, and `store.tokens` is public: without the
+// export the block parse policy a consumer can already read is not nameable.
+export type {RowConfig} from './src/features/tokens'
 
 // Adapter utilities (spec §2.3: keep)
 export {cx} from './src/shared/utils/cx'

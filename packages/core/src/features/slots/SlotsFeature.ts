@@ -50,7 +50,7 @@ export class SlotsFeature {
 		computed(
 			() =>
 				buildContainerProps(
-					this.tokens.rowSeparator() !== undefined && !!this.props.draggable(),
+					this.tokens.rowConfig() !== undefined && !!this.props.draggable(),
 					this.props.readOnly(),
 					this.props.className(),
 					this.props.style(),
@@ -69,7 +69,7 @@ export class SlotsFeature {
 		return (node: TreeNode) => resolveMarkSlot(node, options, Mark, Span)
 	})
 
-	// `tokens` is here for `rowSeparator` alone, and only its PROPS-derived half is wanted:
+	// `tokens` is here for `rowConfig` alone, and only its PROPS-derived half is wanted:
 	// `containerProps` is read during server rendering, where no container has attached and the
 	// tree is still empty, so a gutter asked of the rows would vanish from the SSR pass.
 	constructor(

@@ -59,6 +59,16 @@ export interface RowToken {
 }
 
 /**
+ * The block parse policy, as one record: everything the row skeleton is carved by. One
+ * argument rather than a growing parameter list, and one value the seam can hand around —
+ * `TokenModel.rowConfig` is the single place it is derived from props.
+ */
+export interface RowConfig {
+	/** The structural row separator. Never part of any markup (ADR-0009). */
+	separator: string
+}
+
+/**
  * Position range representing a span in text with start and end positions
  * Used for various positioning needs throughout the parser
  */

@@ -15,8 +15,8 @@ import {dropUnexpressedInput} from './beforeInput'
  * `anchorsForDelete` learned the separator, so both layouts run one delete arm.
  */
 export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
-	const separator = store.tokens.rowSeparator()
-	if (separator === undefined) return
+	const rowConfig = store.tokens.rowConfig()
+	if (rowConfig === undefined) return
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
@@ -42,7 +42,7 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
 	if (at === undefined) return
 
 	event.preventDefault()
-	store.edit.replace(at, at, separator)
+	store.edit.replace(at, at, rowConfig.separator)
 }
 
 /**
@@ -55,7 +55,7 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
  * answered to no keydown, so it fails closed with the rest of the unexpressed.
  */
 export function handleRowParagraph(store: KbCtx, container: HTMLElement, event: InputEvent): boolean {
-	if (store.tokens.rowSeparator() === undefined) return false
+	if (store.tokens.rowConfig() === undefined) return false
 	if (event.inputType !== 'insertParagraph') return false
 	dropUnexpressedInput(container, event)
 	return true

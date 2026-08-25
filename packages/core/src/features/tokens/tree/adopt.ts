@@ -1,6 +1,6 @@
 import {batch, untracked} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
-import type {MarkToken, RowToken, TextToken, Token} from '../parser/types'
+import type {MarkToken, RowConfig, RowToken, TextToken, Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {anchorAt, offsetOfAnchor} from './anchors'
 import type {TokenTree} from './tree'
@@ -32,8 +32,8 @@ export function parseValue(parser: Parser | undefined, value: string): Token[] {
  * one that finds no marks and still splits rows.
  */
 const bareParser = new Parser([])
-export function parseRowsValue(parser: Parser | undefined, value: string, separator: string): RowToken[] {
-	return (parser ?? bareParser).parseRows(value, separator)
+export function parseRowsValue(parser: Parser | undefined, value: string, config: RowConfig): RowToken[] {
+	return (parser ?? bareParser).parseRows(value, config)
 }
 
 /**

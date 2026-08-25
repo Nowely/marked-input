@@ -2,7 +2,7 @@ import {faker} from '@faker-js/faker'
 import {beforeEach, describe, expect, it} from 'vitest'
 
 import {Parser} from './Parser'
-import type {RowToken, Token} from './types'
+import type {RowConfig, RowToken, Token} from './types'
 
 /**
  * The two properties the row pipeline must never lose (issue 08; re-hosted from
@@ -15,6 +15,7 @@ import type {RowToken, Token} from './types'
 const FAKER_SEED = 6_122_026
 const ITERATIONS = 200
 const SEPARATOR = '\n\n'
+const ROW_CONFIG: RowConfig = {separator: SEPARATOR}
 const MARKUPS = ['# __slot__', '**__slot__**', '@[__value__](__meta__)'] as const
 
 beforeEach(() => {
@@ -69,7 +70,7 @@ describe('parseRows properties', () => {
 
 		for (let i = 0; i < ITERATIONS; i++) {
 			const value = generateDocument()
-			const rows = parser.parseRows(value, SEPARATOR)
+			const rows = parser.parseRows(value, ROW_CONFIG)
 
 			const joined = rows.map(row => row.content).join('')
 			expect(joined, `iteration ${i}, value ${JSON.stringify(value)}`).toBe(value)
@@ -81,7 +82,7 @@ describe('parseRows properties', () => {
 
 		for (let i = 0; i < ITERATIONS; i++) {
 			const value = generateDocument()
-			const rows = parser.parseRows(value, SEPARATOR)
+			const rows = parser.parseRows(value, ROW_CONFIG)
 
 			// An insertion strictly inside one row's content (never into its separator):
 			// a single alpha char cannot form or break a '\n\n' separator.
@@ -92,7 +93,7 @@ describe('parseRows properties', () => {
 			const inserted = faker.string.alpha(1)
 			const edited = value.slice(0, offset) + inserted + value.slice(offset)
 
-			const editedRows = parser.parseRows(edited, SEPARATOR)
+			const editedRows = parser.parseRows(edited, ROW_CONFIG)
 			const context = `iteration ${i}, row ${rowIndex}, offset ${offset}, value ${JSON.stringify(value)}`
 
 			expect(editedRows.length, context).toBe(rows.length)

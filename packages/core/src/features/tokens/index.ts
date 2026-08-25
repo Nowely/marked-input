@@ -1,6 +1,6 @@
 // Canonical export point for the token layer: parsing, the live node model, and the DOM facade.
 
-export type {MarkToken, Markup} from './parser/types'
+export type {MarkToken, Markup, RowConfig} from './parser/types'
 export {annotate} from './parser/utils/annotate'
 // "Is this markup usable?" is a parser question, and it is asked from OUTSIDE the parser by
 // every boundary that must not throw over a consumer's typo — `TokenModel.#parser` at the props

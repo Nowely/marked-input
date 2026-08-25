@@ -2,7 +2,7 @@ import {faker} from '@faker-js/faker'
 import {beforeEach, describe, expect, it} from 'vitest'
 
 import {Parser} from '../Parser'
-import type {Markup, PositionRange, RowToken} from '../types'
+import type {Markup, PositionRange, RowConfig, RowToken} from '../types'
 import {MarkupRegistry} from './MarkupRegistry'
 import type {Match} from './Match'
 import {PatternMatcher} from './PatternMatcher'
@@ -125,7 +125,7 @@ class ReferenceParser {
 		this.patternMatcher = new PatternMatcher(registry)
 	}
 
-	parseRows(value: string, separator: string): RowToken[] {
+	parseRows(value: string, {separator}: RowConfig): RowToken[] {
 		const segments = this.segmentMatcher.search(value)
 		const {accepted, separators} = referenceRowPass(this.patternMatcher.process(segments), value, separator)
 		return groupRows(this.treeBuilder.build(accepted, value), separators, value)
@@ -222,12 +222,12 @@ function generateLargeDocument(count: number, separator: string): string {
  */
 function costOf(parser: Parser, value: string, separator: string): number {
 	const BATCH = 4
-	for (let round = 0; round < 3; round++) parser.parseRows(value, separator)
+	for (let round = 0; round < 3; round++) parser.parseRows(value, {separator})
 
 	const samples: number[] = []
 	for (let round = 0; round < 7; round++) {
 		const started = performance.now()
-		for (let call = 0; call < BATCH; call++) parser.parseRows(value, separator)
+		for (let call = 0; call < BATCH; call++) parser.parseRows(value, {separator})
 		samples.push((performance.now() - started) / BATCH)
 	}
 	return samples.toSorted((a, b) => a - b)[3]
@@ -247,7 +247,9 @@ describe('row pass', () => {
 			const separator = SEPARATORS[iteration % SEPARATORS.length]
 			const value = generateDocument(separator)
 
-			if (serialize(parser.parseRows(value, separator)) !== serialize(reference.parseRows(value, separator))) {
+			if (
+				serialize(parser.parseRows(value, {separator})) !== serialize(reference.parseRows(value, {separator}))
+			) {
 				mismatches.push(`separator ${JSON.stringify(separator)}, value ${JSON.stringify(value)}`)
 			}
 		}

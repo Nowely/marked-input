@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest'
 
 import {effect} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
+import type {RowConfig} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {snapshot, stripIds} from './__testing__/snapshot'
 import {parseRowsValue} from './adopt'
@@ -454,12 +455,12 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 })
 
 describe('boundary: a separator adopts rows (issue 08)', () => {
-	function blockSetup(source: string, separator: () => string | undefined) {
-		const tree = createTokenTree(parseRowsValue(undefined, source, '\n\n'))
+	function blockSetup(source: string, rowConfig: () => RowConfig | undefined) {
+		const tree = createTokenTree(parseRowsValue(undefined, source, {separator: '\n\n'}))
 		const boundary = createBoundary({
 			tree,
 			parser: () => undefined,
-			separator,
+			rowConfig,
 			controlled: () => false,
 			onChange: () => {},
 		})
@@ -468,18 +469,20 @@ describe('boundary: a separator adopts rows (issue 08)', () => {
 	}
 
 	it('adopts rows only — the block top level is RowNodes, trailing empty row included', () => {
-		const {tree, tx} = blockSetup('aaa\n\nbbb\n\n', () => '\n\n')
+		const {tree, tx} = blockSetup('aaa\n\nbbb\n\n', () => ({separator: '\n\n'}))
 		expect(tree.roots().map(n => n.kind)).toEqual(['row', 'row', 'row'])
 
 		expect(tx.applyRange({start: 1, end: 1, insertedLength: 0}, 'X')).toBe(true)
 
 		expect(tree.roots().map(n => n.kind)).toEqual(['row', 'row', 'row'])
 		expect(tree.value()).toBe('aXaa\n\nbbb\n\n')
-		expect(stripIds(snapshot(tree.roots()))).toEqual(parseRowsValue(undefined, 'aXaa\n\nbbb\n\n', '\n\n'))
+		expect(stripIds(snapshot(tree.roots()))).toEqual(
+			parseRowsValue(undefined, 'aXaa\n\nbbb\n\n', {separator: '\n\n'})
+		)
 	})
 
 	it('an empty row keeps ONE empty text child — its caret target', () => {
-		const {tree} = blockSetup('\n\nbbb\n\n', () => '\n\n')
+		const {tree} = blockSetup('\n\nbbb\n\n', () => ({separator: '\n\n'}))
 		const row = tree.roots()[0]
 		if (row.kind !== 'row') throw new Error('expected a row')
 		expect(row.children().map(n => n.kind)).toEqual(['text'])
@@ -495,7 +498,7 @@ describe('boundary: a separator adopts rows (issue 08)', () => {
 	})
 
 	it('the projection is identical either way — the separator is literal text in both', () => {
-		const block = blockSetup('aaa\n\nbbb\n\n', () => '\n\n')
+		const block = blockSetup('aaa\n\nbbb\n\n', () => ({separator: '\n\n'}))
 		const inline = blockSetup('aaa\n\nbbb\n\n', () => undefined)
 		inline.boundary.reparse()
 		expect(block.tree.value()).toBe(inline.tree.value())

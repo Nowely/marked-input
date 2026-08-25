@@ -8,7 +8,7 @@ import {anchorAt, offsetOfAnchor, separatorSpan, stepAnchor} from './anchors'
 import {entryAnchor} from './siblings'
 import {createTokenTree, sliceNodes} from './tree'
 
-const SEPARATOR = '\n\n'
+const SEPARATOR = {separator: '\n\n'}
 
 const rowTree = (markups: Markup[], value: string) => {
 	const parser = new Parser(markups)

@@ -2,8 +2,9 @@ import {describe, expect, it} from 'vitest'
 
 import {rowsToDebugTree} from './__testing__/tokensToDebugTree'
 import {Parser} from './Parser'
+import type {RowConfig} from './types'
 
-const SEPARATOR = '\n\n'
+const SEPARATOR: RowConfig = {separator: '\n\n'}
 
 describe('parseRows', () => {
 	describe('plain text', () => {
@@ -96,7 +97,7 @@ describe('parseRows', () => {
 		})
 
 		it('closes an open trailing value at the row boundary', () => {
-			const rows = new Parser(['- __value__']).parseRows('- alpha\n- beta\n', '\n')
+			const rows = new Parser(['- __value__']).parseRows('- alpha\n- beta\n', {separator: '\n'})
 
 			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
 				"0: ROW "- alpha↲" [0-8]
@@ -233,7 +234,7 @@ describe('parseRows', () => {
 
 	describe('contract', () => {
 		it('rejects an empty separator', () => {
-			expect(() => new Parser([]).parseRows('alpha', '')).toThrow('separator must be non-empty')
+			expect(() => new Parser([]).parseRows('alpha', {separator: ''})).toThrow('separator must be non-empty')
 		})
 
 		it('reproduces the value from row contents byte-for-byte', () => {
