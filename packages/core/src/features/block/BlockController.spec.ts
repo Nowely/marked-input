@@ -27,7 +27,7 @@ const mounted: Store[] = []
 function mountRows(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
 	mounted.push(store)
-	store.props.set({separator: null, ...blockProps, ...props})
+	store.props.set({...blockProps, ...props})
 	const container = document.createElement('div')
 	container.style.position = 'relative'
 	document.body.append(container)
