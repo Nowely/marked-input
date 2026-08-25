@@ -70,10 +70,39 @@ describe('remove', () => {
 		expect(rowsOf(store)).toEqual([first, last])
 	})
 
+	/**
+	 * A removal takes the row's whole SUBTREE, so the row that owns no trailing separator is not
+	 * only the pre-order LAST one — every ancestor of it owns none either. Testing the leaf alone
+	 * sent the last root with children down the plain structural splice, which leaves the boundary
+	 * before it dangling and turns it into the trailing empty row.
+	 */
+	it('takes the boundary before the last ROOT, whose subtree ends the document', () => {
+		const store = rowStore('a\nb\n\tc')
+		const [first, root] = rowsOf(store)
+
+		expect(root.remove()).toBe(true)
+
+		expect(store.tokens.value()).toBe('a')
+		expect(rowsOf(store)).toEqual([first])
+	})
+
 	it('refuses the only row of an empty document', () => {
 		const store = rowStore('')
 
 		expect(rowsOf(store)[0].remove()).toBe(false)
+		expect(store.tokens.value()).toBe('')
+	})
+
+	/**
+	 * The document's first row has no boundary in front of it, so the plan declines and the plain
+	 * structural splice takes the row's own span — which is the whole document here. Stated over a
+	 * NON-empty document: on the empty one the downstream `start === end` refusal answers `false`
+	 * whether the guard is there or not.
+	 */
+	it('clears the document when the only row is the first one', () => {
+		const store = rowStore('a')
+
+		expect(rowsOf(store)[0].remove()).toBe(true)
 		expect(store.tokens.value()).toBe('')
 	})
 })

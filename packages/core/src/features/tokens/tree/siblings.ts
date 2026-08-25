@@ -38,16 +38,16 @@ export function mergePlan(
 }
 
 /**
- * The removal window of the DOCUMENT-FINAL row, whose own span is not the whole story: it owns
- * no separator, so deleting only its span would convert it into the trailing empty row and leave
- * the boundary before it dangling — the row count could never shrink (issue 08 review finding).
- * `undefined` everywhere else: any earlier row's span already includes its own separator, and
- * non-rows keep the plain structural splice.
+ * The removal window of a row whose SUBTREE ENDS THE DOCUMENT, whose own span is not the whole
+ * story: it owns no separator, so deleting only its span would convert it into the trailing empty
+ * row and leave the boundary before it dangling — the row count could never shrink (issue 08
+ * review finding). `undefined` everywhere else: any earlier row's span already includes its own
+ * separator, and non-rows keep the plain structural splice.
  *
- * The final row is the last in PRE-ORDER and not the last ROOT, and under nesting those are
- * different rows — the last root is an ancestor of the last row whenever the document ends
- * indented. It is always a LEAF, because a row's children follow it. `findIndex` over the live
- * walk is that test and the liveness check in one read, as `roots.indexOf` was.
+ * {@link endsDocument} and not "is the last row in pre-order": a removal takes the row's whole
+ * SUBTREE, so an ANCESTOR of the last row carries no trailing separator either, and testing only
+ * the leaf left the last root with children splicing its bare span — `'a⏎b⏎⇥c'` minus `b` emitted
+ * `'a⏎'` and gained an empty row instead of losing one.
  */
 export function removePlan(
 	roots: readonly TreeNode[],
@@ -55,10 +55,10 @@ export function removePlan(
 	separator: string | undefined
 ): {start: number; end: number} | undefined {
 	if (node.kind !== 'row' || separator === undefined) return undefined
-	const rows = preorderRows(roots)
-	if (rows.at(-1)?.row !== node) return undefined
+	// The walk is the finality test and the liveness check in one read, as `roots.indexOf` was.
+	if (!endsDocument(roots, node)) return undefined
 	// Nothing precedes the document's first row, so there is no boundary to take with it.
-	if (rows.length < 2) return undefined
+	if (preorderRows(roots)[0]?.row === node) return undefined
 	// The boundary that leaves is the separator BEFORE the row rather than a previous SIBLING's
 	// trailing one: the pre-order join puts one between every adjacent pair at every depth, so
 	// the row a nested final row is preceded by may be its own parent.
