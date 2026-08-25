@@ -128,7 +128,10 @@ Implementation is a separate effort after this map.
   identity rather than UI state. The surviving half — whether MARKS want
   per-node state — is now [09](issues/09-per-node-state-for-marks.md).
 - [The layout switch survives as a PROP and dies as a MODE](issues/05-layout-switch-fate.md)
-  (2026-08-24, Option A, implemented) — `TokenModel.rowSeparator`
+  (2026-08-24, Option A, implemented) — **SUPERSEDED 2026-08-25 by ADR-0011: the
+  prop is deleted too, `rowConfig` replaces `rowSeparator`, and the declared
+  clock behaviour below is withdrawn with the computed it described. See the
+  ticket's own `## Comments`.** `TokenModel.rowSeparator`
   (`layout.isBlock() ? separator() : undefined`) is the SOLE reader of the enum;
   the parse fork, the four feature gates and the grip gutter all ask it, and
   React's `Container` picks a wrapper per NODE, which deletes the `n as BlockRow`

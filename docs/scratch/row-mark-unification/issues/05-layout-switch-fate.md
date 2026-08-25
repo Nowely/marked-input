@@ -1,7 +1,7 @@
 # The layout switch's fate
 
 Type: grilling
-Status: resolved — the enum survives as a PROP and dies as a MODE (2026-08-24)
+Status: resolved — superseded: the enum dies as a mode AND as a prop (2026-08-25, ADR-0011)
 Blocked by: —  (01 resolved 2026-08-24; 02's paused half is about prop names, not the layout mode)
 
 ## Question
@@ -212,3 +212,29 @@ props moved nothing, so the layout arm has no special status here.
 does change: block layout does not render the separators, so a caret at
 `raw=29` in block is `raw=31` in inline. Same position in the projection, and
 the reports appear to have read that as loss.
+
+## Comments
+
+**2026-08-25, P2 (ADR-0011).** The Answer above is superseded on its central point, and this
+ticket is where that has to be said, because this is where the question was reserved.
+
+- **"Option B — deleting `layout` outright — was NOT taken; it is a separate published-API
+  decision."** It was taken, as exactly that: a decision from the outside, recorded in
+  [ADR-0011](../../../adr/0011-the-separator-is-the-whole-row-model.md). The reason it could not
+  be deferred again is this ticket's own argument turned around — the deferral rested on _a
+  configured separator is the mode_, and P2's default of `'\n'` makes every unconfigured editor a
+  row editor, so nothing is left to discriminate.
+- **`TokenModel.rowSeparator`** is gone by name and by shape: `rowConfig: Computed<RowConfig |
+  undefined>` (P1, `3c4b54ad`) is the sole derivation, and `separator === null` is the single
+  spelling of "no rows". The grep in the Answer has no target left; the census at HEAD returns
+  zero production hits for `props.layout`, `isBlock` and `rowSeparator` alike.
+- **The declared behaviour change is withdrawn with its premise.** "In a document with NO rows,
+  changing `separator` no longer pulses the commit clock" was a property of a computed that read
+  `separator` only when `layout` said block. `rowConfig` reads `separator` FIRST and always —
+  `null` is how it answers — so a rowless document is subscribed to it, and moving the separator
+  reparses. The overlay-dismissal outcome the table above records still holds, by a different
+  mechanism: the `separator` signal drops an identical write before it propagates, so a per-render
+  prop sync never wakes anything. Its pin lives on in `OverlayController.spec.ts` with the
+  mechanism corrected.
+- **The two crashing prop pairs stay fixed**, and one of them is now unspellable: `layout="block"`
+  with `separator: ''` has no `layout` to spell. `''` alone is still reported and treated as absent.
