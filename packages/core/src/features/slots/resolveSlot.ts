@@ -128,30 +128,3 @@ function rowComponent(node: RowNode, ctx: NodeSlotContext): Slot | undefined {
 	const option = node.option()
 	return option === undefined ? undefined : ctx.options?.[option]?.row?.Component
 }
-
-/** A run of consecutive sibling rows sharing one wrapper — `Group: undefined` is the bare run. */
-export type RowGroup = {Group: Slot | undefined; rows: readonly RowNode[]}
-
-/**
- * A sibling list as RUNS: consecutive rows agreeing on their `group` component, folded together.
- * Agreeing on NOTHING counts, so a list that declares no group at all is one bare run rather than
- * one run per row — which is what keeps the adapters from wrapping every row in a fragment of its
- * own (Vue mounts two empty text anchors per fragment, measured).
- *
- * In CORE and not in each adapter: grouping at render time in both is the same defect `9024586b`
- * fixed for suggestions, one rule written twice. The group itself is not a node — it has zero
- * bytes in the value and tiles nothing, so folding it here keeps `anchorAt`, `sliceWithin`,
- * `removePlan`, `movePlan` and `boundarySpan` free of a node that addresses nothing.
- */
-export function resolveRowGroups(rows: readonly RowNode[], ctx: NodeSlotContext): readonly RowGroup[] {
-	const groups: {Group: Slot | undefined; rows: RowNode[]}[] = []
-	for (const row of rows) {
-		const option = row.option()
-		const Group = option === undefined ? undefined : ctx.options?.[option]?.row?.group
-		const open = groups.at(-1)
-		// Reference identity is the key: two kinds share a wrapper by sharing one `const`.
-		if (open && open.Group === Group) open.rows.push(row)
-		else groups.push({Group, rows: [row]})
-	}
-	return groups
-}

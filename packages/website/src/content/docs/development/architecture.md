@@ -425,9 +425,7 @@ hold its inline tokens FIRST and its child rows after, in one list, so every gen
 untouched; `inline()` and `rows()` are the two named halves. Its `position` covers its whole
 subtree, which is what keeps sibling positions ascending at every depth, and `lineRange()` is the
 row's own line. The projection joins rows in PRE-ORDER by the separator and each row emits its own
-lead. A sibling list is painted by one `<Rows>` component at every depth, which also folds
-consecutive siblings sharing a `group` component into one wrapper — `resolveRowGroups`, in core, so
-the rule is not written once per adapter.
+lead. A sibling list is painted by one `<Rows>` component at every depth.
 
 `BlockController` (`store.block`) owns them for the whole editor, as four signals
 addressed by row id:

@@ -4,7 +4,7 @@ import type {CSSProperties} from 'react'
 import {memo, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-// oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Block` paints one row and its own list. The cycle is the recursion, both sides are used only inside a render body, and the alternative is the grouping rule written twice.
+// oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Block` paints one row and its own list. The cycle is the recursion, and both sides are used only inside a render body.
 import {Rows} from './Rows'
 import {Token} from './Token'
 

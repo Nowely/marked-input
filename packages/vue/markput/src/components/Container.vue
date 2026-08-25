@@ -55,8 +55,7 @@ const setContainerRef = (el: unknown) => {
 		     per-node form would push 2N stray text nodes into the editing host. The branch is
 		     equivalent — a configured separator is exactly when the parse yields rows.
 		     The roots are then ONE sibling list of rows, painted by the same component a row's
-		     own children are, so the group wrapper and the depth index have one implementation
-		     at every depth. -->
+		     own children are, so the depth index has one implementation at every depth. -->
 		<template v-if="result.rowConfig !== undefined">
 			<Rows :rows="rowRoots" :depth="0" />
 			<!-- The row controls, as one layer INSIDE the container rather than a copy inside

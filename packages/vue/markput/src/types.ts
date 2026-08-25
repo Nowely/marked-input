@@ -18,7 +18,7 @@ export interface RowProps {
 	meta?: string
 	/** Nesting depth, counted from the roots. */
 	depth: number
-	/** Position among the row's own SIBLINGS — a group wrapper does not renumber the list. */
+	/** Position among the row's own SIBLINGS. */
 	index: number
 	/** The live row node: its id, its own text and its verbs. */
 	node: RowNode

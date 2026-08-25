@@ -86,15 +86,6 @@ export interface RowSpec {
 	 * component — the row with no kind — and the only fallback left.
 	 */
 	Component: Slot
-	/**
-	 * Consecutive SIBLING rows sharing this component render inside one wrapper — a `<ul>` around
-	 * a run of bullets, a `<table>` around a run of rows.
-	 *
-	 * REFERENCE identity is the key, not a name: two kinds share a wrapper by sharing one `const`.
-	 * The wrapper receives `{children}` and nothing else; it has zero bytes in the value and is
-	 * not a node in the tree.
-	 */
-	group?: Slot
 }
 
 export type OverlayMatch<TOption = CoreOption> = {

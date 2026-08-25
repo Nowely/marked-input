@@ -56,7 +56,7 @@ index: number;
 
 Defined in: [react/markput/src/types.ts:43](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L43)
 
-Position among the row's own SIBLINGS — a group wrapper does not renumber the list.
+Position among the row's own SIBLINGS.
 
 ***
 

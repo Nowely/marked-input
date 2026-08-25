@@ -6,7 +6,7 @@ import {computed} from 'vue'
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 import {unwrapEl} from '../lib/unwrapEl'
-// oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Block` paints one row and its own list. The cycle is the recursion, both sides are used only inside a render body, and the alternative is the grouping rule written twice.
+// oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Block` paints one row and its own list. The cycle is the recursion, and both sides are used only inside a render body.
 import Rows from './Rows.vue'
 import Token from './Token.vue'
 

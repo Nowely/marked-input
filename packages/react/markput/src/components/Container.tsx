@@ -34,8 +34,7 @@ export const Container = memo(() => {
 			{/* Branched on the PROPS-derived separator rather than per node, matching Vue's
 			    Container: a configured separator is exactly when the parse yields rows. The roots
 			    are then ONE sibling list of rows, painted by the same component a row's own
-			    children are, so the group wrapper and the depth index have one implementation at
-			    every depth. */}
+			    children are, so the depth index has one implementation at every depth. */}
 			{rowConfig === undefined ? (
 				nodes.map(n => <Token key={n.id} node={n} depth={0} />)
 			) : (
