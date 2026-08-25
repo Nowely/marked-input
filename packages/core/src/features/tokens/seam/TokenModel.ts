@@ -524,9 +524,9 @@ export class TokenModel {
 			let removed = false
 			// One tick for value and selection, exactly as `EditController.replace` batches its pair.
 			batch(() => {
-				// The document-final row owns no separator, so its removal takes the PREVIOUS
-				// row's — a span-only splice would just convert it into the trailing empty row
-				// (issue 08 review finding). removePlan's root indexOf is the liveness check.
+				// A row whose subtree ends the document owns no separator, so its removal takes the
+				// preceding one with it — see {@link removePlan}. Every other node keeps the plain
+				// structural splice below.
 				const plan = untracked(() => removePlan(this.#tree.roots(), node, this.#tree.config()?.separator))
 				if (plan) {
 					if (!this.#tx.applyRange({start: plan.start, end: plan.end, insertedLength: 0}, '')) return
@@ -547,9 +547,8 @@ export class TokenModel {
 		duplicate: node => {
 			const projection = this.valueBetween({before: node}, {after: node})
 			// A row whose subtree ends the document carries no separator; without one between the
-			// copies they fuse into a single row (issue 08 review finding). Asked of the SPAN and
-			// not of the root list, because under nesting the last root and the last row are two
-			// different rows and both of them end the document.
+			// copies they fuse into a single row (issue 08 review finding). See
+			// {@link endsDocument} for why that is a walk rather than a root-list index.
 			const text = untracked(() =>
 				endsDocument(this.#tree.roots(), node)
 					? (this.#tree.config()?.separator ?? '') + projection

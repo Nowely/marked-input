@@ -73,9 +73,11 @@ export function removePlan(
  *
  * Asked of the pre-order WALK and not of the spans, because the trailing empty row is
  * zero-width: the row before it ends at the document's end too, and a span test calls it final.
+ *
+ * A non-row answers `false` without a guard of its own: the walk skips it and never descends, so
+ * its own walk is empty and matches no last row.
  */
 export function endsDocument(roots: readonly TreeNode[], node: TreeNode): boolean {
-	if (node.kind !== 'row') return false
 	const last = preorderRows(roots).at(-1)?.row
 	return last !== undefined && preorderRows([node]).at(-1)?.row === last
 }
