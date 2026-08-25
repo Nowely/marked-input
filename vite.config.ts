@@ -28,6 +28,16 @@ export default defineConfig({
 			],
 		},
 		projects: [
+			// `@markput/notion`'s own check is a READ OF ITS SOURCE, not of its behaviour: the claim
+			// is that the package imports nothing but the published adapter and touches no store
+			// member. There is nothing to render, so no browser and no framework plugin.
+			defineProject({
+				test: {
+					name: 'notion',
+					include: ['packages/notion/src/**/*.spec.ts'],
+					environment: 'node',
+				},
+			}),
 			defineProject({
 				test: {
 					name: 'core',

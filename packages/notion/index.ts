@@ -6,6 +6,7 @@
  * internal, no `store.edit`, no `store.tokens`.
  */
 
+export {notionOptions, Paragraph} from './src/options'
 export {NOTION_THEME, theme} from './src/theme'
 
 // The presentational leaves. `src/ui/index.ts` is the list; spelling it twice here would be a
