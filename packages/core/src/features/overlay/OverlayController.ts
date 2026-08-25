@@ -243,6 +243,10 @@ export class OverlayController {
 		const row = this.tokens.rowOf(match.range.anchor)?.row
 		if (!row) return undefined
 		const body = this.tokens.slotWithout(row, match.range)
+		// TYPE-FORCED, not behaviour-forced, and measured: throwing here reddens nothing, because
+		// `row` is derived from the SAME anchor the span was built around, so this caller cannot
+		// hand `slotWithout` a span outside that row. The refusal is real and pinned where it is
+		// reachable — `anchors.spec.ts` calls `slotWithout` directly with a foreign span.
 		if (body === undefined) return undefined
 		return {row, body}
 	}

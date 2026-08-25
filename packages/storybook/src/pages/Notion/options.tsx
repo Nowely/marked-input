@@ -57,13 +57,15 @@ const styledRow = (ownStyle: CSSProperties) =>
  * a row boundary (ADR-0010) — left inline it shattered into four rows whose `'# → rollout'` line
  * was then read as a heading. Its body is `__value__`, so the fence's interior is raw and no
  * markup inside it is matched, which is what a code block means.
- */
-const ROW_KEYS = new Set(['h1', 'h2', 'h3', 'list', 'codeBlock'])
-
-/**
- * What each preset kind contributes to the `/` menu. Declaring it is the WHOLE registration: the
- * menu is `overlay.entries`, assembled from the options that carry one, so nothing here is
- * repeated in a component and no component filters it.
+ *
+ * The same table says what each of them contributes to the `/` menu, and declaring an entry is
+ * the WHOLE registration: the menu is `overlay.entries`, assembled from the options that carry
+ * one, so nothing here is repeated in a component and no component filters it.
+ *
+ * ONE list, not two. Spelled beside a separate `ROW_KEYS` set, a key present in one and absent
+ * from the other typechecked — `noUncheckedIndexedAccess` is off, so `PRESET_MENU[key]` reads as
+ * `MenuSpec` — and the kind then shipped with `menu: undefined`, silently missing from its own
+ * menu.
  */
 const PRESET_MENU: Record<string, MenuSpec> = {
 	h1: {label: 'Heading 1', keywords: ['h1', 'title']},
@@ -72,6 +74,8 @@ const PRESET_MENU: Record<string, MenuSpec> = {
 	list: {label: 'Bulleted list', keywords: ['ul', 'list']},
 	codeBlock: {label: 'Code', keywords: ['fence', 'snippet']},
 }
+
+const ROW_KEYS = new Set(Object.keys(PRESET_MENU))
 
 const presetKinds: Option[] = Object.entries(defaultMarkdownTheme)
 	.filter(([key]) => ROW_KEYS.has(key))
