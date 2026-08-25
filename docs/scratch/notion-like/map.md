@@ -80,6 +80,18 @@ becomes a ticket here.
   that asked whether the model could carry a row type at all. The costs are
   declared in ADR-0010: an inline mark can no longer span a row boundary, and a
   typed row's opener and closing literal are structural bytes no caret enters.
+- **The separator is the whole row model, and a line is a row** (2026-08-25, P2, ADR-0011). The
+  `layout` prop is deleted: `separator?: string | null` is the only fact that says whether a
+  document splits, `null` means it never does, and the default moved from `'\n\n'` to `'\n'`. That
+  closes [05](issues/05-per-item-rows.md) — the probe's `list` became a row kind in the same phase,
+  so each item of the risk list and the decision log is a row with its own grip and menu. The
+  fence had to become a kind with it, because an inline mark cannot span a row (ADR-0010) and it
+  was shattering into four rows. The price is the one [05](issues/05-per-item-rows.md) named as its
+  alternative: a soft break has no representation under `'\n'`, so Shift+Enter is unbound until the
+  keymap phase adds `softBreak` — recorded on [08](issues/08-soft-breaks-are-invisible.md).
+- **A markdown table has no header row on the probe.** An OPEN kind's body runs to the row's own
+  separator, so a table line is a row; which line is the header is a fact about the line AFTER it,
+  and a row component sees only its own row. It comes back with cells-as-rows at P9.
 - **Half of [03](issues/03-row-node-not-nameable.md) landed**: `RowNode` and
   `RowProps` are exported from core and both adapters. `Store` still is not, so
   the ticket stays open.
