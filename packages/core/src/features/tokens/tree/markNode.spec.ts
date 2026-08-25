@@ -753,4 +753,29 @@ describe('entering a fresh row', () => {
 
 		expect(selectionRange(store)).toEqual({start: 2, end: 2})
 	})
+
+	/**
+	 * The SAME caret rule in a document that parses no rows at all, which is what `separator: null`
+	 * is: the sequence an insert names a position in falls back to the ROOTS, and what follows a
+	 * root is the next root rather than the row after its subtree. Both arms are P4's, both are
+	 * load-bearing, and nothing else in the suite calls an insert verb on a non-row document —
+	 * deleting the fallback leaves the caret unmoved and no other spec notices.
+	 */
+	it('names the position after a MARK when the document has no rows', () => {
+		const {store} = setup('a@[m]b')
+
+		expect(store.tokens.nodes()[1].insertAfter('@[n]')).toBe(true)
+
+		expect(store.tokens.value()).toBe('a@[m]@[n]b')
+		expect(selectionRange(store)).toEqual({start: 5, end: 5})
+	})
+
+	it('names it for a duplicate too', () => {
+		const {store} = setup('a@[m]b')
+
+		expect(store.tokens.nodes()[1].duplicate()).toBe(true)
+
+		expect(store.tokens.value()).toBe('a@[m]@[m]b')
+		expect(selectionRange(store)).toEqual({start: 5, end: 5})
+	})
 })

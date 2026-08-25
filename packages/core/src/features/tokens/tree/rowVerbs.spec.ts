@@ -586,6 +586,31 @@ describe('awkward inputs', () => {
 	})
 
 	/**
+	 * A DEAD row is what a consumer holds after an edit removed it. Both plans check liveness by
+	 * looking the node up in the live pre-order walk, and nothing downstream re-checks —
+	 * `applyRange` takes a window, not a node.
+	 *
+	 * The FIRST row is the one that proves it. A dead LAST row's stale window points past the
+	 * shortened document and the transaction's own bound refuses it anyway; a dead first row's
+	 * window still lands on live bytes, so without these checks it rewrites the row that took its
+	 * place — measured `'# cd'` for the retype and `'a⏎b'` for the split, from a node that is not
+	 * in the document.
+	 */
+	it('refuses a retype and a split of a row that has been removed', () => {
+		const heading: CoreOption = {markup: '# __slot__', row: {Component: 'h1'}}
+		const store = rowStore('ab\ncd', [heading])
+		const first = rowsOf(store)[0]
+		const at = inBody(first, 1)
+
+		expect(first.remove()).toBe(true)
+		expect(store.tokens.value()).toBe('cd')
+
+		expect(first.turnInto(heading)).toBe(false)
+		expect(first.splitAt(at)).toBe(false)
+		expect(store.tokens.value()).toBe('cd')
+	})
+
+	/**
 	 * The document-final row is UNTERMINATED — it owns no separator — and every verb that writes
 	 * one has to put it back on the correct side. Read at depth 0, where the row is also the last
 	 * sibling and the last root.
