@@ -6,7 +6,7 @@ import type {Markup, PositionRange, RowToken} from '../types'
 import {MarkupRegistry} from './MarkupRegistry'
 import type {Match} from './Match'
 import {PatternMatcher} from './PatternMatcher'
-import {acceptMatches, groupRows} from './RowBuilder'
+import {acceptMatches, closeTrailingGaps, groupRows} from './RowBuilder'
 import {SegmentMatcher} from './SegmentMatcher'
 import {TreeBuilder} from './TreeBuilder'
 
@@ -27,7 +27,13 @@ import {TreeBuilder} from './TreeBuilder'
 
 const FAKER_SEED = 8_252_026
 const ITERATIONS = 40_000
-const SEPARATORS = ['\n', '\n\n'] as const
+/**
+ * `separator` is an arbitrary public string (`PropsModel.ts`), so the corpus does
+ * not stop at the two defaults: the last four collide with the markup literals,
+ * which is the one shape a newline-joined document cannot produce — an occurrence
+ * that IS part of a match's own text.
+ */
+const SEPARATORS = ['\n', '\n\n', '**', '```', '@[', '|'] as const
 
 const MARKUPS: Markup[] = [
 	'# __slot__',
@@ -129,16 +135,20 @@ class ReferenceParser {
 // ── Fuzz corpus ─────────────────────────────────────────────────────────────
 
 /**
- * Three shapes carry the pass's edge cases and all are deliberately frequent
+ * Four shapes carry the pass's edge cases and all are deliberately frequent
  * here: an opener with an empty body (`'# '`) puts a boundary at exactly the
  * match's end, which is where a lower bound and an upper bound disagree; an
  * unclosed fence leaves a trailing gap that has to travel to a boundary across
- * separator occurrences its own literal hides; and a mark inside a closed slot
- * is the only shape whose extents nest, which is what makes the union of
- * extents differ from the extents themselves.
+ * separator occurrences its own literal hides; a mark inside a closed slot is
+ * the only shape whose extents nest, which is what makes the union of extents
+ * differ from the extents themselves; and case 11 is the only shape that drives
+ * the fixpoint past ONE round — a mention whose closure extends the bold into a
+ * conflict the tree drops, so the pass must re-derive boundaries over the
+ * survivors. Without it the corpus terminated in a single round on all 40 000
+ * documents and asserted nothing about the walk's per-round reset.
  */
-function generateRow(): string {
-	switch (faker.number.int({min: 0, max: 11})) {
+function generateRow(separator: string): string {
+	switch (faker.number.int({min: 0, max: 12})) {
 		case 0:
 			return `# ${faker.lorem.word()}`
 		case 1:
@@ -161,13 +171,15 @@ function generateRow(): string {
 			return `**${faker.lorem.word()} @[${faker.string.alpha(3)}](${faker.string.alpha(2)}) ${faker.lorem.word()}**`
 		case 10:
 			return `**# ${faker.lorem.word()}**`
+		case 11:
+			return `**# ${faker.lorem.word()} @[${faker.string.alpha(3)}](${faker.string.alpha(2)}**${separator}${faker.string.alpha(2)})`
 		default:
 			return faker.lorem.words({min: 1, max: 3})
 	}
 }
 
 function generateDocument(separator: string): string {
-	const rows = Array.from({length: faker.number.int({min: 1, max: 5})}, generateRow)
+	const rows = Array.from({length: faker.number.int({min: 1, max: 5})}, () => generateRow(separator))
 	return rows.join(separator) + (faker.datatype.boolean() ? separator : '')
 }
 
@@ -262,5 +274,45 @@ describe('row pass', () => {
 		const scale = `1000 rows ${base.toFixed(2)}ms, 4000 rows ${quadruple.toFixed(2)}ms, 8000 rows ${octuple.toFixed(2)}ms`
 		expect(quadruple / base, scale).toBeLessThan(10)
 		expect(octuple / base, scale).toBeLessThan(20)
+	})
+
+	/**
+	 * The growth pin above cannot see the binary search, and no tightening of it
+	 * will: the scan it replaced is O(boundaries) per gap at EVERY rung, so it
+	 * inflates the thousand-row baseline the ratios divide by along with the top
+	 * rung. Measured on this corpus, 8000/1000 reads 8.1x with the search and
+	 * 16.6x with the scan — a real 2.3x of runtime that both readings hide inside
+	 * a tolerance the ±35% on absolutes forces the pin to keep.
+	 *
+	 * Probe count sees it exactly and owes nothing to the machine: a lower bound
+	 * reads ~log2(boundaries) per gap, a scan from the front ~boundaries/2. The
+	 * limit is per gap, so a corpus that stopped producing trailing gaps would
+	 * divide by zero and redden rather than pass vacuously.
+	 */
+	it('reaches a gap boundary without reading the boundaries before it', () => {
+		const separator = '\n\n'
+		const value = generateLargeDocument(1000, separator)
+		const registry = new MarkupRegistry(MARKUPS)
+		const segments = new SegmentMatcher(registry.segments).search(value)
+		const matches = acceptMatches(new PatternMatcher(registry).process(segments))
+
+		const boundaries: PositionRange[] = []
+		for (let at = value.indexOf(separator); at !== -1; at = value.indexOf(separator, at + separator.length)) {
+			boundaries.push({start: at, end: at + separator.length})
+		}
+
+		let reads = 0
+		const counted = new Proxy(boundaries, {
+			get(target, key, receiver) {
+				if (typeof key === 'string' && Number.isInteger(Number(key))) reads++
+				return Reflect.get(target, key, receiver)
+			},
+		})
+
+		const gaps = matches.filter(match => match.descriptor.trailingGap).length
+		closeTrailingGaps(matches, counted, value.length)
+
+		const probe = `${reads} reads for ${gaps} gaps over ${boundaries.length} boundaries`
+		expect(reads / gaps, probe).toBeLessThan(20)
 	})
 })
