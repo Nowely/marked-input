@@ -26,6 +26,7 @@ import {
 	stepAnchor,
 } from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
+import {preorderRows} from '../tree/rows'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
 import {depthPlan, endsDocument, mergePlan, movePlan, removePlan} from '../tree/siblings'
@@ -251,15 +252,15 @@ export class TokenModel {
 	 * length, which {@link value} outruns mid-flight — missing it splices a foreign window.
 	 * Deliberately kept: spec-facing and public-reachable through the exported Store (`store.tokens`) — the `api.focus()` precedent.
 	 *
-	 * `enterRoot` puts the caret INTO that row of the RESULT, named by index rather than by a
-	 * character offset into a string that does not exist yet — that offset was the last
-	 * absolute coordinate above `tree/` (ADR-0003), while an index names a node the commit is
-	 * about to produce, which the caller genuinely knows. A separate verb until the
-	 * API-surface cut; the block callers are the only ones that pass it.
+	 * `enterRoot` puts the caret INTO that row of the RESULT, named by its index in
+	 * {@link rowSequence} rather than by a character offset into a string that does not exist yet
+	 * — that offset was the last absolute coordinate above `tree/` (ADR-0003), while an index
+	 * names a node the commit is about to produce, which the caller genuinely knows. A separate
+	 * verb until the API-surface cut; the block callers are the only ones that pass it.
 	 */
 	setValue(text: string, enterRoot?: number): boolean {
 		if (this.replaceBetween('start', 'end', text) === undefined) return false
-		if (enterRoot !== undefined) this.#enterRoot(enterRoot)
+		if (enterRoot !== undefined) this.#enterRow(enterRoot)
 		return true
 	}
 
@@ -602,35 +603,42 @@ export class TokenModel {
 
 	/**
 	 * Both insert verbs, and the caret rule they share: the caret belongs at the START of what
-	 * was inserted, which is the anchor node's trailing edge READ BEFORE the splice. Resolved
-	 * against the post-splice tree, so for a slot-leading row markup it lands inside the fresh
-	 * row's slot — the same position the composer's `startOf(...)` answered.
+	 * was inserted, which is the POSITION the anchor node was followed by — read before the
+	 * splice, resolved after it, so for a slot-leading row markup it lands inside the fresh row's
+	 * slot rather than before its opener.
+	 *
+	 * The position is an index into {@link rowSequence}, and for a ROW it skips the anchor's whole
+	 * SUBTREE: `applyAfter` splices at the node's span end, which under nesting is past every
+	 * descendant, so what follows a row is the row after its last one.
 	 */
 	#insertAfter(node: TreeNode, text: string): boolean {
 		this.#ensureSeeded()
 		let inserted = false
 		batch(() => {
-			const index = untracked(() => this.#tree.roots().indexOf(node))
+			const at = untracked(() => {
+				const index = rowSequence(this.#tree.roots()).indexOf(node)
+				return index < 0 ? undefined : index + (node.kind === 'row' ? preorderRows([node]).length : 1)
+			})
 			if (!this.#tx.applyAfter(node, text)) return
 			inserted = true
-			// The fresh ROOT when the anchor was one — resolved after the splice, so the node
-			// exists. A nested insert names no root and leaves the caret to adoption's repair.
-			if (index >= 0) this.#enterRoot(index + 1)
+			// A node the sequence does not name — an inline node inside a row — leaves the caret
+			// to adoption's repair, exactly as a nested node did before rows nested.
+			if (at !== undefined) this.#enterRow(at)
 		})
 		return inserted
 	}
 
 	/**
-	 * Put the caret INTO root `index` — {@link entryAnchor}'s one rule, applied after the
-	 * splice so the row exists to be named. A no-op when no such root came back, which is what
-	 * controlled mode always looks like: the tree has not moved, so {@link #applyCaret} would
-	 * decline anyway.
+	 * Put the caret INTO {@link rowSequence}'s entry at `index` — {@link entryAnchor}'s one rule,
+	 * applied after the splice so the row exists to be named. A no-op when no such entry came
+	 * back, which is what controlled mode always looks like: the tree has not moved, so
+	 * {@link #applyCaret} would decline anyway.
 	 */
-	#enterRoot(index: number): void {
+	#enterRow(index: number): void {
 		// `.at` for `entryAnchor`'s reason; a negative index cannot arrive here — every
-		// caller derives it from a root index or a literal 0.
-		const root = untracked(() => this.#tree.roots().at(index))
-		if (root) this.#applyCaret(entryAnchor(root))
+		// caller derives it from a sequence index or a literal 0.
+		const row = untracked(() => rowSequence(this.#tree.roots()).at(index))
+		if (row) this.#applyCaret(entryAnchor(row))
 	}
 
 	/**
@@ -770,6 +778,20 @@ export class TokenModel {
 			this.#pipeline.rebind(id)
 		}
 	}
+}
+
+/**
+ * The sequence an insert names a position in: the document's rows in PRE-ORDER once anything
+ * parses as one, and the ROOTS otherwise.
+ *
+ * ONE space rather than two, because at depth 0 the two agree — with no nesting the rows in
+ * pre-order ARE the roots — and pre-order is the only one that survives nesting, where a root
+ * index stops naming a row at all. With no row parse there are no rows and the roots are the
+ * inline tokens, which is the space the mark verbs have always named.
+ */
+function rowSequence(roots: readonly TreeNode[]): readonly TreeNode[] {
+	const rows = preorderRows(roots)
+	return rows.length > 0 ? rows.map(entry => entry.row) : roots
 }
 
 /**

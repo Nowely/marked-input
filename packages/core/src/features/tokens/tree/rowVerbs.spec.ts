@@ -111,3 +111,47 @@ describe('duplicate', () => {
 		expect(rowsOf(store).slice(0, 2)).toEqual([root, child])
 	})
 })
+
+describe('insertAfter', () => {
+	/**
+	 * The caret used to be named by ROOT index, so a nested anchor answered `-1` and the caret
+	 * never moved into the row the verb had just created — the slash menu's whole insert gesture
+	 * on a nested row.
+	 */
+	it('puts the caret in the fresh row when the anchor is NESTED', () => {
+		const store = rowStore('a\n\tb')
+		const child = rowsOf(store)[1]
+
+		expect(child.insertAfter('\n\tc')).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\tb\n\tc')
+		expect(selectionRange(store)).toEqual({start: 6, end: 6})
+	})
+
+	/**
+	 * The insertion point is the anchor's SPAN end, which under nesting is past every descendant,
+	 * so the row that follows a parent is the one after its LAST one. Naming the row one past the
+	 * anchor instead puts the caret in the anchor's own first child.
+	 */
+	it('names the row after the anchor SUBTREE, not the one after its line', () => {
+		const store = rowStore('a\n\tb\n\t\tc\nz')
+		const nested = rowsOf(store)[1]
+
+		expect(nested.insertAfter('\tfresh\n')).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\tb\n\t\tc\n\tfresh\nz')
+		// The fresh row's body starts at 10; the anchor's own child row would have answered 7.
+		expect(selectionRange(store)).toEqual({start: 10, end: 10})
+	})
+
+	it('lands INSIDE a typed row slot at depth, not before its opener', () => {
+		const store = rowStore('# a\n\t# b\n\t# c', [{markup: '# __slot__', row: {Component: 'h1'}}])
+		const child = rowsOf(store)[1]
+
+		expect(child.insertAfter('\t# \n')).toBe(true)
+
+		expect(store.tokens.value()).toBe('# a\n\t# b\n\t# \n\t# c')
+		// The fresh row spans [9,13]; its slot is the zero-width text at 12, past the '# '.
+		expect(selectionRange(store)).toEqual({start: 12, end: 12})
+	})
+})
