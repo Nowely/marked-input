@@ -140,10 +140,15 @@ becomes a ticket here.
   it was carrying was promoted out of it. All three collapse into one answer — replay the SCAN over
   the span the splice rewrites, plus one row — and the mover refuses rather than widening, because
   normalizing another row's lead cascades into the row after it.
-- **`setDepth` shares the same hole and is NOT fixed** (2026-08-25). Measured: `'x⏎⏎⇥⇥b'`,
-  `blank.setDepth(1)` emits `'x⏎⇥⏎⇥⇥b'` and the untouched root `b` lands two levels down as a
-  grandchild. It rewrites one row's lead and re-emits nothing else, so it has no span to replay the
-  scan over. Declared on the architecture page; its own step.
+- **`setDepth` shared the same hole, in TWO faces, and both are closed** (2026-08-25, P6). The
+  declared one first: `'x⏎⏎⇥⇥b'`, `blank.setDepth(1)` emitted `'x⏎⇥⏎⇥⇥b'` and the untouched root
+  `b` landed two levels down as a grandchild. The second was found by measuring the verb rather
+  than by reading it — indenting a row that HAS children emitted `'a⏎⇥b⏎⇥c'` from `'a⏎b⏎⇥c'`, where
+  `c` stopped being `b`'s child and became its sibling, which is Tab in a list. Both come from
+  rewriting ONE row's lead: the subtree travels now, re-led by the same depth delta the mover uses,
+  and the scan replay is shared with the mover as `scanAgrees` rather than written twice. What it
+  still does NOT refuse, because the encoding says so: outdenting a row leaves the siblings after it
+  at a depth its new depth grants, so they become its children — the outliner's answer.
 - **A property exhaustive over PLACEMENTS is not exhaustive over DOCUMENTS.** P5's generator
   rendered every row at `INDENT.repeat(depth)`, so the corpus was canonical-only and structurally
   incapable of holding the class all three defects lived in. Widening it — surplus leads at 25%,
@@ -154,6 +159,34 @@ becomes a ticket here.
   document instead left all 91 files / 1691 tests green, because `moveTo` carries the caret through
   adoption's verified-move short-circuit rather than through the window map. Restored and pinned
   rather than deleted — the answer to an unpinned claim you want to keep is a pin.
+- **The row keymap is four keys and no rules of its own** (2026-08-25, P6). `blockEdit.ts` became
+  `rowKeys.ts`; every arm resolves `tokens.rowOf(anchor)` and calls a P4/P5 verb. Enter is
+  `splitAt` — one call for end-of-row, mid-row and start-of-row — and on an EMPTY row it runs the
+  ONE demote ladder (depth, then kind) that Backspace-at-a-row-entry runs too. Backspace's last
+  rung is NOT a `mergeWith` call: it falls through to the shared delete arm, whose boundary
+  expansion already is the merge, so the keymap has 0 of the 2 possible merge implementations. Tab
+  is `setDepth`, gated by the new `RowSpec.indents`, which gates the KEY rather than the verb.
+- **The soft break is a CONTINUATION ROW, and `softBreak` is not built** (2026-08-25, P6). Tested
+  against what a soft break must do rather than argued: it travels with its parent on a drag and
+  copies with it (it is inside the parent's span), it renders inside the parent's own component,
+  and the caret walks in and out natively. Three costs, all declared in ADR-0011's amendment:
+  Backspace at its start outdents before it merges, so rejoining takes two presses; a consumer
+  cannot tell it from a Tab-nested row, because the two ARE the same document; and typed into a row
+  that already has children it lands before them, where unbounded in-slot index pairing shifts
+  those children's ids. It is ONE splice — `separator + indent.repeat(childDepth)` — and that is
+  forced rather than preferred: two verbs cannot compose in controlled mode, where the tree has not
+  moved when the first returns.
+- **`childDepth` is the scan's ceiling, asked instead of re-derived.** The continuation needs "how
+  deep may a row written under this one sit", and an EMPTY row takes no children — so
+  `depth + 1` would write an indent run the scan never grants and hand back a sibling carrying
+  stray bytes. `rowOf` answers `depthCeiling` directly, which makes Shift+Enter on an empty row a
+  plain split with no rule restated above the tree.
+- **The keymap's own browser spec found a two-keystroke data-loss bug that predates it.** Typing
+  `'- '` into an empty editor and then any character REPLACED the whole document: a document whose
+  content is one empty-bodied typed row has its first selectable offset AT its length, so a plain
+  caret there satisfied both of `isAllSelected`'s equalities. A collapsed selection selects nothing
+  now. The collapsed case had a test, and it was decorative — its fixture was a caret mid-'hello',
+  which the equalities already refuse.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
