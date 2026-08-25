@@ -1,7 +1,7 @@
 import {KEYBOARD} from '../../shared/constants'
 import type {Store} from '../../store/Store'
 import type {AnchoredRow, Anchors} from '../tokens'
-import {anchorEquals} from '../tokens'
+import {anchorEquals, entryAnchor} from '../tokens'
 import {dropUnexpressedInput} from './beforeInput'
 
 type KbCtx = Pick<Store, 'edit' | 'tokens'>
@@ -105,7 +105,13 @@ export function demoteAtRowEntry(store: KbCtx, anchors: Anchors): boolean {
 
 /**
  * TAB and SHIFT+TAB, on the keydown: the row's depth, when the kind that owns its line declares
- * `indents`.
+ * `indents` — or the NEXT CARVED PIECE when the caret is in one.
+ *
+ * The cell walk declares nothing and is not a third setting: a piece is a Row in its parent's own
+ * child list, so "the next cell" is that list's next entry, and a kind that carves its body has
+ * said everything needed to answer it. At the first or last piece there is no neighbour and Tab is
+ * not consumed, so it leaves the field exactly as it does everywhere else (ADR-0002's accepted
+ * cost) rather than wrapping into a row the user did not point at.
  *
  * The declaration gates the KEY and not the verb — a Tab that indents on one row and moves focus on
  * the next is worse than either — so a row of an indenting kind consumes Tab even where the scan
@@ -125,6 +131,20 @@ export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 	if (at === undefined) return
 	const caret = store.tokens.rowOf(at)
 	if (caret === undefined) return
+
+	if (caret.cell) {
+		const cells = caret.row.rows()
+		// `.at`, and the negative guard with it: `noUncheckedIndexedAccess` is off, so an index read
+		// types as non-nullable and the no-neighbour guard reads as impossible — while `.at(-1)`
+		// alone would wrap Shift+Tab from the first piece onto the last.
+		const step = cells.indexOf(caret.cell) + (event.shiftKey ? -1 : 1)
+		const next = step < 0 ? undefined : cells.at(step)
+		if (!next) return
+		event.preventDefault()
+		store.tokens.selection.select(entryAnchor(next))
+		return
+	}
+
 	const owner = caret.row.descriptor() === undefined ? (caret.parent ?? caret.row) : caret.row
 	if (store.tokens.rowSpec(owner)?.indents !== true) return
 

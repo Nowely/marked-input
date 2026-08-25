@@ -953,4 +953,60 @@ describe('rowKeys the row keymap', () => {
 			expect(store.tokens.value()).toBe('# a\nplain')
 		})
 	})
+
+	/**
+	 * A CARVED row's pieces are Rows, so the keymap addresses them without a rule of its own: Tab
+	 * walks the parent's own child list, and every other key names the row that owns the LINE,
+	 * because a piece has no line to splice.
+	 */
+	describe('carved rows', () => {
+		const CELL: CoreOption = {row: {Component: 'td'}}
+		const TABLE: CoreOption = {
+			markup: '|__slot__',
+			row: {Component: 'tr', continues: true, split: {at: ' | ', as: CELL}},
+		}
+		const table = (defaultValue: string) =>
+			mountNestedBlock({defaultValue, options: [TABLE, CELL], Mark: () => null})
+
+		it('moves to the NEXT piece on Tab and back on Shift+Tab', () => {
+			const {store, container} = table('| a | b')
+			// '| a | b': the first piece's body is [1,3), the second's is [6,7).
+			caretIn(store, 1, 1)
+
+			expect(press(container, 'Tab').defaultPrevented).toBe(true)
+			expect(selectionRange(store)).toEqual({start: 6, end: 6})
+
+			expect(press(container, 'Tab', {shiftKey: true}).defaultPrevented).toBe(true)
+			expect(selectionRange(store)).toEqual({start: 1, end: 1})
+			expect(store.tokens.value()).toBe('| a | b')
+		})
+
+		it('LEAVES THE FIELD at the last piece and before the first', () => {
+			const {store, container} = table('| a | b')
+
+			caretIn(store, 2, 1)
+			expect(press(container, 'Tab').defaultPrevented).toBe(false)
+
+			caretIn(store, 1, 1)
+			expect(press(container, 'Tab', {shiftKey: true}).defaultPrevented).toBe(false)
+		})
+
+		it('splits the LINE on Enter, so the pieces after the caret move to the new row', () => {
+			const {store, container} = table('| a | bc')
+			caretIn(store, 2, 1)
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('| a | b\n|c')
+		})
+
+		it('un-types the LINE on Backspace at the first piece, since that is the row entry', () => {
+			const {store, container} = table('| a | b')
+			caretIn(store, 1, 0)
+
+			press(container, 'Backspace')
+
+			expect(store.tokens.value()).toBe(' a | b')
+		})
+	})
 })

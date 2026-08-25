@@ -14,7 +14,10 @@ export {TokenModel} from './seam/TokenModel'
 // `edit/`, `keyboard/`, `clipboard/` and `overlay/` type on it (plan decision, S1.6c task 8).
 // `anchorEquals` joined them at S2.5, when "is this selection collapsed?" stopped being a
 // numeric comparison for the four keyboard and overlay call sites above this layer.
-export {anchorEquals} from './tree/anchors'
+// `entryAnchor` joined them at P9, when Tab between a carved row's pieces made "the first position
+// a caret may occupy in this row" a question the keyboard asks — and one whose answer is a rule
+// (past a typed row's opener, recursively into a carved row's first piece), not a coordinate.
+export {anchorEquals, entryAnchor} from './tree/anchors'
 // Undo/redo's two halves, and neither is nameable without the other: `TokenModel.replay` takes a
 // `Window`, and the one window it can be handed is an `EditRecord`'s read backwards.
 export {invertWindow} from './tree/gapWindow'

@@ -233,11 +233,12 @@ export interface RowNode {
 export type RowPlacement = {parent: RowNode | null; index: number}
 
 /**
- * The row an anchor sits in, with the four facts about it that only the tree can answer. Every
+ * The row an anchor sits in, with the five facts about it that only the tree can answer. Every
  * row keybinding asks this one question and then calls a verb; the alternative is the keyboard
  * layer walking the tree, measuring a lead and re-deriving the scan's own rules.
  */
 export type AnchoredRow = {
+	/** The row whose LINE the anchor is on — never a carved piece; see {@link rowOf}. */
 	row: RowNode
 	/** The recursion index — the tree's own reading of depth, and the only one. */
 	depth: number
@@ -258,6 +259,12 @@ export type AnchoredRow = {
 	 * second line part of the item it was typed in rather than a Tab that leaves the field.
 	 */
 	parent: RowNode | undefined
+	/**
+	 * The CARVED PIECE the anchor is in — a table cell — or `undefined` when {@link row}'s body is
+	 * not carved. It is what Tab walks: a piece is a Row of `row.rows()`, so the neighbour a Tab
+	 * moves to is that list's next entry and no setting declares it.
+	 */
+	cell: RowNode | undefined
 }
 
 export interface TextNode {

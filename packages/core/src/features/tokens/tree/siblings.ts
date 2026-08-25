@@ -66,11 +66,16 @@ export function removePlan(
 }
 
 /**
- * THE ROW AN ANCHOR SITS IN — the innermost one containing the node the anchor names — with the
- * facts about it a keybinding cannot ask for itself: its depth, the depth a row written directly
- * under it would land at, whether the anchor is that row's own entry, and the row it is nested in.
- * The last one is the walk's own by-product — the tree carries no parent pointers, so a caller
- * asking for it separately would be a second walk.
+ * THE ROW WHOSE LINE AN ANCHOR SITS ON — with the facts about it a keybinding cannot ask for
+ * itself: its depth, the depth a row written directly under it would land at, whether the anchor
+ * is that row's own entry, the row it is nested in, and the carved piece it is in when the row's
+ * body is carved. The last two are the walk's own by-products — the tree carries no parent
+ * pointers, so a caller asking for either separately would be a second walk.
+ *
+ * A CARVED PIECE IS NOT A ROW OF THE DOCUMENT, and that is why this is not "the innermost row
+ * containing the node": every verb here splices lines, and a cell has no line of its own. So an
+ * anchor inside one answers the row that OWNS the line, and Enter, Backspace and the slash menu all
+ * address the table row rather than refusing on a node no pre-order walk can name.
  *
  * Node identity rather than an offset, and that is the whole reason it is a walk: two rows share a
  * boundary offset at every nesting level, so a positional answer would have to pick a side, while
@@ -84,16 +89,22 @@ export function rowOf(roots: readonly TreeNode[], anchor: NodeAnchor): AnchoredR
 	if (typeof anchor === 'string') return undefined
 	const target = 'node' in anchor ? anchor.node : 'before' in anchor ? anchor.before : anchor.after
 
-	const search = (
-		nodes: readonly TreeNode[],
-		depth: number,
-		inside: {row: RowNode; depth: number; parent: RowNode | undefined} | undefined
-	): {row: RowNode; depth: number; parent: RowNode | undefined} | undefined => {
+	type Found = {row: RowNode; depth: number; parent: RowNode | undefined; cell: RowNode | undefined}
+
+	const search = (nodes: readonly TreeNode[], depth: number, inside: Found | undefined): Found | undefined => {
 		for (const node of nodes) {
-			const here = node.kind === 'row' ? {row: node, depth, parent: inside?.row} : inside
+			let here = inside
+			let carved = false
+			if (node.kind === 'row') {
+				carved = inside !== undefined && hasCells(inside.row)
+				here =
+					inside && carved
+						? {...inside, cell: node}
+						: {row: node, depth, parent: inside?.row, cell: undefined}
+			}
 			if (node === target) return here
 			if (node.kind === 'text') continue
-			const found = search(node.children(), node.kind === 'row' ? depth + 1 : depth, here)
+			const found = search(node.children(), node.kind === 'row' && !carved ? depth + 1 : depth, here)
 			if (found) return found
 		}
 		return undefined
