@@ -280,6 +280,21 @@ describe('RowNode', () => {
 			const nested = flat.tokens.nodes()[1]
 			expect(nested.kind === 'row' && nested.setDepth(1)).toBe(false)
 		})
+
+		/**
+		 * The ceiling is the SCAN's, and an empty row takes no children — so a row after a blank
+		 * line cannot indent under it. Re-deriving the ceiling here as "one past the row before"
+		 * answered `true`, wrote the lead, and left the row a root at depth 0 with a stray indent
+		 * only `setDepth(0)` could clear.
+		 */
+		it('refuses to indent under an EMPTY row, which takes no children', () => {
+			const store = nestStore('a\n\nb')
+			const row = store.tokens.nodes()[2]
+
+			expect(row.kind === 'row' && row.setDepth(1)).toBe(false)
+			expect(store.tokens.value()).toBe('a\n\nb')
+			expect(store.tokens.nodes().length).toBe(3)
+		})
 	})
 
 	/**

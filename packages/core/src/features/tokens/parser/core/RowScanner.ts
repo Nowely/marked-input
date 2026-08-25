@@ -76,30 +76,42 @@ export function scanRows(value: string, kinds: readonly MarkupDescriptor[], conf
 type Scanned = {row: RowToken; depth: number; empty: boolean}
 
 /**
+ * How deep a row may sit, given the row before it — TWO rules, both measured rather than assumed.
+ * A row descends AT MOST ONE LEVEL past the row before it, so an over-indented paste renders
+ * shallower while its surplus bytes stay verbatim in `lead` and round-trip. And AN EMPTY ROW TAKES
+ * NO CHILDREN — without it `'- a⏎⏎⇥- b'` makes the blank paragraph the parent of the bullet, which
+ * under a one-newline separator is one keystroke away. `undefined` is the document's first row,
+ * which is always a root.
+ *
+ * Exported because a re-indent answers to the same ceiling: `depthPlan` re-deriving it drifted
+ * from the empty-row rule and let `setDepth` write a lead this pass then reads as something
+ * shallower.
+ */
+export function depthCeiling(previous: {depth: number; empty: boolean} | undefined): number {
+	if (previous === undefined) return 0
+	return previous.empty ? previous.depth : previous.depth + 1
+}
+
+/**
  * The stack pass: a flat run of scanned rows becomes a tree, and nesting is indentation and
  * nothing else.
- *
- * Two rules, both measured rather than assumed. A row descends AT MOST ONE LEVEL past the row
- * before it, so an over-indented paste renders shallower while its surplus bytes stay verbatim in
- * `lead` and round-trip. And AN EMPTY ROW TAKES NO CHILDREN — without it `'- a⏎⏎⇥- b'` makes the
- * blank paragraph the parent of the bullet, which under a one-newline separator is one keystroke
- * away.
  */
 function nest(flat: readonly Scanned[], value: string): RowToken[] {
 	const roots: RowToken[] = []
 	// The open ancestors, `stack[d]` being the row currently at depth `d`.
 	const stack: RowToken[] = []
-	let previous: Scanned | undefined
+	let previous: {depth: number; empty: boolean} | undefined
 
 	for (const scanned of flat) {
-		const ceiling = previous === undefined ? 0 : previous.empty ? stack.length - 1 : stack.length
-		const depth = Math.min(scanned.depth, ceiling)
+		// The CLAMPED depth is what the next row measures against — an over-indented row parents
+		// from where it landed, not from where its lead asked to go.
+		const depth = Math.min(scanned.depth, depthCeiling(previous))
 		stack.length = depth
 		const parent = stack.at(-1)
 		if (parent) parent.rows.push(scanned.row)
 		else roots.push(scanned.row)
 		stack.push(scanned.row)
-		previous = scanned
+		previous = {depth, empty: scanned.empty}
 	}
 
 	// A parent's span covers its subtree, so rows keep TILING the value at every depth — which is

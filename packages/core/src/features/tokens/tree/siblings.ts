@@ -1,7 +1,8 @@
+import {depthCeiling} from '../parser/core/RowScanner'
 import type {RowConfig} from '../parser/types'
 import {preorderRows} from './rows'
 import {rowContent, sliceNodes} from './tree'
-import type {Pairing, TreeNode, Window} from './types'
+import type {Pairing, RowNode, TreeNode, Window} from './types'
 
 /**
  * Removing the boundary between two adjacent ROWS, expressed as a REPLACEMENT OF THE FIRST:
@@ -155,8 +156,9 @@ function rowIndexRuns(roots: readonly TreeNode[]): number[][] {
  * which rows are nested where while leaving the document order alone.
  *
  * `undefined` — fail closed — for a non-row, a negative or non-integer depth, a no-op, an editor
- * with nesting off, and a depth deeper than one past the row before it. That last is the scan's
- * own clamp: asking for more would emit a lead the parse reads as something shallower.
+ * with nesting off, and a depth past {@link depthCeiling}. That last is the SCAN's own clamp,
+ * asked of the scan rather than re-derived: asking for more would emit a lead the parse reads as
+ * something shallower, and the row would gain an indent without gaining a parent.
  *
  * It rewrites the whole lead rather than splicing it, which NORMALIZES a surplus indent run a
  * paste preserved — observable, and the alternative is two disagreeing readings of "depth".
@@ -173,8 +175,8 @@ export function depthPlan(
 	const rows = preorderRows(roots)
 	const at = rows.findIndex(entry => entry.row === node)
 	if (at < 0) return undefined
-	const ceiling = at === 0 ? 0 : rows[at - 1].depth + 1
-	if (depth > ceiling) return undefined
+	const before = at === 0 ? undefined : rows[at - 1]
+	if (depth > depthCeiling(before && {depth: before.depth, empty: isEmptyRow(before.row)})) return undefined
 
 	const lead = config.indent.repeat(depth)
 	if (lead === node.lead()) return undefined
@@ -188,4 +190,9 @@ export function depthPlan(
 		},
 		text: lead,
 	}
+}
+
+/** The scan's own emptiness, read off the node: a row whose whole LINE is empty. */
+function isEmptyRow(row: RowNode): boolean {
+	return row.lead() === '' && row.descriptor() === undefined && row.slot() === ''
 }
