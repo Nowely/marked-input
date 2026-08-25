@@ -39,6 +39,11 @@ type KbCtx = Pick<Store, 'edit' | 'tokens'>
  * A RAW CLOSED body — a fence, frontmatter — takes neither: its interior already holds separators,
  * so Enter there is a literal newline. Derived from the compiled markup rather than declared,
  * because a kind whose body is raw and closed is exactly the kind that can hold one.
+ *
+ * A CARVED row takes the split and REFUSES the continuation, and the asymmetry is the encoding's:
+ * a continuation is a row nested under the one whose kind owns the line, and a carved row's
+ * children are its own body, so the scan's ceiling grants it none. See {@link handleRowEnter}'s
+ * Shift arm.
  */
 export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
 	const rowConfig = store.tokens.rowConfig()
@@ -78,6 +83,11 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
 		return
 	}
 	if (event.shiftKey) {
+		// A CARVED piece takes no continuation: the row's children ARE its body, so the scan's
+		// ceiling grants it none, and the separator this writes would land INSIDE the body — cutting
+		// the line in two and leaving the pieces after the caret in a row of their own. Consumed and
+		// refused, which is the answer Backspace at a piece's start already gives.
+		if (caret.cell) return
 		store.edit.replace(at, at, rowConfig.separator + rowConfig.indent.repeat(continuationDepth(caret)))
 		return
 	}

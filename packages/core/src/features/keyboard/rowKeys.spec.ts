@@ -1008,5 +1008,23 @@ describe('rowKeys the row keymap', () => {
 
 			expect(store.tokens.value()).toBe(' a | b')
 		})
+
+		/**
+		 * A CONTINUATION LINE is a row nested under the one whose kind owns the line, and a carved
+		 * row is granted no children — its own body is what its children are. Written anyway, the
+		 * separator lands INSIDE the body: `'| a | b'` broken at the first piece emitted
+		 * `'| ⏎a | b'`, a table line of one empty cell above a PARAGRAPH holding the rest, and the
+		 * pieces after the caret left the row they were typed in. The key is consumed and does
+		 * nothing, which is the answer Backspace at a piece's start already gives.
+		 */
+		it('REFUSES Shift+Enter in a piece, since a carved row takes no continuation', () => {
+			const {store, container} = table('| a | b')
+			caretIn(store, 1, 1)
+
+			const event = press(container, 'Enter', {shiftKey: true})
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('| a | b')
+		})
 	})
 })
