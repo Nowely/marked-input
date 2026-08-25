@@ -509,9 +509,16 @@ function spliceLines(
  * at, and whether its whole LINE is empty. Both are parameters rather than reads off the node,
  * because a verb that re-leads a row changes both, and the row the scan reads back is the one the
  * verb is about to write — a blank row is non-empty only while it carries an indent.
+ *
+ * Emptiness is asked of the LINE BYTES, through the projection's own {@link rowLine}, and that is
+ * the point: `scanRows` reads it as `contentEnd === at` over the same bytes, and the field-wise
+ * restatement it used to carry (`lead === '' && descriptor === undefined && slot === ''`) was a
+ * second implementation of a rule {@link rowLine} already owns — exactly what `splitPlan` compares
+ * for the head it is about to write. It costs one line build per replayed row, which is the
+ * same build {@link spliceLines} makes for every line in the window anyway.
  */
 function scannedAs(row: RowNode, depth: number, lead: string = row.lead()): {depth: number; empty: boolean} {
-	return {depth, empty: lead === '' && row.descriptor() === undefined && row.slot() === ''}
+	return {depth, empty: rowLine(row, lead) === ''}
 }
 
 /** The depth a LEAD asks for — `RowScanner`'s own division, over bytes not yet in the value. */
