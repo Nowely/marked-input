@@ -289,6 +289,58 @@ describe('TokenModel', () => {
 			expect(errors()).toHaveLength(1)
 		})
 
+		/**
+		 * The ROW half of the same boundary. `RowKind.spec` pins `rowMarkupError` as a function;
+		 * these pin that `usableMarkups` CALLS it — without them the whole row arm can be deleted
+		 * and the suite stays green, while a consumer's bad `row` option throws out of `props.set`
+		 * and so out of the adapter's own render hook (ADR-0008, doctrine rule 7).
+		 */
+		it('reports a bad ROW markup and drops that option, keeping the others and their indices', () => {
+			const errors = captureErrors()
+			expect(() => {
+				store.props.set({
+					Mark: () => null,
+					layout: 'block',
+					separator: '\n',
+					// A leading placeholder, which makes line-start recognition undecidable.
+					options: [
+						{markup: '__slot__\n', row: {Component: 'div'}},
+						{markup: '# __slot__', row: {Component: 'h1'}},
+					],
+					defaultValue: '# Title',
+				})
+				store.host.container(document.createElement('div'))
+			}).not.toThrow()
+
+			const row = store.tokens.nodes()[0]
+			if (row.kind !== 'row') throw new Error('expected a row')
+			// The dropped option leaves a HOLE: the survivor keeps ITS index, which is what
+			// resolves its `row.Component`.
+			expect(row.option()).toBe(1)
+			expect(row.slot()).toBe('Title')
+			expect(errors()).toEqual([expect.stringContaining('This option contributes no row kind')])
+		})
+
+		it('reports a duplicate row opener and lets the EARLIER option keep it', () => {
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				layout: 'block',
+				separator: '\n',
+				options: [
+					{markup: '# __slot__', row: {Component: 'h1'}},
+					{markup: '# __value__', row: {Component: 'h2'}},
+				],
+				defaultValue: '# Title',
+			})
+			store.host.container(document.createElement('div'))
+
+			const row = store.tokens.nodes()[0]
+			if (row.kind !== 'row') throw new Error('expected a row')
+			expect(row.option()).toBe(0)
+			expect(errors()).toEqual([expect.stringContaining('Duplicate row opener "# "')])
+		})
+
 		it('reports once per distinct markup set, not once per prop sync', () => {
 			// The report sits DOWNSTREAM of `#markups`' shallow-equality gate over the markup
 			// STRINGS. `props.options` compares elements by reference, so the inline array below —
