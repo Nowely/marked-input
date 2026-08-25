@@ -4,12 +4,18 @@ import type {RowConfig} from '../parser/types'
 import {adopt, parseRowsValue, parseValue} from './adopt'
 import {gapWindow} from './gapWindow'
 import type {TokenTree} from './tree'
-import type {Anchors, CommitSink, TransactionResult, Window} from './types'
+import type {Anchors, CommitSink, EditRecord, TransactionResult, Window} from './types'
 
 /** The string boundary: commit policy plus arrival routing. */
 export interface Boundary {
 	/** Hand to createTransactions. Adopts (uncontrolled) or emits (controlled). */
 	readonly sink: CommitSink
+	/**
+	 * Undo/redo's write: the same commit policy as {@link Boundary.sink}, with no edit recorded —
+	 * a replay is not an edit path — and the caret named by the caller rather than mapped through
+	 * the window.
+	 */
+	replay(value: string, window: Window, caret?: Anchors): boolean
 	/** An external value arrived (props.value, defaultValue). Routes into adoption. */
 	arrive(value: string): void
 	/** Parser or parse policy changed: re-derive every token from the unchanged projection. */
@@ -17,11 +23,24 @@ export interface Boundary {
 }
 
 /**
+ * WHAT AN EMISSION OWES once the tree actually holds it — one or the other, never both, because
+ * an emission is either a commit or a replay:
+ * - a COMMIT owes its {@link EditRecord}, which is why the record is not emitted at `commit`: in
+ *   controlled mode nothing has landed there yet, and an emission the parent declines to echo
+ *   must leave no trace at all;
+ * - a REPLAY owes the caret the record it replayed was captured with. Named rather than mapped:
+ *   the window arithmetic collapses every offset inside the window onto its end, which is right
+ *   for an edit and wrong for the position an edit was made FROM.
+ */
+type Landing = {edit: EditRecord} | {caret: Anchors}
+
+/**
  * The emission a controlled commit is waiting to see echoed. `base` is the projection it
  * spliced, `window` the splice in that projection's coordinates — both only usable while
- * the tree still holds `base`, which is why `arrive` re-checks it.
+ * the tree still holds `base`, which is why `arrive` re-checks it. `landing` rides with them
+ * for the same reason `Window.pairing` does: the echo is the moment all three become true.
  */
-type Emission = {base: string; value: string; window: Window}
+type Emission = {base: string; value: string; window: Window; landing?: Landing}
 
 export function createBoundary(deps: {
 	tree: TokenTree
@@ -50,6 +69,11 @@ export function createBoundary(deps: {
 	 * snapshot and the selection repair off it, in that order.
 	 */
 	onResult?: (result: TransactionResult) => void
+	/**
+	 * THE edit feed, one call per edit the tree actually took — see {@link EditRecord}. Called
+	 * after the fold, so a subscriber reads the value the record describes.
+	 */
+	onEdit?: (record: EditRecord) => void
 }): Boundary {
 	/**
 	 * Set by a controlled commit, consumed by the next arrival. Only the most recent one is
@@ -58,11 +82,15 @@ export function createBoundary(deps: {
 	 */
 	let lastEmitted: Emission | undefined
 
-	const fold = (next: string, window: Window): void => {
+	const fold = (next: string, window: Window, landing?: Landing): void => {
 		// Read BEFORE `adopt`, which repairs the stored selection through `onResult`. The
 		// anchors themselves hold no coordinate, so it is adoption — not this call site —
 		// that owes the pre-mutation reading of their positions.
 		const selectionBefore = deps.selection?.()
+		// A REPLAY names where the caret lands, so it neither captures nor maps: the anchors it
+		// names were captured before the edit this is undoing, and mapping them through the window
+		// that undoes it would collapse them onto the restored span's end.
+		const caret = landing !== undefined && 'caret' in landing ? landing.caret : undefined
 		// A config means the top level is rows (issue 08); its absence is the flat parse.
 		// `!== undefined`, not truthiness, because `undefined` is the ONE word for "no rows" and
 		// the caller owes it: `TokenModel.rowConfig` already folds an empty `separator` prop
@@ -83,36 +111,60 @@ export function createBoundary(deps: {
 			// read live off the props, so the projection always describes the parse behind it.
 			// See `TokenTree.config`.
 			deps.tree.config(rowConfig)
-			const result = adopt(deps.tree, window, parsed, selectionBefore)
+			const result = adopt(deps.tree, window, parsed, caret ? undefined : selectionBefore)
 			// Adoption is the commit; it must not sit inside the optional call's argument,
 			// which JS skips evaluating when no listener is registered.
-			deps.onResult?.(result)
+			deps.onResult?.(caret ? {selectionAfter: caret} : result)
 		})
+		// AFTER the batch, so a subscriber that reads the value sees the one the record describes.
+		if (landing !== undefined && 'edit' in landing) deps.onEdit?.(landing.edit)
+	}
+
+	/**
+	 * THE commit, both modes and both writers: adopt now, or emit and wait for the echo. What the
+	 * emission owes on landing rides with it, so the uncontrolled path pays it immediately and the
+	 * controlled one exactly when the parent hands the value back.
+	 */
+	const apply = (next: string, window: Window, landing?: Landing): boolean => {
+		if (deps.controlled()) {
+			// The parent owns the value: emit and wait. `tree.value()` IS the base this splice
+			// was computed from — `commit` runs with the tree unmutated — and the pair is what
+			// lets the echo be adopted through its exact window.
+			lastEmitted = {base: deps.tree.value(), value: next, window, landing}
+			deps.onChange(next)
+			// Accepted and emitted. A controlled verb reports success on the emission,
+			// not on a commit that may never come; anything else would read as a refusal.
+			return true
+		}
+		// Emission follows adoption: `CommitSink.commit` runs with the tree still holding the
+		// pre-edit base, so an `onChange` consumer that reads the tree — the live pipeline
+		// does — must not be called before the commit lands.
+		fold(next, window, landing)
+		deps.onChange(next)
+		return true
 	}
 
 	const sink: CommitSink = {
 		commit(next, window) {
-			if (deps.controlled()) {
-				// The parent owns the value: emit and wait. `tree.value()` IS the base this splice
-				// was computed from — `commit` runs with the tree unmutated — and the pair is what
-				// lets the echo be adopted through its exact window.
-				lastEmitted = {base: deps.tree.value(), value: next, window}
-				deps.onChange(next)
-				// Accepted and emitted. A controlled verb reports success on the emission,
-				// not on a commit that may never come; anything else would read as a refusal.
-				return true
+			// CAPTURED here and emitted on landing: this is the one place both modes hold the
+			// pre-image — `deps.tree.value()` is the projection this splice was computed from, and
+			// the stored selection is still the one the edit was made from.
+			const edit: EditRecord = {
+				base: deps.tree.value(),
+				next,
+				window,
+				selectionBefore: deps.selection?.(),
 			}
-			// Emission follows adoption: `CommitSink.commit` runs with the tree still holding the
-			// pre-edit base, so an `onChange` consumer that reads the tree — the live pipeline
-			// does — must not be called before the commit lands.
-			fold(next, window)
-			deps.onChange(next)
-			return true
+			return apply(next, window, {edit})
 		},
 	}
 
 	return {
 		sink,
+
+		replay(value, window, caret) {
+			return apply(value, window, caret && {caret})
+		},
 
 		arrive(value) {
 			// `untracked` for the same reason the dispatcher wraps `commit`: `TokenModel` drives
@@ -130,8 +182,13 @@ export function createBoundary(deps: {
 				// precision rather than correctness: on repeated content the two windows disagree
 				// about which repeat survived. Gap-derivation also makes an arrival equal to the
 				// current projection an inert no-op adoption rather than a rebuild.
+				//
+				// THE LANDING GOES WITH THE WINDOW: an emission owes what it owes exactly when the
+				// document becomes it, so a value the parent transformed or replaced pays nothing —
+				// the edit it carried never happened, and no record of it reaches the history.
 				const current = deps.tree.value()
-				fold(value, echoWindow(emission, value, current) ?? gapWindow(current, value))
+				const echo = echoOf(emission, value, current)
+				fold(value, echo?.window ?? gapWindow(current, value), echo?.landing)
 			})
 		},
 
@@ -150,8 +207,9 @@ export function createBoundary(deps: {
 }
 
 /**
- * The recorded splice, usable only when the arrival IS that emission's echo AND the tree
- * still holds the base it was spliced from — the window's coordinates live in that base.
+ * The recorded emission, usable only when the arrival IS its echo AND the tree still holds the
+ * base it was spliced from — the window's coordinates live in that base, and so does the claim
+ * that whatever the emission owes has now come true.
  *
  * Both halves are load-bearing, and neither shows on a plain fixture, where the recorded and
  * the gap-derived window converge. `base` is tripped by a mid-flight controlled→uncontrolled
@@ -162,7 +220,7 @@ export function createBoundary(deps: {
  * assertions in valueBoundary.spec.ts; value-level assertions cannot see either, because
  * adoption converges to the same string through any window.
  */
-function echoWindow(emission: Emission | undefined, value: string, current: string): Window | undefined {
+function echoOf(emission: Emission | undefined, value: string, current: string): Emission | undefined {
 	if (!emission) return undefined
-	return emission.value === value && emission.base === current ? emission.window : undefined
+	return emission.value === value && emission.base === current ? emission : undefined
 }

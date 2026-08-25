@@ -9,23 +9,26 @@ import {parseRowsValue} from './adopt'
 import {offsetOfAnchor} from './anchors'
 import {createTransactions} from './transactions'
 import {createTokenTree} from './tree'
-import type {Anchors, NodeAnchor, TextNode, TransactionResult, TreeNode} from './types'
+import type {Anchors, EditRecord, NodeAnchor, TextNode, TransactionResult, TreeNode} from './types'
 import type {Boundary} from './valueBoundary'
 import {createBoundary} from './valueBoundary'
 
 const parser = new Parser(['@[__value__](__meta__)'])
 
-function setup(source: string, options: {controlled?: boolean} = {}) {
+function setup(source: string, options: {controlled?: boolean; selection?: () => Anchors | undefined} = {}) {
 	const tree = createTokenTree(parser.parse(source))
 	const emitted: string[] = []
+	const records: EditRecord[] = []
 	const boundary = createBoundary({
 		tree,
 		parser: () => parser,
 		controlled: () => options.controlled === true,
+		selection: options.selection,
 		onChange: value => emitted.push(value),
+		onEdit: record => records.push(record),
 	})
 	const tx = createTransactions({tree, readOnly: () => false, sink: boundary.sink})
-	return {tree, boundary, tx, emitted}
+	return {tree, boundary, tx, emitted, records}
 }
 
 const asText = (node: TreeNode): TextNode => {
@@ -158,6 +161,95 @@ describe('boundary: controlled', () => {
 		tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'A')
 		expect(emitted).toEqual(['Ahello'])
 		expect(tree.value()).toBe('hello') // no arrival → nothing happens
+	})
+})
+
+describe('boundary: the edit feed', () => {
+	it('records the two projections an uncontrolled commit moved between, and the splice that did it', () => {
+		const anchor: NodeAnchor = 'start'
+		const {tx, records} = setup('hello', {selection: () => ({anchor, head: anchor})})
+		tx.applyRange({start: 1, end: 3, insertedLength: 0}, 'XY')
+		expect(records).toEqual([
+			{
+				base: 'hello',
+				next: 'hXYlo',
+				window: {start: 1, end: 3, insertedLength: 2},
+				selectionBefore: {anchor: 'start', head: 'start'},
+			},
+		])
+	})
+
+	it('records a controlled commit only once the echo lands', () => {
+		const {boundary, tx, records} = setup('hello', {controlled: true})
+		tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'A')
+		expect(records).toEqual([]) // emitted, but the document has not moved
+		boundary.arrive('Ahello')
+		expect(records.map(record => [record.base, record.next])).toEqual([['hello', 'Ahello']])
+	})
+
+	it('records nothing for an emission the parent refuses to echo', () => {
+		const {tx, records, emitted} = setup('hello', {controlled: true})
+		tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'A')
+		expect(emitted).toEqual(['Ahello'])
+		expect(records).toEqual([]) // no arrival at all: the edit never happened
+	})
+
+	it('records nothing for an emission the parent transformed on the way back', () => {
+		// THE poisoning case. The record names a value the document never took, so a stack that
+		// kept it would replay `base` through a window whose coordinates describe a document that
+		// does not exist.
+		const {tree, boundary, tx, records} = setup('hello', {controlled: true})
+		tx.applyRange({start: 5, end: 5, insertedLength: 0}, 'x')
+		boundary.arrive('HELLOX')
+		expect(tree.value()).toBe('HELLOX')
+		expect(records).toEqual([])
+	})
+
+	it('records nothing for a foreign arrival or a reparse', () => {
+		const {boundary, records} = setup('hello', {controlled: true})
+		boundary.arrive('other')
+		boundary.reparse()
+		expect(records).toEqual([])
+	})
+
+	it('records nothing for a replay, in either mode', () => {
+		// A REPLAY IS NOT AN EDIT PATH: it goes nowhere near the sink that captures records, so
+		// there is no latch to clear and no entry for a stack to re-enter itself through.
+		const uncontrolled = setup('hello')
+		uncontrolled.boundary.replay('hXYlo', {start: 1, end: 3, insertedLength: 2})
+		expect(uncontrolled.tree.value()).toBe('hXYlo')
+		expect(uncontrolled.records).toEqual([])
+
+		const controlled = setup('hello', {controlled: true})
+		controlled.boundary.replay('hXYlo', {start: 1, end: 3, insertedLength: 2})
+		controlled.boundary.arrive('hXYlo')
+		expect(controlled.tree.value()).toBe('hXYlo')
+		expect(controlled.records).toEqual([])
+	})
+
+	it('a replay puts the caret where it is told, in both modes', () => {
+		// The window arithmetic collapses every offset INSIDE the window onto its end, which is
+		// what an edit wants and the opposite of what an undo wants: the position the edit was
+		// made from sits inside the span the undo rewrites.
+		const caretAfter = (controlled: boolean): number | undefined => {
+			const tree = createTokenTree(parser.parse('hello'))
+			const results: TransactionResult[] = []
+			const anchor: NodeAnchor = {node: asText(tree.roots()[0]), offset: 1}
+			const boundary = createBoundary({
+				tree,
+				parser: () => parser,
+				controlled: () => controlled,
+				onChange: () => {},
+				selection: () => ({anchor, head: anchor}),
+				onResult: result => results.push(result),
+			})
+			boundary.replay('hello', {start: 0, end: 5, insertedLength: 5}, {anchor, head: anchor})
+			if (controlled) boundary.arrive('hello')
+			const landed = results[0].selectionAfter
+			return landed && offsetOfAnchor(tree.roots(), landed.anchor)
+		}
+		expect(caretAfter(false)).toBe(1)
+		expect(caretAfter(true)).toBe(1)
 	})
 })
 

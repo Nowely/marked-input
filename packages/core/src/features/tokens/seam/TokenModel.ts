@@ -1,6 +1,6 @@
 import type {DomRef} from '../../../shared/editorContracts'
 import {reportBadProp} from '../../../shared/reportBadProp'
-import {batch, computed, signal, untracked, watch} from '../../../shared/signals/index.js'
+import {batch, computed, event, signal, untracked, watch} from '../../../shared/signals/index.js'
 import type {Computed, Event} from '../../../shared/signals/index.js'
 import type {CoreOption, RowSpec} from '../../../shared/types'
 import {shallow} from '../../../shared/utils/shallow'
@@ -47,12 +47,14 @@ import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
 import type {
 	AnchoredRow,
 	Anchors,
+	EditRecord,
 	MarkNode,
 	MarkPatch,
 	NodeAnchor,
 	RowNode,
 	TreeCommands,
 	TreeNode,
+	Window,
 } from '../tree/types'
 import {createBoundary} from '../tree/valueBoundary'
 
@@ -93,6 +95,17 @@ export class TokenModel {
 	get bound(): Event<void> {
 		return this.#pipeline.bound
 	}
+
+	/**
+	 * THE EDIT FEED: one {@link EditRecord} per edit the document actually took, payload-carrying
+	 * where {@link committed} is payload-free — a stack cannot re-read the pre-image, it has to be
+	 * handed it.
+	 *
+	 * A {@link replay} fires NOTHING here, and that is structural rather than latched: an undo does
+	 * not go through the sink that captures records, so there is no "am I replaying" state to keep
+	 * (which in controlled mode would be cleared a whole echo too early anyway).
+	 */
+	readonly edits: Event<EditRecord> = event()
 
 	/**
 	 * Resolve a token id to its live handle, or `undefined`. THE identity lookup: a consumer
@@ -281,6 +294,28 @@ export class TokenModel {
 	 */
 	setValue(text: string): boolean {
 		return this.replaceBetween('start', 'end', text) !== undefined
+	}
+
+	/**
+	 * @internal UNDO/REDO'S WRITE: put the document back to `value` through the exact `window` the
+	 * recorded edit moved it by, and put the caret where `caret` names rather than where the window
+	 * arithmetic would send it.
+	 *
+	 * NOT AN EDIT PATH, and that is the whole shape of it: it bypasses the sink that captures
+	 * {@link EditRecord}s, so a replay writes no record and the stack cannot re-enter itself.
+	 * `setValue` would — it commits through the ordinary sink — and it would also arrive with no
+	 * `Pairing`, which re-labels every row a move had reordered (measured in `history/`'s spec).
+	 *
+	 * The window is not re-derivable here, so it is not derived: a caller replaying a recorded edit
+	 * holds the one window whose coordinates and identity claim are both true of this document.
+	 *
+	 * READ-ONLY REFUSES, for the flip that a stack outlives: the entries were recorded while the
+	 * editor was writable, and nothing else would stop them being replayed into one that is not.
+	 */
+	replay(value: string, window: Window, caret?: Anchors): boolean {
+		if (untracked(() => this.props.readOnly())) return false
+		this.#ensureSeeded()
+		return this.#boundary.replay(value, window, caret)
 	}
 
 	/**
@@ -783,6 +818,7 @@ export class TokenModel {
 				this.#pipeline.apply()
 				this.selection.repair(result)
 			}),
+		onEdit: record => this.edits(record),
 	})
 
 	readonly #tx = createTransactions({

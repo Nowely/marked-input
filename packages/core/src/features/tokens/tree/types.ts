@@ -40,6 +40,26 @@ export type Window = {
 }
 
 /**
+ * ONE EDIT THAT LANDED: the two projections it moved between, the splice that did it, and the
+ * selection it was made from. What an undo stack is built out of.
+ *
+ * It is captured at `CommitSink.commit` — the one place BOTH modes pass through holding the
+ * pre-image, since a controlled commit never reaches the fold — and emitted only once the tree
+ * actually holds `next`. In controlled mode that is the echo's arrival, so a parent that refuses
+ * the emission produces no record at all rather than one naming a value the document never took.
+ *
+ * `window` is what a replay cannot re-derive: a move past a byte-identical row is invisible to
+ * any diff of the two strings, so an undo that re-derived its own window would re-pair the rows
+ * by index and hand every consumer's row state to the wrong row (measured).
+ */
+export type EditRecord = {
+	readonly base: string
+	readonly next: string
+	readonly window: Window
+	readonly selectionBefore: Anchors | undefined
+}
+
+/**
  * One structure: the same objects flow through adoption and out of the public
  * reads. ADOPTION IS THE ONLY WRITER, for every mutable member — the writable
  * `Signal` fields, which are also the reactive read, and the plain `position`

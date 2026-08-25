@@ -1,5 +1,6 @@
 import {describe, it, expect, vi} from 'vitest'
 
+import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {anchorsAt} from '../__testing__/mountFixtures'
 import {treeShape} from '../__testing__/tokenFactories'
@@ -121,6 +122,33 @@ describe('TokenModel value boundary', () => {
 		expect(treeShape(store.tokens.nodes())).toMatchObject([
 			{kind: 'text', content: 'world', position: {start: 0, end: 5}},
 		])
+	})
+
+	describe('edits and replay()', () => {
+		it('feeds one record per landed edit, and none for a replay', () => {
+			const store = new Store()
+			store.props.set({separator: null, defaultValue: 'hello'})
+			mount(store)
+			const seen: string[][] = []
+			watch(store.tokens.edits, record => seen.push([record.base, record.next]))
+
+			store.tokens.setValue('hello!')
+			store.tokens.replay('hello', {start: 5, end: 6, insertedLength: 0})
+
+			expect(store.tokens.value()).toBe('hello')
+			expect(seen).toEqual([['hello', 'hello!']])
+		})
+
+		it('refuses a replay while readOnly, where the stack outlived the flip', () => {
+			const store = new Store()
+			store.props.set({separator: null, defaultValue: 'hello'})
+			mount(store)
+			store.tokens.setValue('hello!')
+			store.props.update({readOnly: true})
+
+			expect(store.tokens.replay('hello', {start: 5, end: 6, insertedLength: 0})).toBe(false)
+			expect(store.tokens.value()).toBe('hello!')
+		})
 	})
 
 	describe('replaceBetween()', () => {
