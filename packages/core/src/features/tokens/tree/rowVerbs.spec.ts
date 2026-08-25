@@ -702,6 +702,22 @@ describe('moveTo', () => {
 		expect(store.tokens.value()).toBe('\nb')
 	})
 
+	/**
+	 * The same clamp read at the MOVED row instead of the destination. A blank row is non-empty
+	 * only while it carries an indent, so re-leading it to depth 0 turns it into the empty row
+	 * that takes no children — and the subtree the move was carrying is promoted out of it. The
+	 * emitted `'a⏎⏎⇥b'` parsed as three roots, with `b` beside the row it travelled with.
+	 */
+	it('refuses a move that would re-lead a row carrying children into an empty one', () => {
+		const store = rowStore('a\n\t\n\t\tb')
+		const [, blank, kid] = rowsOf(store)
+
+		expect(blank.moveTo({parent: null, index: 1})).toBe(false)
+
+		expect(store.tokens.value()).toBe('a\n\t\n\t\tb')
+		expect(blank.rows()).toEqual([kid])
+	})
+
 	/** With nesting off there is no indent unit to write a lead with, so only root moves exist. */
 	it('refuses a nested placement when the editor has no indent', () => {
 		const store = rowStore('a\nb')

@@ -102,8 +102,9 @@ export function endsDocument(roots: readonly TreeNode[], node: TreeNode): boolea
  * `undefined` — fail closed — for a non-row, a dead row on either end (the pre-order lookup is
  * that check for both), a PLACEMENT INSIDE THE MOVED SUBTREE, an index outside the destination's
  * child list, a no-op, an editor with no separator to rejoin rows by, a nested placement with
- * nesting off, and a destination whose {@link depthCeiling} the moved row cannot reach — an empty
- * row takes no children, so nothing can be placed under one.
+ * nesting off, and a destination whose {@link depthCeiling} the moved row cannot reach. The last
+ * one is "an empty row takes no children" read at both ends: nothing can be placed UNDER an empty
+ * row, and a row carrying children cannot be re-led into an empty one.
  *
  * The subtree test is the run, and it is the reason the run is computed before anything else: the
  * tree carries no parent pointers, so "is this parent inside what I am moving" has no answer
@@ -140,6 +141,13 @@ export function movePlan(
 		parentDepth = rows[parentAt].depth
 	}
 	const depth = parentDepth + 1
+	// A moved row keeps its own subtree only while it stays NON-EMPTY, and the re-lead is what can
+	// empty one: a blank row is non-empty only while it carries an indent. Written at depth 0 it
+	// becomes the empty row {@link depthCeiling} gives no children, so every descendant the move
+	// was carrying would be promoted out of it — `'a⏎⇥⏎⇥⇥b'` moving the blank row to a root
+	// emitted `'a⏎⏎⇥b'`, where `b` is a root beside the row it travelled with. Refused, because a
+	// depth-0 empty row with children is not a document that can be written.
+	if (span > 1 && isEmptyRow(node, indent.repeat(depth))) return undefined
 
 	// The destination's child rows WITHOUT the moved one, which is what makes `index` the position
 	// the row takes after the move rather than a slot in a list it is still in.
@@ -376,15 +384,20 @@ export function splitPlan(
 	return {window: {start, end, insertedLength: text.length}, text, tail}
 }
 
-/** The scan's own emptiness, read off the node: a row whose whole LINE is empty. */
-function isEmptyRow(row: RowNode): boolean {
-	return row.lead() === '' && row.descriptor() === undefined && row.slot() === ''
+/**
+ * The scan's own emptiness, read off the node: a row whose whole LINE is empty. The `lead` is a
+ * parameter because a verb that REWRITES one changes the answer, and the row it is about to write
+ * is the row the scan will read.
+ */
+function isEmptyRow(row: RowNode, lead: string = row.lead()): boolean {
+	return lead === '' && row.descriptor() === undefined && row.slot() === ''
 }
 
 /**
  * Can a row sit at `depth` when it is written directly after `previous` — {@link depthCeiling}
  * asked of a live pre-order entry, and the ONE owner of that question for every verb that writes a
  * lead. `undefined` is the document's first row, which is always a root.
+ *
  */
 function fitsUnder(previous: {row: RowNode; depth: number} | undefined, depth: number): boolean {
 	return depth <= depthCeiling(previous && {depth: previous.depth, empty: isEmptyRow(previous.row)})
