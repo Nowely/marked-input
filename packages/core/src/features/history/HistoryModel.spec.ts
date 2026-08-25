@@ -2,7 +2,7 @@ import {describe, expect, it, vi} from 'vitest'
 
 import type {CoreOption} from '../../shared/types'
 import {Store} from '../../store/Store'
-import type {RowNode} from '../tokens'
+import type {NodeAnchor, RowNode} from '../tokens'
 import {anchorsAt, caretAt, selectionRange} from '../tokens/__testing__/mountFixtures'
 
 /**
@@ -48,6 +48,22 @@ const rowTexts = (store: Store): string[] => rowsOf(store).map(row => row.slot()
 
 /** A row kind the slash menu can name — the shape `OverlayController.menu.spec` drives. */
 const HEADING: CoreOption = {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1'}}
+
+/**
+ * Does the stored selection name nodes the tree STILL HOLDS? The oracle offsets cannot give: a
+ * node adoption dropped keeps the `position` it died with, so every numeric reading of a caret
+ * anchored in it answers correctly while `handle()` — and therefore `placeCaret` — declines.
+ */
+function namesLiveNodes(store: Store): boolean {
+	const anchors = store.tokens.selection.anchors()
+	if (!anchors) return false
+	const held = (anchor: NodeAnchor): boolean => {
+		if (typeof anchor === 'string') return true // a document edge names no node
+		const node = 'node' in anchor ? anchor.node : 'before' in anchor ? anchor.before : anchor.after
+		return store.tokens.find(node.id) === node
+	}
+	return held(anchors.anchor) && held(anchors.head)
+}
 
 describe('history: undo and redo', () => {
 	for (const mode of ['uncontrolled', 'controlled'] as const) {
@@ -243,6 +259,37 @@ describe('history: identity', () => {
 		expect(store.history.undo()).toBe(true)
 		expect(rowTexts(store)).toEqual(['a', 'b', 'c'])
 		expect(rowsOf(store)).toEqual([first, second, third])
+	})
+
+	it('restores a caret into the document it rebuilt, not into the nodes the edit destroyed', () => {
+		// A selection spanning a mark: undoing the delete brings the mark back as a NEW node, and
+		// the text it was cut out of with it. A caret kept as anchors names the dead ones — right
+		// offset, no handle, and the browser caret does not move.
+		const store = mount('he@[x]llo', {options: [{markup: '@[__value__]'}], Mark: () => null})
+		store.tokens.selection.select(store.tokens.anchorAt(7), store.tokens.anchorAt(1))
+		store.edit.replace(...anchorsAt(store, 1, 7), '')
+		expect(store.tokens.value()).toBe('hlo')
+
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('he@[x]llo')
+		expect(selectionRange(store)).toEqual({start: 1, end: 7})
+		expect(namesLiveNodes(store)).toBe(true)
+	})
+
+	it('restores a caret the row merge it undoes had swallowed', () => {
+		// The everyday shape of the same defect: Backspace at the start of a row merges it away,
+		// so BOTH ends of the caret sit in a row the undo cannot bring back as the same object.
+		const store = mount('one\ntwo', {separator: '\n'})
+		caretAt(store, 4)
+		const span = store.tokens.boundarySpan(store.tokens.anchorAt(4), -1)
+		expect(span).toBeDefined()
+		store.edit.replace(span!.anchor, span!.head, '')
+		expect(store.tokens.value()).toBe('onetwo')
+
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('one\ntwo')
+		expect(selectionRange(store)).toEqual({start: 4, end: 4})
+		expect(namesLiveNodes(store)).toBe(true)
 	})
 
 	it('keeps the mark it restores, rather than minting a new one', () => {

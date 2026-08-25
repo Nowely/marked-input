@@ -27,6 +27,7 @@ export type {
 	EditRecord,
 	MarkNode,
 	NodeAnchor,
+	Offsets,
 	RowNode,
 	RowPlacement,
 	TextNode,

@@ -120,7 +120,8 @@ _Avoid_: internal, self-managed, local
 
 **Edit record**:
 One edit the document actually took: the two **Value**s it moved between, the splice that did it,
-and the selection it was made from. Recorded when the value MOVES, not when the edit is made — in
+and where in the first the selection sat — as offsets, because a record outlives the nodes an
+anchor would name. Recorded when the value MOVES, not when the edit is made — in
 **Controlled** mode those are a round trip apart, and an emission the parent never echoes is not an
 edit record at all ([ADR-0012](docs/adr/0012-the-editor-owns-undo.md)). Undo and redo are a record
 replayed, backwards or forwards; the editor keeps no other history state.

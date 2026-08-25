@@ -39,6 +39,15 @@ round, pairing included. The replayed caret is NAMED rather than mapped, because
 edit was made from sits inside the span the undo rewrites, and the window arithmetic collapses
 every offset inside a window onto its end.
 
+**The named caret is a pair of OFFSETS, not anchors.** Every other member of the record is a value
+and this one has to be too: a record is held across arbitrarily many later adoptions, while an
+anchor names a node object the very edit it describes may have destroyed — a row merge, a delete
+spanning a mark. Applied verbatim, such an anchor restores the right string with a caret in a
+detached node: it keeps the `position` it died with, so every numeric reading of the selection
+still answers correctly, and `handle()` — so `placeCaret` — declines it and the browser caret never
+moves. The offsets live in `base`, which is exactly the projection the replay restores, so they are
+resolved against the roots the adoption leaves behind.
+
 **Three rules are derived rather than maintained.** An entry is usable only while the document
 still holds the projection its window lives in — one comparison, which is what an out-of-band value
 trips, what makes `canUndo` honest rather than merely non-empty, and what lets an entry come back

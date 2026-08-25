@@ -51,12 +51,19 @@ export type Window = {
  * `window` is what a replay cannot re-derive: a move past a byte-identical row is invisible to
  * any diff of the two strings, so an undo that re-derived its own window would re-pair the rows
  * by index and hand every consumer's row state to the wrong row (measured).
+ *
+ * EVERY MEMBER IS A VALUE, `selectionBefore` included, and that is the difference between a
+ * record and a snapshot of tree state: a record outlives arbitrarily many adoptions, and an
+ * {@link Anchors} held that long names nodes the tree has since replaced — an undo would restore
+ * the right string with a caret no DOM can place (measured: an undone row merge left both ends
+ * naming a node with no handle). Offsets live in `base`, which is exactly the projection a
+ * replay restores before resolving them.
  */
 export type EditRecord = {
 	readonly base: string
 	readonly next: string
 	readonly window: Window
-	readonly selectionBefore: Anchors | undefined
+	readonly selectionBefore: Offsets | undefined
 }
 
 /**
@@ -381,6 +388,13 @@ export type NodeAnchor = {node: TextNode; offset: number} | {before: TreeNode} |
  * file it already imports.
  */
 export type Anchors = {anchor: NodeAnchor; head: NodeAnchor}
+
+/**
+ * The same two ends as PROJECTION OFFSETS. What {@link Anchors} is not: a value, true of a
+ * named string rather than of whichever nodes the tree holds right now. The one carrier that
+ * needs it is {@link EditRecord}, which is kept across later adoptions — see the note there.
+ */
+export type Offsets = {readonly anchor: number; readonly head: number}
 
 /**
  * What adoption reports back: the one field production reads. The change feed

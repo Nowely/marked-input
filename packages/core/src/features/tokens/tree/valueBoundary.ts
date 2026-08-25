@@ -2,9 +2,10 @@ import {batch, untracked} from '../../../shared/signals'
 import type {Parser} from '../parser/Parser'
 import type {RowConfig} from '../parser/types'
 import {adopt, parseRowsValue, parseValue} from './adopt'
+import {anchorAt, offsetOfAnchor} from './anchors'
 import {gapWindow} from './gapWindow'
 import type {TokenTree} from './tree'
-import type {Anchors, CommitSink, EditRecord, TransactionResult, Window} from './types'
+import type {Anchors, CommitSink, EditRecord, Offsets, TransactionResult, TreeNode, Window} from './types'
 
 /** The string boundary: commit policy plus arrival routing. */
 export interface Boundary {
@@ -13,9 +14,10 @@ export interface Boundary {
 	/**
 	 * Undo/redo's write: the same commit policy as {@link Boundary.sink}, with no edit recorded —
 	 * a replay is not an edit path — and the caret named by the caller rather than mapped through
-	 * the window.
+	 * the window. Named as OFFSETS in the projection being restored, because the caller has held
+	 * them across every edit since; they are resolved against the roots this write leaves behind.
 	 */
-	replay(value: string, window: Window, caret?: Anchors): boolean
+	replay(value: string, window: Window, caret?: Offsets): boolean
 	/** An external value arrived (props.value, defaultValue). Routes into adoption. */
 	arrive(value: string): void
 	/** Parser or parse policy changed: re-derive every token from the unchanged projection. */
@@ -32,7 +34,7 @@ export interface Boundary {
  *   the window arithmetic collapses every offset inside the window onto its end, which is right
  *   for an edit and wrong for the position an edit was made FROM.
  */
-type Landing = {edit: EditRecord} | {caret: Anchors}
+type Landing = {edit: EditRecord} | {caret: Offsets}
 
 /**
  * The emission a controlled commit is waiting to see echoed. `base` is the projection it
@@ -87,7 +89,7 @@ export function createBoundary(deps: {
 		// anchors themselves hold no coordinate, so it is adoption — not this call site —
 		// that owes the pre-mutation reading of their positions.
 		const selectionBefore = deps.selection?.()
-		// A REPLAY names where the caret lands, so it neither captures nor maps: the anchors it
+		// A REPLAY names where the caret lands, so it neither captures nor maps: the offsets it
 		// names were captured before the edit this is undoing, and mapping them through the window
 		// that undoes it would collapse them onto the restored span's end.
 		const caret = landing !== undefined && 'caret' in landing ? landing.caret : undefined
@@ -112,9 +114,15 @@ export function createBoundary(deps: {
 			// See `TokenTree.config`.
 			deps.tree.config(rowConfig)
 			const result = adopt(deps.tree, window, parsed, caret ? undefined : selectionBefore)
+			// RESOLVED AFTER adoption, against the roots it left behind, which is the whole point
+			// of carrying offsets: the nodes the caret sat in when the replayed edit was made may
+			// have been destroyed by it, and an anchor kept verbatim would name one of those —
+			// right offset, dead node, and `placeCaret` declines it.
+			//
 			// Adoption is the commit; it must not sit inside the optional call's argument,
 			// which JS skips evaluating when no listener is registered.
-			deps.onResult?.(caret ? {selectionAfter: caret} : result)
+			const restored = caret && resolveOffsets(deps.tree.roots(), caret)
+			deps.onResult?.(restored ? {selectionAfter: restored} : result)
 		})
 		// AFTER the batch, so a subscriber that reads the value sees the one the record describes.
 		if (landing !== undefined && 'edit' in landing) deps.onEdit?.(landing.edit)
@@ -149,11 +157,15 @@ export function createBoundary(deps: {
 			// CAPTURED here and emitted on landing: this is the one place both modes hold the
 			// pre-image — `deps.tree.value()` is the projection this splice was computed from, and
 			// the stored selection is still the one the edit was made from.
+			const selection = deps.selection?.()
 			const edit: EditRecord = {
 				base: deps.tree.value(),
 				next,
 				window,
-				selectionBefore: deps.selection?.(),
+				// FLATTENED here, where the anchors are still live and the tree still holds
+				// `base`: the record outlives both. `offsetOfAnchor` is a field read, not a walk,
+				// so this costs the commit path nothing.
+				selectionBefore: selection && resolveAnchors(deps.tree.roots(), selection),
 			}
 			return apply(next, window, {edit})
 		},
@@ -220,6 +232,16 @@ export function createBoundary(deps: {
  * assertions in valueBoundary.spec.ts; value-level assertions cannot see either, because
  * adoption converges to the same string through any window.
  */
+/** The two ends as offsets in the projection `roots` currently spells. */
+function resolveAnchors(roots: readonly TreeNode[], anchors: Anchors): Offsets {
+	return {anchor: offsetOfAnchor(roots, anchors.anchor), head: offsetOfAnchor(roots, anchors.head)}
+}
+
+/** And back: the anchors those offsets name in `roots`, whatever nodes it is made of now. */
+function resolveOffsets(roots: readonly TreeNode[], offsets: Offsets): Anchors {
+	return {anchor: anchorAt(roots, offsets.anchor), head: anchorAt(roots, offsets.head)}
+}
+
 function echoOf(emission: Emission | undefined, value: string, current: string): Emission | undefined {
 	if (!emission) return undefined
 	return emission.value === value && emission.base === current ? emission : undefined

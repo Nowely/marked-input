@@ -51,6 +51,7 @@ import type {
 	MarkNode,
 	MarkPatch,
 	NodeAnchor,
+	Offsets,
 	RowNode,
 	TreeCommands,
 	TreeNode,
@@ -316,7 +317,7 @@ export class TokenModel {
 	 * needs an edit that LANDED, and landing seeds the tree — which never empties back, since even
 	 * the empty document parses to one root. The guard was measured out rather than argued about.
 	 */
-	replay(value: string, window: Window, caret?: Anchors): boolean {
+	replay(value: string, window: Window, caret?: Offsets): boolean {
 		if (untracked(() => this.props.readOnly())) return false
 		return this.#boundary.replay(value, window, caret)
 	}

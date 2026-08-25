@@ -166,6 +166,9 @@ describe('boundary: controlled', () => {
 
 describe('boundary: the edit feed', () => {
 	it('records the two projections an uncontrolled commit moved between, and the splice that did it', () => {
+		// The selection is recorded as OFFSETS in `base`: the anchors it was read from name nodes
+		// the very next edit may destroy, and a record is kept for as long as the document holds
+		// the projection it names.
 		const anchor: NodeAnchor = 'start'
 		const {tx, records} = setup('hello', {selection: () => ({anchor, head: anchor})})
 		tx.applyRange({start: 1, end: 3, insertedLength: 0}, 'XY')
@@ -174,7 +177,7 @@ describe('boundary: the edit feed', () => {
 				base: 'hello',
 				next: 'hXYlo',
 				window: {start: 1, end: 3, insertedLength: 2},
-				selectionBefore: {anchor: 'start', head: 'start'},
+				selectionBefore: {anchor: 0, head: 0},
 			},
 		])
 	})
@@ -243,13 +246,33 @@ describe('boundary: the edit feed', () => {
 				selection: () => ({anchor, head: anchor}),
 				onResult: result => results.push(result),
 			})
-			boundary.replay('hello', {start: 0, end: 5, insertedLength: 5}, {anchor, head: anchor})
+			boundary.replay('hello', {start: 0, end: 5, insertedLength: 5}, {anchor: 1, head: 1})
 			if (controlled) boundary.arrive('hello')
 			const landed = results[0].selectionAfter
 			return landed && offsetOfAnchor(tree.roots(), landed.anchor)
 		}
 		expect(caretAfter(false)).toBe(1)
 		expect(caretAfter(true)).toBe(1)
+	})
+
+	it('a replay resolves the caret against the roots it leaves behind, not the ones it found', () => {
+		// The undo of a delete that swallowed a mark: the caret's offset lands in content this
+		// very write brings back, so nothing holding it existed a moment ago. Resolving before
+		// adoption answers off the document being replaced — here that offset is past its end.
+		const tree = createTokenTree(parser.parse('hlo'))
+		const results: TransactionResult[] = []
+		const boundary = createBoundary({
+			tree,
+			parser: () => parser,
+			controlled: () => false,
+			onChange: () => {},
+			onResult: result => results.push(result),
+		})
+		boundary.replay('he@[x](m)llo', {start: 1, end: 1, insertedLength: 9}, {anchor: 10, head: 10})
+		const landed = results[0].selectionAfter
+		expect(landed).toBeDefined()
+		expect(tree.roots()).toContain(textAnchor(landed!.anchor).node)
+		expect(offsetOfAnchor(tree.roots(), landed!.anchor)).toBe(10)
 	})
 })
 
