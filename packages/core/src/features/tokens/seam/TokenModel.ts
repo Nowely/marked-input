@@ -412,9 +412,8 @@ export class TokenModel {
 			// announce) several times.
 			//
 			// `rowConfig`, not the props behind it: the tuple carries what the PARSE
-			// consumes, so a `separator` a rowless document never reads no longer wakes the
-			// clock. Its dependency on `separator` appears and disappears with `layout`,
-			// which a computed tracks per evaluation.
+			// consumes, so the two spellings of "no rows" — `null` and the reported `''` —
+			// arrive here as the one word the parse reads, and neither wakes the clock twice.
 			watch(
 				() => ({
 					value: this.props.value(),

@@ -437,7 +437,7 @@ describe('Clipboard: paste', () => {
 	})
 
 	it('reconstruct the mark inside a block when markput data is pasted in drag mode', async () => {
-		// Drag story: layout 'block', defaultValue "hello\n@[world](1)\nfoo".
+		// Drag story: separator '\n', defaultValue "hello\n@[world](1)\nfoo".
 		// Each line is a separate draggable block; the container is the one editing host.
 		const {host} = await mount(Drag)
 		expect(host.querySelectorAll('mark').length).toBe(1)

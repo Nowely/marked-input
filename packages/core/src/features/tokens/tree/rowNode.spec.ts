@@ -126,7 +126,7 @@ describe('RowNode', () => {
 			expect(span('a\n\n\n\nb', 3, 1)).toEqual([1, 3])
 		})
 
-		it('answers nothing in inline layout, whose roots are never rows', () => {
+		it('answers nothing where the roots are not rows', () => {
 			const parser = new Parser([])
 			const tree = createTokenTree(parser.parse('a\n\nb'))
 			const roots = tree.roots()

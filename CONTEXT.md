@@ -85,7 +85,7 @@ read: `__slot__` is inline-parsed, `__value__` is raw and never re-parsed.
 _Avoid_: block type, row type, node type
 
 **Separator**:
-The editor-level string that delimits **Row**s (`separator` prop, default `'\n\n'`), and the only
+The editor-level string that delimits **Row**s (`separator` prop, default `'\n'`), and the only
 fact that decides whether a document has rows at all — `null` says it never splits, `''` is a bad
 prop reported and treated as absent (ADR-0011). Structural: it belongs to no **Markup**, is that
 markup's own text inside a Row kind's raw body, and bounds an open kind's body at the row's end
