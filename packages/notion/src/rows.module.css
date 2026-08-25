@@ -1,20 +1,18 @@
 /* What a ROW KIND needs and the theme does not already carry.
  *
- * Every class here either composes a theme class or reads a theme token — no hex, no `rgb()`,
- * no colour keyword, exactly as `../theme/README.md` requires of a component class.
+ * Every class here reads a theme token — no hex, no `rgb()`, no colour keyword, exactly as
+ * `../theme/README.md` requires of a component class. A kind that only needs a theme class wears
+ * it directly, so nothing below is an alias.
  *
- * Two of them exist because a row is recognised by its OWN first bytes and can therefore not be
- * told anything about its neighbours. `.numbered` restarts its count at the first item of a run,
- * and `.paragraph` shows its placeholder only while the row is empty; both are readings of the
+ * Two of these exist because a row is recognised by its OWN first bytes and can therefore be told
+ * nothing about its neighbours: `.numbered` restarts its count at the first item of a run, and
+ * `.paragraph` shows its placeholder only while the row is empty. Both are readings of the
  * painted document, taken in CSS, because no component can ask them.
  */
 
-.paragraph {
-	composes: block paragraph from '../theme/notion.module.css';
-}
-
 /* An empty row is one whose only surface holds no text — `:empty` on the span the adapter
-   consigns. `.block` is the containing block the absolutely positioned placeholder needs. */
+   consigns. The theme's `.block`, which the row also wears, is the containing block the
+   absolutely positioned placeholder needs. */
 .paragraph:has(> span:empty)::before {
 	position: absolute;
 	color: var(--notion-text-placeholder);
@@ -23,32 +21,14 @@
 	user-select: none;
 }
 
-/* The rule is a separate empty element so the row keeps a line box the caret can reach: a bare
-   `height: 0` row is unclickable, and a divider still has to be a row a user can stand on. */
-.divider {
-	composes: block from '../theme/notion.module.css';
-}
-
-.dividerRule {
-	composes: divider from '../theme/notion.module.css';
-}
-
-.listItem {
-	composes: block listItem from '../theme/notion.module.css';
-}
-
 /*
  * The ordinal. Counters, not `index + 1`: a row's `index` is its position among ALL its
- * siblings, so the third item of a list that starts after two paragraphs would be "5.".
+ * siblings, so the third item of a list that starts after two paragraphs would read "5.".
  *
  * The reset sits on the FIRST item of a run — `:not(.numbered + .numbered)` — and a counter's
- * scope covers the element that reset it and its following siblings, so each run counts from
- * one without anything outside the run being asked.
+ * scope covers the element that reset it and its following siblings, so each run counts from one
+ * without anything outside the run being asked.
  */
-.numbered {
-	composes: block listItem from '../theme/notion.module.css';
-}
-
 .numbered:not(.numbered + .numbered) {
 	counter-reset: notion-ordinal 0;
 }
@@ -67,10 +47,6 @@
 	content: counter(notion-ordinal) '.';
 }
 
-.todo {
-	composes: block listItem from '../theme/notion.module.css';
-}
-
 .todoBox {
 	width: 14px;
 	height: 14px;
@@ -86,89 +62,47 @@
 	text-decoration: line-through;
 }
 
-.toggle {
-	composes: block toggleRow from '../theme/notion.module.css';
-}
-
-/* `hidden="until-found"` rather than `display: none`: the row stays in the DOM — an unpainted
-   row leaves `bind` and takes its anchors with it — while find-in-page can still reach it and
-   the browser asks the toggle to open before it scrolls there. */
-.toggleBody {
-	composes: toggleChildren from '../theme/notion.module.css';
-}
-
+/*
+ * THE DATABASE LINE, as a grid rather than as `display: table-row`.
+ *
+ * The same column template on every line is what aligns a run of them, and no wrapper element
+ * exists in the tree to hang a real table off. A `display: table-row` line would align too — CSS
+ * wraps consecutive table-row siblings in one anonymous table box — but it was MEASURED to cost
+ * the caret: in controlled mode, typing at the end of a cell of a table-display line puts the
+ * caret back at the cell's start, and the same is true of a flex line. A grid line keeps it.
+ *
+ * The template is the SHOWCASE's, the way its chip tones are: five columns, the first one wide.
+ */
 .tableLine {
-	composes: tableRow from '../theme/notion.module.css';
+	display: grid;
+	grid-template-columns: 2.4fr 1.1fr 1fr 1fr 1fr;
+	border-bottom: 1px solid var(--notion-border-subtle);
+	margin: 0;
+	font-size: var(--notion-font-size-small);
+	white-space: normal;
 }
 
 .tableHeadLine {
-	composes: tableHeaderRow from '../theme/notion.module.css';
+	background: var(--notion-surface-table-header);
 }
 
-/* Consecutive `display: table-row` siblings are wrapped by CSS in ONE anonymous table box, which
-   is what aligns the columns of a run of lines with no wrapper element in the tree. The cell
-   widths are declared once so a run whose lines hold different text still lines up. */
 .tableCell {
-	composes: tableCell from '../theme/notion.module.css';
+	padding: var(--notion-space-3) var(--notion-space-4);
+	color: var(--notion-text-primary);
+	text-align: left;
 }
 
 .tableHeadCell {
-	composes: tableHeaderCell from '../theme/notion.module.css';
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-tiny);
+	font-weight: var(--notion-font-weight-medium);
 }
 
-.tableFooterLine {
-	composes: block tableFooter from '../theme/notion.module.css';
-}
-
-.code {
-	composes: block codeBlock from '../theme/notion.module.css';
-}
-
+/* The fence's language picker, which wears the theme's label and drops the control chrome. */
 .codeLanguage {
-	composes: codeLanguageLabel from '../theme/notion.module.css';
-
 	border: 0;
 	background: none;
 	color: var(--notion-text-muted);
 	font-family: var(--notion-font-family-sans);
 	cursor: pointer;
-}
-
-.toc {
-	composes: block tableOfContents from '../theme/notion.module.css';
-}
-
-.card {
-	composes: block from '../theme/notion.module.css';
-}
-
-.quote {
-	composes: block quote from '../theme/notion.module.css';
-}
-
-.title {
-	composes: block title from '../theme/notion.module.css';
-}
-
-.caption {
-	composes: block caption from '../theme/notion.module.css';
-}
-
-.heading1 {
-	composes: block heading1 from '../theme/notion.module.css';
-}
-
-.heading2 {
-	composes: block heading2 from '../theme/notion.module.css';
-}
-
-.heading3 {
-	composes: block heading3 from '../theme/notion.module.css';
-}
-
-/* The board's own title line, above the columns. */
-.boardTitle {
-	composes: caption from '../theme/notion.module.css';
-
-	margin-bottom: var(--notion-space-2);
 }

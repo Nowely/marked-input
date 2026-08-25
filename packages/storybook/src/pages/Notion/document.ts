@@ -1,72 +1,88 @@
 /**
- * The probe's reference document: a Notion page exported in the OKF / Obsidian shape —
- * YAML frontmatter, headings, prose, a bullet list, tables, a fenced code block, a
- * blockquote, mentions and links.
+ * THE SHOWCASE DOCUMENT — the page of `docs/scratch/notion-like/showcase.md`, written as the
+ * value a user's editor holds.
  *
- * It is written as the exporter would write it, NOT as the parser would prefer it. Where the
- * two disagree the story is expected to look wrong, and the tracker gets a ticket
- * (`docs/scratch/notion-like/`): the point of the probe is to find those places, so the
- * fixture may not dodge them.
+ * Every line here is a ROW. Its first bytes are what types it, an indented line is a child of the
+ * line above it, and nothing in this string is a hint to a component: what the page paints is
+ * decided by `@markput/notion`'s kinds alone.
  *
- * The exporter's own shape puts a blank line between blocks and a single `'\n'` inside a table,
- * the frontmatter and a tight list. Under the `'\n'` default every LINE is a row, so a blank
- * line reads as an empty row and each list line, each table line and each fenced line is its
- * own row — except where a kind's closing literal carries the body across, which is what keeps
- * the frontmatter and the code block whole.
+ * Written as a template literal with real tabs, because the tab IS the indent unit — a document
+ * that spells its nesting with spaces gets neither nesting nor a kind on those lines, which is
+ * declared behaviour rather than a bug to work around here.
  */
-export const APOLLO_DOC = `---
-type: Product Launch
-title: Apollo — Q2 launch plan
-status: in_progress
-owner: sarah.chen@acme.com
-timeline: 2026-03-03 → 2026-06-15
-confidence: 0.82
+export const APOLLO_DOC = `@title Apollo — Q2 launch plan
 ---
-
-# Apollo — Q2 launch plan
-
-Apollo moves our collaboration layer from beta to general availability. Ownership sits with @[Platform](team-platform), with launch gating on the auth migration — everything downstream assumes it ships first.
-
+Status: chip:amber:In progress
+Owner: person:Kara Vance
+Team: people:Kara Vance;Ines Duarte;Milo Freeman;Priya Raman;Tomas Alvarez;Wen Li
+Timeline: Apr 8 → Jun 30
+Tags: chip:blue:Platform, chip:purple:Design, Q2
+Spec: link:apollo/spec https://example.com/apollo/spec
+Confidence: 82%
+---
+---
+Apollo moves the collaboration layer from beta to general availability. Ownership sits with @[Platform](team-platform), and ==launch gating on the auth migration== is what everything downstream assumes.
+@toc
+Launch tasks
+	Sprint board
+	Metrics & risks
+Decision log
+@end
 ## Launch tasks
-
-24 items, 9 done. Individual tasks are separate concepts.
-
-| Task | Status | Owner | Due |
-| --- | --- | --- | --- |
-| Auth service migration | blocked | @[Sarah Chen](sarah.chen) | 2026-04-02 |
-| Realtime sync engine | in_progress | @[Marcus Kane](marcus.kane) | 2026-04-18 |
-| Pricing page rewrite | done | @[Jia Lin](jia.lin) | 2026-03-27 |
-| Load test at 5× peak | planned | @[Amara Reed](amara.reed) | 2026-05-06 |
-
-## Metrics
-
-| Metric | Value | As of |
-| --- | --- | --- |
-| Beta users | 4120 | 2026-04-03 |
-| p95 latency | 184ms | 2026-04-03 |
-| Crash-free sessions | 99.4% | 2026-04-03 |
-| Open bugs | 37 | 2026-04-03 |
-
-## Risks
-
-- **Auth migration slipped two weeks.** GA holds only if cutover lands by 2026-04-09.
-- Vendor SLA unsigned.
-- EU region capacity unconfirmed — awaiting quota approval.
-- Support headcount at 60%.
-
+@caption Inline database · 24 items
+@views Table|Board|Timeline|Calendar
+|= Task | Status | Owner | Due | Effort
+| Auth service migration | <status:Blocked> | <who:Kara Vance> | <due:2026-04-02> | <bar:0.2>
+| Realtime sync engine | <status:In progress> | <who:Milo Freeman> | <due:2026-04-18> | <bar:0.6>
+| Pricing page rewrite | <status:Done> | <who:Ines Duarte> | <due:2026-03-27 done> | <bar:1>
+| Load test at 5× peak | <status:Planned> | <who:Priya Raman> | <due:2026-05-06> | <bar:0>
+| Vendor SLA sign-off | <status:At risk> | <who:Tomas Alvarez> | <due:2026-04-09> | <bar:0.35>
+|+ Count 24 · 9 done
+## Sprint board
+@board
+To do
+- Sign the vendor SLA|red:Legal
+- EU region quota|blue:Infra
+- Launch copy review
+In progress
+- Auth migration|purple:Platform
+- p95 latency budget|amber:Perf
+Shipped
+- Beta invites|green:Growth
+@end
+## Metrics & risks
+@metrics
+Beta users|4,120
+p95 latency|184ms
+Crash-free|99.4%
+Open bugs|37
+@end
+> [!danger] Launch gating on the auth migration — GA holds only if cutover lands by 2026-04-09.
+### Risks
+- Vendor SLA unsigned
+- EU region capacity unconfirmed
+	- Awaiting quota approval
+- Support headcount at 60%
+- [ ] Confirm the EU quota with the vendor
+- [x] Signed off by Platform
 ## Decision log
-
-- 2026-04-02 — [Ship without offline mode](../decisions/2026-04-02-defer-offline-mode.md)
-- 2026-03-21 — Single-region GA first
-- 2026-03-12 — Adopt CRDT over OT
-
+▸ Why we cut the Android target
+	Shipping three platforms at once puts the auth migration on the critical path twice.
+	1. Auth migration owns the critical path.
+	1. Three platforms at once doubles the QA matrix.
+▸ Single-region GA first
+	EU capacity is unconfirmed, so a second region is a launch risk with no launch benefit.
+▸ Adopt CRDT over OT
+	Presence and offline edits fall out of the same merge; OT needed a server for each.
 ## Canary procedure
-
 \`\`\`bash
 apollo deploy --env=staging --canary=5%
 # → rollout 5% · healthy · p95 184ms
 \`\`\`
-
 > If the cutover isn't boring, we're not ready to call it GA.
-
-See the [Apollo architecture RFC](https://github.com/acme/apollo/rfcs/0042) for the conflict-resolution and presence protocols.`
+@bookmark(https://example.com/apollo/auth-migration|How the auth migration changes token lifetimes, and what breaks if it slips.) Auth migration — rollout plan
+@comments
+Kara Vance|2h ago|Can we confirm the EU quota before Friday?
+Milo Freeman|41m ago|Asked the vendor this morning — expecting an answer tomorrow.
+@end
+`

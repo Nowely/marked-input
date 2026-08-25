@@ -56,7 +56,7 @@ export const title: Option = {
 	markup: '@title __slot__',
 	row: {
 		Component: ({children, ref, className, style}: RowProps) => (
-			<div ref={ref} className={cls(className, rows.title)} style={style}>
+			<div ref={ref} className={cls(className, theme.block, theme.title)} style={style}>
 				{children}
 			</div>
 		),
@@ -68,7 +68,7 @@ export const caption: Option = {
 	markup: '@caption __slot__',
 	row: {
 		Component: ({children, ref, className, style}: RowProps) => (
-			<div ref={ref} className={cls(className, rows.caption)} style={style}>
+			<div ref={ref} className={cls(className, theme.block, theme.caption)} style={style}>
 				{children}
 			</div>
 		),
@@ -124,7 +124,7 @@ function readPropertyCell(cell: string): ReactNode {
 			</>
 		)
 	}
-	if (kind === 'people') return <AvatarStack max={3} names={argument.split(', ')} />
+	if (kind === 'people') return <AvatarStack max={3} names={argument.split(';')} />
 	if (kind === 'link') {
 		const [label = '', ...url] = argument.split(' ')
 		return (
@@ -145,8 +145,8 @@ export const divider: Option = {
 	markup: '---__slot__',
 	row: {
 		Component: ({children, ref, className, style}: RowProps) => (
-			<div ref={ref} className={cls(className, rows.divider)} style={style}>
-				<span className={rows.dividerRule} />
+			<div ref={ref} className={cls(className, theme.block)} style={style}>
+				<span className={theme.divider} />
 				{children}
 			</div>
 		),
@@ -159,7 +159,7 @@ export const toc: Option = {
 	markup: '@toc\n__value__\n@end',
 	row: {
 		Component: ({node, ref, className, style}: RowProps) => (
-			<div ref={ref} className={cls(className, rows.toc)} style={style}>
+			<div ref={ref} className={cls(className, theme.block, theme.tableOfContents)} style={style}>
 				{node
 					.slot()
 					.split('\n')
@@ -192,19 +192,19 @@ const heading = (className: string) =>
 
 export const h1: Option = {
 	markup: '# __slot__',
-	row: {Component: heading(rows.heading1)},
+	row: {Component: heading(cls(theme.block, theme.heading1))},
 	menu: {label: 'Heading 1', keywords: ['h1', 'title']},
 }
 
 export const h2: Option = {
 	markup: '## __slot__',
-	row: {Component: heading(rows.heading2)},
+	row: {Component: heading(cls(theme.block, theme.heading2))},
 	menu: {label: 'Heading 2', keywords: ['h2']},
 }
 
 export const h3: Option = {
 	markup: '### __slot__',
-	row: {Component: heading(rows.heading3)},
+	row: {Component: heading(cls(theme.block, theme.heading3))},
 	menu: {label: 'Heading 3', keywords: ['h3']},
 }
 
@@ -214,7 +214,7 @@ export const quote: Option = {
 		continues: true,
 		indents: true,
 		Component: ({children, rows: childRows, ref, className, style}: RowProps) => (
-			<div ref={ref} className={cls(className, rows.quote)} style={style}>
+			<div ref={ref} className={cls(className, theme.block, theme.quote)} style={style}>
 				{children}
 				{childRows}
 			</div>
@@ -287,9 +287,9 @@ export const code: Option = {
 		Component: ({meta = 'bash', children, node, ref, className, style}: RowProps) => {
 			const controlRef = useControlRef()
 			return (
-				<div ref={ref} className={cls(className, rows.code)} style={style}>
+				<div ref={ref} className={cls(className, theme.block, theme.codeBlock)} style={style}>
 					<select
-						className={rows.codeLanguage}
+						className={cls(theme.codeLanguageLabel, rows.codeLanguage)}
 						onChange={event => node.turnInto(code, {meta: event.target.value})}
 						ref={controlRef}
 						value={meta}
@@ -316,7 +316,7 @@ export const bullet: Option = {
 		Component: ({children, rows: childRows, depth, ref, className, style}: RowProps) => {
 			const controlRef = useControlRef()
 			return (
-				<div ref={ref} className={cls(className, rows.listItem)} style={style}>
+				<div ref={ref} className={cls(className, theme.block, theme.listItem)} style={style}>
 					<span className={depth > 0 ? theme.listBulletHollow : theme.listBullet} ref={controlRef} />
 					{children}
 					{childRows}
@@ -335,7 +335,7 @@ export const numbered: Option = {
 		Component: ({children, rows: childRows, ref, className, style}: RowProps) => {
 			const controlRef = useControlRef()
 			return (
-				<div ref={ref} className={cls(className, rows.numbered)} style={style}>
+				<div ref={ref} className={cls(className, theme.block, theme.listItem, rows.numbered)} style={style}>
 					<span className={rows.ordinal} ref={controlRef} />
 					{children}
 					{childRows}
@@ -356,7 +356,7 @@ export const todo: Option = {
 			const controlRef = useControlRef()
 			const done = meta === 'x'
 			return (
-				<div ref={ref} className={cls(className, rows.todo)} style={style}>
+				<div ref={ref} className={cls(className, theme.block, theme.listItem)} style={style}>
 					<input
 						checked={done}
 						className={rows.todoBox}
@@ -417,7 +417,7 @@ export const toggle: Option = {
 				else body.current?.setAttribute('hidden', 'until-found')
 			}, [open])
 			return (
-				<div ref={ref} className={cls(className, rows.toggle)} style={style}>
+				<div ref={ref} className={cls(className, theme.block, theme.toggleRow)} style={style}>
 					<button
 						aria-expanded={open}
 						aria-label={open ? 'Collapse' : 'Expand'}
@@ -427,7 +427,7 @@ export const toggle: Option = {
 						type="button"
 					/>
 					{children}
-					<div className={rows.toggleBody} ref={bodyRef}>
+					<div className={theme.toggleChildren} ref={bodyRef}>
 						{childRows}
 					</div>
 				</div>
@@ -457,7 +457,7 @@ export const cell: Option = {
 export const headerCell: Option = {
 	row: {
 		Component: ({children, ref, className, style}: RowProps) => (
-			<div ref={ref} className={cls(className, rows.tableHeadCell)} style={style}>
+			<div ref={ref} className={cls(className, rows.tableCell, rows.tableHeadCell)} style={style}>
 				{children}
 			</div>
 		),
@@ -478,7 +478,7 @@ export const tableHeader: Option = {
 	row: {
 		split: {at: ' | ', as: headerCell},
 		Component: ({rows: childRows, ref, className, style}: RowProps) => (
-			<div ref={ref} className={cls(className, rows.tableHeadLine)} style={style}>
+			<div ref={ref} className={cls(className, rows.tableLine, rows.tableHeadLine)} style={style}>
 				{childRows}
 			</div>
 		),
@@ -510,7 +510,7 @@ export const tableFooter: Option = {
 		Component: ({children, ref, className, style}: RowProps) => {
 			const controlRef = useControlRef()
 			return (
-				<div ref={ref} className={cls(className, rows.tableFooterLine)} style={style}>
+				<div ref={ref} className={cls(className, theme.block, theme.tableFooter)} style={style}>
 					<button className={theme.tableFooterAction} ref={controlRef} type="button">
 						+ New
 					</button>
@@ -675,7 +675,12 @@ export const Paragraph = ({
 	className?: string
 	style?: RowProps['style']
 }) => (
-	<div className={cls(className, rows.paragraph)} data-placeholder="Type / for commands…" ref={ref} style={style}>
+	<div
+		className={cls(className, theme.block, theme.paragraph, rows.paragraph)}
+		data-placeholder="Type / for commands…"
+		ref={ref}
+		style={style}
+	>
 		{children}
 	</div>
 )
