@@ -100,30 +100,63 @@ async function choose(label: string) {
 const menuItem = (label: string) => page.getByRole('listitem').getByText(label, {exact: true})
 
 describe('the showcase page', () => {
+	/**
+	 * NAMED FOR COMPLETENESS, SO IT COUNTS ELEMENTS. Asserting the page's TEXT proves nothing about
+	 * its kinds: a raw-bodied kind's own text is the document's text, so deleting `properties`,
+	 * `toc`, `metrics`, `comments`, `views`, `title`, `caption`, `divider` and `tableFooter` from
+	 * the options array left every substring in place and this test green. What only the kind can
+	 * produce is the ELEMENT it paints, so that is what is read.
+	 */
 	it('paints every block kind of the reference page', async () => {
 		const {host} = await mount(Showcase)
+		const count = (selector: string) => host.querySelectorAll(selector).length
 
-		// Page furniture and prose.
-		expect(host.textContent).toContain('Apollo — Q2 launch plan')
-		expect(host.textContent).toContain('Inline database · 24 items')
-		// The properties panel reads its own raw interior: the labels are the document's keys.
-		expect(host.textContent).toContain('Confidence')
-		expect(host.textContent).toContain('82%')
-		// The database: a header line, five body lines and a footer.
-		expect(host.querySelectorAll('[class*="tableHeadLine"]')).toHaveLength(1)
-		expect(host.querySelectorAll('[class*="tableLine"]:not([class*="tableHeadLine"])')).toHaveLength(5)
-		expect(host.textContent).toContain('Count 24 · 9 done')
-		// The board's three columns, and the metric cards beside the callout.
-		expect(host.textContent).toContain('To do')
-		expect(host.textContent).toContain('Shipped')
-		expect(host.textContent).toContain('Crash-free')
+		expect({
+			title: count('[class*="title"]'),
+			properties: count('[class*="propertyLabel"]'),
+			divider: count('[class*="divider"]'),
+			tocEntries: count('[class*="tableOfContentsItem"]'),
+			headings: count('[class*="heading"]'),
+			caption: count('[class*="caption"]'),
+			views: count('[role="tablist"]'),
+			tableHead: count('[class*="tableHeadLine"]'),
+			tableLines: count('[class*="tableLine"]:not([class*="tableHeadLine"])'),
+			tableFooter: count('[class*="tableFooterSummary"]'),
+			boardColumns: count('[class*="boardColumnHeader"]'),
+			metrics: count('[class*="metricCard"]'),
+			callout: count('button[class*="calloutIcon"]'),
+			bullets: count('[class*="listBullet"]'),
+			todos: count('input[type="checkbox"]'),
+			toggles: count('[class*="toggleChildren"]'),
+			code: count('[class*="codeBlock"]'),
+			quote: count('[class*="quote"]'),
+			bookmark: count('[class*="bookmarkThumbnail"]'),
+			comments: count('[class*="commentBody"]'),
+		}).toEqual({
+			title: 1,
+			properties: 7,
+			divider: 1,
+			tocEntries: 4,
+			headings: 6,
+			caption: 1,
+			views: 1,
+			tableHead: 1,
+			tableLines: 5,
+			tableFooter: 1,
+			boardColumns: 3,
+			metrics: 4,
+			callout: 1,
+			bullets: 4,
+			todos: 2,
+			toggles: 3,
+			code: 1,
+			quote: 1,
+			bookmark: 1,
+			comments: 2,
+		})
+
+		// And the marks, which are the same claim one level down.
 		expect(host.textContent).toContain('GA holds only if cutover lands by 2026-04-09')
-		// The lists, the toggles, the fence, the quote, the bookmark and the comment thread.
-		expect(host.textContent).toContain('Awaiting quota approval')
-		expect(host.textContent).toContain('Why we cut the Android target')
-		expect(host.textContent).toContain('apollo deploy --env=staging --canary=5%')
-		expect(host.textContent).toContain("If the cutover isn't boring")
-		expect(host.textContent).toContain('Auth migration — rollout plan')
 		expect(host.textContent).toContain('Can we confirm the EU quota before Friday?')
 	})
 
