@@ -50,7 +50,7 @@ describe('SuggestionsModel', () => {
 
 		store.overlay.suggestions.select(1)
 
-		expect(choose).toHaveBeenCalledWith('word', '1')
+		expect(choose).toHaveBeenCalledWith({value: 'word', meta: '1'})
 	})
 
 	it('chooses nothing for an out-of-range index', () => {
@@ -64,7 +64,7 @@ describe('SuggestionsModel', () => {
 
 	it('drives the highlight and the selection from container keydown while activated', () => {
 		// choose is stubbed so the match survives Enter and the post-dispose press is observable
-		const choose = vi.spyOn(store.overlay, 'choose').mockImplementation(() => {})
+		const choose = vi.spyOn(store.overlay, 'choose').mockImplementation(() => true)
 		store.overlay.match(matchWith('', ['alpha', 'beta']))
 		const deactivate = store.overlay.suggestions.activate()
 		const press = (key: string) => {
@@ -80,7 +80,7 @@ describe('SuggestionsModel', () => {
 		press('ArrowUp')
 		expect(store.overlay.suggestions.active()).toBe(0)
 		press('Enter')
-		expect(choose).toHaveBeenCalledWith('alpha', '0')
+		expect(choose).toHaveBeenCalledWith({value: 'alpha', meta: '0'})
 
 		deactivate()
 		press('ArrowDown')

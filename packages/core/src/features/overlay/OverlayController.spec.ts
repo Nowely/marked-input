@@ -237,7 +237,7 @@ describe('OverlayController', () => {
 			const match: OverlayMatch = {...stubMatch, source: '@wo', range, option: {markup: '@[__value__]'}}
 			store.overlay.match(match)
 
-			store.overlay.choose('world')
+			store.overlay.choose({value: 'world'})
 
 			// The trigger span is handed back UNINSPECTED — the anchors that came in are the
 			// anchors the write verb gets (spec S2 §4.5's `OverlayMatch.range` contract).
@@ -290,7 +290,7 @@ describe('OverlayController', () => {
 			const store = typedTriggerOn({markup: '__value__ says', overlay: {trigger: '@'}})
 			expect(store.overlay.match()?.source).toBe('@wo')
 
-			store.overlay.choose('world')
+			store.overlay.choose({value: 'world'})
 
 			expect(store.tokens.value()).toBe('hello @wo')
 			expect(store.tokens.nodes().map(node => node.kind)).toEqual(['text'])
@@ -307,7 +307,7 @@ describe('OverlayController', () => {
 			const errors = captureErrors()
 			const store = typedTriggerOn({markup: '__value__ says', overlay: {trigger: '@'}}, false)
 
-			store.overlay.choose('world')
+			store.overlay.choose({value: 'world'})
 
 			expect(store.tokens.value()).toBe('hello @wo')
 			expect(errors()).toEqual([expect.stringContaining('The overlay selection was discarded')])
@@ -325,7 +325,7 @@ describe('OverlayController', () => {
 			const store = typedTriggerOn({overlay: {trigger: '@'}})
 			expect(store.overlay.match()?.source).toBe('@wo')
 
-			store.overlay.choose('world')
+			store.overlay.choose({value: 'world'})
 
 			expect(store.tokens.value()).toBe('hello @wo')
 			expect(errors()).toEqual([])

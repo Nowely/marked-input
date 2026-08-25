@@ -51,7 +51,7 @@ export class OverlayController {
 	 * `OverlayHandler.select`. An arrow so the adapters can pass it around unbound.
 	 */
 	readonly select = (value: {value: string; meta?: string}): void => {
-		this.choose(value.value, value.meta)
+		this.choose(value)
 	}
 
 	readonly slot: OverlaySlot = computed(() => {
@@ -162,22 +162,31 @@ export class OverlayController {
 	 * `Parser` rejects, writing text nothing reads back as a mark straight into the document.
 	 * Reported for the same reason, and at the moment the consumer's user actually loses a
 	 * selection rather than at a mount they may never have watched.
+	 *
+	 * A PICK rather than two positional strings: it is the one accept path, and what a pick names
+	 * is what gets written. `false` says nothing was — the overlay stays open on a refusal, so the
+	 * user still has the selection they made.
 	 */
-	choose(value: string, meta?: string): void {
+	choose(pick: {value?: string; meta?: string}): boolean {
 		// No hasOverlayTrigger guard needed: match is only ever set by #probeTrigger,
 		// which requires a trigger option, so a missing trigger means match() is undefined.
 		const match = this.match()
-		if (!match) return
+		if (!match) return false
 		const markup = match.option.markup
 		// An overlay-only option, and silent by contract: omitting `markup` is how it is spelled.
-		if (markup === undefined) return
+		if (markup === undefined) return false
 		const invalid = markupError(markup)
 		if (invalid !== undefined) {
 			reportBadProp(`${invalid}. The overlay selection was discarded — this option can insert nothing.`)
-			return
+			return false
 		}
-		this.edit.replace(match.range.anchor, match.range.head, annotate(markup, {value, meta}))
+		this.edit.replace(
+			match.range.anchor,
+			match.range.head,
+			annotate(markup, {value: pick.value ?? '', meta: pick.meta})
+		)
 		this.match(undefined)
+		return true
 	}
 
 	#wantsTrigger(type: 'change' | 'selectionChange'): boolean {

@@ -37,7 +37,7 @@ export class SuggestionsModel {
 		// `in`, not `rows[index] === undefined`: without noUncheckedIndexedAccess the indexed
 		// read is typed plain `string`, which folds that comparison into a constant.
 		if (!(index in rows)) return
-		this.overlay.choose(rows[index], String(index))
+		this.overlay.choose({value: rows[index], meta: String(index)})
 	}
 
 	/**
