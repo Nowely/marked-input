@@ -291,6 +291,44 @@ becomes a ticket here.
   `history` read survived the same treatment for the opposite reason — the suite stayed green
   because it had no pin, not because it does nothing, and the off-then-ON case is now a test that
   reddens without it. `canUndo` also learned about `readOnly`, which `replay` had always refused.
+- **A cell is a Row born from its parent's carve** (2026-08-25, P9,
+  [02](issues/02-variadic-placeholders.md)). A kind declaring `split: {at, as}` has its own body
+  taken apart at the literal, and no fifth node kind and no cell branch in the DOM layer came with
+  it. The tree learns ONE question — are a row's child rows its own body — and answers it
+  structurally, from children being inline-then-rows: a row whose first child is a row has no
+  inline content. Three readings follow, and they are the whole cost: the body IS the children, the
+  line covers them, and the pre-order walk never names one, so no separator is written between
+  pieces.
+- **The edges, all declared rather than discovered later.** N delimiters is N+1 pieces INCLUDING
+  the empty ones a leading, doubled or trailing delimiter produces; a delimiter that would straddle
+  the row's closing literal is not one; a piece cannot contain its own delimiter, which is the
+  declared limitation an escape scoped to a cell body would lift; the carve goes one level, so a
+  kind naming itself terminates. In the keymap: Enter splits the LINE and the pieces after the
+  caret move into the row it produces, Backspace at the first piece un-types the line, Tab at the
+  first or last piece leaves the field (ADR-0002's accepted cost), and a slash menu opened in a
+  piece converts the line.
+- **The spec's rule that `split` excludes `indents` was NOT added, because the defect behind it is
+  closed at its source.** The rule existed to stop a row holding both cells and indented children
+  from losing the indented ones from the projection. A carved row now takes no indent-nested
+  children at all — the scan's depth ceiling refuses them — so an indented line under a table line
+  stays a root. Measured both ways: without the ceiling `'| a | b⏎⇥child'` loses `child` from the
+  top level, and with it the value round-trips. A rule with no defect behind it is a rule with no
+  reason.
+- **The header is a RUN, not a line, and it stays a consumer-side reading.** P2 declared a table
+  renders without one because which line is the header is a fact about the line AFTER it, and the
+  split does not change that — a row is recognised by its own first bytes alone. What it changes is
+  that the reading needs no component to ask: the cells are elements, so `.table + .table` is
+  "preceded by a table line" and what it fails to match is the first line of each run. The fact
+  core is still missing is a wrapper around the run — `RowSpec.group`, in the spec's type and not
+  built — which is also why columns do not align between lines.
+- **In-slot pairing was unbounded index pairing, and P4 measured it into P9's lap.** The
+  window-bounded prefix/suffix walk ran on the ROOT list alone, so writing a delimiter into column 2
+  of a five-column line handed columns 3–5 the node objects of the columns before them, with a
+  byte-identical value either way. The same walk now runs at every depth. It does NOT fix the
+  parent/child `mergeWith` grandchild, and that is not the same defect: `Pairing` is an
+  equal-length permutation, which a merge that removes a row cannot be, and the grandchild's node
+  is one level below the row being deleted while its token is now a sibling of the survivor's text.
+  Only a cross-level claim could pair them.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
@@ -300,6 +338,13 @@ becomes a ticket here.
 - What a package on top of this owns: does it wrap `MarkedInput` and ship
   options + components, or does it need core changes first? The ticket list here
   is the input to that decision, not the answer.
+- **A table is a run of independent lines, and three wants hang off that one gap.** Columns cannot
+  align, the accessible semantics cannot be a table (one `role="table"` per LINE describes a table
+  of one row, which is why the probe carries none), and the header can only be read from the DOM
+  run. All three are the same missing thing — a wrapper around consecutive siblings sharing a
+  component, `RowSpec.group` — and none of them is a reason to give a cell a node kind of its own.
+  The alignment line is a fourth: `'| ---'` is a longer opener than `'| '`, so a kind of its own is
+  available to the consumer whenever someone wants it to paint as a rule instead of as dashes.
 - Caret ergonomics at document scale — atomic tables and code blocks, Tab
   leaving the field (ADR-0002's accepted cost) — are unmeasured over a document
   this size. Native undo is no longer on that list: the editor owns it (ADR-0012).
