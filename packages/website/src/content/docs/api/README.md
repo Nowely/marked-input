@@ -41,6 +41,7 @@ title: "@markput/react"
 - [BlockMenu](/api/functions/blockmenu/)
 - [denote](/api/functions/denote/)
 - [MarkedInput](/api/functions/markedinput/)
+- [useControlRef](/api/functions/usecontrolref/)
 - [useMark](/api/functions/usemark/)
 - [useMarkInfo](/api/functions/usemarkinfo/)
 - [useMarkput](/api/functions/usemarkput/)
