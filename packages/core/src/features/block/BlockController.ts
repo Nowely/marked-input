@@ -312,6 +312,13 @@ export class BlockController {
 	 * THE NEAREST FALLBACK IS ROOT-ONLY. At the top a point in the gap between two rows belongs to
 	 * the nearer of them — the declared hover rule — but inside a parent the leftover space IS the
 	 * parent's own line, so a nearest child there would claim a point the parent owns.
+	 *
+	 * A POINT PAST A ROOT'S BOX IS PAST ITS WHOLE SUBTREE, and answering the root there names the
+	 * wrong line: a parent's box starts at its own line, so "after that line" is the slot its FIRST
+	 * CHILD occupies and a drop below the document landed ABOVE rows the pointer was visibly below.
+	 * The answer is the subtree's last painted line, reached by taking the last painted child at
+	 * every level — which is also the nearest painted row to a point below everything, so hover
+	 * lands where the pointer is.
 	 */
 	rowAt(clientY: number): {id: number; rect: DOMRect; depth: number; parent: DOMRect | undefined} | undefined {
 		if (this.tokens.rowConfig() === undefined) return undefined
@@ -328,6 +335,18 @@ export class BlockController {
 			if (deeper?.contained !== true) break
 			parent = found.rect
 			found = deeper
+			depth++
+		}
+		while (found?.contained === false && clientY >= found.rect.bottom) {
+			const row = this.tokens.find(found.id)
+			if (row?.kind !== 'row' || hasCells(row)) break
+			const kids = row.rows()
+			// The same outward probe the search uses, aimed at the END of the level: a collapsed
+			// subtree has no last painted line, and the descent stops at the row above it.
+			const last = kids.length === 0 ? undefined : this.#paintedNear(kids, kids.length - 1, 0, kids.length - 1)
+			if (!last) break
+			parent = found.rect
+			found = {id: kids[last.at].id, rect: last.rect, contained: false}
 			depth++
 		}
 		return found && {id: found.id, rect: found.rect, depth, parent}

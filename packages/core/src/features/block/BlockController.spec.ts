@@ -238,6 +238,25 @@ describe('hover', () => {
 		expect(block.rowAt(midOf(painted.get(root.id)!))?.id).toBe(root.id)
 	})
 
+	/**
+	 * PAST A ROOT'S BOX IS PAST ITS SUBTREE, so the answer is the subtree's last painted line and
+	 * not the root whose box the point missed — a root's own line is at the TOP of that box.
+	 */
+	it('answers the last painted line of the subtree a point sits below', () => {
+		const {block, painted, store} = mountNestedRows('alpha\n\tbeta\n\t\tgamma')
+		const [root] = store.tokens.nodes()
+		if (root.kind !== 'row') throw new Error('expected a row')
+		const grandchild = root.rows()[0].rows()[0]
+
+		const below = painted.get(root.id)!.getBoundingClientRect().bottom + 30
+		expect(block.rowAt(below)?.id).toBe(grandchild.id)
+		expect(block.rowAt(below)?.depth).toBe(2)
+
+		// A COLLAPSED level has no last painted line, so the walk stops at the row above it.
+		painted.get(root.rows()[0].id)!.hidden = true
+		expect(block.rowAt(painted.get(root.id)!.getBoundingClientRect().bottom + 30)?.id).toBe(root.id)
+	})
+
 	/** And an unpainted row among painted SIBLINGS leaves the rest of the level searchable. */
 	it('searches past an unpainted row rather than giving up on the level', () => {
 		const {block, painted, store} = mountNestedRows('alpha\nbeta\ngamma\ndelta')
@@ -742,6 +761,41 @@ describe('drag and drop', () => {
 
 		dragOverAt(container, 0, box.top + ROW_HEIGHT - 1)
 		expect(block.state.drop()?.placement).toEqual({parent: alpha, index: 0})
+	})
+
+	/**
+	 * A POINT BELOW THE WHOLE DOCUMENT names the gap after its LAST LINE, and a nested last root is
+	 * what tells the two readings apart: answering the root there reads the edge off the root's own
+	 * line, whose "after" is the slot its FIRST CHILD occupies — so the rows landed above the very
+	 * children the pointer was below.
+	 */
+	it('drops below the document at the end of it, not inside the last root', () => {
+		const mounted = mountNestedRows('beta\nalpha\n\tkid')
+		const {block, container, painted, store} = mounted
+		const alpha = store.tokens.nodes()[1]
+		if (alpha.kind !== 'row') throw new Error('expected a row')
+		const kidBottom = painted.get(alpha.rows()[0].id)!.getBoundingClientRect().bottom
+
+		block.beginDrag(store.tokens.nodes()[0].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
+		dragOverAt(container, 0, kidBottom + 30)
+		dropOn(container)
+
+		expect(store.tokens.value()).toBe('alpha\n\tkid\nbeta')
+	})
+
+	/** And the X still chooses the depth down there, out of the depths that last line offers. */
+	it('lets the pointer nest into the last line it is below', () => {
+		const mounted = mountNestedRows('beta\nalpha\n\tkid')
+		const {block, container, painted, store} = mounted
+		const alpha = store.tokens.nodes()[1]
+		if (alpha.kind !== 'row') throw new Error('expected a row')
+		const kidBox = painted.get(alpha.rows()[0].id)!.getBoundingClientRect()
+
+		block.beginDrag(store.tokens.nodes()[0].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
+		dragOverAt(container, kidBox.left, kidBox.bottom + 30)
+		dropOn(container)
+
+		expect(store.tokens.value()).toBe('alpha\n\tkid\n\tbeta')
 	})
 
 	/**
