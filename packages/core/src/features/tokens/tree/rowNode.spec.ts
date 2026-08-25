@@ -176,33 +176,71 @@ describe('RowNode', () => {
 	})
 
 	/**
-	 * The row's REPAINT contract. A retype that leaves the body untouched — a todo's checkbox,
-	 * a callout's tone, a fence's language — changes only the row's kind and meta, and adoption
-	 * re-uses the same text child object, so a subscription over `children()` alone never fires
-	 * and the row keeps painting its old markup while the value already carries the new one.
+	 * The row's REPAINT contract, in three parts. A subscription over `children()` alone answers
+	 * none of them, because adoption re-uses the same child objects and writes their signals in
+	 * place.
 	 */
-	it('notifies a row subscriber when only its kind and meta change', () => {
-		const store = new Store()
-		store.props.set({
-			defaultValue: '- [ ] task',
-			layout: 'block',
-			separator: '\n',
-			Mark: () => null,
-			options: [{markup: '- [__meta__] __slot__', row: {Component: 'li'}}],
+	describe('the row repaint subscription', () => {
+		const rowStore = (defaultValue: string, markup: Markup, Component: string) => {
+			const store = new Store()
+			store.props.set({
+				defaultValue,
+				layout: 'block',
+				separator: '\n',
+				Mark: () => null,
+				options: [{markup, row: {Component}}],
+			})
+			store.host.container(document.createElement('div'))
+
+			const row = store.tokens.nodes()[0]
+			const repaint = computed(renderSubscription(row))
+			let repaints = 0
+			const stop = watch(repaint, () => repaints++)
+			return {store, row, stop, repaints: () => repaints}
+		}
+
+		/**
+		 * A retype that leaves the body untouched — a todo's checkbox, a callout's tone, a fence's
+		 * language — changes only the row's kind and meta, so without those two the row keeps
+		 * painting its old markup while the value already carries the new one.
+		 */
+		it('notifies when only the kind and meta change', () => {
+			const {store, row, stop, repaints} = rowStore('- [ ] task', '- [__meta__] __slot__', 'li')
+
+			// The one keystroke a row control makes: the body text is byte-identical either side.
+			store.tokens.setValue('- [x] task')
+
+			expect(store.tokens.value()).toBe('- [x] task')
+			expect(store.tokens.nodes()[0]).toBe(row)
+			expect(repaints()).toBe(1)
+			stop()
 		})
-		store.host.container(document.createElement('div'))
 
-		const row = store.tokens.nodes()[0]
-		const repaint = computed(renderSubscription(row))
-		let repaints = 0
-		const stop = watch(repaint, () => repaints++)
+		/**
+		 * A RAW body is never re-parsed, so its one text child is rewritten in place and is never
+		 * painted by a Span of its own — the kind's component paints it off `node.slot()`. Without
+		 * the row's own `slot` read, a table's text changes and the table on screen does not.
+		 */
+		it('notifies when a RAW body changes', () => {
+			const {store, row, stop, repaints} = rowStore('|a', '|__value__', 'div')
 
-		// The one keystroke a row control makes: the body text is byte-identical either side.
-		store.tokens.setValue('- [x] task')
+			store.tokens.setValue('|b')
 
-		expect(store.tokens.value()).toBe('- [x] task')
-		expect(store.tokens.nodes()[0]).toBe(row)
-		expect(repaints).toBe(1)
-		stop()
+			expect(store.tokens.value()).toBe('|b')
+			expect(store.tokens.nodes()[0]).toBe(row)
+			expect(row.kind === 'row' && row.slot()).toBe('b')
+			expect(repaints()).toBe(1)
+			stop()
+		})
+
+		/** The gate on that read: a `__slot__` body is painted by its children's own Spans. */
+		it('stays silent on a keystroke inside a SLOT body', () => {
+			const {store, stop, repaints} = rowStore('# a', '# __slot__', 'h1')
+
+			store.tokens.setValue('# ab')
+
+			expect(repaints()).toBe(0)
+			stop()
+		})
 	})
 })

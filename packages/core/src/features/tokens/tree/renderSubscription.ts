@@ -12,6 +12,13 @@ import type {TreeNode} from './types'
  * while the value already carries the new one, because the children the retype produced are
  * element-wise equal.
  *
+ * A RAW-bodied kind (`__value__`) adds its `slot` to that list, and the gate is the reason: its
+ * body is never re-parsed, so adoption rewrites the one text child IN PLACE and `children()`
+ * never fires — while the component paints that text off `node.slot()`, its text child having no
+ * Span of its own to repaint. A `__slot__` body must NOT read `slot()`: there the text IS painted
+ * by its children's Spans, and subscribing the row to them would repaint the whole row on every
+ * keystroke.
+ *
  * Deliberately NOT the shorter "resolve the slot inside the computed": that reads `text()`
  * for a text node and would repaint its Span on every keystroke, which is the one thing the
  * text path exists to avoid.
@@ -24,5 +31,10 @@ export const renderSubscription = (node: TreeNode) => (): unknown =>
 	node.kind === 'mark'
 		? [node.value(), node.meta(), node.children()]
 		: node.kind === 'row'
-			? [node.descriptor(), node.meta(), node.children()]
+			? [
+					node.descriptor(),
+					node.meta(),
+					node.children(),
+					node.descriptor()?.hasSlot === false ? node.slot() : undefined,
+				]
 			: undefined
