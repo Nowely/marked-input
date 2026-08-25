@@ -70,9 +70,13 @@ function isBody(type: GapType): boolean {
 }
 
 /**
- * Scan order: LONGEST OPENER FIRST, then option index. `'- [__meta__] __slot__'` and
- * `'- __slot__'` both open at `'- '`, and only the longer opener distinguishes a todo from a
- * bullet; ties fall back to the index so the order a consumer wrote is what breaks them.
+ * Scan order: LONGEST OPENER FIRST. `'- [__meta__] __slot__'` and `'- __slot__'` both open at
+ * `'- '`, and only the longer opener distinguishes a todo from a bullet.
+ *
+ * The index tie-break settles nothing a document can see: two DISTINCT openers of equal length
+ * never both match at one position, and two IDENTICAL ones cannot coexist — `usableMarkups` drops
+ * the later option and reports it. Kept so the order does not rest on `toSorted`'s stability over
+ * a list `MarkupRegistry` happens to push in index order; deleting it was measured green.
  */
 export function orderRowKinds(kinds: readonly MarkupDescriptor[]): MarkupDescriptor[] {
 	return kinds.toSorted((a, b) => openerLength(b) - openerLength(a) || a.index - b.index)
