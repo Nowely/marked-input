@@ -53,6 +53,7 @@ import type {
 	MarkPatch,
 	NodeAnchor,
 	RowNode,
+	RowPlacement,
 	TreeCommands,
 	TreeNode,
 	Window,
@@ -366,6 +367,18 @@ export class TokenModel {
 			const index = node.option()
 			return index === undefined ? undefined : this.props.options()[index]?.row
 		})
+	}
+
+	/**
+	 * Move a SET of rows to one placement, in one splice — {@link RowNode.moveTo} widened to what
+	 * a multi-row drag names. The set is normalized to maximal subtrees inside the plan, so a
+	 * caller may hand over a selection verbatim.
+	 *
+	 * On the model rather than on a node, because the set has no owning row: `store.block.move` is
+	 * its one caller and the rows it names are peers.
+	 */
+	moveRows(nodes: readonly RowNode[], placement: RowPlacement): boolean {
+		return this.#commands.moveTo(nodes, placement)
 	}
 
 	/**
@@ -693,9 +706,9 @@ export class TokenModel {
 		 * and adoption carries them through untouched. RE-INDENTING does not change that: a lead
 		 * is the ROW's structural bytes and lives in no text node, so no anchor can name one.
 		 */
-		moveTo: (node, placement) => {
+		moveTo: (nodes, placement) => {
 			this.#ensureSeeded()
-			const plan = untracked(() => movePlan(this.#tree.roots(), node, placement, this.#tree.config()))
+			const plan = untracked(() => movePlan(this.#tree.roots(), nodes, placement, this.#tree.config()))
 			if (!plan) return false
 			return this.#tx.applyRange(plan.window, plan.text)
 		},

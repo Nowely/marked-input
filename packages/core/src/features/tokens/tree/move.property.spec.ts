@@ -54,6 +54,7 @@ const BODIES = ['alpha', 'beta', 'alpha', '# head', ''] as const
 
 const BASE_SEED = 25_082_026
 const DOCUMENTS = 24
+const SET_DOCUMENTS = 8
 /** How often a draft is written with MORE indent than its position asks for. */
 const SURPLUS = 0.25
 
@@ -65,10 +66,10 @@ const SURPLUS = 0.25
  */
 type Draft = {body: string; lead: number; rows: Draft[]}
 
-function buildDrafts(count: number, depth: number): Draft[] {
+function buildDrafts(count: number, depth: number, deepest = 2): Draft[] {
 	return Array.from({length: count}, () => {
 		const body = faker.helpers.arrayElement(BODIES)
-		const children = depth === 2 ? 0 : faker.number.int({min: 0, max: 2})
+		const children = depth === deepest ? 0 : faker.number.int({min: 0, max: 2})
 		// A SURPLUS lead — one asking for more depth than the clamp will grant — is what a paste
 		// leaves behind, and its bytes round-trip verbatim. It is the input class both P5
 		// correctness defects lived in: such a row is held at its depth by the row ABOVE it and by
@@ -85,6 +86,17 @@ function render(drafts: readonly Draft[]): string[] {
 const DOCS = Array.from({length: DOCUMENTS}, (_, index) => {
 	faker.seed(BASE_SEED + index)
 	return render(buildDrafts(faker.number.int({min: 2, max: 4}), 0)).join(SEPARATOR)
+})
+
+/**
+ * A SMALLER corpus, for the enumeration over PAIRS. Each pair multiplies the case count by the
+ * row count again, so the documents shrink rather than the placements: exhaustive over placements
+ * is the property's whole point, and P5's review is what proved the corpus may not shrink in the
+ * one dimension that matters — surplus leads and blank rows are still generated here.
+ */
+const SET_DOCS = Array.from({length: SET_DOCUMENTS}, (_, index) => {
+	faker.seed(BASE_SEED + DOCUMENTS + index)
+	return render(buildDrafts(faker.number.int({min: 2, max: 3}), 0, 1)).join(SEPARATOR)
 })
 
 function store(value: string): Store {
@@ -107,24 +119,29 @@ const everyNode = (nodes: readonly TreeNode[]): TreeNode[] =>
 type Shape = {id: number; rows: Shape[]}
 const shapeOf = (rows: readonly RowNode[]): Shape[] => rows.map(row => ({id: row.id, rows: shapeOf(row.rows())}))
 
-/** A placement, addressed by PRE-ORDER INDEX so it survives being replayed on a fresh document. */
-type Case = {value: string; moved: number; parent: number | null; index: number; label: string}
+/**
+ * A placement, addressed by PRE-ORDER INDEX so it survives being replayed on a fresh document.
+ * `moved` is a SET, because that is what a multi-row drag names; a one-element set is the
+ * single-row verb.
+ */
+type Case = {value: string; moved: number[]; parent: number | null; index: number; label: string}
 
-function casesOf(value: string): Case[] {
+function casesOf(value: string, sets: (rows: readonly RowNode[]) => number[][]): Case[] {
 	const rows = preorder(rootRows(store(value)))
 	const cases: Case[] = []
-	for (const [moved, row] of rows.entries()) {
+	for (const moved of sets(rows)) {
+		const picked = maximal(moved.map(at => rows[at]))
 		for (const parent of [null, ...rows.keys()]) {
 			const siblings = (
 				parent === null ? rows.filter(candidate => !hasParent(rows, candidate)) : rows[parent].rows()
-			).filter(candidate => candidate !== row)
+			).filter(candidate => !picked.includes(candidate))
 			for (let index = 0; index <= siblings.length; index++) {
 				cases.push({
 					value,
 					moved,
 					parent,
 					index,
-					label: `${JSON.stringify(value)} — row ${moved} → ${parent === null ? 'root' : `row ${parent}`} at ${index}`,
+					label: `${JSON.stringify(value)} — rows [${moved.join(',')}] → ${parent === null ? 'root' : `row ${parent}`} at ${index}`,
 				})
 			}
 		}
@@ -135,7 +152,34 @@ function casesOf(value: string): Case[] {
 const hasParent = (rows: readonly RowNode[], row: RowNode): boolean =>
 	rows.some(candidate => candidate.rows().includes(row))
 
-const CASES = DOCS.flatMap(casesOf)
+/**
+ * The set NORMALIZED to maximal subtrees, stated here independently of the mover: a row named
+ * together with an ancestor already travels inside that ancestor's subtree, so the set it really
+ * names is the ancestors alone. Every oracle below reads this rather than the raw pick, which is
+ * what makes "naming a parent and its child moves the parent once" a claim the property checks.
+ */
+const maximal = (picked: readonly RowNode[]): RowNode[] =>
+	picked.filter(row => !picked.some(other => other !== row && preorder([other]).includes(row)))
+
+/** Every single row — the exhaustive single-subtree enumeration P5 was gated by. */
+const singles = (rows: readonly RowNode[]): number[][] => rows.map((_, at) => [at])
+
+/**
+ * Every PAIR, over a corpus of its own. Pairs and not larger sets because the arithmetic a set
+ * adds is per-RUN — one delta each, one contiguous block on landing — and two runs already
+ * exercise every part of it, where three multiply the enumeration by the row count again.
+ * Unordered pairs at ARBITRARY depths, so a parent named with its own child is in the corpus and
+ * the normalization above is under test rather than assumed.
+ */
+function pairs(rows: readonly RowNode[]): number[][] {
+	const out: number[][] = []
+	for (let first = 0; first < rows.length; first++) {
+		for (let second = first + 1; second < rows.length; second++) out.push([first, second])
+	}
+	return out
+}
+
+const CASES = [...DOCS.flatMap(value => casesOf(value, singles)), ...SET_DOCS.flatMap(value => casesOf(value, pairs))]
 
 /**
  * Is this placement expressible at all — asked of the ENCODING ITSELF rather than restated from
@@ -148,10 +192,13 @@ const CASES = DOCS.flatMap(casesOf)
  * own descendant, so there is no intended tree to project at all, and a row already sitting where
  * it was asked to go is not a move.
  */
-function legal(entry: Case, created: Store, moved: RowNode, parent: RowNode | null): boolean {
-	if (parent !== null && preorder([moved]).includes(parent)) return false
+function legal(entry: Case, created: Store, moved: readonly RowNode[], parent: RowNode | null): boolean {
+	if (parent !== null && moved.some(row => preorder([row]).includes(parent))) return false
 	const siblings = parent === null ? rootRows(created) : parent.rows()
-	if (siblings.indexOf(moved) === entry.index) return false
+	// ALREADY THERE, widened to a set: the moved rows sitting side by side in document order at
+	// exactly this index is the whole of what "not a move" means, since being children of `parent`
+	// already fixes their depth.
+	if (moved.every((row, offset) => siblings[entry.index + offset] === row)) return false
 	const {expected, projected} = intended(entry, created, moved, parent)
 	return outlineOfRows(rootRows(store(projected.join(SEPARATOR)))) === outlineOfShape(expected)
 }
@@ -168,7 +215,7 @@ const outlineOfRows = (rows: readonly RowNode[]): string => `[${rows.map(row => 
 function intended(
 	entry: Case,
 	created: Store,
-	moved: RowNode,
+	moved: readonly RowNode[],
 	parent: RowNode | null
 ): {expected: Shape[]; projected: string[]} {
 	const rows = preorder(rootRows(created))
@@ -179,35 +226,49 @@ function intended(
 			return [row.id, {lead: row.lead(), body: line.slice(row.lead().length)}]
 		})
 	)
-	const subtree = new Set(preorder([moved]).map(row => row.id))
-	const expected = relocate(shapeOf(rootRows(created)), moved.id, parent?.id ?? null, entry.index)
+	const subtree = new Set(moved.flatMap(row => preorder([row])).map(row => row.id))
+	const expected = relocate(
+		shapeOf(rootRows(created)),
+		moved.map(row => row.id),
+		parent?.id ?? null,
+		entry.index
+	)
 	return {expected, projected: project(expected, lines, subtree)}
 }
 
-/** What a case looks like once it is bound to a live document. */
-function resolve(entry: Case): {created: Store; moved: RowNode; parent: RowNode | null} {
+/**
+ * What a case looks like once it is bound to a live document. `picked` is what the VERB is
+ * handed — raw, in the order the case names — and `moved` is what the oracles read. Keeping the
+ * two apart is what puts the normalization under test: hand the verb an already-maximal set and
+ * its own normalization is never reached.
+ */
+function resolve(entry: Case): {created: Store; picked: RowNode[]; moved: RowNode[]; parent: RowNode | null} {
 	const created = store(entry.value)
 	const rows = preorder(rootRows(created))
-	return {created, moved: rows[entry.moved], parent: entry.parent === null ? null : rows[entry.parent]}
+	const picked = entry.moved.map(at => rows[at])
+	return {created, picked, moved: maximal(picked), parent: entry.parent === null ? null : rows[entry.parent]}
 }
 
-/** The intended tree: the pre-move shape with one subtree detached and re-attached. */
-function relocate(shape: readonly Shape[], id: number, parent: number | null, index: number): Shape[] {
-	let cut: Shape | undefined
+/**
+ * The intended tree: the pre-move shape with the named subtrees detached and re-attached SIDE BY
+ * SIDE, in document order — which is the claim a set makes that a single row cannot.
+ */
+function relocate(shape: readonly Shape[], ids: readonly number[], parent: number | null, index: number): Shape[] {
+	const cut: Shape[] = []
 	const detach = (rows: readonly Shape[]): Shape[] =>
 		rows.flatMap(row => {
-			if (row.id !== id) return [{id: row.id, rows: detach(row.rows)}]
-			cut = row
+			if (!ids.includes(row.id)) return [{id: row.id, rows: detach(row.rows)}]
+			cut.push(row)
 			return []
 		})
 	const rest = detach(shape)
-	if (!cut) throw new Error('the moved row is not in the shape')
+	if (cut.length !== ids.length) throw new Error('a moved row is not in the shape')
 	const moved = cut
-	if (parent === null) return [...rest.slice(0, index), moved, ...rest.slice(index)]
+	if (parent === null) return [...rest.slice(0, index), ...moved, ...rest.slice(index)]
 	const attach = (rows: readonly Shape[]): Shape[] =>
 		rows.map(row =>
 			row.id === parent
-				? {id: row.id, rows: [...row.rows.slice(0, index), moved, ...row.rows.slice(index)]}
+				? {id: row.id, rows: [...row.rows.slice(0, index), ...moved, ...row.rows.slice(index)]}
 				: {id: row.id, rows: attach(row.rows)}
 		)
 	return attach(rest)
@@ -230,6 +291,16 @@ function project(
 	})
 }
 
+/**
+ * THE CALL, through whichever of the two published doors the set has: one row goes through
+ * `RowNode.moveTo`, and only a real set needs `tokens.moveRows`. Both lower onto the same plan, so
+ * driving the single case through the node verb keeps the door P5 exposed under the property.
+ */
+function move(created: Store, picked: readonly RowNode[], parent: RowNode | null, index: number): boolean {
+	const placement = {parent, index}
+	return picked.length === 1 ? picked[0].moveTo(placement) : created.tokens.moveRows(picked, placement)
+}
+
 /** Oracle 4: the lines tile the value in pre-order, and a row's span covers its whole subtree. */
 function expectPositionsTile(rows: readonly RowNode[], lines: readonly string[], label: string): void {
 	const flat = preorder(rows)
@@ -245,15 +316,17 @@ function expectPositionsTile(rows: readonly RowNode[], lines: readonly string[],
 describe('move: a placement lands the subtree, or is refused', () => {
 	it('re-parses to the intended tree, keeping every row object, for every legal placement', () => {
 		let ran = 0
+		let sets = 0
 		for (const entry of CASES) {
-			const {created, moved, parent} = resolve(entry)
+			const {created, picked, moved, parent} = resolve(entry)
 			if (!legal(entry, created, moved, parent)) continue
 			ran++
+			if (moved.length > 1) sets++
 
 			const objects = new Map(everyNode(rootRows(created)).map(node => [node.id, node]))
 			const {expected, projected} = intended(entry, created, moved, parent)
 
-			expect(moved.moveTo({parent, index: entry.index}), entry.label).toBe(true)
+			expect(move(created, picked, parent, entry.index), entry.label).toBe(true)
 
 			expect(created.tokens.value(), entry.label).toBe(projected.join(SEPARATOR))
 			const after = rootRows(created)
@@ -262,20 +335,24 @@ describe('move: a placement lands the subtree, or is refused', () => {
 			expectPositionsTile(after, projected, entry.label)
 		}
 		// The enumeration is the test: a filter that quietly stops matching would leave this
-		// green over nothing at all.
+		// green over nothing at all. Counted twice, because the set corpus is the smaller one and
+		// would vanish into the single-row total without a bound of its own.
 		expect(ran).toBeGreaterThan(1000)
+		expect(sets).toBeGreaterThan(200)
 	})
 
 	it('refuses every illegal placement without touching the document', () => {
 		let ran = 0
+		let sets = 0
 		for (const entry of CASES) {
-			const {created, moved, parent} = resolve(entry)
+			const {created, picked, moved, parent} = resolve(entry)
 			if (legal(entry, created, moved, parent)) continue
 			ran++
+			if (moved.length > 1) sets++
 
 			const before = shapeOf(rootRows(created))
 
-			expect(moved.moveTo({parent, index: entry.index}), entry.label).toBe(false)
+			expect(move(created, picked, parent, entry.index), entry.label).toBe(false)
 
 			// A refusal that corrupts is worse than one that throws: the bytes AND the tree are
 			// what it has to leave alone.
@@ -283,5 +360,6 @@ describe('move: a placement lands the subtree, or is refused', () => {
 			expect(shapeOf(rootRows(created)), entry.label).toEqual(before)
 		}
 		expect(ran).toBeGreaterThan(100)
+		expect(sets).toBeGreaterThan(50)
 	})
 })

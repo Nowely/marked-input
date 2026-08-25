@@ -137,15 +137,23 @@ export function endsDocument(roots: readonly TreeNode[], node: TreeNode): boolea
 }
 
 /**
- * Moving a row AND ITS SUBTREE to a {@link RowPlacement}, as ONE splice over the pre-order LINES
- * whose bytes actually change, plus the {@link Pairing} that says which row went where.
+ * Moving ROWS AND THEIR SUBTREES to a {@link RowPlacement}, as ONE splice over the pre-order
+ * LINES whose bytes actually change, plus the {@link Pairing} that says which row went where.
  *
  * The whole plan lives in ONE coordinate space: the pre-order row list, whose lines tile the
  * value with a separator between every adjacent pair. A subtree is a contiguous RUN in it, so a
- * move is "cut this run, paste it before that index", the destination reduces to a single
+ * move is "cut these runs, paste them before that index", the destination reduces to a single
  * pre-order position, and there is no common ancestor to find — the narrowest splice is the
  * narrowest changed range of lines, which is tighter than the ancestor's span whenever the
  * ancestor has untouched children before or after the move.
+ *
+ * A SET, and one splice for the whole of it. Two verbs cannot compose here — in controlled mode
+ * the tree has not moved when the first returns — and moving a selection one row at a time would
+ * also expose intermediate documents the scan re-reads differently. The set is normalized to
+ * MAXIMAL subtrees first ({@link maximalRuns}): a row named together with its own ancestor
+ * travels inside that ancestor's run, and naming it twice would splice its lines twice.
+ * Every named root lands at the SAME depth, side by side, in document order — a multi-row drag
+ * is a set of siblings-to-be, whatever depths they were picked up from.
  *
  * TWO things change bytes, and the affected range is the union: a line where a DIFFERENT row now
  * sits, and a moved row whose LEAD is rewritten. The re-lead is `indent.repeat(depth)` rather
@@ -153,26 +161,27 @@ export function endsDocument(roots: readonly TreeNode[], node: TreeNode): boolea
  * indent run carried into a destination with a deeper ceiling would land the row at the surplus
  * depth instead of the requested one, so preserving those bytes cannot express the placement.
  *
- * `undefined` — fail closed — for a non-row, a dead row on either end (the pre-order lookup is
- * that check for both), a PLACEMENT INSIDE THE MOVED SUBTREE, an index outside the destination's
- * child list, a no-op, an editor with no separator to rejoin rows by, a nested placement with
- * nesting off, and — the one answer that covers the rest — a splice the SCAN would read back as a
+ * `undefined` — fail closed — for an empty set, a non-row or a dead row anywhere in it (the
+ * pre-order lookup is that check for every end), a PLACEMENT INSIDE ONE OF THE MOVED SUBTREES, a
+ * destination whose child rows are its own carved BODY, an index outside the destination's child
+ * list, a no-op, an editor with no separator to rejoin rows by, a nested placement with nesting
+ * off, and — the one answer that covers the rest — a splice the SCAN would read back as a
  * different tree, which is asked by replaying the scan over the span the splice rewrites.
  *
- * The subtree test is the run, and it is the reason the run is computed before anything else: the
- * tree carries no parent pointers, so "is this parent inside what I am moving" has no answer
- * except "is its pre-order index in the moved run".
+ * The subtree test is the run, and it is the reason the runs are computed before anything else:
+ * the tree carries no parent pointers, so "is this parent inside what I am moving" has no answer
+ * except "is its pre-order index in one of the moved runs".
  *
- * The pairing spans EVERY pre-order row, not just the moved span — `resolvePairing` needs a total
- * bijection, and the untouched rows are the identity part of it.
+ * The pairing spans EVERY pre-order row, not just the moved spans — `resolvePairing` needs a
+ * total bijection, and the untouched rows are the identity part of it.
  */
 export function movePlan(
 	roots: readonly TreeNode[],
-	node: TreeNode,
+	nodes: readonly TreeNode[],
 	placement: RowPlacement,
 	config: RowConfig | undefined
 ): {window: Window; text: string} | undefined {
-	if (node.kind !== 'row' || config === undefined) return undefined
+	if (config === undefined) return undefined
 	const {separator, indent} = config
 	const {parent, index} = placement
 	// A nested placement has to be WRITTEN, and with no indent unit there is nothing to write it
@@ -180,30 +189,32 @@ export function movePlan(
 	if (parent !== null && indent === '') return undefined
 
 	const rows = preorderRows(roots)
-	const from = rows.findIndex(entry => entry.row === node)
-	if (from < 0) return undefined
-	const span = preorderRows([node]).length
+	const runs = maximalRuns(rows, nodes)
+	if (runs === undefined) return undefined
+	const inside = (position: number): boolean =>
+		runs.some(run => position >= run.from && position < run.from + run.span)
 
 	let parentDepth = -1
 	if (parent !== null) {
 		const parentAt = rows.findIndex(entry => entry.row === parent)
 		if (parentAt < 0) return undefined
 		// THE refusal that keeps a move from eating the document: a row cannot become a
-		// descendant of itself, and the run is where that question is answerable.
-		if (parentAt >= from && parentAt < from + span) return undefined
+		// descendant of itself, and the runs are where that question is answerable.
+		if (inside(parentAt)) return undefined
 		parentDepth = rows[parentAt].depth
 	}
 	const depth = parentDepth + 1
 
-	// The destination's child rows WITHOUT the moved one, which is what makes `index` the position
-	// the row takes after the move rather than a slot in a list it is still in.
+	// The destination's child rows WITHOUT the moved ones, which is what makes `index` the position
+	// they take after the move rather than a slot in a list they are still in.
+	const movedRoots = new Set(runs.map(run => rows[run.from].row))
 	const siblings = (
 		parent === null ? rows.filter(entry => entry.depth === 0).map(entry => entry.row) : parent.rows()
-	).filter(row => row !== node)
+	).filter(row => !movedRoots.has(row))
 	if (!Number.isInteger(index) || index < 0 || index > siblings.length) return undefined
 
-	// Where the run lands, as a pre-order index in the CURRENT list: before the sibling that will
-	// follow it, or past the whole subtree of the one it will follow.
+	// Where the runs land, as a pre-order index in the CURRENT list: before the sibling that will
+	// follow them, or past the whole subtree of the one they will follow.
 	const preIndexOf = (row: RowNode): number => rows.findIndex(entry => entry.row === row)
 	const before =
 		index < siblings.length
@@ -214,25 +225,37 @@ export function movePlan(
 					? 0
 					: preIndexOf(parent) + 1
 
-	const kept = rows.map((_, at) => at).filter(at => at < from || at >= from + span)
+	const kept = rows.map((_, at) => at).filter(at => !inside(at))
 	const at = kept.filter(old => old < before).length
-	const run = Array.from({length: span}, (_, offset) => from + offset)
+	const run = runs.flatMap(({from, span}) => Array.from({length: span}, (_, offset) => from + offset))
 	// The claim itself: new pre-order row index → the previous row that becomes it.
 	const order: Pairing = [...kept.slice(0, at), ...run, ...kept.slice(at)]
 
-	const delta = depth - rows[from].depth
+	// One delta PER RUN, because the runs are picked up from different depths and put down at one:
+	// a single delta is only right when there is a single run.
+	const delta = new Map<number, number>()
+	for (const {from, span} of runs) {
+		const shift = depth - rows[from].depth
+		for (let offset = 0; offset < span; offset++) delta.set(from + offset, shift)
+	}
 
-	const moved = (old: number): boolean => old >= from && old < from + span
-	const changed = (position: number): boolean =>
-		order[position] !== position || (delta !== 0 && moved(order[position]))
+	// TWO readings of "this line is not what it was", and a set is what separates them. `moves` is
+	// the NO-OP test: a plan under which no line changes its row and no row changes its depth is
+	// the rows already being where they were asked to go — an order comparison alone misses the
+	// re-indent, since outdenting the last child to a root directly after its parent leaves the
+	// pre-order intact. `rewritten` is the WINDOW: a named row is re-led whatever else happens to
+	// it, which is how a move NORMALIZES a surplus indent run, so a row that keeps its position and
+	// its depth while a second run travels is still a line this splice must write.
+	const moves = (position: number): boolean => order[position] !== position || (delta.get(order[position]) ?? 0) !== 0
+	const rewritten = (position: number): boolean => order[position] !== position || delta.has(order[position])
+	if (!order.some((_, position) => moves(position))) return undefined
+
+	// Terminates: a plan that moves no line was refused above, and every line that MOVES is a line
+	// this REWRITES.
 	let low = 0
-	while (low < order.length && !changed(low)) low++
-	// A move that rewrites no line is the row already being where it was asked to go, and THIS is
-	// the whole of that reading — an order comparison alone misses the re-indent, since outdenting
-	// the last child to a root directly after its parent leaves the pre-order intact.
-	if (low === order.length) return undefined
+	while (!rewritten(low)) low++
 	let high = order.length - 1
-	while (high > low && !changed(high)) high--
+	while (high > low && !rewritten(high)) high--
 
 	// This one walk is what THREE separate refusals reduce to: the destination's own ceiling (the
 	// moved root asks for `depth` and must be granted it), a moved row re-led to `''` and thereby
@@ -241,11 +264,12 @@ export function movePlan(
 	// `'⏎x⏎⇥⇥b'`, where the root `b` became `x`'s child.
 	const written = (position: number): Written => {
 		const entry = rows[order[position]]
-		const landed = moved(order[position]) ? entry.depth + delta : entry.depth
+		const shift = delta.get(order[position])
+		const landed = entry.depth + (shift ?? 0)
 		return {
 			row: entry.row,
 			depth: landed,
-			lead: moved(order[position]) ? indent.repeat(landed) : entry.row.lead(),
+			lead: shift === undefined ? entry.row.lead() : indent.repeat(landed),
 		}
 	}
 	if (!scanAgrees(rows, low, high, written, indent)) return undefined
@@ -259,6 +283,41 @@ export function movePlan(
 		pairing: order,
 	}
 	return {window, text}
+}
+
+/**
+ * The moved set as PRE-ORDER RUNS, in document order and normalized to MAXIMAL subtrees: a row
+ * named together with an ancestor already travels inside that ancestor's run, so its own run is
+ * dropped rather than spliced a second time.
+ *
+ * The normalization lives HERE and not at the caller because the pre-order list is the only place
+ * "is this row inside that one" is answerable at all — the tree carries no parent pointers — and
+ * the same list is what the plan splices in.
+ *
+ * `undefined` for an empty set and for anything that is not a live row OF THE DOCUMENT. A CARVED
+ * PIECE is the case that matters: a cell is a Row, but the pre-order walk names no cell, so a
+ * lookup for one fails here and a cell can never be dragged out of the line that carved it.
+ */
+function maximalRuns(
+	rows: readonly {row: RowNode; depth: number}[],
+	nodes: readonly TreeNode[]
+): {from: number; span: number}[] | undefined {
+	const starts = new Set<number>()
+	for (const node of nodes) {
+		if (node.kind !== 'row') return undefined
+		const from = rows.findIndex(entry => entry.row === node)
+		if (from < 0) return undefined
+		starts.add(from)
+	}
+	if (starts.size === 0) return undefined
+
+	const runs: {from: number; span: number}[] = []
+	for (const from of [...starts].toSorted((a, b) => a - b)) {
+		const last = runs.at(-1)
+		if (last && from < last.from + last.span) continue
+		runs.push({from, span: preorderRows([rows[from].row]).length})
+	}
+	return runs
 }
 
 /**

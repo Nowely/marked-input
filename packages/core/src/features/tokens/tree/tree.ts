@@ -89,7 +89,7 @@ export function createTokenTree(
 				duplicate: () => commands?.()?.duplicate(node) ?? false,
 				insertAfter: text => commands?.()?.insertAfter(node, text) ?? false,
 				mergeWith: next => commands?.()?.mergeWith(node, next) ?? false,
-				moveTo: placement => commands?.()?.moveTo(node, placement) ?? false,
+				moveTo: placement => commands?.()?.moveTo([node], placement) ?? false,
 			}
 			return node
 		}

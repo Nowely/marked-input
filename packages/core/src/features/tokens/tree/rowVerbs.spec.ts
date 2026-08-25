@@ -819,3 +819,67 @@ describe('moveTo', () => {
 		expect(store.tokens.value()).toBe('b\na')
 	})
 })
+/**
+ * THE SET, which is `moveTo` widened to what a multi-row drag names and lowered onto the same
+ * plan. One splice for the whole set is forced rather than preferred: two verbs cannot compose in
+ * controlled mode, where the tree has not moved when the first returns, and a per-row move would
+ * also expose intermediate documents the scan re-reads differently from either end state.
+ */
+describe('moveRows', () => {
+	/**
+	 * Rows picked up from DIFFERENT depths land side by side at ONE depth, in document order —
+	 * the claim a set makes that no sequence of single moves states.
+	 */
+	it('lands every named row as a sibling of the others, keeping each subtree', () => {
+		const store = rowStore('host\nalpha\n\tkid\nbeta\ntail')
+		const [host, alpha, kid, beta, tail] = rowsOf(store)
+
+		expect(store.tokens.moveRows([alpha, beta], {parent: host, index: 0})).toBe(true)
+
+		expect(store.tokens.value()).toBe('host\n\talpha\n\t\tkid\n\tbeta\ntail')
+		expect(rowsOf(store)).toEqual([host, alpha, kid, beta, tail])
+		expect(host.rows()).toEqual([alpha, beta])
+	})
+
+	/**
+	 * A row named together with its own ancestor travels INSIDE that ancestor's run, so the set it
+	 * really names is the ancestors alone. Without the normalization the inner run is spliced a
+	 * second time and the document grows a copy of it.
+	 */
+	it('normalizes a parent named with its own child to the parent alone', () => {
+		const store = rowStore('a\n\tb\ntail')
+		const [a, b, tail] = rowsOf(store)
+
+		expect(store.tokens.moveRows([a, b], {parent: null, index: 1})).toBe(true)
+
+		expect(store.tokens.value()).toBe('tail\na\n\tb')
+		expect(rowsOf(store)).toEqual([tail, a, b])
+	})
+
+	/**
+	 * A CARVED PIECE IS NOT A ROW OF THE DOCUMENT — the pre-order walk names none of them — so a
+	 * cell cannot be dragged out of the line that carved it, alone or in company. That is the
+	 * whole answer for what selecting and dragging mean inside a table line: the LINE moves, the
+	 * cells travel with it, and a cell addresses nothing this splice can write.
+	 */
+	it('refuses a carved piece, on its own and inside a set', () => {
+		const store = rowStore('| a | b\nx', [TABLE, CELL])
+		const [line, cellA, , x] = rowsOf(store)
+
+		expect(cellA.moveTo({parent: null, index: 0})).toBe(false)
+		expect(store.tokens.moveRows([cellA, x], {parent: null, index: 0})).toBe(false)
+		// And a carved row is no destination either, at either end of its own piece list.
+		expect(x.moveTo({parent: line, index: 0})).toBe(false)
+		expect(x.moveTo({parent: line, index: 2})).toBe(false)
+
+		expect(store.tokens.value()).toBe('| a | b\nx')
+		expect(rowsOf(store)).toEqual([line, cellA, line.rows()[1], x])
+	})
+
+	/** An empty set names no rows, so there is nothing to splice. */
+	it('refuses an empty set', () => {
+		const store = rowStore('a\nb')
+		expect(store.tokens.moveRows([], {parent: null, index: 0})).toBe(false)
+		expect(store.tokens.value()).toBe('a\nb')
+	})
+})

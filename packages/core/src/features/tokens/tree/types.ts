@@ -359,8 +359,11 @@ export interface NodeCommands {
 	 * precedent — and because it is the one verb that answers whether the pair HAD a boundary.
 	 */
 	mergeWith(node: TreeNode, next: TreeNode): boolean
-	/** Move a ROW and its subtree, keeping every row's identity. See {@link RowNode.moveTo}. */
-	moveTo(node: RowNode, placement: RowPlacement): boolean
+	/**
+	 * Move ROWS and their subtrees in ONE splice, keeping every row's identity. A single row is
+	 * the degenerate case — {@link RowNode.moveTo} passes itself alone. See {@link RowNode.moveTo}.
+	 */
+	moveTo(nodes: readonly TreeNode[], placement: RowPlacement): boolean
 	/** Re-indent a ROW, keeping every row's identity. See {@link RowNode.setDepth}. */
 	setDepth(node: TreeNode, depth: number): boolean
 	/** Retype a ROW, keeping its identity. See {@link RowNode.turnInto}. */
