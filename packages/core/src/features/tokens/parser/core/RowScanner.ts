@@ -17,7 +17,12 @@ import type {MarkupDescriptor} from './MarkupDescriptor'
  *
  * Emits `children: []`; `Parser.parseRows` fills them per row.
  */
-export function scanRows(value: string, kinds: readonly MarkupDescriptor[], config: RowConfig): RowToken[] {
+export function scanRows(
+	value: string,
+	kinds: readonly MarkupDescriptor[],
+	config: RowConfig,
+	splits: ReadonlyMap<MarkupDescriptor, RowCarve> = new Map()
+): RowToken[] {
 	const {separator, indent} = config
 	const flat: Scanned[] = []
 	let at = 0
@@ -61,7 +66,9 @@ export function scanRows(value: string, kinds: readonly MarkupDescriptor[], conf
 			// The lead is a run of whole units, so the division is exact; with nesting off every
 			// row is a root.
 			depth: indent.length > 0 ? (bodyStart - at) / indent.length : 0,
-			empty: contentEnd === at,
+			// A row whose own line is empty, and a row whose body is about to become its children,
+			// are the same fact to the pass below: neither can hold a nested row.
+			childless: contentEnd === at || (match !== undefined && splits.has(match.descriptor)),
 		})
 
 		// The piece after the final separator is a row even when empty (ADR-0009's trailing
@@ -70,26 +77,32 @@ export function scanRows(value: string, kinds: readonly MarkupDescriptor[], conf
 		at = end
 	}
 
-	return nest(flat, value)
+	const roots = nest(flat, value)
+	carve(roots, value, splits)
+	return roots
 }
 
-type Scanned = {row: RowToken; depth: number; empty: boolean}
+type Scanned = {row: RowToken; depth: number; childless: boolean}
+
+/** A kind's declared carve: the delimiter, and the kind the rows it produces take. */
+export type RowCarve = {at: string; as: MarkupDescriptor}
 
 /**
  * How deep a row may sit, given the row before it — TWO rules, both measured rather than assumed.
  * A row descends AT MOST ONE LEVEL past the row before it, so an over-indented paste renders
- * shallower while its surplus bytes stay verbatim in `lead` and round-trip. And AN EMPTY ROW TAKES
- * NO CHILDREN — without it `'- a⏎⏎⇥- b'` makes the blank paragraph the parent of the bullet, which
- * under a one-newline separator is one keystroke away. `undefined` is the document's first row,
- * which is always a root.
+ * shallower while its surplus bytes stay verbatim in `lead` and round-trip. And A CHILDLESS ROW
+ * TAKES NO CHILDREN, which is two rows in one word: an EMPTY one — without it `'- a⏎⏎⇥- b'` makes
+ * the blank paragraph the parent of the bullet, which under a one-newline separator is one
+ * keystroke away — and a row whose kind CARVES its body, whose children are that body and can hold
+ * nothing else. `undefined` is the document's first row, which is always a root.
  *
  * Exported because a re-indent answers to the same ceiling: `depthPlan` re-deriving it drifted
  * from the empty-row rule and let `setDepth` write a lead this pass then reads as something
  * shallower.
  */
-export function depthCeiling(previous: {depth: number; empty: boolean} | undefined): number {
+export function depthCeiling(previous: {depth: number; childless: boolean} | undefined): number {
 	if (previous === undefined) return 0
-	return previous.empty ? previous.depth : previous.depth + 1
+	return previous.childless ? previous.depth : previous.depth + 1
 }
 
 /**
@@ -100,7 +113,7 @@ function nest(flat: readonly Scanned[], value: string): RowToken[] {
 	const roots: RowToken[] = []
 	// The open ancestors, `stack[d]` being the row currently at depth `d`.
 	const stack: RowToken[] = []
-	let previous: {depth: number; empty: boolean} | undefined
+	let previous: {depth: number; childless: boolean} | undefined
 
 	for (const scanned of flat) {
 		// The CLAMPED depth is what the next row measures against — an over-indented row parents
@@ -111,7 +124,7 @@ function nest(flat: readonly Scanned[], value: string): RowToken[] {
 		if (parent) parent.rows.push(scanned.row)
 		else roots.push(scanned.row)
 		stack.push(scanned.row)
-		previous = {depth, empty: scanned.empty}
+		previous = {depth, childless: scanned.childless}
 	}
 
 	// A parent's span covers its subtree, so rows keep TILING the value at every depth — which is
@@ -128,6 +141,56 @@ function extendOverSubtree(row: RowToken, value: string): number {
 		row.content = value.slice(row.position.start, end)
 	}
 	return end
+}
+
+/**
+ * THE CARVE: a kind that declares one takes its own BODY apart at a literal, and each piece
+ * becomes an ordinary row. A cell is not a new node kind — it is a row whose structural bytes are
+ * the delimiter it was carved at, held in its `lead` exactly as an indent run is, so the round trip
+ * is concatenation and the projection needs no rule of its own.
+ *
+ * The pieces tile the body with no gap, so sibling positions still ascend and every walk that
+ * relies on that is untouched. Carved rows are the row's whole content — the nest pass gave it no
+ * children, and the inline pass parses each piece rather than the body — so a body holding N
+ * delimiters is N+1 rows, INCLUDING the empty ones a leading, doubled or trailing delimiter
+ * produces. A cell therefore cannot contain its own delimiter; that is the declared limitation, and
+ * an escape scoped to a cell's body is the named follow-up.
+ *
+ * ONE LEVEL, deliberately: the rows a carve produces are not carved again, even when their own kind
+ * declares a split. A kind naming itself as its cells' kind would otherwise never terminate, and
+ * nothing wants a cell of a cell.
+ */
+function carve(rows: readonly RowToken[], value: string, splits: ReadonlyMap<MarkupDescriptor, RowCarve>): void {
+	for (const row of rows) {
+		const split = row.descriptor && splits.get(row.descriptor)
+		if (!split) {
+			carve(row.rows, value, splits)
+			continue
+		}
+		const {start, end} = row.slot
+		let at = start
+		let lead = ''
+		for (;;) {
+			const found = value.indexOf(split.at, at)
+			// The delimiter has to FIT inside the body, not merely start in it: one straddling the
+			// row's closing literal would put a piece's lead past its own slot.
+			const piece = found === -1 || found + split.at.length > end ? end : found
+			row.rows.push({
+				type: 'row',
+				content: value.slice(at - lead.length, piece),
+				position: {start: at - lead.length, end: piece},
+				descriptor: split.as,
+				meta: undefined,
+				lead,
+				slot: {content: value.slice(at, piece), start: at, end: piece},
+				children: [],
+				rows: [],
+			})
+			if (piece === end) break
+			lead = split.at
+			at = piece + split.at.length
+		}
+	}
 }
 
 type KindMatch = {descriptor: MarkupDescriptor; end: number; slot: {start: number; end: number}; meta?: string}

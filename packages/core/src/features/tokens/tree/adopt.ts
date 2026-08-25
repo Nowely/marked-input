@@ -3,7 +3,7 @@ import {Parser} from '../parser/Parser'
 import type {MarkToken, RowConfig, RowToken, TextToken, Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {anchorAt, offsetOfAnchor} from './anchors'
-import {preorderRows} from './rows'
+import {preorderRows, tokenHasCells} from './rows'
 import type {TokenTree} from './tree'
 import type {
 	Anchors,
@@ -361,13 +361,13 @@ function resolvePairing(
 	return pairs
 }
 
-/** The parse's rows in the same pre-order the tree's {@link preorderRows} walks. */
+/** The parse's rows in the same pre-order the tree's {@link preorderRows} walks — carved rows excluded on both sides. */
 function preorderRowTokens(tokens: readonly (Token | RowToken)[]): RowToken[] {
 	const out: RowToken[] = []
 	for (const token of tokens) {
 		if (token.type !== 'row') continue
 		out.push(token)
-		out.push(...preorderRowTokens(token.rows))
+		if (!tokenHasCells(token)) out.push(...preorderRowTokens(token.rows))
 	}
 	return out
 }

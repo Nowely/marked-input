@@ -211,6 +211,9 @@ export function entryAnchor(node: TreeNode): NodeAnchor {
 	// non-nullable and the empty-children guard would be linted away as impossible.
 	const first = hasBody ? node.children().at(0) : undefined
 	if (first?.kind === 'text') return {node: first, offset: 0}
+	// A CARVED row has no inline child of its own: its first position is inside its first cell, and
+	// the descent is recursive because that cell may be carved in turn.
+	if (first?.kind === 'row') return entryAnchor(first)
 	return {before: node}
 }
 

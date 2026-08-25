@@ -2,7 +2,7 @@ import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import {depthCeiling} from '../parser/core/RowScanner'
 import type {RowConfig} from '../parser/types'
 import {anchorEquals, entryAnchor, offsetOfAnchor, rowBoundary} from './anchors'
-import {preorderRows} from './rows'
+import {hasCells, preorderRows} from './rows'
 import {rowContent, rowLine, rowMarkup} from './tree'
 import type {AnchoredRow, NodeAnchor, Pairing, RowNode, RowPatch, RowPlacement, TreeNode, Window} from './types'
 
@@ -420,7 +420,9 @@ export function splitPlan(
 
 	const body = node.slot()
 	const cut = offset - slot.start
-	const children = node.rows()
+	// A CARVED row has no subtree to place: its child rows are the body this split is cutting, and
+	// both halves carry their own share of them.
+	const children = hasCells(node) ? [] : node.rows()
 	const descendants =
 		children.length === 0 ? undefined : children.map(child => rowContent(child, separator)).join(separator)
 
@@ -519,8 +521,8 @@ function spliceLines(
  * for the head it is about to write. It costs one line build per replayed row, which is the
  * same build {@link spliceLines} makes for every line in the window anyway.
  */
-function scannedAs(row: RowNode, depth: number, lead: string = row.lead()): {depth: number; empty: boolean} {
-	return {depth, empty: rowLine(row, lead) === ''}
+function scannedAs(row: RowNode, depth: number, lead: string = row.lead()): {depth: number; childless: boolean} {
+	return {depth, childless: rowLine(row, lead) === '' || hasCells(row)}
 }
 
 /** The depth a LEAD asks for — `RowScanner`'s own division, over bytes not yet in the value. */
@@ -533,6 +535,6 @@ function leadDepth(lead: string, indent: string): number {
  * the scan read as `previous` — {@link depthCeiling}'s clamp, and the ONE owner of that question
  * for every verb that writes a lead. `undefined` is the document's first row, always a root.
  */
-function landsAt(previous: {depth: number; empty: boolean} | undefined, asked: number): number {
+function landsAt(previous: {depth: number; childless: boolean} | undefined, asked: number): number {
 	return Math.min(asked, depthCeiling(previous))
 }

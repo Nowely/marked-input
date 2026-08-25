@@ -3,6 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {computed, watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {selectionRange} from '../__testing__/mountFixtures'
+import type {RowDeclaration} from '../parser/core/RowKind'
 import {Parser} from '../parser/Parser'
 import type {Markup} from '../parser/types'
 import {snapshot, stripIds} from './__testing__/snapshot'
@@ -239,6 +240,96 @@ describe('RowNode', () => {
 
 			expect(selectionRange(store)).toEqual({start: 2, end: 13})
 			expect(store.tokens.selection.isAllSelected()).toBe(true)
+		})
+	})
+
+	/**
+	 * A CARVED row: the pieces its kind's split took its body apart into are Rows, and the tree has
+	 * to read them as the row's BODY rather than as rows of the document. Every assertion here is
+	 * one of the three readings that follow from that — the projection, the interior, and the entry.
+	 */
+	describe('carved rows', () => {
+		const LINE = {separator: '\n', indent: '\t'}
+		const table = (
+			value: string,
+			markups: Markup[] = ['|__slot__'],
+			rows: RowDeclaration[] = [{at: ' | ', as: 1}]
+		) => {
+			const parser = new Parser([...markups, undefined], [...rows, true])
+			const tree = createTokenTree(parser.parseRows(value, LINE))
+			tree.config(LINE)
+			return {parser, tree}
+		}
+
+		it('projects a carved row back byte-for-byte, document-final or not', () => {
+			// The pieces are joined by CONCATENATION, not by the separator: a rule that folded them
+			// beside the body instead of inside it emitted `'|⏎ a | bnext'` here, and passed on the
+			// document-final case alone.
+			expect(table('| a | b').tree.value()).toBe('| a | b')
+			expect(table('| a | b\nnext').tree.value()).toBe('| a | b\nnext')
+			expect(table('above\n| a | b\nnext').tree.value()).toBe('above\n| a | b\nnext')
+		})
+
+		it('materializes a carved row back into tokens the parse agrees with', () => {
+			const value = '| a | b\nnext'
+			const {parser, tree} = table(value)
+
+			expect(stripIds(snapshot(tree.roots(), '\n'))).toStrictEqual(parser.parseRows(value, LINE))
+		})
+
+		it('reads its BODY off the cells: slot, slotRange and line all cover them', () => {
+			const {tree} = table('| a | b\nnext')
+			const row = tree.roots()[0]
+			if (row.kind !== 'row') throw new Error('expected row')
+
+			expect(row.slot()).toBe(' a | b')
+			expect(row.slotRange()).toEqual({start: 1, end: 7})
+			// The line covers the cells, where a NESTING row's line stops at its first child.
+			expect(row.lineRange()).toEqual({start: 0, end: 8})
+			expect(row.rows().map(cell => cell.slot())).toEqual([' a', 'b'])
+		})
+
+		it('enters its FIRST cell, since it has no inline child of its own', () => {
+			const {tree} = table('| a | b')
+			const row = tree.roots()[0]
+			if (row.kind !== 'row') throw new Error('expected row')
+			const first = row.rows()[0].children()[0]
+
+			expect(entryAnchor(row)).toEqual({node: first, offset: 0})
+			expect(offsetOfAnchor(tree.roots(), entryAnchor(row))).toBe(1)
+		})
+
+		it('copies part of a carved row as a partial re-annotation', () => {
+			const {tree} = table('| a | b')
+			const row = tree.roots()[0]
+			if (row.kind !== 'row') throw new Error('expected row')
+			const firstCellText = row.rows()[0].children()[0]
+			if (firstCellText.kind !== 'text') throw new Error('expected text')
+
+			// Half a carved row copies as its kind wrapped around the cells the window reached,
+			// exactly as half a heading copies as `'# half'`.
+			expect(sliceNodes(tree.roots(), 'start', {node: firstCellText, offset: 2}, '\n')).toBe('| a')
+		})
+
+		/**
+		 * THE IDENTITY ORACLE for the carve, and the debt P4 measured and left here: a row's child
+		 * rows were paired by index with nothing to bound the walk, so writing a delimiter into
+		 * column 2 handed columns 3–5 the node objects of the columns before them. Objects, not
+		 * counts — the value is byte-identical either way.
+		 */
+		it('keeps every later cell its own node when a delimiter is typed into the second', () => {
+			const {parser, tree} = table('| a | b | c | d | e')
+			const row = tree.roots()[0]
+			if (row.kind !== 'row') throw new Error('expected row')
+			const [, , c, d, e] = row.rows()
+
+			adopt(tree, {start: 7, end: 7, insertedLength: 3}, parser.parseRows('| a | b |  | c | d | e', LINE))
+
+			expect(tree.value()).toBe('| a | b |  | c | d | e')
+			const after = tree.roots()[0]
+			if (after.kind !== 'row') throw new Error('expected row')
+			expect(after.rows().map(cell => cell.slot())).toEqual([' a', 'b', '', 'c', 'd', 'e'])
+			expect([after.rows()[3], after.rows()[4], after.rows()[5]]).toEqual([c, d, e])
 		})
 	})
 

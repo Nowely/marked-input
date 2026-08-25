@@ -375,6 +375,89 @@ describe('parseRows', () => {
 		})
 	})
 
+	describe('split rows', () => {
+		/** A table line and its cells: kind 0 carves its body at `' | '` into rows of the anonymous kind 1. */
+		const tableParser = () => new Parser(['|__slot__', undefined], [{at: ' | ', as: 1}, true])
+
+		it('carves a two-cell line into two rows and keeps the bytes', () => {
+			const value = '| a | b'
+			const rows = tableParser().parseRows(value, LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "| a | b" [0-7] kind=0
+					0.0: ROW " a" [1-3] kind=1
+						0.0.0: TEXT " a" [1-3]
+					0.1: ROW " | b" [3-7] lead=" | " kind=1
+						0.1.0: TEXT "b" [6-7]"
+			`)
+			expect(rows.map(row => row.content).join('')).toBe(value)
+		})
+
+		it('carves a line that is NOT document-final', () => {
+			// The case the old text's own pin missed: a carved row followed by another row is where
+			// a projection rule that folds the cells beside the body instead of inside it breaks.
+			const value = '| a | b\nnext'
+			const rows = tableParser().parseRows(value, LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "| a | b↲" [0-8] kind=0
+					0.0: ROW " a" [1-3] kind=1
+						0.0.0: TEXT " a" [1-3]
+					0.1: ROW " | b" [3-7] lead=" | " kind=1
+						0.1.0: TEXT "b" [6-7]
+				 1: ROW "next" [8-12]
+					1.0: TEXT "next" [8-12]"
+			`)
+			expect(rows.map(row => row.content).join('')).toBe(value)
+		})
+
+		it("parses a mark inside a cell as a mark among THAT cell's children", () => {
+			const parser = new Parser(['|__slot__', undefined, '@[__value__]'], [{at: ' | ', as: 1}, true, false])
+			const rows = parser.parseRows('| @[Jia] | b', LINE)
+
+			expect(rowsToDebugTree(rows)).toMatchInlineSnapshot(`
+				"0: ROW "| @[Jia] | b" [0-12] kind=0
+					0.0: ROW " @[Jia]" [1-8] kind=1
+						0.0.0: TEXT " " [1-2]
+						0.0.1: MARK "@[Jia]" [2-8] [value="Jia"]
+						0.0.2: TEXT "" [8-8]
+					0.1: ROW " | b" [8-12] lead=" | " kind=1
+						0.1.0: TEXT "b" [11-12]"
+			`)
+		})
+
+		it('gives an empty cell for a doubled, leading or trailing delimiter', () => {
+			const cells = (value: string) =>
+				tableParser()
+					.parseRows(value, LINE)[0]
+					.rows.map(cell => cell.slot.content)
+
+			expect(cells('| a |  | b')).toEqual([' a', '', 'b'])
+			expect(cells('| a | ')).toEqual([' a', ''])
+			expect(cells('| | a')).toEqual(['', 'a'])
+			expect(cells('|')).toEqual([''])
+		})
+
+		it('carves nothing for a kind with no split, and one level for a kind with one', () => {
+			// A cell is not carved again even when its own kind declares a split: a kind naming
+			// itself would never terminate, and nothing wants a cell of a cell.
+			const parser = new Parser(['|__slot__'], [{at: ' | ', as: 0}])
+			const cells = parser.parseRows('| a | b', LINE)[0].rows
+
+			expect(cells.map(cell => cell.rows.length)).toEqual([0, 0])
+		})
+
+		it('gives a carved row NO indent-nested children, so the row after it stays a root', () => {
+			// Its children are its body. Without the ceiling rule the indented row below would
+			// become a third cell's sibling inside the table line and leave the projection.
+			const value = '| a | b\n\tchild'
+			const rows = tableParser().parseRows(value, LINE)
+
+			expect(rows.map(row => row.slot.content)).toEqual([' a | b', 'child'])
+			expect(rows.map(row => row.content).join('')).toBe(value)
+		})
+	})
+
 	describe('contract', () => {
 		it('rejects an empty separator', () => {
 			expect(() => new Parser([]).parseRows('alpha', {separator: '', indent: '\t'})).toThrow(

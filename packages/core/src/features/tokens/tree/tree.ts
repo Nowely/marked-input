@@ -4,7 +4,7 @@ import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import type {RowConfig, RowToken, Token} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
 import {offsetOfAnchor} from './anchors'
-import {preorderRows} from './rows'
+import {hasCells, preorderRows} from './rows'
 import type {Id, MarkNode, NodeAnchor, RowNode, TextNode, TreeCommands, TreeNode} from './types'
 
 export interface TokenTree {
@@ -61,16 +61,26 @@ export function createTokenTree(
 				lead: signal({initial: token.lead}),
 				position: {...token.position},
 				// A row's own line ends exactly where its first child row starts, so the split is
-				// derived from the children rather than stored beside them.
+				// derived from the children rather than stored beside them — unless those children
+				// ARE its body, where the line covers every one of them.
 				lineRange: () => ({
 					start: node.position.start,
-					end: node.rows().at(0)?.position.start ?? node.position.end,
+					end: (hasCells(node) ? undefined : node.rows().at(0)?.position.start) ?? node.position.end,
 				}),
-				// DERIVED from the inline children's outer edges rather than stored: a row's body
+				// DERIVED from the body children's outer edges rather than stored: a row's body
 				// is exactly what they cover, so a stored range would be a second reading of one
 				// fact — and the one adoption would have to keep in step.
-				slotRange: () => outerEdges(node.inline()),
-				slot: () => joinNodes(node.inline()),
+				slotRange: () => outerEdges(hasCells(node) ? node.rows() : node.inline()),
+				// A carved row's body is its cells, each contributing the delimiter it was carved at
+				// and its own content — through {@link rowLine}, so "a row's own bytes" keeps one
+				// spelling whether the row is a line of the document or a piece of one.
+				slot: () =>
+					hasCells(node)
+						? node
+								.rows()
+								.map(cell => rowLine(cell))
+								.join('')
+						: joinNodes(node.inline()),
 				range: () => ({...node.position}),
 				setDepth: depth => commands?.()?.setDepth(node, depth) ?? false,
 				turnInto: (option, patch) => commands?.()?.turnInto(node, option, patch) ?? false,
@@ -236,7 +246,12 @@ function sliceRowSubtree(root: RowNode, start: number, end: number, separator: s
 		// covered mark is: copying half a heading yields '# half'. A window touching only the
 		// separator gets the separator alone — re-annotating there would invent an empty row.
 		if (start < lineEnd && end > row.position.start) {
-			result += row.lead() + rowBody(row, sliceWithin(row.inline(), start, end, separator))
+			// A carved row's body is its cells, joined by CONCATENATION: each carries the delimiter
+			// it was carved at in its own lead, so a separator between them would invent a line.
+			const body = hasCells(row)
+				? sliceWithin(row.rows(), start, end, '')
+				: sliceWithin(row.inline(), start, end, separator)
+			result += row.lead() + rowBody(row, body)
 		}
 		result += ownSeparator.slice(Math.max(0, start - lineEnd), Math.min(ownSeparator.length, end - lineEnd))
 	}
@@ -311,7 +326,7 @@ export function rowContent(node: RowNode, separator?: string): string {
  * second spelling of "a row's own bytes" is how the projection and a mover come to disagree.
  */
 export function rowLine(node: RowNode, lead: string = node.lead()): string {
-	return lead + rowBody(node, joinNodes(node.inline()))
+	return lead + rowBody(node, node.slot())
 }
 
 /**

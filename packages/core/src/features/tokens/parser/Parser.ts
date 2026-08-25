@@ -2,6 +2,7 @@ import {acceptMatches, closeTrailingGaps} from './core/InlineRules'
 import type {MarkupDescriptor} from './core/MarkupDescriptor'
 import {MarkupRegistry} from './core/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
+import type {RowDeclaration} from './core/RowKind'
 import {scanRows} from './core/RowScanner'
 import {SegmentMatcher} from './core/SegmentMatcher'
 import {TreeBuilder} from './core/TreeBuilder'
@@ -34,8 +35,10 @@ export class Parser {
 	 *   - `__meta__` - metadata (plain text, no nesting)
 	 *   - `__slot__` - content supporting nested structures
 	 *   - `undefined` - skipped, but original array indices are preserved for descriptor matching
-	 * @param rows - Parallel flags: a `true` compiles that markup as a ROW KIND, matched only at a
-	 *   row's own start and never entered into the inline alternation.
+	 * @param rows - Parallel declarations: a `true` compiles that markup as a ROW KIND, matched only
+	 *   at a row's own start and never entered into the inline alternation; a {@link RowSplit}
+	 *   compiles the same kind and carves its body into child rows of the option it names, which may
+	 *   be one with no markup at all.
 	 *
 	 * @example
 	 * ```typescript
@@ -47,7 +50,7 @@ export class Parser {
 	 * ])
 	 * ```
 	 */
-	constructor(markups: (Markup | undefined)[], rows: readonly boolean[] = []) {
+	constructor(markups: (Markup | undefined)[], rows: readonly (RowDeclaration | undefined)[] = []) {
 		this.registry = new MarkupRegistry(markups, rows)
 		this.segmentMatcher = new SegmentMatcher(this.registry.segments)
 		this.patternMatcher = new PatternMatcher(this.registry)
@@ -133,7 +136,7 @@ export class Parser {
 		if (config.separator.length === 0) {
 			throw new Error('Parser.parseRows: separator must be non-empty')
 		}
-		const rows = scanRows(value, this.registry.rowKinds, config)
+		const rows = scanRows(value, this.registry.rowKinds, config, this.registry.rowSplits)
 		this.#fillBodies(rows, value)
 		return rows
 	}
@@ -169,9 +172,13 @@ export class Parser {
 	 *
 	 * A RAW body (`__value__`) is one text token and is never re-parsed: that is the whole
 	 * difference the two body placeholders express, and the only thing this arm adds.
+	 *
+	 * A CARVED body has no inline content of its own — the carve already took it apart, and each
+	 * piece is parsed as a row in its own right.
 	 */
 	private parseBody(row: RowToken, value: string): Token[] {
 		const {start, end, content} = row.slot
+		if (row.rows.length > 0 && row.descriptor && this.registry.rowSplits.has(row.descriptor)) return []
 		if (row.descriptor && !row.descriptor.hasSlot) return [createTextToken(value, start, end)]
 		return this.parseInline(content, start)
 	}

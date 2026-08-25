@@ -1,5 +1,6 @@
 import type {MarkToken, RowToken, TextToken, Token} from '../../parser/types'
 import {annotate} from '../../parser/utils/annotate'
+import {hasCells} from '../rows'
 import type {RowNode, TreeNode} from '../types'
 
 /**
@@ -32,29 +33,35 @@ export function snapshot(nodes: readonly TreeNode[], separator?: string): (Token
  * pre-order rule the projection joins by.
  */
 function materializeRow(node: RowNode, separator: string, followed: boolean): RowToken {
-	const children = node.inline().map(materializeInline)
-	const body = children.map(child => child.content).join('')
 	const descriptor = node.descriptor()
-	const slotStart = children[0]?.position.start ?? node.position.start
 	const childRows = node.rows()
+	// A CARVED row's children are its BODY: they carry no separator between them and the row's own
+	// line covers them, where a nesting row's line ends before its first child.
+	const carved = hasCells(node)
+	const children = node.inline().map(materializeInline)
 	const rows = childRows.map((child, index) =>
-		materializeRow(child, separator, index < childRows.length - 1 || followed)
+		carved
+			? materializeRow(child, '', false)
+			: materializeRow(child, separator, index < childRows.length - 1 || followed)
 	)
+	const edges = carved ? rows : children
+	const body = edges.map(part => part.content).join('')
+	const slotStart = edges[0]?.position.start ?? node.position.start
 	// Same rule as `joinNodes`' row arm: the lead, the kind's markup wrapped around the body,
 	// then a separator when any row follows, then the subtree.
 	const line =
 		node.lead() +
 		(descriptor ? annotate(descriptor.markup, {value: body, slot: body, meta: node.meta()}) : body) +
-		(childRows.length > 0 || followed ? separator : '')
+		((!carved && childRows.length > 0) || followed ? separator : '')
 	return {
 		type: 'row',
-		content: line + rows.map(row => row.content).join(''),
+		content: carved ? line : line + rows.map(row => row.content).join(''),
 		position: {...node.position},
 		id: node.id,
 		descriptor,
 		meta: node.meta(),
 		lead: node.lead(),
-		slot: {content: body, start: slotStart, end: children[children.length - 1]?.position.end ?? slotStart},
+		slot: {content: body, start: slotStart, end: edges[edges.length - 1]?.position.end ?? slotStart},
 		children,
 		rows,
 	}
@@ -107,9 +114,18 @@ function materializeInline(node: TreeNode): Token {
 export function stripIds(tokens: readonly Token[]): Token[]
 export function stripIds(tokens: readonly (Token | RowToken)[]): (Token | RowToken)[]
 export function stripIds(tokens: readonly (Token | RowToken)[]): (Token | RowToken)[] {
-	// A mark's and a row's children are both `Token[]`, so the recursion takes the
-	// narrow overload and the rebuilt token keeps its children type without a cast.
-	return tokens.map(({id: _id, ...rest}) =>
-		rest.type === 'text' ? rest : {...rest, children: stripIds(rest.children)}
-	)
+	return tokens.map(token => (token.type === 'row' ? stripRowIds(token) : stripInlineIds(token)))
+}
+
+/**
+ * A row's CHILD ROWS carry ids of their own, so the walk has to keep its own arm — flat documents
+ * hid that, since the list is empty there.
+ */
+function stripRowIds({id: _id, ...rest}: RowToken): RowToken {
+	return {...rest, children: stripIds(rest.children), rows: rest.rows.map(stripRowIds)}
+}
+
+/** A mark's children are `Token[]`, so the recursion takes the narrow overload and needs no cast. */
+function stripInlineIds({id: _id, ...rest}: Token): Token {
+	return rest.type === 'text' ? rest : {...rest, children: stripIds(rest.children)}
 }

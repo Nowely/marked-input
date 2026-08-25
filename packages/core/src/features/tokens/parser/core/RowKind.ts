@@ -17,6 +17,51 @@ import {createMarkupDescriptor, markupError} from './MarkupDescriptor'
  * total rather than defensive.
  */
 
+/**
+ * What a row option declares to the PARSER, per option index — `false` or absent for a mark
+ * option, `true` for a plain row kind, and a {@link RowSplit} for a kind that carves its own body.
+ * Everything else a `RowSpec` holds is behaviour the tree and the keymap read; none of it reaches
+ * the parse.
+ */
+export type RowDeclaration = boolean | RowSplit
+
+/**
+ * A kind that carves its OWN body into child rows at a literal — a table row into cells. `as` is
+ * the OPTION INDEX the carved rows take as their kind, which is the same identity `resolveSlot`
+ * resolves a component by, and it may name an option with no markup at all (below).
+ */
+export type RowSplit = {at: string; as: number}
+
+/** The split a declaration carries, or `undefined` for a kind that carves nothing. */
+export function rowSplitOf(declaration: RowDeclaration | undefined): RowSplit | undefined {
+	return typeof declaration === 'object' ? declaration : undefined
+}
+
+/**
+ * THE KIND A SPLIT GIVES THE ROWS IT CARVES, for an option that declares `row` and no `markup`.
+ *
+ * Its markup is the bare `__slot__` placeholder, which annotates to its body and nothing else —
+ * exactly what a carved row needs, since its structural bytes are its LEAD (the delimiter it was
+ * carved at) and it has no opener of its own. The compiler cannot produce it: a markup that
+ * annotates to identity must BEGIN with a placeholder, and `validateMarkup` bans that for both
+ * recognizers — the inline alternation has nothing to delimit such a gap on the left, and line-start
+ * recognition would be undecidable. This kind meets neither recognizer, which is what makes the
+ * exception sound rather than a hole: a descriptor with no first segment is refused by the row scan
+ * (`tryKind`) and is never entered into the alternation at all.
+ */
+export function splitCellKind(index: number): MarkupDescriptor {
+	return {
+		markup: PLACEHOLDER.Slot,
+		index,
+		segments: [],
+		gapTypes: [GAP_TYPE.Slot],
+		hasSlot: true,
+		hasTwoValues: false,
+		trailingGap: GAP_TYPE.Slot,
+		segmentGlobalIndices: [],
+	}
+}
+
 /** The literal a row kind is recognised by: the markup's first segment. */
 export function rowOpener(markup: Markup): string {
 	const first = createMarkupDescriptor(markup, 0).segments[0]

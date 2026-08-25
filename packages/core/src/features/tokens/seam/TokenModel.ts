@@ -15,7 +15,8 @@ import {SelectionDriver} from '../dom/SelectionDriver'
 import type {TokenHandle} from '../dom/TokenHandle'
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import {markupError} from '../parser/core/MarkupDescriptor'
-import {rowMarkupError, rowOpener} from '../parser/core/RowKind'
+import type {RowDeclaration} from '../parser/core/RowKind'
+import {rowMarkupError, rowOpener, rowSplitOf} from '../parser/core/RowKind'
 import {Parser} from '../parser/Parser'
 import type {Markup, RowConfig} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
@@ -561,13 +562,31 @@ export class TokenModel {
 	})
 
 	/**
-	 * Which options declare a ROW KIND, compared SHALLOWLY beside {@link #markups} and for the
-	 * same reason: the pair is what the parser is built from, and a fresh-but-identical
-	 * `options` array must not mint a new one.
+	 * WHAT EACH OPTION DECLARES ABOUT ROWS, as the parser reads it, compared BY VALUE beside
+	 * {@link #markups} and for the same reason: the pair is what the parser is built from, and a
+	 * fresh-but-identical `options` array must not mint a new one. A split record is allocated per
+	 * evaluation, so `shallow` alone would do exactly that.
+	 *
+	 * A split's `as` is resolved to an option INDEX here, by the identity that survives the props
+	 * boundary: the `row` spec object. The option objects themselves do not — the Vue adapter
+	 * rebuilds every one of them on each prop sync — and that is the same reference trap that made
+	 * `turnInto` unreachable in Vue before it resolved kinds by markup. An unresolvable target keeps
+	 * its `-1` until {@link #parser}, which is where a bad prop is reported.
 	 */
-	readonly #rowFlags: Computed<boolean[]> = computed(() => this.props.options().map(opt => opt.row !== undefined), {
-		equals: shallow,
-	})
+	readonly #rowKinds: Computed<(RowDeclaration | undefined)[]> = computed(
+		() => {
+			const options = this.props.options()
+			return options.map(option => {
+				const split = option.row?.split
+				if (!split) return option.row !== undefined
+				return {
+					at: split.at,
+					as: options.findIndex(other => other.row !== undefined && other.row === split.as.row),
+				}
+			})
+		},
+		{equals: (a, b) => a.length === b.length && a.every((kind, index) => sameRowDeclaration(kind, b[index]))}
+	)
 
 	/**
 	 * DOWNSTREAM OF {@link #markups}' EQUALITY GATE, and that is what makes the validation
@@ -577,12 +596,14 @@ export class TokenModel {
 	 * reports once per distinct markup set. Pinned in `TokenModel.parse.spec`.
 	 */
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
-		const rows = this.#rowFlags()
+		const declared = this.#rowKinds()
 		// A row kind needs a parser of its own even with no Mark anywhere: it is the scanner,
 		// not the alternation, that recognises it.
-		if (!this.#hasMark() && !rows.some(Boolean)) return
-		const markups = usableMarkups(this.#markups(), rows)
-		if (!markups.some(Boolean)) return
+		if (!this.#hasMark() && !declared.some(Boolean)) return
+		const {markups, rows} = usableOptions(this.#markups(), declared)
+		// An ANONYMOUS kind carries no markup, so the markup array alone no longer says whether
+		// this editor has anything to parse.
+		if (!markups.some(Boolean) && !rows.some(Boolean)) return
 		return new Parser(markups, rows)
 	})
 
@@ -937,10 +958,12 @@ function rowSequence(roots: readonly TreeNode[]): readonly TreeNode[] {
 }
 
 /**
- * The options' markups as the parser may take them: each string itself, or `undefined` when it
- * breaks a rule. `undefined` is the shape the parser ALREADY supports for "this option
- * contributes no markup" — `MarkupRegistry` skips it while preserving the original indices, so
- * the surviving options keep their `descriptor.index` and their per-option component.
+ * The options as the parser may take them: each markup string itself, or `undefined` when it
+ * breaks a rule, beside the row declaration that survives with it. `undefined` is the shape the
+ * parser ALREADY supports for "this option contributes no markup" — `MarkupRegistry` skips it while
+ * preserving the original indices, so the surviving options keep their `descriptor.index` and their
+ * per-option component. A DROPPED markup drops its row declaration with it, or an option reported
+ * for a bad markup would come back as an anonymous kind.
  *
  * Refused rather than thrown for the reason in `shared/reportBadProp`: the parser is rebuilt
  * inside the props watch a per-render `props.set` drains, so the throw would leave the
@@ -948,13 +971,37 @@ function rowSequence(roots: readonly TreeNode[]): readonly TreeNode[] {
  *
  * A ROW markup answers to `rowMarkupError` as well, and to one rule no single markup can decide
  * alone: two kinds compiling to the same opener are indistinguishable at a row's start, so the
- * later one is dropped rather than shadowed silently.
+ * later one is dropped rather than shadowed silently. A SPLIT answers to two more, both of which
+ * cost the kind its carve rather than its existence: a delimiter has to be something (an empty one
+ * matches at every offset), and its target has to be a row option of this editor.
  */
-function usableMarkups(markups: readonly (Markup | undefined)[], rows: readonly boolean[]): (Markup | undefined)[] {
+function usableOptions(
+	markups: readonly (Markup | undefined)[],
+	declared: readonly (RowDeclaration | undefined)[]
+): {markups: (Markup | undefined)[]; rows: (RowDeclaration | undefined)[]} {
 	const openers = new Set<string>()
-	return markups.map((markup, index) => {
+	const rows = [...declared]
+	const drop = (index: number): undefined => {
+		rows[index] = undefined
+		return undefined
+	}
+	const result = markups.map((markup, index) => {
+		const row = rows[index]
+		const split = rowSplitOf(row)
+		if (split?.at === '') {
+			reportBadProp(
+				'A row `split.at` is empty, so this kind carves nothing. Pass the literal its cells are separated by.'
+			)
+			rows[index] = true
+		} else if (split && split.as < 0) {
+			reportBadProp(
+				'A row `split.as` names an option this editor does not carry, so this kind carves nothing. ' +
+					'Pass one of the same `options`, and give it a `row`.'
+			)
+			rows[index] = true
+		}
 		if (markup === undefined) return undefined
-		if (!rows[index]) {
+		if (!row) {
 			const invalid = markupError(markup)
 			if (invalid === undefined) return markup
 			reportBadProp(`${invalid}. This option contributes no markup.`)
@@ -963,7 +1010,7 @@ function usableMarkups(markups: readonly (Markup | undefined)[], rows: readonly 
 		const invalid = rowMarkupError(markup)
 		if (invalid !== undefined) {
 			reportBadProp(`${invalid}. This option contributes no row kind.`)
-			return undefined
+			return drop(index)
 		}
 		const opener = rowOpener(markup)
 		if (openers.has(opener)) {
@@ -971,11 +1018,19 @@ function usableMarkups(markups: readonly (Markup | undefined)[], rows: readonly 
 				`Duplicate row opener "${opener}" in "${markup}". An earlier row option already claims it, ` +
 					'so this option contributes no row kind.'
 			)
-			return undefined
+			return drop(index)
 		}
 		openers.add(opener)
 		return markup
 	})
+	return {markups: result, rows}
+}
+
+/** Two row declarations by VALUE — see {@link TokenModel.#rowKinds}. */
+function sameRowDeclaration(a: RowDeclaration | undefined, b: RowDeclaration | undefined): boolean {
+	const [left, right] = [rowSplitOf(a), rowSplitOf(b)]
+	if (left && right) return left.at === right.at && left.as === right.as
+	return a === b
 }
 
 /**
