@@ -94,7 +94,7 @@ describe('RowNode', () => {
 		const span = (value: string, offset: number, direction: -1 | 1) => {
 			const {tree} = rowTree([], value)
 			const roots = tree.roots()
-			const answer = boundarySpan(roots, anchorAt(roots, offset), direction, SEPARATOR)
+			const answer = boundarySpan(roots, anchorAt(roots, offset), direction, SEPARATOR.separator)
 			return answer && [offsetOfAnchor(roots, answer.anchor), offsetOfAnchor(roots, answer.head)]
 		}
 
@@ -131,7 +131,7 @@ describe('RowNode', () => {
 			const parser = new Parser([])
 			const tree = createTokenTree(parser.parse('a\n\nb'))
 			const roots = tree.roots()
-			expect(boundarySpan(roots, anchorAt(roots, 3), -1, SEPARATOR)).toBeUndefined()
+			expect(boundarySpan(roots, anchorAt(roots, 3), -1, SEPARATOR.separator)).toBeUndefined()
 		})
 
 		/**
@@ -148,11 +148,11 @@ describe('RowNode', () => {
 			const roots = tree.roots()
 
 			// 'a\n\tb\nc': 'a' [0,4] with child '\tb' [2,4], then 'c' [4,5].
-			expect(boundarySpan(roots, anchorAt(roots, 3), -1, config)).toEqual({
+			expect(boundarySpan(roots, anchorAt(roots, 3), -1, config.separator)).toEqual({
 				anchor: anchorAt(roots, 1),
 				head: anchorAt(roots, 3),
 			})
-			const span = boundarySpan(roots, anchorAt(roots, 3), -1, config)
+			const span = boundarySpan(roots, anchorAt(roots, 3), -1, config.separator)
 			expect(span && [offsetOfAnchor(roots, span.anchor), offsetOfAnchor(roots, span.head)]).toEqual([1, 3])
 		})
 
@@ -168,7 +168,7 @@ describe('RowNode', () => {
 				const tree = createTokenTree(new Parser(['- __slot__'], [true]).parseRows(value, config))
 				tree.config(config)
 				const roots = tree.roots()
-				const span = boundarySpan(roots, anchorAt(roots, 1), 1, config)
+				const span = boundarySpan(roots, anchorAt(roots, 1), 1, config.separator)
 				if (!span) return undefined
 				const start = offsetOfAnchor(roots, span.anchor)
 				const end = offsetOfAnchor(roots, span.head)

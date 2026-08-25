@@ -1,4 +1,3 @@
-import type {RowConfig} from '../parser/types'
 import {preorderRows} from './rows'
 import type {Anchors, MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from './types'
 
@@ -121,9 +120,9 @@ export function boundarySpan(
 	roots: readonly TreeNode[],
 	anchor: NodeAnchor,
 	direction: -1 | 1,
-	config: RowConfig | undefined
+	separator: string | undefined
 ): Anchors | undefined {
-	if (config === undefined) return undefined
+	if (separator === undefined) return undefined
 	const offset = offsetOfAnchor(roots, anchor)
 	const rows = preorderRows(roots).map(entry => entry.row)
 	// The document-final row is followed by nothing, so it can never open a boundary here —
@@ -131,7 +130,7 @@ export function boundarySpan(
 	const boundaries = rows.slice(0, -1).map((row, index) => ({
 		// A row's own line ends where its first child row starts, or at its own span's end; either
 		// way the separator is the last thing in it.
-		end: row.lineRange().end - config.separator.length,
+		end: row.lineRange().end - separator.length,
 		next: rows[index + 1],
 	}))
 	const startOf = (row: RowNode): number => row.position.start + row.lead().length

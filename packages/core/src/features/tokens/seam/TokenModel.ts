@@ -282,7 +282,7 @@ export class TokenModel {
 	 * {@link boundarySpan}; `undefined` for every anchor in a document that parses no rows.
 	 */
 	boundarySpan(anchor: NodeAnchor, direction: -1 | 1): Anchors | undefined {
-		return untracked(() => findBoundarySpan(this.#tree.roots(), anchor, direction, this.#tree.config()))
+		return untracked(() => findBoundarySpan(this.#tree.roots(), anchor, direction, this.#tree.config()?.separator))
 	}
 
 	/** The projection of the span between two anchors — {@link value} restricted to a window (see {@link sliceNodes}). */
