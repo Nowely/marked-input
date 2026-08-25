@@ -275,7 +275,7 @@ export class TokenModel {
 	/**
 	 * The row separator span a collapsed delete at `anchor` removes — THE row-boundary half of
 	 * the Backspace/Delete expansion, beside {@link adjacentMark}'s swallow. See
-	 * {@link separatorSpan}; `undefined` for every anchor in inline layout, which parses no rows.
+	 * {@link separatorSpan}; `undefined` for every anchor in a document that parses no rows.
 	 */
 	separatorSpan(anchor: NodeAnchor, direction: -1 | 1): Anchors | undefined {
 		return untracked(() => findSeparatorSpan(this.#tree.roots(), anchor, direction, this.#tree.separator()))

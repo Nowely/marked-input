@@ -500,8 +500,9 @@ lands. Nothing searches the bound surfaces for a nearest position.
 
 ## Parse
 
-Inline and block parse are always a full parse. The boundary parses the whole
-spliced projection — `Parser.parseRows` in block layout, `Parser.parse` inline —
+Both parses are always a full parse. The boundary parses the whole spliced
+projection — `Parser.parseRows` when the document has rows, `Parser.parse` when
+`separator` is `null` and it has none —
 and hands the result to adoption. There is no windowed re-tokenizer: the only incrementality
 is adoption's prefix/suffix retention above. Full-parse cost is tracked by the
 `parser.bench.ts` tripwire.

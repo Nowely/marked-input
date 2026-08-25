@@ -93,8 +93,8 @@ export function adjacentMark(roots: readonly TreeNode[], anchor: NodeAnchor, dir
 /**
  * The ROW SEPARATOR a collapsed delete at `anchor` removes, as the anchors spanning it —
  * {@link adjacentMark}'s swallow for the row world. `undefined` when the anchor sits at no row
- * boundary, which is EVERY anchor in inline layout: only a block parse builds RowNodes, so the
- * arm is inert there by construction rather than by a layout test.
+ * boundary, which is EVERY anchor in a document with no rows: only a row parse builds RowNodes,
+ * so the arm is inert there by construction rather than by a mode test.
  *
  * It exists because {@link stepAnchor} cannot express this edit: a separator is the row's
  * separator, it has no anchorable interior, and a step into it fails closed. Removing the

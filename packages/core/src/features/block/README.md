@@ -62,4 +62,4 @@ The pin attaches NOTHING to release itself. It is gesture state, so it expires w
 
 ## Usage
 
-The feature is registered by the Store and activates when block layout is enabled; `draggable` gates only the reorder path, because the menu and keyboard row edits are block-mode features rather than drag UI. Row operations run through `store.block`.
+The feature is registered by the Store and activates for any document with rows — `tokens.rowConfig`, which is `undefined` when `separator` is `null` (ADR-0011). `draggable` gates only the reorder path, because the menu and keyboard row edits are row features rather than drag UI. Row operations run through `store.block`.
