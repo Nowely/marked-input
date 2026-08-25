@@ -98,7 +98,6 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
  * two rows. There is no `mergeWith` call here — the merge has one owner, and it is that expansion.
  */
 export function demoteAtRowEntry(store: KbCtx, anchors: Anchors): boolean {
-	if (store.tokens.rowConfig() === undefined) return false
 	// A RANGED Backspace deletes what is selected, wherever it starts.
 	if (!anchorEquals(anchors.anchor, anchors.head)) return false
 	const caret = store.tokens.rowOf(anchors.anchor)
@@ -115,7 +114,6 @@ export function demoteAtRowEntry(store: KbCtx, anchors: Anchors): boolean {
  * Tab still leaves the field, which is ADR-0002's accepted cost, preserved.
  */
 export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
-	if (store.tokens.rowConfig() === undefined) return
 	if (event.key !== KEYBOARD.TAB) return
 	const at = (store.tokens.domAnchors() ?? store.tokens.selection.anchors())?.anchor
 	if (at === undefined) return
