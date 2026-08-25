@@ -274,3 +274,41 @@ export function mountBlock(props: Parameters<Store['props']['set']>[0] = {}) {
 	})
 	return {store, container, rows}
 }
+
+/**
+ * {@link mountBlock} with a NESTED row: `'a\n\tb'` is one root whose child row is painted
+ * inside it, off the row's own `'rows'` child-sequence host — the shape both adapters paint.
+ *
+ * Its own fixture rather than a flag on `mountBlock`: the row elements nest, so the flat
+ * one-div-per-root loop cannot express it.
+ */
+export function mountNestedBlock() {
+	const store = new Store()
+	store.props.set({defaultValue: 'a\n\tb', separator: '\n', indent: '\t', options: []})
+	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
+
+	const paint = (row: TreeNode, parent: HTMLElement): HTMLElement => {
+		const element = document.createElement('div')
+		parent.append(element)
+		store.tokens.consign(row.id)(element)
+		store.tokens.children(row.id)(element)
+		if (row.kind !== 'row') return element
+		for (const child of row.inline()) {
+			const surface = document.createElement('span')
+			element.append(surface)
+			store.tokens.consign(child.id)(surface)
+		}
+		const childRows = row.rows()
+		if (childRows.length === 0) return element
+		const host = document.createElement('span')
+		element.append(host)
+		store.tokens.children(row.id, 'rows')(host)
+		for (const child of childRows) paint(child, host)
+		return element
+	}
+
+	const rows = store.tokens.nodes().map(node => paint(node, container))
+	return {store, container, rows}
+}
