@@ -252,6 +252,32 @@ becomes a ticket here.
   menu) and not before. `choose`'s `meta` on the option arm had no caller either, and
   `slotWithout`'s `from > to` arm guarded a span `#findTrigger` cannot build. Two arms that had
   been pinned only THROUGH `mode` got pins of their own in the same commit.
+- **A history entry is an edit that LANDED, and controlled mode is what forces that** (2026-08-25,
+  P8, ADR-0012). The record is captured at `CommitSink.commit` — the one place both modes hold the
+  pre-image, since a controlled commit never reaches the fold — and emitted only when the tree
+  actually takes it, which in controlled mode is the echo. That is what makes the "parent refuses
+  the emission" case cost nothing: recorded at commit instead, such an entry BURIES every good one
+  under it, because the stack's top then names a document that does not exist. Whatever an emission
+  owes on landing rides WITH the emission, in the same record the pairing already rode in.
+- **`#replaying` was never written, in either direction.** A replay does not go through the sink
+  that captures records, so it emits none and the stack cannot re-enter itself; and the mutant that
+  swaps `replay` for `setValue` reddens five cases, two of them by exactly that re-entry.
+- **An undo replays the recorded window BACKWARDS.** Measured before it was designed: `'a\nb\nc'`
+  with the first row moved keeps every id, and a `setValue`-shaped undo restores the same string
+  while handing row `a`'s node the text `b` had. `invertWindow` reverses the pairing with it — and
+  the first version of that pin was DECORATIVE, because the swap it used is its own inverse. A
+  rotation is what reddens a pairing read forwards.
+- **Three rules derived instead of stored, which is why `EditRecord` has no `origin`.** An entry is
+  usable only while the document still holds the projection its window lives in; a typing run is
+  recognised from the records themselves (two one-character inserts, contiguous, chained, inside
+  500 ms); a fresh edit discards the redo branch. The spec's second origin, `'foreign'`, existed to
+  clear the redo stack and close the run on an outside value — both of which fall out of those
+  comparisons, so the field had no reader and was not built.
+- **The shared browser spec earned itself on its first run.** `history` arrived as `false` in Vue
+  whenever a caller omitted it: Vue casts an absent Boolean-typed prop to `false` unless the
+  declaration carries a default, and this is the first boolean prop in `MarkedInput` whose core
+  default is `true` — `readOnly` and `draggable` default to `false`, so the cast had agreed with
+  them by coincidence. Undo worked in React and did nothing in Vue.
 - Checked and NOT filed: the End key. It moves the caret to the end of the
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
@@ -262,8 +288,13 @@ becomes a ticket here.
   options + components, or does it need core changes first? The ticket list here
   is the input to that decision, not the answer.
 - Caret ergonomics at document scale — atomic tables and code blocks, Tab
-  leaving the field, native undo swallowed (ADR-0002/0006 accepted costs) — are
-  unmeasured over a document this size.
+  leaving the field (ADR-0002's accepted cost) — are unmeasured over a document
+  this size. Native undo is no longer on that list: the editor owns it (ADR-0012).
+- **A value the editor did not write disables undo while it stands** (P8, declared). A parent that
+  writes `value` itself, or another author's change arriving through it, leaves every entry naming
+  a projection the document no longer holds, and `canUndo` answers `false` until it comes back.
+  Mapping recorded windows through foreign changes is the collaborative-editing design, and this
+  one does not foreclose it.
 - **Nothing scopes the row menu to the trigger that owns it, and that needs a
   decision rather than a default.** `overlay.entries` reads only "is an overlay
   open", never `match.option`, so the two overlay protocols share one state.
