@@ -246,10 +246,7 @@ function applyMountState(bindings: ElementBindings, previous: ElementBindings | 
 	// atomic, or the slot it just grew is uneditable.
 	const sameRoot = previous?.tokenElement === bindings.tokenElement
 	const sameHost = previous?.childSequenceHost === bindings.childSequenceHost
-	// The ROW host counts too: a row that GAINS one has just been nested into, and the newly
-	// mounted host must be cleared rather than left with whatever attribute it mounted with.
-	const sameRowHost = previous?.rowSequenceHost === bindings.rowSequenceHost
-	if (sameRoot && sameHost && sameRowHost) return
+	if (sameRoot && sameHost) return
 	applyEditableState(bindings)
 }
 
@@ -281,7 +278,7 @@ function applyEditableState(bindings: ElementBindings): void {
 		bindings.textElement.removeAttribute('contenteditable')
 		return
 	}
-	const {tokenElement, childSequenceHost, rowSequenceHost} = bindings
+	const {tokenElement, childSequenceHost} = bindings
 	tokenElement.removeAttribute('tabindex')
 	if (!childSequenceHost) {
 		if (tokenElement.contentEditable !== 'false') tokenElement.contentEditable = 'false'
@@ -289,12 +286,6 @@ function applyEditableState(bindings: ElementBindings): void {
 	}
 	tokenElement.removeAttribute('contenteditable')
 	childSequenceHost.removeAttribute('contenteditable')
-	// A ROW's child-rows host is document content, and it is cleared on EVERY apply rather than
-	// only when it appears — a row can gain one at runtime, under a walk that already ran.
-	rowSequenceHost?.removeAttribute('contenteditable')
-	// Every element from the row host up to the root is on a content path too: the freeze walk
-	// below must not take one of them for a control just because it sits beside the inline host.
-	const onRowPath = pathToRoot(rowSequenceHost, tokenElement)
 	// Walk the host back up to the root, freezing every sibling of the path: those are
 	// the mark's own controls, and a control is not document content.
 	let onPath: HTMLElement = childSequenceHost
@@ -304,24 +295,10 @@ function applyEditableState(bindings: ElementBindings): void {
 		// walk and this write — a host detached in between must not spin.
 		if (!parent) break
 		for (const child of parent.children) {
-			if (child === onPath || !(child instanceof HTMLElement)) continue
-			if (onRowPath.has(child)) {
-				child.removeAttribute('contenteditable')
-			} else if (child.contentEditable !== 'false') {
+			if (child !== onPath && child instanceof HTMLElement && child.contentEditable !== 'false') {
 				child.contentEditable = 'false'
 			}
 		}
 		onPath = parent
 	}
-}
-
-/** The elements from `from` up to and excluding `root`; empty when there is no `from`. */
-function pathToRoot(from: HTMLElement | undefined, root: HTMLElement): Set<HTMLElement> {
-	const path = new Set<HTMLElement>()
-	let current = from
-	while (current && current !== root) {
-		path.add(current)
-		current = current.parentElement ?? undefined
-	}
-	return path
 }
