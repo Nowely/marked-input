@@ -4,7 +4,17 @@ import type {RowConfig} from '../parser/types'
 import {anchorEquals, entryAnchor, offsetOfAnchor, rowBoundary} from './anchors'
 import {hasCells, preorderRows} from './rows'
 import {rowContent, rowLine, rowMarkup} from './tree'
-import type {AnchoredRow, NodeAnchor, Pairing, RowNode, RowPatch, RowPlacement, TreeNode, Window} from './types'
+import type {
+	AnchoredRow,
+	Anchors,
+	NodeAnchor,
+	Pairing,
+	RowNode,
+	RowPatch,
+	RowPlacement,
+	TreeNode,
+	Window,
+} from './types'
 
 /**
  * Removing the boundary between two rows, as the window that holds them apart — see
@@ -116,6 +126,121 @@ export function rowOf(roots: readonly TreeNode[], anchor: NodeAnchor): AnchoredR
 		...found,
 		childDepth: depthCeiling(scannedAs(found.row, found.depth)),
 		atEntry: anchorEquals(anchor, entryAnchor(found.row)),
+	}
+}
+
+/**
+ * THE ROW SELECTION: the rows a span of the value covers WHOLE, maximal — a covered row's covered
+ * children are inside it and are not named again, which is the same normalization the mover takes
+ * a set through, asked here of a span instead of a pick.
+ *
+ * "Whole" is the row's SUBTREE CONTENT — its own line, its descendants' lines and the separators
+ * between them, but not the separator that follows it, which belongs to the boundary rather than
+ * to the row. A row is a unit or it is nothing: half a row selected is a text selection, and a
+ * verb acting on a set may not act on a row the user only partly named.
+ *
+ * A COLLAPSED span covers NOTHING, whatever offsets it coincides with, for `isAllSelected`'s
+ * reason read at the row: an EMPTY row's content is zero-width, so a caret resting in one sits at
+ * both of its edges and would select the row it is merely being typed into. The cost is declared
+ * and is the same shape: an empty row cannot be row-selected on its own, only as part of a range
+ * that already spans its neighbours.
+ *
+ * A CARVED PIECE is never covered — the walk does not descend into one — because a cell is not a
+ * row of the document and nothing that acts on a set can address it.
+ */
+export function rowsWithin(
+	roots: readonly TreeNode[],
+	span: {start: number; end: number},
+	separator: string | undefined
+): RowNode[] {
+	if (separator === undefined || span.start >= span.end) return []
+	const take = (list: readonly RowNode[]): RowNode[] =>
+		list.flatMap(row => {
+			const own = rowSpan(roots, row, separator)
+			if (span.start <= own.start && span.end >= own.end) return [row]
+			return hasCells(row) ? [] : take(row.rows())
+		})
+	return take(roots.filter((node): node is RowNode => node.kind === 'row'))
+}
+
+/**
+ * THE FOUR SPANS A ROW-SELECTION GESTURE MOVES TO, each answered from the span the editor holds
+ * now — and they are spans rather than verbs because the row selection IS the text selection
+ * (`store.block.selected` derives from it), so widening it is one `select` and no second store.
+ *
+ * - `'row'` — the row the anchor's line belongs to, whole. Esc's first rung: it turns a caret or a
+ *   partial text selection into a row selection. In a CARVED piece it answers the LINE, which is
+ *   {@link rowOf}'s rule and the whole of what selecting inside a table means.
+ * - `'out'` — the PARENT of the first covered row, whole. The widening rung, shared by Esc and
+ *   Mod+A; `undefined` when no row is covered or the covered scope is already at depth 0, which is
+ *   what leaves Mod+A meaning select-all everywhere it always did.
+ * - `'up'` / `'down'` — the covered span with the neighbouring row ABSORBED WHOLE. It only grows,
+ *   and absorbing whole is what keeps it from getting stuck: extending up from a first child
+ *   reaches its parent, whose subtree already covers the child, so the selection becomes the
+ *   parent rather than an impossible span that covers neither.
+ *
+ * Every arm but `'row'` answers `undefined` when the span covers no whole row, which is what keeps
+ * an arrow key native until a row selection actually stands (ADR-0002's rule that nothing may
+ * cancel an ordinary arrow).
+ *
+ * The gestures re-normalize to the COVERED rows rather than to the raw selection, so a text
+ * selection that overshoots into a neighbouring row's body does not carry that overshoot along.
+ */
+export function rowScope(
+	roots: readonly TreeNode[],
+	anchors: Anchors,
+	scope: 'row' | 'out' | 'up' | 'down',
+	separator: string | undefined
+): {start: number; end: number} | undefined {
+	if (separator === undefined) return undefined
+	if (scope === 'row') {
+		const found = rowOf(roots, anchors.anchor)
+		return found && rowSpan(roots, found.row, separator)
+	}
+
+	const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
+	const covered = rowsWithin(roots, {start: Math.min(...ends), end: Math.max(...ends)}, separator)
+	if (covered.length === 0) return undefined
+
+	const rows = preorderRows(roots)
+	const first = rows.findIndex(entry => entry.row === covered[0])
+	const last = rows.findIndex(entry => entry.row === covered[covered.length - 1])
+	const held = {
+		start: rowSpan(roots, rows[first].row, separator).start,
+		end: rowSpan(roots, rows[last].row, separator).end,
+	}
+
+	if (scope === 'out') {
+		const parent = rows.slice(0, first).findLast(entry => entry.depth < rows[first].depth)
+		return parent && rowSpan(roots, parent.row, separator)
+	}
+	// `.at`, and the negative guard with it: `noUncheckedIndexedAccess` is off, so an index read
+	// types as non-nullable and the no-neighbour guard reads as impossible — while `.at(-1)` alone
+	// would wrap a grow upward from the document's first row onto its last.
+	const step = scope === 'up' ? first - 1 : last + preorderRows([rows[last].row]).length
+	const neighbour = step < 0 ? undefined : rows.at(step)
+	if (!neighbour) return undefined
+	const absorbed = rowSpan(roots, neighbour.row, separator)
+	return {start: Math.min(held.start, absorbed.start), end: Math.max(held.end, absorbed.end)}
+}
+
+/**
+ * THE SPAN A SELECTION MUST COVER TO HOLD THIS ROW WHOLE: from the row's own ENTRY to the end of
+ * its subtree's content.
+ *
+ * The entry and not `position.start`, and the difference is the whole reason this is a function:
+ * a row's lead and its opener are STRUCTURAL BYTES NO CARET ENTERS (ADR-0010), so `anchorAt` on
+ * them answers the row's slot start instead — a selection written at `position.start` reads back
+ * one offset later and would never cover the row it was written for.
+ *
+ * The end drops the separator that FOLLOWS the row, which belongs to the boundary rather than to
+ * either side of it; `position` carries it on every row but the ones whose subtree ends the
+ * document, and {@link endsDocument} is what tells the two apart.
+ */
+export function rowSpan(roots: readonly TreeNode[], row: RowNode, separator: string): {start: number; end: number} {
+	return {
+		start: offsetOfAnchor(roots, entryAnchor(row)),
+		end: row.position.end - (endsDocument(roots, row) ? 0 : separator.length),
 	}
 }
 

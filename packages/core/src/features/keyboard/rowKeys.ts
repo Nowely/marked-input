@@ -4,7 +4,7 @@ import type {AnchoredRow, Anchors} from '../tokens'
 import {anchorEquals, entryAnchor} from '../tokens'
 import {dropUnexpressedInput} from './beforeInput'
 
-type KbCtx = Pick<Store, 'edit' | 'tokens'>
+type KbCtx = Pick<Store, 'edit' | 'overlay' | 'tokens'>
 
 /**
  * THE ROW KEYMAP: the keys that mean something different when the value parses into rows. Every
@@ -160,6 +160,64 @@ export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 
 	event.preventDefault()
 	caret.row.setDepth(event.shiftKey ? caret.depth - 1 : caret.depth + 1)
+}
+
+/**
+ * THE ROW SELECTION'S OWN KEYS: Esc, which escalates a caret into a row selection and then widens
+ * it a level at a time, and Shift+Up/Down, which grow it by a row.
+ *
+ * There is no row-selection STORE behind any of this — `store.block.selected` derives from the
+ * text selection — so every arm is one `select` of a span the tree answered. What each key means
+ * is therefore the same question asked four ways, and {@link TokenModel.rowScope} is the one place
+ * it is answered.
+ *
+ * SHIFT+ARROWS ARE CONSUMED ONLY ONCE A ROW SELECTION STANDS, and that is not a courtesy: an
+ * ordinary arrow may never be cancelled (`rowKeys.spec`'s two arrow cases), and the scope answers
+ * `undefined` until a whole row is covered, so the key falls through to the browser by the same
+ * test that decides there is nothing to grow.
+ *
+ * ESC DEFERS TO AN OPEN OVERLAY, which is the one place two features want the same key: the
+ * overlay closes on Escape from its own window listener, and escalating underneath it would move
+ * the selection out from under a menu the user was dismissing — one keystroke from replacing the
+ * row, since the next character typed replaces whatever is selected.
+ */
+export function handleRowSelection(store: KbCtx, event: KeyboardEvent): void {
+	if (store.tokens.rowConfig() === undefined) return
+	const anchors = store.tokens.domAnchors() ?? store.tokens.selection.anchors()
+	if (!anchors) return
+
+	if (event.key === KEYBOARD.ESC) {
+		if (store.overlay.match()) return
+		// The widening rung FIRST, so a second Esc climbs rather than re-selecting the same row.
+		const span = store.tokens.rowScope(anchors, 'out') ?? store.tokens.rowScope(anchors, 'row')
+		if (selectSpan(store, span)) event.preventDefault()
+		return
+	}
+	if (!event.shiftKey || (event.key !== KEYBOARD.UP && event.key !== KEYBOARD.DOWN)) return
+	const span = store.tokens.rowScope(anchors, event.key === KEYBOARD.UP ? 'up' : 'down')
+	if (selectSpan(store, span)) event.preventDefault()
+}
+
+/**
+ * MOD+A'S ROW RUNG, answering whether it consumed the widening — `false` leaves select-all to run,
+ * which is what it has always done and still does everywhere no row selection stands.
+ *
+ * It is the same `'out'` scope Esc climbs, so the two keys cannot disagree about what one level
+ * wider means. The difference is only where they stop: Esc has nothing above the outermost row,
+ * while Mod+A's next rung is the whole document.
+ */
+export function widenRowScope(store: KbCtx): boolean {
+	if (store.tokens.rowConfig() === undefined) return false
+	const anchors = store.tokens.domAnchors() ?? store.tokens.selection.anchors()
+	if (!anchors) return false
+	return selectSpan(store, store.tokens.rowScope(anchors, 'out'))
+}
+
+/** The one write these gestures make: a span of the value, as the anchors that name its ends. */
+function selectSpan(store: KbCtx, span: {start: number; end: number} | undefined): boolean {
+	if (!span) return false
+	store.tokens.selection.select(store.tokens.anchorAt(span.start), store.tokens.anchorAt(span.end))
+	return true
 }
 
 /**

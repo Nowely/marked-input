@@ -40,6 +40,8 @@ import {
 	movePlan,
 	removePlan,
 	rowOf,
+	rowScope,
+	rowsWithin,
 	splitPlan,
 	turnIntoPlan,
 } from '../tree/siblings'
@@ -367,6 +369,28 @@ export class TokenModel {
 			const index = node.option()
 			return index === undefined ? undefined : this.props.options()[index]?.row
 		})
+	}
+
+	/**
+	 * THE ROWS A SELECTION COVERS WHOLE — see {@link rowsWithin}. What `store.block.selected`
+	 * derives from, and the reason there is no second store of selected rows: a row selection IS
+	 * the text selection, read at row granularity.
+	 */
+	rowsWithin(anchors: Anchors): readonly RowNode[] {
+		return untracked(() => {
+			const roots = this.#tree.roots()
+			const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
+			const span = {start: Math.min(...ends), end: Math.max(...ends)}
+			return rowsWithin(roots, span, this.#tree.config()?.separator)
+		})
+	}
+
+	/**
+	 * THE SPAN a row-selection gesture widens to — see {@link rowScope}. `undefined` when the
+	 * gesture has nothing to widen to, which is what leaves the key to the browser.
+	 */
+	rowScope(anchors: Anchors, scope: 'row' | 'out' | 'up' | 'down'): {start: number; end: number} | undefined {
+		return untracked(() => rowScope(this.#tree.roots(), anchors, scope, this.#tree.config()?.separator))
 	}
 
 	/**

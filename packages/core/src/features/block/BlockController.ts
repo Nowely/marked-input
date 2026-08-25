@@ -1,4 +1,5 @@
-import {effect, listen, signal, untracked, watch} from '../../shared/signals'
+import {computed, effect, listen, signal, untracked, watch} from '../../shared/signals'
+import type {Computed} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
@@ -73,6 +74,30 @@ export class BlockController {
 		/** Bumped whenever row geometry may have moved; the layer re-measures off it. */
 		geometry: signal({initial: 0}),
 	}
+
+	/**
+	 * THE ROW SELECTION: the rows the current selection covers WHOLE, maximal, in document order.
+	 *
+	 * DERIVED, and that is the design rather than an economy. A second store of selected row ids
+	 * would need pruning on every commit, re-pairing across every adoption and reconciling with
+	 * the caret — three clocks for a fact the selection already carries. Here a row is selected
+	 * exactly while the text selection spans it, so Esc, Shift+arrows and Mod+A are all ONE
+	 * `select` call and the DOM shows the selection for free.
+	 *
+	 * Its two dependencies are read TRACKED and neither is optional: `nodes()` moves when a commit
+	 * re-parents a row, and `anchors()` moves when the selection does. The answer is then computed
+	 * untracked inside {@link TokenModel.rowsWithin}, because a row's coordinates are plain fields
+	 * no signal covers.
+	 */
+	readonly selected: Computed<readonly number[]> = computed(
+		() => {
+			void this.tokens.nodes()
+			const anchors = this.tokens.selection.anchors()
+			if (!anchors || this.tokens.rowConfig() === undefined) return []
+			return this.tokens.rowsWithin(anchors).map(row => row.id)
+		},
+		{equals: shallow}
+	)
 
 	/**
 	 * The open menu's own element, so the outside-mousedown dismissal below can tell inside from
