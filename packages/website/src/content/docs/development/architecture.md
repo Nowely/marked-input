@@ -446,7 +446,16 @@ BEFORE a row with it, and `duplicate()` puts one back in front of a copy that wo
 both ask the pre-order walk whether the row's SUBTREE ends the document, since a removal takes the
 subtree and every ancestor of the last row carries no trailing separator either. `insertAfter(text)`
 splices at the row's span end — past its whole subtree — and moves the caret into the row that lands
-there.
+there. `moveTo(placement)` relocates a row AND its subtree: a `RowPlacement` is `{parent, index}`,
+the parent being the row it becomes a child of (`null` for the document's own list) and the index
+the position it takes among that parent's child rows once it is out of its old one. The plan is one
+splice over the narrowest run of pre-order LINES whose bytes change — a subtree is contiguous in
+pre-order, so a move is "cut this run, paste it before that index" — and it re-indents every moved
+descendant by the depth delta, which normalizes a surplus indent run exactly as `setDepth` does. It
+refuses a placement INSIDE the moved subtree, because a row cannot become its own descendant, and a
+placement under an EMPTY row, because an empty row takes no children and the lead it would write
+parses back one level shallower. A move leaves the caret alone: every node keeps its content and its
+identity, and a lead is the ROW's bytes and lives in no text node, so no anchor can name one.
 
 Two answers the encoding forces rather than chooses, both from "an empty row takes no children":
 retyping a depth-0 row to an empty paragraph PROMOTES its children to roots (their surplus indent
@@ -502,7 +511,8 @@ Row operations are calls on the row's own node: `addRow`/`deleteRow`/`duplicateR
 open menu's id through `tokens.find` and call `insertAfter(separator)`/`remove()`/`duplicate()`,
 so a row that has left the tree refuses. The drop is addressed by id too: its source is
 `state.dragging`, and both it and the drop edge's row resolve through `rootIndexOf` on the live
-tree.
+tree, which is then handed to `moveTo` as a root-level `RowPlacement` — `rowAt` hit-tests roots
+alone, so a drop cannot yet name a depth.
 
 That signal is also the PROVENANCE test. Only `beginDrag` — the grip's own `dragstart` — sets it,
 and it is per-editor, so `dragover` paints no drop edge for a drag this editor did not start and

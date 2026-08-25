@@ -432,8 +432,11 @@ implemented in `tree.ts`), and they split by the NATURE of the operation rather
 than by node type:
 
 - `NodeCommands` — the STRUCTURAL verbs, on every node: `remove()`,
-  `duplicate()`, `insertAfter(text)`, `mergeWith(next)`, `moveTo(index)`. A block
-  row can be a text node, so a mark-only port could not serve one.
+  `duplicate()`, `insertAfter(text)`, `mergeWith(next)`. A block row can be a
+  text node, so a mark-only port could not serve one. The ROW verbs ride the same
+  port and are row-only by their addressing: `setDepth(depth)`,
+  `turnInto(option, patch)`, `splitAt(anchor)` and `moveTo(placement)`, whose
+  `RowPlacement` names a parent ROW and an index among its child rows.
 - `MarkCommands` — `update(patch)`, mark-only because `value`/`meta`/`slot` are.
 
 All of them ride a transaction — `serializeMark` (`seam/TokenModel.ts`, beside the
@@ -442,7 +445,8 @@ verb wiring) renders a patch to markup,
 read-only mode or off the tree, which is the same fail-closed answer a dead node
 gives. Each also OWNS its post-edit caret, applied through one shared rule, with
 one deliberate exception: `moveTo` moves none, because a move takes no position
-out of the document and the stored anchors still name the same characters.
+out of the document and the stored anchors still name the same characters — a
+re-indent included, since a lead is the ROW's bytes and lives in no text node.
 
 `MarkPatch` has no discriminator: an absent (or `undefined`) field is left alone,
 `null` CLEARS it, and a string sets it. Omitted keys are defaulted off the node

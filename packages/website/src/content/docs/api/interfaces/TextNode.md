@@ -5,7 +5,7 @@ prev: false
 title: "TextNode"
 ---
 
-Defined in: [core/src/features/tokens/tree/types.ts:171](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L171)
+Defined in: [core/src/features/tokens/tree/types.ts:192](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L192)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:171](https://github.com/Nowe
 readonly id: number;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:173](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L173)
+Defined in: [core/src/features/tokens/tree/types.ts:194](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L194)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:173](https://github.com/Nowe
 readonly kind: "text";
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:172](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L172)
+Defined in: [core/src/features/tokens/tree/types.ts:193](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L193)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:172](https://github.com/Nowe
 position: object;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:175](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L175)
+Defined in: [core/src/features/tokens/tree/types.ts:196](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L196)
 
 #### end
 
@@ -57,7 +57,7 @@ start: number;
 readonly text: Signal<string>;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:174](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L174)
+Defined in: [core/src/features/tokens/tree/types.ts:195](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L195)
 
 ## Methods
 
@@ -67,7 +67,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:174](https://github.com/Nowe
 duplicate(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:185](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L185)
+Defined in: [core/src/features/tokens/tree/types.ts:206](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L206)
 
 #### Returns
 
@@ -81,7 +81,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:185](https://github.com/Nowe
 insertAfter(text): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:186](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L186)
+Defined in: [core/src/features/tokens/tree/types.ts:207](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L207)
 
 #### Parameters
 
@@ -101,7 +101,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:186](https://github.com/Nowe
 mergeWith(next): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:187](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L187)
+Defined in: [core/src/features/tokens/tree/types.ts:208](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L208)
 
 #### Parameters
 
@@ -115,33 +115,13 @@ Defined in: [core/src/features/tokens/tree/types.ts:187](https://github.com/Nowe
 
 ***
 
-### moveTo()
-
-```ts
-moveTo(index): boolean;
-```
-
-Defined in: [core/src/features/tokens/tree/types.ts:188](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L188)
-
-#### Parameters
-
-| Parameter | Type |
-| ------ | ------ |
-| `index` | `number` |
-
-#### Returns
-
-`boolean`
-
-***
-
 ### range()
 
 ```ts
 range(): object;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:182](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L182)
+Defined in: [core/src/features/tokens/tree/types.ts:203](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L203)
 
 The derived positional read. NOT reactive: `position` is a plain field written by
 adoption, so a consumer that must react to a move watches `changed` or the content
@@ -172,7 +152,7 @@ start: number;
 remove(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:184](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L184)
+Defined in: [core/src/features/tokens/tree/types.ts:205](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L205)
 
 See NodeCommands. Each rides a transaction; `false` in read-only mode or off the tree.
 

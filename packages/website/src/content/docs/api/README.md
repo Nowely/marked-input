@@ -29,6 +29,7 @@ title: "@markput/react"
 
 - [Markup](/api/type-aliases/markup/)
 - [NodeAnchor](/api/type-aliases/nodeanchor/)
+- [RowPlacement](/api/type-aliases/rowplacement/)
 - [TreeNode](/api/type-aliases/treenode/)
 
 ## Functions

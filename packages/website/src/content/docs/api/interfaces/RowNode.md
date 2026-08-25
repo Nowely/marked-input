@@ -223,16 +223,25 @@ Defined in: [core/src/features/tokens/tree/types.ts:167](https://github.com/Nowe
 ### moveTo()
 
 ```ts
-moveTo(index): boolean;
+moveTo(placement): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:168](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L168)
+Defined in: [core/src/features/tokens/tree/types.ts:178](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L178)
+
+Move this row AND ITS SUBTREE to `placement`, keeping every row's identity — the moved
+subtree's, its old siblings' and its new siblings'. The subtree is re-indented to sit under
+its new parent, which NORMALIZES a surplus indent run exactly as [setDepth](/api/interfaces/rownode/#setdepth) does.
+
+`false` for a placement inside the moved row's OWN subtree — a row cannot become its own
+descendant — and for a dead row on either end, an index outside the destination's child
+list, a no-op, an editor with no separator to rejoin rows by, and a nested placement in an
+editor with nesting off.
 
 #### Parameters
 
 | Parameter | Type |
 | ------ | ------ |
-| `index` | `number` |
+| `placement` | [`RowPlacement`](/api/type-aliases/rowplacement/) |
 
 #### Returns
 
