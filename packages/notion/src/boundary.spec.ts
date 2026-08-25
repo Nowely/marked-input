@@ -12,7 +12,8 @@ import {describe, expect, it} from 'vitest'
  *    inside the package. Reaching into `@markput/core/src` is the failure this names, and so is
  *    a relative path that climbs out of `packages/notion/`;
  * 2. the two store members a consumer would reach for if the option API were not enough —
- *    `store.edit`, the raw text write, and `store.tokens`, the seam — appear nowhere.
+ *    `.edit`, the raw text write, and `.tokens`, the seam — appear nowhere, and neither does
+ *    `useMarkput`, the one published door through which either could be reached.
  *
  * Sources are read with `import.meta.glob`, not `node:fs`, so the check is a pure Vite read and
  * does not depend on the working directory the runner was started from.
@@ -32,9 +33,13 @@ const isSource = (path: string) => !path.endsWith('.spec.ts') && !path.endsWith(
 
 const files = Object.entries(sources).filter(([path]) => isSource(path))
 
-/** Every `from '…'` and `import '…'` specifier, which is every module this package pulls in. */
+/**
+ * Every `from '…'`, `import '…'` and `import('…')` specifier — every module this package pulls
+ * in. EITHER QUOTE, because a fence that only sees one of them is not a fence: a deep core import
+ * written with double quotes passed this file at 4/4 green until the alternation was widened.
+ */
 function specifiersOf(source: string): string[] {
-	return [...stripComments(source).matchAll(/(?:from|import)\s+'([^']+)'/g)].map(match => match[1])
+	return [...stripComments(source).matchAll(/(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g)].map(match => match[1])
 }
 
 const ALLOWED = new Set(['react', '@markput/react'])
@@ -64,16 +69,34 @@ describe('@markput/notion is options and components', () => {
 		expect(offenders).toEqual([])
 	})
 
-	it('calls neither store.edit nor store.tokens', () => {
+	/**
+	 * KEYED ON THE MEMBER REACHED, not on the receiver's NAME. `\bstore\.(edit|tokens)\b` was the
+	 * first spelling and it fenced nothing: `useMarkput(s => s.tokens)` is the same reach through
+	 * the same published door with the variable called something else, and it passed at 4/4 green.
+	 * The package has no other `.edit` or `.tokens` member, so the wider pattern costs nothing.
+	 */
+	it('reaches neither `.edit` nor `.tokens` on anything', () => {
 		const offenders = files.flatMap(([path, source]) =>
 			stripComments(source)
 				.split('\n')
 				.map((text, index) => ({line: index + 1, text}))
-				.filter(entry => /\bstore\s*\.\s*(?:edit|tokens)\b/.test(entry.text))
+				.filter(entry => /\.\s*(?:edit|tokens)\b/.test(entry.text))
 				.map(entry => `${path}:${entry.line} ${entry.text.trim()}`)
 		)
 
 		expect(offenders).toEqual([])
+	})
+
+	/**
+	 * AND IT DOES NOT OPEN THE DOOR AT ALL. `useMarkput` is the adapter's published store hook and
+	 * the only way a consumer reaches the store from outside; the member check above catches what
+	 * you do with it, this catches holding it. A destructure — `const {tokens} = useMarkput(s => s)`
+	 * — is invisible to a member grep and is not invisible here.
+	 */
+	it('imports no store hook from the adapter', () => {
+		const offenders = files.filter(([, source]) => /\buseMarkput\b/.test(stripComments(source)))
+
+		expect(offenders.map(([path]) => path)).toEqual([])
 	})
 
 	it('scans the package, so an empty answer came from looking', () => {
