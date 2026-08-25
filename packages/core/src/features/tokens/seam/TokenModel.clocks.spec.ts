@@ -163,7 +163,7 @@ describe('TokenModel commit clocks', () => {
 })
 
 // ---------------------------------------------------------------------------
-// The (value, parser, rowSeparator) tuple watch
+// The (value, parser, rowConfig) tuple watch
 // ---------------------------------------------------------------------------
 
 describe('one watch over the props tuple', () => {
@@ -194,7 +194,7 @@ describe('one watch over the props tuple', () => {
 	})
 
 	it('a separator change in a document with NO rows does not pulse the clock', () => {
-		// BEHAVIOUR CHANGE (ticket 05). The tuple carries `rowSeparator`, and that computed reads
+		// BEHAVIOUR CHANGE (ticket 05). The tuple carries `rowConfig`, and that computed reads
 		// `separator` only while `layout` is block — so a rowless document is not subscribed to a
 		// prop its parse never consults. The tree was identical across this change before the
 		// switch too; what is gone is the commit, and `committed` is published through

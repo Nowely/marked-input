@@ -150,8 +150,8 @@ function liveCaretRange(): Range {
 /**
  * A BLOCK document with a MARK at one edge — the shape the select-all defect lived in, kept as
  * its regression gate. The premise that made it reachable is gone: block layout no longer
- * filters the empty text tokens a mark is bracketed with, because a row's children open and
- * close with one (`RowBuilder.groupRows`).
+ * filters the empty text tokens a mark is bracketed with, because a row's body is built by
+ * `TreeBuilder` and opens and closes with one.
  *
  * One `<div>` per ROOT holding exactly one token element — the row wrapper and the token
  * element are consigned separately, which is how `bind` tells them apart; a mark with children
@@ -756,8 +756,8 @@ describe('handleBeforeInput()', () => {
 	 * character where the user expected a replacement.
 	 *
 	 * The first root was closed by a `side` parameter and is now closed by the parser: a row's
-	 * children open with a text token (`RowBuilder.groupRows`), so offset 0 resolves inside it
-	 * and never reaches the fallback. THIS is the case that would catch that invariant
+	 * body opens with a text token, so offset 0 resolves inside it and never reaches the
+	 * fallback. THIS is the case that would catch that invariant
 	 * breaking — `tree/anchors.spec` pins it directly.
 	 */
 	describe('select-all over mark-edge block documents', () => {
