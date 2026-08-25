@@ -13,7 +13,24 @@ type Op = {start: number; end: number; text: string}
  * `{next, window}` to the sink. Nothing here mutates the tree — adoption, inside
  * the sink, is the only writer.
  */
-export function createTransactions(deps: {tree: TokenTree; readOnly: () => boolean; sink: CommitSink}) {
+export function createTransactions(deps: {
+	tree: TokenTree
+	readOnly: () => boolean
+	sink: CommitSink
+	/**
+	 * BRING THE MIRROR UP TO DATE before the commit reads it. `selectionchange` is delivered on a
+	 * task of its own, so between a caret moving and the browser saying so the stored anchors name
+	 * where the caret WAS — while the edit itself is addressed from the DOM, since a `beforeinput`
+	 * or a row arm names its own position. The commit then reads the selection twice more, as the
+	 * `selectionBefore` an undo goes back to and as the pre-image the echo maps into a post-edit
+	 * caret, and a stale one sends the caret wherever the editor last believed it was.
+	 *
+	 * HERE and not on a caller: this is the one gate every write verb passes, so the row verbs get
+	 * the same reading as `EditController.replace` instead of a second one. It runs AFTER the
+	 * refusals below, so an edit that never happens moves nothing.
+	 */
+	syncSelection?: () => void
+}) {
 	let dispatching = false
 
 	/**
@@ -67,6 +84,7 @@ export function createTransactions(deps: {tree: TokenTree; readOnly: () => boole
 	const submit = (op: Op, pairing?: Pairing): boolean => {
 		if (isReadOnly()) return false
 		if (op.start < 0 || op.end < op.start || op.end > currentValue().length) return false
+		deps.syncSelection?.()
 		return dispatch(op, pairing)
 	}
 

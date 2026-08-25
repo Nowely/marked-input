@@ -3,7 +3,14 @@ import {describe, it, expect, vi} from 'vitest'
 import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 import type {EditRecord} from '../tokens'
-import {anchorsAt, caretAt, mountStructuralInline, selectionRange} from '../tokens/__testing__/mountFixtures'
+import {
+	anchorsAt,
+	caretAt,
+	enableStructuralStore,
+	mountInline,
+	mountStructuralInline,
+	selectionRange,
+} from '../tokens/__testing__/mountFixtures'
 
 describe('EditController', () => {
 	it('replaces value and places caret after replacement', () => {
@@ -40,16 +47,22 @@ describe('EditController', () => {
 	})
 
 	it('does not move caret or change value when readOnly', () => {
-		const store = new Store()
+		// MOUNTED, with the DOM caret somewhere else on purpose: the gate brings the stored
+		// anchors up to DOM truth before it commits, so a refusal that ran the sync anyway would
+		// move the selection on an edit that never happened. Unmounted, the sync declines for
+		// want of a DOM and the case cannot tell the two apart.
 		const onChange = vi.fn()
-		store.props.set({separator: null, defaultValue: 'hello', readOnly: true, onChange})
+		const store = enableStructuralStore('hello', {readOnly: true, onChange})
+		const {container, textNode} = mountInline(store)
 		caretAt(store, 1)
+		window.getSelection()?.collapse(textNode, 4)
 
 		store.edit.replace(...anchorsAt(store, 1, 4), 'i')
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.tokens.value()).toBe('hello')
 		expect(selectionRange(store)).toEqual({start: 1, end: 1})
+		container.remove()
 	})
 
 	it('emits without moving the caret in controlled mode — the echo repairs it', () => {

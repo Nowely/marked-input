@@ -282,7 +282,6 @@ selectedContent(): {html; text} | undefined // selection serialized for clipboar
 
 // the selection driver, delegated (the driver itself is private)
 domAnchors(): Anchors | undefined    // DOM TRUTH as anchors
-syncSelectionFromDom()               // ...and the write it feeds, on demand
 focusFirst()
 
 // the tree layer's own coordinate boundary — the ONE place a number may be formed.
@@ -464,8 +463,7 @@ ref fires, and that absence is the whole of the refusal (ADR-0008).
 Split in two by owner, and owned HERE. There is no `features/selection/` and no
 `store.selection`: `TokenModel` constructs both halves, publishes the state as
 `tokens.selection` and delegates the driver's externally-needed members
-(`domAnchors`, `syncSelectionFromDom`, `focusFirst`) the same way it delegates
-`DomModel`'s.
+(`domAnchors`, `focusFirst`) the same way it delegates `DomModel`'s.
 
 There is no construction cycle around it: the string boundary calls
 `this.selection.anchors()` / `this.selection.repair(result)` directly, with no
@@ -487,7 +485,9 @@ an explicit type annotation to keep `tsc` off TS7022.
   `selectionchange` is delivered on a TASK: an edit arriving before it is
   addressed from the DOM, so the readings the same edit takes off the stored
   anchors (the history entry, the pre-image a controlled echo maps) have to come
-  off the DOM too. `EditController.replace` is the caller. BUILT IN THE CONSTRUCTOR
+  off the DOM too. The caller is `createTransactions`' own `syncSelection` dep —
+  the write gate every verb passes, so an inline edit and a row split read the
+  same caret. BUILT IN THE CONSTRUCTOR
   BODY, not as a field initializer: its dep bag takes `host` and `bound` as
   VALUES, so an initializer would read a constructor parameter property (`tsc`
   rejects it, TS2729) and `#pipeline` (which answers `undefined` silently from any

@@ -90,6 +90,50 @@ describe('API: history', () => {
 		verifyCaretPosition(host, 4)
 	})
 
+	/**
+	 * REAL KEYS ALONE, with nothing writing a DOM caret behind the editor's back. Chromium moves
+	 * the caret three times and delivers the character before `selectionchange` for the arrows has
+	 * landed, so the gap the two cases above manufacture is one a user opens by typing. The report
+	 * that filed this phase said real keys could not reproduce it; measured, they do.
+	 *
+	 * Only the RESTORED caret is asserted. The broken reading is a race — measured at 6 and at 7
+	 * on the same machine — so pinning it would pin the flake; 4 is the position the edit was made
+	 * from and it is the same in every run.
+	 */
+	it('restores it after a run of real arrow keys, with no caret written by hand', async () => {
+		const onChange = vi.fn()
+		const {host} = await mount(Default, {defaultValue: VALUE, onChange})
+		await focusAtEnd(getElement(page.getByText(VALUE)))
+		await settle()
+
+		await userEvent.keyboard('{ArrowLeft}{ArrowLeft}{ArrowLeft}X')
+		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('UndoX me')
+
+		await undo()
+		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe(VALUE)
+		verifyCaretPosition(host, 4)
+	})
+
+	/**
+	 * A ROW VERB, not an inline edit — Enter splits the row, and the split is addressed from the
+	 * DOM's caret while the record used to name the mirror's. It is the same defect as the two
+	 * cases above wearing a different verb, and it stayed open when the sync sat on
+	 * `EditController.replace`: the row verbs reach the commit without passing through it.
+	 */
+	it('restores the caret an ENTER was pressed at', async () => {
+		const {host, value} = await mountEcho(Default, {value: VALUE, separator: '\n'})
+		await focusAtOffset(getElement(page.getByText(VALUE)), 0)
+		await settle()
+
+		moveDomCaret(getElement(page.getByText(VALUE)), 4)
+		editingHost(host).dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true}))
+		await expect.poll(value).toBe('Undo\n me')
+
+		await undo()
+		await expect.poll(value).toBe(VALUE)
+		verifyCaretPosition(host, 4)
+	})
+
 	it('leaves the keys inert with `history` off', async () => {
 		const onChange = vi.fn()
 		await mount(Default, {defaultValue: VALUE, history: false, onChange})

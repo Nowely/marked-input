@@ -198,6 +198,56 @@ describe('transactions: rejection', () => {
 	})
 })
 
+/**
+ * The gate is where the stored selection is brought up to DOM truth, and the reason it is here
+ * rather than on a caller is that EVERY verb passes through it: an inline replace and a row split
+ * have to record the same caret. See `createTransactions`' `syncSelection`.
+ */
+describe('transactions: the selection sync', () => {
+	function syncing(options: {readOnly?: boolean} = {}) {
+		const tree = createTokenTree(parser.parse('hello'))
+		const order: string[] = []
+		const sink: CommitSink = {
+			commit() {
+				order.push('commit')
+				return true
+			},
+		}
+		const tx = createTransactions({
+			tree,
+			readOnly: () => options.readOnly ?? false,
+			sink,
+			syncSelection: () => order.push('sync'),
+		})
+		return {tx, tree, order}
+	}
+
+	it('runs once per verb, before the commit reads the selection', () => {
+		const {tx, order} = syncing()
+		tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'x')
+		expect(order).toEqual(['sync', 'commit'])
+	})
+
+	it('covers the node-addressed verbs too, not just a raw range', () => {
+		const {tx, tree, order} = syncing()
+		tx.applyAfter(tree.roots()[0], 'x')
+		tx.applyStructural(tree.roots()[0], 'y')
+		expect(order).toEqual(['sync', 'commit', 'sync', 'commit'])
+	})
+
+	it('does not run when the verb is refused, so a declined edit moves no caret', () => {
+		const {tx, order} = syncing({readOnly: true})
+		tx.applyRange({start: 0, end: 0, insertedLength: 0}, 'x')
+		expect(order).toEqual([])
+	})
+
+	it('does not run on an out-of-bounds range either', () => {
+		const {tx, order} = syncing()
+		tx.applyRange({start: 3, end: 99, insertedLength: 0}, 'x')
+		expect(order).toEqual([])
+	})
+})
+
 describe('transactions: adopting sink', () => {
 	it('the transaction result equals a fresh parse (equivalence through the verb layer)', () => {
 		const {tree, tx} = setup('he@[x](m)llo')

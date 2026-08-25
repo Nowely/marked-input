@@ -23,15 +23,10 @@ export class EditController {
 	/** Replace the span between two anchors; the pair is normalized, so `from` after `to` is legal. */
 	replace(from: NodeAnchor, to: NodeAnchor, text: string): void {
 		batch(() => {
-			// WHERE THE USER WAS is read off the DOM first, because that is where `from`/`to` came
-			// from: a `beforeinput` names the span it is about to change, and the stored anchors
-			// are only as fresh as the last `selectionchange` — an event Chromium delivers on a
-			// task of its own. Two readings of one fact is what this closes; the commit captures
-			// the selection twice over, once as the entry the history can undo to and once as the
-			// pre-image the echo maps into a post-edit caret, and a stale one sends the caret to
-			// wherever the editor last believed it was. It declines rather than guesses when the
-			// DOM cannot be read (see `SelectionDriver.syncFromDom`).
-			this.tokens.syncSelectionFromDom()
+			// WHERE THE USER WAS is not read here: the write gate every verb passes reads it, off
+			// the DOM, right before it commits (`createTransactions`' `syncSelection`). This one
+			// used to call the sync itself, which left the row verbs — Enter, Tab, a retype —
+			// committing against the mirror.
 			const caret = this.tokens.replaceBetween(from, to, text)
 			if (!caret) return
 			// Controlled mode moves no DERIVED caret here (spec D6): the tree has not changed
