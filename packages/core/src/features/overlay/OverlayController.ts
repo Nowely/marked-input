@@ -163,7 +163,19 @@ export class OverlayController {
 				const handler = () => {
 					const container = this.host.container()
 					if (!container?.contains(document.activeElement)) return
-					if (this.#wantsTrigger('selectionChange')) this.#probeTrigger()
+					// AN OPEN MATCH IS RE-PROBED WHENEVER THE CARET MOVES, whatever `showOverlayOn`
+					// says. That prop decides when an overlay OPENS; whether one already open still
+					// belongs to the caret is a different question, and nothing was asking it. At
+					// the default `'change'` a click into another row left the menu standing — the
+					// outside-click listener returns early for any click INSIDE the container — and
+					// the next pick retyped the row the user had LEFT: caret in `gamma`, pointer on
+					// Heading 2, value `'## alpha⏎beta⏎gamma'`. An arrow key with the menu open did
+					// the same thing more quietly, moving the document caret under an open popup.
+					//
+					// It cannot OPEN anything: the arm runs only while a match already stands, and
+					// `#probeTrigger` writes whatever the caret's own text answers — the same match
+					// while the caret is still on its trigger, and `undefined` once it is not.
+					if (this.#wantsTrigger('selectionChange') || this.match()) this.#probeTrigger()
 				}
 				listen(document, 'selectionchange', handler)
 			})

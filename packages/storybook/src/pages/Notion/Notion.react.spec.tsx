@@ -289,6 +289,26 @@ describe('the slash menu', () => {
 		await expect.element(page.getByText('Board', {exact: true})).toBeVisible()
 		expect(page.getByText('Quote', {exact: true}).elements()).toHaveLength(0)
 	})
+
+	/**
+	 * AN OPEN MENU BELONGS TO THE CARET THAT OPENED IT. Clicking another row left it standing —
+	 * `showOverlayOn` defaults to `'change'`, so nothing re-probed on a caret move, and the
+	 * outside-click listener returns early for any click INSIDE the container. The pick that
+	 * followed then retyped the row the user had LEFT: caret measured in `gamma`, pointer on
+	 * **Heading 2**, and the value came back `'## alpha⏎beta⏎gamma'`.
+	 */
+	it('closes a menu the caret has walked out of', async () => {
+		const {host, value} = await mountControlled(Showcase, 'alpha\nbeta\ngamma')
+
+		await focusAtEnd(rowAt(host, 'alpha'))
+		dispatchInsertText(editingHost(host), '/')
+		await expect.element(page.getByText('Heading 2', {exact: true})).toBeVisible()
+
+		await focusAtEnd(rowAt(host, 'gamma'))
+
+		await expect.poll(() => page.getByText('Heading 2', {exact: true}).elements()).toHaveLength(0)
+		expect(value()).toBe('alpha/\nbeta\ngamma')
+	})
 })
 
 describe('the keymap on the showcase kinds', () => {
