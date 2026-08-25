@@ -411,6 +411,82 @@ export function movePlan(
 }
 
 /**
+ * EVERY PLACEMENT A DROP INTO ONE GAP MAY TAKE, shallowest first — the gap being the boundary on
+ * one `edge` of `row`, and each answer carrying the DEPTH it lands the moved rows at.
+ *
+ * A drop names a gap between two lines and a depth inside it, and the depth is the pointer's
+ * horizontal position. Which depths a gap actually offers is not a rule this can restate: it is
+ * bounded above by the scan's own ceiling for the line before the gap and below by the depth of
+ * the line after it — go shallower and the row after the gap becomes a CHILD of what was dropped,
+ * which is a re-parenting nobody asked for and which no depth comparison inside the mover sees.
+ * Everything else is ASKED OF THE MOVER: each candidate is planned, and the ones it refuses are
+ * not offered. That is the difference between a drop indicator that predicts and one that
+ * promises — what is painted and what will happen are the same call.
+ *
+ * `index` is counted with the moved rows TAKEN OUT, which is what {@link RowPlacement} means, so a
+ * gap whose preceding siblings are themselves in flight still addresses the slot it looks like.
+ */
+export function dropPlacements(
+	roots: readonly TreeNode[],
+	nodes: readonly TreeNode[],
+	row: RowNode,
+	edge: 'before' | 'after',
+	config: RowConfig | undefined
+): {depth: number; placement: RowPlacement}[] {
+	if (config === undefined) return []
+	const rows = preorderRows(roots)
+	const found = rows.findIndex(entry => entry.row === row)
+	if (found < 0) return []
+
+	// The gap FOLLOWS this pre-order index; `-1` is the gap before the document's first line.
+	const at = edge === 'after' ? found : found - 1
+	const previous = at < 0 ? undefined : rows[at]
+	const ceiling = depthCeiling(previous && scannedAs(previous.row, previous.depth))
+	const floor = rows[at + 1]?.depth ?? 0
+
+	const moved = new Set(nodes)
+	const out: {depth: number; placement: RowPlacement}[] = []
+	for (let depth = floor; depth <= ceiling; depth++) {
+		const placement = placementAt(rows, at, depth, moved)
+		if (placement && movePlan(roots, nodes, placement, config)) out.push({depth, placement})
+	}
+	return out
+}
+
+/**
+ * The placement that puts a row at `depth` in the gap after pre-order index `at`. One deeper than
+ * the line above the gap is that line's FIRST CHILD; anything shallower follows the ancestor of it
+ * that sits at the wanted depth, which is the last entry at that depth on the way back.
+ */
+function placementAt(
+	rows: readonly {row: RowNode; depth: number}[],
+	at: number,
+	depth: number,
+	moved: ReadonlySet<TreeNode>
+): RowPlacement | undefined {
+	if (at < 0) return depth === 0 ? {parent: null, index: 0} : undefined
+	if (depth === rows[at].depth + 1) return {parent: rows[at].row, index: 0}
+
+	const ancestorAt = (limit: number, wanted: number): number => {
+		for (let position = limit; position >= 0; position--) {
+			if (rows[position].depth === wanted) return position
+		}
+		return -1
+	}
+	const anchor = ancestorAt(at, depth)
+	if (anchor < 0) return undefined
+	const parentAt = depth === 0 ? -1 : ancestorAt(anchor - 1, depth - 1)
+	if (depth > 0 && parentAt < 0) return undefined
+	const parent = depth === 0 ? null : rows[parentAt].row
+
+	const siblings = parent === null ? rows.filter(entry => entry.depth === 0).map(entry => entry.row) : parent.rows()
+	const index = siblings
+		.slice(0, siblings.indexOf(rows[anchor].row) + 1)
+		.filter(sibling => !moved.has(sibling)).length
+	return {parent, index}
+}
+
+/**
  * The moved set as PRE-ORDER RUNS, in document order and normalized to MAXIMAL subtrees: a row
  * named together with an ancestor already travels inside that ancestor's run, so its own run is
  * dropped rather than spliced a second time.

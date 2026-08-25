@@ -170,19 +170,6 @@ export function findNode(nodes: readonly TreeNode[], id: Id): TreeNode | undefin
 	return undefined
 }
 
-/** Index of the ROOT whose subtree contains `id` — the block row index, off ids instead of a handle's frozen path. */
-export function rootIndexOf(roots: readonly TreeNode[], id: Id): number | undefined {
-	for (let index = 0; index < roots.length; index++) {
-		if (containsNode(roots[index], id)) return index
-	}
-	return undefined
-}
-
-function containsNode(node: TreeNode, id: Id): boolean {
-	if (node.id === id) return true
-	return node.kind !== 'text' && node.children().some(child => containsNode(child, id))
-}
-
 /**
  * The projection of the span between two anchors — {@link joinNodes} restricted to a window,
  * and the clipboard's markup serialization (spec S2 §4.5). The pair is normalized.

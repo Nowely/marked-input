@@ -35,6 +35,7 @@ import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
 import {
 	depthPlan,
+	dropPlacements,
 	endsDocument,
 	mergePlan,
 	movePlan,
@@ -46,7 +47,7 @@ import {
 	turnIntoPlan,
 } from '../tree/siblings'
 import {createTransactions} from '../tree/transactions'
-import {createTokenTree, findNode, rootIndexOf, sliceNodes} from '../tree/tree'
+import {createTokenTree, findNode, sliceNodes} from '../tree/tree'
 import type {
 	AnchoredRow,
 	Anchors,
@@ -394,6 +395,19 @@ export class TokenModel {
 	}
 
 	/**
+	 * EVERY PLACEMENT A DROP INTO ONE GAP MAY TAKE — see {@link dropPlacements}. What the drag layer
+	 * turns a pointer's horizontal position into, and the reason the drop indicator cannot promise
+	 * a move the mover would refuse.
+	 */
+	dropPlacements(
+		nodes: readonly RowNode[],
+		row: RowNode,
+		edge: 'before' | 'after'
+	): readonly {depth: number; placement: RowPlacement}[] {
+		return untracked(() => dropPlacements(this.#tree.roots(), nodes, row, edge, this.#tree.config()))
+	}
+
+	/**
 	 * Move a SET of rows to one placement, in one splice — {@link RowNode.moveTo} widened to what
 	 * a multi-row drag names. The set is normalized to maximal subtrees inside the plan, so a
 	 * caller may hand over a selection verbatim.
@@ -462,14 +476,6 @@ export class TokenModel {
 		)
 		return undefined
 	})
-
-	/**
-	 * The index of the ROOT whose subtree contains `id` — the block ROW index. Off the live
-	 * tree, which is the only source: a handle carries no positional data.
-	 */
-	rootIndexOf(id: number): number | undefined {
-		return untracked(() => rootIndexOf(this.#tree.roots(), id))
-	}
 
 	/**
 	 * A global offset → the node anchor at it (right affinity). THE offset→anchor direction

@@ -4,17 +4,37 @@ import {shallow} from '../../shared/utils/shallow'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import {hasCells} from '../tokens'
-import type {RowConfig, TokenModel, TreeNode} from '../tokens'
+import type {RowConfig, RowNode, RowPlacement, TokenModel, TreeNode} from '../tokens'
 
 /**
- * Which side of a row a drop lands on. Named `edge` rather than `position` on purpose:
+ * Which side of a row's own LINE a drop lands on. Named `edge` rather than `position` on purpose:
  * ADR-0003's address-space check greps for `.position`, and a `drop.position` field trips it as
  * a false positive — dodging the word is cheaper than narrowing the gate.
+ *
+ * The LINE and not the box, and nesting is what makes the difference: a parent's box covers its
+ * whole subtree, so its lower half is its children rather than its own trailing edge.
  */
 export type DropEdge = 'before' | 'after'
 
 /** One answer of {@link BlockController.rowAt}'s search: which row, its box, and whether it HOLDS the point. */
 type Hit = {id: number; rect: DOMRect; contained: boolean}
+
+/**
+ * A RESOLVED DROP: where the rows in flight will land, and the line the layer paints to say so.
+ * ONE fact, so what is painted and what will happen cannot disagree — the placement is the one
+ * the mover already accepted, and `line` is where its DEPTH puts the indicator.
+ */
+export interface DropTarget {
+	readonly placement: RowPlacement
+	readonly line: DropLine
+}
+
+/** The drop indicator's own geometry, in the layer's space. It has no height: it is a boundary. */
+export interface DropLine {
+	top: number
+	left: number
+	width: number
+}
 
 /** A row's geometry in the controls layer's own space: the container's PADDING box. */
 export interface RowBox {
@@ -23,6 +43,13 @@ export interface RowBox {
 	width: number
 	height: number
 }
+
+/**
+ * The indent unit assumed when the document has NO nesting to measure — one grip gutter, which is
+ * the only horizontal unit core owns. Reached exactly when the pointer is choosing between depth 0
+ * and depth 1 in a flat document, where no painted parent/child pair exists to read one off.
+ */
+const ASSUMED_INDENT = 24
 
 /**
  * THE Block layout owner: one hovered row, one dragged row, one drop edge and one open menu per
@@ -71,9 +98,13 @@ export class BlockController {
 	readonly state = {
 		hovered: signal<number | null>({initial: null}),
 		dragging: signal<number | null>({initial: null}),
-		// Shallow equality, so a dragover tick that lands on the same edge of the same row is
-		// not a state change and re-renders nothing.
-		drop: signal<{id: number; edge: DropEdge} | null>({initial: null, equals: shallow}),
+		// Its own equality, because the value is two levels deep and `shallow` would call every
+		// dragover tick a change: a tick resolving to the same placement AND the same painted line
+		// is not a state change and re-renders nothing.
+		drop: signal<DropTarget | null>({
+			initial: null,
+			equals: (a, b) => shallow(a?.placement, b?.placement) && shallow(a?.line, b?.line),
+		}),
 		menu: signal<{id: number; top: number; left: number} | null>({initial: null, equals: shallow}),
 		/** Bumped whenever row geometry may have moved; the layer re-measures off it. */
 		geometry: signal({initial: 0}),
@@ -245,6 +276,18 @@ export class BlockController {
 		this.state.drop(null)
 	}
 
+	/**
+	 * MOVE THE ROWS THIS EDITOR IS ACTING ON to `placement`, in ONE splice — see {@link acting} for
+	 * which rows those are, and `TokenModel.moveRows` for why a set cannot be a loop over the
+	 * single-row verb.
+	 *
+	 * The drop calls it and so may a consumer; there is exactly one mover behind both, and the set
+	 * is normalized to maximal subtrees inside the plan.
+	 */
+	move(placement: RowPlacement): boolean {
+		return this.tokens.moveRows(this.#acting(), placement)
+	}
+
 	// ═══ Geometry ══════════════════════════════════════════════════════════════
 
 	/** A row's box in the layer's space, measured NOW; `undefined` for an unbound or unmounted row. */
@@ -280,17 +323,24 @@ export class BlockController {
 	 * the nearer of them — the declared hover rule — but inside a parent the leftover space IS the
 	 * parent's own line, so a nearest child there would claim a point the parent owns.
 	 */
-	rowAt(clientY: number): {id: number; rect: DOMRect} | undefined {
+	rowAt(clientY: number): {id: number; rect: DOMRect; depth: number; parent: DOMRect | undefined} | undefined {
 		if (this.tokens.rowConfig() === undefined) return undefined
 		let found = this.#hitAmong(this.tokens.nodes(), clientY)
+		// The two by-products of the descent, and they are here because they are FREE here: a drop
+		// reads the pointer's horizontal position in indent units, which needs the hit row's depth
+		// and one measured indent step. Asked separately, each would be a second walk.
+		let depth = 0
+		let parent: DOMRect | undefined
 		while (found?.contained === true) {
 			const row = this.tokens.find(found.id)
 			if (row?.kind !== 'row' || hasCells(row)) break
 			const deeper = this.#hitAmong(row.rows(), clientY)
 			if (deeper?.contained !== true) break
+			parent = found.rect
 			found = deeper
+			depth++
 		}
-		return found && {id: found.id, rect: found.rect}
+		return found && {id: found.id, rect: found.rect, depth, parent}
 	}
 
 	// ─── internals ─────────────────────────────────────────────────────────────
@@ -345,10 +395,15 @@ export class BlockController {
 		low: number,
 		high: number
 	): {at: number; rect: DOMRect} | undefined {
+		const probe = (at: number): {at: number; rect: DOMRect} | undefined => {
+			if (at < low || at > high) return undefined
+			const rect = this.#rectOf(rows[at].id)
+			return rect && {at, rect}
+		}
 		for (let step = 0; step <= high - low; step++) {
-			const before = this.#rectOf(rows, mid - step, low, high)
+			const before = probe(mid - step)
 			if (before) return before
-			const after = step > 0 ? this.#rectOf(rows, mid + step, low, high) : undefined
+			const after = step > 0 ? probe(mid + step) : undefined
 			if (after) return after
 		}
 		return undefined
@@ -360,16 +415,10 @@ export class BlockController {
 	 * makes of a collapsed row's children; `getBoundingClientRect()` alone answers all zeros there
 	 * and cannot be told apart from a real box at the viewport origin.
 	 */
-	#rectOf(
-		rows: readonly {id: number}[],
-		at: number,
-		low: number,
-		high: number
-	): {at: number; rect: DOMRect} | undefined {
-		if (at < low || at > high) return undefined
-		const element = this.tokens.handle(rows[at].id)?.element()
+	#rectOf(id: number): DOMRect | undefined {
+		const element = this.tokens.handle(id)?.element()
 		if (!element || element.getClientRects().length === 0) return undefined
-		return {at, rect: element.getBoundingClientRect()}
+		return element.getBoundingClientRect()
 	}
 
 	/** Untracked, so a caller reading geometry from inside an effect does not subscribe to mount. */
@@ -381,14 +430,17 @@ export class BlockController {
 		this.state.geometry(untracked(() => this.state.geometry()) + 1)
 	}
 
-	/** The rows the layer is painting on right now — at most the grip's row and the drop edge's. */
+	/**
+	 * The rows the layer is painting on right now — the grip's row, and nothing else.
+	 *
+	 * It used to be two, the drop edge's row with it, because the layer measured that row's box at
+	 * paint time and a reflow underneath it stranded the indicator. The drop RESOLVES its own line
+	 * now ({@link state.drop} carries it), and a live drag re-resolves on every `dragover` tick, so
+	 * a moving row is re-measured by the gesture itself.
+	 */
 	#paintedRows(): number[] {
 		const grip = this.state.dragging() ?? this.state.hovered()
-		const drop = this.state.drop()?.id
-		const ids: number[] = []
-		if (grip !== null) ids.push(grip)
-		if (drop !== undefined && drop !== grip) ids.push(drop)
-		return ids
+		return grip === null ? [] : [grip]
 	}
 
 	/**
@@ -525,47 +577,145 @@ export class BlockController {
 	 */
 	#onDragOver(e: DragEvent): void {
 		if (!e.dataTransfer || this.state.dragging() === null) return
-		const row = this.rowAt(e.clientY)
-		if (!row) return
+		const target = this.#resolveDrop(e.clientX, e.clientY)
+		// CLAIMED WHETHER OR NOT A PLACEMENT RESOLVED, and `dropEffect` is what says which: our own
+		// row must never fall through to the browser's editable drop, which would insert the row's
+		// own text into the document it is being dragged inside. A pointer over a gap that offers
+		// this drag nothing gets `'none'`, so the browser paints a no-drop cursor and cancels the
+		// gesture rather than being told a lie about what a release will do.
 		e.preventDefault()
-		e.dataTransfer.dropEffect = 'move'
-		const middle = row.rect.top + row.rect.height / 2
-		this.state.drop({id: row.id, edge: e.clientY < middle ? 'before' : 'after'})
+		e.dataTransfer.dropEffect = target ? 'move' : 'none'
+		this.state.drop(target ?? null)
 	}
 
 	#onDrop(e: DragEvent): void {
 		const drop = this.state.drop()
 		const source = this.state.dragging()
 		this.state.drop(null)
-		// No painted drop edge means no `dragover` of ours accepted this drag, and cancelling it
-		// would suppress the browser's own editable drop — measured: an unprevented `dragover`
-		// still ends in `beforeinput`/`insertFromDrop` on a contenteditable, which is the event
+		// No drag of OURS means no `dragover` of ours accepted this one, and cancelling it would
+		// suppress the browser's own editable drop — measured: an unprevented `dragover` still ends
+		// in `beforeinput`/`insertFromDrop` on a contenteditable, which is the event
 		// `replacementForInput` already turns into an insert. So a FOREIGN drop over a row falls
 		// through and inserts its text, in block layout exactly as in inline. The per-row handler
 		// could not reach a foreign drop at all — it existed only on a row, in block layout —
 		// where this one is on the container in EVERY layout, so the refusal has to be explicit.
-		if (!drop || source === null) return
+		if (source === null) return
 		e.preventDefault()
+		if (!drop) return
 		// Reorder is drag-originated, so unlike the menu verbs it stays behind `draggable`. Only
 		// a consumer flipping the prop mid-drag reaches this: the grip carries `draggable` too,
-		// so with it off no `dragstart` fires and no drop edge is ever painted.
+		// so with it off no `dragstart` fires and no drop line is ever painted.
 		if (!this.props.draggable()) return
-		// Both ends resolve through the LIVE tree, and either answering `undefined` is what
-		// refuses a drag whose layout left block mid-flight: the re-parse mints new ids, so
-		// neither the dragged row nor the drop edge's row is a root any more.
-		const from = this.tokens.rootIndexOf(source)
-		const index = this.tokens.rootIndexOf(drop.id)
-		if (from === undefined || index === undefined) return
-		const target = drop.edge === 'before' ? index : index + 1
-		// The drop target names a SLOT BETWEEN rows, so a target below the source shifts down by
-		// one once the row leaves its old place. Both drag no-ops — dropping on itself, and
-		// dropping on its own trailing edge — collapse onto the row's current index, which
-		// `movePlan` already refuses.
-		//
-		// `{parent: null}`: {@link rowAt} hit-tests ROOTS alone, so a drop can only ever name a
-		// root slot. Depth is a drop's to give once the hit test descends into nested rows.
-		const row = this.tokens.find(source)
-		if (row?.kind === 'row') row.moveTo({parent: null, index: target > from ? target - 1 : target})
+		// NOTHING IS RE-DERIVED HERE, and that is what makes the indicator a promise: the placement
+		// is the one `dragover` already had the mover accept. A drag whose layout left block
+		// mid-flight still fails closed, one level down — the re-parse mints new ids, so
+		// {@link acting} resolves none of them and the mover is handed an empty set.
+		this.move(drop.placement)
+	}
+
+	/**
+	 * THE DROP, RESOLVED: which gap the pointer's Y names, which of that gap's legal depths its X
+	 * chooses, and where the indicator goes to say so.
+	 *
+	 * The gap comes from the hit row's own LINE and not its box, and nesting is the whole reason:
+	 * a parent's box covers its subtree, so its lower half is its children rather than its own
+	 * trailing edge. Above the line's middle is the gap before the row; below it is the gap after
+	 * that line — which, for a row that has children, is the slot its FIRST CHILD occupies.
+	 *
+	 * The depth is the pointer's horizontal position against the candidates the tree offers,
+	 * measured in indent units off the hit row's own left edge: the deepest candidate whose left
+	 * edge the pointer has reached, and the shallowest when it has reached none. The candidates
+	 * themselves are the mover's answer, not this layer's guess.
+	 */
+	#resolveDrop(clientX: number, clientY: number): DropTarget | undefined {
+		const moved = this.#acting()
+		if (moved.length === 0) return undefined
+		const hit = this.rowAt(clientY)
+		const container = this.#container()
+		if (!hit || !container) return undefined
+		const row = this.tokens.find(hit.id)
+		if (row?.kind !== 'row') return undefined
+
+		const lineBottom = this.#lineBottom(row, hit.rect)
+		const edge: DropEdge = clientY < (hit.rect.top + lineBottom) / 2 ? 'before' : 'after'
+		const candidates = this.tokens.dropPlacements(moved, row, edge)
+		if (candidates.length === 0) return undefined
+
+		const step = this.#indentStep(row, hit.rect, hit.parent)
+		let picked = candidates[0]
+		for (const candidate of candidates) {
+			if (clientX >= hit.rect.left + (candidate.depth - hit.depth) * step) picked = candidate
+		}
+
+		const box = toLocal(hit.rect, container)
+		const left = box.left + (picked.depth - hit.depth) * step
+		return {
+			placement: picked.placement,
+			line: {
+				top: edge === 'before' ? box.top : box.top + (lineBottom - hit.rect.top),
+				left,
+				// The indicator starts where the dropped row will start, so it stops at the row's
+				// right edge rather than keeping the row's full width from an indented origin.
+				width: Math.max(0, box.width - (left - box.left)),
+			},
+		}
+	}
+
+	/**
+	 * THE ROWS A VERB HERE ACTS ON: the row selection, or the gripped row alone when a drag started
+	 * outside it.
+	 *
+	 * One rule, so a drag and a menu cannot disagree about what "these rows" means. Picking up a
+	 * row that is NOT part of the selection drags that row and nothing else — the alternative,
+	 * rewriting the text selection on `dragstart`, moves the caret inside a live native drag for a
+	 * fact the layer can simply read.
+	 *
+	 * Resolving each id through the LIVE tree is also the liveness check: a re-parse mid-drag mints
+	 * new ids, so the set empties and every verb behind it fails closed.
+	 */
+	#acting(): RowNode[] {
+		const source = this.state.dragging()
+		const selected = this.selected()
+		const ids = source !== null && !selected.includes(source) ? [source] : selected
+		return ids.map(id => this.tokens.find(id)).filter((node): node is RowNode => node?.kind === 'row')
+	}
+
+	/**
+	 * Where the hit row's OWN LINE ends: its first painted child row's top, or its own bottom when
+	 * it has none. Derived from the boxes rather than from a DOM shape core does not own — a row's
+	 * line is exactly the part of its box no child covers.
+	 *
+	 * A CARVED row's children are its own body, so its whole box is its line.
+	 */
+	#lineBottom(row: RowNode, rect: DOMRect): number {
+		if (hasCells(row)) return rect.bottom
+		for (const child of row.rows()) {
+			const box = this.#rectOf(child.id)
+			if (box) return box.top
+		}
+		return rect.bottom
+	}
+
+	/**
+	 * The horizontal indent unit, MEASURED off the document rather than assumed: a nested row's box
+	 * is inset from its parent's by exactly one level of whatever indentation the consumer paints,
+	 * so the depth a pointer is asking for is readable without core knowing a single CSS rule.
+	 *
+	 * Two pairs, in the order they are reliable. The hit row and the PARENT the descent came
+	 * through is the first — a leaf row is what a pointer usually lands on, and a leaf has no
+	 * children to measure against. Its own first painted child is the second, for a hit at depth 0.
+	 * {@link ASSUMED_INDENT} covers the one case with neither: a root row with no painted children,
+	 * where the only choice the X makes is between depth 0 and depth 1.
+	 */
+	#indentStep(row: RowNode, rect: DOMRect, parent: DOMRect | undefined): number {
+		if (parent && rect.left > parent.left) return rect.left - parent.left
+		if (!hasCells(row)) {
+			for (const child of row.rows()) {
+				const box = this.#rectOf(child.id)
+				if (box && box.left > rect.left) return box.left - rect.left
+			}
+		}
+		return ASSUMED_INDENT
 	}
 }
 

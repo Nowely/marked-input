@@ -22,6 +22,7 @@ const blockProps: Parameters<Store['props']['set']>[0] = {
  * with its tokens and would file the row wrapper as its own text child's surface.
  */
 const ROW_HEIGHT = 20
+const NESTED_INDENT = 30
 
 const mounted: Store[] = []
 
@@ -74,8 +75,12 @@ function mountNestedRows(value: string, props: Parameters<Store['props']['set']>
 	store.tokens.setValue(value)
 
 	const painted = new Map<number, HTMLElement>()
-	const paint = (node: TreeNode, parent: HTMLElement): void => {
+	const paint = (node: TreeNode, parent: HTMLElement, depth: number): void => {
 		const row = document.createElement('div')
+		// A real horizontal inset, so the layer has an indent unit to MEASURE. Deliberately not 24:
+		// that is the width it assumes when there is no pair to read, and the two must be
+		// distinguishable.
+		if (depth > 0) row.style.marginLeft = `${NESTED_INDENT}px`
 		parent.append(row)
 		painted.set(node.id, row)
 		store.tokens.consign(node.id)(row)
@@ -90,9 +95,9 @@ function mountNestedRows(value: string, props: Parameters<Store['props']['set']>
 			surface.textContent = child.text()
 			store.tokens.consign(child.id)(surface)
 		}
-		for (const kid of node.rows()) paint(kid, row)
+		for (const kid of node.rows()) paint(kid, row, depth + 1)
 	}
-	for (const node of store.tokens.nodes()) paint(node, container)
+	for (const node of store.tokens.nodes()) paint(node, container, 0)
 	return {store, block: store.block, container, painted}
 }
 
@@ -118,13 +123,13 @@ function midOf(row: HTMLElement): number {
 
 function dragOver(container: HTMLElement, row: HTMLElement, edge: 'before' | 'after') {
 	const rect = row.getBoundingClientRect()
+	dragOverAt(container, 0, edge === 'before' ? rect.top + 1 : rect.bottom - 1)
+}
+
+/** The pointer at an exact point: X chooses the DEPTH, so the depth cases need both coordinates. */
+function dragOverAt(container: HTMLElement, clientX: number, clientY: number) {
 	container.dispatchEvent(
-		new DragEvent('dragover', {
-			bubbles: true,
-			cancelable: true,
-			dataTransfer: new DataTransfer(),
-			clientY: edge === 'before' ? rect.top + 1 : rect.bottom - 1,
-		})
+		new DragEvent('dragover', {bubbles: true, cancelable: true, dataTransfer: new DataTransfer(), clientX, clientY})
 	)
 }
 
@@ -563,19 +568,35 @@ describe('drag and drop', () => {
 		expect(block.state.dragging()).toBeNull()
 	})
 
-	it('names the row edge the pointer is over, and clears it when the drag leaves', () => {
+	it('resolves the gap the pointer is over into a PLACEMENT, and clears it when the drag leaves', () => {
 		const mounted = mountRows('alpha\n\nbeta\n\ngamma\n\n')
-		const {block, container, rows, store} = mounted
-		const ids = store.tokens.nodes().map(node => node.id)
+		const {block, container, rows} = mounted
 		startDrag(mounted, 0)
 
-		dragOver(container, rows[1], 'before')
-		expect(block.state.drop()).toEqual({id: ids[1], edge: 'before'})
+		dragOver(container, rows[2], 'before')
+		expect(block.state.drop()?.placement).toEqual({parent: null, index: 1})
 
-		dragOver(container, rows[1], 'after')
-		expect(block.state.drop()).toEqual({id: ids[1], edge: 'after'})
+		dragOver(container, rows[2], 'after')
+		expect(block.state.drop()?.placement).toEqual({parent: null, index: 2})
 
 		container.dispatchEvent(new DragEvent('dragleave', {bubbles: true, relatedTarget: document.body}))
+		expect(block.state.drop()).toBeNull()
+	})
+
+	/**
+	 * WHAT IS PAINTED AND WHAT WILL HAPPEN ARE ONE FACT: the candidates a gap offers are planned by
+	 * the mover, so a gap the move would be a no-op in offers nothing and no line is painted. The
+	 * old layer painted an edge for every gap and discovered the refusal only at the drop.
+	 */
+	it('paints no drop line where the mover would refuse the move', () => {
+		const mounted = mountRows('alpha\n\nbeta\n\ngamma\n\n')
+		const {block, container, rows} = mounted
+		startDrag(mounted, 0)
+
+		// Both no-ops for row 0: its own trailing edge and the leading edge of the row after it.
+		dragOver(container, rows[0], 'after')
+		expect(block.state.drop()).toBeNull()
+		dragOver(container, rows[1], 'before')
 		expect(block.state.drop()).toBeNull()
 	})
 
@@ -668,7 +689,97 @@ describe('drag and drop', () => {
 		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
 	})
 
-	it('writes nothing when a row is dropped on its own trailing edge', () => {
+	/**
+	 * THE DROP DEPTH IS THE POINTER'S X, clamped to the depths the gap actually offers — and which
+	 * those are is asked of the MOVER rather than restated here. The unit is MEASURED: the hit row
+	 * is inset from the parent the descent came through by exactly one level of whatever the
+	 * consumer paints, so nothing in core has to know a CSS rule.
+	 */
+	it('takes the deepest depth the pointer has reached, out of the ones the gap offers', () => {
+		const mounted = mountNestedRows('alpha\n\tkid\nbeta\ngamma')
+		const {block, container, painted, store} = mounted
+		const alpha = store.tokens.nodes()[0]
+		if (alpha.kind !== 'row') throw new Error('expected a row')
+		const kid = alpha.rows()[0]
+		block.beginDrag(store.tokens.nodes()[2].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
+
+		const kidBox = painted.get(kid.id)!.getBoundingClientRect()
+		const y = kidBox.bottom - 1
+
+		// Left of every candidate: the shallowest the gap offers — a root, after `alpha`.
+		dragOverAt(container, 0, y)
+		expect(block.state.drop()?.placement).toEqual({parent: null, index: 1})
+
+		// At the hit row's own left edge: its depth — `alpha`'s second child.
+		dragOverAt(container, kidBox.left, y)
+		expect(block.state.drop()?.placement).toEqual({parent: alpha, index: 1})
+
+		// One measured indent further right: one deeper, as the hit row's own first child.
+		dragOverAt(container, kidBox.left + NESTED_INDENT, y)
+		expect(block.state.drop()?.placement).toEqual({parent: kid, index: 0})
+
+		// And the painted line moves with it, which is what makes the indicator say the DEPTH.
+		const deep = block.state.drop()?.line
+		dragOverAt(container, kidBox.left, y)
+		expect(deep?.left).toBe((block.state.drop()?.line.left ?? 0) + NESTED_INDENT)
+	})
+
+	/**
+	 * THE EDGE IS READ OFF THE ROW'S OWN LINE, not its box, and nesting is what makes the two
+	 * different: a parent's box covers its whole subtree, so its lower half is its CHILDREN. Read
+	 * from the box, the lower half of a parent's own line is called the upper half of the parent
+	 * and the drop lands above it instead of inside it.
+	 */
+	it("reads the edge off the row's own LINE rather than its subtree box", () => {
+		const mounted = mountNestedRows('alpha\n\tkid\nbeta')
+		const {block, container, painted, store} = mounted
+		const alpha = store.tokens.nodes()[0]
+		if (alpha.kind !== 'row') throw new Error('expected a row')
+		block.beginDrag(store.tokens.nodes()[1].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
+
+		const box = painted.get(alpha.id)!.getBoundingClientRect()
+		expect(box.height).toBe(ROW_HEIGHT * 2)
+
+		dragOverAt(container, 0, box.top + ROW_HEIGHT - 1)
+		expect(block.state.drop()?.placement).toEqual({parent: alpha, index: 0})
+	})
+
+	/**
+	 * A MULTI-ROW DRAG is one move of a set, not a move per row: two verbs cannot compose in
+	 * controlled mode, and the rows land side by side wherever the set was picked up from.
+	 */
+	it('moves the whole ROW SELECTION when the gripped row is part of it', () => {
+		const mounted = mountNestedRows('one\ntwo\nthree\nfour')
+		const {block, container, painted, store} = mounted
+		const ids = store.tokens.nodes().map(node => node.id)
+		// Rows `two` and `three`, whole — offsets 4..13 of 'one\ntwo\nthree\nfour'.
+		store.tokens.selection.select(store.tokens.anchorAt(4), store.tokens.anchorAt(13))
+		expect(block.selected()).toEqual([ids[1], ids[2]])
+
+		block.beginDrag(ids[1], new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
+		dragOver(container, painted.get(ids[3])!, 'after')
+		dropOn(container)
+
+		expect(store.tokens.value()).toBe('one\nfour\ntwo\nthree')
+		// Every moved node kept its object: a set move that re-mints them emits the same bytes.
+		expect(store.tokens.nodes().map(node => node.id)).toEqual([ids[0], ids[3], ids[1], ids[2]])
+	})
+
+	/** A grip taken on a row OUTSIDE the selection drags that row alone. */
+	it('drags the gripped row alone when the selection does not hold it', () => {
+		const mounted = mountNestedRows('one\ntwo\nthree\nfour')
+		const {block, container, painted, store} = mounted
+		const ids = store.tokens.nodes().map(node => node.id)
+		store.tokens.selection.select(store.tokens.anchorAt(4), store.tokens.anchorAt(13))
+
+		block.beginDrag(ids[0], new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
+		dragOver(container, painted.get(ids[3])!, 'after')
+		dropOn(container)
+
+		expect(store.tokens.value()).toBe('two\nthree\nfour\none')
+	})
+
+	it('writes nothing when a row is dropped on its own trailing edge, and still CLAIMS the drop', () => {
 		const mounted = mountRows('alpha\n\nbeta\n\n')
 		const {container, rows, store} = mounted
 		let committed = 0
@@ -676,11 +787,13 @@ describe('drag and drop', () => {
 
 		startDrag(mounted, 0)
 		dragOver(container, rows[0], 'after')
-		dropOn(container)
+		const event = dropOn(container)
 
-		// The drop target names a SLOT BETWEEN rows, so this collapses onto `to === from`,
-		// which `movePlan` refuses.
+		// The gap collapses onto the row's own place, which `movePlan` refuses — so nothing is
+		// written. The event is claimed anyway: our OWN row falling through to the browser's
+		// editable drop would insert the row's text into the document it is being dragged inside.
 		expect(committed).toBe(0)
 		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
+		expect(event.defaultPrevented).toBe(true)
 	})
 })

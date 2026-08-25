@@ -45,22 +45,18 @@ const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))
 const gripRow = computed<number | null>(
 	() => dragging.value ?? hovered.value ?? (alwaysShowHandle.value ? (rows.value[0]?.id ?? null) : null)
 )
-const dropRow = computed<number | null>(() => drop.value?.id ?? null)
 
 // Geometry is MEASURED, not inherited from a `position: relative` ancestor: `geometry` is the
 // container's resize/scroll clock and `flush: 'post'` puts the read after this patch painted.
+//
+// The GRIP alone: the drop indicator's line arrives already resolved on `state.drop`, measured by
+// the `dragover` that resolved the placement it will perform, so the layer cannot paint an
+// indicator anywhere but where the drop will land.
 const gripBox = ref<RowBox | null>(null)
-const dropBox = ref<RowBox | null>(null)
-const measure = () => {
-	gripBox.value = gripRow.value === null ? null : (block.boxOf(gripRow.value) ?? null)
-	dropBox.value = dropRow.value === null ? null : (block.boxOf(dropRow.value) ?? null)
-}
 watchEffect(
 	() => {
 		void geometry.value
-		void gripRow.value
-		void dropRow.value
-		measure()
+		gripBox.value = gripRow.value === null ? null : (block.boxOf(gripRow.value) ?? null)
 	},
 	{flush: 'post'}
 )
@@ -94,15 +90,12 @@ const gripStyle = computed(() => ({
 	left: `${gripBox.value?.left ?? 0}px`,
 	height: `${gripBox.value?.height ?? 0}px`,
 }))
+// `left` says the DEPTH the drop will land at: core indents the line by the measured indent unit,
+// so the indicator answers "where" and "how deep" at once.
 const dropStyle = computed(() => {
-	const box = dropBox.value
-	const edge = drop.value?.edge
-	if (!box || !edge) return undefined
-	return {
-		top: `${edge === 'before' ? box.top - 1 : box.top + box.height - 1}px`,
-		left: `${box.left}px`,
-		width: `${box.width}px`,
-	}
+	const line = drop.value?.line
+	if (!line) return undefined
+	return {top: `${line.top - 1}px`, left: `${line.left}px`, width: `${line.width}px`}
 })
 </script>
 

@@ -262,7 +262,8 @@ replaceBetween(from, to, text) / setValue(text)
 
 // tree reads, in tree coordinates
 valueBetween(from, to) / adjacentMark(anchor, ±1) / step(anchor, ±1)
-rootIndexOf(id)
+rowsWithin(anchors) / rowScope(anchors, 'row'|'out'|'up'|'down') // the row selection and its gestures
+dropPlacements(nodes, row, edge) / moveRows(nodes, placement)    // what a multi-row drag asks and does
 
 // renderer contract (adapter-only)
 consign(id) / children(ownerId) / control() // ref callbacks; a ref IS the bind

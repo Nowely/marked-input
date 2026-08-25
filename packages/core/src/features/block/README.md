@@ -38,9 +38,11 @@ Reorder is the one operation that needed more than an anchor: a permutation is n
 
 ## Addressing: the row id, everywhere
 
-The menu holds the ID of the row it opened on and resolves it through `tokens.find` when a verb runs, so a row that has left the tree refuses instead of being written to. The drop resolves the same way: its source row is `state.dragging`, the id `beginDrag` wrote, and both it and the drop edge's row go through `rootIndexOf` on the live tree. It used to learn its source from the drag's own `text/plain` payload instead — see below.
+The menu holds the ID of the row it opened on and resolves it through `tokens.find` when a verb runs, so a row that has left the tree refuses instead of being written to. A drag resolves the same way: its rows are `state.dragging` — the id `beginDrag` wrote — widened to `selected` when that id is part of the row selection, and each of them is looked up in the live tree, which is the liveness check as well as the lookup. It used to learn its source from the drag's own `text/plain` payload instead — see below.
 
-The drop TARGET is geometric, like hover: `dragover` hit-tests the pointer's Y and snaps a point in the gutter or in the gap between two rows to the nearest row, where the per-row handler received no event there at all. The `drop` listener is on the container in EVERY layout, so it claims the event — `preventDefault` — only once it has a drop edge of its own to honour; cancelling a drop it refuses would suppress the browser's own editable drop.
+The drop TARGET is geometric, like hover: `dragover` hit-tests the pointer's Y and snaps a point in the gutter or in the gap between two rows to the nearest row, where the per-row handler received no event there at all. Its Y names a GAP — read off the hit row's own LINE, because under nesting a parent's box covers its children — and its X names a DEPTH inside that gap. Which depths a gap offers is asked of the mover: every candidate is planned, and the ones it refuses are never painted, so the indicator promises rather than predicts. `state.drop` therefore holds a resolved `RowPlacement` and the line to paint for it, one fact rather than two that can disagree.
+
+The `drop` listener is on the container in EVERY layout, so provenance is what decides whether it claims the event: a drag of OURS is always claimed, even over a gap that offers nothing, because our own row falling through to the browser's editable drop would insert the row's text into the document it is being dragged inside. A foreign drop is never claimed — cancelling it would suppress the browser's own editable drop.
 
 ## Provenance: what makes a drag ours
 

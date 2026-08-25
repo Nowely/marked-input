@@ -46,17 +46,18 @@ export const BlockControls = memo(() => {
 	// row, so the option is "one grip, on the row nearest the pointer", resting on the first row
 	// while the pointer is away. DECLARED BEHAVIOUR CHANGE on a published option.
 	const gripRow = dragging ?? hovered ?? (alwaysShowHandle ? (rows[0]?.id ?? null) : null)
-	const dropRow = drop?.id ?? null
 
 	// Geometry is MEASURED, not inherited from a `position: relative` ancestor. In a layout
 	// effect, so it sees the painted DOM of this very commit, and re-run on `geometry` — the
 	// container's own resize/scroll clock.
+	//
+	// The GRIP alone: the drop indicator's line arrives already resolved on `state.drop`, measured
+	// by the `dragover` that resolved the placement it will perform, so the layer cannot paint an
+	// indicator anywhere but where the drop will land.
 	const [gripBox, setGripBox] = useState<RowBox | null>(null)
-	const [dropBox, setDropBox] = useState<RowBox | null>(null)
 	useLayoutEffect(() => {
 		setGripBox(gripRow === null ? null : (block.boxOf(gripRow) ?? null))
-		setDropBox(dropRow === null ? null : (block.boxOf(dropRow) ?? null))
-	}, [block, gripRow, dropRow, geometry])
+	}, [block, gripRow, geometry])
 
 	// A row that GROWS as the user types moves the grip with it, and the container's own observer
 	// says nothing when the container's size is fixed. Observing the ONE decorated row is the
@@ -107,14 +108,12 @@ export const BlockControls = memo(() => {
 				</div>
 			)}
 
-			{drop && dropBox && (
+			{drop && (
 				<div
 					className={styles.DropIndicator}
-					style={{
-						top: drop.edge === 'before' ? dropBox.top - 1 : dropBox.top + dropBox.height - 1,
-						left: dropBox.left,
-						width: dropBox.width,
-					}}
+					// `left` says the DEPTH the drop will land at: core indents the line by the
+					// measured indent unit, so the indicator answers "where" and "how deep" at once.
+					style={{top: drop.line.top - 1, left: drop.line.left, width: drop.line.width}}
 				/>
 			)}
 

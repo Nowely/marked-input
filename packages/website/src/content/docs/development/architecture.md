@@ -553,10 +553,13 @@ lifetime.
 
 Row operations are calls on the row's own node: `addRow`/`deleteRow`/`duplicateRow` resolve the
 open menu's id through `tokens.find` and call `insertAfter(separator)`/`remove()`/`duplicate()`,
-so a row that has left the tree refuses. The drop is addressed by id too: its source is
-`state.dragging`, and both it and the drop edge's row resolve through `rootIndexOf` on the live
-tree, which is then handed to `moveTo` as a root-level `RowPlacement` — `rowAt` hit-tests roots
-alone, so a drop cannot yet name a depth.
+so a row that has left the tree refuses. The drop is addressed by id too: its rows are
+`state.dragging` widened to `store.block.selected` when the gripped row is part of that selection,
+each resolved through the live tree, and they are moved as a SET in one splice by
+`store.block.move(placement)`. The placement itself is resolved at `dragover`: the pointer's Y
+names a gap, its X names one of the depths that gap legally offers, and every candidate is planned
+by the mover before it is offered — so `state.drop` carries the placement that will happen
+together with the line that says so.
 
 That signal is also the PROVENANCE test. Only `beginDrag` — the grip's own `dragstart` — sets it,
 and it is per-editor, so `dragover` paints no drop edge for a drag this editor did not start and
