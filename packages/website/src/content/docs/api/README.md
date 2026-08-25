@@ -31,6 +31,7 @@ title: "@markput/react"
 - [Markup](/api/type-aliases/markup/)
 - [MenuEntry](/api/type-aliases/menuentry/)
 - [NodeAnchor](/api/type-aliases/nodeanchor/)
+- [OverlayPick](/api/type-aliases/overlaypick/)
 - [RowPlacement](/api/type-aliases/rowplacement/)
 - [TreeNode](/api/type-aliases/treenode/)
 

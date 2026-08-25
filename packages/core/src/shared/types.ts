@@ -111,6 +111,19 @@ export interface MenuSpec {
 export type MenuEntry = {option: CoreOption; label: string; section?: string}
 
 /**
+ * WHAT AN OVERLAY ACCEPTS, and a UNION because the two arms are exclusive in fact: naming a row
+ * KIND retypes the caret's row, naming a VALUE writes the trigger option's markup, and no call
+ * does both. Spelled as one optional bag the illegal states were representable — `{}` wrote
+ * `@[]()` into the document, and `{option, value}` typechecked while silently dropping `value`.
+ *
+ * The `?: never` members are load-bearing: a bare union does NOT forbid `{option, value}`,
+ * because excess-property checking against a union accepts any key declared by ANY arm.
+ */
+export type OverlayPick =
+	| {option: CoreOption; value?: never; meta?: never}
+	| {option?: never; value: string; meta?: string}
+
+/**
  * A row of the built-in Suggestions overlay. A bare string is label and value at once, which is
  * every list whose text IS what the document stores; the object form separates them, so a row can
  * carry the identity that goes in the `__meta__` gap of `@[__value__](__meta__)` and a `label`

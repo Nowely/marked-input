@@ -1,4 +1,4 @@
-import type {CoreOption, MenuEntry, OverlayMatch} from '@markput/core'
+import type {MenuEntry, OverlayMatch, OverlayPick} from '@markput/core'
 import {computed, type Ref, type ComputedRef} from 'vue'
 
 import type {Option} from '../../types'
@@ -27,7 +27,7 @@ export interface OverlayHandler {
 	 * removes the trigger in the same splice; `{value, meta}` writes the trigger option's markup,
 	 * which is what {@link OverlayHandler.select} does.
 	 */
-	choose: (pick: {option?: CoreOption; value?: string; meta?: string}) => boolean
+	choose: (pick: OverlayPick) => boolean
 	match: Ref<OverlayMatch<Option> | undefined>
 	ref: {
 		get current(): HTMLElement | null

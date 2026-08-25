@@ -259,4 +259,25 @@ describe('choose an option', () => {
 		expect(store.overlay.choose({option: HEADING})).toBe(false)
 		expect(store.tokens.value()).toBe('plain row/')
 	})
+
+	/**
+	 * The two arms are EXCLUSIVE, and the TYPE is what says so — this pin reddens `typecheck`,
+	 * not the runtime. The runtime assertions below are the damage the old optional bag let a
+	 * caller write: `{option, value}` retyped the row and dropped `value` on the floor, and `{}`
+	 * reached the value arm carrying nothing at all.
+	 *
+	 * A bare `A | B` is NOT enough: excess-property checking against a union accepts any key
+	 * declared by any arm, so `{option, value}` passed. The `?: never` members are what refuse it.
+	 */
+	it('forbids a pick that names both arms, or neither', () => {
+		const both = typedSlash('plain row', 9)
+		// @ts-expect-error -- a pick names a kind or a value, never both
+		expect(both.overlay.choose({option: HEADING, value: 'dropped'})).toBe(true)
+		expect(both.tokens.value()).toBe('# plain row')
+
+		const neither = typedSlash('plain row', 9)
+		// @ts-expect-error -- and never neither
+		expect(neither.overlay.choose({})).toBe(false)
+		expect(neither.tokens.value()).toBe('plain row/')
+	})
 })

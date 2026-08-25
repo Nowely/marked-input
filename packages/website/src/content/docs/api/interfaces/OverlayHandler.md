@@ -25,10 +25,7 @@ which is what [select](/api/interfaces/overlayhandler/#select) does.
 
 | Parameter | Type |
 | ------ | ------ |
-| `pick` | \{ `meta?`: `string`; `option?`: `CoreOption`; `value?`: `string`; \} |
-| `pick.meta?` | `string` |
-| `pick.option?` | `CoreOption` |
-| `pick.value?` | `string` |
+| `pick` | [`OverlayPick`](/api/type-aliases/overlaypick/) |
 
 #### Returns
 

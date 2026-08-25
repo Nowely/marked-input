@@ -50,6 +50,9 @@ export type {
 	// writing that component declares both.
 	MenuSpec,
 	MenuEntry,
+	// `overlay.choose`'s parameter: both adapters re-declare it on `OverlayHandler`, so the
+	// union is spelled once rather than three times.
+	OverlayPick,
 	CSSProperties,
 	CoreSlots,
 	DataAttributes,

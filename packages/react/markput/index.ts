@@ -32,6 +32,9 @@ export type {RowSpec} from '@markput/core'
 // `CoreOption.menu`'s type and what `useOverlay().entries` hands out: a consumer replacing
 // `BlockMenu` declares both, and `Option` names the first in its own shape.
 export type {MenuSpec, MenuEntry} from '@markput/core'
+// `useOverlay().choose`'s parameter, published for `RowPlacement`'s reason: the built
+// `.d.ts` names it, so a consumer wrapping `choose` must be able to import it.
+export type {OverlayPick} from '@markput/core'
 // `RowNode.moveTo`'s parameter, published for `RowSpec`'s reason: without it the built
 // `.d.ts` names a type a consumer of this package cannot import.
 export type {RowPlacement} from '@markput/core'

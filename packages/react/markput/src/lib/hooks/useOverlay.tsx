@@ -1,4 +1,4 @@
-import type {CoreOption, MenuEntry, OverlayMatch} from '@markput/core'
+import type {MenuEntry, OverlayMatch, OverlayPick} from '@markput/core'
 import type {RefObject} from 'react'
 
 import type {Option} from '../../types'
@@ -26,7 +26,7 @@ export interface OverlayHandler {
 	 * removes the trigger in the same splice; `{value, meta}` writes the trigger option's markup,
 	 * which is what {@link select} does.
 	 */
-	choose: (pick: {option?: CoreOption; value?: string; meta?: string}) => boolean
+	choose: (pick: OverlayPick) => boolean
 	match: OverlayMatch<Option> | undefined
 	ref: RefObject<HTMLElement | null>
 }

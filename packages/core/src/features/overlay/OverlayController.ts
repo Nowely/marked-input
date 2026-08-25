@@ -3,7 +3,7 @@ import {escape} from '../../shared/escape'
 import {reportBadProp} from '../../shared/reportBadProp'
 import {signal, computed, event, effect, watch, listen} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {CoreOption, MenuEntry, OverlayMatch, Slot} from '../../shared/types'
+import type {CoreOption, MenuEntry, OverlayMatch, OverlayPick, Slot} from '../../shared/types'
 import type {EditController} from '../edit'
 import type {OverlaySlot} from '../slots'
 import {resolveOverlaySlot} from '../slots/resolveSlot'
@@ -48,8 +48,10 @@ export class OverlayController {
 	readonly suggestions: SuggestionsModel
 
 	/**
-	 * `choose` under the `{value, meta}` payload shape both adapters expose as
-	 * `OverlayHandler.select`. An arrow so the adapters can pass it around unbound.
+	 * THE DOCUMENTED ALIAS of {@link choose}'s value arm, and the older of the two spellings —
+	 * every overlay example in the docs calls it, which is why it stays. `choose` is canonical:
+	 * it takes either arm of an {@link OverlayPick} and says whether it wrote. An arrow so the
+	 * adapters can pass it around unbound.
 	 */
 	readonly select = (value: {value: string; meta?: string}): void => {
 		this.choose(value)
@@ -207,16 +209,21 @@ export class OverlayController {
 	 * the trigger the entry's own `menu.text`/`menu.meta` seed the empty body; on a row that
 	 * already has text the body is kept, because a turn-into must not discard what was typed.
 	 *
+	 * The two arms are a UNION, so an option arm carries no `value`/`meta` for `turnInto` to
+	 * ignore and a value arm carries no `option`. See {@link OverlayPick}.
+	 *
 	 * An arrow for {@link select}'s reason: both adapters hand it straight to a menu component,
 	 * unbound.
 	 */
-	readonly choose = (pick: {option?: CoreOption; value?: string; meta?: string}): boolean => {
+	readonly choose = (pick: OverlayPick): boolean => {
 		// No hasOverlayTrigger guard needed: match is only ever set by #probeTrigger,
 		// which requires a trigger option, so a missing trigger means match() is undefined.
 		const match = this.match()
 		if (!match) return false
+		// `!== undefined`, not `'option' in pick`: the arms discriminate on `?: never`, which is an
+		// OPTIONAL key on both, so `in` narrows nothing.
 		if (pick.option !== undefined) {
-			if (!this.#turnRowInto(pick.option, pick.meta)) return false
+			if (!this.#turnRowInto(pick.option)) return false
 			this.match(undefined)
 			return true
 		}
@@ -228,11 +235,7 @@ export class OverlayController {
 			reportBadProp(`${invalid}. The overlay selection was discarded — this option can insert nothing.`)
 			return false
 		}
-		this.edit.replace(
-			match.range.anchor,
-			match.range.head,
-			annotate(markup, {value: pick.value ?? '', meta: pick.meta})
-		)
+		this.edit.replace(match.range.anchor, match.range.head, annotate(markup, {value: pick.value, meta: pick.meta}))
 		this.match(undefined)
 		return true
 	}
@@ -256,13 +259,13 @@ export class OverlayController {
 	}
 
 	/** {@link choose}'s option arm. `false` when there is no row to retype, or the verb refuses. */
-	#turnRowInto(option: CoreOption, meta: string | undefined): boolean {
+	#turnRowInto(option: CoreOption): boolean {
 		const target = this.#target()
 		if (!target) return false
 		const menu = option.menu
 		return target.row.turnInto(option, {
 			text: target.mode === 'insert' ? (menu?.text ?? '') : target.body,
-			meta: meta ?? menu?.meta,
+			meta: menu?.meta,
 		})
 	}
 
