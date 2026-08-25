@@ -63,13 +63,18 @@ export function removePlan(
 }
 
 /**
- * Does this row's SUBTREE end the document — the one row whose projection carries no trailing
+ * Does this row's SUBTREE end the document — the rows whose projection carries no trailing
  * separator, since the pre-order join puts one between adjacent rows and none after the last.
- * A parent's span covers its subtree, so the span END is the reading that holds at every depth,
- * where "the last root" and "the last row" are two different rows.
+ * True for the last row AND for every ancestor of it, which is why it is not "the last root":
+ * under nesting a whole chain of rows ends the document at once.
+ *
+ * Asked of the pre-order WALK and not of the spans, because the trailing empty row is
+ * zero-width: the row before it ends at the document's end too, and a span test calls it final.
  */
 export function endsDocument(roots: readonly TreeNode[], node: TreeNode): boolean {
-	return node.kind === 'row' && node.position.end === (roots.at(-1)?.position.end ?? 0)
+	if (node.kind !== 'row') return false
+	const last = preorderRows(roots).at(-1)?.row
+	return last !== undefined && preorderRows([node]).at(-1)?.row === last
 }
 
 /**
