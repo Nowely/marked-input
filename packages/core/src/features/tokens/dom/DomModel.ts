@@ -185,6 +185,16 @@ export class DomModel {
 		const a = this.#boundaryAt(anchor)
 		const b = this.#boundaryAt(head)
 		if (!a || !b) return false
+		// BOTH ENDS CONNECTED, checked rather than assumed. `placeRangeAcrossBoundaries` normalizes
+		// the pair with `comparePoint`, which THROWS for a node in another tree, and its own
+		// docstring's premise — "both boundaries live under the one editing host" — is false for
+		// exactly one moment: a framework re-parenting a row replaces its element, and `bound`
+		// pulses per registration, so a pulse can land while one end is the element that just left
+		// the document. Measured in Vue on a two-row drag into a nested position, where the
+		// exception escaped as an unhandled rejection and no selection was applied at all.
+		// Refusing here is self-healing: the last registration of the same patch pulses `bound`
+		// again, and by then both ends are in the document.
+		if (!a.node.isConnected || !b.node.isConnected) return false
 		placeRangeAcrossBoundaries(a, b)
 		return true
 	}

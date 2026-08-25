@@ -45,6 +45,26 @@ export const rows = {
 	Bullet: defineComponent({
 		inheritAttrs: false,
 		props: {meta: String, node: {type: null}, depth: Number, index: Number},
-		template: '<li><slot /><slot name="rows" /></li>',
+		// `data-id` is the browser's NODE-IDENTITY oracle: a row's id is minted at node birth and
+		// never reused, so an id that survived a move is a node that survived it — which the DOM
+		// element cannot say, since neither framework can move an element between two parents.
+		template: '<li :data-id="node.id"><slot /><slot name="rows" /></li>',
+	}),
+	/**
+	 * A COLLAPSIBLE row kind, and the collapse state is the CONSUMER'S — component-local `data`,
+	 * keyed to nothing but the component instance. That is what makes it the measurement the spec
+	 * owes: if a cross-parent drop re-mints the row's node, both adapters key by `node.id` and
+	 * rebuild the component, and this state goes with it.
+	 *
+	 * HIDDEN, never absent, which is core's contract for a collapsed row: an unpainted row leaves
+	 * `bind` and takes its anchors with it, so a collapse is CSS and nothing else.
+	 */
+	Toggle: defineComponent({
+		inheritAttrs: false,
+		props: {meta: String, node: {type: null}, depth: Number, index: Number},
+		data: () => ({open: true}),
+		template:
+			'<div :data-id="node.id"><input type="checkbox" aria-label="open" :checked="open" @change="open = !open" /><slot />' +
+			'<span :hidden="!open"><slot name="rows" /></span></div>',
 	}),
 }

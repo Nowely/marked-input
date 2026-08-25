@@ -1,4 +1,5 @@
 import type {MarkProps, RowProps} from '@markput/react'
+import {useState} from 'react'
 
 import {Button} from '../../shared/components/Button'
 
@@ -29,10 +30,32 @@ export const Overlay = () => <span>I'm here!</span>
  * differs — so the shared spec needs one fixture per framework to read it at all.
  */
 export const rows = {
-	Bullet: ({children, rows: childRows, ref}: RowProps) => (
-		<li ref={ref}>
+	Bullet: ({children, rows: childRows, node, ref}: RowProps) => (
+		// `data-id` is the browser's NODE-IDENTITY oracle: a row's id is minted at node birth and
+		// never reused, so an id that survived a move is a node that survived it — which the DOM
+		// element cannot say, since neither framework can move an element between two parents.
+		<li ref={ref} data-id={node.id}>
 			{children}
 			{childRows}
 		</li>
 	),
+	/**
+	 * A COLLAPSIBLE row kind, and the collapse state is the CONSUMER'S — a `useState` inside the
+	 * component, keyed to nothing but the component instance. That is what makes it the measurement
+	 * the spec owes: if a cross-parent drop re-mints the row's node, both adapters key by `node.id`
+	 * and rebuild the component, and this state goes with it.
+	 *
+	 * HIDDEN, never absent, which is core's contract for a collapsed row: an unpainted row leaves
+	 * `bind` and takes its anchors with it, so a collapse is CSS and nothing else.
+	 */
+	Toggle: ({children, rows: childRows, node, ref}: RowProps) => {
+		const [open, setOpen] = useState(true)
+		return (
+			<div ref={ref} data-id={node.id}>
+				<input type="checkbox" aria-label="open" checked={open} onChange={e => setOpen(e.target.checked)} />
+				{children}
+				<span hidden={!open}>{childRows}</span>
+			</div>
+		)
+	},
 }
