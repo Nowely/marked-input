@@ -738,12 +738,40 @@ export function splitPlan(
 	const text = headKeepsChildren ? head + subtree + separator + tailLine : head + separator + tailLine + subtree
 
 	const start = node.position.start + node.lead().length
-	// The subtree's last line carries a separator unless it ends the document, and the window
-	// stops before it — the join puts one back between the tail and whatever follows.
-	const end = node.position.end - (endsDocument(roots, node) ? 0 : separator.length)
+	// The bytes the bound holds right now: the row's own line, plus the subtree and the separator
+	// before it. The subtree's last line carries no trailing separator when it ends the document,
+	// and the bound stops before it when it does — the join puts one back afterwards.
+	const current = rowMarkup(node.descriptor(), node.meta(), body) + subtree
 	// The tail sits past the whole subtree, or directly after the head when the subtree followed it.
 	const tail = index + (headKeepsChildren ? preorderRows([node]).length : 1)
-	return {window: {start, end, insertedLength: text.length}, text, tail}
+
+	// TRIMMED to the shared prefix and suffix inside that bound, and it is {@link turnIntoPlan}'s
+	// caret rule rather than an economy — the same defect P4 fixed there and left standing here.
+	// `resolveMappedAnchor` collapses every offset INSIDE a window onto the window's end, so a
+	// window spanning the line body sent the caret of every mid-row Enter to the END OF THE TAIL:
+	// `'hello'` split at 2 emitted `'he⏎llo'` and then typed the next character into `'he⏎lloZ'`.
+	// Trimmed, such a split is exactly the INSERTION of the separator plus the tail's lead and
+	// opener at the cut, and right affinity puts the caret at the end of that insertion — the
+	// tail's first typable position. Uncontrolled the verb names the caret itself
+	// (`TokenModel.#enterRow`); controlled it does not, and this is the whole of what answers there.
+	//
+	// ONLY WHILE THE SPLICE IS CONTIGUOUS. A head that KEEPS a subtree writes two disjoint pieces —
+	// bytes leave at the cut and arrive past the subtree — and the smallest window covering both is
+	// the whole bound again, where the caret still lands at the tail's end. That is right at a row's
+	// END, which is where the tail is empty and both readings agree, and it is the one shape of the
+	// defect a single window cannot express. See `docs/scratch/notion-like/map.md`.
+	const contiguous = subtree === '' || !headKeepsChildren
+	const prefix = contiguous ? sharedPrefix(current, text) : 0
+	const suffix = contiguous ? sharedSuffix(current, text, prefix) : 0
+	return {
+		window: {
+			start: start + prefix,
+			end: start + current.length - suffix,
+			insertedLength: text.length - prefix - suffix,
+		},
+		text: text.slice(prefix, text.length - suffix),
+		tail,
+	}
 }
 
 /**

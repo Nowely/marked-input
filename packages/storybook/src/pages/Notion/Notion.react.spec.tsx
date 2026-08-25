@@ -320,6 +320,24 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * THE COMMONEST STRUCTURAL GESTURE, asserted where it can actually fail: MID-row, and through
+	 * the next keystroke. Every other Enter case in the suite drives from `focusAtEnd`, the one
+	 * position where a caret left at the tail's END is indistinguishable from a caret at its start
+	 * — and that is exactly what a controlled field did, silently, at every other offset:
+	 * `'one two three'` split at 4 then typed `X` gave `'one ⏎two threeX'`.
+	 */
+	it('puts the caret at the start of the row a mid-row Enter opens', async () => {
+		const {host, value} = await mountControlled(Showcase, 'head\none two three\ntail')
+
+		await focusAtOffset(rowAt(host, 'one two three'), 4)
+		await userEvent.keyboard('{Enter}')
+		await expect.poll(value).toBe('head\none \ntwo three\ntail')
+
+		dispatchInsertText(editingHost(host), 'X')
+		await expect.poll(value).toBe('head\none \nXtwo three\ntail')
+	})
+
+	/**
 	 * A CONSUMER'S CONTROL IS NOT DOCUMENT CONTENT. Everything a row's component paints sits inside
 	 * the one contenteditable container, so a checkbox or a toggle arrow the editor knows nothing
 	 * about is text the caret can enter and the browser can edit. `useControlRef()` is what says

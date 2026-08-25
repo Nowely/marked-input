@@ -574,6 +574,17 @@ becomes a ticket here.
 - What a package on top of this owns: does it wrap `MarkedInput` and ship
   options + components, or does it need core changes first? The ticket list here
   is the input to that decision, not the answer.
+- **One split shape a single window cannot place the caret in: MID-BODY, on a row that KEEPS a
+  subtree.** `splitPlan`'s window is trimmed to the changed bytes now, which is what put the caret
+  at the tail's start for every childless split (the ordinary Enter). It cannot be trimmed when the
+  head keeps its children, because the edit is then two disjoint pieces — bytes leave at the cut,
+  bytes arrive past the subtree — and the smallest window covering both is the whole bound, where
+  `resolveMappedAnchor` collapses the caret onto its end. MEASURED on the tip, controlled:
+  `'abcd⏎⇥child⏎tail'` split at 2 emits `'ab⏎⇥child⏎cd⏎tail'` with the caret at 12, the END of
+  `cd`, where the tail's start is 10. At a row's END the two readings agree (the tail is empty), and
+  that case is pinned. Closing the last shape needs a post-edit CARET carried through the
+  transaction to adoption rather than inferred from window arithmetic — new surface across
+  `applyRange`, `CommitSink` and `adopt`, which is a design change and not this repair.
 - **A table is a run of independent lines, and three wants hang off that one gap.** Columns cannot
   align, the accessible semantics cannot be a table (one `role="table"` per LINE describes a table
   of one row, which is why the probe carries none), and the header can only be read from the DOM

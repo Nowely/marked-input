@@ -24,6 +24,26 @@ const rowStore = (defaultValue: string, options: CoreOption[] = []) => {
 	return store
 }
 
+/**
+ * The same store CONTROLLED, with a parent echoing every `onChange` back into `value` — the mode
+ * every adapter's controlled field runs in, and the one where a verb's own post-edit caret is
+ * DECLINED (`TokenModel.#applyCaret`: the tree has not moved when the verb returns) and adoption's
+ * window arithmetic answers instead. A caret claim made only against `rowStore` proves nothing
+ * about it.
+ */
+const controlledRowStore = (value: string, options: CoreOption[] = []) => {
+	const store = new Store()
+	store.props.set({
+		value,
+		separator: '\n',
+		Mark: () => null,
+		options,
+		onChange: next => store.props.set({value: next}),
+	})
+	store.host.container(document.createElement('div'))
+	return store
+}
+
 /** A kind that CARVES its body, and the anonymous kind its pieces take — a table line and a cell. */
 const CELL: CoreOption = {row: {Component: 'td'}}
 const TABLE: CoreOption = {markup: '|__slot__', row: {Component: 'tr', continues: true, split: {at: ' | ', as: CELL}}}
@@ -458,6 +478,68 @@ describe('splitAt', () => {
 	})
 
 	/**
+	 * THE SAME CLAIM CONTROLLED, which is the mode a split's caret was never asserted in. The verb's
+	 * own `#enterRow` is declined there and adoption's map answers instead — and the map collapses
+	 * every anchor INSIDE a window onto the window's END, so the untrimmed line-plus-subtree window
+	 * threw the caret to the END of the tail: `'hello'` split at 2 emitted the right value and then
+	 * typed `Z` into `'he\nlloZ'`. This is `turnInto`'s P4 defect on the other verb, and it shows on
+	 * the commonest structural gesture in the editor.
+	 *
+	 * Both spellings, because the opener is what a trim has to keep on the correct side: a plain
+	 * row's tail starts at the separator, a bullet's starts past a fresh `'- '`.
+	 */
+	it('leaves the caret at the TAIL’S START in controlled mode', () => {
+		const store = controlledRowStore('hello')
+		const row = rowsOf(store)[0]
+		caretAt(store, 2)
+
+		expect(row.splitAt(inBody(row, 2))).toBe(true)
+
+		expect(store.tokens.value()).toBe('he\nllo')
+		expect(selectionRange(store)).toEqual({start: 3, end: 3})
+	})
+
+	it('leaves the caret past the TAIL’S OWN OPENER in controlled mode', () => {
+		const store = controlledRowStore('- alpha beta', [bullet])
+		const row = rowsOf(store)[0]
+		caretAt(store, 8)
+
+		expect(row.splitAt(inBody(row, 6))).toBe(true)
+
+		expect(store.tokens.value()).toBe('- alpha \n- beta')
+		expect(selectionRange(store)).toEqual({start: 11, end: 11})
+	})
+
+	/**
+	 * THE BOUND ON THE TRIM, pinned so it cannot be widened by accident. A head that KEEPS a
+	 * subtree writes two disjoint pieces, so the window is the whole bound and the caret lands at
+	 * the tail's end — which at a row's END is the tail's start, because the tail is empty. Trimming
+	 * this shape as well moved the caret BACKWARDS, to the head's end, and nothing else noticed.
+	 */
+	it('opens the tail past a kept subtree and puts the caret in it, in controlled mode', () => {
+		const store = controlledRowStore('abcd\n\tchild\ntail')
+		const row = rowsOf(store)[0]
+		caretAt(store, 4)
+
+		expect(row.splitAt(inBody(row, 4))).toBe(true)
+
+		expect(store.tokens.value()).toBe('abcd\n\tchild\n\ntail')
+		expect(selectionRange(store)).toEqual({start: 12, end: 12})
+	})
+
+	/** Enter at a row's START, where the empty head keeps the opener and the tail keeps the text. */
+	it('leaves the caret in the TAIL when the head empties, in controlled mode', () => {
+		const store = controlledRowStore('- alpha\ntail', [bullet])
+		const row = rowsOf(store)[0]
+		caretAt(store, 2)
+
+		expect(row.splitAt(inBody(row, 0))).toBe(true)
+
+		expect(store.tokens.value()).toBe('- \n- alpha\ntail')
+		expect(selectionRange(store)).toEqual({start: 5, end: 5})
+	})
+
+	/**
 	 * A row written directly under a parent AT THE PARENT'S LEAD adopts every child the parent
 	 * has, because nesting is indentation and nothing else — so the tail lands past the subtree
 	 * and the split re-parents nothing. Every surviving row keeps its object across it: the
@@ -517,10 +599,13 @@ describe('splitAt', () => {
 	 * it clamps to depth 0 and the tail lands below its own former children — `'⏎⇥c⏎⇥⇥d⏎ab'`. The
 	 * subtree follows the TAIL instead, and the nesting survives.
 	 *
-	 * MEASURED COST, not a claim: the split adds a row, so no {@link Pairing} can describe it
-	 * (`resolvePairing` needs a total bijection) and identity rests on adoption's index pairing —
-	 * which hands the caller's node to the EMPTY row and re-mints the one that carries the content.
-	 * Stated so the pin turns red if it ever stops being true.
+	 * MEASURED, not claimed: the split adds a row, so no {@link Pairing} can describe it
+	 * (`resolvePairing` needs a total bijection) and identity rests on adoption's retention walk.
+	 * The trimmed window makes this splice a bare INSERTION of the separator at the cut, so the
+	 * row that keeps the CONTENT keeps its object and the empty head is the fresh one. It used to
+	 * be the other way round — the whole line-plus-subtree window handed the caller's node to the
+	 * empty row and re-minted the one carrying the text, taking its DOM element, its grip and every
+	 * consumer subscription keyed on `node.id` with it.
 	 */
 	it('gives the SUBTREE to the tail when the head empties, and keeps it nested', () => {
 		const store = rowStore('ab\n\tc\n\t\td')
@@ -531,7 +616,7 @@ describe('splitAt', () => {
 		expect(store.tokens.value()).toBe('\nab\n\tc\n\t\td')
 		const after = rowsOf(store)
 		expect(after.length).toBe(4)
-		expect(after[0]).toBe(root)
+		expect(after[1]).toBe(root)
 		expect(after[1].slot()).toBe('ab')
 		expect(after[1].rows().map(row => row.slot())).toEqual(['c'])
 		expect(selectionRange(store)).toEqual({start: 1, end: 1})
