@@ -64,7 +64,17 @@ An arrow key is only ever intercepted once a row selection stands — which foll
 
 Widening never narrows: where a selection spans two parents, `Esc` and `Ctrl/Cmd+A` climb to the parent AND keep the rows outside it, and once every selected row is a root `Esc` leaves the selection alone.
 
+`Enter` over a RANGE is deliberately not the replace-the-range rule: it splices a row boundary at the range's LOW end and KEEPS what was selected, so nothing a selection covers is lost to the key that opened a row above it.
+
 Dragging a row's grip carries the whole row selection when the gripped row is part of it, and that row alone otherwise. Where the drop lands — including how DEEP — comes from the pointer: its vertical position names the gap between two lines, its horizontal position names one of the depths that gap legally admits, and every candidate is planned before it is offered, so the drop indicator promises rather than predicts. A pointer below a nested subtree names the gap after that subtree's LAST line, not the slot under the root it started at.
+
+## Copying and Pasting
+
+Copying part of a TYPED row emits a partial RE-ANNOTATION rather than the painted text: half a heading copies as `'# half'`, and one cell of a table line copies as that line with the other cells empty, so the pasted cell keeps its column. That is what makes a clip round-trip through the editor as the same kind it came from.
+
+`\r\n` is not normalized. Under a single-`\n` separator a Windows clipboard's carriage return lands inside the row's own text, where it is an ordinary character. Strip it in your own paste handler if it matters to you.
+
+A delete the model cannot express — one that would reach through a raw closed kind's closing line, or past either end of the document — is CONSUMED and changes nothing, rather than being handed back to the browser.
 
 ## Deleting Around Marks
 
