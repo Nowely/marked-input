@@ -3,6 +3,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 import {watch} from '../../shared/signals'
 import type {CoreOption} from '../../shared/types'
 import {Store} from '../../store/Store'
+import type {TreeNode} from '../tokens'
 import {selectionRange} from '../tokens/__testing__/mountFixtures'
 
 const blockProps: Parameters<Store['props']['set']>[0] = {
@@ -51,6 +52,48 @@ function mountRows(value: string, props: Parameters<Store['props']['set']>[0] = 
 		store.tokens.consign(child.id)(surface)
 	}
 	return {store, block: store.block, container, rows}
+}
+
+/**
+ * The same document painted NESTED — every row inside its parent, which is the shape both adapters
+ * render and the one the hit test has to descend. Its own fixture rather than a flag on
+ * {@link mountRows}: the flat one-div-per-root loop cannot express a box that contains another.
+ *
+ * A row's own LINE carries the height, on a block-level surface inside the wrapper, so a parent's
+ * box is its line plus its children's — which is exactly the containment that costs the flat
+ * search its sorted axis.
+ */
+function mountNestedRows(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
+	const store = new Store()
+	mounted.push(store)
+	store.props.set({...blockProps, separator: '\n', indent: '\t', ...props})
+	const container = document.createElement('div')
+	container.style.position = 'relative'
+	document.body.append(container)
+	store.host.container(container)
+	store.tokens.setValue(value)
+
+	const painted = new Map<number, HTMLElement>()
+	const paint = (node: TreeNode, parent: HTMLElement): void => {
+		const row = document.createElement('div')
+		parent.append(row)
+		painted.set(node.id, row)
+		store.tokens.consign(node.id)(row)
+		if (node.kind !== 'row') return
+		const surface = document.createElement('span')
+		surface.style.display = 'block'
+		surface.style.height = `${ROW_HEIGHT}px`
+		row.append(surface)
+		// `.at`, because `noUncheckedIndexedAccess` is off and a carved row has no inline child.
+		const child = node.inline().at(0)
+		if (child?.kind === 'text') {
+			surface.textContent = child.text()
+			store.tokens.consign(child.id)(surface)
+		}
+		for (const kid of node.rows()) paint(kid, row)
+	}
+	for (const node of store.tokens.nodes()) paint(node, container)
+	return {store, block: store.block, container, painted}
 }
 
 /**
@@ -135,6 +178,89 @@ describe('hover', () => {
 		// Past the last row there is only one side, and it is still the nearest one.
 		mouseMove(container, rows[3].getBoundingClientRect().bottom + 200)
 		expect(block.state.hovered()).toBe(ids[3])
+	})
+
+	/**
+	 * THE DESCENT. A parent's box CONTAINS its children's, so a point inside a child is inside the
+	 * parent too and the flat search would always answer the outermost row — every nested drag
+	 * would then be a root drag. The row under the pointer is the DEEPEST one whose box holds it.
+	 */
+	it('answers the DEEPEST row whose box holds the point', () => {
+		const {block, painted, store} = mountNestedRows('alpha\n\tbeta\n\t\tgamma')
+		const [root] = store.tokens.nodes()
+		if (root.kind !== 'row') throw new Error('expected a row')
+		const child = root.rows()[0]
+		const grandchild = child.rows()[0]
+
+		expect(block.rowAt(midOf(painted.get(grandchild.id)!))?.id).toBe(grandchild.id)
+
+		// The parent's own LINE is what is left over once no child claims the point: its first
+		// 20px, above where its children start.
+		const rootBox = painted.get(root.id)!.getBoundingClientRect()
+		expect(block.rowAt(rootBox.top + ROW_HEIGHT / 2)?.id).toBe(root.id)
+	})
+
+	/**
+	 * THE NEAREST FALLBACK IS ROOT-ONLY, and the difference is what the gap between two children
+	 * means: at the top it is nobody's, so the nearer row takes it, while inside a parent the
+	 * leftover space IS the parent's own line.
+	 */
+	it('never answers a NEAREST child for a point its parent owns', () => {
+		const {block, painted, store} = mountNestedRows('alpha\n\tbeta\n\tgamma')
+		const [root] = store.tokens.nodes()
+		if (root.kind !== 'row') throw new Error('expected a row')
+		const [first, second] = root.rows()
+		painted.get(first.id)!.style.marginBottom = '40px'
+
+		const gap = painted.get(first.id)!.getBoundingClientRect().bottom + 4
+		expect(block.rowAt(gap)?.id).toBe(root.id)
+		expect(block.rowAt(midOf(painted.get(second.id)!))?.id).toBe(second.id)
+	})
+
+	/**
+	 * THE COLLAPSE HAZARD: a row the consumer hid is still in the tree and still bound, and it has
+	 * no box at all. The search must not order by a coordinate that does not exist, and the descent
+	 * must stop at the row that was collapsed — which is the row a drop should land beside.
+	 */
+	it('stops at a collapsed row, whose children have no box', () => {
+		const {block, painted, store} = mountNestedRows('alpha\n\tbeta\n\tgamma')
+		const [root] = store.tokens.nodes()
+		if (root.kind !== 'row') throw new Error('expected a row')
+		for (const child of root.rows()) painted.get(child.id)!.hidden = true
+
+		const rootBox = painted.get(root.id)!.getBoundingClientRect()
+		expect(rootBox.height).toBe(ROW_HEIGHT)
+		expect(block.rowAt(midOf(painted.get(root.id)!))?.id).toBe(root.id)
+	})
+
+	/** And an unpainted row among painted SIBLINGS leaves the rest of the level searchable. */
+	it('searches past an unpainted row rather than giving up on the level', () => {
+		const {block, painted, store} = mountNestedRows('alpha\nbeta\ngamma\ndelta')
+		const ids = store.tokens.nodes().map(node => node.id)
+		painted.get(ids[1])!.hidden = true
+
+		expect(block.rowAt(midOf(painted.get(ids[2])!))?.id).toBe(ids[2])
+		expect(block.rowAt(midOf(painted.get(ids[3])!))?.id).toBe(ids[3])
+		expect(block.rowAt(midOf(painted.get(ids[0])!))?.id).toBe(ids[0])
+	})
+
+	/**
+	 * A CARVED row is a leaf to the hit test: its child rows are its own cells, a cell has no line
+	 * of its own and no verb can address one, so pointing anywhere in a table line answers the LINE.
+	 */
+	it('answers a carved row rather than the cell under the pointer', () => {
+		const cell: CoreOption = {row: {Component: 'td'}}
+		const table: CoreOption = {
+			markup: '|__slot__',
+			row: {Component: 'tr', split: {at: ' | ', as: cell}},
+		}
+		const {block, painted, store} = mountNestedRows('| a | b\nplain', {options: [table, cell]})
+		const [line] = store.tokens.nodes()
+		if (line.kind !== 'row') throw new Error('expected a row')
+
+		for (const piece of line.rows()) {
+			expect(block.rowAt(midOf(painted.get(piece.id)!))?.id).toBe(line.id)
+		}
 	})
 
 	it('hit-tests nothing outside block layout, which parses no rows', () => {

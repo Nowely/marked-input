@@ -3,6 +3,7 @@ import type {Computed} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
+import {hasCells} from '../tokens'
 import type {RowConfig, TokenModel, TreeNode} from '../tokens'
 
 /**
@@ -11,6 +12,9 @@ import type {RowConfig, TokenModel, TreeNode} from '../tokens'
  * a false positive — dodging the word is cheaper than narrowing the gate.
  */
 export type DropEdge = 'before' | 'after'
+
+/** One answer of {@link BlockController.rowAt}'s search: which row, its box, and whether it HOLDS the point. */
+type Hit = {id: number; rect: DOMRect; contained: boolean}
 
 /** A row's geometry in the controls layer's own space: the container's PADDING box. */
 export interface RowBox {
@@ -253,46 +257,120 @@ export class BlockController {
 
 	/**
 	 * The row under a viewport Y, with the rect that answered it — `undefined` outside block
-	 * layout, or when a row on the search path has no bound element.
+	 * layout and for a document whose rows are none of them painted.
 	 *
-	 * Rows tile the container vertically in tree order, so this is a BINARY search: the naive
-	 * scan costs one rect read per row per mousemove tick. Measured at 10 reads/tick for 50 rows
-	 * and 14 for 200 — ~12 µs/tick steady, ~38 µs/tick when a DOM write between ticks forces
-	 * every read to reflow. Deliberately not cached per geometry tick: the worst measured case
-	 * is 0.2% of a frame, and a cache would need invalidating by everything that can move a row,
-	 * which is every commit and every re-wrapped line.
+	 * TWO SEARCHES, because nesting takes the flat one's only sorted axis away: a parent's box
+	 * CONTAINS its children's, so the roots still tile the container vertically in tree order
+	 * ({@link hitAmong}'s binary search) while the row actually under the pointer is the DEEPEST
+	 * one whose box holds it. The descent is the same search run over the hit row's own child rows
+	 * — the parent's own LINE is what is left over once no child claims the point.
+	 *
+	 * The binary search is what keeps it logarithmic: the naive scan costs one rect read per row
+	 * per mousemove tick. Measured at 10 reads/tick for 50 rows and 14 for 200 — ~12 µs/tick
+	 * steady, ~38 µs/tick when a DOM write between ticks forces every read to reflow. Deliberately
+	 * not cached per geometry tick: the worst measured case is 0.2% of a frame, and a cache would
+	 * need invalidating by everything that can move a row, which is every commit and every
+	 * re-wrapped line. The descent adds one search per LEVEL, over child lists rather than over the
+	 * document.
+	 *
+	 * A CARVED row is a leaf here: its child rows are its own cells, a cell has no line of its own
+	 * and no verb can address one, so pointing at a table's line answers the LINE.
+	 *
+	 * THE NEAREST FALLBACK IS ROOT-ONLY. At the top a point in the gap between two rows belongs to
+	 * the nearer of them — the declared hover rule — but inside a parent the leftover space IS the
+	 * parent's own line, so a nearest child there would claim a point the parent owns.
 	 */
 	rowAt(clientY: number): {id: number; rect: DOMRect} | undefined {
 		if (this.tokens.rowConfig() === undefined) return undefined
-		const rows = this.tokens.nodes()
+		let found = this.#hitAmong(this.tokens.nodes(), clientY)
+		while (found?.contained === true) {
+			const row = this.tokens.find(found.id)
+			if (row?.kind !== 'row' || hasCells(row)) break
+			const deeper = this.#hitAmong(row.rows(), clientY)
+			if (deeper?.contained !== true) break
+			found = deeper
+		}
+		return found && {id: found.id, rect: found.rect}
+	}
+
+	// ─── internals ─────────────────────────────────────────────────────────────
+
+	/**
+	 * The binary search itself, over ONE sibling list: the row whose box holds `clientY`, or the
+	 * nearest probed row when the point falls in a gap between two.
+	 *
+	 * `contained` is the difference the descent needs and the flat search never had to state — see
+	 * {@link rowAt} for why only the root level may take the nearest answer.
+	 */
+	#hitAmong(rows: readonly {id: number}[], clientY: number): Hit | undefined {
 		let low = 0
 		let high = rows.length - 1
-		let nearest: {id: number; rect: DOMRect} | undefined
+		let nearest: Hit | undefined
 		let nearestGap = Infinity
 		while (low <= high) {
-			const mid = (low + high) >> 1
-			const id = rows[mid].id
-			const element = this.tokens.handle(id)?.element()
-			if (!element) return undefined
-			const rect = element.getBoundingClientRect()
-			if (clientY >= rect.top && clientY < rect.bottom) return {id, rect}
+			const probe = this.#paintedNear(rows, (low + high) >> 1, low, high)
+			// Nothing left in the range has a box — a collapsed subtree is the whole of this case.
+			if (!probe) return nearest
+			const {at, rect} = probe
+			const id = rows[at].id
+			if (clientY >= rect.top && clientY < rect.bottom) return {id, rect, contained: true}
 			// The nearest probe, not the LAST one: a search that ends by stepping past a gap
 			// answers the FAR side of it. Tracking the closest is enough, because the search
 			// cannot narrow onto a gap without probing both rows that bound it.
 			const gap = clientY < rect.top ? rect.top - clientY : clientY - rect.bottom
 			if (gap < nearestGap) {
 				nearestGap = gap
-				nearest = {id, rect}
+				nearest = {id, rect, contained: false}
 			}
-			if (clientY < rect.top) high = mid - 1
-			else low = mid + 1
+			if (clientY < rect.top) high = at - 1
+			else low = at + 1
 		}
-		// Between two rows (a margin gap) or past the ends: the NEAREST row still owns the point.
-		// DOM containment showed nothing there; this is the declared hover change.
 		return nearest
 	}
 
-	// ─── internals ─────────────────────────────────────────────────────────────
+	/**
+	 * THE COLLAPSE HAZARD, and this is the whole of the answer: a row hidden by a collapsed
+	 * ancestor is still in the tree and still bound, so a search meets it — and it has no box to
+	 * compare against, while a binary search cannot order by a coordinate that does not exist.
+	 * Probing outward from `mid` to the nearest PAINTED row keeps the range's order intact, and
+	 * costs nothing at all while every row is painted, which is the ordinary document.
+	 *
+	 * The collapsed shape is the cheap one by construction: a collapsed row hides its WHOLE child
+	 * list, so the first probe walks the level, finds nothing and the descent stops at the row the
+	 * consumer collapsed — which is the row a drop should land beside anyway.
+	 */
+	#paintedNear(
+		rows: readonly {id: number}[],
+		mid: number,
+		low: number,
+		high: number
+	): {at: number; rect: DOMRect} | undefined {
+		for (let step = 0; step <= high - low; step++) {
+			const before = this.#rectOf(rows, mid - step, low, high)
+			if (before) return before
+			const after = step > 0 ? this.#rectOf(rows, mid + step, low, high) : undefined
+			if (after) return after
+		}
+		return undefined
+	}
+
+	/**
+	 * A row's viewport box, or `undefined` when the row is not PAINTED. `getClientRects()` is empty
+	 * exactly for an element layout produced no box for, which is what `hidden`/`display: none`
+	 * makes of a collapsed row's children; `getBoundingClientRect()` alone answers all zeros there
+	 * and cannot be told apart from a real box at the viewport origin.
+	 */
+	#rectOf(
+		rows: readonly {id: number}[],
+		at: number,
+		low: number,
+		high: number
+	): {at: number; rect: DOMRect} | undefined {
+		if (at < low || at > high) return undefined
+		const element = this.tokens.handle(rows[at].id)?.element()
+		if (!element || element.getClientRects().length === 0) return undefined
+		return {at, rect: element.getBoundingClientRect()}
+	}
 
 	/** Untracked, so a caller reading geometry from inside an effect does not subscribe to mount. */
 	#container(): HTMLElement | null {
