@@ -88,7 +88,13 @@ describe('the Notion showcase is options and components', () => {
 	 * KEYED ON THE MEMBER REACHED, not on the receiver's NAME. `\bstore\.(edit|tokens)\b` was the
 	 * first spelling and it fenced nothing: `useMarkput(s => s.tokens)` is the same reach through
 	 * the same published door with the variable called something else, and it passed at 4/4 green.
-	 * The package has no other `.edit` or `.tokens` member, so the wider pattern costs nothing.
+	 * The showcase has no other `.edit` or `.tokens` member, so the wider pattern costs nothing.
+	 *
+	 * It is a SOURCE GREP, so computed access walks through it: `store['tok' + 'ens']` was measured
+	 * and is not caught, while the same reach split across lines is. Left as is rather than grown
+	 * into a parser, because there is no door behind it — the only published route to a store is
+	 * `useMarkput`, which the next test forbids by name, and `MarkputHandle` exposes `focus()` and
+	 * nothing else.
 	 */
 	it('reaches neither `.edit` nor `.tokens` on anything', () => {
 		const offenders = files.flatMap(([path, source]) =>

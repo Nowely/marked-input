@@ -5,7 +5,7 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
-import {editingHost, findEditingHost, rowsOf} from '../../shared/lib/dom'
+import {BLOCK_CONTROLS, editingHost, findEditingHost, rowsOf} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtOffset, focusAtStart} from '../../shared/lib/focus'
 import {dispatchInsertText} from '../../shared/lib/inputEvents'
 import {APOLLO_DOC} from './document'
@@ -47,10 +47,24 @@ async function mountControlled(Story: Story, initial: string) {
 	return {host: findEditingHost(container), value: () => latest.current}
 }
 
-/** Every row element at every depth, in document order — a nested row is not a child of the host. */
+/**
+ * The row element reading exactly `text`, at any depth in document order — a nested row is not a
+ * child of the host.
+ *
+ * IT ASKS THE EDITOR WHAT A ROW IS. `resolveNodeSlot` puts its own `styles.Block` on every row it
+ * resolves, kind or paragraph, and a kind's component spreads the `className` it is handed; that
+ * class is the row, whatever tag the consumer chose to paint it as. The lookup used to say `div`,
+ * and a page whose kinds are all `<div>` today hid what that costs: rendering `Paragraph` as `<p>`
+ * — a semantics-only change that alters nothing about the editor — reddened three unrelated tests
+ * with `no element reading "alpha"`, a message whose first reading is "the document broke".
+ *
+ * `BlockControls` shares the prefix and is not a row (ADR-0007), so it and its subtree are out.
+ */
+const ROW = `[class*="Block"]:not(${BLOCK_CONTROLS}):not(${BLOCK_CONTROLS} *)`
+
 const rowAt = (host: HTMLElement, text: string): HTMLElement => {
-	const found = [...host.querySelectorAll<HTMLElement>('div')].find(row => row.textContent.trim() === text)
-	if (!found) throw new Error(`no element reading ${JSON.stringify(text)}`)
+	const found = [...host.querySelectorAll<HTMLElement>(ROW)].find(row => row.textContent.trim() === text)
+	if (!found) throw new Error(`no row reading ${JSON.stringify(text)}`)
 	return found
 }
 
