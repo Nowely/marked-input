@@ -297,10 +297,15 @@ function demote(caret: AnchoredRow): boolean {
  * the event; `false` leaves the ordinary path, which is every selection that is not a whole number
  * of rows. See {@link TokenModel.replaceRows} for the reading all four gestures share.
  *
- * A DELETE removes them — Backspace's own keydown arm and a cut both arrive here as one — and a
- * PASTE replaces them with the clip verbatim, which is what the clipboard carried out of the same
- * span. TYPING is deliberately not on the list: a character replaces the text that was selected and
- * the row it was typed in keeps its kind, which is the granularity every other inline edit has.
+ * A DELETE removes them and a PASTE replaces them with the clip, which is what the clipboard
+ * carried out of the same span. TYPING is deliberately not on the list: a character replaces the
+ * text that was selected and the row it was typed in keeps its kind, which is the granularity every
+ * other inline edit has.
+ *
+ * THE DELETE ARM IS THE ONE FOR DELETES THAT ANSWER TO NO KEYDOWN OF OURS — an Edit-menu delete, a
+ * synthetic `deleteByCut`. Backspace's own keydown arm and the `cut` listener both cancel their
+ * event and call {@link TokenModel.replaceRows} directly, so neither reaches this function; what
+ * the three spellings share is the verb, not this route.
  */
 export function replaceRowSelection(store: KbCtx, event: InputEvent, anchors: Anchors, replacement: string): boolean {
 	if (event.inputType.startsWith('delete')) return store.tokens.replaceRows(anchors, null)
