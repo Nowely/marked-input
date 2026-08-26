@@ -5,7 +5,7 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
-import {ROW_CONTROLS, editingHost, findEditingHost, rowsOf} from '../../shared/lib/dom'
+import {ROW_CONTROLS, editingHost, findEditingHost, getElement, rowsOf} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtOffset, focusAtStart} from '../../shared/lib/focus'
 import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
 import {APOLLO_DOC} from './document'
@@ -101,6 +101,27 @@ async function dragTo(host: HTMLElement, from: HTMLElement, clientX: number, cli
 	host.dispatchEvent(new DragEvent('dragover', at))
 	host.dispatchEvent(new DragEvent('drop', at))
 	grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))
+}
+
+/**
+ * The popup BOX around a rendered item — the positioned ancestor, found by the one property that
+ * defines it (`position: fixed`) rather than by a hashed CSS-module class name.
+ */
+function popupAround(inner: HTMLElement): HTMLElement {
+	for (let element: HTMLElement | null = inner; element; element = element.parentElement) {
+		if (getComputedStyle(element).position === 'fixed') return element
+	}
+	throw new Error('Expected a fixed-positioned popup ancestor')
+}
+
+/** A theme token as the browser RESOLVES it, so the assertion compares two computed colours. */
+function themeToken(host: HTMLElement, name: string): string {
+	const probe = document.createElement('div')
+	probe.style.backgroundColor = `var(${name})`
+	host.append(probe)
+	const colour = getComputedStyle(probe).backgroundColor
+	probe.remove()
+	return colour
 }
 
 /** Picks an entry out of whichever overlay is open. */
@@ -415,6 +436,28 @@ describe('the slash menu', () => {
 		await userEvent.keyboard('{Enter}')
 
 		await expect.poll(value).toBe('## plain row')
+	})
+
+	/**
+	 * AND IT LOOKS LIKE THIS PAGE. The menu, the mention picker and the grip menu were all
+	 * white-on-light inside a dark page — browser chrome sitting on a document. The showcase
+	 * declares the adapter's own theme names in `theme/tokens.css`, so the fix is a token map
+	 * rather than an override of a hashed CSS-module class.
+	 *
+	 * Read as COMPUTED COLOUR, not as a declaration: what a user sees is the pixel, and a
+	 * variable declared on an ancestor the popup does not descend from would still read as
+	 * declared while painting white.
+	 */
+	it('paints the menu in the page\u2019s own surface colour, not browser white', async () => {
+		const {host} = await mount(Empty)
+
+		await focusAtStart(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '/')
+		await expect.element(page.getByText('Heading 2', {exact: true})).toBeVisible()
+
+		const popup = popupAround(getElement(page.getByText('Heading 2', {exact: true})))
+		expect(getComputedStyle(popup).backgroundColor).not.toBe('rgb(255, 255, 255)')
+		expect(getComputedStyle(popup).backgroundColor).toBe(themeToken(host, '--notion-surface-overlay'))
 	})
 
 	/** The menu is `overlay.list.rows`, so a keyword no label contains still narrows it. */

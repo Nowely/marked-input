@@ -159,6 +159,34 @@ evaluated twice for a newly opened overlay: once at the anchor, then again, fitt
 commit that attached the `ref`. **Attach `ref` or you get no flip**: it is how core learns how big
 your overlay is, as well as how outside-click detection finds it.
 
+## Theming the Built-in Look
+
+The popup, its highlighted row, the drag grip and the drop indicator are painted from
+`@markput/core/styles.module.css`, and every colour in it is read through a custom property whose
+fallback is the shipped default. Declare any of them on an ancestor — no CSS-module class name is
+involved, and an editor nobody themes looks exactly as it did.
+
+| Custom property                    | Default                          | Paints                       |
+| ---------------------------------- | -------------------------------- | ---------------------------- |
+| `--markput-popup-background`       | `white`                          | Popup background             |
+| `--markput-popup-border`           | `#ccc`                           | Popup border                 |
+| `--markput-popup-text`             | `#000`                           | Popup text                   |
+| `--markput-popup-shadow`           | `0 3px 6px -2px rgba(0,0,0,.6)`  | Popup shadow                 |
+| `--markput-popup-item-background`  | `#cce9ff`                        | Hovered / highlighted row    |
+| `--markput-popup-item-text`        | `#2589f5`                        | Hovered / highlighted row    |
+| `--markput-grip-color`             | `#9ca3af`                        | The drag grip                |
+| `--markput-drop-indicator`         | `#3b82f6`                        | The row drop line            |
+
+```css
+.my-dark-page {
+    --markput-popup-background: #252525;
+    --markput-popup-border: rgb(255 255 255 / 13%);
+    --markput-popup-text: rgb(255 255 255 / 82%);
+    --markput-popup-item-background: rgb(255 255 255 / 4%);
+    --markput-popup-item-text: rgb(255 255 255 / 82%);
+}
+```
+
 ## The useOverlay Hook
 
 Build custom overlays with the `useOverlay()` hook:

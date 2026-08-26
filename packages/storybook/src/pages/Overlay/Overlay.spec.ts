@@ -354,3 +354,42 @@ describe('a popup that does not fit below the caret', () => {
 		expect(popup.bottom).toBeLessThanOrEqual(caret.top)
 	})
 })
+
+/**
+ * THE SHIPPED LOOK IS A DEFAULT A CONSUMER CAN REPLACE. The three popups this editor paints — the
+ * overlay list, the row menu and the grip menu — were white-on-light with no door at all, so
+ * inside a dark page they read as browser chrome rather than as document. The door is a custom
+ * property, not a class: a CSS-module class name is hashed and is not a contract.
+ */
+describe('the popup takes its colours from the page', () => {
+	const THEMED = 'rgb(17, 18, 19)'
+
+	afterEach(() => {
+		document.documentElement.style.removeProperty('--markput-popup-background')
+	})
+
+	it('paints the background a consumer declares on an ancestor', async () => {
+		const {host} = await mount(Default, {defaultValue: 'Hello ', options: LABELLED_ITEM})
+		document.documentElement.style.setProperty('--markput-popup-background', THEMED)
+		const [surface] = textSurfaces(host)
+
+		await focusAtEnd(surface)
+		await userEvent.keyboard('@')
+		await expect.element(page.getByText('Item')).toBeInTheDocument()
+
+		const popup = overlayBox(getElement(page.getByText('Item')))
+		expect(getComputedStyle(popup).backgroundColor).toBe(THEMED)
+	})
+
+	it('paints white when nobody declares anything, which is the shipped default', async () => {
+		const {host} = await mount(Default, {defaultValue: 'Hello ', options: LABELLED_ITEM})
+		const [surface] = textSurfaces(host)
+
+		await focusAtEnd(surface)
+		await userEvent.keyboard('@')
+		await expect.element(page.getByText('Item')).toBeInTheDocument()
+
+		const popup = overlayBox(getElement(page.getByText('Item')))
+		expect(getComputedStyle(popup).backgroundColor).toBe('rgb(255, 255, 255)')
+	})
+})

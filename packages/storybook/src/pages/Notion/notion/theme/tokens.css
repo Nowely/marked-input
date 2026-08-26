@@ -128,4 +128,22 @@
 	--notion-line-height-tight: 1.2;
 	--notion-line-height-heading: 1.3;
 	--notion-line-height-body: 1.5;
+
+	/* --- What the EDITOR paints ---------------------------------------------- */
+	/* markput's own controls — the overlay list, the row menu, the grip and the drop line — are
+	   the adapters' default look, and the adapters read every colour of it through these names
+	   (`packages/core/styles.module.css`). Declared HERE and nowhere else, so the showcase
+	   themes the editor exactly the way it themes itself: no CSS-module class is overridden,
+	   and nothing depends on a hashed name that is not a contract.
+
+	   Without them the three popups were white-on-light inside a dark page and read as browser
+	   chrome rather than as document. */
+	--markput-popup-background: var(--notion-surface-overlay);
+	--markput-popup-border: var(--notion-border-default);
+	--markput-popup-text: var(--notion-text-primary);
+	--markput-popup-shadow: var(--notion-shadow-overlay);
+	--markput-popup-item-background: var(--notion-surface-block-hover);
+	--markput-popup-item-text: var(--notion-text-primary);
+	--markput-grip-color: var(--notion-text-muted);
+	--markput-drop-indicator: var(--notion-drop-indicator);
 }
