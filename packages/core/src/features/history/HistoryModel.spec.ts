@@ -3,7 +3,7 @@ import {describe, expect, it, vi} from 'vitest'
 import type {CoreOption} from '../../shared/types'
 import {Store} from '../../store/Store'
 import type {NodeAnchor, RowNode} from '../tokens'
-import {anchorsAt, caretAt, selectionRange} from '../tokens/__testing__/mountFixtures'
+import {anchorsAt, caretAt, mountNestedRowDoc, selectionRange} from '../tokens/__testing__/mountFixtures'
 
 /**
  * THE PROVING SUITE FOR THE UNDO STACK, and every case here is stated in BOTH value modes or is
@@ -277,6 +277,46 @@ describe('history: what is one step', () => {
 		expect(store.tokens.value()).toBe('Ahello')
 		expect(store.history.undo()).toBe(true)
 		expect(store.tokens.value()).toBe('hello')
+	})
+
+	/**
+	 * THE CARET INVARIANT'S DOOR IS NOT A STEP. A document ending in a raw closed body with the
+	 * caret inside it gets a row opened after it (`TokenModel.#keepTailEnterable`) — an edit the
+	 * EDITOR made, on the microtask after the one that provoked it.
+	 *
+	 * Taken as a step of its own it killed the stack outright, in both directions at once: the
+	 * entry beneath it named `'```ts⏎q⏎```'`, which the door had already moved past, so `#holds`
+	 * refused it; and undoing the door restored the trap that opens it, so the invariant re-opened
+	 * it and that fresh record cleared the redo stack. On the showcase that read as `/code`, type,
+	 * one Cmd+Z, and neither key ever working again.
+	 *
+	 * BOTH ARMS ARE HERE, and the second is the redo half: the undo below re-provokes the invariant
+	 * with the caret restored into the fence, so the entry it just moved into `#future` is the one
+	 * whose `base` the door moves.
+	 */
+	it('folds the row the caret invariant opens into the edit that provoked it', async () => {
+		const fence: CoreOption = {markup: '```__meta__\n__value__\n```', row: {Component: 'pre'}}
+		const {store} = mountNestedRowDoc({defaultValue: '```ts\nq\n```', options: [fence], Mark: () => null})
+
+		type(store, 7, 'X')
+		expect(store.tokens.value()).toBe('```ts\nqX\n```')
+		// The door, one microtask later — see `rowKeys.spec`'s "inserts a literal newline inside a
+		// RAW CLOSED body, and a row after it".
+		await Promise.resolve()
+		expect(store.tokens.value()).toBe('```ts\nqX\n```\n')
+
+		// ONE press takes the keystroke AND the door, because the door is not the user's step.
+		expect(store.history.canUndo()).toBe(true)
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('```ts\nq\n```')
+
+		// And the invariant re-opens it, with nothing left in `#past` to fold it into.
+		await Promise.resolve()
+		expect(store.tokens.value()).toBe('```ts\nq\n```\n')
+
+		expect(store.history.canRedo()).toBe(true)
+		expect(store.history.redo()).toBe(true)
+		expect(store.tokens.value()).toBe('```ts\nqX\n```\n')
 	})
 })
 

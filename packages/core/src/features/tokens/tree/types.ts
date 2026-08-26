@@ -64,6 +64,13 @@ export type EditRecord = {
 	readonly next: string
 	readonly window: Window
 	readonly selectionBefore: Offsets | undefined
+	/**
+	 * THE EDITOR'S OWN WRITE, not a gesture: the caret invariant opening the door after a
+	 * document-final raw body. It is still an edit — the value grows and the parent hears it — but
+	 * it is nobody's step to take back, and a stack that treats it as one strands itself, because
+	 * undoing the door puts the caret back in the trap that opens it again.
+	 */
+	readonly repair?: true
 }
 
 /**

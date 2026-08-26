@@ -812,6 +812,9 @@ describe('the keymap on the showcase kinds', () => {
 })
 
 describe('undo', () => {
+	const undo = () => userEvent.keyboard('{Meta>}z{/Meta}')
+	const redo = () => userEvent.keyboard('{Meta>}{Shift>}z{/Shift}{/Meta}')
+
 	/**
 	 * The editor owns the stack (ADR-0012), so `Mod+Z` undoes a keystroke and `Mod+Shift+Z` puts it
 	 * back. Driven in the CONTROLLED mode, which is the one the round trip has to survive: the tree
@@ -828,13 +831,54 @@ describe('undo', () => {
 		dispatchInsertText(editingHost(host), 'XY')
 		await expect.poll(value).toBe('- alpha\n- beXYta')
 
-		await userEvent.keyboard('{Meta>}z{/Meta}')
+		await undo()
 		await expect.poll(value).toBe('- alpha\n- beta')
 		expect(window.getSelection()?.focusNode?.textContent).toBe('beta')
 		expect(window.getSelection()?.focusOffset).toBe(2)
 
-		await userEvent.keyboard('{Meta>}{Shift>}z{/Shift}{/Meta}')
+		await redo()
 		await expect.poll(value).toBe('- alpha\n- beXYta')
+	})
+
+	/**
+	 * A RAW-BODIED KIND, which is what every case above avoided and the whole reason the stack could
+	 * be reported dead while the suite was green. The caret invariant opens a row after a fence that
+	 * ends the document — so picking **Code** grows the value TWICE, once for the pick and once for
+	 * that door, and the door used to be an entry of its own. It stranded both directions at the
+	 * same press: undoing it put the caret back in the fence, the invariant re-opened the door, and
+	 * that fresh record cleared the redo stack — while the entry underneath named `'```bash⏎⏎```'`,
+	 * a projection the door had already moved past, so `canUndo` refused it and the `/code`
+	 * conversion could never be taken back.
+	 *
+	 * DRIVEN TO BOTH ENDS on purpose: one undo reads the same whether the stack survived it or died
+	 * on it, and the reported gesture is exactly what the first three lines do.
+	 */
+	it('undoes and redoes the whole gesture that made a code block and typed in it', async () => {
+		const {host, value} = await mountControlled(Empty, '')
+
+		await focusAtStart(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '/code')
+		await expect.element(page.getByText('Code', {exact: true})).toBeVisible()
+		await userEvent.keyboard('{ArrowDown}{Enter}')
+		// The pick leaves the caret in the fence, so the next keys are typed into its body.
+		await userEvent.keyboard('ls')
+		await expect.poll(value).toBe('```bash\nls\n```\n')
+
+		await undo()
+		await expect.poll(value).toBe('```bash\n\n```\n')
+		await undo()
+		await expect.poll(value).toBe('/code')
+		await undo()
+		await expect.poll(value).toBe('')
+
+		await redo()
+		await expect.poll(value).toBe('/code')
+		await redo()
+		// THE DOOR RIDES WITH THE PICK rather than being a press of its own — the redo restores the
+		// settled document, and the invariant finds the row it wants already there.
+		await expect.poll(value).toBe('```bash\n\n```\n')
+		await redo()
+		await expect.poll(value).toBe('```bash\nls\n```\n')
 	})
 })
 

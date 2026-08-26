@@ -75,6 +75,12 @@ export function createBoundary(deps: {
 	selection?: () => Anchors | undefined
 	onChange: (value: string) => void
 	/**
+	 * Is the write in flight the caret invariant's own — see {@link EditRecord.repair}. Read at
+	 * `commit`, which is the only moment both modes share: a controlled record is emitted on the
+	 * parent's echo, a task later, where no ambient reading of "who is writing" is still true.
+	 */
+	repairing?: () => boolean
+	/**
 	 * The `TransactionResult` feed. `TokenModel` drives the commit pipeline, its value
 	 * snapshot and the selection repair off it, in that order.
 	 */
@@ -176,6 +182,9 @@ export function createBoundary(deps: {
 				// `base`: the record outlives both. `offsetOfAnchor` is a field read, not a walk,
 				// so this costs the commit path nothing.
 				selectionBefore: selection && resolveAnchors(deps.tree.roots(), selection),
+				// `true` or ABSENT, never `false`: the field says a repair made this record, and an
+				// optional flag that is present and false is a third state nothing reads.
+				repair: deps.repairing?.() ? true : undefined,
 			}
 			return apply(next, window, {edit})
 		},

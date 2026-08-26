@@ -2,7 +2,7 @@ import {batch, computed, signal, watch} from '../../shared/signals'
 import type {Computed, Signal} from '../../shared/signals'
 import type {PropsModel} from '../state/PropsModel'
 import type {EditRecord, TokenModel, Window} from '../tokens'
-import {invertWindow} from '../tokens'
+import {gapWindow, invertWindow} from '../tokens'
 
 /**
  * How long a typing run stays open. Consecutive characters typed forward inside this window are
@@ -120,6 +120,7 @@ export class HistoryModel {
 	 */
 	#push(record: EditRecord): void {
 		if (!this.props.history()) return
+		if (record.repair) return this.#settle(record)
 		const past = this.#past()
 		const previous = past.at(-1)
 		const run = previous && Date.now() - this.#typedAt < TYPING_RUN_MS ? typedTogether(previous, record) : undefined
@@ -129,6 +130,42 @@ export class HistoryModel {
 		batch(() => {
 			this.#past(run ? [...past.slice(0, -1), run] : [...past, record])
 			this.#future([])
+		})
+	}
+
+	/**
+	 * THE EDITOR'S OWN WRITE, folded into the projection the document currently stands on rather
+	 * than pushed as a step of its own ({@link EditRecord.repair}).
+	 *
+	 * IT IS NOT A STEP. The caret invariant opens the door because the caret is in the trap, so
+	 * undoing the door restores the trap and the invariant opens it again — a step that instantly
+	 * takes itself back, and one that cleared the redo stack every time it did. The whole stack
+	 * under it died with it: the entry beneath named a projection the door had already moved past,
+	 * so `#holds` refused it and every entry below became unreachable. Measured on the showcase:
+	 * `/code`, Enter, `ls`, then one undo, and neither key did anything ever again.
+	 *
+	 * BOTH STACKS, because after an undo both name the value the repair just moved: the top of
+	 * `#past` by its `next`, the top of `#future` by its `base`. Amending one and not the other is
+	 * what leaves undo working and redo dead.
+	 *
+	 * THE WINDOW IS RE-DERIVED, and that is a real loss: an identity {@link Window.pairing} does not
+	 * survive it, so a repair landing on a MOVE would make that move's undo re-pair its rows by
+	 * index. The composition of two splices is not a splice, and a door opened at the document's
+	 * end is not adjacent to the edit that provoked it — Enter inside a fence writes its newline in
+	 * the body — so there is no exact single window to keep.
+	 */
+	#settle(record: EditRecord): void {
+		const amend = (stack: Signal<readonly EditRecord[]>, end: 'base' | 'next'): void => {
+			const entries = stack()
+			const entry = entries.at(-1)
+			if (!entry || entry[end] !== record.base) return
+			const base = end === 'base' ? record.next : entry.base
+			const next = end === 'next' ? record.next : entry.next
+			stack([...entries.slice(0, -1), {...entry, base, next, window: gapWindow(base, next)}])
+		}
+		batch(() => {
+			amend(this.#past, 'next')
+			amend(this.#future, 'base')
 		})
 	}
 

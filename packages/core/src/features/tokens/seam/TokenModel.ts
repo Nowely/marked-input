@@ -1097,11 +1097,23 @@ export class TokenModel {
 		this.#settling = true
 		queueMicrotask(() => {
 			this.#settling = false
-			this.#settleCaret()
+			// EVERY WRITE THE INVARIANT MAKES IS A REPAIR (see {@link EditRecord.repair}), and this
+			// is the one place that can say so: both arms below open a row through the ordinary row
+			// verbs, which a user drives too, so the fact is about the CALLER and not about the verb.
+			// The flag is read synchronously inside `CommitSink.commit`, which the write reaches
+			// before this call returns in either value mode.
+			this.#repairing = true
+			try {
+				this.#settleCaret()
+			} finally {
+				this.#repairing = false
+			}
 		})
 	}
 
 	#settling = false
+
+	#repairing = false
 
 	#settleCaret(): void {
 		const anchors = this.selection.anchors()
@@ -1237,6 +1249,7 @@ export class TokenModel {
 				this.selection.repair(result)
 			}),
 		onEdit: record => this.edits(record),
+		repairing: () => this.#repairing,
 	})
 
 	readonly #tx = createTransactions({
