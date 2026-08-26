@@ -6,6 +6,26 @@ keywords: [slash commands, command menu, Notion, text transformation, command pa
 
 This example demonstrates how to build a slash command system like Notion, Slack, or Linear. Type `/` to trigger a menu of commands that transform text or insert content.
 
+:::tip[There is a shipped one]
+If your `/` menu is meant to change what the caret's ROW IS — a heading, a list item, a quote, a code
+fence — you do not need any of the code below. An option that declares a `menu` is already in the row
+menu, each adapter ships the paint as `RowMenu`, and choosing an entry retypes the row in one splice:
+
+```tsx
+import {RowMenu} from '@markput/react'
+
+const options = [
+    {Overlay: RowMenu, overlay: {trigger: '/'}},
+    {markup: '# __slot__', row: {Component: Heading}, menu: {label: 'Heading 1', keywords: ['h1']}},
+    {markup: '- __slot__', row: {Component: Bullet, continues: true, indents: true}, menu: {label: 'Bulleted list'}},
+]
+```
+
+See [Row Kinds](/guides/row-kinds) and
+[The Row Menu](/guides/overlay-customization#the-row-menu). The page below is the other kind of `/`
+menu: one that inserts an inline MARK, and one that carries a custom overlay component of its own.
+:::
+
 ## Use Case
 
 **What we're building:**
@@ -523,16 +543,12 @@ export const SlashCommandEditor: FC = () => {
 
     const commandOption: Option<CommandMarkProps> = {
         markup: '/[__value__](__meta__)',
-        slots: {
-            mark: CommandMark,
-            overlay: CommandOverlay,
-        },
-        slotProps: {
-            mark: ({value, meta}) => ({
-                command: value as CommandType,
-                label: meta || value || '',
-            }),
-        },
+        Mark: CommandMark,
+        Overlay: CommandOverlay,
+        mark: ({value, meta}) => ({
+            command: value as CommandType,
+            label: meta || value || '',
+        }),
     }
 
     return (

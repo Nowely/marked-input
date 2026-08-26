@@ -329,25 +329,21 @@ export const HtmlLikeEditor: FC = () => {
     const tagOptions = [
         {
             markup: '<__value__>__slot__</__value__>',
-            slots: {
-                mark: (props: any) => {
-                    const tagName = props.value as TagType
-                    const attributes = parseAttributes(props.meta || '')
+            Mark: (props: any) => {
+                const tagName = props.value as TagType
+                const attributes = parseAttributes(props.meta || '')
 
-                    return (
-                        <CustomTag tagName={tagName} attributes={attributes}>
-                            {props.children}
-                        </CustomTag>
-                    )
-                },
+                return (
+                    <CustomTag tagName={tagName} attributes={attributes}>
+                        {props.children}
+                    </CustomTag>
+                )
             },
-            slotProps: {
-                mark: ({value, meta, children}: any) => ({
-                    value,
-                    meta,
-                    children,
-                }),
-            },
+            mark: ({value, meta, children}: any) => ({
+                value,
+                meta,
+                children,
+            }),
         },
     ]
 
@@ -458,17 +454,15 @@ export const HtmlLikeEditor: FC = () => {
 const selfClosingOptions = [
     {
         markup: '<__value__ />',
-        slots: {
-            mark: (props: any) => {
-                switch (props.value) {
-                    case 'br':
-                        return <br />
-                    case 'hr':
-                        return <hr />
-                    default:
-                        return null
-                }
-            },
+        Mark: (props: any) => {
+            switch (props.value) {
+                case 'br':
+                    return <br />
+                case 'hr':
+                    return <hr />
+                default:
+                    return null
+            }
         },
     },
 ]

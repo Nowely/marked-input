@@ -310,7 +310,7 @@ export const MarkdownEditor: FC = () => {
 
     const markdownOptions = MARKDOWN_RULES.map(rule => ({
         markup: rule.markup,
-        slots: {mark: rule.component},
+        Mark: rule.component,
     }))
 
     return (
@@ -487,48 +487,62 @@ function getCursorPosition(element: HTMLElement | null): number {
 
 ## Variations
 
-### Variation 1: Syntax Highlighting
+### Variation 1: Block-Level Markdown
+
+Everything above is INLINE markdown — marks inside a line. Markdown's block syntax is a different
+thing: a `#`, a `>` or a `- ` is only markdown at a LINE's start, and that is exactly what a
+[row kind](/guides/row-kinds) is.
 
 ```tsx
-import Prism from 'prismjs'
-import 'prismjs/themes/prism.css'
+const blockRules: Option[] = [
+    {markup: '# __slot__', row: {Component: H1}, menu: {label: 'Heading 1', keywords: ['h1']}},
+    {markup: '## __slot__', row: {Component: H2}, menu: {label: 'Heading 2', keywords: ['h2']}},
+    {markup: '> __slot__', row: {Component: Quote, continues: true, indents: true}, menu: {label: 'Quote'}},
+    {markup: '- __slot__', row: {Component: Bullet, continues: true, indents: true}, menu: {label: 'List'}},
+]
+```
 
-const CodeBlockMark: FC<{value: string; meta: string}> = ({value, meta}) => {
-    const highlighted = Prism.highlight(value, Prism.languages[meta] || Prism.languages.plaintext, meta)
+Declaring them as MARKS instead would match a `#` anywhere in a line, and would leave Enter, Tab and
+the `/` menu with nothing to act on.
 
-    return (
-        <pre className="code-block">
-            <code dangerouslySetInnerHTML={{__html: highlighted}} />
-        </pre>
-    )
+### Variation 2: Fenced Code with Syntax Highlighting
+
+A fence is a row kind with a RAW body — `__value__` rather than `__slot__` — so its interior is never
+re-parsed and the separators inside it are the fence's own text. One row, several visual lines.
+
+```tsx
+const fence: Option = {
+    markup: '```__meta__\n__value__\n```',
+    row: {
+        Component: ({meta = 'plaintext', children, ref, className, style}: RowProps) => (
+            <pre ref={ref} className={`${className} code-block`} style={style} data-language={meta}>
+                <code>{children}</code>
+            </pre>
+        ),
+    },
+    menu: {label: 'Code', keywords: ['fence', 'snippet'], meta: 'bash'},
 }
 ```
 
-### Variation 2: Table Support
+Render `children` — the row's own text — rather than writing highlighted HTML into the element: the
+body is editable document text and core is its only writer. Highlight by painting over it (a
+`<pre>` background layer, or a read-only preview pane beside the editor).
+
+### Variation 3: Table Support
+
+A table LINE is a row kind that carves its own body into cells with `split`, and a cell is an
+ordinary row of the option `as` names:
 
 ```tsx
-const TableMark: FC<{value: string}> = ({value}) => {
-    const rows = value.split('\\n').map(row => row.split('|'))
+const cell: Option = {row: {Component: Cell}} // anonymous: nothing scans it
 
-    return (
-        <table className="md-table">
-            <thead>
-                <tr>
-                    {rows[0].map((cell, i) => (
-                        <th key={i}>{cell.trim()}</th>
-                    ))}
-                </tr>
-            </thead>
-            <tbody>
-                {rows.slice(2).map((row, i) => (
-                    <tr key={i}>
-                        {row.map((cell, j) => (
-                            <td key={j}>{cell.trim()}</td>
-                        ))}
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-    )
+const tableLine: Option = {
+    markup: '| __slot__',
+    row: {continues: true, split: {at: ' | ', as: cell}, Component: TableLine},
+    menu: {label: 'Table row'},
 }
 ```
+
+Consecutive lines align as columns through CSS (`display: table-row` siblings share one anonymous
+table box), so no wrapper element has to exist in the tree. See
+[Carving a row into cells](/guides/row-kinds#carving-a-row-into-cells).

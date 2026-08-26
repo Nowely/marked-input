@@ -573,21 +573,17 @@ export const AutocompleteEditor: FC = () => {
 
     const autocompleteOptions = AUTOCOMPLETE_SOURCES.map(source => ({
         markup: `${source.trigger}[__value__](__meta__)`,
-        slots: {
-            mark: AutocompleteMark,
-            overlay: () => (
-                <AdvancedAutocompleteOverlay
-                    sources={AUTOCOMPLETE_SOURCES}
-                    recentItems={recentItems}
-                    onSelect={handleSelect}
-                />
-            ),
-        },
-        slotProps: {
-            mark: ({value, meta}: any) => {
-                const [category = '', icon = ''] = (meta || '').split('|')
-                return {value, category, icon}
-            },
+        Mark: AutocompleteMark,
+        Overlay: () => (
+            <AdvancedAutocompleteOverlay
+                sources={AUTOCOMPLETE_SOURCES}
+                recentItems={recentItems}
+                onSelect={handleSelect}
+            />
+        ),
+        mark: ({value, meta}: any) => {
+            const [category = '', icon = ''] = (meta || '').split('|')
+            return {value, category, icon}
         },
     }))
 

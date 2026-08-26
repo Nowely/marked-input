@@ -229,12 +229,10 @@ function Editor() {
 
   const options = useMemo(() => [{
     markup: '@[__value__](__meta__)',
-    slotProps: {
-      mark: ({ value, meta }: MarkProps) => ({
-        value,
-        user: users[meta] // Pass cached data
-      })
-    }
+    mark: ({ value, meta }: MarkProps) => ({
+      value,
+      user: users[meta] // Pass cached data
+    })
   }], [users])
 
   return <MarkedInput value={value} onChange={setValue} options={options} />

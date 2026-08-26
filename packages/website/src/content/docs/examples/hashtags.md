@@ -445,17 +445,13 @@ export const HashtagEditor: FC = () => {
 
     const hashtagOption: Option<HashtagMarkProps> = {
         markup: '#[__value__](__meta__)',
-        slots: {
-            mark: HashtagMark,
-            overlay: () => <HashtagOverlay trending={TRENDING_HASHTAGS} onSelect={handleHashtagSelect} />,
-        },
-        slotProps: {
-            mark: ({value, meta}) => ({
-                tag: value || '',
-                count: meta ? parseInt(meta) : undefined,
-                onClick: handleHashtagClick,
-            }),
-        },
+        Mark: HashtagMark,
+        Overlay: () => <HashtagOverlay trending={TRENDING_HASHTAGS} onSelect={handleHashtagSelect} />,
+        mark: ({value, meta}) => ({
+            tag: value || '',
+            count: meta ? parseInt(meta) : undefined,
+            onClick: handleHashtagClick,
+        }),
     }
 
     return (

@@ -14,11 +14,11 @@ Slots are a component customization pattern that separates structure from stylin
 <MarkedInput
     slots={{
         container: CustomContainer, // Replace component
-        span: CustomSpan, // Replace component
+        paragraph: CustomParagraph, // Replace component
     }}
     slotProps={{
-        container: {className: 'my-editor'}, // Pass props to default
-        span: {style: {color: 'red'}}, // Pass props to default
+        container: {className: 'my-editor'}, // Pass props to the container
+        row: {className: 'my-row'}, // Pass props to every row
     }}
 />
 ```
@@ -30,17 +30,33 @@ Slots are a component customization pattern that separates structure from stylin
 
 ## Available Slots
 
-Markput exposes two slots:
+| Slot        | Default Component | Purpose                                              |
+| ----------- | ----------------- | ---------------------------------------------------- |
+| `container` | `<div>`           | Root editable container — the one `contenteditable`  |
+| `paragraph` | `<div>`           | The component a [row](/guides/rows) with NO kind renders through |
 
-| Slot        | Default Component | Purpose                 |
-| ----------- | ----------------- | ----------------------- |
-| `container` | `<div>`           | Root editable container |
-| `span`      | `<span>`          | Plain text segments     |
+| `slotProps` key | Reaches                       |
+| --------------- | ----------------------------- |
+| `container`     | The container element         |
+| `row`           | Every row's wrapper           |
+
+`slots` and `slotProps` do not take the same keys, and the names say why: `slots.paragraph` is
+consulted only for a row with NO kind, while `slotProps.row` is merged onto EVERY row's wrapper —
+kind and paragraph alike.
 
 **What's NOT a slot:**
 
-- Mark components (use `Mark` prop)
-- Overlay components (use `Overlay` prop)
+- Mark components (use the `Mark` prop, or `option.Mark`)
+- Overlay components (use the `Overlay` prop, or `option.Overlay`)
+- Plain text segments (use the `Span` prop)
+- A row kind's component (use `option.row.Component` — see [Row Kinds](/guides/row-kinds))
+
+:::caution[Typing gap]
+`slots.paragraph` is declared on the React `Slots` type but not yet on the Vue one, and
+`slotProps.row` is declared on neither adapter's `SlotProps`. Both are read by core and work at
+runtime in React and Vue; until the adapter types catch up, TypeScript will reject the object
+literal.
+:::
 
 ## Using slotProps (Customize Defaults)
 
@@ -70,7 +86,7 @@ function StyledEditor() {
                         lineHeight: '1.6',
                     },
                 },
-                span: {
+                row: {
                     style: {
                         whiteSpace: 'pre-wrap', // Preserve whitespace
                     },
@@ -90,8 +106,8 @@ function StyledEditor() {
         container: {
             className: 'editor-container',
         },
-        span: {
-            className: 'editor-text',
+        row: {
+            className: 'editor-row',
         },
     }}
 />
@@ -111,7 +127,7 @@ function StyledEditor() {
     border-color: transparent;
 }
 
-.editor-text {
+.editor-row {
     color: #333;
     letter-spacing: 0.01em;
 }
@@ -196,8 +212,8 @@ Add custom data attributes for testing or analytics:
             'data-editor-type': 'mention-editor',
             'data-track': 'user-input',
         },
-        span: {
-            'data-text-node': true,
+        row: {
+            'data-doc-row': true,
         },
     }}
 />
@@ -249,36 +265,42 @@ function Editor() {
 2. Forward the ref (`forwardRef`)
 3. Be typed correctly for TypeScript
 
-### Custom Span Component
+### Custom Paragraph Component
 
-Replace text spans with custom rendering:
+`slots.paragraph` is the component a row with NO kind renders through — the default is a bare `div`.
+Spread everything you are given onto the element you render, the row's rendered content included:
 
 ```tsx
-const CustomSpan = forwardRef<
-  HTMLSpanElement,
-  HTMLAttributes<HTMLSpanElement>
->((props, ref) => {
-  return (
-    <span
-      {...props}
-      ref={ref}
-      style={{
-        ...props.style,
-        fontFamily: 'monospace',
-        letterSpacing: '0.5px',
-        color: '#666'
-      }}
-    />
-  )
-})
+const Paragraph = ({children, ref, className, style}) => (
+    <p ref={ref} className={className} style={style}>
+        {children}
+    </p>
+)
 
-<MarkedInput
-  Mark={MyMark}
-  slots={{
-    span: CustomSpan
-  }}
-/>
+<MarkedInput Mark={MyMark} slots={{paragraph: Paragraph}} />
 ```
+
+A row that MATCHED a kind never reaches this slot; it renders through `option.row.Component`. See
+[Row Kinds](/guides/row-kinds).
+
+### Custom Text Component
+
+Plain text is not a slot — it is the `Span` prop, and it is a special case: the element it renders IS
+the surface core writes the token's text into, so it cannot be wrapped and it must not be given a
+second writer.
+
+```tsx
+const Mono = ({value, ref}) => (
+    <span ref={ref} style={{fontFamily: 'monospace', letterSpacing: '0.5px'}}>
+        {value}
+    </span>
+)
+
+<MarkedInput Mark={MyMark} Span={Mono} />
+```
+
+The `ref` must land on the element that shows the text. A component that drops it leaves the text
+unbound and the caret cannot resolve into it.
 
 ### Combining slots and slotProps
 
@@ -387,7 +409,7 @@ const StyledContainer = styled('div')(({theme}) => ({
     },
 }))
 
-const StyledSpan = styled('span')(({theme}) => ({
+const StyledParagraph = styled('div')(({theme}) => ({
     color: theme.palette.text.primary,
     fontSize: theme.typography.body1.fontSize,
 }))
@@ -398,7 +420,7 @@ function MuiEditor() {
             Mark={MyMark}
             slots={{
                 container: StyledContainer,
-                span: StyledSpan,
+                paragraph: StyledParagraph,
             }}
         />
     )
@@ -624,37 +646,34 @@ function EditorWithLineNumbers() {
 
 ### Use Case 5: Syntax Highlighting for Text
 
-Custom text rendering with highlighting:
+Custom text rendering with highlighting, through the `Span` prop:
 
 ```tsx
-const HighlightedSpan = forwardRef<
-  HTMLSpanElement,
-  HTMLAttributes<HTMLSpanElement>
->((props, ref) => {
-  const text = props.children as string
+import type {MarkProps} from '@markput/react'
+import type {RefCallback} from 'react'
 
-  // Highlight specific patterns
-  const isUrl = /^https?:\/\//.test(text)
-  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)
+const Highlighted = ({value = '', ref}: MarkProps & {ref?: RefCallback<HTMLElement>}) => {
+    const isUrl = /^https?:\/\//.test(value)
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
-  let style = { ...props.style }
-  if (isUrl) {
-    style.color = '#2196f3'
-    style.textDecoration = 'underline'
-  } else if (isEmail) {
-    style.color = '#4caf50'
-  }
+    const style = isUrl
+        ? {color: '#2196f3', textDecoration: 'underline'}
+        : isEmail
+          ? {color: '#4caf50'}
+          : undefined
 
-  return <span {...props} ref={ref} style={style} />
-})
+    return (
+        <span ref={ref} style={style}>
+            {value}
+        </span>
+    )
+}
 
-<MarkedInput
-  Mark={MyMark}
-  slots={{
-    span: HighlightedSpan
-  }}
-/>
+<MarkedInput Mark={MyMark} Span={Highlighted} />
 ```
+
+The styling reacts to the token's text, but the text on screen is core's to write: keep the `ref` on
+the element and put nothing beside the value inside it.
 
 ## Integration with UI Libraries
 
@@ -798,16 +817,12 @@ import type {MarkedInputProps} from '@markput/react'
 
 interface EditorProps {
     containerClass?: string
-    spanClass?: string
 }
 
-function ConfigurableEditor({containerClass, spanClass}: EditorProps) {
+function ConfigurableEditor({containerClass}: EditorProps) {
     const slotProps: MarkedInputProps['slotProps'] = {
         container: {
             className: containerClass,
-        },
-        span: {
-            className: spanClass,
         },
     }
 
@@ -879,9 +894,6 @@ function Editor() {
             container: {
                 className: 'editor',
                 style: {padding: '16px'},
-            },
-            span: {
-                className: 'text',
             },
         }),
         []
@@ -955,9 +967,7 @@ function GitHubEditor() {
                     options={[
                         {
                             markup: '@[__value__]',
-                            slotProps: {
-                                overlay: {trigger: '@', data: ['octocat', 'github', 'copilot']},
-                            },
+                            overlay: {trigger: '@', data: ['octocat', 'github', 'copilot']},
                         },
                     ]}
                 />
@@ -987,26 +997,13 @@ const NotionContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement
                 minHeight: '300px',
                 outline: 'none',
             }}
+            data-placeholder={placeholder}
             onFocus={() => setPlaceholder('')}
             onBlur={e => {
-                if (!e.currentTarget.textContent) {
-                    setPlaceholder("Type '/' for commands")
-                }
+                if (!e.currentTarget.textContent) setPlaceholder("Type '/' for commands")
                 props.onBlur?.(e)
             }}
-        >
-            {!props.children && (
-                <div
-                    style={{
-                        position: 'absolute',
-                        color: '#9b9a97',
-                        pointerEvents: 'none',
-                    }}
-                >
-                    {placeholder}
-                </div>
-            )}
-        </div>
+        />
     )
 })
 
@@ -1030,13 +1027,21 @@ function NotionEditor() {
                     {value}
                 </span>
             )}
-            slots={{
-                container: NotionContainer,
-            }}
+            slots={{container: NotionContainer}}
+            options={[
+                {Overlay: RowMenu, overlay: {trigger: '/'}},
+                {markup: '# __slot__', row: {Component: Heading}, menu: {label: 'Heading 1'}},
+                {markup: '- __slot__', row: {Component: Bullet, continues: true, indents: true}, menu: {label: 'Bulleted list'}},
+            ]}
+            draggable
         />
     )
 }
 ```
+
+The container must render whatever it is given: the editor's own children ARE the document. Paint a
+placeholder with CSS on `[data-placeholder]:empty::before` rather than by replacing them. What makes
+this a Notion-shaped editor is the row vocabulary beside it — see [Row Kinds](/guides/row-kinds).
 
 ## Best Practices
 

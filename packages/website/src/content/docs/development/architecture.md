@@ -13,8 +13,8 @@ This guide explains Markput's internal architecture, data flow, and design decis
 │                         Markput                             │
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │              Framework Layer (React / Vue)             │  │
-│  │  • Components (MarkedInput, Container, Token, Block)  │  │
-│  │  • Hooks (useMark, useOverlay, useStore)              │  │
+│  │  • Components (MarkedInput, Container, Token, Row)    │  │
+│  │  • Hooks (useMark, useOverlay, useMarkput)            │  │
 │  │  • Context Providers (StoreContext)                    │  │
 │  └───────────────────────────────────────────────────────┘  │
 │                          ↓                                   │
@@ -255,7 +255,7 @@ store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(5), 
 // Read the live root nodes (readonly TreeNode[]) — reactive
 store.tokens.nodes()
 
-// Run a row operation through the editor's block controller — it addresses the row the
+// Run a row operation through the editor's row controller — it addresses the row the
 // open menu belongs to, so the menu is opened on that row first
 store.rows.openMenu(store.tokens.nodes()[0].id, gripElement.getBoundingClientRect())
 store.rows.deleteRow()
@@ -553,7 +553,7 @@ There is no per-row store and no per-row control DOM. At 200 rows the shape this
 201 grip buttons, 201 `control()` roots and 1608 listeners; measured mount was 44 ms and 1005 DOM
 nodes, against 18 ms and 403 for one layer.
 
-The price is geometry: `.Block { position: relative }` made a per-row grip free, while a layer
+The price is geometry: `.Row { position: relative }` made a per-row grip free, while a layer
 measures. `boxOf(id)` answers a row's OWN LINE in CONTAINER-LOCAL coordinates (which carry
 `scrollTop`, so they are scroll-proof) — the element's box, stopped at its first painted child
 row, because a parent's element encloses its subtree and a grip band the height of a subtree
@@ -665,12 +665,12 @@ const { style, close, select, choose, entries, match, ref } = useOverlay()
 | `match`   | `OverlayMatch`                                | Current trigger match                          |
 | `ref`     | `RefObject<HTMLElement>`                      | Ref to attach to overlay DOM                   |
 
-### useStore
+### useMarkput
 
-Returns the Store instance from context:
+Subscribes to the store through a selector; `useStore` is the adapters' own internal context read and is not published:
 
 ```typescript
-const store = useStore()
+const readOnly = useMarkput(s => s.props.readOnly)
 ```
 
 ## Extensibility Points
@@ -770,5 +770,7 @@ function App() {
 
 **See also:**
 
-- [How It Works](../introduction/how-it-works) - Understanding how Markput processes text
-- [Performance](./performance) - Detailed performance analysis
+- [How It Works](/development/how-it-works) - Understanding how Markput processes text
+- [Rows and Nesting](/guides/rows) - The separator, the indent, selection, drag and history
+- [Row Kinds](/guides/row-kinds) - Declaring the markup a row is recognised by
+- [Performance](/development/performance) - Detailed performance analysis

@@ -390,23 +390,19 @@ export const MentionEditor: FC = () => {
 
     const mentionOption: Option<MentionProps> = {
         markup: '@[__value__](__meta__)',
-        slots: {
-            mark: MentionMark,
-            overlay: () => <MentionOverlay users={USERS} />,
-        },
-        slotProps: {
-            mark: ({value, meta}) => {
-                // Parse meta: "userId|displayName|avatar"
-                const [userId = '', displayName = '', avatar = ''] = (meta || '').split('|')
+        Mark: MentionMark,
+        Overlay: () => <MentionOverlay users={USERS} />,
+        mark: ({value, meta}) => {
+            // Parse meta: "userId|displayName|avatar"
+            const [userId = '', displayName = '', avatar = ''] = (meta || '').split('|')
 
-                return {
-                    username: value || '',
-                    userId,
-                    displayName,
-                    avatar,
-                    onMentionClick: handleMentionClick,
-                }
-            },
+            return {
+                username: value || '',
+                userId,
+                displayName,
+                avatar,
+                onMentionClick: handleMentionClick,
+            }
         },
     }
 
@@ -627,13 +623,11 @@ const GroupMentionMark: FC<{name: string; memberCount: number}> = ({name, member
 // Usage
 const groupOption: Option = {
     markup: '@@[__value__](__meta__)',
-    slots: {mark: GroupMentionMark},
-    slotProps: {
-        mark: ({value, meta}) => ({
-            name: value,
-            memberCount: parseInt(meta || '0'),
-        }),
-    },
+    Mark: GroupMentionMark,
+    mark: ({value, meta}) => ({
+        name: value,
+        memberCount: parseInt(meta || '0'),
+    }),
 }
 ```
 

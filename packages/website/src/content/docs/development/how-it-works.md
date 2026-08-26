@@ -92,8 +92,14 @@ A **token** is the internal representation used by Markput's parser. Your text i
 
 **Token Types:**
 
-- **TextToken**: Plain text segments
-- **MarkToken**: Marked segments (rendered as your Mark component)
+- **Text**: Plain text segments
+- **Mark**: Marked segments (rendered as your Mark component)
+- **Row**: The node the separator carves out — three kinds, not two. A row holds its own inline
+  tokens and then its child rows, in one list. See [Rows and Nesting](/guides/rows).
+
+Where the value splits into rows — it does by default — the skeleton is scanned FIRST, from each
+row's own leading bytes, and the inline pass then runs per row. An inline match can never reach past
+the row it is inside.
 
 ## Markup Patterns
 
@@ -318,11 +324,17 @@ The `useOverlay()` hook provides:
 ```
 <MarkedInput>
   └── <Container> (the one contenteditable host)
-      ├── <span> (plain text — bare, inherits editability)
-      ├── <Mark> (your component — contenteditable=false)
-      ├── <span> (plain text)
+      ├── <Row> (its kind's component, or slots.paragraph when it has none)
+      │    ├── <span> (plain text — bare, inherits editability)
+      │    ├── <Mark> (your component — contenteditable=false)
+      │    └── <Row> … (child rows, nested by indentation)
+      ├── <Row> …
+      ├── <RowControls> (ONE per editor: grip, drop indicator, row menu)
       └── <Overlay> (if triggered)
 ```
+
+With `separator={null}` there are no rows and no row controls: the tokens sit directly in the
+container.
 
 ### Props Flow
 
@@ -353,15 +365,17 @@ The key insight: Everything flows through the store, which triggers re-renders o
 Markput uses an internal store for managing editor state:
 
 ```tsx
-Store State:
-{
-  value: string,              // Current text
-  tokens: TreeNode[],         // The live token tree (the source of truth)
-  selection: Range,           // Cursor/selection position
-  overlay: OverlayState,      // Overlay visibility & data
-  focused: boolean            // Focus state
-}
+store.props      // the declared props, each a signal with its own default
+store.tokens     // the token tree (the source of truth), the selection, the DOM↔model map
+store.edit       // every user mutation: replace(from, to, text)
+store.overlay    // the overlay's match, its entries, and choose()
+store.rows       // the rows' own UI: hover, drag, drop edge, the open menu, selected()
+store.history    // the editor's own undo stack: canUndo(), undo(), redo()
+store.slots      // slot component/props resolution
 ```
+
+The value is a PROJECTION of the tokens, not the other way round: every write changes tokens and the
+value follows.
 
 ### Controlled vs Uncontrolled
 
@@ -378,50 +392,50 @@ const [value, setValue] = useState('')
 
 ### Built-in Events
 
-| Event               | When Triggered    | Use Case             |
-| ------------------- | ----------------- | -------------------- |
-| `onChange`          | Text changes      | Update parent state  |
-| `onFocus`           | Editor focused    | Show toolbar         |
-| `onBlur`            | Editor blurred    | Hide toolbar         |
-| `onKeyDown`         | Key pressed       | Custom shortcuts     |
-| `onSelectionChange` | Selection changes | Update toolbar state |
+`onChange` is the editor's own event, and the only one:
 
-### Custom Event Listeners
+| Event      | When Triggered | Use Case            |
+| ---------- | -------------- | ------------------- |
+| `onChange` | Text changes   | Update parent state |
 
-Use `useListener` hook for custom events:
+### DOM Events
+
+Everything else is an ordinary DOM handler on the container, passed through `slotProps.container`:
 
 ```tsx
-import {useListener} from '@markput/react'
-
-const Mark = () => {
-    useListener(
-        'customEvent',
-        data => {
-            console.log('Custom event:', data)
+<MarkedInput
+    slotProps={{
+        container: {
+            onFocus: () => showToolbar(),
+            onBlur: () => hideToolbar(),
+            onKeyDown: event => {
+                /* your shortcuts — Markput owns text mutation */
+            },
         },
-        []
-    )
-
-    return <span>Mark</span>
-}
+    }}
+/>
 ```
+
+Reading editor state from inside a Mark goes through `useMarkput(selector)`, and the mark's own node
+through `useMark()`.
 
 ## Options System
 
-Options allow per-pattern configuration. Each pattern can have its own Mark component and overlay:
+Options allow per-pattern configuration. Each pattern can have its own Mark component and overlay —
+capitalised keys are components, lowercase ones are their props:
 
 ```tsx
 <MarkedInput
     options={[
         {
             markup: '@[__value__](__meta__)', // Pattern 1: mentions
-            slots: {mark: MentionComponent},
-            slotProps: {overlay: {trigger: '@', data: users}},
+            Mark: MentionComponent,
+            overlay: {trigger: '@', data: users},
         },
         {
             markup: '#[__value__]', // Pattern 2: hashtags
-            slots: {mark: HashtagComponent},
-            slotProps: {overlay: {trigger: '#', data: hashtags}},
+            Mark: HashtagComponent,
+            overlay: {trigger: '#', data: hashtags},
         },
     ]}
 />
@@ -435,33 +449,32 @@ Options allow per-pattern configuration. Each pattern can have its own Mark comp
     options={[
         {
             markup: '@[__value__](__meta__)',
-            slots: {
-                mark: MentionComponent,
-                overlay: MentionOverlay,
-            },
-            slotProps: {
-                mark: ({value, meta}) => ({
-                    // Transform extracted props
-                    label: value,
-                    userId: meta,
-                }),
-                overlay: {
-                    // Static overlay config
-                    trigger: '@',
-                    data: users,
-                },
+            Mark: MentionComponent,
+            Overlay: MentionOverlay,
+            mark: ({value, meta}) => ({
+                // Transform extracted props
+                label: value,
+                userId: meta,
+            }),
+            overlay: {
+                // Static overlay config
+                trigger: '@',
+                data: users,
             },
         },
     ]}
 />
 ```
 
+An option may also declare `row` — which makes its markup a [row kind](/guides/row-kinds) matched
+only at a row's own start — and `menu`, which puts it in the row menu.
+
 ### Option Resolution Priority
 
 ```
-1. option.slots.mark       (highest priority)
+1. option.Mark             (highest priority)
 2. MarkedInput.Mark prop
-3. undefined               (error if no Mark provided)
+3. error                   (no component to render the mark with)
 ```
 
 </details>
@@ -505,22 +518,20 @@ For more details, see the [Performance Optimization](/development/performance) g
 
 ### Visualize Tokens
 
-```tsx
-import {parse} from '@markput/core'
+The live tree is on the store, not in a parse helper:
 
-const tokens = parse(value, [{markup: '@[__value__]'}])
-console.log(JSON.stringify(tokens, null, 2))
+```tsx
+const nodes = useMarkput(s => s.tokens.nodes())
+console.log(nodes.map(node => [node.kind, node.range()]))
 ```
 
 This is your best friend for understanding what Markput "sees" in your text.
 
 ### Check Markup Matching
 
-```tsx
-// Enable debug mode (if available)
-<MarkedInput debug value={value} onChange={setValue} />
-// Check console for parsing logs
-```
+There is no debug prop. A markup that breaks the [rules](/guides/configuration#markup-patterns) — and
+a `separator` of `''`, and a row kind whose opener is already claimed — is REPORTED to the console
+and contributes nothing; the console is the first place to look when an option appears to do nothing.
 
 ### Common Issues & Solutions
 
