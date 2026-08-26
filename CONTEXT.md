@@ -12,6 +12,14 @@ edit, and one element of its own that the adapter **consign**s (ADR-0009). Three
 Row is a Token, which is why one registry, one commit and one anchor space cover all of them.
 _Avoid_: node, element, item — `node` belongs to the DOM
 
+**Tree**:
+The arrangement the **Token**s are already in, not a second structure beside them: **Row**s nested
+under Rows by their **Lead**, text and **Mark**s under a Row, further Tokens under a **Slot**. It is
+the source of truth — a **Value** is its projection, and every write changes the tree first — which
+is why `TreeNode` is published and `tokens.nodes()` hands back the roots. `features/tokens/tree/`
+owns it; nothing outside walks it by hand.
+_Avoid_: AST, model tree, node tree, document model, DOM (the DOM is the tree's painting, not the tree)
+
 **Pairing**:
 The claim that says which previous token each freshly parsed one continues. By default it is
 position within the sibling list; an operation that knows better — a row move — states it, and
@@ -47,6 +55,27 @@ _Avoid_: data, payload, attributes, props
 **Anchor**:
 A position in the document, named relative to a token rather than as a number. Anchors are the only way to name a position outside `features/tokens/`, which owns the coordinate space; there are no longer any allowlisted exceptions, and the rule is checked by `packages/core/src/addressSpace.spec.ts` ([ADR-0003](docs/adr/0003-one-address-space.md)).
 _Avoid_: offset, index, position, caret position, coordinate
+
+**Caret**:
+The insertion point inside the **Container** — the collapsed case of the browser's own selection,
+and the one piece of state the editor reads OUT of the DOM rather than owning. Where a caret is, is
+an **Anchor**; "caret" names the thing, never the number. It is applied on the DOM clock rather
+than the commit clock, because a caret landing in a token born by this commit has no element until
+`bind` gives it one. Structural bytes — a **Row**'s opener, its **Lead** — admit no caret at all.
+_Avoid_: cursor, caret position (that is an **Anchor**), selection (a caret is its collapsed case), focus
+
+### The runtime
+
+**Store**:
+The editor instance — one per mounted editor, holding every feature and every signal, and the only
+door a consumer has to editor state. `useMarkput(selector)` selects from it in both adapters, so its
+field names are public vocabulary: `store.tokens` (the **Tree** and the selection), `store.rows`,
+`store.edit`, `store.overlay`, `store.history`. Each field names the CONCERN, not the things —
+`store.rows` is the rows' own UI, while the rows themselves live in `tokens.nodes()`. The name is a
+poor one for what it does and the class carries an open rename TODO (`store/Store.ts`); it is
+published from `@markput/core`, so renaming it is a public change and not a tidy-up.
+_Avoid_: state, context, global, singleton (one per editor, not one per app), editor (the editor is
+the whole thing, of which this is the object)
 
 ### The editable surface
 
@@ -202,6 +231,8 @@ _Avoid_: undo entry, transaction, change, patch, delta
 - A **Mark** may own a **Slot**, which holds further **Token**s
 - A TEXT **Token** is mirrored into one **Surface**; a **Mark** and a **Row** own a consigned element instead — all of them inside the one **Container**
 - An **Anchor** names a position by **Token**
+- A **Caret** is a collapsed selection; where it sits is an **Anchor**
+- The **Tree** is what the **Token**s are arranged into, and a **Store** is the one object that owns it
 - A **Row selection** is read off the selection, and a **Row menu** runs one Row's verbs
 - A **Control** sits inside the **Container** and outside the document; an **Overlay** sits outside the Container entirely — a **consign**ed element is neither
 

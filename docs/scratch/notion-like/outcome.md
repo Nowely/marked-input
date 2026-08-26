@@ -229,9 +229,10 @@ body. Each is real today.
 6. **One split shape cannot place the caret**: mid-body, on a row that keeps a subtree. Map's Fog:
    `'abcd⏎⇥child⏎tail'` split at 2 puts the caret at 12 where the tail's start is 10. Closing it
    needs a post-edit caret carried through the transaction — new surface across three modules.
-7. **Nothing scopes the row menu to the trigger that owns it.** Reproduced on the tip: with an `@`
-   overlay open, `entries()` answers the row-menu list and `choose({option})` retypes the row. No
-   shipped configuration hits it; a documented one (`<MarkedInput Overlay={RowMenu}>`) does.
+7. ~~**Nothing scopes the row menu to the trigger that owns it.**~~ **FIXED 2026-08-26** as a side
+   effect of the list collapse: `OverlayListModel.rows` answers the matched option's `overlay.data`
+   when it declares any and the row menu ONLY when it does not, so the two lists can no longer both
+   be on offer. `choose` is unchanged.
 8. **`RowSpec.group` is not built**, and three wants hang off that one gap: table columns cannot
    align, the accessible semantics cannot be a table (the showcase carries no `role="table"` because
    one per line would be a lie), and the header can only be read from the DOM run.
@@ -241,15 +242,29 @@ body. Each is real today.
 11. **The `/` menu is a flat list of 23 unsectioned labels.** `MenuSpec.section` and `MenuSpec.icon`
     were deleted for having zero readers; they come back with the painter that needs them, and
     `icon?: Slot` is the shape that keeps P7's exit criterion.
-12. **`RowMenu` has no keyboard navigation.** The whole component is 30 lines including its
-    docblock, and contains no key handler and no active index. The arrow/Enter protocol is
-    `SuggestionsModel`'s and is bound to `overlay.data`, which the menu path does not use.
-13. **The overlay opens downward only.** `OverlayController.position` is
-    `{left: rect.left, top: rect.top + rect.height + 1}` — no flip, no viewport clamp.
-14. **Nothing scrolls the caret into view.** The only `scrollIntoView` in core or either adapter is
-    the popup list's own active item.
-15. **The shipped popup is hardcoded light.** `.Popup` is `background: white; border: 1px solid #ccc;
-    color: #000`, with no custom property to override.
+12. ~~**`RowMenu` has no keyboard navigation.**~~ **FIXED 2026-08-26**, and by deletion rather
+    than by addition: `SuggestionsModel` and `OverlayController.entries` were the same list twice,
+    so they became one `OverlayListModel` whose `rows` come from the matched option's
+    `overlay.data` when it declares any and from the options' own `menu` specs when it does not.
+    Both adapters now ship ONE component, `OverlayList`, which is also the DEFAULT overlay — so
+    `{overlay: {trigger: '/'}}` is the whole wiring of a row menu and `RowMenu` is gone from the
+    published surface, as is `MenuEntry` (`OverlayRow` replaces it).
+13. ~~**The overlay opens downward only.**~~ **FIXED 2026-08-26.** `shared/utils/fitPopup` is one
+    rule for both popups: below the anchor when it fits, above it when it does not, clamped inside
+    the viewport when it fits neither way. It needs the popup's measured size, so both positions
+    now read the popup's own element signal — which uncovered a second defect underneath: BOTH
+    adapters' `useOverlay` read `overlay.position()` non-reactively (React's `useMarkput` calls its
+    selector once; a Vue `computed` cannot see a core signal), so the popup had been frozen at the
+    position it opened at and did not follow the caret as the user typed.
+14. ~~**Nothing scrolls the caret into view.**~~ **FIXED 2026-08-26.** `SelectionDriver` reveals the
+    caret after each successful collapsed placement; the walk is `dom/caret.ts`'s `revealCaret`,
+    innermost scrollable ancestor first and then the viewport, re-measuring per step. Gated on the
+    container holding focus; not applied to a ranged selection.
+15. ~~**The shipped popup is hardcoded light.**~~ **FIXED 2026-08-26.** Every colour in
+    `styles.module.css` that a consumer can see is now `var(--markput-…, <the old value>)` — eight
+    names covering the popup, its highlighted row, the grip and the drop line — so the shipped look
+    is unchanged and a page can retheme it without touching a hashed class. The showcase maps all
+    eight onto its own tokens in `notion/theme/tokens.css`.
 16. **`.Container` sets no `outline`**, so the UA focus ring paints around the whole editor. `.Row`
     sets `outline: none`; the container does not.
 17. **Tab leaves the field wherever no kind declares `indents`** (ADR-0002's accepted cost). 7 of the
@@ -264,11 +279,13 @@ body. Each is real today.
 20. **A cross-parent drop keeps the NODE and loses the COMPONENT**, measured in both adapters.
     `store.rows.collapsed` — a core-owned per-row view store — is what would fix it and was not
     built.
-21. **The board is one row and its card drag is the consumer's own.** The card moves in the `Board`
-    component's React state and never reaches the document; `@board`'s body does not change and undo
-    cannot undo it. Consistent with the doctrine and indistinguishable from a real edit for a user.
-    The metric cards are stacked, not beside the callout, for the same reason: two rows cannot sit
-    side by side while the drop tiles the document by Y.
+21. ~~**The board is one row and its card drag is the consumer's own.**~~ **FIXED 2026-08-26**, in
+    the showcase, where it belonged: `Board` is controlled now — the arrangement is the prop, a drop
+    announces the next one, and the option writes it back with `node.turnInto(board, {text})`, the
+    same one splice the checkbox and the callout icon already use. The reading that produced the
+    defect ("not owned by core" = "keep it in the component") is corrected in `showcase.md`.
+    The metric cards are still stacked, not beside the callout: two rows cannot sit side by side
+    while the drop tiles the document by Y.
 22. **A value the editor did not write disables undo while it stands.** `canUndo` answers `false`
     until the document comes back.
 23. **The showcase net is single-framework.** `vitest list --project vue` piped through
@@ -347,8 +364,8 @@ A driving session on the showcase, 2026-08-26. Unvarnished, and it is the sectio
 5. **An atomic block as the last row is a dead end.** After `/code` at the end, ArrowDown, Enter and
    clicking below all fail to make a row after it. Declared (item 3), but the declaration reads as a
    footnote and the experience is a trap: only the grip menu escapes.
-6. **A board card dragged between columns never reaches the document.** Declared (item 21) and
-   indistinguishable from a real edit.
+6. ~~**A board card dragged between columns never reaches the document.**~~ **FIXED 2026-08-26**;
+   see item 21.
 7. **Drag and paste can nest a row under a paragraph, invisibly.** Dropping a quote on "Pack list"
    wrote `⇥> …`; the drop indicator promised the indent, and the result rendered flat. The depth is
    real in the value and unpainted: the showcase's general depth rule (`.blockIndent` ×
@@ -391,11 +408,10 @@ missing, silent, or wrong. The gap between those two sentences is the whole find
 
 Ranked by (breaks a core gesture) × (cheap) × (nothing else is blocked on it first).
 
-1. **Give `RowMenu` the keyboard.** ArrowDown/Up/Enter/Escape over `entries`, using
-   `navigateSuggestions` — which already exists, is already published, and already has its own spec.
-   Ranks first because it is the only item here that breaks a gesture the user tries *first*, and
-   the primitive is already built and already used by the other overlay. **Two overlays, one
-   protocol** is also the doctrine's rule 4 (one rule, one owner) applied to a live divergence.
+1. ~~**Give `RowMenu` the keyboard.**~~ **DONE 2026-08-26**, and the "two overlays, one protocol"
+   reading went further than planned: there is one MODEL (`OverlayListModel`), one COMPONENT
+   (`OverlayList`, which is the default overlay), and `RowMenu`/`MenuEntry` are gone from the
+   published surface. Items 12-15 and the board (21) landed with it.
 2. **Stop the caret entering a control root, and pin it with a real click.** `control()` writes
    `contentEditable = 'false'` and stops; the missing half is refusing the caret a click puts there
    — either by moving it to the nearest row boundary or by turning the click into a row selection.
