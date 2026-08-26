@@ -982,6 +982,12 @@ export class TokenModel {
 		 * still names the same character and adoption's own repair moves it by the delta. That
 		 * holds because {@link turnIntoPlan} trims the window to the changed bytes — an untrimmed
 		 * one puts the body INSIDE the window, where the repair collapses every anchor onto its end.
+		 *
+		 * A SEEDED body is the one retype with no such anchor to move: there was no body to keep,
+		 * so every position the mapping can answer is past what the kind supplied. The plan names
+		 * the caret there and the splice carries it — which is a NAMED caret rather than
+		 * {@link #applyCaret}, because that one is uncontrolled-only and this must hold in both
+		 * modes. See {@link RowPatch.seeded}.
 		 */
 		turnInto: (node, option, patch) => {
 			this.#ensureSeeded()
@@ -989,7 +995,7 @@ export class TokenModel {
 			if (option !== undefined && descriptor === undefined) return false
 			const plan = untracked(() => turnIntoPlan(this.#tree.roots(), node, descriptor, patch))
 			if (!plan) return false
-			return this.#tx.applyRange(plan.window, plan.text)
+			return this.#tx.applyRange(plan.window, plan.text, plan.caret)
 		},
 		/**
 		 * A split PUTS A POSITION IN, so unlike a retype it moves the caret — into the row it

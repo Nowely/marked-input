@@ -1,6 +1,6 @@
 import {untracked} from '../../../shared/signals'
 import type {TokenTree} from './tree'
-import type {CommitSink, Pairing, TreeNode, Window} from './types'
+import type {CommitSink, Offsets, Pairing, TreeNode, Window} from './types'
 
 /**
  * One splice in the coordinates of the COMMITTED projection. No `insertedLength`:
@@ -56,7 +56,7 @@ export function createTransactions(deps: {
 		if (dispatching) throw new Error('TokenTree: re-entrant transaction dispatch')
 	}
 
-	const dispatch = (op: Op, pairing?: Pairing): boolean => {
+	const dispatch = (op: Op, pairing?: Pairing, caret?: Offsets): boolean => {
 		const value = currentValue()
 		const next = value.slice(0, op.start) + op.text + value.slice(op.end)
 		// The pairing is re-attached HERE and not carried on the caller's window, because this
@@ -75,25 +75,37 @@ export function createTransactions(deps: {
 		try {
 			// The dispatcher owns the no-subscription invariant for the whole commit, sink
 			// and result consumer included — whichever sink is plugged in.
-			return untracked(() => deps.sink.commit(next, window))
+			return untracked(() => deps.sink.commit(next, window, caret))
 		} finally {
 			dispatching = false
 		}
 	}
 
-	const submit = (op: Op, pairing?: Pairing): boolean => {
+	const submit = (op: Op, pairing?: Pairing, caret?: Offsets): boolean => {
 		if (isReadOnly()) return false
 		if (op.start < 0 || op.end < op.start || op.end > currentValue().length) return false
 		deps.syncSelection?.()
-		return dispatch(op, pairing)
+		return dispatch(op, pairing, caret)
 	}
 
 	return {
-		/** The primitive: a splice in the committed projection's coordinates, plus any identity claim it carries. */
-		applyRange(window: Window, text: string): boolean {
+		/**
+		 * The primitive: a splice in the committed projection's coordinates, plus any identity claim
+		 * it carries.
+		 *
+		 * `caret` is the position the edit leaves behind, in the POST-edit projection — see
+		 * {@link CommitSink.commit}. It rides here rather than on the `Window` because it is not an
+		 * identity claim and does not have to survive the controlled echo's re-derivation: an echo
+		 * the parent transformed pays no landing at all.
+		 */
+		applyRange(window: Window, text: string, caret?: number): boolean {
 			assertIdle()
 			// `window.insertedLength` is ignored: what we are about to splice in is the truth.
-			return submit({start: window.start, end: window.end, text}, window.pairing)
+			return submit(
+				{start: window.start, end: window.end, text},
+				window.pairing,
+				caret === undefined ? undefined : {anchor: caret, head: caret}
+			)
 		},
 
 		/**

@@ -367,6 +367,18 @@ export interface MarkNode {
 export type RowPatch = {
 	readonly meta?: string | null
 	readonly text?: string
+	/**
+	 * THE BODY THIS RETYPE WRITES IS A SEED — content the kind supplies, not text the user typed.
+	 * The retype then names the caret at the row's ENTRY instead of letting the window's own
+	 * mapping answer, which has RIGHT AFFINITY and therefore leaves it past everything the splice
+	 * inserted: a `/table` entry seeding `'Task | Status | Owner | Due | Effort'` left the caret
+	 * after `'Effort'`, so the first thing typed appended to the last column.
+	 *
+	 * A flag rather than a comparison, because the two cases are indistinguishable in the bytes: a
+	 * retype that KEEPS the body also rewrites it (the trigger run comes out of it), so "was this
+	 * body written or kept" is a fact about the gesture and only its caller holds it.
+	 */
+	readonly seeded?: true
 }
 
 /**
@@ -488,6 +500,14 @@ export interface CommitSink {
 	 * Called with the tree UNMUTATED and `next` computed from its CURRENT projection, so a
 	 * sink may rely on the tree still holding the pre-edit base here; adoption, inside the
 	 * sink, is what ends that.
+	 *
+	 * `caret` NAMES the position the edit leaves behind, in `next`'s own coordinates, for the
+	 * edits whose caret the window cannot express: the mapping has RIGHT AFFINITY, so every
+	 * position inside an insertion collapses onto its END, and an edit that writes a body the
+	 * user did not type wants a position INSIDE what it wrote. Absent — the ordinary edit —
+	 * the mapping answers, exactly as it always has. It is the same channel a REPLAY already
+	 * uses (`ReplayLanding.caret`), and for the same reason: resolved after adoption, against
+	 * the roots the write leaves behind, so it is the one caret a controlled echo can carry.
 	 */
-	commit(next: string, window: Window): boolean
+	commit(next: string, window: Window, caret?: Offsets): boolean
 }

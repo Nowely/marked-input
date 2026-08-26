@@ -37,12 +37,17 @@ export interface Boundary {
 export type ReplayLanding = {caret?: Offsets; landed?: () => void}
 
 /**
- * WHAT AN EMISSION OWES once the tree actually holds it — one or the other, never both, because
- * an emission is either a commit or a replay. A COMMIT owes its {@link EditRecord}, which is why
- * the record is not emitted at `commit`: in controlled mode nothing has landed there yet, and an
- * emission the parent declines to echo must leave no trace at all.
+ * WHAT AN EMISSION OWES once the tree actually holds it. A COMMIT owes its {@link EditRecord},
+ * which is why the record is not emitted at `commit`: in controlled mode nothing has landed there
+ * yet, and an emission the parent declines to echo must leave no trace at all. A REPLAY owes
+ * `landed` instead, and either may name a `caret`.
+ *
+ * ONE RECORD rather than the union of the two arms it used to be. The union said "a commit or a
+ * replay, never both", which is still true of `edit` and `landed` — and it also said a COMMIT can
+ * name no caret, which was never a fact about emissions: it was the replay being the only writer
+ * that had one. A seeded insert is the second ({@link CommitSink.commit}).
  */
-type Landing = {edit: EditRecord} | ReplayLanding
+type Landing = {edit?: EditRecord; caret?: Offsets; landed?: () => void}
 
 /**
  * The emission a controlled commit is waiting to see echoed. `base` is the projection it
@@ -103,11 +108,11 @@ export function createBoundary(deps: {
 		// anchors themselves hold no coordinate, so it is adoption — not this call site —
 		// that owes the pre-mutation reading of their positions.
 		const selectionBefore = deps.selection?.()
-		// A REPLAY names where the caret lands, so it neither captures nor maps: the offsets it
-		// names were captured before the edit this is undoing, and mapping them through the window
-		// that undoes it would collapse them onto the restored span's end.
-		const replay = landing !== undefined && !('edit' in landing) ? landing : undefined
-		const caret = replay?.caret
+		// A NAMED caret neither captures nor maps. A REPLAY names one because the offsets it
+		// carries were captured before the edit this is undoing, and mapping them through the
+		// window that undoes it would collapse them onto the restored span's end; a SEEDED insert
+		// names one because right affinity puts the caret past a body the user never typed.
+		const caret = landing?.caret
 		// A config means the top level is rows (issue 08); its absence is the flat parse.
 		// `!== undefined`, not truthiness, because `undefined` is the ONE word for "no rows" and
 		// the caller owes it: `TokenModel.rowConfig` already folds an empty `separator` prop
@@ -140,8 +145,8 @@ export function createBoundary(deps: {
 			deps.onResult?.(restored ? {selectionAfter: restored} : result)
 		})
 		// AFTER the batch, so a subscriber that reads the value sees the one the landing describes.
-		if (landing !== undefined && 'edit' in landing) deps.onEdit?.(landing.edit)
-		else replay?.landed?.()
+		if (landing?.edit) deps.onEdit?.(landing.edit)
+		else landing?.landed?.()
 	}
 
 	/**
@@ -169,7 +174,7 @@ export function createBoundary(deps: {
 	}
 
 	const sink: CommitSink = {
-		commit(next, window) {
+		commit(next, window, caret) {
 			// CAPTURED here and emitted on landing: this is the one place both modes hold the
 			// pre-image — `deps.tree.value()` is the projection this splice was computed from, and
 			// the stored selection is still the one the edit was made from.
@@ -186,7 +191,7 @@ export function createBoundary(deps: {
 				// optional flag that is present and false is a third state nothing reads.
 				repair: deps.repairing?.() ? true : undefined,
 			}
-			return apply(next, window, {edit})
+			return apply(next, window, {edit, caret})
 		},
 	}
 

@@ -347,6 +347,31 @@ describe('the slash menu', () => {
 	})
 
 	/**
+	 * AND AN ENTRY THAT SEEDS TEXT PUTS THE CARET AT ITS START, not past it. A seed is content the
+	 * KIND supplies — a table's column names, a board's first card — so it is there to be replaced
+	 * rather than typed after: the caret used to land past the whole of it, and the first thing
+	 * typed appended to the last column (`'…| EffortTask'`). The row's ENTRY is the answer, which
+	 * for this CARVED seed is its FIRST CELL: `anchorAt` on a row's opener resolves to that entry,
+	 * so "the start of the seed" and "its first field" are one position.
+	 *
+	 * IT IS THE CONTROLLED FIELD that makes it a real pin: an uncontrolled verb can name its own
+	 * caret, and a controlled one cannot — the window's mapping answers there, and its affinity is
+	 * RIGHT. So the seed's caret has to ride with the emission, and this asserts it did.
+	 */
+	it('puts the caret at the start of a seeded insert, not past it', async () => {
+		const {host, value} = await mountControlled(Empty, '')
+
+		await focusAtStart(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '/')
+		await choose('Table')
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort')
+
+		await userEvent.keyboard('Z')
+
+		await expect.poll(value).toBe('|= ZTask | Status | Owner | Due | Effort')
+	})
+
+	/**
 	 * NO ENTRY OF THIS MENU MAY EAT THE PAGE. A closed kind's raw body is allowed to cross
 	 * separators — that is what makes it closed — so a kind whose opener is a PREFIX of another
 	 * kind's reaches forward to the next line that spells it and swallows everything between.
@@ -1057,6 +1082,13 @@ describe('the inline database', () => {
 	 *
 	 * The CELLS are the oracle beside the value: a paragraph holding pipes and a carved line emit
 	 * different strings, but only the carve puts boxes on the page.
+	 *
+	 * MOVING TO THE LAST COLUMN IS PART OF THE GESTURE NOW, and it is the declared cost of where a
+	 * seeded insert leaves the caret: at the seed's HEAD rather than past it, so the first character
+	 * typed lands in the first column instead of appending to the last one. Enter at a row's START
+	 * is still Enter at a row's start — an empty header above, this row's content below — so the two
+	 * gestures no longer share one caret and this one asks for its own. `End` cannot do it: each
+	 * cell is its own block box, so a line boundary stops at the cell the caret is in.
 	 */
 	it('opens a data LINE when Enter ends the header the menu seeded', async () => {
 		const {host, value} = await mountControlled(Empty, '')
@@ -1066,6 +1098,7 @@ describe('the inline database', () => {
 		await choose('Table')
 		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort')
 
+		await focusAtEnd([...host.querySelectorAll<HTMLElement>('[class*="tableHeadCell"]')].at(-1)!)
 		await userEvent.keyboard('{Enter}')
 		dispatchInsertText(editingHost(host), 'Auth | Done | Kara')
 

@@ -825,7 +825,7 @@ export function turnIntoPlan(
 	node: TreeNode,
 	descriptor: MarkupDescriptor | undefined,
 	patch: RowPatch | undefined
-): {window: Window; text: string} | undefined {
+): {window: Window; text: string; caret: number | undefined} | undefined {
 	if (node.kind !== 'row') return undefined
 	if (!preorderRows(roots).some(entry => entry.row === node)) return undefined
 
@@ -844,6 +844,12 @@ export function turnIntoPlan(
 			insertedLength: text.length - head - tail,
 		},
 		text: text.slice(head, text.length - tail),
+		// THE ROW'S LINE BODY START, which is its OPENER — and `anchorAt` answers a row's own ENTRY
+		// for any offset inside those structural bytes (ADR-0010), so this one number is "the start
+		// of what was seeded" for a plain kind and "its first cell" for a carved one. The offset
+		// survives the splice unmoved: everything before the row's line is untouched, and the lead
+		// a retype leaves alone. See {@link RowPatch.seeded} for when it is named at all.
+		caret: patch?.seeded === true ? start : undefined,
 	}
 }
 

@@ -277,11 +277,25 @@ export class OverlayController {
 		if (!target) return false
 		const menu = option.menu
 		const kind = option.markup === undefined ? undefined : option
+		// An EMPTY body is the insert gesture: the row held nothing but the trigger, so there is
+		// nothing to keep and the entry's own seed writes it.
+		const seeded = target.body === '' && (menu?.text ?? '') !== ''
 		return target.row.turnInto(kind, {
-			// An EMPTY body is the insert gesture: the row held nothing but the trigger, so there is
-			// nothing to keep and the entry's own seed writes it.
 			text: target.body === '' ? (menu?.text ?? '') : target.body,
 			meta: menu?.meta,
+			// AND A SEED IS NOT SOMETHING TO TYPE AFTER. The window's own mapping has right
+			// affinity, so it leaves the caret past everything the splice inserted: `/table`
+			// seeded `'Task | Status | Owner | Due | Effort'` and the next character appended to
+			// `'Effort'`. The seed is content the user did not type and is there to be replaced,
+			// so the caret goes to the row's ENTRY — where every other row-opening gesture already
+			// leaves it, and which for a CARVED seed descends into the first cell, so "the start
+			// of the seed" and "its first field" are one position rather than two rules. Naming a
+			// position the seed itself carried would be a third: a marker every entry has to
+			// spell, in an API whose seeds are plain data.
+			//
+			// A row that seeds NOTHING says nothing: its caret is already the entry of the empty
+			// body it is being given, and claiming it would only be a second answer to that.
+			seeded: seeded ? true : undefined,
 		})
 	}
 
