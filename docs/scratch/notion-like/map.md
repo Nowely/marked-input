@@ -569,6 +569,26 @@ becomes a ticket here.
   VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
   not a defect.
 
+- **P11.6 closed the seven confirmed defects the hardening round left**, each at its
+  one owner and each declared in its commit body (`671b18c4`, `2047537d`, `3facbc6e`,
+  `c1ee4114`, `e4335eba`). Four of them were ONE cause: what a row selection contains.
+  `rowSpan` starts a row at its entry while `sliceNodes` projects the same span with the
+  opener put back, so a copy and a replacement wrote different bytes — closed by
+  `TokenModel.replaceRows(anchors, rows)`, the one reading paste, cut, Backspace and Enter
+  all call, and by the exactness test that keeps a span running from mid-row out of it. The
+  other three: a pasted clip's line breaks now open rows through `RowNode.writeRows`, which
+  is Enter's own `splitPlan` widened to a span plus the pieces written at it; Tab moves the
+  whole selection through the set verb `TokenModel.indentRows`; `movePlan` tells
+  `'unchanged'` apart from a refusal, so the gap a row already holds is a drop that can
+  decline; and "Add below" is `RowNode.addSibling()`, which carries the lead the bare
+  separator never did. Two readings the Fog had sketched did NOT survive measurement and the
+  commits say so: a pasted line takes Enter's rule (`'⇥- two'`) rather than
+  `continuationDepth`'s (`'⇥two'`), which is what keeps a table's cells cells; and the
+  characterization fixture's table kind had to declare `continues: true`, as the showcase's
+  own `tableLine` does, before it could express that claim at all. The collateral is
+  declared: a selection covering exactly one row's whole body — a triple-click — IS a row
+  selection, so cutting or deleting it takes the row away instead of emptying it.
+
 ## Fog
 
 - What a package on top of this owns: does it wrap `MarkedInput` and ship
@@ -580,9 +600,8 @@ becomes a ticket here.
   `<button>` — `aria-label="Drag to reorder or click for options"` — beside a drop indicator and
   the menu popup. There is no add affordance in either adapter, no test names one, and no earlier
   decision retires it. So it is undeclared rather than declined, which is the part being fixed
-  here. It is ALSO blocked on the row verb the "Add below" entry already needs: `addRow` splices
-  a bare separator carrying no lead, so a `+` at a nested row's gutter would open its row at
-  depth 0 exactly as the menu entry does. Same fix, one phase.
+  here. The row verb it was also blocked on now exists — `RowNode.addSibling()`, P11.6 — so a `+`
+  at a nested row's gutter would open its row at the right depth; what is left is the affordance.
 - **The showcase net is single-framework, and that is an accepted cost rather than an oversight.**
   MEASURED 2026-08-26: `pnpm -w exec vitest list --project vue | grep -ci notion` → `0`, while
   `pages/` holds nineteen framework-free `*.spec.ts` that BOTH projects run. Five of the ten
@@ -595,55 +614,6 @@ becomes a ticket here.
   rules whose only pin was that file — Enter deferring to the suggestions protocol, no trigger in
   a raw closed body, the re-probe on a caret move — now have core unit pins that run once for
   both adapters. The remaining exposure is the ADAPTER arms, which is exactly what P12 buys.
-- **Six confirmed defects from the 2026-08-26 hardening pass are still open, each measured and
-  none taken here.** They now each carry a CHARACTERIZATION pin — `rowSpanSeam.spec.ts` for the
-  five span/keymap ones and `BlockController.spec.ts` for the drop — asserting the value the
-  editor emits today, so closing one reddens the test written for it. They are listed so the next
-  phase inherits the readings rather than the hunt.
-  - **A `\n` inside PASTED text is spliced raw and takes none of Enter's row rules.** Into a table
-    cell: `'| a | b⏎after'`, caret at the end of cell `a`, paste `'one⏎two'` → `'| aone⏎two | b⏎after'`
-    and the page paints ONE body cell. The editor's own Enter from that caret gives `'| a⏎|  | b⏎after'`
-    and keeps every cell in the table. Into a nested row: `'- parent⏎⇥- child⏎- after'` + `'one⏎two'`
-    → `'- parent⏎⇥- childone⏎two⏎- after'`, `two` at depth 0. Enter there keeps depth via
-    `continuationDepth`. `map.md`'s P9 entry already records this exact shape as a defect closed for
-    Shift+Enter; paste reaches it through `replacementForInput`'s raw string and was never covered.
-    One undo each.
-  - **A row selection COVERS the body and PROJECTS the opener, so replacing one never replaces its
-    kind.** `rowSpan()` starts at `entryAnchor(row)`, while `sliceNodes()` re-annotates the same span
-    back to `'- alpha'`. Copy `'- one⏎- two'`, Esc-select `'- target'`, paste →
-    `'- one⏎- two⏎- - one⏎- two⏎tail'`, and `[class*="heading"]` still counts 1 for a copied `'## Head'`.
-    The editor's own answer for the same clip into an EMPTY row is the wanted one. Cut and plain
-    Backspace over the same selection leave the identical husk `'- ⏎tail'`, so it is the keymap's
-    span and not the clipboard's.
-  - **Enter over a ROW selection slides the highlight onto a row the user never named.** The
-    declared rule (`rowKeys.ts:66-68`) says it keeps what was selected, and over a TEXT range it
-    does — collapsed. Over a row selection the anchors slide under the insert and come to rest on
-    `'⏎beta'`; the next character then deletes `beta`. Two undos recover.
-  - **A drop into a row's OWN gap has no "leave it where it was" outcome.** `#resolveDrop` seeds
-    `candidates[0]` and only moves the pick rightwards, and at a row's own gap the identity
-    placement is a refused no-op — so every X indents (`'- alpha⏎⇥- beta⏎- gamma'` at three
-    horizontal positions). The indicator does promise the indent (+24px), and the decline exists
-    wherever no deeper candidate survives.
-  - **A partial row-selection delete leaves the first row's OPENER as an empty row of that kind**
-    (`'## Head⏎- alpha⏎- beta⏎- gamma'`, Esc + Shift+Down ×2, Backspace → `'## ⏎- gamma'`). One
-    undo, caret live in the residue.
-  - **Tab and Shift+Tab ignore a standing row selection and re-indent the ANCHOR row alone**
-    (`handleRowIndent` reads `store.tokens.rowOf(at)` and never `block.selected`). `spec.md` item 20
-    makes only the DRAG set-aware, so this is a wiring gap rather than a design hole; the set-aware
-    verb already exists (`TokenModel.moveRows`).
-- **The row menu's "Add below" opens the row at depth 0, whatever depth the pointer was at.**
-  MEASURED on the tip, controlled and uncontrolled: `'- parent⏎⇥- child⏎- tail'`, grip on `child`,
-  **Add below** → `'- parent⏎⇥- child⏎⏎- tail'`. The new row leaves the subtree and cuts the list
-  in two; one undo takes it back. `BlockController.addRow` splices the bare `config.separator`,
-  which carries no lead. The text that WOULD carry it needs two things that live in
-  `features/tokens/` by ADR-0003 — the row's `lead()`, and whether its subtree `endsDocument`,
-  which decides whether the lead is written before the separator (an ordinary row, whose
-  `position.end` is already past its own separator) or after it (the document-final row, which the
-  splice must terminate first). `addressSpace.spec` pins that boundary by name, so the fix is a
-  ROW VERB in the tokens layer — published surface on `NodeCommands` and three node interfaces —
-  and not a longer string in `BlockController`. Not taken here; it is an API addition, not a repair.
-  The KIND should stay uncarried either way: "add a row" opens a blank one, and whether a kind
-  continues is Enter's question.
 - **One split shape a single window cannot place the caret in: MID-BODY, on a row that KEEPS a
   subtree.** `splitPlan`'s window is trimmed to the changed bytes now, which is what put the caret
   at the tail's start for every childless split (the ordinary Enter). It cannot be trimmed when the
