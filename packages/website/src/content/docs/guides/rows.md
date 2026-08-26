@@ -146,7 +146,7 @@ store's other row verbs hang off the same `s.rows` — see
 
 A row selection is the ROWS — openers and leads included. Paste, cut, copy and Backspace/Delete all
 read it that way; typing replaces the rows' TEXT and keeps the first row's kind, except over a row
-with no editable position, where the row itself is replaced. See
+with no editable position, where the character is refused and the row is left standing. See
 [Keyboard Handling](/guides/keyboard-handling) for the full contract.
 
 ## Drag

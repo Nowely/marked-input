@@ -211,10 +211,11 @@ way the row the pointer was IN is the row the caret gets, at that row's own entr
 reaches a neighbouring row.
 
 A row that paints none of its own text — an atomic kind, the whole card — holds no entry to claim,
-so a click on it leaves the caret exactly where it was. On a field nobody has typed in yet that
-means the click is inert: no caret, and the editor gives the focus back rather than holding one the
-user cannot see. If you want such a block to answer a click, paint something the caret can enter or
-handle the click yourself inside the control.
+so a click on it SELECTS the row instead: the selection is written across the row's own element, the
+browser paints the block, and `Backspace`, a paste and a drag act on it. A typed character is
+refused there, since the row holds no prose for it to replace. If you want such a block to answer a
+click some other way, paint something the caret can enter or handle the click yourself inside the
+control.
 
 ## Retyping a row
 
@@ -267,8 +268,8 @@ const tableLine: Option = {
 - Tab inside a cell walks to the next piece rather than changing depth; at the first or last piece
   there is no neighbour and the key is not consumed.
 - Every other key names the LINE, because a piece has no line of its own to splice: Enter splits the
-  line, Backspace at the first piece demotes the line, and the row menu converts the line.
-  Shift+Enter is refused there.
+  line, Backspace at the first piece demotes the line, `Home`/`End` go to the LINE's edges rather
+  than the piece's, and the row menu converts the line. Shift+Enter is refused there.
 - A piece cannot contain the delimiter — an escape scoped to a cell's body is a named follow-up, not
   a feature.
 - Copying one cell emits the whole line with the other cells empty, so a pasted cell keeps its
