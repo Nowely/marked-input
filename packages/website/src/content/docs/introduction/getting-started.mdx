@@ -149,14 +149,14 @@ another, `Esc` selects one, and `Ctrl/Cmd+Z` undoes — the editor keeps its own
 An option that declares `row` turns its markup into a **row kind**, matched only at a row's own
 start:
 
-```tsx
-import {MarkedInput, RowMenu} from '@markput/react'
+```tsx uses=Heading,Bullet
+import {MarkedInput} from '@markput/react'
 
 <MarkedInput
     defaultValue={'# Launch plan\n- ship it'}
     draggable
     options={[
-        {Overlay: RowMenu, overlay: {trigger: '/'}},
+        {overlay: {trigger: '/'}},
         {markup: '# __slot__', row: {Component: Heading}, menu: {label: 'Heading 1'}},
         {markup: '- __slot__', row: {Component: Bullet, continues: true, indents: true}, menu: {label: 'Bulleted list'}},
     ]}

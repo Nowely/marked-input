@@ -239,9 +239,9 @@ describe('API: Overlay and Triggers', () => {
 })
 
 /**
- * THE ROW MENU, driven through the SHIPPED `RowMenu` in both projects. The probe page that
- * proved ticket 11 is React-only until P12, so without these two the Vue component's `entries`
- * binding, its ref wiring and its click path never ran anywhere.
+ * THE ROW MENU, driven through the SHIPPED `OverlayList` in both projects. The probe page that
+ * proved ticket 11 is React-only until P12, so without these the Vue component's `rows` binding,
+ * its ref wiring, its keyboard and its click path never ran anywhere.
  *
  * Both cases go through `mountEcho`: a menu writes a row, and the value the editor emits is the
  * only thing that says which of the two gestures it ran.
@@ -285,5 +285,38 @@ describe('API: the row menu', () => {
 
 		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
 		await expect.element(page.getByText('Bulleted list')).not.toBeInTheDocument()
+	})
+
+	/**
+	 * THE GESTURE THE MENU WAS REACHABLE BY AND THE KEYBOARD WAS NOT. Every case above CLICKS,
+	 * which is why three green rounds never saw this: the shipped menu had no `active` and no
+	 * Enter, so `/h1` + ArrowDown + Enter left the literal `/h1` in the row and SPLIT it —
+	 * `'Intro\n\n/h1\nplain row'` — while the `@` picker beside it had arrows and Enter all along.
+	 */
+	it('choose a kind with the keyboard alone, never touching the mouse', async () => {
+		const {host, value} = await mountEcho(RowMenu, {value: 'Intro\n\nplain row'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/h1')
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+
+		await userEvent.keyboard('{ArrowDown}')
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(value).toBe('Intro\n\n# plain row')
+	})
+
+	/** ArrowDown with nothing highlighted takes the first row, and the highlight is PAINTED. */
+	it('highlight the row the arrows land on', async () => {
+		const {host} = await mountEcho(RowMenu, {value: 'Intro\n\nplain row'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/')
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+		const before = getElement(page.getByText('Heading 1')).className
+
+		await userEvent.keyboard('{ArrowDown}')
+
+		await expect.poll(() => getElement(page.getByText('Heading 1')).className).not.toBe(before)
 	})
 })

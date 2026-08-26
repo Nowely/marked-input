@@ -1027,7 +1027,7 @@ function NotionEditor() {
             )}
             slots={{container: NotionContainer}}
             options={[
-                {Overlay: RowMenu, overlay: {trigger: '/'}},
+                {overlay: {trigger: '/'}},
                 {markup: '# __slot__', row: {Component: Heading}, menu: {label: 'Heading 1'}},
                 {markup: '- __slot__', row: {Component: Bullet, continues: true, indents: true}, menu: {label: 'Bulleted list'}},
             ]}

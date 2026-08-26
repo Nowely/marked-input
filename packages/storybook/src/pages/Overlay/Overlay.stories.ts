@@ -68,9 +68,13 @@ export const PositionedOverlay = story({
 })
 
 /**
- * THE ROW MENU on the shipped `RowMenu`, and the only place either adapter's is DRIVEN: the
- * probe page that exercises it is React-only until P12, so a Vue-side divergence in `entries`,
- * `choose` or the ref wiring would otherwise ship unmeasured.
+ * THE ROW MENU on the shipped `OverlayList`, and the only place either adapter's is DRIVEN: the
+ * probe page that exercises it is React-only until P12, so a Vue-side divergence in `rows`,
+ * `choose`, the keyboard or the ref wiring would otherwise ship unmeasured.
+ *
+ * IT NAMES NO `Overlay` COMPONENT, which is the wiring the collapse bought: a trigger option
+ * declaring no `overlay.data` resolves to the built-in list, and that list offers the entries the
+ * options themselves declare.
  *
  * It overrides the page's `separator: null`: a menu turns ROWS into kinds, and a value that
  * never splits has none.
@@ -78,7 +82,6 @@ export const PositionedOverlay = story({
 export const RowMenu = story({
 	args: {
 		Mark: Empty,
-		Overlay: fixtures.RowMenu,
 		defaultValue: ROW_MENU_VALUE,
 		separator: '\n',
 		options: [

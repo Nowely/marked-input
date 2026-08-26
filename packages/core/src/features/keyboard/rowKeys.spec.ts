@@ -677,14 +677,14 @@ describe('rowKeys the row keymap', () => {
 	describe('Enter', () => {
 		/**
 		 * THE SUGGESTIONS PROTOCOL GETS ITS OWN KEY BACK. Both listeners sit on the container and
-		 * this keymap is bound at editor setup while `SuggestionsModel.activate` binds when the
+		 * this keymap is bound at editor setup while `OverlayListModel.activate` binds when the
 		 * popup mounts — later, same element, same phase — so without the check this arm ran first
 		 * and split the row out from under a highlighted name: `'ping @Mi'` + ArrowDown + Enter
 		 * emitted `'ping @Mi⏎'`, and there was no match left by the time the protocol ran.
 		 *
 		 * The negative half is the same claim's other side: with NOTHING highlighted `consumes` is
-		 * false — which is what keeps the `/` menu's declared "no keyboard navigation" intact — and
-		 * Enter still splits.
+		 * false and Enter still splits, so an overlay the user has not arrowed into costs the row
+		 * split nothing.
 		 */
 		it('leaves Enter to an open suggestion list that has a highlighted row', () => {
 			const MENTION: CoreOption = {
@@ -693,12 +693,12 @@ describe('rowKeys the row keymap', () => {
 			}
 			const {store, container} = keymap('ping ', {options: [BULLET, MENTION]})
 			store.edit.replace(store.tokens.anchorAt(5), store.tokens.anchorAt(5), '@Mi')
-			store.overlay.suggestions.active(0)
+			store.overlay.list.active(0)
 
 			press(container, 'Enter')
 
 			expect(store.tokens.value()).toBe('ping @Mi')
-			store.overlay.suggestions.select(0)
+			store.overlay.list.select(0)
 			expect(store.tokens.value()).toBe('ping @[Milo Freeman](milo.freeman)')
 		})
 

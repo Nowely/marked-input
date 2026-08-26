@@ -1,4 +1,4 @@
-import {RowMenu, useOverlay} from '@markput/react'
+import {useOverlay} from '@markput/react'
 
 /**
  * Story fixtures: the framework half of this page's stories. There is no shared interface to
@@ -6,8 +6,6 @@ import {RowMenu, useOverlay} from '@markput/react'
  * project if this file drifts.
  */
 export const fixtures = {
-	/** The adapter's own row menu, so `RowMenu`'s cases drive the SHIPPED component in both projects. */
-	RowMenu,
 	Overlay: () => <h1>I am the overlay</h1>,
 	Tooltip: () => {
 		const {style} = useOverlay()

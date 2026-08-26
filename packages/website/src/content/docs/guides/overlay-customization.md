@@ -4,7 +4,7 @@ description: Custom autocomplete overlays for Markput - trigger characters, sugg
 keywords: [overlay, autocomplete, suggestions, trigger characters, useOverlay hook, positioning, custom UI]
 ---
 
-The overlay system provides autocomplete, suggestions, and contextual menus when users type trigger characters. Markput includes a default Suggestions component, but you can fully customize it to match your needs.
+The overlay system provides autocomplete, suggestions, and contextual menus when users type trigger characters. Markput includes a default `OverlayList` component — one list for both jobs — but you can fully customize it to match your needs.
 
 ## Overview
 
@@ -20,9 +20,12 @@ User selects 'Alice'
 Text becomes '@[Alice]'
 ```
 
-## Default Suggestions Overlay
+## The Default Overlay List
 
-Markput includes a built-in Suggestions component:
+Markput includes a built-in `OverlayList` component, and it is what a trigger option resolves to
+when it names no `Overlay` of its own. What it offers depends on the matched option and on
+nothing else: an option that declares `overlay.data` offers that data, and an option that
+declares none offers the ROW MENU (see below). One list, one keyboard, either way.
 
 ```tsx
 import {MarkedInput} from '@markput/react'
@@ -87,18 +90,18 @@ A `/` menu is not a custom overlay: an option that declares a `menu` IS in the m
 adapter ships the paint.
 
 ```tsx
-import {RowMenu} from '@markput/react'
-
 const options = [
-    {overlay: {trigger: '/'}, Overlay: RowMenu},
+    {overlay: {trigger: '/'}},
     {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1', keywords: ['h1', 'title']}},
     {markup: '- __slot__', row: {Component: 'li', continues: true}, menu: {label: 'Bulleted list'}},
     {markup: '> __slot__', row: {Component: 'blockquote'}, menu: {label: 'Quote'}},
 ]
 ```
 
-That is the whole wiring. The `/` option carries no markup of its own — it exists to own the
-trigger — and what a choice writes is the ROW KIND the chosen entry names.
+That is the whole wiring, and it names no component: the `/` option carries no markup of its own
+— it exists to own the trigger — declares no `overlay.data`, and therefore resolves to the
+built-in list showing the row menu. What a choice writes is the ROW KIND the chosen entry names,
+by click or by ↑↓ and Enter.
 
 | `MenuSpec` field | Meaning                                                                |
 | ---------------- | ---------------------------------------------------------------------- |
@@ -118,23 +121,26 @@ Which gesture it is is not published, because nothing paints it: `choose` decide
 caret row's own body and no menu component asks. An entry that wants to say "Turn into" needs
 core to answer, so the member comes back with the reader that needs it and not before.
 
-**Replacing `RowMenu`.** A consumer's own menu reads the same two things and still writes no
-filtering and no insert logic:
+**Replacing `OverlayList`.** A consumer's own list reads the same things and still writes no
+filtering and no insert logic. `activate()` is what buys the keyboard — arrows move `active`,
+Enter chooses — and it is opt-in so an overlay that is not a list never swallows those keys:
 
-```tsx
+```tsx fragment
 function MyMenu() {
-    const {entries, choose, style, ref} = useOverlay()
-    if (entries.length === 0) return null
+    const {rows, active, activate, choose, style, ref} = useOverlay()
+    useEffect(activate, [activate])
+    if (rows.length === 0) return null
 
     return (
-        <ul ref={ref} style={{position: 'absolute', ...style}}>
-            {entries.map(entry => (
+        <ul ref={ref as React.Ref<HTMLUListElement>} style={{position: 'absolute', ...style}}>
+            {rows.map((row, index) => (
                 <li
-                    key={entry.label}
+                    key={row.label}
+                    style={index === active ? {background: '#cce9ff'} : undefined}
                     onMouseDown={event => event.preventDefault()}
-                    onClick={() => choose({option: entry.option})}
+                    onClick={() => choose(row.pick)}
                 >
-                    {entry.label}
+                    {row.label}
                 </li>
             ))}
         </ul>
@@ -164,7 +170,9 @@ function CustomOverlay() {
 | `close()`   | `function`                          | Close the overlay                               |
 | `select()`  | `function`                          | Insert a mark                                   |
 | `choose()`  | `function`                          | The one accept path; `{option}` retypes the row |
-| `entries`   | `readonly MenuEntry[]`              | The row menu, already narrowed by the query     |
+| `rows`      | `readonly OverlayRow[]`             | The list on offer, already narrowed by the query|
+| `active`    | `number`                            | Index of the highlighted row; `NaN` for none    |
+| `activate()`| `function`                          | Bind ↑↓/Enter; returns the unbind               |
 | `match`     | `OverlayMatch`                      | Match details (value, source, trigger)          |
 | `ref`       | `RefObject`                         | Ref for outside click detection                 |
 
@@ -180,8 +188,12 @@ interface OverlayHandler {
     select: (value: {value: string; meta?: string}) => void
     /** `{option}` turns the caret's row into that option's kind; `{value, meta}` is `select`. */
     choose: (pick: OverlayPick) => boolean
-    /** One entry per option declaring a `menu`, filtered by what was typed after the trigger. */
-    entries: readonly MenuEntry[]
+    /** The matched option's `overlay.data`, or the row menu when it declares none. */
+    rows: readonly OverlayRow[]
+    /** Index into `rows` of the highlighted row; NaN when none is. */
+    active: number
+    /** Bind ↑↓/Enter to the editing host, and return the unbind. Opt-in. */
+    activate: () => () => void
     match: {
         value: string // Typed text after trigger
         source: string // Full matched text including trigger
@@ -680,10 +692,8 @@ This one is no longer an example of a custom overlay, because it is not custom a
 [The Row Menu](#the-row-menu). The list, the filtering and the write all moved into core:
 
 ```tsx
-import {RowMenu} from '@markput/react'
-
 const options = [
-    {overlay: {trigger: '/'}, Overlay: RowMenu},
+    {overlay: {trigger: '/'}},
     {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1', keywords: ['h1']}},
     {markup: '## __slot__', row: {Component: 'h2'}, menu: {label: 'Heading 2', keywords: ['h2']}},
     {markup: '- __slot__', row: {Component: 'li', continues: true}, menu: {label: 'Bulleted list'}},

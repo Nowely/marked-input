@@ -85,7 +85,7 @@ export interface CoreOption {
 	menu?: MenuSpec
 }
 
-/** What an option declares to appear in {@link OverlayController.entries}. */
+/** What an option declares to appear in {@link OverlayListModel.rows}. */
 export interface MenuSpec {
 	/** What the row shows, and the only text the typed query is matched against. */
 	label: string
@@ -102,16 +102,16 @@ export interface MenuSpec {
 }
 
 /**
- * A row-menu entry, as an overlay hands it out: the option that contributed it, plus what to
- * paint. Insert-versus-turn-into is NOT here and is not anywhere else either — it is a fact
- * about the caret's row that `choose` reads for itself, so no entry and no overlay member
- * carries a second copy of it.
+ * ONE ROW of the list an open overlay offers: what to paint, and the pick that choosing it
+ * commits. It is the SAME shape for a suggestion and for a row-menu entry, which is what let the
+ * two lists collapse into {@link OverlayListModel} — a painter reads `label`, a click hands
+ * `pick` straight back to `choose`, and neither has to know which source the row came from.
  *
- * `label` DOES mirror `option.menu.label`, on purpose: an entry only exists because its option
- * declared a menu, so the projection spends the non-null assertion once here rather than making
- * every painter write `entry.option.menu!.label`.
+ * Insert-versus-turn-into is NOT here and is not anywhere else either — it is a fact about the
+ * caret's row that `choose` reads for itself, so no row and no overlay member carries a second
+ * copy of it.
  */
-export type MenuEntry = {option: CoreOption; label: string}
+export type OverlayRow = {label: string; pick: OverlayPick}
 
 /**
  * WHAT AN OVERLAY ACCEPTS, and a UNION because the two arms are exclusive in fact: naming a row

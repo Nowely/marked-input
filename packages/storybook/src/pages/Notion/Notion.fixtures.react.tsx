@@ -1,5 +1,4 @@
 import type {Option, Suggestion} from '@markput/react'
-import {RowMenu} from '@markput/react'
 import type {ReactNode} from 'react'
 
 import {CoverBand, mention, NOTION_THEME, notionOptions, PageChrome, Paragraph, theme} from './notion'
@@ -30,13 +29,14 @@ const TEAM: Suggestion[] = [
  * option carries no markup at all: it exists only to own a trigger, and what it writes is the
  * kind the chosen entry names.
  *
- * Neither overlay is a component this page wrote. `@` is the built-in suggestion list over
- * `overlay.data`; `/` is the adapter's `RowMenu` over the entries the options themselves
- * declare, so nothing here filters, labels or inserts.
+ * Neither overlay is a component this page wrote, and neither is even NAMED here: the built-in
+ * `OverlayList` paints both. `@` offers the option's own `overlay.data`; `/` declares none, so
+ * the same list offers the ROW MENU the options themselves declare. Nothing here filters, labels
+ * or inserts.
  */
 const options: Option[] = [
 	{...mention, overlay: {trigger: '@', data: TEAM}},
-	{Overlay: RowMenu, overlay: {trigger: '/'}},
+	{overlay: {trigger: '/'}},
 	...notionOptions.filter(option => option !== mention),
 ]
 

@@ -55,7 +55,7 @@ const ASSUMED_INDENT = 24
  * it forces nothing, which is why `EditController` is one with no listeners, no signals and no
  * mount hook at all. Measured across the whole population, no `*Model` in core takes a DOM
  * listener on mount: `PropsModel`, `DomModel` and `TokenModel` call `listen` zero times, and
- * `SuggestionsModel`'s one `container.addEventListener` sits in an opt-in `activate()` the
+ * `OverlayListModel`'s one `container.addEventListener` sits in an opt-in `activate()` the
  * adapter calls and takes back, not in a mount hook. The decisive precedent is `TokenModel`: it
  * owns more state than anything else in core and pushed its DOM I/O OUT, into a class
  * deliberately not called `SelectionModel`. This one takes `host.onMounted`, installs five

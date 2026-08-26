@@ -3,7 +3,7 @@ import {escape} from '../../shared/escape'
 import {reportBadProp} from '../../shared/reportBadProp'
 import {signal, computed, event, effect, watch, listen} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {CoreOption, MenuEntry, OverlayMatch, OverlayPick, Slot} from '../../shared/types'
+import type {CoreOption, OverlayMatch, OverlayPick, Slot} from '../../shared/types'
 import type {EditController} from '../edit'
 import type {OverlaySlot} from '../slots'
 import {resolveOverlaySlot} from '../slots/resolveSlot'
@@ -11,15 +11,14 @@ import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {RowNode, TokenModel} from '../tokens'
 import {anchorEquals, annotate, hasRawBody, markupError} from '../tokens'
-import {filterSuggestions} from './filterSuggestions'
-import {SuggestionsModel} from './SuggestionsModel'
+import {OverlayListModel} from './OverlayListModel'
 
 export class OverlayController {
 	/**
 	 * THE open overlay, or `undefined`. Compared BY CONTENT, because `#findTrigger` allocates a
 	 * fresh match on every probe and every commit re-probes. Without this, a commit that changes
 	 * nothing the overlay can see — a parent re-setting `value` to what it already holds, a
-	 * reparse — announced a "new" match, and `SuggestionsModel`'s watch reset the highlighted
+	 * reparse — announced a "new" match, and `OverlayListModel`'s watch reset the highlighted
 	 * suggestion to NaN. The user lost the row they had arrowed to, for a probe that found
 	 * exactly the same thing. Measured field by field: value, source, span, node, option and
 	 * both anchors were all identical, including the anchors' own node objects.
@@ -45,7 +44,8 @@ export class OverlayController {
 	/** The `{current}` facade over `element` that both adapters hand out as `OverlayHandler.ref`. */
 	readonly ref: {current: HTMLElement | null}
 
-	readonly suggestions: SuggestionsModel
+	/** The ONE list the open overlay offers, its highlight and its keyboard. */
+	readonly list: OverlayListModel
 
 	/**
 	 * THE DOCUMENTED ALIAS of {@link choose}'s value arm, and the older of the two spellings —
@@ -64,28 +64,6 @@ export class OverlayController {
 
 	readonly close = event()
 
-	/**
-	 * THE ROW MENU, assembled from the options themselves: every option carrying a {@link MenuSpec}
-	 * contributes exactly one entry, filtered by what the user typed after the trigger. There is no
-	 * registry and no second list — an option that declares an entry IS in the menu, which is what
-	 * lets a consumer's menu component be pure paint.
-	 *
-	 * The query pass IS {@link filterSuggestions}, over the label and the entry's own hidden
-	 * keywords: one rule for "does this row match what was typed", shared with the built-in
-	 * suggestion list rather than written twice.
-	 */
-	readonly entries: Computed<readonly MenuEntry[]> = computed(() => {
-		const match = this.match()
-		if (!match) return []
-		return this.props.options().flatMap(option => {
-			const menu = option.menu
-			if (!menu) return []
-			const haystack = [menu.label, ...(menu.keywords ?? [])]
-			if (filterSuggestions(haystack, match.value).length === 0) return []
-			return [{option, label: menu.label}]
-		})
-	})
-
 	readonly position: Computed<{left: number; top: number}> = computed(() => {
 		if (!this.match()) return {left: 0, top: 0}
 		const rect = this.tokens.caretRect()
@@ -99,7 +77,7 @@ export class OverlayController {
 		private readonly edit: EditController,
 		private readonly tokens: TokenModel
 	) {
-		this.suggestions = new SuggestionsModel(host, this)
+		this.list = new OverlayListModel(host, props, this)
 
 		const element = this.element
 		this.ref = {

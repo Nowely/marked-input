@@ -9,13 +9,12 @@ This example demonstrates how to build a slash command system like Notion, Slack
 :::tip[There is a shipped one]
 If your `/` menu is meant to change what the caret's ROW IS — a heading, a list item, a quote, a code
 fence — you do not need any of the code below. An option that declares a `menu` is already in the row
-menu, each adapter ships the paint as `RowMenu`, and choosing an entry retypes the row in one splice:
+menu, each adapter ships the paint as the default `OverlayList`, and choosing an entry — by click or
+by ↑↓ and Enter — retypes the row in one splice:
 
-```tsx
-import {RowMenu} from '@markput/react'
-
+```tsx uses=Heading,Bullet
 const options = [
-    {Overlay: RowMenu, overlay: {trigger: '/'}},
+    {overlay: {trigger: '/'}},
     {markup: '# __slot__', row: {Component: Heading}, menu: {label: 'Heading 1', keywords: ['h1']}},
     {markup: '- __slot__', row: {Component: Bullet, continues: true, indents: true}, menu: {label: 'Bulleted list'}},
 ]

@@ -7,7 +7,7 @@ title: "MenuSpec"
 
 Defined in: [core/src/shared/types.ts:89](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L89)
 
-What an option declares to appear in OverlayController.entries.
+What an option declares to appear in OverlayListModel.rows.
 
 ## Properties
 

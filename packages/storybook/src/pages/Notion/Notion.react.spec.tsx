@@ -399,7 +399,25 @@ describe('the slash menu', () => {
 		expect(blank).toEqual([])
 	})
 
-	/** The menu is `overlay.entries`, so a keyword no label contains still narrows it. */
+	/**
+	 * THE REPORTED GESTURE, and the one every green round missed because every green round used a
+	 * MOUSE. `/h2` then Enter left the literal `/h2` in the row and split it: the shipped menu had
+	 * no highlight and no Enter, while the `@` picker one option away had both.
+	 */
+	it('turns a row from the keyboard alone — type, arrow, Enter', async () => {
+		const {host, value} = await mountControlled(Showcase, 'plain row')
+
+		await focusAtEnd(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '/h2')
+		await expect.element(page.getByText('Heading 2', {exact: true})).toBeVisible()
+
+		await userEvent.keyboard('{ArrowDown}')
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(value).toBe('## plain row')
+	})
+
+	/** The menu is `overlay.list.rows`, so a keyword no label contains still narrows it. */
 	it('narrows by a keyword that appears in no label', async () => {
 		const {host} = await mount(Empty)
 
@@ -788,15 +806,15 @@ describe('the inline database', () => {
 	})
 
 	/**
-	 * THE PICKER'S OWN KEYBOARD, finished with the key that finishes it. `SuggestionsModel`
+	 * THE PICKER'S OWN KEYBOARD, finished with the key that finishes it. `OverlayListModel`
 	 * registers its keydown when the popup MOUNTS and the row keymap registered its own at editor
 	 * setup, both on the container — so the keymap ran first, `handleRowEnter` had no overlay check
 	 * at all, and Enter split the row out from under the highlighted name: `'ping @Mi⏎'`, no
 	 * mention. Its neighbour `handleRowSelection` already defers to an open overlay on Esc; this is
 	 * the same deference on the key the protocol actually claims.
 	 *
-	 * (The `/` menu is NOT this case and stays as declared — `RowMenu` has no keyboard, so
-	 * nothing highlights, and `navigateSuggestions` answers `'none'` for a key no one will take.)
+	 * The `/` menu is the SAME case now, and the slash-menu describe above drives it: both lists
+	 * are one model with one keyboard.
 	 */
 	it('finishes a mention on Enter after the arrow keys chose it', async () => {
 		const {host, value} = await mountControlled(Showcase, 'ping ')

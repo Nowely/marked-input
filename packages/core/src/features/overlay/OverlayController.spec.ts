@@ -243,7 +243,7 @@ describe('OverlayController', () => {
 		it('a commit that finds the SAME trigger keeps the highlighted suggestion', () => {
 			// `#findTrigger` allocates, and every commit re-probes — so without a content
 			// comparison on `match`, a commit that changes nothing the overlay can see still
-			// announced a new match, and `SuggestionsModel`'s watch reset the highlight.
+			// announced a new match, and `OverlayListModel`'s watch reset the highlight.
 			//
 			// The commit here is the emptiest one there is: the same value arriving again, which
 			// moves no caret and changes no text. Measured field by field before the equality
@@ -261,13 +261,13 @@ describe('OverlayController', () => {
 			const opened = store.overlay.match()
 			expect(opened?.value).toBe('al')
 
-			store.overlay.suggestions.active(1)
+			store.overlay.list.active(1)
 
 			store.props.update({value: store.tokens.value()})
 			store.props.update({value: undefined})
 
 			expect(store.overlay.match()).toBe(opened)
-			expect(store.overlay.suggestions.active()).toBe(1)
+			expect(store.overlay.list.active()).toBe(1)
 		})
 	})
 

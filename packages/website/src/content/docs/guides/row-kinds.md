@@ -239,7 +239,7 @@ checkbox is a control, and ticking it is a retype.
 
 ```tsx
 import type {Option, RowProps} from '@markput/react'
-import {MarkedInput, RowMenu, useControlRef} from '@markput/react'
+import {MarkedInput, useControlRef} from '@markput/react'
 
 const todo: Option = {
     markup: '- [__meta__] __slot__',
@@ -275,7 +275,7 @@ const bullet: Option = {
 export const Editor = () => (
     <MarkedInput
         defaultValue={'- [ ] Confirm the EU quota\n- [x] Signed off by Platform'}
-        options={[{Overlay: RowMenu, overlay: {trigger: '/'}}, todo, bullet, {markup: '@[__value__](__meta__)'}]}
+        options={[{overlay: {trigger: '/'}}, todo, bullet, {markup: '@[__value__](__meta__)'}]}
     />
 )
 ```

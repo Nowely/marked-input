@@ -2,10 +2,11 @@
 import './src/augment'
 
 export {MarkedInput} from './src/components/MarkedInput'
-// The shipped ROW MENU. Core is framework-agnostic and ships no components, so the default
-// slash-menu paint lives here beside `Suggestions`; `{overlay: {trigger: '/'}, Overlay: RowMenu}`
-// is the whole of a consumer's wiring.
-export {RowMenu} from './src/components/RowMenu/RowMenu'
+// THE shipped overlay list, and the DEFAULT one: core is framework-agnostic and ships no
+// components, so the paint lives here. It is exported for a consumer who wants it beside a
+// custom overlay on another option — wiring a row menu needs no component at all, since
+// `{overlay: {trigger: '/'}}` already resolves to this.
+export {OverlayList} from './src/components/OverlayList/OverlayList'
 // What a consumer's own control — a toggle arrow, a checkbox, a `<select>` — takes so the
 // caret and the browser's own editing stay out of it. `TokenModel.control()` is the SPI behind
 // it, and reaching for that means reaching through `store.tokens`.
@@ -33,11 +34,11 @@ export type {MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from '@markput/c
 // here the published package's own `Option` page links a name nothing exports, and `continues`
 // is documented nowhere a consumer looks.
 export type {RowSpec} from '@markput/core'
-// `CoreOption.menu`'s type and what `useOverlay().entries` hands out: a consumer replacing
-// `RowMenu` declares both, and `Option` names the first in its own shape.
-export type {MenuSpec, MenuEntry} from '@markput/core'
+// `CoreOption.menu`'s type and what `useOverlay().rows` hands out: a consumer replacing
+// `OverlayList` declares both, and `Option` names the first in its own shape.
+export type {MenuSpec, OverlayRow} from '@markput/core'
 // `overlay.data`'s element type. A consumer declaring the rows the built-in picker offers has to
-// name it, and the built `.d.ts` already does through `Option` — published for `MenuEntry`'s
+// name it, and the built `.d.ts` already does through `Option` — published for `OverlayRow`'s
 // reason, and because without it a page wiring an `@` picker reaches past the adapter into core
 // for a type alone.
 export type {Suggestion} from '@markput/core'

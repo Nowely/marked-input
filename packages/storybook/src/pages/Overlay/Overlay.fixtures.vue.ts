@@ -1,4 +1,4 @@
-import {RowMenu, useOverlay} from '@markput/vue'
+import {useOverlay} from '@markput/vue'
 import {defineComponent} from 'vue'
 
 /**
@@ -12,8 +12,6 @@ import {defineComponent} from 'vue'
  * typechecked.
  */
 export const fixtures = {
-	/** The adapter's own row menu, so `RowMenu`'s cases drive the SHIPPED component in both projects. */
-	RowMenu,
 	Overlay: defineComponent({template: '<h1>I am the overlay</h1>'}),
 	Tooltip: defineComponent({
 		// The computed is returned at the TOP level so `proxyRefs` unwraps it for the template;

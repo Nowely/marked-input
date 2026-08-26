@@ -46,10 +46,10 @@ export type {
 	CoreOption,
 	// `CoreOption.row`'s type: a consumer declaring a row kind separately needs the name.
 	RowSpec,
-	// `CoreOption.menu`'s type and what `overlay.entries` hands a menu component: a consumer
+	// `CoreOption.menu`'s type and what `overlay.list.rows` hands a list component: a consumer
 	// writing that component declares both.
 	MenuSpec,
-	MenuEntry,
+	OverlayRow,
 	// `overlay.choose`'s parameter: both adapters re-declare it on `OverlayHandler`, so the
 	// union is spelled once rather than three times.
 	OverlayPick,

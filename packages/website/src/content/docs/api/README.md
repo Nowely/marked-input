@@ -29,9 +29,9 @@ title: "@markput/react"
 ## Type Aliases
 
 - [Markup](/api/type-aliases/markup/)
-- [MenuEntry](/api/type-aliases/menuentry/)
 - [NodeAnchor](/api/type-aliases/nodeanchor/)
 - [OverlayPick](/api/type-aliases/overlaypick/)
+- [OverlayRow](/api/type-aliases/overlayrow/)
 - [RowPlacement](/api/type-aliases/rowplacement/)
 - [Suggestion](/api/type-aliases/suggestion/)
 - [TreeNode](/api/type-aliases/treenode/)
@@ -41,7 +41,7 @@ title: "@markput/react"
 - [annotate](/api/functions/annotate/)
 - [denote](/api/functions/denote/)
 - [MarkedInput](/api/functions/markedinput/)
-- [RowMenu](/api/functions/rowmenu/)
+- [OverlayList](/api/functions/overlaylist/)
 - [useControlRef](/api/functions/usecontrolref/)
 - [useMark](/api/functions/usemark/)
 - [useMarkInfo](/api/functions/usemarkinfo/)

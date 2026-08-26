@@ -8,7 +8,7 @@ import {anchorsAt, caretAt, selectionRange} from '../tokens/__testing__/mountFix
 /**
  * THE ROW MENU. Its subject is the gesture a slash menu IS — one keystroke opens it, one click
  * turns the caret's row into a kind — and the whole point of the phase is that neither half is
- * written by a consumer: the entries come from the options, and the write is one splice through
+ * written by a consumer: the rows come from the options, and the write is one splice through
  * `turnInto`.
  *
  * Every case types the `/` the way a user does, rather than setting a match by hand: the trigger
@@ -63,11 +63,11 @@ function rowsOf(store: Store): RowNode[] {
 	return out
 }
 
-describe('entries', () => {
+describe('the row menu rows', () => {
 	it('is assembled from the options that declare a menu, in option order', () => {
 		const store = typedSlash('plain row', 9)
 
-		expect(store.overlay.entries().map(entry => entry.label)).toEqual([
+		expect(store.overlay.list.rows().map(row => row.label)).toEqual([
 			'Heading 1',
 			'Bulleted list',
 			'Table',
@@ -78,15 +78,15 @@ describe('entries', () => {
 	it('carries the option itself, which is what `choose` names a kind by', () => {
 		const store = typedSlash('plain row', 9)
 
-		expect(store.overlay.entries()[0].option).toBe(HEADING)
+		expect(store.overlay.list.rows()[0].pick.option).toBe(HEADING)
 	})
 
-	it('has no entries at all with no overlay open', () => {
+	it('has no rows at all with no overlay open', () => {
 		const store = typedSlash('plain row', 9)
 
 		store.overlay.close()
 
-		expect(store.overlay.entries()).toEqual([])
+		expect(store.overlay.list.rows()).toEqual([])
 	})
 
 	/**
@@ -98,7 +98,7 @@ describe('entries', () => {
 
 		store.edit.replace(...anchorsAt(store, 1, 1), 'ul')
 
-		expect(store.overlay.entries().map(entry => entry.label)).toEqual(['Bulleted list'])
+		expect(store.overlay.list.rows().map(row => row.label)).toEqual(['Bulleted list'])
 	})
 
 	it('narrows by a keyword that appears in no label', () => {
@@ -106,7 +106,7 @@ describe('entries', () => {
 
 		store.edit.replace(...anchorsAt(store, 1, 1), 'h1')
 
-		expect(store.overlay.entries().map(entry => entry.label)).toEqual(['Heading 1'])
+		expect(store.overlay.list.rows().map(row => row.label)).toEqual(['Heading 1'])
 	})
 })
 

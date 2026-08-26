@@ -2,7 +2,7 @@ import {key} from '@markput/core'
 import {memo, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-import {Suggestions} from './Suggestions/Suggestions'
+import {OverlayList} from './OverlayList/OverlayList'
 
 export const OverlayRenderer = memo(() => {
 	const {match, resolveOverlay} = useMarkput(s => ({
@@ -11,7 +11,7 @@ export const OverlayRenderer = memo(() => {
 	}))
 	const overlayKey = useMemo(() => (match ? key.get(match.option) : undefined), [match])
 
-	const [Overlay, props] = resolveOverlay(match?.option, Suggestions)
+	const [Overlay, props] = resolveOverlay(match?.option, OverlayList)
 
 	if (!overlayKey) return
 

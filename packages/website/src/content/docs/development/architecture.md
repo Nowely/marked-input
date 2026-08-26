@@ -124,15 +124,18 @@ All user mutations go through `store.edit.replace(from, to, text)`: features nam
 ```
 
 A `/` menu takes the other arm of the same accept path. Options contribute their own entries:
-an option carrying a `menu: MenuSpec` is in `store.overlay.entries`, already narrowed by what
+an option carrying a `menu: MenuSpec` is in `store.overlay.list.rows`, already narrowed by what
 was typed after the trigger (label plus hidden keywords, through `filterSuggestions`), so no
 component holds a list of kinds and none filters one. `choose({option})` then removes the
 trigger span and calls `RowNode.turnInto(option, {text})` on the caret's row — ONE splice for
 both gestures, because two verbs cannot compose in controlled mode. Which gesture it is lives
 in ONE place and is not published: `choose` reads the caret row's body and, if it is empty,
 seeds it from the entry's `menu.text`/`menu.meta`; a row that already has text keeps it, since
-a turn-into must not discard what was typed. Each adapter ships `RowMenu` as the default
-paint.
+a turn-into must not discard what was typed. Each adapter ships ONE list component,
+`OverlayList`: it is the default overlay, it paints `overlay.data` when the matched option
+declares any and the row menu when it declares none, and both get the same ↑↓/Enter protocol
+from `OverlayListModel`. `{overlay: {trigger: '/'}}` is therefore the whole wiring of a row
+menu — no component named, no filtering, no insert logic.
 
 ## Parsing Pipeline
 
@@ -397,7 +400,7 @@ THE ROW SELECTION is the same tier's other half, and it has no store: `store.row
 
 WHAT A ROW SELECTION HOLDS has one reading — `tokens.rowSelection(anchors)` for the rows and `tokens.replaceRows(anchors, rows)` for the bytes, both answered by the same exactness test — and every gesture asks it: the paint, the drag, Esc's entry rung, paste, cut, Backspace/Delete, Enter and Tab. It is a verb rather than a widened selection because the span starts at the row's LINE — its lead and its opener, structural bytes no anchor may name (ADR-0010) — which is exactly the difference `sliceNodes` already put back when it PROJECTED the same span, so a copy carried an opener a replacement then wrote inside. `null` removes the rows, taking the boundary that held them apart with them so the row count shrinks. What replaces them says WHOSE LANGUAGE it is in, which is the same distinction the `beforeinput` table draws: a STRING is the value's own projection and is spliced verbatim — this editor's own clipboard entry, and the `''` that is Enter's fresh row — while an ARRAY is LINES, each OPENED as a row at the covered rows' lead and kind, which is what a foreign clip is. Written verbatim instead, a foreign clip's `\r` survived into the value and its line break became a row boundary in a document whose separator is not one. It applies only where the selection is exactly a whole number of rows: a span running from mid-row into another one names bytes outside the rows it covers, so it falls through to the ordinary replacement. Typing is deliberately not one of the four — a character replaces the text that was selected and the row keeps its kind.
 
-Caret navigation is otherwise the browser's: the container is the one editing host, so arrows and Home/End move natively and no core keyboard handler intercepts them. (Core's `SuggestionsModel` does claim ArrowUp/ArrowDown/Enter while the built-in `Suggestions` component is mounted — the adapter component only activates it.) The selection is not a feature of its own: `store.tokens.selection` is the stored anchor pair (see below).
+Caret navigation is otherwise the browser's: the container is the one editing host, so arrows and Home/End move natively and no core keyboard handler intercepts them. (Core's `OverlayListModel` does claim ArrowUp/ArrowDown/Enter while a list component is mounted — the adapter component only activates it.) The selection is not a feature of its own: `store.tokens.selection` is the stored anchor pair (see below).
 
 ## Lifecycle Timing
 
@@ -651,8 +654,8 @@ Use `useMarkInfo()` for structural metadata: `depth` and `hasNestedMarks`.
 
 Available in both React and Vue. Provides overlay state and actions:
 
-```typescript
-const { style, close, select, choose, entries, match, ref } = useOverlay()
+```typescript fragment
+const { style, close, select, choose, rows, active, activate, match, ref } = useOverlay()
 ```
 
 | Property  | Type                                          | Description                                    |
@@ -661,7 +664,9 @@ const { style, close, select, choose, entries, match, ref } = useOverlay()
 | `close`   | `() => void`                                  | Close the overlay                              |
 | `select`  | `(value: { value, meta? }) => void`           | Select an overlay item                         |
 | `choose`  | `(pick: OverlayPick) => bool`                 | The one accept path; `{option}` retypes the row |
-| `entries` | `readonly MenuEntry[]`                        | The row menu, already narrowed by the query    |
+| `rows`    | `readonly OverlayRow[]`                       | The list on offer, already narrowed by the query |
+| `active`  | `number`                                      | Index of the highlighted row; `NaN` for none   |
+| `activate`| `() => () => void`                            | Bind ↑↓/Enter; returns the unbind              |
 | `match`   | `OverlayMatch`                                | Current trigger match                          |
 | `ref`     | `RefObject<HTMLElement>`                      | Ref to attach to overlay DOM                   |
 
