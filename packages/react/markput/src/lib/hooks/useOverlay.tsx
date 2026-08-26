@@ -45,7 +45,12 @@ export function useOverlay(): OverlayHandler {
 		overlay: s.overlay,
 	}))
 
-	const style = useMarkput(s => s.overlay.position())
+	// THE COMPUTED, not its value. `useMarkput` calls its selector ONCE, so `position()` handed
+	// back a plain `{left, top}` that was then frozen for the whole life of the overlay component
+	// — and the component is keyed by the matched OPTION, so it does not remount between
+	// keystrokes. The popup therefore stayed at the position it opened at, and the flip below,
+	// which is decided only once the popup has a measured size, could never be applied at all.
+	const style = useMarkput(s => s.overlay.position)
 
 	// close/select/choose/activate/ref are framework-free glue and live on the controller; only
 	// the reactive match/rows/active/style bindings are React's.

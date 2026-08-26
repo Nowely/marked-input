@@ -47,7 +47,12 @@ export function useOverlay(): OverlayHandler {
 	const rows = useMarkput(s => s.overlay.list.rows)
 	const active = useMarkput(s => s.overlay.list.active)
 
-	const style = computed(() => overlay.position())
+	// THROUGH `useMarkput`, which is the bridge between the two reactive systems. A Vue `computed`
+	// calling `overlay.position()` directly tracks NOTHING — Vue cannot see a core signal — so the
+	// popup stayed at whatever position it was first evaluated at, and the flip below, which is
+	// decided only once the popup has a measured size, could never be applied at all.
+	const position = useMarkput(s => s.overlay.position)
+	const style = computed(() => position.value)
 
 	// close/select/choose/activate/ref are framework-free glue and live on the controller; only
 	// the reactive match/rows/active/style bindings are Vue's.

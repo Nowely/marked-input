@@ -4,6 +4,8 @@ import {reportBadProp} from '../../shared/reportBadProp'
 import {signal, computed, event, effect, watch, listen} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayPick, Slot} from '../../shared/types'
+import {fitPopup, popupSize, windowViewport} from '../../shared/utils/fitPopup'
+import {shallow} from '../../shared/utils/shallow'
 import type {EditController} from '../edit'
 import type {OverlaySlot} from '../slots'
 import {resolveOverlaySlot} from '../slots/resolveSlot'
@@ -64,12 +66,26 @@ export class OverlayController {
 
 	readonly close = event()
 
-	readonly position: Computed<{left: number; top: number}> = computed(() => {
-		if (!this.match()) return {left: 0, top: 0}
-		const rect = this.tokens.caretRect()
-		if (!rect) return {left: 0, top: 0}
-		return {left: rect.left, top: rect.top + rect.height + 1}
-	})
+	/**
+	 * Where the overlay paints, in viewport coordinates: under the caret when it fits there, above
+	 * it when it does not — see {@link fitPopup}.
+	 *
+	 * IT READS {@link element}, which is what makes the flip reactive: the popup's own size is
+	 * unknowable until it has mounted, and the mount writes that signal. So this runs twice for a
+	 * newly opened overlay — once unmeasured at the caret, once measured and fitted — and once per
+	 * keystroke after that, since `match` moves on every one and the list's height moves with it.
+	 */
+	readonly position: Computed<{left: number; top: number}> = computed(
+		() => {
+			if (!this.match()) return {left: 0, top: 0}
+			const rect = this.tokens.caretRect()
+			if (!rect) return {left: 0, top: 0}
+			return fitPopup(rect, popupSize(this.element()), windowViewport(), 1)
+		},
+		// A fresh object per evaluation would call every re-probe a move and re-render both
+		// adapters' popups for a position that did not change.
+		{equals: shallow}
+	)
 
 	constructor(
 		private readonly host: Host,

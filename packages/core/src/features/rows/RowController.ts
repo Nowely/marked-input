@@ -1,5 +1,7 @@
 import {computed, effect, listen, signal, untracked, watch} from '../../shared/signals'
 import type {Computed} from '../../shared/signals'
+import {fitPopup, popupSize, windowViewport} from '../../shared/utils/fitPopup'
+import type {PopupAnchor} from '../../shared/utils/fitPopup'
 import {shallow} from '../../shared/utils/shallow'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
@@ -95,7 +97,12 @@ export class RowController {
 			initial: null,
 			equals: (a, b) => shallow(a?.placement, b?.placement) && shallow(a?.line, b?.line),
 		}),
-		menu: signal<{id: number; top: number; left: number} | null>({initial: null, equals: shallow}),
+		// The GRIP's box, not the popup's: where the menu goes depends on how tall the menu turns
+		// out to be, which is unknowable until it has mounted. {@link menuPosition} is the answer.
+		menu: signal<{id: number; anchor: PopupAnchor} | null>({
+			initial: null,
+			equals: (a, b) => a?.id === b?.id && shallow(a?.anchor, b?.anchor),
+		}),
 		/** Bumped whenever row geometry may have moved; the layer re-measures off it. */
 		geometry: signal({initial: 0}),
 	}
@@ -129,6 +136,23 @@ export class RowController {
 	 * outside. ONE registration for the whole editor, where the per-row store took one per row.
 	 */
 	readonly menuElement = signal<HTMLElement | null>({initial: null})
+
+	/**
+	 * Where the open menu paints, in viewport coordinates — `.Popup` is `position: fixed`, so it
+	 * is the one row control that is NOT in the container's space. Under the grip when it fits
+	 * there, above it when it does not; see {@link fitPopup}.
+	 *
+	 * IT READS {@link menuElement}, which is what makes the flip reactive: the popup's own height
+	 * is unknowable until it has mounted, and the mount writes that signal.
+	 */
+	readonly menuPosition: Computed<{left: number; top: number}> = computed(
+		() => {
+			const menu = this.state.menu()
+			if (!menu) return {left: 0, top: 0}
+			return fitPopup(menu.anchor, popupSize(this.menuElement()), windowViewport(), 4)
+		},
+		{equals: shallow}
+	)
 
 	/**
 	 * The hovered row, FROZEN for the duration of a grip press — see {@link frozen} for why drag
@@ -222,12 +246,12 @@ export class RowController {
 	}
 
 	/**
-	 * `.Popup` is `position: fixed`, so the menu is the one row control that is NOT in the
-	 * container's coordinate space — it takes viewport coordinates off the grip, exactly as the
-	 * per-row menu did.
+	 * Open the menu for row `id`, hung off the GRIP's own viewport box. The box is stored rather
+	 * than a resolved position, because where the popup ends up also depends on how tall it turns
+	 * out to be — {@link menuPosition} is where the two meet.
 	 */
 	openMenu(id: number, grip: DOMRect): void {
-		this.state.menu({id, top: grip.bottom + 4, left: grip.left})
+		this.state.menu({id, anchor: {top: grip.top, bottom: grip.bottom, left: grip.left}})
 	}
 
 	closeMenu = (): void => {

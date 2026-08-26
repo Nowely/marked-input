@@ -1,6 +1,6 @@
 import {ROW_MENU_ITEMS, cx, getAlwaysShowHandle} from '@markput/core'
 import type {RowBox} from '@markput/core'
-import {memo, useEffect, useLayoutEffect, useMemo, useState} from 'react'
+import {memo, useCallback, useEffect, useLayoutEffect, useMemo, useState} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {List} from './Popup/List'
@@ -26,19 +26,31 @@ import styles from '@markput/core/styles.module.css'
 const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
 export const RowControls = memo(() => {
-	const {controller, tokens, readOnly, draggable, rows, hovered, dragging, drop, menu, geometry} = useMarkput(s => ({
-		controller: s.rows,
-		tokens: s.tokens,
-		readOnly: s.props.readOnly,
-		draggable: s.props.draggable,
-		rows: s.tokens.nodes,
-		hovered: s.rows.state.hovered,
-		dragging: s.rows.state.dragging,
-		drop: s.rows.state.drop,
-		menu: s.rows.state.menu,
-		geometry: s.rows.state.geometry,
-	}))
+	const {controller, tokens, readOnly, draggable, rows, hovered, dragging, drop, menu, menuPosition, geometry} =
+		useMarkput(s => ({
+			controller: s.rows,
+			tokens: s.tokens,
+			readOnly: s.props.readOnly,
+			draggable: s.props.draggable,
+			rows: s.tokens.nodes,
+			hovered: s.rows.state.hovered,
+			dragging: s.rows.state.dragging,
+			drop: s.rows.state.drop,
+			menu: s.rows.state.menu,
+			menuPosition: s.rows.menuPosition,
+			geometry: s.rows.state.geometry,
+		}))
 	const controlRef = useMemo(() => tokens.control(), [tokens])
+	// STABLE, and it is load-bearing now that something READS `menuElement`: React calls a
+	// callback ref whose identity changed on every render — first with `null`, then with the
+	// element — so an inline arrow here made the menu's own position signal flip twice per
+	// render and re-render the layer for it. "Maximum update depth exceeded", measured.
+	const menuRef = useCallback(
+		(el: HTMLElement | null) => {
+			controller.menuElement(el)
+		},
+		[controller]
+	)
 	const alwaysShowHandle = useMemo(() => getAlwaysShowHandle(draggable), [draggable])
 
 	// The row the grip decorates: the dragged row while a drag is live, else the hovered one.
@@ -118,12 +130,7 @@ export const RowControls = memo(() => {
 			)}
 
 			{menu && (
-				<Popup
-					ref={(el: HTMLElement | null) => {
-						controller.menuElement(el)
-					}}
-					style={{top: menu.top, left: menu.left, pointerEvents: 'auto'}}
-				>
+				<Popup ref={menuRef} style={{top: menuPosition.top, left: menuPosition.left, pointerEvents: 'auto'}}>
 					<List>
 						{ROW_MENU_ITEMS.map(item => (
 							<ListItem key={item.label} onClick={() => item.run(controller)}>

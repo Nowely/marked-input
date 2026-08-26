@@ -30,6 +30,7 @@ const hovered = useMarkput(() => controller.state.hovered)
 const dragging = useMarkput(() => controller.state.dragging)
 const drop = useMarkput(() => controller.state.drop)
 const menu = useMarkput(() => controller.state.menu)
+const menuPosition = useMarkput(() => controller.menuPosition)
 const geometry = useMarkput(() => controller.state.geometry)
 
 const controlRef = store.tokens.control()
@@ -135,7 +136,7 @@ const dropStyle = computed(() => {
 		<Popup
 			v-if="menu"
 			:attach-ref="setMenuRef"
-			:style="{top: menu.top + 'px', left: menu.left + 'px', pointerEvents: 'auto'}"
+			:style="{top: menuPosition.top + 'px', left: menuPosition.left + 'px', pointerEvents: 'auto'}"
 		>
 			<List>
 				<ListItem v-for="item in ROW_MENU_ITEMS" :key="item.label" @mousedown.prevent="item.run(controller)">

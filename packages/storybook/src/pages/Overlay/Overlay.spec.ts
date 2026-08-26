@@ -1,5 +1,5 @@
 import type {Markup} from '@markput/core'
-import {describe, expect, it} from 'vitest'
+import {afterEach, describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {getElement, rowsOf, textSurfaces} from '../../shared/lib/dom'
@@ -318,5 +318,39 @@ describe('API: the row menu', () => {
 		await userEvent.keyboard('{ArrowDown}')
 
 		await expect.poll(() => getElement(page.getByText('Heading 1')).className).not.toBe(before)
+	})
+})
+/**
+ * A POPUP THAT WOULD NOT FIT OPENS WHERE IT FITS. Both popups were positioned by
+ * `anchor.bottom + gap` and nothing else, so at the bottom of a page a menu was measured at
+ * top 836 with height 196 in a 900px viewport — two thirds of it below the fold, and the entries
+ * it was hiding unreachable by any gesture.
+ *
+ * THE VIEWPORT IS SHRUNK RATHER THAN THE DOCUMENT LENGTHENED, because a document long enough to
+ * push the caret to the fold is also long enough to SCROLL, and then the caret's position is the
+ * scroller's answer rather than the test's.
+ */
+describe('a popup that does not fit below the caret', () => {
+	afterEach(async () => {
+		await page.viewport(1280, 720)
+	})
+
+	it('opens above it instead of off the bottom of the page', async () => {
+		await page.viewport(640, 150)
+		const {host} = await mountEcho(RowMenu, {value: 'a\nb\nc\nd\ne\nplain row'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/')
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+
+		const caret = caretRect()
+		const popup = overlayBox(getElement(page.getByText('Heading 1'))).getBoundingClientRect()
+
+		expect(
+			caret.bottom + popup.height,
+			'the popup must not fit below the caret, or this case proves nothing'
+		).toBeGreaterThan(window.innerHeight)
+		expect(popup.bottom).toBeLessThanOrEqual(window.innerHeight)
+		expect(popup.bottom).toBeLessThanOrEqual(caret.top)
 	})
 })

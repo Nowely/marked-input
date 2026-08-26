@@ -61,6 +61,17 @@ function dropOnRow(host: HTMLElement, rowIndex: number, dt: DataTransfer, positi
 	return {over, drop}
 }
 
+/**
+ * The menu BOX around a rendered item — the positioned ancestor, found by the one property that
+ * defines it (`position: fixed`) rather than by a CSS-module class name or by counting parents.
+ */
+function menuBox(inner: HTMLElement): DOMRect {
+	for (let element: HTMLElement | null = inner; element; element = element.parentElement) {
+		if (getComputedStyle(element).position === 'fixed') return element.getBoundingClientRect()
+	}
+	throw new Error('Expected a fixed-positioned menu ancestor')
+}
+
 /** The grip's own `dragstart` — the only thing that makes a later drop this editor's own row. */
 async function beginRowDrag(host: HTMLElement, rowIndex: number) {
 	const grip = await gripOfRow(host, rowIndex)
@@ -141,6 +152,34 @@ describe('Feature: drag rows', () => {
 			await expect.element(page.getByText('Add below')).toBeInTheDocument()
 			await expect.element(page.getByText('Duplicate')).toBeInTheDocument()
 			await expect.element(page.getByText('Delete')).toBeInTheDocument()
+		})
+
+		/**
+		 * A MENU THAT WOULD NOT FIT OPENS WHERE IT FITS. It hung off `grip.bottom + 4` and nothing
+		 * else, so near the fold two thirds of it was off-screen and the verbs it was hiding could
+		 * not be reached at all. The viewport is shrunk rather than the document lengthened,
+		 * because a document long enough to push a grip to the fold is also long enough to SCROLL.
+		 */
+		it('open above the grip when it does not fit below it', async () => {
+			await page.viewport(640, 220)
+			try {
+				const {host} = await mount(PlainTextDrag, {defaultValue: 'a\n\nb\n\nc\n\nd\n\ne\n\nf\n\ng'})
+				const grip = await gripOfRow(host, rowsOf(host).length - 1)
+				const gripBox = grip.getBoundingClientRect()
+
+				await userEvent.click(grip)
+				await expect.element(page.getByText('Add below')).toBeInTheDocument()
+
+				const menu = menuBox(getElement(page.getByText('Add below')))
+				expect(
+					gripBox.bottom + menu.height,
+					'the menu must not fit below the grip, or this case proves nothing'
+				).toBeGreaterThan(window.innerHeight)
+				expect(menu.bottom).toBeLessThanOrEqual(window.innerHeight)
+				expect(menu.bottom).toBeLessThanOrEqual(gripBox.top)
+			} finally {
+				await page.viewport(1280, 720)
+			}
 		})
 
 		it('close on Escape', async () => {

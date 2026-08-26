@@ -148,6 +148,17 @@ function MyMenu() {
 }
 ```
 
+## Where a Popup Opens
+
+`style` is a viewport position (`position: fixed`), and it is not simply "under the caret": a popup
+that would not fit below the anchor opens ABOVE it, and one that fits neither way is clamped inside
+the viewport rather than left hanging off it. The same rule positions the row menu the grip opens.
+
+The flip needs the popup's own SIZE, which nothing knows until it has mounted — so `style` is
+evaluated twice for a newly opened overlay: once at the anchor, then again, fitted, in the same
+commit that attached the `ref`. **Attach `ref` or you get no flip**: it is how core learns how big
+your overlay is, as well as how outside-click detection finds it.
+
 ## The useOverlay Hook
 
 Build custom overlays with the `useOverlay()` hook:
@@ -166,7 +177,7 @@ function CustomOverlay() {
 
 | Property    | Type                                | Description                                     |
 | ----------- | ----------------------------------- | ----------------------------------------------- |
-| `style`     | `{left, top}`                       | Absolute position for overlay                   |
+| `style`     | `{left, top}`                       | Viewport position, already fitted (see above)   |
 | `close()`   | `function`                          | Close the overlay                               |
 | `select()`  | `function`                          | Insert a mark                                   |
 | `choose()`  | `function`                          | The one accept path; `{option}` retypes the row |
