@@ -679,19 +679,58 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
-	 * A CHECKBOX KEEPS DOM FOCUS — that is the browser's own default for `<input type=checkbox>`,
-	 * and it is the state a user is left in by the ordinary gesture of ticking a to-do. The
-	 * keydown tier declines wholesale for a consumer control root, so the `Mod+Z` after the tick
-	 * was swallowed: the entry was on the stack and replayed fine once you clicked back into a
-	 * text row, but from where the user actually stood the edit could not be taken back. The
-	 * editor's own undo is not the control's key.
+	 * TICK A BOX AND KEEP TYPING, which is what every real user does and what nothing in this file
+	 * did. A `<input type=checkbox>` takes DOM focus on mousedown — the browser's own default — and
+	 * leaves the SELECTION exactly where it was, so the editor was left holding a live caret it
+	 * could not act on: a contenteditable emits no `beforeinput` while a descendant control has
+	 * focus, and `isConsumerKeyOrigin` declines the whole keydown tier for a control root. Typing
+	 * did nothing, Enter did nothing, the value did not move and nothing said so.
+	 *
+	 * A COMMIT IS WHERE THE CONTROL'S INTERACTION HAS LANDED, so that is where the host takes its
+	 * focus back — {@link SelectionDriver.reclaimFocus}. Asserted by TYPING rather than by reading
+	 * `document.activeElement`: focus is the mechanism, the next character is the gesture.
 	 */
-	it('undoes an edit a consumer control made while that control still holds focus', async () => {
+	it('keeps typing after a consumer control edits the document', async () => {
+		const {host, value} = await mountControlled(Showcase, '- [ ] Confirm the EU quota')
+		await focusAtEnd(rowsOf(host)[0])
+
+		await page.elementLocator(host).getByRole('checkbox').click()
+		await expect.poll(value).toBe('- [x] Confirm the EU quota')
+
+		await userEvent.keyboard('!')
+
+		await expect.poll(value).toBe('- [x] Confirm the EU quota!')
+	})
+
+	/**
+	 * The same for a `<select>`, the other control shape a row kind paints. A row AFTER the fence,
+	 * because a document ending in a raw body grows one on its own (`#keepTailEnterable`) and the
+	 * value would then move for a reason that is not this case's.
+	 */
+	it('keeps typing after a language select edits the document', async () => {
+		const {host, value} = await mountControlled(Showcase, '```bash\nls\n```\nafter')
+		await focusAtEnd(rowsOf(host)[0])
+
+		await page.elementLocator(host).getByRole('combobox').selectOptions('sql')
+		await expect.poll(value).toBe('```sql\nls\n```\nafter')
+
+		await userEvent.keyboard('!')
+
+		await expect.poll(value).toBe('```sql\nls!\n```\nafter')
+	})
+
+	/**
+	 * AND THE EDIT IS TAKE-BACK-ABLE from where the user is standing. The `Mod+Z` after a tick was
+	 * swallowed whole: the entry was on the stack and replayed fine once you clicked back into a
+	 * text row, but from the control the key was dead. Kept beside the reclaim above, because the
+	 * arm that makes it work — the undo running AHEAD of the consumer-origin gate — is still the
+	 * only thing standing between a control that commits nothing (the grip) and a dead key.
+	 */
+	it('undoes an edit a consumer control made, from where the control left the user', async () => {
 		const {host, value} = await mountControlled(Showcase, '- [ ] Confirm the EU quota')
 
 		await page.elementLocator(host).getByRole('checkbox').click()
 		await expect.poll(value).toBe('- [x] Confirm the EU quota')
-		expect(document.activeElement?.tagName).toBe('INPUT')
 
 		await userEvent.keyboard('{Meta>}z{/Meta}')
 

@@ -631,6 +631,15 @@ export class TokenModel {
 		this.#selectionDriver.focusFirst()
 	}
 
+	/**
+	 * Take focus back from a control of this editor's own; see {@link SelectionDriver.reclaimFocus}.
+	 * The commit clock calls it for every control that edits the document; `RowController` calls it
+	 * for the two gestures its GRIP ends without one — a cancelled drag and a refused menu verb.
+	 */
+	reclaimFocus(): void {
+		this.#selectionDriver.reclaimFocus()
+	}
+
 	/** Current selection serialized for clipboard use. */
 	selectedContent(): {html: string; text: string} | undefined {
 		return this.#dom.selectedContent()
@@ -1122,6 +1131,13 @@ export class TokenModel {
 			} finally {
 				this.#repairing = false
 			}
+			// AND THE FOCUS HALF, after the caret half and outside the repair flag: taking focus
+			// back writes no bytes, so it is not an edit and must not be recorded as one. A commit
+			// is the moment a CONTROL'S interaction has landed in the document — ticking a to-do,
+			// choosing a fence's language, cycling a callout's tone are all one `turnInto` — and
+			// after it the caret the user still holds has to be a caret again. See
+			// {@link SelectionDriver.reclaimFocus}.
+			this.#selectionDriver.reclaimFocus()
 		})
 	}
 

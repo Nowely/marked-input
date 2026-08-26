@@ -301,15 +301,13 @@ export class RowController {
 		this.#dragged = []
 		this.state.dragging(null)
 		this.state.drop(null)
-		// AND THE EDITOR TAKES ITS FOCUS BACK, for {@link runMenuVerb}'s reason and with the same
-		// measurement behind it: the grip is a `<button>` inside the container, so after a drag
-		// `document.activeElement` is the grip — a registered control root, which the whole keydown
-		// tier declines for (`isConsumerKeyOrigin`). Measured after a real drop: typing `X` next
-		// emitted nothing at all. The `Mod+Z` the report named is the ONE key that survived, because
-		// its arm runs ahead of that gate; every other key was dead. Here rather than in
-		// {@link onDrop} so a drag the user CANCELS heals too — it leaves focus on the grip either
-		// way.
-		untracked(() => this.host.container())?.focus()
+		// AND THE EDITOR TAKES ITS FOCUS BACK: the grip is a `<button>` inside the container, so
+		// after a drag `document.activeElement` is the grip — a registered control root, which the
+		// whole keydown tier declines for (`isConsumerKeyOrigin`). Here rather than in
+		// {@link onDrop} so a drag the user CANCELS heals too, which is the one gesture that ends
+		// with no commit behind it. The rule itself is {@link SelectionDriver.reclaimFocus}, which
+		// this used to spell out by hand beside a second copy in {@link runMenuVerb}.
+		this.tokens.reclaimFocus()
 	}
 
 	/**
@@ -646,17 +644,15 @@ export class RowController {
 		const row = this.tokens.find(menu.id)
 		if (row) verb(row)
 
-		// AND THE EDITOR TAKES ITS FOCUS BACK. The grip is a `<button>` inside the container, so
-		// after a menu click `document.activeElement` is the grip — which is a registered control
-		// root, and the whole keydown tier declines for one (`isConsumerKeyOrigin`). Every key the
-		// user pressed next went nowhere: the `Mod+Z` after a Delete was a dead key, and the `X`
-		// after an Add below landed in no row. The entry existed and the row existed; only focus
-		// was in the wrong place, and a click back into the text made both work.
+		// AND THE EDITOR TAKES ITS FOCUS BACK, because the grip is a `<button>` inside the container
+		// and a menu click leaves `document.activeElement` on it. The commit clock reclaims it for
+		// every verb that WRITES; this call is what covers a verb that REFUSES — a dead row id, a
+		// delete the tree declines — where no commit follows to settle anything. See
+		// {@link SelectionDriver.reclaimFocus} for the one rule both go through.
 		//
 		// AFTER the verb, so the caret it named is already stored and the driver's own placement
-		// wins over whatever `focus()` would otherwise leave. Unconditional, because the guard that
-		// would read naturally here — "focus is already inside the host" — is TRUE of the grip.
-		untracked(() => this.host.container())?.focus()
+		// wins over whatever the focus write would otherwise leave.
+		this.tokens.reclaimFocus()
 	}
 
 	/**

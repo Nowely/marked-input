@@ -170,6 +170,12 @@ const Bullet = ({children, rows, ref, className, style}: RowProps) => {
 Use it for anything that is chrome rather than text: a bullet glyph, a toggle arrow, a checkbox, a
 `<select>`, a tab bar.
 
+A control that is FOCUSABLE — a checkbox, a `<select>`, a `<button>` — takes DOM focus when it is
+clicked, which is the browser's own default, and it leaves the selection where it was. The editor
+takes its focus back once the control's edit has landed, so the user can go on typing where the
+caret already is. The cost of that, stated: a control driven by the KEYBOARD that commits on every
+keystroke — a `<select>` arrowed with its popup closed — loses focus after the first commit.
+
 ## Retyping a row
 
 `node.turnInto(option, patch?)` replaces the row's kind, keeping the row's identity — its id, its

@@ -79,6 +79,42 @@ export class SelectionDriver {
 	}
 
 	/**
+	 * THE EDITING HOST TAKES ITS FOCUS BACK FROM ONE OF ITS OWN CONTROLS — the focus half of the
+	 * caret invariant, and the whole of it. `false` when there was nothing to reclaim.
+	 *
+	 * A row kind paints inside the one contenteditable container, so a to-do's checkbox, a
+	 * fence's language `<select>`, a toggle's arrow and the editor's own grip are all FOCUSABLE
+	 * elements inside the editing host. The browser's default is to focus one on mousedown, and
+	 * it leaves the SELECTION exactly where it was — so the model still holds a live caret while
+	 * `document.activeElement` is the widget. In that state the editor is deaf and says nothing:
+	 * a contenteditable emits no `beforeinput` while a descendant control has focus, so typing
+	 * changes nothing, and `isConsumerKeyOrigin` declines the whole keydown tier for a registered
+	 * control root, so Enter and Backspace are dead keys too. MEASURED on the Notion showcase:
+	 * tick a to-do, press `X`, and the value does not move.
+	 *
+	 * It reads {@link DomModel.handleAt}'s `'control'` verdict, which is the registration
+	 * `tokens.control()` files — so the rule reaches every control a consumer declares through
+	 * `useControlRef`, not just the two the editor paints itself. THE GRIP'S OWN TWO CALL SITES
+	 * (`RowController.endDrag`, `runMenuVerb`) were this rule written twice by hand, and they
+	 * route through here now.
+	 *
+	 * DECLARED COST: a control driven by the KEYBOARD that commits per keystroke — a `<select>`
+	 * arrowed with its popup closed — loses focus after the first commit. `:focus-visible` was
+	 * measured as the discriminator and rejected: Chromium reports `true` for a MOUSE-clicked
+	 * `<select>`, which is half the defect this fixes.
+	 */
+	reclaimFocus(): boolean {
+		const container = this.deps.host.container()
+		const active = document.activeElement
+		if (!container || active === container || !(active instanceof HTMLElement)) return false
+		if (!container.contains(active) || this.deps.dom.handleAt(active) !== 'control') return false
+		// `preventScroll`: the reclaim follows an edit whose own caret has already been revealed,
+		// and focusing the host would otherwise scroll its top edge into view instead.
+		container.focus({preventScroll: true})
+		return true
+	}
+
+	/**
 	 * DOM TRUTH as anchors (spec S2 D5): what the live window selection says right now,
 	 * resolved in the LIVE tree. The `dom*` prefix is the authority marker —
 	 * `selection.anchors()` is what the model believes, this is what the DOM says.
