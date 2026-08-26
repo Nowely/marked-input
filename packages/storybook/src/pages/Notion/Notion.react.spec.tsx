@@ -381,7 +381,14 @@ describe('the slash menu', () => {
 	 * than worked around.
 	 */
 	it('inserts a block that paints something, for every entry it offers', async () => {
-		const labels = notionOptions.map(option => option.menu?.label).filter(label => label !== undefined)
+		// THE UN-TYPING ENTRY IS THE ONE EXCEPTION, and it is excluded by the fact that makes it one
+		// rather than by name: an option with no `markup` names the row with NO kind, so there is no
+		// block for it to insert. `/text` on an empty row correctly leaves an empty paragraph, which
+		// is what the case below drives.
+		const labels = notionOptions
+			.filter(option => option.markup !== undefined)
+			.map(option => option.menu?.label)
+			.filter(label => label !== undefined)
 		const blank: string[] = []
 
 		for (const label of labels) {
@@ -401,6 +408,30 @@ describe('the slash menu', () => {
 
 		expect(labels.length).toBeGreaterThan(20)
 		expect(blank).toEqual([])
+	})
+
+	/**
+	 * THERE IS A WAY BACK TO PLAIN TEXT. Every other entry names a kind to turn INTO, and the
+	 * paragraph is the one kind no option can declare — it is `slots.paragraph`, core's own
+	 * fallback — so a row converted to a quote or a toggle stayed one: `/text` matched nothing and
+	 * Enter split the row. The entry is an option with a `menu` and NO `markup`, which is already
+	 * this API's spelling for "inserts nothing itself".
+	 *
+	 * Driven with the KEYBOARD to its end, because a menu pick that leaves the caret nowhere reads
+	 * as a pass: the character after it has to land in the row that was un-typed.
+	 */
+	it('turns a typed row back into plain text', async () => {
+		const {host, value} = await mountControlled(Showcase, '> a quote row')
+
+		await focusAtEnd(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '/text')
+		await expect.element(page.getByText('Text', {exact: true})).toBeVisible()
+
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(value).toBe('a quote row')
+		await userEvent.keyboard('!')
+		await expect.poll(value).toBe('a quote row!')
 	})
 
 	/**

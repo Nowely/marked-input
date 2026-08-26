@@ -224,6 +224,19 @@ export const toc: Option = {
 
 /* ── prose ──────────────────────────────────────────────────────────────── */
 
+/**
+ * THE WAY BACK TO PLAIN TEXT, and the only entry on this page that declares no `markup`: that is
+ * the spelling for an option naming the row with NO kind — the paragraph, which is `slots.paragraph`
+ * and which no option can declare. Without it a row turned into a quote or a toggle stayed one,
+ * because every other entry names a kind to turn INTO.
+ *
+ * It carries no `row` either, so it compiles to nothing and paints nothing; it exists to put a
+ * label on the menu, which is what `CoreOption.menu` has meant since P7.
+ */
+export const text: Option = {
+	menu: {label: 'Text', keywords: ['paragraph', 'plain', 'body']},
+}
+
 const heading = (kindClassName: string) =>
 	function Heading({children, ref, className, style}: RowProps) {
 		return (
@@ -805,6 +818,9 @@ export const effort: Option = {markup: '<bar:__value__>', Mark: Effort}
  * decide is which component a match resolves to, and which option owns a trigger character.
  */
 export const notionOptions: Option[] = [
+	// FIRST, so an empty `/` opens on it: the menu's sort is stable, so declaration order is what
+	// an untyped query leaves, and "back to plain text" is the entry Notion's own menu opens with.
+	text,
 	title,
 	caption,
 	properties,

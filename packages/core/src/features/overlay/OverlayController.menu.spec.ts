@@ -330,6 +330,42 @@ describe('choose an option', () => {
 	})
 
 	/**
+	 * THE WAY BACK TO PLAIN TEXT. An option with a `menu` and NO `markup` names the row with no
+	 * kind — the paragraph, which is `slots.paragraph` and which no option can declare — so it is
+	 * the one entry a block menu could not carry. A row turned into a quote or a toggle stayed one:
+	 * `/text` matched nothing and Enter split the row instead.
+	 *
+	 * It is the `markup === undefined` spelling `choose`'s value arm already reads as "this option
+	 * inserts nothing", so no new field carries it. Declared APART from the refusal above, which is
+	 * a DECLARED markup that compiles to no kind — a typo, and still refused.
+	 */
+	it('un-types a row through an entry that declares no markup', () => {
+		const text: CoreOption = {menu: {label: 'Text', keywords: ['paragraph']}}
+		const store = typedSlash('# a heading', 11, [SLASH, HEADING, text])
+		expect(store.overlay.list.rows().map(row => row.label)).toContain('Text')
+
+		expect(store.overlay.choose({option: text})).toBe(true)
+
+		expect(store.tokens.value()).toBe('a heading')
+		expect(rowsOf(store)[0].descriptor()).toBeUndefined()
+	})
+
+	/**
+	 * ON A ROW THAT IS ALREADY A PARAGRAPH IT STILL WRITES, and what it writes is the removal of the
+	 * trigger — `turnInto` compares the row's bytes, and `'plain row/'` is not `'plain row'`. That
+	 * is the same answer every other entry gives on a row of its own kind, and it is what keeps the
+	 * gesture from leaving a stray `/` in the document.
+	 */
+	it('removes the trigger when the un-typing entry is chosen on a paragraph', () => {
+		const text: CoreOption = {menu: {label: 'Text'}}
+		const store = typedSlash('plain row', 9, [SLASH, HEADING, text])
+
+		expect(store.overlay.choose({option: text})).toBe(true)
+
+		expect(store.tokens.value()).toBe('plain row')
+	})
+
+	/**
 	 * `#target`'s no-row arm, and the only case that reaches it. A `null` separator says the value
 	 * never splits, so the document parses NO rows at all — the trigger still matches and the
 	 * overlay still opens, but there is nothing to retype and the write declines.

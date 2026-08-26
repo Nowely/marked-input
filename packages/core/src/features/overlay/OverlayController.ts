@@ -257,12 +257,27 @@ export class OverlayController {
 		return {row, body}
 	}
 
-	/** {@link choose}'s option arm. `false` when there is no row to retype, or the verb refuses. */
+	/**
+	 * {@link choose}'s option arm. `false` when there is no row to retype, or the verb refuses.
+	 *
+	 * AN OPTION WITH A `menu` AND NO `markup` IS THE UN-TYPING ENTRY — the row goes back to being a
+	 * plain paragraph, which is `turnInto(undefined)`. Every editor has that row: `slots.paragraph`
+	 * is core's own fallback and the one kind no option declares, so it was the one kind the block
+	 * menu could not name. A row turned into a quote or a toggle had no way back, `/text` matched
+	 * nothing, and Enter split the row instead.
+	 *
+	 * `markup === undefined` is already this API's spelling of "an overlay-only option" ({@link
+	 * choose}'s value arm reads it the same way), so the entry needs no new field and core ships no
+	 * label of its own: WHAT it is called, and where it sits, is the consumer's, exactly like every
+	 * other entry. A markup that is DECLARED and compiles to no row kind still refuses — that is a
+	 * typo, not a request, and {@link TreeCommands.turnInto} owns that refusal.
+	 */
 	#turnRowInto(option: CoreOption): boolean {
 		const target = this.#target()
 		if (!target) return false
 		const menu = option.menu
-		return target.row.turnInto(option, {
+		const kind = option.markup === undefined ? undefined : option
+		return target.row.turnInto(kind, {
 			// An EMPTY body is the insert gesture: the row held nothing but the trigger, so there is
 			// nothing to keep and the entry's own seed writes it.
 			text: target.body === '' ? (menu?.text ?? '') : target.body,

@@ -123,6 +123,21 @@ not outrank one they are reading. Declaration order decides inside a band, and d
 list before the first character is typed. Without ranking, `/table` committed **Table of contents**
 on the first try because that option happened to be declared earlier.
 
+**An entry with no `markup` is the way back to plain text.** Every other entry names a kind to turn
+INTO; the paragraph is the one kind no option can declare, because it is `slots.paragraph`. An
+option carrying a `menu` and no `markup` names it, so choosing that entry un-types the caret's row:
+
+```tsx
+const options = [
+    {overlay: {trigger: '/'}},
+    {menu: {label: 'Text', keywords: ['paragraph', 'plain']}},
+    {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1'}},
+]
+```
+
+Core ships no label for it: what it is called, and where it sits in the list, is yours. A markup
+that IS declared and compiles to no row kind still refuses — that is a typo, not a request.
+
 **Two gestures, one splice.** On a row holding nothing but the trigger the entry INSERTS: the
 row becomes that kind, seeded from `menu.text`/`menu.meta`. On a row that already has text it
 CONVERTS: `'plain row'` + `/` + Heading 1 emits `'# plain row'`, and the seeds are not applied,
