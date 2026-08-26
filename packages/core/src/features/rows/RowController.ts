@@ -301,6 +301,15 @@ export class RowController {
 		this.#dragged = []
 		this.state.dragging(null)
 		this.state.drop(null)
+		// AND THE EDITOR TAKES ITS FOCUS BACK, for {@link runMenuVerb}'s reason and with the same
+		// measurement behind it: the grip is a `<button>` inside the container, so after a drag
+		// `document.activeElement` is the grip — a registered control root, which the whole keydown
+		// tier declines for (`isConsumerKeyOrigin`). Measured after a real drop: typing `X` next
+		// emitted nothing at all. The `Mod+Z` the report named is the ONE key that survived, because
+		// its arm runs ahead of that gate; every other key was dead. Here rather than in
+		// {@link onDrop} so a drag the user CANCELS heals too — it leaves focus on the grip either
+		// way.
+		untracked(() => this.host.container())?.focus()
 	}
 
 	/**

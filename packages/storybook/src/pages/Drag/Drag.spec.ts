@@ -512,6 +512,30 @@ describe('Feature: drag rows', () => {
 			end()
 		})
 
+		/**
+		 * THE EDITOR TAKES ITS FOCUS BACK when the gesture ends. The grip is a `<button>` inside the
+		 * container, so after a drag `document.activeElement` is the grip — a registered control root,
+		 * which the whole keydown tier declines for. Measured before the fix: the drop landed, and the
+		 * `X` typed straight after it emitted NOTHING. (`Mod+Z` was the one key that still worked, its
+		 * arm running ahead of that gate, which is why the report read as "the first undo is
+		 * swallowed" — it was not, and everything else was.)
+		 *
+		 * The editor is deliberately given NO focus first: a user who drags a row before ever clicking
+		 * into the text is the case with nothing to restore.
+		 */
+		it('take the focus back after a drag, so the next keystroke lands', async () => {
+			const {host, value} = await echoPlainText()
+			document.body.focus()
+
+			await dragRow(host, 0, 2)
+			await expect.poll(() => value().startsWith('Second block')).toBe(true)
+
+			expect(host.contains(document.activeElement)).toBe(true)
+			await userEvent.keyboard('X')
+
+			await expect.poll(() => value().includes('X')).toBe(true)
+		})
+
 		it('reorder rows when dragging row 0 after row 2', async () => {
 			const {host, value} = await echoPlainText()
 

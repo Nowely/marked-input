@@ -157,7 +157,8 @@ Dragging carries the whole row selection when the gripped row is part of it, and
 otherwise; which rows those are is fixed when the grip is pressed, since the browser owns the text
 selection for the length of a native drag. The drop's vertical position names the gap between two
 lines and its horizontal position names one of the depths that gap legally admits — every candidate
-is planned before it is offered, so the indicator promises rather than predicts.
+is planned before it is offered, so the indicator promises rather than predicts. The editor takes
+its focus back when the drag ends, so the next keystroke lands in the document.
 
 ## The row menu
 
