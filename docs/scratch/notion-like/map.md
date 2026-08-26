@@ -970,3 +970,67 @@ becomes a ticket here.
     and the caret is re-placed at its entry. The to-do's box keeps its offset because a `meta` change
     leaves the component — and the element — in place. Pinned at its actual behaviour in
     `Notion.react.spec`'s 'keeps typing after the toggle arrow'.
+
+- **The ninth driving session: five defects, ONE owner for three of them, and a diagnosis
+  re-measured false** (2026-08-27). Every one reproduced in the running showcase before it was
+  written, and every pin was seen to redden by MUTATING the mechanism.
+  - **THE HANDED-DOWN DIAGNOSIS DID NOT SURVIVE RE-MEASUREMENT.** The session's brief said
+    `store.rows.selected()` came back EMPTY while nine rows were painted blue, so "the model had no
+    idea a selection existed". Measured on the running page, three ways (fresh load, with a prior
+    caret, and typing immediately), it answers `[3]` every time, and `domAnchors()` and the stored
+    anchors agree with it: `before#3 .. after#3`, the properties row across its own element. The
+    likeliest source of the `[]` is the console it was read in — focusing devtools is a `focusout`,
+    which clears the stored pair by design. The DEFECT was real and the CAUSE was somewhere else,
+    which is doctrine A.13 paying for itself.
+  - **THE MODEL'S READING OUTRANKS THE POINTER'S CLAIM, and a claim answers a LANDING**
+    (`SelectionDriver`). A boundary on frozen presentation used to make `anchorFor` DECLINE, and a
+    decline is not neutral: it fails the whole PAIR closed, after which the control arm reads the
+    gesture as a landing and collapses the caret into that row. MEASURED on
+    `'one⏎- [ ] todo item⏎> [!warning] boom'`: Chromium ends a triple-click of the to-do at
+    `(the callout's icon span, 0)`, the selection was thrown away, and `'ZZ'` landed in the callout —
+    `'> [!warning] ZZboom'` with the row the user selected untouched. Of twelve kinds only the
+    callout reached that door, which is exactly what makes it the consumer's paint and not a rule.
+    `frozenBoundary` answers the row's ENTRY at both ranged affinities (there is no near/far half to
+    read inside frozen presentation), the COLLAPSED reader still declines because "which row did
+    this land in" is a question about the gesture, and `#syncRanged` runs before both claim arms.
+  - **THE FOCUS GATE WAS A HOLE ON FIRST CONTACT** (same owner). Round eight's reclaim is gated on
+    "only where there is a caret to go back to", and a control the browser can FOCUS provokes no
+    `selectionchange` at all — so the claim `pointerdown` filed was never consumed and on a page
+    nobody had typed in yet there was nothing to fall back on. MEASURED: fresh load, click
+    `'+ Add a property'` or a comment thread's `'Reply…'`, ZERO ranges in the document, focus left
+    on the BUTTON, the next two characters gone in silence. The CLICK consumes the claim now — and
+    ONLY when it actually claims, which is measured: that microtask runs BEFORE the
+    `selectionchange` task, so clearing the field unconditionally STOLE the claim and a click on a
+    bullet's dot typed into the page title.
+  - **HOME IN A TABLE CELL WENT TO THE CELL, NOT THE LINE** (`TokenModel.moveToLineBoundary`).
+    `lineboundary` is the browser's question about BOXES and a carved row paints each piece in one.
+    MEASURED on `'|= A | B⏎| c | d'` with the caret in the header's `B`: Home stopped at `B`, and the
+    Enter after it emitted `'|= A | ⏎| B⏎| c | d'` — the header a column short and the column demoted
+    to a data line, from two keys with nothing selected. Round eight's row-start rule reached by a
+    different trigger: the split was correct for the position it was given, and the position was the
+    browser's. Corrected only inside a carved piece, so wrapped prose keeps the platform's answer.
+  - **ONE CLICK PLUS ONE KEYSTROKE ATE A PAGE'S METADATA** (`replaceRowSelection`, breaking). A
+    click on frozen presentation is a BLOCK SELECTION by design, and typing over one replaced the
+    row WHOLE — "what the reference product does", written in round seven. Composed, those two are a
+    data-loss trap armed by the plainest gesture the page has: click the `In progress` chip, a target
+    with no behaviour of its own, type `'a'`, and `@properties … @end` is gone — 76 lines to 67,
+    nothing on the way saying so, one undo the only mercy. The same for an avatar. DECLARED
+    BEHAVIOUR CHANGE: the typed character is CONSUMED AND REFUSED over a row that holds no editable
+    position. `false` would not do — it falls through to the ordinary text path, which writes over a
+    frozen row's own ELEMENT edges, the same deletion by another door. Backspace, Delete and a paste
+    still take the row, because those are the gestures that say so. FOUR PINS in
+    `caret.react.spec` encoded the old rule and are restated, each keeping its original claim with
+    Backspace as the positive witness.
+  - **ENTER ON A DIVIDER DESTROYED IT** (`handleRowEnter`, breaking). `'target row⏎---'`, click the
+    rule — which the kind's own comment calls "the row's only large target" — and Enter emitted
+    `'target row⏎'`. The demote ladder ran because `slot() === ''`, and a divider's body is empty
+    because the KIND has none, not because the user emptied one. Enter's rung is gated on
+    `continues` now: a kind that continues into nothing has no run to leave, so it SPLITS and keeps
+    its kind (`'target row⏎⏎---'`). NOT the shared ladder — Backspace at a row's entry asks about the
+    POSITION, not the run, and un-typing a heading with it is `showcase.md`'s own gesture; gating
+    both keys reddened `Notion.react.spec`'s ladder pin, which is how the asymmetry was found.
+  - **WHAT THE ONE OWNER DID NOT COVER, stated plainly.** The brief's claim was one cause with four
+    shapes. Three of the five belong to the selection reading — the resolver's refusal, the claim
+    outranking a reading, and the gate with nothing to restore — and two do not: the frozen-row
+    write is `replaceRowSelection`'s composition rule and the divider is Enter's ladder. Naming a
+    single owner for all five would have been a story, not a fix.
