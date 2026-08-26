@@ -565,8 +565,18 @@ function maximalRuns(
 }
 
 /**
- * Re-indenting one row, as the splice that REWRITES ITS OWN LEAD AND ITS SUBTREE'S plus the
- * {@link Pairing} that keeps every row's identity across it.
+ * Re-indenting a SET of rows by `steps` levels, as ONE splice that rewrites their own leads AND
+ * their subtrees' plus the {@link Pairing} that keeps every row's identity across it.
+ *
+ * A SET, and one splice for the whole of it, for {@link movePlan}'s reasons: two verbs cannot
+ * compose in controlled mode, and a Tab over a row selection re-indents every row the user named
+ * or none of them. The set is normalized to MAXIMAL subtrees first, so a row named together with
+ * its own ancestor travels inside that ancestor's run rather than being re-led twice.
+ *
+ * STEPS rather than a depth, and that is what a set forces: rows picked up from different depths
+ * keep the nesting they had, where one absolute depth would flatten them onto a single level. A
+ * single row's absolute {@link RowNode.setDepth} is that same arithmetic done at the caller, which
+ * is the layer that knows where the row is now.
  *
  * THE SUBTREE TRAVELS, and it has to be written for that to happen: nesting is indentation and
  * nothing else, so a child left at its old lead is measured against a parent that moved and lands
@@ -580,46 +590,59 @@ function maximalRuns(
  * Pre-order is what makes the identity claim expressible at all, because the re-indent changes
  * which rows are nested where while leaving the document order alone.
  *
- * `undefined` — fail closed — for a non-row, a negative or non-integer depth, a no-op, an editor
- * with nesting off, and — the one answer the rest reduce to — a splice the SCAN would read back as
- * a different tree, which is {@link scanAgrees} replaying it over the lines this rewrites plus the
- * row after them. That covers the row's own clamp (asking for more than the row above grants would
- * emit a lead the parse reads as something shallower), a row re-led to `''` on a blank body, which
- * EMPTIES it so it can no longer carry the children it had, and an untouched row after the subtree
- * re-parenting under a ceiling this splice raised — `'x⏎⏎⇥⇥b'` with the blank row indented emitted
- * `'x⏎⇥⏎⇥⇥b'`, where the root `b` landed two levels down as a grandchild.
+ * `undefined` — fail closed — for an empty set, a non-row or a dead row anywhere in it, a
+ * non-integer step, a depth below the root for any named row, a no-op, an editor with nesting off,
+ * and — the one answer the rest reduce to — a splice the SCAN would read back as a different tree,
+ * which is {@link scanAgrees} replaying it over the lines this rewrites plus the row after them.
+ * That covers the row's own clamp (asking for more than the row above grants would emit a lead the
+ * parse reads as something shallower), a row re-led to `''` on a blank body, which EMPTIES it so it
+ * can no longer carry the children it had, and an untouched row after the subtree re-parenting
+ * under a ceiling this splice raised — `'x⏎⏎⇥⇥b'` with the blank row indented emitted
+ * `'x⏎⇥⏎⇥⇥b'`, where the root `b` landed two levels down as a grandchild. One refusal is the
+ * whole set's: a Tab that could only move some of the named rows moves none.
  *
- * It rewrites whole leads rather than splicing them, which NORMALIZES a surplus indent run a paste
+ * The NO-OP is asked of the named roots' own leads and not of `steps`, which is what keeps a
+ * re-indent to the depth a row already renders at NORMALIZING a surplus indent run some paste
  * preserved — observable, and the alternative is two disagreeing readings of "depth".
  */
 export function depthPlan(
 	roots: readonly TreeNode[],
-	node: TreeNode,
-	depth: number,
+	nodes: readonly TreeNode[],
+	steps: number,
 	config: RowConfig | undefined
 ): {window: Window; text: string} | undefined {
-	if (node.kind !== 'row' || config === undefined || config.indent === '') return undefined
-	if (!Number.isInteger(depth) || depth < 0) return undefined
+	if (config === undefined || config.indent === '') return undefined
+	if (!Number.isInteger(steps)) return undefined
 
 	const rows = preorderRows(roots)
-	const at = rows.findIndex(entry => entry.row === node)
-	if (at < 0) return undefined
-	if (config.indent.repeat(depth) === node.lead()) return undefined
+	const runs = maximalRuns(rows, nodes)
+	if (runs === undefined) return undefined
 
-	const delta = depth - rows[at].depth
-	const high = at + preorderRows([node]).length - 1
+	const carried = new Set<number>()
+	for (const {from, span} of runs) {
+		for (let offset = 0; offset < span; offset++) carried.add(from + offset)
+	}
+	// Refused before `repeat`, which throws on a negative count. Asked of every run's ROOT, which
+	// is where the shallowest carried row is: a descendant is deeper than the row it travels under.
+	if (runs.some(run => rows[run.from].depth + steps < 0)) return undefined
+
 	const written = (position: number): Written => {
 		const entry = rows[position]
-		const carried = position >= at && position <= high
-		const landed = carried ? entry.depth + delta : entry.depth
-		return {row: entry.row, depth: landed, lead: carried ? config.indent.repeat(landed) : entry.row.lead()}
+		const moved = carried.has(position)
+		const landed = entry.depth + (moved ? steps : 0)
+		return {row: entry.row, depth: landed, lead: moved ? config.indent.repeat(landed) : entry.row.lead()}
 	}
-	if (!scanAgrees(rows, at, high, written, config.indent)) return undefined
+	if (runs.every(run => written(run.from).lead === rows[run.from].row.lead())) return undefined
 
-	const text = spliceLines(rows, at, high, written, config.separator)
+	const low = runs[0].from
+	const last = runs[runs.length - 1]
+	const high = last.from + last.span - 1
+	if (!scanAgrees(rows, low, high, written, config.indent)) return undefined
+
+	const text = spliceLines(rows, low, high, written, config.separator)
 	return {
 		window: {
-			start: rows[at].row.lineRange().start,
+			start: rows[low].row.lineRange().start,
 			end: rows[high].row.lineRange().end,
 			insertedLength: text.length,
 			pairing: rows.map((_, index) => index),

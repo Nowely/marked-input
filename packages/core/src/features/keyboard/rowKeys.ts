@@ -143,12 +143,19 @@ export function demoteAtRowEntry(store: KbCtx, anchors: Anchors): boolean {
  * nested in is the one that declared anything, so a kindless row asks it. It re-indents ITSELF, as
  * every other row does; Shift+Tab there detaches the line from its item, which is the answer
  * Backspace at its entry already gives (ADR-0011's declared cost (a)).
+ *
+ * A STANDING ROW SELECTION IS WHAT MOVES, and the caret's own row only when none stands: the rows
+ * the selection covers are the rows the editor is acting on everywhere else — the drag, the menu
+ * verbs — and re-indenting the anchor's row alone left every other selected row where it was. One
+ * verb answers both, because a caret is the set of one and a second arm beside it would be a
+ * second reading of what Tab acts on. The DECLARATION is still the caret's row's, which is where
+ * the user is; the set is what the key then moves.
  */
 export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 	if (event.key !== KEYBOARD.TAB) return
-	const at = (store.tokens.domAnchors() ?? store.tokens.selection.anchors())?.anchor
-	if (at === undefined) return
-	const caret = store.tokens.rowOf(at)
+	const anchors = store.tokens.domAnchors() ?? store.tokens.selection.anchors()
+	if (!anchors) return
+	const caret = store.tokens.rowOf(anchors.anchor)
 	if (caret === undefined) return
 
 	if (caret.cell) {
@@ -168,7 +175,8 @@ export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 	if (store.tokens.rowSpec(owner)?.indents !== true) return
 
 	event.preventDefault()
-	caret.row.setDepth(event.shiftKey ? caret.depth - 1 : caret.depth + 1)
+	const selected = store.tokens.rowsWithin(anchors)
+	store.tokens.indentRows(selected.length > 0 ? selected : [caret.row], event.shiftKey ? -1 : 1)
 }
 
 /**

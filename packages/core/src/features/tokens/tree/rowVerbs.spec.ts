@@ -1029,6 +1029,56 @@ describe('moveRows', () => {
 	})
 })
 
+describe('indentRows', () => {
+	/**
+	 * ONE SPLICE for the whole set, and STEPS rather than a depth: rows picked up from different
+	 * depths keep the nesting they had, where a single absolute depth would flatten them onto one
+	 * level. Both rows here are named, `b` at depth 1 and `d` at depth 0.
+	 */
+	it('re-indents rows at different depths by the same step, keeping their nesting', () => {
+		const store = rowStore('a\n\tb\n\tc\nd\ne')
+		const before = rowsOf(store)
+		const [, , c, , e] = before
+
+		expect(store.tokens.indentRows([c, e], 1)).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\tb\n\t\tc\nd\n\te')
+		// `d` sits between the two runs and is re-emitted untouched, ids and all.
+		expect(rowsOf(store)).toEqual(before)
+	})
+
+	/**
+	 * ONE REFUSAL FOR THE WHOLE SET: a step that cannot be written for every named row moves none
+	 * of them. `a` is already a root, so the outdent has nowhere to go and `b` stays with it.
+	 */
+	it('refuses the set when one named row cannot take the step', () => {
+		const store = rowStore('a\n\tb')
+		const [a, b] = rowsOf(store)
+
+		expect(store.tokens.indentRows([a, b], -1)).toBe(false)
+		expect(store.tokens.value()).toBe('a\n\tb')
+	})
+
+	/**
+	 * A row named together with its own ancestor travels INSIDE that ancestor's run, once: naming
+	 * it again would shift its lead twice and put it a level below where the set went.
+	 */
+	it('shifts a row named with its own ancestor exactly once', () => {
+		const store = rowStore('z\na\n\tb')
+		const [, a, b] = rowsOf(store)
+
+		expect(store.tokens.indentRows([a, b], 1)).toBe(true)
+
+		expect(store.tokens.value()).toBe('z\n\ta\n\t\tb')
+	})
+
+	/** An empty set names no rows, so there is nothing to re-lead. */
+	it('refuses an empty set', () => {
+		const store = rowStore('a\n\tb')
+		expect(store.tokens.indentRows([], 1)).toBe(false)
+	})
+})
+
 describe('dropPlacements', () => {
 	/**
 	 * THE FLOOR IS THE LINE THE MOVE LEAVES AFTER THE GAP, not the one standing there now — and the

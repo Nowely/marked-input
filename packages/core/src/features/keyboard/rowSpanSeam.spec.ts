@@ -191,22 +191,35 @@ describe('the set verbs do not see the set', () => {
 	})
 
 	/**
-	 * `handleRowIndent` reads `store.tokens.rowOf(at)` and never `block.selected`, so Tab and
-	 * Shift+Tab re-indent the ANCHOR row alone and every other selected row stays where it was.
-	 * `spec.md` item 20 makes only the DRAG set-aware, so this is a wiring gap rather than a design
-	 * hole — the set-aware verb already exists as `TokenModel.moveRows`.
-	 *
-	 * WANTED: `'- alpha\n\t- beta\n\t- gamma'`. Both selected rows move.
+	 * TAB MOVES THE ROWS THE SELECTION COVERS, which is the set every other row gesture already
+	 * acts on. It used to read the caret's row alone (`store.tokens.rowOf(at)`), so the second
+	 * selected row stayed where it was and the selection came apart.
 	 */
-	it('indents only the anchor row of a standing row selection', () => {
+	it('indents every row of a standing row selection, in one splice', () => {
 		const {store, container} = mount('- alpha\n- beta\n- gamma')
+		caretIn(store, 1, 0)
+		press(container, 'Escape')
+		press(container, 'ArrowDown', {shiftKey: true})
+		const selected = store.block.selected()
+		expect(selected).toHaveLength(2)
+
+		press(container, 'Tab')
+
+		expect(store.tokens.value()).toBe('- alpha\n\t- beta\n\t- gamma')
+		// The same two rows, still selected: a re-indent moves no position and keeps every id.
+		expect(store.block.selected()).toEqual(selected)
+	})
+
+	/** Shift+Tab is the same verb with the step reversed, and the same set answers it. */
+	it('outdents every row of a standing row selection', () => {
+		const {store, container} = mount('- alpha\n\t- beta\n\t- gamma')
 		caretIn(store, 1, 0)
 		press(container, 'Escape')
 		press(container, 'ArrowDown', {shiftKey: true})
 		expect(store.block.selected()).toHaveLength(2)
 
-		press(container, 'Tab')
+		press(container, 'Tab', {shiftKey: true})
 
-		expect(store.tokens.value()).toBe('- alpha\n\t- beta\n- gamma')
+		expect(store.tokens.value()).toBe('- alpha\n- beta\n- gamma')
 	})
 })

@@ -420,6 +420,19 @@ export class TokenModel {
 	}
 
 	/**
+	 * Re-indent a SET of rows by `steps` levels, in one splice — {@link RowNode.setDepth} widened to
+	 * what a row selection names, and STEPS rather than a depth because rows picked up from
+	 * different depths keep the nesting they had (see {@link depthPlan}).
+	 *
+	 * On the model rather than on a node for {@link moveRows}'s reason: the set has no owning row.
+	 * The keymap's Tab is its caller, and a caret with no row selection standing hands over the one
+	 * row it is in — so there is one indent verb rather than a set arm beside a single arm.
+	 */
+	indentRows(nodes: readonly RowNode[], steps: number): boolean {
+		return this.#applyDepth(nodes, steps)
+	}
+
+	/**
 	 * A row's body once `span` is cut out of it — see {@link slotWithout}. What a caller with a
 	 * span to remove hands to `turnInto`'s `text`, so the removal and the retype are one splice.
 	 */
@@ -746,16 +759,14 @@ export class TokenModel {
 			return this.#tx.applyRange(plan.window, plan.text)
 		},
 		/**
-		 * {@link moveTo}'s rule for the caret applies verbatim: a re-indent takes no position out
-		 * of the document and puts none in — every text node keeps its content — so the anchors
-		 * the selection already holds still name the same characters, and the verified pairing
-		 * carries them through untouched.
+		 * An ABSOLUTE depth, lowered onto the set verb's steps — which is arithmetic only this
+		 * layer can do, since where the row is NOW is a pre-order fact and not one a caller holds.
+		 * A row the walk cannot find is dead, and the lookup is that check.
 		 */
 		setDepth: (node, depth) => {
 			this.#ensureSeeded()
-			const plan = untracked(() => depthPlan(this.#tree.roots(), node, depth, this.#tree.config()))
-			if (!plan) return false
-			return this.#tx.applyRange(plan.window, plan.text)
+			const at = untracked(() => preorderRows(this.#tree.roots()).find(entry => entry.row === node))
+			return at !== undefined && this.#applyDepth([node], depth - at.depth)
 		},
 		/**
 		 * The one verb that takes an OPTION rather than a string, because a kind is not a markup a
@@ -816,6 +827,19 @@ export class TokenModel {
 			}))
 			return this.#insertAfter(node, final ? config.separator + lead : lead + config.separator)
 		},
+	}
+
+	/**
+	 * The one write behind both spellings of a re-indent — the node's absolute {@link setDepth} and
+	 * the set's {@link indentRows}. No {@link #applyCaret}, for `moveTo`'s reason: a re-indent takes
+	 * no position out of the document and puts none in, so the anchors the selection holds still
+	 * name the same characters and the verified pairing carries them through untouched.
+	 */
+	#applyDepth(nodes: readonly TreeNode[], steps: number): boolean {
+		this.#ensureSeeded()
+		const plan = untracked(() => depthPlan(this.#tree.roots(), nodes, steps, this.#tree.config()))
+		if (!plan) return false
+		return this.#tx.applyRange(plan.window, plan.text)
 	}
 
 	/** The compiled row kind an option declares, resolved by its MARKUP — see {@link Parser.rowKind}. */
