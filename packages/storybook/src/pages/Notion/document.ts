@@ -4,7 +4,7 @@
  *
  * Every line here is a ROW. Its first bytes are what types it, an indented line is a child of the
  * line above it, and nothing in this string is a hint to a component: what the page paints is
- * decided by `@markput/notion`'s kinds alone.
+ * decided by `notion/`'s kinds alone.
  *
  * Written as a template literal with real tabs, because the tab IS the indent unit — a document
  * that spells its nesting with spaces gets neither nesting nor a kind on those lines, which is

@@ -1,4 +1,3 @@
-import {notionOptions} from '@markput/notion'
 import type {MarkedInputProps} from '@markput/react'
 import {composeStories} from '@storybook/react-vite'
 import {useState} from 'react'
@@ -10,6 +9,7 @@ import {editingHost, findEditingHost, rowsOf} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtOffset, focusAtStart} from '../../shared/lib/focus'
 import {dispatchInsertText} from '../../shared/lib/inputEvents'
 import {APOLLO_DOC} from './document'
+import {notionOptions} from './notion'
 import * as NotionStories from './Notion.stories.react'
 
 /**
@@ -17,7 +17,7 @@ import * as NotionStories from './Notion.stories.react'
  * emits afterwards — no internal is read, and the only component-level readings are of the DOM
  * the page paints.
  *
- * The page under test is built from `@markput/notion` alone, so a failure here is a failure of
+ * The page under test is built from `notion/` alone, so a failure here is a failure of
  * the option API rather than of this file: the story hands the editor an options array and a
  * paragraph component, and everything these tests exercise — the menu, the keymap, the cells, the
  * drag, the undo stack — is the editor's own.

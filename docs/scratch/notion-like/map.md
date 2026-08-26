@@ -425,12 +425,12 @@ becomes a ticket here.
   ROW. That is what "a row selection IS the text selection" means, and it was true from the first
   commit; only the docs implied otherwise by saying "once a row selection stands". Now pinned and
   written.
-- **The package is options and components, and the grep says so** (2026-08-25, P11).
-  `@markput/notion` is twenty-five row kinds and seven marks, and
-  `packages/notion/src/boundary.spec.ts` is the acceptance test the whole effort was
-  aimed at: every import resolves to `react`, to `@markput/react` or to a file inside
-  the package; no relative path climbs out of it; `store.edit` and `store.tokens`
-  appear nowhere. All three arms were seen to redden — a `@markput/core/src` import,
+- **The package is options and components, and the grep says so** (2026-08-25, P11;
+  moved 2026-08-26). Twenty-five row kinds and seven marks, and
+  `packages/storybook/src/pages/Notion/boundary.spec.ts` is the acceptance test the
+  whole effort was aimed at: every import resolves to `react`, to `@markput/react` or
+  to a file inside the showcase directory; no relative path climbs out of it;
+  `store.edit` and `store.tokens` appear nowhere. All three arms were seen to redden — a `@markput/core/src` import,
   a `../../storybook/…` import and a `store.tokens.value()` call each turn one red.
   The theme and the sixteen presentational leaves MOVED into the package rather than
   being copied: a status chip is what a `<status:…>` mark renders, so a package that

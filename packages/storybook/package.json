@@ -28,7 +28,6 @@
     "@emotion/styled": "^11.14.1",
     "@faker-js/faker": "catalog:",
     "@markput/core": "workspace:*",
-    "@markput/notion": "workspace:*",
     "@markput/react": "workspace:*",
     "@markput/vue": "workspace:*",
     "@mui/material": "^7.3.7",

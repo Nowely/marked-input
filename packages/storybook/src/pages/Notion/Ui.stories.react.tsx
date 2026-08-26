@@ -1,3 +1,7 @@
+import type {Meta, StoryObj} from '@storybook/react-vite'
+import type {ReactNode} from 'react'
+import {useState} from 'react'
+
 import {
 	Avatar,
 	AvatarStack,
@@ -15,10 +19,7 @@ import {
 	PropertiesPanel,
 	theme as styles,
 	ViewTabs,
-} from '@markput/notion'
-import type {Meta, StoryObj} from '@storybook/react-vite'
-import type {ReactNode} from 'react'
-import {useState} from 'react'
+} from './notion'
 
 /**
  * The showcase's consumer components on their own (`docs/scratch/notion-like/showcase.md`, final

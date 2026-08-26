@@ -23,7 +23,7 @@ export type ControlRoots = {
 	 *
 	 * "AND THERE ARE NEVER MANY CONTROLS IN FLIGHT AT ONCE" USED TO STAND HERE, and its own new
 	 * caller falsified it: `useControlRef` is published, and a consumer's row kind registers ONE
-	 * PER ROW — the `@markput/notion` showcase files ~16 on a 36-row page (a bullet's dot, a
+	 * PER ROW — the Notion showcase files ~16 on a 36-row page (a bullet's dot, a
 	 * to-do's box, a toggle's arrow, a callout's icon, a fence's language select, and the frozen
 	 * interior of every atomic kind). On an N-row bullet document that is N registrations, and
 	 * removing one row rebuilds all N chains.

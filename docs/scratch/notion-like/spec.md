@@ -1159,8 +1159,10 @@ buys `store.block.collapsed: Signal<ReadonlySet<Id>>` — and not before.
 **P11 — `@markput/notion` and the React showcase.**
 The option file above, the components, the theme, the showcase page, and `Notion.fixtures.react.tsx`.
 *Proving test:* a React browser suite driving slash-insert, slash-turn-into on a row with text, Tab
-nesting, undo, and a within-column card drag; plus a CI grep that `packages/notion/src` imports
-nothing from `@markput/core/src` and calls neither `store.edit` nor `store.tokens`.
+nesting, undo, and a within-column card drag; plus a CI grep that the showcase's own sources import
+nothing from `@markput/core/src` and call neither `store.edit` nor `store.tokens`. (The sources
+lived in `packages/notion/src` until 2026-08-26 and are now `packages/storybook/src/pages/Notion/`;
+the grep moved with them and its allowlist did not.)
 *Exit:* green.
 
 **P12 — The Vue fixtures and the shared-spec suite.**

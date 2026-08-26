@@ -1,15 +1,15 @@
-import type {Suggestion} from '@markput/core'
-import {CoverBand, mention, NOTION_THEME, notionOptions, PageChrome, Paragraph, theme} from '@markput/notion'
-import type {Option} from '@markput/react'
+import type {Option, Suggestion} from '@markput/react'
 import {BlockMenu} from '@markput/react'
 import type {ReactNode} from 'react'
+
+import {CoverBand, mention, NOTION_THEME, notionOptions, PageChrome, Paragraph, theme} from './notion'
 
 /**
  * The FRAMEWORK HALF of the showcase page: the option array the editor is given, the paragraph
  * slot, and the page furniture the editor sits inside. The story file names these and nothing
  * else, so porting the page to Vue is writing this file again rather than writing the page again.
  *
- * Everything with a markup in it comes from `@markput/notion`. What is added here is what belongs
+ * Everything with a markup in it comes from `notion/`. What is added here is what belongs
  * to a PAGE rather than to the block vocabulary: who the `@` picker may name, and the fact that
  * `/` opens the shipped row menu.
  */

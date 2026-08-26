@@ -6,7 +6,7 @@ import {APOLLO_DOC} from './document'
 import {fixtures} from './Notion.fixtures'
 
 /**
- * THE SHOWCASE — `docs/scratch/notion-like/showcase.md`, built out of `@markput/notion` and the
+ * THE SHOWCASE — `docs/scratch/notion-like/showcase.md`, built out of `notion/` and the
  * published adapter alone.
  *
  * Every block on the page is an OPTION: the properties panel, the table of contents, the inline
