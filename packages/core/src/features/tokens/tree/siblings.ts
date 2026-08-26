@@ -297,12 +297,18 @@ export function endsDocument(roots: readonly TreeNode[], node: TreeNode): boolea
  * indent run carried into a destination with a deeper ceiling would land the row at the surplus
  * depth instead of the requested one, so preserving those bytes cannot express the placement.
  *
+ * `'unchanged'` for the placement the named rows ALREADY hold. It is separated from the refusals
+ * because at a row's own gap it is the only outcome that means "leave it where it was", and a
+ * caller offering the gap's depths has to be able to offer that one too — see
+ * {@link dropPlacements}. Nothing is written either way: the verb answers `false` for it, as it
+ * always did.
+ *
  * `undefined` — fail closed — for an empty set, a non-row or a dead row anywhere in it (the
  * pre-order lookup is that check for every end), a PLACEMENT INSIDE ONE OF THE MOVED SUBTREES, a
  * destination whose child rows are its own carved BODY, an index outside the destination's child
- * list, a no-op, an editor with no separator to rejoin rows by, a nested placement with nesting
- * off, and — the one answer that covers the rest — a splice the SCAN would read back as a
- * different tree, which is asked by replaying the scan over the span the splice rewrites.
+ * list, an editor with no separator to rejoin rows by, a nested placement with nesting off, and —
+ * the one answer that covers the rest — a splice the SCAN would read back as a different tree,
+ * which is asked by replaying the scan over the span the splice rewrites.
  *
  * The subtree test is the run, and it is the reason the runs are computed before anything else:
  * the tree carries no parent pointers, so "is this parent inside what I am moving" has no answer
@@ -316,7 +322,7 @@ export function movePlan(
 	nodes: readonly TreeNode[],
 	placement: RowPlacement,
 	config: RowConfig | undefined
-): {window: Window; text: string} | undefined {
+): {window: Window; text: string} | 'unchanged' | undefined {
 	if (config === undefined) return undefined
 	const {separator, indent} = config
 	const {parent, index} = placement
@@ -384,7 +390,7 @@ export function movePlan(
 	// its depth while a second run travels is still a line this splice must write.
 	const moves = (position: number): boolean => order[position] !== position || (delta.get(order[position]) ?? 0) !== 0
 	const rewritten = (position: number): boolean => order[position] !== position || delta.has(order[position])
-	if (!order.some((_, position) => moves(position))) return undefined
+	if (!order.some((_, position) => moves(position))) return 'unchanged'
 
 	// Terminates: a plan that moves no line was refused above, and every line that MOVES is a line
 	// this REWRITES.
@@ -434,6 +440,14 @@ export function movePlan(
  * not offered. That is the difference between a drop indicator that predicts and one that
  * promises — what is painted and what will happen are the same call.
  *
+ * THE PLACEMENT THE ROWS ALREADY HOLD IS ONE OF THE ANSWERS, and it is the whole reason
+ * {@link movePlan} tells `'unchanged'` apart from a refusal. At a row's OWN gap that placement is
+ * the one the pointer means most of the time — the drag that only changes depth passes through it
+ * on the way — and dropping it from the list left every horizontal position resolving to some
+ * OTHER depth, so a gesture that should do nothing moved the row instead. It is offered like any
+ * other candidate; the drop writes nothing, exactly as it already did wherever no candidate
+ * survived at all.
+ *
  * THE LINE AFTER THE GAP IS THE ONE THE MOVE LEAVES THERE, so the rows in flight are stepped over
  * before the floor is read: a row that is leaving cannot become a child of what lands where it
  * was. Read off the current list instead, the commonest drag there is — pick a row up and drop it
@@ -477,7 +491,7 @@ export function dropPlacements(
 	const out: {depth: number; placement: RowPlacement}[] = []
 	for (let depth = floor; depth <= ceiling; depth++) {
 		const placement = placementAt(rows, at, depth, moved)
-		if (placement && movePlan(roots, nodes, placement, config)) out.push({depth, placement})
+		if (placement && movePlan(roots, nodes, placement, config) !== undefined) out.push({depth, placement})
 	}
 	return out
 }

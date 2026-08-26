@@ -604,19 +604,26 @@ describe('drag and drop', () => {
 
 	/**
 	 * WHAT IS PAINTED AND WHAT WILL HAPPEN ARE ONE FACT: the candidates a gap offers are planned by
-	 * the mover, so a gap the move would be a no-op in offers nothing and no line is painted. The
-	 * old layer painted an edge for every gap and discovered the refusal only at the drop.
+	 * the mover, so the line stands exactly where the release will put the rows. At the gap a row
+	 * ALREADY holds that is the place it is in — the drop resolves, the indicator says "here", and
+	 * the release writes nothing.
 	 */
-	it('paints no drop line where the mover would refuse the move', () => {
+	it('resolves a row’s own gap to the placement it already holds', () => {
 		const mounted = mountRows('alpha\n\nbeta\n\ngamma\n\n')
-		const {block, container, rows} = mounted
+		const {block, container, rows, store} = mounted
+		let committed = 0
+		watch(store.tokens.committed, () => committed++)
 		startDrag(mounted, 0)
 
-		// Both no-ops for row 0: its own trailing edge and the leading edge of the row after it.
+		// One gap, named from either side: row 0's trailing edge and row 1's leading edge.
 		dragOver(container, rows[0], 'after')
-		expect(block.state.drop()).toBeNull()
+		expect(block.state.drop()?.placement).toEqual({parent: null, index: 0})
 		dragOver(container, rows[1], 'before')
-		expect(block.state.drop()).toBeNull()
+		expect(block.state.drop()?.placement).toEqual({parent: null, index: 0})
+
+		dropOn(container)
+		expect(committed).toBe(0)
+		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\ngamma\n\n')
 	})
 
 	it('moves the dragged row onto the drop slot', () => {
@@ -944,23 +951,16 @@ describe('drag and drop', () => {
 	})
 
 	/**
-	 * CHARACTERIZATION, not specification — the one open defect of the 2026-08-26 hardening pass
-	 * that lives here (`docs/scratch/notion-like/map.md`, the Fog section). The expectation below
-	 * is what the editor emits TODAY and it is wrong; closing the defect reddens this test, which
-	 * is the point of writing it down.
+	 * A DROP INTO A ROW'S OWN GAP CAN DECLINE. The gap a nested row already sits in offers its own
+	 * depth like any other candidate, so the pointer resting at the row's own left edge means
+	 * "leave it where it was" — and only an X that has reached ANOTHER depth's edge moves it.
+	 * Before the mover told `'unchanged'` apart from a refusal, the identity candidate was dropped
+	 * from the list and every horizontal position of this gap re-indented the row.
 	 *
-	 * A DROP INTO A ROW'S OWN GAP HAS NO "LEAVE IT WHERE IT WAS" OUTCOME. `#resolveDrop` seeds
-	 * `candidates[0]` and only ever moves the pick rightwards, so at the gap a row already occupies
-	 * the identity placement is a refused no-op and every horizontal position resolves to some
-	 * OTHER depth. The test above pins the neighbouring case — a row on its own TRAILING edge,
-	 * where the whole candidate list collapses to identity — and that one does decline. This gap
-	 * is the one where a candidate survives, so the decline never happens.
-	 *
-	 * WANTED: at least one horizontal position leaves the row where it is, the way the trailing
-	 * edge does. Asserted as "no X is a no-op" rather than against one emitted string, because the
-	 * defect is the missing decline and not the particular depth the pick lands on.
+	 * Three X positions across the one gap: left of the document, at the row's own indent, and far
+	 * to the right. Only the first is a depth the row is not already at.
 	 */
-	it('moves the row at every horizontal position of its own gap, never leaving it put', () => {
+	it('leaves the row where it was at its own depth, and outdents only left of it', () => {
 		const outcomes = [0, NESTED_INDENT + 8, 400].map(clientX => {
 			const {store, block, container, painted} = mountNestedRows('alpha\n\tbeta\ngamma')
 			const alpha = store.tokens.nodes()[0]
@@ -973,7 +973,6 @@ describe('drag and drop', () => {
 			return store.tokens.value()
 		})
 
-		expect(outcomes).toEqual(['alpha\nbeta\ngamma', 'alpha\nbeta\ngamma', 'alpha\nbeta\ngamma'])
-		expect(outcomes.every(value => value !== 'alpha\n\tbeta\ngamma')).toBe(true)
+		expect(outcomes).toEqual(['alpha\nbeta\ngamma', 'alpha\n\tbeta\ngamma', 'alpha\n\tbeta\ngamma'])
 	})
 })

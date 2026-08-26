@@ -71,12 +71,20 @@ function expectedOrder<T>(items: readonly T[], from: number, to: number): T[] {
 	return next
 }
 
+/**
+ * The SPLICE a legal move plans. `'unchanged'` — the mover's answer for a placement the rows
+ * already hold — is not one of these: every case below moves a row somewhere it is not.
+ */
+function spliced(plan: ReturnType<typeof movePlan>, what: string): {window: Window; text: string} {
+	if (!plan || plan === 'unchanged') throw new Error(`movePlan refused a legal move: ${what}`)
+	return plan
+}
+
 function planned(c: Case): {tree: ReturnType<typeof buildTree>; window: Window; next: string; ids: number[]} {
 	const tree = buildTree(c.source)
 	const roots = tree.roots()
 	const ids = roots.map(node => node.id)
-	const plan = movePlan(roots, [roots[c.from]], {parent: null, index: c.to}, ROW_CONFIG)
-	if (!plan) throw new Error(`movePlan refused a legal move: ${label(c)}`)
+	const plan = spliced(movePlan(roots, [roots[c.from]], {parent: null, index: c.to}, ROW_CONFIG), label(c))
 	const value = tree.value()
 	const next = value.slice(0, plan.window.start) + plan.text + value.slice(plan.window.end)
 	return {tree, window: plan.window, next, ids}
@@ -197,8 +205,8 @@ describe('pairing: the content gate', () => {
 		const tree = buildTree(source)
 		const roots = tree.roots()
 		const ids = roots.map(node => node.id)
-		const plan = movePlan(roots, [roots[0]], {parent: null, index: 2}, ROW_CONFIG)
-		if (!plan?.window.pairing) throw new Error('expected a plan carrying a pairing')
+		const plan = spliced(movePlan(roots, [roots[0]], {parent: null, index: 2}, ROW_CONFIG), 'the content gate')
+		if (!plan.window.pairing) throw new Error('expected a plan carrying a pairing')
 		const value = tree.value()
 		const next = value.slice(0, plan.window.start) + plan.text + value.slice(plan.window.end)
 
@@ -228,11 +236,11 @@ describe('move: the window is the narrowest changed range', () => {
 		const [, r, s] = parent.rows()
 
 		// `r` and `s` trade places: two of the parent's four children move, and the other two do not.
-		const plan = movePlan(tree.roots(), [r], {parent, index: 2}, ROW_CONFIG)
+		const plan = spliced(movePlan(tree.roots(), [r], {parent, index: 2}, ROW_CONFIG), 'the narrow window')
 
-		expect(plan?.window.start).toBe(r.lineRange().start)
-		expect(plan?.window.end).toBe(s.lineRange().end)
-		expect(plan?.text).toBe('\ts\n\n\tr\n\n')
+		expect(plan.window.start).toBe(r.lineRange().start)
+		expect(plan.window.end).toBe(s.lineRange().end)
+		expect(plan.text).toBe('\ts\n\n\tr\n\n')
 		// The ancestor's span is the whole document, which is what the narrow window is tighter than.
 		expect(parent.position).toEqual({start: 0, end: tree.value().length})
 	})

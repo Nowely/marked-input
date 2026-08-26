@@ -975,22 +975,29 @@ describe('dropPlacements', () => {
 	 * difference is the commonest drag there is: picking a row up and dropping it at its own gap to
 	 * change only its depth. Reading the floor off the current list makes the row in flight its own
 	 * outdent's obstacle, and the mover accepting the placement is the oracle that says so.
+	 *
+	 * Depth 1 is the placement `c` already holds, and it is offered like any other: it is the one
+	 * the pointer passes through on the way, and a gap that cannot answer "leave it where it was"
+	 * moves the row at every horizontal position.
 	 */
 	it('offers the depths a row in flight vacates, and the mover takes them', () => {
 		const store = rowStore('a\n\tb\n\tc\nd')
 		const [, b, c] = rowsOf(store)
 
-		expect(store.tokens.dropPlacements([c], b, 'after').map(each => each.depth)).toEqual([0, 2])
+		expect(store.tokens.dropPlacements([c], b, 'after').map(each => each.depth)).toEqual([0, 1, 2])
 		expect(store.tokens.moveRows([c], {parent: null, index: 1})).toBe(true)
 		expect(store.tokens.value()).toBe('a\n\tb\nc\nd')
 	})
 
-	/** The whole remainder of the gap may be in flight, and then the floor is the document's own. */
+	/**
+	 * The whole remainder of the gap may be in flight, and then the floor is the document's own.
+	 * Depth 1 is where the pair already sits, offered for the reason above.
+	 */
 	it('offers root depth when every line after the gap is leaving', () => {
 		const store = rowStore('a\n\tb\n\tc')
 		const [a, b, c] = rowsOf(store)
 
-		expect(store.tokens.dropPlacements([b, c], a, 'after').map(each => each.depth)).toEqual([0])
+		expect(store.tokens.dropPlacements([b, c], a, 'after').map(each => each.depth)).toEqual([0, 1])
 		expect(store.tokens.moveRows([b, c], {parent: null, index: 1})).toBe(true)
 		expect(store.tokens.value()).toBe('a\nb\nc')
 	})

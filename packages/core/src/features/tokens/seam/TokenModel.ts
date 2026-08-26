@@ -739,7 +739,10 @@ export class TokenModel {
 		moveTo: (nodes, placement) => {
 			this.#ensureSeeded()
 			const plan = untracked(() => movePlan(this.#tree.roots(), nodes, placement, this.#tree.config()))
-			if (!plan) return false
+			// `'unchanged'` — the rows already hold that placement — writes nothing and answers
+			// like a refusal, which is what a drop onto a row's own place has always looked like
+			// from here. The two are separate in the plan so the DROP can offer that placement.
+			if (!plan || plan === 'unchanged') return false
 			return this.#tx.applyRange(plan.window, plan.text)
 		},
 		/**
