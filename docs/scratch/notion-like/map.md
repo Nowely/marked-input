@@ -730,3 +730,62 @@ becomes a ticket here.
   option-to-icon map in the consumer component — which is precisely the shape P7's
   exit criterion forbids. `icon?: Slot` is the version that keeps the criterion, and
   it lands with the painter, as `section` now does.
+
+- **The fourth driving session's six defects, and four of them were ONE shape: a rule with two
+  owners** (2026-08-26). Every one reproduced in the browser first, and each pin was seen to redden
+  by mutating the mechanism rather than by re-reading the test.
+  - **A CONTROL IS A KEYBOARD TRAP.** A `<input type=checkbox>` or a `<select>` a row kind paints
+    takes DOM focus on mousedown and leaves the SELECTION where it was, so the model held a live
+    caret it could not act on: a contenteditable emits no `beforeinput` while a descendant control
+    has focus, and `isConsumerKeyOrigin` declines the whole keydown tier for a registered control
+    root. Measured: tick a to-do, press `X`, nothing moves. The rule was already in the tree TWICE,
+    written by hand at `RowController.endDrag` and `runMenuVerb` for the grip alone; it is
+    `SelectionDriver.reclaimFocus` now, called from the caret invariant's own settling point
+    (`#afterFrame`), so it reaches every control a consumer declares through `useControlRef`.
+    A COMMIT is the clock, because a commit is the moment the control's interaction has LANDED in
+    the document. `:focus-visible` was measured as a discriminator for keyboard-driven controls and
+    REJECTED: Chromium reports `true` for a mouse-clicked `<select>`, which is half the defect.
+    Declared cost: a control arrowed with its popup closed, committing per keystroke, loses focus
+    after the first commit.
+  - **A ROW ELEMENT'S OFFSET 0 RESOLVED TO `{before: row}`.** `Row.tsx`/`Row.vue` hand the same
+    element to `consign` and to `children`, so a boundary on it takes `fromHostAnchor`'s arm with an
+    EMPTY child list — and the fallback there named the position ahead of the row's lead and opener.
+    The rule ("a row's leading edge is its ENTRY") was already written one line below for an edge
+    CHILD and was never asked of the OWNER. `'- the slash menu⏎⇥- dragging rows'` + Home + any
+    character emitted `'- the slash menu⏎Y⇥- dragging rows'`: the row lost its kind AND its nesting
+    to one keystroke. NOTE: Home does not produce `(rowElement, 0)` on macOS Chromium — the pin
+    writes the boundary directly, at `domBoundary.spec`, and the anchor is asserted rather than the
+    gesture.
+  - **TAB AND THE MOVER DISAGREED, over four of the showcase's 35 rows.** `RowSpec.indents` was
+    read per KIND while the DROP asked the structural question (`depthPlan` + `nestingIsPainted`) —
+    two owners for "may this row nest". Measured before the change: a heading after a callout, the
+    table of contents, a bookmark and a heading after a to-do were each offered depth 1 by the drag
+    and accepted by the verb, while Tab was not consumed at all and the browser took focus out of
+    the editor. `indents` is now ONE answer per editor (`TokenModel.rowsIndent`): it gates the KEY,
+    which is a field-level accessibility question (ADR-0002), and `indentRows` alone decides which
+    row moves. `lineOwner` came out with it. Re-measured after: zero disagreements over all 35 rows.
+  - **THE ROW MENU IGNORED THE KEYBOARD**, which falsified P7's own "one overlay list with one
+    keyboard". The protocol is `navigateSuggestions` — the same pure function the `/` list runs, so
+    the two cannot drift — and what is per-list is the highlight (`state.menuActive`) and the source
+    (`ROW_MENU_ITEMS`). Listened for on `document` beside the menu's existing dismissal, because the
+    grip's own click is what leaves focus on the grip.
+  - **MENU ORDER WAS DECLARATION ORDER.** Harmless while Enter picked nothing; a wrong commit on the
+    first try since `4a11d450` made the first row highlighted. `rankSuggestion` bands a candidate —
+    exact label, label prefix, label substring, then the same three over `keywords` — and both
+    overlay arms read it, so `/table` offers **Table** and `/to` offers **To-do list**. The keyword
+    OFFSET is the half a single band cannot express, and it has its own pin. An empty query is a
+    prefix of everything, so nothing is reordered before the first character.
+  - **THERE WAS NO WAY BACK TO PLAIN TEXT, and the capability belongs in core while the ENTRY
+    belongs to the consumer.** The paragraph is the one kind no option can declare — it is
+    `slots.paragraph` — so an option with a `menu` and NO `markup` names it, which is already this
+    API's spelling for "inserts nothing itself". `choose`'s option arm calls `turnInto(undefined)`
+    there. A DECLARED markup that compiles to no kind still refuses: that is a typo, not a request.
+    Core ships no label; the showcase's `text` option is first in `notionOptions`, which is what
+    puts **Text** at the head of an untyped `/`.
+- **Two judged and NOT filed.** The focus RING around the whole container is correct: the container
+  is the one editing host (ADR-0002), so it is the one focus target, and Chromium matches
+  `:focus-visible` on a contenteditable even for a click — removing the outline in core would take
+  the indicator from every consumer, and a consumer who wants none can style it. The 12px DROP BAND
+  did not reproduce: swept at 2px steps over the showcase, every depth band is exactly one MEASURED
+  indent unit (24px between two bullets, 48px under a toggle) and the SHALLOWEST depth's band is
+  unbounded to the left, which is where the grip's own gutter is.
