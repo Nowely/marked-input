@@ -905,6 +905,32 @@ describe('the inline database', () => {
 
 describe('the toggle', () => {
 	/**
+	 * A TOGGLE THE MENU MAKES IS OPEN, and the whole of the case is the line typed INTO it. The
+	 * entry used to insert the closed kind — "a new toggle has nothing inside it to show" — so the
+	 * Enter-then-Tab that puts the first line there aimed the caret at a subtree with no boxes, and
+	 * forty-seven characters were typed into the document with nothing on screen.
+	 *
+	 * `checkVisibility()` is the oracle rather than the emitted value, for the reason the collapse
+	 * case below states: the value was RIGHT the whole time.
+	 */
+	it('opens the toggle the menu inserts, so the line typed into it is on screen', async () => {
+		const {host, value} = await mountControlled(Empty, '')
+
+		await focusAtStart(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '/')
+		await choose('Toggle list')
+		await expect.poll(value).toBe('\u25be ')
+
+		await userEvent.keyboard('title')
+		await userEvent.keyboard('{Enter}')
+		await userEvent.keyboard('{Tab}')
+		await userEvent.keyboard('nested line')
+
+		await expect.poll(value).toBe('\u25be title\n\t\u25be nested line')
+		expect(rowAt(host, 'nested line').checkVisibility()).toBe(true)
+	})
+
+	/**
 	 * THE COLLAPSED ROW, and the hazard the design carried since P3: a row that is not painted has
 	 * left `bind` and taken its anchors with it. A closed toggle therefore RENDERS its children and
 	 * hides them, and the value it holds is proof they are still in the document.

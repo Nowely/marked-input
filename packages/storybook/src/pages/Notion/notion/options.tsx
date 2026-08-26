@@ -446,8 +446,13 @@ export const todo: Option = {
  * three things it buys.
  *
  * TWO OPTIONS, ONE COMPONENT: `meta` is not usable here, because a row's markup may not begin
- * with a gap and `'▸-'` would be the only spelling left. Only the closed one carries a `menu`:
- * a new toggle has nothing inside it to show.
+ * with a gap and `'▸-'` would be the only spelling left. The `menu` sits on the OPEN one, and
+ * that is a correction rather than a detail: it used to sit on the closed one, on the reading that
+ * "a new toggle has nothing inside it to show". A toggle a user has just asked for is one they are
+ * about to put something IN — and born closed, the Enter-then-Tab that puts the first line there
+ * aimed the caret into a subtree with no boxes. Forty-seven characters were typed into the document
+ * and none of them appeared. (The editor refuses that nesting now, so the same gesture is merely
+ * inert instead of invisible; born open, it does what the user asked.)
  */
 const toggleRow = (open: boolean) =>
 	function Toggle({children, rows: childRows, node, ref, className, style}: RowProps) {
@@ -488,12 +493,12 @@ const toggleRow = (open: boolean) =>
 export const toggle: Option = {
 	markup: '▸ __slot__',
 	row: {continues: true, indents: true, Component: toggleRow(false)},
-	menu: {label: 'Toggle list', keywords: ['collapse', 'details', 'fold']},
 }
 
 export const toggleOpen: Option = {
 	markup: '▾ __slot__',
 	row: {continues: true, indents: true, Component: toggleRow(true)},
+	menu: {label: 'Toggle list', keywords: ['collapse', 'details', 'fold']},
 }
 
 /* ── the inline database ────────────────────────────────────────────────── */
