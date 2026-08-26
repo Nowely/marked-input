@@ -195,6 +195,112 @@ describe('the showcase page', () => {
 
 		await expect.poll(value).toBe(APOLLO_DOC.replace('Vendor SLA unsigned', 'Vendor SLA unsigned!'))
 	})
+
+	/**
+	 * WHAT THE SNAPSHOTS CANNOT SEE. `snapshotHtml` strips `class` and `style`, which is right for a
+	 * structural snapshot and leaves every mark that carries its meaning IN a class invisible: a
+	 * chip and a bare span print identically, and so do a red status and a green one. So the marks
+	 * whose whole job is a class swap are read as elements here.
+	 *
+	 * A mention and a highlight are the two that were only ever text in a snapshot — proof the
+	 * markup parsed, and nothing more. The highlight is the one mark with a SLOT, so its interior is
+	 * still the document's own text and the element has to WRAP it rather than replace it.
+	 */
+	it('paints a mention and a highlight as their own elements, not as bare text', async () => {
+		const {host} = await mountControlled(Showcase, 'Owner @[Platform](team-platform), and ==gating== holds.')
+
+		const mention = host.querySelector('[class*="mention"]')
+		const highlight = host.querySelector('[class*="highlight"]')
+
+		expect(mention?.textContent).toBe('@Platform')
+		expect(highlight?.textContent).toBe('gating')
+		// The markup itself never reaches the page — a mark that failed to parse prints its source.
+		expect(host.textContent).not.toContain('team-platform')
+		expect(host.textContent).not.toContain('==')
+	})
+
+	/**
+	 * THE STATUS TONE MAP, which lives in `marks.tsx` because the tone is a property of the STATUS
+	 * and not of the document. Every entry driven, plus the fallback: a value nobody mapped goes
+	 * grey rather than disappearing, which is the arm an unmapped status would otherwise reach
+	 * silently.
+	 */
+	it('gives each status its own tone, and an unmapped one the fallback', async () => {
+		const line = ['Blocked', 'In progress', 'Done', 'Planned', 'At risk', 'Rescoped']
+			.map(status => `<status:${status}>`)
+			.join(' ')
+		const {host} = await mountControlled(Showcase, line)
+
+		// The tone NAME out of the CSS-module class, whose hash suffix is a build detail: the claim
+		// is which palette slot each status reached, not what the bundler called it this run.
+		const tones = [...host.querySelectorAll('[class*="chip"]')].map(
+			chip => /chip(Grey|Red|Amber|Green|Blue|Purple)/.exec(chip.className)?.[1]
+		)
+
+		expect(tones).toEqual(['Red', 'Amber', 'Green', 'Grey', 'Amber', 'Grey'])
+	})
+
+	/**
+	 * THE DUE DATE'S THREE READINGS, and the reason the document carries the third: "done" is not
+	 * knowable from inside a mark, so `<due:… done>` is how the row says it. The reference date is
+	 * `marks.tsx`'s own `TODAY`, deliberately not a wall-clock read — a page whose colours change
+	 * on a date nobody chose has no assertable state.
+	 */
+	it('reddens a due date that is past and mutes one that is done or ahead', async () => {
+		const {host} = await mountControlled(Showcase, '<due:2026-04-02> <due:2026-03-27 done> <due:2026-05-06>')
+
+		const classes = [...host.querySelectorAll('[class*="value"]')].map(span =>
+			span.className.includes('valueOverdue') ? 'overdue' : 'muted'
+		)
+
+		expect(classes).toEqual(['overdue', 'muted', 'muted'])
+	})
+
+	/** The effort bar is a picture of a NUMBER, and the number is a width the snapshot strips. */
+	it('fills the effort bar to its own fraction, and clamps what is out of range', async () => {
+		const {host} = await mountControlled(Showcase, '<bar:0.35> <bar:1> <bar:0> <bar:4>')
+
+		// As NUMBERS: the fill is a picture of the fraction, and `'35.0%'` vs `'35%'` is the
+		// browser's own normalisation of the same width.
+		const widths = [...host.querySelectorAll<HTMLElement>('[class*="effortBarFill"]')].map(fill =>
+			Number.parseFloat(fill.style.width)
+		)
+
+		expect(widths).toEqual([35, 100, 0, 100])
+	})
+
+	/**
+	 * THE TITLE IS EDITABLE, which nothing asserted — it was counted as an element and never typed
+	 * into. It is the first row of the reference page and the one a user meets first, and its kind
+	 * paints no `{children}` fallback of its own, so a component that dropped them would leave the
+	 * page's name unwritable with every count still green.
+	 */
+	it('types into the page title', async () => {
+		const {host, value} = await mountControlled(Showcase, '@title Apollo\nbody')
+
+		await focusAtEnd(rowAt(host, 'Apollo'))
+		dispatchInsertText(editingHost(host), ' GA')
+
+		await expect.poll(value).toBe('@title Apollo GA\nbody')
+	})
+
+	/**
+	 * THE QUOTE, as a gesture rather than a count. Its kind CONTINUES and INDENTS, so Enter opens
+	 * another quote and Tab nests it — the two declarations that separate it from a heading, and
+	 * neither is visible in the element census.
+	 */
+	it('continues a quote on Enter and nests it on Tab', async () => {
+		const {host, value} = await mountControlled(Showcase, '> first')
+
+		await focusAtEnd(rowAt(host, 'first'))
+		await userEvent.keyboard('{Enter}')
+		dispatchInsertText(editingHost(host), 'second')
+		await expect.poll(value).toBe('> first\n> second')
+
+		await userEvent.keyboard('{Tab}')
+
+		await expect.poll(value).toBe('> first\n\t> second')
+	})
 })
 
 describe('the slash menu', () => {
