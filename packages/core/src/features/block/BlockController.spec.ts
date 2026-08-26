@@ -461,6 +461,24 @@ describe('the row menu', () => {
 		expect(block.state.menu()).toBeNull()
 	})
 
+	/**
+	 * The row the menu was opened on decides the DEPTH, which is what the verb carries and a bare
+	 * separator did not: a row added under a nested one used to open at depth 0 and cut the list
+	 * in two — `'alpha\n\tbeta\ngamma'` became `'alpha\n\tbeta\n\ngamma'`.
+	 */
+	it('adds the row beside the NESTED row the menu belongs to', () => {
+		const {block, painted, store} = mountNestedRows('alpha\n\tbeta\ngamma')
+		const alpha = store.tokens.nodes()[0]
+		if (alpha.kind !== 'row') throw new Error('expected a row')
+		const beta = alpha.rows()[0]
+		block.openMenu(beta.id, painted.get(beta.id)!.getBoundingClientRect())
+
+		block.addRow()
+
+		expect(store.tokens.value()).toBe('alpha\n\tbeta\n\t\ngamma')
+		expect(alpha.rows()).toHaveLength(2)
+	})
+
 	it('adds the first row to an empty document', () => {
 		// An empty document already IS one empty row (issue 08), so there is always a row to
 		// hang the insert on.

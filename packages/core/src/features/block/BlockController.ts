@@ -4,7 +4,7 @@ import {shallow} from '../../shared/utils/shallow'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import {hasCells} from '../tokens'
-import type {RowConfig, RowNode, RowPlacement, TokenModel, TreeNode} from '../tokens'
+import type {RowNode, RowPlacement, TokenModel, TreeNode} from '../tokens'
 
 /** One answer of {@link BlockController.rowAt}'s search: which row, its box, and whether it HOLDS the point. */
 type Hit = {id: number; rect: DOMRect; contained: boolean}
@@ -235,14 +235,9 @@ export class BlockController {
 		this.state.menu(null)
 	}
 
-	// A fresh row IS the separator (issue 08): spliced after the anchor row's own separator it
-	// reads as an empty row, and on the document-final unterminated row it first terminates
-	// that row. It carries NO DEPTH, so "Add below" on a nested row opens the row at depth 0 and
-	// cuts the list in two — measured and recorded in `docs/scratch/notion-like/map.md`. The text
-	// that would carry it needs the row's LEAD and whether its subtree ENDS THE DOCUMENT (the two
-	// decide the order of lead and separator), and both live in `features/tokens/` by ADR-0003, so
-	// closing it is a verb there rather than a longer string here.
-	addRow = (): void => this.#runMenuVerb((row, config) => row.insertAfter(config.separator))
+	// The DEPTH the new row opens at is the row verb's, not a string this layer builds: the lead it
+	// needs and the side of the separator it goes on are both facts of the tree (ADR-0003).
+	addRow = (): void => this.#runMenuVerb(row => row.kind === 'row' && row.addSibling())
 	duplicateRow = (): void => this.#runMenuVerb(row => row.duplicate())
 	deleteRow = (): void => this.#runMenuVerb(row => row.remove())
 
@@ -594,17 +589,16 @@ export class BlockController {
 	 * row edits are row features, so a document with rows alone admits them. The menu closes
 	 * either way, so a refused verb does not leave it open.
 	 *
-	 * The parse policy travels INTO the verb rather than being read again beside it: the gate
-	 * below is what makes a separator available at all, and reading `props.separator` here would
-	 * be a second answer to the question the gate just asked.
+	 * The parse policy is a GATE and no longer a parameter: every verb below reads what it needs
+	 * off the tree, and handing one this layer's reading of the separator would be a second answer
+	 * to the question the gate just asked.
 	 */
-	#runMenuVerb(verb: (row: TreeNode, config: RowConfig) => void): void {
+	#runMenuVerb(verb: (row: TreeNode) => void): void {
 		const menu = this.state.menu()
 		this.closeMenu()
-		const config = this.tokens.rowConfig()
-		if (!menu || config === undefined) return
+		if (!menu || this.tokens.rowConfig() === undefined) return
 		const row = this.tokens.find(menu.id)
-		if (row) verb(row, config)
+		if (row) verb(row)
 
 		// AND THE EDITOR TAKES ITS FOCUS BACK. The grip is a `<button>` inside the container, so
 		// after a menu click `document.activeElement` is the grip — which is a registered control

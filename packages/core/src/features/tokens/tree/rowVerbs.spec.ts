@@ -216,6 +216,66 @@ describe('insertAfter', () => {
 	})
 })
 
+describe('addSibling', () => {
+	/**
+	 * The lead is the whole verb. `insertAfter(separator)` spliced a bare separator at the anchor's
+	 * span end, which is the start of the NEXT line, so the row it opened carried no indent and
+	 * left the subtree — `'- parent\n\t- child\n- tail'` became a list cut in two.
+	 */
+	it('opens the row at the anchor row’s own depth', () => {
+		const store = rowStore('a\n\tb\nc')
+		const child = rowsOf(store)[1]
+
+		expect(child.addSibling()).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\tb\n\t\nc')
+		expect(rowsOf(store).map(row => row.lead())).toEqual(['', '\t', '\t', ''])
+		// The fresh row's line is the lone '\t' at 5..6; its body is the zero-width text at 6.
+		expect(selectionRange(store)).toEqual({start: 6, end: 6})
+	})
+
+	/**
+	 * PAST THE SUBTREE, which is where a row written at this row's lead can go without adopting
+	 * its children — {@link RowNode.splitAt}'s placement rule, read for an insert.
+	 */
+	it('opens it after the whole subtree, not between the row and its children', () => {
+		const store = rowStore('a\n\tb\n\t\tc\nz')
+		const nested = rowsOf(store)[1]
+
+		expect(nested.addSibling()).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\tb\n\t\tc\n\t\nz')
+		// The fresh line is the lone '\t' at 9..10; the row's own child row would have answered 3.
+		expect(selectionRange(store)).toEqual({start: 10, end: 10})
+	})
+
+	/**
+	 * The document-final row owns no separator, so one has to be written BEFORE the lead: the
+	 * other order leaves the lead inside that row's own body instead of opening a line.
+	 */
+	it('terminates the document-final row before opening the next', () => {
+		const store = rowStore('a\n\tb')
+		const child = rowsOf(store)[1]
+
+		expect(child.addSibling()).toBe(true)
+
+		expect(store.tokens.value()).toBe('a\n\tb\n\t')
+		expect(rowsOf(store)).toHaveLength(3)
+		expect(selectionRange(store)).toEqual({start: 6, end: 6})
+	})
+
+	/** A blank row, whatever the anchor's kind: whether a kind continues is Enter's question. */
+	it('carries the depth and not the KIND', () => {
+		const store = rowStore('# a\n\t# b', [{markup: '# __slot__', row: {Component: 'h1', continues: true}}])
+		const child = rowsOf(store)[1]
+
+		expect(child.addSibling()).toBe(true)
+
+		expect(store.tokens.value()).toBe('# a\n\t# b\n\t')
+		expect(rowsOf(store)[2].option()).toBeUndefined()
+	})
+})
+
 describe('mergeWith', () => {
 	/**
 	 * A parent's boundary is with its FIRST CHILD, whose span begins INSIDE the parent's own —

@@ -196,6 +196,24 @@ export interface RowNode {
 	 * this row's own body — a caret in another row cannot address this one's split point.
 	 */
 	splitAt(at: NodeAnchor): boolean
+	/**
+	 * Open a BLANK row after this row's whole subtree, at this row's own DEPTH — "add below", as a
+	 * verb rather than as a separator a caller splices.
+	 *
+	 * The lead is the whole of what it carries, and it cannot be written outside this layer: which
+	 * side of the separator it goes on depends on whether this row's subtree ENDS THE DOCUMENT —
+	 * an ordinary row's span is already past its own separator, while the document-final row must
+	 * be terminated before the new line can follow it. `insertAfter(separator)` carried neither,
+	 * so a row added under a nested one landed at depth 0 and cut the list in two.
+	 *
+	 * PAST THE SUBTREE, which is {@link splitAt}'s placement rule and forced by the same encoding:
+	 * a row written between this one and its children, at this one's lead, adopts every one of
+	 * them. The KIND is deliberately not carried — "add a row" opens a blank one, and whether a
+	 * kind continues is Enter's question.
+	 *
+	 * `false` for an editor with no separator, and for a dead row.
+	 */
+	addSibling(): boolean
 	/** See {@link NodeCommands}. */
 	remove(): boolean
 	duplicate(): boolean
@@ -370,6 +388,8 @@ export interface NodeCommands {
 	turnInto(node: RowNode, option: CoreOption | undefined, patch?: RowPatch): boolean
 	/** Split a ROW at an anchor in its own body. See {@link RowNode.splitAt}. */
 	splitAt(node: RowNode, at: NodeAnchor): boolean
+	/** Open a blank ROW after this one's subtree, at its depth. See {@link RowNode.addSibling}. */
+	addSibling(node: RowNode): boolean
 }
 
 /**

@@ -797,6 +797,25 @@ export class TokenModel {
 			})
 			return split
 		},
+		/**
+		 * The bytes are a LEAD and a SEPARATOR, and the order between them is the whole verb: an
+		 * ordinary row's span already runs past its own separator, so the lead is written first and
+		 * the separator ends the new line; the document-final row owns none, so the separator has to
+		 * terminate IT before the lead can open anything. Both facts live here (ADR-0003), which is
+		 * why "add below" is a verb rather than a string a caller splices.
+		 *
+		 * {@link #insertAfter} answers the caret: the position it names is the row after this one's
+		 * whole subtree, which is exactly the row this opens.
+		 */
+		addSibling: node => {
+			const config = untracked(() => this.#tree.config())
+			if (!config) return false
+			const {lead, final} = untracked(() => ({
+				lead: node.lead(),
+				final: endsDocument(this.#tree.roots(), node),
+			}))
+			return this.#insertAfter(node, final ? config.separator + lead : lead + config.separator)
+		},
 	}
 
 	/** The compiled row kind an option declares, resolved by its MARKUP — see {@link Parser.rowKind}. */
