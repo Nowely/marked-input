@@ -90,6 +90,24 @@ function pasteMarkup(container: HTMLElement, range: Range, markup: string): void
 	paste(container, range, markup, MARKPUT_MIME)
 }
 
+/** A live DOM selection running between two rows' own bodies — an ordinary drag, not a row gesture. */
+function sweep(store: Store, fromRow: number, fromOffset: number, toRow: number, toOffset: number): void {
+	const at = (row: number, offset: number) => {
+		const body = rowsOf(store)[row].inline()[0]
+		const surface = store.tokens.handle(body.id)?.element()
+		if (!surface) throw new Error('row body has no consigned element')
+		return surface.firstChild ? {node: surface.firstChild, offset} : {node: surface, offset: 0}
+	}
+	const from = at(fromRow, fromOffset)
+	const to = at(toRow, toOffset)
+	const range = document.createRange()
+	range.setStart(from.node, from.offset)
+	range.setEnd(to.node, to.offset)
+	const selection = window.getSelection()
+	selection?.removeAllRanges()
+	selection?.addRange(range)
+}
+
 /** The live DOM selection as a Range — what a paste over a standing row selection targets. */
 function liveRange(): Range {
 	const selection = window.getSelection()
@@ -286,5 +304,49 @@ describe('the set verbs do not see the set', () => {
 		press(container, 'Tab', {shiftKey: true})
 
 		expect(store.tokens.value()).toBe('- alpha\n- beta\n- gamma')
+	})
+
+	/**
+	 * A TEXT SWEEP IS NOT A ROW SELECTION, however much of a row it happens to cover. Tab asked the
+	 * LOOSE question — "which rows does this span cover whole" — while Backspace, cut, paste and
+	 * Enter asked the exact one, so a drag from the middle of `alpha` to the end of `beta` made Tab
+	 * indent `beta`, a row the caret is not in, and leave the caret's own row where it was. Both now
+	 * ask {@link TokenModel.rowSelection}, which answers the empty set here.
+	 */
+	it('does not move a row a plain text sweep merely covers', () => {
+		const {store, container} = mount('- alpha\n- beta')
+		sweep(store, 0, 2, 1, 4)
+		expect(store.block.selected()).toHaveLength(0)
+
+		press(container, 'Tab')
+
+		// Consumed — the caret's own row is a bullet — and the step is refused: `alpha` is already
+		// at depth 0 with no row above it to nest under.
+		expect(store.tokens.value()).toBe('- alpha\n- beta')
+	})
+
+	/**
+	 * THE DECLARATION IS THE SET'S. The gate read the ANCHOR's row and the verb moved every covered
+	 * row, so which row happened to be FIRST decided the outcome: a heading selected after a bullet
+	 * was indented under it, while the same two rows selected the other way round consumed nothing.
+	 * Tab with a caret in that heading alone is not consumed either, so the editor held two answers
+	 * for one question.
+	 */
+	it('leaves the key alone when the set holds a kind that declares no indents', () => {
+		for (const [value, key] of [
+			['- alpha\n- beta\n## Head', 'ArrowDown'],
+			['- alpha\n## Head\n- beta', 'ArrowUp'],
+		] as const) {
+			const {store, container} = mount(value)
+			caretIn(store, key === 'ArrowDown' ? 1 : 2, 0)
+			press(container, 'Escape')
+			press(container, key, {shiftKey: true})
+			expect(store.block.selected()).toHaveLength(2)
+
+			const event = press(container, 'Tab')
+
+			expect(event.defaultPrevented).toBe(false)
+			expect(store.tokens.value()).toBe(value)
+		}
 	})
 })

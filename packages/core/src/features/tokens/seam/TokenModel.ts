@@ -43,7 +43,6 @@ import {
 	rowOf,
 	rowScope,
 	rowSelectionSpan,
-	rowsWithin,
 	splitPlan,
 	turnIntoPlan,
 } from '../tree/siblings'
@@ -399,17 +398,21 @@ export class TokenModel {
 	}
 
 	/**
-	 * THE ROWS A SELECTION COVERS WHOLE — see {@link rowsWithin}. What `store.block.selected`
-	 * derives from, and the reason there is no second store of selected rows: a row selection IS
-	 * the text selection, read at row granularity.
+	 * THE ROWS A SELECTION HOLDS — the one reading, and the whole of it. What `store.block.selected`
+	 * paints, what the drag picks up, what Esc asks before it climbs and what Tab moves;
+	 * {@link replaceRows} writes over the span the same test answers. There is no second store of
+	 * selected rows because a row selection IS the text selection, read at row granularity.
+	 *
+	 * EXACTLY those rows: a span running from the middle of one row into the end of another covers
+	 * the row between them whole and is still a TEXT selection, so the set is empty there. The paint
+	 * used to say otherwise and Tab believed it — which is how Tab came to indent a row the caret was
+	 * not in, while Backspace over the same selection correctly declined. See
+	 * {@link rowSelectionSpan}, whose exactness test this is.
 	 */
-	rowsWithin(anchors: Anchors): readonly RowNode[] {
-		return untracked(() => {
-			const roots = this.#tree.roots()
-			const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
-			const span = {start: Math.min(...ends), end: Math.max(...ends)}
-			return rowsWithin(roots, span, this.#tree.config()?.separator)
-		})
+	rowSelection(anchors: Anchors): readonly RowNode[] {
+		return untracked(
+			() => rowSelectionSpan(this.#tree.roots(), anchors, this.#tree.config()?.separator, 'replace')?.rows ?? []
+		)
 	}
 
 	/**

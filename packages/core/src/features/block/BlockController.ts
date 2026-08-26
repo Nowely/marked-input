@@ -112,7 +112,7 @@ export class BlockController {
 	 *
 	 * Its two dependencies are read TRACKED and neither is optional: `nodes()` moves when a commit
 	 * re-parents a row, and `anchors()` moves when the selection does. The answer is then computed
-	 * untracked inside {@link TokenModel.rowsWithin}, because a row's coordinates are plain fields
+	 * untracked inside {@link TokenModel.rowSelection}, because a row's coordinates are plain fields
 	 * no signal covers.
 	 */
 	readonly selected: Computed<readonly number[]> = computed(
@@ -120,7 +120,7 @@ export class BlockController {
 			void this.tokens.nodes()
 			const anchors = this.tokens.selection.anchors()
 			if (!anchors || this.tokens.rowConfig() === undefined) return []
-			return this.tokens.rowsWithin(anchors).map(row => row.id)
+			return this.tokens.rowSelection(anchors).map(row => row.id)
 		},
 		{equals: shallow}
 	)

@@ -164,10 +164,10 @@ export function rowsWithin(
 }
 
 /**
- * THE ROW SELECTION AS AN EDIT: the bytes a verb acting on the rows a selection covers must
- * write over, or `undefined` when the selection is not a whole number of rows.
+ * THE ROW SELECTION: the rows a selection holds, and the bytes a verb acting on them must write
+ * over — or `undefined` when the selection is not a whole number of rows.
  *
- * ONE READING for every gesture that acts on a row selection — paste, cut, Backspace, Enter —
+ * ONE READING for every gesture that acts on a row selection — paste, cut, Backspace, Enter, Tab —
  * because they disagreed. {@link rowSpan} starts a row's span at its ENTRY, past the lead and the
  * opener, since those are structural bytes no caret may occupy and a selection written across them
  * reads back one offset later. But `sliceNodes` PROJECTS the same span with the opener put back:
@@ -192,13 +192,18 @@ export function rowsWithin(
  * empty row, so the row count could never shrink. At the END of the document there is no trailing
  * separator to take, so the one BEFORE the run leaves instead — and when the run also starts the
  * document there is neither, which is the whole value and clears it.
+ *
+ * The ROWS come back beside the span because a caller that writes into it needs the first one — its
+ * lead, and its kind where the kind continues, are what an arriving line is opened with — and
+ * because a caller that only wants the SET (Tab) must not re-derive the exactness test to get it.
+ * That is the whole of {@link TokenModel.rowSelection}.
  */
 export function rowSelectionSpan(
 	roots: readonly TreeNode[],
 	anchors: Anchors,
 	separator: string | undefined,
 	take: 'replace' | 'remove'
-): {start: number; end: number} | undefined {
+): {start: number; end: number; rows: readonly RowNode[]} | undefined {
 	if (separator === undefined) return undefined
 	const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
 	const held = {start: Math.min(...ends), end: Math.max(...ends)}
@@ -215,8 +220,8 @@ export function rowSelectionSpan(
 	// for a span rather than widening the selection they hold.
 	const start = first.position.start
 	const final = endsDocument(roots, last)
-	if (take === 'replace') return {start, end: last.position.end - (final ? 0 : separator.length)}
-	return {start: final ? Math.max(0, start - separator.length) : start, end: last.position.end}
+	if (take === 'replace') return {start, end: last.position.end - (final ? 0 : separator.length), rows: covered}
+	return {start: final ? Math.max(0, start - separator.length) : start, end: last.position.end, rows: covered}
 }
 
 /**

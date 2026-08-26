@@ -1,6 +1,6 @@
 import {KEYBOARD} from '../../shared/constants'
 import type {Store} from '../../store/Store'
-import type {AnchoredRow, Anchors} from '../tokens'
+import type {AnchoredRow, Anchors, RowNode} from '../tokens'
 import {anchorEquals, entryAnchor, hasRawBody} from '../tokens'
 import type {Replacement} from './beforeInput'
 import {dropUnexpressedInput} from './beforeInput'
@@ -158,11 +158,18 @@ export function demoteAtRowEntry(store: KbCtx, anchors: Anchors): boolean {
  * Backspace at its entry already gives (ADR-0011's declared cost (a)).
  *
  * A STANDING ROW SELECTION IS WHAT MOVES, and the caret's own row only when none stands: the rows
- * the selection covers are the rows the editor is acting on everywhere else — the drag, the menu
+ * the selection holds are the rows the editor is acting on everywhere else — the drag, the menu
  * verbs — and re-indenting the anchor's row alone left every other selected row where it was. One
  * verb answers both, because a caret is the set of one and a second arm beside it would be a
- * second reading of what Tab acts on. The DECLARATION is still the caret's row's, which is where
- * the user is; the set is what the key then moves.
+ * second reading of what Tab acts on.
+ *
+ * THE DECLARATION IS ASKED OF EVERY ROW THE KEY WOULD MOVE, not of the anchor's alone. Asked at the
+ * anchor it was the wrong question twice over: a heading covered by a selection that STARTED on a
+ * bullet was re-led under it, though Tab with a caret in that heading is not even consumed, and the
+ * same two rows selected the other way round consumed nothing and dropped focus out of the editor.
+ * Which row happens to be first is not a property of the gesture. All or none, which is
+ * {@link depthPlan}'s own rule for a step: a set holding a row of a kind that declares nothing
+ * leaves the key alone, exactly as a caret in that row does.
  */
 export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 	if (event.key !== KEYBOARD.TAB) return
@@ -184,12 +191,27 @@ export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 		return
 	}
 
-	const owner = caret.row.descriptor() === undefined ? (caret.parent ?? caret.row) : caret.row
-	if (store.tokens.rowSpec(owner)?.indents !== true) return
+	const selected = store.tokens.rowSelection(anchors)
+	const moving = selected.length > 0 ? selected : [caret.row]
+	if (!moving.every(row => store.tokens.rowSpec(lineOwner(store, row))?.indents === true)) return
 
 	event.preventDefault()
-	const selected = store.tokens.rowsWithin(anchors)
-	store.tokens.indentRows(selected.length > 0 ? selected : [caret.row], event.shiftKey ? -1 : 1)
+	store.tokens.indentRows(moving, event.shiftKey ? -1 : 1)
+}
+
+/**
+ * THE ROW WHOSE KIND OWNS A ROW'S LINE: its own, or — for a row carrying no kind — the row it is
+ * nested in, which is the only one that declared anything. A row with no kind at depth 0 is a
+ * paragraph and owns its own line.
+ *
+ * Asked through {@link TokenModel.rowOf} because the tree carries no parent pointers and that walk
+ * is where the parent is a by-product; {@link entryAnchor} is what turns a row back into an anchor
+ * to ask about. ONE rule for the caret's row and for every other row in a set — asked of the caret
+ * alone it was the answer for only one of the rows the key moved.
+ */
+function lineOwner(store: KbCtx, row: RowNode): RowNode {
+	const at = store.tokens.rowOf(entryAnchor(row))
+	return at !== undefined && at.row.descriptor() === undefined ? (at.parent ?? at.row) : row
 }
 
 /**
@@ -224,7 +246,7 @@ export function handleRowSelection(store: KbCtx, event: KeyboardEvent): void {
 		// The `'row'` rung is the ENTRY into a row selection and runs only while none stands: with
 		// whole rows already held and nothing above them to climb to, re-stating the ANCHOR's row
 		// alone SHRINKS a selection that spans several, which is the one thing Esc must not do.
-		const entering = store.tokens.rowsWithin(anchors).length === 0
+		const entering = store.tokens.rowSelection(anchors).length === 0
 		const span =
 			store.tokens.rowScope(anchors, 'out') ?? (entering ? store.tokens.rowScope(anchors, 'row') : undefined)
 		if (selectSpan(store, span)) event.preventDefault()
