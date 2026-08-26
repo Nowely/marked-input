@@ -788,6 +788,21 @@ function openedLine(node: RowNode, continues: boolean, text: string): string {
 }
 
 /**
+ * A CLIP'S LINES, RE-CUT SO NO PIECE CARRIES THE DOCUMENT'S OWN SEPARATOR. A piece holding one
+ * opens a row nobody wrote a lead or an opener for, and — for {@link splitPlan} — a row the plan
+ * did not count, so its pre-order `tail` named the wrong one and the caret came to rest inside the
+ * clip instead of at its end.
+ *
+ * HERE and not at the caller, which cuts on LINE BREAKS: what a line break is belongs to the clip's
+ * platform, what the separator is belongs to the document, and only this layer holds the second.
+ * Reachable only for a separator with no newline in it (`';;'`, `'¶'`) — for the `'\n'` family the
+ * caller's own cut has already taken every one of them.
+ */
+function documentLines(lines: readonly string[], separator: string): string[] {
+	return lines.flatMap(line => line.split(separator))
+}
+
+/**
  * A FOREIGN CLIP'S LINES AS THE ROWS THAT REPLACE A ROW SELECTION — `first`'s lead on every one of
  * them, and its kind where the kind continues, joined by the document's own separator.
  *
@@ -804,7 +819,9 @@ export function rowSelectionRows(
 	lines: readonly string[],
 	separator: string
 ): string {
-	return lines.map(line => openedLine(first, continues, line)).join(separator)
+	return documentLines(lines, separator)
+		.map(line => openedLine(first, continues, line))
+		.join(separator)
 }
 
 /**
@@ -853,7 +870,11 @@ export function splitPlan(
 	rows: readonly string[]
 ): {window: Window; text: string; tail: number; into: number} | undefined {
 	if (node.kind !== 'row' || separator === undefined) return undefined
-	if (rows.length < 2) return undefined
+	// The pieces, re-cut so none of them carries the document's own separator — see
+	// {@link documentLines}. Counted AFTER that cut, because it is the cut that decides how many
+	// rows this opens, and `tail` is an index into them.
+	const pieces = documentLines(rows, separator)
+	if (pieces.length < 2) return undefined
 	const lines = preorderRows(roots)
 	const index = lines.findIndex(entry => entry.row === node)
 	if (index < 0) return undefined
@@ -871,8 +892,8 @@ export function splitPlan(
 	const descendants =
 		children.length === 0 ? undefined : children.map(child => rowContent(child, separator)).join(separator)
 
-	const head = rowMarkup(node.descriptor(), node.meta(), body.slice(0, from - slot.start) + rows[0])
-	const opened = rows.slice(1)
+	const head = rowMarkup(node.descriptor(), node.meta(), body.slice(0, from - slot.start) + pieces[0])
+	const opened = pieces.slice(1)
 	const openedLines = opened.map((piece, at) =>
 		openedLine(node, continues, at === opened.length - 1 ? piece + body.slice(to - slot.start) : piece)
 	)
@@ -921,7 +942,7 @@ export function splitPlan(
 		tail,
 		// How far INTO the tail's own body the caret goes: past what this wrote there, which for
 		// Enter's empty piece is the tail's entry and for a paste is the end of the clip.
-		into: rows[rows.length - 1].length,
+		into: pieces[pieces.length - 1].length,
 	}
 }
 

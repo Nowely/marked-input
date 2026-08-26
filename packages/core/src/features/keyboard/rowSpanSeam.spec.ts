@@ -171,6 +171,28 @@ describe('a pasted clip’s lines open rows', () => {
 
 		expect(store.tokens.value()).toBe('- parent\n\t- child\n\t- own\n- after')
 	})
+
+	/**
+	 * A PIECE CARRYING THE DOCUMENT'S OWN SEPARATOR IS TWO LINES. The caller cuts a clip on LINE
+	 * BREAKS, which is the clip's platform's question; whether a piece still holds a separator is
+	 * the DOCUMENT's, and only the plan knows it. Uncut, that piece opened a row the plan had not
+	 * counted: `y` arrived with neither lead nor opener while `- z` got both — two readings of one
+	 * clip inside one paste — and the pre-order `tail` named the row before the last, leaving the
+	 * caret at offset 11, in the middle of what was pasted, instead of at its end.
+	 *
+	 * Only reachable for a separator with no newline in it; for the `'\n'` family the caller's own
+	 * cut has already taken every one.
+	 */
+	it('opens a row per document separator inside a pasted line, and ends the caret past the clip', () => {
+		const {store, container} = mountWith('- alpha;;- beta', ';;')
+		const range = caretIn(store, 0, 5)
+
+		paste(container, range, 'x;;y\nz')
+
+		expect(store.tokens.value()).toBe('- alphax;;- y;;- z;;- beta')
+		// Offset 18 is the end of `z`, which is the end of the clip.
+		expect(selectionRange(store)).toEqual({start: 18, end: 18})
+	})
 })
 
 describe('a row selection is the rows, opener and all', () => {
