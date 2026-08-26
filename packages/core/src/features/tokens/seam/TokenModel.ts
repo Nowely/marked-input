@@ -42,6 +42,7 @@ import {
 	removePlan,
 	rowOf,
 	rowScope,
+	rowSelectionSpan,
 	rowsWithin,
 	splitPlan,
 	turnIntoPlan,
@@ -264,26 +265,51 @@ export class TokenModel {
 		// Lowered in the TREE's coordinate space: that is what `transactions.dispatch` splices,
 		// and the space the anchors themselves resolve in. NOT {@link value}, which is props-first
 		// and runs ahead of the tree while a controlled parent's arrival is still in flight.
-		const op = untracked(() => {
+		const span = untracked(() => {
 			const roots = this.#tree.roots()
 			const a = offsetOfAnchor(roots, from)
 			const b = offsetOfAnchor(roots, to)
-			const start = Math.min(a, b)
-			const end = Math.max(a, b)
-			const value = this.#tree.value()
-			// WHOLE-VALUE ops are re-derived through `gapWindow`: a full window makes both
-			// adoption walks inert and re-pairs every row BY INDEX, so a row's identity — and
-			// with it whatever a consumer's own row component holds — lands on the wrong row.
-			if (start === 0 && end === value.length) {
-				const window = gapWindow(value, text)
-				return {window, slice: text.slice(window.start, window.start + window.insertedLength)}
-			}
-			return {window: {start, end, insertedLength: text.length}, slice: text, caret: start + text.length}
+			return {start: Math.min(a, b), end: Math.max(a, b)}
 		})
-		if (!this.#tx.applyRange(op.window, op.slice)) return undefined
-		// `caret` is absent exactly on the whole-value arm, where the narrowed window's start
-		// is NOT the caller's: the caret is the end of the string it supplied.
-		return this.anchorAt(op.caret ?? text.length)
+		return this.#replaceWithin(span.start, span.end, text)
+	}
+
+	/**
+	 * THE ROW SELECTION'S OWN EDIT: replace the rows `anchors` covers WHOLE — their leads and their
+	 * openers included — with `rows`, or remove them outright for `null`. Answers whether it wrote,
+	 * so a caller whose selection is not a whole number of rows falls through to its ordinary path.
+	 *
+	 * A VERB rather than a widened selection, and the reason is the encoding: the span starts at the
+	 * row's LINE, and a row's lead and opener are structural bytes no anchor can name (ADR-0010's
+	 * rule, and `rowSpan`'s own docstring). The four gestures that act on a row selection — paste,
+	 * cut, Backspace and Enter — all reach this one, so what a selection copies, what it cuts and
+	 * what a paste replaces are the same bytes. See {@link rowSelectionSpan}.
+	 *
+	 * `null` REMOVES, `''` leaves ONE EMPTY ROW, and the difference is the boundary: a removal takes
+	 * the separator that held the rows apart from the document with them, where a replacement leaves
+	 * it to separate whatever arrives. Enter over a row selection wants the second — it opens a fresh
+	 * row exactly as it does over an all-selected document.
+	 */
+	replaceRows(anchors: Anchors, rows: string | null): boolean {
+		this.#ensureSeeded()
+		let written = false
+		// One tick for value and selection, as `EditController.replace` batches its own pair.
+		batch(() => {
+			const span = untracked(() =>
+				rowSelectionSpan(
+					this.#tree.roots(),
+					anchors,
+					this.#tree.config()?.separator,
+					rows === null ? 'remove' : 'replace'
+				)
+			)
+			if (!span) return
+			const caret = this.#replaceWithin(span.start, span.end, rows ?? '')
+			if (!caret) return
+			written = true
+			this.#applyCaret(caret)
+		})
+		return written
 	}
 
 	/**
@@ -665,6 +691,29 @@ export class TokenModel {
 
 	/** THE tree, and the only representation of the value. */
 	readonly #tree = createTokenTree([], () => this.#commands)
+
+	/**
+	 * The offset-space core of {@link replaceBetween}, shared with {@link replaceRows} — whose span
+	 * is one no pair of anchors can express. Answers the post-edit caret, or `undefined` when the
+	 * write was refused.
+	 */
+	#replaceWithin(start: number, end: number, text: string): NodeAnchor | undefined {
+		const op = untracked(() => {
+			const value = this.#tree.value()
+			// WHOLE-VALUE ops are re-derived through `gapWindow`: a full window makes both
+			// adoption walks inert and re-pairs every row BY INDEX, so a row's identity — and
+			// with it whatever a consumer's own row component holds — lands on the wrong row.
+			if (start === 0 && end === value.length) {
+				const window = gapWindow(value, text)
+				return {window, slice: text.slice(window.start, window.start + window.insertedLength)}
+			}
+			return {window: {start, end, insertedLength: text.length}, slice: text, caret: start + text.length}
+		})
+		if (!this.#tx.applyRange(op.window, op.slice)) return undefined
+		// `caret` is absent exactly on the whole-value arm, where the narrowed window's start
+		// is NOT the caller's: the caret is the end of the string it supplied.
+		return this.anchorAt(op.caret ?? text.length)
+	}
 
 	/** Whole-node replacement — the mark verbs' write path. */
 	#applyStructural(target: TreeNode, replacement: string): boolean {

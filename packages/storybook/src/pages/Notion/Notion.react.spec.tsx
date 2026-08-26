@@ -502,6 +502,36 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * A ROW SELECTION IS THE ROWS, and every gesture over it says so: Esc escalates the caret onto
+	 * the row, Shift+Down grows the hold by one, and Backspace takes both rows away — where deleting
+	 * the span between the anchors left the first row's own opener standing as an empty heading.
+	 * Driven with real keys, because the escalation, the grow and the delete are three listeners on
+	 * the container and only the browser puts them in order.
+	 */
+	it('deletes the rows an Esc selection holds, openers and all', async () => {
+		const {host, value} = await mountControlled(Showcase, '## Launch tasks\n- alpha\n- beta')
+
+		await focusAtStart(rowAt(host, 'Launch tasks'))
+		await userEvent.keyboard('{Escape}')
+		await userEvent.keyboard('{Shift>}{ArrowDown}{/Shift}')
+		await userEvent.keyboard('{Backspace}')
+
+		await expect.poll(value).toBe('- beta')
+	})
+
+	/** Tab moves every row the selection holds, which is the set the drag and the menu already act on. */
+	it('indents every row of a standing row selection', async () => {
+		const {host, value} = await mountControlled(Showcase, '- alpha\n- beta\n- gamma')
+
+		await focusAtStart(rowAt(host, 'beta'))
+		await userEvent.keyboard('{Escape}')
+		await userEvent.keyboard('{Shift>}{ArrowDown}{/Shift}')
+		await userEvent.keyboard('{Tab}')
+
+		await expect.poll(value).toBe('- alpha\n\t- beta\n\t- gamma')
+	})
+
+	/**
 	 * THE COMMONEST STRUCTURAL GESTURE, asserted where it can actually fail: MID-row, and through
 	 * the next keystroke. Every other Enter case in the suite drives from `focusAtEnd`, the one
 	 * position where a caret left at the tail's END is indistinguishable from a caret at its start

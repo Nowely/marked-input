@@ -19,6 +19,11 @@ export class ClipboardController {
 			listen(container, 'cut', e => {
 				const anchors = this.#handleCopy(e)
 				if (!anchors) return
+				// A cut takes exactly what the copy above put on the clipboard, and over whole rows
+				// that is their LINES — openers included, which is what `valueBetween` projected.
+				// Removing the span between the anchors left the first row's opener behind as an
+				// empty row of that kind, so cut and copy disagreed about what was selected.
+				if (this.tokens.replaceRows(anchors, null)) return
 				edit.replace(anchors.anchor, anchors.head, '')
 			})
 		})

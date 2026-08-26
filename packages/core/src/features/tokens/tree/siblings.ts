@@ -164,6 +164,62 @@ export function rowsWithin(
 }
 
 /**
+ * THE ROW SELECTION AS AN EDIT: the bytes a verb acting on the rows a selection covers must
+ * write over, or `undefined` when the selection is not a whole number of rows.
+ *
+ * ONE READING for every gesture that acts on a row selection — paste, cut, Backspace, Enter —
+ * because they disagreed. {@link rowSpan} starts a row's span at its ENTRY, past the lead and the
+ * opener, since those are structural bytes no caret may occupy and a selection written across them
+ * reads back one offset later. But `sliceNodes` PROJECTS the same span with the opener put back:
+ * copying a selected `'- alpha'` yields `'- alpha'`. So what the clipboard carried and what a
+ * replacement wrote were different bytes, and replacing a selected row left its old opener standing
+ * in front of whatever landed — `'- - one⏎- two'` from a paste, and the husk `'- '` from a delete.
+ * What a selection copies is now what it cuts and what a paste replaces.
+ *
+ * EXACTLY those rows, and that test is what makes this safe to reach for on any ranged edit: a
+ * selection running from the middle of one row into the end of another COVERS the rows between
+ * them whole while also naming bytes outside them, and writing only the covered rows' span would
+ * silently keep the partial text the user had selected. Every row gesture produces an exact span by
+ * construction ({@link rowScope} builds every one of them out of {@link rowSpan}), and a text sweep
+ * that happens to land on both edges is the same selection by every reading this editor has.
+ *
+ * `'replace'` takes the covered rows' own LINES and their subtrees, and stops before the separator
+ * that follows them — that byte belongs to the boundary, and the rows arriving in their place need
+ * it to stay separated from the row below.
+ *
+ * `'remove'` takes that boundary with them, for {@link removePlan}'s reason read over a run: the
+ * rows leave and the separator that held them apart from the document would otherwise remain as an
+ * empty row, so the row count could never shrink. At the END of the document there is no trailing
+ * separator to take, so the one BEFORE the run leaves instead — and when the run also starts the
+ * document there is neither, which is the whole value and clears it.
+ */
+export function rowSelectionSpan(
+	roots: readonly TreeNode[],
+	anchors: Anchors,
+	separator: string | undefined,
+	take: 'replace' | 'remove'
+): {start: number; end: number} | undefined {
+	if (separator === undefined) return undefined
+	const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
+	const held = {start: Math.min(...ends), end: Math.max(...ends)}
+	const covered = rowsWithin(roots, held, separator)
+	if (covered.length === 0) return undefined
+
+	const first = covered[0]
+	const last = covered[covered.length - 1]
+	if (held.start !== rowSpan(roots, first, separator).start) return undefined
+	if (held.end !== rowSpan(roots, last, separator).end) return undefined
+
+	// The row's own LINE START — its lead and its opener included, which is the difference this
+	// whole function exists for. It is not expressible as an anchor, which is why the callers ask
+	// for a span rather than widening the selection they hold.
+	const start = first.position.start
+	const final = endsDocument(roots, last)
+	if (take === 'replace') return {start, end: last.position.end - (final ? 0 : separator.length)}
+	return {start: final ? Math.max(0, start - separator.length) : start, end: last.position.end}
+}
+
+/**
  * THE FOUR SPANS A ROW-SELECTION GESTURE MOVES TO, each answered from the span the editor holds
  * now — and they are spans rather than verbs because the row selection IS the text selection
  * (`store.block.selected` derives from it), so widening it is one `select` and no second store.

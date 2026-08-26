@@ -19,6 +19,7 @@ import {
 	handleRowIndent,
 	handleRowParagraph,
 	handleRowSelection,
+	replaceRowSelection,
 	widenRowScope,
 } from './rowKeys'
 
@@ -125,10 +126,16 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	const anchors = store.tokens.domAnchors()
 	if (!anchors) return
 
-	// The ROW arm, and it sits HERE rather than beside this one so it inherits every check above:
-	// at a row's own entry Backspace DEMOTES — depth first, then kind — and only once the row has
-	// neither left does the expansion below take the boundary and merge the two rows.
+	// The ROW arms, and they sit HERE rather than beside this one so they inherit every check above.
+	// At a row's own entry Backspace DEMOTES — depth first, then kind — and only once the row has
+	// neither left does the expansion below take the boundary and merge the two rows. Over a ROW
+	// SELECTION the rows themselves leave, openers and all; deleting the span between the anchors
+	// instead left the first row's opener standing as an empty row of that kind.
 	if (event.key === KEYBOARD.BACKSPACE && demoteAtRowEntry(store, anchors)) {
+		event.preventDefault()
+		return
+	}
+	if (store.tokens.replaceRows(anchors, null)) {
 		event.preventDefault()
 		return
 	}
@@ -205,6 +212,13 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 	const replacement = replacementForInput(container, event)
 	if (anchors === undefined || replacement === undefined) {
 		dropUnexpressedInput(container, event)
+		return
+	}
+
+	// The ROW SELECTION's arm, which needs both of the reads above: a paste or a cut over whole
+	// rows writes over their LINES, which no pair of anchors can address.
+	if (replaceRowSelection(store, event, anchors, replacement)) {
+		event.preventDefault()
 		return
 	}
 

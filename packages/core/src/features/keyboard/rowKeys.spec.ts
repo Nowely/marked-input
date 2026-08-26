@@ -275,7 +275,13 @@ describe('rowKeys beforeinput guard', () => {
 		expect(store.tokens.value()).toBe('o\n\ntwo\n\n')
 	})
 
-	it('deletes the cut range on deleteByCut', () => {
+	/**
+	 * A cut whose range covers a row WHOLE takes the row: the clipboard carried the row's own
+	 * projection, so leaving an empty row of that kind behind is the husk `TokenModel.replaceRows`
+	 * exists to stop. Row 0's body here is the whole row — a paragraph has no opener — so the
+	 * difference is one row fewer rather than one emptied.
+	 */
+	it('takes the whole row on a deleteByCut that covers one', () => {
 		const {store} = mountBlock()
 		const text = selectInRow(store, 0, 0, 3)
 
@@ -283,7 +289,19 @@ describe('rowKeys beforeinput guard', () => {
 		text.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(true)
-		expect(store.tokens.value()).toBe('\n\ntwo\n\n')
+		expect(store.tokens.value()).toBe('two\n\n')
+	})
+
+	/** A range that covers no row whole is still exactly the range, which is every partial cut. */
+	it('deletes only the cut range when it covers no row whole', () => {
+		const {store} = mountBlock()
+		const text = selectInRow(store, 0, 1, 3)
+
+		const event = new InputEvent('beforeinput', {inputType: 'deleteByCut', bubbles: true, cancelable: true})
+		text.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(true)
+		expect(store.tokens.value()).toBe('o\n\ntwo\n\n')
 	})
 
 	it('falls back to event.data when a paste carries no dataTransfer', () => {

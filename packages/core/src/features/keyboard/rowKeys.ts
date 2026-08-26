@@ -78,8 +78,20 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
 	// The stored anchors stand behind the live selection, and this is the one arm that still wants
 	// them: a split needs THE POSITION, which only they carry. The delete arm dropped its own
 	// fallback — an edge measured off the row's DOM — because it could disagree with them.
-	const at = (store.tokens.domAnchors() ?? store.tokens.selection.anchors())?.anchor
-	if (at === undefined) return
+	const anchors = store.tokens.domAnchors() ?? store.tokens.selection.anchors()
+	if (!anchors) return
+
+	// A ROW SELECTION is REPLACED, not split at its low end: whole rows are what the user named, so
+	// Enter opens one fresh row in their place — the same answer it gives for an all-selected
+	// document, at row granularity. Splitting instead slid the anchors under the inserted separator
+	// and left the caret at the start of the row BELOW the one Enter had opened, where the next
+	// character typed deleted the row that was selected.
+	if (store.tokens.replaceRows(anchors, '')) {
+		event.preventDefault()
+		return
+	}
+
+	const at = anchors.anchor
 	const caret = store.tokens.rowOf(at)
 	if (caret === undefined) return
 
@@ -276,6 +288,23 @@ function continuationDepth(caret: AnchoredRow): number {
  */
 function demote(caret: AnchoredRow): boolean {
 	return caret.depth > 0 ? caret.row.setDepth(caret.depth - 1) : caret.row.turnInto(undefined)
+}
+
+/**
+ * THE ROW SELECTION'S ARM OF `beforeinput`: a paste or a delete over whole rows edits the ROWS,
+ * openers and leads included, rather than the span between two anchors. Answers whether it consumed
+ * the event; `false` leaves the ordinary path, which is every selection that is not a whole number
+ * of rows. See {@link TokenModel.replaceRows} for the reading all four gestures share.
+ *
+ * A DELETE removes them — Backspace's own keydown arm and a cut both arrive here as one — and a
+ * PASTE replaces them with the clip verbatim, which is what the clipboard carried out of the same
+ * span. TYPING is deliberately not on the list: a character replaces the text that was selected and
+ * the row it was typed in keeps its kind, which is the granularity every other inline edit has.
+ */
+export function replaceRowSelection(store: KbCtx, event: InputEvent, anchors: Anchors, replacement: string): boolean {
+	if (event.inputType.startsWith('delete')) return store.tokens.replaceRows(anchors, null)
+	if (event.inputType === 'insertFromPaste') return store.tokens.replaceRows(anchors, replacement)
+	return false
 }
 
 /**

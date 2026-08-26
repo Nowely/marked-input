@@ -122,16 +122,17 @@ describe('a `\\n` inside PASTED text is spliced raw', () => {
 	})
 })
 
-describe('a row selection covers the body and projects the opener', () => {
+describe('a row selection is the rows, opener and all', () => {
 	/**
-	 * `rowSpan()` starts at `entryAnchor(row)` — past the opener — while `sliceNodes()` re-annotates
-	 * the same span back to `'- target'`. So replacing a selected row never replaces its KIND: the
-	 * old opener is left standing and the clip lands inside it.
-	 *
-	 * WANTED: the same clip pasted over a selected row REPLACES it, which is the answer the editor
-	 * already gives for the same clip into an empty row — `'- one\n- two\ntail'`.
+	 * ONE READING for the four gestures. `rowSpan()` starts a row at `entryAnchor(row)` — past the
+	 * opener, because those bytes are structural and no anchor can name them — while `sliceNodes()`
+	 * PROJECTS the same span with the opener put back, so a copy of this selection carries
+	 * `'- target'`. Replacing the span between the anchors therefore left the old opener standing in
+	 * front of whatever landed. `TokenModel.replaceRows` writes over the row's LINE instead, which is
+	 * the same bytes the clipboard carried — and the same answer the editor already gave for this
+	 * clip pasted into an EMPTY row.
 	 */
-	it('leaves the selected row’s opener in front of what replaced it', () => {
+	it('replaces the selected row with the clip, opener and all', () => {
 		const {store, container} = mount('- target\ntail')
 		caretIn(store, 0, 0)
 		press(container, 'Escape')
@@ -139,17 +140,15 @@ describe('a row selection covers the body and projects the opener', () => {
 
 		paste(container, liveRange(), '- one\n- two')
 
-		expect(store.tokens.value()).toBe('- - one\n- two\ntail')
+		expect(store.tokens.value()).toBe('- one\n- two\ntail')
 	})
 
 	/**
-	 * The same span, through the KEYMAP rather than the clipboard — which is how it is known to be
-	 * the span's defect and not the paste path's. Both leave the identical husk.
-	 *
-	 * WANTED: `'- gamma'`. The selection covers three whole rows and Backspace deletes rows, not
-	 * bodies.
+	 * The same span through the KEYMAP rather than the clipboard, which is how it is known to be the
+	 * span's rule and not the paste path's. A DELETE takes the boundary with the rows, so the row
+	 * count actually shrinks — leaving it behind is what turned the head row into the husk `'## '`.
 	 */
-	it('leaves the first row’s opener as an empty row of that kind on a delete', () => {
+	it('deletes the rows a selection covers, not their bodies', () => {
 		const {store, container} = mount('## Head\n- alpha\n- beta\n- gamma')
 		caretIn(store, 0, 0)
 		press(container, 'Escape')
@@ -159,22 +158,34 @@ describe('a row selection covers the body and projects the opener', () => {
 
 		press(container, 'Backspace')
 
-		expect(store.tokens.value()).toBe('## \n- gamma')
+		expect(store.tokens.value()).toBe('- gamma')
+	})
+
+	/**
+	 * A selection that covers no row WHOLE is still exactly the span between its anchors: the rule
+	 * is about the rows a selection holds, not about how much text it happens to cover.
+	 */
+	it('deletes the span itself when the selection covers no row whole', () => {
+		const {store} = mount('- alpha\n- beta')
+		const [from, to] = [store.tokens.anchorAt(4), store.tokens.anchorAt(12)]
+		store.tokens.selection.select(from, to)
+		expect(store.block.selected()).toHaveLength(0)
+
+		store.edit.replace(from, to, '')
+
+		expect(store.tokens.value()).toBe('- alta')
 	})
 })
 
 describe('the set verbs do not see the set', () => {
 	/**
-	 * `handleRowEnter`'s declared rule is "splices at the LOW end and KEEPS what was selected", and
-	 * over a TEXT range it does. Over a ROW selection the anchors slide UNDER the insert: the empty
-	 * row opens above the selection and the caret comes to rest at the start of the row below it,
-	 * so the next character is typed into the row the user had selected rather than into the row
-	 * Enter opened.
-	 *
-	 * WANTED: Enter over a row selection replaces the selected rows, the way it replaces an
-	 * all-selected document with one fresh row.
+	 * ENTER ACTS ON THE SELECTION: whole rows are what the user named, so it opens ONE fresh row in
+	 * their place — the answer it already gives for an all-selected document, at row granularity.
+	 * Splicing at the selection's low end instead slid the anchors UNDER the inserted separator and
+	 * came to rest at the start of the row below, so the next character typed deleted the row that
+	 * had been selected.
 	 */
-	it('slides the caret off the row an Enter over a row selection opened', () => {
+	it('replaces a row selection with one fresh row, and keeps the caret in it', () => {
 		const {store, container} = mount('- alpha\n- beta\n- gamma')
 		caretIn(store, 1, 0)
 		press(container, 'Escape')
@@ -182,12 +193,12 @@ describe('the set verbs do not see the set', () => {
 
 		press(container, 'Enter')
 
-		expect(store.tokens.value()).toBe('- alpha\n- \n- beta\n- gamma')
-		// Offset 13 is the start of `beta`'s body, not of the empty row Enter opened (offset 10).
-		expect(selectionRange(store)).toEqual({start: 13, end: 13})
+		expect(store.tokens.value()).toBe('- alpha\n\n- gamma')
+		// Offset 8 is the fresh row's own body, which is where the next character goes.
+		expect(selectionRange(store)).toEqual({start: 8, end: 8})
 		const anchors = store.tokens.selection.anchors()
 		if (anchors) store.edit.replace(anchors.anchor, anchors.head, 'X')
-		expect(store.tokens.value()).toBe('- alpha\n- \n- Xbeta\n- gamma')
+		expect(store.tokens.value()).toBe('- alpha\nX\n- gamma')
 	})
 
 	/**
