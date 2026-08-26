@@ -565,9 +565,18 @@ becomes a ticket here.
   fake it and would poison the hit test. It becomes available with a per-kind drag axis, exactly as
   the nested-row board does.
 
-- Checked and NOT filed: the End key. It moves the caret to the end of the
-  VISUAL line, which on a wrapped row is mid-row — correct browser behaviour,
-  not a defect.
+- ~~Checked and NOT filed: the End key. It moves the caret to the end of the VISUAL line, which on a
+  wrapped row is mid-row — correct browser behaviour, not a defect.~~ **THE PREMISE WAS NEVER
+  MEASURED, and it is false on macOS** (corrected 2026-08-26, `bcb6b5e2`). End mostly does not move
+  the caret there at all: measured with no editor in the page, a bare `contenteditable` in a 200vh
+  document leaves the caret where it is and smooth-scrolls to the bottom, and a `<textarea>` beside
+  it does the same, because macOS binds the key to `scrollToEndOfDocument` and the editing command
+  runs only once nothing is left to scroll. That is why the fifth driving session reported the caret
+  reaching a line's edge on roughly one press in three — whether the key scrolls or edits depends on
+  how far the page is already scrolled. The dismissal was right about the CAUSE it never named (the
+  platform's answer, not our defect) and wrong about the action: the platform's answer is the wrong
+  one for a field whose content is the thing being navigated, so the editor owns the two bare keys
+  now and leaves Cmd+Left/Right and Ctrl+Home to it.
 
 - **P11.6 closed the seven confirmed defects the hardening round left**, each at its
   one owner and each declared in its commit body (`671b18c4`, `2047537d`, `3facbc6e`,
@@ -718,6 +727,14 @@ becomes a ticket here.
   way to say which trigger owns the menu — new surface with no caller today, or a
   heuristic ("the option with no `data`") that would be worse than the hole. P11 is
   the phase that will have a caller.
+  **CLOSED 2026-08-26, and by the heuristic this entry called worse than the hole** — which turned
+  out not to be a heuristic. `overlay.entries` is gone; `OverlayListModel.rows` offers the matched
+  option's own `overlay.data` when it DECLARES any (`data: []` included, since a list that currently
+  offers nothing must not fall through) and the row menu only when it declares none, so the two
+  lists can never both be on offer. `data !== undefined` is the option's own declaration rather than
+  a guess about it, which is the difference the entry could not see from where it stood. `choose`
+  is unchanged: `choose({option})` called directly still retypes the row while a mention overlay
+  stands, and that is a consumer calling a verb, not a list offering a row nobody asked for.
 - **The showcase's `/` menu is still a flat list of labels.** P11 shipped the page
   without bringing `MenuSpec.section` or an icon back, because the shipped `BlockMenu`
   paints neither and the exit criterion — "the showcase's menu component contains no
@@ -789,3 +806,59 @@ becomes a ticket here.
   did not reproduce: swept at 2px steps over the showcase, every depth band is exactly one MEASURED
   indent unit (24px between two bullets, 48px under a toggle) and the SHALLOWEST depth's band is
   unbounded to the left, which is where the grip's own gutter is.
+
+- **The fifth driving session's five defects, and four of them were ONE shape: a single answer
+  standing in for two different questions** (2026-08-26). Same method as the fourth: reproduced in
+  the browser first, and the pin seen to redden by mutating the mechanism rather than by re-reading
+  the test. Re-measured while recording this, for the last of the five: routing `#claimRow` back
+  through `#recoverCaret` fails all three of its pins, and disabling the `pointerdown` latch alone
+  fails two. The other four are as their own commits record them.
+  - **A CLICK ON FROZEN PRESENTATION LANDED IN A DIFFERENT ROW** (`9ef80374`). The hit test and the
+    anchor resolution were both measured correct; the DESTINATION was the defect, and the old pin
+    asserted it as if it were the rule — it clicked the table of contents and expected the keystroke
+    in the heading four rows below. `#recoverCaret` searches FORWARD from the row it is handed
+    because it answers "where next": the row under the caret stopped holding a position a caret may
+    occupy, so travel continues where a person's own ArrowDown would. A POINTER asks "where did you
+    point", and the one answer that question may never take is a neighbour. `#claimRow` is the other
+    answer — the row the gesture landed in, at that row's own entry — and `#recoverCaret`'s
+    `undefined` arm went out with it, since a search from index −1 is the same defect aimed at the
+    document's first row. AND THE CLAIM HAS TO OUTRANK THE BROWSER, which is why it is latched on
+    `pointerdown` rather than read off the selection: MEASURED in a bare `contenteditable` with no
+    editor loaded, Chromium answers a mousedown on a `draggable` element inside a frozen island by
+    collapsing the caret to the START OF THE EDITING HOST — a perfectly valid anchor in a row the
+    pointer is nowhere near, and `selectionchange` carries no pointer, so nothing downstream can
+    tell it from an intent. The latch is dropped by the next keydown, because a pointer landing on a
+    FOCUSABLE control provokes no `selectionchange` at all and its claim would otherwise be spent on
+    an arrow key several keystrokes later. WHERE THE ROW HOLDS NO POSITION AT ALL the click is
+    inert, and the caret and the host focus are RELEASED rather than parked: the row's own boundary
+    was the other candidate and it is worse, since the anchor space names it, the DOM cannot paint
+    it, and the next keystroke would edit the row's hidden text. Dropping the range alone was
+    measured insufficient — a focused `contenteditable` with no selection still takes typing and
+    Chromium invents the host's start for it.
+  - **A ROW THAT CLOSED UNDER THE CARET KEPT IT** (`21976b3f`). `DomModel.painted` answered one
+    boolean for two questions — "this frame has not reached the row yet" and "the row's element is
+    in the document and generates no box" — and the caret invariant stood down for both, so the
+    focus reclaim handed focus back and restored the caret into a toggle that had just closed. It is
+    `rowPaint` with three answers now: `'absent'` stands down, `'boxless'` goes straight to the
+    recovery, and the forward walk STEPS OVER a boxless row because a collapsed run is exactly what
+    a person's own ArrowDown skips. The hidden rows are left where they are — a closed toggle
+    renders its host and hides it, which is a kind doing its job.
+  - **A RETYPE PUT CHILDREN UNDER A KIND THAT PAINTS NONE** (`358bcfaa`). Tab and the drop already
+    refuse, because the would-be parent is on screen to be asked before anything happens; `turnInto`
+    writes the new kind UNDER children the row already has, so picking Heading 3 on a bulleted
+    parent took both nested bullets off the screen while leaving them in the value. This is the one
+    of the five that is not "one answer, two questions" but "asked before the DOM could answer":
+    the same defect had been repaired three times at three doors, and it is asked once now at the
+    commit's own repair pass, where the destination kind finally has a DOM. Because it runs after
+    the write it is a REPAIR rather than a refusal, so one undo takes back the retype and the lift
+    together.
+  - **`continues: true` CARRIED THE SPLITTING ROW'S `meta`** (`ee8dfe62`, breaking). Enter at the
+    end of a ticked to-do opened a second to-do already ticked, and Enter after a callout opened one
+    wearing the tone of the row above. `- [x] ` says THIS task is done; it does not say what a new
+    task is. The tail takes the kind and the KIND's own seed — `menu.meta`, the value an option
+    already declares for the row its menu entry opens — which is what makes the two doors into a new
+    row agree.
+  - **END AND HOME WERE THE PLATFORM'S KEYS, and the entry that dismissed them is corrected above**
+    (`bcb6b5e2`). `DomModel.moveToLineBoundary` runs `Selection.modify(…, 'lineboundary')` rather
+    than computing an anchor, because which character ends a LINE is a layout fact and not a tree
+    one — a wrapped row is several lines and one row.

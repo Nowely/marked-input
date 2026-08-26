@@ -130,8 +130,10 @@ summary.
   deferral rested on.
 - **ADR-0012** fills the hole ADR-0006 left: the guard swallows native undo, and until this the
   editor had none.
-- **ADR-0002's accepted cost is preserved, not fixed.** Tab still leaves the field wherever no kind
-  declares `indents`. `RowSpec.indents` gates the KEY rather than the verb, deliberately.
+- **ADR-0002's accepted cost is preserved, not fixed — and it is an EDITOR's answer now, not a
+  row's.** Tab leaves the field in an editor where NO option declares `indents`; where one does,
+  every row consumes the key even where the verb then refuses the depth (`TokenModel.rowsIndent`,
+  2026-08-26). `RowSpec.indents` still gates the KEY rather than the verb, deliberately.
 
 ### Where the design was wrong and measurement corrected it
 
@@ -164,6 +166,14 @@ real defects — thirteen rounds, and the shape repeated.
   headline defect through one door only: a foreign clip pasted over a row selection took none of the
   row rules, and `Replacement.markup` — invented in the same phase for exactly that question — was
   computed and thrown away.
+- **The driving sessions, fourth and fifth** — eleven more defects that the automated suite did not
+  see, and two shapes between them. The fourth's was a rule with TWO OWNERS: `indents` read per kind
+  by the key and structurally by the drop, and the focus reclaim written by hand at two grip verbs
+  instead of at the control contract. The fifth's was ONE ANSWER standing in for two questions:
+  `painted` for "not yet" and "never", `#recoverCaret` for "where next" and "where did you point",
+  `continues` for the kind and the row's own `meta`, and End for scrolling the page and moving the
+  caret. **The pins were the tell in both.** Every one of these gestures had a green suite over it,
+  and the click-on-frozen-presentation pin asserted the defect itself as the contract.
 
 Two mutation audits are worth naming because they are the only thing that separated a real pin from
 a decorative one: a pin that asserts against a shape the mechanism does not govern reads exactly
@@ -215,11 +225,19 @@ body. Each is real today.
    all. (ADR-0011 amendment.)
 2. **A kind whose component drops the `rows` prop drops every child row it has** — continuation,
    Tab-nested, moved and pasted alike. Core cannot see whether a component reads a prop, so this is a
-   contract on the kind and nothing enforces it.
+   contract on the kind and nothing enforces it. **NARROWED 2026-08-26**: such a kind registers no
+   child-rows host, and the commit's own repair pass now lifts the children OUT of it — one level up,
+   in the same undo step as the write that produced the shape — so a retype, a paste or a replayed
+   edit can no longer take rows off the screen while leaving them in the value. What stands: a value
+   merely HANDED to the editor is left alone, deliberately, since rewriting a consumer's own bytes on
+   mount would emit an edit nobody made.
 3. **An atomic kind leaves the caret nowhere to go.** `choose` turns THIS ROW into the kind and an
    atomic row generates no caret position, so nothing a consumer can write asks for the trailing
    empty paragraph Notion leaves under such a block. On a one-row document the editor has no caret
-   target at all. Declared in the showcase's own docblock.
+   target at all. Declared in the showcase's own docblock. **AMENDED 2026-08-26**: what a CLICK on
+   such a row does is decided now — nothing moves, and where the editor holds no caret at all the DOM
+   selection is dropped and the editing host gives up focus, so the click is inert rather than
+   stranding. The hole itself is untouched: there is still no way to ask for the row after.
 4. **A paste whose SPAN crosses two rows is spliced raw.** Recorded in the map's Fog, measured
    2026-08-26: `'- alpha⏎⇥- beta'`, selection from `alpha`+2 to `beta`+2, paste `'one⏎two'` →
    `'- alone⏎twota'`. `splitPlan` refuses deliberately; widening it is a contract change.
@@ -267,9 +285,12 @@ body. Each is real today.
     eight onto its own tokens in `notion/theme/tokens.css`.
 16. **`.Container` sets no `outline`**, so the UA focus ring paints around the whole editor. `.Row`
     sets `outline: none`; the container does not.
-17. **Tab leaves the field wherever no kind declares `indents`** (ADR-0002's accepted cost). 7 of the
-    showcase's 26 kinds declare it. A ROOT paragraph has no parent to inherit from, so a paragraph
-    outdented to depth 0 cannot be indented again.
+17. **Tab leaves the field only in an editor where NO option declares `indents`** (ADR-0002's
+    accepted cost, narrowed 2026-08-26 from "wherever no KIND declares it" — the per-kind reading was
+    itself the defect, since it disagreed with the drop over four of the showcase's 35 rows). 7 of
+    the showcase's 26 kinds declare it, so Tab never leaves the field there: a row of any kind
+    consumes the key and `indentRows` alone decides whether the depth moves. A ROOT paragraph has no
+    parent to inherit from, so a paragraph outdented to depth 0 cannot be indented again.
 18. **A row selection is painted as a text selection.** There is no block band; the row's own text
     highlights and nothing else.
 19. **A collapsed toggle costs two things**: an arrow from the title jumps over the closed subtree,
@@ -319,16 +340,24 @@ the list above is the whole of what is open rather than the whole of what was wr
 (Items 13–16 belong in the same category: nobody decided them, they are simply what the CSS and the
 positioning arithmetic do.)
 
-31. **A control root refuses the browser's editing and not the caret.** `control()` writes
-    `contentEditable = 'false'` and stops. A click or an arrow still parks the caret inside, where
-    every keystroke is dropped. The showcase's own docblock claims the call answers both.
-32. **The editor's own clip is spliced verbatim at any caret, not only at a line start.**
-    `writeRowsFromInput` opens rows for a foreign clip and returns early on `replacement.markup`.
-    That is right on an empty row and wrong in the middle of one, where the projection's leads and
-    openers become prose.
-33. **Nesting depth is unpainted except by the kinds that indent their own children.** The
-    showcase's general rule — `.blockIndent` multiplied by `--notion-block-depth` — is applied by no
-    component; grep finds only the rule and two comments claiming a component sets it.
+31. ~~**A control root refuses the browser's editing and not the caret.**~~ **FIXED 2026-08-26.** A
+    `pointerdown` inside a control root is a CLAIM on the row that control is painted in, latched
+    before the browser answers and outranking whatever it answers — including Chromium's collapse to
+    the START of the editing host on a `draggable` element, measured with no editor in the page.
+    Where the row holds no editable position the click is inert and the caret and the host's focus
+    are released. Arrows were already answered: a run of atomic rows is walked past, pinned.
+    Item 3's trailing-paragraph hole is what is left of this.
+32. ~~**The editor's own clip is spliced verbatim at any caret, not only at a line start.**~~
+    **FIXED 2026-08-26** (`4f365608`). The distinction is the SHAPE handed to `RowNode.writeRows` —
+    an array is pieces, a string is this editor's own markup — which is the convention `replaceRows`
+    already read over a row selection, so the caret arm and the selection arm now spell it the same
+    way. New declared cost in its place: a markup clip copied from the middle of a row and across a
+    row boundary opens its first fragment as a row of its own, because the payload does not say
+    where the copy began.
+33. ~~**Nesting depth is unpainted except by the kinds that indent their own children.**~~
+    **FIXED 2026-08-26** (`43a99df9`), in the showcase's theme; core was never involved, since the
+    depth was always in the document. A kindless child row of a paragraph stays flush on purpose: it
+    is that paragraph's continuation line, and only the kind it carries tells the two apart.
 
 ---
 
@@ -336,12 +365,16 @@ positioning arithmetic do.)
 
 A driving session on the showcase, 2026-08-26. Unvarnished, and it is the section that matters most.
 
-**Seven things broke.**
+**Seven things broke.** The report is the driver's and stays unedited; the **STATUS** line under
+each is what has happened to it since, with the commit that did it.
 
 1. **`/` + Enter writes garbage.** Typing `/h2` then Enter left the literal `/h2` in the row and
    split it into a new row. The menu is click-only (item 12 above), and Enter falls through to
    `splitAt` because nothing claims it. This is the single worst gesture on the page, and it is the
    first thing a new user tries.
+   **STATUS: closed** (`3435d3ad`, `4a11d450`, `07e9aa81`). One list with one keyboard, its first row
+   highlighted from the moment it opens, and the rows ranked by what was typed. Pinned by the
+   gesture itself: type `/page t`, press Enter alone, assert the value AND the highlight.
 2. **Clicking an atomic block strands the caret.** A TOC entry, a properties value, a metric card,
    the bookmark title — the anchor parks in a `contenteditable=false` node, ArrowDown does not move
    it, and every keystroke after is silently dropped until you click elsewhere. `control()` writes
@@ -353,17 +386,36 @@ A driving session on the showcase, 2026-08-26. Unvarnished, and it is the sectio
    then dispatches its `beforeinput` on the OUTER editing host, so it proves the model's anchor
    advanced and not that a real keystroke would be delivered. The one test that does use a real
    `userEvent.click` plus real keys (`:693`) is the divider, which is not one of the seven.
+   **STATUS: closed in two steps, and the first step's answer was itself a defect.** `9c781d4a` took
+   the caret out of the control root; WHERE it put it was the next editable row — four rows from the
+   pointer for a table of contents entry — and its pin asserted exactly that as the contract.
+   `9ef80374` corrected the destination: the row the pointer landed IN, at that row's own entry,
+   claimed on `pointerdown` so the browser's own answer cannot outrank it. A row that holds no
+   position at all is inert, and the focus goes with the caret.
 3. **Typing blind into a closed toggle.** Enter after a `▸` title, then Tab, puts the caret inside
    the hidden subtree — 11 characters landed in the value with no caret box and nothing on screen.
+   **STATUS: closed** (`9c781d4a`, then `21976b3f` for the same reading in the other direction — a
+   row that closes UNDER the caret). A row whose element is in the document and generates no box
+   holds no caret the invariant will accept: it walks out, stepping over the whole collapsed run.
+   Pinned in the collapse direction; the Enter-then-Tab direction this report describes follows from
+   the same rule and has no pin of its own.
 4. **Pasting a two-row block selection at a caret leaks markup.** At the end of a paragraph it
    produced `Flights are cheapest midweek.⇥- Adapters` — a raw tab and a literal `- ` as prose.
    Clean on an empty row. The mechanism is `writeRowsFromInput`'s first line, `if
    (replacement.markup) return false`: the editor's own clip is "the value's own projection" and is
    spliced verbatim, which is right at a line start and wrong everywhere else. This is a **different
    shape** from the declared cross-row hole (item 4 in the list above) and was not declared.
+   **STATUS: closed** (`4f365608`). Both languages reach `RowNode.writeRows` and the SHAPE says which
+   one a clip is in: an array is pieces, opened at the caret row's lead and kind; a string is this
+   editor's own markup, whose lines are already whole rows. Its own declared cost: a markup clip
+   copied from the MIDDLE of a row and across a boundary opens its first fragment as a row.
 5. **An atomic block as the last row is a dead end.** After `/code` at the end, ArrowDown, Enter and
    clicking below all fail to make a row after it. Declared (item 3), but the declaration reads as a
    footnote and the experience is a trap: only the grip menu escapes.
+   **STATUS: half closed** (`9c781d4a`). A document ending in a RAW CLOSED BODY — a fence,
+   frontmatter — grows a blank row after it while the caret is in that row, so `/code` at the end is
+   no longer the trap this describes. An atomic row that is not a raw body still is, and that is
+   item 3 of the list above: it wants the trailing-paragraph decision, not a patch.
 6. ~~**A board card dragged between columns never reaches the document.**~~ **FIXED 2026-08-26**;
    see item 21.
 7. **Drag and paste can nest a row under a paragraph, invisibly.** Dropping a quote on "Pack list"
@@ -372,6 +424,9 @@ A driving session on the showcase, 2026-08-26. Unvarnished, and it is the sectio
    `--notion-block-depth`) is applied by **no component** — grep returns only its own definition and
    two comments claiming a component sets it. Only kinds that indent their own children
    (`.toggleChildren`, `.listItemNested`) paint depth at all, and a paragraph is not one of them.
+   **STATUS: closed** (`43a99df9`), in the showcase's own theme where it belonged. A KINDED row
+   nested under a paragraph paints one indent step; a kindless child row stays flush deliberately,
+   because that is the paragraph's own continuation line and the two are the same bytes.
 
 **Thirteen things felt wrong.** In the driver's words, compressed:
 
@@ -390,6 +445,20 @@ into". **Undo granularity is uneven: 57 undos to unwind ~30 gestures, splitting 
 the strongest single result in the session. And the editor wears a blue focus ring around the whole
 column, so it reads as a form field rather than a page.
 
+**Amended 2026-08-26**, in the order they were closed: `/` and `@` are one list with one keyboard
+(`3435d3ad`); both popups flip above the anchor when they do not fit below (`b92a8db0`); the editor
+follows its own caret onto the screen (`638c7a46`); every popup colour a consumer can see is a
+themeable default (`5167f690`); **Tab no longer leaves the editor** in a document any of whose kinds
+indent, which is what "the worst moment of the session" was (`07595912`); the grip menu takes the
+keyboard (`84872488`); and Home and End move the caret on the first press rather than scrolling the
+page (`bcb6b5e2`). The FOCUS RING was judged and kept: the container is the one editing host
+(ADR-0002), so it is the one focus target, and a consumer who wants none can style it. NO COMMIT
+SINCE NAMES the rest, so they stand where the driver left them: a row selection painted as a text
+selection, the first Cmd+A taking the whole document, `/` → Table giving a header row only,
+Backspace at the start of the row after an atomic block, the grip menu's missing "Turn into"
+(`ROW_MENU_ITEMS` is still Add below / Duplicate / Delete), nesting as a one-way door for a root
+paragraph, and undo granularity.
+
 **Seven things are missing** against `showcase.md` and against Notion: the gutter `+`; a trailing
 empty paragraph and click-below-to-append; a selection toolbar (bold, italic, link and colour are
 unreachable except by typing markup); "Turn into" and any set-wide verb beyond indent and drag;
@@ -402,6 +471,14 @@ structural gesture the maintainer asked for exists and is pinned. Nearly every g
 performs without thinking — Enter on a menu, click on a block, Tab, paste, scroll — is either
 missing, silent, or wrong. The gap between those two sentences is the whole finding.
 
+**Amended 2026-08-26**, and the amendment is the finding's second half rather than its refutation.
+Every one of those five gestures now works and is pinned: Enter on a menu, a click on a block, Tab,
+the internal-clip paste, and the scroll that follows the caret. It took **two more driving sessions
+and eleven defects** to get there, not one of which the suite could see, and one of them — the
+click's destination — shipped with a green pin asserting the defect itself as the contract. So the
+gap was real and it closed by DRIVING rather than by testing harder; what stays open is the list
+above this one, with the trailing paragraph at the head of it.
+
 ---
 
 ## What I would do next
@@ -412,37 +489,41 @@ Ranked by (breaks a core gesture) × (cheap) × (nothing else is blocked on it f
    reading went further than planned: there is one MODEL (`OverlayListModel`), one COMPONENT
    (`OverlayList`, which is the default overlay), and `RowMenu`/`MenuEntry` are gone from the
    published surface. Items 12-15 and the board (21) landed with it.
-2. **Stop the caret entering a control root, and pin it with a real click.** `control()` writes
-   `contentEditable = 'false'` and stops; the missing half is refusing the caret a click puts there
-   — either by moving it to the nearest row boundary or by turning the click into a row selection.
-   Ranks second because it is one owner, it is core's own SPI, and it makes *every* atomic kind
-   usable rather than one of them. The pin matters as much as the fix: both existing pins pass
-   today while the gesture fails, which is the same shape P11's review round found seven times.
+2. ~~**Stop the caret entering a control root, and pin it with a real click.**~~ **DONE 2026-08-26**,
+   in two commits, and the second exists because the first got the destination wrong: `9c781d4a`
+   moved the caret out of the control root and into the next editable row, `9ef80374` made it the
+   row the pointer landed IN. "Pin it with a real click" was the load-bearing half of this item and
+   it held both ways — the first pin drove a real click and asserted the wrong row as the contract,
+   which is how a defect shipped with a green suite over it. The three pins now over it were each
+   seen to redden under a mutated mechanism.
 3. **Decide the trailing paragraph.** An atomic row generates no caret position, so the editor can
    end in a state with no caret target at all. This is a design question, not a repair: either the
    editor guarantees a trailing empty row, or `choose` gains an insert-after contract beside its
    turn-into one. Ranks third because the driving session's item 5 dissolves into it entirely — the
    `Empty` story's "no caret target at all" is the same hole — and because it is a published-contract
    change that should be decided once rather than patched twice.
-4. **Fix the internal-clip paste at a non-line-start caret.** `writeRowsFromInput`'s
-   `if (replacement.markup) return false` assumes the projection lands at a line start. It should
-   ask whether it does. Ranks fourth because it is data corruption a user cannot see coming, it is
-   one predicate, and — unlike the declared cross-row hole — it is not a contract change.
-5. **Paint depth.** Apply the showcase's own `.blockIndent` and set `--notion-block-depth`, so
-   nesting is visible under every kind rather than under the two that indent their own children.
-   Ranks fifth because it is showcase-only and small, but it is what makes drag, Tab and drop
-   legible at all — three features that currently succeed invisibly.
-6. **Flip the overlay, and scroll the caret into view.** Both are viewport arithmetic in one owner
-   each (`OverlayController.position`; a `selectionchange`-adjacent scroll). Ranks here rather than
-   higher because neither loses data — they only make the editor unusable below the fold.
+4. ~~**Fix the internal-clip paste at a non-line-start caret.**~~ **DONE 2026-08-26** (`4f365608`),
+   and it was not the predicate this item imagined: the two languages are told apart by the SHAPE
+   handed to `RowNode.writeRows` — array of pieces versus this editor's own markup string — which
+   `replaceRows` had always read that way over a row selection.
+5. ~~**Paint depth.**~~ **DONE 2026-08-26** (`43a99df9`), in the showcase's theme. `:not(.paragraph)`
+   is the rule rather than an exclusion: a kindless child row of a paragraph is that paragraph's
+   continuation line and must stay flush, and the kind it carries is the only thing that tells them
+   apart.
+6. ~~**Flip the overlay, and scroll the caret into view.**~~ **DONE 2026-08-26** (`b92a8db0`,
+   `638c7a46`). The flip uncovered a second defect underneath it: both adapters read
+   `overlay.position()` non-reactively, so the popup had been frozen where it opened and did not
+   follow the caret as the user typed.
 7. **Convert the showcase to the shared harness (P12).** ~800 lines of Vue vocabulary plus Vue's
    `useControlRef`. Ranks seventh despite being the largest item, because five of the ten defects
    the last hardening round fixed have their only pin in a React-only file — so **every fix above
    ships half-measured until this lands**. It should be reconsidered upward the moment an adapter
    defect escapes.
-8. **Theme the shipped popup and drop the container's focus ring.** `.Popup`'s three hardcoded
-   colours become custom properties; `.Container` gets `outline: none` or a considered ring. Cheap,
-   cosmetic, and it is the difference between "a library component" and "part of the page".
+8. **Theme the shipped popup** — ~~and drop the container's focus ring~~. **HALF DONE 2026-08-26**
+   (`5167f690`): eight `var(--markput-…, <old value>)` names cover the popup, its highlighted row,
+   the grip and the drop line, and the showcase maps all eight onto its own tokens. The FOCUS RING
+   was judged and kept rather than dropped — the container is the one editing host, so it is the one
+   focus target, and removing the indicator in core would take it from every consumer.
 9. **Extend the doc-sample check to prose backticks.** Highest-value of the three rot-guard
    follow-ups, and the one that is not trivial: it needs a filter that tells `` `store.rows` `` from
    English in backticks. The other two — a grep spec over `CONTEXT.md`'s avoid-list, and the link
@@ -450,6 +531,16 @@ Ranked by (breaks a core gesture) × (cheap) × (nothing else is blocked on it f
 10. **Decide the two published-type corrections** (`OverlayHandler.ref`, `MarkedInputProps.Span`).
     Ranks last not because it is unimportant but because it is a decision, not a task: the repo
     already works around both in three places, and the docs now cast in eight.
+
+**Where the list stands after two driving sessions** (2026-08-26): 1, 2, 4, 5 and 6 are done and 8 is
+half done, so **the trailing paragraph (3) is the top open item** and it is still a decision rather
+than a task — every repair since has walked around it, and the click-claim's "a row with no position
+is inert" is the closest anything has come to answering it. **P12 (7) has not fallen**: the last two
+sessions did put most of their new pins at core level or in specs both projects run
+(`Base/keyboard.spec.ts`, `Base/rowKeymap.spec.ts`, `Drag/Drag.spec.ts`), but the showcase's own net
+is still three React-only files — `Notion.react.spec.tsx`, `caret.react.spec.tsx`,
+`structure.react.spec.tsx` — and the caret rules the last two pin are exactly where an adapter can
+differ.
 
 **Not recommended yet, and why.** A selection toolbar, "Turn into" in the grip menu, `RowSpec.group`
 and a per-kind drag axis are all real gaps, and every one of them adds published surface. The
