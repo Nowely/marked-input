@@ -395,7 +395,7 @@ export interface NodeCommands {
 	 */
 	moveTo(nodes: readonly TreeNode[], placement: RowPlacement): boolean
 	/** Re-indent a ROW, keeping every row's identity. See {@link RowNode.setDepth}. */
-	setDepth(node: TreeNode, depth: number): boolean
+	setDepth(node: RowNode, depth: number): boolean
 	/** Retype a ROW, keeping its identity. See {@link RowNode.turnInto}. */
 	turnInto(node: RowNode, option: CoreOption | undefined, patch?: RowPatch): boolean
 	/** Split a ROW at an anchor in its own body. See {@link RowNode.splitAt}. */
