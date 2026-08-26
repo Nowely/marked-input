@@ -747,6 +747,25 @@ becomes a ticket here.
   option-to-icon map in the consumer component — which is precisely the shape P7's
   exit criterion forbids. `icon?: Slot` is the version that keeps the criterion, and
   it lands with the painter, as `section` now does.
+- **A ROW SELECTION THAT STARTS AT A FROZEN ROW CANNOT BE GROWN, and the model and the DOM disagree
+  in silence while it stands.** A click on a row holding no editable position now SELECTS it
+  (2026-08-26), written across the row's own ELEMENT because its text has no surface. MEASURED on
+  `'- keep me⏎@toc⏎Launch tasks⏎@end⏎- and me'` in `Notion/Showcase`, controlled: typing replaces
+  the row (`'- keep me⏎Z⏎- and me'`), Backspace removes it, Enter puts one blank row in its place,
+  Mod+Z restores it, and `getSelection().toString()` carries `'Launch tasks'` — the browser paints
+  it. Esc does NOTHING, and that is Esc's own semantics rather than a gap: it escalates and has
+  never cleared, and a root row is already the outermost rung. THE ARROWS ARE THE GAP.
+  Shift+ArrowDown IS consumed and the stored anchors DO widen, but nothing on screen moves:
+  `selectSpan` writes `anchorAt(rowSpan.start)`, a row's ENTRY, and a frozen row's entry resolves to
+  no boundary, so `DomModel.selectRange` declines and the DOM selection stays where it was — the
+  next keystroke reads DOM truth and replaces the toc row alone. Shift+ArrowUp only appears to work
+  because the BROWSER's own extend does it; plain ArrowUp collapses out of the selection and plain
+  ArrowDown is a dead key. The cure is the one `#selectRow` already found, generalized: a range END
+  that resolves to a row nothing paints falls back to the row's ELEMENT edge, which is a DOM
+  question and belongs in `DomModel.#rangeBoundaryAt` — it takes that arm today only for
+  `{before}`/`{after}` anchors, and every row gesture hands it entry offsets. NOT TAKEN with the
+  click, because it changes what Esc's `'row'` rung, Mod+A's widening and the drag's own reads all
+  paint, which is a behaviour change of its own and not a repair confined to the pointer.
 
 - **The fourth driving session's six defects, and four of them were ONE shape: a rule with two
   owners** (2026-08-26). Every one reproduced in the browser first, and each pin was seen to redden

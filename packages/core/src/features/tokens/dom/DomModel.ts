@@ -322,10 +322,12 @@ export class DomModel {
 	 * never moved while the STORED one said all-selected — so the next keystroke replaced a
 	 * document the user could not see was selected. Both ends now go through
 	 * {@link TokenHandle.caretBoundary}, the same answer `placeCaret` places.
+	 *
+	 * AND EITHER END MAY BE A ROW, across the row's OWN ELEMENT — see {@link #rangeBoundaryAt}.
 	 */
 	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean {
-		const a = this.#boundaryAt(anchor)
-		const b = this.#boundaryAt(head)
+		const a = this.#rangeBoundaryAt(anchor)
+		const b = this.#rangeBoundaryAt(head)
 		if (!a || !b) return false
 		// BOTH ENDS CONNECTED, checked rather than assumed. `placeRangeAcrossBoundaries` normalizes
 		// the pair with `comparePoint`, which THROWS for a node in another tree, and its own
@@ -416,6 +418,30 @@ export class DomModel {
 		const target = this.#targetOf(anchor)
 		if (!target) return undefined
 		return this.deps.handle(target.id)?.caretBoundary(target.offset)
+	}
+
+	/**
+	 * THE SAME BOUNDARY FOR A RANGE END, with one difference: a `{before}`/`{after}` ROW resolves
+	 * to the ROW'S OWN ELEMENT EDGE rather than descending to its edge child.
+	 *
+	 * A CARET has to descend — a row wrapper's parent-index coordinates put the caret BETWEEN rows
+	 * rather than inside one, and the separator has no DOM to land in ({@link #entryOf}). A RANGE
+	 * END does not: an element edge is exactly what a block selection is bounded by, and it is the
+	 * only pair a FROZEN row has at all. Its text is painted by nothing, so the descent finds an
+	 * unbound handle, `selectRange` declines, and the DOM selection stays wherever the click left
+	 * it — inside the frozen island, where the browser emits no `beforeinput` and `isConsumerOrigin`
+	 * declines every key. A row selected and no key reaching it is the state this avoids.
+	 *
+	 * `caretBoundary` already answers it: a row's handle binds no text surface, so any offset > 0
+	 * is the parent coordinate AFTER the row element and 0 is the one before it — the same arm a
+	 * MARK's endpoints have always taken.
+	 */
+	#rangeBoundaryAt(anchor: NodeAnchor): CaretBoundary | undefined {
+		if (typeof anchor !== 'string' && !('node' in anchor)) {
+			const row = 'before' in anchor ? anchor.before : anchor.after
+			if (row.kind === 'row') return this.deps.handle(row.id)?.caretBoundary('before' in anchor ? 0 : 1)
+		}
+		return this.#boundaryAt(anchor)
 	}
 }
 

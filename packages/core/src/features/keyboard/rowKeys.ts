@@ -343,9 +343,16 @@ export function replaceRowSelection(
 		)
 	}
 	const span = store.tokens.rowSelectionText(anchors)
-	if (!span) return false
-	store.edit.replace(span.anchor, span.head, replacement.text)
-	return true
+	if (span) {
+		store.edit.replace(span.anchor, span.head, replacement.text)
+		return true
+	}
+	// AND A ROW THAT HOLDS NO EDITABLE POSITION IS REPLACED WHOLE. A frozen row's body is the
+	// kind's own markup rather than prose — `TokenModel.rowSelectionText` refuses it — so the row
+	// goes and a plain row carrying what was typed takes its place, which is what the reference
+	// product does when a character is typed over a selected block. `replaceRows` answers `false`
+	// when there is no row selection at all, so an ordinary text edit still falls through here.
+	return store.tokens.replaceRows(anchors, [replacement.text])
 }
 
 /**

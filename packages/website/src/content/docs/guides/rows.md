@@ -139,8 +139,13 @@ The hook works anywhere under the editor: a row kind's component, a mark's compo
 store's other row verbs hang off the same `s.rows` — see
 [Keyboard Handling → Selecting Rows](/guides/keyboard-handling#selecting-rows).
 
+- A CLICK on a row that holds no editable position — an atomic kind, which paints none of its own
+  text — selects that row. The selection is written across the row's own element, so the browser
+  paints the block and the next keystroke acts on it.
+
 A row selection is the ROWS — openers and leads included. Paste, cut, copy and Backspace/Delete all
-read it that way; typing replaces the rows' TEXT and keeps the first row's kind. See
+read it that way; typing replaces the rows' TEXT and keeps the first row's kind, except over a row
+with no editable position, where the row itself is replaced. See
 [Keyboard Handling](/guides/keyboard-handling) for the full contract.
 
 ## Drag

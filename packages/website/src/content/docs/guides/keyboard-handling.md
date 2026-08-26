@@ -25,6 +25,7 @@ right-hand column's parentheses.
 | `Ctrl/Cmd+A`                 | Widens a nested row selection to the row it is nested in, then selects the whole document.                                                      |
 | `Ctrl/Cmd+Z`                 | Undo. `Shift+Ctrl/Cmd+Z` redoes. `history={false}` turns both into no-ops.                                                                       |
 | Arrow keys                   | The browser's, except while a row selection stands.                                                                                            |
+| Click on a frozen block      | SELECTS that row. An atomic kind paints none of its own text, so there is no caret position in it; the selection is written across the row's own element, so the browser paints the block and the next key acts on it. |
 | A trigger character          | Opens the overlay the option owning that character declares — `@` for a picker, `/` for the row menu.                                            |
 
 ## Edit Flow
@@ -91,7 +92,7 @@ A row selection is the ROWS, openers and leads included, and paste, cut and `Bac
 
 "Exactly" is a BOUNDARY and not an offset. Between one row's last character and the next row's first typable position lie the separator, the next row's indent and its opener — all structural, none of them a caret position — so every offset in that stretch names the same boundary and any of them closes the run. That is what the browser hands you: `Shift+ArrowDown` from a row's start, and a mouse sweep down one line, both end at the NEXT row's first position, and `getSelection().toString()` on a selected `BBB` reads `"BBB\n"` where the highlight paints only `BBB`.
 
-TYPING stays TEXT: a character replaces the rows' own text and the first row keeps its kind. It writes over the selection's own span in row coordinates — never the raw offsets, which carry that trailing boundary and would delete the separator with the text.
+TYPING stays TEXT: a character replaces the rows' own text and the first row keeps its kind. It writes over the selection's own span in row coordinates — never the raw offsets, which carry that trailing boundary and would delete the separator with the text. The ONE exception is a row that holds no editable position, an atomic kind that paints none of its own text: there is no prose there to replace, so the ROW goes and a plain row carrying what was typed takes its place.
 
 A clip pasted over a row selection takes the same rules it takes at a caret in the same row: a FOREIGN clip's lines each open a row at the covered rows' depth, carrying their kind wherever the kind declares `continues`, so a one-line clip keeps the kind exactly as typing does; this editor's own clip is the value's own projection and is spliced verbatim.
 

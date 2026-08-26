@@ -150,21 +150,45 @@ describe('the caret goes where a person can follow it', () => {
 	})
 
 	/**
-	 * AND A ROW WITH NO POSITION AT ALL LEAVES THE CARET WHERE IT WAS. An atomic kind paints none of
-	 * its own text, so there is nothing in it to claim — and the one answer a click may not give is
-	 * a DIFFERENT row, which is what typing into the table of contents used to edit: the heading
-	 * below it, four rows from the pointer.
+	 * AND A ROW WITH NO POSITION AT ALL IS SELECTED. An atomic kind paints none of its own text, so
+	 * there is nothing in it to put a caret on — and the two answers that were tried before are both
+	 * invisible to the user. Handing the caret to a DIFFERENT row is what typing into the table of
+	 * contents used to edit: the heading below it, four rows from the pointer. Doing NOTHING reads as
+	 * the same defect with a different destination — the click appears inert and the next keystrokes
+	 * go to wherever the caret was last, which is off screen.
+	 *
+	 * The row selection is the answer this editor already owns (`store.rows.selected`), and the
+	 * browser paints it: the selection is written across the row's own ELEMENT, so the block is
+	 * highlighted and the keys land on it. Typing REPLACES a frozen row rather than writing into it
+	 * — its body is the kind's markup, not prose.
 	 */
-	it('leaves the caret where it was when the block clicked holds no position', async () => {
-		const {host, value} = await mountControlled(Showcase)
+	it('selects the row when the block clicked holds no position', async () => {
+		const {host, value} = await mountControlled(Showcase, '- keep me\n@toc\nLaunch tasks\n@end\n- and me')
 
-		await focusAtEnd(rowStarting(host, 'Vendor SLA unsigned'))
+		await focusAtEnd(rowStarting(host, 'keep me'))
 		await page.getByText('Launch tasks', {exact: true}).first().click()
 		await settle()
-		await userEvent.keyboard('ZZZ')
 
-		expect(value()).toContain('- Vendor SLA unsignedZZZ')
-		expect(value()).not.toContain('ZZZLaunch tasks')
+		// The browser's own highlight is over the block, which is the whole point of selecting it.
+		expect(window.getSelection()?.toString()).toContain('Launch tasks')
+
+		await userEvent.keyboard('Z')
+		await settle()
+
+		expect(value()).toBe('- keep me\nZ\n- and me')
+	})
+
+	/** Backspace over the same selection takes the block away, opener and closing literal and all. */
+	it('deletes the row a click on frozen presentation selected', async () => {
+		const {host, value} = await mountControlled(Showcase, '- keep me\n@toc\nLaunch tasks\n@end\n- and me')
+
+		await focusAtEnd(rowStarting(host, 'keep me'))
+		await page.getByText('Launch tasks', {exact: true}).first().click()
+		await settle()
+		await userEvent.keyboard('{Backspace}')
+		await settle()
+
+		expect(value()).toBe('- keep me\n- and me')
 	})
 
 	/**
@@ -191,9 +215,10 @@ describe('the caret goes where a person can follow it', () => {
 		await settle()
 		await userEvent.keyboard('ZZZ')
 
-		expect(host.contains(caretElement())).toBe(false)
-		// An echoing controlled field that never heard `onChange` still holds its mount value.
-		expect(value()).toBe('')
+		// The BOARD is what the keystroke reached — the row the pointer was in, selected and then
+		// replaced — and the page title the browser had named is untouched.
+		expect(value()).not.toContain('ZZZApollo')
+		expect(value()).toContain('\nZZZ\n')
 	})
 
 	/**

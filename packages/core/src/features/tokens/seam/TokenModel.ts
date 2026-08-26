@@ -467,12 +467,22 @@ export class TokenModel {
 	 * row's kind stays. What it may NOT keep is the anchors the event named — the browser ends a
 	 * one-row selection at the NEXT row's entry, so the raw span carries a row BOUNDARY the
 	 * highlight never paints, and replacing it merged the row below into the row above.
+	 *
+	 * A ROW THAT HOLDS NO EDITABLE POSITION IS REFUSED, and the caller then replaces the ROW
+	 * instead ({@link replaceRows}). It is the caret invariant read at the WRITE: a body no caret
+	 * may enter is not prose, it is the kind's own markup — a raw body between its literals, a
+	 * carved grid — so text written into it is bytes the kind cannot read back. Measured on a
+	 * selected table of contents: `'@toc⏎Section⏎@end'` typed over emitted `'@toc⏎Z- beta'`, the
+	 * closing literal gone and the row below merged in. The same reading `#placeInRow` makes, and
+	 * the reason it is a DOM one: whether a kind paints its own text is the consumer's, not the
+	 * tree's.
 	 */
 	rowSelectionText(anchors: Anchors): Anchors | undefined {
 		const span = untracked(() =>
 			rowSelectionSpan(this.#tree.roots(), anchors, this.#tree.config()?.separator, 'text')
 		)
 		if (!span) return undefined
+		if (!span.rows.every(row => this.#dom.reachable(untracked(() => entryAnchor(row))))) return undefined
 		return {anchor: this.anchorAt(span.start), head: this.anchorAt(span.end)}
 	}
 
@@ -1322,10 +1332,25 @@ export class TokenModel {
 	 * the other question (see there).
 	 *
 	 * AND WHEN THE ROW HOLDS NO POSITION AT ALL — an atomic kind paints none of its text, so there
-	 * is nothing in it to put a caret on — NOTHING MOVES. The row's own boundary was the other
-	 * candidate and it is worse: the anchor space names it, the DOM cannot paint it, so the caret
-	 * would be invisible and still edit the row's hidden text on the next keystroke. A click on a
-	 * card is inert instead, which is what the screen already says.
+	 * is nothing in it to put a caret on — THE ROW IS SELECTED. That is a change and it replaces the
+	 * previous answer, which was to do nothing at all: inert reads to the user as the SAME defect
+	 * with a different destination, because the click appears to do nothing and the next keystroke
+	 * goes to wherever the caret was last, which is off screen. Measured 6 for 6 on the showcase —
+	 * board card, metric number, properties chip, bookmark title, table-of-contents entry, board
+	 * column head — with a caret established first.
+	 *
+	 * A SELECTION IS THE ONE ANSWER THIS EDITOR ALREADY OWNS. The row selection is the text
+	 * selection read at row granularity (`RowController.selected`), so selecting a row is one
+	 * `select` of its own span and every gesture over one already works: typing replaces it,
+	 * Backspace takes it away, Esc widens to what it is nested in, Shift+arrows grow it, the grip
+	 * drags it. It is also what the reference product does — a click on a non-text block selects
+	 * the block.
+	 *
+	 * WHAT IT COSTS, declared: the browser paints nothing. A frozen row's own text has no surface,
+	 * so `selectRange` finds no boundary for either end and the DOM selection stays where the click
+	 * left it — the model holds the row and the screen does not say so. A consumer paints it from
+	 * `store.rows.selected`, which is why that read is public; the showcase does not, and its
+	 * `.blockSelected` rule is where it would.
 	 *
 	 * A CONTROL IN NO ROW AT ALL IS NOT THIS RULE'S BUSINESS, and that is the editor's own furniture:
 	 * the grip and its menu are a control root parked over the document rather than inside a row, so
@@ -1335,7 +1360,33 @@ export class TokenModel {
 		const row = this.#rowAbove(origin)
 		if (!row) return
 		if (this.#placeInRow(row)) return
+		if (this.#selectRow(row)) return
 		this.#selectionDriver.restoreCaret()
+	}
+
+	/**
+	 * THE ROW SELECTION OVER ONE ROW, written across the row's OWN ELEMENT: `{before}` to
+	 * `{after}`.
+	 *
+	 * NOT `rowSpan`'s two offsets, which is what Esc's `'row'` rung writes, and the difference is
+	 * the whole reason a click can answer at all. Those name positions in the row's TEXT, and a
+	 * frozen row's text has no surface — `selectRange` finds no boundary for either end, so the
+	 * DOM selection stays inside the frozen island where the click left it. Every input path then
+	 * reads the DOM: `isConsumerOrigin` sees a control root and declines the event whole, so the
+	 * row was selected in the model and every key after it did nothing. The row's own element IS
+	 * registered, so its edges resolve, the browser paints the block, and the keys land.
+	 *
+	 * The two readings agree about WHICH ROW: an element's edges are `position.start`/
+	 * `position.end`, which sit inside the boundary at each end, and {@link namesBoundary} is
+	 * where they meet.
+	 *
+	 * `false` for an editor with no rows at all, which is where the claim has nothing to select and
+	 * the caret release is still the answer.
+	 */
+	#selectRow(row: RowNode): boolean {
+		if (untracked(() => this.#tree.config()?.separator) === undefined) return false
+		this.selection.select({before: row}, {after: row})
+		return true
 	}
 
 	/**
