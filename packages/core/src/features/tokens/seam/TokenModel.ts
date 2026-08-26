@@ -719,9 +719,40 @@ export class TokenModel {
 		this.#selectionDriver.focusFirst()
 	}
 
-	/** The caret to its visual line's edge — Home and End; see {@link DomModel.moveToLineBoundary}. */
+	/**
+	 * The caret to its LINE's edge — Home and End; the primitive is
+	 * {@link DomModel.moveToLineBoundary} and the correction below is this layer's.
+	 *
+	 * A CARVED ROW IS ONE LINE (ADR-0011), AND THE BROWSER DOES NOT KNOW THAT. `lineboundary` is a
+	 * question about BOXES, and a kind that carves its body paints each piece in a box of its own —
+	 * so Home in the second column of a table answered that column's start, which is a position no
+	 * line of this document begins at. MEASURED on `'|= A | B⏎| c | d'` with the caret in the
+	 * header's `B`: Home stopped at `B`, and the Enter after it emitted `'|= A | ⏎| B⏎| c | d'` —
+	 * the header lost a column and the column became a data row, from two keys with no selection
+	 * anywhere. It is round seven's row-start rule reached by a different trigger: the split itself
+	 * is correct for the position it was given, and the position was the browser's.
+	 *
+	 * ONLY IN A CARVED PIECE, checked rather than assumed, so wrapped prose keeps the browser's own
+	 * answer — a row that wraps over three visual lines still has three line edges and they are the
+	 * platform's to find. The declared cost is the other half of that: a carved piece whose own text
+	 * wraps has its wrapped edges taken by the LINE too, because the piece is not a line.
+	 */
 	moveToLineBoundary(direction: 'backward' | 'forward', extend: boolean): boolean {
-		return this.#dom.moveToLineBoundary(direction, extend)
+		if (!this.#dom.moveToLineBoundary(direction, extend)) return false
+		const anchors = this.domAnchors()
+		// The END the key MOVED, which under `extend` is the only one it touched: a DOM Range is
+		// document-ordered, so backward moved the low end and forward the high one.
+		const moved = anchors && (direction === 'backward' ? anchors.anchor : anchors.head)
+		if (!moved || !this.rowOf(moved)?.cell) return true
+		// Asked of the END THAT MOVED, not of the pair: under `extend` the other end is wherever the
+		// selection started, and `rowScope` reads the `anchor` it is handed.
+		const span = this.rowScope({anchor: moved, head: moved}, 'row')
+		if (!span) return true
+		const edge = this.anchorAt(direction === 'backward' ? span.start : span.end)
+		if (!extend) this.selection.select(edge)
+		else if (direction === 'backward') this.selection.select(edge, anchors.head)
+		else this.selection.select(anchors.anchor, edge)
+		return true
 	}
 
 	/**

@@ -1191,6 +1191,42 @@ describe('rowKeys the row keymap', () => {
 			expect(event.defaultPrevented).toBe(true)
 			expect(store.tokens.value()).toBe('| a | b')
 		})
+
+		/**
+		 * HOME ANSWERS THE LINE, and a carved row's pieces are not lines of their own. `lineboundary`
+		 * is the browser's question about BOXES and every piece is painted in one, so Home in the
+		 * second column stopped at that column — a position no line of this document begins at.
+		 *
+		 * The Enter that follows is the whole reason it matters: at a row's own start it opens the
+		 * empty row above and keeps the kind, and at a CELL's start it splits, so `'|= A | B'` came
+		 * back `'|= A | ⏎| B'` — the header a column short and the column demoted to a data line, from
+		 * two keys with nothing selected anywhere.
+		 */
+		it('takes Home to the LINE start from a piece, not to the piece start', () => {
+			const {store, container} = table('| a | bc')
+			caretIn(store, 2, 1)
+
+			expect(press(container, 'Home').defaultPrevented).toBe(true)
+
+			// '| a | bc' with a one-byte opener: the line's entry is offset 1, and the second
+			// piece's own start — where the browser stopped — is 6.
+			expect(selectionRange(store)).toEqual({start: 1, end: 1})
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('|\n| a | bc')
+		})
+
+		/** End is the same rule at the other edge: the LINE's content ends past the last piece. */
+		it('takes End to the LINE end from a piece', () => {
+			const {store, container} = table('| a | bc')
+			caretIn(store, 1, 1)
+
+			expect(press(container, 'End').defaultPrevented).toBe(true)
+
+			// Past the LAST piece, not past the one the caret was in (which ends at 3).
+			expect(selectionRange(store)).toEqual({start: 8, end: 8})
+		})
 	})
 
 	/**
@@ -1337,4 +1373,5 @@ describe('rowKeys the row keymap', () => {
 			expect(store.tokens.value()).toBe('Z\n- [x] todo\nnext')
 		})
 	})
+
 })
