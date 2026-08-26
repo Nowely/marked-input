@@ -148,6 +148,28 @@
 	color: var(--notion-text-primary);
 }
 
+/* A ROW NESTED UNDER A PARAGRAPH, indented — which every other container kind gets for free from
+   its own left padding (a bullet's dot gutter is what indents the list under it) and a paragraph,
+   having none, did not: a quote dropped or Tab'ed onto a paragraph carried a real depth in the
+   value and painted flush against its parent, so the indent the drop indicator had just promised
+   was nowhere on the screen.
+
+   `> span >` is the adapter's row-sequence host, a `display: contents` wrapper with no class of
+   its own; a paragraph's own text surfaces are spans too and hold no element children, so they
+   match nothing here.
+
+   `:not(.paragraph)` IS THE RULE, not an exclusion: a KINDLESS child row of a paragraph is that
+   paragraph's own continuation line — what Shift+Enter writes (ADR-0011) — and a soft break is
+   the one nested row that must stay flush. The two are the same bytes in the value, so which of
+   them a child row is can only be read off the kind it carries.
+
+   The step is `.block`'s own horizontal padding SHORT of a whole indent unit, because the child
+   already starts at its parent's content edge. A bullet's children need no such discount: its
+   `padding-left` is the dot gutter and is already one whole unit. */
+.paragraph > span > .block:not(.paragraph) {
+	margin-left: calc(var(--notion-indent-step) - var(--notion-space-2));
+}
+
 .caption {
 	display: block;
 	margin: 0 0 var(--notion-space-3);

@@ -118,6 +118,7 @@ function pasteAtCaret(host: HTMLElement, clipboardData: DataTransfer): void {
 	Object.defineProperty(event, 'dataTransfer', {value: clipboardData})
 	host.dispatchEvent(event)
 }
+
 describe('the caret goes where a person can follow it', () => {
 	/**
 	 * AN ATOMIC ROW HOLDS NO CARET POSITION. Its interior is `contenteditable="false"` — that is
@@ -216,5 +217,30 @@ describe('the caret goes where a person can follow it', () => {
 		expect(value()).toContain(
 			'downstream assumes.\n\t- Awaiting quota approval\n- Support headcount at 60%\n@toc\n'
 		)
+	})
+
+	/**
+	 * A DEPTH IN THE VALUE IS A DEPTH ON THE SCREEN. A row nested under a PARAGRAPH — which Tab and
+	 * a drop both write, and the drop indicator promises — painted at its parent's own left edge,
+	 * so the indent the document holds was invisible. A nested bullet is the measure: one indent
+	 * step, whoever the parent is.
+	 */
+	it('paints a row nested under a paragraph at the nesting step', async () => {
+		const {host} = await mountControlled(
+			Empty,
+			'alpha\n\tnested line\n\t> nested quote\n> quote\n- bullet\n\t- nested bullet'
+		)
+
+		// The step a NESTING adds, measured per kind against the same kind at depth 0 — a quote and
+		// a bullet draw their own left edges differently, so their absolute boxes never agree.
+		const left = (text: string) => Math.round(rowStarting(host, text).getBoundingClientRect().left)
+		const step = left('nested bullet') - left('bullet')
+
+		expect(step).toBeGreaterThan(0)
+		expect(left('nested quote') - left('quote')).toBe(step)
+		// AND A SOFT BREAK IS NOT A NESTING. A continuation line is a kindless child row — the same
+		// bytes Tab writes — and takes no step at all; what separates it from its parent's box is
+		// that parent's own padding, which every child inside the box starts at.
+		expect(left('nested line') - left('alpha')).toBeLessThan(step)
 	})
 })
