@@ -180,6 +180,18 @@ export interface RowNode {
 	 */
 	turnInto(option: CoreOption | undefined, patch?: RowPatch): boolean
 	/**
+	 * Write `rows` into this row's body at `span`, opening one row per piece past the first: the
+	 * body before the span keeps `rows[0]`, the body after it follows `rows.at(-1)` in the last row
+	 * this opens, and every piece between them becomes a row of its own. {@link splitAt} is the
+	 * degenerate case — one cut and nothing written at it — and this is what a multi-line PASTE
+	 * lands through, so a clip's lines take the row rules rather than a second copy of them.
+	 *
+	 * `false` for fewer than two pieces, for an editor with no separator, and for a span that is
+	 * not inside this row's own body — which is what leaves a paste ACROSS rows to the ordinary
+	 * replacement.
+	 */
+	writeRows(span: Anchors, rows: readonly string[]): boolean
+	/**
 	 * Split this row at `at`: the body before the anchor stays, the body after it becomes a new row
 	 * at the same lead, whose kind is this one when the kind `continues` and a plain row otherwise.
 	 * A continuing kind carries its `meta` into the tail with it, so splitting a checked to-do
@@ -388,6 +400,8 @@ export interface NodeCommands {
 	turnInto(node: RowNode, option: CoreOption | undefined, patch?: RowPatch): boolean
 	/** Split a ROW at an anchor in its own body. See {@link RowNode.splitAt}. */
 	splitAt(node: RowNode, at: NodeAnchor): boolean
+	/** Open rows inside a ROW's own body. See {@link RowNode.writeRows}. */
+	writeRows(node: RowNode, span: Anchors, rows: readonly string[]): boolean
 	/** Open a blank ROW after this one's subtree, at its depth. See {@link RowNode.addSibling}. */
 	addSibling(node: RowNode): boolean
 }

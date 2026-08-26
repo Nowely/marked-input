@@ -772,8 +772,20 @@ function sharedSuffix(a: string, b: string, prefix: number): number {
 }
 
 /**
- * Splitting one row at an anchor in its own body, as ONE splice plus the PRE-ORDER index of the
- * row it produces.
+ * Opening ROWS inside one row's own body, as ONE splice plus the PRE-ORDER index of the row the
+ * caret belongs in and how far into it. Enter's split is the degenerate case — two empty pieces,
+ * which is a cut and nothing written at it.
+ *
+ * `rows` are the pieces written AT THE CUT, one per line the edit opens: `rows[0]` joins the head,
+ * `rows.at(-1)` opens the tail and the rest of the body follows it, and every piece between them
+ * becomes a row of its own. Two pieces are the minimum, because fewer opens no row and is an
+ * ordinary insert; a multi-line PASTE is the caller that supplies more. Its lines take the row
+ * rules rather than a second implementation of them — a raw `⏎` spliced into the body carried
+ * neither the lead nor the opener, so a clip pasted into a nested list item landed at depth 0 and
+ * one pasted into a table cell ended the table line.
+ *
+ * A SPAN rather than one anchor, so a paste over a text selection is one splice: the head keeps
+ * what precedes the span and the tail what follows it. Enter passes its caret on both ends.
  *
  * The window covers the row's LINE BODY AND ITS WHOLE SUBTREE, and re-emits the descendants
  * unchanged in the middle, because the tail row normally lands AFTER them. That placement is
@@ -789,54 +801,67 @@ function sharedSuffix(a: string, b: string, prefix: number): number {
  * empty the subtree follows the TAIL, which is Enter at a row's start: an empty row above, and the
  * row with its children below it, intact.
  *
- * The tail's kind is the row's own when the kind `continues`, else a plain row; the caller reads
- * that field, because `tree/` knows a descriptor and not the option that declared it.
+ * The opened rows' kind is the row's own when the kind `continues`, else a plain row; the caller
+ * reads that field, because `tree/` knows a descriptor and not the option that declared it.
  *
  * `undefined` — fail closed — for a non-row, a dead node, an editor with no separator to split at,
- * and an anchor outside the row's own body.
+ * fewer than two pieces, and a span that is not inside the row's own body — which is what sends a
+ * paste across several rows back to the ordinary splice.
  */
 export function splitPlan(
 	roots: readonly TreeNode[],
 	node: TreeNode,
-	at: NodeAnchor,
+	span: Anchors,
 	separator: string | undefined,
-	continues: boolean
-): {window: Window; text: string; tail: number} | undefined {
+	continues: boolean,
+	rows: readonly string[]
+): {window: Window; text: string; tail: number; into: number} | undefined {
 	if (node.kind !== 'row' || separator === undefined) return undefined
-	const rows = preorderRows(roots)
-	const index = rows.findIndex(entry => entry.row === node)
+	if (rows.length < 2) return undefined
+	const lines = preorderRows(roots)
+	const index = lines.findIndex(entry => entry.row === node)
 	if (index < 0) return undefined
 
 	const slot = node.slotRange()
-	const offset = offsetOfAnchor(roots, at)
-	if (offset < slot.start || offset > slot.end) return undefined
+	const ends = [offsetOfAnchor(roots, span.anchor), offsetOfAnchor(roots, span.head)]
+	const from = Math.min(...ends)
+	const to = Math.max(...ends)
+	if (from < slot.start || to > slot.end) return undefined
 
 	const body = node.slot()
-	const cut = offset - slot.start
 	// A CARVED row has no subtree to place: its child rows are the body this split is cutting, and
 	// both halves carry their own share of them.
 	const children = hasCells(node) ? [] : node.rows()
 	const descendants =
 		children.length === 0 ? undefined : children.map(child => rowContent(child, separator)).join(separator)
 
-	const head = rowMarkup(node.descriptor(), node.meta(), body.slice(0, cut))
-	const tailLine =
-		node.lead() +
-		rowMarkup(continues ? node.descriptor() : undefined, continues ? node.meta() : undefined, body.slice(cut))
+	const head = rowMarkup(node.descriptor(), node.meta(), body.slice(0, from - slot.start) + rows[0])
+	const opened = rows.slice(1)
+	const openedLines = opened.map(
+		(piece, at) =>
+			node.lead() +
+			rowMarkup(
+				continues ? node.descriptor() : undefined,
+				continues ? node.meta() : undefined,
+				at === opened.length - 1 ? piece + body.slice(to - slot.start) : piece
+			)
+	)
 	const subtree = descendants === undefined ? '' : separator + descendants
 	// The scan's own emptiness, asked of the head this split is about to write — see
 	// {@link scannedAs} for the same test over a row a verb is about to emit.
 	const headKeepsChildren = node.lead() + head !== ''
 
-	const text = headKeepsChildren ? head + subtree + separator + tailLine : head + separator + tailLine + subtree
+	const written = openedLines.join(separator)
+	const text = headKeepsChildren ? head + subtree + separator + written : head + separator + written + subtree
 
 	const start = node.position.start + node.lead().length
 	// The bytes the bound holds right now: the row's own line, plus the subtree and the separator
 	// before it. The subtree's last line carries no trailing separator when it ends the document,
 	// and the bound stops before it when it does — the join puts one back afterwards.
 	const current = rowMarkup(node.descriptor(), node.meta(), body) + subtree
-	// The tail sits past the whole subtree, or directly after the head when the subtree followed it.
-	const tail = index + (headKeepsChildren ? preorderRows([node]).length : 1)
+	// The LAST opened row is where the caret goes, past the subtree when the head kept it and
+	// directly after the head when it did not.
+	const tail = index + (headKeepsChildren ? preorderRows([node]).length : 1) + opened.length - 1
 
 	// TRIMMED to the shared prefix and suffix inside that bound, and it is {@link turnIntoPlan}'s
 	// caret rule rather than an economy — the same defect P4 fixed there and left standing here.
@@ -864,6 +889,9 @@ export function splitPlan(
 		},
 		text: text.slice(prefix, text.length - suffix),
 		tail,
+		// How far INTO the tail's own body the caret goes: past what this wrote there, which for
+		// Enter's empty piece is the tail's entry and for a paste is the end of the clip.
+		into: rows[rows.length - 1].length,
 	}
 }
 

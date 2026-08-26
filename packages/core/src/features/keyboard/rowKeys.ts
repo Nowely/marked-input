@@ -2,6 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import type {Store} from '../../store/Store'
 import type {AnchoredRow, Anchors} from '../tokens'
 import {anchorEquals, entryAnchor, hasRawBody} from '../tokens'
+import type {Replacement} from './beforeInput'
 import {dropUnexpressedInput} from './beforeInput'
 
 type KbCtx = Pick<Store, 'block' | 'edit' | 'overlay' | 'tokens'>
@@ -305,6 +306,38 @@ export function replaceRowSelection(store: KbCtx, event: InputEvent, anchors: An
 	if (event.inputType.startsWith('delete')) return store.tokens.replaceRows(anchors, null)
 	if (event.inputType === 'insertFromPaste') return store.tokens.replaceRows(anchors, replacement)
 	return false
+}
+
+/**
+ * Any line break, whichever platform the clip came from. A clip carries LINES; the document's own
+ * separator is a different question and is the verb's.
+ */
+const LINE_BREAK = /\r\n|\r|\n/
+
+/**
+ * A FOREIGN CLIP'S LINES, OPENED AS ROWS — the row world's answer for a paste that crosses lines,
+ * and the same plan Enter's own split writes. Answers whether it consumed the event.
+ *
+ * The clip was spliced verbatim before this, which took none of the row rules with it: the bytes
+ * between two lines carried no lead and no opener, so a two-line clip pasted into a nested list
+ * item left its second line at depth 0, and one pasted into a table cell ended the table line and
+ * cost the row every cell after the caret. Enter already knows how to open a row; this is that
+ * call with text on both sides of the cut.
+ *
+ * ONLY A FOREIGN CLIP. This editor's own clipboard entry is the value's own projection and already
+ * carries a lead and an opener per line, so opening rows for it would write a second one in front
+ * of each. See {@link Replacement}.
+ *
+ * A RAW CLOSED body is refused for the reason Enter is: its interior already holds separators, so
+ * a line break inside one is content. The ordinary replacement splices the clip there verbatim.
+ */
+export function writeRowsFromInput(store: KbCtx, anchors: Anchors, replacement: Replacement): boolean {
+	if (replacement.markup) return false
+	const rows = replacement.text.split(LINE_BREAK)
+	if (rows.length < 2) return false
+	const caret = store.tokens.rowOf(anchors.anchor)
+	if (!caret || hasRawBody(caret.row)) return false
+	return caret.row.writeRows(anchors, rows)
 }
 
 /**

@@ -2,36 +2,31 @@ import {describe, expect, it} from 'vitest'
 
 import type {CoreOption} from '../../shared/types'
 import type {Store} from '../../store/Store'
+import {MARKPUT_MIME} from '../clipboard/pasteMarkup'
 import type {RowNode, TreeNode} from '../tokens'
 import {mountNestedBlock, selectionRange} from '../tokens/__testing__/mountFixtures'
 
 /**
- * CHARACTERIZATION, not specification. Every expectation below is the value the editor emits
- * TODAY, and every one of them is wrong; each test names the answer it should give instead.
+ * THE SEAM A SPAN CROSSES WHEN IT COVERS WHOLE ROWS, which had no oracle at any level and was
+ * decided in four places that disagreed: `rowSpan()` and `sliceNodes()` in the tree, the paste
+ * path's replacement, and `handleRowIndent` in the keymap. This file was written as a
+ * CHARACTERIZATION of six confirmed defects (`docs/scratch/notion-like/map.md`, the Fog section)
+ * so that closing any of them would redden the case named for it; every one of them is closed here
+ * and every expectation now states the wanted answer.
  *
- * They exist because the seam they cover had no oracle at any level. What a span MEANS when it
- * covers whole rows is decided in four places — `rowSpan()` and `sliceNodes()` in the tree,
- * `replacementForInput` on the paste path, and `handleRowIndent` in the keymap — and `map.md:587`
- * already records the first two disagreeing. An edit there could make the disagreement worse or
- * fix one defect and re-open another, and every suite in the repo stayed green either way. There
- * was also no multi-row paste test anywhere: `Clipboard.spec.ts`'s twenty-four cases are all
- * inline-mark.
+ * There was also no multi-row paste test anywhere — `Clipboard.spec.ts`'s twenty-four cases are
+ * all inline-mark — which is why the paste cases live here rather than beside them.
  *
- * So these are not a wish list. They turn "fixed it" into a visible diff: closing any of the six
- * REDDENS the test named for it, and the person closing it rewrites that expectation to the wanted
- * value written in its own docstring. A green run here means nothing has moved, not that the
- * behaviour is right.
- *
- * All six are the confirmed-and-not-taken list from the 2026-08-26 hardening pass
- * (`docs/scratch/notion-like/map.md`, the Fog section). The readings were re-measured here rather
- * than copied.
+ * The table kind declares `continues: true`, as the showcase's own `tableLine` does. Without it a
+ * split of a table line emits a paragraph, so the fixture could not express the claim its own
+ * cases are about: that the cells either side of a cut stay cells.
  */
 
 const BULLET: CoreOption = {markup: '- __slot__', row: {Component: 'li', continues: true, indents: true}}
 const HEADING: CoreOption = {markup: '## __slot__', row: {Component: 'h2'}}
 /** The cell kind a carve targets — an option with no markup of its own, as a table's cells are. */
 const CELL: CoreOption = {markup: undefined, row: {Component: 'span'}}
-const TABLE: CoreOption = {markup: '| __slot__', row: {Component: 'div', split: {at: ' | ', as: CELL}}}
+const TABLE: CoreOption = {markup: '| __slot__', row: {Component: 'div', continues: true, split: {at: ' | ', as: CELL}}}
 
 const mount = (value: string) =>
 	mountNestedBlock({defaultValue: value, options: [BULLET, HEADING, TABLE, CELL], Mark: () => null})
@@ -71,9 +66,9 @@ function press(container: HTMLElement, key: string, modifiers: KeyboardEventInit
 }
 
 /** A real paste: the text arrives on the event's own `dataTransfer`, which is where the path reads it. */
-function paste(container: HTMLElement, range: Range, text: string): void {
+function paste(container: HTMLElement, range: Range, text: string, mime = 'text/plain'): void {
 	const dataTransfer = new DataTransfer()
-	dataTransfer.setData('text/plain', text)
+	dataTransfer.setData(mime, text)
 	const event = new InputEvent('beforeinput', {
 		inputType: 'insertFromPaste',
 		bubbles: true,
@@ -84,6 +79,17 @@ function paste(container: HTMLElement, range: Range, text: string): void {
 	container.dispatchEvent(event)
 }
 
+/**
+ * A paste of THIS editor's own markup, which arrives the way the copy path leaves it: the entry is
+ * captured off a `paste` event and read back out of the container that captured it.
+ */
+function pasteMarkup(container: HTMLElement, range: Range, markup: string): void {
+	const dataTransfer = new DataTransfer()
+	dataTransfer.setData(MARKPUT_MIME, markup)
+	container.dispatchEvent(new ClipboardEvent('paste', {bubbles: true, cancelable: true, clipboardData: dataTransfer}))
+	paste(container, range, markup, MARKPUT_MIME)
+}
+
 /** The live DOM selection as a Range — what a paste over a standing row selection targets. */
 function liveRange(): Range {
 	const selection = window.getSelection()
@@ -91,34 +97,59 @@ function liveRange(): Range {
 	return selection.getRangeAt(0)
 }
 
-describe('a `\\n` inside PASTED text is spliced raw', () => {
+describe('a pasted clip’s lines open rows', () => {
 	/**
-	 * WANTED: the paste takes Enter's row rules, so the second line becomes a row and the cells
-	 * either side of the caret stay cells. The editor's own Enter from this caret gives
-	 * `'| a\n|  | b\nafter'` and keeps every cell in the table.
+	 * A clip's line break goes through the SPLIT, so the line it opens is a table line of its own
+	 * and the cells either side of the caret stay cells. Spliced raw it was neither: the bare `\n`
+	 * ended the table line and everything after the caret became a paragraph, one cell where there
+	 * had been two.
 	 */
-	it('destroys the carve when a two-line clip is pasted into a table cell', () => {
+	it('keeps the cells either side of the cut when a two-line clip lands in a cell', () => {
 		const {store, container} = mount('| a | b\nafter')
 		const range = caretIn(store, 1, 1)
 
 		paste(container, range, 'one\ntwo')
 
-		expect(store.tokens.value()).toBe('| aone\ntwo | b\nafter')
-		// One body cell where there were two: the separator inside the clip ended the table line.
+		expect(store.tokens.value()).toBe('| aone\n| two | b\nafter')
 		expect(rowsOf(store)[0].rows()).toHaveLength(1)
+		// The line the paste opened is a table line, carrying the cell the caret was in front of.
+		expect(
+			rowsOf(store)[2]
+				.rows()
+				.map(cell => cell.slot())
+		).toEqual(['two', 'b'])
+		// The caret is at the end of what was pasted, which is the end of `two`.
+		expect(selectionRange(store)).toEqual({start: 12, end: 12})
 	})
 
 	/**
-	 * WANTED: the line the paste opens keeps the caret row's depth, the way `continuationDepth`
-	 * does for Enter — `'- parent\n\t- childone\n\ttwo\n- after'`.
+	 * The line keeps the caret row's DEPTH, because the split writes the row's own lead — where the
+	 * raw splice carried none and left the second line at depth 0, outside the list. Its KIND comes
+	 * with it for the same reason Enter's does: the bullet `continues`.
 	 */
-	it('drops a pasted line to depth 0 out of a nested row', () => {
+	it('opens the pasted line at the caret row’s depth', () => {
 		const {store, container} = mount('- parent\n\t- child\n- after')
 		const range = caretIn(store, 1, 5)
 
 		paste(container, range, 'one\ntwo')
 
-		expect(store.tokens.value()).toBe('- parent\n\t- childone\ntwo\n- after')
+		expect(store.tokens.value()).toBe('- parent\n\t- childone\n\t- two\n- after')
+		expect(selectionRange(store)).toEqual({start: 27, end: 27})
+	})
+
+	/**
+	 * THIS EDITOR'S OWN CLIP is the value's own projection — every line already carries its lead and
+	 * its opener — so it is spliced verbatim. Opening rows for it would write a second opener in
+	 * front of each line. The markup entry is what tells the two apart, and it is the same entry the
+	 * copy above put there.
+	 */
+	it('splices this editor’s own markup verbatim', () => {
+		const {store, container} = mount('- parent\n\t- child\n- after')
+		const range = caretIn(store, 1, 5)
+
+		pasteMarkup(container, range, '\n\t- own')
+
+		expect(store.tokens.value()).toBe('- parent\n\t- child\n\t- own\n- after')
 	})
 })
 

@@ -127,7 +127,7 @@ start: number;
 addSibling(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:216](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L216)
+Defined in: [core/src/features/tokens/tree/types.ts:228](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L228)
 
 Open a BLANK row after this row's whole subtree, at this row's own DEPTH — "add below", as a
 verb rather than as a separator a caller splices.
@@ -157,7 +157,7 @@ kind continues is Enter's question.
 duplicate(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:219](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L219)
+Defined in: [core/src/features/tokens/tree/types.ts:231](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L231)
 
 #### Returns
 
@@ -187,7 +187,7 @@ readonly [`TreeNode`](/api/type-aliases/treenode/)[]
 insertAfter(text): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:220](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L220)
+Defined in: [core/src/features/tokens/tree/types.ts:232](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L232)
 
 #### Parameters
 
@@ -236,7 +236,7 @@ start: number;
 mergeWith(next): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:221](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L221)
+Defined in: [core/src/features/tokens/tree/types.ts:233](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L233)
 
 #### Parameters
 
@@ -256,7 +256,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:221](https://github.com/Nowe
 moveTo(placement): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:239](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L239)
+Defined in: [core/src/features/tokens/tree/types.ts:251](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L251)
 
 Move this row AND ITS SUBTREE to `placement`, keeping every row's identity — the moved
 subtree's, its old siblings' and its new siblings'. The subtree is re-indented to sit under
@@ -338,7 +338,7 @@ start: number;
 remove(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:218](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L218)
+Defined in: [core/src/features/tokens/tree/types.ts:230](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L230)
 
 See NodeCommands.
 
@@ -450,7 +450,7 @@ start: number;
 splitAt(at): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:198](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L198)
+Defined in: [core/src/features/tokens/tree/types.ts:210](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L210)
 
 Split this row at `at`: the body before the anchor stays, the body after it becomes a new row
 at the same lead, whose kind is this one when the kind `continues` and a plain row otherwise.
@@ -511,6 +511,37 @@ empty parent; the surplus indent survives verbatim in each child's `lead`.
 | ------ | ------ |
 | `option` | `CoreOption` \| `undefined` |
 | `patch?` | `RowPatch` |
+
+#### Returns
+
+`boolean`
+
+***
+
+### writeRows()
+
+```ts
+writeRows(span, rows): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:193](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L193)
+
+Write `rows` into this row's body at `span`, opening one row per piece past the first: the
+body before the span keeps `rows[0]`, the body after it follows `rows.at(-1)` in the last row
+this opens, and every piece between them becomes a row of its own. [splitAt](/api/interfaces/rownode/#splitat) is the
+degenerate case — one cut and nothing written at it — and this is what a multi-line PASTE
+lands through, so a clip's lines take the row rules rather than a second copy of them.
+
+`false` for fewer than two pieces, for an editor with no separator, and for a span that is
+not inside this row's own body — which is what leaves a paste ACROSS rows to the ordinary
+replacement.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `span` | `Anchors` |
+| `rows` | readonly `string`[] |
 
 #### Returns
 

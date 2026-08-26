@@ -843,19 +843,33 @@ export class TokenModel {
 		 * produced, named by the pre-order index the plan answers. {@link splitPlan} forms that
 		 * index because it is the one layer that may.
 		 */
-		splitAt: (node, at) => {
+		splitAt: (node, at) => this.#commands.writeRows(node, {anchor: at, head: at}, ['', '']),
+		/**
+		 * The general form, and the one the split lowers onto: a cut with text written on both
+		 * sides of it. The caret goes into the LAST row it opened, past what was written there —
+		 * for the split's empty pieces that is the row's entry, which is where Enter has always
+		 * left it.
+		 */
+		writeRows: (node, span, rows) => {
 			this.#ensureSeeded()
-			let split = false
+			let written = false
 			batch(() => {
 				const plan = untracked(() =>
-					splitPlan(this.#tree.roots(), node, at, this.#tree.config()?.separator, this.#continues(node))
+					splitPlan(
+						this.#tree.roots(),
+						node,
+						span,
+						this.#tree.config()?.separator,
+						this.#continues(node),
+						rows
+					)
 				)
 				if (!plan) return
 				if (!this.#tx.applyRange(plan.window, plan.text)) return
-				split = true
-				this.#enterRow(plan.tail)
+				written = true
+				this.#enterRow(plan.tail, plan.into)
 			})
-			return split
+			return written
 		},
 		/**
 		 * The bytes are a LEAD and a SEPARATOR, and the order between them is the whole verb: an
@@ -933,12 +947,24 @@ export class TokenModel {
 	 * applied after the splice so the row exists to be named. A no-op when no such entry came
 	 * back, which is what controlled mode always looks like: the tree has not moved, so
 	 * {@link #applyCaret} would decline anyway.
+	 *
+	 * `into` is how far past that entry the caret belongs, and it is an OFFSET rather than a walk
+	 * because what was written there may parse into several nodes: a pasted clip carrying a markup
+	 * arrives as text and a mark, and stepping `into` characters through the tree would have to
+	 * re-derive the split. Zero is the entry itself, which is every caller but the paste.
 	 */
-	#enterRow(index: number): void {
+	#enterRow(index: number, into = 0): void {
 		// `.at` for `entryAnchor`'s reason; a negative index cannot arrive here — every
 		// caller derives it from a sequence index or a literal 0.
 		const row = untracked(() => rowSequence(this.#tree.roots()).at(index))
-		if (row) this.#applyCaret(entryAnchor(row))
+		if (!row) return
+		if (into === 0) {
+			this.#applyCaret(entryAnchor(row))
+			return
+		}
+		this.#applyCaret(
+			this.anchorAt(untracked(() => (row.kind === 'row' ? row.slotRange().start : row.position.start)) + into)
+		)
 	}
 
 	/**

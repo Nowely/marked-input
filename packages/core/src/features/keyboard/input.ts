@@ -21,6 +21,7 @@ import {
 	handleRowSelection,
 	replaceRowSelection,
 	widenRowScope,
+	writeRowsFromInput,
 } from './rowKeys'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
@@ -197,7 +198,7 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 			return
 		}
 		event.preventDefault()
-		store.edit.setValue(replacement)
+		store.edit.setValue(replacement.text)
 		return
 	}
 
@@ -215,9 +216,14 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 		return
 	}
 
-	// The ROW SELECTION's arm, which needs both of the reads above: a paste or a cut over whole
-	// rows writes over their LINES, which no pair of anchors can address.
-	if (replaceRowSelection(store, event, anchors, replacement)) {
+	// The two ROW arms, which need both of the reads above. A paste or a cut over whole rows writes
+	// over their LINES, which no pair of anchors can address; a foreign clip carrying line breaks
+	// opens a row per line through the same plan Enter's split writes.
+	if (replaceRowSelection(store, event, anchors, replacement.text)) {
+		event.preventDefault()
+		return
+	}
+	if (writeRowsFromInput(store, anchors, replacement)) {
 		event.preventDefault()
 		return
 	}
@@ -230,7 +236,7 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 	}
 
 	event.preventDefault()
-	store.edit.replace(target.anchor, target.head, replacement)
+	store.edit.replace(target.anchor, target.head, replacement.text)
 }
 
 function handlePaste(store: KbCtx, container: HTMLElement, event: ClipboardEvent): void {

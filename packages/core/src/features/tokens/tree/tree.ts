@@ -85,6 +85,7 @@ export function createTokenTree(
 				setDepth: depth => commands?.()?.setDepth(node, depth) ?? false,
 				turnInto: (option, patch) => commands?.()?.turnInto(node, option, patch) ?? false,
 				splitAt: at => commands?.()?.splitAt(node, at) ?? false,
+				writeRows: (span, rows) => commands?.()?.writeRows(node, span, rows) ?? false,
 				addSibling: () => commands?.()?.addSibling(node) ?? false,
 				remove: () => commands?.()?.remove(node) ?? false,
 				duplicate: () => commands?.()?.duplicate(node) ?? false,

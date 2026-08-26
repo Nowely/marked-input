@@ -7,7 +7,7 @@ import {page, userEvent} from 'vitest/browser'
 
 import {BLOCK_CONTROLS, editingHost, findEditingHost, rowsOf} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtOffset, focusAtStart} from '../../shared/lib/focus'
-import {dispatchInsertText} from '../../shared/lib/inputEvents'
+import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
 import {APOLLO_DOC} from './document'
 import {notionOptions} from './notion'
 import * as NotionStories from './Notion.stories.react'
@@ -499,6 +499,21 @@ describe('the keymap on the showcase kinds', () => {
 		await focusAtStart(rowAt(heading.host, 'Launch tasks'))
 		await userEvent.keyboard('{Backspace}')
 		await expect.poll(heading.value).toBe('Launch tasks')
+	})
+
+	/**
+	 * A PASTED CLIP'S LINES ARE ROWS, and they take Enter's rules: the line the clip opens keeps the
+	 * list item's depth and its kind, where the raw `⏎` the paste used to splice carried neither and
+	 * left the second line at depth 0, outside the list. Driven through a real `paste` event so the
+	 * clipboard entry, the `beforeinput` that follows it and the row arm all run in order.
+	 */
+	it('opens a pasted clip’s second line as a row at the caret row’s depth', async () => {
+		const {host, value} = await mountControlled(Showcase, '- alpha\n\t- beta\n- gamma')
+
+		await focusAtEnd(rowAt(host, 'beta'))
+		dispatchPaste(editingHost(host), 'one\ntwo')
+
+		await expect.poll(value).toBe('- alpha\n\t- betaone\n\t- two\n- gamma')
 	})
 
 	/**

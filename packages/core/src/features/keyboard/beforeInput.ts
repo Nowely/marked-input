@@ -63,6 +63,19 @@ export function dropUnexpressedInput(container: HTMLElement, event: InputEvent):
 }
 
 /**
+ * What an input event puts into the document, and WHOSE language it is written in.
+ *
+ * `markup` is true only for this editor's own clipboard entry, which is the value's own
+ * projection — leads, openers and separators already in it. Anything else is foreign text, whose
+ * line breaks mean lines and not structure, and the row world opens those as rows
+ * (`rowKeys.ts`'s `writeRowsFromInput`). Splicing a projection through the same rule would write
+ * a second opener in front of every line it already carries.
+ */
+export type Replacement = {readonly text: string; readonly markup: boolean}
+
+const foreign = (text: string): Replacement => ({text, markup: false})
+
+/**
  * The ONE inputType→replacement table, and since the guards folded into one there is one
  * caller too — `input.ts`'s `beforeinput` — where a per-guard copy used to be the drift
  * hazard this shared table answered. `undefined` means the type has no expression as a value
@@ -70,17 +83,18 @@ export function dropUnexpressedInput(container: HTMLElement, event: InputEvent):
  * insertParagraph, is decided BEFORE this table in `rowKeys.ts`'s `handleRowParagraph`, so
  * the mapping itself stays layout-free.
  */
-export function replacementForInput(container: HTMLElement, event: InputEvent): string | undefined {
-	if (event.inputType.startsWith('delete')) return ''
+export function replacementForInput(container: HTMLElement, event: InputEvent): Replacement | undefined {
+	if (event.inputType.startsWith('delete')) return foreign('')
 	if (event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') {
 		const markup = consumeMarkupPaste(container)
-		return markup ?? event.dataTransfer?.getData('text/plain') ?? event.data ?? ''
+		if (markup !== undefined) return {text: markup, markup: true}
+		return foreign(event.dataTransfer?.getData('text/plain') ?? event.data ?? '')
 	}
-	if (event.inputType === 'insertText') return event.data ?? ''
+	if (event.inputType === 'insertText') return foreign(event.data ?? '')
 	// Enter is a newline in the VALUE, not a DOM line break: the guard owns the edit, so
 	// the browser never gets to build a <div>/<br> inside the host.
-	if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') return '\n'
-	if (event.inputType === 'insertFromDrop') return event.dataTransfer?.getData('text/plain') ?? ''
+	if (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak') return foreign('\n')
+	if (event.inputType === 'insertFromDrop') return foreign(event.dataTransfer?.getData('text/plain') ?? '')
 	return undefined
 }
 
