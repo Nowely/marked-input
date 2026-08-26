@@ -3,10 +3,12 @@ import type {Computed} from '../../shared/signals'
 import {fitPopup, popupSize, windowViewport} from '../../shared/utils/fitPopup'
 import type {PopupAnchor} from '../../shared/utils/fitPopup'
 import {shallow} from '../../shared/utils/shallow'
+import {navigateSuggestions} from '../overlay/suggestionNavigation'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import {hasCells} from '../tokens'
 import type {RowNode, RowPlacement, TokenModel, TreeNode} from '../tokens'
+import {ROW_MENU_ITEMS} from './menu'
 
 /** One answer of {@link RowController.rowAt}'s search: which row, its box, and whether it HOLDS the point. */
 type Hit = {id: number; rect: DOMRect; contained: boolean}
@@ -103,6 +105,13 @@ export class RowController {
 			initial: null,
 			equals: (a, b) => a?.id === b?.id && shallow(a?.anchor, b?.anchor),
 		}),
+		/**
+		 * Index into {@link ROW_MENU_ITEMS} of the highlighted entry — the open menu's own
+		 * highlight, and the only piece of list state this controller holds. See
+		 * {@link RowController.navigateMenu} for why it cannot be `OverlayListModel.active`: that
+		 * one is bound to `overlay.match()`, and the two lists can be open over different rows.
+		 */
+		menuActive: signal({initial: 0}),
 		/** Bumped whenever row geometry may have moved; the layer re-measures off it. */
 		geometry: signal({initial: 0}),
 	}
@@ -217,8 +226,8 @@ export class RowController {
 			watch(this.tokens.committed, () => this.#moved())
 			this.#watchPaintedRows()
 
-			// The menu's dismissal listeners live exactly as long as the menu does — the lazily
-			// attached, interaction-scoped shape `OverlayController` already ships for its own
+			// The menu's dismissal AND KEYBOARD listeners live exactly as long as the menu does — the
+			// lazily attached, interaction-scoped shape `OverlayController` already ships for its own
 			// outside-click. A mounted editor with no menu open attaches nothing.
 			effect(() => {
 				const menu = this.state.menu()
@@ -228,7 +237,11 @@ export class RowController {
 					if (!element.contains(e.target instanceof Node ? e.target : null)) this.closeMenu()
 				})
 				listen(document, 'keydown', e => {
-					if (e.key === 'Escape') this.closeMenu()
+					if (e.key === 'Escape') {
+						this.closeMenu()
+						return
+					}
+					this.#navigateMenu(e)
 				})
 			})
 		})
@@ -261,6 +274,11 @@ export class RowController {
 	 */
 	openMenu(id: number, grip: DOMRect): void {
 		this.state.menu({id, anchor: {top: grip.top, bottom: grip.bottom, left: grip.left}})
+		// THE FIRST ENTRY IS HIGHLIGHTED FROM THE MOMENT IT OPENS, which is `OverlayListModel.active`'s
+		// own rule and the whole of what makes Enter a complete gesture. Here rather than in a watch
+		// on `state.menu`, because a menu re-opened on the SAME row writes an equal value that the
+		// signal's own equality drops.
+		this.state.menuActive(0)
 	}
 
 	closeMenu = (): void => {
@@ -272,6 +290,33 @@ export class RowController {
 	addRow = (): void => this.#runMenuVerb(row => row.kind === 'row' && row.addSibling())
 	duplicateRow = (): void => this.#runMenuVerb(row => row.duplicate())
 	deleteRow = (): void => this.#runMenuVerb(row => row.remove())
+
+	/**
+	 * THE ROW MENU'S KEYBOARD, and it is the SUGGESTION OVERLAY'S — {@link navigateSuggestions} is
+	 * the protocol's one owner, so arrows and Enter cannot mean one thing in the `/` list and
+	 * another in this one. What is per-list is the HIGHLIGHT, which two lists cannot share, and the
+	 * SOURCE: {@link ROW_MENU_ITEMS} rather than `overlay.data`.
+	 *
+	 * The claim it makes true is the one P7 shipped with a hole in it: "one overlay list with one
+	 * keyboard". The `/` menu honoured the contract and this one did not — ArrowDown scrolled the
+	 * page, Enter did nothing, and only Escape worked, so the menu could be operated by the mouse
+	 * alone.
+	 *
+	 * ON `document`, beside the dismissal it sits with, and NOT on the container: the grip's own
+	 * click leaves focus on the grip `<button>`, and while the menu is open that is where the keys
+	 * come from. Cancelled, because ArrowDown on a page-length document scrolls otherwise.
+	 */
+	#navigateMenu(event: KeyboardEvent): void {
+		const result = navigateSuggestions(event.key, this.state.menuActive(), ROW_MENU_ITEMS.length)
+		if (result.action === 'none') return
+		event.preventDefault()
+		if (result.action !== 'select') {
+			this.state.menuActive(result.index)
+			return
+		}
+		// `.at` with its own guard for `noUncheckedIndexedAccess`'s reason, as everywhere else here.
+		ROW_MENU_ITEMS.at(result.index)?.run(this)
+	}
 
 	/**
 	 * `state.dragging` — not the payload — is what says a drop is this editor's own row,

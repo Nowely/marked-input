@@ -26,20 +26,33 @@ import styles from '@markput/core/styles.module.css'
 const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
 export const RowControls = memo(() => {
-	const {controller, tokens, readOnly, draggable, rows, hovered, dragging, drop, menu, menuPosition, geometry} =
-		useMarkput(s => ({
-			controller: s.rows,
-			tokens: s.tokens,
-			readOnly: s.props.readOnly,
-			draggable: s.props.draggable,
-			rows: s.tokens.nodes,
-			hovered: s.rows.state.hovered,
-			dragging: s.rows.state.dragging,
-			drop: s.rows.state.drop,
-			menu: s.rows.state.menu,
-			menuPosition: s.rows.menuPosition,
-			geometry: s.rows.state.geometry,
-		}))
+	const {
+		controller,
+		tokens,
+		readOnly,
+		draggable,
+		rows,
+		hovered,
+		dragging,
+		drop,
+		menu,
+		menuActive,
+		menuPosition,
+		geometry,
+	} = useMarkput(s => ({
+		controller: s.rows,
+		tokens: s.tokens,
+		readOnly: s.props.readOnly,
+		draggable: s.props.draggable,
+		rows: s.tokens.nodes,
+		hovered: s.rows.state.hovered,
+		dragging: s.rows.state.dragging,
+		drop: s.rows.state.drop,
+		menu: s.rows.state.menu,
+		menuActive: s.rows.state.menuActive,
+		menuPosition: s.rows.menuPosition,
+		geometry: s.rows.state.geometry,
+	}))
 	const controlRef = useMemo(() => tokens.control(), [tokens])
 	// STABLE, and it is load-bearing now that something READS `menuElement`: React calls a
 	// callback ref whose identity changed on every render — first with `null`, then with the
@@ -132,8 +145,14 @@ export const RowControls = memo(() => {
 			{menu && (
 				<Popup ref={menuRef} style={{top: menuPosition.top, left: menuPosition.left, pointerEvents: 'auto'}}>
 					<List>
-						{ROW_MENU_ITEMS.map(item => (
-							<ListItem key={item.label} onClick={() => item.run(controller)}>
+						{ROW_MENU_ITEMS.map((item, index) => (
+							// `active` is the same prop and the same class the `/` list paints its
+							// highlight with — one list, one keyboard, one look.
+							<ListItem
+								key={item.label}
+								active={index === menuActive}
+								onClick={() => item.run(controller)}
+							>
 								<span className={item.iconClass} />
 								<span>{item.label}</span>
 							</ListItem>

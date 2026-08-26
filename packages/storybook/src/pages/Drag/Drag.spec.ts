@@ -214,6 +214,49 @@ describe('Feature: drag rows', () => {
 			await userEvent.click(firstChild(host)!)
 			await expect.element(page.getByText('Add below')).not.toBeInTheDocument()
 		})
+
+		/**
+		 * THE ROW MENU HONOURS THE SAME KEYBOARD CONTRACT AS THE `/` LIST, which is what "one overlay
+		 * list with one keyboard" claimed and this menu did not keep: ArrowDown scrolled the page and
+		 * highlighted nothing, Enter did nothing, and only Escape worked — so the menu could be
+		 * operated by the mouse alone. The protocol is `navigateSuggestions`, the same pure function
+		 * the `/` list runs, so the two cannot drift.
+		 *
+		 * The FIRST entry is highlighted from the moment it opens, which is what makes Enter a
+		 * complete gesture on its own (`OverlayListModel.active`'s rule, read at this list).
+		 */
+		it('highlight the first entry the moment it opens, and move the highlight on ArrowDown', async () => {
+			const {host} = await mount(PlainTextDrag)
+			await openMenuForRow(host, 0)
+
+			// The `<li>` carries the highlight class; `getByText` lands on the label span inside it.
+			const entry = (label: string) => getElement(page.getByText(label)).closest('li')!.className
+			expect(entry('Add below')).not.toBe(entry('Duplicate'))
+			expect(entry('Duplicate')).toBe(entry('Delete'))
+
+			await userEvent.keyboard('{ArrowDown}')
+
+			await expect.poll(() => entry('Duplicate')).not.toBe(entry('Add below'))
+			await expect.poll(() => entry('Add below')).toBe(entry('Delete'))
+		})
+
+		/**
+		 * AND THE KEYBOARD RUNS THE VERB, which is the half Escape alone could never reach. Then the
+		 * next character has to LAND: the grip is a `<button>` inside the container, so without the
+		 * editor taking its focus back the row was duplicated into a field that could no longer be
+		 * typed in — the same trap a to-do's checkbox sets, at the one control the editor paints
+		 * itself.
+		 */
+		it('run the highlighted verb on Enter, and leave the field typeable after it', async () => {
+			const {host, value} = await echoPlainText()
+			await openMenuForRow(host, 0)
+
+			await userEvent.keyboard('{ArrowDown}{Enter}')
+
+			await expect.poll(value).toContain('First block of plain text\n\nFirst block of plain text')
+			await expect.element(page.getByText('Add below')).not.toBeInTheDocument()
+			expect(document.activeElement).toBe(host)
+		})
 	})
 
 	describe('add row', () => {

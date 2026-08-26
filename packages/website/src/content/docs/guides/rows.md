@@ -168,6 +168,10 @@ Add, duplicate and delete a row, and convert it to another kind. One menu per ed
 grip or by the `/` trigger, and addressed by the id of the row it opened on — so a row that has left
 the tree refuses instead of being written to.
 
+Both lists take the same keyboard: the first entry is highlighted from the moment the menu opens,
+`ArrowUp`/`ArrowDown` move the highlight, `Enter` runs it and `Esc` closes. After a verb the editor
+takes its focus back from the grip, so the next character lands in the document.
+
 Which kinds it offers is not a list you write: an option that declares a `menu` IS in the menu. See
 [Overlay Customization → The Row Menu](/guides/overlay-customization#the-row-menu).
 
