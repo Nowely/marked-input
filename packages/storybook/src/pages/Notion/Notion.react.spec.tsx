@@ -480,6 +480,28 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * THE DEMOTE LADDER, on the page's own kinds: a row gives up its DEPTH first and then its KIND,
+	 * and both keys that climb it are `showcase.md`'s own — Enter to leave a list from its empty
+	 * last item, Backspace at a block's start to make it a paragraph. Every other Enter and
+	 * Backspace here lands on a row with text in it, where the ladder never runs at all, so a
+	 * ladder that gave nothing back left this file green.
+	 */
+	it('leaves the list on Enter from an empty item, and un-types a heading on Backspace at its start', async () => {
+		const list = await mountControlled(Showcase, '- alpha')
+		await focusAtEnd(rowAt(list.host, 'alpha'))
+		await userEvent.keyboard('{Enter}')
+		await expect.poll(list.value).toBe('- alpha\n- ')
+
+		await userEvent.keyboard('{Enter}')
+		await expect.poll(list.value).toBe('- alpha\n')
+
+		const heading = await mountControlled(Showcase, '## Launch tasks')
+		await focusAtStart(rowAt(heading.host, 'Launch tasks'))
+		await userEvent.keyboard('{Backspace}')
+		await expect.poll(heading.value).toBe('Launch tasks')
+	})
+
+	/**
 	 * THE COMMONEST STRUCTURAL GESTURE, asserted where it can actually fail: MID-row, and through
 	 * the next keystroke. Every other Enter case in the suite drives from `focusAtEnd`, the one
 	 * position where a caret left at the tail's END is indistinguishable from a caret at its start
