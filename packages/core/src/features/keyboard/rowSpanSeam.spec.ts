@@ -28,8 +28,10 @@ const HEADING: CoreOption = {markup: '## __slot__', row: {Component: 'h2'}}
 const CELL: CoreOption = {markup: undefined, row: {Component: 'span'}}
 const TABLE: CoreOption = {markup: '| __slot__', row: {Component: 'div', continues: true, split: {at: ' | ', as: CELL}}}
 
-const mount = (value: string) =>
-	mountNestedBlock({defaultValue: value, options: [BULLET, HEADING, TABLE, CELL], Mark: () => null})
+const mountWith = (value: string, separator: string) =>
+	mountNestedBlock({defaultValue: value, separator, options: [BULLET, HEADING, TABLE, CELL], Mark: () => null})
+
+const mount = (value: string) => mountWith(value, '\n')
 
 /** Every row in pre-order — the space the verbs and the projection both speak. */
 function rowsOf(store: Store): RowNode[] {
@@ -180,6 +182,12 @@ describe('a row selection is the rows, opener and all', () => {
 	 * front of whatever landed. `TokenModel.replaceRows` writes over the row's LINE instead, which is
 	 * the same bytes the clipboard carried — and the same answer the editor already gave for this
 	 * clip pasted into an EMPTY row.
+	 *
+	 * THIS EDITOR'S OWN clip, through the markup entry — which is what makes the case about the SPAN
+	 * rather than about the clip. Written through `paste()` it went out on the FOREIGN channel while
+	 * carrying an opener per line and a `⏎` that happened to equal this fixture's separator: the one
+	 * clip for which the verbatim splice and the row-aware answer produce the same bytes, so the
+	 * case could not fail for the reading it claimed.
 	 */
 	it('replaces the selected row with the clip, opener and all', () => {
 		const {store, container} = mount('- target\ntail')
@@ -187,9 +195,87 @@ describe('a row selection is the rows, opener and all', () => {
 		press(container, 'Escape')
 		expect(store.block.selected()).toHaveLength(1)
 
-		paste(container, liveRange(), '- one\n- two')
+		pasteMarkup(container, liveRange(), '- one\n- two')
 
 		expect(store.tokens.value()).toBe('- one\n- two\ntail')
+	})
+
+	/**
+	 * A FOREIGN CLIP IS LINES, and over a row selection it takes the same rules it takes at a caret
+	 * in the same row: the covered row's lead on every line, and its kind where the kind continues.
+	 * Spliced verbatim — which is what this arm did — a two-line clip over a NESTED bullet landed
+	 * both lines at depth 0 with no opener and cut the list in two, while the identical clip at a
+	 * caret one keystroke earlier gave `'- parent⏎⇥- childone⏎⇥- two⏎- after'`.
+	 *
+	 * The literal `- ` in the second case is the point of it: foreign text is text. A clip that
+	 * looks like this editor's own markup is not this editor's own markup, and the caret path has
+	 * always written it as body content.
+	 */
+	it('opens a foreign clip’s lines as rows at the covered row’s depth and kind', () => {
+		const {store, container} = mount('- parent\n\t- child\n- after')
+		caretIn(store, 1, 0)
+		press(container, 'Escape')
+		expect(store.block.selected()).toHaveLength(1)
+
+		paste(container, liveRange(), 'one\ntwo')
+
+		expect(store.tokens.value()).toBe('- parent\n\t- one\n\t- two\n- after')
+	})
+
+	it('writes a foreign clip’s markup-looking bytes as body text', () => {
+		const {store, container} = mount('- target\ntail')
+		caretIn(store, 0, 0)
+		press(container, 'Escape')
+
+		paste(container, liveRange(), '- one\n- two')
+
+		expect(store.tokens.value()).toBe('- - one\n- - two\ntail')
+	})
+
+	/**
+	 * A CARRIAGE RETURN IS A LINE BREAK, whatever the document's separator is — the rule
+	 * `keyboard-handling.md` states — and this arm was the one place it was not. A Windows clip left
+	 * a literal `\r` sitting inside a row's body, in the value handed to `onChange`.
+	 */
+	it('normalizes a CRLF clip to the document’s own separator', () => {
+		const {store, container} = mount('- target\ntail')
+		caretIn(store, 0, 0)
+		press(container, 'Escape')
+
+		paste(container, liveRange(), 'one\r\ntwo')
+
+		expect(store.tokens.value()).toBe('- one\n- two\ntail')
+	})
+
+	/**
+	 * THE CASE THAT CANNOT BE ARGUED AS A PREFERENCE: with a separator that is not a newline, the
+	 * verbatim splice wrote a `⏎` the document's own encoding has no meaning for — a character
+	 * inside a row's body, produced by a paste, where the user pasted two lines and got one row.
+	 */
+	it('opens the lines as rows when the separator is not a newline', () => {
+		const {store, container} = mountWith('- alpha;;- beta', ';;')
+		caretIn(store, 0, 0)
+		press(container, 'Escape')
+		expect(store.block.selected()).toHaveLength(1)
+
+		paste(container, liveRange(), 'one\ntwo')
+
+		expect(store.tokens.value()).toBe('- one;;- two;;- beta')
+	})
+
+	/**
+	 * A ONE-LINE foreign clip takes the same rule, which is what makes a paste agree with TYPING
+	 * over the same selection — a character typed there already keeps the row's kind
+	 * (`'## Head'` + `x` → `'## x'`). Pasting one lost it.
+	 */
+	it('keeps the covered row’s kind for a single-line clip', () => {
+		const {store, container} = mount('- target\ntail')
+		caretIn(store, 0, 0)
+		press(container, 'Escape')
+
+		paste(container, liveRange(), 'one')
+
+		expect(store.tokens.value()).toBe('- one\ntail')
 	})
 
 	/**

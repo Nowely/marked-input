@@ -314,32 +314,43 @@ function demote(caret: AnchoredRow): boolean {
 }
 
 /**
+ * Any line break, whichever platform the clip came from. A clip carries LINES; the document's own
+ * separator is a different question and is the verb's.
+ */
+const LINE_BREAK = /\r\n|\r|\n/
+
+/**
  * THE ROW SELECTION'S ARM OF `beforeinput`: a paste or a delete over whole rows edits the ROWS,
  * openers and leads included, rather than the span between two anchors. Answers whether it consumed
  * the event; `false` leaves the ordinary path, which is every selection that is not a whole number
  * of rows. See {@link TokenModel.replaceRows} for the reading all four gestures share.
  *
- * A DELETE removes them and a PASTE replaces them with the clip, which is what the clipboard
- * carried out of the same span. TYPING is deliberately not on the list: a character replaces the
- * text that was selected and the row it was typed in keeps its kind, which is the granularity every
- * other inline edit has.
+ * A DELETE removes them and a PASTE replaces them with the clip. TYPING is deliberately not on the
+ * list: a character replaces the text that was selected and the row it was typed in keeps its kind,
+ * which is the granularity every other inline edit has.
+ *
+ * WHOSE LANGUAGE THE CLIP IS IN is the same question {@link writeRowsFromInput} asks at a caret,
+ * and this arm asked it nowhere: it handed the verb a finished STRING, so a foreign clip pasted
+ * over a row selection took none of the row rules — its lines lost the covered row's lead and kind,
+ * its `\r` survived into the value, and its `⏎` became a row boundary in a document whose separator
+ * is not one. {@link Replacement} carries the answer, computed one layer up, and it now reaches the
+ * verb: this editor's own projection stays a string, a foreign clip arrives as LINES.
  *
  * THE DELETE ARM IS THE ONE FOR DELETES THAT ANSWER TO NO KEYDOWN OF OURS — an Edit-menu delete, a
  * synthetic `deleteByCut`. Backspace's own keydown arm and the `cut` listener both cancel their
  * event and call {@link TokenModel.replaceRows} directly, so neither reaches this function; what
  * the three spellings share is the verb, not this route.
  */
-export function replaceRowSelection(store: KbCtx, event: InputEvent, anchors: Anchors, replacement: string): boolean {
+export function replaceRowSelection(
+	store: KbCtx,
+	event: InputEvent,
+	anchors: Anchors,
+	replacement: Replacement
+): boolean {
 	if (event.inputType.startsWith('delete')) return store.tokens.replaceRows(anchors, null)
-	if (event.inputType === 'insertFromPaste') return store.tokens.replaceRows(anchors, replacement)
-	return false
+	if (event.inputType !== 'insertFromPaste') return false
+	return store.tokens.replaceRows(anchors, replacement.markup ? replacement.text : replacement.text.split(LINE_BREAK))
 }
-
-/**
- * Any line break, whichever platform the clip came from. A clip carries LINES; the document's own
- * separator is a different question and is the verb's.
- */
-const LINE_BREAK = /\r\n|\r|\n/
 
 /**
  * A FOREIGN CLIP'S LINES, OPENED AS ROWS — the row world's answer for a paste that crosses lines,

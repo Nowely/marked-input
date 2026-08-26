@@ -777,6 +777,37 @@ function sharedSuffix(a: string, b: string, prefix: number): number {
 }
 
 /**
+ * A LINE OPENED BESIDE `node`: written at its LEAD, and carrying its KIND where the kind continues
+ * into a row a split produces. The one rule for every arriving line, and it has two writers — the
+ * lines {@link splitPlan} opens at a cut, and the lines {@link rowSelectionRows} writes in a
+ * covered row's place. Answering it twice is how a paste at a caret and the same paste over a row
+ * selection came to disagree about the same clip.
+ */
+function openedLine(node: RowNode, continues: boolean, text: string): string {
+	return node.lead() + rowMarkup(continues ? node.descriptor() : undefined, continues ? node.meta() : undefined, text)
+}
+
+/**
+ * A FOREIGN CLIP'S LINES AS THE ROWS THAT REPLACE A ROW SELECTION — `first`'s lead on every one of
+ * them, and its kind where the kind continues, joined by the document's own separator.
+ *
+ * The rows a selection holds are being replaced whole, so the row that decides how the arriving
+ * lines are written is the FIRST of them: the depth the user was at, and the kind they were in.
+ * That is the same answer {@link splitPlan} gives for a clip pasted at a caret in that row, which
+ * is the point — the two gestures disagreed, and a foreign clip over a row selection was spliced
+ * verbatim, so its `\r` survived into the value and its `⏎` became a row boundary in a document
+ * whose separator is not one.
+ */
+export function rowSelectionRows(
+	first: RowNode,
+	continues: boolean,
+	lines: readonly string[],
+	separator: string
+): string {
+	return lines.map(line => openedLine(first, continues, line)).join(separator)
+}
+
+/**
  * Opening ROWS inside one row's own body, as ONE splice plus the PRE-ORDER index of the row the
  * caret belongs in and how far into it. Enter's split is the degenerate case — two empty pieces,
  * which is a cut and nothing written at it.
@@ -842,14 +873,8 @@ export function splitPlan(
 
 	const head = rowMarkup(node.descriptor(), node.meta(), body.slice(0, from - slot.start) + rows[0])
 	const opened = rows.slice(1)
-	const openedLines = opened.map(
-		(piece, at) =>
-			node.lead() +
-			rowMarkup(
-				continues ? node.descriptor() : undefined,
-				continues ? node.meta() : undefined,
-				at === opened.length - 1 ? piece + body.slice(to - slot.start) : piece
-			)
+	const openedLines = opened.map((piece, at) =>
+		openedLine(node, continues, at === opened.length - 1 ? piece + body.slice(to - slot.start) : piece)
 	)
 	const subtree = descendants === undefined ? '' : separator + descendants
 	// The scan's own emptiness, asked of the head this split is about to write — see

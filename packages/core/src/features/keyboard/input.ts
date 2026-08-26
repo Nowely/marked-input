@@ -219,7 +219,7 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 	// The two ROW arms, which need both of the reads above. A paste or a cut over whole rows writes
 	// over their LINES, which no pair of anchors can address; a foreign clip carrying line breaks
 	// opens a row per line through the same plan Enter's split writes.
-	if (replaceRowSelection(store, event, anchors, replacement.text)) {
+	if (replaceRowSelection(store, event, anchors, replacement)) {
 		event.preventDefault()
 		return
 	}

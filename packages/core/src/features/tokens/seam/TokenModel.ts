@@ -42,6 +42,7 @@ import {
 	removePlan,
 	rowOf,
 	rowScope,
+	rowSelectionRows,
 	rowSelectionSpan,
 	splitPlan,
 	turnIntoPlan,
@@ -288,22 +289,32 @@ export class TokenModel {
 	 * the separator that held the rows apart from the document with them, where a replacement leaves
 	 * it to separate whatever arrives. Enter over a row selection wants the second — it opens a fresh
 	 * row exactly as it does over an all-selected document.
+	 *
+	 * WHOSE LANGUAGE `rows` IS WRITTEN IN is the difference between the two replacement forms, and
+	 * it is the same distinction {@link Replacement} draws at the event. A STRING is the value's own
+	 * projection — leads, openers and separators already in it — and is spliced verbatim; that is
+	 * this editor's own clipboard entry, and Enter's empty row. An ARRAY is LINES, in nobody's
+	 * language, and each one is OPENED as a row at the covered rows' lead and kind
+	 * ({@link rowSelectionRows}) — which is what a foreign clip is, and what the caret path has
+	 * always done with one. Spliced verbatim instead, a foreign clip's `\r` survived into the value
+	 * and its `⏎` became a row boundary in a document whose separator is not one.
 	 */
-	replaceRows(anchors: Anchors, rows: string | null): boolean {
+	replaceRows(anchors: Anchors, rows: string | readonly string[] | null): boolean {
 		this.#ensureSeeded()
 		let written = false
 		// One tick for value and selection, as `EditController.replace` batches its own pair.
 		batch(() => {
+			const separator = untracked(() => this.#tree.config()?.separator)
 			const span = untracked(() =>
-				rowSelectionSpan(
-					this.#tree.roots(),
-					anchors,
-					this.#tree.config()?.separator,
-					rows === null ? 'remove' : 'replace'
-				)
+				rowSelectionSpan(this.#tree.roots(), anchors, separator, rows === null ? 'remove' : 'replace')
 			)
-			if (!span) return
-			const caret = this.#replaceWithin(span.start, span.end, rows ?? '')
+			if (!span || separator === undefined) return
+			const first = span.rows[0]
+			const text =
+				rows === null || typeof rows === 'string'
+					? (rows ?? '')
+					: untracked(() => rowSelectionRows(first, this.#continues(first), rows, separator))
+			const caret = this.#replaceWithin(span.start, span.end, text)
 			if (!caret) return
 			written = true
 			this.#applyCaret(caret)
