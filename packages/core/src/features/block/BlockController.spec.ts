@@ -963,7 +963,9 @@ describe('drag and drop', () => {
 	it('moves the row at every horizontal position of its own gap, never leaving it put', () => {
 		const outcomes = [0, NESTED_INDENT + 8, 400].map(clientX => {
 			const {store, block, container, painted} = mountNestedRows('alpha\n\tbeta\ngamma')
-			const beta = store.tokens.nodes()[0].rows()[0]
+			const alpha = store.tokens.nodes()[0]
+			if (alpha.kind !== 'row') throw new Error('expected a row')
+			const beta = alpha.rows()[0]
 			block.beginDrag(beta.id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 			const own = painted.get(beta.id)!.getBoundingClientRect()
 			dragOverAt(container, clientX, own.bottom - 1)
