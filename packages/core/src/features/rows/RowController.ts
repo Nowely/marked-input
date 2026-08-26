@@ -243,6 +243,15 @@ export class RowController {
 	 */
 	pinHover = (): void => {
 		this.#pinned = true
+		// AND THE ROW SELECTION IS TAKEN HERE TOO, for the pin's own reason widened by one
+		// measurement: between the grip's mousedown and Chromium's `dragstart` the row selection is
+		// already GONE. Traced on a real drag of a Shift-selected pair — `store.rows.selected()`
+		// answers 2 inside the mousedown handler and 0 inside a document-capture `dragstart`, before
+		// `beginDrag` runs — because the selection a row selection is DERIVED from belongs to
+		// Chromium for the length of a native drag, and it moves it. Read at `dragstart` the drag
+		// picked up one row of the two; read at the drop it picked up the rows under the POINTER.
+		// See {@link acting}.
+		this.#dragged = this.selected()
 	}
 
 	/**
@@ -273,6 +282,10 @@ export class RowController {
 	beginDrag(id: number, e: DragEvent): void {
 		if (!e.dataTransfer) return
 		e.dataTransfer.effectAllowed = 'move'
+		// Picking up a row that is NOT part of the selection {@link pinHover} took drags that row
+		// and nothing else. A drag that reached here without a press — a consumer's own — finds an
+		// empty set and gets the same answer.
+		if (!this.#dragged.includes(id)) this.#dragged = [id]
 		this.state.dragging(id)
 		// `setDragImage` needs the ROW element and reaches it through the same registry `bind`
 		// reads — which is why the per-row store's `refs.container` needed no replacement here.
@@ -285,6 +298,7 @@ export class RowController {
 		// The drag path's pin release: Chromium delivers NO mouseup for a drag at all — measured
 		// order is pointerdown, mousedown, dragstart, pointercancel, drop, dragend.
 		this.#pinned = false
+		this.#dragged = []
 		this.state.dragging(null)
 		this.state.drop(null)
 	}
@@ -742,8 +756,8 @@ export class RowController {
 	}
 
 	/**
-	 * THE ROWS A VERB HERE ACTS ON: the row selection, or the gripped row alone when a drag started
-	 * outside it.
+	 * THE ROWS A VERB HERE ACTS ON: the ones the DRAG picked up, or the row selection when no drag
+	 * is standing.
 	 *
 	 * THE DRAG'S RULE, and only the drag's: the menu verbs act on the row their menu was opened on,
 	 * which {@link runMenuVerb} resolves from `state.menu` alone. Picking up a row that is NOT part
@@ -751,15 +765,24 @@ export class RowController {
 	 * selection on `dragstart`, moves the caret inside a live native drag for a fact the layer can
 	 * simply read.
 	 *
-	 * Resolving each id through the LIVE tree is also the liveness check: a re-parse mid-drag mints
-	 * new ids, so the set empties and every verb behind it fails closed.
+	 * THE SET IS CAPTURED AT THE PRESS AND NOT RE-READ, and that is measured rather than tidy. The
+	 * row selection is DERIVED from the text selection, and Chromium OWNS the text selection for the
+	 * length of a native drag: `store.rows.selected()` answers 2 inside the grip's mousedown and 0
+	 * by `dragstart`, and by `drop` it names the rows under the POINTER instead — traced on a real
+	 * drag of a Shift-selected pair. Re-derived here, the gesture moved one row of the two. Nothing
+	 * synthetic can see it: a fabricated drag leaves the selection exactly where the test put it.
+	 * {@link pinHover} is where the capture lives, for the same reason the hover pin does.
+	 *
+	 * What stays live is the LOOKUP — every id is resolved through the current tree, so a re-parse
+	 * mid-drag mints new ids, the set empties, and every verb behind it fails closed.
 	 */
 	#acting(): RowNode[] {
-		const source = this.state.dragging()
-		const selected = this.selected()
-		const ids = source !== null && !selected.includes(source) ? [source] : selected
+		const ids = this.state.dragging() === null ? this.selected() : this.#dragged
 		return ids.map(id => this.tokens.find(id)).filter((node): node is RowNode => node?.kind === 'row')
 	}
+
+	/** The ids {@link beginDrag} picked up, held for the length of the gesture — see {@link acting}. */
+	#dragged: readonly number[] = []
 
 	/**
 	 * Where the hit row's OWN LINE ends: its first painted child row's top, or its own bottom when

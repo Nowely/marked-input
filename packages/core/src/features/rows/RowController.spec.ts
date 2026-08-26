@@ -595,6 +595,7 @@ describe('drag and drop', () => {
 		const id = store.tokens.nodes()[2].id
 		const dataTransfer = new DataTransfer()
 
+		controller.pinHover()
 		controller.beginDrag(id, new DragEvent('dragstart', {dataTransfer}))
 
 		// The payload is what a drag OUT of this editor delivers, and nothing more: the drop
@@ -745,6 +746,7 @@ describe('drag and drop', () => {
 		const alpha = store.tokens.nodes()[0]
 		if (alpha.kind !== 'row') throw new Error('expected a row')
 		const kid = alpha.rows()[0]
+		controller.pinHover()
 		controller.beginDrag(store.tokens.nodes()[2].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 
 		const kidBox = painted.get(kid.id)!.getBoundingClientRect()
@@ -779,6 +781,7 @@ describe('drag and drop', () => {
 		const {controller, container, painted, store} = mounted
 		const [alpha, beta] = store.tokens.nodes()
 		if (alpha.kind !== 'row' || beta.kind !== 'row') throw new Error('expected rows')
+		controller.pinHover()
 		controller.beginDrag(store.tokens.nodes()[2].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 
 		const betaBox = painted.get(beta.id)!.getBoundingClientRect()
@@ -803,6 +806,7 @@ describe('drag and drop', () => {
 		const {controller, container, painted, store} = mounted
 		const [alpha] = store.tokens.nodes()
 		if (alpha.kind !== 'row') throw new Error('expected a row')
+		controller.pinHover()
 		controller.beginDrag(store.tokens.nodes()[2].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 
 		const box = painted.get(alpha.id)!.getBoundingClientRect()
@@ -826,6 +830,7 @@ describe('drag and drop', () => {
 		const mounted = mountNestedRows('| a | b\nplain\ntail', {options: [table, cell]})
 		const {controller, container, painted, store} = mounted
 		const [line] = store.tokens.nodes()
+		controller.pinHover()
 		controller.beginDrag(store.tokens.nodes()[2].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 
 		const box = painted.get(line.id)!.getBoundingClientRect()
@@ -871,6 +876,7 @@ describe('drag and drop', () => {
 		const {controller, container, painted, store} = mounted
 		const alpha = store.tokens.nodes()[0]
 		if (alpha.kind !== 'row') throw new Error('expected a row')
+		controller.pinHover()
 		controller.beginDrag(store.tokens.nodes()[1].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 
 		const box = painted.get(alpha.id)!.getBoundingClientRect()
@@ -893,6 +899,7 @@ describe('drag and drop', () => {
 		if (alpha.kind !== 'row') throw new Error('expected a row')
 		const kidBottom = painted.get(alpha.rows()[0].id)!.getBoundingClientRect().bottom
 
+		controller.pinHover()
 		controller.beginDrag(store.tokens.nodes()[0].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 		dragOverAt(container, 0, kidBottom + 30)
 		dropOn(container)
@@ -908,6 +915,7 @@ describe('drag and drop', () => {
 		if (alpha.kind !== 'row') throw new Error('expected a row')
 		const kidBox = painted.get(alpha.rows()[0].id)!.getBoundingClientRect()
 
+		controller.pinHover()
 		controller.beginDrag(store.tokens.nodes()[0].id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 		dragOverAt(container, kidBox.left, kidBox.bottom + 30)
 		dropOn(container)
@@ -927,6 +935,7 @@ describe('drag and drop', () => {
 		store.tokens.selection.select(store.tokens.anchorAt(4), store.tokens.anchorAt(13))
 		expect(controller.selected()).toEqual([ids[1], ids[2]])
 
+		controller.pinHover()
 		controller.beginDrag(ids[1], new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 		dragOver(container, painted.get(ids[3])!, 'after')
 		dropOn(container)
@@ -943,6 +952,7 @@ describe('drag and drop', () => {
 		const ids = store.tokens.nodes().map(node => node.id)
 		store.tokens.selection.select(store.tokens.anchorAt(4), store.tokens.anchorAt(13))
 
+		controller.pinHover()
 		controller.beginDrag(ids[0], new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 		dragOver(container, painted.get(ids[3])!, 'after')
 		dropOn(container)
@@ -984,6 +994,7 @@ describe('drag and drop', () => {
 			const alpha = store.tokens.nodes()[0]
 			if (alpha.kind !== 'row') throw new Error('expected a row')
 			const beta = alpha.rows()[0]
+			controller.pinHover()
 			controller.beginDrag(beta.id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 			const own = painted.get(beta.id)!.getBoundingClientRect()
 			dragOverAt(container, clientX, own.bottom - 1)

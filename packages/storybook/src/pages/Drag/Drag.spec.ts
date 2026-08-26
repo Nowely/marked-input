@@ -3,6 +3,7 @@ import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {caretIsInside, firstChild, getElement, rowsOf} from '../../shared/lib/dom'
+import {dragRowTo, GRIP, gripOfRow} from '../../shared/lib/drag'
 import {focusAtEnd, focusAtStart, settle, verifyCaretPosition} from '../../shared/lib/focus'
 import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
 import {defineMark, Mark} from '../../shared/lib/marks'
@@ -30,33 +31,33 @@ const CONTROLLED_ARGS = {
 	draggable: true,
 } as const
 
-const GRIP = {name: 'Drag to reorder or click for options'} as const
-
 /**
  * The ONE grip. It lives in the editor's controls layer rather than inside a row, so it is found
  * on the host and follows the pointer: hovering a row is what puts it on that row.
  */
-async function gripOfRow(host: HTMLElement, rowIndex: number) {
-	await userEvent.hover(rowsOf(host)[rowIndex])
-	return page.elementLocator(host).getByRole('button', GRIP).findElement()
+async function gripElementOfRow(host: HTMLElement, rowIndex: number) {
+	return (await gripOfRow(host, rowsOf(host)[rowIndex])).findElement()
 }
 
 /** Hovers a row, then clicks its grip — the only way the row menu opens. */
 async function openMenuForRow(host: HTMLElement, rowIndex: number) {
-	await userEvent.click(await gripOfRow(host, rowIndex))
+	await userEvent.click(await gripElementOfRow(host, rowIndex))
 }
 
 /**
- * The TARGET half of a drag: dragover then drop, both on the CONTAINER, which is where the layer
- * listens, carrying the clientY that names the edge. Its own helper because the host it aims at
- * need not be the one the drag started in — that is how a foreign drag arrives.
+ * The TARGET half of a FOREIGN drag: dragover then drop, both on the CONTAINER, which is where the
+ * layer listens. Fabricated on purpose and only here — a drag that started in another application
+ * is the one gesture Playwright cannot drive, and what these two cases assert is that the editor
+ * claims NEITHER event. Every drag of the editor's own row goes through {@link dragRow}, which is
+ * real; see `shared/lib/drag.ts` for why that matters.
  */
 function dropOnRow(host: HTMLElement, rowIndex: number, dt: DataTransfer, position: 'before' | 'after' = 'after') {
 	const rect = rowsOf(host)[rowIndex].getBoundingClientRect()
 	const clientY = position === 'before' ? rect.top + 1 : rect.bottom - 1
-	const over = new DragEvent('dragover', {bubbles: true, cancelable: true, dataTransfer: dt, clientY})
+	const clientX = rect.left
+	const over = new DragEvent('dragover', {bubbles: true, cancelable: true, dataTransfer: dt, clientX, clientY})
 	host.dispatchEvent(over)
-	const drop = new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt, clientY})
+	const drop = new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt, clientX, clientY})
 	host.dispatchEvent(drop)
 	return {over, drop}
 }
@@ -72,24 +73,38 @@ function menuBox(inner: HTMLElement): DOMRect {
 	throw new Error('Expected a fixed-positioned menu ancestor')
 }
 
-/** The grip's own `dragstart` — the only thing that makes a later drop this editor's own row. */
+/**
+ * The grip's own `dragstart`, left standing — for the two cases whose subject is what happens
+ * BETWEEN `dragstart` and the drop, where a real drag gives the test no seam to look through.
+ */
 async function beginRowDrag(host: HTMLElement, rowIndex: number) {
-	const grip = await gripOfRow(host, rowIndex)
+	const grip = await gripElementOfRow(host, rowIndex)
 	const dt = new DataTransfer()
 	grip.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer: dt}))
 	return {grip, dt, end: () => grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))}
 }
 
-/** The whole sequence a browser produces, start to finish, inside ONE editor. */
+/**
+ * A whole drag of row `sourceIndex`, released on `targetIndex`'s own line — REAL, driven by the
+ * browser through {@link dragRowTo}.
+ *
+ * BOTH COORDINATES, and the X is the half this file used to leave out: a synthetic event carries
+ * only what the author set, `clientX` defaulted to 0, and every drop this suite made therefore
+ * resolved to the shallowest depth on offer. It could not nest a row at all, which is how a drop
+ * that wrote a row into a parent painting none of its children shipped under a green suite.
+ */
 async function dragRow(
 	host: HTMLElement,
 	sourceIndex: number,
 	targetIndex: number,
 	position: 'before' | 'after' = 'after'
 ) {
-	const {dt, end} = await beginRowDrag(host, sourceIndex)
-	dropOnRow(host, targetIndex, dt, position)
-	end()
+	const target = rowsOf(host)[targetIndex]
+	const rect = target.getBoundingClientRect()
+	await dragRowTo(host, rowsOf(host)[sourceIndex], target, {
+		clientX: rect.left,
+		clientY: position === 'before' ? rect.top + 1 : rect.bottom - 1,
+	})
 }
 
 /** The helper stories driven as a controlled field that echoes `onChange` back into `value`. */
@@ -164,7 +179,7 @@ describe('Feature: drag rows', () => {
 			await page.viewport(640, 220)
 			try {
 				const {host} = await mount(PlainTextDrag, {defaultValue: 'a\n\nb\n\nc\n\nd\n\ne\n\nf\n\ng'})
-				const grip = await gripOfRow(host, rowsOf(host).length - 1)
+				const grip = await gripElementOfRow(host, rowsOf(host).length - 1)
 				const gripBox = grip.getBoundingClientRect()
 
 				await userEvent.click(grip)
@@ -453,7 +468,7 @@ describe('Feature: drag rows', () => {
 			// the container's hit-test — and the grip sits in its own row's vertical band, so the
 			// hover it recomputes is the row it is already on.
 			const {host} = await mount(PlainTextDrag)
-			const grip = await gripOfRow(host, 0)
+			const grip = await gripElementOfRow(host, 0)
 
 			await userEvent.hover(grip)
 			expect(grip.parentElement!.matches('[class*="SidePanelVisible"]')).toBe(true)
@@ -465,7 +480,7 @@ describe('Feature: drag rows', () => {
 			// left behind. It stays MOUNTED — its own `dragend` is the pin's release, and
 			// Chromium sends no mouseup for a drag at all.
 			const {host} = await mount(PlainTextDrag)
-			const grip = await gripOfRow(host, 0)
+			const grip = await gripElementOfRow(host, 0)
 			const visible = () => grip.parentElement!.matches('[class*="SidePanelVisible"]')
 			expect(visible()).toBe(true)
 
@@ -678,7 +693,7 @@ describe('Feature: drag rows', () => {
 			})
 			await focusAtEnd(rowsOf(host)[0])
 			const row = rowsOf(host)[3]
-			const grip = await gripOfRow(host, 3)
+			const grip = await gripElementOfRow(host, 3)
 			expect(Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
 
 			// Enter splits row 0 in two, so every row below it moves down by a row.
@@ -720,7 +735,7 @@ describe('Feature: drag rows', () => {
 					slotProps: {container: {style: {overflow: 'auto', height: '200px'}}},
 				})
 				const row = rowsOf(host)[3]
-				const grip = await gripOfRow(host, 3)
+				const grip = await gripElementOfRow(host, 3)
 				const containerHeight = host.getBoundingClientRect().height
 				expect(Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
 				const topBefore = row.getBoundingClientRect().top
@@ -1258,7 +1273,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('ignores beforeinput inside a drag control', async () => {
 			const {host, value} = await echoPlainText()
 			const before = value()
-			const handle = await gripOfRow(host, 0)
+			const handle = await gripElementOfRow(host, 0)
 
 			await userEvent.click(handle)
 			await userEvent.keyboard('x')

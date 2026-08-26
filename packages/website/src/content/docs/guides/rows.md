@@ -154,9 +154,10 @@ the row nearest the pointer, painted from a single layer beside the rows rather 
 `alwaysShowHandle` keeps it visible instead of fading it in on hover.
 
 Dragging carries the whole row selection when the gripped row is part of it, and that row alone
-otherwise. The drop's vertical position names the gap between two lines and its horizontal position
-names one of the depths that gap legally admits — every candidate is planned before it is offered, so
-the indicator promises rather than predicts.
+otherwise; which rows those are is fixed when the grip is pressed, since the browser owns the text
+selection for the length of a native drag. The drop's vertical position names the gap between two
+lines and its horizontal position names one of the depths that gap legally admits — every candidate
+is planned before it is offered, so the indicator promises rather than predicts.
 
 ## The row menu
 

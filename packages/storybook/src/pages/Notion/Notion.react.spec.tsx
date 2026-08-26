@@ -6,6 +6,7 @@ import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
 import {ROW_CONTROLS, editingHost, findEditingHost, getElement, rowsOf} from '../../shared/lib/dom'
+import {dragRowTo, GRIP} from '../../shared/lib/drag'
 import {focusAtEnd, focusAtOffset, focusAtStart, settle} from '../../shared/lib/focus'
 import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
 import {APOLLO_DOC} from './document'
@@ -83,24 +84,6 @@ const toggleStarting = (host: HTMLElement, text: string): HTMLElement => {
 	)
 	if (!found) throw new Error(`no toggle starting ${JSON.stringify(text)}`)
 	return found
-}
-
-const GRIP = {name: 'Drag to reorder or click for options'} as const
-
-async function gripOfRow(host: HTMLElement, row: HTMLElement) {
-	await userEvent.hover(row)
-	return page.elementLocator(host).getByRole('button', GRIP).findElement()
-}
-
-/** A whole drag at an exact POINT: the pointer's Y names the gap, its X names the depth in it. */
-async function dragTo(host: HTMLElement, from: HTMLElement, clientX: number, clientY: number) {
-	const grip = await gripOfRow(host, from)
-	const dataTransfer = new DataTransfer()
-	grip.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer}))
-	const at = {bubbles: true, cancelable: true, dataTransfer, clientX, clientY}
-	host.dispatchEvent(new DragEvent('dragover', at))
-	host.dispatchEvent(new DragEvent('drop', at))
-	grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))
 }
 
 /**
@@ -1034,9 +1017,11 @@ describe('drag', () => {
 		await userEvent.keyboard('{Escape}')
 		await userEvent.keyboard('{Shift>}{ArrowDown}{/Shift}')
 
+		// A REAL drag — see `shared/lib/drag.ts`. Its Y names the gap after `target`'s line and its
+		// X, at the row's far right, names the deepest depth that gap offers.
 		const target = rowAt(host, 'target')
 		const box = target.getBoundingClientRect()
-		await dragTo(host, alpha, box.right, box.bottom - 1)
+		await dragRowTo(host, alpha, target, {clientX: box.right - 1, clientY: box.bottom - 1})
 
 		await expect.poll(value).toBe('- target\n\t- alpha\n\t- beta')
 	})

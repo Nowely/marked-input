@@ -1,7 +1,8 @@
 import {describe, expect, it, vi} from 'vitest'
-import {page, userEvent} from 'vitest/browser'
+import {userEvent} from 'vitest/browser'
 
 import {rowsOf} from '../../shared/lib/dom'
+import {dragRowTo} from '../../shared/lib/drag'
 import {focusAtStart} from '../../shared/lib/focus'
 import {Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
@@ -33,26 +34,17 @@ const TOGGLE = {markup: '> __slot__', row: {Component: rows.Toggle, indents: tru
 
 const DOCUMENT = '- alpha\n- beta\n> toggle\n\t- kid'
 
-const GRIP = {name: 'Drag to reorder or click for options'} as const
-
-/** The ONE grip: it lives in the editor's controls layer, and hovering a row is what puts it there. */
-async function gripOfRow(host: HTMLElement, row: HTMLElement) {
-	await userEvent.hover(row)
-	return page.elementLocator(host).getByRole('button', GRIP).findElement()
-}
-
 /**
- * A whole drag, start to finish, at an exact POINT — both coordinates, because the pointer's Y
- * names the gap and its X names the depth inside it.
+ * A whole drag at an exact POINT, released on the LOWER HALF of `onto`'s own line — the gap after
+ * it — with `clientX` choosing the depth inside that gap.
+ *
+ * REAL, through {@link dragRowTo}: the fabricated triple this used to dispatch could not reach a
+ * browser's own drop negotiation, and — the part that actually hid a defect — every spec that
+ * built one had to remember to set BOTH coordinates. See `shared/lib/drag.ts`.
  */
-async function dragTo(host: HTMLElement, from: HTMLElement, clientX: number, clientY: number) {
-	const grip = await gripOfRow(host, from)
-	const dataTransfer = new DataTransfer()
-	grip.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer}))
-	const at = {bubbles: true, cancelable: true, dataTransfer, clientX, clientY}
-	host.dispatchEvent(new DragEvent('dragover', at))
-	host.dispatchEvent(new DragEvent('drop', at))
-	grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))
+async function dragBelow(host: HTMLElement, from: HTMLElement, onto: HTMLElement, clientX: number) {
+	const box = onto.getBoundingClientRect()
+	await dragRowTo(host, from, onto, {clientX, clientY: box.bottom - 1})
 }
 
 /**
@@ -92,8 +84,8 @@ describe('row selection and nested drag', () => {
 
 		// The gap after `kid`, which offers depth 0 (a root after the toggle), depth 1 (the
 		// toggle's second child) and depth 2 (the kid's own first child).
-		const box = rowWith(host, 'kid').getBoundingClientRect()
-		await dragTo(host, alpha, box.left, box.bottom - 1)
+		const kid = rowWith(host, 'kid')
+		await dragBelow(host, alpha, kid, kid.getBoundingClientRect().left)
 
 		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('> toggle\n\t- kid\n\t- alpha\n\t- beta')
 		// The pair landed INSIDE the toggle's own element, which is where its `rows` prop paints,
@@ -112,8 +104,7 @@ describe('row selection and nested drag', () => {
 		await selectRows(host, alpha, 1)
 
 		// The SAME gap and the SAME Y — only the X differs, and it is left of every indent.
-		const box = rowWith(host, 'kid').getBoundingClientRect()
-		await dragTo(host, alpha, 0, box.bottom - 1)
+		await dragBelow(host, alpha, rowWith(host, 'kid'), host.getBoundingClientRect().left)
 
 		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('> toggle\n\t- kid\n- alpha\n- beta')
 		await expect.poll(() => rowsOf(host)).toHaveLength(3)
@@ -161,8 +152,8 @@ describe('row selection and nested drag', () => {
 		await selectRows(host, toggle, 0)
 
 		// `child`'s own line, lower half: the gap after it, at the outer toggle's child depth.
-		const box = rowWith(host, 'child').getBoundingClientRect()
-		await dragTo(host, toggle, box.left, box.bottom - 1)
+		const child = rowWith(host, 'child')
+		await dragBelow(host, toggle, child, child.getBoundingClientRect().left)
 
 		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('> outer\n\t- child\n\t> inner\n\t\t- kid')
 		// THE NODE came through — same id, one level deeper, under a new parent.
