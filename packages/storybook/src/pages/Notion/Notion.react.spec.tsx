@@ -1194,12 +1194,12 @@ describe('the inline database', () => {
 	 * The CELLS are the oracle beside the value: a paragraph holding pipes and a carved line emit
 	 * different strings, but only the carve puts boxes on the page.
 	 *
-	 * MOVING TO THE LAST COLUMN IS PART OF THE GESTURE NOW, and it is the declared cost of where a
+	 * MOVING TO THE LAST COLUMN IS PART OF THE GESTURE, and it is the declared cost of where a
 	 * seeded insert leaves the caret: at the seed's HEAD rather than past it, so the first character
-	 * typed lands in the first column instead of appending to the last one. Enter at a row's START
-	 * is still Enter at a row's start — an empty header above, this row's content below — so the two
-	 * gestures no longer share one caret and this one asks for its own. `End` cannot do it: each
-	 * cell is its own block box, so a line boundary stops at the cell the caret is in.
+	 * typed lands in the first column instead of appending to the last one. `End` cannot do it: each
+	 * cell is its own block box, so a line boundary stops at the cell the caret is in. What Enter
+	 * does from where the menu actually LEFT the caret is the case below, which is the gesture a
+	 * user makes and is asserted rather than avoided.
 	 */
 	it('opens a data LINE when Enter ends the header the menu seeded', async () => {
 		const {host, value} = await mountControlled(Empty, '')
@@ -1215,6 +1215,33 @@ describe('the inline database', () => {
 
 		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n| Auth | Done | Kara')
 		expect(cellsOf(host).map(cell => cell.textContent)).toEqual(['Auth', 'Done', 'Kara'])
+	})
+
+	/**
+	 * AND ENTER FROM WHERE THE MENU LEAVES THE CARET OPENS A ROW ABOVE, which is Enter's own rule at
+	 * a row's start and is DECLARED rather than repaired — `packages/website/src/content/docs/guides/rows.md`
+	 * is where a user reads it. A seeded insert leaves the caret at the seed's head, so the very
+	 * next Enter is Enter at a row's start: an empty row of what this kind CONTINUES INTO opens
+	 * above, and the header goes on being the header.
+	 *
+	 * IT USED TO DESTROY THE TABLE, and this case exists because the pass that found it rewrote the
+	 * gesture instead of asserting it. `continues` was applied to the half that kept the CONTENT, so
+	 * the split left an empty `'|= '` above and demoted the seeded column names to a data LINE — the
+	 * table's head gone in one keystroke, from the first key a user presses after inserting one.
+	 * Now the half that keeps the content keeps the kind, and only the empty half is opened.
+	 */
+	it('opens an empty row ABOVE when Enter runs where the menu left the caret', async () => {
+		const {host, value} = await mountControlled(Empty, '')
+
+		await focusAtStart(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '/')
+		await choose('Table')
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort')
+
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(value).toBe('| \n|= Task | Status | Owner | Due | Effort')
+		expect(host.querySelectorAll('[class*="tableHeadCell"]').length).toBe(5)
 	})
 
 	/**

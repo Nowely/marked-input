@@ -1021,14 +1021,27 @@ export function splitPlan(
 	// whether the copy started at a row's line start. DECLARED COST: a markup clip copied from the
 	// MIDDLE of a row and across a boundary opens its first fragment as a row of its own.
 	const joinsHead = !markup || pieces[0] === ''
-	const headLine = rowMarkup(node.descriptor(), node.meta(), headBody + (joinsHead ? pieces[0] : ''))
+	// AT A ROW'S OWN START THE TWO HALVES SWAP ROLES, and that is the same rule the subtree
+	// placement below already follows. A split OPENS one row and KEEPS the other, and
+	// {@link Continuation} describes the one it opens — but when nothing is written at the cut and
+	// the head takes none of the body, the opened row is the EMPTY HEAD and the tail is the row
+	// that was already there. Written the other way round, `continues` was applied to the user's
+	// own text: Enter at the head of a table HEADER left an empty header above and demoted its
+	// column names to a data LINE (`'|= A | B'` emitted `'|= ⏎| A | B'`, the table's head gone),
+	// Enter at the head of a heading took the heading off its own text (`'# a'` emitted `'# ⏎a'`),
+	// and Enter at the head of a ticked to-do left the tick above and re-seeded the text below.
+	// The row that keeps the CONTENT keeps the kind and the `meta` that qualifies it.
+	const opensAbove = !markup && headBody === '' && pieces.every(piece => piece === '')
+	const kept: Continuation = {descriptor: node.descriptor(), meta: node.meta()}
+	const headKind = opensAbove ? continues : kept
+	const headLine = rowMarkup(headKind?.descriptor, headKind?.meta, headBody + (joinsHead ? pieces[0] : ''))
 	// An empty, kindless head is not kept: pasting rows onto a blank row is the clip and nothing else.
 	const keepsHead = joinsHead || node.lead() + headLine !== ''
 	const head = keepsHead ? headLine : pieces[0]
 	const opened = pieces.slice(joinsHead || !keepsHead ? 1 : 0)
 	const openedLines = opened.map((piece, at) => {
 		const text = at === opened.length - 1 ? piece + body.slice(to - slot.start) : piece
-		return markup ? text : openedLine(node, continues, text)
+		return markup ? text : openedLine(node, opensAbove ? kept : continues, text)
 	})
 	const subtree = descendants === undefined ? '' : separator + descendants
 	// The scan's own emptiness, asked of the head this split is about to write — see
