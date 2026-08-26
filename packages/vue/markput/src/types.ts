@@ -1,5 +1,7 @@
 import type {
 	CoreOption,
+	CoreSlotProps,
+	CoreSlots,
 	DataAttributes,
 	DraggableConfig,
 	OverlayTrigger,
@@ -24,7 +26,7 @@ export interface MarkProps {
 export interface RowProps {
 	/** The kind's metadata gap — a todo's checked flag, a fence's language. */
 	meta?: string
-	/** Nesting depth, counted from the roots. */
+	/** Nesting depth, counted from 0: a ROOT row is at depth 0, its child at depth 1. */
 	depth: number
 	/** Position among the row's own SIBLINGS. */
 	index: number
@@ -109,10 +111,24 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	draggable?: boolean | DraggableConfig
 }
 
-export interface Slots {
-	container?: string | Slot
+/**
+ * Available slots for customizing MarkedInput internal components. EXTENDS the core contract, so a
+ * slot core learns to resolve is a slot this type declares.
+ */
+export interface Slots extends CoreSlots {
+	/** Root container component */
+	container?: Slot | string
 }
 
-export interface SlotProps {
-	container?: Record<string, unknown> & DataAttributes
+/**
+ * Props merged onto the components the editor paints itself. EXTENDS the core contract, so a key
+ * core learns to read is a key this type declares.
+ *
+ * Not the same key set as {@link Slots}, and the names say why: `slots.paragraph` is consulted only
+ * for a row with NO kind, while `slotProps.row` reaches every row.
+ */
+export interface SlotProps extends CoreSlotProps {
+	container?: CoreSlotProps['container'] & DataAttributes
+	/** Merged onto EVERY row's wrapper — kind or paragraph alike, unlike `slots.paragraph`. */
+	row?: CoreSlotProps['row'] & DataAttributes
 }

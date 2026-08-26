@@ -51,12 +51,10 @@ kind and paragraph alike.
 - Plain text segments (use the `Span` prop)
 - A row kind's component (use `option.row.Component` — see [Row Kinds](/guides/row-kinds))
 
-:::caution[Typing gap]
-`slots.paragraph` is declared on the React `Slots` type but not yet on the Vue one, and
-`slotProps.row` is declared on neither adapter's `SlotProps`. Both are read by core and work at
-runtime in React and Vue; until the adapter types catch up, TypeScript will reject the object
-literal.
-:::
+Both key sets are declared on the published types, in both adapters: [`Slots`](/api/interfaces/slots/)
+and [`SlotProps`](/api/interfaces/slotprops/) each extend the core contract, so a key core resolves
+is a key TypeScript accepts. A slot value may be a component or an intrinsic tag name —
+`slots={{container: 'article'}}` mounts the editor on an `<article>`.
 
 ## Using slotProps (Customize Defaults)
 

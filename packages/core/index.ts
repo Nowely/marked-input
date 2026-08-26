@@ -54,7 +54,11 @@ export type {
 	// union is spelled once rather than three times.
 	OverlayPick,
 	CSSProperties,
+	// The two slot key sets, and both adapters EXTEND them rather than restating them: that is
+	// what keeps a key core reads from being a key an adapter's type rejects. `CoreSlotProps`
+	// was the one not exported, so `slotProps.row` shipped readable-but-undeclarable.
 	CoreSlots,
+	CoreSlotProps,
 	DataAttributes,
 	DraggableConfig,
 	// `CoreOption.overlay.data`'s row type: a consumer building that list separately needs it.

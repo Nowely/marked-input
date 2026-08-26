@@ -58,6 +58,9 @@ leading indentation as content.
 
 ### Depth is the tree, lead is the bytes
 
+**`depth` counts from 0**: a root row is at depth 0, its child at depth 1. That is the number a row
+kind's component receives as `depth` and the number `setDepth` takes.
+
 There is no function from one to the other, and the difference is observable. An over-indented paste
 keeps its surplus run in the row's `lead` and renders one level shallower than the bytes say. The
 surplus survives round-trip until the row or an ancestor is re-indented, at which point `setDepth`
@@ -84,13 +87,6 @@ root promotes whatever was under it.
 
 The two are not a pair, and the names say which is which: `slots.paragraph` is consulted only for a
 row with no kind, while `slotProps.row` reaches every row.
-
-:::caution[Typing gap]
-`slots.paragraph` is declared on the React `Slots` type but not yet on the Vue one, and
-`slotProps.row` is declared on neither adapter's `SlotProps`. Both are read by core and work at
-runtime in React and Vue; until the adapter types catch up, TypeScript will reject the object
-literal.
-:::
 
 ## Row verbs
 
@@ -126,9 +122,22 @@ no rows at all.
   its parent.
 - `Ctrl/Cmd+A` widens a nested selection to the row it is nested in before it selects the document.
 
-```ts
-store.rows.selected() // reactive: the ids of the selected rows, in document order
+The selection is readable from your own components. `useMarkput(selector)` is the one published door
+to the editor's store, in both adapters, and it re-renders on exactly the signals the selector names
+— so hand it the signal itself rather than calling it:
+
+```tsx
+import {useMarkput} from '@markput/react'
+
+const SelectionCount = () => {
+    const selected = useMarkput(s => s.rows.selected) // readonly number[] — row ids, document order
+    return <span>{selected.length} rows</span>
+}
 ```
+
+The hook works anywhere under the editor: a row kind's component, a mark's component, a slot. The
+store's other row verbs hang off the same `s.rows` — see
+[Keyboard Handling → Selecting Rows](/guides/keyboard-handling#selecting-rows).
 
 A row selection is the ROWS — openers and leads included. Paste, cut, copy and Backspace/Delete all
 read it that way. See [Keyboard Handling](/guides/keyboard-handling) for the full contract.

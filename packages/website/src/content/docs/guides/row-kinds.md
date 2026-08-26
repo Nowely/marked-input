@@ -14,9 +14,10 @@ It is the same markup language a mark uses, compiled by the same compiler. What 
 the `row` key:
 
 ```tsx
+import type {RowProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 
-const Heading = ({children, ref, className, style}) => (
+const Heading = ({children, ref, className, style}: RowProps) => (
     <h1 ref={ref} className={className} style={style}>
         {children}
     </h1>
@@ -95,7 +96,7 @@ Everything a kind declares beyond its markup lives in [`RowSpec`](/api/interface
 | `children`                 | The row's own inline content, already rendered.                                                    |
 | `rows`                     | The row's CHILD ROWS, already rendered; `undefined` when there are none.                            |
 | `meta`                     | The kind's `__meta__` gap — a to-do's flag, a fence's language.                                     |
-| `depth`                    | Nesting depth, counted from the roots.                                                             |
+| `depth`                    | Nesting depth, counted from 0 — a root row is at depth 0.                                          |
 | `index`                    | Position among the row's own siblings.                                                             |
 | `node`                     | The live [`RowNode`](/api/interfaces/rownode/): its id, its own text, and its verbs.                |
 | `ref`, `className`, `style` | Slot plumbing. **Spread all three onto the element you render.**                                   |
@@ -143,9 +144,10 @@ the user types into a checkbox's label lands in the value.
 A control announces itself with `useControlRef()`:
 
 ```tsx
+import type {RowProps} from '@markput/react'
 import {useControlRef} from '@markput/react'
 
-const Bullet = ({children, rows, ref, className, style}) => {
+const Bullet = ({children, rows, ref, className, style}: RowProps) => {
     const controlRef = useControlRef()
     return (
         <div ref={ref} className={className} style={style}>

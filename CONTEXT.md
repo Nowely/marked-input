@@ -8,8 +8,8 @@ An editable text field that mixes plain text with inline custom components, decl
 
 **Token**:
 A unit of the document — text, a **Mark**, or a **Row**. Carries a stable identity that survives an
-edit, and one element of its own that the adapter consigns (ADR-0009). Three kinds, not two: a Row
-is a Token, which is why one registry, one commit and one anchor space cover all of them.
+edit, and one element of its own that the adapter **consign**s (ADR-0009). Three kinds, not two: a
+Row is a Token, which is why one registry, one commit and one anchor space cover all of them.
 _Avoid_: node, element, item — `node` belongs to the DOM
 
 **Pairing**:
@@ -25,10 +25,6 @@ _Avoid_: tag, chip, widget, entity, annotation
 **Value**:
 The whole document as one string, and the form value a consumer binds to. It is a projection of the tokens, not the other way round.
 _Avoid_: text, content, document string
-
-**Lexeme**:
-The parser's output shape, before it is folded into the token tree. A parser-local term — never the runtime unit.
-_Avoid_: token, using it for anything a consumer or an adapter touches
 
 **Markup**:
 The template string an option declares, carrying `__value__`, `__meta__` and/or `__slot__` placeholders. It is what a mark serialises to inside the value.
@@ -66,6 +62,36 @@ _Avoid_: span, text element, text node
 The adapter seam. It owns the state the framework adapter feeds in — the container reference and the render lifecycle — and hands the container to features when one is attached.
 _Avoid_: using it for the container element itself, or for the DOM spec's "editing host"
 
+**Consign**:
+The adapter's handover of a **Token**'s own element to the model — `tokens.consign(id)`, a ref
+callback filed by owner id. It is THE element source: `bind` reads that registry and nothing else,
+because the framework held the element a moment before it painted it, so the association is PUSHED
+rather than re-discovered by a DOM walk. A **Surface** is the text case of the same handover.
+_Avoid_: register, attach, mount, ref (the mechanism, not the act)
+
+**Control**:
+An element inside the **Container** that is editor UI rather than document content — the row-controls
+layer, a consumer's checkbox, toggle arrow or `<select>` inside a **Row kind**. Announced by
+`tokens.control()` (published as `useControlRef`), and registration is where it LEAVES the editing
+host: without it the caret enters it and the browser edits it, so what a user types into a
+checkbox's label lands in the **Value**. Element-level and singular; the plural "row controls",
+lowercase, is the hover/drag/drop/menu layer beside the Rows, which is not a term.
+_Avoid_: chrome (this repository reasons about Chromium on nearly every page), widget, UI element,
+non-editable
+
+### Overlays
+
+**Overlay**:
+The editor UI an **Option**'s `overlay` opens at the caret — a mention picker, a slash menu. ONE per
+editor at a time, held as one match signal, opened by a TRIGGER character the option declares and
+probed against the caret's own node; what it writes back is a `choose`, which both adapters hand out
+unchanged. Both adapters paint it as a SIBLING of the **Container**, so it is outside the editing
+host and needs no **Control** registration — unlike the **Row menu**'s other opener, the grip, whose
+layer is inside the container and does register. An Overlay is positioned at the caret and is never
+document content.
+_Avoid_: popup, popover, dropdown, autocomplete, suggestions (that names the built-in component, not
+the concept)
+
 ### Rows
 
 **Row**:
@@ -96,10 +122,10 @@ and no **Separator** is written between Cells.
 _Avoid_: column, field, table node
 
 **Depth**:
-A **Row**'s recursion index, counted from the roots — what the adapters pass down and what a Row
-kind's component receives as `depth`. It is the TREE, and **Lead** is the bytes; there is no function
-from one to the other, because an over-indented paste keeps its surplus in the lead and renders
-shallower.
+A **Row**'s recursion index, counted from 0 — a root Row is at depth 0, its child at depth 1. It is
+what the adapters pass down and what a Row kind's component receives as `depth`. It is the TREE, and
+**Lead** is the bytes; there is no function from one to the other, because an over-indented paste
+keeps its surplus in the lead and renders shallower.
 _Avoid_: level, indent (as a term for the number), nesting count
 
 **Lead**:
@@ -177,11 +203,12 @@ _Avoid_: undo entry, transaction, change, patch, delta
 - A TEXT **Token** is mirrored into one **Surface**; a **Mark** and a **Row** own a consigned element instead — all of them inside the one **Container**
 - An **Anchor** names a position by **Token**
 - A **Row selection** is read off the selection, and a **Row menu** runs one Row's verbs
+- A **Control** sits inside the **Container** and outside the document; an **Overlay** sits outside the Container entirely — a **consign**ed element is neither
 
 ## Flagged ambiguities
 
 - **"node" meant both the model unit and a DOM node.** Resolved: the model unit is a **Token**, and `node` is left to the DOM — the published `OverlayMatch.node` is a DOM `Node` (`shared/types.ts:75`), which is the collision the language is avoiding. `TreeNode`, `NodeAnchor`, `nodes()` and `nodeAt` keep the older word inside and around `tree/`; the names are not the language, and none of them is a rename target.
-- **"token" meant both the parser's output and the runtime unit.** Resolved: the runtime unit is a **Token**, the parser's output is a **Lexeme**. `TextToken` in `parser/` still carries the wider word and is parser-local. `MarkToken` is NOT: it is a published export, because `denote`'s callback parameter is one and dropping the type made a shipped signature unnameable. Neither is a rename target — the second because the wider word is already on the public surface there.
+- **"token" meant both the parser's output and the runtime unit.** Resolved BY SCOPE: the runtime unit is a **Token**, and the parser's output is the parse's own intermediate — `parser/`'s `Token`/`TextToken`, which no consumer and no adapter touches. `MarkToken` is the exception and is not parser-local: it is a published export, because `denote`'s callback parameter is one and dropping the type made a shipped signature unnameable. Neither is a rename target — the second because the wider word is already on the public surface there. **Lexeme** was the second word this entry used to resolve it with, and it is DELETED, 2026-08-26: it had zero occurrences in any `.ts`/`.tsx`/`.vue` file in the repository, so it named the parse's output to nobody. A glossary word with no uptake is not vocabulary, it is a proposal; scope does the same work here without one.
 - **"host" meant the element, the class owning it, and the DOM spec's concept.** Resolved: the element is the **Container**, the class is the **Host**. Where browser behaviour is under discussion, "editing host" is quoted as the spec's term, not used as ours.
-- **"block" meant both a layout mode and the row it laid out.** Resolved by DELETION, 2026-08-26: there is no mode (ADR-0011), so the word names nothing here and the API no longer carries it. `slots.block` → `slots.paragraph` (the row with NO kind, which is the only thing it ever answered), `slotProps.block` → `slotProps.row` (every row's wrapper props — the two were never a pair), `BlockMenu` → `RowMenu`, `BLOCK_MENU_ITEMS` → `ROW_MENU_ITEMS`, `BlockController` → `RowController`, `store.block` → `store.rows`, `.Block` → `.Row`, `.BlockControls` → `.RowControls`. `isBlock` never existed as a declaration at all. `BlockStore` and `blockIndex` stay deleted, and the historical comments that name them stay too — a record is not a rename target. Where "block" still appears it is SOMEONE ELSE'S word and stays on purpose: CSS's (containing block, block box, `display: block`, `inline-block`), markdown's (code block, blockquote), and the Notion showcase's own product vocabulary (`.block`, `--notion-block-*`, `"Blocked"`), which the demo copies deliberately. The row controls get no glossary term — in prose they are "row controls", lowercase; the element-level word is `control` (`TokenModel.control()`), and "chrome" is not used at all, because this repository reasons about Chromium on nearly every page. One leftover, declared: the grip's `aria-label` still reads "Block options" — user-visible text, so changing it is a behaviour change rather than a rename.
+- **"block" meant both a layout mode and the row it laid out.** Resolved by DELETION, 2026-08-26: there is no mode (ADR-0011), so the word names nothing here and the API no longer carries it. `slots.block` → `slots.paragraph` (the row with NO kind, which is the only thing it ever answered), `slotProps.block` → `slotProps.row` (every row's wrapper props — the two were never a pair), `BlockMenu` → `RowMenu`, `BLOCK_MENU_ITEMS` → `ROW_MENU_ITEMS`, `BlockController` → `RowController`, `store.block` → `store.rows`, `.Block` → `.Row`, `.BlockControls` → `.RowControls`. `isBlock` never existed as a declaration at all. `BlockStore` and `blockIndex` stay deleted, and the historical comments that name them stay too — a record is not a rename target. Where "block" still appears it is SOMEONE ELSE'S word and stays on purpose: CSS's (containing block, block box, `display: block`, `inline-block`), markdown's (code block, blockquote), and the Notion showcase's own product vocabulary (`.block`, `--notion-block-*`, `"Blocked"`), which the demo copies deliberately. The row controls get no glossary term — in prose they are "row controls", lowercase; the element-level word is **Control**, which now has one. One leftover, declared: the grip's `aria-label` still reads "Block options" — user-visible text, so changing it is a behaviour change rather than a rename.
 - **"value" means both the whole document and a mark's own field.** Kept, not renamed: **Value** is the document, and a mark's field appears only in code form — the `__value__` placeholder and `MarkToken.value` — so the shape disambiguates. The document sense is unrenamable anyway; it is the published `value` prop. The two senses coincide today because a mark's field is the text it displays, and they pull apart the moment a field carries structure rather than display text — that is when this entry has to be revisited.

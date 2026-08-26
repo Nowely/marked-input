@@ -64,12 +64,6 @@ const ASSUMED_INDENT = 24
  * also what the per-row owner it replaced did. `store.rows` names the concern, as every Store
  * field does.
  *
- * TWO DESIGNS UNDER ONE OLD NAME — `git log` on this file spans both, and both were called
- * `BlockController`. The earlier one vended a per-row `BlockStore` out of a `WeakMap` and pruned
- * them by row id; this one owns editor-level row-control state and there is no per-row store at
- * all. The ROLE never changed, so the rename to `RowController` is a word and nothing else;
- * `BlockStore` stays deleted.
- *
  * It replaced a per-row store that wired eight DOM handlers and five signals to every row, and
  * the adapters painted a grip, two drop indicators and a menu inside each one. The row controls
  * are not document content and they are not per-row state: at 200 rows that shape mounted 201
@@ -85,6 +79,10 @@ const ASSUMED_INDENT = 24
  *   amendment);
  * - hover is geometric Y rather than DOM containment, so the 24px gutter left of a row hovers
  *   that row, and a point in the gap BETWEEN rows snaps to the nearest one.
+ *
+ * The two earlier designs `git log` on this file spans, and the names they went by, are in this
+ * feature's README. They are a record and not this class, and this docblock SHIPS — it is what a
+ * consumer hovering `store.rows` reads out of the published `index.d.ts`.
  */
 export class RowController {
 	readonly state = {

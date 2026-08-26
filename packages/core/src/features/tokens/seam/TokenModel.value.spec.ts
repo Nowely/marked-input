@@ -283,12 +283,6 @@ describe('TokenModel value boundary', () => {
 	})
 
 	/**
-	 * The clipboard's markup entry (`ClipboardController`'s markput MIME) and the rows'
-	 * text read (`keyboard/rowKeys.ts`). `block/operations.spec` stubs the read with a plain
-	 * `doc.slice`, so the delegation to `tree/sliceNodes` — and the anchor resolution in front
-	 * of it — is pinned only here.
-	 */
-	/**
 	 * ONE OWNER for the separator that joins the CURRENT roots. `TokenTree.separator` records what
 	 * the roots were parsed under; `rowConfig` is the policy for the NEXT parse. The two agree only
 	 * while the props watch is live, and a DETACHED editor's is not — its scope dies with the
@@ -338,6 +332,14 @@ describe('TokenModel value boundary', () => {
 		})
 	})
 
+	/**
+	 * `valueBetween` has two callers — the clipboard's markup entry (`ClipboardController`'s
+	 * markput MIME) and `rows.duplicate`, which projects a row's own span before re-inserting it —
+	 * and neither pins the PROJECTION: the clipboard's cover is the browser `Clipboard.spec`, end
+	 * to end, and `duplicate`'s specs assert the document that came back. `tree/tree.spec` pins
+	 * `sliceNodes` on anchors it builds itself, so the delegation to it — and the expansion
+	 * `anchorAt` performs in front of it — is pinned only here.
+	 */
 	describe('valueBetween()', () => {
 		// The browser `Clipboard.spec`'s own fixture value, so the answers below are the unit
 		// side of its end-to-end assertions.

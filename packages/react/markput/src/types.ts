@@ -1,4 +1,12 @@
-import type {CoreOption, CoreSlots, CSSProperties, DataAttributes, RowNode, Suggestion} from '@markput/core'
+import type {
+	CoreOption,
+	CoreSlotProps,
+	CoreSlots,
+	CSSProperties,
+	DataAttributes,
+	RowNode,
+	Suggestion,
+} from '@markput/core'
 import type {ComponentType, ElementType, ReactNode, RefCallback} from 'react'
 
 /**
@@ -37,7 +45,7 @@ export interface RowProps {
 	 * would walk into a row with no element.
 	 */
 	rows?: ReactNode
-	/** Nesting depth, counted from the roots. */
+	/** Nesting depth, counted from 0: a ROOT row is at depth 0, its child at depth 1. */
 	depth: number
 	/** Position among the row's own SIBLINGS. */
 	index: number
@@ -107,6 +115,15 @@ export interface Slots extends CoreSlots {
 	container?: ElementType<Record<string, unknown>>
 }
 
-export interface SlotProps {
-	container?: Record<string, unknown> & DataAttributes
+/**
+ * Props merged onto the components the editor paints itself. EXTENDS the core contract, so a key
+ * core learns to read is a key this type declares.
+ *
+ * Not the same key set as {@link Slots}, and the names say why: `slots.paragraph` is consulted only
+ * for a row with NO kind, while `slotProps.row` reaches every row.
+ */
+export interface SlotProps extends CoreSlotProps {
+	container?: CoreSlotProps['container'] & DataAttributes
+	/** Merged onto EVERY row's wrapper — kind or paragraph alike, unlike `slots.paragraph`. */
+	row?: CoreSlotProps['row'] & DataAttributes
 }

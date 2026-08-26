@@ -273,8 +273,9 @@ describe('TokenModel shell (seam/)', () => {
 
 	describe('handles', () => {
 		it('a control leaves the editing host the moment it registers, with no bind in between', () => {
-			// Controls do not mount on the commit clock — a menu opening off a block-store
-			// signal never sees a re-bind — so the atomic write belongs to registration.
+			// Controls do not mount on the commit clock — the row menu opens off `RowController`'s
+			// own editor-level `menu` signal and never sees a re-bind — so the atomic write
+			// belongs to registration.
 			const {model} = mountNewInline()
 			const button = document.createElement('button')
 

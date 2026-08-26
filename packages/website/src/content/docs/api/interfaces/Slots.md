@@ -5,7 +5,7 @@ prev: false
 title: "Slots"
 ---
 
-Defined in: [react/markput/src/types.ts:105](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L105)
+Defined in: [react/markput/src/types.ts:113](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L113)
 
 Available slots for customizing MarkedInput internal components
 
@@ -21,7 +21,7 @@ Available slots for customizing MarkedInput internal components
 optional container: ElementType<Record<string, unknown>>;
 ```
 
-Defined in: [react/markput/src/types.ts:107](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L107)
+Defined in: [react/markput/src/types.ts:115](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L115)
 
 Root container component
 
@@ -36,10 +36,10 @@ CoreSlots.container
 ### paragraph?
 
 ```ts
-optional paragraph: ElementType;
+optional paragraph: string | ComponentClass<any, any> | FunctionComponent<any>;
 ```
 
-Defined in: [core/src/shared/types.ts:221](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L221)
+Defined in: [core/src/shared/types.ts:228](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L228)
 
 The component a row with NO kind renders through. A kind brings its own, so this is never asked for one.
 

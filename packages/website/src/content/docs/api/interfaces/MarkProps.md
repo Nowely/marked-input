@@ -5,7 +5,7 @@ prev: false
 title: "MarkProps"
 ---
 
-Defined in: [react/markput/src/types.ts:7](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L7)
+Defined in: [react/markput/src/types.ts:15](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L15)
 
 Props passed to Mark components.
 
@@ -17,7 +17,7 @@ Props passed to Mark components.
 optional children: ReactNode;
 ```
 
-Defined in: [react/markput/src/types.ts:13](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L13)
+Defined in: [react/markput/src/types.ts:21](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L21)
 
 Rendered children content (ReactNode) for nested marks
 
@@ -29,7 +29,7 @@ Rendered children content (ReactNode) for nested marks
 optional meta: string;
 ```
 
-Defined in: [react/markput/src/types.ts:11](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L11)
+Defined in: [react/markput/src/types.ts:19](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L19)
 
 Additional metadata for the mark
 
@@ -41,6 +41,6 @@ Additional metadata for the mark
 optional value: string;
 ```
 
-Defined in: [react/markput/src/types.ts:9](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L9)
+Defined in: [react/markput/src/types.ts:17](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L17)
 
 Main content value of the mark

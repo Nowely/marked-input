@@ -215,12 +215,20 @@ export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 's
 export type CSSProperties = CSS.Properties<string | number>
 export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
 
+/**
+ * THE slot key set, and both adapters extend it rather than restating it.
+ *
+ * A value is a framework component OR an intrinsic tag NAME. The string half is not a convenience:
+ * `resolveSlot`'s `defaultSlots` is a `Record<SlotName, string>`, so every slot a consumer leaves
+ * unset resolves to one, and `Slots.spec`'s `{container: 'article'}` mounts in both adapters.
+ */
 export interface CoreSlots {
-	container?: Slot
+	container?: Slot | string
 	/** The component a row with NO kind renders through. A kind brings its own, so this is never asked for one. */
-	paragraph?: Slot
+	paragraph?: Slot | string
 }
 
+/** THE slot-props key set — NOT the same list as {@link CoreSlots}, and both adapters extend it. */
 export interface CoreSlotProps {
 	container?: Record<string, unknown> & {className?: string; style?: CSSProperties}
 	/** Merged onto EVERY row's wrapper — kind or paragraph alike, unlike `slots.paragraph`. */
