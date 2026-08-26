@@ -175,6 +175,29 @@ describe('a row selection is the rows, opener and all', () => {
 	})
 
 	/**
+	 * THE `cut` LISTENER, which is the one of the four gestures nothing reached. It is not the
+	 * `deleteByCut` arm beside it: `#handleCopy` cancels the event, so the browser emits no
+	 * `beforeinput` after a real cut and `rowKeys.spec`'s `deleteByCut` case cannot stand in for it.
+	 * Measured before this pin — deleting the listener's `replaceRows` call left the whole core
+	 * project green, and Cmd+X over a selected `'- alpha'` would have gone back to the husk `'- '`.
+	 *
+	 * Both halves are asserted, because the defect is precisely that they DISAGREED: what the
+	 * clipboard carried out included the opener and what the removal took did not.
+	 */
+	it('cuts the rows a selection holds, and takes the same bytes it copied', () => {
+		const {store, container} = mount('- alpha\n- beta')
+		caretIn(store, 0, 0)
+		press(container, 'Escape')
+		expect(store.block.selected()).toHaveLength(1)
+
+		const clipboardData = new DataTransfer()
+		container.dispatchEvent(new ClipboardEvent('cut', {bubbles: true, cancelable: true, clipboardData}))
+
+		expect(clipboardData.getData(MARKPUT_MIME)).toBe('- alpha')
+		expect(store.tokens.value()).toBe('- beta')
+	})
+
+	/**
 	 * The same span through the KEYMAP rather than the clipboard, which is how it is known to be the
 	 * span's rule and not the paste path's. A DELETE takes the boundary with the rows, so the row
 	 * count actually shrinks — leaving it behind is what turned the head row into the husk `'## '`.
