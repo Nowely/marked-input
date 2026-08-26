@@ -37,6 +37,14 @@ const ROW = `[class*="Row"]:not(${ROW_CONTROLS}):not(${ROW_CONTROLS} *)`
 
 const rowsOfHost = (host: HTMLElement) => [...host.querySelectorAll<HTMLElement>(ROW)]
 
+const toggleStarting = (host: HTMLElement, text: string): HTMLElement => {
+	const found = [...host.querySelectorAll<HTMLElement>('[class*="toggleRow"]')].find(row =>
+		row.textContent.trim().startsWith(text)
+	)
+	if (!found) throw new Error(`no toggle starting ${JSON.stringify(text)}`)
+	return found
+}
+
 /** The element the caret sits in — a `Text` boundary answers its parent. */
 function caretElement(): HTMLElement | null {
 	const selection = window.getSelection()
@@ -55,6 +63,29 @@ function caretIsUsable(): boolean {
 	const element = caretElement()
 	if (!element) return false
 	return element.checkVisibility() && element.closest('[contenteditable="false"]') === null
+}
+
+/** Puts the caret at a text offset inside `node`, and lets the editor hear about it. */
+async function caretAt(host: HTMLElement, node: Node, offset: number) {
+	await userEvent.click(host)
+	const selection = window.getSelection()
+	if (!selection) throw new Error('no selection')
+	selection.removeAllRanges()
+	const range = document.createRange()
+	range.setStart(node, offset)
+	range.collapse(true)
+	selection.addRange(range)
+	await settle()
+}
+
+/** The row's OWN line, skipping the child rows a kind paints inside its own element. */
+function lineTextOf(row: HTMLElement): Text {
+	const walker = document.createTreeWalker(row, NodeFilter.SHOW_TEXT)
+	let node = walker.nextNode()
+	while (node && (node.textContent === '' || node.parentElement?.closest(ROW) !== row)) node = walker.nextNode()
+	if (!node) throw new Error('no line text')
+	// oxlint-disable-next-line no-unsafe-type-assertion -- SHOW_TEXT guarantees Text
+	return node as Text
 }
 
 const settle = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -110,5 +141,28 @@ describe('the caret goes where a person can follow it', () => {
 		await settle()
 
 		expect(value()).toBe('alpha\n```bash\n\n```\n')
+	})
+
+	/**
+	 * A CARET MAY NOT ENTER A SUBTREE WITH NO BOXES. A closed toggle paints its children rather than
+	 * unmounting them — an unpainted row leaves the DOM layer and takes its anchors with it — so a
+	 * row indented under one is in the document and on no screen: eleven characters typed there
+	 * landed in the value with no visible caret.
+	 */
+	it('refuses to indent a row into a closed toggle', async () => {
+		const {host, value} = await mountControlled(Showcase)
+
+		const toggle = toggleStarting(host, 'Single-region GA first')
+		const title = lineTextOf(toggle)
+		await caretAt(host, title, title.length)
+		await userEvent.keyboard('{Enter}')
+		await settle()
+		await userEvent.keyboard('{Tab}')
+		await settle()
+		await userEvent.keyboard('eleven char')
+
+		expect(caretIsUsable()).toBe(true)
+		expect(value()).toContain('\n▸ eleven char\n')
+		expect(value()).not.toContain('\t▸ eleven char')
 	})
 })

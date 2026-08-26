@@ -472,12 +472,47 @@ export class TokenModel {
 	 * No {@link #applyCaret}, for `moveTo`'s reason: a re-indent takes no position out of the
 	 * document and puts none in, so the anchors the selection holds still name the same characters
 	 * and the verified pairing carries them through untouched.
+	 *
+	 * AND IT REFUSES A DESTINATION NOTHING PAINTS — {@link #nestingIsPainted}, which is the caret
+	 * invariant read at the one gesture that can move a row out from under it.
 	 */
 	indentRows(nodes: readonly RowNode[], steps: number): boolean {
 		this.#ensureSeeded()
+		if (steps > 0 && !nodes.every(node => this.#nestingIsPainted(node))) return false
 		const plan = untracked(() => depthPlan(this.#tree.roots(), nodes, steps, this.#tree.config()))
 		if (!plan) return false
 		return this.#tx.applyRange(plan.window, plan.text)
+	}
+
+	/**
+	 * WOULD THIS ROW STILL BE ON SCREEN one level deeper? The row that would parent it there is its
+	 * PREVIOUS SIBLING — nesting is indentation and nothing else — and a kind that COLLAPSES its
+	 * children paints them with no boxes at all.
+	 *
+	 * A caret may not enter a subtree with no boxes, and Tab was the one gesture that put it there:
+	 * a row opened after a closed toggle's title and then indented landed inside it, where eleven
+	 * characters were typed into the document with no visible caret and nothing on screen. Refusing
+	 * the MOVE rather than recovering the caret afterwards is the answer that loses nothing — the
+	 * row stays where the user can see it, and the key is still consumed, exactly as it is at a
+	 * depth the scan refuses.
+	 *
+	 * A PARENT WITH NO CHILDREN YET has told us nothing — a collapsed kind paints an empty subtree
+	 * exactly as an open one does — so the move is allowed. That hole is the price of asking the
+	 * DOM instead of asking the option, and the option cannot answer: "closed" is a fact about a
+	 * component's own rendering that no declaration reaches.
+	 */
+	#nestingIsPainted(node: RowNode): boolean {
+		const rows = untracked(() => preorderRows(this.#tree.roots()))
+		const at = rows.findIndex(entry => entry.row === node)
+		if (at < 0) return true
+		const depth = rows[at].depth
+		let parent: RowNode | undefined
+		for (let index = at - 1; index >= 0 && rows[index].depth >= depth; index--) {
+			if (rows[index].depth === depth) parent = rows[index].row
+			if (parent) break
+		}
+		const child = parent && untracked(() => parent.rows().at(0))
+		return child === undefined || this.#dom.painted(child.id)
 	}
 
 	/**
