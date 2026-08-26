@@ -574,8 +574,32 @@ becomes a ticket here.
 - What a package on top of this owns: does it wrap `MarkedInput` and ship
   options + components, or does it need core changes first? The ticket list here
   is the input to that decision, not the answer.
+- **The gutter `+` of `showcase.md` interaction 1 was never built, and nothing said so.**
+  `showcase.md:56` asks for "its **drag grip** and a **+** on the left gutter". MEASURED
+  2026-08-26: `packages/react/markput/src/components/BlockControls.tsx` paints exactly ONE
+  `<button>` — `aria-label="Drag to reorder or click for options"` — beside a drop indicator and
+  the menu popup. There is no add affordance in either adapter, no test names one, and no earlier
+  decision retires it. So it is undeclared rather than declined, which is the part being fixed
+  here. It is ALSO blocked on the row verb the "Add below" entry already needs: `addRow` splices
+  a bare separator carrying no lead, so a `+` at a nested row's gutter would open its row at
+  depth 0 exactly as the menu entry does. Same fix, one phase.
+- **The showcase net is single-framework, and that is an accepted cost rather than an oversight.**
+  MEASURED 2026-08-26: `pnpm -w exec vitest list --project vue | grep -ci notion` → `0`, while
+  `pages/` holds nineteen framework-free `*.spec.ts` that BOTH projects run. Five of the ten
+  defects the hardening round fixed have their only regression pin in `Notion.react.spec.tsx`.
+  Converting the page to AGENTS.md's shared harness would double the net, and it is NOT the cheap
+  rename the shape suggests: `Notion.fixtures.vue.ts` has to re-declare the whole vocabulary —
+  ~800 lines of `options.tsx` plus sixteen presentational leaves — as Vue components, which is a
+  second implementation and its own phase (`spec.md`'s P12, still owed with `useControlRef`).
+  What the 2026-08-26 pass did INSTEAD, so the cost is bounded rather than unpaid: the three core
+  rules whose only pin was that file — Enter deferring to the suggestions protocol, no trigger in
+  a raw closed body, the re-probe on a caret move — now have core unit pins that run once for
+  both adapters. The remaining exposure is the ADAPTER arms, which is exactly what P12 buys.
 - **Six confirmed defects from the 2026-08-26 hardening pass are still open, each measured and
-  none taken here.** They are listed so the next phase inherits the readings rather than the hunt.
+  none taken here.** They now each carry a CHARACTERIZATION pin — `rowSpanSeam.spec.ts` for the
+  five span/keymap ones and `BlockController.spec.ts` for the drop — asserting the value the
+  editor emits today, so closing one reddens the test written for it. They are listed so the next
+  phase inherits the readings rather than the hunt.
   - **A `\n` inside PASTED text is spliced raw and takes none of Enter's row rules.** Into a table
     cell: `'| a | b⏎after'`, caret at the end of cell `a`, paste `'one⏎two'` → `'| aone⏎two | b⏎after'`
     and the page paints ONE body cell. The editor's own Enter from that caret gives `'| a⏎|  | b⏎after'`
