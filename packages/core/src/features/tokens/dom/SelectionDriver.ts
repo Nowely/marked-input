@@ -275,6 +275,20 @@ export class SelectionDriver {
 		this.deps.selection.select(anchors.anchor, anchors.head)
 	}
 
+	/**
+	 * {@link syncFromDom} for a RANGED reading only, answering whether it stored one — the test
+	 * that separates a SELECTION from a LANDING, and the whole of it.
+	 *
+	 * A caret is not enough: the two claims it gates read a collapsed answer as "the browser put
+	 * the caret somewhere the user did not aim", which is the state they exist for.
+	 */
+	#syncRanged(): boolean {
+		const anchors = this.domAnchors()
+		if (!anchors || anchorEquals(anchors.anchor, anchors.head)) return false
+		this.deps.selection.select(anchors.anchor, anchors.head)
+		return true
+	}
+
 	#trackSelection(container: HTMLElement): void {
 		const syncIfInEditor = (node: Node): void => {
 			// THE POINTER OUTRANKS THE BROWSER'S ANSWER, and only inside a control root. What the
@@ -285,6 +299,12 @@ export class SelectionDriver {
 			// the row the pointer is IN is the row the caret belongs to.
 			const pointer = this.#pointerControl
 			this.#pointerControl = undefined
+			// AND THE MODEL'S OWN READING OUTRANKS THE POINTER. A CLAIM ANSWERS A LANDING — a
+			// gesture whose position the model cannot name — so a RANGED selection it CAN read is
+			// never one: the extent is what the user swept, and no claim can re-derive it. Both arms
+			// below reached for the claim on the strength of one ENDPOINT alone, which is the
+			// browser's raw range deciding rather than informing.
+			if (this.#syncRanged()) return
 			// FOCUS DECIDES WHOSE GESTURE IT IS, the discriminator {@link reclaimFocus} already
 			// reads: the browser hands focus to a control it can operate — a `<select>`, a
 			// checkbox, a button — and a caret written into the host would take it straight back.
@@ -305,16 +325,22 @@ export class SelectionDriver {
 				return
 			}
 			// A CONTROL ROOT IS `contenteditable="false"`, so the browser's own caret can land in
-			// one and the model can name no position there: `anchorFor` declines the boundary by
-			// construction. Leaving it standing is what stranded the caret — ArrowDown could not
-			// move it and every keystroke after it was dropped with nothing said — so the caret
-			// goes to the row that control is painted IN instead.
+			// one and the model can name no position INSIDE it: the collapsed reader declines such a
+			// boundary by construction ({@link frozenBoundary}). Leaving it standing is what stranded
+			// the caret — ArrowDown could not move it and every keystroke after it was dropped with
+			// nothing said — so the caret goes to the row that control is painted IN instead.
+			//
+			// EVERYTHING THAT REACHES HERE IS A LANDING, which the ranged sync above is what makes
+			// true: a sweep that merely ENDS on frozen presentation resolves and never arrives, and a
+			// range wholly INSIDE one control names that row's entry at both ends, so it compares
+			// collapsed and falls through to this claim.
 			//
 			// AN INTERACTIVE CONTROL NEVER REACHES HERE, measured rather than assumed: a click on
 			// a `<select>`, a checkbox, a `<button>` or a row grip moves FOCUS and leaves the
-			// selection exactly where it was, so no `selectionchange` is delivered at all. What
-			// does reach here is a click on frozen PRESENTATION — an atomic row's card, table of
-			// contents or properties grid — which is the case this claims.
+			// selection exactly where it was, so no `selectionchange` is delivered at all — which is
+			// why the `click` listener below has to consume the same claim. What does reach here is a
+			// click on frozen PRESENTATION — an atomic row's card, table of contents or properties
+			// grid — which is the case this claims.
 			if (at === 'control') {
 				this.deps.claimRow(node)
 				return

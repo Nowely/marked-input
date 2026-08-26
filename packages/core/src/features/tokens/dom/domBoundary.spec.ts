@@ -581,7 +581,16 @@ describe('anchorFor across elements the tree does not own', () => {
 })
 
 describe('anchorFor across a control', () => {
-	it('returns undefined for selections crossing controls', () => {
+	/**
+	 * A COLLAPSED caret inside a control root still declines, and that is the half kept
+	 * deliberately: a caret has no extent, so "which row did this land in" is a question about the
+	 * GESTURE — `TokenModel.#claimRow` answers it, and it is the only reading that can tell a row
+	 * the caret may enter from one it may not.
+	 *
+	 * The range below COLLAPSES: `controlText` precedes `textNode` in document order, so `setEnd`
+	 * before the start collapses to the end point, which is the boundary inside the control.
+	 */
+	it('returns undefined for a caret that lands inside a control', () => {
 		const {store, container, textNode, controlText} = mountStructuralRowWithControl('hello')
 		const selection = window.getSelection()!
 		const range = document.createRange()
@@ -590,9 +599,47 @@ describe('anchorFor across a control', () => {
 		selection.removeAllRanges()
 		selection.addRange(range)
 
-		// `locate` answers `'control'` for the end boundary, so the pair never forms.
+		expect(range.collapsed).toBe(true)
 		expect(store.tokens.domAnchors()).toBeUndefined()
 		container.remove()
+	})
+
+	/**
+	 * A RANGE EDGE ON FROZEN PRESENTATION NAMES ITS ROW'S ENTRY rather than declining, and the
+	 * refusal it replaces was not neutral: it failed the whole PAIR closed, and `SelectionDriver`'s
+	 * control arm then read the gesture as a landing and collapsed the caret into that row.
+	 *
+	 * MEASURED on the showcase, `'one⏎- [ ] todo item⏎> [!warning] boom'`: Chromium ends a
+	 * triple-click of the to-do at `(the callout's icon span, 0)` — the one neighbour of twelve
+	 * whose entry decoration is neither a row element nor a cell nor a text node. The selection was
+	 * discarded, the caret was claimed into the callout, and the two characters typed next landed
+	 * there: `'> [!warning] ZZboom'`, with the row the user had selected untouched.
+	 *
+	 * The ENTRY at BOTH ranged affinities, so the high edge stops BEFORE the row (its opener is
+	 * kept) and the low edge starts AT it. There is no near/far half to read: no offset inside
+	 * frozen presentation is nameable at all.
+	 */
+	it('answers a RANGE edge inside a control with the row it is painted in', () => {
+		const {store, rows} = mountTypedRows()
+		const dot = rows[1].firstChild!
+		const surface = rows[0].children[1].firstChild!
+		const selection = window.getSelection()!
+		const range = document.createRange()
+		range.setStart(surface, 0)
+		range.setEnd(dot, 0)
+		selection.removeAllRanges()
+		selection.addRange(range)
+
+		// The door, pinned rather than assumed: the dot the range ends on is a control root.
+		expect(store.tokens.handleAt(dot)).toBe('control')
+
+		const anchors = store.tokens.domAnchors()!
+		const roots = store.tokens.nodes()
+
+		// '- one\n- two': row 0's body starts at 2, row 1's ENTRY is 8 — past the separator and past
+		// the `'- '` opener, which is where the second row's own content begins.
+		expect(offsetOfAnchor(roots, anchors.anchor)).toBe(2)
+		expect(offsetOfAnchor(roots, anchors.head)).toBe(8)
 	})
 })
 /**

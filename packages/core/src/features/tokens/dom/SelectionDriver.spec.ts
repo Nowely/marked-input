@@ -536,4 +536,71 @@ describe('SelectionDriver', () => {
 			container.remove()
 		})
 	})
+
+	/**
+	 * A CLAIM ANSWERS A LANDING, and a landing is a gesture whose POSITION the model cannot name.
+	 * Everything else the pointer touches is read, not claimed.
+	 *
+	 * Both arms of `syncIfInEditor` used to reach for the claim on the strength of ONE ENDPOINT —
+	 * the focus node sitting in a control root — which is the browser's raw range deciding rather
+	 * than informing. The other side of the same rule is the `click` listener: a control the browser
+	 * can FOCUS provokes no `selectionchange` at all, so on a page with no caret yet nothing ever
+	 * consumed the claim and the focus stayed on the control.
+	 */
+	describe('the pointer claim answers a landing, never a selection', () => {
+		/** Two typed rows, each painted with a REGISTERED decoration before its own text surface. */
+		function mountDecoratedRows() {
+			const store = new Store()
+			store.props.set({
+				defaultValue: '- one\n- two',
+				separator: '\n',
+				options: [{markup: '- __slot__', row: {Component: 'li'}}],
+				Mark: () => null,
+			})
+			const container = document.createElement('div')
+			document.body.append(container)
+			store.host.container(container)
+			const dots: HTMLElement[] = []
+			const surfaces: HTMLElement[] = []
+			store.tokens.nodes().forEach(node => {
+				const row = document.createElement('div')
+				const dot = document.createElement('span')
+				dot.tabIndex = 0
+				row.append(dot)
+				store.tokens.control()(dot)
+				const surface = document.createElement('span')
+				row.append(surface)
+				container.append(row)
+				dots.push(dot)
+				surfaces.push(surface)
+				store.tokens.consign(node.id)(row)
+				store.tokens.children(node.id)(row)
+				if (node.kind === 'row') store.tokens.consign(node.children()[0].id)(surface)
+			})
+			return {store, container, dots, surfaces}
+		}
+
+		/**
+		 * A sweep that merely ENDS on a decoration is a SELECTION. It used to be thrown away whole:
+		 * measured on `'one⏎- [ ] todo item⏎> [!warning] boom'`, a triple-click of the to-do ends at
+		 * the callout's icon, the caret was claimed into the callout, and `'ZZ'` landed there.
+		 */
+		it('keeps a ranged reading whose end sits on a decoration', () => {
+			const {store, container, dots, surfaces} = mountDecoratedRows()
+			const text = surfaces[0].firstChild
+			if (!text) throw new Error('the row surface rendered no text node')
+
+			window.getSelection()?.setBaseAndExtent(text, 0, dots[1], 0)
+			document.dispatchEvent(new Event('selectionchange'))
+
+			const anchors = store.tokens.selection.anchors()
+			const roots = store.tokens.nodes()
+			// '- one\n- two': row 0's body starts at 2 and row 1's ENTRY is 8.
+			expect(anchors && offsetOfAnchor(roots, anchors.anchor)).toBe(2)
+			expect(anchors && offsetOfAnchor(roots, anchors.head)).toBe(8)
+			expect(store.rows.selected()).toHaveLength(1)
+			container.remove()
+		})
+
+	})
 })

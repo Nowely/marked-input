@@ -202,6 +202,10 @@ export class DomModel {
 			container: this.deps.container() ?? undefined,
 			locate: node => this.#locate(node),
 			find: id => this.deps.find(id),
+			above: node => {
+				const handle = this.tokenAbove(node)
+				return handle && this.deps.find(handle.id)
+			},
 		}
 	}
 

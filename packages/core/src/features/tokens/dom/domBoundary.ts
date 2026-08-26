@@ -39,6 +39,12 @@ export type AnchorContext = {
 	locate(node: Node): Lookup | undefined
 	/** Stable id → live node (TokenModel.find): ids outlive the bind window. */
 	find(id: Id): TreeNode | undefined
+	/**
+	 * The nearest LIVE node above a DOM node, walking PAST any control root — {@link locate} stops
+	 * at one and answers `{kind: 'control'}`, losing whatever it was painted inside. See
+	 * {@link frozenBoundary} for the one branch that needs it, and {@link DomModel.tokenAbove}.
+	 */
+	above(node: Node): TreeNode | undefined
 }
 
 /**
@@ -60,6 +66,7 @@ export function anchorFromBoundary(
 	}
 
 	const lookup = ctx.locate(node)
+	if (lookup?.kind === 'control') return frozenBoundary(ctx, node, affinity)
 	if (lookup?.kind !== 'token') return undefined
 
 	// The IDENTITY bridge (spec S2 D2): `handle.id` is generation-independent, so
@@ -112,6 +119,40 @@ export function anchorFromBoundary(
 	}
 
 	return undefined
+}
+
+/**
+ * A RANGE EDGE THAT LANDED ON FROZEN PRESENTATION — a to-do's tick box, a callout's icon, the
+ * interior of an atomic row — resolved to the LEADING EDGE of the node that presentation is
+ * painted in, which is the only position in it the model can name.
+ *
+ * IT DOES NOT DEPEND ON WHAT A CONSUMER PAINTS, and that is the whole point. Every other branch
+ * above answers off a node the adapter BOUND — a row element, a slot host, a text surface — so a
+ * decoration that is none of those declined, and a decline is not a neutral answer here: it fails
+ * the whole pair closed, and `SelectionDriver`'s control arm then reads the gesture as a LANDING
+ * and collapses the caret into the row the decoration belongs to. MEASURED on
+ * `'one⏎- [ ] todo item⏎> [!warning] boom'`: Chromium ends a triple-click of the to-do at
+ * `(the callout's icon span, 0)`, the pair failed, the caret was claimed into the callout and the
+ * next two characters landed there — `'> [!warning] ZZboom'` with the to-do untouched. The callout
+ * was the only kind of twelve that reached this door, which is exactly what makes it the
+ * consumer's paint rather than a rule: a bullet's dot and a to-do's box are the row's own first
+ * child, so Chromium names the ROW element instead.
+ *
+ * ONE ANSWER FOR BOTH RANGED AFFINITIES, and it is the row's ENTRY rather than a near/far split:
+ * no offset inside frozen presentation is nameable, so there is no "which half" to read. The high
+ * edge then stops BEFORE that row (the callout keeps its opener) and the low edge starts AT it;
+ * {@link contentSpan} snaps both onto whole lines afterwards, so neither can name a byte of
+ * structure.
+ *
+ * `'nearest'` — the COLLAPSED reader — still declines, and deliberately. A caret has no extent, so
+ * "the row this landed in" is a question about the GESTURE and not about a boundary:
+ * `TokenModel.#claimRow` answers it with the row's entry where a caret may sit and with a block
+ * selection where none may, and it is the only reading that can tell those apart.
+ */
+function frozenBoundary(ctx: AnchorContext, node: Node, affinity: BoundaryAffinity): NodeAnchor | undefined {
+	if (affinity === 'nearest') return undefined
+	const owner = ctx.above(node)
+	return owner && leadingEdge(owner)
 }
 
 /**
