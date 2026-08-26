@@ -6,6 +6,7 @@ import {page, userEvent} from 'vitest/browser'
 
 import {ROW_CONTROLS, findEditingHost, getElement} from '../../shared/lib/dom'
 import {focusAtEnd} from '../../shared/lib/focus'
+import {APOLLO_DOC} from './document'
 import * as NotionStories from './Notion.stories.react'
 
 /**
@@ -176,6 +177,28 @@ describe('the caret goes where a person can follow it', () => {
 		await settle()
 
 		expect(value()).toBe('- keep me\nZ\n- and me')
+	})
+
+	/**
+	 * AND THE KEYSTROKE GOES WHERE THE SELECTION SAYS, which is the sharpest failure the contract
+	 * above can have: the bookmark's row painted as selected and the typed character appended to the
+	 * QUOTE above it. The selection runs across the row's own element, which is not an editable
+	 * extent, so Chromium canonicalizes the `beforeinput` target range to the nearest position it
+	 * can name — in the row before — and the read preferred that range over the live selection
+	 * whenever it came back collapsed. Reproduced 2 of 2 before, 1 of 1 after.
+	 */
+	it('types over the row a click on a bookmark selected, not the row above it', async () => {
+		// THE WHOLE PAGE, because the shape is the page's: a three-row stand-in gives Chromium a
+		// target range this rule never sees, and the pin passes with the mechanism reverted.
+		const {host, value} = await mountControlled(Showcase, APOLLO_DOC)
+
+		await focusAtEnd(rowStarting(host, 'Apollo moves the collaboration'))
+		await page.getByText('Auth migration — rollout plan', {exact: true}).first().click()
+		await settle()
+		await userEvent.keyboard('Z')
+		await settle()
+
+		expect(value()).toContain("we're not ready to call it GA.\nZ\n@comments")
 	})
 
 	/** Backspace over the same selection takes the block away, opener and closing literal and all. */

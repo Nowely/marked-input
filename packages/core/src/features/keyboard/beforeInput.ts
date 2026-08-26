@@ -25,10 +25,15 @@ type KbCtx = Pick<Store, 'tokens'>
  *
  * `domAnchors()` re-reads the LIVE selection, so it is the same authority the no-target-range
  * arm has always used; when it declines — a boundary this layer cannot resolve, or no window
- * selection at all — the target range still answers. It must also ANSWER COLLAPSED to stand in
- * for a collapsed event: a ranged reading of a caret event would replace text the browser
- * never named. Unproduced in Chromium, where the live selection IS the caret the event
- * describes, and cheap enough to close by construction rather than by argument.
+ * selection at all — the target range still answers.
+ *
+ * IT NO LONGER HAS TO ANSWER COLLAPSED, and the condition that said so was a defect rather than a
+ * safety rail. It read "unproduced in Chromium, where the live selection IS the caret the event
+ * describes"; a ROW SELECTION over a frozen row falsifies that. The selection runs across the row's
+ * own ELEMENT, which is not an editable extent, so Chromium reports a COLLAPSED target range at
+ * the nearest position it can name — inside the row ABOVE. Measured on the showcase's bookmark: the
+ * row painted as selected and the typed character appended to the quote above it. The selection the
+ * user can see is the model's, so it answers here too.
  *
  * A `StaticRange` is document-ordered, so `anchor` is the low end and `head` the high one —
  * the same normalization {@link SelectionDriver.domAnchors} relies on, which is why the
@@ -36,10 +41,10 @@ type KbCtx = Pick<Store, 'tokens'>
  */
 export function anchorsFromInputEvent(store: KbCtx, event: InputEvent): Anchors | undefined {
 	const range = event.getTargetRanges().at(0)
-	if (!range) return store.tokens.domAnchors()
-	if (!range.collapsed) return anchorsFromTargetRange(store, range)
 	const live = store.tokens.domAnchors()
-	return live && anchorEquals(live.anchor, live.head) ? live : anchorsFromTargetRange(store, range)
+	if (!range) return live
+	if (!range.collapsed) return anchorsFromTargetRange(store, range)
+	return live ?? anchorsFromTargetRange(store, range)
 }
 
 /**

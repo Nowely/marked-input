@@ -555,11 +555,14 @@ describe('handleBeforeInput()', () => {
 		container.remove()
 	})
 
-	it('ignores a RANGED live selection on a collapsed target range', () => {
-		// CONSTRUCTED, and it says so: Chromium sets the live selection to the caret the event
-		// describes, so this disagreement is not one it produces. The guard is the cheap half
-		// of the precedence rule — a collapsed event must never resolve to an extent — and
-		// without a case the whole `anchorEquals` test can be deleted with the suite green.
+	it('takes the RANGED live selection over a collapsed target range', () => {
+		// DECLARED BEHAVIOUR CHANGE, and the pin it replaces had it backwards on a premise that
+		// has since been measured false. It read "Chromium sets the live selection to the caret
+		// the event describes, so this disagreement is not one it produces" — a row selection
+		// across a FROZEN row produces exactly it. That selection is not an editable extent, so
+		// Chromium canonicalizes the target range to the nearest position it can name, which is
+		// in the row ABOVE: on the showcase's bookmark the row painted as selected and the typed
+		// character appended to the quote above it. The selection the user can SEE is the answer.
 		const {store, container, textNode} = mountStructuralInline('ab')
 		const selection = window.getSelection()
 		if (!selection) throw new Error('no window selection')
@@ -574,7 +577,7 @@ describe('handleBeforeInput()', () => {
 
 		textNode.dispatchEvent(inputEvent('insertText', caret, {data: 'X'}))
 
-		expect(store.tokens.value()).toBe('aXb')
+		expect(store.tokens.value()).toBe('X')
 		container.remove()
 	})
 
