@@ -186,11 +186,15 @@ export interface RowNode {
 	 * degenerate case — one cut and nothing written at it — and this is what a multi-line PASTE
 	 * lands through, so a clip's lines take the row rules rather than a second copy of them.
 	 *
+	 * A STRING is this editor's OWN markup — the convention {@link TokenModel.replaceRows} already
+	 * reads at a row selection — whose lines are whole rows and are written verbatim; an ARRAY is
+	 * pieces, opened at this row's lead and kind. See {@link splitPlan}.
+	 *
 	 * `false` for fewer than two pieces, for an editor with no separator, and for a span that is
 	 * not inside this row's own body — which is what leaves a paste ACROSS rows to the ordinary
 	 * replacement.
 	 */
-	writeRows(span: Anchors, rows: readonly string[]): boolean
+	writeRows(span: Anchors, rows: readonly string[] | string): boolean
 	/**
 	 * Split this row at `at`: the body before the anchor stays, the body after it becomes a new row
 	 * at the same lead, whose kind is this one when the kind `continues` and a plain row otherwise.
@@ -403,7 +407,7 @@ export interface NodeCommands {
 	/** Split a ROW at an anchor in its own body. See {@link RowNode.splitAt}. */
 	splitAt(node: RowNode, at: NodeAnchor): boolean
 	/** Open rows inside a ROW's own body. See {@link RowNode.writeRows}. */
-	writeRows(node: RowNode, span: Anchors, rows: readonly string[]): boolean
+	writeRows(node: RowNode, span: Anchors, rows: readonly string[] | string): boolean
 	/** Open a blank ROW after this one's subtree, at its depth. See {@link RowNode.addSibling}. */
 	addSibling(node: RowNode): boolean
 }

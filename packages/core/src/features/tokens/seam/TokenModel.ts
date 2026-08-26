@@ -910,7 +910,8 @@ export class TokenModel {
 		 * The general form, and the one the split lowers onto: a cut with text written on both
 		 * sides of it. The caret goes into the LAST row it opened, past what was written there —
 		 * for the split's empty pieces that is the row's entry, which is where Enter has always
-		 * left it.
+		 * left it — unless the plan names none, which is the markup clip's arm and leaves the
+		 * caret to the window's own mapping.
 		 */
 		writeRows: (node, span, rows) => {
 			this.#ensureSeeded()
@@ -929,7 +930,7 @@ export class TokenModel {
 				if (!plan) return
 				if (!this.#tx.applyRange(plan.window, plan.text)) return
 				written = true
-				this.#enterRow(plan.tail, plan.into)
+				if (plan.into !== undefined) this.#enterRow(plan.tail, plan.into)
 			})
 			return written
 		},

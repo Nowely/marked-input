@@ -37,6 +37,12 @@ const ROW = `[class*="Row"]:not(${ROW_CONTROLS}):not(${ROW_CONTROLS} *)`
 
 const rowsOfHost = (host: HTMLElement) => [...host.querySelectorAll<HTMLElement>(ROW)]
 
+const rowStarting = (host: HTMLElement, text: string): HTMLElement => {
+	const found = rowsOfHost(host).find(row => row.textContent.trim().startsWith(text))
+	if (!found) throw new Error(`no row starting ${JSON.stringify(text)}`)
+	return found
+}
+
 const toggleStarting = (host: HTMLElement, text: string): HTMLElement => {
 	const found = [...host.querySelectorAll<HTMLElement>('[class*="toggleRow"]')].find(row =>
 		row.textContent.trim().startsWith(text)
@@ -90,6 +96,28 @@ function lineTextOf(row: HTMLElement): Text {
 
 const settle = () => new Promise(resolve => setTimeout(resolve, 0))
 
+/** Dispatches a copy carrying a mock DataTransfer, and hands it back. */
+function copyFrom(host: HTMLElement): DataTransfer {
+	const clipboardData = new DataTransfer()
+	const event = new ClipboardEvent('copy', {clipboardData, bubbles: true})
+	Object.defineProperty(event, 'target', {value: host, writable: false})
+	host.dispatchEvent(event)
+	return clipboardData
+}
+
+/** The paste sequence a browser produces: `paste` carries the data, `beforeinput` the target range. */
+function pasteAtCaret(host: HTMLElement, clipboardData: DataTransfer): void {
+	const live = window.getSelection()?.getRangeAt(0)
+	if (!live) throw new Error('no caret to paste at')
+	host.dispatchEvent(new ClipboardEvent('paste', {clipboardData, bubbles: true}))
+	const targetRange = document.createRange()
+	targetRange.setStart(live.startContainer, live.startOffset)
+	targetRange.setEnd(live.endContainer, live.endOffset)
+	const event = new InputEvent('beforeinput', {inputType: 'insertFromPaste', bubbles: true, cancelable: true})
+	Object.defineProperty(event, 'getTargetRanges', {value: () => [targetRange]})
+	Object.defineProperty(event, 'dataTransfer', {value: clipboardData})
+	host.dispatchEvent(event)
+}
 describe('the caret goes where a person can follow it', () => {
 	/**
 	 * AN ATOMIC ROW HOLDS NO CARET POSITION. Its interior is `contenteditable="false"` — that is
@@ -164,5 +192,29 @@ describe('the caret goes where a person can follow it', () => {
 		expect(caretIsUsable()).toBe(true)
 		expect(value()).toContain('\n▸ eleven char\n')
 		expect(value()).not.toContain('\t▸ eleven char')
+	})
+
+	/**
+	 * A CLIP OF WHOLE ROWS IS PASTED AS ROWS. This editor's own clipboard entry is the value's own
+	 * projection — a lead and an opener per line — and splicing it into a row's body wrote those
+	 * bytes as PROSE: a literal `'- '` in the middle of a paragraph, and a literal tab in front of
+	 * it. Pasting the same clip on an empty row was clean, which is the two readings this closes.
+	 */
+	it('opens a two-row clip as rows when it is pasted at a caret', async () => {
+		const {host, value} = await mountControlled(Showcase)
+
+		await focusAtEnd(rowStarting(host, 'Awaiting quota approval'))
+		await userEvent.keyboard('{Escape}')
+		await userEvent.keyboard('{Shift>}{ArrowDown}{/Shift}')
+		const clip = copyFrom(host)
+		expect(clip.getData('application/x-markput')).toBe('\t- Awaiting quota approval\n- Support headcount at 60%')
+
+		await focusAtEnd(rowStarting(host, 'Apollo moves the collaboration'))
+		pasteAtCaret(host, clip)
+		await settle()
+
+		expect(value()).toContain(
+			'downstream assumes.\n\t- Awaiting quota approval\n- Support headcount at 60%\n@toc\n'
+		)
 	})
 })

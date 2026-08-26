@@ -353,26 +353,31 @@ export function replaceRowSelection(
 }
 
 /**
- * A FOREIGN CLIP'S LINES, OPENED AS ROWS — the row world's answer for a paste that crosses lines,
- * and the same plan Enter's own split writes. Answers whether it consumed the event.
+ * A CLIP THAT CROSSES ROWS, OPENED AS ROWS — the row world's answer for a paste at a caret, and
+ * the same plan Enter's own split writes. Answers whether it consumed the event.
  *
- * The clip was spliced verbatim before this, which took none of the row rules with it: the bytes
- * between two lines carried no lead and no opener, so a two-line clip pasted into a nested list
- * item left its second line at depth 0, and one pasted into a table cell ended the table line and
- * cost the row every cell after the caret. Enter already knows how to open a row; this is that
- * call with text on both sides of the cut.
+ * The clip was spliced verbatim before this, which took none of the row rules with it. For a
+ * FOREIGN clip the bytes between two lines carried no lead and no opener, so a two-line clip
+ * pasted into a nested list item left its second line at depth 0, and one pasted into a table cell
+ * ended the table line and cost the row every cell after the caret.
  *
- * ONLY A FOREIGN CLIP. This editor's own clipboard entry is the value's own projection and already
- * carries a lead and an opener per line, so opening rows for it would write a second one in front
- * of each. See {@link Replacement}.
+ * FOR THIS EDITOR'S OWN CLIP the same splice failed the other way round, and that half was open
+ * until now: the projection carries a lead and an opener PER LINE, so splicing it into a row's
+ * body wrote those bytes as PROSE — pasting two rows at the end of a paragraph produced a literal
+ * tab and a literal `'- '` in the middle of the sentence, while the same clip on an empty row was
+ * clean. Both readings reach {@link RowNode.writeRows} now, and WHICH language the clip is in is
+ * the string-or-array it is handed as ({@link Replacement}), which is the convention
+ * {@link TokenModel.replaceRows} already reads over a row selection.
  *
  * A RAW CLOSED body is refused for the reason Enter is: its interior already holds separators, so
  * a line break inside one is content. The ordinary replacement splices the clip there verbatim.
  */
 export function writeRowsFromInput(store: KbCtx, anchors: Anchors, replacement: Replacement): boolean {
-	if (replacement.markup) return false
-	const rows = replacement.text.split(LINE_BREAK)
-	if (rows.length < 2) return false
+	const rows = replacement.markup ? replacement.text : replacement.text.split(LINE_BREAK)
+	// A clip that opens no row is an ordinary insert. For LINES that is the count; for MARKUP the
+	// document's own SEPARATOR decides, and the plan is the layer holding it — so the string arm
+	// asks the verb and takes its refusal.
+	if (typeof rows !== 'string' && rows.length < 2) return false
 	const caret = store.tokens.rowOf(anchors.anchor)
 	if (!caret || hasRawBody(caret.row)) return false
 	return caret.row.writeRows(anchors, rows)

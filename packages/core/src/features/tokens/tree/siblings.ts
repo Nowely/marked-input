@@ -869,6 +869,17 @@ export function rowSelectionRows(
  * The opened rows' kind is the row's own when the kind `continues`, else a plain row; the caller
  * reads that field, because `tree/` knows a descriptor and not the option that declared it.
  *
+ * A STRING IS THIS EDITOR'S OWN MARKUP — {@link TokenModel.replaceRows}'s convention, read here at
+ * the caret — and its lines are already whole ROWS, lead and opener and all. They are written
+ * VERBATIM: opened as pieces they would take a second lead and a second opener each, and spliced as
+ * text (which is what a markup clip did until now) their structural bytes landed in the caret's row
+ * as PROSE — a literal `'- '` mid-paragraph, and a literal tab in front of it.
+ *
+ * IT NAMES NO CARET, and that is not an omission: a verbatim splice is contiguous, so the trimmed
+ * window IS the insertion and right affinity leaves the caret at its end — the end of the clip,
+ * which is where the ordinary replacement used to leave it. Naming one would need the last line's
+ * BODY length, which is a parse this layer does not have.
+ *
  * `undefined` — fail closed — for a non-row, a dead node, an editor with no separator to split at,
  * fewer than two pieces, and a span that is not inside the row's own body — which is what sends a
  * paste across several rows back to the ordinary splice.
@@ -879,13 +890,15 @@ export function splitPlan(
 	span: Anchors,
 	separator: string | undefined,
 	continues: boolean,
-	rows: readonly string[]
-): {window: Window; text: string; tail: number; into: number} | undefined {
+	rows: readonly string[] | string
+): {window: Window; text: string; tail: number; into: number | undefined} | undefined {
 	if (node.kind !== 'row' || separator === undefined) return undefined
+	const markup = typeof rows === 'string'
 	// The pieces, re-cut so none of them carries the document's own separator — see
 	// {@link documentLines}. Counted AFTER that cut, because it is the cut that decides how many
-	// rows this opens, and `tail` is an index into them.
-	const pieces = documentLines(rows, separator)
+	// rows this opens, and `tail` is an index into them. A markup clip arrives as ONE string and is
+	// cut here for the same reason: what a row boundary is belongs to the document.
+	const pieces = documentLines(markup ? [rows] : rows, separator)
 	if (pieces.length < 2) return undefined
 	const lines = preorderRows(roots)
 	const index = lines.findIndex(entry => entry.row === node)
@@ -904,11 +917,23 @@ export function splitPlan(
 	const descendants =
 		children.length === 0 ? undefined : children.map(child => rowContent(child, separator)).join(separator)
 
-	const head = rowMarkup(node.descriptor(), node.meta(), body.slice(0, from - slot.start) + pieces[0])
-	const opened = pieces.slice(1)
-	const openedLines = opened.map((piece, at) =>
-		openedLine(node, continues, at === opened.length - 1 ? piece + body.slice(to - slot.start) : piece)
-	)
+	const headBody = body.slice(0, from - slot.start)
+	// AN EMPTY FIRST LINE IS A ROW'S TAIL, not a row: a markup clip beginning with the document's
+	// own separator was copied from the END of a row, so there is nothing there to open and it joins
+	// the head exactly as a foreign clip's first piece does. Every other first line is written as the
+	// row it may be — which is the whole of the leak this closes, since the payload does not say
+	// whether the copy started at a row's line start. DECLARED COST: a markup clip copied from the
+	// MIDDLE of a row and across a boundary opens its first fragment as a row of its own.
+	const joinsHead = !markup || pieces[0] === ''
+	const headLine = rowMarkup(node.descriptor(), node.meta(), headBody + (joinsHead ? pieces[0] : ''))
+	// An empty, kindless head is not kept: pasting rows onto a blank row is the clip and nothing else.
+	const keepsHead = joinsHead || node.lead() + headLine !== ''
+	const head = keepsHead ? headLine : pieces[0]
+	const opened = pieces.slice(joinsHead || !keepsHead ? 1 : 0)
+	const openedLines = opened.map((piece, at) => {
+		const text = at === opened.length - 1 ? piece + body.slice(to - slot.start) : piece
+		return markup ? text : openedLine(node, continues, text)
+	})
 	const subtree = descendants === undefined ? '' : separator + descendants
 	// The scan's own emptiness, asked of the head this split is about to write — see
 	// {@link scannedAs} for the same test over a row a verb is about to emit.
@@ -953,8 +978,9 @@ export function splitPlan(
 		text: text.slice(prefix, text.length - suffix),
 		tail,
 		// How far INTO the tail's own body the caret goes: past what this wrote there, which for
-		// Enter's empty piece is the tail's entry and for a paste is the end of the clip.
-		into: pieces[pieces.length - 1].length,
+		// Enter's empty piece is the tail's entry and for a foreign clip is the end of the clip.
+		// `undefined` for a markup clip, whose last line is a whole row — see the header.
+		into: markup ? undefined : pieces[pieces.length - 1].length,
 	}
 }
 
