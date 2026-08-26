@@ -735,7 +735,7 @@ export class TokenModel {
 			find: id => this.find(id),
 			handle: id => this.handle(id),
 			dom: this.#dom,
-			recoverCaret: origin => this.#recoverCaret(this.#rowAbove(origin)),
+			claimRow: origin => this.#claimRow(origin),
 		})
 
 		// THE DOM CLOCK, because where a caret MAY be is a question about the frame the framework
@@ -1296,9 +1296,38 @@ export class TokenModel {
 	}
 
 	/**
+	 * A GESTURE LANDED ON A ROW'S FROZEN PRESENTATION — the row it landed in is the row it gets,
+	 * at that row's own entry. NEVER A NEIGHBOUR: a pointer names a place on the screen, so the one
+	 * answer a claim may not give is a different row, which is exactly what routing this through
+	 * {@link #recoverCaret} did — its search starts AFTER the row it is given, because it answers
+	 * the other question (see there).
+	 *
+	 * AND WHEN THE ROW HOLDS NO POSITION AT ALL — an atomic kind paints none of its text, so there
+	 * is nothing in it to put a caret on — NOTHING MOVES. The row's own boundary was the other
+	 * candidate and it is worse: the anchor space names it, the DOM cannot paint it, so the caret
+	 * would be invisible and still edit the row's hidden text on the next keystroke. A click on a
+	 * card is inert instead, which is what the screen already says.
+	 *
+	 * A CONTROL IN NO ROW AT ALL IS NOT THIS RULE'S BUSINESS, and that is the editor's own furniture:
+	 * the grip and its menu are a control root parked over the document rather than inside a row, so
+	 * a claim there has no row to name and the caret is whatever the verb that ran left behind.
+	 */
+	#claimRow(origin: Node): void {
+		const row = this.#rowAbove(origin)
+		if (!row) return
+		if (this.#placeInRow(row)) return
+		this.#selectionDriver.restoreCaret()
+	}
+
+	/**
 	 * WHERE THE CARET GOES when the position it holds is one no caret may occupy: the nearest row
 	 * entry AFTER it that is painted and editable, else a row opened after it when it ENDS the
 	 * document, else the nearest entry before it.
+	 *
+	 * ITS QUESTION IS "WHERE NEXT", not "where did you point" — the row under the caret stopped
+	 * being one a caret can hold (a collapse, a retype, a frame that unpainted it), so travel
+	 * continues in the direction a person's own ArrowDown would. A POINTER asks the other question
+	 * and takes {@link #claimRow}.
 	 *
 	 * FORWARD FIRST because that is where a person continues, and it is also what makes the opening
 	 * arm terminate: the row it opens is reachable, so the next pass finds it by search rather than
@@ -1309,9 +1338,9 @@ export class TokenModel {
 	 * DOM clock also pulses per REGISTRATION, mid-patch — the one condition no half-painted frame
 	 * can fake: it is read off the tree, not off the elements.
 	 */
-	#recoverCaret(from: RowNode | undefined): void {
+	#recoverCaret(from: RowNode): void {
 		const rows = untracked(() => preorderRows(this.#tree.roots()).map(entry => entry.row))
-		const at = from ? rows.indexOf(from) : -1
+		const at = rows.indexOf(from)
 		for (let index = at + 1; index < rows.length; index++) {
 			// The same three-way reading {@link #settleCaret} opens with, and it has to be the same
 			// one. `'absent'` STOPS the walk: a row with no element is a row this frame has not
@@ -1326,12 +1355,12 @@ export class TokenModel {
 		// A blank row of no kind is already a row the caret can enter — the trailing convention
 		// (ADR-0009) leaves one at the end of any document ending in a separator — so the invariant
 		// is met and opening a second one would grow the value on every pass.
-		const blank = from && untracked(() => from.descriptor() === undefined && from.slot() === '')
+		const blank = untracked(() => from.descriptor() === undefined && from.slot() === '')
 		// AND NOT INSIDE A COLLAPSED ROOM: a sibling of a boxless row is boxless too, so opening one
 		// there is a door nobody can see and a value that grows on every pass. The row the caret
 		// leaves is found by the backward walk instead.
-		const collapsed = from !== undefined && this.#dom.rowPaint(from.id) === 'boxless'
-		if (from && at === rows.length - 1 && !blank && !collapsed && this.#commands.addSibling(from)) return
+		const collapsed = this.#dom.rowPaint(from.id) === 'boxless'
+		if (at === rows.length - 1 && !blank && !collapsed && this.#commands.addSibling(from)) return
 		for (let index = at - 1; index >= 0; index--) {
 			if (this.#placeInRow(rows[index])) return
 		}

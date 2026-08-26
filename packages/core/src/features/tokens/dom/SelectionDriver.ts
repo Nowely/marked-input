@@ -21,11 +21,11 @@ export type SelectionDriverDeps = {
 	handle(id: Id): TokenHandle | undefined
 	dom: DomModel
 	/**
-	 * THE CARET HAS NOWHERE TO BE — put it somewhere a person can follow it, starting from the DOM
-	 * node the browser put it in. Answered by the model, which is the layer that owns both the row
-	 * order to search and the verb that opens a row when the search runs out.
+	 * A GESTURE LANDED ON FROZEN PRESENTATION — the caret belongs to the ROW that presentation is
+	 * painted in, and nowhere else. Answered by the model, which is the layer that owns both the
+	 * row a DOM node sits in and the entry a caret may take inside it.
 	 */
-	recoverCaret(origin: Node): void
+	claimRow(origin: Node): void
 }
 
 /**
@@ -35,6 +35,14 @@ export type SelectionDriverDeps = {
  * which is DOM-free.
  */
 export class SelectionDriver {
+	/**
+	 * The control root a pointer went down in, held for exactly as long as the gesture that set
+	 * it: written by every `pointerdown`, consumed by the first selection sync after it, dropped
+	 * by the next keydown. See {@link SelectionDriver.#trackSelection} for why the correlation
+	 * cannot be read off `selectionchange` itself.
+	 */
+	#pointerControl: Node | undefined
+
 	constructor(private readonly deps: SelectionDriverDeps) {
 		deps.host.onMounted(container => {
 			this.#trackSelection(container)
@@ -176,6 +184,23 @@ export class SelectionDriver {
 		if (!this.deps.selection.select(anchor)) this.#applySelection()
 	}
 
+	/**
+	 * NOTHING MOVED — the answer for a gesture the editor refuses to read as a caret intent, and
+	 * the reason it is a WRITE rather than a return: the browser has already moved its own caret
+	 * by the time anyone asks, so leaving the model alone is not leaving the caret alone.
+	 *
+	 * Two arms, one meaning: the stored caret goes back into the DOM, and a model holding NO caret
+	 * takes the browser's out of the document rather than letting it stand somewhere the user never
+	 * put it. The second arm is what a click on frozen presentation needs on a page nobody has
+	 * typed in yet: Chromium answers a mousedown on a `draggable` island by collapsing the caret to
+	 * the START OF THE EDITING HOST — measured with no editor present — and an edit reads the DOM
+	 * for its own span, so a caret left standing there types into the document's first row.
+	 */
+	restoreCaret(): void {
+		if (this.deps.selection.anchors()) this.#applySelection()
+		else this.deps.dom.releaseCaret()
+	}
+
 	#applySelection(): void {
 		const anchors = this.deps.selection.anchors()
 		if (anchors === undefined) return
@@ -244,6 +269,21 @@ export class SelectionDriver {
 
 	#trackSelection(container: HTMLElement): void {
 		const syncIfInEditor = (node: Node): void => {
+			// THE POINTER OUTRANKS THE BROWSER'S ANSWER, and only inside a control root. What the
+			// browser answers there is not a position the user aimed at: Chromium either leaves the
+			// caret in the frozen node (which is the `'control'` arm below) or — for a `draggable`
+			// one — collapses it to the START OF THE EDITING HOST, a perfectly valid anchor in a row
+			// the pointer is nowhere near. Both are the same question, so both get the same rule:
+			// the row the pointer is IN is the row the caret belongs to.
+			const pointer = this.#pointerControl
+			this.#pointerControl = undefined
+			// FOCUS DECIDES WHOSE GESTURE IT IS, the discriminator {@link reclaimFocus} already
+			// reads: the browser hands focus to a control it can operate — a `<select>`, a
+			// checkbox, a button — and a caret written into the host would take it straight back.
+			if (pointer && document.activeElement === container) {
+				this.deps.claimRow(pointer)
+				return
+			}
 			// The container IS the editor, and it owns no token: `handleAt` answers
 			// `undefined` for it, which is the "outside" verdict. Its own boundaries are
 			// where a caret before or after a top-level mark lives, so they must SYNC.
@@ -260,19 +300,35 @@ export class SelectionDriver {
 			// one and the model can name no position there: `anchorFor` declines the boundary by
 			// construction. Leaving it standing is what stranded the caret — ArrowDown could not
 			// move it and every keystroke after it was dropped with nothing said — so the caret
-			// goes to the nearest position it may occupy instead.
+			// goes to the row that control is painted IN instead.
 			//
 			// AN INTERACTIVE CONTROL NEVER REACHES HERE, measured rather than assumed: a click on
 			// a `<select>`, a checkbox, a `<button>` or a row grip moves FOCUS and leaves the
 			// selection exactly where it was, so no `selectionchange` is delivered at all. What
 			// does reach here is a click on frozen PRESENTATION — an atomic row's card, table of
-			// contents or properties grid — which is the case this recovers.
+			// contents or properties grid — which is the case this claims.
 			if (at === 'control') {
-				this.deps.recoverCaret(node)
+				this.deps.claimRow(node)
 				return
 			}
 			this.deps.selection.clear()
 		}
+
+		// SET ON THE WAY DOWN, read by the sync the browser's own default provokes — the two are
+		// one gesture and there is no other way to correlate them: `selectionchange` carries no
+		// pointer. Every `pointerdown` writes this field, so a click on ordinary text clears it.
+		listen(container, 'pointerdown', event => {
+			const target = event.target
+			this.#pointerControl =
+				target instanceof Node && this.deps.dom.handleAt(target) === 'control' ? target : undefined
+		})
+		// AND A KEY ENDS THE GESTURE. A pointer that landed on a FOCUSABLE control provokes no
+		// `selectionchange` at all, so the claim above is never consumed; without this the next
+		// one — an arrow key, or the caret re-placed after that control's own edit — would be
+		// answered with a row the user pointed at several keystrokes ago.
+		listen(container, 'keydown', () => {
+			this.#pointerControl = undefined
+		})
 
 		listen(container, 'focusout', () => {
 			queueMicrotask(() => {

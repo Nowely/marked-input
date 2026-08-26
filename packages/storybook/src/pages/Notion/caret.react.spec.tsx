@@ -43,6 +43,13 @@ const rowStarting = (host: HTMLElement, text: string): HTMLElement => {
 	return found
 }
 
+/** A control a KIND paints inside its own row — the dot, the rule, the arrow. */
+const controlIn = (row: HTMLElement, selector: string): HTMLElement => {
+	const found = row.querySelector<HTMLElement>(selector)
+	if (!found) throw new Error(`no ${selector} in row`)
+	return found
+}
+
 const toggleStarting = (host: HTMLElement, text: string): HTMLElement => {
 	const found = [...host.querySelectorAll<HTMLElement>('[class*="toggleRow"]')].find(row =>
 		row.textContent.trim().startsWith(text)
@@ -71,9 +78,8 @@ function caretIsUsable(): boolean {
 	return element.checkVisibility() && element.closest('[contenteditable="false"]') === null
 }
 
-/** Puts the caret at a text offset inside `node`, and lets the editor hear about it. */
-async function caretAt(host: HTMLElement, node: Node, offset: number) {
-	await userEvent.click(host)
+/** The BROWSER's own caret write — what a click leaves behind, without the click. */
+function putCaret(node: Node, offset: number): void {
 	const selection = window.getSelection()
 	if (!selection) throw new Error('no selection')
 	selection.removeAllRanges()
@@ -81,6 +87,12 @@ async function caretAt(host: HTMLElement, node: Node, offset: number) {
 	range.setStart(node, offset)
 	range.collapse(true)
 	selection.addRange(range)
+}
+
+/** Puts the caret at a text offset inside `node`, and lets the editor hear about it. */
+async function caretAt(host: HTMLElement, node: Node, offset: number) {
+	await userEvent.click(host)
+	putCaret(node, offset)
 	await settle()
 }
 
@@ -121,20 +133,67 @@ function pasteAtCaret(host: HTMLElement, clipboardData: DataTransfer): void {
 
 describe('the caret goes where a person can follow it', () => {
 	/**
-	 * AN ATOMIC ROW HOLDS NO CARET POSITION. Its interior is `contenteditable="false"` — that is
-	 * what `useControlRef()` writes — so a click parks the browser's own caret inside it, ArrowDown
-	 * cannot move it and every keystroke after it is dropped with nothing said. The editor puts the
-	 * caret at the nearest position it may occupy instead, which is the row after the block.
+	 * A CLICK CLAIMS THE ROW IT LANDED IN. A kind paints controls of its own — a bullet's dot, a
+	 * divider's rule — and each is `contenteditable="false"`, so the browser can name no position
+	 * there. The row around it holds plenty, and that row is the one the pointer was in: the caret
+	 * used to be handed to whatever row the recovery's forward search reached first.
 	 */
-	it('moves the caret out of an atomic block that was clicked', async () => {
-		const {value} = await mountControlled(Showcase)
+	it('claims the row a click landed in, not a neighbour', async () => {
+		const {host, value} = await mountControlled(Showcase)
 
-		await page.getByText('Launch tasks', {exact: true}).first().click()
+		await userEvent.click(controlIn(rowStarting(host, 'Vendor SLA unsigned'), '[class*="listBullet"]'))
 		await settle()
 		await userEvent.keyboard('ZZZ')
 
 		expect(caretIsUsable()).toBe(true)
-		expect(value()).toContain('## ZZZLaunch tasks')
+		expect(value()).toContain('- ZZZVendor SLA unsigned')
+	})
+
+	/**
+	 * AND A ROW WITH NO POSITION AT ALL LEAVES THE CARET WHERE IT WAS. An atomic kind paints none of
+	 * its own text, so there is nothing in it to claim — and the one answer a click may not give is
+	 * a DIFFERENT row, which is what typing into the table of contents used to edit: the heading
+	 * below it, four rows from the pointer.
+	 */
+	it('leaves the caret where it was when the block clicked holds no position', async () => {
+		const {host, value} = await mountControlled(Showcase)
+
+		await focusAtEnd(rowStarting(host, 'Vendor SLA unsigned'))
+		await page.getByText('Launch tasks', {exact: true}).first().click()
+		await settle()
+		await userEvent.keyboard('ZZZ')
+
+		expect(value()).toContain('- Vendor SLA unsignedZZZ')
+		expect(value()).not.toContain('ZZZLaunch tasks')
+	})
+
+	/**
+	 * THE SAME RULE WHERE THE BROWSER ANSWERS RATHER THAN DECLINES. Chromium resolves a mousedown on
+	 * a `draggable` element inside a frozen island by collapsing the caret to the START OF THE
+	 * EDITING HOST — a perfectly valid anchor in a row at the top of the document. A board card is
+	 * such an element, and typing after clicking one rewrote the page title.
+	 *
+	 * THE PLATFORM'S HALF IS WRITTEN OUT rather than driven, and that is a limit of the harness
+	 * rather than a shortcut: a real click on the card teleports the caret in a browser (measured
+	 * with no editor present at all, and on the running showcase), and produces no teleport at all
+	 * under this runner's synthetic pointer. What the two lines below stage is exactly what was
+	 * measured — the press inside the frozen island, then the browser's own answer to it — and the
+	 * rule under test is the editor's: the pointer's row outranks the anchor the browser named.
+	 */
+	it('hands no keystroke to the first row when a draggable card is pressed', async () => {
+		const {host, value} = await mountControlled(Showcase)
+
+		host.focus()
+		controlIn(rowStarting(host, 'To do'), '[class*="boardCardDraggable"]').dispatchEvent(
+			new PointerEvent('pointerdown', {bubbles: true})
+		)
+		putCaret(lineTextOf(rowsOfHost(host)[0]), 0)
+		await settle()
+		await userEvent.keyboard('ZZZ')
+
+		expect(host.contains(caretElement())).toBe(false)
+		// An echoing controlled field that never heard `onChange` still holds its mount value.
+		expect(value()).toBe('')
 	})
 
 	/**

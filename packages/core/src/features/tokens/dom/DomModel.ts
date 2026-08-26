@@ -78,9 +78,9 @@ export class DomModel {
 	 * {@link handleAt} stops at a control and answers `'control'`, losing whatever the control
 	 * was painted inside.
 	 *
-	 * Its one caller is the caret recovery, and what it needs is exactly what the stop discards:
-	 * a click that strands the caret in an atomic block still happened in a ROW, and that row is
-	 * where the search for a position the caret may occupy starts.
+	 * Its one caller is the row claim, and what it needs is exactly what the stop discards: a
+	 * gesture that lands on frozen presentation still happened in a ROW, and that row is the one
+	 * the caret belongs to.
 	 */
 	tokenAbove(node: Node): TokenHandle | undefined {
 		const container = this.deps.container()
@@ -281,6 +281,31 @@ export class DomModel {
 		// NO `alive()` gate: `kill` and `unbind` both clear the DOM bindings, and
 		// `TokenHandle.placeCaret` already declines a handle without them.
 		return this.deps.handle(target.id)?.placeCaret(target.offset) === true
+	}
+
+	/**
+	 * THE DOM HALF OF "THERE IS NO CARET" — `Selection.clear` is the model's, and the two are
+	 * one answer: a caret the model does not name may not stay in the document, because every
+	 * edit reads the DOM for the span it is about to change ({@link SelectionDriver.domAnchors}).
+	 *
+	 * THE FOCUS GOES WITH IT, and that is measured rather than tidy: a FOCUSED `contenteditable`
+	 * with no selection at all still takes typing, and Chromium invents the host's START for it —
+	 * so dropping the range alone left the very defect this exists to answer, one keystroke later.
+	 * The pair is already the state this editor lives by in the other direction, where `focusout`
+	 * clears the stored selection.
+	 *
+	 * ONLY OURS, checked rather than assumed: the window selection is the PAGE's, so an editor
+	 * that dropped it unconditionally would clear a selection made in a second editor — or in
+	 * ordinary page text — on a gesture of its own. And only while the HOST itself holds the
+	 * focus: a control inside it is operating, and taking its focus away is not this rule's
+	 * business.
+	 */
+	releaseCaret(): void {
+		const container = this.deps.container()
+		if (!container || document.activeElement !== container) return
+		const selection = window.getSelection()
+		if (selection?.focusNode && container.contains(selection.focusNode)) selection.removeAllRanges()
+		container.blur()
 	}
 
 	/**

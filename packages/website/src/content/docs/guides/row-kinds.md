@@ -189,6 +189,18 @@ takes its focus back once the control's edit has landed, so the user can go on t
 caret already is. The cost of that, stated: a control driven by the KEYBOARD that commits on every
 keystroke — a `<select>` arrowed with its popup closed — loses focus after the first commit.
 
+A control that is only PRESENTATION — a bullet glyph, a card, a properties grid — takes no focus,
+and a click on one names no position the editor can use: the browser either leaves its caret inside
+the frozen element or, for a `draggable` one, collapses it to the start of the editing host. Either
+way the row the pointer was IN is the row the caret gets, at that row's own entry. A click never
+reaches a neighbouring row.
+
+A row that paints none of its own text — an atomic kind, the whole card — holds no entry to claim,
+so a click on it leaves the caret exactly where it was. On a field nobody has typed in yet that
+means the click is inert: no caret, and the editor gives the focus back rather than holding one the
+user cannot see. If you want such a block to answer a click, paint something the caret can enter or
+handle the click yourself inside the control.
+
 ## Retyping a row
 
 `node.turnInto(option, patch?)` replaces the row's kind, keeping the row's identity — its id, its
