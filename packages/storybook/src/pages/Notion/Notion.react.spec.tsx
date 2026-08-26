@@ -795,7 +795,7 @@ describe('the inline database', () => {
 	 * mention. Its neighbour `handleRowSelection` already defers to an open overlay on Esc; this is
 	 * the same deference on the key the protocol actually claims.
 	 *
-	 * (The `/` menu is NOT this case and stays as declared — `BlockMenu` has no keyboard, so
+	 * (The `/` menu is NOT this case and stays as declared — `RowMenu` has no keyboard, so
 	 * nothing highlights, and `navigateSuggestions` answers `'none'` for a key no one will take.)
 	 */
 	it('finishes a mention on Enter after the arrow keys chose it', async () => {

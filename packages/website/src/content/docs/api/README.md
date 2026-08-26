@@ -39,9 +39,9 @@ title: "@markput/react"
 ## Functions
 
 - [annotate](/api/functions/annotate/)
-- [BlockMenu](/api/functions/blockmenu/)
 - [denote](/api/functions/denote/)
 - [MarkedInput](/api/functions/markedinput/)
+- [RowMenu](/api/functions/rowmenu/)
 - [useControlRef](/api/functions/usecontrolref/)
 - [useMark](/api/functions/usemark/)
 - [useMarkInfo](/api/functions/usemarkinfo/)

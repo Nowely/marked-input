@@ -3,9 +3,9 @@ import './src/augment'
 
 export {default as MarkedInput} from './src/components/MarkedInput.vue'
 // The shipped ROW MENU. Core is framework-agnostic and ships no components, so the default
-// slash-menu paint lives here beside `Suggestions`; `{overlay: {trigger: '/'}, Overlay: BlockMenu}`
+// slash-menu paint lives here beside `Suggestions`; `{overlay: {trigger: '/'}, Overlay: RowMenu}`
 // is the whole of a consumer's wiring.
-export {default as BlockMenu} from './src/components/BlockMenu/BlockMenu.vue'
+export {default as RowMenu} from './src/components/RowMenu/RowMenu.vue'
 export {useMark} from './src/lib/hooks/useMark'
 export {useMarkInfo} from './src/lib/hooks/useMarkInfo'
 export {useOverlay} from './src/lib/hooks/useOverlay'
@@ -29,7 +29,7 @@ export type {MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from '@markput/c
 // is documented nowhere a consumer looks.
 export type {RowSpec} from '@markput/core'
 // `CoreOption.menu`'s type and what `useOverlay().entries` hands out: a consumer replacing
-// `BlockMenu` declares both, and `Option` names the first in its own shape.
+// `RowMenu` declares both, and `Option` names the first in its own shape.
 export type {MenuSpec, MenuEntry} from '@markput/core'
 // `overlay.data`'s element type. A consumer declaring the rows the built-in picker offers has to
 // name it, and the built `.d.ts` already does through `Option` — published for `MenuEntry`'s

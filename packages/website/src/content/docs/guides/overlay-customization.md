@@ -87,10 +87,10 @@ A `/` menu is not a custom overlay: an option that declares a `menu` IS in the m
 adapter ships the paint.
 
 ```tsx
-import {BlockMenu} from '@markput/react'
+import {RowMenu} from '@markput/react'
 
 const options = [
-    {overlay: {trigger: '/'}, Overlay: BlockMenu},
+    {overlay: {trigger: '/'}, Overlay: RowMenu},
     {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1', keywords: ['h1', 'title']}},
     {markup: '- __slot__', row: {Component: 'li', continues: true}, menu: {label: 'Bulleted list'}},
     {markup: '> __slot__', row: {Component: 'blockquote'}, menu: {label: 'Quote'}},
@@ -118,7 +118,7 @@ Which gesture it is is not published, because nothing paints it: `choose` decide
 caret row's own body and no menu component asks. An entry that wants to say "Turn into" needs
 core to answer, so the member comes back with the reader that needs it and not before.
 
-**Replacing `BlockMenu`.** A consumer's own menu reads the same two things and still writes no
+**Replacing `RowMenu`.** A consumer's own menu reads the same two things and still writes no
 filtering and no insert logic:
 
 ```tsx
@@ -680,10 +680,10 @@ This one is no longer an example of a custom overlay, because it is not custom a
 [The Row Menu](#the-row-menu). The list, the filtering and the write all moved into core:
 
 ```tsx
-import {BlockMenu} from '@markput/react'
+import {RowMenu} from '@markput/react'
 
 const options = [
-    {overlay: {trigger: '/'}, Overlay: BlockMenu},
+    {overlay: {trigger: '/'}, Overlay: RowMenu},
     {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1', keywords: ['h1']}},
     {markup: '## __slot__', row: {Component: 'h2'}, menu: {label: 'Heading 2', keywords: ['h2']}},
     {markup: '- __slot__', row: {Component: 'li', continues: true}, menu: {label: 'Bulleted list'}},

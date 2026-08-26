@@ -7,11 +7,11 @@ import {Popup} from '../Popup/Popup'
  * THE ROW MENU, shipped: one entry per option that declares a `menu`, already narrowed by what
  * the user typed after the trigger, and a click turns the caret's row into that kind.
  *
- * A consumer wires it with one line — `{overlay: {trigger: '/'}, Overlay: BlockMenu}` — and a
+ * A consumer wires it with one line — `{overlay: {trigger: '/'}, Overlay: RowMenu}` — and a
  * consumer replacing it writes no filtering and no insert logic either: `entries` and `choose`
  * are core's, and this component is the paint over them.
  */
-export const BlockMenu = () => {
+export const RowMenu = () => {
 	const {entries, choose, style, ref} = useOverlay()
 
 	if (entries.length === 0) return null

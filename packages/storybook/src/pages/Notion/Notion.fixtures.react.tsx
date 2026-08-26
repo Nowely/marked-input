@@ -1,5 +1,5 @@
 import type {Option, Suggestion} from '@markput/react'
-import {BlockMenu} from '@markput/react'
+import {RowMenu} from '@markput/react'
 import type {ReactNode} from 'react'
 
 import {CoverBand, mention, NOTION_THEME, notionOptions, PageChrome, Paragraph, theme} from './notion'
@@ -31,12 +31,12 @@ const TEAM: Suggestion[] = [
  * kind the chosen entry names.
  *
  * Neither overlay is a component this page wrote. `@` is the built-in suggestion list over
- * `overlay.data`; `/` is the adapter's `BlockMenu` over the entries the options themselves
+ * `overlay.data`; `/` is the adapter's `RowMenu` over the entries the options themselves
  * declare, so nothing here filters, labels or inserts.
  */
 const options: Option[] = [
 	{...mention, overlay: {trigger: '@', data: TEAM}},
-	{Overlay: BlockMenu, overlay: {trigger: '/'}},
+	{Overlay: RowMenu, overlay: {trigger: '/'}},
 	...notionOptions.filter(option => option !== mention),
 ]
 

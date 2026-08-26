@@ -131,7 +131,7 @@ trigger span and calls `RowNode.turnInto(option, {text})` on the caret's row —
 both gestures, because two verbs cannot compose in controlled mode. Which gesture it is lives
 in ONE place and is not published: `choose` reads the caret row's body and, if it is empty,
 seeds it from the entry's `menu.text`/`menu.meta`; a row that already has text keeps it, since
-a turn-into must not discard what was typed. Each adapter ships `BlockMenu` as the default
+a turn-into must not discard what was typed. Each adapter ships `RowMenu` as the default
 paint.
 
 ## Parsing Pipeline

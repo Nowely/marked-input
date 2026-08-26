@@ -239,7 +239,7 @@ describe('API: Overlay and Triggers', () => {
 })
 
 /**
- * THE ROW MENU, driven through the SHIPPED `BlockMenu` in both projects. The probe page that
+ * THE ROW MENU, driven through the SHIPPED `RowMenu` in both projects. The probe page that
  * proved ticket 11 is React-only until P12, so without these two the Vue component's `entries`
  * binding, its ref wiring and its click path never ran anywhere.
  *
