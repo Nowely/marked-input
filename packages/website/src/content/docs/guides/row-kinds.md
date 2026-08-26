@@ -187,7 +187,7 @@ of the option `as` names — a table line into cells.
 ```tsx
 const cell: Option = {
     row: {
-        Component: ({children, ref, className, style}) => (
+        Component: ({children, ref, className, style}: RowProps) => (
             <div ref={ref} className={`${className} cell`} style={style}>
                 {children}
             </div>

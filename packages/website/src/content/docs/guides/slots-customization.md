@@ -269,7 +269,7 @@ function Editor() {
 Spread everything you are given onto the element you render, the row's rendered content included:
 
 ```tsx
-const Paragraph = ({children, ref, className, style}) => (
+const Paragraph = ({children, ref, className, style}: RowProps) => (
     <p ref={ref} className={className} style={style}>
         {children}
     </p>
