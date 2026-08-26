@@ -646,6 +646,29 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * PROSE INSIDE A TOGGLE, which is a CONSUMER DECLARATION and was one word wrong. Declaring
+	 * `continues: true` on the toggle kinds made Enter at the end of a title open ANOTHER toggle,
+	 * and Tab then nested a toggle inside a toggle — so the only way to put a line of text in one
+	 * was Enter, Tab, `/text`. A list item continues; a CONTAINER does not.
+	 *
+	 * WHAT IS STILL A GAP, and it is the Tab: `continues` carries a KIND and the tail is written at
+	 * the row's OWN lead, so no option can say "Enter opens a CHILD of this row". Filed in
+	 * `docs/scratch/notion-like/map.md` with what a depth-carrying form would take.
+	 */
+	it('opens a plain line under a toggle rather than another toggle', async () => {
+		const {host, value} = await mountControlled(Showcase, '▾ Why\n\tbody line')
+
+		await focusAtOffset(toggleStarting(host, 'Why'), 'Why'.length)
+		await userEvent.keyboard('{Enter}')
+		await expect.poll(value).toBe('▾ Why\n\tbody line\n')
+
+		await userEvent.keyboard('{Tab}')
+		dispatchInsertText(editingHost(host), 'prose')
+
+		await expect.poll(value).toBe('▾ Why\n\tbody line\n\tprose')
+	})
+
+	/**
 	 * THE DEMOTE LADDER, on the page's own kinds: a row gives up its DEPTH first and then its KIND,
 	 * and both keys that climb it are `showcase.md`'s own — Enter to leave a list from its empty
 	 * last item, Backspace at a block's start to make it a paragraph. Every other Enter and
@@ -1150,6 +1173,10 @@ describe('the toggle', () => {
 	 *
 	 * `checkVisibility()` is the oracle rather than the emitted value, for the reason the collapse
 	 * case below states: the value was RIGHT the whole time.
+	 *
+	 * AND WHAT LANDS INSIDE IT IS PROSE. The toggle kinds declare no `continues`, so Enter after a
+	 * title opens a plain row and Tab puts it in the toggle — where `continues: true` used to open
+	 * a second TOGGLE and Tab nested a toggle inside a toggle.
 	 */
 	it('opens the toggle the menu inserts, so the line typed into it is on screen', async () => {
 		const {host, value} = await mountControlled(Empty, '')
@@ -1164,7 +1191,7 @@ describe('the toggle', () => {
 		await userEvent.keyboard('{Tab}')
 		await userEvent.keyboard('nested line')
 
-		await expect.poll(value).toBe('\u25be title\n\t\u25be nested line')
+		await expect.poll(value).toBe('\u25be title\n\tnested line')
 		expect(rowAt(host, 'nested line').checkVisibility()).toBe(true)
 	})
 

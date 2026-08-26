@@ -747,6 +747,29 @@ becomes a ticket here.
   option-to-icon map in the consumer component — which is precisely the shape P7's
   exit criterion forbids. `icon?: Slot` is the version that keeps the criterion, and
   it lands with the painter, as `section` now does.
+- **`continues` CARRIES A KIND AND NEVER A DEPTH, so no option can say "Enter opens a CHILD of
+  this row" — which is what a CONTAINER wants.** The showcase's toggles declared `continues: true`
+  and got the only thing the field can express: another toggle beside this one (`'▾ Why'` + Enter +
+  text emitted `'▾ Why⏎▾ text'`), with Tab then nesting a toggle inside a toggle. That word is gone
+  (2026-08-26) and the gesture is Enter, Tab — the `/text` in the middle is no longer needed — but
+  the Tab is still the user's to press. WHAT A DEPTH-CARRYING FORM WOULD TAKE, measured against the
+  code rather than sketched:
+  - one more word in `RowSpec` — `continues` is `boolean | CoreOption` today and every reading of it
+    goes through `TokenModel.#continues` into `Continuation = {descriptor, meta}`, so the field and
+    that type both grow a "one level deeper" answer;
+  - `siblings.ts`'s `openedLine` writes `node.lead() + rowMarkup(…)`, the splitting row's OWN lead,
+    which is exactly why the tail is always a sibling. It would have to take a lead rather than read
+    one, and the deeper lead is `lead + config.indent` — the byte-level primitive already exists as
+    `rowKeys.ts`'s `continuationDepth`, which is what Shift+Enter writes;
+  - `splitPlan` PLACES the tail past the whole subtree (`head + subtree + separator + written`)
+    because a row written between a row and its children adopts them. A child goes on the other side
+    of that join, and the `tail` index it returns —
+    `index + preorderRows([node]).length + opened.length - 1` — moves with it. That is a contract
+    change to the one function whose window arithmetic is already the fragile part (see the mid-body
+    split entry above), not a one-field addition;
+  - and it inherits two refusals it must not re-derive: the scan's ceiling
+    (`AnchoredRow.childDepth`, which an EMPTY row makes 0) and `TokenModel.#nestingIsPainted`, a DOM
+    fact that lives at the seam because `tree/` cannot ask whether a kind paints child rows.
 - **A ROW SELECTION THAT STARTS AT A FROZEN ROW CANNOT BE GROWN, and the model and the DOM disagree
   in silence while it stands.** A click on a row holding no editable position now SELECTS it
   (2026-08-26), written across the row's own ELEMENT because its text has no surface. MEASURED on

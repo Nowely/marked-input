@@ -275,8 +275,9 @@ describe('the caret goes where a person can follow it', () => {
 		await userEvent.keyboard('eleven char')
 
 		expect(caretIsUsable()).toBe(true)
-		expect(value()).toContain('\n▸ eleven char\n')
-		expect(value()).not.toContain('\t▸ eleven char')
+		// A plain row rather than a second toggle: the toggle kinds declare no `continues`.
+		expect(value()).toContain('\neleven char\n')
+		expect(value()).not.toContain('\televen char')
 	})
 
 	/**

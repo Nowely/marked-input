@@ -503,14 +503,27 @@ const toggleRow = (open: boolean) =>
 		)
 	}
 
+/**
+ * AND THE KIND DOES NOT CONTINUE, which is one word and was the whole of why prose could not be
+ * typed inside a toggle. `continues: true` meant Enter at the end of a title opened ANOTHER toggle
+ * — `'▾ Why'` + Enter + text emitted `'▾ Why⏎▾ text'` — and Tab on it then nested a toggle inside a
+ * toggle. A list item continues because a second bullet is what Enter after a bullet means; a
+ * toggle is a CONTAINER, and what Enter after its title means is a line INSIDE it.
+ *
+ * WHAT IT BUYS AND WHAT IT STILL COSTS. Enter now opens a plain row and Tab puts it in the toggle,
+ * so the gesture is Enter, Tab — the `/text` that used to be needed in the middle is gone. What no
+ * declaration can say is the Tab: `continues` carries a KIND, and the tail is written at the row's
+ * OWN lead ({@link splitPlan}'s `openedLine`), so an option can name what the next row IS and never
+ * where it SITS. See `docs/scratch/notion-like/map.md` for what a depth-carrying form would take.
+ */
 export const toggle: Option = {
 	markup: '▸ __slot__',
-	row: {continues: true, indents: true, Component: toggleRow(false)},
+	row: {indents: true, Component: toggleRow(false)},
 }
 
 export const toggleOpen: Option = {
 	markup: '▾ __slot__',
-	row: {continues: true, indents: true, Component: toggleRow(true)},
+	row: {indents: true, Component: toggleRow(true)},
 	menu: {label: 'Toggle list', keywords: ['collapse', 'details', 'fold']},
 }
 
