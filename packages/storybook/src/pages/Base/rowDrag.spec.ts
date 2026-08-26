@@ -31,6 +31,7 @@ const ROWS = {separator: '\n', indent: '\t', Mark, draggable: true} as const
 // `string` does not satisfy.
 const ITEM = {markup: '- __slot__', row: {Component: rows.Bullet, indents: true}} as const
 const TOGGLE = {markup: '> __slot__', row: {Component: rows.Toggle, indents: true}} as const
+const HEADING = {markup: '## __slot__', row: {Component: rows.Heading}} as const
 
 const DOCUMENT = '- alpha\n- beta\n> toggle\n\t- kid'
 
@@ -160,5 +161,68 @@ describe('row selection and nested drag', () => {
 		expect(idOf(rowWith(host, 'inner'))).toBe(id)
 		// THE COMPONENT did not: re-parented, so re-mounted, so back to its initial state.
 		expect(rowWith(host, 'inner').querySelector<HTMLInputElement>('input')?.checked).toBe(true)
+	})
+})
+
+/**
+ * A KIND THAT PAINTS NONE OF THE CHILD ROWS IT IS HANDED, which nothing in the option API forbids
+ * and which `rows.Heading` is. A row nested under one is in the document, holds its text, and has
+ * no box, no caret position and nothing on screen — so both gestures that can deepen a row have to
+ * refuse it, and the drop has to refuse it BEFORE it paints an indicator promising it.
+ *
+ * THE ORACLE IS THE PAINTED DOM, not the emitted value, and that is the whole reason this went
+ * unseen: the value the broken mover emitted was correct — `'## head\n\t- body'`, a tab and a
+ * legal tree. It was the screen that lost the row.
+ *
+ * Measured against the code before the fix, in both projects: the drop emitted `'## head\n\t- body'`
+ * and `everyRow` came back holding `head` alone; Tab did the same. Both cases also cover the hole
+ * the old guard left open by construction — it asked the would-be parent's FIRST EXISTING CHILD
+ * whether it was painted, and a heading with no children yet answered nothing.
+ */
+describe('a destination that paints no child rows', () => {
+	const PAGE = '## head\n- body\n- tail'
+	const withHeading = async (onChange: (value: string) => void) =>
+		mountComponent({defaultValue: PAGE, ...ROWS, options: [ITEM, HEADING], onChange})
+
+	const texts = (host: HTMLElement) => everyRow(host).map(row => row.textContent.trim())
+
+	it('refuses the DEPTH a drop asks for, and leaves the dropped row on screen', async () => {
+		const onChange = vi.fn<(value: string) => void>()
+		const {host} = await withHeading(onChange)
+		const head = rowWith(host, 'head')
+
+		// The gap after the heading's line, released as far INSIDE it as the row goes — an X that
+		// asks for every depth the gap has.
+		await dragBelow(host, rowWith(host, 'tail'), head, head.getBoundingClientRect().right - 1)
+
+		// The gap keeps its shallowest depth, so the row lands at the root: NO indent in the value,
+		// and — the oracle the emitted value cannot give — the row still has a box. Before the fix
+		// this emitted `'## head\n\t- tail\n- body'` and `texts` came back `['head', 'body']`.
+		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('## head\n- tail\n- body')
+		await expect.poll(() => texts(host)).toEqual(['head', 'tail', 'body'])
+	})
+
+	it('refuses the Tab that would nest a row under it', async () => {
+		const onChange = vi.fn<(value: string) => void>()
+		const {host} = await withHeading(onChange)
+
+		await focusAtStart(rowWith(host, 'body'))
+		await userEvent.keyboard('{Tab}')
+
+		expect(onChange).not.toHaveBeenCalled()
+		expect(texts(host)).toEqual(['head', 'body', 'tail'])
+	})
+
+	it('still reorders at the heading own depth, so the refusal is the DEPTH and not the drop', async () => {
+		const onChange = vi.fn<(value: string) => void>()
+		const {host} = await withHeading(onChange)
+		const head = rowWith(host, 'head')
+
+		// The SAME gap and the same Y, left of every indent: depth 0, which the heading hosts
+		// nothing for and which the refusal therefore leaves alone.
+		await dragBelow(host, rowWith(host, 'tail'), head, host.getBoundingClientRect().left)
+
+		await expect.poll(() => onChange.mock.lastCall?.[0]).toBe('## head\n- tail\n- body')
+		await expect.poll(() => texts(host)).toEqual(['head', 'tail', 'body'])
 	})
 })

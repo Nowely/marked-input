@@ -302,12 +302,13 @@ export function mountNestedRowDoc(props: Parameters<Store['props']['set']>[0] = 
 			element.append(surface)
 			store.tokens.consign(child.id)(surface)
 		}
-		const childRows = row.rows()
-		if (childRows.length === 0) return element
+		// The host goes in WHETHER OR NOT the row has children, which is what both adapters do and
+		// what `DomModel.nestingIsPainted` reads off a would-be parent.
 		const host = document.createElement('span')
+		host.style.display = 'contents'
 		element.append(host)
 		store.tokens.children(row.id, 'rows')(host)
-		for (const child of childRows) paint(child, host)
+		for (const child of row.rows()) paint(child, host)
 		return element
 	}
 

@@ -87,13 +87,19 @@ const rowProps = computed(() => {
 		<template #default>
 			<Token v-for="child in inlineChildren" :key="child.id" :node="child" :depth="0" />
 			<!-- HIDDEN rather than absent is the consumer's contract for a collapsed row: an
-			     unpainted row leaves `bind` and takes its anchors with it. What is absent here is
-			     the HOST, and only when the row genuinely has no children. -->
-			<span v-if="!isKind && childRows.length > 0" :ref="setRowsRef" style="display: contents">
+			     unpainted row leaves `bind` and takes its anchors with it.
+
+			     THE HOST IS RENDERED WHETHER OR NOT THE ROW HAS CHILDREN, and that is the whole of
+			     what `DomModel.nestingIsPainted` reads: a kind that never renders the `rows` slot
+			     mounts no host, and core has to know that BEFORE it writes the first child into
+			     such a row — a drop that nested a paragraph under a heading left it in the
+			     document with no box at all. It costs one boxless `display: contents` element per
+			     kind row. -->
+			<span v-if="!isKind" :ref="setRowsRef" style="display: contents">
 				<Rows :rows="childRows" :depth="depth + 1" />
 			</span>
 		</template>
-		<template v-if="isKind && childRows.length > 0" #rows>
+		<template v-if="isKind" #rows>
 			<span :ref="setRowsRef" style="display: contents">
 				<Rows :rows="childRows" :depth="depth + 1" />
 			</span>

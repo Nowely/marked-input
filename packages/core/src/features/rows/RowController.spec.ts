@@ -95,18 +95,30 @@ function mountNestedRows(value: string, props: Parameters<Store['props']['set']>
 			surface.textContent = child.text()
 			store.tokens.consign(child.id)(surface)
 		}
-		for (const kid of node.rows()) paint(kid, row, depth + 1)
+		// The child-rows host, filed WHETHER OR NOT the row has children — both adapters do, and it
+		// is what says this kind paints the rows it is handed (`DomModel.nestingIsPainted`).
+		const host = document.createElement('span')
+		host.style.display = 'contents'
+		row.append(host)
+		store.tokens.children(node.id, 'rows')(host)
+		for (const kid of node.rows()) paint(kid, host, depth + 1)
 	}
 	for (const node of store.tokens.nodes()) paint(node, container, 0)
 	return {store, controller: store.rows, container, painted}
 }
 
 /**
- * The grip's own `dragstart`, and the only thing that tells an editor a later drop is ITS OWN
- * row. Every drop test goes through it: without one, `dragover` paints no edge at all.
+ * The grip's own mousedown and `dragstart`, in that order — the whole press, which is what the
+ * adapters wire and what the controller reads: `pinHover` freezes the hovered row AND takes the row
+ * selection the drag is picking up, because by `dragstart` Chromium has already moved the text
+ * selection the row selection is derived from.
+ *
+ * `dragstart` is also the only thing that tells an editor a later drop is ITS OWN row. Every drop
+ * test goes through this: without one, `dragover` paints no edge at all.
  */
 function startDrag({controller, store}: ReturnType<typeof mountRows>, index: number): number {
 	const id = store.tokens.nodes()[index].id
+	controller.pinHover()
 	controller.beginDrag(id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
 	return id
 }

@@ -94,7 +94,7 @@ Everything a kind declares beyond its markup lives in [`RowSpec`](/api/interface
 | Prop                       | What it is                                                                                        |
 | -------------------------- | ------------------------------------------------------------------------------------------------- |
 | `children`                 | The row's own inline content, already rendered.                                                    |
-| `rows`                     | The row's CHILD ROWS, already rendered; `undefined` when there are none.                            |
+| `rows`                     | The row's CHILD ROWS, already rendered. Always present — empty when the row has none.               |
 | `meta`                     | The kind's `__meta__` gap — a to-do's flag, a fence's language.                                     |
 | `depth`                    | Nesting depth, counted from 0 — a root row is at depth 0.                                          |
 | `index`                    | Position among the row's own siblings.                                                             |
@@ -104,9 +104,17 @@ Everything a kind declares beyond its markup lives in [`RowSpec`](/api/interface
 The `ref` is load-bearing. It is how the editor finds the row's element; a component that drops it
 leaves the row unbound and the caret cannot resolve into it.
 
-A kind that renders neither `rows` nor a wrapper for them keeps its child rows in the value and off
-the screen — they round-trip and reappear when the row is outdented. That is Notion's own behaviour
-for a heading, and it is what declaring no "can this nest" flag costs.
+**A kind that never renders `rows` cannot be nested under.** Rendering it is how the editor learns
+that this kind has somewhere to put a child: the wrapper the adapter hands over registers itself,
+and a kind that drops it registers nothing. Tab and a drag both read that and refuse to nest a row
+where nothing would paint it — the drop indicator never offers the depth, and Tab is consumed and
+does nothing. Nothing is lost and nothing is hidden, which is what the alternative cost: a row moved
+under a heading that renders no `rows` stayed in the value with no box, no caret position and
+nothing on screen.
+
+So render `rows` even where the design has no children in mind — an empty wrapper costs nothing,
+and it is what keeps the kind nestable. Hiding them is a different thing and is fine (below); it is
+read as "not now", and a nest into a hidden subtree is refused for the same reason.
 
 Collapse by HIDING, never by unmounting. An unpainted row leaves the DOM binding and takes its
 anchors with it, so `End`, select-all and every arrow that resolves through the last row would walk

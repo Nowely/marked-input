@@ -58,4 +58,15 @@ export const rows = {
 			</div>
 		)
 	},
+	/**
+	 * A row KIND that is handed its child rows and PAINTS NONE OF THEM — a heading, which is the
+	 * commonest shape of it. It is a fixture and not a mistake: nothing in the option API obliges a
+	 * kind to render `rows`, so a row nested under one would be in the document with no box, no
+	 * caret position and nothing on screen. Both gestures that can deepen a row have to refuse it.
+	 */
+	Heading: ({children, node, ref}: RowProps) => (
+		<h2 ref={ref} data-id={node.id}>
+			{children}
+		</h2>
+	),
 }

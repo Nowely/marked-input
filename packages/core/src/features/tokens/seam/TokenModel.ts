@@ -439,13 +439,20 @@ export class TokenModel {
 	 * EVERY PLACEMENT A DROP INTO ONE GAP MAY TAKE — see {@link dropPlacements}. What the drag layer
 	 * turns a pointer's horizontal position into, and the reason the drop indicator cannot promise
 	 * a move the mover would refuse.
+	 *
+	 * The planner is pure tree arithmetic and stays that way; the ONE refusal it cannot make is
+	 * {@link #nestingIsPainted}'s, which is a DOM fact. It is applied HERE rather than left to the
+	 * drop, so a candidate the mover will refuse is never offered and never painted — the indicator
+	 * promises, it does not predict.
 	 */
 	dropPlacements(
 		nodes: readonly RowNode[],
 		row: RowNode,
 		edge: 'before' | 'after'
 	): readonly {depth: number; placement: RowPlacement}[] {
-		return untracked(() => dropPlacements(this.#tree.roots(), nodes, row, edge, this.#tree.config()))
+		return untracked(() => dropPlacements(this.#tree.roots(), nodes, row, edge, this.#tree.config())).filter(
+			candidate => this.#nestingIsPainted(candidate.placement.parent)
+		)
 	}
 
 	/**
@@ -474,45 +481,53 @@ export class TokenModel {
 	 * and the verified pairing carries them through untouched.
 	 *
 	 * AND IT REFUSES A DESTINATION NOTHING PAINTS — {@link #nestingIsPainted}, which is the caret
-	 * invariant read at the one gesture that can move a row out from under it.
+	 * invariant read at the gestures that can move a row out from under it.
 	 */
 	indentRows(nodes: readonly RowNode[], steps: number): boolean {
 		this.#ensureSeeded()
-		if (steps > 0 && !nodes.every(node => this.#nestingIsPainted(node))) return false
+		if (steps > 0 && !nodes.every(node => this.#nestingIsPainted(this.#parentOneLevelDeeper(node)))) return false
 		const plan = untracked(() => depthPlan(this.#tree.roots(), nodes, steps, this.#tree.config()))
 		if (!plan) return false
 		return this.#tx.applyRange(plan.window, plan.text)
 	}
 
 	/**
-	 * WOULD THIS ROW STILL BE ON SCREEN one level deeper? The row that would parent it there is its
-	 * PREVIOUS SIBLING — nesting is indentation and nothing else — and a kind that COLLAPSES its
-	 * children paints them with no boxes at all.
+	 * WOULD A ROW NESTED UNDER `parent` STILL BE ON SCREEN? THE one question every gesture that
+	 * deepens a row has to ask, and it is asked of the DESTINATION — `null` is the root, which
+	 * always paints.
 	 *
-	 * A caret may not enter a subtree with no boxes, and Tab was the one gesture that put it there:
-	 * a row opened after a closed toggle's title and then indented landed inside it, where eleven
-	 * characters were typed into the document with no visible caret and nothing on screen. Refusing
-	 * the MOVE rather than recovering the caret afterwards is the answer that loses nothing — the
-	 * row stays where the user can see it, and the key is still consumed, exactly as it is at a
+	 * A caret may not enter a subtree with no boxes, and two gestures put it there. Tab: a row
+	 * opened after a closed toggle's title and then indented landed inside it, where eleven
+	 * characters were typed into the document with no visible caret and nothing on screen. The
+	 * DROP: released one indent step right of a heading's line, a row was written as that heading's
+	 * first child, and the heading's component takes the child rows it is handed and paints none of
+	 * them — the row kept its text, lost its box, and the document read one root shorter. Refusing
+	 * the MOVE rather than recovering the caret afterwards is the answer that loses nothing: the row
+	 * stays where the user can see it, and the gesture is still consumed, exactly as it is at a
 	 * depth the scan refuses.
 	 *
-	 * A PARENT WITH NO CHILDREN YET has told us nothing — a collapsed kind paints an empty subtree
-	 * exactly as an open one does — so the move is allowed. That hole is the price of asking the
-	 * DOM instead of asking the option, and the option cannot answer: "closed" is a fact about a
-	 * component's own rendering that no declaration reaches.
+	 * IT USED TO BE ASKED OF THE PARENT'S FIRST EXISTING CHILD, which a parent with no children yet
+	 * could not answer, so the move was allowed and that was the whole of the drop defect above. It
+	 * is now {@link DomModel.nestingIsPainted}, which asks the parent's own child-rows host — a fact
+	 * every kind has whether or not it has children yet.
 	 */
-	#nestingIsPainted(node: RowNode): boolean {
+	#nestingIsPainted(parent: RowNode | null): boolean {
+		return parent === null || this.#dom.nestingIsPainted(parent.id)
+	}
+
+	/**
+	 * The row that would PARENT `node` one level deeper: its previous sibling, because nesting is
+	 * indentation and nothing else. `null` where it has none — the plan refuses that on its own.
+	 */
+	#parentOneLevelDeeper(node: RowNode): RowNode | null {
 		const rows = untracked(() => preorderRows(this.#tree.roots()))
 		const at = rows.findIndex(entry => entry.row === node)
-		if (at < 0) return true
+		if (at < 0) return null
 		const depth = rows[at].depth
-		let parent: RowNode | undefined
 		for (let index = at - 1; index >= 0 && rows[index].depth >= depth; index--) {
-			if (rows[index].depth === depth) parent = rows[index].row
-			if (parent) break
+			if (rows[index].depth === depth) return rows[index].row
 		}
-		const child = parent && untracked(() => parent.rows().at(0))
-		return child === undefined || this.#dom.painted(child.id)
+		return null
 	}
 
 	/**
@@ -862,6 +877,9 @@ export class TokenModel {
 		 */
 		moveTo: (nodes, placement) => {
 			this.#ensureSeeded()
+			// The same refusal Tab makes, at the other gesture that deepens a row — and HERE rather
+			// than in `moveRows`, because this is where the drop and `RowNode.moveTo` meet.
+			if (!this.#nestingIsPainted(placement.parent)) return false
 			const plan = untracked(() => movePlan(this.#tree.roots(), nodes, placement, this.#tree.config()))
 			// `'unchanged'` — the rows already hold that placement — writes nothing and answers
 			// like a refusal, which is what a drop onto a row's own place has always looked like

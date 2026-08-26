@@ -10,10 +10,13 @@
  * painted document, taken in CSS, because no component can ask them.
  */
 
-/* An empty row is one whose only surface holds no text — `:empty` on the span the adapter
-   consigns. The theme's `.block`, which the row also wears, is the containing block the
-   absolutely positioned placeholder needs. */
-.paragraph:has(> span:empty)::before {
+/* An empty row is one whose own text surface holds no text — `:empty` on the FIRST span the
+   adapter consigns. `:first-child` is load-bearing: a row's element also carries the adapter's
+   child-rows host, an empty `display: contents` span that is there whether or not the row has
+   children, so a bare `> span:empty` matched every paragraph and kept the placeholder over the
+   text the user had just typed. The theme's `.block`, which the row also wears, is the containing
+   block the absolutely positioned placeholder needs. */
+.paragraph:has(> span:first-child:empty)::before {
 	position: absolute;
 	color: var(--notion-text-placeholder);
 	content: attr(data-placeholder);

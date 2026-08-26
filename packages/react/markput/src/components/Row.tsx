@@ -65,14 +65,18 @@ export const Row = memo(({node, depth, index}: RowRenderProps) => {
 
 	const childRows = node.rows()
 	// HIDDEN rather than absent is the consumer's contract for a collapsed row: an unpainted row
-	// leaves `bind` and takes its anchors with it. What is absent here is the HOST, and only when
-	// the row genuinely has no children.
-	const rows =
-		childRows.length > 0 ? (
-			<span ref={hostRows} style={rowsHostStyle}>
-				<Rows rows={childRows} depth={depth + 1} />
-			</span>
-		) : undefined
+	// leaves `bind` and takes its anchors with it.
+	//
+	// THE HOST IS RENDERED WHETHER OR NOT THE ROW HAS CHILDREN, and that is the whole of what
+	// `DomModel.nestingIsPainted` reads: a kind that ignores the rows it is handed registers no
+	// host, and core has to know that BEFORE it writes the first child into such a row — a drop
+	// that nested a paragraph under a heading left it in the document with no box at all. It cost
+	// one boxless `display: contents` element per kind row.
+	const rows = (
+		<span ref={hostRows} style={rowsHostStyle}>
+			<Rows rows={childRows} depth={depth + 1} />
+		</span>
+	)
 
 	const [Component, props] = resolveNodeSlot(node, {depth, index})
 	// `node` in the resolved props is core's answer for "this row paints through its KIND's own

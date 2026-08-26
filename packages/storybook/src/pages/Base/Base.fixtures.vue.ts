@@ -67,4 +67,16 @@ export const rows = {
 			'<div :data-id="node.id"><input type="checkbox" aria-label="open" :checked="open" @change="open = !open" /><slot />' +
 			'<span :hidden="!open"><slot name="rows" /></span></div>',
 	}),
+	/**
+	 * A row KIND that is handed its child rows and PAINTS NONE OF THEM — a heading, which is the
+	 * commonest shape of it. It is a fixture and not a mistake: nothing in the option API obliges a
+	 * kind to render the `rows` slot, so a row nested under one would be in the document with no
+	 * box, no caret position and nothing on screen. Both gestures that can deepen a row have to
+	 * refuse it.
+	 */
+	Heading: defineComponent({
+		inheritAttrs: false,
+		props: {meta: String, node: {type: null}, depth: Number, index: Number},
+		template: '<h2 :data-id="node.id"><slot /></h2>',
+	}),
 }

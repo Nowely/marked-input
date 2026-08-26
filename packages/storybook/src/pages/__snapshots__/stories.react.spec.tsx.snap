@@ -275,6 +275,7 @@ exports[`Component: stories > Notion stories > Story Empty 1`] = `
     <div contenteditable="true">
       <div data-placeholder="Type / for commands…">
         <span></span>
+        <span></span>
       </div>
       <div contenteditable="false"></div>
     </div>
@@ -448,6 +449,7 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
           </span>
         </span>
         <span> is what everything downstream assumes.</span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -772,6 +774,7 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
           </span>
           <div>
             <span>Launch gating on the auth migration — GA holds only if cutover lands by 2026-04-09.</span>
+            <span></span>
           </div>
         </div>
       </div>
@@ -781,6 +784,7 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
       <div>
         <span contenteditable="false"></span>
         <span>Vendor SLA unsigned</span>
+        <span></span>
       </div>
       <div>
         <span contenteditable="false"></span>
@@ -789,24 +793,28 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
           <div>
             <span contenteditable="false"></span>
             <span>Awaiting quota approval</span>
+            <span></span>
           </div>
         </span>
       </div>
       <div>
         <span contenteditable="false"></span>
         <span>Support headcount at 60%</span>
+        <span></span>
       </div>
       <div>
         <input type="checkbox" contenteditable="false">
         <span>
           <span>Confirm the EU quota with the vendor</span>
         </span>
+        <span></span>
       </div>
       <div>
         <input type="checkbox" checked="" contenteditable="false">
         <span>
           <span>Signed off by Platform</span>
         </span>
+        <span></span>
       </div>
       <div>
         <span>Decision log</span>
@@ -818,14 +826,17 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
           <span>
             <div data-placeholder="Type / for commands…">
               <span>Shipping three platforms at once puts the auth migration on the critical path twice.</span>
+              <span></span>
             </div>
             <div>
               <span contenteditable="false"></span>
               <span>Auth migration owns the critical path.</span>
+              <span></span>
             </div>
             <div>
               <span contenteditable="false"></span>
               <span>Three platforms at once doubles the QA matrix.</span>
+              <span></span>
             </div>
           </span>
         </div>
@@ -837,6 +848,7 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
           <span>
             <div data-placeholder="Type / for commands…">
               <span>EU capacity is unconfirmed, so a second region is a launch risk with no launch benefit.</span>
+              <span></span>
             </div>
           </span>
         </div>
@@ -848,6 +860,7 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
           <span>
             <div data-placeholder="Type / for commands…">
               <span>Presence and offline edits fall out of the same merge; OT needed a server for each.</span>
+              <span></span>
             </div>
           </span>
         </div>
@@ -866,6 +879,7 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
       </div>
       <div>
         <span>If the cutover isn't boring, we're not ready to call it GA.</span>
+        <span></span>
       </div>
       <div>
         <div contenteditable="false">
@@ -903,6 +917,7 @@ exports[`Component: stories > Notion stories > Story Showcase 1`] = `
         </div>
       </div>
       <div data-placeholder="Type / for commands…">
+        <span></span>
         <span></span>
       </div>
       <div contenteditable="false"></div>

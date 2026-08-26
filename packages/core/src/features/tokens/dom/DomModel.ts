@@ -127,6 +127,29 @@ export class DomModel {
 		return element?.isConnected === true && element.checkVisibility()
 	}
 
+	/**
+	 * WOULD A CHILD ROW OF THIS ROW BE ON SCREEN — asked of the WOULD-BE PARENT, before anything
+	 * is written, which is what a childless one could not be asked while the question was put to
+	 * its first existing child.
+	 *
+	 * A row's child rows reach its kind's component as one host element, and a kind that ignores
+	 * them never renders it: no host, no place for a child to be painted, so a row nested there is
+	 * in the document and on no screen. The host is what the adapters register for exactly this
+	 * reason, and they file it whether or not the row has children YET — the fact is about the
+	 * KIND, and a parent with an empty list has to be able to answer it.
+	 *
+	 * A ROW THE FRAMEWORK HAS NOT PAINTED ANSWERS `true`, and that asymmetry is deliberate: no
+	 * bindings at all is a node this commit added or a document with no adapter behind it, where a
+	 * refusal would be a race rather than a verdict — the rule {@link painted}'s callers already
+	 * live by.
+	 */
+	nestingIsPainted(id: Id): boolean {
+		const bindings = this.deps.handle(id)?.node()
+		if (!bindings) return true
+		const host = bindings.rowSequenceHost
+		return host?.isConnected === true && rendersContents(host)
+	}
+
 	/** Locate the live node owning a DOM node, walking up to the container. */
 	#locate(node: Node): Lookup | undefined {
 		const container = this.deps.container()
@@ -318,4 +341,29 @@ export class DomModel {
 		if (!target) return undefined
 		return this.deps.handle(target.id)?.caretBoundary(target.offset)
 	}
+}
+
+/**
+ * Would something painted INSIDE `element` be on screen? The question {@link DomModel.painted}
+ * asks of an element about ITSELF, asked instead about an element's contents.
+ *
+ * `checkVisibility()` CANNOT ANSWER IT, and that is measured rather than assumed. A child-sequence
+ * host is `display: contents`, and `checkVisibility`'s first step is "does this have an associated
+ * box" — which such an element never has, so it answers `false` for an open host, a closed one and
+ * an empty one alike and tells none of them apart. Asking the host's PARENT instead trades one
+ * blind spot for another: a `content-visibility: hidden` element — which is what
+ * `hidden="until-found"` is — is itself rendered and answers `true` while everything inside it is
+ * skipped.
+ *
+ * So the three properties are read directly. `visibility` INHERITS, so the host's own computed
+ * value already carries an ancestor's; the other two do not, and their effect reaches the whole
+ * subtree, so those are the walk. The caller owns `isConnected`.
+ */
+function rendersContents(element: HTMLElement): boolean {
+	if (getComputedStyle(element).visibility === 'hidden') return false
+	for (let current: HTMLElement | null = element; current; current = current.parentElement) {
+		const style = getComputedStyle(current)
+		if (style.display === 'none' || style.getPropertyValue('content-visibility') === 'hidden') return false
+	}
+	return true
 }
