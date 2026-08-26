@@ -84,7 +84,7 @@ Everything a kind declares beyond its markup lives in [`RowSpec`](/api/interface
 | ----------- | ----------- | --------------------------------------------------------------------------------------------------------------------- |
 | `Component` | required    | The component every row of this kind renders through. There is no per-kind fallback — `slots.paragraph` answers only the row with NO kind. |
 | `continues` | `false`     | What the row a split produces is. `true` is this kind again, with the same `meta` — Enter at the end of a `continues` row opens another row of it, and mid-row the tail keeps it. `false` is a plain row. An **option** is a third answer: the tail takes THAT kind and carries no `meta` of this one's, which is how a table header continues into a table line. A list item continues, a heading does not, a checked to-do splits into two checked to-dos. |
-| `indents`   | `false`     | Does Tab / Shift+Tab re-indent a row of this kind — and does Tab belong to the editor at all while the caret is in one. It gates the KEY, not the verb: a kind that declares it consumes Tab even where the depth cannot change. Everywhere else Tab still leaves the field. |
+| `indents`   | `false`     | Does Tab belong to this EDITOR. One option declaring it answers for the whole editor: Tab then re-indents a row of ANY kind, wherever a drag onto the same gap would, and is consumed even where the step is refused. In an editor no option declares it on, Tab leaves the field (ADR-0002). |
 | `split`     | —           | This kind carves its own body at a literal into **cells**. See [Carving a row into cells](#carving-a-row-into-cells). |
 
 ## What your component receives

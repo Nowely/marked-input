@@ -411,6 +411,26 @@ export class TokenModel {
 	}
 
 	/**
+	 * DOES TAB BELONG TO THIS EDITOR — one answer per editor, not one per row, and that is the whole
+	 * of what `RowSpec.indents` decides.
+	 *
+	 * The declaration answers an ACCESSIBILITY question (ADR-0002: Tab leaves the field unless the
+	 * editor has a use for it), and an accessibility question is about the field. Whether a
+	 * PARTICULAR row may go one level deeper is a structural question, and it already has an owner
+	 * in {@link indentRows} — the scan's ceiling plus {@link #nestingIsPainted}, which is also what
+	 * the DROP asks through {@link dropPlacements}. Read per KIND, the two disagreed: measured over
+	 * the Notion showcase's 35 rows, four of them — a heading after a callout, a table of contents,
+	 * a bookmark, a heading after a to-do — were offered depth 1 by the drag and accepted by the
+	 * verb while Tab was not even consumed, so the key fell through and took focus out of the
+	 * editor. That is the very split `indents` was written to prevent ("a Tab that sometimes moves
+	 * focus and sometimes indents is worse than either"), one level up: it prevented it inside a
+	 * kind and produced it between kinds of one document.
+	 */
+	readonly rowsIndent: Computed<boolean> = computed(() =>
+		this.props.options().some(option => option.row?.indents === true)
+	)
+
+	/**
 	 * THE ROWS A SELECTION HOLDS — the one reading, and the whole of it. What `store.rows.selected`
 	 * paints, what the drag picks up, what Esc asks before it climbs and what Tab moves;
 	 * {@link replaceRows} writes over the span the same test answers. There is no second store of

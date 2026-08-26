@@ -1,6 +1,6 @@
 import {KEYBOARD} from '../../shared/constants'
 import type {Store} from '../../store/Store'
-import type {AnchoredRow, Anchors, RowNode} from '../tokens'
+import type {AnchoredRow, Anchors} from '../tokens'
 import {anchorEquals, entryAnchor, hasRawBody} from '../tokens'
 import type {Replacement} from './beforeInput'
 import {dropUnexpressedInput} from './beforeInput'
@@ -136,7 +136,7 @@ export function demoteAtRowEntry(store: KbCtx, anchors: Anchors): boolean {
 }
 
 /**
- * TAB and SHIFT+TAB, on the keydown: the row's depth, when the kind that owns its line declares
+ * TAB and SHIFT+TAB, on the keydown: the row's depth, in an editor whose options declare
  * `indents` — or the NEXT CARVED PIECE when the caret is in one.
  *
  * The cell walk declares nothing and is not a third setting: a piece is a Row in its parent's own
@@ -153,31 +153,23 @@ export function demoteAtRowEntry(store: KbCtx, anchors: Anchors): boolean {
  * focus to split a row with. Consuming it costs what every `indents` kind already costs (ADR-0002),
  * and it costs it only while the caret is inside a carved body.
  *
- * The declaration gates the KEY and not the verb — a Tab that indents on one row and moves focus on
- * the next is worse than either — so a row of an indenting kind consumes Tab even where the scan
- * refuses the depth (at depth 0 with Shift, or under a row that grants no more). Everywhere else
- * Tab still leaves the field, which is ADR-0002's accepted cost, preserved.
- *
- * OWNS THE LINE, not "is the row": a continuation carries no kind of its own, so reading the
- * declaration off the caret's own row let Tab eject focus from the SECOND line of a list item and
- * keep it on the first — the very split the sentence above calls worse than either. The row it is
- * nested in is the one that declared anything, so a kindless row asks it. It re-indents ITSELF, as
- * every other row does; Shift+Tab there detaches the line from its item, which is the answer
- * Backspace at its entry already gives (ADR-0011's declared cost (a)).
+ * THE DECLARATION IS THE EDITOR'S, NOT THE ROW'S, and that is what makes the keyboard and the
+ * MOVER agree. `RowSpec.indents` gates the KEY — a Tab that indents on one row and moves focus on
+ * the next is worse than either — and {@link TokenModel.rowsIndent} is that gate read where the
+ * answer belongs: once per editor. Which row may actually go deeper is
+ * {@link TokenModel.indentRows}' question and always was, and the DROP asks the same one through
+ * `dropPlacements`; asked per KIND, the two gave different answers for the same gesture (see
+ * {@link TokenModel.rowsIndent} for the measurement). So a row of ANY kind consumes Tab in an
+ * editor that indents, even where the verb then refuses the depth — at depth 0 with Shift, under a
+ * row that grants no more, or under a parent whose component paints no child rows. In an editor
+ * where NO option declares `indents`, Tab still leaves the field: ADR-0002's accepted cost,
+ * preserved exactly where it was.
  *
  * A STANDING ROW SELECTION IS WHAT MOVES, and the caret's own row only when none stands: the rows
  * the selection holds are the rows the editor is acting on everywhere else — the drag, the menu
  * verbs — and re-indenting the anchor's row alone left every other selected row where it was. One
  * verb answers both, because a caret is the set of one and a second arm beside it would be a
  * second reading of what Tab acts on.
- *
- * THE DECLARATION IS ASKED OF EVERY ROW THE KEY WOULD MOVE, not of the anchor's alone. Asked at the
- * anchor it was the wrong question twice over: a heading covered by a selection that STARTED on a
- * bullet was re-led under it, though Tab with a caret in that heading is not even consumed, and the
- * same two rows selected the other way round consumed nothing and dropped focus out of the editor.
- * Which row happens to be first is not a property of the gesture. All or none, which is
- * {@link depthPlan}'s own rule for a step: a set holding a row of a kind that declares nothing
- * leaves the key alone, exactly as a caret in that row does.
  */
 export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 	if (event.key !== KEYBOARD.TAB) return
@@ -198,27 +190,11 @@ export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 		return
 	}
 
+	if (!store.tokens.rowsIndent()) return
 	const selected = store.tokens.rowSelection(anchors)
-	const moving = selected.length > 0 ? selected : [caret.row]
-	if (!moving.every(row => store.tokens.rowSpec(lineOwner(store, row))?.indents === true)) return
 
 	event.preventDefault()
-	store.tokens.indentRows(moving, event.shiftKey ? -1 : 1)
-}
-
-/**
- * THE ROW WHOSE KIND OWNS A ROW'S LINE: its own, or — for a row carrying no kind — the row it is
- * nested in, which is the only one that declared anything. A row with no kind at depth 0 is a
- * paragraph and owns its own line.
- *
- * Asked through {@link TokenModel.rowOf} because the tree carries no parent pointers and that walk
- * is where the parent is a by-product; {@link entryAnchor} is what turns a row back into an anchor
- * to ask about. ONE rule for the caret's row and for every other row in a set — asked of the caret
- * alone it was the answer for only one of the rows the key moved.
- */
-function lineOwner(store: KbCtx, row: RowNode): RowNode {
-	const at = store.tokens.rowOf(entryAnchor(row))
-	return at !== undefined && at.row.descriptor() === undefined ? (at.parent ?? at.row) : row
+	store.tokens.indentRows(selected.length > 0 ? selected : [caret.row], event.shiftKey ? -1 : 1)
 }
 
 /**

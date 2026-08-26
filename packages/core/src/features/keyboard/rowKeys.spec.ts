@@ -1043,8 +1043,26 @@ describe('rowKeys the row keymap', () => {
 			expect(store.tokens.value()).toBe('- a')
 		})
 
-		it('LEAVES THE FIELD on a kind that does not declare it, and on a paragraph', () => {
-			const {store, container} = keymap('# a\nplain')
+		it('INDENTS A KIND THAT DECLARES NOTHING, because the declaration is the EDITOR’S', () => {
+			// `RowSpec.indents` answers "does Tab belong to this field" (ADR-0002), which is a fact
+			// about the FIELD. Which row may go deeper is the verb's, and the DROP asks the verb —
+			// so read per kind, the keyboard refused a nesting the drag offered and performed.
+			const {store, container} = keymap('- a\n# b\nplain')
+
+			caretIn(store, 1, 1)
+			expect(press(container, 'Tab').defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('- a\n\t# b\nplain')
+
+			// A paragraph too: it is a row of this document like any other.
+			caretIn(store, 2, 1)
+			expect(press(container, 'Tab').defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('- a\n\t# b\n\tplain')
+		})
+
+		it('LEAVES THE FIELD in an editor where no option declares it', () => {
+			// ADR-0002's accepted cost, preserved exactly where it was: a document whose kinds never
+			// indent keeps Tab as the browser's focus key.
+			const {store, container} = keymap('# a\nplain', {options: [HEADING]})
 
 			caretIn(store, 0, 1)
 			expect(press(container, 'Tab').defaultPrevented).toBe(false)

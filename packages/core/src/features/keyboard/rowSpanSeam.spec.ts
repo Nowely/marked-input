@@ -434,16 +434,19 @@ describe('the set verbs do not see the set', () => {
 	})
 
 	/**
-	 * THE DECLARATION IS THE SET'S. The gate read the ANCHOR's row and the verb moved every covered
-	 * row, so which row happened to be FIRST decided the outcome: a heading selected after a bullet
-	 * was indented under it, while the same two rows selected the other way round consumed nothing.
-	 * Tab with a caret in that heading alone is not consumed either, so the editor held two answers
-	 * for one question.
+	 * THE SET GETS ONE ANSWER, WHICHEVER WAY IT WAS SELECTED. The gate read the ANCHOR's row and the
+	 * verb moved every covered row, so which row happened to be FIRST decided the outcome: a heading
+	 * selected after a bullet was indented under it, while the same two rows selected the other way
+	 * round consumed nothing and dropped focus out of the editor.
+	 *
+	 * Both directions now indent, because `indents` is the EDITOR'S declaration and this editor
+	 * declares it — see {@link TokenModel.rowsIndent}. What decides whether the rows MOVE is the
+	 * verb, and it answers the same for both orders.
 	 */
-	it('leaves the key alone when the set holds a kind that declares no indents', () => {
-		for (const [value, key] of [
-			['- alpha\n- beta\n## Head', 'ArrowDown'],
-			['- alpha\n## Head\n- beta', 'ArrowUp'],
+	it('gives a set the same answer whichever end it was selected from', () => {
+		for (const [value, key, indented] of [
+			['- alpha\n- beta\n## Head', 'ArrowDown', '- alpha\n\t- beta\n\t## Head'],
+			['- alpha\n## Head\n- beta', 'ArrowUp', '- alpha\n\t## Head\n\t- beta'],
 		] as const) {
 			const {store, container} = mount(value)
 			caretIn(store, key === 'ArrowDown' ? 1 : 2, 0)
@@ -453,8 +456,8 @@ describe('the set verbs do not see the set', () => {
 
 			const event = press(container, 'Tab')
 
-			expect(event.defaultPrevented).toBe(false)
-			expect(store.tokens.value()).toBe(value)
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe(indented)
 		}
 	})
 })

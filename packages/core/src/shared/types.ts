@@ -160,13 +160,17 @@ export interface RowSpec {
 	 */
 	continues?: boolean | CoreOption
 	/**
-	 * Does Tab / Shift+Tab re-indent a row of this kind, and does Tab belong to the editor at all
-	 * while the caret is in one. Default false, so Tab still LEAVES THE FIELD everywhere else —
-	 * ADR-0002's accepted cost, preserved rather than traded for a keyboard trap.
+	 * DOES TAB BELONG TO THIS EDITOR. Default false, so an editor no option declares it on leaves
+	 * Tab to the browser and the field stays escapable by keyboard alone — ADR-0002's accepted
+	 * cost, preserved rather than traded for a keyboard trap.
 	 *
-	 * It gates the KEY, not the verb: a kind that declares it consumes Tab even where the depth
-	 * cannot change, because a Tab that sometimes moves focus and sometimes indents is worse than
-	 * either.
+	 * ONE OPTION DECLARING IT ANSWERS FOR THE WHOLE EDITOR, and that is the granularity the
+	 * question has: it gates the KEY, and the key belongs to the field. Whether a PARTICULAR row
+	 * may go one level deeper is a structural question with an owner of its own — the scan's depth
+	 * ceiling plus "does the would-be parent paint child rows" — which is also what a DROP asks. So
+	 * Tab re-indents a row of any kind wherever a drag onto the same gap would, and it is consumed
+	 * even where the verb then refuses the step: a Tab that sometimes moves focus and sometimes
+	 * indents is worse than either.
 	 */
 	indents?: boolean
 	/**

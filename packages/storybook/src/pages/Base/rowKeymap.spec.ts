@@ -26,6 +26,8 @@ const {Default} = composePage(BaseStories)
 const ROWS = {separator: '\n', indent: '\t', Mark} as const
 /** A list item: it continues on Enter and it indents on Tab, which is every arm this page drives. */
 const BULLET = {markup: '- __slot__' as const, row: {Component: rows.Bullet, continues: true, indents: true}}
+/** A kind that declares NOTHING and paints no child rows — the other half of the Tab cases. */
+const HEADING = {markup: '## __slot__' as const, row: {Component: rows.Heading}}
 
 describe('the row keymap', () => {
 	it('types `- a⏎b⇥c⏎⏎` and lands a nested list', async () => {
@@ -118,5 +120,49 @@ describe('the row keymap', () => {
 
 		await userEvent.keyboard('x')
 		await expect.poll(value).toBe('- a\n\tx')
+	})
+
+	/**
+	 * TAB AND THE DRAG AGREE ON WHAT MAY NEST. `RowSpec.indents` answers "does Tab belong to this
+	 * FIELD" (ADR-0002), which is a fact about the field; which ROW may go one level deeper is
+	 * {@link TokenModel.indentRows}' question, and the drop asks the very same one. Read per KIND
+	 * they disagreed — measured over the Notion showcase, four rows were offered depth 1 by the
+	 * drag and moved there by the verb while Tab was not consumed at all, so the key fell through
+	 * and the BROWSER moved focus out of the editor.
+	 *
+	 * The heading declares nothing and paints no child rows, which makes it both halves of the
+	 * case: it can BE nested (under the bullet) and it can never be a PARENT.
+	 */
+	it('indents a kind that declares nothing, in an editor where something does', async () => {
+		const onChange = vi.fn<(value: string) => void>()
+		const {host} = await mountComponent({
+			defaultValue: '- a\n## head',
+			...ROWS,
+			options: [BULLET, HEADING],
+			onChange,
+		})
+		const emitted = () => onChange.mock.lastCall?.[0]
+
+		await focusAtStart(rowsOf(host)[1])
+		await userEvent.keyboard('{Tab}')
+
+		await expect.poll(emitted).toBe('- a\n\t## head')
+		// AND THE CARET IS STILL IN THE EDITOR: a Tab that fell through would have moved focus out,
+		// and the value assertion alone cannot tell that apart from a Tab that worked.
+		await userEvent.keyboard('X')
+		await expect.poll(emitted).toBe('- a\n\t## Xhead')
+	})
+
+	/**
+	 * ADR-0002'S ACCEPTED COST, PRESERVED where it was: an editor whose options never indent leaves
+	 * Tab to the browser, so the field is still escapable by keyboard alone.
+	 */
+	it('LEAVES THE FIELD in an editor where no option declares indents', async () => {
+		const {host} = await mountComponent({defaultValue: '## a\n## b', ...ROWS, options: [HEADING]})
+
+		await focusAtStart(rowsOf(host)[1])
+		await userEvent.keyboard('{Tab}')
+
+		expect(document.activeElement).not.toBe(host)
 	})
 })
