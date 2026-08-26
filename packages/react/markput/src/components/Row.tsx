@@ -4,11 +4,13 @@ import type {CSSProperties} from 'react'
 import {memo, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-// oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Block` paints one row and its own list. The cycle is the recursion, and both sides are used only inside a render body.
+// oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Row` paints one row and its own list. The cycle is the recursion, and both sides are used only inside a render body.
 import {Rows} from './Rows'
 import {Token} from './Token'
 
-interface BlockProps {
+/** What `Rows` hands one row. Named apart from the published `RowProps`, which is what a row
+ * KIND's component receives and is a wider shape. */
+interface RowRenderProps {
 	node: RowNode
 	/** Nesting depth and position among siblings — both known by the parent that mapped them. */
 	depth: number
@@ -31,7 +33,7 @@ const rowsHostStyle: CSSProperties = {display: 'contents'}
  * component is `slots.paragraph`, whose default is a bare `div` that would stringify a React node
  * onto the element, so its child rows go in as ordinary children after the inline ones.
  */
-export const Block = memo(({node, depth, index}: BlockProps) => {
+export const Row = memo(({node, depth, index}: RowRenderProps) => {
 	const {resolveNodeSlot, tokens} = useMarkput(s => ({
 		resolveNodeSlot: s.slots.node,
 		tokens: s.tokens,
@@ -48,17 +50,17 @@ export const Block = memo(({node, depth, index}: BlockProps) => {
 	// same job its mark arm does for Token.
 	useMarkput(() => renderSubscription(node))
 
-	// MEMOISED, unlike `setBlockRef` below: `consign` and `children` mint a registration key per
+	// MEMOISED, unlike `setRowRef` below: `consign` and `children` mint a registration key per
 	// CALL, so calling them inline would file a fresh entry on every paint and never release the
 	// old one. The wrapper IS the row's token element (issue 08) AND its INLINE child-sequence
 	// host, so the row's own content hangs off it directly.
-	const consignBlock = useMemo(() => tokens.consign(node.id), [tokens, node.id])
-	const hostBlock = useMemo(() => tokens.children(node.id), [tokens, node.id])
+	const consignRow = useMemo(() => tokens.consign(node.id), [tokens, node.id])
+	const hostRow = useMemo(() => tokens.children(node.id), [tokens, node.id])
 	const hostRows = useMemo(() => tokens.children(node.id, 'rows'), [tokens, node.id])
 
-	const setBlockRef = (el: HTMLElement | null) => {
-		consignBlock(el)
-		hostBlock(el)
+	const setRowRef = (el: HTMLElement | null) => {
+		consignRow(el)
+		hostRow(el)
 	}
 
 	const childRows = node.rows()
@@ -83,7 +85,7 @@ export const Block = memo(({node, depth, index}: BlockProps) => {
 		<Component
 			{...props}
 			{...(isKind ? {rows} : {})}
-			ref={setBlockRef}
+			ref={setRowRef}
 			// oxlint-disable-next-line no-unsafe-type-assertion -- props.style is raw and needs casting to CSSProperties
 			style={{opacity: isDragging ? 0.4 : 1, ...(props.style as CSSProperties | undefined)}}
 		>
@@ -95,4 +97,4 @@ export const Block = memo(({node, depth, index}: BlockProps) => {
 	)
 })
 
-Block.displayName = 'Block'
+Row.displayName = 'Row'

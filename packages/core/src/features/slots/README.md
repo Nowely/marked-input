@@ -1,6 +1,6 @@
 # Slots Feature
 
-Resolver utilities that implement the component slot/customization system — allowing framework wrappers to override default HTML elements (`container`, `block`, `overlay`, `mark`) with custom components.
+Resolver utilities that implement the component slot/customization system — allowing framework wrappers to override default HTML elements (`container`, `paragraph`, `overlay`, `mark`) with custom components.
 
 ## Resolver Functions
 
@@ -21,8 +21,10 @@ const props = store.slots.containerProps()
 // enabled — a CSS-ready string, because a bare number is only CSS under React's JSX
 // convention and Vue drops it), and data-* slotProps
 
-const BlockComponent = store.slots.blockComponent()
-const blockProps = store.slots.blockProps() // raw slotProps only
+// Node resolver — one for text, mark and ROW alike; a row with no kind falls back to
+// `slots.paragraph`, and `slotProps.row` is merged onto every row
+const resolveNode = store.slots.node()
+const [NodeComponent, nodeProps] = resolveNode(node, {depth, index})
 
 // Mark resolver — call() returns a resolver function, call it with the token
 const resolveMark = store.slots.mark()

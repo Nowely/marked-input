@@ -50,10 +50,10 @@ Both framework adapters share the same component structure:
   │ │           └─ <Token node={child}>
   │ │
   │ └─ (block layout)
-  │     ├─ <Block node={n}>         # Row: painted by its KIND's component, or by
+  │     ├─ <Row node={n}>           # Row: painted by its KIND's component, or by
   │     │   └─ <Token node={child}> #   slots.paragraph when it has none. The row's own
   │     │                           #   element AND its child-sequence host
-  │     └─ <BlockControls />        # ONE per editor, beside the rows, not inside
+  │     └─ <RowControls />          # ONE per editor, beside the rows, not inside
   │         ├─ grip                 #   them: grip, drop indicator and row menu,
   │         ├─ drop indicator       #   painted at row boxes it measures
   │         └─ row menu
@@ -70,8 +70,8 @@ Both framework adapters share the same component structure:
 | **Container**        | contenteditable management, renders tokens or blocks         |
 | **Token**            | Unified renderer for both text and mark tokens (recursive)   |
 | **TokenChildren**    | Internal nested token sequence host for slot children        |
-| **Block**            | Block layout's row — resolved through `slots.node` to the kind's own component (or `slots.paragraph` for a paragraph); the row's own element and its child-sequence host |
-| **BlockControls**    | ONE per editor: the grip, the drop indicator and the row menu, painted at measured row boxes |
+| **Row**              | One row — resolved through `slots.node` to the kind's own component (or `slots.paragraph` for a paragraph); the row's own element and its child-sequence host |
+| **RowControls**      | ONE per editor: the grip, the drop indicator and the row menu, painted at measured row boxes |
 | **OverlayRenderer**  | Portal renderer for overlay component                        |
 | **Span**             | Default text span renderer                                   |
 
@@ -432,8 +432,8 @@ React/Vue render asynchronously, so initialization order matters:
 A document that never splits (`separator={null}`): tokens render in one flow as alternating `[text, mark, text, ...]`.
 
 Block layout (any non-empty `separator`, with `draggable` adding the reorder affordance): each root node
-is a ROW, wrapped in a `<Block>` component that renders the row's children and nothing else. The
-row controls — grip, drop indicator, row menu — are not in the row. One `<BlockControls>` per editor
+is a ROW, wrapped in a `<Row>` component that renders the row's children and nothing else. The
+row controls — grip, drop indicator, row menu — are not in the row. One `<RowControls>` per editor
 paints all three, as the container's last child, `position: absolute; inset: 0` over the rows.
 
 ROWS NEST, and nesting is indentation and nothing else (ADR-0010). A row whose indent run is deeper

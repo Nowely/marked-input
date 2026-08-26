@@ -172,7 +172,7 @@ describe('Render-count gates: block layout', () => {
 		// every tick re-points one editor-level signal and re-renders the layer alone.
 		//
 		// What it cannot see, measured rather than assumed: subscribing a ROW to `drop` through
-		// the object selector (react `Block.tsx`, vue `Block.vue`) leaves this green in both
+		// the object selector (react `Row.tsx`, vue `Row.vue`) leaves this green in both
 		// projects, because both bridges skip a child whose node object did not change, so the
 		// extra row renders never reach a Mark or a Span. The scalar `dragging` selector both
 		// `Block`s use is therefore a discipline this file states but does not enforce.

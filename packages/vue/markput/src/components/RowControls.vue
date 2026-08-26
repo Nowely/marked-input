@@ -17,7 +17,7 @@ import styles from '@markput/core/styles.module.css'
  * `RowControls`, over the SAME `RowController`. Every decision is core's: the hover pin, the
  * hit-test, the drop edge and the menu's row all live there, so this file is a painter.
  *
- * `RowControls`, not `BlockLayer`: `Block.vue` is the row WRAPPER, and two near-identical names
+ * `RowControls`, not `RowLayer`: `Row.vue` is the row WRAPPER, and two near-identical names
  * beside each other is the ambiguity this one is named to avoid.
  */
 const store = useStore()

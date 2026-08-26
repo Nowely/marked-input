@@ -6,7 +6,7 @@ import {computed} from 'vue'
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 import {unwrapEl} from '../lib/unwrapEl'
-// oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Block` paints one row and its own list. The cycle is the recursion, and both sides are used only inside a render body.
+// oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Row` paints one row and its own list. The cycle is the recursion, and both sides are used only inside a render body.
 import Rows from './Rows.vue'
 import Token from './Token.vue'
 
@@ -36,14 +36,14 @@ const isDragging = useMarkput(s => () => s.rows.state.dragging() === props.node.
 // them inside the ref callback would file a fresh entry on every paint and never release the old
 // one. The wrapper IS the row's token element (issue 08) AND its INLINE child-sequence host, so
 // the row's own content hangs off it directly.
-const consignBlock = store.tokens.consign(props.node.id)
-const hostBlock = store.tokens.children(props.node.id)
+const consignRow = store.tokens.consign(props.node.id)
+const hostRow = store.tokens.children(props.node.id)
 const hostRows = store.tokens.children(props.node.id, 'rows')
 
-const setBlockRef = (el: unknown) => {
+const setRowRef = (el: unknown) => {
 	const element = unwrapEl(el)
-	consignBlock(element)
-	hostBlock(element)
+	consignRow(element)
+	hostRow(element)
 }
 
 const setRowsRef = (el: unknown) => hostRows(unwrapEl(el))
@@ -72,18 +72,18 @@ const childRows = computed(() => {
 })
 /** `node` in the resolved props is core's answer for "this row paints through its KIND's own component". */
 const isKind = computed(() => 'node' in resolved.value[1])
-const blockStyle = computed(() => ({
+const rowStyle = computed(() => ({
 	opacity: isDragging.value ? 0.4 : 1,
 	...(resolved.value[1].style as CSSProperties | undefined),
 }))
-const blockProps = computed(() => {
+const rowProps = computed(() => {
 	const {style: _s, ...rest} = resolved.value[1]
 	return rest
 })
 </script>
 
 <template>
-	<component :is="resolved[0]" :ref="setBlockRef" v-bind="blockProps" :style="blockStyle">
+	<component :is="resolved[0]" :ref="setRowRef" v-bind="rowProps" :style="rowStyle">
 		<template #default>
 			<Token v-for="child in inlineChildren" :key="child.id" :node="child" :depth="0" />
 			<!-- HIDDEN rather than absent is the consumer's contract for a collapsed row: an

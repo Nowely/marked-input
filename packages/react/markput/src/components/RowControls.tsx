@@ -14,7 +14,7 @@ import styles from '@markput/core/styles.module.css'
  * and the row menu at row boxes it MEASURES, where `.Row { position: relative }` used to make
  * them free inside every row.
  *
- * `RowControls`, not `BlockLayer`: `Block.tsx` is the row WRAPPER, and two near-identical names
+ * `RowControls`, not `RowLayer`: `Row.tsx` is the row WRAPPER, and two near-identical names
  * beside each other is the ambiguity this one is named to avoid.
  *
  * It lives INSIDE the container — the alternative, a new wrapper element in `MarkedInput`, would

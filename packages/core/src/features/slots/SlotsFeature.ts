@@ -26,7 +26,7 @@ import styles from '../../../styles.module.css'
 const DRAG_HANDLE_WIDTH = '24px'
 
 function buildContainerProps(
-	isDraggableBlock: boolean,
+	rowsDraggable: boolean,
 	readOnly: boolean,
 	className: string | undefined,
 	style: CSSProperties | undefined,
@@ -34,7 +34,7 @@ function buildContainerProps(
 ): {className: string | undefined; style?: CSSProperties; [key: string]: unknown} {
 	const containerSlotProps = slotProps?.container
 	const baseStyle = merge(style, containerSlotProps?.style)
-	const mergedStyle = isDraggableBlock && !readOnly ? {paddingLeft: DRAG_HANDLE_WIDTH, ...baseStyle} : baseStyle
+	const mergedStyle = rowsDraggable && !readOnly ? {paddingLeft: DRAG_HANDLE_WIDTH, ...baseStyle} : baseStyle
 
 	const {className: _, style: __, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
 
@@ -60,9 +60,9 @@ export class SlotsFeature {
 			{equals: shallow}
 		)
 	/**
-	 * THE node resolver, for every node kind. `blockComponent`/`blockProps` used to sit beside it
-	 * and answer the row half; both are gone — a row is a node, and `resolveNodeSlot` answers it
-	 * exactly as it answers a mark.
+	 * THE node resolver, for every node kind. A separate row component/props pair used to sit
+	 * beside it and answer the row half; both are gone — a row is a node, and `resolveNodeSlot`
+	 * answers it exactly as it answers a mark.
 	 */
 	readonly node: NodeSlot = computed(() => {
 		const ctx = {
