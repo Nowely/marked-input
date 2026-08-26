@@ -838,6 +838,30 @@ describe('the inline database', () => {
 		expect(cellsOf(host).slice(3)).toEqual(tail)
 	})
 
+	/**
+	 * TAB AT THE LAST CELL KEEPS THE FOCUS. It used to fall through — the caret had nowhere to go,
+	 * the key was not consumed, and the browser moved focus out of the editor onto the next control
+	 * — which POISONED the next Enter: the editor had no focus left to split a row with, and the
+	 * user's typed cell then travelled into whatever the next `/` picked. Both halves are asserted,
+	 * because the focus alone reads the same as a Tab that did nothing at all.
+	 *
+	 * The ONE-CELL line the row menu inserts is the shape this is met in: its first cell is also its
+	 * last, so Tab there never had a neighbour to walk to.
+	 */
+	it('keeps the focus when Tab runs out of cells, so the next Enter still splits the line', async () => {
+		const {host, value} = await mountControlled(Showcase, '|= A | B\n| one')
+
+		await focusAtEnd(cellsOf(host)[0])
+		await userEvent.keyboard('{Tab}')
+
+		expect(editingHost(host).contains(document.activeElement)).toBe(true)
+		expect(value()).toBe('|= A | B\n| one')
+
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(value).toBe('|= A | B\n| one\n| ')
+	})
+
 	it('writes a mention into a cell through the built-in picker', async () => {
 		const {host, value} = await mountControlled(Showcase, '| Auth migration | Kara\nnext')
 

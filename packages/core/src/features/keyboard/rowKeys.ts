@@ -141,9 +141,17 @@ export function demoteAtRowEntry(store: KbCtx, anchors: Anchors): boolean {
  *
  * The cell walk declares nothing and is not a third setting: a piece is a Row in its parent's own
  * child list, so "the next cell" is that list's next entry, and a kind that carves its body has
- * said everything needed to answer it. At the first or last piece there is no neighbour and Tab is
- * not consumed, so it leaves the field exactly as it does everywhere else (ADR-0002's accepted
- * cost) rather than wrapping into a row the user did not point at.
+ * said everything needed to answer it. At the first or last piece there is no neighbour and the
+ * caret does not move — Tab does NOT wrap into a row the user did not point at.
+ *
+ * IT IS STILL CONSUMED THERE, by the rule the paragraph below already states for `indents`: the
+ * declaration gates the KEY, not the verb. It used not to be, and the split was a defect rather
+ * than a nicety. A table line the menu inserts has ONE cell, so its first cell is also its last:
+ * Tab moved no caret, fell through, and the browser moved focus OUT of the editor onto the next
+ * control — measured, `document.activeElement` a `<button>` after one Tab past the last cell. The
+ * user saw nothing happen, and the next Enter was a dead key, because the editor no longer had
+ * focus to split a row with. Consuming it costs what every `indents` kind already costs (ADR-0002),
+ * and it costs it only while the caret is inside a carved body.
  *
  * The declaration gates the KEY and not the verb — a Tab that indents on one row and moves focus on
  * the next is worse than either — so a row of an indenting kind consumes Tab even where the scan
@@ -179,15 +187,14 @@ export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 	if (caret === undefined) return
 
 	if (caret.cell) {
+		event.preventDefault()
 		const cells = caret.row.rows()
 		// `.at`, and the negative guard with it: `noUncheckedIndexedAccess` is off, so an index read
 		// types as non-nullable and the no-neighbour guard reads as impossible — while `.at(-1)`
 		// alone would wrap Shift+Tab from the first piece onto the last.
 		const step = cells.indexOf(caret.cell) + (event.shiftKey ? -1 : 1)
 		const next = step < 0 ? undefined : cells.at(step)
-		if (!next) return
-		event.preventDefault()
-		store.tokens.selection.select(entryAnchor(next))
+		if (next) store.tokens.selection.select(entryAnchor(next))
 		return
 	}
 

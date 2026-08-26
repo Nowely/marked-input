@@ -1082,14 +1082,40 @@ describe('rowKeys the row keymap', () => {
 			expect(store.tokens.value()).toBe('| a | b')
 		})
 
-		it('LEAVES THE FIELD at the last piece and before the first', () => {
+		/**
+		 * DECLARED BEHAVIOUR CHANGE: it used to leave the field at both ends, and the caret was left
+		 * with no way back. A table line inserted from the row menu has ONE piece, so its first is
+		 * also its last: Tab moved no caret, fell through, and the browser took focus OUT of the
+		 * editor onto the next control — after which Enter could not split a row, because the editor
+		 * did not have the focus to split one with. The key is consumed at the ends and the caret
+		 * stays where it is, which is the rule `indents` has always had one paragraph away: the
+		 * declaration gates the KEY, not the verb.
+		 */
+		it('CONSUMES the key at the last piece and before the first, leaving the caret alone', () => {
 			const {store, container} = table('| a | b')
 
+			// The DOM caret, because nothing writes the STORED one here — which is the claim: the
+			// key is taken and no verb runs behind it.
+			const caretOffset = () => window.getSelection()?.focusOffset
+
 			caretIn(store, 2, 1)
-			expect(press(container, 'Tab').defaultPrevented).toBe(false)
+			expect(press(container, 'Tab').defaultPrevented).toBe(true)
+			expect(caretOffset()).toBe(1)
 
 			caretIn(store, 1, 1)
-			expect(press(container, 'Tab', {shiftKey: true}).defaultPrevented).toBe(false)
+			expect(press(container, 'Tab', {shiftKey: true}).defaultPrevented).toBe(true)
+			expect(caretOffset()).toBe(1)
+			expect(store.tokens.value()).toBe('| a | b')
+		})
+
+		/** The one-piece line the row menu inserts, which is where the fall-through was met. */
+		it('consumes the key in a line with ONE piece, which has no neighbour either way', () => {
+			const {store, container} = table('| a')
+			caretIn(store, 1, 1)
+
+			expect(press(container, 'Tab').defaultPrevented).toBe(true)
+			expect(press(container, 'Tab', {shiftKey: true}).defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('| a')
 		})
 
 		it('splits the LINE on Enter, so the pieces after the caret move to the new row', () => {
