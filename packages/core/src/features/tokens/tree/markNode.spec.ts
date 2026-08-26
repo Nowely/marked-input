@@ -773,4 +773,27 @@ describe('entering a fresh row', () => {
 		expect(store.tokens.value()).toBe('a@[m]@[m]b')
 		expect(selectionRange(store)).toEqual({start: 5, end: 5})
 	})
+
+	/**
+	 * THE CARET IS AN ANCHOR AND NOT AN OFFSET, which is the whole of `#enterRow`'s zero fork and
+	 * the one thing an offset assertion cannot state. `entryAnchor` names the position INSIDE the
+	 * mark the insert landed on; the offset arm beside it names `position.start`, which is the text
+	 * before the mark's opener. In a document that parses no rows those two are the same NUMBER —
+	 * the mark's own start — so every existing case here stayed green with the fork deleted, and
+	 * only the next character typed says which position the caret actually held.
+	 *
+	 * A SLOT markup, for the reason `headingSetup` above spells out at the row: a `__value__` mark
+	 * has no interior position at all, so both arms answer the same anchor there and the case
+	 * cannot express its own claim.
+	 */
+	it('names a position INSIDE the mark an insert lands on, not one before its opener', () => {
+		const {store} = setup('a@[m]b', '@[__slot__]')
+
+		expect(store.tokens.nodes()[0].insertAfter('Q')).toBe(true)
+
+		const anchors = store.tokens.selection.anchors()
+		if (!anchors) throw new Error('the insert named no caret')
+		store.edit.replace(anchors.anchor, anchors.head, 'X')
+		expect(store.tokens.value()).toBe('aQ@[Xm]b')
+	})
 })

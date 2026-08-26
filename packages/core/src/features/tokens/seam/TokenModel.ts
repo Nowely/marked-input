@@ -946,6 +946,15 @@ export class TokenModel {
 	 * because what was written there may parse into several nodes: a pasted clip carrying a markup
 	 * arrives as text and a mark, and stepping `into` characters through the tree would have to
 	 * re-derive the split. Zero is the entry itself, which is every caller but the paste.
+	 *
+	 * THE ZERO FORK IS NOT AN ECONOMY, measured: for a ROW the two arms agree everywhere — every row
+	 * carries a text child, even an empty one, so `entryAnchor` never falls to `{before}` — but for
+	 * a MARK entry they name different POSITIONS, and {@link rowSequence} falls back to the ROOTS in
+	 * a document that parses no rows. `entryAnchor` lands inside the mark's slot; the offset arm
+	 * lands on the text before its opener. Pinned in `markNode.spec.ts` ('names a position INSIDE
+	 * the mark an insert lands on'), which is what a green suite could not tell: both arms project
+	 * to the same OFFSET on the insert cases that already existed, so deleting the fork reddened
+	 * nothing and only the next character typed says which position the caret held.
 	 */
 	#enterRow(index: number, into = 0): void {
 		// `.at` for `entryAnchor`'s reason; a negative index cannot arrive here — every
