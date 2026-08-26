@@ -86,7 +86,7 @@ describe('nested rows', () => {
 
 	/**
 	 * THE ROW KIND'S OWN HALF of the contract, which the paragraph cases above cannot reach: a
-	 * paragraph takes its child rows as ordinary children of `slots.block`, while a KIND takes
+	 * paragraph takes its child rows as ordinary children of `slots.paragraph`, while a KIND takes
 	 * them through the `rows` prop (React) or the `rows` slot (Vue). A kind that never receives
 	 * them paints nothing where they should be — the rows stay in the value, off the screen, and
 	 * out of `bind` with their anchors.

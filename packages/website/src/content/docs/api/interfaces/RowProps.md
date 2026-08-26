@@ -93,7 +93,7 @@ optional ref: RefCallback<HTMLElement>;
 Defined in: [react/markput/src/types.ts:52](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L52)
 
 A row kind's component is a SLOT component: spread `ref`, `className` and `style` onto the
-element it renders, the way `slots.container` and `slots.block` consumers already do. The
+element it renders, the way `slots.container` and `slots.paragraph` consumers already do. The
 ref is how the editor finds the row's element; a component that drops it leaves the row
 unbound, and the caret cannot resolve into it.
 

@@ -12,11 +12,14 @@ function resolveOptionSlot<T extends object>(optionConfig: T | ((base: T) => T) 
 	return baseProps
 }
 
-export type SlotName = 'container' | 'block'
+// The two key sets are NOT the same list, and naming them apart is the point: `slots.paragraph`
+// is consulted only for a row with no kind, while `slotProps.row` reaches every row.
+export type SlotName = keyof CoreSlots
+export type SlotPropsName = keyof CoreSlotProps
 
 const defaultSlots: Record<SlotName, string> = {
 	container: 'div',
-	block: 'div',
+	paragraph: 'div',
 }
 
 export function resolveSlot(slotName: SlotName, slots: unknown): Slot {
@@ -24,7 +27,7 @@ export function resolveSlot(slotName: SlotName, slots: unknown): Slot {
 	return ((slots as CoreSlots | undefined)?.[slotName] ?? defaultSlots[slotName]) as Slot
 }
 
-export function resolveSlotProps(slotName: SlotName, slotProps: unknown): Record<string, unknown> | undefined {
+export function resolveSlotProps(slotName: SlotPropsName, slotProps: unknown): Record<string, unknown> | undefined {
 	// oxlint-disable-next-line no-unsafe-type-assertion -- `slotProps` is `CoreSlotProps | undefined` at runtime; typed as unknown for Vue Ref<T> cross-framework compat
 	const props = (slotProps as CoreSlotProps | undefined)?.[slotName]
 	return props ? convertDataAttrs(props) : undefined
@@ -88,9 +91,9 @@ export interface RowRender {
  * here; the subscription that makes a node repaint is the component's own (spec D8).
  *
  * A ROW resolves through its KIND's component, and a row with no kind — a paragraph — through
- * `slots.block`, which is the only fallback left. It answers the `className`/`style` merge with
- * it: both adapters used to cast and merge those by hand beside their own `blockComponent` and
- * `blockProps` reads, which was one rule written twice.
+ * `slots.paragraph`, which is the only fallback left. It answers the `className`/`style` merge
+ * with it: both adapters used to cast and merge those by hand beside their own row component and
+ * row props reads, which was one rule written twice.
  */
 export function resolveNodeSlot(
 	node: TreeNode,
@@ -103,17 +106,17 @@ export function resolveNodeSlot(
 	}
 	if (node.kind === 'row') {
 		const Kind = rowComponent(node, ctx)
-		const {className, style, ...rest} = resolveSlotProps('block', ctx.slotProps) ?? {}
+		const {className, style, ...rest} = resolveSlotProps('row', ctx.slotProps) ?? {}
 		// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.className is raw consumer input
 		const base = {...rest, className: cx(styles.Block, className as string | undefined), style}
 		// The row's own data goes ONLY to a kind's component, which is the consumer's. The
-		// paragraph fallback is `slots.block`, whose default is a bare `div`: handing a `node`
+		// paragraph fallback is `slots.paragraph`, whose default is a bare `div`: handing a `node`
 		// to that writes a stringified attribute onto the element — and the same is true of the
 		// rendered child rows, which is why a paragraph's go in as ordinary children instead.
 		//
 		// `node` in the returned props is therefore also THE test a caller reads for "this row
 		// paints through its kind's own component"; both adapters ask it that way.
-		return Kind ? [Kind, {...base, meta: node.meta(), node, ...row}] : [resolveSlot('block', ctx.slots), base]
+		return Kind ? [Kind, {...base, meta: node.meta(), node, ...row}] : [resolveSlot('paragraph', ctx.slots), base]
 	}
 	const option = ctx.options?.[node.descriptor.index]
 	const baseProps = {value: node.value(), meta: node.meta()}

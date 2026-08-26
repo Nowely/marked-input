@@ -27,7 +27,7 @@ describe('row kinds', () => {
 		const heading = host.querySelector('h1')
 		expect(heading?.textContent).toBe('Title')
 		expect(heading?.classList.contains('heading')).toBe(true)
-		// The paragraph has no kind, so it keeps the default `slots.block` component. Read by
+		// The paragraph has no kind, so it keeps the default `slots.paragraph` component. Read by
 		// index: the container's last child is the row-controls layer, not a row.
 		expect(host.children[1]?.tagName).toBe('DIV')
 		expect(host.children[1]?.textContent).toBe('plain')

@@ -15,22 +15,6 @@ Available slots for customizing MarkedInput internal components
 
 ## Properties
 
-### block?
-
-```ts
-optional block: ElementType;
-```
-
-Defined in: [core/src/shared/types.ts:220](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L220)
-
-#### Inherited from
-
-```ts
-CoreSlots.block
-```
-
-***
-
 ### container?
 
 ```ts
@@ -45,4 +29,22 @@ Root container component
 
 ```ts
 CoreSlots.container
+```
+
+***
+
+### paragraph?
+
+```ts
+optional paragraph: ElementType;
+```
+
+Defined in: [core/src/shared/types.ts:221](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L221)
+
+The component a row with NO kind renders through. A kind brings its own, so this is never asked for one.
+
+#### Inherited from
+
+```ts
+CoreSlots.paragraph
 ```

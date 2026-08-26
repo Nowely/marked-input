@@ -53,7 +53,7 @@ const Page = ({children}: {children?: ReactNode}) => (
 
 export const fixtures = {
 	options,
-	/** `slots.block` is the PARAGRAPH component — the row with no kind, and the only fallback. */
-	slots: {block: Paragraph},
+	/** `slots.paragraph` is the row with no kind, and the only fallback. */
+	slots: {paragraph: Paragraph},
 	Page,
 }

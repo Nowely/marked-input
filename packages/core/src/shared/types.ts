@@ -138,8 +138,8 @@ export type Suggestion = string | {value: string; meta?: string; label?: string}
 /** A row KIND's declaration: what an option adds to make its markup a row rather than a mark. */
 export interface RowSpec {
 	/**
-	 * REQUIRED. Every row kind renders through its own component; `slots.block` is the PARAGRAPH
-	 * component — the row with no kind — and the only fallback left.
+	 * REQUIRED. Every row kind renders through its own component; `slots.paragraph` is the row
+	 * with no kind, and the only fallback left.
 	 */
 	Component: Slot
 	/**
@@ -217,12 +217,14 @@ export type DataAttributes = Record<`data${Capitalize<string>}`, string | number
 
 export interface CoreSlots {
 	container?: Slot
-	block?: Slot
+	/** The component a row with NO kind renders through. A kind brings its own, so this is never asked for one. */
+	paragraph?: Slot
 }
 
 export interface CoreSlotProps {
 	container?: Record<string, unknown> & {className?: string; style?: CSSProperties}
-	block?: Record<string, unknown> & {className?: string; style?: CSSProperties}
+	/** Merged onto EVERY row's wrapper — kind or paragraph alike, unlike `slots.paragraph`. */
+	row?: Record<string, unknown> & {className?: string; style?: CSSProperties}
 }
 
 export interface DraggableConfig {

@@ -19,8 +19,8 @@ Component: ElementType;
 
 Defined in: [core/src/shared/types.ts:144](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L144)
 
-REQUIRED. Every row kind renders through its own component; `slots.block` is the PARAGRAPH
-component — the row with no kind — and the only fallback left.
+REQUIRED. Every row kind renders through its own component; `slots.paragraph` is the row
+with no kind, and the only fallback left.
 
 ***
 

@@ -239,14 +239,14 @@ describe('Store', () => {
 
 		it('resolves it to the user-provided slot component', () => {
 			const store = new Store()
-			store.props.set({separator: null, slots: {block: 'article'}})
+			store.props.set({separator: null, slots: {paragraph: 'article'}})
 			const [node] = nodesOf([rowToken('hello', 0, [textToken('hello', 0)])])
 			expect(store.slots.node()(node)[0]).toBe('article')
 		})
 
-		it('carries the block slotProps onto the row, class and style merged', () => {
+		it('carries the row slotProps onto the row, class and style merged', () => {
 			const store = new Store()
-			store.props.set({separator: null, slotProps: {block: {dataBlock: 'true', className: 'mine'}}})
+			store.props.set({separator: null, slotProps: {row: {dataBlock: 'true', className: 'mine'}}})
 			const [node] = nodesOf([rowToken('hello', 0, [textToken('hello', 0)])])
 			expect(store.slots.node()(node)[1]).toMatchObject({
 				'data-block': 'true',

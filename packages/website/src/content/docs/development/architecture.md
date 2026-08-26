@@ -51,7 +51,7 @@ Both framework adapters share the same component structure:
   │ │
   │ └─ (block layout)
   │     ├─ <Block node={n}>         # Row: painted by its KIND's component, or by
-  │     │   └─ <Token node={child}> #   slots.block when it has none. The row's own
+  │     │   └─ <Token node={child}> #   slots.paragraph when it has none. The row's own
   │     │                           #   element AND its child-sequence host
   │     └─ <BlockControls />        # ONE per editor, beside the rows, not inside
   │         ├─ grip                 #   them: grip, drop indicator and row menu,
@@ -70,7 +70,7 @@ Both framework adapters share the same component structure:
 | **Container**        | contenteditable management, renders tokens or blocks         |
 | **Token**            | Unified renderer for both text and mark tokens (recursive)   |
 | **TokenChildren**    | Internal nested token sequence host for slot children        |
-| **Block**            | Block layout's row — resolved through `slots.node` to the kind's own component (or `slots.block` for a paragraph); the row's own element and its child-sequence host |
+| **Block**            | Block layout's row — resolved through `slots.node` to the kind's own component (or `slots.paragraph` for a paragraph); the row's own element and its child-sequence host |
 | **BlockControls**    | ONE per editor: the grip, the drop indicator and the row menu, painted at measured row boxes |
 | **OverlayRenderer**  | Portal renderer for overlay component                        |
 | **Span**             | Default text span renderer                                   |
@@ -695,8 +695,7 @@ Replace internal rendering components:
 <MarkedInput
   slots={{
     container: MyCustomContainer,
-    span: MyCustomSpan,
-    block: MyCustomBlock,       // drag mode only
+    paragraph: MyCustomParagraph,  // the row with NO kind; a kind brings its own
   }}
 />
 ```

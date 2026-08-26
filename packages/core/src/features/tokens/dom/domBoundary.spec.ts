@@ -82,7 +82,7 @@ function mountNestedSlot({extra = false, control = true} = {}) {
  * child's text surface.
  *
  * `grip` puts a registered control BEFORE the token inside the row. The block controls no longer
- * renders there — it is one layer beside the rows — but a consumer's own `slots.block` may still
+ * renders there — it is one layer beside the rows — but a consumer's own `slots.paragraph` may still
  * put a control inside a row, and this is the shape that asks whether a boundary can escape it.
  */
 function mountBlockRows({grip = false} = {}) {

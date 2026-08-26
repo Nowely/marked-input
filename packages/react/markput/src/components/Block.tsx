@@ -19,7 +19,7 @@ interface BlockProps {
 const rowsHostStyle: CSSProperties = {display: 'contents'}
 
 /**
- * A row, painted by its KIND's component — a paragraph falls back to `slots.block`. The grip,
+ * A row, painted by its KIND's component — a paragraph falls back to `slots.paragraph`. The grip,
  * the drop indicators and the menu that used to be painted here live in the editor's one
  * `BlockControls`, so a row is no longer a mixture of document content and editor UI.
  *
@@ -28,7 +28,7 @@ const rowsHostStyle: CSSProperties = {display: 'contents'}
  *
  * A row's CHILD ROWS reach a kind's component as the `rows` prop, so it decides where they go —
  * a toggle hides them, a bullet nests a list inside its `<li>`. A PARAGRAPH gets none: its
- * component is `slots.block`, whose default is a bare `div` that would stringify a React node
+ * component is `slots.paragraph`, whose default is a bare `div` that would stringify a React node
  * onto the element, so its child rows go in as ordinary children after the inline ones.
  */
 export const Block = memo(({node, depth, index}: BlockProps) => {
@@ -75,7 +75,7 @@ export const Block = memo(({node, depth, index}: BlockProps) => {
 	const [Component, props] = resolveNodeSlot(node, {depth, index})
 	// `node` in the resolved props is core's answer for "this row paints through its KIND's own
 	// component", and the kind is the one that takes `rows` as a PROP. A paragraph's is
-	// `slots.block`, whose default is a bare `div` that would stringify a React node onto the
+	// `slots.paragraph`, whose default is a bare `div` that would stringify a React node onto the
 	// element, so its child rows go in as ordinary children instead.
 	const isKind = 'node' in props
 

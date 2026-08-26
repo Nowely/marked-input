@@ -725,7 +725,7 @@ export const comments: Option = {
 /* ── the paragraph, which is the row with NO kind ───────────────────────── */
 
 /**
- * `slots.block` is the paragraph component and the only fallback left. It carries the
+ * `slots.paragraph` is the row with no kind and the only fallback left. It carries the
  * placeholder as an attribute the theme reads, and CSS decides when to show it: an empty row is
  * one whose only surface holds no text, which no component can be told.
  */

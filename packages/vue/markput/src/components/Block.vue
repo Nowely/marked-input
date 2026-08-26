@@ -11,7 +11,7 @@ import Rows from './Rows.vue'
 import Token from './Token.vue'
 
 /**
- * A row, painted by its KIND's component — a paragraph falls back to `slots.block`. The grip,
+ * A row, painted by its KIND's component — a paragraph falls back to `slots.paragraph`. The grip,
  * the drop indicators and the menu that used to be painted here live in the editor's one
  * `BlockControls`.
  *
@@ -20,7 +20,7 @@ import Token from './Token.vue'
  *
  * A row's CHILD ROWS reach a kind's component through its `rows` SLOT, so it decides where they
  * go — a toggle hides them, a bullet nests a list inside its `<li>`. A PARAGRAPH gets none: its
- * component is `slots.block`, whose default is a bare `div`, so its child rows go in as ordinary
+ * component is `slots.paragraph`, whose default is a bare `div`, so its child rows go in as ordinary
  * children after the inline ones.
  */
 const props = defineProps<{node: RowNode; depth: number; index: number}>()
