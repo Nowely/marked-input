@@ -942,4 +942,36 @@ describe('drag and drop', () => {
 		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
 		expect(event.defaultPrevented).toBe(true)
 	})
+
+	/**
+	 * CHARACTERIZATION, not specification — the one open defect of the 2026-08-26 hardening pass
+	 * that lives here (`docs/scratch/notion-like/map.md`, the Fog section). The expectation below
+	 * is what the editor emits TODAY and it is wrong; closing the defect reddens this test, which
+	 * is the point of writing it down.
+	 *
+	 * A DROP INTO A ROW'S OWN GAP HAS NO "LEAVE IT WHERE IT WAS" OUTCOME. `#resolveDrop` seeds
+	 * `candidates[0]` and only ever moves the pick rightwards, so at the gap a row already occupies
+	 * the identity placement is a refused no-op and every horizontal position resolves to some
+	 * OTHER depth. The test above pins the neighbouring case — a row on its own TRAILING edge,
+	 * where the whole candidate list collapses to identity — and that one does decline. This gap
+	 * is the one where a candidate survives, so the decline never happens.
+	 *
+	 * WANTED: at least one horizontal position leaves the row where it is, the way the trailing
+	 * edge does. Asserted as "no X is a no-op" rather than against one emitted string, because the
+	 * defect is the missing decline and not the particular depth the pick lands on.
+	 */
+	it('moves the row at every horizontal position of its own gap, never leaving it put', () => {
+		const outcomes = [0, NESTED_INDENT + 8, 400].map(clientX => {
+			const {store, block, container, painted} = mountNestedRows('alpha\n\tbeta\ngamma')
+			const beta = store.tokens.nodes()[0].rows()[0]
+			block.beginDrag(beta.id, new DragEvent('dragstart', {dataTransfer: new DataTransfer()}))
+			const own = painted.get(beta.id)!.getBoundingClientRect()
+			dragOverAt(container, clientX, own.bottom - 1)
+			dropOn(container)
+			return store.tokens.value()
+		})
+
+		expect(outcomes).toEqual(['alpha\nbeta\ngamma', 'alpha\nbeta\ngamma', 'alpha\nbeta\ngamma'])
+		expect(outcomes.every(value => value !== 'alpha\n\tbeta\ngamma')).toBe(true)
+	})
 })
