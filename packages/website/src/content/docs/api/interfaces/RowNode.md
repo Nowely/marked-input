@@ -127,7 +127,7 @@ start: number;
 addSibling(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:228](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L228)
+Defined in: [core/src/features/tokens/tree/types.ts:230](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L230)
 
 Open a BLANK row after this row's whole subtree, at this row's own DEPTH — "add below", as a
 verb rather than as a separator a caller splices.
@@ -143,7 +143,9 @@ a row written between this one and its children, at this one's lead, adopts ever
 them. The KIND is deliberately not carried — "add a row" opens a blank one, and whether a
 kind continues is Enter's question.
 
-`false` for an editor with no separator, and for a dead row.
+`false` for an editor with no separator, for a dead row, and for a CARVED PIECE — a cell is a
+Row and [rows](/api/interfaces/rownode/#rows) on a carved row hands a consumer exactly these, but it has no line of its
+own to open one beside, so the bytes would land inside the line it is a piece of.
 
 #### Returns
 
@@ -157,7 +159,7 @@ kind continues is Enter's question.
 duplicate(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:231](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L231)
+Defined in: [core/src/features/tokens/tree/types.ts:233](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L233)
 
 #### Returns
 
@@ -187,7 +189,7 @@ readonly [`TreeNode`](/api/type-aliases/treenode/)[]
 insertAfter(text): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:232](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L232)
+Defined in: [core/src/features/tokens/tree/types.ts:234](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L234)
 
 #### Parameters
 
@@ -236,7 +238,7 @@ start: number;
 mergeWith(next): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:233](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L233)
+Defined in: [core/src/features/tokens/tree/types.ts:235](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L235)
 
 #### Parameters
 
@@ -256,7 +258,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:233](https://github.com/Nowe
 moveTo(placement): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:251](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L251)
+Defined in: [core/src/features/tokens/tree/types.ts:253](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L253)
 
 Move this row AND ITS SUBTREE to `placement`, keeping every row's identity — the moved
 subtree's, its old siblings' and its new siblings'. The subtree is re-indented to sit under
@@ -338,7 +340,7 @@ start: number;
 remove(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:230](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L230)
+Defined in: [core/src/features/tokens/tree/types.ts:232](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L232)
 
 See NodeCommands.
 
