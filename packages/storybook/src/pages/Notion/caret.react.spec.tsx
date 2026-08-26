@@ -201,6 +201,30 @@ describe('the caret goes where a person can follow it', () => {
 		expect(value()).toContain("we're not ready to call it GA.\nZ\n@comments")
 	})
 
+	/**
+	 * AND SHIFT+ARROWDOWN OVER SUCH A ROW MOVES THE PAINT, not just the stored anchors. It used to
+	 * move only the anchors: `rowScope` names its ends in ROW coordinates, a frozen row's text has
+	 * no surface, so `selectRange` declined and the DOM selection stayed on the one row — after
+	 * which the next keystroke, which reads DOM truth, acted on that one row. Half a gesture. The
+	 * write falls back on the row's own element edge now, which is the pair the click already used.
+	 */
+	it('grows a frozen row selection by a row, visibly', async () => {
+		const {host, value} = await mountControlled(Showcase, '- keep me\n@toc\nLaunch tasks\n@end\n- and me')
+
+		await focusAtEnd(rowStarting(host, 'keep me'))
+		await page.getByText('Launch tasks', {exact: true}).first().click()
+		await settle()
+		await userEvent.keyboard('{Shift>}{ArrowDown}{/Shift}')
+		await settle()
+
+		expect(window.getSelection()?.toString()).toContain('and me')
+
+		await userEvent.keyboard('X')
+		await settle()
+
+		expect(value()).toBe('- keep me\nX')
+	})
+
 	/** Backspace over the same selection takes the block away, opener and closing literal and all. */
 	it('deletes the row a click on frozen presentation selected', async () => {
 		const {host, value} = await mountControlled(Showcase, '- keep me\n@toc\nLaunch tasks\n@end\n- and me')

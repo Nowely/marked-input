@@ -47,6 +47,7 @@ import {
 	rowScope,
 	rowSelectionRows,
 	rowSelectionSpan,
+	rowsWithin,
 	splitPlan,
 	turnIntoPlan,
 } from '../tree/siblings'
@@ -493,6 +494,34 @@ export class TokenModel {
 	 */
 	rowScope(anchors: Anchors, scope: 'row' | 'out' | 'up' | 'down'): {start: number; end: number} | undefined {
 		return untracked(() => rowScope(this.#tree.roots(), anchors, scope, this.#tree.config()?.separator))
+	}
+
+	/**
+	 * THE ONE WRITE EVERY ROW-SELECTION GESTURE MAKES — Esc's two rungs, Shift+Up/Down and Mod+A —
+	 * as the span {@link rowScope} answered.
+	 *
+	 * AN END NO SURFACE PAINTS FALLS BACK ON ITS ROW'S OWN ELEMENT EDGE, which is
+	 * {@link #selectRow}'s reading generalized from a whole row to one END of a span, and it is what
+	 * finishes the arrows. `rowScope` names its ends in ROW coordinates — a row's entry, a row's
+	 * content end — and a FROZEN row's text has no surface at all, so `anchorAt` answered a text
+	 * node the DOM could not reach, `selectRange` declined, and the DOM selection stayed on whatever
+	 * one row the click had put it on. The anchors widened, the paint did not, and the next
+	 * keystroke — which reads DOM truth — acted on the one row: half a gesture, which is worse than
+	 * either whole one.
+	 *
+	 * IT IS A NO-OP WHEREVER THE END IS PAINTED, checked rather than assumed, so Esc, Mod+A and the
+	 * drag write exactly the anchors they always did on ordinary rows. Only the ends that resolved
+	 * to NOTHING move, and an element edge is what a block selection is bounded by
+	 * ({@link DomModel.#rangeBoundaryAt}).
+	 */
+	selectRowSpan(span: {start: number; end: number}): void {
+		const covered = untracked(() => rowsWithin(this.#tree.roots(), span, this.#tree.config()?.separator))
+		const reach = (offset: number, row: RowNode | undefined, side: 'before' | 'after'): NodeAnchor => {
+			const anchor = this.anchorAt(offset)
+			if (!row || this.#dom.reachable(anchor)) return anchor
+			return side === 'before' ? {before: row} : {after: row}
+		}
+		this.selection.select(reach(span.start, covered.at(0), 'before'), reach(span.end, covered.at(-1), 'after'))
 	}
 
 	/**

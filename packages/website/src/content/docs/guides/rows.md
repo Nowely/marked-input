@@ -141,7 +141,8 @@ store's other row verbs hang off the same `s.rows` — see
 
 - A CLICK on a row that holds no editable position — an atomic kind, which paints none of its own
   text — selects that row. The selection is written across the row's own element, so the browser
-  paints the block and the next keystroke acts on it.
+  paints the block and the next keystroke acts on it. `Shift+ArrowUp`/`Down` grow such a selection
+  visibly, by the same reading: an end that no surface paints falls back on its row's element edge.
 
 A row selection is the ROWS — openers and leads included. Paste, cut, copy and Backspace/Delete all
 read it that way; typing replaces the rows' TEXT and keeps the first row's kind, except over a row

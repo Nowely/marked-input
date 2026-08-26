@@ -255,10 +255,13 @@ export function widenRowScope(store: KbCtx): boolean {
 	return selectSpan(store, store.tokens.rowScope(anchors, 'out'))
 }
 
-/** The one write these gestures make: a span of the value, as the anchors that name its ends. */
+/**
+ * The one write these gestures make: a span of the value, through {@link TokenModel.selectRowSpan}
+ * — which is where an end no surface paints falls back on its row's own element edge.
+ */
 function selectSpan(store: KbCtx, span: {start: number; end: number} | undefined): boolean {
 	if (!span) return false
-	store.tokens.selection.select(store.tokens.anchorAt(span.start), store.tokens.anchorAt(span.end))
+	store.tokens.selectRowSpan(span)
 	return true
 }
 
