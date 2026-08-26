@@ -509,11 +509,12 @@ export function movePlan(
  * other candidate; the drop writes nothing, exactly as it already did wherever no candidate
  * survived at all.
  *
- * THE LINE AFTER THE GAP IS THE ONE THE MOVE LEAVES THERE, so the rows in flight are stepped over
- * before the floor is read: a row that is leaving cannot become a child of what lands where it
- * was. Read off the current list instead, the commonest drag there is — pick a row up and drop it
- * at its own gap to change only its depth — offers no outdent at all, and a gap whose whole
- * remainder is in flight offers nothing.
+ * THE LINES EITHER SIDE OF THE GAP ARE THE ONES THE MOVE LEAVES THERE, so the rows in flight are
+ * stepped over at BOTH ends: a row that is leaving cannot become a child of what lands where it
+ * was, and neither can it be the line a landing row nests under. Read off the current list instead,
+ * the commonest drag there is — pick a row up and drop it at its own gap to change only its depth —
+ * offered no outdent at all below the gap and no INDENT above it, so the same physical gap answered
+ * differently from a row's upper half and its lower.
  *
  * `index` is counted with the moved rows TAKEN OUT, which is what {@link RowPlacement} means, so a
  * gap whose preceding siblings are themselves in flight still addresses the slot it looks like.
@@ -540,12 +541,23 @@ export function dropPlacements(
 	if (found < 0) return []
 
 	// The gap FOLLOWS this pre-order index; `-1` is the gap before the document's first line.
-	const at = edge === 'after' ? found : found - 1
+	const gap = edge === 'after' ? found : found - 1
+	const runs = maximalRuns(rows, nodes) ?? []
+	const inFlight = (position: number): boolean =>
+		runs.some(run => position >= run.from && position < run.from + run.span)
+
+	// BOTH ENDS STEP OVER THE ROWS IN FLIGHT, and the ceiling's step is the one that was missing.
+	// At a moved row's OWN lower gap `previous` IS that row, so the only nested candidate was "child
+	// of the row being dragged", which `movePlan` refuses — leaving the commonest drag there is,
+	// pick a row up and change only its depth, working from the upper half of its own line and not
+	// the lower. The line the move leaves above the gap is the one to ask, and it is what
+	// `placementAt` must anchor on too: anchored on the moved row it named that row as the parent.
+	let at = gap
+	while (at >= 0 && inFlight(at)) at--
 	const previous = at < 0 ? undefined : rows[at]
 	const ceiling = depthCeiling(previous && scannedAs(previous.row, previous.depth))
-	const runs = maximalRuns(rows, nodes) ?? []
-	let after = at + 1
-	while (runs.some(run => after >= run.from && after < run.from + run.span)) after++
+	let after = gap + 1
+	while (inFlight(after)) after++
 	const floor = rows[after]?.depth ?? 0
 
 	const moved = new Set(nodes)

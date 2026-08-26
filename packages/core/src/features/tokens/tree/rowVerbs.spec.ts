@@ -1136,4 +1136,23 @@ describe('dropPlacements', () => {
 		// there addresses the slot AFTER `a`'s whole subtree, which is not the gap pointed at.
 		expect(store.tokens.dropPlacements([e], b, 'after').map(each => each.depth)).toEqual([1, 2])
 	})
+
+	/**
+	 * THE CEILING IS THE SAME RULE READ ABOVE THE GAP, and it was the half that stayed unstepped:
+	 * at a moved row's own LOWER gap the line above is that row itself, so the only nested candidate
+	 * was "child of the row being dragged" — which `movePlan` refuses, since a row cannot land
+	 * inside its own moved subtree. One physical gap answered `[0, 1]` from `b`'s upper half and
+	 * `[0]` from its lower, so holding the pointer one pixel down and moving right offered no indent
+	 * at all. Both spellings of the gap name it, so both are asserted.
+	 */
+	it('offers the same depths at a moved row’s own gap from either side', () => {
+		const store = rowStore('a\nb\nc')
+		const [a, b, c] = rowsOf(store)
+
+		expect(store.tokens.dropPlacements([b], a, 'after').map(each => each.depth)).toEqual([0, 1])
+		expect(store.tokens.dropPlacements([b], c, 'before').map(each => each.depth)).toEqual([0, 1])
+		// And the nested one is a real placement: `b` becomes `a`'s child without leaving its line.
+		expect(store.tokens.moveRows([b], {parent: a, index: 0})).toBe(true)
+		expect(store.tokens.value()).toBe('a\n\tb\nc')
+	})
 })
