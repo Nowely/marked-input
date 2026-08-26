@@ -404,9 +404,18 @@ export class TokenModel {
 	 * behavior is read, rather than each caller walking from the descriptor to the option itself.
 	 */
 	rowSpec(node: RowNode): RowSpec | undefined {
+		return this.#optionOf(node)?.row
+	}
+
+	/**
+	 * THE OPTION a row's kind was declared by — the identity {@link rowSpec} already reads off the
+	 * option index, kept whole for the one question `row` cannot answer: what a NEW row of this
+	 * kind starts as, which the option declares once in `menu` for every door that opens one.
+	 */
+	#optionOf(node: RowNode): CoreOption | undefined {
 		return untracked(() => {
 			const index = node.option()
-			return index === undefined ? undefined : this.props.options()[index]?.row
+			return index === undefined ? undefined : this.props.options()[index]
 		})
 	}
 
@@ -1026,17 +1035,25 @@ export class TokenModel {
 	 * compiled kinds, which is a question only this layer can answer: `tree/` holds descriptors and
 	 * never the options that declared them.
 	 *
-	 * `true` is this row's own kind AND its `meta`; an OPTION is that option's kind and no meta of
-	 * this one's — a table header continues into a table LINE, and a header's `meta` would be the
-	 * wrong thing to copy into it. An option this editor compiled no row kind from resolves to
-	 * `undefined`, which is a plain row: the same refusal {@link TreeCommands.turnInto} makes for
-	 * the same reason, and the only one a write path can make without a report per keystroke.
+	 * `true` is this row's own kind; an OPTION is that option's kind — a table header continues into
+	 * a table LINE. An option this editor compiled no row kind from resolves to `undefined`, which
+	 * is a plain row: the same refusal {@link TreeCommands.turnInto} makes for the same reason, and
+	 * the only one a write path can make without a report per keystroke.
+	 *
+	 * THE KIND CONTINUES AND THE META DOES NOT, and that is the whole rule. A `meta` is the ROW's
+	 * own field, not the kind's: `- [x] ` says THIS task is done, and Enter after it opened a
+	 * second task already ticked. What the new row carries instead is the kind's own SEED —
+	 * `menu.meta`, which is what a row of that kind starts as through every other door, so "a new
+	 * to-do" means the same thing whether the `/` menu or Enter opened it. A kind whose meta really
+	 * is part of the kind says so by seeding it: the showcase's callout seeds `warning` and gets a
+	 * warning callout, where it used to copy the tone of the row above.
 	 */
 	#continues(node: RowNode): Continuation {
 		const continues = this.rowSpec(node)?.continues
-		if (continues === true) return {descriptor: node.descriptor(), meta: node.meta()}
 		if (!continues) return undefined
-		return {descriptor: untracked(() => this.#rowKind(continues)), meta: undefined}
+		const option = continues === true ? this.#optionOf(node) : continues
+		const descriptor = continues === true ? node.descriptor() : untracked(() => this.#rowKind(continues))
+		return {descriptor, meta: option?.menu?.meta}
 	}
 
 	/**

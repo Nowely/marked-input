@@ -39,7 +39,7 @@ CoreSlots.container
 optional paragraph: string | ComponentClass<any, any> | FunctionComponent<any>;
 ```
 
-Defined in: [core/src/shared/types.ts:251](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L251)
+Defined in: [core/src/shared/types.ts:256](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L256)
 
 The component a row with NO kind renders through. A kind brings its own, so this is never asked for one.
 

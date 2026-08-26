@@ -155,16 +155,21 @@ export interface RowSpec {
 	 */
 	Component: Slot
 	/**
-	 * WHAT THE ROW A SPLIT PRODUCES IS. `true` is this kind again, AND the same `meta` — a list item
-	 * continues, a checked to-do splits into two checked to-dos. `false` or absent is a plain row,
-	 * which is what a heading wants.
+	 * WHAT THE ROW A SPLIT PRODUCES IS. `true` is this kind again — a list item continues. `false`
+	 * or absent is a plain row, which is what a heading wants.
 	 *
-	 * AN OPTION IS A THIRD ANSWER: the tail takes THAT kind, carrying no `meta` of this one's. A
-	 * table HEADER is the shape that needs it — it continues into a table LINE, not into a second
-	 * header and not into a paragraph, and without it the obvious way to add the first data row
-	 * (Enter, then type the cells) left a paragraph holding literal pipes. The option must be one
-	 * this editor compiled a row kind from, exactly as {@link split}'s `as` must; anything else
-	 * continues into a plain row.
+	 * THE KIND CONTINUES AND THE ROW'S OWN `meta` DOES NOT. A meta is the ROW's field, not the
+	 * kind's: `- [x] ` says THIS task is done, and Enter after it used to open a second task already
+	 * ticked. What the tail carries instead is the kind's SEED, `menu.meta` — what a row of this
+	 * kind starts as through every other door — so "a new to-do" means the same thing whether the
+	 * menu or Enter opened it. A kind whose meta really belongs to the kind says so by seeding it.
+	 *
+	 * AN OPTION IS A THIRD ANSWER: the tail takes THAT kind, and that kind's seed. A table HEADER is
+	 * the shape that needs it — it continues into a table LINE, not into a second header and not
+	 * into a paragraph, and without it the obvious way to add the first data row (Enter, then type
+	 * the cells) left a paragraph holding literal pipes. The option must be one this editor compiled
+	 * a row kind from, exactly as {@link split}'s `as` must; anything else continues into a plain
+	 * row.
 	 *
 	 * ONE field for the whole rule, and it is the same one Enter at a row's end reads: "another row
 	 * of this kind" and "the tail keeps this kind" are the same question asked at two caret

@@ -645,18 +645,31 @@ describe('splitAt', () => {
 	})
 
 	/**
-	 * A continuing kind carries its META into the tail with it, so splitting a checked to-do gives
-	 * two checked to-dos. Declared rather than derived: `continues` says "the tail gets the same
-	 * kind" and meta is not kind, so the reading is stated here and can be argued with.
+	 * THE KIND CONTINUES AND THE ROW'S OWN META DOES NOT: splitting a CHECKED to-do gives a checked
+	 * head and an UNCHECKED tail, because `[x]` says THIS task is done and the tail is a new one.
+	 * What the tail carries instead is the kind's SEED — `menu.meta`, what a row of this kind starts
+	 * as through every other door — so the two doors that open a to-do agree.
+	 *
+	 * It carried the row's own meta until 2026-08-26, pinned right here with "meta is not kind, so
+	 * the reading is stated here and can be argued with". Driven, it was: Enter on a ticked to-do
+	 * ticked the next one.
 	 */
-	it('carries the kind META into the tail of a continuing row', () => {
-		const todo: CoreOption = {markup: '- [__meta__] __slot__', row: {Component: 'li', continues: true}}
-		const store = rowStore('- [x] ab', [todo])
-		const row = rowsOf(store)[0]
+	it('gives the tail the kind SEED rather than the row’s own meta', () => {
+		const seeded: CoreOption = {
+			markup: '- [__meta__] __slot__',
+			row: {Component: 'li', continues: true},
+			menu: {label: 'To-do', meta: ' '},
+		}
+		const store = rowStore('- [x] ab', [seeded])
+		expect(rowsOf(store)[0].splitAt(inBody(rowsOf(store)[0], 1))).toBe(true)
+		expect(store.tokens.value()).toBe('- [x] a\n- [ ] b')
 
-		expect(row.splitAt(inBody(row, 1))).toBe(true)
-
-		expect(store.tokens.value()).toBe('- [x] a\n- [x] b')
+		// AND A KIND THAT SEEDS NOTHING CARRIES NOTHING: the meta gap is written empty rather than
+		// copied, which is the same answer the option arm of `continues` has always given.
+		const bare: CoreOption = {markup: '- [__meta__] __slot__', row: {Component: 'li', continues: true}}
+		const unseeded = rowStore('- [x] ab', [bare])
+		expect(rowsOf(unseeded)[0].splitAt(inBody(rowsOf(unseeded)[0], 1))).toBe(true)
+		expect(unseeded.tokens.value()).toBe('- [x] a\n- [] b')
 	})
 
 	/**
