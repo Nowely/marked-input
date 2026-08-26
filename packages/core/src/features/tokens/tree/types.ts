@@ -223,7 +223,9 @@ export interface RowNode {
 	 * them. The KIND is deliberately not carried — "add a row" opens a blank one, and whether a
 	 * kind continues is Enter's question.
 	 *
-	 * `false` for an editor with no separator, and for a dead row.
+	 * `false` for an editor with no separator, for a dead row, and for a CARVED PIECE — a cell is a
+	 * Row and {@link rows} on a carved row hands a consumer exactly these, but it has no line of its
+	 * own to open one beside, so the bytes would land inside the line it is a piece of.
 	 */
 	addSibling(): boolean
 	/** See {@link NodeCommands}. */

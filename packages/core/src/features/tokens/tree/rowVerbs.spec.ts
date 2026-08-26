@@ -274,6 +274,21 @@ describe('addSibling', () => {
 		expect(store.tokens.value()).toBe('# a\n\t# b\n\t')
 		expect(rowsOf(store)[2].option()).toBeUndefined()
 	})
+
+	/**
+	 * A CARVED PIECE has no line to open one beside, and it answers `lead()` and `endsDocument`
+	 * anyway — both meaningless for it, since its structural bytes are the carve delimiter. Written
+	 * regardless, the separator landed INSIDE the line and cut the table row in two. The PRE-ORDER
+	 * WALK is the test, which is the same one `maximalRuns` uses to keep a cell out of a drag.
+	 */
+	it('refuses a CARVED PIECE, which has no line of its own', () => {
+		const store = rowStore('| a | b\nx', [TABLE, CELL])
+		const cell = rowsOf(store)[0].rows()[0]
+
+		expect(cell.addSibling()).toBe(false)
+
+		expect(store.tokens.value()).toBe('| a | b\nx')
+	})
 })
 
 describe('mergeWith', () => {

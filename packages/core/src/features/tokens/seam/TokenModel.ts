@@ -887,15 +887,23 @@ export class TokenModel {
 		 *
 		 * {@link #insertAfter} answers the caret: the position it names is the row after this one's
 		 * whole subtree, which is exactly the row this opens.
+		 *
+		 * A ROW OF THE DOCUMENT or nothing, and the PRE-ORDER WALK is that test — the same one
+		 * `maximalRuns` uses, liveness and membership in one read. A CARVED PIECE is why it is
+		 * needed: a cell is a Row and answers `lead()` and `endsDocument` like any other, but both
+		 * are meaningless for it — its structural bytes are the carve delimiter, so the splice wrote
+		 * a separator INSIDE the line and cut a table row in two ('| a | b' → '| a⏎ | b').
 		 */
 		addSibling: node => {
 			const config = untracked(() => this.#tree.config())
 			if (!config) return false
-			const {lead, final} = untracked(() => ({
-				lead: node.lead(),
-				final: endsDocument(this.#tree.roots(), node),
-			}))
-			return this.#insertAfter(node, final ? config.separator + lead : lead + config.separator)
+			const line = untracked(() => {
+				const roots = this.#tree.roots()
+				if (!preorderRows(roots).some(entry => entry.row === node)) return undefined
+				return {lead: node.lead(), final: endsDocument(roots, node)}
+			})
+			if (!line) return false
+			return this.#insertAfter(node, line.final ? config.separator + line.lead : line.lead + config.separator)
 		},
 	}
 
