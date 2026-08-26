@@ -844,6 +844,25 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * A KEYSTROKE OVER A SELECTED ROW REACHES THE DOCUMENT even when the row BELOW opens with a
+	 * `meta`. The row selection stood, Backspace over it worked, and typing did nothing at all: the
+	 * event's target range ends inside the consumer's own decoration for that `meta` — a
+	 * `contenteditable="false"` span the model can name no anchor in — and the whole read failed
+	 * closed. A selection that paints and then eats the keystroke is worse than one that writes the
+	 * wrong bytes, because nothing on screen says the editor is alive. The LIVE selection answers
+	 * when the event's own range resolves to nothing.
+	 */
+	it('types over a selected row whose neighbour opens with a meta', async () => {
+		const {host, value} = await mountControlled(Showcase, 'a\n- [x] todo\nnext')
+
+		await focusAtEnd(rowAt(host, 'next'))
+		await page.getByText('a', {exact: true}).first().tripleClick()
+		await userEvent.keyboard('Z')
+
+		await expect.poll(value).toBe('Z\n- [x] todo\nnext')
+	})
+
+	/**
 	 * AND THE EDIT IS TAKE-BACK-ABLE from where the user is standing. The `Mod+Z` after a tick was
 	 * swallowed whole: the entry was on the stack and replayed fine once you clicked back into a
 	 * text row, but from the control the key was dead. Kept beside the reclaim above, because the

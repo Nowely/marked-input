@@ -1213,6 +1213,7 @@ describe('rowKeys the row keymap', () => {
 			markup: '| __slot__',
 			row: {Component: 'tr', continues: true, split: {at: ' | ', as: CELL}},
 		}
+		const TODO: CoreOption = {markup: '- [__meta__] __slot__', row: {Component: 'label'}}
 		const table = (defaultValue: string) =>
 			mountNestedRowDoc({defaultValue, options: [TABLE, CELL], Mark: () => null})
 
@@ -1319,6 +1320,21 @@ describe('rowKeys the row keymap', () => {
 			type(container, 'X')
 
 			expect(store.tokens.value()).toBe('| aaa | bbb | X\nafter')
+		})
+
+		/**
+		 * AND A `meta` IN THE NEXT ROW'S OPENER IS PART OF THE BOUNDARY. The row selection stands
+		 * here, so this shape reached the write correctly — what it did not reach was the READ: the
+		 * event's target range ends inside the consumer's own decoration for that `meta`, which is
+		 * DOM no anchor can name, and the whole read failed closed. Nothing happened at all.
+		 */
+		it('writes over a row whose neighbour opens with a meta', () => {
+			const {store, container} = keymap('a\n- [x] todo\nnext', {options: [BULLET, HEADING, FENCE, TODO]})
+			selectAcross(store, 0, 0, 1, 0)
+
+			expect(type(container, 'Z').defaultPrevented).toBe(true)
+
+			expect(store.tokens.value()).toBe('Z\n- [x] todo\nnext')
 		})
 	})
 })

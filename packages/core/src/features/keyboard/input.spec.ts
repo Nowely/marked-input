@@ -581,6 +581,36 @@ describe('handleBeforeInput()', () => {
 		container.remove()
 	})
 
+	/**
+	 * AND A TARGET RANGE THAT RESOLVES TO NOTHING FALLS BACK ON THE LIVE SELECTION rather than
+	 * swallowing the key. A consumer's own decoration inside a row is DOM this layer can name no
+	 * anchor in, and Chromium ends a target range there whenever the selection stops at that row's
+	 * entry — measured on the showcase's to-do tick box. The read used to fail closed and the
+	 * keystroke did NOTHING AT ALL, with the row still painted as selected.
+	 */
+	it('falls back on the live selection when the target range resolves to nothing', () => {
+		const {store, container, textNode} = mountStructuralInline('ab')
+		const selection = window.getSelection()
+		if (!selection) throw new Error('no window selection')
+		const spread = document.createRange()
+		spread.setStart(textNode, 0)
+		spread.setEnd(textNode, 2)
+		selection.removeAllRanges()
+		selection.addRange(spread)
+		// An element the editor knows nothing about — the shape a consumer's control has.
+		const stranger = document.createElement('span')
+		document.body.append(stranger)
+		const foreign = document.createRange()
+		foreign.setStart(textNode, 0)
+		foreign.setEnd(stranger, 0)
+
+		textNode.dispatchEvent(inputEvent('insertText', foreign, {data: 'X'}))
+
+		expect(store.tokens.value()).toBe('X')
+		stranger.remove()
+		container.remove()
+	})
+
 	it('a RANGED target range outranks the live caret', () => {
 		// The other half of the precedence contract, and it needs its own case: a ranged target
 		// carries an EXTENT the caret does not. MEASURED in Chromium on `deleteWordBackward`

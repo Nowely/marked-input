@@ -35,6 +35,14 @@ type KbCtx = Pick<Store, 'tokens'>
  * row painted as selected and the typed character appended to the quote above it. The selection the
  * user can see is the model's, so it answers here too.
  *
+ * A TARGET RANGE THAT RESOLVES TO NOTHING FALLS BACK rather than swallowing the key, which is the
+ * same rule read at the other end. A consumer's own decoration inside a row — a to-do's tick box —
+ * is DOM this layer can name no anchor in, and Chromium ends a target range there whenever the
+ * selection stops at that row's entry. Measured on `'a⏎- [x] todo⏎next'`: the row selection stood,
+ * Backspace over it worked, and typing did nothing at all, because the unresolvable end failed the
+ * whole read closed. A selection that paints and then eats the keystroke is worse than one that
+ * writes the wrong bytes — the editor reads as dead.
+ *
  * A `StaticRange` is document-ordered, so `anchor` is the low end and `head` the high one —
  * the same normalization {@link SelectionDriver.domAnchors} relies on, which is why the
  * numeric version's `start <= end` swap has no counterpart here.
@@ -43,7 +51,7 @@ export function anchorsFromInputEvent(store: KbCtx, event: InputEvent): Anchors 
 	const range = event.getTargetRanges().at(0)
 	const live = store.tokens.domAnchors()
 	if (!range) return live
-	if (!range.collapsed) return anchorsFromTargetRange(store, range)
+	if (!range.collapsed) return anchorsFromTargetRange(store, range) ?? live
 	return live ?? anchorsFromTargetRange(store, range)
 }
 
