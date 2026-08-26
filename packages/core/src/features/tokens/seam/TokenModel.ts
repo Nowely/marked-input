@@ -23,6 +23,7 @@ import {annotate} from '../parser/utils/annotate'
 import {
 	adjacentMark as findAdjacentMark,
 	anchorAt as anchorAtOffset,
+	anchorEquals,
 	boundarySpan as findBoundarySpan,
 	entryAnchor,
 	offsetOfAnchor,
@@ -30,7 +31,7 @@ import {
 	stepAnchor,
 } from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
-import {preorderRows} from '../tree/rows'
+import {hasRawBody, preorderRows} from '../tree/rows'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
 import {
@@ -640,7 +641,12 @@ export class TokenModel {
 			find: id => this.find(id),
 			handle: id => this.handle(id),
 			dom: this.#dom,
+			recoverCaret: origin => this.#recoverCaret(this.#rowAbove(origin)),
 		})
+
+		// THE DOM CLOCK, because where a caret MAY be is a question about the frame the framework
+		// painted rather than about the tree.
+		watch(this.#pipeline.bound, () => this.#afterFrame())
 	}
 
 	// ─── internals ─────────────────────────────────────────────────────────────
@@ -1001,6 +1007,148 @@ export class TokenModel {
 	#applyCaret(caret: NodeAnchor): void {
 		if (this.props.value() !== undefined) return
 		this.selection.select(caret)
+	}
+
+	/**
+	 * THE CARET'S OWN INVARIANT: a caret may sit only where the document is PAINTED and EDITABLE.
+	 *
+	 * ONE reading for what were three defects, because they are one — an atomic row holds no caret
+	 * position at all, a row inside a collapsed subtree holds one with no box, and a `contenteditable
+	 * ="false"` control root holds one the browser will not edit. See {@link DomModel.reachable}
+	 * for the refusals it rests on, and {@link #keepTailEnterable} for the invariant's other half.
+	 *
+	 * ON THE DOM CLOCK, and it has to be: the model clock pulses while the tree already holds a row
+	 * the framework has not painted yet, so every reachability read there answers about the previous
+	 * frame. Measured — the caret's own recovery skipped the row it had just opened.
+	 *
+	 * A RANGE is left alone: what is unreachable about a selection is a question nobody asked, and
+	 * every gesture that makes one places its own ends.
+	 */
+	#afterFrame(): void {
+		// ONE MICROTASK PAST THE PULSE, deduped — the invariant's settling point, and it buys three
+		// things at once rather than being a scheduler for its own sake.
+		//
+		// THE FRAME IS WHOLE. This clock pulses per element REGISTRATION as well as per commit, so a
+		// mid-patch pulse shows a row whose element the framework has already replaced and whose
+		// children it has not yet reached. MEASURED in Vue: outdenting a row re-parents it, and for
+		// one pulse the row was bound with its own text surface gone — read there, the invariant
+		// declared the row unenterable and grew a trailing row on an ordinary Backspace.
+		//
+		// THE FRAMEWORK HAS RENDERED. Both adapters flush a controlled echo inside the gesture that
+		// caused it, so a microtask queued from the pulse lands after that render.
+		//
+		// AND THE DISPATCHER IS OFF THE STACK. A verb called from inside a commit is a bug the
+		// dispatcher throws on, and this clock is pulsed by the commit itself.
+		if (this.#settling) return
+		this.#settling = true
+		queueMicrotask(() => {
+			this.#settling = false
+			this.#settleCaret()
+		})
+	}
+
+	#settling = false
+
+	#settleCaret(): void {
+		const anchors = this.selection.anchors()
+		if (!anchors || !anchorEquals(anchors.anchor, anchors.head)) return
+		const row = this.rowOf(anchors.anchor)?.row
+		if (!row || !this.#dom.painted(row.id)) return
+		// ASKED OF THE ROW'S OWN ENTRY, not of the anchor the caret happens to hold, and that is the
+		// difference between a verdict and a race: a node the adapter has not painted YET makes any
+		// single anchor unresolvable for a pulse or two — a mark just inserted, the empty text token
+		// the parse leaves after it — while a row whose ENTRY cannot be reached is an atomic block,
+		// which is a fact about the row and stays true. MEASURED: the anchor reading grew a trailing
+		// row every time a mention was completed at the end of a document.
+		if (this.#dom.reachable(entryAnchor(row))) {
+			this.#keepTailEnterable(row)
+			return
+		}
+		this.#recoverCaret(row)
+	}
+
+	/**
+	 * THE INVARIANT'S OTHER HALF, and a TREE question rather than a DOM one: a document must end in
+	 * a row the caret can LEAVE. A raw closed body — a fence, frontmatter — is the one row Enter
+	 * cannot, because its interior already holds separators, so every Enter in it is a line; at the
+	 * document's end that made the block a room with no door, where ArrowDown, Enter and a click
+	 * below all failed to open a row after it.
+	 *
+	 * ONLY WITH THE CARET IN IT, so a document merely AUTHORED ending in a fence is left alone until
+	 * someone actually stands in the trap. And once, by construction: the row this opens is the last
+	 * row afterwards.
+	 */
+	#keepTailEnterable(row: RowNode): void {
+		// O(1) ahead of everything else: almost no document ends in a raw body.
+		if (!untracked(() => hasRawBody(row))) return
+		if (untracked(() => preorderRows(this.#tree.roots()).at(-1)?.row) !== row) return
+		this.#openRowAfter(row)
+	}
+
+	/**
+	 * WHERE THE CARET GOES when the position it holds is one no caret may occupy: the nearest row
+	 * entry AFTER it that is painted and editable, else a row opened after it when it ENDS the
+	 * document, else the nearest entry before it.
+	 *
+	 * FORWARD FIRST because that is where a person continues, and it is also what makes the opening
+	 * arm terminate: the row it opens is reachable, so the next pass finds it by search rather than
+	 * opening a second one — which is the pass controlled mode always needs, since a verb names no
+	 * caret there.
+	 *
+	 * IT OPENS A ROW ONLY AT THE DOCUMENT'S END, which is where the invariant bites and — since the
+	 * DOM clock also pulses per REGISTRATION, mid-patch — the one condition no half-painted frame
+	 * can fake: it is read off the tree, not off the elements.
+	 */
+	#recoverCaret(from: RowNode | undefined): void {
+		const rows = untracked(() => preorderRows(this.#tree.roots()).map(entry => entry.row))
+		const at = from ? rows.indexOf(from) : -1
+		for (let index = at + 1; index < rows.length; index++) {
+			// The same "not yet" reading {@link #settleCaret} opens with, and it has to be the same
+			// one: a row with no element is a row this frame has not reached, and stepping PAST it
+			// would land the caret somewhere the user never pointed at.
+			if (!this.#dom.painted(rows[index].id)) return
+			if (this.#placeInRow(rows[index])) return
+		}
+		// A blank row of no kind is already a row the caret can enter — the trailing convention
+		// (ADR-0009) leaves one at the end of any document ending in a separator — so the invariant
+		// is met and opening a second one would grow the value on every pass.
+		const blank = from && untracked(() => from.descriptor() === undefined && from.slot() === '')
+		if (from && at === rows.length - 1 && !blank && this.#commands.addSibling(from)) return
+		for (let index = at - 1; index >= 0; index--) {
+			if (this.#placeInRow(rows[index])) return
+		}
+	}
+
+	/** The caret at a row's own entry, when that entry is one it may occupy. */
+	#placeInRow(row: RowNode): boolean {
+		const anchor = untracked(() => entryAnchor(row))
+		if (!this.#dom.reachable(anchor)) return false
+		this.#selectionDriver.placeAt(anchor)
+		return true
+	}
+
+	/**
+	 * A blank row after `row`, and NO CARET — which is the whole difference from
+	 * {@link TreeCommands.addSibling} and the reason this is not that verb: the caret is INSIDE
+	 * `row` and belongs there, the new row is the door it will need LATER. Moving it would take a
+	 * user who just picked **Code** out of the fence they picked it for.
+	 */
+	#openRowAfter(row: RowNode): void {
+		const config = untracked(() => this.#tree.config())
+		if (!config) return
+		// The document-final row owns no separator, so one has to terminate IT before the lead can
+		// open anything — `addSibling`'s own rule for the final row, which this row always is.
+		this.#tx.applyAfter(row, config.separator + row.lead())
+	}
+
+	/**
+	 * The ROW a stranded DOM node sits in — the walk `DomModel.handleAt` cannot make, because it
+	 * stops at the control root that stranded the caret in the first place.
+	 */
+	#rowAbove(origin: Node): RowNode | undefined {
+		const handle = this.#dom.tokenAbove(origin)
+		const node = handle && this.find(handle.id)
+		return node?.kind === 'row' ? node : undefined
 	}
 
 	/** The lazily-materialized default, so a `defaultValue` set after the first read stays a no-op. */

@@ -3,7 +3,7 @@ import type {Event} from '../../../shared/signals'
 import type {Host} from '../../state/Host'
 import {anchorEquals} from '../tree/anchors'
 import type {Selection} from '../tree/selection'
-import type {Anchors, Id, TreeNode} from '../tree/types'
+import type {Anchors, Id, NodeAnchor, TreeNode} from '../tree/types'
 import type {DomModel} from './DomModel'
 import type {TokenHandle} from './TokenHandle'
 
@@ -20,6 +20,12 @@ export type SelectionDriverDeps = {
 	find(id: Id): TreeNode | undefined
 	handle(id: Id): TokenHandle | undefined
 	dom: DomModel
+	/**
+	 * THE CARET HAS NOWHERE TO BE — put it somewhere a person can follow it, starting from the DOM
+	 * node the browser put it in. Answered by the model, which is the layer that owns both the row
+	 * order to search and the verb that opens a row when the search runs out.
+	 */
+	recoverCaret(origin: Node): void
 }
 
 /**
@@ -125,6 +131,15 @@ export class SelectionDriver {
 		return true
 	}
 
+	/**
+	 * {@link placeAtHandle} for an anchor the caller already resolved, and it carries the same
+	 * dedupe rule for the same reason: the caret recovery runs when the DOM caret is somewhere the
+	 * STORED anchors never followed it to, so a write that changes nothing still has to be applied.
+	 */
+	placeAt(anchor: NodeAnchor): void {
+		if (!this.deps.selection.select(anchor)) this.#applySelection()
+	}
+
 	#applySelection(): void {
 		const anchors = this.deps.selection.anchors()
 		if (anchors === undefined) return
@@ -196,7 +211,21 @@ export class SelectionDriver {
 				this.syncFromDom()
 				return
 			}
-			if (at === 'control') return
+			// A CONTROL ROOT IS `contenteditable="false"`, so the browser's own caret can land in
+			// one and the model can name no position there: `anchorFor` declines the boundary by
+			// construction. Leaving it standing is what stranded the caret — ArrowDown could not
+			// move it and every keystroke after it was dropped with nothing said — so the caret
+			// goes to the nearest position it may occupy instead.
+			//
+			// AN INTERACTIVE CONTROL NEVER REACHES HERE, measured rather than assumed: a click on
+			// a `<select>`, a checkbox, a `<button>` or a row grip moves FOCUS and leaves the
+			// selection exactly where it was, so no `selectionchange` is delivered at all. What
+			// does reach here is a click on frozen PRESENTATION — an atomic row's card, table of
+			// contents or properties grid — which is the case this recovers.
+			if (at === 'control') {
+				this.deps.recoverCaret(node)
+				return
+			}
 			this.deps.selection.clear()
 		}
 

@@ -73,6 +73,60 @@ export class DomModel {
 		return lookup.handle
 	}
 
+	/**
+	 * The nearest bound token ABOVE a DOM node, walking PAST any control root on the way — where
+	 * {@link handleAt} stops at a control and answers `'control'`, losing whatever the control
+	 * was painted inside.
+	 *
+	 * Its one caller is the caret recovery, and what it needs is exactly what the stop discards:
+	 * a click that strands the caret in an atomic block still happened in a ROW, and that row is
+	 * where the search for a position the caret may occupy starts.
+	 */
+	tokenAbove(node: Node): TokenHandle | undefined {
+		const container = this.deps.container()
+		if (!container) return undefined
+		for (let current: Node | null = node; current && current !== container; current = current.parentNode) {
+			if (!(current instanceof HTMLElement)) continue
+			const handle = this.deps.byElement(current)
+			if (handle?.node()) return handle
+		}
+		return undefined
+	}
+
+	/**
+	 * MAY A CARET SIT HERE — did the adapter give this anchor a surface, and is that surface the
+	 * document's rather than the consumer's?
+	 *
+	 * Two refusals, each a defect this reading was written for. NO SURFACE AT ALL is what an ATOMIC
+	 * row is: its kind's component is handed the row's children and draws none of them, so the row
+	 * round-trips and holds no position a caret can take. A CONTROL ROOT is the other:
+	 * `useControlRef()` writes `contenteditable="false"`, so the browser's own caret lands inside
+	 * one and every keystroke after it is dropped with nothing said.
+	 *
+	 * NO VISIBILITY TEST HERE, and that is measured rather than tidy: `checkVisibility()` is FALSE
+	 * for an EMPTY inline box, which is what a blank row's own text surface is and what the parse
+	 * leaves after every trailing mark — so asking it here answered "unusable" for the commonest
+	 * caret position in the editor. Whether a row is on screen is a question about the ROW, and
+	 * {@link painted} is where it is asked.
+	 */
+	reachable(anchor: NodeAnchor): boolean {
+		const target = this.#targetOf(anchor)
+		if (!target) return false
+		const element = this.deps.handle(target.id)?.element()
+		return element?.isConnected === true && !this.deps.isControlRoot(element)
+	}
+
+	/**
+	 * DOES THE BROWSER PAINT A BOX FOR THIS NODE — asked of a ROW, where it is exactly the question
+	 * a caret invariant needs: a row with no element is one the framework has not reached YET, and
+	 * a row inside a kind that collapses its children generates no box at all, so a caret in it is
+	 * in the document and on no screen.
+	 */
+	painted(id: Id): boolean {
+		const element = this.deps.handle(id)?.element()
+		return element?.isConnected === true && element.checkVisibility()
+	}
+
 	/** Locate the live node owning a DOM node, walking up to the container. */
 	#locate(node: Node): Lookup | undefined {
 		const container = this.deps.container()

@@ -796,7 +796,7 @@ describe('rowKeys the row keymap', () => {
 			}
 		})
 
-		it('inserts a literal newline inside a RAW CLOSED body', () => {
+		it('inserts a literal newline inside a RAW CLOSED body, and a row after it', async () => {
 			const {store, container} = keymap('```ts\nq\n```')
 			caretIn(store, 0, 1)
 
@@ -805,6 +805,15 @@ describe('rowKeys the row keymap', () => {
 			// One row still, and one line longer: a fence's body already holds separators.
 			expect(store.tokens.value()).toBe('```ts\nq\n\n```')
 			expect(rowsOf(store)).toHaveLength(1)
+
+			// AND THEN THE ROW AFTER IT, a microtask later, which is the caret invariant rather than
+			// Enter: a raw body is the one row Enter cannot leave, so a document must not END in one
+			// while the caret is inside it. Its browser gate is `caret.react.spec`'s "opens a row
+			// after a raw-bodied block that ends the document".
+			await Promise.resolve()
+
+			expect(store.tokens.value()).toBe('```ts\nq\n\n```\n')
+			expect(rowsOf(store)).toHaveLength(2)
 		})
 	})
 
