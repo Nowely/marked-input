@@ -5,7 +5,7 @@ prev: false
 title: "RowSpec"
 ---
 
-Defined in: [core/src/shared/types.ts:139](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L139)
+Defined in: [core/src/shared/types.ts:151](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L151)
 
 A row KIND's declaration: what an option adds to make its markup a row rather than a mark.
 
@@ -17,7 +17,7 @@ A row KIND's declaration: what an option adds to make its markup a row rather th
 Component: ElementType;
 ```
 
-Defined in: [core/src/shared/types.ts:144](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L144)
+Defined in: [core/src/shared/types.ts:156](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L156)
 
 REQUIRED. Every row kind renders through its own component; `slots.paragraph` is the row
 with no kind, and the only fallback left.
@@ -30,7 +30,7 @@ with no kind, and the only fallback left.
 optional continues: boolean | CoreOption;
 ```
 
-Defined in: [core/src/shared/types.ts:161](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L161)
+Defined in: [core/src/shared/types.ts:173](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L173)
 
 WHAT THE ROW A SPLIT PRODUCES IS. `true` is this kind again, AND the same `meta` — a list item
 continues, a checked to-do splits into two checked to-dos. `false` or absent is a plain row,
@@ -55,15 +55,19 @@ positions.
 optional indents: boolean;
 ```
 
-Defined in: [core/src/shared/types.ts:171](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L171)
+Defined in: [core/src/shared/types.ts:187](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L187)
 
-Does Tab / Shift+Tab re-indent a row of this kind, and does Tab belong to the editor at all
-while the caret is in one. Default false, so Tab still LEAVES THE FIELD everywhere else —
-ADR-0002's accepted cost, preserved rather than traded for a keyboard trap.
+DOES TAB BELONG TO THIS EDITOR. Default false, so an editor no option declares it on leaves
+Tab to the browser and the field stays escapable by keyboard alone — ADR-0002's accepted
+cost, preserved rather than traded for a keyboard trap.
 
-It gates the KEY, not the verb: a kind that declares it consumes Tab even where the depth
-cannot change, because a Tab that sometimes moves focus and sometimes indents is worse than
-either.
+ONE OPTION DECLARING IT ANSWERS FOR THE WHOLE EDITOR, and that is the granularity the
+question has: it gates the KEY, and the key belongs to the field. Whether a PARTICULAR row
+may go one level deeper is a structural question with an owner of its own — the scan's depth
+ceiling plus "does the would-be parent paint child rows" — which is also what a DROP asks. So
+Tab re-indents a row of any kind wherever a drag onto the same gap would, and it is consumed
+even where the verb then refuses the step: a Tab that sometimes moves focus and sometimes
+indents is worse than either.
 
 ***
 
@@ -73,7 +77,7 @@ either.
 optional split: object;
 ```
 
-Defined in: [core/src/shared/types.ts:186](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L186)
+Defined in: [core/src/shared/types.ts:202](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L202)
 
 This kind carves its OWN body at a literal, and each piece becomes an ordinary Row of the
 option `as` names — a table line into cells. A cell is not a node kind of its own: it is a Row

@@ -111,11 +111,17 @@ CoreOption.markup
 optional menu: MenuSpec;
 ```
 
-Defined in: [core/src/shared/types.ts:85](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L85)
+Defined in: [core/src/shared/types.ts:91](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L91)
 
 ONE contribution to the row menu an overlay offers, and its PRESENCE is what puts the option
 there — an option that declares a menu entry IS the menu, so no list of kinds is written
 anywhere else and no consumer component filters one.
+
+WITH NO [markup](/api/interfaces/option/#markup) IT IS THE UN-TYPING ENTRY: choosing it turns the caret's row back into
+the row with NO kind, which renders through `slots.paragraph`. That is the one kind no option
+can declare, so it was the one entry a block menu could not carry — and every editor has it.
+Core ships no label for it: what it is called, and where it sits in the list, is the
+consumer's, exactly like every other entry.
 
 #### Inherited from
 

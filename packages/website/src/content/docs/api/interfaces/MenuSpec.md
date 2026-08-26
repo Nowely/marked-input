@@ -5,7 +5,7 @@ prev: false
 title: "MenuSpec"
 ---
 
-Defined in: [core/src/shared/types.ts:89](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L89)
+Defined in: [core/src/shared/types.ts:95](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L95)
 
 What an option declares to appear in OverlayListModel.rows.
 
@@ -17,7 +17,7 @@ What an option declares to appear in OverlayListModel.rows.
 optional keywords: readonly string[];
 ```
 
-Defined in: [core/src/shared/types.ts:93](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L93)
+Defined in: [core/src/shared/types.ts:105](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L105)
 
 Extra query terms that never appear on screen — `'h1'` for Heading 1.
 
@@ -29,9 +29,13 @@ Extra query terms that never appear on screen — `'h1'` for Heading 1.
 label: string;
 ```
 
-Defined in: [core/src/shared/types.ts:91](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L91)
+Defined in: [core/src/shared/types.ts:103](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L103)
 
-What the row shows, and the only text the typed query is matched against.
+What the row shows, and what the typed query is RANKED against: an exact match first, then a
+label the query is a prefix of, then a label holding it anywhere — and only then the same
+three over [keywords](/api/interfaces/menuspec/#keywords), because a term the user cannot see must not outrank one they are
+reading. Declaration order decides inside a band, and decides everything before the first
+character is typed.
 
 ***
 
@@ -41,7 +45,7 @@ What the row shows, and the only text the typed query is matched against.
 optional meta: string;
 ```
 
-Defined in: [core/src/shared/types.ts:100](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L100)
+Defined in: [core/src/shared/types.ts:112](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L112)
 
 SEEDS for the row this entry writes, and both are DATA rather than a callback: the entry
 says what the row starts as, and `choose` is the only thing that writes it. They apply only
@@ -56,4 +60,4 @@ turn-into must not discard what the user typed.
 optional text: string;
 ```
 
-Defined in: [core/src/shared/types.ts:101](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L101)
+Defined in: [core/src/shared/types.ts:113](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L113)
