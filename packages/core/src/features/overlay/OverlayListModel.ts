@@ -27,10 +27,20 @@ import {navigateSuggestions} from './suggestionNavigation'
  */
 export class OverlayListModel {
 	/**
-	 * Index into {@link rows} of the highlighted row; NaN when none is. `Object.is` because
-	 * NaN !== NaN would turn every reset into a change.
+	 * Index into {@link rows} of the highlighted row — THE FIRST ONE until an arrow moves it, which
+	 * is what makes Enter a complete gesture on its own.
+	 *
+	 * IT USED TO BE NaN — no row highlighted, and Enter therefore free for the row keymap — and that
+	 * silently corrupted the row on the first gesture anyone tries: `/page t` narrows to exactly one
+	 * entry, Enter split the row and left the literal `/page t` in the document. The arm that let it
+	 * through was `navigateSuggestions`' "Enter with nothing highlighted means the key is free", so
+	 * the fix is to leave nothing unhighlighted rather than to special-case Enter: a key that acts
+	 * on a selection the user cannot SEE is the same defect one step further on.
+	 *
+	 * A list with no rows still declines every key — that arm is `length === 0`, not the highlight —
+	 * so a query nothing matches leaves Enter to the row split, exactly as it did.
 	 */
-	readonly active: Signal<number> = signal({initial: NaN, equals: Object.is})
+	readonly active: Signal<number> = signal({initial: 0})
 
 	/**
 	 * The rows on offer, already narrowed by what was typed after the trigger. The query pass is
@@ -67,8 +77,8 @@ export class OverlayListModel {
 		private readonly overlay: OverlayController
 	) {
 		// A new match means new rows: a surviving highlight could name a different row, or one
-		// past the end of the narrowed list.
-		watch(this.overlay.match, () => this.active(NaN))
+		// past the end of the narrowed list. Back to the FIRST, not to nothing — see {@link active}.
+		watch(this.overlay.match, () => this.active(0))
 	}
 
 	/** Choose `rows()[index]`. Out of range chooses nothing. */
@@ -88,8 +98,8 @@ export class OverlayListModel {
 	 * `'ping @Mi⏎'`, no mention), because by the time the protocol ran there was no match left.
 	 *
 	 * It is `navigateSuggestions` and nothing else, so the answer cannot drift from what the
-	 * handler does with the same key: `'none'` — no rows, or Enter with nothing highlighted —
-	 * means the key is free and the split still reaches it.
+	 * handler does with the same key: `'none'` — which is now only an EMPTY list — means the key is
+	 * free and the split still reaches it.
 	 */
 	consumes(key: string): boolean {
 		return navigateSuggestions(key, this.active(), this.rows().length).action !== 'none'

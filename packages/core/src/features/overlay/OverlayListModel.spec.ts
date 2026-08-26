@@ -42,13 +42,35 @@ describe('OverlayListModel', () => {
 		expect(store.overlay.list.rows()).toEqual([])
 	})
 
-	it('resets the highlight when the match changes', () => {
+	/**
+	 * BACK TO THE FIRST ROW, not to nothing: the narrowed list is a different list, and its own
+	 * first row is what the next Enter should take.
+	 */
+	it('puts the highlight back on the first row when the match changes', () => {
 		store.overlay.match(matchWith('', ['alpha', 'beta']))
 		store.overlay.list.active(1)
 
 		store.overlay.match(matchWith('a', ['alpha', 'beta']))
 
-		expect(store.overlay.list.active()).toBeNaN()
+		expect(store.overlay.list.active()).toBe(0)
+	})
+
+	/**
+	 * THE REPORTED GESTURE, at the model: an open list has a row highlighted from the start, so
+	 * Enter picks without an arrow press. It used to answer nothing, the row keymap took the key,
+	 * and the row split with the trigger still in it.
+	 */
+	it('highlights the first row of a list the moment it opens', () => {
+		const choose = vi.spyOn(store.overlay, 'choose').mockImplementation(() => true)
+		store.overlay.match(matchWith('wor', ['world', 'word']))
+
+		expect(store.overlay.list.active()).toBe(0)
+		expect(store.overlay.list.consumes('Enter')).toBe(true)
+
+		store.overlay.list.activate()
+		container.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', cancelable: true}))
+
+		expect(choose).toHaveBeenCalledWith({value: 'world', meta: '0'})
 	})
 
 	it('chooses the filtered row with its index as meta', () => {
@@ -90,10 +112,14 @@ describe('OverlayListModel', () => {
 		}
 
 		expect(press('ArrowDown').defaultPrevented).toBe(true)
-		expect(store.overlay.list.active()).toBe(0)
-		press('ArrowDown')
 		expect(store.overlay.list.active()).toBe(1)
+		// The wrap, from both ends: the highlight starts on the first row, so ArrowUp off it is the
+		// arithmetic that used to be unreachable while nothing was highlighted.
 		press('ArrowUp')
+		expect(store.overlay.list.active()).toBe(0)
+		press('ArrowUp')
+		expect(store.overlay.list.active()).toBe(1)
+		press('ArrowDown')
 		expect(store.overlay.list.active()).toBe(0)
 		press('Enter')
 		expect(choose).toHaveBeenCalledWith({value: 'alpha', meta: '0'})
@@ -110,7 +136,6 @@ describe('OverlayListModel', () => {
 		container.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(false)
-		expect(store.overlay.list.active()).toBeNaN()
 	})
 
 	it('rebinds the keydown listener to a swapped container', () => {
@@ -176,24 +201,25 @@ describe('OverlayListModel', () => {
 			}
 
 			expect(press('ArrowDown').defaultPrevented).toBe(true)
-			expect(store.overlay.list.active()).toBe(0)
-			press('ArrowDown')
 			expect(store.overlay.list.active()).toBe(1)
 			expect(press('Enter').defaultPrevented).toBe(true)
 			expect(choose).toHaveBeenCalledWith({option: MENU_OPTIONS[2]})
 		})
 
 		/**
-		 * The key the row keymap asks about before it splits a row. With the menu open and a row
-		 * highlighted, Enter belongs to the list — which is exactly what `/h2` + Enter did not do.
+		 * The key the row keymap asks about before it splits a row. HAVING A ROW TO OFFER is the
+		 * whole test — the list always has one highlighted — so `/page t` + Enter picks the one
+		 * entry it narrowed to instead of splitting the row around the trigger it left behind.
 		 */
-		it('claims Enter from the row keymap only once a row is highlighted', () => {
-			store.overlay.match(menuMatch(''))
+		it('claims Enter from the row keymap as soon as it has a row to offer', () => {
+			store.overlay.match(menuMatch('nothing matches this'))
 
+			expect(store.overlay.list.rows()).toEqual([])
 			expect(store.overlay.list.consumes('Enter')).toBe(false)
 
-			store.overlay.list.active(0)
+			store.overlay.match(menuMatch('h1'))
 
+			expect(store.overlay.list.rows()).toHaveLength(1)
 			expect(store.overlay.list.consumes('Enter')).toBe(true)
 		})
 

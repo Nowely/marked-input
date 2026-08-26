@@ -422,6 +422,28 @@ describe('the slash menu', () => {
 	})
 
 	/**
+	 * AND WITHOUT THE ARROW, which is the gesture everyone tries first. `/page t` narrows to one
+	 * entry; Enter used to split the row and leave the literal `/page t` in the document, because
+	 * nothing was highlighted and `navigateSuggestions` read that as "the key is free".
+	 *
+	 * The HIGHLIGHT is asserted beside the value: Enter picking the right row and Enter picking a
+	 * row the user cannot see are the same emitted string, and only the first is the contract.
+	 */
+	it('picks with Enter alone, and shows which row it will pick', async () => {
+		const {host, value} = await mountControlled(Empty, '')
+
+		await focusAtStart(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '/page t')
+		await expect.element(menuItem('Page title')).toBeVisible()
+		expect(page.getByRole('listitem').elements()).toHaveLength(1)
+		expect(getElement(menuItem('Page title')).closest('li')?.className).toContain('Active')
+
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(value).toBe('@title ')
+	})
+
+	/**
 	 * AND IT LOOKS LIKE THIS PAGE. The menu, the mention picker and the grip menu were all
 	 * white-on-light inside a dark page — browser chrome sitting on a document. The showcase
 	 * declares the adapter's own theme names in `theme/tokens.css`, so the fix is a token map

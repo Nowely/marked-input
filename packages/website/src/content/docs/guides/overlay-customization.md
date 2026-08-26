@@ -62,7 +62,8 @@ function BasicSuggestions() {
 
 - Keyboard navigation (↑↓)
 - Filtering as you type
-- Enter to select
+- Enter to select the highlighted row — the FIRST one until an arrow moves it, so Enter alone
+  finishes the gesture and never leaves the trigger text in the document
 - Esc to close
 - Click to select
 
@@ -128,7 +129,9 @@ core to answer, so the member comes back with the reader that needs it and not b
 
 **Replacing `OverlayList`.** A consumer's own list reads the same things and still writes no
 filtering and no insert logic. `activate()` is what buys the keyboard — arrows move `active`,
-Enter chooses — and it is opt-in so an overlay that is not a list never swallows those keys:
+Enter chooses the row it names — and it is opt-in so an overlay that is not a list never swallows
+those keys. A list with NO rows claims nothing, so a query that matches nothing leaves Enter to the
+row split:
 
 ```tsx fragment
 function MyMenu() {
@@ -215,7 +218,7 @@ function CustomOverlay() {
 | `select()`  | `function`                          | Insert a mark                                   |
 | `choose()`  | `function`                          | The one accept path; `{option}` retypes the row |
 | `rows`      | `readonly OverlayRow[]`             | The list on offer, already narrowed by the query|
-| `active`    | `number`                            | Index of the highlighted row; `NaN` for none    |
+| `active`    | `number`                            | Index of the highlighted row; the FIRST by default |
 | `activate()`| `function`                          | Bind ↑↓/Enter; returns the unbind               |
 | `match`     | `OverlayMatch`                      | Match details (value, source, trigger)          |
 | `ref`       | `RefObject`                         | Ref for outside click detection                 |
@@ -234,7 +237,7 @@ interface OverlayHandler {
     choose: (pick: OverlayPick) => boolean
     /** The matched option's `overlay.data`, or the row menu when it declares none. */
     rows: readonly OverlayRow[]
-    /** Index into `rows` of the highlighted row; NaN when none is. */
+    /** Index into `rows` of the highlighted row — the first one until an arrow moves it. */
     active: number
     /** Bind ↑↓/Enter to the editing host, and return the unbind. Opt-in. */
     activate: () => () => void
