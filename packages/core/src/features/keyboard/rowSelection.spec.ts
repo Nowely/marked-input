@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest'
 
 import type {Store} from '../../store/Store'
 import type {TreeNode} from '../tokens'
-import {mountNestedBlock, selectionRange} from '../tokens/__testing__/mountFixtures'
+import {mountNestedRowDoc, selectionRange} from '../tokens/__testing__/mountFixtures'
 
 /**
  * THE ROW SELECTION, end to end: the keys that widen it and the derivation that reads it back.
@@ -16,7 +16,7 @@ import {mountNestedBlock, selectionRange} from '../tokens/__testing__/mountFixtu
  */
 const DOCUMENT = 'aa\n\tbb\n\tcc\ndd'
 
-const mount = () => mountNestedBlock({defaultValue: DOCUMENT})
+const mount = () => mountNestedRowDoc({defaultValue: DOCUMENT})
 
 /**
  * The row selection as SLOT TEXT, which is what makes the expectations readable: ids are minted
@@ -64,7 +64,7 @@ describe('the row selection derives from the text selection', () => {
 	 * already spans its neighbours.
 	 */
 	it('refuses to hold an EMPTY row a caret merely rests in', () => {
-		const {store} = mountNestedBlock({defaultValue: 'aa\n\ncc'})
+		const {store} = mountNestedRowDoc({defaultValue: 'aa\n\ncc'})
 
 		caretAt(store, 3)
 		expect(selectedSlots(store)).toEqual([])
@@ -235,7 +235,7 @@ describe('Shift+arrows grow the row selection', () => {
 	 * span, not a mode the user entered.
 	 */
 	it('is a row gesture from a text selection that covers a row whole, with no Esc', () => {
-		const {store, container} = mountNestedBlock({defaultValue: 'aaa\nbbb\nccc'})
+		const {store, container} = mountNestedRowDoc({defaultValue: 'aaa\nbbb\nccc'})
 		store.tokens.selection.select(store.tokens.anchorAt(0), store.tokens.anchorAt(3))
 		expect(store.rows.selected()).toHaveLength(1)
 

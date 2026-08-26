@@ -4,7 +4,7 @@ import type {CoreOption} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {MARKPUT_MIME} from '../clipboard/pasteMarkup'
 import type {RowNode, TreeNode} from '../tokens'
-import {mountNestedBlock, selectionRange} from '../tokens/__testing__/mountFixtures'
+import {mountNestedRowDoc, selectionRange} from '../tokens/__testing__/mountFixtures'
 
 /**
  * THE SEAM A SPAN CROSSES WHEN IT COVERS WHOLE ROWS, which had no oracle at any level and was
@@ -29,7 +29,7 @@ const CELL: CoreOption = {markup: undefined, row: {Component: 'span'}}
 const TABLE: CoreOption = {markup: '| __slot__', row: {Component: 'div', continues: true, split: {at: ' | ', as: CELL}}}
 
 const mountWith = (value: string, separator: string) =>
-	mountNestedBlock({defaultValue: value, separator, options: [BULLET, HEADING, TABLE, CELL], Mark: () => null})
+	mountNestedRowDoc({defaultValue: value, separator, options: [BULLET, HEADING, TABLE, CELL], Mark: () => null})
 
 const mount = (value: string) => mountWith(value, '\n')
 

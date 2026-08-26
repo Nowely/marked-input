@@ -1059,12 +1059,12 @@ describe('Feature: drag row keyboard navigation', () => {
 
 			it('lands the caret at the join inside the heading row', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const markBlock = rowsOf(host)[0]
+				const markRow = rowsOf(host)[0]
 
 				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Backspace}')
 
-				expect(caretIsInside(markBlock)).toBe(true)
+				expect(caretIsInside(markRow)).toBe(true)
 			})
 		})
 	})
@@ -1175,12 +1175,12 @@ describe('Feature: drag row keyboard navigation', () => {
 
 			it('move focus to mark row on Delete at mark boundary', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const markBlock = rowsOf(host)[0]
+				const markRow = rowsOf(host)[0]
 
 				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Delete}')
 
-				expect(caretIsInside(markBlock)).toBe(true)
+				expect(caretIsInside(markRow)).toBe(true)
 			})
 		})
 	})

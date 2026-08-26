@@ -3,7 +3,7 @@ import {describe, it, expect} from 'vitest'
 import type {CoreOption} from '../../shared/types'
 import {Store} from '../../store/Store'
 import type {RowNode, TreeNode} from '../tokens'
-import {mountBlock, mountNestedBlock, selectionRange} from '../tokens/__testing__/mountFixtures'
+import {mountRowDoc, mountNestedRowDoc, selectionRange} from '../tokens/__testing__/mountFixtures'
 
 /**
  * The Surface of a row's text slot, asked of the model rather than found by shape: the
@@ -44,7 +44,7 @@ function caretInRow(store: Store, rowIndex: number, offset: number): Node {
  */
 describe('rowKeys row identity', () => {
 	it('Enter with a DOM-resolvable selection (tier 1) splits the selected row', () => {
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		const second = store.tokens.nodes()[1]
 		store.tokens.selection.selectNode(second, 'end')
 		// Applying the stored anchor focuses the EDITING HOST — the container, since no row
@@ -59,7 +59,7 @@ describe('rowKeys row identity', () => {
 	})
 
 	it('Enter with only a stored selection (tier 2) splits the selected row', () => {
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		const second = store.tokens.nodes()[1]
 		if (second.kind !== 'row') throw new Error('expected a row')
 		const body = second.children()[0]
@@ -81,7 +81,7 @@ describe('rowKeys row identity', () => {
 	it('splits at the stored anchor itself, not at the end of the row holding it', () => {
 		// Tier 2 is the stored ANCHOR, and it is the position rather than the row it sits in: a
 		// caret stored mid-row splits there instead of appending an empty row behind it.
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		const second = store.tokens.nodes()[1]
 		if (second.kind !== 'row') throw new Error('expected a row')
 		const text = second.children()[0]
@@ -99,7 +99,7 @@ describe('rowKeys row identity', () => {
 		// One host makes cross-row caret movement NATIVE: the caret walks out of a row the
 		// way it walks out of any inline element, so nothing may cancel an arrow keydown.
 		// Row 0's END is where the deleted Right/Down branches fired.
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		const first = store.tokens.nodes()[0]
 		store.tokens.selection.selectNode(first, 'end')
 
@@ -114,7 +114,7 @@ describe('rowKeys row identity', () => {
 	it('Arrow keys at a row START are left to the browser too', () => {
 		// The mirror: the deleted Left/Up branches fired at offset 0 of a row with a
 		// predecessor, which the case above never reaches.
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		const second = store.tokens.nodes()[1]
 		store.tokens.selection.selectNode(second, 'start')
 
@@ -127,7 +127,7 @@ describe('rowKeys row identity', () => {
 	})
 
 	it('select-all + Enter replaces everything with one fresh row', () => {
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		store.tokens.selection.selectAll()
 
 		const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true})
@@ -154,7 +154,7 @@ describe('rowKeys row identity', () => {
 		// Enter is NOT the shared table's replace-the-range: it splices the separator at the
 		// low end, so 'one' selected [1,3) becomes 'o' + a fresh row holding 'ne'. Pinned
 		// because nothing else in the repo covers Enter over a non-empty selection.
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		selectInRow(store, 0, 1, 3)
 
 		const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true})
@@ -165,7 +165,7 @@ describe('rowKeys row identity', () => {
 	})
 
 	it('does nothing when there is no selection anywhere', () => {
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		store.tokens.selection.clear()
 		window.getSelection()?.removeAllRanges()
 
@@ -179,7 +179,7 @@ describe('rowKeys beforeinput guard', () => {
 	it('drops an unhandled cancelable inputType instead of letting the browser edit the row', () => {
 		// Same contract as `input.ts`: block rows live in the SAME single host, so an
 		// inputType the shared table cannot express would edit model-owned DOM.
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		const second = store.tokens.nodes()[1]
 		store.tokens.selection.selectNode(second, 'end')
 
@@ -200,7 +200,7 @@ describe('rowKeys beforeinput guard', () => {
 		// the consumer-origin test, so this event resolved a caret at the ROW's text end and
 		// typed there — 'one\n\ntwo\n\n' became 'one\n\ntwox\n\n' with the event cancelled,
 		// while the same edit inline was left alone.
-		const {store} = mountBlock()
+		const {store} = mountRowDoc()
 		const island = document.createElement('span')
 		island.setAttribute('contenteditable', 'true')
 		island.textContent = 'inner'
@@ -233,7 +233,7 @@ describe('rowKeys beforeinput guard', () => {
 		// to take the shared table's `'\n'`, which at the default separator SPLIT the row — by the
 		// generic path, so with none of the row rules — and inside a row at any other separator
 		// spliced a bare newline.
-		const {store} = mountBlock()
+		const {store} = mountRowDoc()
 		const text = caretInRow(store, 0, 1)
 
 		const event = new InputEvent('beforeinput', {inputType: 'insertLineBreak', bubbles: true, cancelable: true})
@@ -244,7 +244,7 @@ describe('rowKeys beforeinput guard', () => {
 	})
 
 	it('inserts the dropped text in the row on insertFromDrop', () => {
-		const {store} = mountBlock()
+		const {store} = mountRowDoc()
 		const text = caretInRow(store, 0, 1)
 		const dataTransfer = new DataTransfer()
 		dataTransfer.setData('text/plain', 'X')
@@ -265,7 +265,7 @@ describe('rowKeys beforeinput guard', () => {
 		// The SOURCE half of a drag: the browser pairs insertFromDrop at the target with
 		// deleteByDrag at the origin. Without an expressed '' deletion the dragged text
 		// survives where it came from, so a drag out of a row duplicates it.
-		const {store} = mountBlock()
+		const {store} = mountRowDoc()
 		const text = selectInRow(store, 0, 1, 3)
 
 		const event = new InputEvent('beforeinput', {inputType: 'deleteByDrag', bubbles: true, cancelable: true})
@@ -282,7 +282,7 @@ describe('rowKeys beforeinput guard', () => {
 	 * difference is one row fewer rather than one emptied.
 	 */
 	it('takes the whole row on a deleteByCut that covers one', () => {
-		const {store} = mountBlock()
+		const {store} = mountRowDoc()
 		const text = selectInRow(store, 0, 0, 3)
 
 		const event = new InputEvent('beforeinput', {inputType: 'deleteByCut', bubbles: true, cancelable: true})
@@ -294,7 +294,7 @@ describe('rowKeys beforeinput guard', () => {
 
 	/** A range that covers no row whole is still exactly the range, which is every partial cut. */
 	it('deletes only the cut range when it covers no row whole', () => {
-		const {store} = mountBlock()
+		const {store} = mountRowDoc()
 		const text = selectInRow(store, 0, 1, 3)
 
 		const event = new InputEvent('beforeinput', {inputType: 'deleteByCut', bubbles: true, cancelable: true})
@@ -307,7 +307,7 @@ describe('rowKeys beforeinput guard', () => {
 	it('falls back to event.data when a paste carries no dataTransfer', () => {
 		// The shared table's last paste resort: engines that put the payload on `data`
 		// rather than `dataTransfer`.
-		const {store} = mountBlock()
+		const {store} = mountRowDoc()
 		const text = caretInRow(store, 0, 1)
 
 		const event = new InputEvent('beforeinput', {
@@ -327,7 +327,7 @@ describe('rowKeys beforeinput guard', () => {
 		// which inserts the SEPARATOR — the table's '\n' would splice a literal newline
 		// inside the row. Unreachable from a real Enter (the keydown is cancelled first);
 		// pinned so the divergence survives the table.
-		const {store} = mountBlock()
+		const {store} = mountRowDoc()
 		const text = caretInRow(store, 0, 1)
 
 		const event = new InputEvent('beforeinput', {inputType: 'insertParagraph', bubbles: true, cancelable: true})
@@ -341,7 +341,7 @@ describe('rowKeys beforeinput guard', () => {
 		// Neither authority answers (no DOM range, no stored selection), yet the event still
 		// targets model-owned DOM: `handleRowEnter` bails on the same missing caret, so this
 		// guard is the last one standing.
-		const {store} = mountBlock()
+		const {store} = mountRowDoc()
 		const rowText = rowSurface(store, 0)
 		store.tokens.selection.clear()
 		window.getSelection()?.removeAllRanges()
@@ -362,7 +362,7 @@ describe('rowKeys beforeinput guard', () => {
  */
 describe('rowKeys row-boundary delete', () => {
 	it('Backspace at a row start removes the separator before it', () => {
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		caretInRow(store, 1, 0)
 
 		const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
@@ -373,7 +373,7 @@ describe('rowKeys row-boundary delete', () => {
 	})
 
 	it('Delete at a row content end removes the separator that row owns', () => {
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		caretInRow(store, 0, 3)
 
 		const event = new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true})
@@ -386,7 +386,7 @@ describe('rowKeys row-boundary delete', () => {
 	it('Delete at a row START takes the separator BEHIND it', () => {
 		// Block layout's own answer, not a symmetry with Backspace: Delete pressed at the start
 		// of a row merges it into the previous one (`Drag.spec`'s 'Delete at start of row').
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		caretInRow(store, 1, 0)
 
 		const event = new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true})
@@ -399,7 +399,7 @@ describe('rowKeys row-boundary delete', () => {
 	it('Backspace inside a row deletes one character, on the keydown', () => {
 		// The ordinary case, which block used to leave to the `beforeinput` that follows: with
 		// one delete arm it is answered here and the default never runs.
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		caretInRow(store, 1, 2)
 
 		const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
@@ -416,7 +416,7 @@ describe('rowKeys row-boundary delete', () => {
 		// live caret downstream and is applied verbatim — that is how one `Delete` at the end of a
 		// code fence's body swallowed the closing line and the kind with it. ADR-0006's rule holds
 		// here too, and at a document edge there is nothing for the browser to have done anyway.
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		caretInRow(store, 0, 0)
 
 		const event = new KeyboardEvent('keydown', {key: 'Backspace', bubbles: true, cancelable: true})
@@ -431,7 +431,7 @@ describe('rowKeys row-boundary delete', () => {
 		// only just started answering deletes on the KEYDOWN: without the modifier decline this
 		// arm would cancel Alt+Backspace and delete ONE character, where it used to fall
 		// through and the browser's ranged `deleteWordBackward` deleted the word.
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		caretInRow(store, 0, 3)
 
 		const event = new KeyboardEvent('keydown', {
@@ -452,7 +452,7 @@ describe('rowKeys row-boundary delete', () => {
 		// all-selected and no live range, `domAnchors()` declines, so without the all-selected
 		// branch ahead of it this returns without cancelling and the browser mutates the host
 		// behind the model's back.
-		const {store, container} = mountBlock()
+		const {store, container} = mountRowDoc()
 		store.tokens.selection.selectAll()
 		window.getSelection()?.removeAllRanges()
 
@@ -517,7 +517,7 @@ describe('rowKeys mark swallow', () => {
  * stored for some row elsewhere.
  */
 describe('rowKeys control guard', () => {
-	function mountBlockWithControl(controlRow: 0 | 1) {
+	function mountRowWithControl(controlRow: 0 | 1) {
 		const store = new Store()
 		store.props.set({
 			defaultValue: 'one\n\ntwo\n\n',
@@ -548,7 +548,7 @@ describe('rowKeys control guard', () => {
 	}
 
 	it('ignores Enter targeting a control even with a row selection stored', () => {
-		const {store, control} = mountBlockWithControl(0)
+		const {store, control} = mountRowWithControl(0)
 		const row0 = store.tokens.nodes()[0]
 		store.tokens.selection.selectNode(row0, 'end')
 		control.focus()
@@ -563,7 +563,7 @@ describe('rowKeys control guard', () => {
 	it('ignores Enter targeting a control even with everything selected', () => {
 		// The all-selected arm replaces the whole document, so it must sit BEHIND the
 		// control verdict — same precedence `input.ts` gives `isConsumerOrigin`.
-		const {store, control} = mountBlockWithControl(0)
+		const {store, control} = mountRowWithControl(0)
 		store.tokens.selection.selectAll()
 		control.focus()
 
@@ -577,7 +577,7 @@ describe('rowKeys control guard', () => {
 	it('leaves a control root its own beforeinput even with a row selection stored', () => {
 		// The one verdict that still passes through after the guard started failing
 		// closed: the consumer's own control owns its input, and the model owns none of that DOM.
-		const {store, control} = mountBlockWithControl(0)
+		const {store, control} = mountRowWithControl(0)
 		const row0 = store.tokens.nodes()[0]
 		store.tokens.selection.selectNode(row0, 'end')
 
@@ -594,7 +594,7 @@ describe('rowKeys control guard', () => {
 	})
 
 	it('ignores Backspace targeting a control even with a row selection stored', () => {
-		const {store, control} = mountBlockWithControl(1)
+		const {store, control} = mountRowWithControl(1)
 		const row1 = store.tokens.nodes()[1]
 		store.tokens.selection.selectNode(row1, 'start')
 		control.focus()
@@ -621,7 +621,7 @@ describe('rowKeys the row keymap', () => {
 	const FENCE: CoreOption = {markup: '```__meta__\n__value__\n```', row: {Component: 'pre'}}
 
 	const keymap = (defaultValue: string, props: Parameters<Store['props']['set']>[0] = {}) =>
-		mountNestedBlock({defaultValue, options: [BULLET, HEADING, FENCE], Mark: () => null, ...props})
+		mountNestedRowDoc({defaultValue, options: [BULLET, HEADING, FENCE], Mark: () => null, ...props})
 
 	/** Every row in pre-order — the space the verbs and the projection both speak. */
 	const rowsOf = (store: Store): RowNode[] => {
@@ -1058,7 +1058,7 @@ describe('rowKeys the row keymap', () => {
 			row: {Component: 'tr', continues: true, split: {at: ' | ', as: CELL}},
 		}
 		const table = (defaultValue: string) =>
-			mountNestedBlock({defaultValue, options: [TABLE, CELL], Mark: () => null})
+			mountNestedRowDoc({defaultValue, options: [TABLE, CELL], Mark: () => null})
 
 		it('moves to the NEXT piece on Tab and back on Shift+Tab', () => {
 			const {store, container} = table('| a | b')

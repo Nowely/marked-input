@@ -570,7 +570,7 @@ describe('boundary: pre-adoption selection capture (spec D7)', () => {
 })
 
 describe('boundary: a separator adopts rows (issue 08)', () => {
-	function blockSetup(source: string, rowConfig: () => RowConfig | undefined) {
+	function rowSetup(source: string, rowConfig: () => RowConfig | undefined) {
 		const tree = createTokenTree(parseRowsValue(undefined, source, {separator: '\n\n', indent: '\t'}))
 		tree.config({separator: '\n\n', indent: '\t'})
 		const boundary = createBoundary({
@@ -585,7 +585,7 @@ describe('boundary: a separator adopts rows (issue 08)', () => {
 	}
 
 	it('adopts rows only — the block top level is RowNodes, trailing empty row included', () => {
-		const {tree, tx} = blockSetup('aaa\n\nbbb\n\n', () => ({separator: '\n\n', indent: '\t'}))
+		const {tree, tx} = rowSetup('aaa\n\nbbb\n\n', () => ({separator: '\n\n', indent: '\t'}))
 		expect(tree.roots().map(n => n.kind)).toEqual(['row', 'row', 'row'])
 
 		expect(tx.applyRange({start: 1, end: 1, insertedLength: 0}, 'X')).toBe(true)
@@ -598,7 +598,7 @@ describe('boundary: a separator adopts rows (issue 08)', () => {
 	})
 
 	it('an empty row keeps ONE empty text child — its caret target', () => {
-		const {tree} = blockSetup('\n\nbbb\n\n', () => ({separator: '\n\n', indent: '\t'}))
+		const {tree} = rowSetup('\n\nbbb\n\n', () => ({separator: '\n\n', indent: '\t'}))
 		const row = tree.roots()[0]
 		if (row.kind !== 'row') throw new Error('expected a row')
 		expect(row.children().map(n => n.kind)).toEqual(['text'])
@@ -606,7 +606,7 @@ describe('boundary: a separator adopts rows (issue 08)', () => {
 	})
 
 	it('dropping the separator reparses the same value to the flat shape', () => {
-		const {tree, boundary} = blockSetup('aaa\n\nbbb\n\n', () => undefined)
+		const {tree, boundary} = rowSetup('aaa\n\nbbb\n\n', () => undefined)
 		// The tree was BUILT as rows; the first rowless adoption restores the flat parse,
 		// which is exactly what leaving block layout must do.
 		boundary.reparse()
@@ -614,9 +614,9 @@ describe('boundary: a separator adopts rows (issue 08)', () => {
 	})
 
 	it('the projection is identical either way — the separator is literal text in both', () => {
-		const block = blockSetup('aaa\n\nbbb\n\n', () => ({separator: '\n\n', indent: '\t'}))
-		const inline = blockSetup('aaa\n\nbbb\n\n', () => undefined)
-		inline.boundary.reparse()
-		expect(block.tree.value()).toBe(inline.tree.value())
+		const rows = rowSetup('aaa\n\nbbb\n\n', () => ({separator: '\n\n', indent: '\t'}))
+		const flat = rowSetup('aaa\n\nbbb\n\n', () => undefined)
+		flat.boundary.reparse()
+		expect(rows.tree.value()).toBe(flat.tree.value())
 	})
 })

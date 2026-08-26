@@ -443,21 +443,21 @@ describe('Clipboard: paste', () => {
 		expect(host.querySelectorAll('mark').length).toBe(1)
 
 		// Focus the first block ("hello") and place caret at end
-		const blocks = childrenOf(host)
-		expect(blocks.length).toBeGreaterThan(0)
-		const firstBlock = blocks[0]
+		const rows = childrenOf(host)
+		expect(rows.length).toBeGreaterThan(0)
+		const firstRow = rows[0]
 		host.focus()
 		await flush()
 
-		const firstBlockText = firstTextNode(firstBlock)
-		if (!firstBlockText) throw new Error('no text node in first block')
+		const firstRowText = firstTextNode(firstRow)
+		if (!firstRowText) throw new Error('no text node in first row')
 
-		window.getSelection()!.collapse(firstBlockText, firstBlockText.length)
+		window.getSelection()!.collapse(firstRowText, firstRowText.length)
 
 		const pasteClipboard = new DataTransfer()
 		pasteClipboard.setData('text/plain', ' test')
 		pasteClipboard.setData('application/x-markput', '@[test](99)')
-		pasteAt(host, pasteClipboard, firstBlockText, firstBlockText.length)
+		pasteAt(host, pasteClipboard, firstRowText, firstRowText.length)
 
 		await expect.element(page.getByRole('mark').first()).toBeInTheDocument()
 		const marksLocator = page.getByRole('mark')

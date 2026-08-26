@@ -77,7 +77,7 @@ function mountNestedSlot({extra = false, control = true} = {}) {
  * The row and the token element are DIFFERENT elements of the same token and are consigned
  * separately, which is how the adapters register them (`Block` consigns the row, `Token` its own
  * element) and the only way a handle gets a `rowElement`. Local rather than the shared
- * `mountBlock` because `consignRendered` knows only about token elements: it files the row
+ * `mountRowDoc` because `consignRendered` knows only about token elements: it files the row
  * wrapper as the mark's element, so no row is ever registered and the mark's element becomes its
  * child's text surface.
  *
@@ -85,7 +85,7 @@ function mountNestedSlot({extra = false, control = true} = {}) {
  * renders there — it is one layer beside the rows — but a consumer's own `slots.paragraph` may still
  * put a control inside a row, and this is the shape that asks whether a boundary can escape it.
  */
-function mountBlockRows({grip = false} = {}) {
+function mountRows({grip = false} = {}) {
 	const store = enableStructuralStore('one\n\ntwo\n\n', {
 		separator: '\n\n',
 		options: [],
@@ -413,7 +413,7 @@ describe('anchorFor', () => {
 	})
 
 	it('anchors a row boundary to its owner by side', () => {
-		const {store, rows} = mountBlockRows()
+		const {store, rows} = mountRows()
 		const second = store.tokens.nodes()[1]
 		expect(store.tokens.anchorFor(rows[1], 0)).toEqual({before: second})
 		expect(store.tokens.anchorFor(rows[1], 1)).toEqual({after: second})
@@ -427,7 +427,7 @@ describe('anchorFor', () => {
 		// contrived shape; now nothing pairs a row's children with anything, so it is the
 		// ordinary case — the drop indicators, grip and menu the `Block` renderers put in
 		// every row all land here, and the bare Text node below stands in for them.
-		const {store, rows} = mountBlockRows()
+		const {store, rows} = mountRows()
 		const stray = rows[1].appendChild(document.createTextNode(' '))
 
 		expect(store.tokens.handleAt(stray)).toBe(store.tokens.handle(store.tokens.nodes()[1].id))
@@ -435,7 +435,7 @@ describe('anchorFor', () => {
 	})
 })
 
-function mountStructuralBlockWithControl(value: string) {
+function mountStructuralRowWithControl(value: string) {
 	const store = enableStructuralStore(value, {separator: '\n\n'})
 	const container = document.createElement('div')
 	const row = document.createElement('div')
@@ -463,8 +463,8 @@ function mountStructuralBlockWithControl(value: string) {
  * Block layout with a drag grip before each row's token — the shape the React and Vue
  * `Block` renderers produce (the drop indicator and the handle precede the token).
  */
-function mountBlockWithGrip() {
-	return mountBlockRows({grip: true})
+function mountRowWithGrip() {
+	return mountRows({grip: true})
 }
 
 /**
@@ -512,7 +512,7 @@ describe('anchorFor across elements the tree does not own', () => {
 		// `[grip, token]`: the boundary before the token is index 1, and 2 — not 1 — is the
 		// first one past it. Reading `offset <= 0` as "before" made every real boundary in a
 		// gripped row answer the row's END.
-		const {store, rows} = mountBlockWithGrip()
+		const {store, rows} = mountRowWithGrip()
 		const first = store.tokens.nodes()[0]
 
 		expect(store.tokens.anchorFor(rows[0], 0)).toEqual({before: first})
@@ -524,7 +524,7 @@ describe('anchorFor across elements the tree does not own', () => {
 		// END-TO-END, and the regression the parent-coordinate write introduced: a mark row
 		// has no text surface, so `placeCaret(0)` lands on the ROW at the token's own index,
 		// which the raw-index read answered as "past the token".
-		const {store} = mountBlockWithGrip()
+		const {store} = mountRowWithGrip()
 		const first = store.tokens.nodes()[0]
 		const handle = store.tokens.handle(first.id)
 		if (!handle) throw new Error('expected a bound row handle')
@@ -582,7 +582,7 @@ describe('anchorFor across elements the tree does not own', () => {
 
 describe('anchorFor across a control', () => {
 	it('returns undefined for selections crossing controls', () => {
-		const {store, container, textNode, controlText} = mountStructuralBlockWithControl('hello')
+		const {store, container, textNode, controlText} = mountStructuralRowWithControl('hello')
 		const selection = window.getSelection()!
 		const range = document.createRange()
 		range.setStart(textNode, 0)

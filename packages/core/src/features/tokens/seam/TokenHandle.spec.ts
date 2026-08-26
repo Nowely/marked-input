@@ -21,7 +21,7 @@ function mountInline(value: string) {
  * wrapper div is the row's own token element (the Block wrapper's role); each row
  * text child gets a surface span the text effect writes into.
  */
-function mountBlock(value: string) {
+function mountRowDoc(value: string) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: value,
@@ -115,7 +115,7 @@ describe('TokenHandle', () => {
 		// Block layout: two text rows "alpha\n\n" and "beta\n\n".
 		// We capture the handle for row 2's token, then reduce the value to one
 		// row, update the DOM to one row, and re-bind. The handle should die.
-		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
+		const {store, container} = mountRowDoc('alpha\n\nbeta\n\n')
 
 		// Grab the second row's handle (path [1])
 		const handle = store.tokens.handle(store.tokens.nodes()[1].id!)
@@ -155,7 +155,7 @@ describe('TokenHandle', () => {
 		// hint marks the shift). Under path-keying the handle at path [1] would be
 		// re-bound to a different token (or killed); under id-keying the SAME
 		// handle object follows its token to path [2] and reports a move.
-		const {store, container} = mountBlock('alpha\n\nbeta\n\n')
+		const {store, container} = mountRowDoc('alpha\n\nbeta\n\n')
 
 		const handle = store.tokens.handle(store.tokens.nodes()[1].id!)
 		if (!handle) throw new Error('expected handle for row 1')

@@ -195,7 +195,7 @@ function liveCaretRange(): Range {
  * element are consigned separately, which is how `bind` tells them apart; a mark with children
  * gets one element per child, a markless one gets the presentation text an adapter would render.
  */
-function mountBlockWithMarkEdge(value: string) {
+function mountRowWithMarkEdge(value: string) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: value,
@@ -822,7 +822,7 @@ describe('handleBeforeInput()', () => {
 			['LAST', 'plain\n\n@[m](1)'],
 			['FIRST', '@[m](1)\n\nplain\n\n'],
 		])('selects the whole document when the mark is %s', (_label, value) => {
-			const {store, container} = mountBlockWithMarkEdge(value)
+			const {store, container} = mountRowWithMarkEdge(value)
 			const length = store.tokens.value().length
 
 			container.dispatchEvent(ctrlA())
@@ -842,7 +842,7 @@ describe('handleBeforeInput()', () => {
 		])('typing after select-all replaces the whole document (mark %s)', (_label, value) => {
 			// The intended semantics, now VISIBLE: the same keystroke did this before the fix
 			// on the mark-LAST document while the DOM showed no selection at all.
-			const {store, container} = mountBlockWithMarkEdge(value)
+			const {store, container} = mountRowWithMarkEdge(value)
 
 			container.dispatchEvent(ctrlA())
 			container.dispatchEvent(

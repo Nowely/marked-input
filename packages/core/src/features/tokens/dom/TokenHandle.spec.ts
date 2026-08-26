@@ -52,7 +52,7 @@ function mountMark() {
  * text child gets a surface span. `unmount` is the pair of null ref calls the
  * adapter makes when the row component goes away.
  */
-function mountBlock(value: string) {
+function mountRowDoc(value: string) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: value,
@@ -341,7 +341,7 @@ describe('TokenHandle', () => {
 
 	it('alive() is false once the handle is killed', () => {
 		// Block layout: capture row 1's handle, then shrink to one row so bind kills it.
-		const {store, rows} = mountBlock('alpha\n\nbeta\n\n')
+		const {store, rows} = mountRowDoc('alpha\n\nbeta\n\n')
 		const rowId = store.tokens.nodes()[1].id
 		const handle = store.tokens.handle(rowId)
 		if (!handle) throw new Error('expected handle for row 1')

@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
-import {domModelOf, mountBlock, mountNestedBlock, mountWithMark} from '../__testing__/mountFixtures'
+import {domModelOf, mountRowDoc, mountNestedRowDoc, mountWithMark} from '../__testing__/mountFixtures'
 import {joinNodes} from '../tree/tree'
 
 describe('TokenModel facade selection reads', () => {
@@ -11,7 +11,7 @@ describe('TokenModel facade selection reads', () => {
 
 	for (const [name, mount] of [
 		['inline with mark', mountWithMark],
-		['block layout', mountBlock],
+		['block layout', mountRowDoc],
 	] as const) {
 		it(`reads the live selection as node anchors — ${name}`, () => {
 			const {store, container} = mount()
@@ -83,7 +83,7 @@ describe('DomModel placement commands', () => {
 		// at. That is why a row's edge descends to its edge child, and it has to descend all the
 		// way: with rows nested, one level down lands on another row wrapper and answers with
 		// exactly the boundary the descent exists to avoid.
-		const {store, container} = mountNestedBlock()
+		const {store, container} = mountNestedRowDoc()
 		const dom = domModelOf(store.tokens, container)
 		const root = store.tokens.nodes()[0]
 		if (root.kind !== 'row') throw new Error('expected a row root')

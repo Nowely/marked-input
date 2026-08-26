@@ -74,7 +74,7 @@ export function selectionRange(store: Store): {start: number; end: number} | und
  * own element children. It CANNOT follow a child-sequence host, because the registry that knows
  * about hosts is private to the model — and a fixture whose slot children live inside a host must
  * name them itself, or the first child is consigned the host and the per-Surface writer replaces
- * the host's contents with that child's text. `mountNested` and `mountBlock` below do exactly
+ * the host's contents with that child's text. `mountNested` and `mountRowDoc` below do exactly
  * that; so does any spec with a bespoke shape.
  */
 export function consignRendered(store: Store, container: HTMLElement): void {
@@ -251,7 +251,7 @@ export function mountNested() {
  * the shipped `'\n'` default needs a row whose separator is one newline, and every case here
  * needs one where a newline inside a row is not a boundary.
  */
-export function mountBlock(props: Parameters<Store['props']['set']>[0] = {}) {
+export function mountRowDoc(props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: 'one\n\ntwo\n\n',
@@ -276,15 +276,15 @@ export function mountBlock(props: Parameters<Store['props']['set']>[0] = {}) {
 }
 
 /**
- * {@link mountBlock} with NESTED rows: every row is painted inside its parent, off the parent's
+ * {@link mountRowDoc} with NESTED rows: every row is painted inside its parent, off the parent's
  * own `'rows'` child-sequence host — the shape both adapters paint. The default `'a\n\tb'` is one
  * root with one child; `props` overrides the value and everything else, which is what the keymap
  * cases need — one document per rule, at the depth the rule is about.
  *
- * Its own fixture rather than a flag on `mountBlock`: the row elements nest, so the flat
+ * Its own fixture rather than a flag on `mountRowDoc`: the row elements nest, so the flat
  * one-div-per-root loop cannot express it.
  */
-export function mountNestedBlock(props: Parameters<Store['props']['set']>[0] = {}) {
+export function mountNestedRowDoc(props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
 	store.props.set({defaultValue: 'a\n\tb', separator: '\n', indent: '\t', options: [], ...props})
 	const container = document.createElement('div')

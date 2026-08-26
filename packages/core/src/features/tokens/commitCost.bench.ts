@@ -170,7 +170,7 @@ function inlineDoc(marks: number): string {
 /** The row docs' own separator, read by BOTH the raw parse and the Store parse below. */
 const ROW_SEPARATOR = '\n\n'
 
-function blockDoc(rows: number): string {
+function rowDoc(rows: number): string {
 	let out = ''
 	for (let i = 0; i < rows; i++) out += `row ${i} with some plain text in it${ROW_SEPARATOR}`
 	return out
@@ -268,8 +268,8 @@ const docs: Doc[] = [
 	describeDoc('inline 10 marks', inlineDoc(10), INLINE_MARKUP, null),
 	describeDoc('inline 100 marks', inlineDoc(100), INLINE_MARKUP, null),
 	describeDoc('inline 1000 marks', inlineDoc(1000), INLINE_MARKUP, null),
-	describeDoc('block 100 rows', blockDoc(100), undefined, ROW_SEPARATOR),
-	describeDoc('block 1000 rows', blockDoc(1000), undefined, ROW_SEPARATOR),
+	describeDoc('100 rows', rowDoc(100), undefined, ROW_SEPARATOR),
+	describeDoc('1000 rows', rowDoc(1000), undefined, ROW_SEPARATOR),
 ]
 
 console.log(
@@ -463,7 +463,7 @@ function mountDom(store: Store, doc: Doc): readonly (() => void)[] {
 	for (const root of store.tokens.nodes()) {
 		if (doc.separator !== null) {
 			// A ROW and a TOKEN ELEMENT are different elements of the same token, registered
-			// separately — the same pairing `mountBlock` documents in `__testing__/mountFixtures.ts`.
+			// separately — the same pairing `mountRowDoc` documents in `__testing__/mountFixtures.ts`.
 			const row = document.createElement('div')
 			const text = document.createElement('span')
 			row.append(text)

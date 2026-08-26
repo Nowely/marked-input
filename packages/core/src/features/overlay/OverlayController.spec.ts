@@ -2,7 +2,7 @@ import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest'
 
 import type {CoreOption, OverlayMatch} from '../../shared/types'
 import {Store} from '../../store/Store'
-import {anchorsAt, caretAt, mountNestedBlock} from '../tokens/__testing__/mountFixtures'
+import {anchorsAt, caretAt, mountNestedRowDoc} from '../tokens/__testing__/mountFixtures'
 
 /** A raw CLOSED body: `hasSlot` false and a closing literal, so its interior holds separators. */
 const FENCE: CoreOption = {markup: '```__meta__\n__value__\n```', row: {Component: 'pre'}}
@@ -126,7 +126,7 @@ describe('OverlayController', () => {
 		 */
 		it('takes no trigger inside a raw closed body, and still takes one outside it', () => {
 			const options = [FENCE, {overlay: {trigger: '/'}}]
-			const inFence = mountNestedBlock({defaultValue: FENCED_DOC, options})
+			const inFence = mountNestedRowDoc({defaultValue: FENCED_DOC, options})
 			caretAt(inFence.store, 10)
 
 			inFence.store.edit.replace(...anchorsAt(inFence.store, 10, 10), '/')
@@ -134,7 +134,7 @@ describe('OverlayController', () => {
 			expect(inFence.store.tokens.value()).toBe('```bash\nls/\n```\ntail')
 			expect(inFence.store.overlay.match()).toBeUndefined()
 
-			const inTail = mountNestedBlock({defaultValue: FENCED_DOC, options})
+			const inTail = mountNestedRowDoc({defaultValue: FENCED_DOC, options})
 			const end = FENCED_DOC.length
 			caretAt(inTail.store, end)
 
@@ -151,7 +151,7 @@ describe('OverlayController', () => {
 		 * click INSIDE the container — and the next pick retyped the row the user had LEFT.
 		 */
 		it('closes a standing match once the caret has left the trigger, at the default showOverlayOn', () => {
-			const {store, container} = mountNestedBlock({
+			const {store, container} = mountNestedRowDoc({
 				defaultValue: 'alpha\nbeta\ngamma',
 				options: [{overlay: {trigger: '/'}}],
 			})
