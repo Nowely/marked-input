@@ -24,7 +24,7 @@ const {entries, choose, style: overlayStyle, ref: overlayRef} = useOverlay()
 
 // `overlayStyle` carries the caret position as bare numbers, the framework-free shape core
 // computes; the CSSOM rejects a unitless length, so the unit belongs to the binding. Same rule
-// as `Suggestions.vue` and `BlockControls.vue`'s menu.
+// as `Suggestions.vue` and `RowControls.vue`'s menu.
 const popupStyle = computed(() => ({left: `${overlayStyle.value.left}px`, top: `${overlayStyle.value.top}px`}))
 
 function setOverlayRef(el: HTMLElement | null) {

@@ -2,7 +2,7 @@ import {memo, useCallback} from 'react'
 import type {Ref} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-import {BlockControls} from './BlockControls'
+import {RowControls} from './RowControls'
 import {Rows} from './Rows'
 import {Token} from './Token'
 
@@ -41,12 +41,12 @@ export const Container = memo(() => {
 				<Rows rows={nodes.filter(n => n.kind === 'row')} depth={0} />
 			)}
 			{/* The row controls, as one layer INSIDE the container rather than a copy inside every
-			    row. It is therefore a container child that is not a row — `styles.BlockControls`
+			    row. It is therefore a container child that is not a row — `styles.RowControls`
 			    is how a caller tells them apart. Gated on the PROPS-derived separator, not on the
 			    rows themselves: the tree is empty until the container attaches, so a tree-derived
 			    gate would leave the layer out of the server pass and out of the first client
 			    render. */}
-			{rowConfig !== undefined && <BlockControls />}
+			{rowConfig !== undefined && <RowControls />}
 		</Component>
 	)
 })

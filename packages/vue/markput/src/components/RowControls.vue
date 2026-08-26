@@ -14,10 +14,10 @@ import styles from '@markput/core/styles.module.css'
 
 /**
  * ONE absolutely positioned row-controls layer per editor — the Vue mirror of the React
- * `BlockControls`, over the SAME `RowController`. Every decision is core's: the hover pin, the
+ * `RowControls`, over the SAME `RowController`. Every decision is core's: the hover pin, the
  * hit-test, the drop edge and the menu's row all live there, so this file is a painter.
  *
- * `BlockControls`, not `BlockLayer`: `Block.vue` is the row WRAPPER, and two near-identical names
+ * `RowControls`, not `BlockLayer`: `Block.vue` is the row WRAPPER, and two near-identical names
  * beside each other is the ambiguity this one is named to avoid.
  */
 const store = useStore()
@@ -100,7 +100,7 @@ const dropStyle = computed(() => {
 </script>
 
 <template>
-	<div :ref="setLayerRef" :class="styles.BlockControls">
+	<div :ref="setLayerRef" :class="styles.RowControls">
 		<!-- Painted but INVISIBLE while its row is being dragged, as the per-row panel was: the
 		     grip stays mounted so its own `dragend` still fires (Chromium sends no mouseup for a
 		     drag), and the pointer is away with the drag image anyway. -->

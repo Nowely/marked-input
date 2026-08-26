@@ -1,7 +1,7 @@
 import {afterEach, describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {BLOCK_CONTROLS, editingHost, getElement, rowsOf} from '../../shared/lib/dom'
+import {ROW_CONTROLS, editingHost, getElement, rowsOf} from '../../shared/lib/dom'
 import {
 	caretOffsetFromPoint,
 	centreOf,
@@ -23,7 +23,7 @@ const surface = () => getElement(page.getByText(VALUE))
 /**
  * A stylesheet of the consumer's over the rows of one editor, hung off an attribute this file
  * writes rather than off a class prop — `className` and `class` are two spellings and this spec
- * runs in both frameworks. `BLOCK_CONTROLS` is excluded for the reason `rowsOf` excludes it: the
+ * runs in both frameworks. `ROW_CONTROLS` is excluded for the reason `rowsOf` excludes it: the
  * controls layer is the container's other child and is not a row (ADR-0007). Spelled through the
  * shared constant so the stylesheet and `rowsOf` cannot drift into two answers.
  */
@@ -33,7 +33,7 @@ let stylesheet: HTMLStyleElement | undefined
 function styleRows(host: HTMLElement, display: string) {
 	host.setAttribute(PROBE, '')
 	stylesheet = document.createElement('style')
-	stylesheet.textContent = `[${PROBE}] > *:not(${BLOCK_CONTROLS}) {display: ${display}}`
+	stylesheet.textContent = `[${PROBE}] > *:not(${ROW_CONTROLS}) {display: ${display}}`
 	document.head.append(stylesheet)
 }
 

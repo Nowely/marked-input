@@ -250,7 +250,7 @@ describe('Store', () => {
 			const [node] = nodesOf([rowToken('hello', 0, [textToken('hello', 0)])])
 			expect(store.slots.node()(node)[1]).toMatchObject({
 				'data-block': 'true',
-				className: `${styles.Block} mine`,
+				className: `${styles.Row} mine`,
 			})
 		})
 

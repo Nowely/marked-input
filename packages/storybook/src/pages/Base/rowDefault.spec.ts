@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import {BLOCK_CONTROLS, rowsOf} from '../../shared/lib/dom'
+import {ROW_CONTROLS, rowsOf} from '../../shared/lib/dom'
 import {defineMark, Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
 
@@ -47,7 +47,7 @@ describe('the default separator', () => {
 		const {host} = await mountComponent({value: 'alpha\nbeta\ngamma', separator: null, Mark})
 
 		expect(host.textContent).toBe('alpha\nbeta\ngamma')
-		expect(host.querySelector(BLOCK_CONTROLS)).toBeNull()
+		expect(host.querySelector(ROW_CONTROLS)).toBeNull()
 	})
 
 	/**

@@ -21,7 +21,7 @@ const rowsHostStyle: CSSProperties = {display: 'contents'}
 /**
  * A row, painted by its KIND's component — a paragraph falls back to `slots.paragraph`. The grip,
  * the drop indicators and the menu that used to be painted here live in the editor's one
- * `BlockControls`, so a row is no longer a mixture of document content and editor UI.
+ * `RowControls`, so a row is no longer a mixture of document content and editor UI.
  *
  * The component and its props come from `slots.node`, the same resolver `Token` asks: a row is a
  * node, and the class/style merge that used to sit here by hand is the resolver's answer now.

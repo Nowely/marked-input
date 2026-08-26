@@ -108,7 +108,7 @@ export function resolveNodeSlot(
 		const Kind = rowComponent(node, ctx)
 		const {className, style, ...rest} = resolveSlotProps('row', ctx.slotProps) ?? {}
 		// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.className is raw consumer input
-		const base = {...rest, className: cx(styles.Block, className as string | undefined), style}
+		const base = {...rest, className: cx(styles.Row, className as string | undefined), style}
 		// The row's own data goes ONLY to a kind's component, which is the consumer's. The
 		// paragraph fallback is `slots.paragraph`, whose default is a bare `div`: handing a `node`
 		// to that writes a stringified attribute onto the element — and the same is true of the

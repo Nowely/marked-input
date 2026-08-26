@@ -11,10 +11,10 @@ import styles from '@markput/core/styles.module.css'
 
 /**
  * ONE absolutely positioned row-controls layer per editor: it paints the grip, the drop indicator
- * and the row menu at row boxes it MEASURES, where `.Block { position: relative }` used to make
+ * and the row menu at row boxes it MEASURES, where `.Row { position: relative }` used to make
  * them free inside every row.
  *
- * `BlockControls`, not `BlockLayer`: `Block.tsx` is the row WRAPPER, and two near-identical names
+ * `RowControls`, not `BlockLayer`: `Block.tsx` is the row WRAPPER, and two near-identical names
  * beside each other is the ambiguity this one is named to avoid.
  *
  * It lives INSIDE the container — the alternative, a new wrapper element in `MarkedInput`, would
@@ -25,7 +25,7 @@ import styles from '@markput/core/styles.module.css'
  */
 const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
-export const BlockControls = memo(() => {
+export const RowControls = memo(() => {
 	const {controller, tokens, readOnly, draggable, rows, hovered, dragging, drop, menu, geometry} = useMarkput(s => ({
 		controller: s.rows,
 		tokens: s.tokens,
@@ -72,7 +72,7 @@ export const BlockControls = memo(() => {
 	}, [controller, tokens, gripRow])
 
 	return (
-		<div ref={controlRef} className={styles.BlockControls}>
+		<div ref={controlRef} className={styles.RowControls}>
 			{!readOnly && gripRow !== null && gripBox !== null && (
 				<div
 					className={cx(
@@ -138,4 +138,4 @@ export const BlockControls = memo(() => {
 	)
 })
 
-BlockControls.displayName = 'BlockControls'
+RowControls.displayName = 'RowControls'

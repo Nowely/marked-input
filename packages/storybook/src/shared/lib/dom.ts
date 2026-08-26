@@ -21,15 +21,15 @@ export function childrenOf(element: Element): HTMLElement[] {
 }
 
 /** The row-controls layer: one more container child, and NOT a row (ADR-0007). */
-export const BLOCK_CONTROLS = '[class*="BlockControls"]'
+export const ROW_CONTROLS = '[class*="RowControls"]'
 
 /**
  * The Rows of an editor. Under the single-host topology the editing host IS the row host, so its
- * element children are the rows — minus {@link BLOCK_CONTROLS}, which is a child of the same
+ * element children are the rows — minus {@link ROW_CONTROLS}, which is a child of the same
  * parent and would otherwise count as a trailing row in every assertion.
  */
 export function rowsOf(host: HTMLElement): HTMLElement[] {
-	return childrenOf(host).filter(child => !child.matches(BLOCK_CONTROLS))
+	return childrenOf(host).filter(child => !child.matches(ROW_CONTROLS))
 }
 
 export function getActiveElement(): HTMLElement | null {

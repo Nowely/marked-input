@@ -549,7 +549,7 @@ describe('Feature: drag rows', () => {
 
 	/**
 	 * The controls layer paints at coordinates it MEASURES, where the per-row panel inherited them
-	 * from `.Block { position: relative }`. These are the properties that geometry has to hold
+	 * from `.Row { position: relative }`. These are the properties that geometry has to hold
 	 * and that no unit test in `RowController.spec.ts` can see, because it paints nothing.
 	 */
 	describe('controls layer geometry', () => {
@@ -701,7 +701,7 @@ describe('Feature: drag rows', () => {
 		it('paint the row menu above consumer content that outranks the layer', async () => {
 			// `.Popup` is `z-index: 9999` and the layer must not clamp it: a `z-index` on the
 			// layer would make it a stacking context, where the deleted per-row controls hung off
-			// `.Block` (positioned, `z-index: auto`) and the popup competed at the page level.
+			// `.Row` (positioned, `z-index: auto`) and the popup competed at the page level.
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',

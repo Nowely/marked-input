@@ -28,7 +28,7 @@ describe('nested rows', () => {
 		expect(roots[0].textContent).toBe('alphabeta')
 		// The child is INSIDE the parent's element — that is the whole claim, and the lead never
 		// reaches the document.
-		expect(roots[0].querySelector('[class*="Block"]')?.textContent).toBe('beta')
+		expect(roots[0].querySelector('[class*="Row"]')?.textContent).toBe('beta')
 	})
 
 	it('nests a row at RUNTIME and then types into it', async () => {
@@ -48,7 +48,7 @@ describe('nested rows', () => {
 		// AND THEN TYPE. Real keystrokes, so Chromium decides whether the newly mounted rows host
 		// is editable at all — a dispatched `beforeinput` would land in a frozen host just as
 		// happily and pin nothing.
-		const nested = rowsOf(host)[0].querySelector('[class*="Block"]')
+		const nested = rowsOf(host)[0].querySelector('[class*="Row"]')
 		if (!(nested instanceof HTMLElement)) throw new Error('expected a nested row element')
 		await focusAtEnd(nested)
 		await userEvent.keyboard('X')
@@ -61,7 +61,7 @@ describe('nested rows', () => {
 		const {host} = await mountComponent({defaultValue: 'alpha\n\tbeta', ...BLOCK, onChange})
 		expect(rowsOf(host)).toHaveLength(1)
 
-		const nested = rowsOf(host)[0].querySelector('[class*="Block"]')
+		const nested = rowsOf(host)[0].querySelector('[class*="Row"]')
 		if (!(nested instanceof HTMLElement)) throw new Error('expected a nested row element')
 		// Backspace at a row's first caret position DEMOTES before it merges, so the first press
 		// gives up the depth and the two rows become siblings.
@@ -113,7 +113,7 @@ describe('nested rows', () => {
 		await expect.poll(() => rowsOf(host)).toHaveLength(1)
 		expect(onChange).toHaveBeenLastCalledWith('- alpha\n\tbeta')
 
-		const nested = host.querySelector('li [class*="Block"]')
+		const nested = host.querySelector('li [class*="Row"]')
 		if (!(nested instanceof HTMLElement)) throw new Error('the kind painted no child row')
 		expect(nested.textContent).toBe('beta')
 

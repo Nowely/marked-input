@@ -5,7 +5,7 @@ import type {Ref} from 'vue'
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 import {unwrapEl} from '../lib/unwrapEl'
-import BlockControls from './BlockControls.vue'
+import RowControls from './RowControls.vue'
 import Rows from './Rows.vue'
 import Token from './Token.vue'
 
@@ -60,8 +60,8 @@ const setContainerRef = (el: unknown) => {
 			<Rows :rows="rowRoots" :depth="0" />
 			<!-- The row controls, as one layer INSIDE the container rather than a copy inside
 			     every row. It is therefore a container child that is not a row —
-			     `styles.BlockControls` is how a caller tells them apart. -->
-			<BlockControls />
+			     `styles.RowControls` is how a caller tells them apart. -->
+			<RowControls />
 		</template>
 		<template v-else>
 			<Token v-for="node in result.nodes" :key="node.id" :node="node" :depth="0" />

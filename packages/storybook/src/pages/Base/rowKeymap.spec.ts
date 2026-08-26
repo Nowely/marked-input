@@ -90,7 +90,7 @@ describe('the row keymap', () => {
 		// One ROOT, and the continuation is painted inside the bullet's own element rather than
 		// beside it.
 		expect(rowsOf(host)).toHaveLength(1)
-		expect(host.querySelector('li [class*="Block"]')?.textContent).toBe('second line')
+		expect(host.querySelector('li [class*="Row"]')?.textContent).toBe('second line')
 
 		// The SECOND soft break lands BESIDE the first, not under it: N presses are N lines at one
 		// level. Typed here rather than asserted in the unit spec alone because the staircase this

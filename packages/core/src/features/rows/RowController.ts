@@ -75,7 +75,7 @@ const ASSUMED_INDENT = 24
  * grip buttons, 201 control roots and 1608 listeners, where this attaches five listeners to the
  * container and the adapter paints one grip.
  *
- * The cost of moving out of the row is geometry. `.Block { position: relative }` made the grip
+ * The cost of moving out of the row is geometry. `.Row { position: relative }` made the grip
  * and the indicator free; a layer has to measure. Hit-testing is therefore a rect read per
  * mousemove, kept logarithmic by {@link rowAt}.
  *

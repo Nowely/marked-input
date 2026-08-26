@@ -78,7 +78,7 @@
 	color: #2589f5;
 }
 
-.Block {
+.Row {
 	/* Kept after the controls left the row: markput positions nothing inside a row any more,
 	   but the rule is also a CONSUMER's containing block, and dropping it would silently
 	   re-parent their absolutely-positioned row content to the container. */
@@ -98,8 +98,8 @@
    NO `z-index`, deliberately. It is the container's LAST child and it is positioned, so it
    already paints above every row; a `z-index` here would make it a stacking context and clamp
    the row menu's `.Popup { z-index: 9999 }` inside it, where the deleted per-row controls hung
-   off `.Block` (positioned, `z-index: auto`) and the popup competed at the page level. */
-.BlockControls {
+   off `.Row` (positioned, `z-index: auto`) and the popup competed at the page level. */
+.RowControls {
 	position: absolute;
 	inset: 0;
 	/* The layer must not eat the pointer; the grip and the menu turn it back on for themselves. */
