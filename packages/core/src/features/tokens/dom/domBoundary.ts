@@ -179,12 +179,27 @@ function fromHostAnchor(
 	// `.at`, not an index read: `noUncheckedIndexedAccess` is off, so the empty case would
 	// type as a `TreeNode` and the fallback below would be linted away as impossible.
 	const edge = offset <= 0 ? children.at(0) : children.at(-1)
-	if (!edge) return offset <= 0 ? {before: owner} : {after: owner}
-	// A ROW edge answers where a caret may legally SIT in that row, not where the row begins: a
-	// row's lead and opener are structural bytes, so `{before: row}` puts the caret ahead of the
-	// indent and an edit at the host's leading edge lands outside the row it is inside.
-	if (offset <= 0) return edge.kind === 'row' ? entryAnchor(edge) : {before: edge}
+	if (!edge) return offset <= 0 ? leadingEdge(owner) : {after: owner}
+	if (offset <= 0) return leadingEdge(edge)
 	return {after: edge}
+}
+
+/**
+ * A NODE'S LEADING EDGE, and for a ROW that is its ENTRY rather than `{before}`: a row's lead and
+ * its opener are structural bytes, so `{before: row}` names the position AHEAD of the indent and
+ * the marker, where a caret may not sit and an edit lands outside the row it was made in.
+ *
+ * ONE rule, and it has to be asked of the OWNER as well as of an edge child. A row registers its
+ * OWN element as its inline host (`Row.tsx`/`Row.vue` hand the same element to `consign` and to
+ * `children`), and {@link anchorFromBoundary} hands that arm an EMPTY child list — so a boundary
+ * at the row element's offset 0 fell through to the owner fallback with the rule unapplied.
+ * MEASURED on `'- the slash menu⏎⇥- dragging rows'`: Chromium puts a Home keypress at
+ * `(rowElement, 0)`, and the next character emitted `'- the slash menu⏎Y⇥- dragging rows'` — the
+ * row lost its kind and its nesting to one keystroke, and a Backspace there left the opener
+ * standing in the middle of the merged line.
+ */
+function leadingEdge(node: TreeNode): NodeAnchor {
+	return node.kind === 'row' ? entryAnchor(node) : {before: node}
 }
 
 /** The interior of {@link fromChildAnchor}, including its inverted-affinity fallback. */

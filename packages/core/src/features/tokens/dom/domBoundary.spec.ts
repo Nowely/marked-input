@@ -595,3 +595,81 @@ describe('anchorFor across a control', () => {
 		container.remove()
 	})
 })
+/**
+ * A ROW ELEMENT IS ITS OWN INLINE HOST — `Row.tsx` and `Row.vue` both hand the same element to
+ * `consign` and to `children(id)` — so a boundary on it takes {@link fromHostAnchor}'s arm, with
+ * an empty child list because a row's inline children are not a MARK's. That is the shape this
+ * fixture reproduces: a typed row whose first DOM child is a registered control (the showcase's
+ * bullet dot, a to-do's box), which is what makes `(row, 0)` a boundary the browser can pick.
+ */
+function mountTypedRows() {
+	const store = enableStructuralStore('- one\n- two', {
+		separator: '\n',
+		options: [{markup: '- __slot__', row: {Component: 'li', indents: true}}],
+	})
+	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
+	const rows: HTMLElement[] = []
+	store.tokens.nodes().forEach(node => {
+		const row = document.createElement('div')
+		const dot = document.createElement('span')
+		row.append(dot)
+		store.tokens.control()(dot)
+		const surface = document.createElement('span')
+		row.append(surface)
+		container.append(row)
+		rows.push(row)
+		// Both registrations, as the adapters make them: the row IS its token element and its
+		// inline child-sequence host.
+		store.tokens.consign(node.id)(row)
+		store.tokens.children(node.id)(row)
+		if (node.kind === 'row' && node.children()[0]?.kind === 'text') {
+			store.tokens.consign(node.children()[0].id)(surface)
+		}
+	})
+	return {store, container, rows}
+}
+
+describe('anchorFor at a row element', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+	})
+
+	/**
+	 * THE ROW'S ENTRY, never `{before: row}`. A row's lead and its opener are structural bytes, so
+	 * `{before}` names the position AHEAD of them — outside the row a caret is visibly inside.
+	 *
+	 * The rule was already written for an edge CHILD of a rows host and was not asked of the OWNER,
+	 * where the empty child list sends the read to the fallback. Reachable from the keyboard:
+	 * Chromium answers a Home keypress in a row whose first inline box is a `contenteditable=false`
+	 * control with `(rowElement, 0)`, and the next character then landed before the row's own
+	 * markup — `'- the slash menu⏎⇥- dragging rows'` became `'- the slash menu⏎Y⇥- dragging rows'`,
+	 * one keystroke to lose both the kind and the nesting.
+	 */
+	it('answers a row element boundary at offset 0 with the row ENTRY', () => {
+		const {store, rows} = mountTypedRows()
+		const second = store.tokens.nodes()[1]
+
+		const anchor = store.tokens.anchorFor(rows[1], 0)
+
+		// The entry is past `'\n'` and past the `'- '` opener: offset 8 of '- one\n- two'.
+		expect(offsetOfAnchor(store.tokens.nodes(), anchor!)).toBe(8)
+		expect(anchor).not.toEqual({before: second})
+	})
+
+	/** The same boundary reached as a collapsed DOM caret, which is how a keystroke reaches it. */
+	it('reads the same through domAnchors, which is what an edit is addressed from', () => {
+		const {store, rows} = mountTypedRows()
+		const range = document.createRange()
+		range.setStart(rows[1], 0)
+		range.collapse(true)
+		const selection = window.getSelection()!
+		selection.removeAllRanges()
+		selection.addRange(range)
+
+		const anchors = store.tokens.domAnchors()!
+
+		expect(offsetOfAnchor(store.tokens.nodes(), anchors.anchor)).toBe(8)
+	})
+})
