@@ -404,6 +404,27 @@ describe('the slash menu', () => {
 	})
 
 	/**
+	 * AN EXACT MATCH IS WHAT ENTER PICKS. The list was declaration order, so `/table` committed
+	 * **Table of contents** on the first try and `/to` did the same — harmless while Enter picked
+	 * nothing, a wrong write once it picked the first row. Asserted on the LIST rather than on the
+	 * commit, because the order is the claim.
+	 */
+	it('offers the exact match first, and a hidden keyword last', async () => {
+		const {host} = await mountControlled(Showcase, 'plain row')
+		const labels = () =>
+			page
+				.getByRole('listitem')
+				.elements()
+				.map(item => item.textContent)
+
+		await focusAtEnd(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '/table')
+		await expect.element(page.getByText('Table', {exact: true})).toBeVisible()
+
+		expect(labels()).toEqual(['Table', 'Table of contents', 'Table row', 'Table footer'])
+	})
+
+	/**
 	 * THE REPORTED GESTURE, and the one every green round missed because every green round used a
 	 * MOUSE. `/h2` then Enter left the literal `/h2` in the row and split it: the shipped menu had
 	 * no highlight and no Enter, while the `@` picker one option away had both.

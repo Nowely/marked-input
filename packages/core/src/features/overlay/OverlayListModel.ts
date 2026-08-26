@@ -3,7 +3,7 @@ import type {Computed, Signal} from '../../shared/signals'
 import type {OverlayRow} from '../../shared/types'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
-import {filterSuggestions, suggestionLabel} from './filterSuggestions'
+import {filterSuggestions, rankSuggestion, suggestionLabel} from './filterSuggestions'
 import type {OverlayController} from './OverlayController'
 import {navigateSuggestions} from './suggestionNavigation'
 
@@ -43,9 +43,10 @@ export class OverlayListModel {
 	readonly active: Signal<number> = signal({initial: 0})
 
 	/**
-	 * The rows on offer, already narrowed by what was typed after the trigger. The query pass is
-	 * {@link filterSuggestions} on BOTH arms — one rule for "does this row match what was typed",
-	 * over a suggestion's label or over a menu entry's label plus its own hidden keywords.
+	 * The rows on offer, already narrowed AND RANKED by what was typed after the trigger. The query
+	 * pass is {@link rankSuggestion} on BOTH arms — one rule for "how well does this row answer what
+	 * was typed", over a suggestion's label or over a menu entry's label plus its own hidden
+	 * keywords — so the row Enter picks is the best answer rather than the first one declared.
 	 */
 	readonly rows: Computed<readonly OverlayRow[]> = computed(() => {
 		const match = this.overlay.match()
@@ -62,13 +63,16 @@ export class OverlayListModel {
 				pick: typeof row === 'string' ? {value: row, meta: String(index)} : {value: row.value, meta: row.meta},
 			}))
 		}
-		return this.props.options().flatMap(option => {
-			const menu = option.menu
-			if (!menu) return []
-			const haystack = [menu.label, ...(menu.keywords ?? [])]
-			if (filterSuggestions(haystack, match.value).length === 0) return []
-			return [{label: menu.label, pick: {option}}]
-		})
+		return this.props
+			.options()
+			.flatMap(option => {
+				const menu = option.menu
+				if (!menu) return []
+				const rank = rankSuggestion(match.value, menu.label, menu.keywords)
+				return rank < 0 ? [] : [{rank, row: {label: menu.label, pick: {option}}}]
+			})
+			.toSorted((a, b) => a.rank - b.rank)
+			.map(entry => entry.row)
 	})
 
 	constructor(

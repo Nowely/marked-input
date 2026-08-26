@@ -87,7 +87,13 @@ export interface CoreOption {
 
 /** What an option declares to appear in {@link OverlayListModel.rows}. */
 export interface MenuSpec {
-	/** What the row shows, and the only text the typed query is matched against. */
+	/**
+	 * What the row shows, and what the typed query is RANKED against: an exact match first, then a
+	 * label the query is a prefix of, then a label holding it anywhere — and only then the same
+	 * three over {@link keywords}, because a term the user cannot see must not outrank one they are
+	 * reading. Declaration order decides inside a band, and decides everything before the first
+	 * character is typed.
+	 */
 	label: string
 	/** Extra query terms that never appear on screen — `'h1'` for Heading 1. */
 	keywords?: readonly string[]

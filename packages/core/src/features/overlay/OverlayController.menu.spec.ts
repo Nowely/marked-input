@@ -169,6 +169,54 @@ describe('the row menu rows', () => {
 		expect(store.overlay.list.consumes('Enter')).toBe(false)
 		expect(store.overlay.list.consumes('ArrowDown')).toBe(false)
 	})
+
+	/**
+	 * AN EXACT MATCH IS THE FIRST ROW, whatever the option array's order. Enter picks the first row
+	 * (`OverlayListModel.active`), so declaration order was a WRONG COMMIT on the first try, not
+	 * merely an odd list: measured on the Notion showcase, `/table` gave **Table of contents**.
+	 *
+	 * `Table of contents` is declared BEFORE `Table` here for the same reason the showcase declares
+	 * it first — a longer opener wins the parse whatever the order — so the case would pass on
+	 * declaration order alone if it were declared the other way round.
+	 */
+	it('ranks an exact label match above a prefix of a longer one', () => {
+		const toc: CoreOption = {markup: '@toc __slot__', row: {Component: 'nav'}, menu: {label: 'Table of contents'}}
+		const store = typedSlash('', 0, [SLASH, toc, TABLE])
+
+		store.edit.replace(...anchorsAt(store, 1, 1), 'table')
+
+		expect(store.overlay.list.rows().map(row => row.label)).toEqual(['Table', 'Table of contents'])
+	})
+
+	/**
+	 * A HIDDEN KEYWORD RANKS BELOW EVERY LABEL, because a keyword is not what the user is reading.
+	 * `/to` matched **Table of contents** through its `toc` keyword and offered it first, ahead of
+	 * two entries whose own labels start with what was typed.
+	 */
+	it('ranks a label match above a keyword match', () => {
+		const toc: CoreOption = {
+			markup: '@toc __slot__',
+			row: {Component: 'nav'},
+			menu: {label: 'Table of contents', keywords: ['toc']},
+		}
+		const store = typedSlash('', 0, [SLASH, toc, TODO])
+
+		store.edit.replace(...anchorsAt(store, 1, 1), 'to')
+
+		expect(store.overlay.list.rows().map(row => row.label)).toEqual(['To-do list', 'Table of contents'])
+	})
+
+	/** An empty query reorders nothing: every row lands in one band and the sort is stable. */
+	it('leaves declaration order alone before anything is typed', () => {
+		const store = typedSlash('plain row', 9)
+
+		expect(store.overlay.list.rows().map(row => row.label)).toEqual([
+			'Heading 1',
+			'Bulleted list',
+			'Table',
+			'To-do list',
+		])
+	})
 })
 
 describe('choose an option', () => {

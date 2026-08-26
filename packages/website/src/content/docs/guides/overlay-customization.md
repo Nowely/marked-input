@@ -111,10 +111,17 @@ by click or by ↑↓ and Enter.
 
 | `MenuSpec` field | Meaning                                                                |
 | ---------------- | ---------------------------------------------------------------------- |
-| `label`          | What the row shows, and the only text the query matches                |
+| `label`          | What the row shows, and the text the query is ranked against           |
 | `keywords`       | Extra query terms that never appear on screen                          |
 | `meta`           | Seeds the meta of the row this entry writes                            |
 | `text`           | Seeds the body of the row this entry writes                            |
+
+**The best answer is the first row, and `Enter` picks the first row.** The query ranks rather than
+merely filters: an exact `label` first, then a label the query is a prefix of, then a label holding
+it anywhere — and only then the same three over `keywords`, because a term the user cannot see must
+not outrank one they are reading. Declaration order decides inside a band, and decides the whole
+list before the first character is typed. Without ranking, `/table` committed **Table of contents**
+on the first try because that option happened to be declared earlier.
 
 **Two gestures, one splice.** On a row holding nothing but the trigger the entry INSERTS: the
 row becomes that kind, seeded from `menu.text`/`menu.meta`. On a row that already has text it
