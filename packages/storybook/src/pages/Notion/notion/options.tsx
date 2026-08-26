@@ -8,6 +8,7 @@ import {theme} from './theme'
 import {Avatar} from './ui/Avatar'
 import {AvatarStack} from './ui/AvatarStack'
 import {Board} from './ui/Board'
+import type {BoardColumnData} from './ui/Board'
 import {BookmarkCard} from './ui/BookmarkCard'
 import type {CalloutTone} from './ui/Callout'
 import {Callout} from './ui/Callout'
@@ -607,8 +608,16 @@ export const views: Option = {
 /* ── the board ──────────────────────────────────────────────────────────── */
 
 /**
- * The board is ONE row whose raw body describes its columns, and its cards drag between columns
- * through the `Board` component's own state — which `showcase.md` assigns to the consumer.
+ * The board is ONE row whose raw body describes its columns, and a card dragged between them is
+ * WRITTEN BACK to that body — `turnInto` with the same kind and a new text, which is the same one
+ * splice the checkbox, the callout icon and the toggle arrow already use.
+ *
+ * IT USED TO LIVE IN THE COMPONENT'S OWN STATE, on `showcase.md`'s reading that the arrangement
+ * is the consumer's. That reading is wrong HERE, and the argument is the markup above: the
+ * columns ARE the document. Kept in the component, a drag moved the card on screen while the
+ * value the editor emitted never changed — nothing to undo, nothing to persist, and every count
+ * outside the board stale against what was on screen. The write is the ordinary published route,
+ * so the board gets the undo stack and the controlled-mode echo for free.
  *
  * Not nested rows, and the reason is measured rather than aesthetic: the editor's own row drag
  * resolves a drop by the pointer's Y through a vertical tiling of the document, and a board's
@@ -621,7 +630,10 @@ export const board: Option = {
 		Component: ({node, ref, className, style}: RowProps) => (
 			<div className={className} ref={ref} style={style}>
 				<Atomic>
-					<Board columns={readBoard(node.slot())} />
+					<Board
+						columns={readBoard(node.slot())}
+						onMove={next => node.turnInto(board, {text: writeBoard(next)})}
+					/>
 				</Atomic>
 			</div>
 		),
@@ -651,6 +663,18 @@ function readBoard(source: string): BoardColumn[] {
 		current.cards.push({id: title, title, ...(tag ? {tag: {label, tone: chipTone(tone)}} : {})})
 	}
 	return columns
+}
+
+/** {@link readBoard}'s inverse, so a drag round-trips through the document rather than around it. */
+function writeBoard(columns: readonly BoardColumnData[]): string {
+	return columns
+		.flatMap(column => [
+			column.title,
+			...column.cards.map(card =>
+				card.tag ? `- ${card.title}|${card.tag.tone}:${card.tag.label}` : `- ${card.title}`
+			),
+		])
+		.join('\n')
 }
 
 /* ── metrics, bookmark, comments ────────────────────────────────────────── */

@@ -6,6 +6,7 @@ import {
 	Avatar,
 	AvatarStack,
 	Board,
+	type BoardColumnData,
 	BookmarkCard,
 	Callout,
 	CardGrid,
@@ -38,6 +39,41 @@ const Section = ({title, children}: {title: string; children: ReactNode}) => (
 		{children}
 	</section>
 )
+
+/**
+ * The arrangement has to live somewhere for a drag to be worth performing, and the board no
+ * longer holds it: in the document it is the row's own body, and here it is the story. Same
+ * contract either way — the board announces the next arrangement and paints the one it is given.
+ */
+const BOARD_COLUMNS: BoardColumnData[] = [
+	{
+		id: 'todo',
+		title: 'To do',
+		cards: [
+			{id: 'sla', title: 'Sign the vendor SLA', tag: {label: 'Legal', tone: 'red'}},
+			{id: 'quota', title: 'EU region quota', tag: {label: 'Infra', tone: 'blue'}},
+			{id: 'copy', title: 'Launch copy review'},
+		],
+	},
+	{
+		id: 'doing',
+		title: 'In progress',
+		cards: [
+			{id: 'auth', title: 'Auth migration', tag: {label: 'Platform', tone: 'purple'}},
+			{id: 'perf', title: 'p95 latency budget', tag: {label: 'Perf', tone: 'amber'}},
+		],
+	},
+	{
+		id: 'shipped',
+		title: 'Shipped',
+		cards: [{id: 'beta', title: 'Beta invites', tag: {label: 'Growth', tone: 'green'}}],
+	},
+]
+
+const BoardDemo = () => {
+	const [columns, setColumns] = useState<readonly BoardColumnData[]>(BOARD_COLUMNS)
+	return <Board columns={columns} onMove={setColumns} />
+}
 
 /** `active` has to live somewhere for the bar to be worth clicking; here that is the story. */
 const ViewTabsDemo = () => {
@@ -183,32 +219,7 @@ export const Comments: StoryObj = {
 export const SprintBoard: StoryObj = {
 	render: () => (
 		<Section title="Board / BoardColumn / BoardCard">
-			<Board
-				columns={[
-					{
-						id: 'todo',
-						title: 'To do',
-						cards: [
-							{id: 'sla', title: 'Sign the vendor SLA', tag: {label: 'Legal', tone: 'red'}},
-							{id: 'quota', title: 'EU region quota', tag: {label: 'Infra', tone: 'blue'}},
-							{id: 'copy', title: 'Launch copy review'},
-						],
-					},
-					{
-						id: 'doing',
-						title: 'In progress',
-						cards: [
-							{id: 'auth', title: 'Auth migration', tag: {label: 'Platform', tone: 'purple'}},
-							{id: 'perf', title: 'p95 latency budget', tag: {label: 'Perf', tone: 'amber'}},
-						],
-					},
-					{
-						id: 'shipped',
-						title: 'Shipped',
-						cards: [{id: 'beta', title: 'Beta invites', tag: {label: 'Growth', tone: 'green'}}],
-					},
-				]}
-			/>
+			<BoardDemo />
 		</Section>
 	),
 }

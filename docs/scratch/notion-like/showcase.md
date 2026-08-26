@@ -79,3 +79,14 @@ avatars, effort bars, metric cards, the board's columns and cards, view tabs,
 bookmark card, comment thread, breadcrumb, cover band. These must be reachable
 using nothing but the published option/component API — if any of them needs a
 core fork, that is a finding.
+
+**A consumer component is not a place to keep document state.** "Not owned by
+core" says who RENDERS it, not who remembers it. The board read that as licence
+to keep its arrangement in `useState`, and its columns are the row's own raw
+body — so a card dragged between columns moved on screen while the value never
+changed, undo had nothing to undo, and the column counts went stale. The rule
+this line now carries: if a component's state can be read back out of the
+document, the document is where it lives, and the component writes through the
+published verb (`node.turnInto(option, {text})`) like every other control here.
+State that is genuinely nobody else's — a view tab's active tab, a drag in
+flight, a column's drop highlight — stays in the component.

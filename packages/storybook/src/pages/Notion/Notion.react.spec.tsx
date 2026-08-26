@@ -6,7 +6,7 @@ import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
 import {ROW_CONTROLS, editingHost, findEditingHost, getElement, rowsOf} from '../../shared/lib/dom'
-import {focusAtEnd, focusAtOffset, focusAtStart} from '../../shared/lib/focus'
+import {focusAtEnd, focusAtOffset, focusAtStart, settle} from '../../shared/lib/focus'
 import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
 import {APOLLO_DOC} from './document'
 import {notionOptions} from './notion'
@@ -1053,5 +1053,117 @@ describe('the empty row', () => {
 		dispatchInsertText(editingHost(host), 'x')
 
 		await expect.poll(() => window.getComputedStyle(rowsOf(host)[0], '::before').content).toBe('none')
+	})
+})
+
+/**
+ * THE BOARD, and the one component on this page that was writing nowhere. Its columns ARE the
+ * document — a raw row body the option parses — but the component kept the arrangement in its own
+ * `useState`, so a card dragged between columns moved on screen and nothing else happened: the
+ * emitted value never changed, undo had nothing to undo, and the counts in the column headers
+ * went stale against what a user could see.
+ *
+ * It is the SHOWCASE's defect, not the editor's, and the fix is the ordinary published route
+ * every other control on this page already takes — `node.turnInto(board, {text})`, one splice.
+ */
+describe('the board', () => {
+	const BOARD_DOC = [
+		'@board',
+		'To do',
+		'- Sign the vendor SLA|red:Legal',
+		'- EU region quota|blue:Infra',
+		'- Launch copy review',
+		'In progress',
+		'- Auth migration|purple:Platform',
+		'Shipped',
+		'- Beta invites|green:Growth',
+		'@end',
+	].join('\n')
+
+	const MOVED = [
+		'@board',
+		'To do',
+		'- Sign the vendor SLA|red:Legal',
+		'- EU region quota|blue:Infra',
+		'In progress',
+		'- Auth migration|purple:Platform',
+		'Shipped',
+		'- Beta invites|green:Growth',
+		'- Launch copy review',
+		'@end',
+	].join('\n')
+
+	/** The card reading exactly `title`, and the column whose header reads exactly `title`. */
+	const cardTitled = (host: HTMLElement, title: string): HTMLElement => {
+		const found = [...host.querySelectorAll<HTMLElement>('[class*="boardCard"]')].find(
+			card => card.textContent.trim() === title
+		)
+		if (!found) throw new Error(`no board card reading ${JSON.stringify(title)}`)
+		return found
+	}
+
+	const columnTitled = (host: HTMLElement, title: string): HTMLElement => {
+		const found = [...host.querySelectorAll<HTMLElement>('[class*="boardColumn"]')].find(column =>
+			column.querySelector('[class*="boardColumnHeader"]')?.textContent.startsWith(title)
+		)
+		if (!found) throw new Error(`no board column titled ${JSON.stringify(title)}`)
+		return found
+	}
+
+	const countIn = (column: HTMLElement) => column.querySelector('[class*="boardColumnCount"]')!.textContent
+
+	/**
+	 * The HTML5 card drag, end to end: the card is the source, the column is the target.
+	 *
+	 * AWAITED BETWEEN THE EVENTS, and it is not padding: the drag source announces itself through
+	 * React state, and a `drop` dispatched in the same task reads the handler closure from BEFORE
+	 * that state landed — so the whole gesture is a no-op with nothing said. A real pointer takes
+	 * frames between these; this is the deterministic spelling of that.
+	 */
+	async function dragCard(card: HTMLElement, column: HTMLElement) {
+		const dataTransfer = new DataTransfer()
+		const at = {bubbles: true, cancelable: true, dataTransfer}
+		card.dispatchEvent(new DragEvent('dragstart', at))
+		await settle()
+		column.dispatchEvent(new DragEvent('dragover', at))
+		await settle()
+		column.dispatchEvent(new DragEvent('drop', at))
+		await settle()
+		card.dispatchEvent(new DragEvent('dragend', at))
+	}
+
+	it('writes a card dragged between columns into the document', async () => {
+		const {host, value} = await mountControlled(Showcase, BOARD_DOC)
+
+		await dragCard(cardTitled(host, 'Launch copy review'), columnTitled(host, 'Shipped'))
+
+		await expect.poll(value).toBe(MOVED)
+	})
+
+	/** The counts are the visible half of the same fact: they were derived from the stale copy. */
+	it('re-counts both columns from the document the drag wrote', async () => {
+		const {host, value} = await mountControlled(Showcase, BOARD_DOC)
+		expect([countIn(columnTitled(host, 'To do')), countIn(columnTitled(host, 'Shipped'))]).toEqual(['3', '1'])
+
+		await dragCard(cardTitled(host, 'Launch copy review'), columnTitled(host, 'Shipped'))
+		await expect.poll(value).toBe(MOVED)
+
+		expect([countIn(columnTitled(host, 'To do')), countIn(columnTitled(host, 'Shipped'))]).toEqual(['2', '2'])
+	})
+
+	/**
+	 * AND IT IS AN EDIT LIKE ANY OTHER, which is the point of writing through the published verb:
+	 * the undo stack is the editor's and the board did not have to know it exists.
+	 */
+	it('undoes the move, because the move was a document edit', async () => {
+		const {host, value} = await mountControlled(Showcase, BOARD_DOC)
+
+		await dragCard(cardTitled(host, 'Launch copy review'), columnTitled(host, 'Shipped'))
+		await expect.poll(value).toBe(MOVED)
+
+		editingHost(host).focus()
+		await userEvent.keyboard('{ControlOrMeta>}z{/ControlOrMeta}')
+
+		await expect.poll(value).toBe(BOARD_DOC)
 	})
 })
