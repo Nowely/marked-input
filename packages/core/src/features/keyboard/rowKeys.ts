@@ -1,6 +1,6 @@
 import {KEYBOARD} from '../../shared/constants'
 import type {Store} from '../../store/Store'
-import type {AnchoredRow, Anchors} from '../tokens'
+import type {AnchoredRow, Anchors, RowNode} from '../tokens'
 import {anchorEquals, entryAnchor, hasRawBody} from '../tokens'
 import type {Replacement} from './beforeInput'
 import {dropUnexpressedInput} from './beforeInput'
@@ -25,8 +25,9 @@ type KbCtx = Pick<Store, 'edit' | 'overlay' | 'rows' | 'tokens'>
  * Plain Enter SPLITS at the caret — `RowNode.splitAt` — which is one call for three gestures
  * the old text listed separately — at a row's end the tail is empty and takes this kind when the
  * kind `continues`, mid-row it carries the rest of the body, and at a row's start the empty head
- * stays above and the subtree follows the tail. On an EMPTY row it DEMOTES instead, and only falls
- * through to the split when the ladder has nothing left to give.
+ * stays above and the subtree follows the tail. On an EMPTY row of a kind that CONTINUES it
+ * DEMOTES instead ({@link continuesARun}), and only falls through to the split when the ladder has
+ * nothing left to give.
  *
  * Shift+Enter opens a CONTINUATION LINE — a row with no kind, under the row whose kind owns the
  * line — which is the soft break this encoding can express: one line is one row (ADR-0011), so a
@@ -113,7 +114,7 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
 		store.edit.replace(at, at, rowConfig.separator + rowConfig.indent.repeat(continuationDepth(caret)))
 		return
 	}
-	if (caret.row.slot() === '' && demote(caret)) return
+	if (caret.row.slot() === '' && continuesARun(store, caret.row) && demote(caret)) return
 	caret.row.splitAt(at)
 }
 
@@ -294,9 +295,33 @@ function continuationDepth(caret: AnchoredRow): number {
  * Both rungs are verbs, and the second rung's own gate is the verb's: `turnInto(undefined)` on a
  * row that is already a paragraph is a no-op, which the verb refuses on its own, so "and typed" is
  * not a condition written here.
+ *
+ * WHICH KEY MAY CLIMB IT IS NOT DECIDED HERE, and the two do not ask the same question: Backspace
+ * asks about the POSITION (at the row's entry, un-type what is to my left — true of every kind),
+ * Enter asks about the ROW (this run is finished — see {@link continuesARun}).
  */
 function demote(caret: AnchoredRow): boolean {
 	return caret.depth > 0 ? caret.row.setDepth(caret.depth - 1) : caret.row.turnInto(undefined)
+}
+
+/**
+ * IS THERE A RUN TO LEAVE — the whole of what separates Enter's empty-row ladder from Backspace's.
+ *
+ * Enter on an empty item means "this list is finished", and a kind that declares no CONTINUATION
+ * has no list: its body is empty because the kind HAS none, not because the user emptied one.
+ * MEASURED on the showcase's divider (`'---__slot__'`), whose rule is the row's only large target,
+ * so a click below the text lands the caret in it: Enter there un-typed the kind and
+ * `'target row⏎---'` came back `'target row⏎'`, with the divider simply gone and nothing said. It
+ * takes the SPLIT now, which at a row's own start opens the empty row above and KEEPS the kind
+ * (round seven's rule): `'target row⏎⏎---'`.
+ *
+ * A ROW WITH NO KIND AT ALL ANSWERS YES, and that is not an exemption: a nested row with no kind IS
+ * a continuation line of the row above it ({@link continuationDepth}), so its depth rung is the
+ * same "leave the run" gesture spelled without a declaration.
+ */
+function continuesARun(store: KbCtx, row: RowNode): boolean {
+	const spec = store.tokens.rowSpec(row)
+	return spec === undefined || spec.continues !== undefined
 }
 
 /**

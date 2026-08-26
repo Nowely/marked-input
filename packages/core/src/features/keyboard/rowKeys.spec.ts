@@ -791,6 +791,26 @@ describe('rowKeys the row keymap', () => {
 			expect(store.tokens.nodes()).toHaveLength(2)
 		})
 
+		/**
+		 * THE LADDER IS FOR LEAVING A RUN, so a kind that declares no CONTINUATION takes no rung of
+		 * it — its body is empty because the kind HAS none, not because the user emptied one.
+		 *
+		 * MEASURED on the showcase's divider (`'---__slot__'`), whose rule is the row's only large
+		 * target: a click below the text lands the caret in that row, and Enter there un-typed the
+		 * kind — `'target row⏎---'` came back `'target row⏎'` with the divider simply gone. It takes
+		 * the split now, which at a row's own start opens the empty row above and keeps the kind.
+		 *
+		 * `HEADING` is the fixture's own non-continuing kind and stands for every one of them.
+		 */
+		it('SPLITS on an empty row whose kind declares no continuation, rather than un-typing it', () => {
+			const {store, container} = keymap('a\n# ')
+			caretIn(store, 1, 0)
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('a\n\n# ')
+		})
+
 		it('INSERTS on an empty row that has neither depth nor kind to give up', () => {
 			const {store, container} = keymap('a\n')
 			caretIn(store, 1, 0)
