@@ -588,9 +588,74 @@ becomes a ticket here.
   own `tableLine` does, before it could express that claim at all. The collateral is
   declared: a selection covering exactly one row's whole body — a triple-click — IS a row
   selection, so cutting or deleting it takes the row away instead of emptying it.
+  NARROWED by the review round below: "a pasted clip's line breaks now open rows" held only
+  for a paste whose SPAN sits inside one row's body. Over a row selection the clip was still
+  spliced raw, and across two rows it still is.
+
+- **The review round on P11.6 found the phase had closed defect 1 through one door only, and
+  that its own headline reading shipped twice.** Three reviewers, thirteen findings, ten
+  reproduced. What the reproductions said, in the order they were fixed:
+  a foreign clip pasted over a ROW SELECTION took none of the row rules — `input.ts` runs
+  `replaceRowSelection` before `writeRowsFromInput`, and that arm handed the verb a finished
+  STRING, so `Replacement.markup` (invented in the same phase for exactly this question) was
+  computed and thrown away; measured, `'one\r\ntwo'` over a selected row left a literal
+  carriage return in the value, and `'one⏎two'` over a nested bullet landed both lines at
+  depth 0. `replaceRows` now takes `string | readonly string[] | null` and the union IS the
+  distinction — a projection is spliced, LINES are opened — with `openedLine` shared with
+  `splitPlan` so the caret path and the selection path cannot drift again.
+  Tab used `rowsWithin`, the LOOSE reading, while the four gestures the phase unified used the
+  exact one: a sweep from mid-`alpha` to the end of `beta` made Tab indent `beta`, a row the
+  caret is not in. `TokenModel.rowSelection` publishes the exact reading and the paint, the
+  drag, Esc's entry rung and Tab all ask it — `rowsWithin` no longer leaves `tree/`.
+  Tab's `indents` gate was read off the ANCHOR's row while the verb moved the whole set, so
+  which row happened to be first decided whether a heading got indented under a bullet or the
+  key fell through to the browser. It is asked of every row now, all or none.
+  `RowNode.addSibling()` answered `true` on a CELL and cut a table line in two; the pre-order
+  walk that keeps a cell out of every set verb is the test it was missing.
+  `splitPlan` counted the pieces it was handed while the splice opened one row per document
+  separator in them, so under a `';;'` separator a pasted `'x;;y⏎z'` grew a lead-less row and
+  put the caret in the middle of the clip.
+  `dropPlacements` stepped over the rows in flight at the floor and not at the ceiling, so a
+  dragged row's own gap offered the indent from the upper half of its line and not the lower.
+  TWO REDUCTIONS WERE PROPOSED AND MEASURED, and they did not agree. `#applyDepth` came out
+  (−11 lines, suite and typecheck green): its width was a `TreeNode` where a `RowNode` was
+  meant. `#enterRow`'s `into === 0` fork did NOT: a green suite is not a proof, and the probe
+  found the two arms name different POSITIONS for a MARK entry — `rowSequence` falls back to
+  the roots in a document with no rows — so deleting it moved a caret from inside a mark's
+  slot to the text before its opener while every existing case, which asserts an OFFSET, stayed
+  green. The fork stays and the pin that tells the arms apart types a character.
+  THE COST, honestly: production `packages/core/src` +222/−94, of which 133 added lines are
+  comment and 30 removed ones were; net +89 lines of code, one mechanism retired, one
+  published read added (`rowSelection`) and one removed (`rowsWithin`). Six new pins, five of
+  them for behaviour that had none. Three findings were rejected on measurement rather than on
+  taste, and are named in the Fog below so they are not re-filed.
 
 ## Fog
 
+- **A paste whose SPAN crosses two rows is still spliced raw**, which is the one shape of
+  defect 1 left open. MEASURED 2026-08-26 on the tip: `'- alpha⏎⇥- beta'`, DOM selection from
+  offset 2 of `alpha` to offset 2 of `beta`, paste `'one⏎two'` → `'- alone⏎twota'` — the second
+  line carries neither lead nor opener. `splitPlan` refuses a span that leaves the row's own
+  body (`'what sends a paste across several rows back to the ordinary splice'`), and that
+  refusal is deliberate: widening it means the head row keeps the text before the span, the
+  LAST covered row's tail follows the last piece, and every row between them plus three subtree
+  placements are consumed in one plan. That is a contract change to `splitPlan`, not a
+  hardening fix, so it is declared in `keyboard-handling.md` rather than half-built.
+- **`duplicate` and `insertAfter` on a CARVED PIECE fail open in the shape `addSibling` just
+  stopped failing in.** MEASURED 2026-08-26: on `'| a | b⏎after'` the first cell answers
+  `duplicate() === true` → `'| a| a | b⏎after'` and `insertAfter('\n') === true` →
+  `'| a⏎ | b⏎after'`. PRE-EXISTING and a family rather than a case — the cure is the same
+  pre-order membership test, applied where each verb reaches `#applyStructural`. Not taken
+  with `addSibling` because that verb was this phase's own and these are not; a cell is
+  unreachable from `BlockController` (its target comes from `state.menu`, and `rowAt` treats a
+  carved row as a leaf), so both are published-API-only today.
+- Three review findings REJECTED on measurement, recorded so they are not re-filed:
+  `#enterRow`'s `into === 0` fork is load-bearing (above); `RowNode.writeRows` is not
+  misplaced surface — the rule this codebase states is that a verb lives on the MODEL when the
+  set it acts on has no owning row (`moveRows`, `indentRows`, `replaceRows`) and on the NODE
+  when it does, and `writeRows` writes inside one row's own body exactly as `splitAt`,
+  `turnInto` and `setDepth` do; and `replaceRowSelection`'s docstring was wrong about routing
+  rather than the routing being wrong (fixed as prose, `e98160d0`).
 - What a package on top of this owns: does it wrap `MarkedInput` and ship
   options + components, or does it need core changes first? The ticket list here
   is the input to that decision, not the answer.
