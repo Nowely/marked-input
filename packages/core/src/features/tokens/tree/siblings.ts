@@ -190,6 +190,11 @@ export function rowsWithin(
  * construction ({@link rowScope} builds every one of them out of {@link rowSpan}), and a text sweep
  * that happens to land on both edges is the same selection by every reading this editor has.
  *
+ * "Exact" is a BOUNDARY and not an offset, at BOTH ends — see {@link namesBoundary}. A row
+ * boundary is a stretch of structural bytes, and every offset in it names the same boundary;
+ * compared against the run's own edges alone, the plainest row selection there is — Shift+ArrowDown
+ * over one row — answered with no rows at all.
+ *
  * `'replace'` takes the covered rows' own LINES and their subtrees, and stops before the separator
  * that follows them — that byte belongs to the boundary, and the rows arriving in their place need
  * it to stay separated from the row below.
@@ -200,6 +205,11 @@ export function rowsWithin(
  * separator to take, so the one BEFORE the run leaves instead — and when the run also starts the
  * document there is neither, which is the whole value and clears it.
  *
+ * `'text'` takes what the SELECTION itself covers, in row coordinates: the first row's entry to the
+ * last row's content end, both openers left standing. It is the one gesture over a row selection
+ * that stays TEXT — a character replaces the rows' text and the first row keeps its kind — and it
+ * exists so that gesture writes over the same boundary reading as the other three.
+ *
  * The ROWS come back beside the span because a caller that writes into it needs the first one — its
  * lead, and its kind where the kind continues, are what an arriving line is opened with — and
  * because a caller that only wants the SET (Tab) must not re-derive the exactness test to get it.
@@ -209,7 +219,7 @@ export function rowSelectionSpan(
 	roots: readonly TreeNode[],
 	anchors: Anchors,
 	separator: string | undefined,
-	take: 'replace' | 'remove'
+	take: 'replace' | 'remove' | 'text'
 ): {start: number; end: number; rows: readonly RowNode[]} | undefined {
 	if (separator === undefined) return undefined
 	const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
@@ -219,8 +229,11 @@ export function rowSelectionSpan(
 
 	const first = covered[0]
 	const last = covered[covered.length - 1]
-	if (held.start !== rowSpan(roots, first, separator).start) return undefined
-	if (held.end !== rowSpan(roots, last, separator).end) return undefined
+	const opens = rowSpan(roots, first, separator)
+	const closes = rowSpan(roots, last, separator)
+	if (!namesBoundary(roots, held.start, opens.start, stepOver(roots, first, -1), separator)) return undefined
+	if (!namesBoundary(roots, held.end, closes.end, stepOver(roots, last, 1), separator)) return undefined
+	if (take === 'text') return {start: opens.start, end: closes.end, rows: covered}
 
 	// The row's own LINE START — its lead and its opener included, which is the difference this
 	// whole function exists for. It is not expressible as an anchor, which is why the callers ask
@@ -229,6 +242,59 @@ export function rowSelectionSpan(
 	const final = endsDocument(roots, last)
 	if (take === 'replace') return {start, end: last.position.end - (final ? 0 : separator.length), rows: covered}
 	return {start: final ? Math.max(0, start - separator.length) : start, end: last.position.end, rows: covered}
+}
+
+/**
+ * Does `at` name the BOUNDARY that opens or closes the run — `near` being the run's own edge and
+ * `neighbour` the row on the other side of it?
+ *
+ * A BOUNDARY IS A RANGE OF BYTES, NOT AN OFFSET, and that is the whole of this function. Between
+ * one row's content end and the next row's ENTRY lie the separator, the next row's lead and its
+ * opener — every one of them structural, none of them a position a caret may occupy (ADR-0010). So
+ * every offset in that stretch names the same boundary, and a selection reaching any of them has
+ * taken nothing another has not.
+ *
+ * IT IS NOT THE MODEL THAT PRODUCES THE FAR SIDE, which is why equality against `near` alone was
+ * never enough. Every row gesture writes the near side ({@link rowScope} builds its spans out of
+ * {@link rowSpan}), and everything else that can select a row writes the far one:
+ * - Shift+ArrowDown from a row's start, and a mouse sweep down one line, land the focus at the NEXT
+ *   row's first typable position — `getSelection().toString()` reads `'BBB\n'` where the highlight
+ *   paints only `BBB`. Read as an ordinary text span, typing over it deleted the separator with the
+ *   text and merged the row below into the row above, kind and children and all;
+ * - a click on a FROZEN row selects that row across its own ELEMENT (`TokenModel.#selectRow`),
+ *   because a row whose text has no surface has no other pair of boundaries the DOM can paint —
+ *   and an element's edges are `position.start`/`position.end`, which sit inside the boundary at
+ *   both ends.
+ *
+ * The document's own edges close the argument: before the first row and after the last there is no
+ * neighbour, and the run's own edge is the only offset there is.
+ */
+function namesBoundary(
+	roots: readonly TreeNode[],
+	at: number,
+	near: number,
+	neighbour: RowNode | undefined,
+	separator: string
+): boolean {
+	if (at === near) return true
+	if (!neighbour) return false
+	const far = rowSpan(roots, neighbour, separator)
+	return near < at ? at <= far.start : at >= far.end
+}
+
+/**
+ * The row on the other side of the boundary `row` opens (`-1`) or closes (`+1`), in pre-order —
+ * `undefined` at the document's edges.
+ *
+ * Past the whole SUBTREE going forward: the run's rows are maximal, so a covered row's descendants
+ * are covered with it and the next boundary a selection can reach is the one after all of them.
+ * Backwards it is the immediately preceding line, which under nesting may be this row's own parent.
+ */
+function stepOver(roots: readonly TreeNode[], row: RowNode, direction: -1 | 1): RowNode | undefined {
+	const rows = preorderRows(roots)
+	const at = rows.findIndex(entry => entry.row === row)
+	if (at < 0) return undefined
+	return direction === -1 ? rows[at - 1]?.row : rows[at + preorderRows([row]).length]?.row
 }
 
 /**

@@ -140,7 +140,8 @@ store's other row verbs hang off the same `s.rows` — see
 [Keyboard Handling → Selecting Rows](/guides/keyboard-handling#selecting-rows).
 
 A row selection is the ROWS — openers and leads included. Paste, cut, copy and Backspace/Delete all
-read it that way. See [Keyboard Handling](/guides/keyboard-handling) for the full contract.
+read it that way; typing replaces the rows' TEXT and keeps the first row's kind. See
+[Keyboard Handling](/guides/keyboard-handling) for the full contract.
 
 ## Drag
 

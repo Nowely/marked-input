@@ -458,6 +458,25 @@ export class TokenModel {
 	}
 
 	/**
+	 * THE SPAN A CHARACTER TYPED OVER A ROW SELECTION REPLACES, as anchors — `undefined` when the
+	 * selection is not a whole number of rows, which leaves every ordinary text edit exactly where
+	 * it was.
+	 *
+	 * TYPING IS THE ONE ROW-SELECTION GESTURE THAT STAYS TEXT (see {@link replaceRows} for the
+	 * other four), so it needs a span rather than a verb: the rows' own text goes and the first
+	 * row's kind stays. What it may NOT keep is the anchors the event named — the browser ends a
+	 * one-row selection at the NEXT row's entry, so the raw span carries a row BOUNDARY the
+	 * highlight never paints, and replacing it merged the row below into the row above.
+	 */
+	rowSelectionText(anchors: Anchors): Anchors | undefined {
+		const span = untracked(() =>
+			rowSelectionSpan(this.#tree.roots(), anchors, this.#tree.config()?.separator, 'text')
+		)
+		if (!span) return undefined
+		return {anchor: this.anchorAt(span.start), head: this.anchorAt(span.end)}
+	}
+
+	/**
 	 * THE SPAN a row-selection gesture widens to — see {@link rowScope}. `undefined` when the
 	 * gesture has nothing to widen to, which is what leaves the key to the browser.
 	 */

@@ -675,6 +675,30 @@ describe('the keymap on the showcase kinds', () => {
 		await expect.poll(value).toBe('- beta')
 	})
 
+	/**
+	 * TYPING OVER A ROW SELECTION THE BROWSER FORMED, which is the plainest one there is: Home,
+	 * Shift+ArrowDown, a character. Chromium ends that selection at the NEXT row's first typable
+	 * position — `getSelection().toString()` is `'beta\n'` where the highlight paints only `beta`
+	 * — so the anchors the `beforeinput` names carry a row BOUNDARY. Written over verbatim they
+	 * deleted the separator and the next row's opener with the text: `'- alpha⏎- Xgamma'` out of
+	 * three bullets, one row and its whole opener gone from one keystroke.
+	 *
+	 * DRIVEN WITH REAL KEYS, and Shift+ArrowDown is the load-bearing one: the FIRST press is
+	 * native — no row selection stands yet, so the arm declines it (ADR-0002) — and only the
+	 * browser produces the span it leaves behind.
+	 */
+	it('replaces only the selected row when a character is typed over it', async () => {
+		// One kind for all three, so every row's text starts at the same x: ArrowDown keeps the
+		// caret's COLUMN, and a quote below a bullet lands it four characters into the line.
+		const {host, value} = await mountControlled(Showcase, '- alpha\n- beta\n- gamma')
+
+		await focusAtStart(rowAt(host, 'beta'))
+		await userEvent.keyboard('{Shift>}{ArrowDown}{/Shift}')
+		await userEvent.keyboard('X')
+
+		await expect.poll(value).toBe('- alpha\n- X\n- gamma')
+	})
+
 	/** Tab moves every row the selection holds, which is the set the drag and the menu already act on. */
 	it('indents every row of a standing row selection', async () => {
 		const {host, value} = await mountControlled(Showcase, '- alpha\n- beta\n- gamma')

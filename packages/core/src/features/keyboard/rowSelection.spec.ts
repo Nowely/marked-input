@@ -84,6 +84,29 @@ describe('the row selection derives from the text selection', () => {
 		store.tokens.selection.select(store.tokens.anchorAt(0), store.tokens.anchorAt(10))
 		expect(selectedSlots(store)).toEqual(['aa'])
 	})
+
+	/**
+	 * A ROW'S END IS A BOUNDARY, NOT AN OFFSET, and this is the shape every selection the BROWSER
+	 * forms has: Shift+ArrowDown from a row's start — and a mouse sweep down one line — lands the
+	 * focus at the NEXT row's first typable position, so the span reads `[entry(bb), entry(cc)]`
+	 * where a row gesture would have written `[entry(bb), end(bb)]`. Nothing separates the two but
+	 * the separator and the next row's lead, which no caret may occupy.
+	 *
+	 * Compared against `end(bb)` alone this answered NO ROWS, and the gesture that then wrote over
+	 * the raw span rather than through a row verb — typing — took the boundary with the text and
+	 * merged `cc` into `bb`. See `keyboard/rowKeys.spec`'s type-over case for the write.
+	 */
+	it('holds a row whose selection ends at the NEXT row entry, which is the same boundary', () => {
+		const {store} = mount()
+
+		store.tokens.selection.select(store.tokens.anchorAt(4), store.tokens.anchorAt(8))
+		expect(selectedSlots(store)).toEqual(['bb'])
+
+		// AND STILL NOT A PARTIAL ONE: half of `bb` into the entry of `cc` names bytes of `bb` the
+		// selection does not hold, so it stays a text selection.
+		store.tokens.selection.select(store.tokens.anchorAt(5), store.tokens.anchorAt(8))
+		expect(selectedSlots(store)).toEqual([])
+	})
 })
 
 describe('Esc escalates, one level per press', () => {

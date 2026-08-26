@@ -654,6 +654,26 @@ describe('rowKeys the row keymap', () => {
 		selection?.addRange(range)
 	}
 
+	/**
+	 * A live DOM selection ACROSS two rows' bodies — the shape the BROWSER leaves behind for a
+	 * whole-row selection: Shift+ArrowDown from a row's start lands the focus at the next row's
+	 * first typable position, so the range ends one boundary past the row it covers.
+	 */
+	function selectAcross(store: Store, from: number, at: number, to: number, until: number): void {
+		const textOf = (row: number): ChildNode => {
+			const surface = store.tokens.handle(rowsOf(store)[row].inline()[0].id)?.element()
+			const text = surface?.firstChild
+			if (!text) throw new Error('row body rendered no text node')
+			return text
+		}
+		const range = document.createRange()
+		range.setStart(textOf(from), at)
+		range.setEnd(textOf(to), until)
+		const selection = window.getSelection()
+		selection?.removeAllRanges()
+		selection?.addRange(range)
+	}
+
 	/** The same, RANGED over `[start, end)` — the shape a Shift+Arrow leaves behind. */
 	function selectIn(store: Store, row: number, start: number, end: number): void {
 		const body = rowsOf(store)[row].inline()[0]
@@ -1170,6 +1190,77 @@ describe('rowKeys the row keymap', () => {
 
 			expect(event.defaultPrevented).toBe(true)
 			expect(store.tokens.value()).toBe('| a | b')
+		})
+	})
+
+	/**
+	 * TYPING OVER A ROW SELECTION, which is the one gesture over one that stays TEXT — and the one
+	 * that used to write over the raw anchors the event named. The browser ends a whole-row
+	 * selection at the NEXT row's entry ({@link selectAcross}), so those anchors carry a row
+	 * BOUNDARY the highlight never paints: replacing them deleted the separator AND the next row's
+	 * opener, merging the row below into the row above with its kind, its children and their
+	 * indent. Backspace over the identical selection deleted correctly the whole time, which is
+	 * what kept it invisible.
+	 */
+	describe('typing over a row selection', () => {
+		const type = (container: HTMLElement, data: string): InputEvent => {
+			const event = new InputEvent('beforeinput', {
+				inputType: 'insertText',
+				data,
+				bubbles: true,
+				cancelable: true,
+			})
+			container.dispatchEvent(event)
+			return event
+		}
+
+		it('replaces the selected row and leaves the row below it whole', () => {
+			const {store, container} = keymap('a\n# b\nc')
+			// `[entry(a), entry(b)]` — one row covered, one boundary carried.
+			selectAcross(store, 0, 0, 1, 0)
+
+			expect(type(container, 'X').defaultPrevented).toBe(true)
+
+			expect(store.tokens.value()).toBe('X\n# b\nc')
+		})
+
+		/**
+		 * AND THE ROW TYPED IN KEEPS ITS OWN KIND, which is what separates this from the other four
+		 * gestures: the rows do not leave, their text does.
+		 */
+		it('keeps the covered row opener, where a paste over the same selection replaces it', () => {
+			const {store, container} = keymap('- a\n- b')
+			selectAcross(store, 0, 0, 1, 0)
+
+			type(container, 'X')
+
+			expect(store.tokens.value()).toBe('- X\n- b')
+		})
+
+		/**
+		 * AND THE BOUNDARY IS THE ONLY THING THE END MAY OVERSHOOT BY. A selection running from a
+		 * row's entry INTO the next row's body covers the first row whole and names bytes of the
+		 * second, so it is a text selection and the span stays exactly what the event said. Read as
+		 * a row selection it would write over the first row alone and silently keep the `'b'` the
+		 * user had selected.
+		 */
+		it('writes exactly the named span when the end lands inside the next row body', () => {
+			const {store, container} = keymap('aa\n# bb\ncc')
+			selectAcross(store, 0, 0, 1, 1)
+
+			type(container, 'X')
+
+			expect(store.tokens.value()).toBe('Xb\ncc')
+		})
+
+		/** The same at the other end: a selection that starts mid-row is a text selection. */
+		it('writes exactly the named span when the selection covers no row whole', () => {
+			const {store, container} = keymap('aa\n# b\nc')
+			selectAcross(store, 0, 1, 1, 0)
+
+			type(container, 'X')
+
+			expect(store.tokens.value()).toBe('aXb\nc')
 		})
 	})
 })

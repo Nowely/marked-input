@@ -308,9 +308,14 @@ const LINE_BREAK = /\r\n|\r|\n/
  * the event; `false` leaves the ordinary path, which is every selection that is not a whole number
  * of rows. See {@link TokenModel.replaceRows} for the reading all four gestures share.
  *
- * A DELETE removes them and a PASTE replaces them with the clip. TYPING is deliberately not on the
- * list: a character replaces the text that was selected and the row it was typed in keeps its kind,
- * which is the granularity every other inline edit has.
+ * A DELETE removes them and a PASTE replaces them with the clip. TYPING stays TEXT — a character
+ * replaces the rows' own text and the first row keeps its kind, which is the granularity every
+ * other inline edit has — but it is on the list all the same, for the SPAN: the anchors an event
+ * names run to the NEXT row's entry whenever the browser formed the selection (Shift+ArrowDown, a
+ * mouse sweep), so replacing them verbatim deleted the row boundary with the text. Typing over a
+ * selected `'BBB'` in `'AAA⏎BBB⏎CCC⏎DDD'` emitted `'AAA⏎XCCC⏎DDD'` — one row and its whole KIND
+ * gone, silently. {@link TokenModel.rowSelectionText} is that span, read through the same boundary
+ * test the other three gestures go through.
  *
  * WHOSE LANGUAGE THE CLIP IS IN is the same question {@link writeRowsFromInput} asks at a caret,
  * and this arm asked it nowhere: it handed the verb a finished STRING, so a foreign clip pasted
@@ -331,8 +336,16 @@ export function replaceRowSelection(
 	replacement: Replacement
 ): boolean {
 	if (event.inputType.startsWith('delete')) return store.tokens.replaceRows(anchors, null)
-	if (event.inputType !== 'insertFromPaste') return false
-	return store.tokens.replaceRows(anchors, replacement.markup ? replacement.text : replacement.text.split(LINE_BREAK))
+	if (event.inputType === 'insertFromPaste') {
+		return store.tokens.replaceRows(
+			anchors,
+			replacement.markup ? replacement.text : replacement.text.split(LINE_BREAK)
+		)
+	}
+	const span = store.tokens.rowSelectionText(anchors)
+	if (!span) return false
+	store.edit.replace(span.anchor, span.head, replacement.text)
+	return true
 }
 
 /**
