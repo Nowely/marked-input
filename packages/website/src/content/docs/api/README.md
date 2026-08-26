@@ -33,6 +33,7 @@ title: "@markput/react"
 - [NodeAnchor](/api/type-aliases/nodeanchor/)
 - [OverlayPick](/api/type-aliases/overlaypick/)
 - [RowPlacement](/api/type-aliases/rowplacement/)
+- [Suggestion](/api/type-aliases/suggestion/)
 - [TreeNode](/api/type-aliases/treenode/)
 
 ## Functions
