@@ -770,6 +770,15 @@ becomes a ticket here.
   - and it inherits two refusals it must not re-derive: the scan's ceiling
     (`AnchoredRow.childDepth`, which an EMPTY row makes 0) and `TokenModel.#nestingIsPainted`, a DOM
     fact that lives at the seam because `tree/` cannot ask whether a kind paints child rows.
+- **CLOSED 2026-08-26 (round eight): the arrows are finished, not refused.** The cure below was
+  taken, at the SEAM rather than in `DomModel`: `TokenModel.selectRowSpan` is the one write every
+  row-selection gesture makes, and an end whose anchor `#dom.reachable` declines falls back on its
+  row's `{before}`/`{after}` — the pair `#selectRow` already writes. It is a NO-OP wherever the end
+  is painted, so Esc, Mod+A and the drag write byte-identical anchors on ordinary rows and the
+  behaviour change is confined to the ends that resolved to nothing. Pinned by
+  `caret.react.spec`'s 'grows a frozen row selection by a row, visibly', which reddens when the
+  fallback is removed.
+
 - **A ROW SELECTION THAT STARTS AT A FROZEN ROW CANNOT BE GROWN, and the model and the DOM disagree
   in silence while it stands.** A click on a row holding no editable position now SELECTS it
   (2026-08-26), written across the row's own ELEMENT because its text has no surface. MEASURED on
@@ -904,3 +913,60 @@ becomes a ticket here.
     (`bcb6b5e2`). `DomModel.moveToLineBoundary` runs `Selection.modify(…, 'lineboundary')` rather
     than computing an anchor, because which character ends a LINE is a layout fact and not a tree
     one — a wrapped row is several lines and one row.
+
+- **The eighth driving session's six defects, and the first was ONE rule wearing four faces**
+  (2026-08-26). Every one reproduced in the browser or in core first, and every pin was seen to
+  redden by MUTATING the mechanism rather than by re-reading the test.
+  - **A SELECTION EDGE THAT LANDS ON STRUCTURAL BYTES MUST RESOLVE TO THE CONTENT BOUNDARY IT
+    NAMES.** The round-seven fix taught the ROW SELECTION one shape of this — a sibling row — and
+    three more were still live, each because the row selection is the wrong set to ask. A parent's
+    span covers its whole SUBTREE, so a triple-click on `'- A⏎⇥- B⏎⇥- C⏎- D'`'s first line covers no
+    row whole, `store.rows.selected()` is EMPTY, and the raw write emitted `'- ZB⏎⇥- C⏎- D'`. A CELL
+    is a piece no gesture may name — `rowsWithin` never descends into a carved body — so
+    `'| aaa | bbb | ccc'` typed over at `bbb` ate the `' | '` and the row lost a column, and the same
+    gesture on `ccc` ate the row below. The set that answers all four is the LINES: every row's own
+    `slotRange` plus every cell's, recursively. `contentSpan` resolves the low edge forward onto the
+    next line's entry and the high edge back onto the previous line's end, refuses an edge INSIDE a
+    line's content (so a mid-row sweep still merges, unchanged), and only ever SHRINKS — an edit can
+    never touch a byte outside the selection. It REPLACED `namesBoundary` and `stepOver` outright,
+    and the `'text'` take with them: the exactness test a row selection needs is now "the content
+    this span covers is exactly the covered rows' content", which is the same function. Proven over
+    sibling, child, cell, last-cell-into-the-next-row and a meta-bearing opener; the whole suite was
+    green at the swap, so those two functions were a special case of this one all along.
+  - **A KEYSTROKE WAS SWALLOWED WHOLE WHEN THE NEXT ROW'S OPENER CARRIED A `meta`.** `'a⏎- [x]
+    todo⏎next'`, triple-click `a`, type `Z`: nothing at all, while `store.rows.selected()` held the
+    row and Backspace over it worked. Chromium ends the `beforeinput` target range inside the
+    consumer's own decoration for that `meta` — a `contenteditable="false"` span no anchor can name
+    — and `anchorsFromInputEvent` failed the whole read closed. It falls back on the LIVE selection
+    now, which was correct the whole time.
+  - **A CLICK ON THE BOOKMARK SELECTED ITS ROW AND THE LETTER LANDED TWO ROWS UP.** Same function,
+    the other precedence rule. A row selection across a frozen row's ELEMENT is not an editable
+    extent, so Chromium canonicalizes the target range to the nearest position it CAN name — in the
+    row above — and the rule preferred a COLLAPSED target range over a ranged live selection. The
+    pin that guarded that preference said in its own comment "this disagreement is not one Chromium
+    produces"; it produces it on every atomic row. Reversed and declared.
+  - **FOUR DECORATIONS SWALLOWED FOCUS.** The contract stays **a consumer must register**, and the
+    showcase already follows it — all five controls are `useControlRef`'d, three of them inside
+    their kind's one `Atomic`, which the fix's own success proves (`reclaimFocus` fires only for a
+    registered control root). What was missing was the editor's half: the reclaim ran on the COMMIT,
+    so it reached exactly the controls that WRITE. The trigger is the CLICK now, for every control
+    that does not own a keyboard of its own; a `<select>`, an `<input>`, a `<textarea>` and an
+    editable island keep the focus their click gave them — taking it back would close the popup the
+    click opened — and give it back on their commit, which is the path that already existed.
+  - **ENTER AT A ROW'S START APPLIED `continues` TO THE HALF THAT KEPT THE CONTENT.** Round seven
+    rewrote the `/table` pin to press Enter from the LAST cell rather than face this. Restored, seen
+    red, and FIXED at the cause: a split OPENS one row and KEEPS the other, and when nothing is
+    written at the cut and the head takes none of the body, the row it opens is the empty HEAD. So
+    `'|= A | B'` no longer emits `'|= ⏎| A | B'` (an empty header above, the column names demoted to
+    a data line — the table's head gone in one keystroke) and `'# a'` no longer emits `'# ⏎a'`. A
+    bullet is unchanged, because `continues: true` is the same kind either way. NO PIN ANYWHERE
+    COVERED THE INVERSION: the whole suite stayed green with the swap in. What Enter from a seeded
+    header now does — an empty row of what the kind CONTINUES INTO, above the header — is declared
+    in `guides/keyboard-handling.md` and asserted rather than avoided.
+  - **PRE-EXISTING, FLAGGED, NOT FIXED: a kind flip loses the caret's offset.** Clicking the toggle
+    arrow reclaims focus correctly and the next character lands at the ROW'S ENTRY rather than where
+    the caret was. Measured identical with the click reclaim disabled, so it is not that rule's: a
+    flip of the arrow is a flip of the row's KIND, the consumer mints a fresh element for the row,
+    and the caret is re-placed at its entry. The to-do's box keeps its offset because a `meta` change
+    leaves the component — and the element — in place. Pinned at its actual behaviour in
+    `Notion.react.spec`'s 'keeps typing after the toggle arrow'.
