@@ -1,8 +1,7 @@
 # Is a Row a Token? — glossary decision
 
 Type: grilling
-Status: open
-Blocked by: 02
+Status: resolved
 
 ## Question
 
@@ -59,3 +58,43 @@ tests red, and it must supersede ADR-0009.
 
 One inaccuracy already sitting in `CONTEXT.md:108`, worth fixing in the same
 pass: it calls `MarkToken` parser-local, but `MarkToken` is a published export.
+
+## Answer (2026-08-26) — Widen the Token, and the blocker resolved itself
+
+**Option 1 won, and its blocker is gone.** 06 waited on 02's slot-registry
+sub-question — "`Row` versus `Block`" — because closing first would have written
+an entry that decision deleted. A vocabulary census answered it independently:
+`slots.block` resolved ONLY the row with no kind, `slotProps.block` reached EVERY
+row, so the two were never a pair and neither was "the row wrapper" the glossary
+called them. Both are renamed (`slots.paragraph`, `slotProps.row`), together with
+`BlockMenu`, `BLOCK_MENU_ITEMS`, `BlockController`, `store.block`, `.Block` and
+`.BlockControls`. Nothing that named the deleted layout mode is left on the public
+surface, so the entry 06 was waiting to write is now safe to write.
+
+**`Token = text | mark | row`.** The Token entry says so, the Row entry declares
+membership, and the Relationships line reads "A **Mark** is a **Token**, and so is
+a **Row**". This is the smallest edit that makes `CONTEXT.md` agree with both
+`architecture.md` and ADR-0009. No ADR: it reverses nothing and surprises nobody —
+the published docs already said it.
+
+**Option 2 (the unit is a Node) was not taken.** It buys the deletion of **Lexeme**
+at the price of reversing Flagged ambiguity 1 and renaming the word every entry in
+the glossary is written in. Nothing forced that trade, and the census's own rule
+applies: rename only where a name refers to something that no longer is.
+
+**The three owed repairs are all made, each re-verified rather than inherited:**
+
+- `CONTEXT.md:70` — deleted outright with the **Block layout** entry, which was
+  stale three ways over (rows nest; a Row holds tokens rather than being one
+  promoted; `draggable` defaults to `false`, `PropsModel.ts:55`).
+- "Every Token is mirrored into one Surface" — now "A TEXT Token is mirrored into
+  one Surface; a Mark and a Row own a consigned element instead". Proven at
+  `bind.ts:217`: `textElement: node.kind === 'text' ? element : undefined`.
+- "a span between Separator occurrences" — replaced. `Parser.parseRows`' own
+  docblock: "a separator inside a row's raw body is that row's own text rather
+  than a boundary", so one Row can read as several visual lines and carry one grip.
+
+**And the extra inaccuracy:** `MarkToken` was called parser-local. It is a
+published export (`core/index.ts:28`) — `denote`'s callback parameter is one, and
+dropping the type made a shipped signature unnameable. `TextToken` is still
+internal. Flagged ambiguity 2 now says which is which.
