@@ -185,9 +185,24 @@ Use it for anything that is chrome rather than text: a bullet glyph, a toggle ar
 
 A control that is FOCUSABLE — a checkbox, a `<select>`, a `<button>` — takes DOM focus when it is
 clicked, which is the browser's own default, and it leaves the selection where it was. The editor
-takes its focus back once the control's edit has landed, so the user can go on typing where the
-caret already is. The cost of that, stated: a control driven by the KEYBOARD that commits on every
-keystroke — a `<select>` arrowed with its popup closed — loses focus after the first commit.
+takes its focus back, so the user can go on typing where the caret already is, and it does so at
+whichever of these comes first:
+
+- the CLICK, for a control that answers the pointer and nothing else — a `<button>`, a tab, a
+  `[tabindex]` element. A decoration that writes nothing to the document is the common case here,
+  and holding its focus only makes the editor deaf: a `contenteditable` emits no `beforeinput` while
+  a descendant control has focus, so every keystroke after such a click was lost with nothing on
+  screen to say why;
+- the COMMIT, for a control that OWNS a keyboard of its own — a `<select>`, an `<input>`, a
+  `<textarea>` or your own `contenteditable` island. Those keep the focus a click gives them, because
+  taking it back would close the very popup the click opened, and they answer their own arrow keys
+  and typing until they write. The cost of that, stated: such a control driven by the KEYBOARD and
+  committing on every keystroke — a `<select>` arrowed with its popup closed — loses focus after the
+  first commit.
+
+THE RULE ONLY REACHES CONTROLS YOU REGISTER. `useControlRef()` is what tells the editor an element is
+not document content; a focusable element it knows nothing about keeps the focus it took, and the
+keyboard stays dead until the user clicks back into the text.
 
 A control that is only PRESENTATION — a bullet glyph, a card, a properties grid — takes no focus,
 and a click on one names no position the editor can use: the browser either leaves its caret inside

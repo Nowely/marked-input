@@ -7,6 +7,14 @@ import type {Anchors, Id, NodeAnchor, TreeNode} from '../tree/types'
 import type {DomModel} from './DomModel'
 import type {TokenHandle} from './TokenHandle'
 
+/**
+ * WHICH ELEMENTS ANSWER THE KEYBOARD THEMSELVES. A focused one of these owns arrow keys, typing or
+ * both, so the editor leaves it the focus a click gave it — see the `click` listener below. Every
+ * other focusable thing inside the host (a `<button>`, a `[tabindex]` div) answers the pointer and
+ * nothing else, and holding the focus after its click only makes the editor deaf.
+ */
+const KEYBOARD_OWNERS = 'select, input, textarea, [contenteditable="true"], [contenteditable=""]'
+
 /** What the selection's DOM half reads from the model — nothing more. */
 export type SelectionDriverDeps = {
 	/** The tree-space half: the stored anchors this driver applies and rewrites. */
@@ -328,6 +336,45 @@ export class SelectionDriver {
 		// answered with a row the user pointed at several keystrokes ago.
 		listen(container, 'keydown', () => {
 			this.#pointerControl = undefined
+		})
+
+		// AND A CONTROL THAT KEEPS NO KEYBOARD GIVES THE FOCUS BACK WHEN ITS CLICK IS OVER, which is
+		// the trigger {@link reclaimFocus} was missing. It ran only after a COMMIT, so the rule
+		// reached exactly the controls that write to the document — a to-do's box, a fence's
+		// language, a toggle's arrow — and none of the ones that do not. Measured on the showcase,
+		// all four registered through `useControlRef`: `'+ Add a property'`, a view tab, a comment
+		// thread's `'Reply…'` and the same view bar's actions all took focus on mousedown, wrote
+		// nothing, and the next keystroke was lost with nothing on screen to say why.
+		//
+		// A KEYBOARD OWNER KEEPS IT, and that is the whole discriminator: a `<select>`, an `<input>`,
+		// a `<textarea>` and an editable island answer arrow keys and typing of their own, and taking
+		// the focus off one on `click` would close the very popup the click opened. Those give it
+		// back on their COMMIT, which is the path that already existed.
+		//
+		// AND ONLY WHERE THERE IS A CARET TO GO BACK TO. "Take the focus back" means "back to the
+		// position the user still holds", and with none there is nothing to return to: focusing the
+		// host would have Chromium INVENT one at its start, which is {@link DomModel.releaseCaret}'s
+		// own measured hazard read at the other end. Measured on `Drag`'s grip — clicked in a field
+		// nobody had typed in, the `x` after it landed at the top of the document.
+		//
+		// It is the LIVE selection that answers, not the stored anchors, and that is measured too:
+		// Chromium routes focus through `<body>` on the way from the host to a control inside it, so
+		// the `focusout` rule below has already cleared the stored pair by the time this runs. The
+		// DOM selection is what a control click leaves standing, which is the whole reason the
+		// reclaim exists, and the stored pair heals itself on the next `selectionchange` — every edit
+		// path reads DOM truth first anyway. The COMMIT path is not gated at all and is left exactly
+		// as it was: an edit has landed there, so the caret it named is the one being returned to.
+		//
+		// AFTER the consumer's own handler, which is what the microtask is for: a control that moves
+		// focus somewhere itself has done so by then, and it is `document.activeElement` — not the
+		// element clicked — that this reads.
+		listen(container, 'click', () => {
+			queueMicrotask(() => {
+				if (!this.domAnchors()) return
+				const active = document.activeElement
+				if (active instanceof Element && active.matches(KEYBOARD_OWNERS)) return
+				this.reclaimFocus()
+			})
 		})
 
 		listen(container, 'focusout', () => {

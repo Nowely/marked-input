@@ -863,6 +863,75 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * AND A CONTROL THAT WRITES NOTHING GIVES THE FOCUS BACK TOO. The rule above ran on the COMMIT,
+	 * so it reached exactly the controls that edit the document and none of the DECORATIONS beside
+	 * them — and a decoration is a `<button>`, which takes focus on mousedown like any other. All
+	 * three below are registered through `useControlRef` (each inside its kind's one `Atomic`), the
+	 * editor still held a live caret, and the next keystroke was lost with nothing on screen to say
+	 * why. The CLICK is where such an interaction ends, so that is the trigger now.
+	 *
+	 * ONE `it` PER SHAPE, because they are three different components and a loop that mis-selects
+	 * one of them reads as two passes and a skip.
+	 */
+	const decorations: [string, string, string][] = [
+		['+ Add a property', '[class*="addProperty"]', '@properties\nStatus: chip:amber:Open\n@end\ntail'],
+		['a view tab', 'button[class*="viewTab"]', '@views Table|Board\ntail'],
+		['Reply…', '[class*="commentReply"]', '@comments\nKara|2h|Ping?\n@end\ntail'],
+	]
+	for (const [name, selector, document_] of decorations) {
+		it(`keeps typing after clicking ${name}, which writes nothing`, async () => {
+			const {host, value} = await mountControlled(Showcase, document_)
+			await focusAtEnd(rowAt(host, 'tail'))
+			const control = host.querySelector<HTMLElement>(selector)
+			if (!control) throw new Error(`no ${selector} on the page`)
+
+			await userEvent.click(control)
+			await userEvent.keyboard('!')
+
+			await expect.poll(value).toBe(`${document_}!`)
+		})
+	}
+
+	/**
+	 * And the toggle's arrow, which is a decoration that DOES write — the commit path and the click
+	 * path over the same control.
+	 *
+	 * PRE-EXISTING AND FLAGGED, not fixed here: the character lands at the row's ENTRY rather than
+	 * where the caret was. A flip of the arrow is a flip of the row's KIND, so the consumer mints a
+	 * fresh element for it and the caret is re-placed at the row's entry — measured identical with
+	 * the click reclaim disabled, so it is not this rule's. The to-do's box keeps its offset because
+	 * a `meta` change leaves the component, and the element, in place.
+	 */
+	it('keeps typing after the toggle arrow', async () => {
+		const {host, value} = await mountControlled(Showcase, '\u25be Why we cut it\n\tbecause')
+		await focusAtEnd(toggleStarting(host, 'Why we cut it'))
+
+		await userEvent.click(host.querySelector<HTMLElement>('[class*="toggleArrow"]')!)
+		await expect.poll(value).toBe('\u25b8 Why we cut it\n\tbecause')
+
+		await userEvent.keyboard('!')
+
+		await expect.poll(value).toBe('\u25b8 !Why we cut it\n\tbecause')
+	})
+
+	/**
+	 * THE ONE CONTROL THAT KEEPS THE FOCUS ITS OWN CLICK GAVE IT, declared rather than repaired: a
+	 * `<select>` answers arrow keys and type-ahead of its own, and taking the focus off one on
+	 * `click` would close the very popup the click opened. It gives the focus back on its CHANGE,
+	 * which is the commit path two cases above.
+	 */
+	it('leaves a language select the focus its own click gave it', async () => {
+		const {host} = await mountControlled(Showcase, '```bash\nls\n```\nafter')
+		await focusAtEnd(rowAt(host, 'after'))
+		const select = host.querySelector<HTMLElement>('select')
+		if (!select) throw new Error('no language select')
+
+		await userEvent.click(select)
+
+		expect(document.activeElement).toBe(select)
+	})
+
+	/**
 	 * AND THE EDIT IS TAKE-BACK-ABLE from where the user is standing. The `Mod+Z` after a tick was
 	 * swallowed whole: the entry was on the stack and replayed fine once you clicked back into a
 	 * text row, but from the control the key was dead. Kept beside the reclaim above, because the
