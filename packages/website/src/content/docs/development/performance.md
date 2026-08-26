@@ -42,7 +42,7 @@ Common performance issues:
 
 **Solution 1: Debounce onChange**
 
-```typescript
+```typescript fragment uses=saveToBackend,MyMark
 import { useMemo } from 'react'
 import { debounce } from 'lodash'
 
@@ -76,7 +76,7 @@ function Editor() {
 
 For very large documents, use virtualization:
 
-```typescript
+```typescript fragment uses=MyMark
 import { FixedSizeList } from 'react-window'
 
 function VirtualizedEditor() {
@@ -90,7 +90,7 @@ function VirtualizedEditor() {
       itemSize={24}
       width="100%"
     >
-      {({ index, style }) => (
+      {({index, style}: {index: number; style: React.CSSProperties}) => (
         <div style={style}>
           <MarkedInput
             value={lines[index]}
@@ -112,7 +112,7 @@ function VirtualizedEditor() {
 
 Parse only visible content:
 
-```typescript
+```typescript fragment uses=ScrollContainer,MyMark
 function LazyEditor() {
   const [value, setValue] = useState('')
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 1000 })
@@ -120,7 +120,7 @@ function LazyEditor() {
   const visibleText = value.substring(visibleRange.start, visibleRange.end)
 
   return (
-    <ScrollContainer onScroll={(range) => setVisibleRange(range)}>
+    <ScrollContainer onScroll={(range: {start: number; end: number}) => setVisibleRange(range)}>
       <MarkedInput
         value={visibleText}
         onChange={(newText) => {
@@ -141,7 +141,7 @@ function LazyEditor() {
 
 **Solution: Memoize Mark Components**
 
-```typescript
+```typescript fragment
 import { memo } from 'react'
 
 // ❌ Re-renders on every change
@@ -154,7 +154,9 @@ const FastMark = memo<MarkProps>(({ value }) => (
   <span>{value}</span>
 ))
 
-<MarkedInput Mark={FastMark} />
+const Editor = () => (
+    <MarkedInput Mark={FastMark} />
+)
 ```
 
 **Solution: Memoize Options**
@@ -164,16 +166,16 @@ option objects costs nothing — hoisting the objects out of the render is enoug
 and a `useMemo` over the whole array is not required. What still costs is fresh
 option OBJECTS, because nothing can tell them from a genuine change.
 
-```typescript
+```typescript fragment uses=MyMark
 // ❌ New option objects on every render — the resolver churns and every token re-renders
-function Editor() {
+function ChurningEditor() {
   return <MarkedInput Mark={MyMark} options={[{markup: '@[__value__]'}]} />
 }
 
 // ✅ The objects are stable; the array around them may be fresh
-const OPTIONS = [{markup: '@[__value__]'}]
+const OPTIONS: Option[] = [{markup: '@[__value__]'}]
 
-function Editor() {
+function StableEditor() {
   return <MarkedInput Mark={MyMark} options={OPTIONS} />
 }
 ```
@@ -194,7 +196,7 @@ The cost it leaves is a render pass, not a remount.
 
 **Solution: Simplify Mark Components**
 
-```typescript
+```typescript fragment uses=useFetchUser,useFetchAvatar,Tooltip
 // ❌ Heavy mark component
 const HeavyMark: FC<MarkProps> = ({ value, meta }) => {
   const user = useFetchUser(meta)           // API call per mark!
@@ -217,23 +219,28 @@ const LightMark: FC<MarkProps> = ({ value }) => (
 
 **Solution: Batch Data Fetching**
 
-```typescript
+```typescript fragment uses=extractMarks,useFetchUsers
 // Fetch all user data at once
 function Editor() {
   const [value, setValue] = useState('')
   const marks = extractMarks(value)
-  const userIds = marks.map(m => m.meta)
+  const userIds = marks.map((m: MarkNode) => m.meta)
 
   // Single batch request
   const users = useFetchUsers(userIds)
 
-  const options = useMemo(() => [{
-    markup: '@[__value__](__meta__)',
-    mark: ({ value, meta }: MarkProps) => ({
-      value,
-      user: users[meta] // Pass cached data
-    })
-  }], [users])
+  const options = useMemo<Option<{value?: string; user: unknown}>[]>(
+    () => [
+      {
+        markup: '@[__value__](__meta__)',
+        mark: ({value, meta}: MarkProps) => ({
+          value,
+          user: users[meta ?? ''] // Pass cached data
+        })
+      }
+    ],
+    [users]
+  )
 
   return <MarkedInput value={value} onChange={setValue} options={options} />
 }
@@ -243,7 +250,7 @@ function Editor() {
 
 **Solution: Lazy Loading**
 
-```typescript
+```typescript fragment uses=useIntersectionObserver,fetchData,DetailedView
 const LazyMark: FC<MarkProps> = ({ value, meta }) => {
   const markerRef = useRef<HTMLSpanElement>(null)
   const [data, setData] = useState(null)
@@ -267,7 +274,7 @@ const LazyMark: FC<MarkProps> = ({ value, meta }) => {
 
 ### Strategy 1: Component-Level Memoization
 
-```typescript
+```typescript fragment
 // Memoize entire mark component
 const MemoizedMark = memo<MarkProps>(
   ({ value, meta }) => <span>{value}</span>,
@@ -280,7 +287,7 @@ const MemoizedMark = memo<MarkProps>(
 
 ### Strategy 2: Hook-Level Memoization
 
-```typescript
+```typescript fragment uses=formatName
 const MyMark: FC = () => {
   const mark = useMark()
   const value = mark.value()
@@ -301,7 +308,7 @@ const MyMark: FC = () => {
 
 ### Strategy 3: Data-Level Memoization
 
-```typescript
+```typescript fragment uses=parser
 // Cache parsed tokens
 const tokens = useMemo(() => {
     return parser.parse(value)
@@ -309,21 +316,21 @@ const tokens = useMemo(() => {
 
 // Cache mark data
 const markData = useMemo(() => {
-    return tokens.filter(t => t.type === 'mark').map(t => ({value: t.value, meta: t.meta}))
+    return tokens.filter((t: MarkNode) => t.kind === 'mark').map((t: MarkNode) => ({value: t.value(), meta: t.meta()}))
 }, [tokens])
 ```
 
 ### Strategy 4: Callback Memoization
 
-```typescript
+```typescript fragment uses=MyMark
 function Editor() {
   // ❌ New function on every render
-  const handleMarkClick = (id: string) => {
+  const freshHandler = (id: string) => {
     console.log(id)
   }
 
   // ✅ Memoized callback
-  const handleMarkClick = useCallback((id: string) => {
+  const stableHandler = useCallback((id: string) => {
     console.log(id)
   }, [])
 
@@ -335,7 +342,7 @@ function Editor() {
 
 ### Debounce onChange
 
-```typescript
+```typescript fragment uses=saveToServer,validateContent,updateAnalytics,MyMark
 import { useMemo } from 'react'
 import debounce from 'lodash/debounce'
 
@@ -369,10 +376,11 @@ function Editor() {
 
 ### Debounce Overlay Search
 
-```typescript
+```typescript fragment uses=debounce,searchAPI
 const MyOverlay: FC = () => {
   const { match } = useOverlay()
-  const [results, setResults] = useState([])
+  const [results, setResults] = useState<string[]>([])
+  const query = match?.value ?? ''
 
   const debouncedSearch = useMemo(
     () => debounce((query: string) => {
@@ -382,16 +390,16 @@ const MyOverlay: FC = () => {
   )
 
   useEffect(() => {
-    debouncedSearch(match.value)
-  }, [match.value])
+    debouncedSearch(query)
+  }, [query])
 
-  return <div>{results.map(r => ...)}</div>
+  return <div>{results.map(r => r)}</div>
 }
 ```
 
 ### Throttle vs Debounce
 
-```typescript
+```typescript fragment uses=debounce,fn,throttle
 // Debounce: Wait for user to stop typing
 const debounced = debounce(fn, 300)
 // Calls fn 300ms after last keystroke
@@ -439,7 +447,7 @@ const throttled = throttle(fn, 300)
 
 ### Custom Performance Monitoring
 
-```typescript
+```typescript fragment uses=parser
 function measurePerformance<T>(fn: () => T, label: string): T {
     const start = performance.now()
     const result = fn()
@@ -454,7 +462,7 @@ const tokens = measurePerformance(() => parser.parse(value), 'Parse')
 
 ### Performance Hooks
 
-```typescript
+```typescript fragment
 function usePerformanceMonitor(label: string) {
     useEffect(() => {
         const start = performance.now()
@@ -507,7 +515,7 @@ function App() {
 
 Load mark components on demand:
 
-```typescript
+```typescript fragment
 function App() {
   const [MarkComponent, setMarkComponent] = useState(null)
 
@@ -529,24 +537,21 @@ function App() {
 
 ### Cleanup Event Listeners
 
-```typescript
+```typescript fragment uses=SystemEvent
 function MyComponent() {
     useEffect(() => {
-        const handler = e => console.log(e)
-        store.bus.on(SystemEvent.Change, handler)
-
-        return () => {
-            store.bus.off(SystemEvent.Change, handler) // ✅ Cleanup
-        }
+        // `watch` hands back the unsubscribe; there is no event bus on the store
+        const dispose = watch(store.tokens.value, value => console.log(value))
+        return dispose // ✅ Cleanup
     }, [])
 }
 ```
 
 ### Avoid Memory Leaks
 
-```typescript
+```typescript fragment uses=fetchLargeData
 // ❌ Memory leak: closure captures large object
-function Editor() {
+function LeakingEditor() {
   const largeData = fetchLargeData()
 
   const handleChange = (value: string) => {
@@ -557,7 +562,7 @@ function Editor() {
 }
 
 // ✅ Fixed: only capture what you need
-function Editor() {
+function LeanEditor() {
   const largeData = fetchLargeData()
   const summary = largeData.summary // Small object
 
@@ -571,7 +576,7 @@ function Editor() {
 
 ### WeakMap for Caches
 
-```typescript
+```typescript fragment uses=CachedData,computeExpensiveData
 // Cache mark data without preventing GC. Key on the live node: `useMark()` returns
 // the same `MarkNode` object for as long as the mark keeps its id.
 const markCache = new WeakMap<MarkNode, CachedData>()
@@ -591,20 +596,20 @@ function getCachedData(mark: MarkNode): CachedData {
 
 ### Optimization 1: Batch Updates
 
-```typescript
+```typescript fragment uses=markup:Markup,onChange
 // ❌ Multiple onChange calls
-function insertMultipleMarks() {
+function insertOneAtATime() {
     marks.forEach(mark => {
-        const newValue = value + annotate(markup, mark)
+        const newValue = value + annotate(markup, {value: mark.value(), meta: mark.meta()})
         onChange(newValue) // Triggers re-render each time!
     })
 }
 
 // ✅ Single onChange call
-function insertMultipleMarks() {
+function insertInOneGo() {
     let newValue = value
     marks.forEach(mark => {
-        newValue += annotate(markup, mark)
+        newValue += annotate(markup, {value: mark.value(), meta: mark.meta()})
     })
     onChange(newValue) // Single re-render
 }
@@ -612,7 +617,7 @@ function insertMultipleMarks() {
 
 ### Optimization 2: Request Deduplication
 
-```typescript
+```typescript fragment
 const pendingRequests = new Map<string, Promise<any>>()
 
 function fetchWithDedup(url: string): Promise<any> {
@@ -633,7 +638,7 @@ function fetchWithDedup(url: string): Promise<any> {
 
 ### Optimization 3: Incremental Rendering
 
-```typescript
+```typescript fragment uses=chunkText
 function IncrementalEditor() {
   const [value, setValue] = useState('')
   const [rendered, setRendered] = useState('')
@@ -689,7 +694,7 @@ function IncrementalEditor() {
 
 ### Test Setup
 
-```typescript
+```typescript fragment
 function benchmark(label: string, fn: () => void, iterations = 1000) {
     const start = performance.now()
 
@@ -705,7 +710,7 @@ function benchmark(label: string, fn: () => void, iterations = 1000) {
 
 ### Parsing Benchmarks
 
-```typescript
+```typescript fragment uses=Parser,benchmark,longText
 const parser = new Parser(['@[__value__](__meta__)'])
 
 benchmark('Parse 100 chars', () => {
@@ -719,7 +724,7 @@ benchmark('Parse 1000 chars', () => {
 
 ### Rendering Benchmarks
 
-```typescript
+```typescript fragment uses=benchmark,render,textWith10Marks,MyMark
 benchmark('Render 10 marks', () => {
   render(
     <MarkedInput

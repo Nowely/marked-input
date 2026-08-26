@@ -127,6 +127,33 @@ behavior change under "internal cleanup".
 - Browser tests use real Vitest Browser Mode with Playwright. Reuse shared
   helpers from `packages/storybook/src/shared/lib/`.
 
+### Doc Samples
+
+Every `ts`/`tsx`/`typescript`/`jsx` fence under
+`packages/website/src/content/docs/` is extracted and type-checked by the `docs`
+vitest project (`packages/website/samples/`), against the packages' SOURCE and a
+consumer-shaped tsconfig — strict, bundler resolution, automatic JSX runtime. A
+failure names the page, line and column. The generated `api/` tree is excluded:
+TypeDoc rewrites it from the adapter's source, and its fences are member
+signatures, not samples.
+
+A fence with no directive is compiled ALONE and must carry its own imports, like
+the reader who pastes it. A fence that is something else says so:
+
+| Directive       | The fence is                                                       |
+| --------------- | ------------------------------------------------------------------ |
+| `fragment`      | statements continuing the page's scope (`samples/scope.d.ts`)      |
+| `markup`        | JSX markup rather than a program                                   |
+| `value`         | a bare object or array literal                                     |
+| `elide`         | carrying `...`/`…` where a value would be                          |
+| `uses=A,b:Type` | leaning on names shown elsewhere; `name:Type` keeps the check real |
+| `sketch="why"`  | not code — out of the check, and the count is pinned by a test     |
+
+A relative import is the READER's own file: the names it brings in are declared
+opaque. Third-party packages the guides illustrate are listed one by one in
+`samples/readers-own.d.ts`. Do not reach for `sketch` to silence a sample that
+stopped compiling — that is the rot the check exists to find.
+
 ### Snapshot Failures
 
 Do not regenerate HTML or DOM snapshots automatically. First diff the old and

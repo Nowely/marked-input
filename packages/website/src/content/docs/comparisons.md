@@ -137,7 +137,7 @@ If you're considering migrating from another editor to Markput, here's what you 
 
 **Example:**
 
-```typescript
+```typescript sketch="a Draft.js entity beside the markup it becomes — two shapes, not a program"
 // Draft.js entity
 { type: 'mention', data: { id: '123', name: 'Alice' } }
 

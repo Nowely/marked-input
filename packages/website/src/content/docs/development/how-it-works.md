@@ -64,7 +64,7 @@ A Mark's own element belongs to you, so core never asks for it and never writes 
 
 A **mark** is a special pattern in your text that gets rendered as a React component. It highlights or transforms specific text segments into interactive elements.
 
-```tsx
+```tsx fragment
 'Hello @[World](meta)!'
 //     ↑          ↑
 //     Mark boundaries
@@ -81,7 +81,7 @@ A **mark** is a special pattern in your text that gets rendered as a React compo
 
 A **token** is the internal representation used by Markput's parser. Your text is broken down into tokens:
 
-```tsx
+```text
 'Hello @[World](meta)!'[
     // Becomes this token tree:
     ({type: 'text', content: 'Hello '},
@@ -115,7 +115,7 @@ Markup patterns define how marks are identified in your text. They use placehold
 
 ### Common Patterns
 
-```tsx
+```tsx fragment
 // Basic mention
 '@[__value__]'
 // Matches: @[Alice], @[Bob]
@@ -154,7 +154,7 @@ Let's walk through how Markput processes your text step-by-step:
 
 The text is scanned for potential mark boundaries.
 
-```tsx
+```text
 Input: 'Hello @[World](meta) and @[Alice](user:1)!'
        ↓
 Identifies: Two potential marks at positions 6-22 and 27-42
@@ -164,7 +164,7 @@ Identifies: Two potential marks at positions 6-22 and 27-42
 
 Each potential mark is tested against your markup patterns.
 
-```tsx
+```text
 Markup: '@[__value__](__meta__)'
        ↓
 Test: '@[World](meta)' → ✅ Match!
@@ -178,7 +178,7 @@ Test: '@[Alice](user:1)' → ✅ Match!
 
 The text is broken into tokens.
 
-```tsx
+```tsx value elide
 [
   { type: 'text', content: 'Hello ' },
   { type: 'mark', value: 'World', meta: 'meta', ... },
@@ -192,7 +192,7 @@ The text is broken into tokens.
 
 Each token is rendered as a React element.
 
-```tsx
+```text
 TextToken → <span>Hello </span>
 MarkToken → <Mark value="World" meta="meta" />
 TextToken → <span> and </span>
@@ -208,7 +208,7 @@ TextToken → <span>!</span>
 
 Nested marks allow hierarchical structures. Use `__slot__` to enable nesting:
 
-```tsx
+```tsx fragment
 // Flat (no nesting)
 markup: '*__value__*'
 value: '*bold with *italic* inside*'
@@ -225,7 +225,7 @@ value: '*bold with *italic* inside*'
 <details>
 <summary><strong>Token Structure Example (Advanced)</strong></summary>
 
-```tsx
+```text
 '**bold with *italic* text**'
 
 // Token tree:
@@ -256,14 +256,14 @@ Notice the `children` array - this is what makes nesting possible. Each mark can
 
 When a mark has `children`, they're rendered as React children:
 
-```tsx
-const Mark = ({children, nested}) => {
+```tsx fragment
+const Mark = ({children, value}: MarkProps) => {
     // For nested marks, use children (ReactNode)
     if (children) {
         return <strong>{children}</strong>
     }
-    // For flat marks, use nested string
-    return <strong>{nested}</strong>
+    // For flat marks, the mark's own value is the text
+    return <strong>{value}</strong>
 }
 ```
 
@@ -300,7 +300,7 @@ Overlay closed
 
 The `useOverlay()` hook provides:
 
-```tsx
+```text
 {
   style: { left: 120, top: 45 }, // Caret position
   close: () => {...},             // Close the overlay
@@ -364,7 +364,7 @@ The key insight: Everything flows through the store, which triggers re-renders o
 
 Markput uses an internal store for managing editor state:
 
-```tsx
+```tsx fragment
 store.props      // the declared props, each a signal with its own default
 store.tokens     // the token tree (the source of truth), the selection, the DOM↔model map
 store.edit       // every user mutation: replace(from, to, text)
@@ -379,13 +379,13 @@ value follows.
 
 ### Controlled vs Uncontrolled
 
-```tsx
+```tsx fragment
 // ✅ Controlled (recommended)
 const [value, setValue] = useState('')
-<MarkedInput value={value} onChange={setValue} />
+const Controlled = () => <MarkedInput value={value} onChange={setValue} />
 
 // ⚠️ Uncontrolled (less common)
-<MarkedInput defaultValue="initial" />
+const Uncontrolled = () => <MarkedInput defaultValue="initial" />
 ```
 
 ## Event System
@@ -402,13 +402,13 @@ const [value, setValue] = useState('')
 
 Everything else is an ordinary DOM handler on the container, passed through `slotProps.container`:
 
-```tsx
+```tsx markup uses=showToolbar,hideToolbar
 <MarkedInput
     slotProps={{
         container: {
             onFocus: () => showToolbar(),
             onBlur: () => hideToolbar(),
-            onKeyDown: event => {
+            onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
                 /* your shortcuts — Markput owns text mutation */
             },
         },
@@ -424,7 +424,7 @@ through `useMark()`.
 Options allow per-pattern configuration. Each pattern can have its own Mark component and overlay —
 capitalised keys are components, lowercase ones are their props:
 
-```tsx
+```tsx markup uses=MentionComponent,users,HashtagComponent,hashtags
 <MarkedInput
     options={[
         {
@@ -444,7 +444,7 @@ capitalised keys are components, lowercase ones are their props:
 <details>
 <summary><strong>Advanced: Full Example with Props Transform</strong></summary>
 
-```tsx
+```tsx markup uses=MentionComponent,MentionOverlay,users
 <MarkedInput
     options={[
         {
@@ -492,8 +492,8 @@ Markput minimizes re-renders:
 - Components re-render only when their token changes
 - Use `React.memo` for expensive Mark components
 
-```tsx
-const ExpensiveMark = React.memo(({value}) => {
+```tsx fragment
+const ExpensiveMark = memo(({value}: MarkProps) => {
     // Complex rendering logic
     return <span>{value}</span>
 })
@@ -520,8 +520,9 @@ For more details, see the [Performance Optimization](/development/performance) g
 
 The live tree is on the store, not in a parse helper:
 
-```tsx
-const nodes = useMarkput(s => s.tokens.nodes())
+```tsx fragment
+// The SIGNAL itself, not its value — the hook subscribes to what the selector names
+const nodes = useMarkput(s => s.tokens.nodes)
 console.log(nodes.map(node => [node.kind, node.range()]))
 ```
 

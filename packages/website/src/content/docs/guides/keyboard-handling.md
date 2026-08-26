@@ -39,7 +39,7 @@ Production code should not infer token identity from DOM child order or public d
 
 Inline text input uses the selection the DOM reports:
 
-```ts
+```ts fragment uses=text
 const anchors = store.tokens.domAnchors()
 if (anchors) store.edit.replace(anchors.anchor, anchors.head, text)
 ```
@@ -58,7 +58,7 @@ An undo restores the value AND the caret the edit was made from, and it replays 
 
 Wire your own controls to the same stack:
 
-```ts
+```ts fragment
 store.history.canUndo() // reactive: safe to read inside a computed
 store.history.undo()    // answers whether the document moved
 store.history.redo()
@@ -74,7 +74,7 @@ Where the value splits into rows, `Esc` turns the caret into a ROW SELECTION: th
 
 There is no separate row-selection state: a row is selected exactly while the text selection spans it whole, so the browser paints it and every read is one call.
 
-```ts
+```ts fragment
 store.rows.selected() // reactive: the ids of the selected rows, in document order
 store.rows.move({parent: null, index: 2}) // move them, as one splice
 ```
@@ -128,7 +128,7 @@ function RemovableMention() {
 
 To update a mark, call `mark.update()`:
 
-```tsx
+```tsx fragment
 mark.update({value: 'alice'})
 mark.update({meta: null})
 ```
@@ -143,11 +143,11 @@ Overlay trigger probing uses the current raw caret position (`caret.selection()`
 
 Attach custom handlers to the container through `slotProps.container`, but let Markput own text mutation:
 
-```tsx
+```tsx markup
 <MarkedInput
     slotProps={{
         container: {
-            onKeyDown(event) {
+            onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
                 if (event.key === 'Escape') {
                     // custom behavior
                 }

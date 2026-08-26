@@ -29,7 +29,7 @@ This example demonstrates how to build a comprehensive autocomplete system with 
 
 ### Step 1: Define Types
 
-```tsx
+```tsx fragment
 // types.ts
 export interface AutocompleteItem {
     id: string
@@ -53,7 +53,7 @@ export interface AutocompleteSource {
 
 ### Step 2: Fuzzy Search Utility
 
-```tsx
+```tsx fragment uses=AutocompleteItem
 // fuzzySearch.ts
 export function fuzzyMatch(query: string, text: string): boolean {
     const pattern = query.toLowerCase().split('').join('.*')
@@ -181,8 +181,9 @@ export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [
     const [asyncItems, setAsyncItems] = useState<AutocompleteItem[]>([])
     const selectedRef = useRef<HTMLButtonElement>(null)
 
-    // Find active source based on trigger
-    const activeSource = sources.find(s => match.trigger === s.trigger)
+    // `match` is undefined while no trigger is open, and the trigger lives on the matched option
+    const query = match?.value ?? ''
+    const activeSource = sources.find(s => match?.option.overlay?.trigger === s.trigger)
 
     // Get all items
     const allItems = useMemo(() => {
@@ -191,30 +192,30 @@ export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [
         let items = activeSource.async ? asyncItems : activeSource.items
 
         // Add recent items at the top if query is empty
-        if (!match.value && recentItems.length > 0) {
-            const recentForCategory = recentItems.filter(item => item.category === activeSource.category)
+        if (!query && recentItems.length > 0) {
+            const recentForCategory = recentItems.filter((item: AutocompleteItem) => item.category === activeSource.category)
             items = [...recentForCategory, ...items]
         }
 
         // Apply fuzzy filtering
-        if (activeSource.fuzzy && match.value) {
-            return fuzzyFilter(items, match.value)
+        if (activeSource.fuzzy && query) {
+            return fuzzyFilter(items, query)
         }
 
         // Simple filtering
-        return items.filter(item => item.label.toLowerCase().includes(match.value.toLowerCase()))
-    }, [activeSource, asyncItems, recentItems, match.value])
+        return items.filter((item: AutocompleteItem) => item.label.toLowerCase().includes(query.toLowerCase()))
+    }, [activeSource, asyncItems, recentItems, query])
 
     // Fetch async items
     useEffect(() => {
         if (activeSource?.async && activeSource.fetchItems) {
             setLoading(true)
             activeSource
-                .fetchItems(match.value)
+                .fetchItems(query)
                 .then(setAsyncItems)
                 .finally(() => setLoading(false))
         }
-    }, [activeSource, match.value])
+    }, [activeSource, query])
 
     // Reset selection on results change
     useEffect(() => {
@@ -266,7 +267,7 @@ export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [
     if (loading) {
         return (
             <div
-                ref={ref}
+                ref={ref as React.Ref<HTMLDivElement>}
                 className="autocomplete-overlay"
                 style={{position: 'absolute', left: style.left, top: style.top}}
             >
@@ -281,18 +282,18 @@ export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [
     if (allItems.length === 0) {
         return (
             <div
-                ref={ref}
+                ref={ref as React.Ref<HTMLDivElement>}
                 className="autocomplete-overlay"
                 style={{position: 'absolute', left: style.left, top: style.top}}
             >
-                <div className="autocomplete-empty">No results for "{match.value}"</div>
+                <div className="autocomplete-empty">No results for "{query}"</div>
             </div>
         )
     }
 
     // Group items by category
     const itemsByCategory = allItems.reduce(
-        (acc, item) => {
+        (acc: Record<string, AutocompleteItem[]>, item: AutocompleteItem) => {
             if (!acc[item.category]) acc[item.category] = []
             acc[item.category].push(item)
             return acc
@@ -304,7 +305,7 @@ export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [
 
     return (
         <div
-            ref={ref}
+            ref={ref as React.Ref<HTMLDivElement>}
             className="autocomplete-overlay"
             style={{position: 'absolute', left: style.left, top: style.top}}
             onKeyDown={handleKeyDown}
@@ -321,7 +322,7 @@ export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [
                 {Object.entries(itemsByCategory).map(([category, items]) => (
                     <div key={category} className="autocomplete-category">
                         {Object.keys(itemsByCategory).length > 1 && <div className="category-header">{category}</div>}
-                        {items.map(item => {
+                        {(items as AutocompleteItem[]).map(item => {
                             const index = globalIndex++
                             const isSelected = index === selectedIndex
 
@@ -500,6 +501,7 @@ export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [
 // AutocompleteEditor.tsx
 import {FC, useState, useCallback} from 'react'
 import {MarkedInput} from '@markput/react'
+import type {Markup} from '@markput/react'
 import {AutocompleteMark} from './AutocompleteMark'
 import {AdvancedAutocompleteOverlay} from './AdvancedAutocompleteOverlay'
 import type {AutocompleteSource, AutocompleteItem} from './types'
@@ -572,7 +574,8 @@ export const AutocompleteEditor: FC = () => {
     }, [])
 
     const autocompleteOptions = AUTOCOMPLETE_SOURCES.map(source => ({
-        markup: `${source.trigger}[__value__](__meta__)`,
+        // A markup built at runtime is a plain string; `Markup` is the literal shape the parser reads
+        markup: `${source.trigger}[__value__](__meta__)` as Markup,
         Mark: AutocompleteMark,
         Overlay: () => (
             <AdvancedAutocompleteOverlay

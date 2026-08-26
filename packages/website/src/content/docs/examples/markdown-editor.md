@@ -28,7 +28,7 @@ This example demonstrates how to build a Markdown editor with bold, italic, link
 
 ### Step 1: Define Markdown Rules
 
-```tsx
+```tsx fragment uses=BoldMark,ItalicMark,CodeMark,LinkMark,ImageMark
 // markdown.ts
 export interface MarkdownRule {
     id: string
@@ -293,7 +293,7 @@ export const MarkdownEditor: FC = () => {
             const isMod = e.metaKey || e.ctrlKey
 
             if (isMod) {
-                const rule = MARKDOWN_RULES.find(r => {
+                const rule = MARKDOWN_RULES.find((r: MarkdownRule) => {
                     if (!r.shortcut) return false
                     const [mod, key] = r.shortcut.split('-')
                     return key === e.key.toLowerCase()
@@ -308,7 +308,7 @@ export const MarkdownEditor: FC = () => {
         [handleFormat]
     )
 
-    const markdownOptions = MARKDOWN_RULES.map(rule => ({
+    const markdownOptions = MARKDOWN_RULES.map((rule: MarkdownRule) => ({
         markup: rule.markup,
         Mark: rule.component,
     }))
@@ -493,7 +493,7 @@ Everything above is INLINE markdown — marks inside a line. Markdown's block sy
 thing: a `#`, a `>` or a `- ` is only markdown at a LINE's start, and that is exactly what a
 [row kind](/guides/row-kinds) is.
 
-```tsx
+```tsx fragment uses=H1,H2,Quote,Bullet
 const blockRules: Option[] = [
     {markup: '# __slot__', row: {Component: H1}, menu: {label: 'Heading 1', keywords: ['h1']}},
     {markup: '## __slot__', row: {Component: H2}, menu: {label: 'Heading 2', keywords: ['h2']}},
@@ -510,7 +510,7 @@ the `/` menu with nothing to act on.
 A fence is a row kind with a RAW body — `__value__` rather than `__slot__` — so its interior is never
 re-parsed and the separators inside it are the fence's own text. One row, several visual lines.
 
-```tsx
+```tsx fragment
 const fence: Option = {
     markup: '```__meta__\n__value__\n```',
     row: {
@@ -533,7 +533,7 @@ body is editable document text and core is its only writer. Highlight by paintin
 A table LINE is a row kind that carves its own body into cells with `split`, and a cell is an
 ordinary row of the option `as` names:
 
-```tsx
+```tsx fragment uses=Cell,TableLine
 const cell: Option = {row: {Component: Cell}} // anonymous: nothing scans it
 
 const tableLine: Option = {

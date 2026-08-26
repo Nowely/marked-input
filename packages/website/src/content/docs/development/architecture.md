@@ -147,7 +147,7 @@ Input: "Hello @[Alice](123) and #[react]"
 
 ### Stage 2: Parser Initialization
 
-```typescript
+```typescript fragment uses=Parser
 const parser = new Parser([
     '@[__value__](__meta__)', // Mention pattern
     '#[__value__]',           // Hashtag pattern
@@ -173,7 +173,7 @@ per distinct markup set instead of once per render.
 
 Tokens carry `descriptor.index` pointing back to which option/markup created them.
 
-```typescript
+```typescript fragment
 [
     { type: 'text', content: 'Hello ' },
     {
@@ -199,7 +199,7 @@ Tokens carry `descriptor.index` pointing back to which option/markup created the
 
 Each root node renders via the unified `Token` component, taking the live `TreeNode` off `store.tokens.nodes()`:
 
-```jsx
+```jsx markup uses=Container,Token,textNode,markNode
 <Container>
     <Token node={textNode} />   {/* renders as <span> */}
     <Token node={markNode} />   {/* renders user's Mark component */}
@@ -251,7 +251,7 @@ Re-parsing is not a store event: it is the string boundary's `reparse()`, driven
 
 ### Event Usage
 
-```typescript
+```typescript fragment uses=gripElement
 // Commit a value edit between two node anchors
 store.tokens.replaceBetween(store.tokens.anchorAt(0), store.tokens.anchorAt(5), 'hello')
 
@@ -264,18 +264,13 @@ store.rows.openMenu(store.tokens.nodes()[0].id, gripElement.getBoundingClientRec
 store.rows.deleteRow()
 
 // Subscribe to an event
-import {watch, effectScope} from '@markput/core'
+import {watch} from '@markput/core'
 
-const dispose = effectScope(() => {
-    watch(
-        store.tokens.value,
-        () => {
-            console.log('Text changed')
-        }
-    )
+const dispose = watch(store.tokens.value, () => {
+    console.log('Text changed')
 })
 
-// Clean up all subscriptions in the scope
+// Drop the subscription
 dispose()
 ```
 
@@ -285,7 +280,7 @@ dispose()
 
 State is managed through direct signal declarations. Each property is a `Signal<T>`:
 
-```typescript
+```typescript fragment
 export interface Signal<T> {
     (): T                 // Read value (also tracks as reactive dependency)
     (value: T | undefined): void  // Write value (undefined reverts to default)
@@ -308,7 +303,7 @@ This is the **only framework coupling point**.
 
 ### Store Structure
 
-```typescript
+```typescript sketch="the internal store's SHAPE, written as one class body it is not"
 class Store {
     readonly key: KeyGenerator
 
@@ -357,7 +352,7 @@ class Store {
 
 Internal feature state, computeds, and events live directly on `store.<name>.*`. Values and options passed from React/Vue live on `store.props` and are updated via `store.props.set()`.
 
-```typescript
+```typescript fragment
 // Read the live root nodes (readonly TreeNode[]) — reactive, and THE render read
 store.tokens.nodes()
 
@@ -408,7 +403,7 @@ EVERY CARET THIS EDITOR PLACES IS FOLLOWED. The browser scrolls the caret into v
 
 React/Vue render asynchronously, so initialization order matters:
 
-```typescript
+```typescript fragment
 // 1. Framework writes the container element via store.host.container(el).
 //    → Each feature's onMounted callback fires with the live container element.
 //      It also re-fires (with auto-disposal of the previous scope) if the
@@ -539,7 +534,7 @@ survives verbatim in `lead`), and no verb can write an empty parent.
 `RowController` (`store.rows`) owns them for the whole editor, as four signals
 addressed by row id:
 
-```typescript
+```typescript sketch="the row controller's state, with every signal's argument elided"
 class RowController {
     readonly state = {
         hovered:  signal<number | null>(...),                      // row id under the pointer
@@ -644,7 +639,7 @@ See `packages/core/src/features/tokens/README.md` for the full architecture of t
 
 Available in both React and Vue. Returns the live `MarkNode` for the current mark token:
 
-```typescript
+```typescript fragment
 const mark = useMark()
 mark.update({value: 'updated'})
 mark.remove()
@@ -676,7 +671,7 @@ const { style, close, select, choose, rows, active, activate, match, ref } = use
 
 Subscribes to the store through a selector; `useStore` is the adapters' own internal context read and is not published:
 
-```typescript
+```typescript fragment
 const readOnly = useMarkput(s => s.props.readOnly)
 ```
 
@@ -684,13 +679,13 @@ const readOnly = useMarkput(s => s.props.readOnly)
 
 ### 1. Custom Mark Components
 
-```typescript
+```typescript markup uses=CustomMark
 <MarkedInput Mark={CustomMark} />
 ```
 
 ### 2. Custom Overlay
 
-```typescript
+```typescript markup uses=CustomOverlay
 <MarkedInput Overlay={CustomOverlay} />
 ```
 
@@ -698,7 +693,7 @@ const readOnly = useMarkput(s => s.props.readOnly)
 
 Replace internal rendering components:
 
-```typescript
+```typescript markup uses=MyCustomContainer,MyCustomParagraph
 <MarkedInput
   slots={{
     container: MyCustomContainer,
@@ -711,7 +706,7 @@ Replace internal rendering components:
 
 ### Pattern: Controlled Component
 
-```typescript
+```typescript fragment uses=MyMark
 function App() {
   const [value, setValue] = useState('')
 
@@ -727,7 +722,7 @@ function App() {
 
 ### Pattern: Uncontrolled Component
 
-```typescript
+```typescript fragment uses=MyMark
 function App() {
   return (
     <MarkedInput
@@ -746,7 +741,7 @@ back to earlier text, pass it.
 
 ### Pattern: Rows With Drag
 
-```typescript
+```typescript fragment uses=MyMark
 function App() {
   return (
     <MarkedInput

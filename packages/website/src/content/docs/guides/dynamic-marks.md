@@ -45,7 +45,7 @@ The node does not expose a DOM ref. React and Vue own structural DOM and registe
 
 ## Updating Marks
 
-```tsx
+```tsx fragment
 function EditableMention() {
     const mark = useMark()
 
@@ -59,7 +59,7 @@ function EditableMention() {
 
 An omitted key leaves the field alone, a string sets it, and `null` clears it:
 
-```tsx
+```tsx fragment
 mark.update({meta: 'user:1'})
 mark.update({meta: null})
 mark.update({slot: 'nested text'})
@@ -68,8 +68,8 @@ mark.update({slot: 'nested text'})
 The patch shape is not an exported type — write the literal, or name it with
 `Parameters<MarkNode['update']>[0]`:
 
-```ts
-{value?: string; meta?: string | null; slot?: string | null}
+```ts fragment
+type MarkPatch = {value?: string; meta?: string | null; slot?: string | null}
 ```
 
 All commands go through the core write path. In controlled mode, Markput emits `onChange` and waits for the matching `value` prop echo before applying the new caret position.

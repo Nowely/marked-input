@@ -6,7 +6,7 @@ keywords: [configuration, markup patterns, options, props, separator, indent, se
 
 Everything is configured through props on `<MarkedInput>` and through the `options` array it is given.
 
-```tsx
+```tsx uses=MyMarkComponent,users
 import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 
@@ -54,12 +54,12 @@ Vue takes the same props, with `class` for `className` and a `change` emit for `
 An option is one configured kind of markup: what it serialises to, what renders it, and whether an
 overlay may be triggered for it.
 
-```tsx
-options={[
+```tsx fragment uses=MentionComponent,users,HashtagComponent,hashtags
+const options: Option<{userId?: string}>[] = [
     {
         markup: '@[__value__](__meta__)',
         Mark: MentionComponent,
-        mark: ({value, meta}) => ({userId: meta}),
+        mark: ({meta}: MarkProps) => ({userId: meta}),
         overlay: {trigger: '@', data: users},
     },
     {
@@ -67,7 +67,7 @@ options={[
         Mark: HashtagComponent,
         overlay: {trigger: '#', data: hashtags},
     },
-]}
+]
 ```
 
 | Key       | Purpose                                                                                |
@@ -84,7 +84,7 @@ The capitalised keys are components; the lowercase ones are their props. That is
 
 ## Markup patterns
 
-```tsx
+```tsx fragment
 markup: '@[__value__]'                  // @[Alice]
 markup: '@[__value__](__meta__)'        // @[Alice](user:1)
 markup: '**__slot__**'                  // **bold with *italic* inside**
@@ -116,12 +116,12 @@ the extra rules a markup takes on when it types a row.
 
 `mark` turns what the markup captured into what your component takes. Two forms:
 
-```tsx
+```tsx fragment uses=Mention,Chip
 // Function — derive props from the markup
-{
+const derived: Option<{username?: string; userId?: string; href: string}> = {
     markup: '@[__value__](__meta__)',
     Mark: Mention,
-    mark: ({value, meta}) => ({
+    mark: ({value, meta}: MarkProps) => ({
         username: value,
         userId: meta,
         href: `/users/${meta}`,
@@ -129,7 +129,7 @@ the extra rules a markup takes on when it types a row.
 }
 
 // Object — fixed props for every mark of this option
-{
+const fixed: Option<{variant: string; color: string; size: string}> = {
     markup: '@[__value__]',
     Mark: Chip,
     mark: {variant: 'filled', color: 'primary', size: 'small'},
@@ -153,7 +153,7 @@ Row:     option.row.Component  (required — slots.paragraph answers only a row 
 Text:    MarkedInput.Span →  a bare <span>
 ```
 
-```tsx
+```tsx markup uses=DefaultMark,MentionMark
 <MarkedInput
     Mark={DefaultMark}
     options={[
@@ -165,7 +165,7 @@ Text:    MarkedInput.Span →  a bare <span>
 
 ## TypeScript
 
-```tsx
+```tsx fragment uses=Mention,setValue
 import {MarkedInput} from '@markput/react'
 import type {Option} from '@markput/react'
 
@@ -188,15 +188,15 @@ const options: Option<MentionProps>[] = [
 
 ## Best practices
 
-```tsx
+```tsx fragment elide uses=users
 // Memoize options that are built at render time
-const options = useMemo(() => [...], [users])
+const options = useMemo<Option[]>(() => [...], [users])
 
 // Prefer a stable component over an inline arrow in `Mark`
 const Mention = ({value}: MarkProps) => <span className="mention">{value}</span>
 
 // Keep `mark` cheap — it runs for every mark on every paint
-mark: ({value, meta}) => ({username: value, userId: meta})
+const mark = ({value, meta}: MarkProps) => ({username: value, userId: meta})
 ```
 
 **Questions?** Ask in [GitHub Discussions](https://github.com/Nowely/marked-input/discussions).

@@ -46,6 +46,15 @@ export default defineConfig({
 					environment: 'node',
 				},
 			}),
+			// The published guides' code samples, type-checked against the packages' SOURCE. Like
+			// `boundary` it is a read of text rather than of behaviour, so it needs no browser.
+			defineProject({
+				test: {
+					name: 'docs',
+					include: ['packages/website/samples/*.spec.ts'],
+					environment: 'node',
+				},
+			}),
 			defineProject({
 				test: {
 					name: 'core',

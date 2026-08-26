@@ -56,7 +56,7 @@ keeps its index.
   than a row split, and a separator inside it is that markup's own text, not a boundary — which is
   how a fenced code block or a frontmatter frame reads as ONE row across several visual lines.
 
-```tsx
+```tsx value uses=CodeFence
 {markup: '```__meta__\n__value__\n```', row: {Component: CodeFence}}
 ```
 
@@ -68,7 +68,7 @@ A kind whose markup has no closing literal after the body — `'# __slot__'`, `'
 Openers are scanned longest-first, so a longer opener beats a prefix of itself and the two never
 compete:
 
-```tsx
+```tsx sketch="two openers side by side, both row specs elided"
 {markup: '- [__meta__] __slot__', row: {…}}  // '- [x] ' — a to-do
 {markup: '- __slot__',           row: {…}}  // '- '     — a bullet
 ```
@@ -112,7 +112,7 @@ Collapse by HIDING, never by unmounting. An unpainted row leaves the DOM binding
 anchors with it, so `End`, select-all and every arrow that resolves through the last row would walk
 into a row with no element:
 
-```tsx
+```tsx markup uses=open:boolean,rows:ReactNode
 <span hidden={!open}>{rows}</span>
 ```
 
@@ -167,7 +167,7 @@ Use it for anything that is chrome rather than text: a bullet glyph, a toggle ar
 `node.turnInto(option, patch?)` replaces the row's kind, keeping the row's identity — its id, its
 element, its drag grip, its child rows. `undefined` makes it a paragraph.
 
-```tsx
+```tsx fragment uses=node:RowNode,todo:Option
 node.turnInto(todo, {meta: 'x'}) // tick the box
 node.turnInto(undefined)         // back to a paragraph
 ```
@@ -184,7 +184,7 @@ editor compiles no row kind from, and for a no-op.
 A kind that declares `split` carves its OWN body at a literal, and each piece becomes an ordinary Row
 of the option `as` names — a table line into cells.
 
-```tsx
+```tsx fragment uses=TableLine
 const cell: Option = {
     row: {
         Component: ({children, ref, className, style}: RowProps) => (
@@ -224,7 +224,7 @@ const tableLine: Option = {
 
 An option that declares `menu` IS in the row menu — there is no list of kinds anywhere else:
 
-```tsx
+```tsx value uses=Heading
 {markup: '# __slot__', row: {Component: Heading}, menu: {label: 'Heading 1', keywords: ['h1', 'title']}}
 ```
 
@@ -265,6 +265,13 @@ const todo: Option = {
     },
     menu: {label: 'To-do list', keywords: ['todo', 'task', 'check'], meta: ' '},
 }
+
+const Bullet = ({children, rows, ref, className, style}: RowProps) => (
+    <li ref={ref} className={className} style={style}>
+        {children}
+        {rows}
+    </li>
+)
 
 const bullet: Option = {
     markup: '- __slot__',

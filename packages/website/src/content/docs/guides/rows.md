@@ -7,7 +7,7 @@ keywords: [rows, separator, indent, nesting, depth, row selection, drag, history
 By default a Markput document has **rows**: `separator` is `'\n'`, so every line is a row, with its
 own drag grip, its own place in the tree, and its own entry in the row menu.
 
-```tsx
+```tsx markup
 <MarkedInput defaultValue={'first row\nsecond row'} />
 ```
 
@@ -77,7 +77,7 @@ root promotes whatever was under it.
 | `slotProps.row`      | Props merged onto EVERY row's wrapper — kind and paragraph alike.         |
 | `option.row.Component` | The component rows of that kind render through.                        |
 
-```tsx
+```tsx markup uses=Paragraph
 <MarkedInput
     slots={{paragraph: Paragraph}}
     slotProps={{row: {className: 'doc-row'}}}
@@ -144,7 +144,7 @@ read it that way. See [Keyboard Handling](/guides/keyboard-handling) for the ful
 
 ## Drag
 
-```tsx
+```tsx markup
 <MarkedInput draggable options={options} />
 <MarkedInput draggable={{alwaysShowHandle: true}} options={options} />
 ```
@@ -171,7 +171,7 @@ Which kinds it offers is not a list you write: an option that declares a `menu` 
 
 The editor keeps its own undo stack, on by default:
 
-```tsx
+```tsx markup
 <MarkedInput history={false} options={options} />
 ```
 

@@ -67,7 +67,7 @@ A row of `data` may be a string or `{value, meta?, label?}`. The object form is 
 an id behind it needs — the `__meta__` half of `@[__value__](__meta__)` — so a mention picker no
 longer has to abandon the built-in overlay and write its own component:
 
-```tsx
+```tsx value
 {
     markup: '@[__value__](__meta__)',
     overlay: {
@@ -217,7 +217,7 @@ function CustomOverlay() {
 
 **Complete interface:**
 
-```tsx
+```tsx fragment uses=Anchors
 interface OverlayHandler {
     style: {
         left: number // X coordinate
@@ -249,7 +249,7 @@ interface OverlayHandler {
 
 ### Example 1: Simple List
 
-```tsx
+```tsx fragment
 import {useOverlay} from '@markput/react'
 
 function SimpleListOverlay() {
@@ -276,7 +276,7 @@ function SimpleListOverlay() {
 
 Position the overlay at the caret:
 
-```tsx
+```tsx fragment
 function PositionedOverlay() {
     const {style, select} = useOverlay()
 
@@ -309,14 +309,17 @@ function PositionedOverlay() {
 
 Filter based on typed text:
 
-```tsx
+```tsx fragment
 function FilteredOverlay() {
     const {select, match, close} = useOverlay()
 
     const allItems = ['Alice', 'Bob', 'Charlie', 'Diana']
 
+    // `match` is undefined while no trigger is open
+    const query = match?.value ?? ''
+
     // Filter items based on typed text
-    const filtered = allItems.filter(item => item.toLowerCase().includes(match.value.toLowerCase()))
+    const filtered = allItems.filter(item => item.toLowerCase().includes(query.toLowerCase()))
 
     if (filtered.length === 0) {
         return (
@@ -342,7 +345,7 @@ function FilteredOverlay() {
 
 Include metadata when selecting:
 
-```tsx
+```tsx fragment
 function UserOverlay() {
     const {select} = useOverlay()
 
@@ -421,7 +424,7 @@ function KeyboardOverlay() {
     }, [selected, items, select, close])
 
     return (
-        <div ref={ref} className="overlay">
+        <div ref={ref as React.Ref<HTMLDivElement>} className="overlay">
             {items.map((item, index) => (
                 <div key={item} onClick={() => select({value: item})} className={index === selected ? 'selected' : ''}>
                     {item}
@@ -436,7 +439,7 @@ function KeyboardOverlay() {
 
 Use the `ref` to detect clicks outside the overlay:
 
-```tsx
+```tsx fragment
 function ClickOutsideOverlay() {
     const {select, ref} = useOverlay()
 
@@ -444,7 +447,7 @@ function ClickOutsideOverlay() {
 
     return (
         <div
-            ref={ref} // Important for outside click detection
+            ref={ref as React.Ref<HTMLDivElement>} // Important for outside click detection
             className="overlay"
         >
             {items.map(item => (
@@ -467,58 +470,43 @@ function ClickOutsideOverlay() {
 
 ### Single Trigger
 
-```tsx
-options={[
-  {
-    markup: '@[__value__]',
-    overlay: {
-      trigger: '@',
-      data: ['Alice', 'Bob']
-    }
-  }
-]}
+```tsx fragment
+const options: Option[] = [
+    {
+        markup: '@[__value__]',
+        overlay: {trigger: '@', data: ['Alice', 'Bob']},
+    },
+]
 ```
 
 ### Multiple Triggers
 
 Different triggers for different mark types:
 
-```tsx
-options={[
-  {
-    markup: '@[__value__](user)',
-    overlay: { trigger: '@', data: users }
-  },
-  {
-    markup: '#[__value__](hashtag)',
-    overlay: { trigger: '#', data: hashtags }
-  },
-  {
-    markup: '/[__value__](command)',
-    overlay: { trigger: '/', data: commands }
-  }
-]}
+```tsx fragment uses=users,hashtags,commands
+const options: Option[] = [
+    {markup: '@[__value__](user)', overlay: {trigger: '@', data: users}},
+    {markup: '#[__value__](hashtag)', overlay: {trigger: '#', data: hashtags}},
+    {markup: '/[__value__](command)', overlay: {trigger: '/', data: commands}},
+]
 ```
 
 ### Multi-Character Triggers
 
-```tsx
-options={[
-  {
-    markup: '{{__value__}}',
-    overlay: {
-      trigger: '{{',
-      data: ['name', 'email', 'date']
-    }
-  }
-]}
+```tsx fragment
+const options: Option[] = [
+    {
+        markup: '{{__value__}}',
+        overlay: {trigger: '{{', data: ['name', 'email', 'date']},
+    },
+]
 ```
 
 ## Per-Option Custom Overlays
 
 Use different overlay components for different triggers:
 
-```tsx
+```tsx fragment
 import {MarkedInput} from '@markput/react'
 
 function UserOverlay() {
@@ -574,19 +562,22 @@ import {useState, useEffect} from 'react'
 
 function AsyncOverlay() {
     const {select, match} = useOverlay()
-    const [users, setUsers] = useState([])
+    const [users, setUsers] = useState<{id: string; name: string}[]>([])
     const [loading, setLoading] = useState(true)
+
+    // `match` is undefined while no trigger is open
+    const query = match?.value ?? ''
 
     useEffect(() => {
         setLoading(true)
         // Fetch users based on typed text
-        fetch(`/api/users?q=${match.value}`)
+        fetch(`/api/users?q=${query}`)
             .then(res => res.json())
             .then(data => {
                 setUsers(data)
                 setLoading(false)
             })
-    }, [match.value])
+    }, [query])
 
     if (loading) {
         return <div className="overlay">Loading...</div>
@@ -612,7 +603,7 @@ function AsyncOverlay() {
 
 Use `showOverlayOn` prop:
 
-```tsx
+```tsx sketch="one prop, four values — the alternatives are shown on one element, not written on one"
 <MarkedInput
     value={value}
     onChange={setValue}
@@ -652,11 +643,13 @@ function RichUserOverlay() {
         {id: '3', name: 'Charlie Brown', avatar: '🧑', role: 'Manager'},
     ]
 
-    const filtered = users.filter(u => u.name.toLowerCase().includes(match.value.toLowerCase()))
+    // `match` is undefined while no trigger is open
+    const query = match?.value ?? ''
+    const filtered = users.filter(u => u.name.toLowerCase().includes(query.toLowerCase()))
 
     useEffect(() => {
         setSelected(0)
-    }, [match.value])
+    }, [query])
 
     useEffect(() => {
         const handleKey = (e: KeyboardEvent) => {
@@ -681,7 +674,7 @@ function RichUserOverlay() {
 
     return (
         <div
-            ref={ref}
+            ref={ref as React.Ref<HTMLDivElement>}
             style={{
                 position: 'absolute',
                 left: style.left,
@@ -744,7 +737,7 @@ const options = [
 
 ### ✅ Do
 
-```tsx
+```tsx sketch="a checklist of one-line reminders, each a different shape"
 // Attach ref for outside click detection
 <div ref={ref}>overlay content</div>
 
@@ -769,7 +762,7 @@ useEffect(() => {
 
 ### ❌ Don't
 
-```tsx
+```tsx sketch="the anti-pattern list: every line here is deliberately wrong"
 // Don't forget ref
 <div>overlay</div>  // Won't close on outside click
 
@@ -801,7 +794,7 @@ function TypedOverlay() {
         overlay.select({value, meta: 'optional'})
     }
 
-    return <div ref={overlay.ref}>{/* overlay content */}</div>
+    return <div ref={overlay.ref as React.Ref<HTMLDivElement>}>{/* overlay content */}</div>
 }
 ```
 
