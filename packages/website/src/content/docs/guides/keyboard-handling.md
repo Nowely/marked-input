@@ -56,11 +56,11 @@ Where the value splits into rows, `Esc` turns the caret into a ROW SELECTION: th
 There is no separate row-selection state: a row is selected exactly while the text selection spans it whole, so the browser paints it and every read is one call.
 
 ```ts
-store.block.selected() // reactive: the ids of the selected rows, in document order
-store.block.move({parent: null, index: 2}) // move them, as one splice
+store.rows.selected() // reactive: the ids of the selected rows, in document order
+store.rows.move({parent: null, index: 2}) // move them, as one splice
 ```
 
-An arrow key is only ever intercepted once a row selection stands — which follows from the selection being derived and is not a synonym for "after `Esc`": a plain text selection that spans one row WHOLE grows by a row rather than by a line, and what `Shift+ArrowDown` writes back is that row's exact span, so the sweep becomes a row selection at that press. Until then `store.block.selected()` is empty and no verb acts on the row the sweep merely covers. At the document's edges the key is still the gesture's and does nothing, rather than falling back to the browser and collapsing the selection it was extending. `Esc` defers to anything already open — the suggestions overlay and the row menu — each of which closes on that press instead. An EMPTY row cannot be row-selected on its own — its content is zero-width, so a caret resting in one sits at both of its edges — but it is selected as part of a range that spans its neighbours.
+An arrow key is only ever intercepted once a row selection stands — which follows from the selection being derived and is not a synonym for "after `Esc`": a plain text selection that spans one row WHOLE grows by a row rather than by a line, and what `Shift+ArrowDown` writes back is that row's exact span, so the sweep becomes a row selection at that press. Until then `store.rows.selected()` is empty and no verb acts on the row the sweep merely covers. At the document's edges the key is still the gesture's and does nothing, rather than falling back to the browser and collapsing the selection it was extending. `Esc` defers to anything already open — the suggestions overlay and the row menu — each of which closes on that press instead. An EMPTY row cannot be row-selected on its own — its content is zero-width, so a caret resting in one sits at both of its edges — but it is selected as part of a range that spans its neighbours.
 
 Widening never narrows: where a selection spans two parents, `Esc` and `Ctrl/Cmd+A` climb to the parent AND keep the rows outside it, and once every selected row is a root `Esc` leaves the selection alone.
 

@@ -6,7 +6,7 @@ import type {PropsModel} from '../state/PropsModel'
 import {hasCells} from '../tokens'
 import type {RowNode, RowPlacement, TokenModel, TreeNode} from '../tokens'
 
-/** One answer of {@link BlockController.rowAt}'s search: which row, its box, and whether it HOLDS the point. */
+/** One answer of {@link RowController.rowAt}'s search: which row, its box, and whether it HOLDS the point. */
 type Hit = {id: number; rect: DOMRect; contained: boolean}
 
 /**
@@ -61,11 +61,11 @@ const ASSUMED_INDENT = 24
  * deliberately not called `SelectionModel`. This one takes `host.onMounted`, installs five
  * container listeners plus two `ResizeObserver`s, a commit watch and a rAF loop there — two more
  * document listeners while a menu is open — and its menu and drop verbs write the TREE, which is
- * also what the per-row owner it replaced did. `store.block` names the concern, as every Store
+ * also what the per-row owner it replaced did. `store.rows` names the concern, as every Store
  * field does.
  *
  * SAME NAME, DIFFERENT DESIGN — `git log` on this filename spans two of them. The earlier
- * `BlockController` vended a per-row `BlockStore` out of a `WeakMap` and pruned them by row id;
+ * `RowController` vended a per-row `BlockStore` out of a `WeakMap` and pruned them by row id;
  * this one owns editor-level row-control state and there is no per-row store at all. The role is
  * the same — the controller of Block layout — so the name is, and `BlockStore` stays deleted.
  *
@@ -85,7 +85,7 @@ const ASSUMED_INDENT = 24
  * - hover is geometric Y rather than DOM containment, so the 24px gutter left of a row hovers
  *   that row, and a point in the gap BETWEEN rows snaps to the nearest one.
  */
-export class BlockController {
+export class RowController {
 	readonly state = {
 		hovered: signal<number | null>({initial: null}),
 		dragging: signal<number | null>({initial: null}),

@@ -29,7 +29,7 @@ const sources: Record<string, string> = import.meta.glob('./**/*.ts', {
 
 /**
  * Comments are stripped before scanning, and that is not cosmetic — MEASURED, not assumed:
- * without the strip this check fails on `features/block/BlockController.ts:9`, whose comment
+ * without the strip this check fails on `features/rows/RowController.ts:9`, whose comment
  * explains why its `drop.position` field is NOT one of these reads. A check that failed on prose
  * would be a check nobody could keep green honestly.
  */

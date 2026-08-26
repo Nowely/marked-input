@@ -550,7 +550,7 @@ describe('Feature: drag rows', () => {
 	/**
 	 * The controls layer paints at coordinates it MEASURES, where the per-row panel inherited them
 	 * from `.Block { position: relative }`. These are the properties that geometry has to hold
-	 * and that no unit test in `BlockController.spec.ts` can see, because it paints nothing.
+	 * and that no unit test in `RowController.spec.ts` can see, because it paints nothing.
 	 */
 	describe('controls layer geometry', () => {
 		const centerY = (element: Element) => {

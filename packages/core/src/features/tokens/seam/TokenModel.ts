@@ -409,7 +409,7 @@ export class TokenModel {
 	}
 
 	/**
-	 * THE ROWS A SELECTION HOLDS — the one reading, and the whole of it. What `store.block.selected`
+	 * THE ROWS A SELECTION HOLDS — the one reading, and the whole of it. What `store.rows.selected`
 	 * paints, what the drag picks up, what Esc asks before it climbs and what Tab moves;
 	 * {@link replaceRows} writes over the span the same test answers. There is no second store of
 	 * selected rows because a row selection IS the text selection, read at row granularity.
@@ -452,7 +452,7 @@ export class TokenModel {
 	 * a multi-row drag names. The set is normalized to maximal subtrees inside the plan, so a
 	 * caller may hand over a selection verbatim.
 	 *
-	 * On the model rather than on a node, because the set has no owning row: `store.block.move` is
+	 * On the model rather than on a node, because the set has no owning row: `store.rows.move` is
 	 * its one caller and the rows it names are peers.
 	 */
 	moveRows(nodes: readonly RowNode[], placement: RowPlacement): boolean {
@@ -518,7 +518,7 @@ export class TokenModel {
 	 * empty, so a tree-derived answer would drop block layout's grip gutter from the SSR pass.
 	 *
 	 * A NULL `separator` ANSWERS `undefined`: the value never splits, which is one document with
-	 * no rows — the row parse, the block feature gates, the grip gutter and `BlockController` all
+	 * no rows — the row parse, the block feature gates, the grip gutter and `RowController` all
 	 * turn off together on it.
 	 *
 	 * AN EMPTY `separator` answers `undefined` too, but reports first: `''` separates nothing

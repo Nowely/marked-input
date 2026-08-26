@@ -227,7 +227,7 @@ export function rowSelectionSpan(
 /**
  * THE FOUR SPANS A ROW-SELECTION GESTURE MOVES TO, each answered from the span the editor holds
  * now — and they are spans rather than verbs because the row selection IS the text selection
- * (`store.block.selected` derives from it), so widening it is one `select` and no second store.
+ * (`store.rows.selected` derives from it), so widening it is one `select` and no second store.
  *
  * - `'row'` — the row the anchor's line belongs to, whole. Esc's first rung: it turns a caret or a
  *   partial text selection into a row selection. In a CARVED piece it answers the LINE, which is

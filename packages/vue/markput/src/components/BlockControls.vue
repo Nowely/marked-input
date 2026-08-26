@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {BLOCK_MENU_ITEMS, getAlwaysShowHandle} from '@markput/core'
+import {ROW_MENU_ITEMS, getAlwaysShowHandle} from '@markput/core'
 import type {RowBox} from '@markput/core'
 import {computed, onScopeDispose, ref, watchEffect} from 'vue'
 
@@ -14,27 +14,27 @@ import styles from '@markput/core/styles.module.css'
 
 /**
  * ONE absolutely positioned row-controls layer per editor — the Vue mirror of the React
- * `BlockControls`, over the SAME `BlockController`. Every decision is core's: the hover pin, the
+ * `BlockControls`, over the SAME `RowController`. Every decision is core's: the hover pin, the
  * hit-test, the drop edge and the menu's row all live there, so this file is a painter.
  *
  * `BlockControls`, not `BlockLayer`: `Block.vue` is the row WRAPPER, and two near-identical names
  * beside each other is the ambiguity this one is named to avoid.
  */
 const store = useStore()
-const block = store.block
+const controller = store.rows
 
 const readOnly = useMarkput(s => s.props.readOnly)
 const draggable = useMarkput(s => s.props.draggable)
 const rows = useMarkput(s => s.tokens.nodes)
-const hovered = useMarkput(() => block.state.hovered)
-const dragging = useMarkput(() => block.state.dragging)
-const drop = useMarkput(() => block.state.drop)
-const menu = useMarkput(() => block.state.menu)
-const geometry = useMarkput(() => block.state.geometry)
+const hovered = useMarkput(() => controller.state.hovered)
+const dragging = useMarkput(() => controller.state.dragging)
+const drop = useMarkput(() => controller.state.drop)
+const menu = useMarkput(() => controller.state.menu)
+const geometry = useMarkput(() => controller.state.geometry)
 
 const controlRef = store.tokens.control()
 const setLayerRef = (el: unknown) => controlRef(unwrapEl(el))
-const setMenuRef = (el: HTMLElement | null) => block.menuElement(el)
+const setMenuRef = (el: HTMLElement | null) => controller.menuElement(el)
 
 const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))
 
@@ -56,7 +56,7 @@ const gripBox = ref<RowBox | null>(null)
 watchEffect(
 	() => {
 		void geometry.value
-		gripBox.value = gripRow.value === null ? null : (block.boxOf(gripRow.value) ?? null)
+		gripBox.value = gripRow.value === null ? null : (controller.boxOf(gripRow.value) ?? null)
 	},
 	{flush: 'post'}
 )
@@ -74,7 +74,7 @@ watchEffect(
 		const element = store.tokens.handle(id)?.element()
 		if (!element) return
 		observer = new ResizeObserver(() => {
-			gripBox.value = block.boxOf(id) ?? null
+			gripBox.value = controller.boxOf(id) ?? null
 		})
 		observer.observe(element)
 	},
@@ -119,10 +119,12 @@ const dropStyle = computed(() => {
 				:draggable="!!draggable"
 				:class="[styles.GripButton, dragging !== null && styles.GripButtonDragging]"
 				:aria-label="draggable ? 'Drag to reorder or click for options' : 'Block options'"
-				@mousedown="block.pinHover()"
-				@dragstart="e => block.beginDrag(gripRow!, e)"
-				@dragend="block.endDrag()"
-				@click.prevent="e => block.openMenu(gripRow!, (e.currentTarget as HTMLElement).getBoundingClientRect())"
+				@mousedown="controller.pinHover()"
+				@dragstart="e => controller.beginDrag(gripRow!, e)"
+				@dragend="controller.endDrag()"
+				@click.prevent="
+					e => controller.openMenu(gripRow!, (e.currentTarget as HTMLElement).getBoundingClientRect())
+				"
 			>
 				<span :class="`${styles.Icon} ${styles.IconGrip}`" />
 			</button>
@@ -136,7 +138,7 @@ const dropStyle = computed(() => {
 			:style="{top: menu.top + 'px', left: menu.left + 'px', pointerEvents: 'auto'}"
 		>
 			<List>
-				<ListItem v-for="item in BLOCK_MENU_ITEMS" :key="item.label" @mousedown.prevent="item.run(block)">
+				<ListItem v-for="item in ROW_MENU_ITEMS" :key="item.label" @mousedown.prevent="item.run(controller)">
 					<span :class="item.iconClass" />
 					<span>{{ item.label }}</span>
 				</ListItem>

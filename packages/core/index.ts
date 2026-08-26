@@ -36,10 +36,10 @@ export {key} from './src/shared/classes'
 // `suggestionLabel` rides with `filterSuggestions`: `overlay.data` rows may separate the label
 // from the value they write, and both adapters' Suggestions render and key by the label.
 export {filterSuggestions, navigateSuggestions, suggestionLabel} from './src/features/overlay'
-// `BLOCK_MENU_ITEMS` is the block menu's content contract; both adapters' BlockControls maps it.
-// `RowBox` is what `store.block.boxOf()` answers — the coordinates both layers paint at.
-export {BLOCK_MENU_ITEMS, getAlwaysShowHandle} from './src/features/block'
-export type {RowBox} from './src/features/block'
+// `ROW_MENU_ITEMS` is the row menu's content contract; both adapters' BlockControls maps it.
+// `RowBox` is what `store.rows.boxOf()` answers — the coordinates both layers paint at.
+export {ROW_MENU_ITEMS, getAlwaysShowHandle} from './src/features/rows'
+export type {RowBox} from './src/features/rows'
 export type {
 	OverlayMatch,
 	OverlayTrigger,

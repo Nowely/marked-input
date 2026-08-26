@@ -10,7 +10,7 @@ import {rows} from './Base.fixtures'
 /**
  * BLOCK SELECTION AND NESTED DRAG, driven through the DOM in both adapters. Framework-free on
  * purpose: the two `Rows` implementations paint the same tree through the same core resolver and
- * the same `BlockController` decides every drop, so a divergence between them is a failing test
+ * the same `RowController` decides every drop, so a divergence between them is a failing test
  * here rather than a difference nobody diffs.
  *
  * TWO CLAIMS PER DROP, and neither implies the other. The emitted VALUE says the rows landed at
@@ -130,7 +130,7 @@ describe('block selection and nested drag', () => {
 	 * moves between two different framework parents, and neither React nor Vue can carry a DOM
 	 * element or a component instance across that boundary, so the state resets.
 	 *
-	 * That is the measurement the spec said would buy `store.block.collapsed` — a core-owned,
+	 * That is the measurement the spec said would buy `store.rows.collapsed` — a core-owned,
 	 * node-keyed store of per-row view state — and it is now made rather than argued. It is not
 	 * built here: this phase's mandate is selection and drag, and a keyed signal registry is its
 	 * own change with its own pruning clock.

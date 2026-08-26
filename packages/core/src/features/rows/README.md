@@ -4,19 +4,19 @@ Manages the block editing mode where each row is rendered as a separate draggabl
 
 ## Components
 
-- **BlockController**: THE Block layout owner, one per editor (`store.block`) — the hovered row, the dragged row, the RESOLVED DROP and the open menu, each addressed by row ID, plus `selected`, the ROW SELECTION, which is derived from the text selection rather than stored. It attaches five listeners to the CONTAINER (mousemove, mouseleave, dragover, dragleave, drop) plus three geometry clocks — a `ResizeObserver` on each of the container's two boxes, a watch on the commit clock, and a rAF loop over the painted row while the controls are visible — owns the row verbs the menu triggers (`addRow`/`duplicateRow`/`deleteRow` call `insertAfter()`/`duplicate()`/`remove()` on the menu's row) and the drop handler that calls `move()` → `tokens.moveRows()`, and answers the geometry the adapters paint at (`boxOf`, `rowAt`).
+- **RowController**: THE Block layout owner, one per editor (`store.rows`) — the hovered row, the dragged row, the RESOLVED DROP and the open menu, each addressed by row ID, plus `selected`, the ROW SELECTION, which is derived from the text selection rather than stored. It attaches five listeners to the CONTAINER (mousemove, mouseleave, dragover, dragleave, drop) plus three geometry clocks — a `ResizeObserver` on each of the container's two boxes, a watch on the commit clock, and a rAF loop over the painted row while the controls are visible — owns the row verbs the menu triggers (`addRow`/`duplicateRow`/`deleteRow` call `insertAfter()`/`duplicate()`/`remove()` on the menu's row) and the drop handler that calls `move()` → `tokens.moveRows()`, and answers the geometry the adapters paint at (`boxOf`, `rowAt`).
 - **getAlwaysShowHandle**: Extracts `alwaysShowHandle` from `DraggableConfig`
-- **BLOCK_MENU_ITEMS**: the menu's content contract — label, icon class and a verb taking the block controller.
+- **ROW_MENU_ITEMS**: the menu's content contract — label, icon class and a verb taking the block controller.
 
 ## Why `Controller` and not `Model`
 
 It owns state — five signals, the menu's element and the hover pin — so the suffix was contested. What decides it is DOM lifecycle taken at MOUNT, counted across core's whole population rather than argued, and the rule is ONE-WAY: taking it forces `Controller`, while not taking it forces nothing (`EditController` has no listeners, no signals and no mount hook). No `*Model` here takes a DOM listener on mount — `PropsModel`, `DomModel` and `TokenModel` call `listen` zero times, and `SuggestionsModel`'s one `container.addEventListener` sits in an opt-in `activate()` the adapter calls and takes back, not in a mount hook. `TokenModel` owns more state than anything else in core and pushed its DOM I/O out into a class deliberately not named `SelectionModel`. This one takes `host.onMounted`, installs five container listeners plus two `ResizeObserver`s, a commit watch and a rAF loop there (and two document listeners while a menu is open), and its menu and drop verbs write the tree — the same job the per-row owner it replaced had. `OverlayController` is the precedent for a controller that owns its own state, and it is the shape this class copied for the menu's dismissal listeners.
 
-`store.block` names its concern, not the class behind it (`store.tokens`, `store.edit`, `store.overlay`).
+`store.rows` names its concern, not the class behind it (`store.tokens`, `store.edit`, `store.overlay`).
 
 ## One name, two designs
 
-`git log` on `BlockController.ts` spans two of them, and the caveat is written here rather than left for a reader to trip over. The EARLIER `BlockController` vended a per-row `BlockStore` out of a `WeakMap` and pruned those stores by row id. The CURRENT one owns editor-level row-control state and there is no per-row store at all. The role is identical — the controller of Block layout — so the name is, but the internals share nothing. `BlockStore` and `blockIndex` are gone for good.
+`git log` on `RowController.ts` spans two of them, and the caveat is written here rather than left for a reader to trip over. The EARLIER `RowController` vended a per-row `BlockStore` out of a `WeakMap` and pruned those stores by row id. The CURRENT one owns editor-level row-control state and there is no per-row store at all. The role is identical — the controller of Block layout — so the name is, but the internals share nothing. `BlockStore` and `blockIndex` are gone for good.
 
 ## Why the row controls are not per-row state
 
@@ -64,4 +64,4 @@ The pin attaches NOTHING to release itself. It is gesture state, so it expires w
 
 ## Usage
 
-The feature is registered by the Store and activates for any document with rows — `tokens.rowConfig`, which is `undefined` when `separator` is `null` (ADR-0011). `draggable` gates only the reorder path, because the menu and keyboard row edits are row features rather than drag UI. Row operations run through `store.block`.
+The feature is registered by the Store and activates for any document with rows — `tokens.rowConfig`, which is `undefined` when `separator` is `null` (ADR-0011). `draggable` gates only the reorder path, because the menu and keyboard row edits are row features rather than drag UI. Row operations run through `store.rows`.

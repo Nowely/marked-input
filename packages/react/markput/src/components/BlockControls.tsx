@@ -1,4 +1,4 @@
-import {BLOCK_MENU_ITEMS, cx, getAlwaysShowHandle} from '@markput/core'
+import {ROW_MENU_ITEMS, cx, getAlwaysShowHandle} from '@markput/core'
 import type {RowBox} from '@markput/core'
 import {memo, useEffect, useLayoutEffect, useMemo, useState} from 'react'
 
@@ -26,17 +26,17 @@ import styles from '@markput/core/styles.module.css'
 const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
 export const BlockControls = memo(() => {
-	const {block, tokens, readOnly, draggable, rows, hovered, dragging, drop, menu, geometry} = useMarkput(s => ({
-		block: s.block,
+	const {controller, tokens, readOnly, draggable, rows, hovered, dragging, drop, menu, geometry} = useMarkput(s => ({
+		controller: s.rows,
 		tokens: s.tokens,
 		readOnly: s.props.readOnly,
 		draggable: s.props.draggable,
 		rows: s.tokens.nodes,
-		hovered: s.block.state.hovered,
-		dragging: s.block.state.dragging,
-		drop: s.block.state.drop,
-		menu: s.block.state.menu,
-		geometry: s.block.state.geometry,
+		hovered: s.rows.state.hovered,
+		dragging: s.rows.state.dragging,
+		drop: s.rows.state.drop,
+		menu: s.rows.state.menu,
+		geometry: s.rows.state.geometry,
 	}))
 	const controlRef = useMemo(() => tokens.control(), [tokens])
 	const alwaysShowHandle = useMemo(() => getAlwaysShowHandle(draggable), [draggable])
@@ -56,8 +56,8 @@ export const BlockControls = memo(() => {
 	// indicator anywhere but where the drop will land.
 	const [gripBox, setGripBox] = useState<RowBox | null>(null)
 	useLayoutEffect(() => {
-		setGripBox(gripRow === null ? null : (block.boxOf(gripRow) ?? null))
-	}, [block, gripRow, geometry])
+		setGripBox(gripRow === null ? null : (controller.boxOf(gripRow) ?? null))
+	}, [controller, gripRow, geometry])
 
 	// A row that GROWS as the user types moves the grip with it, and the container's own observer
 	// says nothing when the container's size is fixed. Observing the ONE decorated row is the
@@ -66,10 +66,10 @@ export const BlockControls = memo(() => {
 		if (gripRow === null) return
 		const element = tokens.handle(gripRow)?.element()
 		if (!element) return
-		const observer = new ResizeObserver(() => setGripBox(block.boxOf(gripRow) ?? null))
+		const observer = new ResizeObserver(() => setGripBox(controller.boxOf(gripRow) ?? null))
 		observer.observe(element)
 		return () => observer.disconnect()
-	}, [block, tokens, gripRow])
+	}, [controller, tokens, gripRow])
 
 	return (
 		<div ref={controlRef} className={styles.BlockControls}>
@@ -95,12 +95,12 @@ export const BlockControls = memo(() => {
 						draggable={!!draggable}
 						className={cx(styles.GripButton, dragging !== null && styles.GripButtonDragging)}
 						aria-label={draggable ? 'Drag to reorder or click for options' : 'Block options'}
-						onMouseDown={block.pinHover}
-						onDragStart={e => block.beginDrag(gripRow, e.nativeEvent)}
-						onDragEnd={() => block.endDrag()}
+						onMouseDown={controller.pinHover}
+						onDragStart={e => controller.beginDrag(gripRow, e.nativeEvent)}
+						onDragEnd={() => controller.endDrag()}
 						onClick={e => {
 							e.preventDefault()
-							block.openMenu(gripRow, e.currentTarget.getBoundingClientRect())
+							controller.openMenu(gripRow, e.currentTarget.getBoundingClientRect())
 						}}
 					>
 						<span className={iconGrip} />
@@ -120,13 +120,13 @@ export const BlockControls = memo(() => {
 			{menu && (
 				<Popup
 					ref={(el: HTMLElement | null) => {
-						block.menuElement(el)
+						controller.menuElement(el)
 					}}
 					style={{top: menu.top, left: menu.left, pointerEvents: 'auto'}}
 				>
 					<List>
-						{BLOCK_MENU_ITEMS.map(item => (
-							<ListItem key={item.label} onClick={() => item.run(block)}>
+						{ROW_MENU_ITEMS.map(item => (
+							<ListItem key={item.label} onClick={() => item.run(controller)}>
 								<span className={item.iconClass} />
 								<span>{item.label}</span>
 							</ListItem>

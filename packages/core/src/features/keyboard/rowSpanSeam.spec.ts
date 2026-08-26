@@ -215,7 +215,7 @@ describe('a row selection is the rows, opener and all', () => {
 		const {store, container} = mount('- target\ntail')
 		caretIn(store, 0, 0)
 		press(container, 'Escape')
-		expect(store.block.selected()).toHaveLength(1)
+		expect(store.rows.selected()).toHaveLength(1)
 
 		pasteMarkup(container, liveRange(), '- one\n- two')
 
@@ -237,7 +237,7 @@ describe('a row selection is the rows, opener and all', () => {
 		const {store, container} = mount('- parent\n\t- child\n- after')
 		caretIn(store, 1, 0)
 		press(container, 'Escape')
-		expect(store.block.selected()).toHaveLength(1)
+		expect(store.rows.selected()).toHaveLength(1)
 
 		paste(container, liveRange(), 'one\ntwo')
 
@@ -278,7 +278,7 @@ describe('a row selection is the rows, opener and all', () => {
 		const {store, container} = mountWith('- alpha;;- beta', ';;')
 		caretIn(store, 0, 0)
 		press(container, 'Escape')
-		expect(store.block.selected()).toHaveLength(1)
+		expect(store.rows.selected()).toHaveLength(1)
 
 		paste(container, liveRange(), 'one\ntwo')
 
@@ -314,7 +314,7 @@ describe('a row selection is the rows, opener and all', () => {
 		const {store, container} = mount('- alpha\n- beta')
 		caretIn(store, 0, 0)
 		press(container, 'Escape')
-		expect(store.block.selected()).toHaveLength(1)
+		expect(store.rows.selected()).toHaveLength(1)
 
 		const clipboardData = new DataTransfer()
 		container.dispatchEvent(new ClipboardEvent('cut', {bubbles: true, cancelable: true, clipboardData}))
@@ -334,7 +334,7 @@ describe('a row selection is the rows, opener and all', () => {
 		press(container, 'Escape')
 		press(container, 'ArrowDown', {shiftKey: true})
 		press(container, 'ArrowDown', {shiftKey: true})
-		expect(store.block.selected()).toHaveLength(3)
+		expect(store.rows.selected()).toHaveLength(3)
 
 		press(container, 'Backspace')
 
@@ -349,7 +349,7 @@ describe('a row selection is the rows, opener and all', () => {
 		const {store} = mount('- alpha\n- beta')
 		const [from, to] = [store.tokens.anchorAt(4), store.tokens.anchorAt(12)]
 		store.tokens.selection.select(from, to)
-		expect(store.block.selected()).toHaveLength(0)
+		expect(store.rows.selected()).toHaveLength(0)
 
 		store.edit.replace(from, to, '')
 
@@ -369,7 +369,7 @@ describe('the set verbs do not see the set', () => {
 		const {store, container} = mount('- alpha\n- beta\n- gamma')
 		caretIn(store, 1, 0)
 		press(container, 'Escape')
-		expect(store.block.selected()).toHaveLength(1)
+		expect(store.rows.selected()).toHaveLength(1)
 
 		press(container, 'Enter')
 
@@ -391,14 +391,14 @@ describe('the set verbs do not see the set', () => {
 		caretIn(store, 1, 0)
 		press(container, 'Escape')
 		press(container, 'ArrowDown', {shiftKey: true})
-		const selected = store.block.selected()
+		const selected = store.rows.selected()
 		expect(selected).toHaveLength(2)
 
 		press(container, 'Tab')
 
 		expect(store.tokens.value()).toBe('- alpha\n\t- beta\n\t- gamma')
 		// The same two rows, still selected: a re-indent moves no position and keeps every id.
-		expect(store.block.selected()).toEqual(selected)
+		expect(store.rows.selected()).toEqual(selected)
 	})
 
 	/** Shift+Tab is the same verb with the step reversed, and the same set answers it. */
@@ -407,7 +407,7 @@ describe('the set verbs do not see the set', () => {
 		caretIn(store, 1, 0)
 		press(container, 'Escape')
 		press(container, 'ArrowDown', {shiftKey: true})
-		expect(store.block.selected()).toHaveLength(2)
+		expect(store.rows.selected()).toHaveLength(2)
 
 		press(container, 'Tab', {shiftKey: true})
 
@@ -424,7 +424,7 @@ describe('the set verbs do not see the set', () => {
 	it('does not move a row a plain text sweep merely covers', () => {
 		const {store, container} = mount('- alpha\n- beta')
 		sweep(store, 0, 2, 1, 4)
-		expect(store.block.selected()).toHaveLength(0)
+		expect(store.rows.selected()).toHaveLength(0)
 
 		press(container, 'Tab')
 
@@ -449,7 +449,7 @@ describe('the set verbs do not see the set', () => {
 			caretIn(store, key === 'ArrowDown' ? 1 : 2, 0)
 			press(container, 'Escape')
 			press(container, key, {shiftKey: true})
-			expect(store.block.selected()).toHaveLength(2)
+			expect(store.rows.selected()).toHaveLength(2)
 
 			const event = press(container, 'Tab')
 

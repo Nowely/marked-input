@@ -30,7 +30,7 @@ const store = useStore()
 const resolveNodeSlot = useMarkput(s => s.slots.node)
 // A SCALAR subscription: read as a boolean, the derivation notifies only when THIS row's own
 // answer flips, so picking a row up does not re-render every other row.
-const isDragging = useMarkput(s => () => s.block.state.dragging() === props.node.id)
+const isDragging = useMarkput(s => () => s.rows.state.dragging() === props.node.id)
 
 // Created ONCE in setup: `consign` and `children` mint a registration key per call, so calling
 // them inside the ref callback would file a fresh entry on every paint and never release the old

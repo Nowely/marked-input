@@ -5,7 +5,7 @@ import {anchorEquals, entryAnchor, hasRawBody} from '../tokens'
 import type {Replacement} from './beforeInput'
 import {dropUnexpressedInput} from './beforeInput'
 
-type KbCtx = Pick<Store, 'block' | 'edit' | 'overlay' | 'tokens'>
+type KbCtx = Pick<Store, 'edit' | 'overlay' | 'rows' | 'tokens'>
 
 /**
  * THE ROW KEYMAP: the keys that mean something different when the value parses into rows. Every
@@ -218,7 +218,7 @@ function lineOwner(store: KbCtx, row: RowNode): RowNode {
  * THE ROW SELECTION'S OWN KEYS: Esc, which escalates a caret into a row selection and then widens
  * it a level at a time, and Shift+Up/Down, which grow it by a row.
  *
- * There is no row-selection STORE behind any of this — `store.block.selected` derives from the
+ * There is no row-selection STORE behind any of this — `store.rows.selected` derives from the
  * text selection — so every arm is one `select` of a span the tree answered. What each key means
  * is therefore the same question asked four ways, and {@link TokenModel.rowScope} is the one place
  * it is answered.
@@ -241,7 +241,7 @@ export function handleRowSelection(store: KbCtx, event: KeyboardEvent): void {
 	if (!anchors) return
 
 	if (event.key === KEYBOARD.ESC) {
-		if (store.overlay.match() || store.block.state.menu()) return
+		if (store.overlay.match() || store.rows.state.menu()) return
 		// The widening rung FIRST, so a second Esc climbs rather than re-selecting the same row.
 		// The `'row'` rung is the ENTRY into a row selection and runs only while none stands: with
 		// whole rows already held and nothing above them to climb to, re-stating the ANCHOR's row

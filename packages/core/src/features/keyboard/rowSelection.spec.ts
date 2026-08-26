@@ -6,7 +6,7 @@ import {mountNestedBlock, selectionRange} from '../tokens/__testing__/mountFixtu
 
 /**
  * THE ROW SELECTION, end to end: the keys that widen it and the derivation that reads it back.
- * One spec for both halves on purpose — there is no store between them, so `store.block.selected`
+ * One spec for both halves on purpose — there is no store between them, so `store.rows.selected`
  * IS what the keys wrote, and testing either alone would test a projection of the other.
  *
  * The document is one nested shape, `'aa\n\tbb\n\tcc\ndd'`, because every rule here is about
@@ -30,7 +30,7 @@ function selectedSlots(store: Store): string[] {
 		node.rows().forEach(collect)
 	}
 	store.tokens.nodes().forEach(collect)
-	return store.block.selected().map(id => byId.get(id) ?? '?')
+	return store.rows.selected().map(id => byId.get(id) ?? '?')
 }
 
 /** A collapsed caret at a projection offset, stored — which is the tier these arms read. */
@@ -168,7 +168,7 @@ describe('Esc escalates, one level per press', () => {
 		const {store, container} = mount()
 		const rows = store.tokens.nodes()
 		caretAt(store, 5)
-		store.block.openMenu(rows[0].id, new DOMRect(0, 0, 24, 20))
+		store.rows.openMenu(rows[0].id, new DOMRect(0, 0, 24, 20))
 
 		expect(press(store, container, 'Escape').defaultPrevented).toBe(false)
 		expect(selectedSlots(store)).toEqual([])
@@ -237,7 +237,7 @@ describe('Shift+arrows grow the row selection', () => {
 	it('is a row gesture from a text selection that covers a row whole, with no Esc', () => {
 		const {store, container} = mountNestedBlock({defaultValue: 'aaa\nbbb\nccc'})
 		store.tokens.selection.select(store.tokens.anchorAt(0), store.tokens.anchorAt(3))
-		expect(store.block.selected()).toHaveLength(1)
+		expect(store.rows.selected()).toHaveLength(1)
 
 		expect(press(store, container, 'ArrowDown', {shiftKey: true}).defaultPrevented).toBe(true)
 		expect(selectionRange(store)).toEqual({start: 0, end: 7})

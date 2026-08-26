@@ -42,7 +42,7 @@ export const Block = memo(({node, depth, index}: BlockProps) => {
 	// the exact regression an editor-level signal invites. As a boolean it notifies only
 	// when THIS row's own answer flips. The closure is safe for `Token`'s reason: the component
 	// is keyed by `node.id` and ids are never reused.
-	const isDragging = useMarkput(s => () => s.block.state.dragging() === node.id)
+	const isDragging = useMarkput(s => () => s.rows.state.dragging() === node.id)
 	// The per-row subscription: a row's kind, its meta and its children are what this component
 	// paints, so an edit to any of them must re-render it — `renderSubscription`'s row arm, the
 	// same job its mark arm does for Token.
