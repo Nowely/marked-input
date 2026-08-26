@@ -350,12 +350,27 @@ export function replaceRowSelection(
 		store.edit.replace(span.anchor, span.head, replacement.text)
 		return true
 	}
-	// AND A ROW THAT HOLDS NO EDITABLE POSITION IS REPLACED WHOLE. A frozen row's body is the
-	// kind's own markup rather than prose — `TokenModel.rowSelectionText` refuses it — so the row
-	// goes and a plain row carrying what was typed takes its place, which is what the reference
-	// product does when a character is typed over a selected block. `replaceRows` answers `false`
-	// when there is no row selection at all, so an ordinary text edit still falls through here.
-	return store.tokens.replaceRows(anchors, [replacement.text])
+	// AND A ROW THAT HOLDS NO EDITABLE POSITION IS CONSUMED AND LEFT ALONE. A frozen row's body is
+	// the kind's own markup rather than prose — `TokenModel.rowSelectionText` refuses it — so the
+	// character has nothing in that row to replace and the key does nothing. `rowSelection` is
+	// empty wherever no whole row is held, so an ordinary text edit still falls through here.
+	//
+	// IT USED TO REPLACE THE ROW WHOLE, and that made ONE CLICK PLUS ONE KEYSTROKE a page-scale
+	// delete. A block selection is what a pointer landing on frozen presentation produces
+	// (`TokenModel.#claimRow`), so a click on a chip inside a properties panel — a target with no
+	// behaviour of its own, that nobody reads as "select this block" — armed it. MEASURED on the
+	// showcase: one click on the `In progress` chip and one `'a'` took `@properties … @end` with
+	// it, 76 lines to 67, and the same gesture on an avatar did the same. Nothing on the way said
+	// so and only Mod+Z brought it back.
+	//
+	// THE GESTURES THAT SAY SO STILL TAKE THE ROW: Backspace and Delete reach
+	// {@link TokenModel.replaceRows} through the arm above and through `handleDeleteKey`, and a
+	// PASTE still replaces it. Only the typed character is refused.
+	//
+	// `false` WOULD NOT DO. It falls through to the ordinary text path, which writes over the
+	// anchors verbatim — a frozen row's are its own ELEMENT edges — and that is the same deletion
+	// through another door. The refusal has to be the consumption.
+	return store.tokens.rowSelection(anchors).length > 0
 }
 
 /**

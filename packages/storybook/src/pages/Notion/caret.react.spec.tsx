@@ -160,10 +160,17 @@ describe('the caret goes where a person can follow it', () => {
 	 *
 	 * The row selection is the answer this editor already owns (`store.rows.selected`), and the
 	 * browser paints it: the selection is written across the row's own ELEMENT, so the block is
-	 * highlighted and the keys land on it. Typing REPLACES a frozen row rather than writing into it
-	 * — its body is the kind's markup, not prose.
+	 * highlighted and the keys land on it.
+	 *
+	 * DECLARED BEHAVIOUR CHANGE: a typed character over such a row is now CONSUMED AND REFUSED,
+	 * where it used to replace the row whole. The selection is reachable by the plainest gesture the
+	 * page has — a click on a chip inside the properties panel, a target with no behaviour of its
+	 * own — so "replace the block with this letter" put a page's metadata one keystroke away from
+	 * gone: measured on the showcase, one click and one `'a'` took `@properties … @end`, 76 lines to
+	 * 67. The keys that MEAN it still take the row (the Backspace case below), and a paste still
+	 * replaces it; only the character is refused.
 	 */
-	it('selects the row when the block clicked holds no position', async () => {
+	it('selects the row when the block clicked holds no position, and refuses a typed character', async () => {
 		const {host, value} = await mountControlled(Showcase, '- keep me\n@toc\nLaunch tasks\n@end\n- and me')
 
 		await focusAtEnd(rowStarting(host, 'keep me'))
@@ -176,7 +183,7 @@ describe('the caret goes where a person can follow it', () => {
 		await userEvent.keyboard('Z')
 		await settle()
 
-		expect(value()).toBe('- keep me\nZ\n- and me')
+		expect(value()).toBe('- keep me\n@toc\nLaunch tasks\n@end\n- and me')
 	})
 
 	/**
@@ -186,8 +193,13 @@ describe('the caret goes where a person can follow it', () => {
 	 * extent, so Chromium canonicalizes the `beforeinput` target range to the nearest position it
 	 * can name — in the row before — and the read preferred that range over the live selection
 	 * whenever it came back collapsed. Reproduced 2 of 2 before, 1 of 1 after.
+	 *
+	 * STATED AS "NOTHING MOVES" since the character became a refusal, and it still discriminates the
+	 * rule it was written for: the defect it rejects APPENDED to the quote, so the read regressing
+	 * changes the value and this case reddens either way. Backspace is the positive witness, and it
+	 * is the case below.
 	 */
-	it('types over the row a click on a bookmark selected, not the row above it', async () => {
+	it('writes nothing at all when a click on a bookmark is typed over', async () => {
 		// THE WHOLE PAGE, because the shape is the page's: a three-row stand-in gives Chromium a
 		// target range this rule never sees, and the pin passes with the mechanism reverted.
 		const {host, value} = await mountControlled(Showcase, APOLLO_DOC)
@@ -195,10 +207,20 @@ describe('the caret goes where a person can follow it', () => {
 		await focusAtEnd(rowStarting(host, 'Apollo moves the collaboration'))
 		await page.getByText('Auth migration — rollout plan', {exact: true}).first().click()
 		await settle()
+
 		await userEvent.keyboard('Z')
 		await settle()
 
-		expect(value()).toContain("we're not ready to call it GA.\nZ\n@comments")
+		expect(value()).toBe(APOLLO_DOC)
+
+		// AND THE POSITIVE HALF, without which "nothing moved" would also pass for an editor that
+		// heard nothing at all: Backspace takes the row the SELECTION names. Under the defect this
+		// case was written for it acted in the quote above instead.
+		await userEvent.keyboard('{Backspace}')
+		await settle()
+
+		expect(value()).not.toContain('@bookmark')
+		expect(value()).toContain("we're not ready to call it GA.\n@comments")
 	})
 
 	/**
@@ -219,10 +241,13 @@ describe('the caret goes where a person can follow it', () => {
 
 		expect(window.getSelection()?.toString()).toContain('and me')
 
-		await userEvent.keyboard('X')
+		// BACKSPACE is the witness, not a typed character: a selection holding a row no caret may
+		// enter refuses the character and takes the delete, so this is the key that says what the
+		// grown selection covers.
+		await userEvent.keyboard('{Backspace}')
 		await settle()
 
-		expect(value()).toBe('- keep me\nX')
+		expect(value()).toBe('- keep me')
 	})
 
 	/** Backspace over the same selection takes the block away, opener and closing literal and all. */
@@ -252,7 +277,7 @@ describe('the caret goes where a person can follow it', () => {
 	 * rule under test is the editor's: the pointer's row outranks the anchor the browser named.
 	 */
 	it('hands no keystroke to the first row when a draggable card is pressed', async () => {
-		const {host, value} = await mountControlled(Showcase)
+		const {host} = await mountControlled(Showcase)
 
 		host.focus()
 		controlIn(rowStarting(host, 'To do'), '[class*="boardCardDraggable"]').dispatchEvent(
@@ -260,12 +285,19 @@ describe('the caret goes where a person can follow it', () => {
 		)
 		putCaret(lineTextOf(rowsOfHost(host)[0]), 0)
 		await settle()
-		await userEvent.keyboard('ZZZ')
 
-		// The BOARD is what the keystroke reached — the row the pointer was in, selected and then
-		// replaced — and the page title the browser had named is untouched.
-		expect(value()).not.toContain('ZZZApollo')
-		expect(value()).toContain('\nZZZ\n')
+		// The BOARD is what the pointer claimed — the row it was pressed in, selected across its own
+		// element — and the page title the browser had named is not where anything landed.
+		expect(window.getSelection()?.toString()).toContain('To do')
+
+		await userEvent.keyboard('ZZZ')
+		await settle()
+
+		// The board holds no position a caret may take, so the characters are refused outright. Read
+		// off the HOST rather than off `value()`: a refused key writes nothing, so `onChange` never
+		// fires and the controlled mirror would answer `''` whatever happened on screen.
+		expect(host.textContent).not.toContain('ZZZ')
+		expect(host.textContent).toContain('To do')
 	})
 
 	/**

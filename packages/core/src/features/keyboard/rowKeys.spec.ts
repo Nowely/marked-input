@@ -1374,4 +1374,99 @@ describe('rowKeys the row keymap', () => {
 		})
 	})
 
+	/**
+	 * A ROW NO CARET MAY ENTER, which is what an ATOMIC kind is: its component is handed the row's
+	 * children and paints none of them, so the row round-trips and holds no position of its own. A
+	 * POINTER LANDING on it is a block selection (`TokenModel.#claimRow`), and that is reachable by
+	 * the plainest gesture the page has — the showcase's properties panel is one such row and a
+	 * click anywhere inside it, on a chip that has no behaviour of its own, selects the whole thing.
+	 *
+	 * SO THE TYPED CHARACTER IS REFUSED. It used to replace the row WHOLE: one click and one letter
+	 * took `@properties … @end` off the showcase, 76 lines to 67, with nothing on the way saying so
+	 * and only Mod+Z to bring it back. The keys that MEAN it still take the row — Backspace below,
+	 * and a paste — which is what makes this a refusal rather than a hole.
+	 */
+	describe('typing over a row no caret may enter', () => {
+		const CARD: CoreOption = {markup: '@card __slot__', row: {Component: 'div'}}
+
+		const typeInto = (container: HTMLElement, data: string): InputEvent => {
+			const event = new InputEvent('beforeinput', {
+				inputType: 'insertText',
+				data,
+				bubbles: true,
+				cancelable: true,
+			})
+			container.dispatchEvent(event)
+			return event
+		}
+
+		/**
+		 * {@link mountNestedRowDoc}'s paint with ONE difference: a row that has a KIND gets no surface
+		 * for its own body, which is exactly what an atomic component does and what
+		 * {@link DomModel.reachable} reads — a token the adapter never painted has no element to reach.
+		 */
+		function frozen(defaultValue: string) {
+			const store = new Store()
+			store.props.set({defaultValue, separator: '\n', indent: '\t', options: [CARD], Mark: () => null})
+			const container = document.createElement('div')
+			document.body.append(container)
+			store.host.container(container)
+			store.tokens.nodes().forEach(node => {
+				const element = document.createElement('div')
+				container.append(element)
+				store.tokens.consign(node.id)(element)
+				store.tokens.children(node.id)(element)
+				if (node.kind !== 'row' || node.descriptor() !== undefined) return
+				for (const child of node.inline()) {
+					const surface = document.createElement('span')
+					element.append(surface)
+					store.tokens.consign(child.id)(surface)
+				}
+			})
+			return {store, container}
+		}
+
+		/** The selection a pointer landing writes: the row across its own ELEMENT. */
+		const selectRowElement = (store: Store, index: number): void => {
+			const row = rowsOf(store)[index]
+			store.tokens.selection.select({before: row}, {after: row})
+		}
+
+		it('CONSUMES the key and leaves the row standing', () => {
+			const {store, container} = frozen('before\n@card panel\nafter')
+			selectRowElement(store, 1)
+			expect(store.rows.selected()).toHaveLength(1)
+
+			expect(typeInto(container, 'a').defaultPrevented).toBe(true)
+
+			expect(store.tokens.value()).toBe('before\n@card panel\nafter')
+			container.remove()
+		})
+
+		it('still lets Backspace take the row, which is the gesture that says so', () => {
+			const {store, container} = frozen('before\n@card panel\nafter')
+			selectRowElement(store, 1)
+
+			press(container, 'Backspace')
+
+			expect(store.tokens.value()).toBe('before\nafter')
+			container.remove()
+		})
+
+		/** And a row the caret CAN enter is still typed over, text-first, keeping its kind. */
+		it('replaces the TEXT of a selected row that holds an editable position', () => {
+			const {store, container} = mountNestedRowDoc({
+				defaultValue: 'before\n@card panel\nafter',
+				separator: '\n',
+				options: [CARD],
+				Mark: () => null,
+			})
+			selectRowElement(store, 1)
+
+			expect(typeInto(container, 'a').defaultPrevented).toBe(true)
+
+			expect(store.tokens.value()).toBe('before\n@card a\nafter')
+			container.remove()
+		})
+	})
 })
