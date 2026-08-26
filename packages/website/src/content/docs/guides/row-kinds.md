@@ -132,6 +132,11 @@ into a row with no element:
 <span hidden={!open}>{rows}</span>
 ```
 
+Closing one under the caret is safe: a hidden row generates no box, and the editor moves the caret
+to the nearest row that does — the row after the collapsed subtree, which is where the same
+`ArrowDown` would have landed. It used to be left inside, where every keystroke edited text nobody
+could see.
+
 ### The same kind in Vue
 
 Vue delivers the child rows as a **slot** named `rows` rather than as a prop — the one place the two

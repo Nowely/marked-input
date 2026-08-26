@@ -4,7 +4,7 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
-import {ROW_CONTROLS, findEditingHost} from '../../shared/lib/dom'
+import {ROW_CONTROLS, findEditingHost, getElement} from '../../shared/lib/dom'
 import {focusAtEnd} from '../../shared/lib/focus'
 import * as NotionStories from './Notion.stories.react'
 
@@ -239,6 +239,33 @@ describe('the caret goes where a person can follow it', () => {
 
 		expect(value()).toBe('### Risks\n\t- EU quota')
 		expect(host.textContent).not.toContain('EU quota')
+	})
+
+	/**
+	 * AND THE CARET GOES WITH IT WHEN A ROW CLOSES UNDER IT. A toggle's arrow is a retype onto the
+	 * closed kind, which hides the children rather than unmounting them — so the caret's row was
+	 * still in the document, still `reachable`, and generated no box. The focus reclaim then handed
+	 * focus back and restored the caret into the row it had just hidden: the next keystroke edited
+	 * text nobody could see.
+	 */
+	it('takes the caret out of a toggle that closes under it', async () => {
+		const {host, value} = await mountControlled(Showcase)
+
+		const toggle = toggleStarting(host, 'Why we cut the Android target')
+		const child = [...toggle.querySelectorAll<HTMLElement>(ROW)][0]
+		const text = lineTextOf(child)
+		await caretAt(host, text, text.length)
+		await userEvent.click(getElement(page.getByRole('button', {name: 'Collapse'}).first()))
+		await settle()
+		await userEvent.keyboard('ZZZ')
+		await settle()
+
+		expect(caretIsUsable()).toBe(true)
+		expect(value()).not.toContain('twice.ZZZ')
+		// AND THE HIDDEN ROWS STAY WHERE THEY ARE. A closed toggle renders its host and hides it,
+		// which is a kind doing its job — the row half of the invariant above must not read that as
+		// "nothing paints them" and lift them out from under the toggle on every collapse.
+		expect(value()).toContain('▸ Why we cut the Android target\n\tShipping three platforms')
 	})
 
 	/**

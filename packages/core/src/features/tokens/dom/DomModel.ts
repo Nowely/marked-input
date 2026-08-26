@@ -117,14 +117,24 @@ export class DomModel {
 	}
 
 	/**
-	 * DOES THE BROWSER PAINT A BOX FOR THIS NODE — asked of a ROW, where it is exactly the question
-	 * a caret invariant needs: a row with no element is one the framework has not reached YET, and
-	 * a row inside a kind that collapses its children generates no box at all, so a caret in it is
-	 * in the document and on no screen.
+	 * WHAT THIS FRAME SAYS ABOUT A ROW — three answers, because a caret invariant needs two of them
+	 * apart and the single boolean this replaces could not tell them apart:
+	 *
+	 * - `'absent'` — no element, or one no longer in the document. A RACE, not a verdict: the
+	 *   framework has not reached this row yet, and the next pulse answers again.
+	 * - `'boxless'` — an element the framework HAS painted, in the document, generating no box: a
+	 *   row inside a collapsed subtree. A VERDICT, and one that does not heal by waiting, so a
+	 *   caret there is in the document and on no screen.
+	 * - `'painted'`.
+	 *
+	 * The two were one `painted()` reading until the toggle defect: closing a toggle with the caret
+	 * inside it left `'boxless'`, the caret invariant read it as `'absent'` and stood down, and the
+	 * next keystroke edited text nobody could see.
 	 */
-	painted(id: Id): boolean {
+	rowPaint(id: Id): 'absent' | 'boxless' | 'painted' {
 		const element = this.deps.handle(id)?.element()
-		return element?.isConnected === true && element.checkVisibility()
+		if (element?.isConnected !== true) return 'absent'
+		return element.checkVisibility() ? 'painted' : 'boxless'
 	}
 
 	/**
@@ -157,7 +167,7 @@ export class DomModel {
 	 *
 	 * A ROW THE FRAMEWORK HAS NOT PAINTED ANSWERS `true`, and that asymmetry is deliberate: no
 	 * bindings at all is a node this commit added or a document with no adapter behind it, where a
-	 * refusal would be a race rather than a verdict — the rule {@link painted}'s callers already
+	 * refusal would be a race rather than a verdict — the rule {@link rowPaint}'s callers already
 	 * live by.
 	 */
 	nestingIsPainted(id: Id): boolean {

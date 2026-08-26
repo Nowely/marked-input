@@ -1232,14 +1232,23 @@ export class TokenModel {
 		const anchors = this.selection.anchors()
 		if (!anchors || !anchorEquals(anchors.anchor, anchors.head)) return
 		const row = this.rowOf(anchors.anchor)?.row
-		if (!row || !this.#dom.painted(row.id)) return
+		if (!row) return
+		// `'absent'` is the frame's own "not yet" and stands down — the next pulse asks again.
+		// `'boxless'` is a VERDICT and goes straight to the recovery: the row is painted, its
+		// element is in the document and it generates no box, which is what a collapsed subtree
+		// does to the rows inside it. {@link DomModel.reachable} cannot tell that apart — it asks
+		// about the SURFACE and a hidden one is still a surface — so a caret closed inside a toggle
+		// read as reachable, the invariant declared it well, and the focus reclaim below handed it
+		// back to a row nobody could see. Every keystroke after that edited invisible text.
+		const paint = this.#dom.rowPaint(row.id)
+		if (paint === 'absent') return
 		// ASKED OF THE ROW'S OWN ENTRY, not of the anchor the caret happens to hold, and that is the
 		// difference between a verdict and a race: a node the adapter has not painted YET makes any
 		// single anchor unresolvable for a pulse or two — a mark just inserted, the empty text token
 		// the parse leaves after it — while a row whose ENTRY cannot be reached is an atomic block,
 		// which is a fact about the row and stays true. MEASURED: the anchor reading grew a trailing
 		// row every time a mention was completed at the end of a document.
-		if (this.#dom.reachable(entryAnchor(row))) {
+		if (paint === 'painted' && this.#dom.reachable(entryAnchor(row))) {
 			this.#keepTailEnterable(row)
 			return
 		}
@@ -1282,25 +1291,39 @@ export class TokenModel {
 		const rows = untracked(() => preorderRows(this.#tree.roots()).map(entry => entry.row))
 		const at = from ? rows.indexOf(from) : -1
 		for (let index = at + 1; index < rows.length; index++) {
-			// The same "not yet" reading {@link #settleCaret} opens with, and it has to be the same
-			// one: a row with no element is a row this frame has not reached, and stepping PAST it
-			// would land the caret somewhere the user never pointed at.
-			if (!this.#dom.painted(rows[index].id)) return
+			// The same three-way reading {@link #settleCaret} opens with, and it has to be the same
+			// one. `'absent'` STOPS the walk: a row with no element is a row this frame has not
+			// reached, and stepping past it would land the caret somewhere the user never pointed
+			// at. `'boxless'` is STEPPED OVER — {@link #placeInRow} declines it — because a
+			// collapsed subtree is exactly what a person's own ArrowDown skips: it is the row after
+			// the whole collapsed run they land on, and stopping there would leave the caret in the
+			// trap this was called to take it out of.
+			if (this.#dom.rowPaint(rows[index].id) === 'absent') return
 			if (this.#placeInRow(rows[index])) return
 		}
 		// A blank row of no kind is already a row the caret can enter — the trailing convention
 		// (ADR-0009) leaves one at the end of any document ending in a separator — so the invariant
 		// is met and opening a second one would grow the value on every pass.
 		const blank = from && untracked(() => from.descriptor() === undefined && from.slot() === '')
-		if (from && at === rows.length - 1 && !blank && this.#commands.addSibling(from)) return
+		// AND NOT INSIDE A COLLAPSED ROOM: a sibling of a boxless row is boxless too, so opening one
+		// there is a door nobody can see and a value that grows on every pass. The row the caret
+		// leaves is found by the backward walk instead.
+		const collapsed = from !== undefined && this.#dom.rowPaint(from.id) === 'boxless'
+		if (from && at === rows.length - 1 && !blank && !collapsed && this.#commands.addSibling(from)) return
 		for (let index = at - 1; index >= 0; index--) {
 			if (this.#placeInRow(rows[index])) return
 		}
 	}
 
-	/** The caret at a row's own entry, when that entry is one it may occupy. */
+	/**
+	 * The caret at a row's own entry, when that entry is one it may occupy — which is ONE reading
+	 * short of {@link DomModel.reachable}: a row generating no box holds a position the anchor
+	 * space can name and no person can see, so the caret invariant may not put the caret back into
+	 * one while recovering it from another.
+	 */
 	#placeInRow(row: RowNode): boolean {
 		const anchor = untracked(() => entryAnchor(row))
+		if (this.#dom.rowPaint(row.id) !== 'painted') return false
 		if (!this.#dom.reachable(anchor)) return false
 		this.#selectionDriver.placeAt(anchor)
 		return true
