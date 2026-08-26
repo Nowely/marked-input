@@ -190,10 +190,9 @@ export function rowsWithin(
  * construction ({@link rowScope} builds every one of them out of {@link rowSpan}), and a text sweep
  * that happens to land on both edges is the same selection by every reading this editor has.
  *
- * "Exact" is a BOUNDARY and not an offset, at BOTH ends — see {@link namesBoundary}. A row
- * boundary is a stretch of structural bytes, and every offset in it names the same boundary;
- * compared against the run's own edges alone, the plainest row selection there is — Shift+ArrowDown
- * over one row — answered with no rows at all.
+ * "Exact" is measured in CONTENT, not in offsets — see {@link contentSpan}. Every edge a gesture
+ * writes lands somewhere in the structural run between two lines, and all of those offsets name the
+ * same pair of content boundaries.
  *
  * `'replace'` takes the covered rows' own LINES and their subtrees, and stops before the separator
  * that follows them — that byte belongs to the boundary, and the rows arriving in their place need
@@ -205,11 +204,6 @@ export function rowsWithin(
  * separator to take, so the one BEFORE the run leaves instead — and when the run also starts the
  * document there is neither, which is the whole value and clears it.
  *
- * `'text'` takes what the SELECTION itself covers, in row coordinates: the first row's entry to the
- * last row's content end, both openers left standing. It is the one gesture over a row selection
- * that stays TEXT — a character replaces the rows' text and the first row keeps its kind — and it
- * exists so that gesture writes over the same boundary reading as the other three.
- *
  * The ROWS come back beside the span because a caller that writes into it needs the first one — its
  * lead, and its kind where the kind continues, are what an arriving line is opened with — and
  * because a caller that only wants the SET (Tab) must not re-derive the exactness test to get it.
@@ -219,7 +213,7 @@ export function rowSelectionSpan(
 	roots: readonly TreeNode[],
 	anchors: Anchors,
 	separator: string | undefined,
-	take: 'replace' | 'remove' | 'text'
+	take: 'replace' | 'remove'
 ): {start: number; end: number; rows: readonly RowNode[]} | undefined {
 	if (separator === undefined) return undefined
 	const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
@@ -229,11 +223,14 @@ export function rowSelectionSpan(
 
 	const first = covered[0]
 	const last = covered[covered.length - 1]
-	const opens = rowSpan(roots, first, separator)
-	const closes = rowSpan(roots, last, separator)
-	if (!namesBoundary(roots, held.start, opens.start, stepOver(roots, first, -1), separator)) return undefined
-	if (!namesBoundary(roots, held.end, closes.end, stepOver(roots, last, 1), separator)) return undefined
-	if (take === 'text') return {start: opens.start, end: closes.end, rows: covered}
+	// EXACT means the CONTENT the selection covers is exactly the covered rows' own content —
+	// their first line's entry to their last line's end. Every other offset the two edges could
+	// carry is structure, and structure belongs to no row.
+	const content = contentSpan(roots, anchors)
+	const own = contentLines([first]).at(0)
+	const upto = contentLines([last]).at(-1)
+	if (!content || !own || !upto) return undefined
+	if (content.start !== own.start || content.end !== upto.end) return undefined
 
 	// The row's own LINE START — its lead and its opener included, which is the difference this
 	// whole function exists for. It is not expressible as an anchor, which is why the callers ask
@@ -245,56 +242,76 @@ export function rowSelectionSpan(
 }
 
 /**
- * Does `at` name the BOUNDARY that opens or closes the run — `near` being the run's own edge and
- * `neighbour` the row on the other side of it?
+ * THE CONTENT A SELECTION COVERS — the one rule for every edge that lands on structural bytes, and
+ * the span a ranged edit may write over. `undefined` when an edge sits INSIDE a line's content,
+ * which is an ordinary text selection and stays exactly the bytes the event named.
  *
- * A BOUNDARY IS A RANGE OF BYTES, NOT AN OFFSET, and that is the whole of this function. Between
- * one row's content end and the next row's ENTRY lie the separator, the next row's lead and its
- * opener — every one of them structural, none of them a position a caret may occupy (ADR-0010). So
- * every offset in that stretch names the same boundary, and a selection reaching any of them has
- * taken nothing another has not.
+ * A DOCUMENT IS CONTENT SEPARATED BY STRUCTURE, and the structure is never the user's to write
+ * over. Between two lines' content lie the separator, the next line's lead, its opener and the
+ * `meta` in it — and between two CARVED pieces lies the delimiter the kind split at. Every one of
+ * them is structural, no caret may occupy one (ADR-0010), and a selection reaching any offset in
+ * such a run has taken nothing another has not. So each edge resolves to the content boundary it
+ * names: the low edge FORWARD onto the next line's entry, the high edge BACK onto the previous
+ * line's end.
  *
- * IT IS NOT THE MODEL THAT PRODUCES THE FAR SIDE, which is why equality against `near` alone was
- * never enough. Every row gesture writes the near side ({@link rowScope} builds its spans out of
- * {@link rowSpan}), and everything else that can select a row writes the far one:
- * - Shift+ArrowDown from a row's start, and a mouse sweep down one line, land the focus at the NEXT
- *   row's first typable position — `getSelection().toString()` reads `'BBB\n'` where the highlight
- *   paints only `BBB`. Read as an ordinary text span, typing over it deleted the separator with the
- *   text and merged the row below into the row above, kind and children and all;
- * - a click on a FROZEN row selects that row across its own ELEMENT (`TokenModel.#selectRow`),
- *   because a row whose text has no surface has no other pair of boundaries the DOM can paint —
- *   and an element's edges are `position.start`/`position.end`, which sit inside the boundary at
- *   both ends.
+ * IT IS NOT THE MODEL THAT WRITES THE FAR EDGE, which is why the run's own edges were never
+ * enough. Every row gesture writes the near one ({@link rowScope} builds its spans out of
+ * {@link rowSpan}); everything else writes the far one — Shift+ArrowDown and a mouse sweep land the
+ * focus at the NEXT line's first typable position, a triple-click ends on the line below, and a
+ * click on a frozen row selects it across its own ELEMENT, whose edges are `position.start` and
+ * `position.end`. Read as an ordinary text span, each of those deleted a boundary the highlight
+ * never painted: a sibling row merged into the one above, a PARENT swallowed its first child
+ * (`'- A⏎⇥- B⏎⇥- C'` typed over emitted `'- ZB⏎⇥- C'`), and a table cell ate the delimiter after it
+ * so the row lost a column.
  *
- * The document's own edges close the argument: before the first row and after the last there is no
- * neighbour, and the run's own edge is the only offset there is.
+ * A LINE, not a row, and that is what makes it one rule instead of four: a row's own content is
+ * its `slotRange`, which stops where its first CHILD begins, and a carved row has no line of its
+ * own — its pieces are the lines. So a parent, a child, a cell and a plain sibling are all the
+ * same shape here.
+ *
+ * IT ONLY EVER SHRINKS. Both edges move inward, so the answer can never name a byte the selection
+ * did not, and no content inside the selection is left behind: a line that overlaps the span at
+ * all lies wholly inside it, since neither edge is in a line's interior.
  */
-function namesBoundary(
-	roots: readonly TreeNode[],
-	at: number,
-	near: number,
-	neighbour: RowNode | undefined,
-	separator: string
-): boolean {
-	if (at === near) return true
-	if (!neighbour) return false
-	const far = rowSpan(roots, neighbour, separator)
-	return near < at ? at <= far.start : at >= far.end
+export function contentSpan(roots: readonly TreeNode[], anchors: Anchors): {start: number; end: number} | undefined {
+	const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
+	const held = {start: Math.min(...ends), end: Math.max(...ends)}
+	// A CARET names no content, and the collapsed case is every ordinary keystroke: resolving one
+	// would move the insertion point off the position the user is typing at.
+	if (held.start >= held.end) return undefined
+	const lines = contentLines(roots)
+	const interior = (at: number) => lines.some(line => line.start < at && at < line.end)
+	if (interior(held.start) || interior(held.end)) return undefined
+	const opens = lines.find(line => line.start >= held.start)
+	const closes = lines.findLast(line => line.end <= held.end)
+	if (!opens || !closes || opens.start > closes.end) return undefined
+	return {start: opens.start, end: closes.end}
 }
 
 /**
- * The row on the other side of the boundary `row` opens (`-1`) or closes (`+1`), in pre-order —
- * `undefined` at the document's edges.
+ * EVERY LINE OF THE DOCUMENT, as the CONTENT range it owns, in document order.
  *
- * Past the whole SUBTREE going forward: the run's rows are maximal, so a covered row's descendants
- * are covered with it and the next boundary a selection can reach is the one after all of them.
- * Backwards it is the immediately preceding line, which under nesting may be this row's own parent.
+ * A row's own content is its `slotRange` — its inline body, which ends where its first child row
+ * begins, so a parent contributes its own line and its children contribute theirs. A CARVED row
+ * contributes no line at all: its pieces ARE the lines of it, each one a Row whose structural bytes
+ * are the delimiter it was carved at, and the descent is recursive because a piece may be carved in
+ * turn.
+ *
+ * The ranges ascend and never overlap, which is what lets {@link contentSpan} read an edge by
+ * scanning them.
  */
-function stepOver(roots: readonly TreeNode[], row: RowNode, direction: -1 | 1): RowNode | undefined {
-	const rows = preorderRows(roots)
-	const at = rows.findIndex(entry => entry.row === row)
-	if (at < 0) return undefined
-	return direction === -1 ? rows[at - 1]?.row : rows[at + preorderRows([row]).length]?.row
+function contentLines(nodes: readonly TreeNode[]): {start: number; end: number}[] {
+	const out: {start: number; end: number}[] = []
+	for (const node of nodes) {
+		if (node.kind !== 'row') continue
+		if (hasCells(node)) {
+			out.push(...contentLines(node.rows()))
+			continue
+		}
+		out.push(node.slotRange())
+		out.push(...contentLines(node.rows()))
+	}
+	return out
 }
 
 /**

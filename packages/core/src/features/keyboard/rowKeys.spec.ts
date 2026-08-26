@@ -1194,15 +1194,28 @@ describe('rowKeys the row keymap', () => {
 	})
 
 	/**
-	 * TYPING OVER A ROW SELECTION, which is the one gesture over one that stays TEXT — and the one
-	 * that used to write over the raw anchors the event named. The browser ends a whole-row
-	 * selection at the NEXT row's entry ({@link selectAcross}), so those anchors carry a row
-	 * BOUNDARY the highlight never paints: replacing them deleted the separator AND the next row's
-	 * opener, merging the row below into the row above with its kind, its children and their
-	 * indent. Backspace over the identical selection deleted correctly the whole time, which is
-	 * what kept it invisible.
+	 * TYPING OVER A SELECTION THAT ENDS ON A BOUNDARY, which is the one gesture over a set of whole
+	 * lines that stays TEXT — and the one that used to write over the raw anchors the event named.
+	 * The browser ends such a selection at the NEXT LINE's entry ({@link selectAcross}), so those
+	 * anchors carry structure the highlight never paints: replacing them deleted the separator AND
+	 * the next line's opener. Backspace over the identical selection deleted correctly the whole
+	 * time, which is what kept it invisible.
+	 *
+	 * ONE RULE FOR EVERY STRUCTURE, and the shapes below are the census of what can sit between two
+	 * lines' content: a separator, a lead, a row opener, the `meta` inside one, and a carve
+	 * delimiter. The first fix taught the ROW SELECTION one of them and the other four were still
+	 * live — the two that are not row selections at all (a parent with children, a table cell) went
+	 * on merging their neighbour away. See {@link contentSpan}.
 	 */
-	describe('typing over a row selection', () => {
+	describe('typing over a selection that ends on a boundary', () => {
+		const CELL: CoreOption = {row: {Component: 'td'}}
+		const TABLE: CoreOption = {
+			markup: '| __slot__',
+			row: {Component: 'tr', continues: true, split: {at: ' | ', as: CELL}},
+		}
+		const table = (defaultValue: string) =>
+			mountNestedRowDoc({defaultValue, options: [TABLE, CELL], Mark: () => null})
+
 		const type = (container: HTMLElement, data: string): InputEvent => {
 			const event = new InputEvent('beforeinput', {
 				inputType: 'insertText',
@@ -1261,6 +1274,51 @@ describe('rowKeys the row keymap', () => {
 			type(container, 'X')
 
 			expect(store.tokens.value()).toBe('aXb\nc')
+		})
+
+		/**
+		 * A PARENT'S BOUNDARY IS WITH ITS FIRST CHILD, and the row selection cannot see it: a
+		 * parent's span covers its whole SUBTREE, so a triple-click on the parent's own line covers
+		 * no row whole and `store.rows.selected()` is EMPTY. The write fell to the raw anchors and
+		 * swallowed the separator, the child's indent and its opener at once — `'- A'` typed over
+		 * emitted `'- ZB'` and the first child was gone with its kind. What the highlight paints is
+		 * the parent's own LINE, and that is what is written.
+		 */
+		it('keeps the first CHILD when the selection ends at its entry', () => {
+			const {store, container} = keymap('- A\n\t- B\n\t- C\n- D')
+			selectAcross(store, 0, 0, 1, 0)
+
+			expect(store.tokens.rowSelection(store.tokens.domAnchors()!)).toEqual([])
+			type(container, 'Z')
+
+			expect(store.tokens.value()).toBe('- Z\n\t- B\n\t- C\n- D')
+		})
+
+		/**
+		 * AND A CARVE DELIMITER IS A BOUNDARY TOO. A cell is a Row whose structural bytes are the
+		 * delimiter its kind split at, and no gesture can name one — `rowsWithin` never descends
+		 * into a carved body — so this is a text selection by every reading. Its end lands at the
+		 * NEXT cell's entry, and the raw write ate the `' | '` between them: the row came out one
+		 * column short.
+		 */
+		it('keeps the delimiter when the selection ends at the next CELL', () => {
+			const {store, container} = table('| aaa | bbb | ccc')
+			// Pre-order rows: 0 is the line, 1..3 its cells.
+			selectAcross(store, 2, 0, 3, 0)
+
+			type(container, 'X')
+
+			expect(store.tokens.value()).toBe('| aaa | X | ccc')
+		})
+
+		/** The LAST cell's boundary is the row's own, and the row below it stays. */
+		it('keeps the row below when the selection ends past the LAST cell', () => {
+			const {store, container} = table('| aaa | bbb | ccc\nafter')
+			selectAcross(store, 3, 0, 4, 0)
+
+			type(container, 'X')
+
+			expect(store.tokens.value()).toBe('| aaa | bbb | X\nafter')
 		})
 	})
 })

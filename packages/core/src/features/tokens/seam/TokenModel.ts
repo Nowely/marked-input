@@ -36,6 +36,7 @@ import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
 import type {Continuation} from '../tree/siblings'
 import {
+	contentSpan,
 	depthPlan,
 	dropPlacements,
 	endsDocument,
@@ -458,15 +459,16 @@ export class TokenModel {
 	}
 
 	/**
-	 * THE SPAN A CHARACTER TYPED OVER A ROW SELECTION REPLACES, as anchors — `undefined` when the
-	 * selection is not a whole number of rows, which leaves every ordinary text edit exactly where
-	 * it was.
+	 * THE SPAN A RANGED TEXT EDIT WRITES OVER, as anchors — the selection with each edge resolved
+	 * off the structural bytes it landed on ({@link contentSpan}). `undefined` for a caret and for a
+	 * selection whose edges are inside a line's content, which is every ordinary text edit and stays
+	 * exactly the bytes the event named.
 	 *
 	 * TYPING IS THE ONE ROW-SELECTION GESTURE THAT STAYS TEXT (see {@link replaceRows} for the
 	 * other four), so it needs a span rather than a verb: the rows' own text goes and the first
-	 * row's kind stays. What it may NOT keep is the anchors the event named — the browser ends a
-	 * one-row selection at the NEXT row's entry, so the raw span carries a row BOUNDARY the
-	 * highlight never paints, and replacing it merged the row below into the row above.
+	 * row's kind stays. But the rule is not the row selection's — the browser ends a selection at
+	 * the NEXT line's entry whatever that line is, so a parent's first child and a table's next cell
+	 * carried the same unpainted boundary and neither was a row selection at all.
 	 *
 	 * A ROW THAT HOLDS NO EDITABLE POSITION IS REFUSED, and the caller then replaces the ROW
 	 * instead ({@link replaceRows}). It is the caret invariant read at the WRITE: a body no caret
@@ -478,11 +480,10 @@ export class TokenModel {
 	 * tree's.
 	 */
 	rowSelectionText(anchors: Anchors): Anchors | undefined {
-		const span = untracked(() =>
-			rowSelectionSpan(this.#tree.roots(), anchors, this.#tree.config()?.separator, 'text')
-		)
+		const span = untracked(() => contentSpan(this.#tree.roots(), anchors))
 		if (!span) return undefined
-		if (!span.rows.every(row => this.#dom.reachable(untracked(() => entryAnchor(row))))) return undefined
+		if (!this.rowSelection(anchors).every(row => this.#dom.reachable(untracked(() => entryAnchor(row)))))
+			return undefined
 		return {anchor: this.anchorAt(span.start), head: this.anchorAt(span.end)}
 	}
 
@@ -1383,8 +1384,8 @@ export class TokenModel {
 	 * registered, so its edges resolve, the browser paints the block, and the keys land.
 	 *
 	 * The two readings agree about WHICH ROW: an element's edges are `position.start`/
-	 * `position.end`, which sit inside the boundary at each end, and {@link namesBoundary} is
-	 * where they meet.
+	 * `position.end`, which sit in the structural run at each end, and {@link contentSpan} is where
+	 * they meet — it resolves both onto the row's own content.
 	 *
 	 * `false` for an editor with no rows at all, which is where the claim has nothing to select and
 	 * the caret release is still the answer.

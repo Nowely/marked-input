@@ -1129,6 +1129,23 @@ describe('the inline database', () => {
 		expect(cellsOf(host).map(cell => cell.textContent)).toEqual(['Auth', 'Done', 'Kara'])
 	})
 
+	/**
+	 * TYPING OVER A CELL KEEPS THE COLUMN AFTER IT. A triple-click on a cell ends at the NEXT cell's
+	 * entry, and the bytes between them are the `' | '` the kind carved at — structure the highlight
+	 * never paints. Written over, the row came out one column SHORT, and the same gesture on the
+	 * last cell ate the row below. It is a text selection by every reading this editor has —
+	 * `store.rows.selected()` is empty, because no gesture may name a carved piece — so the row
+	 * selection could not have covered it; the rule is the CONTENT each edge names.
+	 */
+	it('keeps the column after a cell typed over on the showcase', async () => {
+		const {value} = await mountControlled(Showcase, APOLLO_DOC)
+
+		await page.getByText('Realtime sync engine', {exact: true}).first().tripleClick()
+		await userEvent.keyboard('X')
+
+		await expect.poll(value).toContain('\n| X | <status:In progress> | <who:Milo Freeman> |')
+	})
+
 	it('writes a mention into a cell through the built-in picker', async () => {
 		const {host, value} = await mountControlled(Showcase, '| Auth migration | Kara\nnext')
 

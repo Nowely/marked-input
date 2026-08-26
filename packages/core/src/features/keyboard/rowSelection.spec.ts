@@ -107,6 +107,40 @@ describe('the row selection derives from the text selection', () => {
 		store.tokens.selection.select(store.tokens.anchorAt(5), store.tokens.anchorAt(8))
 		expect(selectedSlots(store)).toEqual([])
 	})
+
+	/**
+	 * AND THE OTHER EDGE IS A BOUNDARY TOO, which is what a row selection written across a row's own
+	 * ELEMENT names: `{before}`/`{after}` resolve to `position.start` and `position.end`, and the
+	 * first of those sits AHEAD of the row's lead and its opener. That is the pair a click on a
+	 * frozen row writes (`TokenModel.#selectRow`) and the pair a Shift+arrow over one widens.
+	 *
+	 * Its own case because the storybook is where the shape occurs and core is where the rule lives:
+	 * with the low edge left unresolved the whole core suite stayed green and three browser pins
+	 * carried it alone.
+	 */
+	it('holds a row selected across its own ELEMENT, opener and separator included', () => {
+		const {store} = mount()
+		const bb = store.tokens.nodes()[0]
+		if (bb.kind !== 'row') throw new Error('expected a row')
+		const child = bb.rows()[0]
+
+		store.tokens.selection.select({before: child}, {after: child})
+
+		expect(selectedSlots(store)).toEqual(['bb'])
+	})
+
+	/**
+	 * AN EMPTY ROW SWEPT OVER IS HELD, and it is the one shape where BOTH edges move: the span runs
+	 * from the row above's content end to the row below's entry, and the row it names has no content
+	 * of its own to reach.
+	 */
+	it('holds an empty row a sweep crossed, from the end above to the entry below', () => {
+		const {store} = mountNestedRowDoc({defaultValue: 'aa\n\ncc'})
+
+		store.tokens.selection.select(store.tokens.anchorAt(2), store.tokens.anchorAt(4))
+
+		expect(selectedSlots(store)).toEqual([''])
+	})
 })
 
 describe('Esc escalates, one level per press', () => {
