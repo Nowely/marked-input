@@ -11,7 +11,7 @@ describe('TokenModel facade selection reads', () => {
 
 	for (const [name, mount] of [
 		['inline with mark', mountWithMark],
-		['block layout', mountRowDoc],
+		['with rows', mountRowDoc],
 	] as const) {
 		it(`reads the live selection as node anchors — ${name}`, () => {
 			const {store, container} = mount()
@@ -25,7 +25,7 @@ describe('TokenModel facade selection reads', () => {
 			sel?.addRange(range)
 
 			// Resolved through the DOM rather than named: the inline fixture opens with a
-			// ROOT text node and the block one with a mark's slot CHILD, and the anchor is
+			// ROOT text node and the row one with a mark's slot CHILD, and the anchor is
 			// local to whichever it is — which is the point (the deleted numeric read
 			// answered 0 and 1 for both only because both start the document).
 			const handle = store.tokens.handleAt(firstText)

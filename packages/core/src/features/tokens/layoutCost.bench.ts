@@ -57,8 +57,8 @@ import {bench, describe} from 'vitest'
  * entire document in ONE inline formatting context, and editing one character reflows it
  * wholesale. Nothing about markput is involved — this is a browser property of a flat inline run.
  *
- * markput's BLOCK layout already has the fix by construction, one block per Row, which is why
- * `commitCost.bench.ts` reads block-1000-rows at ~0.8 ms against inline-1000-marks at 16-40 ms
+ * markput's ROWS already have the fix by construction, one block box per Row, which is why
+ * `commitCost.bench.ts` reads 1000-rows at ~0.8 ms against inline-1000-marks at 16-40 ms
  * for the same token count.
  *
  * Run these on an IDLE machine. Under background load the absolutes inflate and the big rungs'
@@ -77,8 +77,8 @@ type World = {surface: Text; host: HTMLElement}
 
 /**
  * `chunk` = 0 puts every span in ONE inline formatting context, which is markput's inline layout.
- * Any other value wraps each `chunk` spans in a block `div`, which is what block layout already
- * produces (one block per Row). Changing one character reflows an inline formatting context
+ * Any other value wraps each `chunk` spans in a block `div`, which is what a document with rows already
+ * produces (one block box per Row). Changing one character reflows an inline formatting context
  * WHOLESALE, so the chunk size is the hypothesis under test.
  */
 function buildWorld(spans: number, chunk = 0): World {

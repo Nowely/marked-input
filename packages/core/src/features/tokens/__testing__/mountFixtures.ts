@@ -173,7 +173,7 @@ export function mountWithMark() {
  * Mounted fixture for an arbitrary value: one bare span per top-level token,
  * the shape `bind` expects an adapter to have rendered. Sibling of
  * {@link mountWithMark} for the cases that need a different value or props (a
- * rootless block document, a value with an astral char).
+ * rootless document with rows, a value with an astral char).
  *
  * The surfaces are appended AFTER `host.container` because their count comes
  * from the parse, which only runs once the container is set; binding happens at
@@ -240,10 +240,10 @@ export function mountNested() {
 }
 
 /**
- * Mounted block fixture (issue 08's row world): paragraph rows need no markup, so
+ * Mounted row fixture (issue 08's row world): paragraph rows need no markup, so
  * 'one\n\ntwo\n\n' parses to THREE RowNodes — "one\n\n" [0,5], "two\n\n" [5,10] and
  * the empty document-final row [10,10]. One row div per RowNode, consigned as the
- * row's own token element (the Block wrapper's role), holding one text surface per
+ * row's own token element (the `Row` component's role), holding one text surface per
  * row text child; the rows are returned because they are the only handle on the
  * row binding.
  *

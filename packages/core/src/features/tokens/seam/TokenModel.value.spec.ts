@@ -283,7 +283,7 @@ describe('TokenModel value boundary', () => {
 	})
 
 	/**
-	 * The clipboard's markup entry (`ClipboardController`'s markput MIME) and the block rows'
+	 * The clipboard's markup entry (`ClipboardController`'s markput MIME) and the rows'
 	 * text read (`keyboard/rowKeys.ts`). `block/operations.spec` stubs the read with a plain
 	 * `doc.slice`, so the delegation to `tree/sliceNodes` — and the anchor resolution in front
 	 * of it — is pinned only here.
@@ -296,14 +296,14 @@ describe('TokenModel value boundary', () => {
 	 * joined by the OLD separator while every read reaches for the new one.
 	 */
 	describe('the separator that joins the current roots', () => {
-		const BLOCK = {separator: '\n\n', Mark: () => null, options: [], defaultValue: 'a\n\nb'}
+		const ROWS = {separator: '\n\n', Mark: () => null, options: [], defaultValue: 'a\n\nb'}
 
 		const detachedAfterSeparatorMove = (): Store => {
 			const store = new Store()
-			store.props.set({...BLOCK, separator: '\n\n'})
+			store.props.set({...ROWS, separator: '\n\n'})
 			mount(store)
 			store.host.container(null)
-			store.props.set({...BLOCK, separator: '\n'})
+			store.props.set({...ROWS, separator: '\n'})
 			return store
 		}
 

@@ -160,7 +160,7 @@ describe('Esc escalates, one level per press', () => {
 	})
 
 	/**
-	 * The SAME deferral for the block row menu, whose own Escape closes it from a `document`
+	 * The SAME deferral for the row menu, whose own Escape closes it from a `document`
 	 * listener this container one runs before — so without the guard one press both dismissed the
 	 * menu and row-selected underneath it, leaving the next character typed to replace the row.
 	 */

@@ -106,7 +106,7 @@ export class Parser {
 	}
 
 	/**
-	 * Parses text into rows — block layout's top level (ADR-0010: the skeleton is scanned
+	 * Parses text into rows — the top level of a document with rows (ADR-0010: the skeleton is scanned
 	 * before the inlines are parsed).
 	 *
 	 * THREE passes, no fixpoint. {@link scanRows} carves the rows by reading each row's own start
@@ -120,7 +120,7 @@ export class Parser {
 	 * always yields a visible row.
 	 *
 	 * @param value - Text to parse
-	 * @param config - The block parse policy; its separator is never part of any markup
+	 * @param config - The row parse policy; its separator is never part of any markup
 	 *
 	 * @example
 	 * ```typescript

@@ -82,7 +82,7 @@ describe('EditController', () => {
 	})
 
 	it('moves no caret on a controlled setValue', () => {
-		// The D-e exemption went with `caretOffset`. Its callers were block row edits that
+		// The D-e exemption went with `caretOffset`. Its callers were row edits that
 		// wanted the caret inside a row of the RESULT, and they address their own nodes now;
 		// the measurement that justified the exemption had gone stale, so nothing is left
 		// asking `setValue` to write a caret the echo will re-map.

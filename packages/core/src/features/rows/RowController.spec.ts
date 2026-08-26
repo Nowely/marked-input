@@ -287,7 +287,7 @@ describe('hover', () => {
 		}
 	})
 
-	it('hit-tests nothing outside block layout, which parses no rows', () => {
+	it('hit-tests nothing where the document has no rows', () => {
 		const {controller, container, rows, store} = mountRows('alpha\n\nbeta\n\n')
 		const y = midOf(rows[1])
 
@@ -523,9 +523,9 @@ describe('the row menu', () => {
 		expect(store.tokens.value()).toBe('beta\n\n')
 	})
 
-	it('refuses the menu verbs once the layout leaves block, and closes the menu anyway', () => {
-		// A row node cannot outlive block layout, so what refuses the write is the transaction
-		// layer meeting a dead node; the model's own block check is the second belt. The menu
+	it('refuses the menu verbs once the document loses its rows, and closes the menu anyway', () => {
+		// A row node cannot outlive its document's rows, so what refuses the write is the transaction
+		// layer meeting a dead node; the model's own row check is the second belt. The menu
 		// close is the half this pins alone — it runs on the refused branch.
 		const {controller, rows, store} = mountRows('alpha\n\nbeta\n\n')
 		controller.openMenu(store.tokens.nodes()[0].id, rows[0].getBoundingClientRect())
@@ -687,7 +687,7 @@ describe('drag and drop', () => {
 		expect(event.defaultPrevented).toBe(false)
 	})
 
-	it('refuses a drop once the layout leaves block — both ends resolve through the LIVE tree', () => {
+	it('refuses a drop once the document loses its rows — both ends resolve through the LIVE tree', () => {
 		// The one gate the menu verbs get for free from their own row: the re-parse mints new
 		// ids, so neither the dragged row nor the drop edge's row is a root any more. Marks are
 		// what makes an inline reorder visible — plain inline text is a single node.
@@ -705,7 +705,7 @@ describe('drag and drop', () => {
 
 	it('leaves a drop it did not paint an edge for alone, so an INLINE editor still receives it', () => {
 		// The listener is on the CONTAINER in every layout, where the per-row one existed only
-		// on a row in block layout. Cancelling the event is how a handler claims the drop, so
+		// on a row. Cancelling the event is how a handler claims the drop, so
 		// claiming one it refuses would suppress core's own `insertFromDrop` edit.
 		const {container, store} = mountRows('alpha\n\nbeta\n\n')
 		store.props.set({separator: null, options: []})

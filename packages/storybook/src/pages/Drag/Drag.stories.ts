@@ -24,7 +24,7 @@ export default {
 		docs: {
 			description: {
 				component:
-					'Drag mode: each separator-delimited row is its own draggable block (issue 08). The separator is an editor-level setting, never part of a markup; the piece after the final separator is a row even when empty.',
+					'Drag mode: each separator-delimited row is its own draggable unit (issue 08). The separator is an editor-level setting, never part of a markup; the piece after the final separator is a row even when empty.',
 			},
 		},
 	},

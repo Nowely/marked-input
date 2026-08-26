@@ -5,7 +5,7 @@ import {mountComponent} from '../../shared/lib/page'
 
 /**
  * A ROW renders through its KIND's component, in both adapters. Framework-free on purpose: the
- * two `Block` implementations resolve the component through the same core resolver, so a
+ * two `Row` implementations resolve the component through the same core resolver, so a
  * divergence between them is a failing test here rather than a difference nobody diffs.
  *
  * The fixtures are generated marks, which take the row's rendered children exactly as they take a
@@ -14,13 +14,13 @@ import {mountComponent} from '../../shared/lib/page'
 const Heading = defineMark({tag: 'h1', class: 'heading'})
 const Quote = defineMark({tag: 'blockquote'})
 
-const BLOCK = {separator: '\n', Mark} as const
+const ROWS = {separator: '\n', Mark} as const
 
 describe('row kinds', () => {
-	it('paints a typed row through its own component and a paragraph through the block slot', async () => {
+	it('paints a typed row through its own component and a paragraph through the paragraph slot', async () => {
 		const {host} = await mountComponent({
 			value: '# Title\nplain',
-			...BLOCK,
+			...ROWS,
 			options: [{markup: '# __slot__', row: {Component: Heading}}],
 		})
 
@@ -36,7 +36,7 @@ describe('row kinds', () => {
 	it('keeps a row opener out of the painted text', async () => {
 		const {host} = await mountComponent({
 			value: '# Title',
-			...BLOCK,
+			...ROWS,
 			options: [{markup: '# __slot__', row: {Component: Heading}}],
 		})
 
@@ -47,7 +47,7 @@ describe('row kinds', () => {
 	it('paints inline marks inside a typed row', async () => {
 		const {host} = await mountComponent({
 			value: '> quoting @[someone]',
-			...BLOCK,
+			...ROWS,
 			options: [{markup: '> __slot__', row: {Component: Quote}}, {markup: '@[__value__]'}],
 		})
 
@@ -57,13 +57,13 @@ describe('row kinds', () => {
 	it('repaints a row when only its kind changes', async () => {
 		const {rerender} = await mountComponent({
 			value: 'plain',
-			...BLOCK,
+			...ROWS,
 			options: [{markup: '# __slot__', row: {Component: Heading}}],
 		})
 
 		const host = await rerender({
 			value: '# plain',
-			...BLOCK,
+			...ROWS,
 			options: [{markup: '# __slot__', row: {Component: Heading}}],
 		})
 

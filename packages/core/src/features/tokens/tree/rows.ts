@@ -32,7 +32,7 @@ export function tokenHasCells(token: RowToken): boolean {
  *
  * Two arms read it, and they say the same thing about the same body: Enter inside one writes a
  * literal newline, and an overlay TRIGGER inside one is a literal character. The second was
- * missing, and a `/` at the end of a fence's body opened the block menu — whose pick then retyped
+ * missing, and a `/` at the end of a fence's body opened the row menu — whose pick then retyped
  * the whole ROW, destroying the fence, its language and its closing line at once.
  */
 export function hasRawBody(row: RowNode): boolean {

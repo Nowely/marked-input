@@ -8,7 +8,7 @@ import {mountComponent} from '../../shared/lib/page'
 import {rows} from './Base.fixtures'
 
 /**
- * BLOCK SELECTION AND NESTED DRAG, driven through the DOM in both adapters. Framework-free on
+ * ROW SELECTION AND NESTED DRAG, driven through the DOM in both adapters. Framework-free on
  * purpose: the two `Rows` implementations paint the same tree through the same core resolver and
  * the same `RowController` decides every drop, so a divergence between them is a failing test
  * here rather than a difference nobody diffs.
@@ -24,7 +24,7 @@ import {rows} from './Base.fixtures'
  * neither framework can move a DOM element between two parents, so a row that changes parent is
  * rebuilt in both. See the collapse case at the bottom for what that costs.
  */
-const BLOCK = {separator: '\n', indent: '\t', Mark, draggable: true} as const
+const ROWS = {separator: '\n', indent: '\t', Mark, draggable: true} as const
 
 // `as const` on the markup: `Option.markup` is the template-literal `Markup`, which a widened
 // `string` does not satisfy.
@@ -57,7 +57,7 @@ async function dragTo(host: HTMLElement, from: HTMLElement, clientX: number, cli
 
 /**
  * Every row element in the document, at every depth, in document order. `[data-id]` and not the
- * `Block` class: a row KIND paints its own element, so the class core would have merged in is
+ * `Row` class: a row KIND paints its own element, so the class core would have merged in is
  * whatever the fixture chose to spread — here, nothing.
  */
 const everyRow = (host: HTMLElement): HTMLElement[] => Array.from(host.querySelectorAll<HTMLElement>('[data-id]'))
@@ -77,14 +77,14 @@ async function selectRows(host: HTMLElement, first: HTMLElement, more: number) {
 	for (let step = 0; step < more; step++) await userEvent.keyboard('{Shift>}{ArrowDown}{/Shift}')
 }
 
-describe('block selection and nested drag', () => {
+describe('row selection and nested drag', () => {
 	/**
 	 * THE PHASE'S PIN: two rows selected with Shift, dropped INTO a toggle at a chosen depth, with
 	 * the depth coming from the pointer's horizontal position alone.
 	 */
 	it('drops a Shift-selected pair into a toggle at the depth the pointer chooses', async () => {
 		const onChange = vi.fn<(value: string) => void>()
-		const {host} = await mountComponent({defaultValue: DOCUMENT, ...BLOCK, options: [ITEM, TOGGLE], onChange})
+		const {host} = await mountComponent({defaultValue: DOCUMENT, ...ROWS, options: [ITEM, TOGGLE], onChange})
 
 		const alpha = rowWith(host, 'alpha')
 		const ids = [idOf(alpha), idOf(rowWith(host, 'beta'))]
@@ -105,7 +105,7 @@ describe('block selection and nested drag', () => {
 
 	it('lands the same pair at the ROOT when the pointer stays left of the indent', async () => {
 		const onChange = vi.fn<(value: string) => void>()
-		const {host} = await mountComponent({defaultValue: DOCUMENT, ...BLOCK, options: [ITEM, TOGGLE], onChange})
+		const {host} = await mountComponent({defaultValue: DOCUMENT, ...ROWS, options: [ITEM, TOGGLE], onChange})
 
 		const alpha = rowWith(host, 'alpha')
 		const ids = [idOf(alpha), idOf(rowWith(host, 'beta'))]
@@ -142,7 +142,7 @@ describe('block selection and nested drag', () => {
 		const onChange = vi.fn<(value: string) => void>()
 		const {host} = await mountComponent({
 			defaultValue: '> outer\n\t- child\n> inner\n\t- kid',
-			...BLOCK,
+			...ROWS,
 			options: [ITEM, TOGGLE],
 			onChange,
 		})

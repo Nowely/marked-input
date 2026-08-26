@@ -41,7 +41,7 @@ export function anchorAt(roots: readonly TreeNode[], offset: number): NodeAnchor
 		if (owner.kind === 'row' && offset < owner.slotRange().start) return entryAnchor(owner)
 		// A mark interior is not anchorable (spec §2.3), so a slotless mark answers with its
 		// boundary — and a row's separator span and closing literal answer the same way, failing
-		// closed exactly like a block row's trailing `\n\n` always has.
+		// closed exactly like a row's trailing `\n\n` always has.
 		return {after: owner}
 	}
 	return offset <= 0 ? 'start' : 'end'
@@ -109,7 +109,7 @@ export function adjacentMark(roots: readonly TreeNode[], anchor: NodeAnchor, dir
  * decides what the joined text becomes (issue 08's markdown-like policy), which is the same
  * answer `RowNode.mergeWith` gives.
  *
- * ASYMMETRIC, and that asymmetry is block layout's own long-standing answer rather than an
+ * ASYMMETRIC, and that asymmetry is the row model's own long-standing answer rather than an
  * oversight. Backspace takes only the boundary ENDING at the anchor, so at a row's content end
  * it still deletes the character before it. Delete takes that one too, ahead of the boundary
  * STARTING at the anchor: Delete pressed at a row START merges that row into the previous one
@@ -162,7 +162,7 @@ export function rowBoundary(row: RowNode, next: RowNode, separator: string): {st
  * raw offsets until S2.5.
  *
  * FAILS CLOSED on an unanchorable neighbour, and that is the one deliberate behavior change:
- * a position inside a mark's MARKUP (the `{` of `#[v]{inner}`, a block row's trailing
+ * a position inside a mark's MARKUP (the `{` of `#[v]{inner}`, a row's trailing
  * `\n\n`) is not anchorable, so {@link anchorAt} answers with the mark's own boundary
  * instead. The old numeric step spliced that position anyway and re-parsed the mark into
  * plain text; answering `undefined` leaves the browser default, which at the edge of a

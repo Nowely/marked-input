@@ -2,7 +2,7 @@ import type {Match} from './Match'
 
 /**
  * The two rules every inline pass shares, whichever scope it runs in: which overlapping matches
- * survive, and how far an open trailing gap reaches. Block layout runs them per ROW now
+ * survive, and how far an open trailing gap reaches. They run per ROW now
  * (ADR-0010), so the scope is a row's body rather than the whole value, and neither rule needs to
  * know a separator exists.
  */

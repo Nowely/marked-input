@@ -10,6 +10,12 @@
  *     indicator and the placeholder only;
  *   - markers (bullets, arrows) are separate empty elements pulled left by a negative
  *     margin, so the text they precede keeps a single, uninterrupted line box.
+ *
+ * `block` in this file (`.block`, `.blockGutter`, `.blockIndent`, `--notion-block-*`) is the
+ * IMITATED PRODUCT'S own word, not markput's — markput calls the same unit a Row and reserves
+ * `.Row` / `.RowControls` for it. Left as it is on purpose: the showcase is faithful to the
+ * vocabulary it copies, and renaming it here would make the demo say something the product does
+ * not.
  */
 
 /* --- Page shell ------------------------------------------------------------- */

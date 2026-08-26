@@ -61,7 +61,7 @@ export function createBoundary(deps: {
 	 */
 	controlled: () => boolean
 	/**
-	 * THE parse policy: how the block skeleton is carved (issue 08), or `undefined` for a
+	 * THE parse policy: how the row skeleton is carved (issue 08), or `undefined` for a
 	 * document that has no rows. Read per adoption, so a change is honored by the next
 	 * `reparse` without a second code path. Layout is not a second input here — the caller
 	 * folds it in (`TokenModel.rowConfig`).

@@ -428,7 +428,7 @@ describe('MarkNode live-read parity', () => {
 })
 
 /**
- * Block rows (issue 08): paragraph rows need no markup at all — the separator is
+ * Rows (issue 08): paragraph rows need no markup at all — the separator is
  * structural, every root is a RowNode, and the boundary `mergeWith` removes is the
  * first row's own separator. The trailing empty piece is a row too, so a value
  * ending in a separator carries one more root than it used to.

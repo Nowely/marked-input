@@ -113,7 +113,7 @@ function mountNestedRows() {
 	return {store, container, rowsHost, nested}
 }
 
-/** A registered control root (block menu, custom control) holding its own `<input>`. */
+/** A registered control root (row menu, custom control) holding its own `<input>`. */
 function mountInlineWithControl(value = 'hello') {
 	const store = new Store()
 	store.props.set({separator: null, defaultValue: value})
@@ -186,8 +186,8 @@ function liveCaretRange(): Range {
 }
 
 /**
- * A BLOCK document with a MARK at one edge — the shape the select-all defect lived in, kept as
- * its regression gate. The premise that made it reachable is gone: block layout no longer
+ * A document with ROWS and a MARK at one edge — the shape the select-all defect lived in, kept as
+ * its regression gate. The premise that made it reachable is gone: a document with rows no longer
  * filters the empty text tokens a mark is bracketed with, because a row's body is built by
  * `TreeBuilder` and opens and closes with one.
  *
@@ -815,7 +815,7 @@ describe('handleBeforeInput()', () => {
 	 * fallback. THIS is the case that would catch that invariant
 	 * breaking — `tree/anchors.spec` pins it directly.
 	 */
-	describe('select-all over mark-edge block documents', () => {
+	describe('select-all over mark-edge row documents', () => {
 		const ctrlA = () => new KeyboardEvent('keydown', {code: 'KeyA', ctrlKey: true, bubbles: true, cancelable: true})
 
 		it.each([

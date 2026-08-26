@@ -59,8 +59,8 @@ import type {TextNode, TreeNode, Window} from './tree/types'
  *   inline 10 marks     (21 nodes)      0.35 ms
  *   inline 100 marks    (201 nodes)     1.12 ms
  *   inline 1000 marks   (2001 nodes)    4.05 ms
- *   block 100 rows      (300 refs)      1.73 ms
- *   block 1000 rows     (3000 refs)     6.42 ms
+ *   100 rows            (300 refs)      1.73 ms
+ *   1000 rows          (3000 refs)     6.42 ms
  *
  * READ IT AS CURVATURE. 10x the document costs ~3.6x here, not 100x; the absolute numbers move
  * with the machine and the per-ref cost is small enough that fixed overhead dominates the small
@@ -102,11 +102,11 @@ import type {TextNode, TreeNode, Window} from './tree/types'
  *    Grouping the same spans into blocks takes it from 93 ms to 0.049 ms. Read that file before
  *    concluding anything about the caret from this one.
  *
- *    On BLOCK 1000 rows — 36 KB, 2000 tokens, the realistic large document, and stable to +-1% —
- *    the caret costs +0.11 ms on a 0.86 ms keystroke. Block layout already has one block per Row,
+ *    On 1000 rows — 36 KB, 2000 tokens, the realistic large document, and stable to +-1% —
+ *    the caret costs +0.11 ms on a 0.86 ms keystroke. A document with rows already has one block box per Row,
  *    so it never pays the inline-context bill.
  *
- * 2. An earlier version of the FOCUSED rungs was confounded and its numbers were wrong (block
+ * 2. An earlier version of the FOCUSED rungs was confounded and its numbers were wrong (the rows
  *    1000 rows read 5.56 ms where it now reads 0.82 ms). `focusFirst()` places at the FIRST root
  *    and so overwrites the seeded selection, leaving the caret at the document start while the
  *    edit happened in the middle — and placing a caret far from the edit is itself expensive.
@@ -125,14 +125,14 @@ import type {TextNode, TreeNode, Window} from './tree/types'
  * deletion rests on:
  *
  *   inline 100 marks    L6 0.26-0.29 ms -> L7 0.35-0.40 ms   (~1.35x)
- *   block 100 rows      L6 0.34-0.37 ms -> L7 0.30-0.61 ms   (unstable, see below)
- *   block 1000 rows     L6 0.70-0.73 ms -> L7 1.81-1.86 ms   (~2.5x, +-0.6% rme)
+ *   100 rows            L6 0.34-0.37 ms -> L7 0.30-0.61 ms   (unstable, see below)
+ *   1000 rows          L6 0.70-0.73 ms -> L7 1.81-1.86 ms   (~2.5x, +-0.6% rme)
  *
  * So always binding roughly doubles the commit, and the worst case measured is ~1.85 ms on a 2000
  * token document — about 12% of a frame. Cheap enough that the routing does not pay for its
  * concepts.
  *
- * Ranges, not single figures, because these are three separate runs on an idle machine. Block 100
+ * Ranges, not single figures, because these are three separate runs on an idle machine. The 100-row
  * rows is the one rung that did not settle (0.295 / 0.613 / 0.597 across the three), so treat it
  * as unresolved rather than as a number.
  *
@@ -140,7 +140,7 @@ import type {TextNode, TreeNode, Window} from './tree/types'
  *
  * Run these with NOTHING else on the machine. An earlier set of these figures was taken while
  * three background agents were running browser suites, and it inflated every absolute by roughly
- * 5-30% (block 1000 L7 read 1.925 ms against 1.81-1.86 ms clean) while pushing rme from ~1% to
+ * 5-30% (1000 rows L7 read 1.925 ms against 1.81-1.86 ms clean) while pushing rme from ~1% to
  * 20-105%. Ratios between rungs survived, absolutes did not. If a rung reports rme above ~10% at
  * a size where its neighbours report ~1%, suspect the machine before the code.
  *
@@ -438,7 +438,7 @@ function coreCommitKeystroke(doc: Doc, caret = true): Keystroke {
 
 /**
  * The adapter's DOM, hand-rendered once: one span per root inline, one
- * `div > span > span` per row in block layout (the shape `bind` walks — see
+ * `div > span > span` per row (the shape `bind` walks — see
  * `__testing__/mountFixtures.ts`), and then CONSIGNED, because consignment is the element
  * source since the DOM walk was deleted.
  *
@@ -453,7 +453,7 @@ function coreCommitKeystroke(doc: Doc, caret = true): Keystroke {
 function mountDom(store: Store, doc: Doc): readonly (() => void)[] {
 	// Every mounted rung gets the page to itself: worlds are built lazily and used by one
 	// bench each, and leaving the previous fixture attached made a later rung pay style and
-	// layout for a document it never edits (measured: block-100's no-caret rung read SLOWER
+	// layout for a document it never edits (measured: the 100-row doc's no-caret rung read SLOWER
 	// than its caret rung purely from the fixture left over by the rung before it).
 	document.body.replaceChildren()
 	const container = document.createElement('div')

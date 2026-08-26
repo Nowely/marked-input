@@ -23,14 +23,14 @@ const {Default} = composePage(BaseStories)
  * browser: Tab and Enter have BROWSER defaults (focus moves, the host is split into `<div>`s), and
  * only a real keystroke can tell whether the keymap cancelled them.
  */
-const BLOCK = {separator: '\n', indent: '\t', Mark} as const
+const ROWS = {separator: '\n', indent: '\t', Mark} as const
 /** A list item: it continues on Enter and it indents on Tab, which is every arm this page drives. */
 const BULLET = {markup: '- __slot__' as const, row: {Component: rows.Bullet, continues: true, indents: true}}
 
 describe('the row keymap', () => {
 	it('types `- a⏎b⇥c⏎⏎` and lands a nested list', async () => {
 		const onChange = vi.fn<(value: string) => void>()
-		const {host} = await mountComponent({defaultValue: '', ...BLOCK, options: [BULLET], onChange})
+		const {host} = await mountComponent({defaultValue: '', ...ROWS, options: [BULLET], onChange})
 		const emitted = () => onChange.mock.lastCall?.[0]
 
 		await focusAtStart(rowsOf(host)[0])
@@ -76,7 +76,7 @@ describe('the row keymap', () => {
 	 */
 	it('opens a continuation line on Shift+Enter and types into it', async () => {
 		const onChange = vi.fn<(value: string) => void>()
-		const {host} = await mountComponent({defaultValue: '- a', ...BLOCK, options: [BULLET], onChange})
+		const {host} = await mountComponent({defaultValue: '- a', ...ROWS, options: [BULLET], onChange})
 		const emitted = () => onChange.mock.lastCall?.[0]
 
 		await focusAtStart(rowsOf(host)[0])
@@ -109,7 +109,7 @@ describe('the row keymap', () => {
 	 * it was. A soft break composed of a split and a re-indent passes uncontrolled and fails here.
 	 */
 	it('opens the continuation in CONTROLLED mode too', async () => {
-		const {host, value} = await mountEcho(Default, {...BLOCK, options: [BULLET], value: '- a'})
+		const {host, value} = await mountEcho(Default, {...ROWS, options: [BULLET], value: '- a'})
 
 		await focusAtStart(rowsOf(host)[0])
 		await userEvent.keyboard('{End}')

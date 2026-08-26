@@ -14,14 +14,14 @@ function rowSurface(store: Store, rowIndex: number): HTMLElement {
 	const row = store.tokens.nodes()[rowIndex]
 	if (row.kind !== 'row') throw new Error('expected a row')
 	const surface = store.tokens.handle(row.children()[0].id)?.element()
-	if (!surface) throw new Error('block row has no consigned element')
+	if (!surface) throw new Error('row has no consigned element')
 	return surface
 }
 
 /** The row's own text node, with a live DOM Range over [start, end) on it. */
 function selectInRow(store: Store, rowIndex: number, start: number, end: number): Node {
 	const text = rowSurface(store, rowIndex).firstChild
-	if (!text) throw new Error('block row did not render a text node')
+	if (!text) throw new Error('row did not render a text node')
 	const selection = window.getSelection()
 	if (!selection) throw new Error('no window selection')
 	const range = document.createRange()
@@ -95,7 +95,7 @@ describe('rowKeys row identity', () => {
 		expect(store.tokens.value()).toBe('one\n\nt\n\nwo\n\n')
 	})
 
-	it('Arrow keys in block mode are left to the browser (no preventDefault)', () => {
+	it('Arrow keys inside a row are left to the browser (no preventDefault)', () => {
 		// One host makes cross-row caret movement NATIVE: the caret walks out of a row the
 		// way it walks out of any inline element, so nothing may cancel an arrow keydown.
 		// Row 0's END is where the deleted Right/Down branches fired.
@@ -177,7 +177,7 @@ describe('rowKeys row identity', () => {
 
 describe('rowKeys beforeinput guard', () => {
 	it('drops an unhandled cancelable inputType instead of letting the browser edit the row', () => {
-		// Same contract as `input.ts`: block rows live in the SAME single host, so an
+		// Same contract as `input.ts`: rows live in the SAME single host, so an
 		// inputType the shared table cannot express would edit model-owned DOM.
 		const {store, container} = mountRowDoc()
 		const second = store.tokens.nodes()[1]
@@ -191,12 +191,12 @@ describe('rowKeys beforeinput guard', () => {
 	})
 
 	it('leaves an edit inside an EXPLICIT contenteditable island alone', () => {
-		// The block half of `input.spec`'s 'leaves an unhandled type alone inside an EXPLICIT
+		// The ROW half of `input.spec`'s 'leaves an unhandled type alone inside an EXPLICIT
 		// contenteditable island'. The consumer's own DOM, marked as such by an attribute: the
 		// model neither owns it nor resolves boundaries in it, so it must neither edit on the
 		// event nor cancel it.
 		//
-		// MEASURED before the guards folded into one: block took only the control-root half of
+		// MEASURED before the guards folded into one: the row arm took only the control-root half of
 		// the consumer-origin test, so this event resolved a caret at the ROW's text end and
 		// typed there — 'one\n\ntwo\n\n' became 'one\n\ntwox\n\n' with the event cancelled,
 		// while the same edit inline was left alone.
@@ -384,7 +384,7 @@ describe('rowKeys row-boundary delete', () => {
 	})
 
 	it('Delete at a row START takes the separator BEHIND it', () => {
-		// Block layout's own answer, not a symmetry with Backspace: Delete pressed at the start
+		// The row model's own answer, not a symmetry with Backspace: Delete pressed at the start
 		// of a row merges it into the previous one (`Drag.spec`'s 'Delete at start of row').
 		const {store, container} = mountRowDoc()
 		caretInRow(store, 1, 0)
@@ -397,7 +397,7 @@ describe('rowKeys row-boundary delete', () => {
 	})
 
 	it('Backspace inside a row deletes one character, on the keydown', () => {
-		// The ordinary case, which block used to leave to the `beforeinput` that follows: with
+		// The ordinary case, which the row arm used to leave to the `beforeinput` that follows: with
 		// one delete arm it is answered here and the default never runs.
 		const {store, container} = mountRowDoc()
 		caretInRow(store, 1, 2)
@@ -427,7 +427,7 @@ describe('rowKeys row-boundary delete', () => {
 	})
 
 	it('leaves a word delete to the beforeinput that names its own range', () => {
-		// The block half of `input.spec`'s inline pin, and it earns its own case because block
+		// The ROW half of `input.spec`'s inline pin, and it earns its own case because the row arm
 		// only just started answering deletes on the KEYDOWN: without the modifier decline this
 		// arm would cancel Alt+Backspace and delete ONE character, where it used to fall
 		// through and the browser's ranged `deleteWordBackward` deleted the word.
@@ -447,7 +447,7 @@ describe('rowKeys row-boundary delete', () => {
 	})
 
 	it('clears the whole value even when the DOM selection is gone', () => {
-		// The block half of `input.spec`'s inline pin, and block only reaches it now that both
+		// The ROW half of `input.spec`'s inline pin, and the row arm only reaches it now that both
 		// layouts share one delete arm. The discriminating case: with the STORED selection
 		// all-selected and no live range, `domAnchors()` declines, so without the all-selected
 		// branch ahead of it this returns without cancelling and the browser mutates the host
@@ -466,7 +466,7 @@ describe('rowKeys row-boundary delete', () => {
 
 describe('rowKeys mark swallow', () => {
 	it('deletes the adjacent inline mark inside a row on Backspace', () => {
-		// Safe since issue 08: a block row is a RowNode, never a MarkNode, so the swallow
+		// Safe since issue 08: a row is a RowNode, never a MarkNode, so the swallow
 		// can only grab an INLINE mark inside the row — never a whole row.
 		const store = new Store()
 		store.props.set({
@@ -510,7 +510,7 @@ describe('rowKeys mark swallow', () => {
 })
 
 /**
- * A control root (drag handle, block menu button) is not a row: `SelectionDriver`
+ * A control root (drag handle, row menu button) is not a row: `SelectionDriver`
  * deliberately leaves the stored selection standing when focus lands on one
  * (`SelectionDriver.ts`'s `syncIfInEditor`), so a keypress landing on a control
  * must be judged by its EVENT TARGET, not by whatever selection happens to be
@@ -531,7 +531,7 @@ describe('rowKeys control guard', () => {
 		document.body.append(container)
 		store.host.container(container)
 		store.tokens.control()(control)
-		// Consigned by hand, the way the Block and Token components do it: the wrapper under
+		// Consigned by hand, the way the Row and Token components do it: the wrapper under
 		// `consign(row.id)` — the wrapper IS the row's element now — and each row text child
 		// under its own id. The positional helper cannot serve here — the control sits where
 		// a row's first child element would be, so pairing by index would misfile it.
@@ -870,8 +870,8 @@ describe('rowKeys the row keymap', () => {
 			expect(rowsOf(store)[0].rows()).toHaveLength(2)
 		})
 
-		it('opens a continuation under a ROOT paragraph, which is its own block', () => {
-			// A root with no kind still owns its lines — it is one block, and a paragraph gets its
+		it('opens a continuation under a ROOT paragraph, which owns its own lines', () => {
+			// A root with no kind still owns its lines — they are its own, and a paragraph gets its
 			// child rows as ordinary children, so the second line paints inside it. The nesting
 			// test above is about a row that is ALREADY an interior line.
 			const {store, container} = keymap('a')

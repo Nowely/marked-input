@@ -20,7 +20,7 @@ export function markToken(value: string, content: string, start: number, childre
 		children,
 	}
 }
-/** A block-mode PARAGRAPH row: no kind, and its body is the whole span it covers. */
+/** A PARAGRAPH row: no kind, and its body is the whole span it covers. */
 export function rowToken(content: string, start: number, children: Token[]): RowToken {
 	return {
 		type: 'row',

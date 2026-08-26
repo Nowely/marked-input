@@ -72,7 +72,7 @@ describe('anchorAt', () => {
 		expect(offsetOfAnchor(roots, anchorAt(roots, 0))).toBe(0)
 	})
 
-	it("answers a block row's own start with a text anchor when the row opens with a mark", () => {
+	it("answers a row's own start with a text anchor when the row opens with a mark", () => {
 		// '@[x]\n\n@[y]' is the shape that separates the two halves: each row's body is parsed on
 		// its own, so both rows open on `TreeBuilder`'s zero-length pre-match token rather than on
 		// a token the whole-document pass happened to leave there. A fixture whose second row is

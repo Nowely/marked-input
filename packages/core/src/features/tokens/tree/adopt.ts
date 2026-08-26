@@ -27,8 +27,8 @@ export function parseValue(parser: Parser | undefined, value: string): Token[] {
 }
 
 /**
- * Block layout's parse: rows exist with or without markups — a paragraph-only
- * block editor is legal (issue 08), so a missing parser falls back to a bare
+ * The row parse: rows exist with or without markups — a paragraph-only
+ * document is legal (issue 08), so a missing parser falls back to a bare
  * one that finds no marks and still splits rows.
  */
 const bareParser = new Parser([])
@@ -151,7 +151,7 @@ export function adopt(
 				} else if (candidate?.kind === 'row' && token.type === 'row') {
 					// KIND match only, and deliberately NOT on the row's own kind: a row HAS a
 					// descriptor rather than being one, so any row candidate adopts any row
-					// token. That is what keeps the row object — and the block state keyed on
+					// token. That is what keeps the row object — and the row state keyed on
 					// it — alive across a retype (ADR-0007).
 					adoptRow(candidate, token)
 					result.push(candidate)

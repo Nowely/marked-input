@@ -60,7 +60,7 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
 	// keyboard navigation) still reaches the split.
 	if (store.overlay.suggestions.consumes(event.key)) return
 
-	// Everything selected: Enter REPLACES the document with one fresh row — the block analogue of
+	// Everything selected: Enter REPLACES the document with one fresh row — the row analogue of
 	// inline's whole-value replace. Ahead of the anchor read, which would resolve the position the
 	// selection merely STARTS at and split the row there instead, appending an empty row while
 	// keeping everything selected.
@@ -228,7 +228,7 @@ function lineOwner(store: KbCtx, row: RowNode): RowNode {
  * `undefined` until a whole row is covered, so the key falls through to the browser by the same
  * test that decides there is nothing to grow.
  *
- * ESC DEFERS TO ANYTHING ALREADY OPEN — the suggestions overlay and the block row menu — which is
+ * ESC DEFERS TO ANYTHING ALREADY OPEN — the suggestions overlay and the row menu — which is
  * where two features want the same key: each closes on Escape from a listener of its own, on
  * `window` and on `document`, so BOTH run after this container one and neither can see that this
  * arm consumed the key. Escalating underneath them moves the selection out from under a menu the
@@ -284,7 +284,7 @@ function selectSpan(store: KbCtx, span: {start: number; end: number} | undefined
  * breaks in one row are N lines at ONE level, never a chain N deep.
  *
  * The caret's row is the row that OWNS the lines when it has a kind, or when it is a root — a root
- * with no kind is a paragraph, and a paragraph IS its own block. The continuation goes under it, at
+ * with no kind is a paragraph, and a ROOT paragraph owns its own lines. The continuation goes under it, at
  * `childDepth` rather than `depth + 1`: an EMPTY row takes no children, so asking the tree keeps
  * that case a plain split instead of writing an indent run the scan never granted.
  *

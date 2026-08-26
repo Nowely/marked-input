@@ -175,7 +175,7 @@ export class DomModel {
 	 * on the reading that a Range boundary inside a mark's presentation is not a document
 	 * position the model owns. True of the INSIDE, but a mark's endpoints are its PARENT
 	 * coordinates (spec S2, and what `placeCaret` has answered since the one-host flip), and
-	 * refusing them silently dropped whole selections: on a block document that ends with a
+	 * refusing them silently dropped whole selections: on a document with rows that ends with a
 	 * mark, select-all resolved `{after: mark}`, this method declined, and the DOM selection
 	 * never moved while the STORED one said all-selected — so the next keystroke replaced a
 	 * document the user could not see was selected. Both ends now go through
@@ -224,13 +224,13 @@ export class DomModel {
 	}
 
 	/**
-	 * A row's boundary descends to its edge CHILD — a row's own handle is the block
+	 * A row's boundary descends to its edge CHILD — a row's own handle is the row
 	 * wrapper, whose parent-index coordinates would put the caret between rows rather
 	 * than inside one, and the separator has no DOM to land in. Text and mark nodes
 	 * answer themselves, as before.
 	 *
 	 * RECURSIVELY, since rows nest: a row's last child is itself a row whenever it has any, so
-	 * one level down would answer with another block wrapper and `'end'` would resolve to a
+	 * one level down would answer with another row wrapper and `'end'` would resolve to a
 	 * handle no caret can sit in.
 	 */
 	#entryOf(node: TreeNode, side: 'start' | 'end'): {id: Id; offset: number} {

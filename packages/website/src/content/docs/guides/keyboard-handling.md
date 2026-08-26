@@ -4,7 +4,7 @@ description: How keyboard input, deletion, overlay triggers, and caret placement
 keywords: [keyboard, selection, node anchor, replace, overlay, caret]
 ---
 
-Markput handles text input, deletion, paste, overlay insertion, block editing, and mark commands through core-owned NODE ANCHORS — a node plus a local offset, never an absolute position in the value string.
+Markput handles text input, deletion, paste, overlay insertion, row editing, and mark commands through core-owned NODE ANCHORS — a node plus a local offset, never an absolute position in the value string.
 
 ## Edit Flow
 

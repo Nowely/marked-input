@@ -42,7 +42,7 @@ export interface RowBox {
 const ASSUMED_INDENT = 24
 
 /**
- * THE Block layout owner: one hovered row, one dragged row, one RESOLVED DROP and one open menu
+ * THE row-controls owner: one hovered row, one dragged row, one RESOLVED DROP and one open menu
  * per EDITOR, each addressed by row id — plus {@link selected}, the row selection, which is
  * derived rather than held.
  *
@@ -64,10 +64,11 @@ const ASSUMED_INDENT = 24
  * also what the per-row owner it replaced did. `store.rows` names the concern, as every Store
  * field does.
  *
- * SAME NAME, DIFFERENT DESIGN — `git log` on this filename spans two of them. The earlier
- * `RowController` vended a per-row `BlockStore` out of a `WeakMap` and pruned them by row id;
- * this one owns editor-level row-control state and there is no per-row store at all. The role is
- * the same — the controller of Block layout — so the name is, and `BlockStore` stays deleted.
+ * TWO DESIGNS UNDER ONE OLD NAME — `git log` on this file spans both, and both were called
+ * `BlockController`. The earlier one vended a per-row `BlockStore` out of a `WeakMap` and pruned
+ * them by row id; this one owns editor-level row-control state and there is no per-row store at
+ * all. The ROLE never changed, so the rename to `RowController` is a word and nothing else;
+ * `BlockStore` stays deleted.
  *
  * It replaced a per-row store that wired eight DOM handlers and five signals to every row, and
  * the adapters painted a grip, two drop indicators and a menu inside each one. The row controls
@@ -323,8 +324,8 @@ export class RowController {
 	}
 
 	/**
-	 * The row under a viewport Y, with the rect that answered it — `undefined` outside block
-	 * layout and for a document whose rows are none of them painted.
+	 * The row under a viewport Y, with the rect that answered it — `undefined` where the document
+	 * has no rows and for a document whose rows are none of them painted.
 	 *
 	 * TWO SEARCHES, because nesting takes the flat one's only sorted axis away: a parent's box
 	 * CONTAINS its children's, so the roots still tile the container vertically in tree order
@@ -651,8 +652,8 @@ export class RowController {
 		// suppress the browser's own editable drop — measured: an unprevented `dragover` still ends
 		// in `beforeinput`/`insertFromDrop` on a contenteditable, which is the event
 		// `replacementForInput` already turns into an insert. So a FOREIGN drop over a row falls
-		// through and inserts its text, in block layout exactly as in inline. The per-row handler
-		// could not reach a foreign drop at all — it existed only on a row, in block layout —
+		// through and inserts its text, in a document with rows exactly as in one without. The per-row handler
+		// could not reach a foreign drop at all — it existed only on a row —
 		// where this one is on the container in EVERY layout, so the refusal has to be explicit.
 		if (source === null) return
 		e.preventDefault()
@@ -665,7 +666,7 @@ export class RowController {
 		// one `dragover` already had the mover accept, off coordinates this event does not carry.
 		// The SET is read again — `move` asks {@link acting}, which resolves every id through the
 		// live tree — and that is the liveness check rather than a second opinion: a drag whose
-		// layout left block mid-flight meets a re-parse that minted new ids, resolves none of them,
+		// document lost its rows mid-flight meets a re-parse that minted new ids, resolves none of them,
 		// and hands the mover an empty set.
 		this.move(drop.placement)
 	}

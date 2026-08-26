@@ -121,12 +121,12 @@ function buildMarkdownOptions(theme: Record<string, MarkupPreset>) {
 
 /**
  * Markdown options ready for MarkedInput. The block-level markups carry NO separator
- * (issue 08, ADR-0009): in block layout the editor-level `separator` bounds each row and
+ * (issue 08, ADR-0009): where the document has rows the editor-level `separator` bounds each row and
  * an open trailing slot closes at the row boundary.
  */
 export const markdownOptions = buildMarkdownOptions(defaultMarkdownTheme)
 
-/** The theme keys whose marks are whole rows in block layout. */
+/** The theme keys whose marks are whole rows. */
 const BLOCK_LEVEL = new Set(['h1', 'h2', 'h3', 'list'])
 
 /**

@@ -17,8 +17,8 @@ function mountInline(value: string) {
 }
 
 /**
- * Block layout (issue 08's row world): paragraph rows, no markup. Each RowNode's
- * wrapper div is the row's own token element (the Block wrapper's role); each row
+ * A document with rows (issue 08's row world): paragraph rows, no markup. Each RowNode's
+ * wrapper div is the row's own token element (the `Row` component's role); each row
  * text child gets a surface span the text effect writes into.
  */
 function mountRowDoc(value: string) {
@@ -41,7 +41,7 @@ function mountRowDoc(value: string) {
 	return {store, container}
 }
 
-/** One block row as the adapters render it: the Block's wrapper around the row's surface. */
+/** One row as the adapters render it: the `Row` component's wrapper around the row's surface. */
 function buildRow(): HTMLElement {
 	const rowEl = document.createElement('div')
 	rowEl.append(document.createElement('span'))
@@ -49,7 +49,7 @@ function buildRow(): HTMLElement {
 }
 
 /**
- * Consign a block document: each row's wrapper as the ROW's own element and, inside it,
+ * Consign a document with rows: each row's wrapper as the ROW's own element and, inside it,
  * a surface per row text child. Explicit rather than {@link consignRendered} because that
  * pairs the container's children with the roots directly and cannot descend into rows.
  */
@@ -112,7 +112,7 @@ describe('TokenHandle', () => {
 	})
 
 	it('kills handles whose token disappears (dead-handle contract)', () => {
-		// Block layout: two text rows "alpha\n\n" and "beta\n\n".
+		// With rows: two text rows "alpha\n\n" and "beta\n\n".
 		// We capture the handle for row 2's token, then reduce the value to one
 		// row, update the DOM to one row, and re-bind. The handle should die.
 		const {store, container} = mountRowDoc('alpha\n\nbeta\n\n')
@@ -150,7 +150,7 @@ describe('TokenHandle', () => {
 	})
 
 	it('handle survives a structural shift that changes its path (id-keyed identity)', () => {
-		// Block layout: two rows "alpha\n\n" and "beta\n\n". We capture row 2's
+		// With rows: two rows "alpha\n\n" and "beta\n\n". We capture row 2's
 		// handle, then PREPEND a new row via the real edit path (so the reconcile
 		// hint marks the shift). Under path-keying the handle at path [1] would be
 		// re-bound to a different token (or killed); under id-keying the SAME

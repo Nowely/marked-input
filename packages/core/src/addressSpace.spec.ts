@@ -5,7 +5,7 @@ import {describe, expect, it} from 'vitest'
  *
  * The ADR states the rule as "a grep with a fixed allowlist", but no such grep existed
  * anywhere — not in CI, not in `oxlint.config.ts`, not in a script, and there is no
- * `scripts/` directory. The rule was enforced by review alone, which is how the block keymap
+ * `scripts/` directory. The rule was enforced by review alone, which is how the row keymap
  * stayed on the allowlist after its last real read had become a comment.
  *
  * The rule: only `features/tokens/` may read a node's `position`, `slotRange` or `lead`.

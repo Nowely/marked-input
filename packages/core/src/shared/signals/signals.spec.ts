@@ -358,84 +358,84 @@ describe('signal<T> with computed views', () => {
 	beforeEach(() => vi.clearAllMocks())
 
 	it('expose attached computeds as Computed values', () => {
-		const layout = signal({
-			initial: 'inline' as 'inline' | 'block',
+		const theme = signal({
+			initial: 'light' as 'light' | 'dark',
 			computed: self => ({
-				isBlock: () => self() === 'block',
+				isDark: () => self() === 'dark',
 			}),
 		})
-		const isBlockResult: boolean = layout.isBlock()
-		expect(typeof layout.isBlock).toBe('function')
-		expect(isBlockResult).toBe(false)
-		expect(isReactive(layout.isBlock)).toBe(true)
+		const isDarkResult: boolean = theme.isDark()
+		expect(typeof theme.isDark).toBe('function')
+		expect(isDarkResult).toBe(false)
+		expect(isReactive(theme.isDark)).toBe(true)
 	})
 
 	it('recompute attached views when the signal updates', () => {
-		const layout = signal({
-			initial: 'inline' as 'inline' | 'block',
+		const theme = signal({
+			initial: 'light' as 'light' | 'dark',
 			computed: self => ({
-				isBlock: () => self() === 'block',
+				isDark: () => self() === 'dark',
 			}),
 		})
 
 		const runs = vi.fn()
 		trackedEffect(() => {
-			layout.isBlock()
+			theme.isDark()
 			runs()
 		})
 		expect(runs).toHaveBeenCalledTimes(1)
 
-		layout('block')
-		expect(layout.isBlock()).toBe(true)
+		theme('dark')
+		expect(theme.isDark()).toBe(true)
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
 	it('still treat the augmented value as a normal signal', () => {
-		const layout = signal({
-			initial: 'inline' as 'inline' | 'block',
-			computed: self => ({isBlock: () => self() === 'block'}),
+		const theme = signal({
+			initial: 'light' as 'light' | 'dark',
+			computed: self => ({isDark: () => self() === 'dark'}),
 		})
-		expect(isReactive(layout)).toBe(true)
-		layout('block')
-		expect(layout()).toBe('block')
+		expect(isReactive(theme)).toBe(true)
+		theme('dark')
+		expect(theme()).toBe('dark')
 	})
 
 	it('support multiple computed views on one signal', () => {
-		const layout = signal({
-			initial: 'inline' as 'inline' | 'block',
+		const theme = signal({
+			initial: 'light' as 'light' | 'dark',
 			computed: self => ({
-				isBlock: () => self() === 'block',
-				isInline: () => self() === 'inline',
+				isDark: () => self() === 'dark',
+				isLight: () => self() === 'light',
 			}),
 		})
-		expect(layout.isBlock()).toBe(false)
-		expect(layout.isInline()).toBe(true)
-		layout('block')
-		expect(layout.isBlock()).toBe(true)
-		expect(layout.isInline()).toBe(false)
+		expect(theme.isDark()).toBe(false)
+		expect(theme.isLight()).toBe(true)
+		theme('dark')
+		expect(theme.isDark()).toBe(true)
+		expect(theme.isLight()).toBe(false)
 	})
 
 	it('honor readonly while still exposing computed views', () => {
-		const layout = signal({
-			initial: 'inline' as 'inline' | 'block',
+		const theme = signal({
+			initial: 'light' as 'light' | 'dark',
 			readonly: true,
-			computed: self => ({isBlock: () => self() === 'block'}),
+			computed: self => ({isDark: () => self() === 'dark'}),
 		})
-		expect(layout.isBlock()).toBe(false)
-		expect(layout('block')).toBe(false)
-		expect(layout()).toBe('inline')
-		expect(layout.isBlock()).toBe(false)
+		expect(theme.isDark()).toBe(false)
+		expect(theme('dark')).toBe(false)
+		expect(theme()).toBe('light')
+		expect(theme.isDark()).toBe(false)
 	})
 
 	it('assigns to a manually-written Signal<T, C> annotation', () => {
-		const layout: Signal<'inline' | 'block', {isBlock: boolean}> = signal({
-			initial: 'inline' as 'inline' | 'block',
-			computed: self => ({isBlock: () => self() === 'block'}),
+		const theme: Signal<'light' | 'dark', {isDark: boolean}> = signal({
+			initial: 'light' as 'light' | 'dark',
+			computed: self => ({isDark: () => self() === 'dark'}),
 		})
-		expect(layout()).toBe('inline')
-		expect(layout.isBlock()).toBe(false)
-		layout('block')
-		expect(layout.isBlock()).toBe(true)
+		expect(theme()).toBe('light')
+		expect(theme.isDark()).toBe(false)
+		theme('dark')
+		expect(theme.isDark()).toBe(true)
 	})
 })
 
@@ -867,17 +867,17 @@ describe('signal<T> with default slot', () => {
 
 	describe('interaction with computed views', () => {
 		it('attaches computed views that see the post-revert value', () => {
-			const layout = signal({
-				default: 'inline' as 'inline' | 'block',
+			const theme = signal({
+				default: 'light' as 'light' | 'dark',
 				computed: self => ({
-					isBlock: () => self() === 'block',
+					isDark: () => self() === 'dark',
 				}),
 			})
-			expect(layout.isBlock()).toBe(false)
-			layout('block')
-			expect(layout.isBlock()).toBe(true)
-			layout(undefined)
-			expect(layout.isBlock()).toBe(false)
+			expect(theme.isDark()).toBe(false)
+			theme('dark')
+			expect(theme.isDark()).toBe(true)
+			theme(undefined)
+			expect(theme.isDark()).toBe(false)
 		})
 	})
 })

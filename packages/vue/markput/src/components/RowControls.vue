@@ -112,7 +112,7 @@ const dropStyle = computed(() => {
 			]"
 			:style="gripStyle"
 		>
-			<!-- The grip is also the menu trigger, so it renders in block mode regardless;
+			<!-- The grip is also the menu trigger, so it renders whether or not the rows drag;
 			     `draggable` gates only the drag affordance it carries. -->
 			<button
 				type="button"

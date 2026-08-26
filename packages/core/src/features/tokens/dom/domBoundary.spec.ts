@@ -71,17 +71,17 @@ function mountNestedSlot({extra = false, control = true} = {}) {
 }
 
 /**
- * Block layout: mark "one\n\n" [0,5] with child text "one" [0,3], mark "two\n\n" [5,10] with
+ * With rows: mark "one\n\n" [0,5] with child text "one" [0,3], mark "two\n\n" [5,10] with
  * child text "two" [5,8]. One row div per mark, the mark element holding one text surface.
  *
  * The row and the token element are DIFFERENT elements of the same token and are consigned
- * separately, which is how the adapters register them (`Block` consigns the row, `Token` its own
+ * separately, which is how the adapters register them (`Row` consigns the row, `Token` its own
  * element) and the only way a handle gets a `rowElement`. Local rather than the shared
  * `mountRowDoc` because `consignRendered` knows only about token elements: it files the row
  * wrapper as the mark's element, so no row is ever registered and the mark's element becomes its
  * child's text surface.
  *
- * `grip` puts a registered control BEFORE the token inside the row. The block controls no longer
+ * `grip` puts a registered control BEFORE the token inside the row. The row controls no longer
  * renders there — it is one layer beside the rows — but a consumer's own `slots.paragraph` may still
  * put a control inside a row, and this is the shape that asks whether a boundary can escape it.
  */
@@ -125,8 +125,8 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(orphan, 0)).toBeUndefined()
 	})
 
-	it('anchors an empty block document to its single empty row', () => {
-		// Rootless documents no longer exist (issue 08): an empty block value IS one
+	it('anchors an empty row document to its single empty row', () => {
+		// Rootless documents no longer exist (issue 08): an empty value with rows IS one
 		// empty unterminated row, and the container boundary resolves to it.
 		const {store, container} = mountValue('', {separator: '\n\n'})
 		expect(store.tokens.anchorFor(container, 0)).toEqual({before: store.tokens.nodes()[0]})
@@ -425,7 +425,7 @@ describe('anchorFor', () => {
 		// and each of those has its own arm above. What is left is a node under a ROW but
 		// outside that row's token element. Once a row was pairing-relevant that took a
 		// contrived shape; now nothing pairs a row's children with anything, so it is the
-		// ordinary case — the drop indicators, grip and menu the `Block` renderers put in
+		// ordinary case — the drop indicators, grip and menu the `Row` renderers put in
 		// every row all land here, and the bare Text node below stands in for them.
 		const {store, rows} = mountRows()
 		const stray = rows[1].appendChild(document.createTextNode(' '))
@@ -454,14 +454,14 @@ function mountStructuralRowWithControl(value: string) {
 	}
 	const textNode = textSurface.firstChild
 	const controlText = control.firstChild
-	if (!(textNode instanceof Text)) throw new Error('Structural block text surface did not render a text node')
+	if (!(textNode instanceof Text)) throw new Error('Structural row text surface did not render a text node')
 	if (!(controlText instanceof Text)) throw new Error('Structural control did not render a text node')
 	return {store, container, row, control, controlText, textSurface, textNode}
 }
 
 /**
- * Block layout with a drag grip before each row's token — the shape the React and Vue
- * `Block` renderers produce (the drop indicator and the handle precede the token).
+ * A document with rows and a drag grip before each row's token — the shape the React and Vue
+ * `Row` renderers produce (the drop indicator and the handle precede the token).
  */
 function mountRowWithGrip() {
 	return mountRows({grip: true})

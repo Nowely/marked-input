@@ -79,7 +79,7 @@ const foreign = (text: string): Replacement => ({text, markup: false})
  * The ONE inputType→replacement table, and since the guards folded into one there is one
  * caller too — `input.ts`'s `beforeinput` — where a per-guard copy used to be the drift
  * hazard this shared table answered. `undefined` means the type has no expression as a value
- * edit; the caller answers that with {@link dropUnexpressedInput}. Block's single divergence,
+ * edit; the caller answers that with {@link dropUnexpressedInput}. The row path's single divergence,
  * insertParagraph, is decided BEFORE this table in `rowKeys.ts`'s `handleRowParagraph`, so
  * the mapping itself stays layout-free.
  */
@@ -162,10 +162,10 @@ export function ownsPlatformUndo(container: HTMLElement, event: KeyboardEvent): 
  * The browser suites (`Base/keyboard.{react,vue}.spec`) cover it end to end.
  *
  * The separator arm is what makes a delete at a row boundary a MERGE, in one mechanism with
- * every other delete — where block layout used to resolve a row from the selection and call
+ * every other delete — where the row path used to resolve a row from the selection and call
  * `RowNode.mergeWith`. The two expansions cannot both answer: a row's children end with a text
  * token, so no mark boundary ever coincides with a separator's. See {@link boundarySpan} for
- * the direction rules, which are block's own and are not symmetric.
+ * the direction rules, which are the row path's own and are not symmetric.
  */
 export function anchorsForDelete(store: KbCtx, inputType: string, anchors: Anchors): Anchors | undefined {
 	if (!anchorEquals(anchors.anchor, anchors.head)) return anchors

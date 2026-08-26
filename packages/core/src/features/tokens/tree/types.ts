@@ -9,7 +9,7 @@ export type Id = number
 /**
  * An identity claim the string cannot carry: `pairing[j]` is the index of the PREVIOUS root
  * that becomes new root `j`. ROOT level, and ONE space on both ends: nothing sits between the
- * parse and the tree, so a root index is the parse's top-level index — in block layout, the
+ * parse and the tree, so a root index is the parse's top-level index — where the document has rows, the
  * row index a drag names (ADR-0009).
  *
  * It exists because a permutation is not derivable from the two strings. Moving a row past a
@@ -77,7 +77,7 @@ export type EditRecord = {
 export type TreeNode = TextNode | MarkNode | RowNode
 
 /**
- * A first-class block row (issue 08): block layout's only root kind, carved by the row scanner
+ * A first-class row (issue 08): the only root kind a document with rows has, carved by the row scanner
  * from the structural separator and TYPED by its own opener (ADR-0010). Never a child of a mark
  * or another row. A paragraph is a Row with no kind at all — its children are the plain text and
  * inline marks of the whole line.
@@ -385,7 +385,7 @@ export interface NodeCommands {
 	 * is no boundary: a non-row on either side, no configured separator, or a pair that is not
 	 * actually adjacent.
 	 *
-	 * PUBLISHED API with no in-repo caller since the block keyboard began resolving a row
+	 * PUBLISHED API with no in-repo caller since the row keyboard began resolving a row
 	 * merge through anchors (`beforeInput.ts`'s `anchorsForDelete` expands onto the boundary
 	 * and the shared delete arm removes it). Kept for that contract — the `api.focus()`
 	 * precedent — and because it is the one verb that answers whether the pair HAD a boundary.

@@ -39,7 +39,7 @@ function setCaretPosition(element: HTMLElement, offset: number) {
 
 /**
  * Focus is asserted on the EDITING HOST, not on `element`: under the single-host topology
- * the container owns `contenteditable`, and text spans, mark roots and block rows are all
+ * the container owns `contenteditable`, and text spans, mark roots and rows are all
  * plain content inside it. The caret — verified below — is what says where we are.
  */
 export async function focusAtStart(element: HTMLElement) {

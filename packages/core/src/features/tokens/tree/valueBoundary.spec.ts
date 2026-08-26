@@ -584,7 +584,7 @@ describe('boundary: a separator adopts rows (issue 08)', () => {
 		return {tree, boundary, tx}
 	}
 
-	it('adopts rows only — the block top level is RowNodes, trailing empty row included', () => {
+	it('adopts rows only — the top level is RowNodes, trailing empty row included', () => {
 		const {tree, tx} = rowSetup('aaa\n\nbbb\n\n', () => ({separator: '\n\n', indent: '\t'}))
 		expect(tree.roots().map(n => n.kind)).toEqual(['row', 'row', 'row'])
 
@@ -608,7 +608,7 @@ describe('boundary: a separator adopts rows (issue 08)', () => {
 	it('dropping the separator reparses the same value to the flat shape', () => {
 		const {tree, boundary} = rowSetup('aaa\n\nbbb\n\n', () => undefined)
 		// The tree was BUILT as rows; the first rowless adoption restores the flat parse,
-		// which is exactly what leaving block layout must do.
+		// which is exactly what losing the rows must do.
 		boundary.reparse()
 		expect(tree.roots().map(n => n.kind)).toEqual(['text'])
 	})

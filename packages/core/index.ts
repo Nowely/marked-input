@@ -27,7 +27,7 @@ export {annotate, denote} from './src/features/tokens'
 // intend; S2.9 restores this one only — see the note at the bottom of this file.
 export type {MarkToken, Markup} from './src/features/tokens'
 // `RowConfig` is `TokenModel.rowConfig`'s type, and `store.tokens` is public: without the
-// export the block parse policy a consumer can already read is not nameable.
+// export the row parse policy a consumer can already read is not nameable.
 export type {RowConfig} from './src/features/tokens'
 
 // Adapter utilities (spec §2.3: keep)
@@ -79,7 +79,7 @@ export type {Computed, SignalValues} from './src/shared/signals'
 export {readSelected} from './src/shared/readSelected'
 export type {Selectable, ObjectSelector} from './src/shared/readSelected'
 // `readSelected`'s sibling on the subscription side: the per-node repaint target all four
-// adapter Token/Block components pass to `useMarkput`, hoisted so the field contract has one
+// adapter Token/Row components pass to `useMarkput`, hoisted so the field contract has one
 // owner instead of a copy per adapter.
 export {renderSubscription} from './src/features/tokens'
 

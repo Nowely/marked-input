@@ -68,7 +68,7 @@ export class TokenHandle {
 		return this.#bindings
 	}
 
-	/** The text surface, else the token root — which for a RowNode IS the block wrapper. */
+	/** The text surface, else the token root — which for a RowNode IS the row wrapper. */
 	#measureScope(): HTMLElement | undefined {
 		const bindings = this.#bindings
 		return bindings?.textElement ?? bindings?.tokenElement
@@ -133,7 +133,7 @@ export class TokenHandle {
 	}
 
 	/**
-	 * Focus the editing host of this token's scope element (row in block layout).
+	 * Focus the editing host of this token's scope element (the row, where the document has rows).
 	 * Deliberately kept despite zero in-repo callers: public-reachable surface via the exported Store (`store.tokens.handle()`) — the `api.focus()` precedent.
 	 */
 	focus(): boolean {

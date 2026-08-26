@@ -62,12 +62,12 @@ the explicit `<T>` argument and widen on `initial` instead — TS infers both
 the value type and the companion shape from the option object in one pass:
 
 ```ts
-const layout = signal({
-    initial: 'inline' as 'inline' | 'block',
+const theme = signal({
+    initial: 'light' as 'light' | 'dark',
     readonly: true,
-    computed: self => ({isBlock: () => self() === 'block'}),
+    computed: self => ({isDark: () => self() === 'dark'}),
 })
-layout.isBlock() // Computed<boolean>
+theme.isDark() // Computed<boolean>
 ```
 
 | Option     | Type                                      | Default     | Description                                                                                                                                                                     |
@@ -78,21 +78,21 @@ layout.isBlock() // Computed<boolean>
 | `readonly` | `boolean`                                 | `false`     | Block writes except inside `batch(fn, {mutable: true})`                                                                                                                         |
 | `get`      | `(value: T) => T`                         | identity    | Memoized read transform; runs inside a private `computed` so external signals read inside `get` propagate to consumers                                                          |
 | `set`      | `(next, previous: T) => T`                | identity    | Write transform; return `previous` to reject the write. With `initial`, `next: T \| undefined`. With `default`, `next: T` (undefined is handled before `set`).                  |
-| `computed` | `(self) => Record<string, () => unknown>` | —           | Attach named derived views to the signal callable (e.g. `layout.isBlock()`)                                                                                                     |
+| `computed` | `(self) => Record<string, () => unknown>` | —           | Attach named derived views to the signal callable (e.g. `theme.isDark()`)                                                                                                       |
 
 #### Default slot
 
 Use `default` instead of `initial` when writing `undefined` should reset the signal to a known fallback. This is the right tool for framework-prop signals where adapters spread every prop into a `set({...})` call — including the ones the user did not provide, which arrive as `undefined`.
 
 ```ts
-const layout = signal<'inline' | 'block'>({default: 'inline', readonly: true})
+const theme = signal<'light' | 'dark'>({default: 'light', readonly: true})
 
-layout() // 'inline'
-layout('block') // returns true
-layout() // 'block'
-layout(undefined) // returns true — reverts to 'inline'
-layout() // 'inline'
-layout(undefined) // returns false — already at default
+theme() // 'light'
+theme('dark') // returns true
+theme() // 'dark'
+theme(undefined) // returns true — reverts to 'light'
+theme() // 'light'
+theme(undefined) // returns false — already at default
 ```
 
 Trace summary:
@@ -413,13 +413,13 @@ type Signal<T, C extends Record<string, unknown> = {}> = {
 `C` is the _value_ record for any computed companions attached via the `computed` option. For a signal without companions, `C` defaults to `{}` so `Signal<T>` reads as before:
 
 ```ts
-const layout: Signal<'inline' | 'block', {isBlock: boolean}> = signal({
-    initial: 'inline' as 'inline' | 'block',
-    computed: self => ({isBlock: () => self() === 'block'}),
+const theme: Signal<'light' | 'dark', {isDark: boolean}> = signal({
+    initial: 'light' as 'light' | 'dark',
+    computed: self => ({isDark: () => self() === 'dark'}),
 })
 
-layout() // 'inline' | 'block'
-layout.isBlock() // Computed<boolean>
+theme() // 'light' | 'dark'
+theme.isDark() // Computed<boolean>
 ```
 
 You almost never write this annotation by hand — TS infers it from the `signal({...})` call. The two-parameter form mainly makes hover types and explicit re-annotations readable.

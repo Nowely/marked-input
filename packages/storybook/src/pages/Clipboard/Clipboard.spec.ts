@@ -436,13 +436,13 @@ describe('Clipboard: paste', () => {
 		expect(sel.anchorOffset).toBe(0)
 	})
 
-	it('reconstruct the mark inside a block when markput data is pasted in drag mode', async () => {
+	it('reconstruct the mark inside a row when markput data is pasted in drag mode', async () => {
 		// Drag story: separator '\n', defaultValue "hello\n@[world](1)\nfoo".
-		// Each line is a separate draggable block; the container is the one editing host.
+		// Each line is a separate draggable row; the container is the one editing host.
 		const {host} = await mount(Drag)
 		expect(host.querySelectorAll('mark').length).toBe(1)
 
-		// Focus the first block ("hello") and place caret at end
+		// Focus the first row ("hello") and place caret at end
 		const rows = childrenOf(host)
 		expect(rows.length).toBeGreaterThan(0)
 		const firstRow = rows[0]
@@ -535,7 +535,7 @@ describe('Clipboard: cut', () => {
 		const {host} = await mount(Drag)
 		const before = host.textContent
 		// The grip is painted by the editor's controls layer on the row nearest the pointer, so it
-		// is in the DOM only while a row is hovered — where block layout used to render one per
+		// is in the DOM only while a row is hovered — where the rows used to render one per
 		// row, always mounted and merely transparent.
 		await userEvent.hover(childrenOf(host)[0])
 		const button = page.elementLocator(host).getByRole('button').first().element()

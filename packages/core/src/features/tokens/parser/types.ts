@@ -35,7 +35,7 @@ export interface MarkToken {
 }
 
 /**
- * A first-class block-mode row, and block layout's top level. `parseRows` carves the skeleton
+ * A first-class row, and the top level of a document with rows. `parseRows` carves the skeleton
  * first: each row is recognised at its OWN start, by its kind's opener or by nothing at all, and
  * its body is inline-parsed afterwards.
  *
@@ -86,7 +86,7 @@ export interface RowToken {
 }
 
 /**
- * The block parse policy, as one record: everything the row skeleton is carved by. One
+ * The row parse policy, as one record: everything the row skeleton is carved by. One
  * argument rather than a growing parameter list, and one value the seam can hand around —
  * `TokenModel.rowConfig` is the single place it is derived from props.
  */

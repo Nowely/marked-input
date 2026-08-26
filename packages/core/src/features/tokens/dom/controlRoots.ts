@@ -7,10 +7,10 @@
  * caret and the browser's own editing out of grips, menus and overlays.
  *
  * IT OWNS THE SET, and that is the point of the module. This used to be recomputed inside every
- * `bind` from a registry the model held, so a control's ref cost a whole-tree walk — and block
- * layout registered up to four controls PER ROW (two drop indicators, a drag handle, a menu),
- * which made mounting a block document quadratic: measured at 400 rows, 400 registrations drove
- * 400 binds in 93 ms, growing 3.7x per doubling. The block controls are ONE layer with one registration
+ * `bind` from a registry the model held, so a control's ref cost a whole-tree walk — and the
+ * editor registered up to four controls PER ROW (two drop indicators, a drag handle, a menu),
+ * which made mounting a document with rows quadratic: measured at 400 rows, 400 registrations drove
+ * 400 binds in 93 ms, growing 3.7x per doubling. The row controls are ONE layer with one registration
  * now, but registration stays O(depth) here and touches no token.
  */
 export type ControlRoots = {

@@ -41,7 +41,7 @@ async function gripOfRow(host: HTMLElement, rowIndex: number) {
 	return page.elementLocator(host).getByRole('button', GRIP).findElement()
 }
 
-/** Hovers a row, then clicks its grip — the only way the block menu opens. */
+/** Hovers a row, then clicks its grip — the only way the row menu opens. */
 async function openMenuForRow(host: HTMLElement, rowIndex: number) {
 	await userEvent.click(await gripOfRow(host, rowIndex))
 }
@@ -409,7 +409,7 @@ describe('Feature: drag rows', () => {
 	})
 
 	describe('drag & drop', () => {
-		it('keep grip visible when pointer moves from block content to grip button', async () => {
+		it('keep grip visible when pointer moves from row content to grip button', async () => {
 			// The layer lives INSIDE the container, so a mousemove over the grip still bubbles to
 			// the container's hit-test — and the grip sits in its own row's vertical band, so the
 			// hover it recomputes is the row it is already on.
@@ -572,7 +572,7 @@ describe('Feature: drag rows', () => {
 		})
 
 		it('hang the grip band LEFT of its row, where core reserves no gutter', async () => {
-			// Core supplies the 24px gutter only for draggable, editable block layout. A band
+			// Core supplies the 24px gutter only for draggable, editable rows. A band
 			// anchored to the layer's own origin therefore covers the first 24px of the hovered
 			// row and swallows the click that should place a caret there.
 			const {host} = await mountComponent({

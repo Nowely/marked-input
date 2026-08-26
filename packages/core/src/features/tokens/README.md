@@ -70,7 +70,7 @@ the framework has not repainted yet.
   writer.
 - `valueBoundary.ts` — the string boundary: commit policy plus arrival routing.
   Controlled mode emits and waits for the echo it spliced; uncontrolled commits
-  straight through. Block mode's parse routes through `parseRows` here — the
+  straight through. The row parse routes through `parseRows` here — the
   structural separator forms the rows (ADR-0009).
 - `__testing__/snapshot.ts` — TEST-ONLY, no production caller:
   `stripIds(snapshot(tree))` deep-equals a fresh parse of the tree's projection.
@@ -121,11 +121,11 @@ it. What holds the position writes correct is the snapshot ORACLE
 `adopt.property.spec.ts` asserts the whole tree against a fresh parse after
 every adopt, so a position left stale is a deep-equal mismatch.
 
-**Block-typing consequence:** every block row is a `RowNode` whose content is its
+**Row-typing consequence:** every row is a `RowNode` whose content is its
 children (ADR-0009), so without in-row adoption each keystroke in a row would be
 a whole-row replacement → structural → re-render. With it the keystroke touches
 only the row's text child → text path → the surface is patched with ZERO
-component re-renders — gated end-to-end by the block render-count specs
+component re-renders — gated end-to-end by the row render-count specs
 (`packages/storybook/src/pages/renderCount.spec.ts`, one file held against both
 adapters).
 
@@ -167,7 +167,7 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
 - **A control registration binds nothing.** `dom/controlRoots.ts` owns which
   elements sit under a control root and updates in place, because that answer is a
   DOM walk from each control up to the host and touches no token. It used to be
-  recomputed inside every bind, which made a block mount quadratic — block layout
+  recomputed inside every bind, which made a mount with rows quadratic — the rows
   registers up to four controls per ROW.
 - **Text is not the pipeline's business.** `bind` arms
   `effect(() => { const t = node.text(); if (el.textContent !== t) el.textContent = t })`
@@ -241,7 +241,7 @@ successful bind re-attaches the same handles. Alignment is all-or-nothing per
 frame — a count mismatch drops that frame AND every descendant frame with it,
 because a dropped frame never enqueues its children.
 
-**Block layout:** each immediate container child is a row; a row must contain
+**With rows:** each immediate container child is a row; a row must contain
 exactly one non-control element. Alignment is all-or-nothing — one bad row bails
 the whole frame, failing loud when an adapter renders something unexpected.
 
@@ -399,7 +399,7 @@ There is no per-node `dirty` signal, and no event surface: a handle does not
 emit `text`/`moved`/`unmounted`. Consumers detect change through `committed` —
 published as `api.changed` — and re-read.
 
-### Measurement (over the bound elements, row scope in block layout)
+### Measurement (over the bound elements, row scope where the document has rows)
 
 Three reads, all answering an inert default when the handle is unbound:
 
@@ -433,7 +433,7 @@ implemented in `tree.ts`), and they split by the NATURE of the operation rather
 than by node type:
 
 - `NodeCommands` — the STRUCTURAL verbs, on every node: `remove()`,
-  `duplicate()`, `insertAfter(text)`, `mergeWith(next)`. A block row can be a
+  `duplicate()`, `insertAfter(text)`, `mergeWith(next)`. A row can be a
   text node, so a mark-only port could not serve one. The ROW verbs ride the same
   port and are row-only by their addressing: `setDepth(depth)`,
   `turnInto(option, patch)`, `splitAt(anchor)` and `moveTo(placement)`, whose

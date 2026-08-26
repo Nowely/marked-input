@@ -47,8 +47,8 @@ function mountMark() {
 }
 
 /**
- * Block layout (issue 08's row world): paragraph rows, no markup. Each RowNode's
- * wrapper div is the row's own token element (the Block wrapper's role); each row
+ * A document with rows (issue 08's row world): paragraph rows, no markup. Each RowNode's
+ * wrapper div is the row's own token element (the `Row` component's role); each row
  * text child gets a surface span. `unmount` is the pair of null ref calls the
  * adapter makes when the row component goes away.
  */
@@ -198,7 +198,7 @@ describe('TokenHandle', () => {
 			handle.bindElements({tokenElement: row}, textNodeOf('hello'))
 
 			// 6, not 5: the measure scope is the token element — for a row handle that IS
-			// the block wrapper — so the sibling's text counts too.
+			// the row wrapper — so the sibling's text counts too.
 			expect(handle.textLength()).toBe(6)
 		})
 
@@ -266,7 +266,7 @@ describe('TokenHandle', () => {
 
 		it('a model-initiated placement focuses the editing host, not the bare surface', () => {
 			// The reason `focusEditingHost` exists: a placement with no click behind it — the
-			// `handle.focus()` / `placeAtHandle` / block `focusRow` path — must pull focus INTO
+			// `handle.focus()` / `placeAtHandle` / `focusRow` path — must pull focus INTO
 			// the editor, and the old per-element focus was a no-op on a bare span.
 			//
 			// THE CALL, not just `activeElement`, and the difference is MEASURED: in a focused
@@ -340,7 +340,7 @@ describe('TokenHandle', () => {
 	})
 
 	it('alive() is false once the handle is killed', () => {
-		// Block layout: capture row 1's handle, then shrink to one row so bind kills it.
+		// With rows: capture row 1's handle, then shrink to one row so bind kills it.
 		const {store, rows} = mountRowDoc('alpha\n\nbeta\n\n')
 		const rowId = store.tokens.nodes()[1].id
 		const handle = store.tokens.handle(rowId)

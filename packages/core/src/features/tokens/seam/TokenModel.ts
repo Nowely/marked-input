@@ -174,8 +174,8 @@ export class TokenModel {
 	 * {@link ControlRoots}, which owns the membership the locate walk reads.
 	 *
 	 * NO BIND: a control's ancestor chain is a pure DOM walk that touches no token, so it
-	 * updates in place. Routing a ref through the bind counter makes a block mount quadratic —
-	 * block layout used to mount up to four controls per ROW, measured at 400 rows / 400 binds /
+	 * updates in place. Routing a ref through the bind counter makes a mount with rows quadratic —
+	 * a document with rows used to mount up to four controls per ROW, measured at 400 rows / 400 binds /
 	 * 93 ms. It mounts ONE now, the controls layer, but a ref that costs a whole-tree walk is
 	 * still the wrong shape.
 	 *
@@ -509,16 +509,16 @@ export class TokenModel {
 	readonly nodes: Computed<readonly TreeNode[]> = computed(() => this.#tree.roots())
 
 	/**
-	 * THE block parse policy: how the row skeleton is carved, or `undefined` for a document
+	 * THE row parse policy: how the row skeleton is carved, or `undefined` for a document
 	 * that has no rows. There is no mode beside it (ADR-0011) — every row question in core asks
 	 * this, or the tree it produced.
 	 *
 	 * PROPS-derived, deliberately not tree-derived. `SlotsFeature.containerProps` reads it
 	 * during SERVER rendering, where no container has attached and the tree is therefore still
-	 * empty, so a tree-derived answer would drop block layout's grip gutter from the SSR pass.
+	 * empty, so a tree-derived answer would drop the grip gutter from the SSR pass.
 	 *
 	 * A NULL `separator` ANSWERS `undefined`: the value never splits, which is one document with
-	 * no rows — the row parse, the block feature gates, the grip gutter and `RowController` all
+	 * no rows — the row parse, the row-controls gates, the grip gutter and `RowController` all
 	 * turn off together on it.
 	 *
 	 * AN EMPTY `separator` answers `undefined` too, but reports first: `''` separates nothing

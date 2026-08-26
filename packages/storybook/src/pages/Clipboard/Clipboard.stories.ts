@@ -3,7 +3,7 @@ import {component, story, type PageMeta} from '../../shared/lib/stories'
 import {fixtures} from './Clipboard.fixtures'
 
 const INLINE_VALUE = 'hello @[world](1) foo'
-const BLOCK_VALUE = 'hello\n@[world](1)\nfoo'
+const ROWS_VALUE = 'hello\n@[world](1)\nfoo'
 
 /**
  * Every named export of a CSF file is indexed as a story, so this file exports stories and
@@ -24,7 +24,7 @@ export const PlainText = story({
 })
 
 export const Drag = story({
-	args: {separator: '\n', draggable: true, Mark, defaultValue: BLOCK_VALUE},
+	args: {separator: '\n', draggable: true, Mark, defaultValue: ROWS_VALUE},
 })
 
 export const NestedMarkStory = story({

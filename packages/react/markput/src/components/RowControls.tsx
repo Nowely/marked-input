@@ -90,7 +90,7 @@ export const RowControls = memo(() => {
 				>
 					<button
 						type="button"
-						// The grip is also the menu trigger, so it renders in block mode regardless;
+						// The grip is also the menu trigger, so it renders whether or not the rows drag;
 						// `draggable` gates only the drag affordance it carries.
 						draggable={!!draggable}
 						className={cx(styles.GripButton, dragging !== null && styles.GripButtonDragging)}

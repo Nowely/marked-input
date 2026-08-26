@@ -110,7 +110,7 @@
    measured — `left` is the row's own left edge and the negative margin puts the band's right
    edge on it, exactly where the deleted per-row panel's `left: -24px` sat. Anchoring to the
    ROW and not to the layer's origin is what keeps the band off the text: core reserves the
-   24px gutter only for `draggable` block layout, and without it a band at the layer's origin
+   24px gutter only for `draggable` rows, and without it a band at the layer's origin
    covers the first 24px of every hovered row and swallows the click that should place a
    caret. */
 .SidePanel {

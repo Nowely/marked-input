@@ -108,7 +108,7 @@ describe('RowNode', () => {
 		})
 
 		it('takes the separator BEHIND a forward delete at a row start', () => {
-			// Not a symmetry — block layout's own answer for Delete pressed at a row start,
+			// Not a symmetry — the row model's own answer for Delete pressed at a row start,
 			// which merges that row into the previous one.
 			expect(span('a\n\nb', 3, 1)).toEqual([1, 3])
 		})

@@ -94,7 +94,7 @@
 	--notion-indent-step: 24px;
 	--notion-block-depth: 1;
 
-	/* The left gutter markput reserves for the drag grip in block layout
+	/* The left gutter markput reserves for the drag grip
 	   (`packages/core/styles.module.css` `.SidePanel`). The showcase's own gutter has to
 	   line up with it. */
 	--notion-gutter-width: 24px;

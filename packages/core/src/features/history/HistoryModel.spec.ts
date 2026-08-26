@@ -284,7 +284,7 @@ describe('history: identity', () => {
 	it('gives every row back its OWN id when it undoes a move', () => {
 		// A `setValue`-shaped undo restores the same string and re-pairs the rows BY INDEX:
 		// measured on this exact document, the row reading 'a' afterwards is the node that used
-		// to be 'b', so every consumer keyed by row id — drag state, block selection, a collapse
+		// to be 'b', so every consumer keyed by row id — drag state, row selection, a collapse
 		// flag — lands on the wrong row.
 		//
 		// A ROTATION, not a swap, and that is not decoration: a transposition is its own inverse,

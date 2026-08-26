@@ -22,7 +22,7 @@ export {anchorEquals, entryAnchor} from './tree/anchors'
 // `Window`, and the one window it can be handed is an `EditRecord`'s read backwards.
 export {invertWindow} from './tree/gapWindow'
 // "Are this row's child rows its own carved BODY?" is a structural fact about a row that only the
-// tree can answer, and block layout asks it: a cell has no line of its own, so the hit test stops
+// tree can answer, and the row hit test asks it: a cell has no line of its own, so the hit test stops
 // at a carved row rather than descending into pieces no verb can address.
 export {hasCells, hasRawBody} from './tree/rows'
 // The repaint-field contract both adapters pass to `useMarkput` — core knowledge (which node

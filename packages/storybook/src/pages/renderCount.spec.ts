@@ -123,14 +123,14 @@ describe('Render-count gates: structural fan-out', () => {
 })
 
 /**
- * Block-layout gate (issue 08's row world): a row is a RowNode with no markup, its text a
+ * Rows gate (issue 08's row world): a row is a RowNode with no markup, its text a
  * bare Span inside the one host. A keystroke inside a row lands on the row's child text
  * token and rides the text path — the surface is patched in place while the tree keeps
  * its reference, so no Span re-renders. A row split is structural and re-renders through
  * the framework.
  */
-describe('Render-count gates: block layout', () => {
-	it('block keystroke into a row does not re-render Mark or Span; a row split does', async () => {
+describe('Render-count gates: rows', () => {
+	it('a keystroke into a row does not re-render Mark or Span; a row split does', async () => {
 		const [CountedMark, markRenders] = countRenders({tag: 'mark'})
 		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
 		const {host} = await mountComponent({
@@ -175,7 +175,7 @@ describe('Render-count gates: block layout', () => {
 		// the object selector (react `Row.tsx`, vue `Row.vue`) leaves this green in both
 		// projects, because both bridges skip a child whose node object did not change, so the
 		// extra row renders never reach a Mark or a Span. The scalar `dragging` selector both
-		// `Block`s use is therefore a discipline this file states but does not enforce.
+		// `Row`s use is therefore a discipline this file states but does not enforce.
 		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
 		const {host} = await mountComponent({
 			Span: CountedSpan,

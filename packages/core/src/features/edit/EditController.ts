@@ -44,7 +44,7 @@ export class EditController {
 	 * controlled-mode rule as {@link replace}.
 	 *
 	 * The `caretOffset` override is GONE — it was the last absolute offset in any core module,
-	 * an index into a string that had not been parsed yet. Its callers were all block row edits
+	 * an index into a string that had not been parsed yet. Its callers were all row edits
 	 * that wanted the caret inside a row of the RESULT, and they now say exactly that through
 	 * `tokens.setValue(text, rootIndex)`. Its controlled-mode exemption went with it:
 	 * the measurement that justified it had gone stale — `PlainTextDrag` stopped being

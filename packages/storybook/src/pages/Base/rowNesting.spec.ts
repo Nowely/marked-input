@@ -17,11 +17,11 @@ import {rows} from './Base.fixtures'
  * spec that mounts an already-nested document passes against an add-only editable-state climb —
  * the row that gains children after mount is the one whose new host the climb froze.
  */
-const BLOCK = {separator: '\n', indent: '\t', Mark} as const
+const ROWS = {separator: '\n', indent: '\t', Mark} as const
 
 describe('nested rows', () => {
 	it('mounts a nested document with the child row inside its parent', async () => {
-		const {host} = await mountComponent({value: 'alpha\n\tbeta', ...BLOCK})
+		const {host} = await mountComponent({value: 'alpha\n\tbeta', ...ROWS})
 
 		const roots = rowsOf(host)
 		expect(roots).toHaveLength(1)
@@ -33,7 +33,7 @@ describe('nested rows', () => {
 
 	it('nests a row at RUNTIME and then types into it', async () => {
 		const onChange = vi.fn<(value: string) => void>()
-		const {host} = await mountComponent({defaultValue: 'alpha\nbeta', ...BLOCK, onChange})
+		const {host} = await mountComponent({defaultValue: 'alpha\nbeta', ...ROWS, onChange})
 		expect(rowsOf(host)).toHaveLength(2)
 
 		// The indent is written as ordinary text at the row's own start, which is what makes it a
@@ -58,7 +58,7 @@ describe('nested rows', () => {
 
 	it('outdents a row at RUNTIME and then types into it', async () => {
 		const onChange = vi.fn<(value: string) => void>()
-		const {host} = await mountComponent({defaultValue: 'alpha\n\tbeta', ...BLOCK, onChange})
+		const {host} = await mountComponent({defaultValue: 'alpha\n\tbeta', ...ROWS, onChange})
 		expect(rowsOf(host)).toHaveLength(1)
 
 		const nested = rowsOf(host)[0].querySelector('[class*="Row"]')
@@ -100,7 +100,7 @@ describe('nested rows', () => {
 		const onChange = vi.fn<(value: string) => void>()
 		const {host} = await mountComponent({
 			defaultValue: '- alpha\nbeta',
-			...BLOCK,
+			...ROWS,
 			options: [{markup: '- __slot__', row: {Component: rows.Bullet}}],
 			onChange,
 		})

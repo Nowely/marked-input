@@ -74,7 +74,7 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 		if (isConsumerKeyOrigin(store, container, e)) return
 
 		// Layout-independent on purpose: selecting the whole value is a model operation, and
-		// block rows are values too. In block layout it gains ONE rung below that: while a row
+		// rows are values too. Where the document has rows it gains ONE rung below that: while a row
 		// selection stands inside a NESTED row, Mod+A widens to the row it is nested in before it
 		// reaches for the whole document. Everywhere else — every inline editor, and every caret
 		// that has not been escalated with Esc — the rung declines and this is select-all as it was.
@@ -202,11 +202,11 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 		return
 	}
 
-	// The block ARM, after the two checks above and answering only in block layout. It used to
+	// The ROW ARM, after the two checks above and answering only where the document has rows. It used to
 	// be a second CAPTURE listener on this same container, which repeated the control-root half
 	// of `isConsumerOrigin`, skipped whatever this one had already prevented, and — the reason
 	// this order matters — never took the island half at all. Everything past it is shared: the
-	// block tail was a copy of the one below.
+	// row tail was a copy of the one below.
 	if (handleRowParagraph(store, container, event)) return
 
 	const anchors = anchorsFromInputEvent(store, event)
