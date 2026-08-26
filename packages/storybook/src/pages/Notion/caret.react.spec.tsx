@@ -196,6 +196,52 @@ describe('the caret goes where a person can follow it', () => {
 	})
 
 	/**
+	 * AND THE ROW HALF OF THE SAME RULE: a verb may not leave a row where nothing paints it. Tab and
+	 * the drop are refused before they write, because the destination is already on screen to be
+	 * asked; a RETYPE is not — a heading paints no child rows and the row only becomes a heading
+	 * after the frame — so `turnInto` wrote the kind under two nested bullets and both left the
+	 * screen. They stayed in the value, exported, and came back only on undo.
+	 *
+	 * The rows are LIFTED to the depth that paints them, in the same undo step as the retype: what
+	 * the user asked for stands, and nothing they were looking at disappears.
+	 */
+	it('lifts the children of a row retyped into a kind that paints none', async () => {
+		const {host, value} = await mountControlled(Empty, '- Milestones\n\t- Auth cutover\n\t- EU quota')
+
+		const line = lineTextOf(rowStarting(host, 'Milestones'))
+		await caretAt(host, line, line.length)
+		await userEvent.keyboard('/h3')
+		await settle()
+		await page.getByText('Heading 3', {exact: true}).click()
+		await settle()
+
+		expect(value()).toBe('### Milestones\n- Auth cutover\n- EU quota')
+		expect(host.textContent).toContain('Auth cutover')
+		expect(host.textContent).toContain('EU quota')
+
+		// ONE undo takes back BOTH HALVES, because the lift is a repair rather than a step of its
+		// own: the kind and the nesting come back together. What is left standing is the typed
+		// `/h3` — the run the menu was opened with, which is the step below this one.
+		await userEvent.keyboard('{ControlOrMeta>}z{/ControlOrMeta}')
+		await settle()
+		expect(value()).toBe('- Milestones/h3\n\t- Auth cutover\n\t- EU quota')
+	})
+
+	/**
+	 * AND IT LEAVES AN AUTHORED VALUE ALONE. The lift repairs a document being EDITED — the same
+	 * rule the tail-row invariant lives by — because a value that arrives already holding a child
+	 * under such a kind is the consumer's own bytes: rewriting it on mount would emit an edit
+	 * nobody made, out of an editor nobody has touched.
+	 */
+	it('does not lift the children of a value it was merely given', async () => {
+		const {host, value} = await mountControlled(Empty, '### Risks\n\t- EU quota')
+		await settle()
+
+		expect(value()).toBe('### Risks\n\t- EU quota')
+		expect(host.textContent).not.toContain('EU quota')
+	})
+
+	/**
 	 * A CLIP OF WHOLE ROWS IS PASTED AS ROWS. This editor's own clipboard entry is the value's own
 	 * projection — a lead and an opener per line — and splicing it into a row's body wrote those
 	 * bytes as PROSE: a literal `'- '` in the middle of a paragraph, and a literal tab in front of

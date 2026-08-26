@@ -31,7 +31,7 @@ import {
 	stepAnchor,
 } from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
-import {hasRawBody, preorderRows} from '../tree/rows'
+import {hasCells, hasRawBody, preorderRows} from '../tree/rows'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
 import type {Continuation} from '../tree/siblings'
@@ -1147,6 +1147,7 @@ export class TokenModel {
 			// before this call returns in either value mode.
 			this.#repairing = true
 			try {
+				this.#settleRows()
 				this.#settleCaret()
 			} finally {
 				this.#repairing = false
@@ -1164,6 +1165,68 @@ export class TokenModel {
 	#settling = false
 
 	#repairing = false
+
+	/**
+	 * THE DOCUMENT HALF OF THE SAME INVARIANT: a row may not be left where nothing paints it.
+	 *
+	 * A kind that ignores the rows it is handed renders no host for them, so its children are in
+	 * the value, absent from the DOM and reachable only by undo. `moveTo` and `indentRows` refuse
+	 * to write a row there ({@link #nestingIsPainted}), but a row can BECOME such a parent without
+	 * either verb running: `turnInto` retypes the row under its children — pick Heading 3 on a
+	 * bulleted parent and both nested bullets leave the screen — and a paste or a replayed edit
+	 * writes the same shape with no row named at all. Asking at each of those doors is how the same
+	 * defect has now been repaired three times; this asks once, where the answer exists.
+	 *
+	 * AND IT CAN ONLY BE ASKED HERE. Whether a kind paints child rows is a DOM fact, and the
+	 * destination kind of a retype has no DOM until the frame after it — so the check cannot
+	 * precede the write, and the repair is a repair rather than a refusal: {@link EditRecord.repair}
+	 * folds it into the edit that provoked it, so one undo takes back both.
+	 *
+	 * THE CHILDREN ARE LIFTED, not deleted and not put back: the retype is what the user asked for
+	 * and it stands, and the rows that can no longer live under it move to the depth that paints
+	 * them — the same verb, and the same step, a Shift+Tab would have made.
+	 *
+	 * ONLY WHILE SOMEONE IS IN THE DOCUMENT, for {@link #keepTailEnterable}'s reason: a value
+	 * merely AUTHORED with a child under such a kind is the consumer's own bytes, and an editor
+	 * that rewrote them on mount would emit an edit nobody made.
+	 */
+	#settleRows(): void {
+		if (!this.selection.anchors()) return
+		const orphaned = untracked(() => this.#parentHostingNothing(this.#tree.roots()))
+		if (!orphaned) return
+		// ONE ROW PER PASS, and no loop: the lift is a splice, so the tree the walk read is stale
+		// the moment it lands. The next pulse re-reads it and finds the next one, which is also
+		// what makes the pass terminate — every lift moves a subtree one level up, and depth 0
+		// always paints.
+		this.indentRows(
+			untracked(() => orphaned.rows()),
+			-1
+		)
+	}
+
+	/**
+	 * The FIRST row in document order whose child rows have nowhere to be painted, or `undefined`.
+	 *
+	 * Its own descent rather than a `find` over {@link preorderRows}, and that is measured: this
+	 * runs on every commit, and the pre-order walk materialises one entry per row whether or not it
+	 * has children — 0.110 ms against 0.043 ms at 1000 rows, on the microtask after a keystroke
+	 * whose whole L6 cost is ~0.7 ms there. This descends only where there is something to descend
+	 * into and allocates nothing.
+	 *
+	 * A CARVED row is skipped WITH its children: cells are that row's body, painted by its own
+	 * component, and nothing may move them.
+	 */
+	#parentHostingNothing(nodes: readonly TreeNode[]): RowNode | undefined {
+		for (const node of nodes) {
+			if (node.kind !== 'row' || hasCells(node)) continue
+			const children = node.rows()
+			if (children.length === 0) continue
+			if (!this.#dom.nestingIsHosted(node.id)) return node
+			const found = this.#parentHostingNothing(children)
+			if (found) return found
+		}
+		return undefined
+	}
 
 	#settleCaret(): void {
 		const anchors = this.selection.anchors()

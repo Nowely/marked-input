@@ -128,6 +128,23 @@ export class DomModel {
 	}
 
 	/**
+	 * IS THERE ANYWHERE AT ALL for this row's child rows — the DOCUMENT half of the invariant,
+	 * where {@link nestingIsPainted} is the caret's. A kind that ignores the rows it is handed
+	 * renders no host, so rows nested under it are in the value and on no screen, and no gesture
+	 * can reach them: `turnInto` onto such a kind is how a row with children arrives there, and a
+	 * paste or a replayed edit is how it arrives without any verb naming the row at all.
+	 *
+	 * WHETHER THE HOST IS ON SCREEN IS NOT ASKED HERE, and that is the whole difference from
+	 * {@link nestingIsPainted}: a closed toggle renders its host and hides it, which is a kind
+	 * doing its job, and lifting its children out of it would destroy the document on every
+	 * collapse. No host at all is the one state nothing can recover from.
+	 */
+	nestingIsHosted(id: Id): boolean {
+		const bindings = this.deps.handle(id)?.node()
+		return !bindings || bindings.rowSequenceHost?.isConnected === true
+	}
+
+	/**
 	 * WOULD A CHILD ROW OF THIS ROW BE ON SCREEN — asked of the WOULD-BE PARENT, before anything
 	 * is written, which is what a childless one could not be asked while the question was put to
 	 * its first existing child.

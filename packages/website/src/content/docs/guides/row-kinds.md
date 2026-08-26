@@ -116,6 +116,14 @@ So render `rows` even where the design has no children in mind — an empty wrap
 and it is what keeps the kind nestable. Hiding them is a different thing and is fine (below); it is
 read as "not now", and a nest into a hidden subtree is refused for the same reason.
 
+**A row that BECOMES such a kind has its children lifted.** Tab and a drag are refused before they
+write, because the destination is on screen to be asked; a retype is not — the row only becomes a
+heading a frame later — so `node.turnInto(heading)` on a parent used to leave its children in the
+value with nothing painting them. The editor now moves them out one level, to the depth that does
+paint them, in the same undo step as the retype: what the user asked for stands, and nothing they
+were looking at disappears. It repairs a document being EDITED, never one merely authored: a value
+that arrives with a child under such a kind is the consumer's own bytes and is left alone.
+
 Collapse by HIDING, never by unmounting. An unpainted row leaves the DOM binding and takes its
 anchors with it, so `End`, select-all and every arrow that resolves through the last row would walk
 into a row with no element:
