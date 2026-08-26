@@ -659,6 +659,35 @@ describe('splitAt', () => {
 		expect(store.tokens.value()).toBe('- [x] a\n- [x] b')
 	})
 
+	/**
+	 * A THIRD ANSWER: `continues` naming an OPTION opens the tail as THAT kind. A table header is
+	 * the shape — it continues into a table LINE, so Enter at the end of a header writes the first
+	 * data row instead of a paragraph holding literal pipes.
+	 *
+	 * The header's own META does not travel with it: the tail is a different kind, and its gaps are
+	 * its own. And an option this editor compiled no row kind from opens a PLAIN row, which is
+	 * `turnInto`'s refusal read at the split.
+	 */
+	it('gives the tail ANOTHER kind when the kind names one, and a plain row when it names an unregistered one', () => {
+		const line: CoreOption = {markup: '| __slot__', row: {Component: 'tr', continues: true}}
+		const stranger: CoreOption = {markup: '> __slot__', row: {Component: 'blockquote'}}
+		const header = (continues: CoreOption): CoreOption => ({
+			markup: '|= [__meta__] __slot__',
+			row: {Component: 'tr', continues},
+		})
+		const known = rowStore('|= [x] a | b', [header(line), line])
+		// The stranger is NOT in this editor's options, so no row kind was ever compiled from it.
+		const unknown = rowStore('|= [x] a | b', [header(stranger)])
+
+		expect(rowsOf(known)[0].splitAt(inBody(rowsOf(known)[0], 5))).toBe(true)
+		expect(rowsOf(unknown)[0].splitAt(inBody(rowsOf(unknown)[0], 5))).toBe(true)
+
+		// Enter AT THE END of the header, which is the reported gesture: the line it opens is empty
+		// and carries the continuation's own opener.
+		expect(known.tokens.value()).toBe('|= [x] a | b\n| ')
+		expect(unknown.tokens.value()).toBe('|= [x] a | b\n')
+	})
+
 	it('splits at the row START, which pushes the row down under an empty one', () => {
 		const store = rowStore('a\n\t- b', [bullet])
 		const child = rowsOf(store)[1]

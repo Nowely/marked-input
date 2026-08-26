@@ -17,6 +17,13 @@ import type {
 } from './types'
 
 /**
+ * WHAT A LINE OPENED BESIDE A ROW IS WRITTEN AS: a compiled kind and the `meta` to write in its gap,
+ * or `undefined` for a plain row. It is `RowSpec.continues` resolved — `tree/` knows a descriptor
+ * and not the option that declared one, so the seam answers this and this layer only writes it.
+ */
+export type Continuation = {descriptor: MarkupDescriptor | undefined; meta: string | undefined} | undefined
+
+/**
  * Removing the boundary between two rows, as the window that holds them apart — see
  * {@link rowBoundary} for what is in it. Deleting it is the whole merge; reparse decides what the
  * joined text becomes (issue 08's markdown-like policy). No kind gate on the merged CONTENT: any
@@ -789,14 +796,14 @@ function sharedSuffix(a: string, b: string, prefix: number): number {
 }
 
 /**
- * A LINE OPENED BESIDE `node`: written at its LEAD, and carrying its KIND where the kind continues
- * into a row a split produces. The one rule for every arriving line, and it has two writers — the
- * lines {@link splitPlan} opens at a cut, and the lines {@link rowSelectionRows} writes in a
- * covered row's place. Answering it twice is how a paste at a caret and the same paste over a row
- * selection came to disagree about the same clip.
+ * A LINE OPENED BESIDE `node`: written at its LEAD, opened as {@link Continuation} says. The one
+ * rule for every arriving line, and it has two writers — the lines {@link splitPlan} opens at a
+ * cut, and the lines {@link rowSelectionRows} writes in a covered row's place. Answering it twice
+ * is how a paste at a caret and the same paste over a row selection came to disagree about the
+ * same clip.
  */
-function openedLine(node: RowNode, continues: boolean, text: string): string {
-	return node.lead() + rowMarkup(continues ? node.descriptor() : undefined, continues ? node.meta() : undefined, text)
+function openedLine(node: RowNode, continues: Continuation, text: string): string {
+	return node.lead() + rowMarkup(continues?.descriptor, continues?.meta, text)
 }
 
 /**
@@ -827,7 +834,7 @@ function documentLines(lines: readonly string[], separator: string): string[] {
  */
 export function rowSelectionRows(
 	first: RowNode,
-	continues: boolean,
+	continues: Continuation,
 	lines: readonly string[],
 	separator: string
 ): string {
@@ -889,7 +896,7 @@ export function splitPlan(
 	node: TreeNode,
 	span: Anchors,
 	separator: string | undefined,
-	continues: boolean,
+	continues: Continuation,
 	rows: readonly string[] | string
 ): {window: Window; text: string; tail: number; into: number | undefined} | undefined {
 	if (node.kind !== 'row' || separator === undefined) return undefined

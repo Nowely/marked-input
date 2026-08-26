@@ -533,23 +533,9 @@ export const headerCell: Option = {
  * in a single anonymous table box, which is what aligns the columns of a run of lines without a
  * wrapper element existing anywhere in the tree.
  *
- * The HEADER is a kind of its own rather than "the first line of a run": a row is recognised by
- * its own first bytes alone, and which line is the header is a fact about the line after it.
- * `'|= '` is a longer opener than `'| '`, so the two never compete.
+ * Declared BEFORE the header, which names it: `continues` takes an option value, so the reference
+ * is read when this module is evaluated.
  */
-export const tableHeader: Option = {
-	markup: '|= __slot__',
-	row: {
-		split: {at: ' | ', as: headerCell},
-		Component: ({rows: childRows, ref, className, style}: RowProps) => (
-			<div ref={ref} className={cls(className, rows.tableLine, rows.tableHeadLine)} style={style}>
-				{childRows}
-			</div>
-		),
-	},
-	menu: {label: 'Table', keywords: ['database', 'grid', 'table'], text: 'Task | Status | Owner | Due | Effort'},
-}
-
 export const tableLine: Option = {
 	markup: '| __slot__',
 	row: {
@@ -562,6 +548,29 @@ export const tableLine: Option = {
 		),
 	},
 	menu: {label: 'Table row', keywords: ['database', 'record', 'row']},
+}
+
+/**
+ * The line above it. The HEADER is a kind of its own rather than "the first line of a run": a row
+ * is recognised by its own first bytes alone, and which line is the header is a fact about the line
+ * after it. `'|= '` is a longer opener than `'| '`, so the two never compete.
+ *
+ * IT CONTINUES INTO A LINE, not into a second header and not into a paragraph — Enter at the end of
+ * a header opens the first data row, which is the obvious way to write one and used to emit a
+ * paragraph holding literal pipes.
+ */
+export const tableHeader: Option = {
+	markup: '|= __slot__',
+	row: {
+		continues: tableLine,
+		split: {at: ' | ', as: headerCell},
+		Component: ({rows: childRows, ref, className, style}: RowProps) => (
+			<div ref={ref} className={cls(className, rows.tableLine, rows.tableHeadLine)} style={style}>
+				{childRows}
+			</div>
+		),
+	},
+	menu: {label: 'Table', keywords: ['database', 'grid', 'table'], text: 'Task | Status | Owner | Due | Effort'},
 }
 
 /**

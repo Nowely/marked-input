@@ -34,6 +34,7 @@ import {gapWindow} from '../tree/gapWindow'
 import {hasRawBody, preorderRows} from '../tree/rows'
 import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
+import type {Continuation} from '../tree/siblings'
 import {
 	depthPlan,
 	dropPlacements,
@@ -986,9 +987,22 @@ export class TokenModel {
 		return this.#parser()?.rowKind(option.markup)
 	}
 
-	/** Does this row's kind carry into the row a split produces — see {@link rowSpec}. */
-	#continues(node: RowNode): boolean {
-		return this.rowSpec(node)?.continues === true
+	/**
+	 * WHAT A ROW OPENED BESIDE THIS ONE IS WRITTEN AS — `RowSpec.continues` resolved against the
+	 * compiled kinds, which is a question only this layer can answer: `tree/` holds descriptors and
+	 * never the options that declared them.
+	 *
+	 * `true` is this row's own kind AND its `meta`; an OPTION is that option's kind and no meta of
+	 * this one's — a table header continues into a table LINE, and a header's `meta` would be the
+	 * wrong thing to copy into it. An option this editor compiled no row kind from resolves to
+	 * `undefined`, which is a plain row: the same refusal {@link TreeCommands.turnInto} makes for
+	 * the same reason, and the only one a write path can make without a report per keystroke.
+	 */
+	#continues(node: RowNode): Continuation {
+		const continues = this.rowSpec(node)?.continues
+		if (continues === true) return {descriptor: node.descriptor(), meta: node.meta()}
+		if (!continues) return undefined
+		return {descriptor: untracked(() => this.#rowKind(continues)), meta: undefined}
 	}
 
 	/**

@@ -143,15 +143,22 @@ export interface RowSpec {
 	 */
 	Component: Slot
 	/**
-	 * Does this kind CONTINUE into the row a split produces: splitting a row of this kind gives the
-	 * tail the same kind AND the same `meta`, where by default the tail is a plain row. A list item
-	 * continues, a heading does not; a checked to-do splits into two checked to-dos.
+	 * WHAT THE ROW A SPLIT PRODUCES IS. `true` is this kind again, AND the same `meta` — a list item
+	 * continues, a checked to-do splits into two checked to-dos. `false` or absent is a plain row,
+	 * which is what a heading wants.
+	 *
+	 * AN OPTION IS A THIRD ANSWER: the tail takes THAT kind, carrying no `meta` of this one's. A
+	 * table HEADER is the shape that needs it — it continues into a table LINE, not into a second
+	 * header and not into a paragraph, and without it the obvious way to add the first data row
+	 * (Enter, then type the cells) left a paragraph holding literal pipes. The option must be one
+	 * this editor compiled a row kind from, exactly as {@link split}'s `as` must; anything else
+	 * continues into a plain row.
 	 *
 	 * ONE field for the whole rule, and it is the same one Enter at a row's end reads: "another row
 	 * of this kind" and "the tail keeps this kind" are the same question asked at two caret
 	 * positions.
 	 */
-	continues?: boolean
+	continues?: boolean | CoreOption
 	/**
 	 * Does Tab / Shift+Tab re-indent a row of this kind, and does Tab belong to the editor at all
 	 * while the caret is in one. Default false, so Tab still LEAVES THE FIELD everywhere else —

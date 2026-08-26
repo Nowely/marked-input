@@ -934,6 +934,30 @@ describe('the inline database', () => {
 		await expect.poll(value).toBe('|= A | B\n| one\n| ')
 	})
 
+	/**
+	 * THE FIRST DATA ROW, written the obvious way: `/table` seeds the header, Enter at the end of it
+	 * opens a LINE, and the pipes typed there are carved into cells. The header declared no
+	 * continuation, so Enter opened a paragraph and the row a user typed sat in the document as
+	 * literal `'Auth | Done | Kara'` — the table's own vocabulary as prose.
+	 *
+	 * The CELLS are the oracle beside the value: a paragraph holding pipes and a carved line emit
+	 * different strings, but only the carve puts boxes on the page.
+	 */
+	it('opens a data LINE when Enter ends the header the menu seeded', async () => {
+		const {host, value} = await mountControlled(Empty, '')
+
+		await focusAtStart(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '/')
+		await choose('Table')
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort')
+
+		await userEvent.keyboard('{Enter}')
+		dispatchInsertText(editingHost(host), 'Auth | Done | Kara')
+
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n| Auth | Done | Kara')
+		expect(cellsOf(host).map(cell => cell.textContent)).toEqual(['Auth', 'Done', 'Kara'])
+	})
+
 	it('writes a mention into a cell through the built-in picker', async () => {
 		const {host, value} = await mountControlled(Showcase, '| Auth migration | Kara\nnext')
 
