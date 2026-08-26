@@ -250,6 +250,23 @@ describe('parseRows', () => {
 			`)
 		})
 
+		/**
+		 * THE LEAD IS BOUNDED BY THE ROW'S OWN SEPARATOR. Both bytes are consumer props and nothing
+		 * constrains one against the other, so an `indent` that CONTAINS the `separator` is legal
+		 * input — and without the bound the run swallows the boundary: `'|-|x'` at separator `'|'`
+		 * came back with a first row of content `'|'` carrying a lead of `'|-'`, a lead longer than
+		 * the row it leads and a depth read off bytes the row does not hold.
+		 */
+		it('stops the lead at the row separator when the indent unit contains one', () => {
+			const rows = new Parser([]).parseRows('|-|x', {separator: '|', indent: '|-'})
+
+			expect(rows.map(row => ({content: row.content, lead: row.lead}))).toEqual([
+				{content: '|', lead: ''},
+				{content: '-|', lead: ''},
+				{content: 'x', lead: ''},
+			])
+		})
+
 		it('nests a paragraph under a typed row, and a typed row under a paragraph', () => {
 			const rows = rowParser(['> __slot__']).parseRows('> quote\n\tloose line\nplain\n\t> deep', LINE)
 
@@ -455,6 +472,28 @@ describe('parseRows', () => {
 
 			expect(rows.map(row => row.slot.content)).toEqual([' a | b', 'child'])
 			expect(rows.map(row => row.content).join('')).toBe(value)
+		})
+
+		/**
+		 * A DELIMITER HAS TO FIT INSIDE THE BODY, not merely start in it. Reachable only for a
+		 * CLOSED kind — an open one ends at the separator, so nothing can straddle its end — whose
+		 * closing literal shares a prefix with the split: here `' >'` against `' | '`. Treating the
+		 * straddling `' |'` as a delimiter appends a piece whose slot starts PAST its own end and
+		 * loses the byte round-trip, which is why both are asserted.
+		 */
+		it('takes no delimiter that would straddle a closed row’s closing literal', () => {
+			const value = '<<a | b | >'
+			const parser = new Parser(['<<__slot__ >', undefined], [{at: ' | ', as: 1}, true])
+			const cells = parser.parseRows(value, LINE)[0].rows
+
+			expect(cells.map(cell => cell.slot.content)).toEqual(['a', 'b |'])
+			expect(cells.every(cell => cell.slot.start <= cell.slot.end)).toBe(true)
+			expect(
+				parser
+					.parseRows(value, LINE)
+					.map(row => row.content)
+					.join('')
+			).toBe(value)
 		})
 	})
 

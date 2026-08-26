@@ -636,6 +636,20 @@ describe('rowKeys the row keymap', () => {
 		selection?.addRange(range)
 	}
 
+	/** The same, RANGED over `[start, end)` — the shape a Shift+Arrow leaves behind. */
+	function selectIn(store: Store, row: number, start: number, end: number): void {
+		const body = rowsOf(store)[row].inline()[0]
+		const surface = store.tokens.handle(body.id)?.element()
+		const text = surface?.firstChild
+		if (!text) throw new Error('row body rendered no text node')
+		const range = document.createRange()
+		range.setStart(text, start)
+		range.setEnd(text, end)
+		const selection = window.getSelection()
+		selection?.removeAllRanges()
+		selection?.addRange(range)
+	}
+
 	function press(container: HTMLElement, key: string, modifiers: {shiftKey?: boolean} = {}): KeyboardEvent {
 		const event = new KeyboardEvent('keydown', {key, ...modifiers, bubbles: true, cancelable: true})
 		container.dispatchEvent(event)
@@ -870,6 +884,22 @@ describe('rowKeys the row keymap', () => {
 			press(container, 'Backspace')
 
 			expect(store.tokens.value()).toBe('- b')
+		})
+
+		/**
+		 * A RANGED Backspace deletes what is SELECTED, even though it starts at the entry — the one
+		 * reading that separates the ladder's question ("is the caret at the entry?") from the
+		 * delete arm's ("what is selected?"). Shift+ArrowRight from the start of a nested item and
+		 * then Backspace is the whole gesture, and without the guard it outdents the row and deletes
+		 * nothing: `'- a\n\t- bcd'` came back `'- a\n- bcd'`, with `bc` still there.
+		 */
+		it('deletes the SELECTION of a ranged Backspace that starts at a nested row entry', () => {
+			const {store, container} = keymap('- a\n\t- bcd')
+			selectIn(store, 1, 0, 2)
+
+			press(container, 'Backspace')
+
+			expect(store.tokens.value()).toBe('- a\n\t- d')
 		})
 
 		it('PROMOTES the children of an empty row it un-types, which the encoding cannot avoid', () => {
