@@ -64,15 +64,21 @@ An arrow key is only ever intercepted once a row selection stands — which foll
 
 Widening never narrows: where a selection spans two parents, `Esc` and `Ctrl/Cmd+A` climb to the parent AND keep the rows outside it, and once every selected row is a root `Esc` leaves the selection alone.
 
-`Enter` over a RANGE is deliberately not the replace-the-range rule: it splices a row boundary at the range's LOW end and KEEPS what was selected, so nothing a selection covers is lost to the key that opened a row above it.
+`Enter` over a TEXT range is deliberately not the replace-the-range rule: it splices a row boundary at the range's LOW end and KEEPS what was selected, so nothing a selection covers is lost to the key that opened a row above it. Over a ROW SELECTION it does replace, opening one fresh row where the selected rows were — the same answer it gives for an all-selected document, at row granularity.
 
-Dragging a row's grip carries the whole row selection when the gripped row is part of it, and that row alone otherwise. Where the drop lands — including how DEEP — comes from the pointer: its vertical position names the gap between two lines, its horizontal position names one of the depths that gap legally admits, and every candidate is planned before it is offered, so the drop indicator promises rather than predicts. A pointer below a nested subtree names the gap after that subtree's LAST line, not the slot under the root it started at.
+A row selection is the ROWS, openers and leads included, and paste, cut and `Backspace`/`Delete` all read it that way: a paste replaces the selected rows with the clip, a cut or a delete takes them away rather than emptying the first, and what a copy put on the clipboard is exactly what those two write over. This applies wherever the selection covers a whole number of rows — including the one a triple-click makes, which is a row selection by every reading this editor has. TYPING is not one of them: a character replaces the text that was selected and the row it was typed in keeps its kind.
+
+`Tab` and `Shift+Tab` move every row the selection holds, in one splice; where no row selection stands they move the caret's own row. A step no selected row can take moves none of them.
+
+Dragging a row's grip carries the whole row selection when the gripped row is part of it, and that row alone otherwise. Where the drop lands — including how DEEP — comes from the pointer: its vertical position names the gap between two lines, its horizontal position names one of the depths that gap legally admits, and every candidate is planned before it is offered, so the drop indicator promises rather than predicts. A pointer below a nested subtree names the gap after that subtree's LAST line, not the slot under the root it started at. The placement the rows ALREADY hold is one of the depths a gap offers, so releasing at a row's own indent leaves it where it was instead of re-indenting it.
 
 ## Copying and Pasting
 
 Copying part of a TYPED row emits a partial RE-ANNOTATION rather than the painted text: half a heading copies as `'# half'`, and one cell of a table line copies as that line with the other cells empty, so the pasted cell keeps its column. That is what makes a clip round-trip through the editor as the same kind it came from.
 
-`\r\n` is not normalized. Under a single-`\n` separator a Windows clipboard's carriage return lands inside the row's own text, where it is an ordinary character. Strip it in your own paste handler if it matters to you.
+A pasted clip's LINE BREAKS open rows, through the same plan `Enter` writes: the first line joins the row the caret is in, each line after it opens a row at that row's depth, carrying its kind wherever the kind declares `continues`, and the rest of the body follows the last one. `\r\n`, `\r` and `\n` are all line breaks here, whatever the editor's own separator is. Two clips are spliced verbatim instead: one that came from this editor — it is the value's own projection, and every line already carries its lead and its opener — and one landing inside a raw closed kind, whose body holds separators as content.
+
+Where the value does NOT split into rows, a pasted line break is an ordinary character, as it always was.
 
 A delete the model cannot express — one that would reach through a raw closed kind's closing line, or past either end of the document — is CONSUMED and changes nothing, rather than being handed back to the browser.
 
