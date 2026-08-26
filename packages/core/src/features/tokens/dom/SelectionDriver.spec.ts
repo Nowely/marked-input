@@ -602,5 +602,30 @@ describe('SelectionDriver', () => {
 			container.remove()
 		})
 
+		/**
+		 * AND THE CLICK CONSUMES THE CLAIM. A focusable control leaves the selection exactly where it
+		 * was, so the reclaim's own gate — "only where there is a caret to go back to" — had nothing
+		 * to answer with on first contact and stood down. MEASURED on the showcase's
+		 * `'+ Add a property'` and a comment thread's `'Reply…'`: fresh load, zero ranges in the
+		 * document, focus left on the BUTTON, and the next two characters swallowed in silence.
+		 */
+		it('claims the pointer row on a click that provoked no selectionchange', async () => {
+			const {store, container, dots} = mountDecoratedRows()
+			// A tick for the mount's own clocks, then the state a fresh page is in: nothing selected
+			// anywhere, and the focus on the control the pointer is about to press.
+			await new Promise(resolve => setTimeout(resolve, 0))
+			window.getSelection()?.removeAllRanges()
+			dots[1].focus()
+			expect(store.tokens.domAnchors()).toBeUndefined()
+
+			dots[1].dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}))
+			dots[1].dispatchEvent(new MouseEvent('click', {bubbles: true}))
+			await Promise.resolve()
+
+			const anchors = store.tokens.selection.anchors()
+			expect(anchors && offsetOfAnchor(store.tokens.nodes(), anchors.anchor)).toBe(8)
+			expect(document.activeElement).toBe(container)
+			container.remove()
+		})
 	})
 })

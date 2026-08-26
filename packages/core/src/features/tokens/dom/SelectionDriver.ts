@@ -383,6 +383,16 @@ export class SelectionDriver {
 		// own measured hazard read at the other end. Measured on `Drag`'s grip — clicked in a field
 		// nobody had typed in, the `x` after it landed at the top of the document.
 		//
+		// SO THE CLICK MAKES ONE RATHER THAN STANDING DOWN, and the pointer already said where: the
+		// claim it filed on the way down is a position the MODEL names, which is exactly what the gate
+		// was asking for. Without it the gate was a HOLE ON FIRST CONTACT — a control the browser can
+		// focus provokes NO `selectionchange` at all, so nothing ever consumed that claim, and on a
+		// page nobody had typed in yet there was no live selection to fall back on. MEASURED on the
+		// showcase, fresh load: clicking `'+ Add a property'` or a comment thread's `'Reply…'` left
+		// `document.activeElement` on the BUTTON with ZERO ranges in the document, and the next two
+		// characters were swallowed with nothing on screen to say why. With a prior caret every control
+		// behaved, which is what hid it.
+		//
 		// It is the LIVE selection that answers, not the stored anchors, and that is measured too:
 		// Chromium routes focus through `<body>` on the way from the host to a control inside it, so
 		// the `focusout` rule below has already cleared the stored pair by the time this runs. The
@@ -396,7 +406,18 @@ export class SelectionDriver {
 		// element clicked — that this reads.
 		listen(container, 'click', () => {
 			queueMicrotask(() => {
-				if (!this.domAnchors()) return
+				// CONSUMED ONLY WHEN IT IS ACTUALLY CLAIMED, and that is measured: this microtask runs
+				// BEFORE the `selectionchange` task, so clearing the field unconditionally STOLE the
+				// claim from the arm that needs it. A click on a bullet's dot then typed into the page
+				// TITLE — Chromium had already answered the mousedown with a caret at the host's start,
+				// `domAnchors()` read it, and by the time the sync arrived there was no pointer left to
+				// outrank it. Left standing, that sync claims exactly as it always did.
+				const pointer = this.#pointerControl
+				if (pointer && !this.domAnchors()) {
+					this.#pointerControl = undefined
+					this.deps.claimRow(pointer)
+				}
+				if (!this.domAnchors() && !this.deps.selection.anchors()) return
 				const active = document.activeElement
 				if (active instanceof Element && active.matches(KEYBOARD_OWNERS)) return
 				this.reclaimFocus()
