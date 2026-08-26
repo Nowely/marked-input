@@ -657,6 +657,44 @@ describe('rowKeys the row keymap', () => {
 	}
 
 	describe('Enter', () => {
+		/**
+		 * THE SUGGESTIONS PROTOCOL GETS ITS OWN KEY BACK. Both listeners sit on the container and
+		 * this keymap is bound at editor setup while `SuggestionsModel.activate` binds when the
+		 * popup mounts — later, same element, same phase — so without the check this arm ran first
+		 * and split the row out from under a highlighted name: `'ping @Mi'` + ArrowDown + Enter
+		 * emitted `'ping @Mi⏎'`, and there was no match left by the time the protocol ran.
+		 *
+		 * The negative half is the same claim's other side: with NOTHING highlighted `consumes` is
+		 * false — which is what keeps the `/` menu's declared "no keyboard navigation" intact — and
+		 * Enter still splits.
+		 */
+		it('leaves Enter to an open suggestion list that has a highlighted row', () => {
+			const MENTION: CoreOption = {
+				markup: '@[__value__](__meta__)',
+				overlay: {trigger: '@', data: [{value: 'Milo Freeman', meta: 'milo.freeman'}]},
+			}
+			const {store, container} = keymap('ping ', {options: [BULLET, MENTION]})
+			store.edit.replace(store.tokens.anchorAt(5), store.tokens.anchorAt(5), '@Mi')
+			store.overlay.suggestions.active(0)
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('ping @Mi')
+			store.overlay.suggestions.select(0)
+			expect(store.tokens.value()).toBe('ping @[Milo Freeman](milo.freeman)')
+		})
+
+		it('takes Enter back when the open list highlights nothing', () => {
+			const SLASH: CoreOption = {overlay: {trigger: '/'}}
+			const {store, container} = keymap('ping ', {options: [BULLET, SLASH]})
+			store.edit.replace(store.tokens.anchorAt(5), store.tokens.anchorAt(5), '/')
+			expect(store.overlay.match()?.source).toBe('/')
+
+			press(container, 'Enter')
+
+			expect(store.tokens.value()).toBe('ping /\n')
+		})
+
 		it('opens another row of the SAME kind at the end of a row whose kind continues', () => {
 			const {store, container} = keymap('- a')
 			caretIn(store, 0, 1)

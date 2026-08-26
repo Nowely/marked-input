@@ -2,7 +2,11 @@ import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest'
 
 import type {CoreOption, OverlayMatch} from '../../shared/types'
 import {Store} from '../../store/Store'
-import {anchorsAt, caretAt} from '../tokens/__testing__/mountFixtures'
+import {anchorsAt, caretAt, mountNestedBlock} from '../tokens/__testing__/mountFixtures'
+
+/** A raw CLOSED body: `hasSlot` false and a closing literal, so its interior holds separators. */
+const FENCE: CoreOption = {markup: '```__meta__\n__value__\n```', row: {Component: 'pre'}}
+const FENCED_DOC = '```bash\nls\n```\ntail'
 
 /**
  * A store with a caret, which the shared fixture below deliberately has not: the probe is
@@ -107,6 +111,60 @@ describe('OverlayController', () => {
 			// The span the pick replaces is the TRIGGER, and nothing else of the row.
 			const head = store.overlay.match()?.range.head
 			expect(typeof head === 'object' && 'offset' in head ? head.offset : undefined).toBe(1)
+		})
+
+		/**
+		 * A RAW CLOSED BODY TAKES NO TRIGGER — the same rule `handleRowEnter` reads off the same
+		 * compiled markup. What is inside a fence is CONTENT the parse never re-enters, so a `/`
+		 * there is a character, exactly as it is in Notion. It used to open the menu and the pick
+		 * then retyped the whole ROW: `'```bash⏎ls -la⏎```⏎tail'` with the caret at the end of
+		 * `ls -la`, then Divider, emitted `'---ls -la⏎tail'` — fence, language and closing line
+		 * gone, the command text now the divider's body.
+		 *
+		 * The tail row is the control: the same keystroke one row down DOES open, so the refusal is
+		 * the body's and not the option's.
+		 */
+		it('takes no trigger inside a raw closed body, and still takes one outside it', () => {
+			const options = [FENCE, {overlay: {trigger: '/'}}]
+			const inFence = mountNestedBlock({defaultValue: FENCED_DOC, options})
+			caretAt(inFence.store, 10)
+
+			inFence.store.edit.replace(...anchorsAt(inFence.store, 10, 10), '/')
+
+			expect(inFence.store.tokens.value()).toBe('```bash\nls/\n```\ntail')
+			expect(inFence.store.overlay.match()).toBeUndefined()
+
+			const inTail = mountNestedBlock({defaultValue: FENCED_DOC, options})
+			const end = FENCED_DOC.length
+			caretAt(inTail.store, end)
+
+			inTail.store.edit.replace(...anchorsAt(inTail.store, end, end), '/')
+
+			expect(inTail.store.overlay.match()?.source).toBe('/')
+		})
+
+		/**
+		 * AN OPEN MATCH IS RE-PROBED WHENEVER THE CARET MOVES, whatever `showOverlayOn` says. That
+		 * prop decides when an overlay OPENS; whether one already open still belongs to the caret is
+		 * a different question, and nothing was asking it. At the default `'change'` a click into
+		 * another row left the menu standing — the outside-click listener returns early for any
+		 * click INSIDE the container — and the next pick retyped the row the user had LEFT.
+		 */
+		it('closes a standing match once the caret has left the trigger, at the default showOverlayOn', () => {
+			const {store, container} = mountNestedBlock({
+				defaultValue: 'alpha\nbeta\ngamma',
+				options: [{overlay: {trigger: '/'}}],
+			})
+			container.tabIndex = 0
+			container.focus()
+			caretAt(store, 5)
+			store.edit.replace(...anchorsAt(store, 5, 5), '/')
+			expect(store.overlay.match()?.source).toBe('/')
+
+			caretAt(store, store.tokens.value().length)
+			document.dispatchEvent(new Event('selectionchange'))
+
+			expect(store.overlay.match()).toBeUndefined()
 		})
 
 		it('clear match when close is emitted', () => {
