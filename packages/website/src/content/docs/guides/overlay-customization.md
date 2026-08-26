@@ -20,6 +20,11 @@ User selects 'Alice'
 Text becomes '@[Alice]'
 ```
 
+Everything typed after the trigger and left of the caret is the **query**, spaces and punctuation
+included, up to the next line break or a second trigger — so a multi-word entry (`To-do list`,
+`Table of contents`) can be typed in full. A query nothing matches simply offers nothing: the list
+is empty, the built-in overlay paints nothing, and every key goes back to the editor.
+
 ## The Default Overlay List
 
 Markput includes a built-in `OverlayList` component, and it is what a trigger option resolves to

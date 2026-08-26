@@ -108,6 +108,67 @@ describe('the row menu rows', () => {
 
 		expect(store.overlay.list.rows().map(row => row.label)).toEqual(['Heading 1'])
 	})
+
+	/**
+	 * A LABEL IS TYPEABLE IN FULL, hyphen, space and all — the query's alphabet is the labels', not
+	 * `\w`. Typed character by character, because the defect was in what each keystroke left of the
+	 * MATCH: `/To` narrowed to one row, and the very next `-` closed the menu outright, so every
+	 * multi-word entry the row menu offers could only be reached by stopping at the first word and
+	 * arrowing. Asserted at every step, since the row list alone reads the same whether the menu is
+	 * open on `To-do` or has fallen back to nothing.
+	 */
+	it('keeps narrowing through the hyphen and the space of a multi-word label', () => {
+		const store = typedSlash('', 0)
+		const typed: [string, string[]][] = []
+
+		for (const [index, character] of Array.from('To-do list').entries()) {
+			store.edit.replace(...anchorsAt(store, index + 1, index + 1), character)
+			typed.push([store.overlay.match()?.value ?? '<closed>', store.overlay.list.rows().map(row => row.label)])
+		}
+
+		expect(typed.at(-1)).toEqual(['To-do list', ['To-do list']])
+		expect(typed.map(([query]) => query)).toEqual([
+			'T',
+			'To',
+			'To-',
+			'To-d',
+			'To-do',
+			'To-do ',
+			'To-do l',
+			'To-do li',
+			'To-do lis',
+			'To-do list',
+		])
+	})
+
+	/**
+	 * AND THE TRIGGER NEAREST THE CARET IS STILL THE ONE THAT OPENS. The query may hold spaces now,
+	 * so it may not be a plain greedy run: read leftmost-first, `'/a /b'` would query `'a /b'` and
+	 * the menu would narrow on text the user typed before ever opening it.
+	 */
+	it('opens on the LAST trigger left of the caret, not the first', () => {
+		const store = typedSlash('', 0)
+
+		store.edit.replace(...anchorsAt(store, 1, 1), 'x /ul')
+
+		expect(store.overlay.match()?.value).toBe('ul')
+		expect(store.overlay.list.rows().map(row => row.label)).toEqual(['Bulleted list'])
+	})
+
+	/**
+	 * A query nothing matches is what the narrow alphabet was really doing, and it needs no
+	 * alphabet: the list empties, `consumes` declines every key for an empty list, and both
+	 * adapters' built-in list paints nothing.
+	 */
+	it('offers nothing, and claims no key, for a query no entry matches', () => {
+		const store = typedSlash('', 0)
+
+		store.edit.replace(...anchorsAt(store, 1, 1), 'nothing at all')
+
+		expect(store.overlay.list.rows()).toEqual([])
+		expect(store.overlay.list.consumes('Enter')).toBe(false)
+		expect(store.overlay.list.consumes('ArrowDown')).toBe(false)
+	})
 })
 
 describe('choose an option', () => {

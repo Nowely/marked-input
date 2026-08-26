@@ -492,6 +492,29 @@ describe('the slash menu', () => {
 	})
 
 	/**
+	 * A MULTI-WORD ENTRY IS TYPEABLE IN FULL. Every one this page offers — `To-do list`,
+	 * `Table of contents`, `Metric cards` — was reachable only by typing the first word and
+	 * arrowing: the query's alphabet was `\w`, so the hyphen closed the menu on `/To-` and the
+	 * space closed it on `/Table `. Driven one keystroke at a time and asserted at the character
+	 * that used to close it, because the row list alone reads the same whether the menu narrowed to
+	 * one row or fell back to none.
+	 */
+	it('narrows through the hyphen of a multi-word entry, and inserts it', async () => {
+		const {host, value} = await mountControlled(Empty, '')
+
+		await focusAtStart(rowsOf(host)[0])
+		dispatchInsertText(editingHost(host), '/To')
+		await expect.element(page.getByText('To-do list', {exact: true})).toBeVisible()
+
+		dispatchInsertText(editingHost(host), '-do list')
+		await expect.element(page.getByText('To-do list', {exact: true})).toBeVisible()
+		expect(page.getByRole('listitem').elements()).toHaveLength(1)
+
+		await choose('To-do list')
+		await expect.poll(value).toBe('- [ ] ')
+	})
+
+	/**
 	 * AN OPEN MENU BELONGS TO THE CARET THAT OPENED IT. Clicking another row left it standing —
 	 * `showOverlayOn` defaults to `'change'`, so nothing re-probed on a caret move, and the
 	 * outside-click listener returns early for any click INSIDE the container. The pick that

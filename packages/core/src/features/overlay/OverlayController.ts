@@ -314,7 +314,7 @@ export class OverlayController {
 			const trigger = option.overlay?.trigger
 			if (!trigger) continue
 
-			const match = left.match(new RegExp(`${escape(trigger)}(\\w*)$`))
+			const match = left.match(queryAfter(trigger))
 			if (!match) continue
 
 			// A RAW CLOSED BODY takes no trigger, the same rule `handleRowEnter` reads off the same
@@ -340,4 +340,32 @@ export class OverlayController {
 			}
 		}
 	}
+}
+
+/**
+ * THE TRIGGER AND THE QUERY IT OPENS, as one anchored pattern: the LAST `trigger` left of the
+ * caret, and everything typed after it.
+ *
+ * THE QUERY'S ALPHABET IS WHAT A CONSUMER'S OWN LABELS HOLD. It was `\w*`, which is
+ * `[A-Za-z0-9_]` — so the first SPACE or HYPHEN ended the match, `#findTrigger` answered nothing
+ * and the overlay closed. Every multi-word entry the row menu offers was therefore untypeable:
+ * `To-do list` died at the hyphen, `Table of contents` and `Metric cards` at the space, and the
+ * only way to reach one was to stop at the first word and arrow. (Backspacing re-opened the menu,
+ * which is the same fact seen from the other side.)
+ *
+ * TEMPERED rather than `[^\n]*`, and that is what keeps the LAST trigger the one that opens: a
+ * plain run is greedy from the LEFTMOST match, so `'@bob and @al'` would query `'bob and @al'`.
+ * Refusing a second trigger inside the run puts the match back on the trigger nearest the caret,
+ * and it does so for a trigger of any length, where a character class could only do it for one
+ * character. The line break is the other bound — a flat editor's whole value is one text node.
+ *
+ * IT NEEDS NO "GIVE UP" LENGTH, which is what the narrow class was really doing. A query nothing
+ * matches produces an EMPTY list: `OverlayListModel.consumes` declines every key for one, so Enter
+ * still splits the row, and both adapters' built-in list paints nothing at all. A `/` typed inside
+ * prose is as inert as it ever was; one typed to open the menu now stays open while the user types
+ * the entry's name.
+ */
+function queryAfter(trigger: string): RegExp {
+	const pattern = escape(trigger)
+	return new RegExp(`${pattern}((?:(?!${pattern})[^\n])*)$`)
 }
