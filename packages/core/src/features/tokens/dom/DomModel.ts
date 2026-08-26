@@ -317,6 +317,30 @@ export class DomModel {
 	}
 
 	/**
+	 * HOME AND END — the caret to its VISUAL line's edge, `extend` for the shifted pair. `false`
+	 * when there is no live selection to move.
+	 *
+	 * `Selection.modify` rather than an anchor this layer computes, and that is the point: which
+	 * character ends a LINE is a layout fact, not a tree one — a wrapped row has several lines and
+	 * the tree has one row — so the answer belongs to the engine that laid it out. It is the same
+	 * primitive Chromium's own `MoveToEndOfLine` runs, reached directly.
+	 *
+	 * WHY THE EDITOR OWNS A KEY THE BROWSER ALREADY BINDS: on macOS it does not bind it to this. End
+	 * is `scrollToEndOfDocument` there, so inside a page with anything left to scroll the key scrolls
+	 * and the caret does not move — MEASURED with no editor present at all: a bare `contenteditable`
+	 * in a 200vh page leaves the caret where it was and smooth-scrolls to the bottom, and so does a
+	 * `<textarea>` beside it. Pressed again with nothing left to scroll, the same key moves the
+	 * caret, which is what made it read as one press in three. The platform's own answer is
+	 * Cmd+Left/Right and it is untouched; what this takes is the key that says End.
+	 */
+	moveToLineBoundary(direction: 'backward' | 'forward', extend: boolean): boolean {
+		const selection = window.getSelection()
+		if (!selection || selection.rangeCount === 0) return false
+		selection.modify(extend ? 'extend' : 'move', direction, 'lineboundary')
+		return true
+	}
+
+	/**
 	 * The anchor's own node as an id and a LOCAL offset. `Infinity` is
 	 * `TokenHandle.placeCaret`'s "end of this surface" — the offset an `{after: node}`
 	 * anchor means without knowing the node's length.

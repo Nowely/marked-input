@@ -8,14 +8,16 @@ Markput handles text input, deletion, paste, overlay insertion, row editing, and
 
 ## The Keymap
 
-Every binding below exists only where the value splits into [rows](/guides/rows); with
-`separator={null}` the editor keeps the plain-text behaviour in the right-hand column's parentheses.
+Every binding below except `Home`/`End` exists only where the value splits into
+[rows](/guides/rows); with `separator={null}` the editor keeps the plain-text behaviour in the
+right-hand column's parentheses.
 
 | Key                          | What it does                                                                                                                                  |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Enter`                      | Splits the caret's row. On an EMPTY row it demotes instead — depth first, then kind — and inserts only when the row has neither left to give. Over a text range it splices at the range's LOW end and keeps what was selected; over a row selection it replaces those rows with one fresh row. Inside a raw closed body (a fence) it is a literal newline. It defers to an open suggestion list. (Otherwise: a `'\n'` in the value.) |
 | `Shift+Enter`                | Opens a CONTINUATION line — a row inside the subtree of the row whose kind owns the line, so N soft breaks are N lines at one level. Refused inside a carved cell.        |
 | `Tab` / `Shift+Tab`          | Re-indents the row selection, or the caret's row, in an editor where some option declares `indents`. Inside a carved row it walks to the next/previous cell, and is consumed at the ends without moving the caret. In an editor where no option declares it, the key leaves the field (ADR-0002). |
+| `Home` / `End`               | The caret to its visual line's edge, `Shift` to extend. Owned by the editor on every platform, and present with `separator={null}` too: macOS binds both keys to SCROLLING the document, so in a page with room left to scroll the caret did not move at all until the key was pressed a second time. A modifier is left to the platform — `Cmd+Left`/`Right` and `Ctrl+Home` are still the browser's. |
 | `Backspace` at a row's entry | Runs the same demote ladder as Enter on an empty row; otherwise the boundary expansion merges the row with the one above.                       |
 | `Backspace` / `Delete`       | Next to a mark, deletes the WHOLE mark. Over a row selection, takes those rows away rather than emptying the first.                            |
 | `Esc`                        | Turns the caret into a ROW SELECTION, one level wider on each press. Defers to an open overlay or row menu, which closes on that press instead.  |

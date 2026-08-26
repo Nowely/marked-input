@@ -84,6 +84,8 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 			return
 		}
 
+		if (handleLineBoundary(store, e)) return
+
 		// The ROW arms, after the shared checks and answering only where the value parses into
 		// rows. They used to be a second keydown listener on this same container that repeated
 		// both checks; Backspace's row arm is the one that is not here, because it belongs INSIDE
@@ -93,6 +95,32 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 		handleRowSelection(store, e)
 		handleDeleteKey(store, e)
 	})
+}
+
+/**
+ * HOME AND END, and the shifted pair with them — the caret to its visual line's edge. Answers
+ * whether it consumed the key.
+ *
+ * THE EDITOR OWNS THESE TWO KEYS, which is a change and not a repair of one: on macOS the browser
+ * binds them to SCROLLING the document, so inside any page with room left to scroll the key
+ * scrolled and the caret stayed where it was — then the next press, with nothing left to scroll,
+ * moved it. Measured with no editor in the page at all, so this is not a defect the editor
+ * introduced; it is the platform's answer, and it is the wrong one for a field whose content is
+ * the thing being navigated. See {@link DomModel.moveToLineBoundary} for the primitive.
+ *
+ * A MODIFIER LEAVES IT ALONE. Cmd+Left/Right is macOS's own line-edge pair and Ctrl+Home is the
+ * document edge everywhere else; both belong to the platform, and this arm only claims the bare
+ * key. It is also AFTER the consumer-origin gate above, so a `<select>`, an `<input>` or an
+ * editable island inside a row keeps its own Home and End.
+ */
+function handleLineBoundary(store: KbCtx, event: KeyboardEvent): boolean {
+	if (event.key !== KEYBOARD.HOME && event.key !== KEYBOARD.END) return false
+	if (event.ctrlKey || event.metaKey || event.altKey) return false
+	if (!store.tokens.moveToLineBoundary(event.key === KEYBOARD.END ? 'forward' : 'backward', event.shiftKey)) {
+		return false
+	}
+	event.preventDefault()
+	return true
 }
 
 function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {

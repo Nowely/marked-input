@@ -12,6 +12,9 @@ export const KEYBOARD = {
 
 	TAB: 'Tab',
 
+	HOME: 'Home',
+	END: 'End',
+
 	ESC: 'Escape',
 } as const
 export type KEYBOARD = (typeof KEYBOARD)[keyof typeof KEYBOARD]

@@ -651,6 +651,11 @@ export class TokenModel {
 		this.#selectionDriver.focusFirst()
 	}
 
+	/** The caret to its visual line's edge — Home and End; see {@link DomModel.moveToLineBoundary}. */
+	moveToLineBoundary(direction: 'backward' | 'forward', extend: boolean): boolean {
+		return this.#dom.moveToLineBoundary(direction, extend)
+	}
+
 	/**
 	 * Take focus back from a control of this editor's own; see {@link SelectionDriver.reclaimFocus}.
 	 * The commit clock calls it for every control that edits the document; `RowController` calls it
