@@ -157,9 +157,18 @@ export class SelectionDriver {
 		// ANCHORS on both arms, and the ranged one no longer detours through the derived
 		// numeric `range`: normalizing the pair is DOM-order work the placement owns.
 		if (anchorEquals(anchors.anchor, anchors.head)) {
-			this.deps.dom.placeCaret(anchors.head)
+			// AND THE CARET IS FOLLOWED. The browser scrolls the caret into view for edits IT
+			// performed; every caret here is written programmatically, so it scrolls nothing —
+			// typing at the end of a long page left the caret at y=882 of a 900px viewport with
+			// the scroll position untouched, and the next line was typed below the fold. Only on
+			// the placement that SUCCEEDED: a declined placement left the caret where it was, and
+			// following it there would scroll to a position the model does not believe in.
+			if (this.deps.dom.placeCaret(anchors.head)) this.deps.dom.revealCaret()
 			return
 		}
+		// NOT on the ranged arm. A selection that grows is grown by the browser's own keys, which
+		// scroll their focus end natively; a select-all would otherwise yank the view to whichever
+		// end the pair happens to name.
 		this.deps.dom.selectRange(anchors.anchor, anchors.head)
 	}
 

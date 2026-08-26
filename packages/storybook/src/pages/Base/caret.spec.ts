@@ -5,6 +5,7 @@ import {ROW_CONTROLS, editingHost, getElement, rowsOf} from '../../shared/lib/do
 import {
 	caretOffsetFromPoint,
 	centreOf,
+	focusAtEnd,
 	focusAtOffset,
 	moveDomCaret,
 	settle,
@@ -132,3 +133,42 @@ describe('API: the caret an edit leaves', () => {
 		}
 	)
 })
+/**
+ * THE EDITOR FOLLOWS ITS OWN CARET. Every caret in this editor is written programmatically, and a
+ * programmatic `Selection.collapse` scrolls nothing — so typing at the end of a long page put the
+ * caret at y=882 of a 900px viewport and the scroll position never moved. What is asserted is the
+ * user-visible fact: after the keystroke, the caret is on screen.
+ *
+ * The page is scrolled AWAY from the caret rather than the document made long enough to hide it,
+ * because "the scroll position never moved" is exactly the claim, and starting from a scroll the
+ * test performed is the only way to read it off the DOM without trusting a layout guess.
+ */
+describe('a caret the page has scrolled past', () => {
+	const TALL = Array.from({length: 40}, (_, i) => `row number ${i}`).join('\n')
+
+	afterEach(async () => {
+		await page.viewport(1280, 720)
+	})
+
+	it('is scrolled back into view by the keystroke that moved it', async () => {
+		await page.viewport(640, 200)
+		const {host, value} = await mountEcho(Default, {value: TALL, separator: '\n'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		window.scrollTo(0, 0)
+		expect(caretTop(), 'the caret must start off the bottom of the page').toBeGreaterThan(window.innerHeight)
+
+		dispatchInsertText(editingHost(host), 'X')
+
+		await expect.poll(value).toBe(`${TALL}X`)
+		await expect.poll(caretTop).toBeLessThanOrEqual(window.innerHeight)
+		expect(window.scrollY).toBeGreaterThan(0)
+	})
+})
+
+/** Top of the live caret rect, in viewport coordinates. */
+function caretTop(): number {
+	const selection = window.getSelection()
+	if (!selection?.rangeCount) throw new Error('Expected a caret')
+	return selection.getRangeAt(0).getBoundingClientRect().top
+}

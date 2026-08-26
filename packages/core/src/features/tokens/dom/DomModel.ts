@@ -1,6 +1,6 @@
 import {untracked} from '../../../shared/signals/index.js'
 import type {Id, NodeAnchor, TreeNode} from '../tree/types'
-import {getRect, placeRangeAcrossBoundaries} from './caret'
+import {getRect, placeRangeAcrossBoundaries, revealCaret} from './caret'
 import type {CaretBoundary} from './caret'
 import {anchorFromBoundary} from './domBoundary'
 import type {AnchorContext, BoundaryAffinity, Lookup} from './domBoundary'
@@ -186,6 +186,19 @@ export class DomModel {
 	/** Viewport rect of the caret/selection, or `undefined` when there is none. */
 	caretRect(): DOMRect | undefined {
 		return getRect() ?? undefined
+	}
+
+	/**
+	 * Scroll the caret back onto the screen — see {@link revealCaret} for the walk.
+	 *
+	 * GATED ON FOCUS, and that is the whole of when this is the editor's business: an editor that
+	 * does not hold the caret has no claim on where the page is scrolled to, and a second editor
+	 * on the same page would otherwise fight the first for it on every commit.
+	 */
+	revealCaret(): void {
+		const container = this.deps.container()
+		if (!container?.contains(document.activeElement)) return
+		revealCaret(container, getRect)
 	}
 
 	/** Current selection serialized for clipboard use. */

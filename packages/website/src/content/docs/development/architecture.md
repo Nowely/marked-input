@@ -402,6 +402,8 @@ WHAT A ROW SELECTION HOLDS has one reading — `tokens.rowSelection(anchors)` fo
 
 Caret navigation is otherwise the browser's: the container is the one editing host, so arrows and Home/End move natively and no core keyboard handler intercepts them. (Core's `OverlayListModel` does claim ArrowUp/ArrowDown/Enter while a list component is mounted — the adapter component only activates it.) The selection is not a feature of its own: `store.tokens.selection` is the stored anchor pair (see below).
 
+EVERY CARET THIS EDITOR PLACES IS FOLLOWED. The browser scrolls the caret into view for edits it performed itself; every caret here is written programmatically, so it scrolls nothing — typing at the end of a long page left the caret below the fold with the scroll position untouched. `SelectionDriver` therefore calls `DomModel.revealCaret()` after each SUCCESSFUL collapsed placement: it walks the scrollable ancestors of the container innermost-first and then the viewport, re-reading the caret rect at each step (scrolling one ancestor moves it) and scrolling by the smallest amount that brings it inside. It is gated on the container holding focus, so a second editor on the page never fights the first for the scroll position, and it is NOT applied to a ranged selection — the keys that grow one are the browser's and scroll their own focus end.
+
 ## Lifecycle Timing
 
 React/Vue render asynchronously, so initialization order matters:
