@@ -1,4 +1,3 @@
-import type * as Core from '@markput/core'
 import type * as Markput from '@markput/react'
 /**
  * The scope a docs PAGE establishes and its later fences lean on.
@@ -73,7 +72,7 @@ declare global {
 
 	// ── The editor's own vocabulary, as the page around the fence named it ─────
 	/** What `useMarkput(s => s)` hands back. */
-	const store: Core.Store
+	const store: Markput.Store
 	const options: Markput.Option[]
 	const value: string
 	const meta: string

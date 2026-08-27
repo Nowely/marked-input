@@ -151,17 +151,19 @@ A controller holds no value of its own and lives as long as the editor does, so 
 there to re-render on — the hook hands it back as it is:
 
 ```tsx
-import {useMarkput} from '@markput/react'
+import {useMarkput, type Store} from '@markput/react'
 
 const RowBadge = ({id}: {id: number}) => {
-    const rows = useMarkput(s => s.rows)
+    const rows: Store['rows'] = useMarkput(s => s.rows)
     const box = rows.boxOf(id) // the row's coordinates, read on demand
     return box === undefined ? null : <span style={{top: box.top, left: box.left}}>•</span>
 }
 ```
 
-Name the type with `Store['rows']` — `Store` is `useMarkput`'s selector parameter and both adapters
-publish it.
+`Store` is `useMarkput`'s selector parameter and both adapters publish it, so `Store['rows']` names
+what the hook hands back. The annotation is optional inside a component and NOT optional on an
+export: a library built on markput that re-exports a hook of its own gets `TS2883 — the inferred
+type cannot be named`, because the controller class itself is core's and is not published.
 
 - A CLICK on a row that holds no editable position — an atomic kind, which paints none of its own
   text — selects that row. The selection is written across the row's own element, so the browser
