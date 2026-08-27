@@ -362,6 +362,21 @@ describe('Mod+A widens before it reaches for the document', () => {
 		expect(store.tokens.selection.isAllSelected()).toBe(true)
 	})
 
+	/**
+	 * AN EMPTY ROW HAS NO ROW RUNG, so the key falls straight through to select-all. Its content is
+	 * zero-width, so the `'row'` scope answers a COLLAPSED span there — and a collapsed span was
+	 * "widened" enough to consume the key and write nothing, which left `rowSelection` empty, left
+	 * `entering` true forever, and made Mod+A permanently inert in the single most common transient
+	 * state a row document has: every Enter opens one.
+	 */
+	it('takes the whole document from a caret in an EMPTY row, on the first press', () => {
+		const {store, container} = mountNestedRowDoc({defaultValue: 'aa\n\ncc'})
+		caretAt(store, 3)
+
+		press(store, container, 'a', {code: 'KeyA', metaKey: true})
+		expect(store.tokens.selection.isAllSelected()).toBe(true)
+	})
+
 	/** The rung Esc shares, and it may not lose a row here either — a widening that narrows is not one. */
 	it('never answers less than the selection it was given', () => {
 		const {store, container} = mount()

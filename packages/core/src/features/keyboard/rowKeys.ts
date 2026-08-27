@@ -268,9 +268,14 @@ export function widenRowScope(store: KbCtx): boolean {
 /**
  * The one write these gestures make: a span of the value, through {@link TokenModel.selectRowSpan}
  * — which is where an end no surface paints falls back on its row's own element edge.
+ *
+ * A COLLAPSED SPAN IS NOT A WIDENING. An EMPTY row's entry and content end are the same position,
+ * so `rowScope(anchors, 'row')` answers a zero-width span there — and reporting that as a widening
+ * consumed the key, wrote nothing, and left the caller's next rung unreached. Mod+A in an empty row
+ * never selected anything and never fell through to select-all, on any press.
  */
 function selectSpan(store: KbCtx, span: {start: number; end: number} | undefined): boolean {
-	if (!span) return false
+	if (!span || span.end === span.start) return false
 	store.tokens.selectRowSpan(span)
 	return true
 }
