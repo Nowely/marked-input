@@ -627,5 +627,35 @@ describe('SelectionDriver', () => {
 			expect(document.activeElement).toBe(container)
 			container.remove()
 		})
+
+		/**
+		 * AND A CARET THE GESTURE COULD NOT HAVE MOVED DOES NOT OUTRANK IT. Frozen presentation the
+		 * browser can DRAG — a board card — moves no caret and provokes no `selectionchange`, so the
+		 * click is the only arm its claim ever reaches, and the gate there read "there is a reading" as
+		 * "there is nothing to claim". MEASURED on the showcase: caret in the intro paragraph, one click
+		 * on the `'Sign the vendor SLA'` card, one `'Y'` — `'Apollo Ymoves the collaboration layer'`,
+		 * three screens from where the pointer went down.
+		 */
+		it('claims the pointer row over a caret the gesture could not have moved', async () => {
+			const {store, container, dots, surfaces} = mountDecoratedRows()
+			await new Promise(resolve => setTimeout(resolve, 0))
+			const text = surfaces[0].firstChild
+			if (!text) throw new Error('the row surface rendered no text node')
+			// The state a click on a `draggable` island leaves: a caret in ANOTHER row, untouched, and the
+			// host still holding the focus because the island is not focusable.
+			container.focus()
+			window.getSelection()?.collapse(text, 1)
+			document.dispatchEvent(new Event('selectionchange'))
+			expect(store.tokens.domAnchors()).toBeDefined()
+
+			dots[1].dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}))
+			dots[1].dispatchEvent(new MouseEvent('click', {bubbles: true}))
+			await Promise.resolve()
+
+			const anchors = store.tokens.selection.anchors()
+			// '- one\n- two': row 1's ENTRY is 8, and row 0's caret was at 1.
+			expect(anchors && offsetOfAnchor(store.tokens.nodes(), anchors.anchor)).toBe(8)
+			container.remove()
+		})
 	})
 })

@@ -32,8 +32,12 @@ export type SelectionDriverDeps = {
 	 * A GESTURE LANDED ON FROZEN PRESENTATION — the caret belongs to the ROW that presentation is
 	 * painted in, and nowhere else. Answered by the model, which is the layer that owns both the
 	 * row a DOM node sits in and the entry a caret may take inside it.
+	 *
+	 * `false` where the live reading is one the gesture COULD have produced, which is the whole of
+	 * the precedence rule and is the model's to decide — see `TokenModel.#gestureCouldRead`. A
+	 * declined claim leaves the ordinary DOM sync to run.
 	 */
-	claimRow(origin: Node): void
+	claimRow(origin: Node): boolean
 }
 
 /**
@@ -276,42 +280,52 @@ export class SelectionDriver {
 	}
 
 	/**
-	 * {@link syncFromDom} for a RANGED reading only, answering whether it stored one — the test
-	 * that separates a SELECTION from a LANDING, and the whole of it.
+	 * WAS THIS GESTURE A LANDING, and did the model take it — the pointer half of the precedence
+	 * rule, spelled once for the two arms that ask it (the sync the browser's own answer provokes,
+	 * and the click, which is the only arm a focusable control ever reaches).
 	 *
-	 * A caret is not enough: the two claims it gates read a collapsed answer as "the browser put
-	 * the caret somewhere the user did not aim", which is the state they exist for.
+	 * FOCUS SAYS WHOSE GESTURE IT IS. A control the browser can focus — a `<button>`, a `<select>`, a
+	 * checkbox — ANSWERS the pointer itself, so its click is not a landing and a caret the user still
+	 * holds elsewhere is theirs to keep: `Notion.react.spec`'s decorations loop pins that three times
+	 * over, one `it` per component. Frozen PRESENTATION focuses nothing, the host keeps the focus, and
+	 * that click IS a landing.
+	 *
+	 * AND A CONTROL'S CLICK BECOMES ONE WHEN THERE IS NO READING AT ALL, which is the state a fresh
+	 * page is in: nothing to go back to, and the claim is the only position anyone can name. Measured
+	 * on `'+ Add a property'` and a comment thread's `'Reply…'` — zero ranges in the document, focus
+	 * on the BUTTON, and without this the next two characters went nowhere.
+	 *
+	 * WHAT THE MODEL DOES WITH IT is the other half and is the model's alone: a landing outranks every
+	 * reading the gesture could not have produced, and defers to the one it could
+	 * (`TokenModel.#gestureCouldRead`).
 	 */
-	#syncRanged(): boolean {
-		const anchors = this.domAnchors()
-		if (!anchors || anchorEquals(anchors.anchor, anchors.head)) return false
-		this.deps.selection.select(anchors.anchor, anchors.head)
-		return true
+	#claimLanding(pointer: Node | undefined, container: HTMLElement): boolean {
+		if (!pointer) return false
+		if (document.activeElement !== container && this.domAnchors()) return false
+		return this.deps.claimRow(pointer)
 	}
 
 	#trackSelection(container: HTMLElement): void {
 		const syncIfInEditor = (node: Node): void => {
-			// THE POINTER OUTRANKS THE BROWSER'S ANSWER, and only inside a control root. What the
-			// browser answers there is not a position the user aimed at: Chromium either leaves the
-			// caret in the frozen node (which is the `'control'` arm below) or — for a `draggable`
-			// one — collapses it to the START OF THE EDITING HOST, a perfectly valid anchor in a row
-			// the pointer is nowhere near. Both are the same question, so both get the same rule:
-			// the row the pointer is IN is the row the caret belongs to.
+			// THE POINTER OUTRANKS EVERY READING ITS OWN GESTURE COULD NOT HAVE PRODUCED, and that is
+			// the ONE precedence rule between a claim and a reading. The MODEL decides it, because
+			// "which row is this position in" is its question and not the DOM's — see
+			// `TokenModel.#gestureCouldRead`.
+			//
+			// IT REPLACES `#syncRanged`, which gave every ranged reading precedence on the strength of
+			// the reading EXISTING. That was backwards: a sweep that BEGAN in the claimed row still
+			// outranks the claim, because its near end names that row, and a reading that names the row
+			// nowhere — a caret three rows up that nothing has moved since, an anchor Chromium invented
+			// at the host's start — no longer does.
+			//
+			// THE FOCUS TEST IS NOT THAT RULE and it stays: it says WHOSE gesture this is. A control the
+			// browser can focus — a `<button>`, a `<select>`, a checkbox — answers the pointer ITSELF,
+			// so its click is not a landing and the caret the user still holds elsewhere is theirs to
+			// keep (pinned three times over in `Notion.react.spec`'s decorations loop). Frozen
+			// PRESENTATION focuses nothing, the host keeps the focus, and that click IS a landing.
 			const pointer = this.#pointerControl
 			this.#pointerControl = undefined
-			// AND THE MODEL'S OWN READING OUTRANKS THE POINTER. A CLAIM ANSWERS A LANDING — a
-			// gesture whose position the model cannot name — so a RANGED selection it CAN read is
-			// never one: the extent is what the user swept, and no claim can re-derive it. Both arms
-			// below reached for the claim on the strength of one ENDPOINT alone, which is the
-			// browser's raw range deciding rather than informing.
-			if (this.#syncRanged()) return
-			// FOCUS DECIDES WHOSE GESTURE IT IS, the discriminator {@link reclaimFocus} already
-			// reads: the browser hands focus to a control it can operate — a `<select>`, a
-			// checkbox, a button — and a caret written into the host would take it straight back.
-			if (pointer && document.activeElement === container) {
-				this.deps.claimRow(pointer)
-				return
-			}
+			if (this.#claimLanding(pointer, container)) return
 			// The container IS the editor, and it owns no token: `handleAt` answers
 			// `undefined` for it, which is the "outside" verdict. Its own boundaries are
 			// where a caret before or after a top-level mark lives, so they must SYNC.
@@ -330,10 +344,11 @@ export class SelectionDriver {
 			// the caret — ArrowDown could not move it and every keystroke after it was dropped with
 			// nothing said — so the caret goes to the row that control is painted IN instead.
 			//
-			// EVERYTHING THAT REACHES HERE IS A LANDING, which the ranged sync above is what makes
-			// true: a sweep that merely ENDS on frozen presentation resolves and never arrives, and a
-			// range wholly INSIDE one control names that row's entry at both ends, so it compares
-			// collapsed and falls through to this claim.
+			// A SWEEP THAT MERELY ENDS HERE IS NOT A LANDING, and the claim's own test is what tells
+			// them apart now: a triple-click that ends on a callout's icon names that row at one end,
+			// so the claim declines and the reading below stores the extent the user swept. A range
+			// wholly INSIDE one control names no position at all — the collapsed reader declines both
+			// ends — so nothing outranks the claim there.
 			//
 			// AN INTERACTIVE CONTROL NEVER REACHES HERE, measured rather than assumed: a click on
 			// a `<select>`, a checkbox, a `<button>` or a row grip moves FOCUS and leaves the
@@ -342,7 +357,7 @@ export class SelectionDriver {
 			// click on frozen PRESENTATION — an atomic row's card, table of contents or properties
 			// grid — which is the case this claims.
 			if (at === 'control') {
-				this.deps.claimRow(node)
+				if (!this.deps.claimRow(node)) this.syncFromDom()
 				return
 			}
 			this.deps.selection.clear()
@@ -393,6 +408,15 @@ export class SelectionDriver {
 		// characters were swallowed with nothing on screen to say why. With a prior caret every control
 		// behaved, which is what hid it.
 		//
+		// AND A PRIOR CARET IS NOT A REASON TO DROP THE CLAIM, which is what `!domAnchors()` — the gate
+		// that used to stand where the claim now decides — read it as. A `draggable` island moves no
+		// caret and fires no `selectionchange` at all, so this microtask is the ONLY place its claim is
+		// ever offered; with a caret already in the document the gate threw it away every time.
+		// MEASURED on the showcase: caret in the intro paragraph, one click on the `Sign the vendor
+		// SLA` board card, one `'Y'` — `'Apollo Ymoves the collaboration layer'`, three screens from
+		// the pointer. The model's own test replaces it and the focus discriminator above still gates
+		// it, so a `<button>`'s click stays the button's.
+		//
 		// It is the LIVE selection that answers, not the stored anchors, and that is measured too:
 		// Chromium routes focus through `<body>` on the way from the host to a control inside it, so
 		// the `focusout` rule below has already cleared the stored pair by the time this runs. The
@@ -411,12 +435,10 @@ export class SelectionDriver {
 				// claim from the arm that needs it. A click on a bullet's dot then typed into the page
 				// TITLE — Chromium had already answered the mousedown with a caret at the host's start,
 				// `domAnchors()` read it, and by the time the sync arrived there was no pointer left to
-				// outrank it. Left standing, that sync claims exactly as it always did.
-				const pointer = this.#pointerControl
-				if (pointer && !this.domAnchors()) {
-					this.#pointerControl = undefined
-					this.deps.claimRow(pointer)
-				}
+				// outrank it. Left standing, that sync claims exactly as it always did. The claim's own
+				// decline is what "actually claimed" means now, and it is the one test: a reading in the
+				// row the pointer landed in belongs to this gesture, and anything else does not.
+				if (this.#claimLanding(this.#pointerControl, container)) this.#pointerControl = undefined
 				if (!this.domAnchors() && !this.deps.selection.anchors()) return
 				const active = document.activeElement
 				if (active instanceof Element && active.matches(KEYBOARD_OWNERS)) return

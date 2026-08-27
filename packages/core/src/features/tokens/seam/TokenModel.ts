@@ -1422,13 +1422,52 @@ export class TokenModel {
 	 * A CONTROL IN NO ROW AT ALL IS NOT THIS RULE'S BUSINESS, and that is the editor's own furniture:
 	 * the grip and its menu are a control root parked over the document rather than inside a row, so
 	 * a claim there has no row to name and the caret is whatever the verb that ran left behind.
+	 *
+	 * IT OUTRANKS EVERY READING THE GESTURE COULD NOT HAVE PRODUCED, and {@link #gestureCouldRead}
+	 * is that test — the inversion of round nine's "a reading the model CAN make outranks a
+	 * landing", which was backwards. Answers whether it took the gesture, so a caller that is
+	 * declined runs the ordinary DOM sync it always did.
 	 */
-	#claimRow(origin: Node): void {
+	#claimRow(origin: Node): boolean {
 		const row = this.#rowAbove(origin)
-		if (!row) return
-		if (this.#placeInRow(row)) return
-		if (this.#selectRow(row)) return
+		if (!row) return false
+		if (this.#gestureCouldRead(row)) return false
+		if (this.#placeInRow(row)) return true
+		if (this.#selectRow(row)) return true
 		this.#selectionDriver.restoreCaret()
+		return true
+	}
+
+	/**
+	 * COULD THE POINTER THAT LANDED IN `row` HAVE PRODUCED WHAT THE DOM SAYS RIGHT NOW — the whole
+	 * of the precedence rule between a claim and a reading, and the one question that separates
+	 * them.
+	 *
+	 * A pointer names a place on the SCREEN. Everything a press in `row` can leave behind touches
+	 * that row: a caret it put there, and a sweep it began there and dragged away from — whose far
+	 * end may be anywhere, but whose near end is where the finger went down. So a reading with an
+	 * END in `row` is the gesture's own and stands, and a reading that names NEITHER end there —
+	 * a caret three rows up that nothing has moved since, an anchor Chromium invented at the start
+	 * of the editing host — is not one this gesture made, and the claim outranks it.
+	 *
+	 * A CARET IS NOT SUCH A READING AT ALL, whichever row it is in: it names no extent, so a claim
+	 * loses nothing by outranking it. MEASURED, with a caret in the intro paragraph and one click on
+	 * a board card: Chromium moves no caret for a mousedown on a `draggable`, the stale reading
+	 * resolved perfectly well, and round nine's gates handed the next character to the paragraph —
+	 * `'Apollo Ymoves the collaboration layer'`, three screens from the pointer.
+	 *
+	 * THE ROW, not the anchor: the two ends of a row selection are the row's OWN element edges and
+	 * a click on frozen presentation lands on a descendant of it, so an identity test on anchors
+	 * would answer no to the claim that wrote them.
+	 */
+	#gestureCouldRead(row: RowNode): boolean {
+		const anchors = this.#selectionDriver.domAnchors()
+		// A CARET IS NOT A SWEEP. Only an EXTENT is a thing a claim cannot re-derive; a collapsed
+		// reading is the browser answering the same press this claim is about, and inside frozen
+		// presentation it is `frozenBoundary`'s own answer — the row's entry, which would otherwise
+		// read as "the gesture named this row" and decline the claim that produced it.
+		if (!anchors || anchorEquals(anchors.anchor, anchors.head)) return false
+		return this.rowOf(anchors.anchor)?.row === row || this.rowOf(anchors.head)?.row === row
 	}
 
 	/**
