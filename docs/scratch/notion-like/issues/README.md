@@ -39,7 +39,7 @@ Two generations of tickets live here.
 | [12](12-upward-mouse-selection.md) | An upward mouse drag re-places the caret instead of extending the selection | ready-for-human | **The shipping blocker.** No backward mouse selection, and no test in the suite can see it |
 | [13](13-collapsed-body-lost-on-a-row-cover.md) | A selection covering a collapsed toggle whole deletes its hidden body | ready-for-agent | `#visibleEnd` guards the text path and not `replaceRows` — silent data loss |
 | [14](14-arrowdown-skips-an-empty-row.md) | ArrowDown skips an empty row | ready-for-agent | The line box has a height and no width; the mirror direction was never measured |
-| [15](15-opener-prefix-is-unchecked.md) | Two kinds may share an opener PREFIX | ready-for-human | The only unbounded document-loss class open; `usableOptions` checks equality only |
+| [15](15-opener-prefix-is-unchecked.md) | Two kinds may share an opener PREFIX | resolved | `shadowedRowKinds` drops a closed kind whose opener extends another's; the recorded condition was wrong twice |
 | [16](16-trailing-paragraph.md) | An atomic row leaves the caret nowhere to go | ready-for-human | The top open DECLARED item; a published-contract decision, not a task |
 | [17](17-cross-row-paste-is-spliced-raw.md) | A paste whose span crosses two rows is spliced raw | needs-triage | `splitPlan` refuses deliberately; widening it is a contract change |
 | [18](18-carved-piece-verbs-fail-open.md) | `duplicate` and `insertAfter` fail open on a carved piece | ready-for-agent | The membership test `addSibling` already runs, applied to two more verbs |

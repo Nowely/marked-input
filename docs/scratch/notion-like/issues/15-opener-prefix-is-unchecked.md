@@ -1,7 +1,7 @@
 # Two row kinds may share an opener PREFIX, and one menu click swallows the document
 
 Type: task
-Status: ready-for-human
+Status: resolved — `shadowedRowKinds` drops the closed kind and reports (2026-08-27)
 Blocked by: —
 
 ## Problem
@@ -48,3 +48,55 @@ instance of an unwritten rule."*
 The decision is what keeps this out of `ready-for-agent`: dropping a kind a consumer declared is
 observable, and "either kind has a raw body" has to be written down as the condition rather than
 inferred at the call.
+
+## Answer
+
+`usableOptions` gained a second pass, `shadowedRowKinds`
+(`packages/core/src/features/tokens/seam/TokenModel.ts`), and `RowKind.ts` gained the `rowCloser`
+that pass reads. A row kind whose BODY closes at a literal, and whose opener extends another
+declared kind's opener, contributes no row kind: it is dropped and reported, exactly as a duplicate
+opener is.
+
+**The recorded condition was wrong in two places, and both were measured before the code moved.**
+
+- *"when either has a RAW body"* — too narrow. `'---\n__slot__\n---'` beside `'---__slot__'`
+  collapses `'a⏎---⏎b⏎c⏎d⏎---⏎e'` from 7 rows to 3 identically to the `__value__` spelling. Raw
+  versus inline-parsed decides nothing here; what decides is whether the body has a CLOSING LITERAL,
+  because `tryKind` bounds every metadata gap by the row's separator and lets the body gap alone
+  cross it.
+- *"EITHER kind"* — too wide. When the SHORTER opener is the closed one the parse is already safe:
+  `'@@__value__@@'` beside `'@@@__slot__'` leaves `'a⏎@@@ hi⏎b⏎@@ x @@⏎c'` at 5 rows, because
+  longest-opener-first tries the longer kind first and it simply does not match. Only the kind whose
+  opener EXTENDS another's can steal a row the other opened, so only that kind is dropped.
+
+The hazard is also not the separator special case it looked like. `'---!__value__!---'` beside
+`'---__slot__'` takes `'a⏎---! x⏎b⏎c⏎!---⏎e'` from 6 rows to 3 — a user typing `---! x` for a
+divider loses three rows below it — so any extension of another kind's opener is enough, not just
+one that continues with the separator.
+
+**Which kind loses is not the duplicate's tie-break.** A duplicate's two kinds are interchangeable
+and declaration order is the only thing to go on; here the closed kind is dropped whichever was
+declared first, because dropping the shorter one leaves the swallow exactly where it was — the
+longer opener matches the same bytes with or without a divider declared. Pinned by *"drops the
+closed kind even when it is the EARLIER option"*.
+
+**Behaviour change:** a consumer who declares such a pair now loses the closed kind — its rows parse
+as paragraphs — and gets one `reportBadProp`. No shipped kind set in the repo declares one; the
+showcase's `properties` was respelled `'@properties\n__value__\n@end'` in P11, and the full suite is
+green with the check in place.
+
+Pins: `TokenModel.parse.spec.ts` — *"drops a CLOSED row kind whose opener extends another kind and
+keeps the rows it would have taken"* (7 rows, not 3), *"drops the closed kind even when it is the
+EARLIER option"*, *"keeps a shared opener prefix whose longer kind ends at the row"* (the bullet /
+todo pair, which is the mechanism this must not break); `RowKind.spec.ts` — `rowCloser`. All four
+were seen red: deleting the drop loop gives
+`expected [ 'a', '---\nb\nc\nd\n---', 'e' ] to deeply equal [ 'a', '---', 'b', 'c', 'd', …(2) ]`, and
+removing the closed-body condition drops the todo kind and gives `expected [ +0, +0 ] to deeply
+equal [ +0, 1 ]`.
+
+Still NOT checked, and not checkable from the options alone: one closed kind on its own still
+swallows the rows between two of its own openers (`'---\n__value__\n---'` alone collapses the same
+document to 3 rows). That is `spec.md`'s risk 3 — the declared limitation every fenced kind has —
+and it is untouched by this rule. What the rule catches is the case where the editor ITSELF offers
+the shorter opener, so a documented gesture detonates it; risk 3's claim that risk 8's rule is its
+mitigation is therefore too strong.

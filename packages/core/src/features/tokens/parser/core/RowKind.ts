@@ -71,6 +71,21 @@ export function rowOpener(markup: Markup): string {
 }
 
 /**
+ * The literal the row's BODY ends at, or `undefined` when the body runs to the row's own separator.
+ *
+ * It is the one thing that decides whether a kind can reach past its own row: `tryKind` bounds
+ * every metadata gap by the separator and lets the body gap alone cross it, so a body with a closing
+ * literal is a body that may take the rows below.
+ */
+export function rowCloser(markup: Markup): string | undefined {
+	const {segments, gapTypes} = createMarkupDescriptor(markup, 0)
+	// `rowMarkupError` runs first at every call site, so there is exactly one body gap.
+	const body = gapTypes.findIndex(isBody)
+	const closer = body === -1 ? undefined : segments[body + 1]
+	return typeof closer === 'string' ? closer : undefined
+}
+
+/**
  * The row markup's rule violation, or `undefined` when it is well-formed — the row analogue of
  * `markupError`, for the same non-throwing caller. It reports the mark rules first, because a row
  * markup is a markup: the leading-placeholder ban is what makes line-start recognition decidable

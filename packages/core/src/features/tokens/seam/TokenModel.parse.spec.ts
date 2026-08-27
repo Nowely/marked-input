@@ -378,6 +378,79 @@ describe('TokenModel', () => {
 			expect(errors()).toEqual([expect.stringContaining('Duplicate row opener "# "')])
 		})
 
+		/**
+		 * A shared opener PREFIX is legal — longest-first is what tells a todo from a bullet — and it
+		 * is unbounded document loss when the longer opener closes its own body, because the scan
+		 * lets a body gap cross separators. One `/`-menu **Divider** click took the showcase page
+		 * from 36 rows to 3 this way.
+		 */
+		it('drops a CLOSED row kind whose opener extends another kind and keeps the rows it would have taken', () => {
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				separator: '\n',
+				options: [
+					{markup: '---__slot__', row: {Component: 'hr'}},
+					{markup: '---\n__value__\n---', row: {Component: 'div'}},
+				],
+				defaultValue: 'a\n---\nb\nc\nd\n---\ne',
+			})
+			store.host.container(document.createElement('div'))
+
+			expect(treeShape(store.tokens.nodes()).map(node => node.content)).toEqual([
+				'a',
+				'---',
+				'b',
+				'c',
+				'd',
+				'---',
+				'e',
+			])
+			expect(errors()).toEqual([expect.stringContaining('extends "---", which another row option claims')])
+		})
+
+		/**
+		 * The closed kind loses whichever was declared first, which is where this rule parts company
+		 * with the duplicate above: dropping the SHORTER kind would leave the swallow in place,
+		 * since the longer opener matches the same bytes with or without it.
+		 */
+		it('drops the closed kind even when it is the EARLIER option', () => {
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				separator: '\n',
+				options: [
+					{markup: '---\n__value__\n---', row: {Component: 'div'}},
+					{markup: '---__slot__', row: {Component: 'hr'}},
+				],
+				defaultValue: 'a\n---\nb',
+			})
+			store.host.container(document.createElement('div'))
+
+			const rule = store.tokens.nodes()[1]
+			if (rule.kind !== 'row') throw new Error('expected a row')
+			expect(rule.option()).toBe(1)
+			expect(errors()).toHaveLength(1)
+		})
+
+		it('keeps a shared opener prefix whose longer kind ends at the row', () => {
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				separator: '\n',
+				options: [
+					{markup: '- __slot__', row: {Component: 'li'}},
+					{markup: '- [__meta__] __slot__', row: {Component: 'li'}},
+				],
+				defaultValue: '- a\n- [x] b',
+			})
+			store.host.container(document.createElement('div'))
+
+			const rows = store.tokens.nodes()
+			expect(rows.map(row => (row.kind === 'row' ? row.option() : undefined))).toEqual([0, 1])
+			expect(errors()).toEqual([])
+		})
+
 		it('reports once per distinct markup set, not once per prop sync', () => {
 			// The report sits DOWNSTREAM of `#markups`' shallow-equality gate over the markup
 			// STRINGS. `props.options` compares elements by reference, so the inline array below —

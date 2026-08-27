@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest'
 
 import {Parser} from '../Parser'
 import type {Markup} from '../types'
-import {rowMarkupError, rowOpener} from './RowKind'
+import {rowCloser, rowMarkupError, rowOpener} from './RowKind'
 
 /**
  * The props boundary for a ROW markup. `createMarkupDescriptor` throws, and both adapters push
@@ -54,5 +54,13 @@ describe('row kind order', () => {
 	it('answers a markup opener as the literal a row is recognised by', () => {
 		expect(rowOpener('- [__meta__] __slot__')).toBe('- [')
 		expect(rowOpener('```__meta__\n__value__\n```')).toBe('```')
+	})
+
+	it('answers a markup closer as the literal its BODY ends at, and nothing for a body that runs to the row end', () => {
+		expect(rowCloser('```__meta__\n__value__\n```')).toBe('\n```')
+		expect(rowCloser('---\n__value__\n---')).toBe('\n---')
+		// The meta gap's own closer is not the body's: only the body may cross a separator.
+		expect(rowCloser('- [__meta__] __slot__')).toBeUndefined()
+		expect(rowCloser('# __slot__')).toBeUndefined()
 	})
 })

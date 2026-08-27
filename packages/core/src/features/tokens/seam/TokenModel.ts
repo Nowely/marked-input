@@ -16,7 +16,7 @@ import type {TokenHandle} from '../dom/TokenHandle'
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import {markupError} from '../parser/core/MarkupDescriptor'
 import type {RowDeclaration} from '../parser/core/RowKind'
-import {rowMarkupError, rowOpener, rowSplitOf} from '../parser/core/RowKind'
+import {rowCloser, rowMarkupError, rowOpener, rowSplitOf} from '../parser/core/RowKind'
 import {Parser} from '../parser/Parser'
 import type {Markup, RowConfig} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
@@ -1881,11 +1881,12 @@ function rowSequence(roots: readonly TreeNode[]): readonly TreeNode[] {
  * inside the props watch a per-render `props.set` drains, so the throw would leave the
  * adapter's own lifecycle hook.
  *
- * A ROW markup answers to `rowMarkupError` as well, and to one rule no single markup can decide
- * alone: two kinds compiling to the same opener are indistinguishable at a row's start, so the
- * later one is dropped rather than shadowed silently. A SPLIT answers to two more, both of which
- * cost the kind its carve rather than its existence: a delimiter has to be something (an empty one
- * matches at every offset), and its target has to be a row option of this editor.
+ * A ROW markup answers to `rowMarkupError` as well, and to two rules no single markup can decide
+ * alone — {@link shadowedRowKinds} is the second. Two kinds compiling to the same opener are
+ * indistinguishable at a row's start, so the later one is dropped rather than shadowed silently.
+ * A SPLIT answers to two more, both of which cost the kind its carve rather than its existence: a
+ * delimiter has to be something (an empty one matches at every offset), and its target has to be a
+ * row option of this editor.
  */
 function usableOptions(
 	markups: readonly (Markup | undefined)[],
@@ -1897,6 +1898,7 @@ function usableOptions(
 		rows[index] = undefined
 		return undefined
 	}
+	const kept = new Map<number, Markup>()
 	const result = markups.map((markup, index) => {
 		const row = rows[index]
 		const split = rowSplitOf(row)
@@ -1933,9 +1935,49 @@ function usableOptions(
 			return drop(index)
 		}
 		openers.add(opener)
+		kept.set(index, markup)
 		return markup
 	})
+	for (const index of shadowedRowKinds(kept, openers)) result[index] = drop(index)
 	return {markups: result, rows}
+}
+
+/**
+ * The row kinds another kind's opener puts out of reach, by option index.
+ *
+ * A shared opener PREFIX is legal and load-bearing — longest-first is how `'- [x] '` is told from
+ * `'- '` ({@link orderRowKinds}) — and it stops being legal the moment the LONGER opener belongs to
+ * a kind that closes its own body. The scan lets a body gap cross separators, so such a kind claims
+ * a row the shorter kind opened and then runs to a closing literal rows below, taking everything
+ * between into a body no caret can enter. Measured: `'a⏎---! x⏎b⏎c⏎!---⏎e'` is six rows under
+ * `'---__slot__'` alone and three once `'---!__value__!---'` is declared beside it, and the
+ * showcase's own `'---\n__value__\n---'` beside its `'---__slot__'` divider took a page from 36
+ * rows to 3.
+ *
+ * The CLOSED kind is the one that loses, whichever was declared first: dropping the shorter one
+ * would leave the swallow in place, since the longer opener matches the same bytes with or without
+ * it. That is where this parts company with the duplicate rule above, whose two kinds are
+ * interchangeable and whose only tie-break is declaration order.
+ *
+ * Decided against ONE set of openers, so a drop cannot change another kind's verdict and the answer
+ * cannot depend on the order the options arrive in.
+ */
+function shadowedRowKinds(kept: ReadonlyMap<number, Markup>, openers: ReadonlySet<string>): number[] {
+	const shadowed: number[] = []
+	for (const [index, markup] of kept) {
+		const closer = rowCloser(markup)
+		if (closer === undefined) continue
+		const opener = rowOpener(markup)
+		const shorter = [...openers].find(other => other.length < opener.length && opener.startsWith(other))
+		if (shorter === undefined) continue
+		reportBadProp(
+			`Row opener "${opener}" in "${markup}" extends "${shorter}", which another row option claims, and ` +
+				`this kind's body closes at "${closer}" rather than at the row's own end, so it would take the ` +
+				'rows between. This option contributes no row kind.'
+		)
+		shadowed.push(index)
+	}
+	return shadowed
 }
 
 /** Two row declarations by VALUE — see {@link TokenModel.#rowKinds}. */
