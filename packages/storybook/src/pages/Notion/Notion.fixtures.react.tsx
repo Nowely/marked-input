@@ -1,7 +1,7 @@
 import type {Option, Suggestion} from '@markput/react'
 import type {ComponentType, ReactNode} from 'react'
 
-import {CoverBand, mention, NOTION_THEME, notionOptions, PageChrome, Paragraph, theme} from './notion'
+import {CoverBand, kinds, NOTION_THEME, notionOptions, PageChrome, Paragraph, theme} from './notion'
 import {TEAM} from './team'
 
 /**
@@ -26,9 +26,9 @@ import {TEAM} from './team'
  * or inserts.
  */
 const options: Option[] = [
-	{...mention, overlay: {trigger: '@', data: TEAM satisfies readonly Suggestion[]}},
+	{...kinds.mention, overlay: {trigger: '@', data: TEAM satisfies readonly Suggestion[]}},
 	{overlay: {trigger: '/'}},
-	...notionOptions.filter(option => option !== mention),
+	...notionOptions.filter(option => option !== kinds.mention),
 ]
 
 /** The page around the editor: breadcrumb, cover band, and the centred content column. */

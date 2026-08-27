@@ -164,7 +164,7 @@ const CalloutRow = defineComponent({
 			theme,
 			tone,
 			icon: computed(() => CALLOUT_ICON[tone.value]),
-			cycle: () => props.node.turnInto(callout, {meta: nextCalloutTone(props.meta ?? 'neutral')}),
+			cycle: () => props.node.turnInto(kinds.callout, {meta: nextCalloutTone(props.meta ?? 'neutral')}),
 			setControlRef: useControlRef(),
 		}
 	},
@@ -197,7 +197,7 @@ const Code = defineComponent({
 		language: computed({
 			get: () => props.meta ?? 'bash',
 			set: (next: string) => {
-				props.node.turnInto(code, {meta: next})
+				props.node.turnInto(kinds.code, {meta: next})
 			},
 		}),
 	}),
@@ -250,7 +250,7 @@ const Todo = defineComponent({
 		done: computed(() => props.meta === 'x'),
 		tick: (event: Event) => {
 			const box = event.target
-			if (box instanceof HTMLInputElement) props.node.turnInto(todo, {meta: box.checked ? 'x' : ' '})
+			if (box instanceof HTMLInputElement) props.node.turnInto(kinds.todo, {meta: box.checked ? 'x' : ' '})
 		},
 		setControlRef: useControlRef(),
 	}),
@@ -287,12 +287,12 @@ const toggleRow = (open: boolean) =>
 		name: open ? 'NotionToggleOpen' : 'NotionToggle',
 		props: rowProps,
 		setup(props) {
-			const reveal = () => props.node.turnInto(toggleOpen)
+			const reveal = () => props.node.turnInto(kinds.toggleOpen)
 			let body: HTMLElement | null = null
 			return {
 				theme,
 				open,
-				flip: () => props.node.turnInto(open ? toggle : toggleOpen),
+				flip: () => props.node.turnInto(open ? kinds.toggle : kinds.toggleOpen),
 				setControlRef: useControlRef(),
 				setBodyRef: (element: unknown) => {
 					body?.removeEventListener('beforematch', reveal)
@@ -355,7 +355,7 @@ const TableFooter = defineComponent({
 	setup: props => ({
 		theme,
 		setControlRef: useControlRef(),
-		addLine: () => props.node.turnInto(tableLine, {text: newTableLineText(props.node.slot())}),
+		addLine: () => props.node.turnInto(kinds.tableLine, {text: newTableLineText(props.node.slot())}),
 	}),
 	template: `
 		<div :class="[theme.block, theme.tableFooter]">
@@ -403,7 +403,7 @@ const BoardRow = defineComponent({
 		const body = useSlot(props.node)
 		return {
 			columns: computed(() => readBoard(body.value)),
-			move: (next: readonly BoardColumnData[]) => props.node.turnInto(board, {text: writeBoard(next)}),
+			move: (next: readonly BoardColumnData[]) => props.node.turnInto(kinds.board, {text: writeBoard(next)}),
 		}
 	},
 	template: '<div><Atomic><Board :columns="columns" @move="move" /></Atomic></div>',
@@ -517,40 +517,8 @@ const {kinds, options} = assembleNotion<Component, Component>(
 
 // Every kind by name beside the array: a consumer that adds a trigger to one — the `@` picker
 // rides on `mention` — needs to name it, and the row components above name their own kind to
-// `turnInto`.
-export const text: Option = kinds.text
-export const title: Option = kinds.title
-export const caption: Option = kinds.caption
-export const properties: Option = kinds.properties
-export const divider: Option = kinds.divider
-export const toc: Option = kinds.toc
-export const h1: Option = kinds.h1
-export const h2: Option = kinds.h2
-export const h3: Option = kinds.h3
-export const quote: Option = kinds.quote
-export const callout: Option = kinds.callout
-export const code: Option = kinds.code
-export const bullet: Option = kinds.bullet
-export const numbered: Option = kinds.numbered
-export const todo: Option = kinds.todo
-export const toggle: Option = kinds.toggle
-export const toggleOpen: Option = kinds.toggleOpen
-export const cell: Option = kinds.cell
-export const headerCell: Option = kinds.headerCell
-export const tableHeader: Option = kinds.tableHeader
-export const tableLine: Option = kinds.tableLine
-export const tableFooter: Option = kinds.tableFooter
-export const views: Option = kinds.views
-export const board: Option = kinds.board
-export const metrics: Option = kinds.metrics
-export const bookmark: Option = kinds.bookmark
-export const comments: Option = kinds.comments
-export const mention: Option = kinds.mention
-export const link: Option = kinds.link
-export const highlight: Option = kinds.highlight
-export const status: Option = kinds.status
-export const who: Option = kinds.who
-export const due: Option = kinds.due
-export const effort: Option = kinds.effort
+// `turnInto`. ONE record rather than 34 re-exports, because the name list is `vocabulary.ts`'s and
+// spelling it again per paint is the second implementation this file exists to not have.
+export {kinds}
 
 export const notionOptions: Option[] = options

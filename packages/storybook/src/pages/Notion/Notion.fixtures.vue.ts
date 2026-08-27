@@ -1,7 +1,7 @@
 import type {Option, Suggestion} from '@markput/vue'
 import {defineComponent} from 'vue'
 
-import {CoverBand, mention, NOTION_THEME, notionOptions, PageChrome, Paragraph, theme} from './notion'
+import {CoverBand, kinds, NOTION_THEME, notionOptions, PageChrome, Paragraph, theme} from './notion'
 import {TEAM} from './team'
 
 /**
@@ -20,9 +20,9 @@ import {TEAM} from './team'
  * kind the chosen entry names.
  */
 const options: Option[] = [
-	{...mention, overlay: {trigger: '@', data: TEAM satisfies readonly Suggestion[]}},
+	{...kinds.mention, overlay: {trigger: '@', data: TEAM satisfies readonly Suggestion[]}},
 	{overlay: {trigger: '/'}},
-	...notionOptions.filter(option => option !== mention),
+	...notionOptions.filter(option => option !== kinds.mention),
 ]
 
 /** The page around the editor: breadcrumb, cover band, and the centred content column. */

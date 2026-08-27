@@ -171,7 +171,7 @@ const CalloutRow = ({meta = 'neutral', children, rows: childRows, node, ref, cla
 				icon={
 					<button
 						className={theme.calloutIcon}
-						onClick={() => node.turnInto(callout, {meta: nextCalloutTone(meta)})}
+						onClick={() => node.turnInto(kinds.callout, {meta: nextCalloutTone(meta)})}
 						ref={controlRef}
 						type="button"
 					>
@@ -193,7 +193,7 @@ const Code = ({meta = 'bash', children, node, ref, className, style}: RowProps) 
 		<div ref={ref} className={cls(className, theme.block, theme.codeBlock)} style={style}>
 			<select
 				className={cls(theme.codeLanguageLabel, rows.codeLanguage)}
-				onChange={event => node.turnInto(code, {meta: event.target.value})}
+				onChange={event => node.turnInto(kinds.code, {meta: event.target.value})}
 				ref={controlRef}
 				value={meta}
 			>
@@ -238,7 +238,7 @@ const Todo = ({meta, children, rows: childRows, node, ref, className, style}: Ro
 			<input
 				checked={done}
 				className={rows.todoBox}
-				onChange={event => node.turnInto(todo, {meta: event.target.checked ? 'x' : ' '})}
+				onChange={event => node.turnInto(kinds.todo, {meta: event.target.checked ? 'x' : ' '})}
 				ref={controlRef}
 				type="checkbox"
 			/>
@@ -276,7 +276,7 @@ const toggleRow = (open: boolean) =>
 				if (!element) return undefined
 				if (open) return undefined
 				element.setAttribute('hidden', 'until-found')
-				const reveal = () => node.turnInto(toggleOpen)
+				const reveal = () => node.turnInto(kinds.toggleOpen)
 				element.addEventListener('beforematch', reveal)
 				return () => element.removeEventListener('beforematch', reveal)
 			},
@@ -288,7 +288,7 @@ const toggleRow = (open: boolean) =>
 					aria-expanded={open}
 					aria-label={open ? 'Collapse' : 'Expand'}
 					className={open ? theme.toggleArrowOpen : theme.toggleArrow}
-					onClick={() => node.turnInto(open ? toggle : toggleOpen)}
+					onClick={() => node.turnInto(open ? kinds.toggle : kinds.toggleOpen)}
 					ref={controlRef}
 					type="button"
 				/>
@@ -332,7 +332,7 @@ const TableFooter = ({children, node, ref, className, style}: RowProps) => {
 		<div ref={ref} className={cls(className, theme.block, theme.tableFooter)} style={style}>
 			<button
 				className={theme.tableFooterAction}
-				onClick={() => node.turnInto(tableLine, {text: newTableLineText(node.slot())})}
+				onClick={() => node.turnInto(kinds.tableLine, {text: newTableLineText(node.slot())})}
 				ref={controlRef}
 				type="button"
 			>
@@ -360,7 +360,10 @@ const Views = ({node, ref, className, style}: RowProps) => {
 const BoardRow = ({node, ref, className, style}: RowProps) => (
 	<div className={className} ref={ref} style={style}>
 		<Atomic>
-			<Board columns={readBoard(node.slot())} onMove={next => node.turnInto(board, {text: writeBoard(next)})} />
+			<Board
+				columns={readBoard(node.slot())}
+				onMove={next => node.turnInto(kinds.board, {text: writeBoard(next)})}
+			/>
 		</Atomic>
 	</div>
 )
@@ -460,40 +463,8 @@ const {kinds, options} = assembleNotion(
 
 // Every kind by name beside the array: a consumer that adds a trigger to one — the `@` picker
 // rides on `mention` — needs to name it, and the row components above name their own kind to
-// `turnInto`.
-export const text: Option = kinds.text
-export const title: Option = kinds.title
-export const caption: Option = kinds.caption
-export const properties: Option = kinds.properties
-export const divider: Option = kinds.divider
-export const toc: Option = kinds.toc
-export const h1: Option = kinds.h1
-export const h2: Option = kinds.h2
-export const h3: Option = kinds.h3
-export const quote: Option = kinds.quote
-export const callout: Option = kinds.callout
-export const code: Option = kinds.code
-export const bullet: Option = kinds.bullet
-export const numbered: Option = kinds.numbered
-export const todo: Option = kinds.todo
-export const toggle: Option = kinds.toggle
-export const toggleOpen: Option = kinds.toggleOpen
-export const cell: Option = kinds.cell
-export const headerCell: Option = kinds.headerCell
-export const tableHeader: Option = kinds.tableHeader
-export const tableLine: Option = kinds.tableLine
-export const tableFooter: Option = kinds.tableFooter
-export const views: Option = kinds.views
-export const board: Option = kinds.board
-export const metrics: Option = kinds.metrics
-export const bookmark: Option = kinds.bookmark
-export const comments: Option = kinds.comments
-export const mention: Option = kinds.mention
-export const link: Option = kinds.link
-export const highlight: Option = kinds.highlight
-export const status: Option = kinds.status
-export const who: Option = kinds.who
-export const due: Option = kinds.due
-export const effort: Option = kinds.effort
+// `turnInto`. ONE record rather than 34 re-exports, because the name list is `vocabulary.ts`'s and
+// spelling it again per paint is the second implementation this file exists to not have.
+export {kinds}
 
 export const notionOptions: Option[] = options

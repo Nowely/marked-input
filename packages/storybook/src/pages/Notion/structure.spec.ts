@@ -726,10 +726,12 @@ describe('the reference document', () => {
 	})
 })
 
-/** Every option the vocabulary declares, under the name it exports it as. */
-const DECLARED = Object.entries(vocabulary).flatMap(([name, exported]) =>
-	vocabulary.notionOptions.filter(option => option === exported).map(option => ({name, option}))
-)
+/**
+ * Every option the vocabulary declares, under its own name. `kinds` is the assembled record, so the
+ * list is `KINDS`' own key set and cannot fall short of it — the earlier walk over the whole barrel
+ * namespace matched by object identity, and a kind whose identity broke simply vanished from it.
+ */
+const DECLARED = Object.entries(vocabulary.kinds).map(([name, option]) => ({name, option}))
 
 /**
  * An option's name in the vocabulary. BY IDENTITY FIRST, because the two cell kinds are anonymous
