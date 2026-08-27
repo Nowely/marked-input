@@ -68,5 +68,67 @@ real one in both directions: everything the interior does — a caret in a cell,
 mention inside one, a drag of one line — would be the mark's own to rebuild, and none of it is
 markup the editor can read back.
 
-Left open. Nothing here decides between the two; both sides are now on the record with the
-measurement that supports them.
+## The trade above does not exist — measured 2026-08-27
+
+The section above is wrong, and so was the question both the maintainer and the orchestrator were
+asking. **A raw closed body already carves.** `split` and a closing literal are compatible by
+construction: `rowMarkupError` accepts `'@table\n__value__\n@end'` (one body gap, no second value,
+no touching placeholders); `usableOptions` and `shadowedRowKinds` police openers only;
+`MarkupRegistry` sets `rowSplits` from the declaration alone; and `RowScanner.carve` splits
+`row.slot` without asking how the body was bounded. Nothing excludes them.
+
+Parsed three ways, same table, same marks:
+
+| shape | tree | caret in a cell | mention parses |
+| --- | --- | --- | --- |
+| carved run (today) | 6 root rows, 5 cell rows each | yes | yes |
+| fence, no `split` | 1 root row, 1 text child | no | no |
+| fence **+ `split: {at: '\n'}`** | 1 root row, 5 line rows, inline-parsed | yes | yes |
+
+So the fence keeps everything the carve had. What it does not do is recurse: `carve` is one level by
+design (its own comment says so), so a fence carves into LINES but a line inside it does not carve
+into cells.
+
+**Two levels cost eight lines.** Measured on a copy of core in `/tmp`: `carve` made recursive with a
+`seen: MarkupDescriptor[]` guard against a self-naming kind — **+8 lines, 0 deletions, 0 new public
+surface**, since `Option.row.split` already carries everything. Fence → 3 lines → 3 cells each,
+marks inside cells, `tree.value()` round-trips, and the tree's own §7.1 oracle passes. The code
+around it was already shaped for this: `anchors.ts`'s descent comment says *"the descent is
+recursive because that cell may be carved in turn"*. Core suite under an aliased config: 1427
+passed, byte-identical to the unpatched baseline. The adapter projects were NOT run — their config
+would not load from `/tmp` — so that half is unmeasured rather than green.
+
+**It is shorter for the consumer, not longer.** Today: five options, ~45 lines, and the header must
+be its own kind because which line is the header is a fact about the line after it. Fenced carve:
+three options, ~20 lines — an anonymous `cell`, an anonymous `line` carrying
+`split: {at: ' | ', as: cell}`, and the fenced `table` carrying `split: {at: '\n', as: line}`. The
+header stops being a kind at all: the line component gets `index`, so `index === 0` is the header.
+Column alignment and `role="table"/"row"/"cell"` land on real elements.
+
+**It is more readable in the file.** Today six independent lines whose leading `|`/`|=` is both
+opener and delimiter, with nothing marking where the table ends. Fenced: `@table`, lines whose pipes
+are delimiters only, `@end` — two lines of fence bought, two characters per line saved, and the
+extent explicit.
+
+**What it really costs, and neither framing named either one.**
+
+1. **The table stops being document rows.** `preorderRows` answers 1 for the whole fence, so no
+   per-line grip, drag, row selection or Tab. Today every line is draggable.
+2. **Overlay triggers die inside a fence.** `OverlayController` refuses a trigger when the caret's
+   row `hasRawBody`, and `rowOf` reports the FENCE for a caret inside a carved piece — measured at
+   one and two levels. So `@` in a cell is a literal `@`, though a mention written by hand still
+   parses. Relaxing the guard to `&& !hasCells(row)` re-opens the `/` menu, whose pick would
+   `turnInto` the FENCE and destroy the table. That is a decision about what `/` and `@` mean inside
+   a carved cell, not a one-line relaxation.
+
+**A fourth shape, measured and rejected:** a fence with a `__slot__` body inline-parses its whole
+interior across newlines — marks and caret work — but there is no line or cell structure, and
+`hasRawBody` is false, so Enter splits the fence.
+
+**Verdict of the measurement, for the conversation this ticket is parked for.** The fenced two-level
+carve wins every want this ticket exists for, shortens the consumer's declaration, and makes the
+stored file more readable, for eight lines in one function. `RowSpec.group` is not needed for any of
+the three. Two questions decide it: whether dragging a single table line is worth paying for the
+cross-axis hit-testing ADR-0007 rules out, and what `/` and `@` should do inside a fenced cell.
+
+Still open, and still the maintainer's call.
