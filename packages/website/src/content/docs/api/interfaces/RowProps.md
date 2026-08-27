@@ -32,7 +32,7 @@ The row's own inline content, already rendered.
 optional className: string;
 ```
 
-Defined in: [react/markput/src/types.ts:62](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L62)
+Defined in: [react/markput/src/types.ts:67](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L67)
 
 ***
 
@@ -54,9 +54,12 @@ Nesting depth, counted from 0: a ROOT row is at depth 0, its child at depth 1.
 index: number;
 ```
 
-Defined in: [react/markput/src/types.ts:51](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L51)
+Defined in: [react/markput/src/types.ts:56](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L56)
 
-Position among the row's own SIBLINGS.
+Position among the row's own SIBLINGS, and the one fact about a row that the row cannot
+answer for itself — a numbered list's ordinal is what needs it. Kept with no reader in this
+repo, deliberately: it is published surface with its own generated page, and only the parent
+that mapped the siblings knows it.
 
 ***
 
@@ -78,7 +81,7 @@ The kind's metadata gap — a todo's checked flag, a fence's language.
 node: RowNode;
 ```
 
-Defined in: [react/markput/src/types.ts:53](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L53)
+Defined in: [react/markput/src/types.ts:58](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L58)
 
 The live row node: its id, its own text and its verbs.
 
@@ -90,7 +93,7 @@ The live row node: its id, its own text and its verbs.
 optional ref: RefCallback<HTMLElement>;
 ```
 
-Defined in: [react/markput/src/types.ts:61](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L61)
+Defined in: [react/markput/src/types.ts:66](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L66)
 
 A row kind's component is a SLOT component: spread `ref`, `className` and `style` onto the
 element it renders, the way `slots.container` and `slots.paragraph` consumers already do. The
@@ -127,4 +130,4 @@ would walk into a row with no element.
 optional style: CSSProperties;
 ```
 
-Defined in: [react/markput/src/types.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L63)
+Defined in: [react/markput/src/types.ts:68](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L68)

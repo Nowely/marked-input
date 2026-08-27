@@ -28,7 +28,12 @@ export interface RowProps {
 	meta?: string
 	/** Nesting depth, counted from 0: a ROOT row is at depth 0, its child at depth 1. */
 	depth: number
-	/** Position among the row's own SIBLINGS. */
+	/**
+	 * Position among the row's own SIBLINGS, and the one fact about a row that the row cannot
+	 * answer for itself — a numbered list's ordinal is what needs it. Kept with no reader in this
+	 * repo, deliberately: it is published surface, and only the parent that mapped the siblings
+	 * knows it.
+	 */
 	index: number
 	/** The live row node: its id, its own text and its verbs. */
 	node: RowNode
