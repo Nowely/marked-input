@@ -271,7 +271,8 @@ export function rowSelectionSpan(
  *
  * IT ONLY EVER SHRINKS. Both edges move inward, so the answer can never name a byte the selection
  * did not, and no content inside the selection is left behind: a line that overlaps the span at
- * all lies wholly inside it, since neither edge is in a line's interior.
+ * all lies wholly inside it, since neither edge is in a line's interior. Shrinking to NOTHING is a
+ * legal answer and is a collapsed span, not `undefined` — see the no-content arm below.
  */
 export function contentSpan(roots: readonly TreeNode[], anchors: Anchors): {start: number; end: number} | undefined {
 	const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
@@ -298,7 +299,23 @@ export function contentSpan(roots: readonly TreeNode[], anchors: Anchors): {star
 	if (named(held.start) && named(held.end) && (interior(held.start) || interior(held.end))) return undefined
 	const opens = interior(held.start) ? held.start : lines.find(line => line.start >= held.start)?.start
 	const closes = interior(held.end) ? held.end : lines.findLast(line => line.end <= held.end)?.end
-	if (opens === undefined || closes === undefined || opens > closes) return undefined
+	if (opens === undefined || closes === undefined) return undefined
+	// NO CONTENT LIES BETWEEN THE TWO EDGES — the whole span is structure, and the answer is a
+	// POSITION rather than nothing. `undefined` here handed the RAW pair back to the write path,
+	// which then took the structure the selection had covered: a double-click in a row's blank right
+	// MARGIN is the plainest way to it, since Chromium's word expansion past end-of-line returns a
+	// cross-row range whose own text is empty — `'lead sentence here'` + `'- bullet row'`, one `'Z'`,
+	// and the value read `'lead sentence hereZbullet row'` with the bullet's marker gone. A sweep
+	// that ends on an atomic row is the same pair once {@link TokenModel.#offBlockInterior} has moved
+	// its far edge, and it cost `'@metrics'` and `'@views'` their opener lines.
+	//
+	// THE LOW EDGE NAMES IT: `closes` wherever the low edge is at or past a line's end — the row the
+	// gesture began in — and `opens` where it is not, so the point is always inside the span the user
+	// held and this still ONLY SHRINKS.
+	if (opens > closes) {
+		const at = closes >= held.start ? closes : opens
+		return {start: at, end: at}
+	}
 	return {start: opens, end: closes}
 }
 

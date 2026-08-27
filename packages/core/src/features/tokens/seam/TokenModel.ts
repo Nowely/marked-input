@@ -485,8 +485,11 @@ export class TokenModel {
 		if (!span) return undefined
 		if (!this.rowSelection(anchors).every(row => this.#dom.reachable(untracked(() => entryAnchor(row)))))
 			return undefined
+		// `<`, not `<=`: an EMPTY content span is a POSITION rather than a refusal — see
+		// {@link contentSpan}'s no-content arm — and refusing one put the raw pair back on the
+		// write path, which is the whole defect that arm exists to close.
 		const end = this.#visibleEnd(span)
-		if (end <= span.start) return undefined
+		if (end < span.start) return undefined
 		return {anchor: this.anchorAt(span.start), head: this.anchorAt(end)}
 	}
 

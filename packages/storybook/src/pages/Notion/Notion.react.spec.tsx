@@ -90,6 +90,16 @@ const textReading = (element: HTMLElement, text: string): Text => {
 	throw new Error(`no text node reading ${JSON.stringify(text)}`)
 }
 
+/**
+ * A DOUBLE-CLICK IN THE ROW'S BLANK RIGHT MARGIN — past the end of its line, where the browser's
+ * own word expansion runs off the row and answers a cross-row range. A row is a full-width block,
+ * so six pixels short of its right edge is empty space on every kind the showcase paints.
+ */
+const marginDoubleClick = async (row: HTMLElement): Promise<void> => {
+	const box = row.getBoundingClientRect()
+	await userEvent.dblClick(row, {position: {x: Math.round(box.width) - 6, y: Math.round(box.height / 2)}})
+}
+
 /** A toggle row, named by the text its own line starts with — its children are inside it. */
 const toggleStarting = (host: HTMLElement, text: string): HTMLElement => {
 	const found = [...host.querySelectorAll<HTMLElement>('[class*="toggleRow"]')].find(row =>
@@ -921,6 +931,28 @@ describe('the keymap on the showcase kinds', () => {
 		await userEvent.keyboard('Z')
 
 		await expect.poll(value).toBe('▸ Z\n\tbody\nafter')
+	})
+
+	/**
+	 * A SELECTION THAT COVERS NO CONTENT IS A POSITION, NOT A LICENCE TO WRITE THE STRUCTURE IT
+	 * SPANS. A double-click in a row's blank RIGHT MARGIN is the plainest way to one: Chromium's
+	 * word expansion past end-of-line answers a CROSS-ROW range whose own text is empty — measured
+	 * `(the row's text, 18) -> (the next row's text, 0)` — and the write took the bytes between,
+	 * which are the separator and the next row's OPENER. Reproduced on a caption, a heading, a
+	 * quote and a bullet; inside a table it ate the cell delimiter instead and left a four-column
+	 * header over a five-column body. Nothing was said and nothing was highlighted.
+	 *
+	 * THE GESTURE IS DRIVEN, not assembled: the right margin is where the browser's own expansion
+	 * runs off the end of the line, and building the range by hand would pin the write while
+	 * leaving the reading that produces it unmeasured.
+	 */
+	it('inserts at the row content when a double-click lands in its blank right margin', async () => {
+		const {host, value} = await mountControlled(Showcase, '@caption cap here\n@views Table|Board\ntail')
+
+		await marginDoubleClick(rowAt(host, 'cap here'))
+		await userEvent.keyboard('Z')
+
+		await expect.poll(value).toBe('@caption cap hereZ\n@views Table|Board\ntail')
 	})
 
 	/**

@@ -1100,3 +1100,27 @@ becomes a ticket here.
     into text: the showcase's own markup is `'---__slot__'` and its component renders `{children}`,
     so `'---caption'` is still a divider, and the caption is painted and visible (measured: 676×61,
     `checkVisibility()` true). Both are the consumer's vocabulary doing what it declares.
+
+- **The eleventh driving session: four defects, ONE owner for two of them, and the cure it was handed
+  was half already in the code** (2026-08-27). Every one reproduced in the running showcase before it
+  was written, and every pin was seen to redden by MUTATING its mechanism — nine mutations.
+  - **THE CURE, MEASURED.** The twelfth session's brief said "no selection end may sit on a row
+    separator or inside a block's opener; clamp it to the row's edge before any edit reads it — that
+    one clamp closes breaks 1 and 2 together". Half of it was already shipped and the other half was
+    two clauses, not one. The clamp EXISTS (`contentSpan` + `TokenModel.#offFrozen`, rounds eight to
+    ten) and it already owned the typed character; what was missing is that an EMPTY clamp answered
+    `undefined`, which handed the RAW pair back to the write path — so the resolver refused precisely
+    where the structure it protects was all that was selected. Second, it did not own the DELETE
+    path at all: `anchorsForDelete` returned the raw pair for any ranged selection, so every byte the
+    resolver protects was still deletable through Backspace. Third, "inside a block's opener" needed
+    its own clause, because a fence's body IS reachable and reads as ordinary content.
+  - **A SELECTION THAT COVERS NO CONTENT IS A POSITION** (`contentSpan`). MEASURED with a driven
+    double-click in a row's blank RIGHT MARGIN: Chromium's word expansion past end-of-line answers a
+    cross-row range whose own text is EMPTY — `(the row's text, 18) -> (the next row's text, 0)` —
+    both edges resolve into the same structural run, `opens > closes`, and the raw span then wrote
+    `'\n- '`. `'lead sentence here'` + `'- bullet row'` and one `'Z'` gave
+    `'lead sentence hereZbullet row'`: two rows merged and the marker gone, no exception, no
+    highlight. Reproduced on a caption, a heading, a quote, a bullet and — eating a cell delimiter
+    instead — a table header. It answers a COLLAPSED span now, at the boundary the LOW edge names, so
+    the character is inserted at the end of the row the gesture began in and the resolution still only
+    shrinks.
