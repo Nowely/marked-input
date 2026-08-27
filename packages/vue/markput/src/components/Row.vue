@@ -103,9 +103,16 @@ const rowStyle = computed(() => ({
 }))
 const rowProps = computed(() => {
 	const {style: _s, className, ...rest} = resolved.value[1]
+	// `class`, which is Vue's own spelling and the one `RowProps` publishes. Handed over as
+	// `className` — the resolver's key, and React's prop name — it reached the element as a DOM
+	// PROPERTY write, so a kind whose template carried any class of its own had it silently
+	// overwritten: measured, `<div class="mine">` painted `class="_Row_…"` and nothing else. As
+	// `class` it is a fallthrough attribute, which Vue MERGES, so a kind adds its classes by
+	// writing them and needs no plumbing at all.
+	//
 	// The selection class rides the same merge the drag opacity does — the resolver owns the
 	// consumer/`styles.Row` merge, and this appends the editor's own paint to its answer.
-	return {...rest, className: cx(className as string | undefined, isSelected.value && styles.RowSelected)}
+	return {...rest, class: cx(className as string | undefined, isSelected.value && styles.RowSelected)}
 })
 </script>
 
