@@ -121,7 +121,7 @@ Copying part of a TYPED row emits a partial RE-ANNOTATION rather than the painte
 
 A pasted clip's LINE BREAKS open rows, through the same plan `Enter` writes: the first line joins the row the caret is in, each line after it opens a row at that row's depth, carrying its kind wherever the kind declares `continues`, and the rest of the body follows the last one. `\r\n`, `\r` and `\n` are all line breaks here, whatever the editor's own separator is — and so is the separator itself, wherever a line still holds one. A text DROP carrying line breaks takes the same rule, since it delivers the same bytes. Two clips are spliced verbatim instead: one that came from this editor — it is the value's own projection, and every line already carries its lead and its opener — and one landing inside a raw closed kind, whose body holds separators as content.
 
-One SPAN shape is outside all of this: a paste whose selection runs from one row into another is spliced raw, line breaks and all, because the split refuses a span that leaves a single row's body.
+A selection that runs from one row INTO A LATER ONE takes the same plan: the head keeps the text before it, the rows between the two ends go, and the last covered row's tail follows the last line of the clip — in a row carrying that row's own kind at the head's depth. Two shapes still fall back on the raw splice, both because the tail is written at the head's depth: one closing in a row that has rows nested under it, and one after which the next row would no longer sit where it sat.
 
 Where the value does NOT split into rows, a pasted line break is an ordinary character, as it always was.
 

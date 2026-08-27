@@ -1315,24 +1315,11 @@ export class TokenModel {
 		 */
 		writeRows: (node, span, rows) => {
 			this.#ensureSeeded()
-			let written = false
-			batch(() => {
-				const plan = untracked(() =>
-					splitPlan(
-						this.#tree.roots(),
-						node,
-						span,
-						this.#tree.config()?.separator,
-						this.#continues(node),
-						rows
-					)
-				)
-				if (!plan) return
-				if (!this.#tx.applyRange(plan.window, plan.text)) return
-				written = true
-				if (plan.into !== undefined) this.#enterRow(plan.tail, plan.into)
-			})
-			return written
+			const plan = untracked(() =>
+				splitPlan(this.#tree.roots(), node, span, this.#tree.config(), this.#continues(node), rows)
+			)
+			if (!plan) return false
+			return this.#tx.applyRange(plan.window, plan.text, plan.caret)
 		},
 		/**
 		 * The bytes are a LEAD and a SEPARATOR, and the order between them is the whole verb: an
@@ -1425,32 +1412,19 @@ export class TokenModel {
 	 * back, which is what controlled mode always looks like: the tree has not moved, so
 	 * {@link #applyCaret} would decline anyway.
 	 *
-	 * `into` is how far past that entry the caret belongs, and it is an OFFSET rather than a walk
-	 * because what was written there may parse into several nodes: a pasted clip carrying a markup
-	 * arrives as text and a mark, and stepping `into` characters through the tree would have to
-	 * re-derive the split. Zero is the entry itself, which is every caller but the paste.
-	 *
-	 * THE ZERO FORK IS NOT AN ECONOMY, measured: for a ROW the two arms agree everywhere — every row
-	 * carries a text child, even an empty one, so `entryAnchor` never falls to `{before}` — but for
-	 * a MARK entry they name different POSITIONS, and {@link rowSequence} falls back to the ROOTS in
-	 * a document that parses no rows. `entryAnchor` lands inside the mark's slot; the offset arm
-	 * lands on the text before its opener. Pinned in `markNode.spec.ts` ('names a position INSIDE
-	 * the mark an insert lands on'), which is what a green suite could not tell: both arms project
-	 * to the same OFFSET on the insert cases that already existed, so deleting the fork reddened
-	 * nothing and only the next character typed says which position the caret held.
+	 * THE ENTRY AND NOT AN OFFSET INTO IT, which is what a MARK entry needs: `rowSequence` falls
+	 * back to the ROOTS in a document that parses no rows, and there the two readings name different
+	 * POSITIONS — `entryAnchor` lands inside the mark's slot, an offset lands on the text before its
+	 * opener. Pinned in `markNode.spec.ts` ('names a position INSIDE the mark an insert lands on'),
+	 * which is what a green suite could not tell: both project to the same OFFSET on every insert
+	 * case, and only the next character typed says which position the caret held.
 	 */
-	#enterRow(index: number, into = 0): void {
+	#enterRow(index: number): void {
 		// `.at` for `entryAnchor`'s reason; a negative index cannot arrive here — every
 		// caller derives it from a sequence index or a literal 0.
 		const row = untracked(() => rowSequence(this.#tree.roots()).at(index))
 		if (!row) return
-		if (into === 0) {
-			this.#applyCaret(entryAnchor(row))
-			return
-		}
-		this.#applyCaret(
-			this.anchorAt(untracked(() => (row.kind === 'row' ? row.slotRange().start : row.position.start)) + into)
-		)
+		this.#applyCaret(entryAnchor(row))
 	}
 
 	/**

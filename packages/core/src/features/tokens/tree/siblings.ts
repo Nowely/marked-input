@@ -1024,16 +1024,17 @@ export function splitPlan(
 	roots: readonly TreeNode[],
 	node: TreeNode,
 	span: Anchors,
-	separator: string | undefined,
+	config: RowConfig | undefined,
 	continues: Continuation,
 	rows: readonly string[] | string
-): {window: Window; text: string; tail: number; into: number | undefined} | undefined {
-	if (node.kind !== 'row' || separator === undefined) return undefined
+): {window: Window; text: string; caret: number | undefined} | undefined {
+	if (node.kind !== 'row' || config === undefined) return undefined
+	const separator = config.separator
 	const markup = typeof rows === 'string'
 	// The pieces, re-cut so none of them carries the document's own separator — see
 	// {@link documentLines}. Counted AFTER that cut, because it is the cut that decides how many
-	// rows this opens, and `tail` is an index into them. A markup clip arrives as ONE string and is
-	// cut here for the same reason: what a row boundary is belongs to the document.
+	// rows this opens. A markup clip arrives as ONE string and is cut here for the same reason:
+	// what a row boundary is belongs to the document.
 	const pieces = documentLines(markup ? [rows] : rows, separator)
 	if (pieces.length < 2) return undefined
 	const lines = preorderRows(roots)
@@ -1044,16 +1045,35 @@ export function splitPlan(
 	const ends = [offsetOfAnchor(roots, span.anchor), offsetOfAnchor(roots, span.head)]
 	const from = Math.min(...ends)
 	const to = Math.max(...ends)
-	if (from < slot.start || to > slot.end) return undefined
+	if (from < slot.start || from > slot.end) return undefined
+	// THE ROW THE SPAN ENDS IN, which is `node` for every span inside one body and a LATER row for a
+	// cross-row paste. An offset in the structural run BETWEEN two lines belongs to no body and is
+	// refused: it names no content, so there is no tail to keep.
+	const closes = lines.findIndex(
+		(entry, at) => at >= index && to >= entry.row.slotRange().start && to <= entry.row.slotRange().end
+	)
+	if (closes < 0) return undefined
+	const last = lines[closes].row
+	const crossing = last !== node
+	// A ROW WITH CHILDREN CANNOT BE THE TAIL. The tail is written at the HEAD's lead, so `last`'s own
+	// children would be re-parented by the clamp rather than moved, and re-leading them is a depth
+	// plan rather than a splice. A CARVED row is refused by the same test — its cells are its child
+	// rows — which is what keeps a paste from cutting a table line in two.
+	if (crossing && last.rows().length > 0) return undefined
 
 	const body = node.slot()
 	// A CARVED row has no subtree to place: its child rows are the body this split is cutting, and
-	// both halves carry their own share of them.
-	const children = hasCells(node) ? [] : node.rows()
+	// both halves carry their own share of them. A CROSSING span has none either: every row between
+	// the two ends lies wholly inside it, and `node`'s descendants are all of them.
+	const children = crossing || hasCells(node) ? [] : node.rows()
 	const descendants =
 		children.length === 0 ? undefined : children.map(child => rowContent(child, separator)).join(separator)
 
 	const headBody = body.slice(0, from - slot.start)
+	// WHAT THE LAST COVERED ROW KEEPS: its body past the span, which follows the last piece into the
+	// row this opens. For a span inside one body that is the same slice the split has always made.
+	const closing = last.slotRange()
+	const tailBody = last.slot().slice(to - closing.start)
 	// AN EMPTY FIRST LINE IS A ROW'S TAIL, not a row: a markup clip beginning with the document's
 	// own separator was copied from the END of a row, so there is nothing there to open and it joins
 	// the head exactly as a foreign clip's first piece does. Every other first line is written as the
@@ -1071,7 +1091,7 @@ export function splitPlan(
 	// Enter at the head of a heading took the heading off its own text (`'# a'` emitted `'# ⏎a'`),
 	// and Enter at the head of a ticked to-do left the tick above and re-seeded the text below.
 	// The row that keeps the CONTENT keeps the kind and the `meta` that qualifies it.
-	const opensAbove = !markup && headBody === '' && pieces.every(piece => piece === '')
+	const opensAbove = !crossing && !markup && headBody === '' && pieces.every(piece => piece === '')
 	const kept: Continuation = {descriptor: node.descriptor(), meta: node.meta()}
 	const headKind = opensAbove ? continues : kept
 	const headLine = rowMarkup(headKind?.descriptor, headKind?.meta, headBody + (joinsHead ? pieces[0] : ''))
@@ -1079,9 +1099,18 @@ export function splitPlan(
 	const keepsHead = joinsHead || node.lead() + headLine !== ''
 	const head = keepsHead ? headLine : pieces[0]
 	const opened = pieces.slice(joinsHead || !keepsHead ? 1 : 0)
+	// THE ROW THAT KEEPS THE CONTENT KEEPS THE KIND, which is `opensAbove`'s rule read at the other
+	// end of the span: what survives a crossing span is the LAST covered row's tail, so the row it
+	// lands in is that row's kind and not the head's continuation. Its LEAD is the head's all the
+	// same — every line this plan opens is written at the row the span began in, which is what makes
+	// the tail a sibling and what its own children could not survive.
+	const tailKind: Continuation = crossing ? {descriptor: last.descriptor(), meta: last.meta()} : undefined
+	const openedKind = crossing ? tailKind : opensAbove ? kept : continues
 	const openedLines = opened.map((piece, at) => {
-		const text = at === opened.length - 1 ? piece + body.slice(to - slot.start) : piece
-		return markup ? text : openedLine(node, opensAbove ? kept : continues, text)
+		const closes = at === opened.length - 1
+		const text = closes ? piece + tailBody : piece
+		if (markup) return text
+		return openedLine(node, closes ? openedKind : opensAbove ? kept : continues, text)
 	})
 	const subtree = descendants === undefined ? '' : separator + descendants
 	// The scan's own emptiness, asked of the head this split is about to write — see
@@ -1089,16 +1118,34 @@ export function splitPlan(
 	const headKeepsChildren = node.lead() + head !== ''
 
 	const written = openedLines.join(separator)
+	// THE ROW AFTER THE SPAN KEEPS ITS DEPTH, or there is no plan — the scan's own ceiling, asked of
+	// the one row whose predecessor this changes. A crossing span replaces the last covered row's
+	// line with one written at the HEAD's lead, so a row that used to follow a deeper line now
+	// follows a shallower one and the clamp re-parents it without a byte of its own moving. Past
+	// that row every predecessor is untouched and so is every parse, which is {@link scanAgrees}'
+	// own reason for stopping at `high + 1`.
+	const following = crossing ? lines[closes + 1] : undefined
+	if (following) {
+		const above = {depth: lines[index].depth, childless: openedLines[openedLines.length - 1] === ''}
+		if (landsAt(above, leadDepth(following.row.lead(), config.indent)) !== following.depth) return undefined
+	}
 	const text = headKeepsChildren ? head + subtree + separator + written : head + separator + written + subtree
 
 	const start = node.position.start + node.lead().length
 	// The bytes the bound holds right now: the row's own line, plus the subtree and the separator
 	// before it. The subtree's last line carries no trailing separator when it ends the document,
 	// and the bound stops before it when it does — the join puts one back afterwards.
-	const current = rowMarkup(node.descriptor(), node.meta(), body) + subtree
-	// The LAST opened row is where the caret goes, past the subtree when the head kept it and
-	// directly after the head when it did not.
-	const tail = index + (headKeepsChildren ? preorderRows([node]).length : 1) + opened.length - 1
+	//
+	// A CROSSING span holds every line from this row's to the last covered row's own, the lines
+	// between them included — which is the pre-order join, and the one place this plan reads bytes
+	// it did not write.
+	const current = crossing
+		? [
+				rowMarkup(node.descriptor(), node.meta(), body),
+				...lines.slice(index + 1, closes).map(entry => rowLine(entry.row)),
+				rowLine(last),
+			].join(separator)
+		: rowMarkup(node.descriptor(), node.meta(), body) + subtree
 
 	// TRIMMED to the shared prefix and suffix inside that bound, and it is {@link turnIntoPlan}'s
 	// caret rule rather than an economy — the same defect P4 fixed there and left standing here.
@@ -1118,6 +1165,24 @@ export function splitPlan(
 	const contiguous = subtree === '' || !headKeepsChildren
 	const prefix = contiguous ? sharedPrefix(current, text) : 0
 	const suffix = contiguous ? sharedSuffix(current, text, prefix) : 0
+	// THE LAST OPENED ROW'S OWN BODY, `into` characters along it — past what this wrote there, which
+	// for Enter's empty piece is the row's entry and for a foreign clip is the end of the clip. An
+	// absolute offset, so the window arithmetic answers nothing about the caret and controlled mode
+	// gets the same answer as uncontrolled. `undefined` for a markup clip, whose last line is a whole
+	// row this layer cannot parse — see the header.
+	const lastLine = openedLines[openedLines.length - 1]
+	const writtenAt = headKeepsChildren
+		? head.length + subtree.length + separator.length
+		: head.length + separator.length
+	const caret = markup
+		? undefined
+		: start +
+			writtenAt +
+			written.length -
+			lastLine.length +
+			node.lead().length +
+			bodyOffset(openedKind) +
+			pieces[pieces.length - 1].length
 	return {
 		window: {
 			start: start + prefix,
@@ -1125,12 +1190,27 @@ export function splitPlan(
 			insertedLength: text.length - prefix - suffix,
 		},
 		text: text.slice(prefix, text.length - suffix),
-		tail,
-		// How far INTO the tail's own body the caret goes: past what this wrote there, which for
-		// Enter's empty piece is the tail's entry and for a foreign clip is the end of the clip.
-		// `undefined` for a markup clip, whose last line is a whole row — see the header.
-		into: markup ? undefined : pieces[pieces.length - 1].length,
+		caret,
 	}
+}
+
+/**
+ * A character no markup can carry, used to ask a kind where it puts its body — see
+ * {@link bodyOffset}.
+ */
+const BODY_PROBE = '\u0000'
+
+/**
+ * WHERE A KIND PUTS ITS BODY inside the line it writes: the bytes of its own that precede it.
+ *
+ * Asked of the markup itself rather than recovered by comparing two of its outputs, and that is not
+ * fastidiousness — a shared prefix answers wrongly for a body that BEGINS with the kind's own
+ * closing bytes, which for a fence is any body starting with a newline. {@link rowMarkup} writes a
+ * gap verbatim, so a probe comes back at exactly the offset the body will occupy.
+ */
+function bodyOffset(continues: Continuation): number {
+	if (!continues?.descriptor) return 0
+	return rowMarkup(continues.descriptor, continues.meta, BODY_PROBE).indexOf(BODY_PROBE)
 }
 
 /**

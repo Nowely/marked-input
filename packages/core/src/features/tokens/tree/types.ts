@@ -197,9 +197,14 @@ export interface RowNode {
 	 * reads at a row selection — whose lines are whole rows and are written verbatim; an ARRAY is
 	 * pieces, opened at this row's lead and kind. See {@link splitPlan}.
 	 *
-	 * `false` for fewer than two pieces, for an editor with no separator, and for a span that is
-	 * not inside this row's own body — which is what leaves a paste ACROSS rows to the ordinary
-	 * replacement.
+	 * A SPAN MAY LEAVE THIS ROW and close in a later one, which is what a paste over a cross-row
+	 * selection is: the rows between the two ends are consumed, and the last covered row's tail
+	 * follows the last piece — in a row carrying THAT row's kind at THIS row's lead.
+	 *
+	 * `false` for fewer than two pieces, for an editor with no rows, for a span whose low end is
+	 * outside this row's own body, for one whose high end is in the structure between two lines,
+	 * and — because the tail is written at this row's lead — for one closing in a row that has
+	 * children of its own or before a row that would then land at a different depth.
 	 */
 	writeRows(span: Anchors, rows: readonly string[] | string): boolean
 	/**

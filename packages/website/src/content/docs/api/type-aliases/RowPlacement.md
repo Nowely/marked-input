@@ -9,7 +9,7 @@ title: "RowPlacement"
 type RowPlacement = object;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:276](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L276)
+Defined in: [core/src/features/tokens/tree/types.ts:281](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L281)
 
 WHERE a row goes: the row it becomes a child of (`null` for the document's own root list) and
 the index it takes among that parent's child rows AFTER the move, counted with the moved row
@@ -27,7 +27,7 @@ parents a row joins, and the tree carries no parent pointers to disambiguate it 
 index: number;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:276](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L276)
+Defined in: [core/src/features/tokens/tree/types.ts:281](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L281)
 
 ***
 
@@ -37,4 +37,4 @@ Defined in: [core/src/features/tokens/tree/types.ts:276](https://github.com/Nowe
 parent: RowNode | null;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:276](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L276)
+Defined in: [core/src/features/tokens/tree/types.ts:281](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L281)
