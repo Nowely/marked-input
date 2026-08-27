@@ -77,6 +77,19 @@ const cellsOf = (host: HTMLElement): HTMLElement[] => [
 	...host.querySelectorAll<HTMLElement>('[class*="tableCell"]:not([class*="tableHeadCell"])'),
 ]
 
+/**
+ * The TEXT NODE reading `text` inside `element` — what a hand-built `Range` endpoint takes, where
+ * `rowAt` and its neighbours answer the element around it. A kind that paints furniture beside its
+ * body (a toggle's arrow, a to-do's box) has no single child to reach for.
+ */
+const textReading = (element: HTMLElement, text: string): Text => {
+	const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
+	for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+		if (node instanceof Text && node.data === text) return node
+	}
+	throw new Error(`no text node reading ${JSON.stringify(text)}`)
+}
+
 /** A toggle row, named by the text its own line starts with — its children are inside it. */
 const toggleStarting = (host: HTMLElement, text: string): HTMLElement => {
 	const found = [...host.querySelectorAll<HTMLElement>('[class*="toggleRow"]')].find(row =>
@@ -886,6 +899,28 @@ describe('the keymap on the showcase kinds', () => {
 		await userEvent.keyboard('Z')
 
 		await expect.poll(value).toBe('lead Z\n@toc\nSection\n@end\nafter')
+	})
+
+	/**
+	 * AND A WRITE MAY NOT TAKE CONTENT NOBODY CAN SEE. A collapsed toggle RENDERS its children and
+	 * hides them, so their text is in the DOM and the browser's own paragraph walk takes it: MEASURED
+	 * on the showcase, a triple-click of `'▸ Single-region GA first'` carries the hidden body in
+	 * `range.toString()`, and typing over it emitted `'▸ Z'` — 76 lines to 75, the body gone with
+	 * nothing having shown it. The OPEN toggle beside it keeps its children under the same gesture,
+	 * which is what makes this the collapse rather than the selection.
+	 */
+	it('leaves a collapsed toggle its hidden body when the selection is typed over', async () => {
+		const {host, value} = await mountControlled(Showcase, '▸ head\n\tbody\nafter')
+		const head = textReading(toggleStarting(host, 'head'), 'head')
+		const next = rowAt(host, 'after').firstChild?.firstChild
+		if (!(next instanceof Text)) throw new Error('the page painted no row text')
+
+		// The range a triple-click of the closed toggle makes: its own line, plus the body it hides.
+		window.getSelection()?.setBaseAndExtent(head, 0, next, 0)
+		await settle()
+		await userEvent.keyboard('Z')
+
+		await expect.poll(value).toBe('▸ Z\n\tbody\nafter')
 	})
 
 	/**

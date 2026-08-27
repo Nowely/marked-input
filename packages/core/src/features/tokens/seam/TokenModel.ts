@@ -485,7 +485,43 @@ export class TokenModel {
 		if (!span) return undefined
 		if (!this.rowSelection(anchors).every(row => this.#dom.reachable(untracked(() => entryAnchor(row)))))
 			return undefined
-		return {anchor: this.anchorAt(span.start), head: this.anchorAt(span.end)}
+		const end = this.#visibleEnd(span)
+		if (end <= span.start) return undefined
+		return {anchor: this.anchorAt(span.start), head: this.anchorAt(end)}
+	}
+
+	/**
+	 * WHERE THE SPAN STOPS BEING VISIBLE — a write may not take content the user cannot see, which is
+	 * the invariant this effort already wrote for the CARET (`#settleCaret`'s `'boxless'` arm) and for
+	 * NESTING (a kind that hosts no children refuses the rows), now on the write path.
+	 *
+	 * A COLLAPSED TOGGLE renders its children and hides them, so their text is in the DOM and the
+	 * browser's own paragraph walk takes it: MEASURED on the showcase, a triple-click of `'▸
+	 * Single-region GA first'` selects its hidden body too — `range.toString()` carries both lines —
+	 * and typing over it emitted `'▸ Z'`, 76 lines to 75, the body gone with nothing on screen having
+	 * shown it. The same gesture on the OPEN toggle beside it keeps its children, which is what makes
+	 * this the collapse and not the selection.
+	 *
+	 * `'boxless'` IS THE ONLY VERDICT READ HERE. `'absent'` is a frame that has not painted the row
+	 * yet — a race — and treating it as hidden would clip a span against the adapter's timing;
+	 * `rowPaint` is the three-way reading that keeps those apart.
+	 *
+	 * IT ONLY EVER SHRINKS, like {@link contentSpan} itself, so the visible half of what the user
+	 * selected is still replaced: the toggle's own line goes, its hidden body stays, and one undo is
+	 * not needed to find out what happened.
+	 */
+	#visibleEnd(span: {start: number; end: number}): number {
+		const separator = untracked(() => this.#tree.config()?.separator)
+		if (separator === undefined) return span.end
+		let end = span.end
+		// Document order, so the FIRST hidden row inside the span closes it and the rest fall outside.
+		for (const row of untracked(() => preorderRows(this.#tree.roots()).map(entry => entry.row))) {
+			const line = untracked(() => row.position.start)
+			if (line <= span.start || line >= end) continue
+			if (this.#dom.rowPaint(row.id) !== 'boxless') continue
+			end = line - separator.length
+		}
+		return end
 	}
 
 	/**
