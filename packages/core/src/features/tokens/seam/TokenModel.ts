@@ -319,13 +319,28 @@ export class TokenModel {
 					? (rows ?? '')
 					: untracked(() => rowSelectionRows(first, this.#continues(first), rows, separator))
 			// A WRITE MAY NOT TAKE CONTENT THE USER CANNOT SEE, on this door as on the text one
-			// ({@link #visibleEnd}). The clip answers a CONTENT end and this path's own end is a
-			// BOUNDARY — a removal takes the separator after the last row it takes, a replacement
-			// leaves it to separate what arrives — so a clipped end is read back on the side the
-			// verb writes on.
-			const visible = this.#visibleEnd(span)
-			const end = visible === span.end ? span.end : visible + (rows === null ? separator.length : 0)
-			const caret = this.#replaceWithin(span.start, end, text)
+			// ({@link #hiddenWithin}). The span itself is written whole and each hidden subtree is
+			// put BACK into it, because the rule is a per-subtree exclusion: a span truncated at
+			// the first hidden row leaves every visible row beyond it standing, which over two
+			// collapsed toggles is a delete the user watched skip rows they had selected.
+			const value = untracked(() => this.#tree.value())
+			const kept = this.#hiddenWithin(span)
+				.map(hidden => value.slice(hidden.start, Math.min(hidden.end, span.end)))
+				.map(line => (line.endsWith(separator) ? line.slice(0, -separator.length) : line))
+				.join(separator)
+			// A REMOVAL'S SPAN IS WHOLE LINES PLUS ONE ADJOINING SEPARATOR — leading when the run
+			// ends the document ({@link rowSelectionSpan}), trailing otherwise — so whatever
+			// survives has to carry that same separator back. A replacement's span adjoins none,
+			// and its own text comes first.
+			const write =
+				kept === ''
+					? text
+					: rows === null
+						? (span.start === first.position.start ? '' : separator) +
+							kept +
+							(span.end === value.length ? '' : separator)
+						: text + separator + kept
+			const caret = this.#replaceWithin(span.start, span.end, write)
 			if (!caret) return
 			written = true
 			this.#applyCaret(caret)
@@ -506,7 +521,7 @@ export class TokenModel {
 	}
 
 	/**
-	 * WHERE THE SPAN STOPS BEING VISIBLE — a write may not take content the user cannot see, which is
+	 * THE SUBTREES INSIDE THE SPAN THE USER CANNOT SEE — a write may not take their content, which is
 	 * the invariant this effort already wrote for the CARET (`#settleCaret`'s `'boxless'` arm) and for
 	 * NESTING (a kind that hosts no children refuses the rows), now on the write path.
 	 *
@@ -521,28 +536,36 @@ export class TokenModel {
 	 * yet — a race — and treating it as hidden would clip a span against the adapter's timing;
 	 * `rowPaint` is the three-way reading that keeps those apart.
 	 *
-	 * IT ONLY EVER SHRINKS, like {@link contentSpan} itself, so the visible half of what the user
-	 * selected is still replaced: the toggle's own line goes, its hidden body stays, and one undo is
-	 * not needed to find out what happened.
+	 * A SUBTREE, so its own hidden descendants are not answered twice: a `position` runs to the end
+	 * of everything nested under the row, and a collapsed row hides all of it at once.
 	 *
-	 * TWO DOORS REACH THE SAME RULE. {@link replaceRows} — the EXACT-ROW-COVER path, which Backspace,
-	 * Delete, cut, paste and a typed character over a row selection all reach — asks it too, and it
-	 * has to: a collapsed toggle's subtree is inside its own `position.end`, so a sweep that covers
-	 * the toggle's row whole covers a body nothing on the screen showed. What differs is only which
-	 * side of the separator each verb reads its own end on.
+	 * TWO DOORS READ THIS, and the difference between them is the whole reason it answers a LIST
+	 * rather than a number. {@link rowSelectionText} can only shrink a span, so it takes the first
+	 * hidden subtree as the end ({@link #visibleEnd}) — an anchor pair has no way to say "all of
+	 * this except the middle". {@link replaceRows} writes offsets, so it puts every hidden subtree
+	 * back and takes the rest: truncating there left every VISIBLE row beyond the first collapsed
+	 * toggle standing, and a sweep of twenty rows crossing one toggle deleted down to it and left
+	 * the other fifteen, with nothing on screen saying why.
 	 */
+	#hiddenWithin(span: {start: number; end: number}): {start: number; end: number}[] {
+		const hidden: {start: number; end: number}[] = []
+		let covered = span.start
+		for (const row of untracked(() => preorderRows(this.#tree.roots()).map(entry => entry.row))) {
+			const position = untracked(() => ({start: row.position.start, end: row.position.end}))
+			if (position.start <= span.start || position.start >= span.end || position.start < covered) continue
+			if (this.#dom.rowPaint(row.id) !== 'boxless') continue
+			hidden.push(position)
+			covered = position.end
+		}
+		return hidden
+	}
+
+	/** Where the span stops being visible — the first hidden subtree's line; see {@link #hiddenWithin}. */
 	#visibleEnd(span: {start: number; end: number}): number {
 		const separator = untracked(() => this.#tree.config()?.separator)
-		if (separator === undefined) return span.end
-		let end = span.end
-		// Document order, so the FIRST hidden row inside the span closes it and the rest fall outside.
-		for (const row of untracked(() => preorderRows(this.#tree.roots()).map(entry => entry.row))) {
-			const line = untracked(() => row.position.start)
-			if (line <= span.start || line >= end) continue
-			if (this.#dom.rowPaint(row.id) !== 'boxless') continue
-			end = line - separator.length
-		}
-		return end
+		const first = this.#hiddenWithin(span).at(0)
+		if (separator === undefined || first === undefined) return span.end
+		return first.start - separator.length
 	}
 
 	/**

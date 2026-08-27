@@ -976,6 +976,79 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * THE SURVIVING BODY IS A ROW, NOT TEXT IN THE ROW ABOVE. A removal whose run ends the document
+	 * owns no trailing separator, so `rowSelectionSpan` charges it the LEADING one instead — and a
+	 * write that leaves something standing has to put that separator back, or the two rows either
+	 * side of it fuse. Measured before this pin: three keystrokes turned `'intro⏎before⏎▸ head⏎⇥body'`
+	 * into `'intro⇥body'`, the child's indent surviving as a literal tab in the middle of a paragraph.
+	 */
+	it('leaves the hidden body a row of its own when the cover ends the document', async () => {
+		const {host, value} = await mountControlled(Showcase, 'intro\nbefore\n▸ head\n\tbody')
+		await focusAtStart(rowAt(host, 'before'))
+		await userEvent.keyboard('{Escape}')
+		await settle()
+		await userEvent.keyboard('{Shift>}{ArrowDown}{/Shift}')
+		await settle()
+		await userEvent.keyboard('{Backspace}')
+
+		await expect.poll(value).toBe('intro\n\tbody')
+	})
+
+	/**
+	 * THE CONTROL FOR THE SEPARATOR THE PIN ABOVE PUTS BACK: the identical document-final gesture
+	 * with no toggle in it must still leave nothing behind, so a fix for the fusion cannot start
+	 * stranding a separator on every ordinary delete.
+	 */
+	it('takes both rows and the separator when a document-final cover holds nothing hidden', async () => {
+		const {host, value} = await mountControlled(Showcase, 'intro\nbefore\nlast')
+		await focusAtStart(rowAt(host, 'before'))
+		await userEvent.keyboard('{Escape}')
+		await settle()
+		await userEvent.keyboard('{Shift>}{ArrowDown}{/Shift}')
+		await settle()
+		await userEvent.keyboard('{Backspace}')
+
+		await expect.poll(value).toBe('intro')
+	})
+
+	/**
+	 * EVERY HIDDEN SUBTREE IS EXCLUDED, NOT JUST THE FIRST. The rule is "do not take what the user
+	 * cannot see", which is a per-subtree exclusion — a span merely TRUNCATED at the first collapsed
+	 * toggle stops at it and leaves every visible row beyond standing. Measured before this pin: a
+	 * cover of four visible rows across two collapsed toggles deleted two of them and left `'▸ two'`
+	 * — a row the user selected, could see, and watched survive a delete.
+	 */
+	it('takes every visible row a cover spans across two collapsed toggles', async () => {
+		const {host, value} = await mountControlled(Showcase, 'before\n▸ one\n\tb1\n▸ two\n\tb2\nafter')
+		const first = rowAt(host, 'before').firstChild?.firstChild
+		const next = rowAt(host, 'after').firstChild?.firstChild
+		if (!(first instanceof Text) || !(next instanceof Text)) throw new Error('the page painted no row text')
+
+		window.getSelection()?.setBaseAndExtent(first, 0, next, 0)
+		await settle()
+		await userEvent.keyboard('{Backspace}')
+
+		await expect.poll(value).toBe('\tb1\n\tb2\nafter')
+	})
+
+	/**
+	 * AND THE SAME COVER PASTED OVER, which is the other verb this door serves: the arriving lines
+	 * take the visible rows' place and every hidden subtree is still put back, in document order.
+	 */
+	it('keeps both hidden bodies when a cover across two collapsed toggles is pasted over', async () => {
+		const {host, value} = await mountControlled(Showcase, 'before\n▸ one\n\tb1\n▸ two\n\tb2\nafter')
+		const first = rowAt(host, 'before').firstChild?.firstChild
+		const next = rowAt(host, 'after').firstChild?.firstChild
+		if (!(first instanceof Text) || !(next instanceof Text)) throw new Error('the page painted no row text')
+
+		window.getSelection()?.setBaseAndExtent(first, 0, next, 0)
+		await settle()
+		dispatchPaste(host, 'x\ny')
+
+		await expect.poll(value).toBe('x\ny\n\tb1\n\tb2\nafter')
+	})
+
+	/**
 	 * A SELECTION THAT COVERS NO CONTENT IS A POSITION, NOT A LICENCE TO WRITE THE STRUCTURE IT
 	 * SPANS. A double-click in a row's blank RIGHT MARGIN is the plainest way to one: Chromium's
 	 * word expansion past end-of-line answers a CROSS-ROW range whose own text is empty — measured
