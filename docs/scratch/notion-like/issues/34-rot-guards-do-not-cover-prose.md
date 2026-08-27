@@ -55,10 +55,24 @@ spans qualify, and each segment of each one has to appear as an identifier in
 that is the floor that catches the rot mode which actually happens — a name is deleted and the
 prose keeps citing it — without pretending to type-check a sentence.
 
-Four spans in the guides today are correctly there and are not ours to declare, and they are named
-with their reasons rather than skipped: `React` and `forwardRef` are React's, and `insertMark` and
-`replaceText` appear inside the sentence that says they were WITHDRAWN. A budget pins the list at
-four, for `SKETCH_BUDGET`'s reason.
+Eight spans in the guides today are correctly there and are not ours to declare, and they are named
+with their reasons rather than skipped: `React` and `forwardRef` are React's, `defaultPrevented`,
+`isContentEditable` and `insertCompositionText` are the DOM's, and `insertMark`, `replaceText` and
+`replaceRange` appear inside the sentence that says they were WITHDRAWN. A budget pins the list at
+eight, for `SKETCH_BUDGET`'s reason.
+
+Two refinements came out of trying to break it rather than out of design, and both are pinned:
+
+- **the corpus is PRODUCTION only.** A spec's `it('fails closed when the mark is gone')` puts
+  English into the corpus as a declared name, and measured, `` `store.gone` `` PASSED the check
+  until specs, benches and `__testing__` came out of it — 4565 names against 1963 now. The
+  retired-vocabulary scan keeps them, because a rename has to reach a test too.
+- **a file name is not an identifier.** `` `package.json` `` and `` `oxfmt.config.ts` `` are dotted
+  and nothing declares a `json` or a `ts`. The guides happen to carry none today and `AGENTS.md`
+  carries four, so leaving it would have been a trap for the next page that names a config file.
+
+The retired scan also reads `packages/storybook/src`, which is the largest consumer this repository
+has and where a rename lands next; measured clean on all ten identifiers.
 
 **The avoid-list half was measured and NOT taken, and that is the ticket's own false-positive risk
 turning out to be fatal.** Extracting every single-word `_Avoid_` entry from `CONTEXT.md` answers
@@ -81,6 +95,8 @@ for any of the three.
 
 Seen to redden, not merely seen to pass: a `const BlockStore = 1` added to `RowController.ts` turned
 the `BlockStore` case red; `` `store.bus` `` and `` `effectScopeGone` `` added to `guides/rows.md`
-turned that page red with `store.bus — no \`bus\` in any package source`; and rewriting one
-glossary line to `` `BlockMenu` is fine again `` turned the `BlockMenu` case red on the pin that
-holds the two together.
+turned that page red with `store.bus — no \`bus\` in any package source`; a `const BlockMenu = 1` in
+the showcase's own `options.tsx` turned it red through the consumer scan; `` `store.gone` `` turned
+it red once the corpus lost the specs and passed before; and rewriting one glossary line to
+`` `BlockMenu` is fine again `` turned the `BlockMenu` case red on the pin that holds the two
+together.

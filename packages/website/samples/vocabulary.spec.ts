@@ -52,10 +52,21 @@ function stripComments(source: string): string {
 		.replaceAll(/(^|[^:])\/\/[^\n]*/g, '$1')
 }
 
-const sources = PACKAGE_SOURCES.flatMap(dir => walk(dir, name => /\.(?:ts|tsx|vue)$/.test(name))).map(path => ({
-	path: relative(ROOT, path),
-	code: stripComments(readFileSync(path, 'utf8')),
-}))
+function read(dirs: readonly string[]): {path: string; code: string}[] {
+	return dirs
+		.flatMap(dir => walk(dir, name => /\.(?:ts|tsx|vue)$/.test(name)))
+		.map(path => ({path: relative(ROOT, path), code: stripComments(readFileSync(path, 'utf8'))}))
+}
+
+const sources = read(PACKAGE_SOURCES)
+
+/**
+ * The showcase and the demo pages, which are CONSUMERS: they are scanned for the retired
+ * vocabulary — a rename lands there too, and the Notion page is the largest consumer this
+ * repository has — and deliberately NOT for the identifier corpus below, which is what the guides
+ * describe. A page's own local name is not an answer to "does this API still exist".
+ */
+const consumers = read([join(ROOT, 'packages', 'storybook', 'src')])
 
 /**
  * THE GLOSSARY'S DELETIONS, AS IDENTIFIERS. `CONTEXT.md`'s "Flagged ambiguities" resolves two
@@ -97,7 +108,7 @@ describe("CONTEXT.md's deletions stay deleted", () => {
 		// the two cannot drift apart in silence.
 		expect(context).toContain(entry.glossary)
 
-		const offenders = sources.flatMap(({path, code}) =>
+		const offenders = [...sources, ...consumers].flatMap(({path, code}) =>
 			code
 				.split('\n')
 				.map((text, index) => ({path, line: index + 1, text}))
@@ -110,6 +121,7 @@ describe("CONTEXT.md's deletions stay deleted", () => {
 	it('reads a meaningful number of sources, so an empty answer came from looking', () => {
 		expect(sources.length).toBeGreaterThan(100)
 		expect(sources.some(source => source.path.includes('features/rows/'))).toBe(true)
+		expect(consumers.some(source => source.path.includes('pages/Notion/'))).toBe(true)
 	})
 })
 
@@ -120,7 +132,21 @@ describe("CONTEXT.md's deletions stay deleted", () => {
  * without pretending to type-check a sentence. `store.bus` fails on `bus`; `store.rows` passes on
  * both halves.
  */
-const identifiers = new Set(sources.flatMap(({code}) => code.match(/[A-Za-z_$][A-Za-z0-9_$]*/g) ?? []))
+const identifiers = new Set(
+	sources
+		.filter(source => isProduction(source.path))
+		.flatMap(({code}) => code.match(/[A-Za-z_$][A-Za-z0-9_$]*/g) ?? [])
+)
+
+/**
+ * PRODUCTION ONLY, for the corpus alone. A spec's `it('fails closed when the mark is gone')` puts
+ * English into the corpus as an identifier: measured, `store.gone` PASSED the check until this
+ * line, and the corpus was 4565 names against 1963 now. The retired-vocabulary scan above keeps
+ * the specs, because a rename has to reach them too.
+ */
+function isProduction(path: string): boolean {
+	return !/\.(?:spec|bench)\.tsx?$/.test(path) && !path.includes('__testing__')
+}
 
 /**
  * WHICH BACKTICKS ARE CODE. A span qualifies when it is DOTTED (`store.rows`, `RowSpec.continues`)
@@ -129,9 +155,16 @@ const identifiers = new Set(sources.flatMap(({code}) => code.match(/[A-Za-z_$][A
  * puts single lowercase words and phrases in backticks — `row`, `separator`, `'\n'` — and neither
  * shape matches. Measured over the guides as they stand: 259 spans qualify out of the many
  * hundreds present.
+ *
+ * A FILE NAME IS NOT AN IDENTIFIER, and it is the one shape that reads as one: `package.json` and
+ * `oxfmt.config.ts` are dotted, and nothing declares a `json` or a `ts`. Measured — the guides
+ * happen to carry none today, but `AGENTS.md` carries four, so leaving it would be a trap for the
+ * next page that names a config file.
  */
 const CODE_SPAN =
 	/^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z0-9_$]+)+(?:\(\))?$|^[a-z$_][a-z0-9$_]*[A-Z][A-Za-z0-9_$]*(?:\(\))?$/
+
+const FILE_NAME = /\.(?:ts|tsx|js|jsx|mjs|cjs|json|md|mdx|css|vue|html|yaml|yml)$/
 
 /**
  * Names that are correctly in the guides and are not ours to declare. Kept explicit and short for
@@ -140,8 +173,12 @@ const CODE_SPAN =
 const FOREIGN = new Map([
 	['React', "React's own namespace, in `React.memo`"],
 	['forwardRef', "React's own API, named while explaining what a row component must spread"],
+	['defaultPrevented', "the DOM's, in the paragraph about what the guard cancels"],
+	['isContentEditable', "the DOM's"],
+	['insertCompositionText', "the DOM's — an inputType this editor deliberately does not express"],
 	['insertMark', 'a WITHDRAWN ref member, named in the sentence that says it is withdrawn'],
 	['replaceText', 'the same sentence'],
+	['replaceRange', 'the same sentence'],
 ])
 
 const docPages = walk(DOCS, name => /\.mdx?$/.test(name))
@@ -159,7 +196,7 @@ describe('prose backticks name something that exists', () => {
 		const page = docPages.find(candidate => candidate.slug === slug)!
 		const spans = [...prose(page.text).matchAll(/`([^`\n]+)`/g)].map(match => match[1].trim())
 		const rot = spans
-			.filter(span => CODE_SPAN.test(span))
+			.filter(span => CODE_SPAN.test(span) && !FILE_NAME.test(span))
 			.flatMap(span =>
 				span
 					.split(/[.()]/)
@@ -173,12 +210,14 @@ describe('prose backticks name something that exists', () => {
 	it('checks a meaningful number of spans, so an empty answer came from looking', () => {
 		const checked = docPages
 			.flatMap(page => [...prose(page.text).matchAll(/`([^`\n]+)`/g)].map(match => match[1].trim()))
-			.filter(span => CODE_SPAN.test(span))
+			.filter(span => CODE_SPAN.test(span) && !FILE_NAME.test(span))
 		expect(checked.length).toBeGreaterThan(150)
 		expect(identifiers.size).toBeGreaterThan(1000)
+		// The corpus is production only, so a name that lives in a test title is NOT an answer.
+		expect(identifiers.has('gone')).toBe(false)
 	})
 
 	it('spends no more of the foreign list than agreed', () => {
-		expect([...FOREIGN.keys()]).toHaveLength(4)
+		expect([...FOREIGN.keys()]).toHaveLength(8)
 	})
 })
