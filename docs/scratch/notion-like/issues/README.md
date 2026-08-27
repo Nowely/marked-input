@@ -5,13 +5,14 @@ Two generations of tickets live here.
 - **01–11 are the PROBE's**, filed 2026-08-25 before any of the work started, against the editor as
   it then was. Seven are closed; `outcome.md:189-212` is the account of which decision closed each,
   and that four of the seven closures are ONE decision (the scan-first inversion, ADR-0010).
-- **12–44 came out of the BUILD**, filed 2026-08-27 from what the effort declared and did not
+- **12–45 came out of the BUILD**, filed 2026-08-27 from what the effort declared and did not
   build: `outcome.md`'s "What is declared but not built", `map.md`'s Fog, and `insights.md`'s
   ranked next steps and its "what I would not do yet". Nothing here is new analysis — every problem
   statement quotes a record and cites the file the record cites, re-verified against the code at
   `52ef65ae`. 41–43 were split out during the contract group's review, from items an earlier record
 had judged open and then carried inside a `resolved` ticket, and 44 during the affordance group's
-for the same reason.
+for the same reason. 45 is the exception to "nothing here is new analysis": it came out of 33's own
+measurement, which is the first one in this tracker to have been RUN rather than quoted.
 
 `Status:` uses the five roles in `docs/agents/triage-labels.md`; the older tickets also use
 `resolved — <what answered it>`, which is the wayfinder vocabulary in
@@ -59,7 +60,7 @@ for the same reason.
 | [30](30-foreign-value-disables-undo.md) | A value the editor did not write disables undo | needs-triage | Declared in P8; the collaborative-editing boundary |
 | [31](31-find-in-page-edits-the-document.md) | Find-in-page inside a closed toggle edits the document | needs-triage | `beforematch` opens the row, and opening it is a retype |
 | [32](32-no-per-row-view-state.md) | A cross-parent drop keeps the node and loses the component | needs-triage | No core-owned per-row view store; why 31 exists |
-| [33](33-nothing-is-measured-at-document-scale.md) | Row-verb runtime and caret ergonomics are unmeasured | needs-triage | One number exists: ~1.5 ms per `dragover` at 4000 rows |
+| [33](33-nothing-is-measured-at-document-scale.md) | Row-verb runtime and caret ergonomics are unmeasured | resolved | Measured both sides of the seam: the row layer is free (`rowOf` 0.067 ms at 4000 rows) and a STRUCTURAL edit is not — 45 carries what it found |
 | [34](34-rot-guards-do-not-cover-prose.md) | The rot guards stop at fenced code | ready-for-agent | Prose backticks unchecked; `CONTEXT.md`'s avoid-list unenforced |
 | [35](35-unexercised-clamp-distinction.md) | `rowSelectionText`'s original-vs-clamped distinction | resolved | Exercisable after all; neither pair is a witness alone, so the refusal is asked of both |
 | [36](36-published-surface-leftovers.md) | Grip `aria-label`, `Store`'s rename TODO, `RowProps.index` | resolved | "Row options" announced; `Store` keeps its name; `index` kept — as a sibling position, not the ordinal first published |
@@ -71,6 +72,7 @@ for the same reason.
 | [42](42-no-insert-above-verb.md) | No insert-ABOVE verb, and `addSibling` names no caret | needs-triage | Split out of 16 for the same reason; `writeRows` now names a caret, so the primitive exists |
 | [43](43-cross-row-write-takes-hidden-rows.md) | A cross-row write takes the rows a collapsed toggle hides | needs-triage | 13's rule, unenforced on the third write path; pre-existing, measured identical at `da03807d~1` |
 | [44](44-painted-selection-outruns-the-write.md) | The painted selection is not the span a keystroke replaces | needs-triage | Split out of 29 in review; a correct clamp with an incomprehensible paint, so it is a paint problem and not a refusal |
+| [45](45-a-split-repaints-every-row-after-it.md) | A structural row edit re-renders every sibling after it | needs-triage | Filed out of 33's measurement: Enter at the top of 4000 rows costs 286 ms where core's own split costs 6 |
 
 ## The affordance group (T-D, 2026-08-27)
 
