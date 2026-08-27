@@ -27,7 +27,7 @@ export const CommentThread = defineComponent({
 				:key="comment.author + ' ' + comment.timestamp"
 				:class="styles.comment"
 			>
-				<Avatar :class-name="styles.commentAvatar" :name="comment.author" />
+				<Avatar :class="styles.commentAvatar" :name="comment.author" />
 				<div :class="styles.commentHeader">
 					<span :class="styles.commentAuthor">{{ comment.author }}</span>
 					<span :class="styles.commentTimestamp">{{ comment.timestamp }}</span>

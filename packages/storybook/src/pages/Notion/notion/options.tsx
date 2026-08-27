@@ -21,7 +21,6 @@ import {
 	assembleNotion,
 	CALLOUT_ICON,
 	calloutTone,
-	cls,
 	LANGUAGES,
 	newTableLineText,
 	nextCalloutTone,
@@ -35,6 +34,9 @@ import {
 } from './vocabulary'
 
 import rows from './rows.module.css'
+
+/** The class joiner this paint needs and Vue does not: a Vue kind merges its classes by fallthrough. */
+const cls = (...parts: (string | false | undefined)[]): string => parts.filter(Boolean).join(' ')
 
 /**
  * THE REACT PAINT. Every kind of the showcase is declared in `vocabulary.ts` — what a line looks

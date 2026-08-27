@@ -318,16 +318,17 @@ export function assembleNotion<TRow, TMark>(
 		const MarkComponent = paintMark[name]
 		if (Component !== undefined) option.row = {Component}
 		else if (MarkComponent !== undefined) option.Mark = MarkComponent
-		if (option.row && declaration.row?.indents !== undefined) option.row.indents = declaration.row.indents
-
 		assembled[name] = option
 	}
 
-	// A second pass: both cross-references may name a kind declared after their own referrer.
+	// A second pass, where the three ROW RULES are written together: both cross-references may name
+	// a kind declared after their own referrer, and splitting `indents` off into the first loop only
+	// made a reader check both to know what `row` holds.
 	for (const [name, declaration] of Object.entries(declarations)) {
 		const rules = declaration.row
 		const row = assembled[name]?.row
 		if (!rules || !row) continue
+		if (rules.indents !== undefined) row.indents = rules.indents
 		if (rules.continues !== undefined) {
 			row.continues = rules.continues === true ? true : assembled[rules.continues]
 		}
@@ -532,5 +533,3 @@ export const readBookmark = (meta: string): {url: string; description: string} =
 
 /** The card the footer's `+ New` retypes itself into: a data line, with the footer written back. */
 export const newTableLineText = (summary: string): string => `\n|+ ${summary}`
-
-export const cls = (...parts: (string | false | undefined)[]): string => parts.filter(Boolean).join(' ')
