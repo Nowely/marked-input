@@ -924,6 +924,25 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * CLOSING A FENCE LEAVES THE CARET AFTER IT, not three characters behind the literal that closed
+	 * it. `{after: row}` is where the edit's own post-edit anchor lands, and a row's DOM boundary
+	 * descends to its edge CHILD — for a closed body that is the last character of the CODE, so
+	 * Chromium read it back, the sync stored it, and the next Enter wrote another line INSIDE the
+	 * fence. MEASURED: `'```bash⏎ls -la⏎```'` typed out left the caret at `ls -la|`.
+	 */
+	it('leaves the caret after a fence the last backtick closed', async () => {
+		const {host, value} = await mountControlled(Showcase, 'before\nafter')
+		await focusAtEnd(rowAt(host, 'before'))
+
+		await userEvent.keyboard('{Enter}```bash{Enter}ls{Enter}```')
+		await expect.poll(value).toBe('before\n```bash\nls\n```\nafter')
+
+		await userEvent.keyboard('X')
+
+		await expect.poll(value).toBe('before\n```bash\nls\n```\nXafter')
+	})
+
+	/**
 	 * AND A CONTROL THAT WRITES NOTHING GIVES THE FOCUS BACK TOO. The rule above ran on the COMMIT,
 	 * so it reached exactly the controls that edit the document and none of the DECORATIONS beside
 	 * them — and a decoration is a `<button>`, which takes focus on mousedown like any other. All

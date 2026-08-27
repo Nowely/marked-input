@@ -1423,6 +1423,18 @@ export class TokenModel {
 		if (!anchors || !anchorEquals(anchors.anchor, anchors.head)) return
 		const row = this.rowOf(anchors.anchor)?.row
 		if (!row) return
+		// A CARET AFTER A RAW BODY IS NOT INSIDE IT, and `{after: row}` is the only anchor that can say
+		// so — every other position in such a row is an offset in its text. The DOM cannot hold this
+		// one: a row's boundary DESCENDS to its edge child ({@link DomModel.#entryOf}), which for a
+		// closed body is the last character of the CODE, three characters behind the literal the user
+		// just typed. MEASURED: type a fence, a line of code and the closing backticks, and the caret
+		// lands at the end of the code — Chromium reads it back, `syncFromDom` stores it, and Enter
+		// after it writes another line INSIDE the fence. Travel continues forward instead, which is
+		// where a person who has just closed a block goes and what {@link #recoverCaret} answers.
+		if (typeof anchors.anchor !== 'string' && 'after' in anchors.anchor && untracked(() => hasRawBody(row))) {
+			this.#recoverCaret(row)
+			return
+		}
 		// `'absent'` is the frame's own "not yet" and stands down — the next pulse asks again.
 		// `'boxless'` is a VERDICT and goes straight to the recovery: the row is painted, its
 		// element is in the document and it generates no box, which is what a collapsed subtree
