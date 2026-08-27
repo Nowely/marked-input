@@ -1596,4 +1596,109 @@ describe('rowKeys the row keymap', () => {
 			container.remove()
 		})
 	})
+
+	/**
+	 * THE REFUSAL CHANNEL, asked of four different keys — the claim is that there is ONE, not that
+	 * any single one of them refuses, which the cases above already pin. Each key here is a gesture
+	 * a driving session filed as broken and every one of them is a correct rule; what is under test
+	 * is that a rule running is now observable.
+	 */
+	describe('a refused gesture is announced', () => {
+		const CELL: CoreOption = {row: {Component: 'td'}}
+		const TABLE: CoreOption = {
+			markup: '|__slot__',
+			row: {Component: 'tr', continues: true, split: {at: ' | ', as: CELL}},
+		}
+
+		it('names the row a Tab at depth 0 could not outdent', () => {
+			const {store, container} = keymap('- a')
+			caretIn(store, 0, 1)
+
+			press(container, 'Tab', {shiftKey: true})
+
+			expect(store.rows.state.refused()).toEqual({id: rowsOf(store)[0].id, at: 1})
+			expect(store.tokens.value()).toBe('- a')
+		})
+
+		it('counts each press, so a second refusal of the same key on the same row says so again', () => {
+			const {store, container} = keymap('- a')
+			caretIn(store, 0, 1)
+
+			press(container, 'Tab', {shiftKey: true})
+			press(container, 'Tab', {shiftKey: true})
+
+			expect(store.rows.state.refused()).toEqual({id: rowsOf(store)[0].id, at: 2})
+		})
+
+		it('says nothing when the same key is accepted', () => {
+			const {store, container} = keymap('- a\n- b')
+			caretIn(store, 1, 1)
+
+			press(container, 'Tab')
+
+			expect(store.rows.state.refused()).toBeNull()
+			expect(store.tokens.value()).toBe('- a\n\t- b')
+		})
+
+		it('names the carved row a Tab past the last cell could not leave', () => {
+			const {store, container} = mountNestedRowDoc({
+				defaultValue: '| a | b',
+				options: [TABLE, CELL],
+				Mark: () => null,
+			})
+			caretIn(store, 2, 1)
+
+			press(container, 'Tab')
+
+			expect(store.rows.state.refused()).toEqual({id: rowsOf(store)[0].id, at: 1})
+		})
+
+		it('names the carved row a Shift+Enter could not continue', () => {
+			const {store, container} = mountNestedRowDoc({
+				defaultValue: '| a | b',
+				options: [TABLE, CELL],
+				Mark: () => null,
+			})
+			caretIn(store, 1, 1)
+
+			press(container, 'Enter', {shiftKey: true})
+
+			expect(store.rows.state.refused()).toEqual({id: rowsOf(store)[0].id, at: 1})
+			expect(store.tokens.value()).toBe('| a | b')
+		})
+
+		it('names the row a Backspace at a raw body edge could not merge', () => {
+			// A fence's closing literal is not anchorable, so there is no merge to offer across it in
+			// either direction — `handleDeleteKey` consumes the key and now says it did.
+			const {store, container} = keymap('```js\ncode\n```\nplain')
+			caretIn(store, 1, 0)
+
+			press(container, 'Backspace')
+
+			expect(store.rows.state.refused()).toEqual({id: rowsOf(store)[1].id, at: 1})
+			expect(store.tokens.value()).toBe('```js\ncode\n```\nplain')
+		})
+
+		it('names the row a typed character over a frozen row could not replace', () => {
+			const CARD: CoreOption = {markup: '@card __slot__', row: {Component: 'div'}}
+			const {store, container} = mountNestedRowDoc({
+				defaultValue: 'before\n@card panel\nafter',
+				options: [CARD],
+				Mark: () => null,
+			})
+			const card = rowsOf(store)[1]
+			// The row across its own ELEMENT, which is the selection a pointer landing on frozen
+			// presentation writes.
+			store.tokens.selection.select({before: card}, {after: card})
+			// The kind's component paints no body surface, which is what makes the row frozen.
+			store.tokens.handle(card.inline()[0].id)?.element()?.remove()
+
+			container.dispatchEvent(
+				new InputEvent('beforeinput', {inputType: 'insertText', data: 'x', bubbles: true, cancelable: true})
+			)
+
+			expect(store.rows.state.refused()).toEqual({id: card.id, at: 1})
+			expect(store.tokens.value()).toBe('before\n@card panel\nafter')
+		})
+	})
 })

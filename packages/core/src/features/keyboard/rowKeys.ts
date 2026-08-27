@@ -110,7 +110,10 @@ export function handleRowEnter(store: KbCtx, event: KeyboardEvent): void {
 		// ceiling grants it none, and the separator this writes would land INSIDE the body — cutting
 		// the line in two and leaving the pieces after the caret in a row of their own. Consumed and
 		// refused, which is the answer Backspace at a piece's start already gives.
-		if (caret.cell) return
+		if (caret.cell) {
+			store.rows.refuse(caret.row.id)
+			return
+		}
 		store.edit.replace(at, at, rowConfig.separator + rowConfig.indent.repeat(continuationDepth(caret)))
 		return
 	}
@@ -188,6 +191,7 @@ export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 		const step = cells.indexOf(caret.cell) + (event.shiftKey ? -1 : 1)
 		const next = step < 0 ? undefined : cells.at(step)
 		if (next) store.tokens.selection.select(entryAnchor(next))
+		else store.rows.refuse(caret.row.id)
 		return
 	}
 
@@ -195,7 +199,8 @@ export function handleRowIndent(store: KbCtx, event: KeyboardEvent): void {
 	const selected = store.tokens.rowSelection(anchors)
 
 	event.preventDefault()
-	store.tokens.indentRows(selected.length > 0 ? selected : [caret.row], event.shiftKey ? -1 : 1)
+	const moved = selected.length > 0 ? selected : [caret.row]
+	if (!store.tokens.indentRows(moved, event.shiftKey ? -1 : 1)) store.rows.refuse(caret.row.id)
 }
 
 /**
@@ -388,10 +393,10 @@ export function replaceRowSelection(
 	//
 	// SELECT-ALL IS NOT THIS QUESTION and never arrives here: `isAllSelected` replaces the whole
 	// value one layer up (`input.ts`), which is what Mod+A and a keystroke mean everywhere.
-	if (store.tokens.holdsFrozenRow(anchors)) return true
+	if (store.tokens.holdsFrozenRow(anchors)) return refuseTyping(store, anchors)
 	const span = store.tokens.rowSelectionText(anchors)
 	if (span) {
-		if (store.tokens.holdsFrozenRow(span)) return true
+		if (store.tokens.holdsFrozenRow(span)) return refuseTyping(store, anchors)
 		store.edit.replace(span.anchor, span.head, replacement.text)
 		return true
 	}
@@ -413,7 +418,23 @@ export function replaceRowSelection(
 	// `false` WOULD NOT DO. It falls through to the ordinary text path, which writes over the
 	// anchors verbatim — a frozen row's are its own ELEMENT edges — and that is the same deletion
 	// through another door. The refusal has to be the consumption.
-	return store.tokens.rowSelection(anchors).length > 0
+	if (store.tokens.rowSelection(anchors).length === 0) return false
+	return refuseTyping(store, anchors)
+}
+
+/**
+ * A TYPED CHARACTER, CONSUMED AND ANSWERED WITH NOTHING — the three arms above that keep a row by
+ * refusing the key, saying so through {@link RowController.refuse}.
+ *
+ * The ANCHOR's row, which is where the gesture started rather than which row declined it: a sweep
+ * that acquires a frozen row is refused for that row and flashes the one the caret is in. Naming
+ * the declining row instead means asking the model which rows a span holds that no caret may enter,
+ * which is a second reading of {@link TokenModel.holdsFrozenRow}'s own answer.
+ */
+function refuseTyping(store: KbCtx, anchors: Anchors): true {
+	const caret = store.tokens.rowOf(anchors.anchor)
+	if (caret) store.rows.refuse(caret.row.id)
+	return true
 }
 
 /**

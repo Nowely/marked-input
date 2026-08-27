@@ -30,6 +30,18 @@ export interface DropLine {
 	width: number
 }
 
+/**
+ * A REFUSED GESTURE: the row it was refused at, and the press it belongs to.
+ *
+ * `at` counts presses rather than time. Two refusals of the same key on the same row are the same
+ * VALUE, and a layer handed the same value repaints nothing — so without it the second Tab at
+ * depth 0 says less than the first did.
+ */
+export interface Refusal {
+	readonly id: number
+	readonly at: number
+}
+
 /** A row's geometry in the controls layer's own space: the container's PADDING box. */
 export interface RowBox {
 	top: number
@@ -114,6 +126,8 @@ export class RowController {
 		menuActive: signal({initial: 0}),
 		/** Bumped whenever row geometry may have moved; the layer re-measures off it. */
 		geometry: signal({initial: 0}),
+		/** The last gesture this editor took and answered with nothing — see {@link refuse}. */
+		refused: signal<Refusal | null>({initial: null}),
 	}
 
 	/**
@@ -283,6 +297,30 @@ export class RowController {
 
 	closeMenu = (): void => {
 		this.state.menu(null)
+	}
+
+	/**
+	 * THE REFUSAL CHANNEL: say that the editor took a gesture at row `id` and answered it with
+	 * nothing. One channel for every key, in the shape `reportBadProp` already gives the props
+	 * boundary — many call sites, one owner, one look — because a refusal spelled per key is a
+	 * refusal the user has to learn per key.
+	 *
+	 * IT SAYS NOTHING ABOUT WHY. A reason would have to be a string, and a string is either
+	 * untranslatable or a published vocabulary of causes; what the user is missing is not the rule
+	 * but the fact that a rule ran at all. The rules themselves are correct — every site that calls
+	 * this was measured, argued and kept — so this is a channel for their silence and not a repair.
+	 *
+	 * ROW-SCOPED, because every refusal the driving sessions reported happens at a row and the layer
+	 * that paints it already addresses rows by id. A gesture refused where the document has no rows
+	 * — a Backspace at an inline editor's first offset — reaches no call site and paints nothing,
+	 * which is the answer every plain text field gives.
+	 *
+	 * NOTHING CLEARS IT. The paint is an animation, so its whole visible life is one run of that
+	 * animation and a cleared signal would need a clock to clear it on; what survives is a row id
+	 * and a count, which the layer renders as nothing at all once the run is over.
+	 */
+	refuse(id: number): void {
+		this.state.refused({id, at: untracked(() => this.state.refused()?.at ?? 0) + 1})
 	}
 
 	// The DEPTH the new row opens at is the row verb's, not a string this layer builds: the lead it

@@ -185,7 +185,14 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	// The extents that legitimately need the browser's own event — a word or line delete — never
 	// reach here: the modifier test above declines ahead of this.
 	event.preventDefault()
-	if (!target) return
+	if (!target) {
+		// AND THE ONE REFUSAL IN THIS ARM SAYS SO. `undefined` above is a boundary with no merge to
+		// offer in either direction; a document with no rows reaches it too — at the first offset of
+		// an inline editor — and refuses there in silence, which is what every plain text field does.
+		const caret = store.tokens.rowOf(anchors.anchor)
+		if (caret) store.rows.refuse(caret.row.id)
+		return
+	}
 	store.edit.replace(target.anchor, target.head, '')
 }
 
