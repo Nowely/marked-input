@@ -343,7 +343,11 @@ for (const doc of docs) {
 			),
 			options
 		)
-		bench('S1 settle pass', settleRung(doc), options)
+		bench(
+			'S1 settle pass',
+			lazy(() => settleRung(doc)),
+			options
+		)
 		bench(
 			'P1 refuse',
 			lazy(() => {
