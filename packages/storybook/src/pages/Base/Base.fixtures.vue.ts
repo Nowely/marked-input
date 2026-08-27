@@ -1,3 +1,4 @@
+import type {RowProps} from '@markput/vue'
 import {defineComponent} from 'vue'
 
 import Button from '../../shared/components/Button/Button.vue'
@@ -34,17 +35,30 @@ export const marks = {
 export const Overlay = defineComponent({template: `<span>I'm here!</span>`})
 
 /**
+ * THE ROW PROPS A KIND DECLARES, spelled once for the three fixtures below. They are DECLARED for
+ * `marks.vue.ts`'s reason: vue puts every undeclared prop onto the root element, so `node` and
+ * `depth` would face React's bare `<li>` as attributes.
+ *
+ * `satisfies Record<keyof RowProps, unknown>` is a COMPILE-TIME PIN on the published type, and the
+ * only one there can be: it fails `typecheck:vue` the moment `RowProps` grows a key this list has
+ * not, or loses one it has. What it is guarding against is a FALLTHROUGH ATTRIBUTE creeping back
+ * onto the type — Vue removes a DECLARED key from `$attrs`, so a `class` or `style` on `RowProps`
+ * makes a kind written straight from it lose the editor's own paint, and nothing on screen says so.
+ */
+const rowProps = {meta: String, node: {type: null}, depth: Number, index: Number} satisfies Record<
+	keyof RowProps,
+	unknown
+>
+
+/**
  * Spec fixtures: a row KIND that paints its own child rows. React delivers them as the `rows`
  * PROP and Vue as the `rows` SLOT, which is the one place the two adapters' row contract
  * differs — so the shared spec needs one fixture per framework to read it at all.
- *
- * The row props are DECLARED for `marks.vue.ts`'s reason: vue puts every undeclared prop onto
- * the root element, so `node` and `depth` would face React's bare `<li>` as attributes.
  */
 export const rows = {
 	Bullet: defineComponent({
 		inheritAttrs: false,
-		props: {meta: String, node: {type: null}, depth: Number, index: Number},
+		props: rowProps,
 		// `data-id` is the browser's NODE-IDENTITY oracle: a row's id is minted at node birth and
 		// never reused, so an id that survived a move is a node that survived it — which the DOM
 		// element cannot say, since neither framework can move an element between two parents.
@@ -61,7 +75,7 @@ export const rows = {
 	 */
 	Toggle: defineComponent({
 		inheritAttrs: false,
-		props: {meta: String, node: {type: null}, depth: Number, index: Number},
+		props: rowProps,
 		data: () => ({open: true}),
 		template:
 			'<div :data-id="node.id"><input type="checkbox" aria-label="open" :checked="open" @change="open = !open" /><slot />' +
@@ -76,7 +90,7 @@ export const rows = {
 	 */
 	Heading: defineComponent({
 		inheritAttrs: false,
-		props: {meta: String, node: {type: null}, depth: Number, index: Number},
+		props: rowProps,
 		template: '<h2 :data-id="node.id"><slot /></h2>',
 	}),
 }

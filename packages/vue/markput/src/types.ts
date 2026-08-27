@@ -22,6 +22,24 @@ export interface MarkProps {
  *
  * A row's structural bytes are not among them: its opener and closing literal are the editor's,
  * not the document's, so they never reach a component and no caret may enter them.
+ *
+ * NEITHER IS `class` OR `style`, and their absence is the contract rather than an omission. A row
+ * kind's component is a SLOT component: both are FALLTHROUGH ATTRIBUTES, which Vue merges onto its
+ * root element unless it declares `inheritAttrs: false`, and the editor's own `ref` resolves
+ * through the component instance — so there is nothing to spread. Declaring either as a prop is
+ * what breaks it: Vue removes a DECLARED key from `$attrs`, so a kind written as
+ * `defineProps<RowProps>()` would take the editor's class and style out of the fallthrough and
+ * paint neither — measured, `<div class="mine">` with no `_Row_` class and no drag opacity, which
+ * costs the row its containing block, its `min-height` and the empty-row rule the caret needs.
+ * `Base.fixtures.vue.ts` pins this key set against the type.
+ *
+ * Its `rows` SLOT is the row's CHILD ROWS, already rendered, and is absent when there are none —
+ * React passes the same thing as a `rows` PROP, which is the one place the two adapters' row
+ * contract differs, because a rendered node is a slot in Vue and a node in React. A kind that
+ * renders neither them nor a wrapper keeps its child rows in the value and off the screen: they
+ * round-trip and reappear when the row is outdented. A collapsed row is HIDDEN, never unmounted —
+ * an unpainted row leaves `bind` and takes its anchors with it. Its default slot is the row's
+ * rendered inline content.
  */
 export interface RowProps {
 	/** The kind's metadata gap — a todo's checked flag, a fence's language. */
@@ -44,20 +62,6 @@ export interface RowProps {
 	index: number
 	/** The live row node: its id, its own text and its verbs. */
 	node: RowNode
-	/**
-	 * A row kind's component is a SLOT component: `class` and `style` fall through onto its root
-	 * element unless it declares `inheritAttrs: false`, and the editor's own `ref` resolves
-	 * through the component instance. Its default slot is the row's rendered inline content.
-	 *
-	 * Its `rows` SLOT is the row's CHILD ROWS, already rendered, and is absent when there are
-	 * none — React passes the same thing as a `rows` PROP, which is the one place the two
-	 * adapters' row contract differs, because a rendered node is a slot in Vue and a node in
-	 * React. A kind that renders neither them nor a wrapper keeps its child rows in the value and
-	 * off the screen: they round-trip and reappear when the row is outdented. A collapsed row is
-	 * HIDDEN, never unmounted — an unpainted row leaves `bind` and takes its anchors with it.
-	 */
-	class?: string
-	style?: CSSProperties
 }
 
 export interface OverlayProps {
