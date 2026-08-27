@@ -542,16 +542,28 @@ export class TokenModel {
 	 * mean both. Held together, the refusal was asked of the pair the EVENT named while the span
 	 * was resolved off the structure it landed on, and the two disagreed wherever the resolution
 	 * moved an edge.
+	 *
+	 * AN ORDINARY TEXT SPAN IS CLIPPED AT WHAT NOBODY CAN SEE ALL THE SAME, and that clip is what
+	 * `undefined` used to take with it. {@link contentSpan} declines a pair both of whose edges are
+	 * inside a line's content — a mid-row sweep — so the RAW pair went to the write, and 13's rule
+	 * held on a row COVER and nowhere else. MEASURED on `'▸ head⏎⇥body⏎after'` with the toggle
+	 * closed, swept `he|ad`→`af|ter`: a typed character emitted `'▸ heZter'`, Backspace and Delete
+	 * `'▸ heter'` — the hidden body gone with nothing on screen having shown it.
+	 *
+	 * ONLY AN ANSWER THAT SHRINKS IS REPORTED, so `undefined` still means what it meant: an ordinary
+	 * sweep over nothing hidden keeps exactly the bytes the event named, which is the behaviour this
+	 * function was written not to change.
 	 */
 	rowSelectionText(anchors: Anchors): Anchors | undefined {
 		const span = untracked(() => contentSpan(this.#tree.roots(), this.#offBlockInterior(anchors)))
-		if (!span) return undefined
+		const held = span ?? untracked(() => this.#spanOf(anchors))
 		// `<`, not `<=`: an EMPTY content span is a POSITION rather than a refusal — see
 		// {@link contentSpan}'s no-content arm — and refusing one put the raw pair back on the
 		// write path, which is the whole defect that arm exists to close.
-		const end = this.#visibleEnd(span)
-		if (end < span.start) return undefined
-		return {anchor: this.anchorAt(span.start), head: this.anchorAt(end)}
+		const end = this.#visibleEnd(held)
+		if (end < held.start) return undefined
+		if (!span && end === held.end) return undefined
+		return {anchor: this.anchorAt(held.start), head: this.anchorAt(end)}
 	}
 
 	/**

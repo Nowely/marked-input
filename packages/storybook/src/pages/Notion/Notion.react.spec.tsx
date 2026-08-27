@@ -1049,6 +1049,38 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * A SWEEP THAT NEVER TOUCHES A ROW'S EDGE IS STILL CLIPPED. The four pins above all hold a row
+	 * COVER, which is the one shape `contentSpan` resolves; a MID-ROW sweep is the shape it calls
+	 * ordinary text and hands back untouched, and 13's rule reached none of it. MEASURED before this
+	 * pin on `'▸ head⏎⇥body⏎after'` swept `he|ad`→`af|ter`: a typed character emitted `'▸ heZter'`
+	 * and Backspace and Delete `'▸ heter'` — the hidden body gone, with nothing on screen having
+	 * shown it. The PASTE that measured the same way is the pin below it, which needed a second
+	 * door opened first.
+	 *
+	 * THE SWEEP'S FAR END SURVIVES, which is the clip and not a second rule: the write stops before
+	 * the first row nobody can see, so `after` keeps the `ter` the user had highlighted. That the
+	 * paint still shows the whole sweep is ticket 44.
+	 */
+	it('leaves a collapsed toggle its hidden body when a MID-ROW sweep crosses it', async () => {
+		const gestures: [string, (host: HTMLElement) => unknown][] = [
+			['▸ heZ\n\tbody\nafter', () => userEvent.keyboard('Z')],
+			['▸ he\n\tbody\nafter', () => userEvent.keyboard('{Backspace}')],
+			['▸ he\n\tbody\nafter', () => userEvent.keyboard('{Delete}')],
+		]
+		for (const [expected, gesture] of gestures) {
+			const {host, value} = await mountControlled(Showcase, '▸ head\n\tbody\nafter')
+			const head = textReading(toggleStarting(host, 'head'), 'head')
+			const next = textReading(rowAt(host, 'after'), 'after')
+
+			window.getSelection()?.setBaseAndExtent(head, 2, next, 2)
+			await settle()
+			await gesture(host)
+
+			await expect.poll(value).toBe(expected)
+		}
+	})
+
+	/**
 	 * A SELECTION THAT COVERS NO CONTENT IS A POSITION, NOT A LICENCE TO WRITE THE STRUCTURE IT
 	 * SPANS. A double-click in a row's blank RIGHT MARGIN is the plainest way to one: Chromium's
 	 * word expansion past end-of-line answers a CROSS-ROW range whose own text is empty — measured
