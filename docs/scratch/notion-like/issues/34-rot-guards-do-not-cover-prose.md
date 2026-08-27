@@ -100,3 +100,42 @@ the showcase's own `options.tsx` turned it red through the consumer scan; `` `st
 it red once the corpus lost the specs and passed before; and rewriting one glossary line to
 `` `BlockMenu` is fine again `` turned the `BlockMenu` case red on the pin that holds the two
 together.
+
+## Reopened and closed again, 2026-08-27 — the guard stopped one shape short of its own headline
+
+Three reviewers found the same hole independently, and it was the ticket's own headline: the prose
+half could not see an undotted PascalCase span, and the retired scan never read a doc page at all.
+Reproduced — appending ``The `BlockMenu` and `RowControllerGone` are gone.`` to `guides/rows.md`
+left the file at **36 passed**. `BlockMenu` is entry 5 of this file's own deletion list;
+`RowControllerGone` exists nowhere.
+
+Both halves are closed, and the bill was measured before either was taken.
+
+**The retired scan now reads the doc pages.** Raw text, fences included — a sample naming a deleted
+export is exactly this rot, and `samples.spec.ts` only type-checks the fences it can compile.
+Measured first: all ten patterns answer **nothing** across the 23 hand-written pages, so it costs no
+allowlist, no exception and no budget.
+
+**The prose arm now accepts PascalCase with an internal capital.** That is the same rule the
+camelCase arm already used, and on this arm it is what keeps English out. Measured over the pages:
+
+| arm | spans added | `FOREIGN` entries needed |
+| --- | --- | --- |
+| any leading capital | +151 | 14 — adds `Alice`, `World`, `User`, `Esc`, `Shift`, `Down`, `Right` |
+| an INTERNAL capital | +62 | 9 |
+
+The nine are five names a page's own sample declares (`CustomContainer`, `MentionMark`,
+`MentionOverlay`, `MentionProps`, `TableLine`), one recording a deletion (`DragAction`, in the
+sentence of `architecture.md` that says it is gone), and three shouted in prose (`BBB`, `BODY`,
+`COMMANDS`). The budget moves 8 → 17 and the span floor 150 → 300, both deliberately. What it buys
+is the published surface: every exported type, class and component here is PascalCase, so
+`RowNode`, `MenuSpec`, `DomModel`, `MarkputHandle`, `MarkupRegistry`, `RowController` and
+`OverlayListModel` were exactly the names the check could not see.
+
+Seen to redden: the same appended sentence now fails **two** cases —
+`docs/guides/rows.md:243 The \`BlockMenu\` and \`RowControllerGone\` are gone.` from the deletion
+scan, and `BlockMenu — no \`BlockMenu\` in any package source` plus the same for
+`RowControllerGone` from the prose scan.
+
+The claim this ticket made — *"the glossary's DELETIONS are enforced"* — is true of prose as well as
+of source now. It was not before.

@@ -68,6 +68,24 @@ const sources = read(PACKAGE_SOURCES)
  */
 const consumers = read([join(ROOT, 'packages', 'storybook', 'src')])
 
+/** Every hand-written doc page. TypeDoc rewrites `api/` from source on every build, so it is not one. */
+const docPages = walk(DOCS, name => /\.mdx?$/.test(name))
+	.map(path => ({slug: relative(DOCS, path).replaceAll('\\', '/'), text: readFileSync(path, 'utf8')}))
+	.filter(page => !page.slug.startsWith(`${GENERATED}/`))
+	.sort((a, b) => a.slug.localeCompare(b.slug))
+
+/**
+ * The same pages as a scannable corpus for the retired-vocabulary check below. THE PROSE IS THE
+ * PLACE A READER MEETS THE VOCABULARY, and it was the one place the glossary's own deletions were
+ * unenforced: `BlockMenu` in a guide passed green while the identical word in any package or
+ * showcase source reddened. Measured before adding it — all ten patterns answer nothing across the
+ * 23 hand-written pages, so this costs no allowlist and no exception.
+ *
+ * RAW TEXT, fences included: a sample that names a deleted export is exactly the rot this catches,
+ * and `samples.spec.ts` only type-checks the fences it can compile.
+ */
+const docCorpus = docPages.map(page => ({path: `docs/${page.slug}`, code: page.text}))
+
 /**
  * THE GLOSSARY'S DELETIONS, AS IDENTIFIERS. `CONTEXT.md`'s "Flagged ambiguities" resolves two
  * words by DELETION and enumerates what each one used to be called; this is that enumeration, and
@@ -108,7 +126,8 @@ describe("CONTEXT.md's deletions stay deleted", () => {
 		// the two cannot drift apart in silence.
 		expect(context).toContain(entry.glossary)
 
-		const offenders = [...sources, ...consumers].flatMap(({path, code}) =>
+		const scanned = [...sources, ...consumers, ...docCorpus]
+		const offenders = scanned.flatMap(({path, code}) =>
 			code
 				.split('\n')
 				.map((text, index) => ({path, line: index + 1, text}))
@@ -122,6 +141,7 @@ describe("CONTEXT.md's deletions stay deleted", () => {
 		expect(sources.length).toBeGreaterThan(100)
 		expect(sources.some(source => source.path.includes('features/rows/'))).toBe(true)
 		expect(consumers.some(source => source.path.includes('pages/Notion/'))).toBe(true)
+		expect(docCorpus.some(page => page.path.includes('guides/'))).toBe(true)
 	})
 })
 
@@ -149,12 +169,23 @@ function isProduction(path: string): boolean {
 }
 
 /**
- * WHICH BACKTICKS ARE CODE. A span qualifies when it is DOTTED (`store.rows`, `RowSpec.continues`)
- * or camelCase with an internal capital (`effectScope`, `rowSelectionText`), optionally ending in
- * `()`. That is the filter the ticket asked for and it is drawn where English does not go: prose
- * puts single lowercase words and phrases in backticks — `row`, `separator`, `'\n'` — and neither
- * shape matches. Measured over the guides as they stand: 259 spans qualify out of the many
- * hundreds present.
+ * WHICH BACKTICKS ARE CODE. A span qualifies when it is DOTTED (`store.rows`, `RowSpec.continues`),
+ * camelCase with an internal capital (`effectScope`, `rowSelectionText`), or PascalCase with one
+ * (`RowNode`, `TokenModel`), optionally ending in `()`. That is the filter the ticket asked for and
+ * it is drawn where English does not go: prose puts single lowercase words and phrases in backticks
+ * — `row`, `separator`, `'\n'` — and none of the three shapes matches.
+ *
+ * THE INTERNAL CAPITAL IS THE WHOLE RULE ON BOTH CASED ARMS, and on the PascalCase one it is what
+ * keeps English out. Measured over the hand-written pages: requiring it adds 62 spans and 9
+ * `FOREIGN` entries, where accepting any leading capital adds 151 and 14 — the extra 5 being
+ * `Alice`, `World`, `User`, `Esc`, `Shift`, `Down`, `Right`, i.e. prose nouns and key names, and
+ * the extra spans being the single-word type names (`Store`, `Slot`, `Anchor`) that are also
+ * ordinary English. A name with one capital is not worth an allowlist of proper nouns.
+ *
+ * IT IS WHERE THE PUBLISHED SURFACE LIVES, which is why it is worth the nine: every exported type,
+ * class and component in this repository is PascalCase, so before this arm the highest-value
+ * targets — `RowNode`, `MenuSpec`, `DomModel`, `MarkputHandle`, `MarkupRegistry`, `RowController`,
+ * `OverlayListModel` — were the ones the check could not see.
  *
  * A FILE NAME IS NOT AN IDENTIFIER, and it is the one shape that reads as one: `package.json` and
  * `oxfmt.config.ts` are dotted, and nothing declares a `json` or a `ts`. Measured — the guides
@@ -162,7 +193,7 @@ function isProduction(path: string): boolean {
  * next page that names a config file.
  */
 const CODE_SPAN =
-	/^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z0-9_$]+)+(?:\(\))?$|^[a-z$_][a-z0-9$_]*[A-Z][A-Za-z0-9_$]*(?:\(\))?$/
+	/^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z0-9_$]+)+(?:\(\))?$|^[a-z$_][a-z0-9$_]*[A-Z][A-Za-z0-9_$]*(?:\(\))?$|^[A-Z][A-Za-z0-9_$]*[A-Z][A-Za-z0-9_$]*(?:\(\))?$/
 
 const FILE_NAME = /\.(?:ts|tsx|js|jsx|mjs|cjs|json|md|mdx|css|vue|html|yaml|yml)$/
 
@@ -179,12 +210,18 @@ const FOREIGN = new Map([
 	['insertMark', 'a WITHDRAWN ref member, named in the sentence that says it is withdrawn'],
 	['replaceText', 'the same sentence'],
 	['replaceRange', 'the same sentence'],
+	// The nine the PascalCase arm costs, each checked by hand. Five are a page's own sample
+	// declaring its own component, one records a deletion, and three are prose in caps.
+	['CustomContainer', "a page's own sample declares it, in `slots-customization.md`"],
+	['MentionMark', "the mention example's own component"],
+	['MentionOverlay', 'the same example'],
+	['MentionProps', "the same example's props type"],
+	['TableLine', "the row-kinds guide's own sample renderer"],
+	['DragAction', 'named in the sentence of `architecture.md` that says it is GONE'],
+	['BBB', 'a line of the sample document in the keyboard guide, not a name'],
+	['BODY', "the DOM's `document.body`, shouted in a table cell about where focus landed"],
+	['COMMANDS', "the slash-command example's own constant"],
 ])
-
-const docPages = walk(DOCS, name => /\.mdx?$/.test(name))
-	.map(path => ({slug: relative(DOCS, path).replaceAll('\\', '/'), text: readFileSync(path, 'utf8')}))
-	.filter(page => !page.slug.startsWith(`${GENERATED}/`))
-	.sort((a, b) => a.slug.localeCompare(b.slug))
 
 /** Fenced code is `samples.spec.ts`'s subject; what is left is the prose this check reads. */
 function prose(text: string): string {
@@ -211,13 +248,13 @@ describe('prose backticks name something that exists', () => {
 		const checked = docPages
 			.flatMap(page => [...prose(page.text).matchAll(/`([^`\n]+)`/g)].map(match => match[1].trim()))
 			.filter(span => CODE_SPAN.test(span) && !FILE_NAME.test(span))
-		expect(checked.length).toBeGreaterThan(150)
+		expect(checked.length).toBeGreaterThan(300)
 		expect(identifiers.size).toBeGreaterThan(1000)
 		// The corpus is production only, so a name that lives in a test title is NOT an answer.
 		expect(identifiers.has('gone')).toBe(false)
 	})
 
 	it('spends no more of the foreign list than agreed', () => {
-		expect([...FOREIGN.keys()]).toHaveLength(8)
+		expect([...FOREIGN.keys()]).toHaveLength(17)
 	})
 })
