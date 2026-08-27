@@ -61,7 +61,7 @@ measurement, which is the first one in this tracker to have been RUN rather than
 | [31](31-find-in-page-edits-the-document.md) | Find-in-page inside a closed toggle edits the document | needs-triage | `beforematch` opens the row, and opening it is a retype |
 | [32](32-no-per-row-view-state.md) | A cross-parent drop keeps the node and loses the component | needs-triage | No core-owned per-row view store; why 31 exists |
 | [33](33-nothing-is-measured-at-document-scale.md) | Row-verb runtime and caret ergonomics are unmeasured | resolved | Measured both sides of the seam: the row layer is free (`rowOf` 0.067 ms at 4000 rows) and a STRUCTURAL edit is not — 45 carries what it found |
-| [34](34-rot-guards-do-not-cover-prose.md) | The rot guards stop at fenced code | ready-for-agent | Prose backticks unchecked; `CONTEXT.md`'s avoid-list unenforced |
+| [34](34-rot-guards-do-not-cover-prose.md) | The rot guards stop at fenced code | resolved | Prose backticks checked by a dotted/camelCase filter; the glossary's DELETIONS are enforced and the `_Avoid_` half was measured (74 words, all legitimate) and refused |
 | [35](35-unexercised-clamp-distinction.md) | `rowSelectionText`'s original-vs-clamped distinction | resolved | Exercisable after all; neither pair is a witness alone, so the refusal is asked of both |
 | [36](36-published-surface-leftovers.md) | Grip `aria-label`, `Store`'s rename TODO, `RowProps.index` | resolved | "Row options" announced; `Store` keeps its name; `index` kept — as a sibling position, not the ordinal first published |
 | [37](37-softbreak-stays-unbuilt.md) | `softBreak` stays unbuilt | wontfix | Standing deferral; re-open on a case the continuation row cannot carry |

@@ -1,7 +1,7 @@
 # The rot guards stop at fenced code, and `CONTEXT.md`'s own vocabulary is unenforced
 
 Type: task
-Status: ready-for-agent
+Status: resolved — `packages/website/samples/vocabulary.spec.ts`; the avoid-list half was measured and REFUSED
 Blocked by: —
 
 ## Problem
@@ -39,3 +39,48 @@ written."*
 > check that is already built — are afternoon work and can ride along.
 
 The grep spec over the avoid-list is fully specified and independent; take it first.
+
+## Answered, 2026-08-27
+
+Both halves, in one file — `packages/website/samples/vocabulary.spec.ts`, in the `docs` vitest
+project, which is the one with a filesystem and no browser to boot. It copies
+`addressSpace.spec.ts`'s two rules: comments are stripped before scanning, and every scan carries a
+non-vacuity guard, because `toEqual([])` is satisfied by looking at nothing.
+
+**The prose backticks are checked.** The filter the ticket asked for — the one that tells
+`` `store.rows` `` from English in backticks — is: a span qualifies when it is DOTTED or camelCase
+with an internal capital, optionally ending in `()`. Measured over the guides as they stand, 259
+spans qualify, and each segment of each one has to appear as an identifier in
+`packages/{core,react/markput,vue/markput}/src` with comments stripped. Membership, not resolution:
+that is the floor that catches the rot mode which actually happens — a name is deleted and the
+prose keeps citing it — without pretending to type-check a sentence.
+
+Four spans in the guides today are correctly there and are not ours to declare, and they are named
+with their reasons rather than skipped: `React` and `forwardRef` are React's, and `insertMark` and
+`replaceText` appear inside the sentence that says they were WITHDRAWN. A budget pins the list at
+four, for `SKETCH_BUDGET`'s reason.
+
+**The avoid-list half was measured and NOT taken, and that is the ticket's own false-positive risk
+turning out to be fatal.** Extracting every single-word `_Avoid_` entry from `CONTEXT.md` answers
+**74 words**, among them `dom`, `state`, `focus`, `selection`, `props`, `ref`, `index`, `position`,
+`text`, `element`, `line`, `item`, `body` and `field` — every one a legitimate name on the published
+surface, several of them banned by one glossary entry for a concept a different entry names them
+for. `RowProps.index` alone would redden it, and ticket 36 kept that name on purpose. An avoided
+word is only wrong when it names the thing the glossary renamed, which is a judgement about a
+sentence and not a grep.
+
+**What IS checkable is the deletions, and those are checked.** `CONTEXT.md`'s "Flagged ambiguities"
+resolves two words by DELETION and enumerates the identifiers each used to be: `Lexeme`, and
+`BlockStore` / `blockIndex` / `BlockController` / `BlockMenu` / `BLOCK_MENU_ITEMS` / `isBlock` /
+`slots.block` / `slotProps.block` / `store.block`. Each is banned from package source, and each
+test also asserts that the glossary still contains the sentence that bans it — so un-banning a word
+means editing `CONTEXT.md` and watching this go red, rather than editing `CONTEXT.md` alone. A BARE
+`block` is deliberately not banned, for the reason the glossary gives: the word is CSS's,
+markdown's and the Notion showcase's before it is ours, which is why this check needs no allowlist
+for any of the three.
+
+Seen to redden, not merely seen to pass: a `const BlockStore = 1` added to `RowController.ts` turned
+the `BlockStore` case red; `` `store.bus` `` and `` `effectScopeGone` `` added to `guides/rows.md`
+turned that page red with `store.bus — no \`bus\` in any package source`; and rewriting one
+glossary line to `` `BlockMenu` is fine again `` turned the `BlockMenu` case red on the pin that
+holds the two together.
