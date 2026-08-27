@@ -665,7 +665,7 @@ const { style, close, select, choose, rows, active, activate, match, ref } = use
 | `active`  | `number`                                      | Index of the highlighted row; `NaN` for none   |
 | `activate`| `() => () => void`                            | Bind ↑↓/Enter; returns the unbind              |
 | `match`   | `OverlayMatch`                                | Current trigger match                          |
-| `ref`     | `RefObject<HTMLElement>`                      | Ref to attach to overlay DOM                   |
+| `ref`     | `RefObject<TElement \| null>`                 | Ref to attach to overlay DOM; name the element with `useOverlay<HTMLDivElement>()` |
 
 ### useMarkput
 

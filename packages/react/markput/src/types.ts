@@ -22,6 +22,20 @@ export interface MarkProps {
 }
 
 /**
+ * Props passed to the global `Span` — the component that paints a TEXT token.
+ *
+ * IT IS HANDED A `ref` AND A MARK IS NOT, which is the whole of why this is its own type. A mark
+ * is painted inside a wrapper markput owns and that wrapper carries the consignment, so a Mark
+ * component forwards nothing; a text token's element IS the Surface core writes into, so the ref
+ * lands on the consumer's own element. A `Span` that drops it leaves the text unbound and the
+ * caret cannot resolve into it.
+ */
+export interface SpanProps extends MarkProps {
+	/** Spread onto the element the component renders — see {@link RowProps.ref} for the same rule. */
+	ref?: RefCallback<HTMLElement>
+}
+
+/**
  * Props passed to a ROW KIND's component — what `option.row.Component` receives.
  *
  * A row's structural bytes are not among them: its opener and closing literal are the editor's,

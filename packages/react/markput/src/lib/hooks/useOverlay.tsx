@@ -4,7 +4,7 @@ import type {RefObject} from 'react'
 import type {Option} from '../../types'
 import {useMarkput} from './useMarkput'
 
-export interface OverlayHandler {
+export interface OverlayHandler<TElement extends HTMLElement = HTMLElement> {
 	style: {
 		left: number
 		top: number
@@ -34,10 +34,20 @@ export interface OverlayHandler {
 	 */
 	choose: (pick: OverlayPick) => boolean
 	match: OverlayMatch<Option> | undefined
-	ref: RefObject<HTMLElement | null>
+	/**
+	 * THE OVERLAY'S OWN ELEMENT, handed back so core can measure the popup and flip it above the
+	 * caret when it does not fit below. A consumer attaches it to whatever element it paints.
+	 *
+	 * IT IS THE ELEMENT'S TYPE, not `HTMLElement`, and that is what the parameter is for. React's
+	 * `ref` prop is invariant — `{current: HTMLElement | null}` is not a `Ref<HTMLDivElement>` —
+	 * so a handler that could only ever answer the base type made every consumer of a concrete
+	 * element write an assertion or a callback ref around it. `useOverlay<HTMLDivElement>()` is
+	 * the same object with the type the consumer already knows.
+	 */
+	ref: RefObject<TElement | null>
 }
 
-export function useOverlay(): OverlayHandler {
+export function useOverlay<TElement extends HTMLElement = HTMLElement>(): OverlayHandler<TElement> {
 	const {match, rows, active, overlay} = useMarkput(s => ({
 		match: s.overlay.match,
 		rows: s.overlay.list.rows,
@@ -63,6 +73,10 @@ export function useOverlay(): OverlayHandler {
 		choose: overlay.choose,
 		activate: overlay.list.activate,
 		close: overlay.close,
-		ref: overlay.ref,
+		// The one erasure, kept HERE rather than at every consumer: core stores the element as an
+		// `HTMLElement`, which is all it does with it — measure it — and the parameter says which
+		// element the consumer will put there. The same contract `useRef<T>()` has.
+		// oxlint-disable-next-line no-unsafe-type-assertion
+		ref: overlay.ref as RefObject<TElement | null>,
 	}
 }

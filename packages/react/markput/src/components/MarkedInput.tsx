@@ -4,7 +4,7 @@ import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useImperativeHandle, useLayoutEffect, useState} from 'react'
 
 import {StoreContext} from '../lib/providers/StoreContext'
-import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
+import type {MarkProps, Option, OverlayProps, SlotProps, Slots, SpanProps} from '../types'
 import {Container} from './Container'
 import {OverlayRenderer} from './OverlayRenderer'
 
@@ -29,7 +29,7 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	/** Ref to the editor API (spec §2.3) */
 	ref?: Ref<MarkputHandle>
 	/** Global component used for rendering text tokens (default: built-in Span) */
-	Span?: ComponentType<MarkProps>
+	Span?: ComponentType<SpanProps>
 	/** Global component used for rendering markups (fallback for option.Mark) */
 	Mark?: ComponentType<TMarkProps>
 	/** Global component used for rendering overlays (fallback for option.Overlay) */

@@ -24,6 +24,7 @@ title: "@markput/react"
 - [RowSpec](/api/interfaces/rowspec/)
 - [SlotProps](/api/interfaces/slotprops/)
 - [Slots](/api/interfaces/slots/)
+- [SpanProps](/api/interfaces/spanprops/)
 - [Store](/api/interfaces/store/)
 - [TextNode](/api/interfaces/textnode/)
 

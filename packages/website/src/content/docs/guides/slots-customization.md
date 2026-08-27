@@ -290,8 +290,8 @@ the surface core writes the token's text into, so it cannot be wrapped and it mu
 second writer.
 
 ```tsx fragment uses=MyMark
-// `Span` receives the text token's props AND the ref core writes text through
-const Mono = ({value, ref}: MarkProps & {ref?: React.RefCallback<HTMLElement>}) => (
+// `SpanProps` is the text token's props AND the ref core writes text through
+const Mono = ({value, ref}: SpanProps) => (
     <span ref={ref} style={{fontFamily: 'monospace', letterSpacing: '0.5px'}}>
         {value}
     </span>
@@ -304,6 +304,13 @@ const Editor = () => (
 
 The `ref` must land on the element that shows the text. A component that drops it leaves the text
 unbound and the caret cannot resolve into it.
+
+The prop carries that contract, so an inline `Span` needs no annotation at all — `value` and `ref`
+are typed from where it is written:
+
+```tsx fragment uses=MyMark
+const Editor = () => <MarkedInput Mark={MyMark} Span={({value, ref}) => <span ref={ref}>{value}</span>} />
+```
 
 ### Combining slots and slotProps
 
@@ -658,10 +665,9 @@ function EditorWithLineNumbers() {
 Custom text rendering with highlighting, through the `Span` prop:
 
 ```tsx fragment uses=MyMark
-import type {MarkProps} from '@markput/react'
-import type {RefCallback} from 'react'
+import type {SpanProps} from '@markput/react'
 
-const Highlighted = ({value = '', ref}: MarkProps & {ref?: RefCallback<HTMLElement>}) => {
+const Highlighted = ({value = '', ref}: SpanProps) => {
     const isUrl = /^https?:\/\//.test(value)
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 

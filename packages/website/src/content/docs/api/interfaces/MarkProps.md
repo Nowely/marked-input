@@ -9,6 +9,10 @@ Defined in: [react/markput/src/types.ts:15](https://github.com/Nowely/marked-inp
 
 Props passed to Mark components.
 
+## Extended by
+
+- [`SpanProps`](/api/interfaces/spanprops/)
+
 ## Properties
 
 ### children?

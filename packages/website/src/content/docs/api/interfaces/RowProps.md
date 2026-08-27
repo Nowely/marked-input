@@ -5,7 +5,7 @@ prev: false
 title: "RowProps"
 ---
 
-Defined in: [react/markput/src/types.ts:30](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L30)
+Defined in: [react/markput/src/types.ts:44](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L44)
 
 Props passed to a ROW KIND's component — what `option.row.Component` receives.
 
@@ -20,7 +20,7 @@ not the document's, so they never reach a component and no caret may enter them.
 optional children: ReactNode;
 ```
 
-Defined in: [react/markput/src/types.ts:34](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L34)
+Defined in: [react/markput/src/types.ts:48](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L48)
 
 The row's own inline content, already rendered.
 
@@ -32,7 +32,7 @@ The row's own inline content, already rendered.
 optional className: string;
 ```
 
-Defined in: [react/markput/src/types.ts:74](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L74)
+Defined in: [react/markput/src/types.ts:88](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L88)
 
 ***
 
@@ -42,7 +42,7 @@ Defined in: [react/markput/src/types.ts:74](https://github.com/Nowely/marked-inp
 depth: number;
 ```
 
-Defined in: [react/markput/src/types.ts:49](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L49)
+Defined in: [react/markput/src/types.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L63)
 
 Nesting depth, counted from 0: a ROOT row is at depth 0, its child at depth 1.
 
@@ -54,7 +54,7 @@ Nesting depth, counted from 0: a ROOT row is at depth 0, its child at depth 1.
 index: number;
 ```
 
-Defined in: [react/markput/src/types.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L63)
+Defined in: [react/markput/src/types.ts:77](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L77)
 
 Position among the row's own SIBLINGS OF EVERY KIND, counted from 0 — `Rows` maps one list
 and hands each row where it sits in it. It is the one fact about a row that the row cannot
@@ -76,7 +76,7 @@ generated page, and zero in-repo callers is not dead code for a published symbol
 optional meta: string;
 ```
 
-Defined in: [react/markput/src/types.ts:32](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L32)
+Defined in: [react/markput/src/types.ts:46](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L46)
 
 The kind's metadata gap — a todo's checked flag, a fence's language.
 
@@ -88,7 +88,7 @@ The kind's metadata gap — a todo's checked flag, a fence's language.
 node: RowNode;
 ```
 
-Defined in: [react/markput/src/types.ts:65](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L65)
+Defined in: [react/markput/src/types.ts:79](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L79)
 
 The live row node: its id, its own text and its verbs.
 
@@ -100,7 +100,7 @@ The live row node: its id, its own text and its verbs.
 optional ref: RefCallback<HTMLElement>;
 ```
 
-Defined in: [react/markput/src/types.ts:73](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L73)
+Defined in: [react/markput/src/types.ts:87](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L87)
 
 A row kind's component is a SLOT component: spread `ref`, `className` and `style` onto the
 element it renders, the way `slots.container` and `slots.paragraph` consumers already do. The
@@ -116,7 +116,7 @@ it otherwise; the other two cost a row that looks wrong rather than one the edit
 optional rows: ReactNode;
 ```
 
-Defined in: [react/markput/src/types.ts:47](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L47)
+Defined in: [react/markput/src/types.ts:61](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L61)
 
 The row's CHILD ROWS, already rendered; `undefined` when there are none. A kind that renders
 them decides where they go — a toggle hides them, a bullet nests a list inside its `<li>`.
@@ -137,4 +137,4 @@ would walk into a row with no element.
 optional style: CSSProperties;
 ```
 
-Defined in: [react/markput/src/types.ts:75](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L75)
+Defined in: [react/markput/src/types.ts:89](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L89)

@@ -142,7 +142,7 @@ interface MentionOverlayProps {
 }
 
 export const MentionOverlay: FC<MentionOverlayProps> = ({users}) => {
-    const {style, match, select, close, ref} = useOverlay()
+    const {style, match, select, close, ref} = useOverlay<HTMLDivElement>()
     const [selectedIndex, setSelectedIndex] = useState(0)
 
     // `match` is undefined while no trigger is open
@@ -198,7 +198,7 @@ export const MentionOverlay: FC<MentionOverlayProps> = ({users}) => {
     if (filteredUsers.length === 0) {
         return (
             <div
-                ref={ref as React.Ref<HTMLDivElement>}
+                ref={ref}
                 className="mention-overlay"
                 style={{
                     position: 'absolute',
@@ -213,7 +213,7 @@ export const MentionOverlay: FC<MentionOverlayProps> = ({users}) => {
 
     return (
         <div
-            ref={ref as React.Ref<HTMLDivElement>}
+            ref={ref}
             className="mention-overlay"
             style={{
                 position: 'absolute',

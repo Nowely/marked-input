@@ -292,7 +292,7 @@ slots={{ container: 'div' }}
 ### Span?
 
 ```ts
-optional Span: ComponentType<MarkProps>;
+optional Span: ComponentType<SpanProps>;
 ```
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:32](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L32)

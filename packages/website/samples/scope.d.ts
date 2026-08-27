@@ -52,9 +52,10 @@ declare global {
 	type Option<TMarkProps = Markput.MarkProps> = Markput.Option<TMarkProps>
 	type MarkProps = Markput.MarkProps
 	type RowProps = Markput.RowProps
+	type SpanProps = Markput.SpanProps
 	type RowSpec = Markput.RowSpec
 	type OverlayProps = Markput.OverlayProps
-	type OverlayHandler = Markput.OverlayHandler
+	type OverlayHandler<TElement extends HTMLElement = HTMLElement> = Markput.OverlayHandler<TElement>
 	type OverlayPick = Markput.OverlayPick
 	type Slots = Markput.Slots
 	type SlotProps = Markput.SlotProps

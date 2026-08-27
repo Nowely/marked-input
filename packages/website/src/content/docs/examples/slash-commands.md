@@ -235,7 +235,7 @@ import type {Command} from './types'
 import './CommandOverlay.css'
 
 export const CommandOverlay: FC = () => {
-    const {style, match, select, close, ref} = useOverlay()
+    const {style, match, select, close, ref} = useOverlay<HTMLDivElement>()
     const [selectedIndex, setSelectedIndex] = useState(0)
     const selectedRef = useRef<HTMLButtonElement>(null)
 
@@ -298,7 +298,7 @@ export const CommandOverlay: FC = () => {
     if (filteredCommands.length === 0) {
         return (
             <div
-                ref={ref as React.Ref<HTMLDivElement>}
+                ref={ref}
                 className="command-overlay"
                 style={{
                     position: 'absolute',
@@ -313,7 +313,7 @@ export const CommandOverlay: FC = () => {
 
     return (
         <div
-            ref={ref as React.Ref<HTMLDivElement>}
+            ref={ref}
             className="command-overlay"
             style={{
                 position: 'absolute',

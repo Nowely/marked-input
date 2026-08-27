@@ -7,6 +7,12 @@ title: "OverlayHandler"
 
 Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:7](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L7)
 
+## Type Parameters
+
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TElement` *extends* `HTMLElement` | `HTMLElement` |
+
 ## Properties
 
 ### activate()
@@ -99,10 +105,19 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:36](https://github.com/N
 ### ref
 
 ```ts
-ref: RefObject<HTMLElement | null>;
+ref: RefObject<TElement | null>;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:37](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L37)
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:47](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L47)
+
+THE OVERLAY'S OWN ELEMENT, handed back so core can measure the popup and flip it above the
+caret when it does not fit below. A consumer attaches it to whatever element it paints.
+
+IT IS THE ELEMENT'S TYPE, not `HTMLElement`, and that is what the parameter is for. React's
+`ref` prop is invariant — `{current: HTMLElement | null}` is not a `Ref<HTMLDivElement>` —
+so a handler that could only ever answer the base type made every consumer of a concrete
+element write an assertion or a callback ref around it. `useOverlay<HTMLDivElement>()` is
+the same object with the type the consumer already knows.
 
 ***
 

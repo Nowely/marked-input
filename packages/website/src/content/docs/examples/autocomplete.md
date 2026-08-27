@@ -175,7 +175,7 @@ interface Props {
 }
 
 export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [], onSelect}) => {
-    const {style, match, select, close, ref} = useOverlay()
+    const {style, match, select, close, ref} = useOverlay<HTMLDivElement>()
     const [selectedIndex, setSelectedIndex] = useState(0)
     const [loading, setLoading] = useState(false)
     const [asyncItems, setAsyncItems] = useState<AutocompleteItem[]>([])
@@ -267,7 +267,7 @@ export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [
     if (loading) {
         return (
             <div
-                ref={ref as React.Ref<HTMLDivElement>}
+                ref={ref}
                 className="autocomplete-overlay"
                 style={{position: 'absolute', left: style.left, top: style.top}}
             >
@@ -282,7 +282,7 @@ export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [
     if (allItems.length === 0) {
         return (
             <div
-                ref={ref as React.Ref<HTMLDivElement>}
+                ref={ref}
                 className="autocomplete-overlay"
                 style={{position: 'absolute', left: style.left, top: style.top}}
             >
@@ -305,7 +305,7 @@ export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [
 
     return (
         <div
-            ref={ref as React.Ref<HTMLDivElement>}
+            ref={ref}
             className="autocomplete-overlay"
             style={{position: 'absolute', left: style.left, top: style.top}}
             onKeyDown={handleKeyDown}

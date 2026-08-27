@@ -157,12 +157,12 @@ row split:
 
 ```tsx fragment
 function MyMenu() {
-    const {rows, active, activate, choose, style, ref} = useOverlay()
+    const {rows, active, activate, choose, style, ref} = useOverlay<HTMLUListElement>()
     useEffect(activate, [activate])
     if (rows.length === 0) return null
 
     return (
-        <ul ref={ref as React.Ref<HTMLUListElement>} style={{position: 'absolute', ...style}}>
+        <ul ref={ref} style={{position: 'absolute', ...style}}>
             {rows.map((row, index) => (
                 <li
                     key={row.label}
@@ -428,7 +428,7 @@ import {useOverlay} from '@markput/react'
 import {useState, useEffect} from 'react'
 
 function KeyboardOverlay() {
-    const {select, close, ref} = useOverlay()
+    const {select, close, ref} = useOverlay<HTMLDivElement>()
     const [selected, setSelected] = useState(0)
 
     const items = ['Alice', 'Bob', 'Charlie']
@@ -455,7 +455,7 @@ function KeyboardOverlay() {
     }, [selected, items, select, close])
 
     return (
-        <div ref={ref as React.Ref<HTMLDivElement>} className="overlay">
+        <div ref={ref} className="overlay">
             {items.map((item, index) => (
                 <div key={item} onClick={() => select({value: item})} className={index === selected ? 'selected' : ''}>
                     {item}
@@ -472,13 +472,13 @@ Use the `ref` to detect clicks outside the overlay:
 
 ```tsx fragment
 function ClickOutsideOverlay() {
-    const {select, ref} = useOverlay()
+    const {select, ref} = useOverlay<HTMLDivElement>()
 
     const items = ['Item 1', 'Item 2']
 
     return (
         <div
-            ref={ref as React.Ref<HTMLDivElement>} // Important for outside click detection
+            ref={ref} // Important for outside click detection
             className="overlay"
         >
             {items.map(item => (
@@ -665,7 +665,7 @@ import {useOverlay} from '@markput/react'
 import {useState, useEffect} from 'react'
 
 function RichUserOverlay() {
-    const {select, match, style, ref} = useOverlay()
+    const {select, match, style, ref} = useOverlay<HTMLDivElement>()
     const [selected, setSelected] = useState(0)
 
     const users = [
@@ -705,7 +705,7 @@ function RichUserOverlay() {
 
     return (
         <div
-            ref={ref as React.Ref<HTMLDivElement>}
+            ref={ref}
             style={{
                 position: 'absolute',
                 left: style.left,
@@ -819,13 +819,13 @@ import {useOverlay} from '@markput/react'
 import type {OverlayHandler} from '@markput/react'
 
 function TypedOverlay() {
-    const overlay: OverlayHandler = useOverlay()
+    const overlay: OverlayHandler<HTMLDivElement> = useOverlay<HTMLDivElement>()
 
     const handleSelect = (value: string) => {
         overlay.select({value, meta: 'optional'})
     }
 
-    return <div ref={overlay.ref as React.Ref<HTMLDivElement>}>{/* overlay content */}</div>
+    return <div ref={overlay.ref}>{/* overlay content */}</div>
 }
 ```
 

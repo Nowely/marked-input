@@ -16,7 +16,7 @@ import {Popup} from '../Popup/Popup'
  * filtering, no insert logic. `rows` and `choose` are core's, and this is the paint over them.
  */
 export const OverlayList = () => {
-	const {rows, active, activate, choose, style, ref} = useOverlay()
+	const {rows, active, activate, choose, style, ref} = useOverlay<HTMLDivElement>()
 
 	// The keydown protocol lives exactly as long as this component: `activate` is opt-in so a
 	// custom overlay that is not a list keeps the arrows and Enter it never claimed.
