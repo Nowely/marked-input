@@ -705,7 +705,7 @@ describe('Feature: drag rows', () => {
 			})
 			const row = rowsOf(host)[0]
 			await userEvent.hover(row)
-			const grip = await page.elementLocator(host).getByRole('button', {name: 'Block options'}).findElement()
+			const grip = await page.elementLocator(host).getByRole('button', {name: 'Row options'}).findElement()
 
 			const band = grip.parentElement!.getBoundingClientRect()
 			const rect = row.getBoundingClientRect()

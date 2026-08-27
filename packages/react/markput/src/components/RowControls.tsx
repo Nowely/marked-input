@@ -119,7 +119,7 @@ export const RowControls = memo(() => {
 						// `draggable` gates only the drag affordance it carries.
 						draggable={!!draggable}
 						className={cx(styles.GripButton, dragging !== null && styles.GripButtonDragging)}
-						aria-label={draggable ? 'Drag to reorder or click for options' : 'Block options'}
+						aria-label={draggable ? 'Drag to reorder or click for options' : 'Row options'}
 						onMouseDown={controller.pinHover}
 						onDragStart={e => controller.beginDrag(gripRow, e.nativeEvent)}
 						onDragEnd={() => controller.endDrag()}

@@ -120,7 +120,7 @@ const dropStyle = computed(() => {
 				type="button"
 				:draggable="!!draggable"
 				:class="[styles.GripButton, dragging !== null && styles.GripButtonDragging]"
-				:aria-label="draggable ? 'Drag to reorder or click for options' : 'Block options'"
+				:aria-label="draggable ? 'Drag to reorder or click for options' : 'Row options'"
 				@mousedown="controller.pinHover()"
 				@dragstart="e => controller.beginDrag(gripRow!, e)"
 				@dragend="controller.endDrag()"
