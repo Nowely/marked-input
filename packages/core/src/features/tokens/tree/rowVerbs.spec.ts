@@ -170,6 +170,20 @@ describe('duplicate', () => {
 		expect(store.tokens.value()).toBe('a\n\tb\na\n\tb')
 		expect(rowsOf(store).slice(0, 2)).toEqual([root, child])
 	})
+
+	/**
+	 * A CARVED PIECE has no line to copy beside — a cell's structural bytes are the carve delimiter,
+	 * not a lead and a separator — so the projection landed INSIDE the line and the table row grew a
+	 * column out of nowhere. Measured before the refusal: `'| a| a | b'`.
+	 */
+	it('refuses a CARVED PIECE, whose copy would land inside the line', () => {
+		const store = rowStore('| a | b\nafter', [TABLE, CELL])
+		const cell = rowsOf(store)[0].rows()[0]
+
+		expect(cell.duplicate()).toBe(false)
+
+		expect(store.tokens.value()).toBe('| a | b\nafter')
+	})
 })
 
 describe('insertAfter', () => {
@@ -213,6 +227,29 @@ describe('insertAfter', () => {
 		expect(store.tokens.value()).toBe('# a\n\t# b\n\t# \n\t# c')
 		// The fresh row spans [9,13]; its slot is the zero-width text at 12, past the '# '.
 		expect(selectionRange(store)).toEqual({start: 12, end: 12})
+	})
+
+	/**
+	 * The same refusal, at the verb that lets a caller choose the bytes: written after a cell, a
+	 * separator cut the table row in two — `'| a⏎ | b'`. It is the ROW half of the rule only; an
+	 * inline node is absent from the sequence by construction and still inserts.
+	 */
+	it('refuses a CARVED PIECE, which has no line for the bytes to follow', () => {
+		const store = rowStore('| a | b\nafter', [TABLE, CELL])
+		const cell = rowsOf(store)[0].rows()[0]
+
+		expect(cell.insertAfter('\n')).toBe(false)
+
+		expect(store.tokens.value()).toBe('| a | b\nafter')
+	})
+
+	it('still inserts after an INLINE node, which the row sequence never names', () => {
+		const store = rowStore('a @[m] b', [{markup: '@[__value__]'}])
+		const mark = rowsOf(store)[0].inline()[1]
+
+		expect(mark.insertAfter('!')).toBe(true)
+
+		expect(store.tokens.value()).toBe('a @[m]! b')
 	})
 })
 

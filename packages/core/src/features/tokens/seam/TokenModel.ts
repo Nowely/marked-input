@@ -1244,24 +1244,14 @@ export class TokenModel {
 		 * terminate IT before the lead can open anything. Both facts live here (ADR-0003), which is
 		 * why "add below" is a verb rather than a string a caller splices.
 		 *
-		 * {@link #insertAfter} answers the caret: the position it names is the row after this one's
-		 * whole subtree, which is exactly the row this opens.
-		 *
-		 * A ROW OF THE DOCUMENT or nothing, and the PRE-ORDER WALK is that test — the same one
-		 * `maximalRuns` uses, liveness and membership in one read. A CARVED PIECE is why it is
-		 * needed: a cell is a Row and answers `lead()` and `endsDocument` like any other, but both
-		 * are meaningless for it — its structural bytes are the carve delimiter, so the splice wrote
-		 * a separator INSIDE the line and cut a table row in two ('| a | b' → '| a⏎ | b').
+		 * {@link #insertAfter} answers the caret AND the membership: a row it cannot name is not a row
+		 * of the document, and the bytes formed here are meaningless for one. `lead()` and
+		 * `endsDocument` are read before that refusal and are simply thrown away with it.
 		 */
 		addSibling: node => {
 			const config = untracked(() => this.#tree.config())
 			if (!config) return false
-			const line = untracked(() => {
-				const roots = this.#tree.roots()
-				if (!preorderRows(roots).some(entry => entry.row === node)) return undefined
-				return {lead: node.lead(), final: endsDocument(roots, node)}
-			})
-			if (!line) return false
+			const line = untracked(() => ({lead: node.lead(), final: endsDocument(this.#tree.roots(), node)}))
 			return this.#insertAfter(node, line.final ? config.separator + line.lead : line.lead + config.separator)
 		},
 	}
@@ -1306,6 +1296,15 @@ export class TokenModel {
 	 * The position is an index into {@link rowSequence}, and for a ROW it skips the anchor's whole
 	 * SUBTREE: `applyAfter` splices at the node's span end, which under nesting is past every
 	 * descendant, so what follows a row is the row after its last one.
+	 *
+	 * A ROW THE SEQUENCE DOES NOT NAME IS REFUSED, and the sequence lookup is where that question
+	 * was already being answered — for the caret alone, which is how all three verbs above came to
+	 * write anyway. A CARVED PIECE is the row it excludes: a cell answers `lead()` and
+	 * `endsDocument` like any other row and both are meaningless for it, so anything spliced after
+	 * one lands INSIDE a line — `'| a | b'` duplicated to `'| a| a | b'`, and an inserted separator
+	 * cut the table row in two. An INLINE node is not refused and cannot be: when the document has
+	 * rows the sequence holds only rows, so a mark is absent from it by construction and leaves the
+	 * caret to adoption's repair, exactly as a nested node did before rows nested.
 	 */
 	#insertAfter(node: TreeNode, text: string): boolean {
 		this.#ensureSeeded()
@@ -1315,10 +1314,9 @@ export class TokenModel {
 				const index = rowSequence(this.#tree.roots()).indexOf(node)
 				return index < 0 ? undefined : index + (node.kind === 'row' ? preorderRows([node]).length : 1)
 			})
+			if (at === undefined && node.kind === 'row') return
 			if (!this.#tx.applyAfter(node, text)) return
 			inserted = true
-			// A node the sequence does not name — an inline node inside a row — leaves the caret
-			// to adoption's repair, exactly as a nested node did before rows nested.
 			if (at !== undefined) this.#enterRow(at)
 		})
 		return inserted

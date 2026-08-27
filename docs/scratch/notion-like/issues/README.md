@@ -42,7 +42,7 @@ Two generations of tickets live here.
 | [15](15-opener-prefix-is-unchecked.md) | Two kinds may share an opener PREFIX | resolved | `shadowedRowKinds` drops a closed kind whose opener extends another's; the recorded condition was wrong twice |
 | [16](16-trailing-paragraph.md) | An atomic row leaves the caret nowhere to go | ready-for-human | The top open DECLARED item; a published-contract decision, not a task |
 | [17](17-cross-row-paste-is-spliced-raw.md) | A paste whose span crosses two rows is spliced raw | needs-triage | `splitPlan` refuses deliberately; widening it is a contract change |
-| [18](18-carved-piece-verbs-fail-open.md) | `duplicate` and `insertAfter` fail open on a carved piece | ready-for-agent | The membership test `addSibling` already runs, applied to two more verbs |
+| [18](18-carved-piece-verbs-fail-open.md) | `duplicate` and `insertAfter` fail open on a carved piece | resolved | One test in `#insertAfter` answers all three verbs; `addSibling`'s own copy came out |
 | [19](19-mid-body-split-loses-the-caret.md) | A mid-body split on a row that keeps a subtree loses the caret | needs-triage | Wants a post-edit caret carried through the transaction |
 | [20](20-rowspec-group.md) | `RowSpec.group` | needs-triage | THE ticket for it — three wants, and the threshold is a fourth |
 | [21](21-table-gestures.md) | The table's own gestures | needs-triage | Header-only seed, a dead Tab at the last cell, no escape for the delimiter |
