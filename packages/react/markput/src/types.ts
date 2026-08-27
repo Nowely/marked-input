@@ -48,10 +48,17 @@ export interface RowProps {
 	/** Nesting depth, counted from 0: a ROOT row is at depth 0, its child at depth 1. */
 	depth: number
 	/**
-	 * Position among the row's own SIBLINGS, and the one fact about a row that the row cannot
-	 * answer for itself — a numbered list's ordinal is what needs it. Kept with no reader in this
-	 * repo, deliberately: it is published surface with its own generated page, and only the parent
-	 * that mapped the siblings knows it.
+	 * Position among the row's own SIBLINGS OF EVERY KIND, counted from 0 — `Rows` maps one list
+	 * and hands each row where it sits in it. It is the one fact about a row that the row cannot
+	 * answer for itself, which is what a kind asking "am I the first of my siblings" needs.
+	 *
+	 * IT IS NOT A LIST ORDINAL. Two paragraphs before a numbered list put its first item at
+	 * `index === 2`, so `index + 1` reads "3." — which is why the showcase's own numbered kind
+	 * paints an empty span and lets a CSS counter number the run
+	 * (`pages/Notion/notion/rows.module.css`).
+	 *
+	 * Kept with no reader in this repo, deliberately: it is published surface with its own
+	 * generated page, and zero in-repo callers is not dead code for a published symbol.
 	 */
 	index: number
 	/** The live row node: its id, its own text and its verbs. */

@@ -58,7 +58,16 @@ expensive than it was when the TODO was written, not less.
 
 **3. `RowProps.index` is KEPT, and the doc now says what for.** "Measured removable" was never the
 question — zero in-repo callers is not dead code for a published symbol, which is the reasoning
-that kept `api.focus()` and `SelectionSnapshot.anchor`. The prop also earns its place on its own
-terms: a row's node sees only itself, so a numbered list's ordinal is exactly the fact only the
-parent that mapped the siblings can supply. Both adapters' doc comments carry the decision, so the
-next audit meets it instead of re-measuring removability and stopping there.
+that kept `api.focus()` and `SelectionSnapshot.anchor`. A row's node sees only itself, so its
+position among its siblings is a fact only the parent that mapped them can supply. Both adapters'
+doc comments carry the decision, so the next audit meets it instead of re-measuring removability
+and stopping there.
+
+*Correction (2026-08-27).* The reason first published with it named "a numbered list's ordinal",
+and the repo's own showcase is the counter-example: `Rows` maps ALL siblings
+(`react/src/components/Rows.tsx:12`), so two paragraphs before a list put its first item at
+`index === 2` and `index + 1` reads "3.". The showcase's `numbered` kind accordingly paints an
+empty span and lets a CSS counter number the run, and says so at
+`pages/Notion/notion/rows.module.css:27-33`. The decision stands; the doc comments now say what
+`index` IS — a sibling position across kinds, for a kind asking "am I the first of my siblings" —
+and say explicitly that it is not an ordinal.
