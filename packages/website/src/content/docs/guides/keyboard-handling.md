@@ -22,7 +22,7 @@ right-hand column's parentheses.
 | `Backspace` / `Delete`       | Next to a mark, deletes the WHOLE mark. Over a row selection, takes those rows away rather than emptying the first.                            |
 | `Esc`                        | Turns the caret into a ROW SELECTION, one level wider on each press. Defers to an open overlay or row menu, which closes on that press instead.  |
 | `Shift+ArrowUp` / `Down`     | Grows the selection by a whole row.                                                                                                            |
-| `Ctrl/Cmd+A`                 | Widens a nested row selection to the row it is nested in, then selects the whole document.                                                      |
+| `Ctrl/Cmd+A`                 | Selects the caret's own row, then the row that one is nested in, then the whole document.                                                       |
 | `Ctrl/Cmd+Z`                 | Undo. `Shift+Ctrl/Cmd+Z` redoes. `history={false}` turns both into no-ops.                                                                       |
 | Arrow keys                   | The browser's, except while a row selection stands. An EMPTY row is stopped on like any other — it is given a line box for it, which the platform does not.  |
 | Click on a frozen block      | SELECTS that row. An atomic kind paints none of its own text, so there is no caret position in it; the selection is written across the row's own element, so the browser paints the block and `Backspace`, a paste and a drag act on it. A typed CHARACTER is refused there — see below. The landing outranks a caret elsewhere, since no press in this row could have put one there; it defers to a SWEEP with an end in the row pressed, and a control the browser FOCUSES keeps its own click. |
@@ -74,7 +74,7 @@ Pass `history={false}` to turn both keys back into no-ops.
 
 ## Selecting Rows
 
-Where the value splits into rows, `Esc` turns the caret into a ROW SELECTION: the whole row it sits in, and one level wider on each press after that. `Shift+ArrowUp`/`Shift+ArrowDown` grow the selection by a row — absorbing that row whole, so growing past a first child reaches its parent — and `Ctrl/Cmd+A` widens a nested row selection to the row it is nested in before it selects the whole document.
+Where the value splits into rows, `Esc` turns the caret into a ROW SELECTION: the whole row it sits in, and one level wider on each press after that. `Shift+ArrowUp`/`Shift+ArrowDown` grow the selection by a row — absorbing that row whole, so growing past a first child reaches its parent — and `Ctrl/Cmd+A` walks the same ladder from the caret's own row, reaching the whole document one rung after `Esc` runs out of parents.
 
 There is no separate row-selection state: a row is selected exactly while the text selection spans it whole, so the browser paints it and every read is one call.
 
@@ -112,6 +112,16 @@ TYPING stays TEXT: a character replaces the rows' own text and the first row kee
 A clip pasted over a row selection takes the same rules it takes at a caret in the same row: a FOREIGN clip's lines each open a row at the covered rows' depth, carrying their kind wherever the kind declares `continues`, so a one-line clip keeps the kind exactly as typing does; this editor's own clip is the value's own projection and is spliced verbatim.
 
 `Tab` and `Shift+Tab` move every row the selection holds, in one splice; where no row selection stands they move the caret's own row. A step no selected row can take moves none of them. `indents` is the EDITOR's declaration, not the row's: it answers whether Tab belongs to the field at all, and which rows may actually nest is the same question a DROP asks — the scan's depth ceiling, plus whether the would-be parent's component paints child rows. So the keyboard and the drag agree, and a row of a kind that declares nothing still nests under a bullet by either gesture.
+
+## When a Gesture Is Refused
+
+Several of the rules above END in the editor consuming a key and doing nothing, and every one of them is deliberate: `Shift+Enter` inside a table cell, `Tab` past the last cell of a carved row, `Tab` on a row the depth verb will not move — a root row under `Shift+Tab`, or one whose would-be parent paints no child rows — `Backspace` at a boundary there is no merge to offer across, and a character typed over a row that holds no editable position. A cancelled key with nothing behind it is indistinguishable from an editor that has stopped responding, so the editor SAYS it refused: a tint fades over the row the gesture was refused at, once per press. Its colour is `--markput-row-refused`.
+
+It names the row and not the reason. Nothing about the rules changes, and nothing is required of you to get it — it is painted by the same layer that paints the grip and the drop indicator. Where the document parses no rows there is nothing to tint and a refusal is silent, which is what a plain text field does.
+
+```ts fragment
+store.rows.state.refused() // reactive: {id, at} — the row, and which press
+```
 
 Dragging a row's grip carries the whole row selection when the gripped row is part of it, and that row alone otherwise. Where the drop lands — including how DEEP — comes from the pointer: its vertical position names the gap between two lines, its horizontal position names one of the depths that gap legally admits, and every candidate is planned before it is offered, so the drop indicator promises rather than predicts. A pointer below a nested subtree names the gap after that subtree's LAST line, not the slot under the root it started at. The placement the rows ALREADY hold is one of the depths a gap offers, so releasing at a row's own indent leaves it where it was instead of re-indenting it. The rows in flight are stepped over at BOTH ends of a gap, so a dragged row's own gap offers the same depths whether the pointer sits on the upper half of its line or the lower.
 

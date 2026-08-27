@@ -191,7 +191,7 @@ your overlay is, as well as how outside-click detection finds it.
 
 ## Theming the Built-in Look
 
-The popup, its highlighted row, the drag grip and the drop indicator are painted from
+The popup, its highlighted row, the gutter buttons, the drop indicator and the refusal tint are painted from
 `@markput/core/styles.module.css`, and every colour in it is read through a custom property whose
 fallback is the shipped default. Declare any of them on an ancestor — no CSS-module class name is
 involved, and an editor nobody themes looks exactly as it did.
@@ -204,9 +204,10 @@ involved, and an editor nobody themes looks exactly as it did.
 | `--markput-popup-shadow`           | `0 3px 6px -2px rgba(0,0,0,.6)`  | Popup shadow                 |
 | `--markput-popup-item-background`  | `#cce9ff`                        | Hovered / highlighted row    |
 | `--markput-popup-item-text`        | `#2589f5`                        | Hovered / highlighted row    |
-| `--markput-grip-color`             | `#9ca3af`                        | The drag grip                |
+| `--markput-grip-color`             | `#9ca3af`                        | Both gutter buttons          |
 | `--markput-drop-indicator`         | `#3b82f6`                        | The row drop line            |
 | `--markput-row-selected`           | `rgb(35 131 226 / 28%)`          | The row selection overlay    |
+| `--markput-row-refused`            | `rgb(235 87 87 / 26%)`           | The refused-gesture tint     |
 
 ```css
 .my-dark-page {

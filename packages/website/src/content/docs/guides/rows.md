@@ -120,7 +120,7 @@ no rows at all.
   after that.
 - `Shift+ArrowUp` / `Shift+ArrowDown` grow it by a whole row, so growing past a first child reaches
   its parent.
-- `Ctrl/Cmd+A` widens a nested selection to the row it is nested in before it selects the document.
+- `Ctrl/Cmd+A` climbs: the caret's own row, then the row that one is nested in, then the whole document.
 
 The selection is readable from your own components. `useMarkput(selector)` is the one published door
 to the editor's store, in both adapters, and it re-renders on exactly the signals the selector names
@@ -185,6 +185,12 @@ with no editable position, where the character is refused and the row is left st
 `draggable` is `false` by default, and ineffective when `separator` is `null`. There is ONE grip, on
 the row nearest the pointer, painted from a single layer beside the rows rather than inside them;
 `alwaysShowHandle` keeps it visible instead of fading it in on hover.
+
+Beside it, in the same band, is a `+` that opens a fresh row under the row the pointer is on — the
+row menu's own `Add below`, one gesture instead of three. It is a ROW feature rather than a drag one,
+so it is painted whenever the band is, and it is hidden with the band under `readOnly`. The band is
+two controls wide, and that is the left gutter the editor reserves on the container while the rows
+drag: 48px of `padding-left`, which your own layout has to leave room for.
 
 Dragging carries the whole row selection when the gripped row is part of it, and that row alone
 otherwise; which rows those are is fixed when the grip is pressed, since the browser owns the text
