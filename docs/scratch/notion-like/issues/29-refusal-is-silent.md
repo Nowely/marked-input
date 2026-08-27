@@ -1,7 +1,7 @@
 # The editor refuses silently, and what a click does depends on markup the user cannot see
 
 Type: task
-Status: resolved — one refusal channel, in core, painted by both adapters
+Status: resolved — one refusal channel, in core, painted by both adapters; the click half went to 32 and the clamped sweep to 44
 Blocked by: —
 
 > Two of the four rough edges `insights.md:148-167` records as *"nobody filed and everybody felt"*.
@@ -66,7 +66,6 @@ The five call sites are the ticket's own list plus the two the neighbouring tick
 | Shift+Enter inside a carved cell | `rowKeys.ts` `handleRowEnter`'s Shift arm |
 | Tab past a carved row's last cell | `rowKeys.ts` `handleRowIndent`'s cell walk — [21](21-table-gestures.md)'s item 2 |
 | a Tab the depth verb refuses | `rowKeys.ts` `handleRowIndent` — [28](28-gestures-the-first-session-left-standing.md)'s item 3, the dead key at depth 0 |
-| Backspace at a boundary with no merge to offer | `input.ts` `handleDeleteKey`'s `!target` arm |
 | a character typed over a row no caret may enter | `rowKeys.ts` `replaceRowSelection`, all three arms |
 
 **WHAT IT SAYS AND WHAT IT DOES NOT.** It names the ROW and never the reason. A reason has to be a
@@ -78,7 +77,7 @@ animation. Nothing clears it: one run of the animation is the whole of its visib
 
 **THE COST TO A CONSUMER WHO WANTS NONE** is one CSS custom property: `--markput-row-refused`, set
 to `transparent`. There is no prop, and there is no channel to turn off — the signal is written
-whether or not anything reads it, at five sites that were already returning.
+whether or not anything reads it, at four sites that were already returning.
 
 **ROW-SCOPED, and that is a decision.** Every refusal the three sessions reported happens at a row,
 and the layer that paints it already addresses rows by id. A gesture refused where the document
@@ -93,8 +92,44 @@ belongs with [32](32-no-per-row-view-state.md)'s class of consumer-boundary ques
 here.
 
 **Pins**, and every one of them was mutated and seen to redden:
-`rowKeys.spec`'s `a refused gesture is announced` (six keys, plus one that asserts silence when the
-same key is ACCEPTED) and `Base/rowKeymap.spec`'s browser case in both adapters. Mutants run:
+`rowKeys.spec`'s `a refused gesture is announced` (five keys, plus one that asserts silence when the
+same key is ACCEPTED and one that asserts silence for a delete the model cannot express) and
+`Base/rowKeymap.spec`'s browser case in both adapters. Mutants run:
 `refuse()` made a no-op → 6 of 6 red; the press count frozen → the second-press case red; the Tab
-site's report dropped → 2 red; the delete site's dropped → 1 red; React's element removed → the
-React project red with Vue green; Vue's `:key` removed → the second-press identity assertion red.
+site's report dropped → 2 red; React's element removed → the React project red with Vue green;
+Vue's `:key` removed → the second-press identity assertion red; the tint's `animation` line deleted
+→ the browser case red in both projects.
+
+## Corrected 2026-08-27, in review
+
+**THE DELETE SITE CAME BACK OUT.** `input.ts` `handleDeleteKey`'s `!target` arm announced for one
+commit and was wrong more often than it was right. `anchorsForDelete` answers `undefined` for TWO
+facts and cannot tell them apart: a boundary with no merge to offer, and the plain DOCUMENT EDGE.
+Measured on `'one⏎two'` with a live DOM caret: Backspace at offset 0 of row 0 → `{id: 1, at: 1}`;
+Delete at the end of row 1 → `{id: 3, at: 1}`. That is the universal no-op of every text field, and
+because `at` counts presses and both adapters key the element on it, holding the key repainted the
+tint on every autorepeat.
+
+Telling the two apart needs `boundarySpan` to distinguish "found and refused" from "not found",
+which widens a PUBLISHED return type for one key in one narrow document shape (a raw closed body
+followed by another row). Deleted instead, and measured: exactly one test reddened — this pass's
+own pin — which is now inverted to assert the silence, with both document edges added to it.
+
+The `boundarySpan` round-trip guard (`2cd50c8d`) STAYS: it is the real repair, and it stands on its
+own — the key writes nothing and takes no undo step for it.
+
+**THE CLAMPED SWEEP was never answered here and is not this channel.** *"A sweep into a fence
+paints 20 characters that survive typing"* is a write that HAPPENED on a smaller span than what was
+painted — `refuse()` would be a lie, since the gesture did write. It is a PAINT problem (the
+selection shown is not the selection that will be replaced), filed as
+[44](44-painted-selection-outruns-the-write.md).
+
+**A SOFT KEYBOARD or an Edit-menu delete reaches `beforeinput` with no keydown**, and that door
+never announced either. With the keydown site gone the two doors agree, which is what "one
+mechanism" meant.
+
+**NOT DONE, recorded so nobody re-measures it blind:** `state.refused` is never cleared, so a dead
+refusal is re-measured by `boxOf` on every geometry bump and keeps an `opacity: 0` element mounted
+for the editor's lifetime. The rAF loop bumps `geometry` only when a box actually moved, so the
+steady-state cost is near zero; a clean fix is `onAnimationEnd`/`@animationend` in the adapters,
+which needs no clock in core. Left as a smell, not a defect.

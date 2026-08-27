@@ -5,12 +5,13 @@ Two generations of tickets live here.
 - **01–11 are the PROBE's**, filed 2026-08-25 before any of the work started, against the editor as
   it then was. Seven are closed; `outcome.md:189-212` is the account of which decision closed each,
   and that four of the seven closures are ONE decision (the scan-first inversion, ADR-0010).
-- **12–43 came out of the BUILD**, filed 2026-08-27 from what the effort declared and did not
+- **12–44 came out of the BUILD**, filed 2026-08-27 from what the effort declared and did not
   build: `outcome.md`'s "What is declared but not built", `map.md`'s Fog, and `insights.md`'s
   ranked next steps and its "what I would not do yet". Nothing here is new analysis — every problem
   statement quotes a record and cites the file the record cites, re-verified against the code at
   `52ef65ae`. 41–43 were split out during the contract group's review, from items an earlier record
-had judged open and then carried inside a `resolved` ticket.
+had judged open and then carried inside a `resolved` ticket, and 44 during the affordance group's
+for the same reason.
 
 `Status:` uses the five roles in `docs/agents/triage-labels.md`; the older tickets also use
 `resolved — <what answered it>`, which is the wayfinder vocabulary in
@@ -69,16 +70,22 @@ had judged open and then carried inside a `resolved` ticket.
 | [41](41-empty-raw-body-has-no-caret-line.md) | An empty raw body paints no caret line | needs-triage | Split out of 16, which judged it NOT dissolved and then went `resolved`; a paint question, not a tree one |
 | [42](42-no-insert-above-verb.md) | No insert-ABOVE verb, and `addSibling` names no caret | needs-triage | Split out of 16 for the same reason; `writeRows` now names a caret, so the primitive exists |
 | [43](43-cross-row-write-takes-hidden-rows.md) | A cross-row write takes the rows a collapsed toggle hides | needs-triage | 13's rule, unenforced on the third write path; pre-existing, measured identical at `da03807d~1` |
+| [44](44-painted-selection-outruns-the-write.md) | The painted selection is not the span a keystroke replaces | needs-triage | Split out of 29 in review; a correct clamp with an incomprehensible paint, so it is a paint problem and not a refusal |
 
 ## The affordance group (T-D, 2026-08-27)
 
 29, 28, 27, 21, 04 and 08 were driven as one pass, and the shape of it was ONE mechanism rather than
-six features: a refusal channel in core, painted once per adapter, which answers 29 whole and the
-dead-key halves of 28 and 21. Beside it, three items each of which came out of a MEASUREMENT rather
+six features: a refusal channel in core, painted once per adapter, which answers the dead-key
+halves of 29, 28 and 21. Beside it, three items each of which came out of a MEASUREMENT rather
 than an argument — Mod+A's missing rung was two spellings of one question, a Backspace at a raw-body
 boundary was writing nothing and taking an undo step for it, and 08's premise was refuted by the one
 file its own grep could not reach. Three affordances were judged and NOT taken, each with its reason
 recorded on 27 so nobody re-opens it blind.
+
+The pass's own review then corrected it: Mod+A was DEAD in an empty row rather than merely missing
+a rung (a collapsed span read as a widening), the delete door's announcement fired at the plain
+document edge and came back out, and 29's third item — the clamped sweep — was neither answered nor
+recorded, and is now [44](44-painted-selection-outruns-the-write.md).
 
 ## What was checked and NOT filed
 

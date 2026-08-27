@@ -1667,16 +1667,35 @@ describe('rowKeys the row keymap', () => {
 			expect(store.tokens.value()).toBe('| a | b')
 		})
 
-		it('names the row a Backspace at a raw body edge could not merge', () => {
-			// A fence's closing literal is not anchorable, so there is no merge to offer across it in
-			// either direction — `handleDeleteKey` consumes the key and now says it did.
-			const {store, container} = keymap('```js\ncode\n```\nplain')
-			caretIn(store, 1, 0)
+		/**
+		 * A DELETE THE MODEL CANNOT EXPRESS IS CONSUMED IN SILENCE — the one refusal this channel
+		 * deliberately does NOT carry. `anchorsForDelete` answers `undefined` for two different
+		 * facts and cannot tell them apart: a boundary with no merge to offer, and the plain
+		 * DOCUMENT EDGE, which every text field in the world answers with nothing. Announcing on
+		 * the union tinted the first row on every Backspace at offset 0, restarting the animation
+		 * on each autorepeat.
+		 *
+		 * The repair the edge case rests on is `boundarySpan`'s round-trip guard, not the paint:
+		 * the key writes nothing and takes NO undo step for it, which is pinned in `HistoryModel`.
+		 */
+		it('says nothing for a delete it cannot express, at a raw body edge or at either document edge', () => {
+			const fence = keymap('```js\ncode\n```\nplain')
+			caretIn(fence.store, 1, 0)
+			press(fence.container, 'Backspace')
+			expect(fence.store.rows.state.refused()).toBeNull()
+			expect(fence.store.tokens.value()).toBe('```js\ncode\n```\nplain')
 
-			press(container, 'Backspace')
+			const start = keymap('one\ntwo')
+			caretIn(start.store, 0, 0)
+			press(start.container, 'Backspace')
+			expect(start.store.rows.state.refused()).toBeNull()
+			expect(start.store.tokens.value()).toBe('one\ntwo')
 
-			expect(store.rows.state.refused()).toEqual({id: rowsOf(store)[1].id, at: 1})
-			expect(store.tokens.value()).toBe('```js\ncode\n```\nplain')
+			const end = keymap('one\ntwo')
+			caretIn(end.store, 1, 3)
+			press(end.container, 'Delete')
+			expect(end.store.rows.state.refused()).toBeNull()
+			expect(end.store.tokens.value()).toBe('one\ntwo')
 		})
 
 		it('names the row a typed character over a frozen row could not replace', () => {

@@ -115,9 +115,11 @@ A clip pasted over a row selection takes the same rules it takes at a caret in t
 
 ## When a Gesture Is Refused
 
-Several of the rules above END in the editor consuming a key and doing nothing, and every one of them is deliberate: `Shift+Enter` inside a table cell, `Tab` past the last cell of a carved row, `Tab` on a row the depth verb will not move — a root row under `Shift+Tab`, or one whose would-be parent paints no child rows — `Backspace` at a boundary there is no merge to offer across, and a character typed over a row that holds no editable position. A cancelled key with nothing behind it is indistinguishable from an editor that has stopped responding, so the editor SAYS it refused: a tint fades over the row the gesture was refused at, once per press. Its colour is `--markput-row-refused`.
+Several of the rules above END in the editor consuming a key and doing nothing, and every one of them is deliberate: `Shift+Enter` inside a table cell, `Tab` past the last cell of a carved row, `Tab` on a row the depth verb will not move — a root row under `Shift+Tab`, or one whose would-be parent paints no child rows — and a character typed over a row that holds no editable position. A cancelled key with nothing behind it is indistinguishable from an editor that has stopped responding, so the editor SAYS it refused: a tint fades over the row the gesture was refused at, once per press. Its colour is `--markput-row-refused`.
 
 It names the row and not the reason. Nothing about the rules changes, and nothing is required of you to get it — it is painted by the same layer that paints the grip and the drop indicator. Where the document parses no rows there is nothing to tint and a refusal is silent, which is what a plain text field does.
+
+A DELETE the model cannot express is the one refusal that stays quiet: `Backspace` at a boundary there is no merge to offer across — the closing line of a raw body — is consumed and writes nothing, but so is `Backspace` at the very start of the document and `Delete` at its very end, and the editor cannot tell those apart. Announcing on the pair tinted the first row on the most ordinary keystroke there is, so it announces on neither.
 
 ```ts fragment
 store.rows.state.refused() // reactive: {id, at} — the row, and which press

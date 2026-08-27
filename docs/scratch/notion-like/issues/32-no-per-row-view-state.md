@@ -34,3 +34,19 @@ A core-owned per-row store keyed by row id, surviving a re-parent because core k
 identity across it (`rowKeys.ts`) while the frameworks do not. It is new published surface with one
 would-be caller today, so it wants the maintainer's yes and a second caller before it is worth its
 own weight.
+
+## Inherited from [29](29-refusal-is-silent.md), 2026-08-27 (T-D)
+
+29's SECOND half landed here and 29 is closed, so this ticket is now the only place it is written
+down. *"Whether a click moves your caret, selects a block, or does nothing depends on whether the
+consumer called `useControlRef` on the thing under the pointer"* (`insights.md:162-167`, round
+eleven, which measured a click across a button decoration, frozen presentation and a `<select>` and
+found three answers where there should be two).
+
+It belongs here rather than with the refusal channel because nothing in core knows the click was
+declined — nothing declined it. It is the same consumer-boundary question this ticket is about: the
+editor's behaviour at a row depends on facts only the consumer's own DOM holds, and there is no
+core-side place to hold them.
+
+Not part of this ticket's own shape-of-a-fix, and does not on its own justify the store — recorded
+so a later pass reading 29's `resolved` does not lose it.

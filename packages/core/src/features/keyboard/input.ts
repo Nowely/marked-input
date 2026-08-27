@@ -184,15 +184,18 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	//
 	// The extents that legitimately need the browser's own event — a word or line delete — never
 	// reach here: the modifier test above declines ahead of this.
+	//
+	// AND IT SAYS NOTHING WHEN IT DECLINES. This arm announced the refusal for one release and the
+	// announcement was wrong more often than it was right: `undefined` above conflates the raw-body
+	// boundary with the plain DOCUMENT EDGE — Backspace at offset 0, Delete at the end — which is
+	// not a declined gesture but the universal no-op of every text field. The tint restarts on
+	// every keydown REPEAT, so holding Backspace at the top of a document painted a continuous
+	// alarm over the first row. Telling the two apart needs {@link boundarySpan} to distinguish
+	// "found and refused" from "not found", which grows its published return type for one key; the
+	// channel keeps the gestures a user actually aims — Tab, Shift+Enter, a typed character over a
+	// frozen row.
 	event.preventDefault()
-	if (!target) {
-		// AND THE ONE REFUSAL IN THIS ARM SAYS SO. `undefined` above is a boundary with no merge to
-		// offer in either direction; a document with no rows reaches it too — at the first offset of
-		// an inline editor — and refuses there in silence, which is what every plain text field does.
-		const caret = store.tokens.rowOf(anchors.anchor)
-		if (caret) store.rows.refuse(caret.row.id)
-		return
-	}
+	if (!target) return
 	store.edit.replace(target.anchor, target.head, '')
 }
 
