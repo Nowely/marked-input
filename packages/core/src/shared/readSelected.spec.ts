@@ -49,4 +49,16 @@ describe('readSelected', () => {
 		const controller = new RowsLike()
 		expect(readSelected(controller)).toBe(readSelected(controller))
 	})
+
+	/**
+	 * Only an untyped selector reaches this — the published parameter is `object`. It still may not
+	 * THROW: this runs inside React's `getSnapshot` and Vue's `effect`, so an exception here takes
+	 * the render root down rather than the consumer's own line.
+	 */
+	it('answers a nullish target as itself rather than throwing into the framework', () => {
+		// oxlint-disable-next-line no-unsafe-type-assertion -- the JS-consumer door the guard is for
+		expect(readSelected(null as unknown as object)).toBe(null)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- the JS-consumer door the guard is for
+		expect(readSelected(undefined as unknown as object)).toBe(undefined)
+	})
 })

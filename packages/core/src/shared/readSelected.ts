@@ -40,7 +40,15 @@ function isCallable(value: object): value is () => unknown {
 	return typeof value === 'function'
 }
 
-function isPlainObject(value: object): value is Record<string, unknown> {
+/**
+ * `null` and `undefined` are tested FIRST because `Object.getPrototypeOf` throws on them, and this
+ * runs inside the reactive primitive each adapter's `useMarkput` drives — React's `getSnapshot`,
+ * Vue's `effect`. A throw there lands in the framework's own frame and takes the render root down
+ * with it, which is the one thing `reportBadProp` exists to say the library never does at a
+ * consumer boundary. The published parameter is `object`, so only an untyped selector gets here.
+ */
+function isPlainObject(value: object | null | undefined): value is Record<string, unknown> {
+	if (value === null || value === undefined) return false
 	const prototype: unknown = Object.getPrototypeOf(value)
 	return prototype === Object.prototype || prototype === null
 }

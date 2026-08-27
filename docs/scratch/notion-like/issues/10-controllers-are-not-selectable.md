@@ -58,7 +58,7 @@ meets first — "Index signature for type 'string' is missing in type 'RowContro
 mechanism rather than the rule.
 
 **Pins.** `packages/core/src/shared/readSelected.spec.ts` for the runtime; deleting the arm reddens
-three of four, with `RowsLike {selected: [Function bound computedOper]}` becoming
+three of five, with `RowsLike {selected: [Function bound computedOper]}` becoming
 `{selected: ["row-1"]}` in the diff. The TYPE half is pinned by a sample in
 `guides/rows.md`, which the `docs` vitest project compiles against the adapter source: removing the
 overload reddens it with the ticket's own TS2769.
@@ -67,3 +67,33 @@ overload reddens it with the ticket's own TS2769.
 answered rather than copied, and `null` answers `null` rather than the `{}` that `for…in` over it
 silently produced. `readSelected`'s published parameter widens from `Selectable | ObjectSelector`
 to `object`.
+
+### Two corrections, measured (2026-08-27)
+
+**`null` did not answer `null` — it threw.** `isPlainObject` reached `Object.getPrototypeOf(null)`,
+which performs `ToObject` and raises `TypeError: Cannot convert undefined or null to object`, out of
+React's `getSnapshot` and Vue's `effect`. The behaviour claimed above is now the behaviour shipped:
+the predicate tests nullish first, and `readSelected.spec.ts` pins both `null` and `undefined` —
+removing the guard reddens it.
+
+**The mutation count was two of four, not three of four.** The two tests that read a signal and a
+plain object are unaffected by the arm by construction. With the nullish pin added the same mutation
+now reddens three of five.
+
+### The third overload was too wide (2026-08-27)
+
+`<T extends object>` is satisfied by every non-primitive, so it admitted two shapes that used to be
+compile errors and now answer wrongly:
+
+- `useMarkput(s => s.rows.selected())` — the signal CALLED in the selector, the likeliest mistake at
+  this API. An array is not a plain object, so `readSelected` hands it straight back; the wrapping
+  `computed` reads nothing reactive and never invalidates, so the hook returns the array as it stood
+  at mount, forever.
+- an INTERFACE-typed selector return. It gets no implicit index signature, so it falls past the
+  unwrapping overload to this one and keeps its wrapped type — while the runtime, meeting a plain
+  object literal, unwraps it. `bag.readOnly()` is then `TypeError: not a function`.
+
+The constraint now names the rule rather than the shape: `Store['rows'] | Store['edit'] |
+Store['tokens']`, the three the doc comment, this ticket and `guides/rows.md` all name. Both bad
+shapes are compile errors again. `Store[keyof Store]` was tried first and is useless —
+`KeyboardController` is structurally empty, so the union swallows `readonly number[]`.
