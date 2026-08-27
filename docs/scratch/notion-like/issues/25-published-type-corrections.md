@@ -1,7 +1,7 @@
 # Two published types are wrong at the boundary
 
 Type: task
-Status: needs-triage
+Status: resolved — both corrected, and the workarounds came out (2026-08-27)
 Blocked by: —
 
 ## Problem
@@ -39,3 +39,38 @@ Related and already ticketed by the probe, both still open and both one line eac
 published from `@markput/core` and from neither adapter ([03](03-row-node-not-nameable.md)'s open
 half), and `useMarkput(s => s.rows)` does not compile ([10](10-controllers-are-not-selectable.md)).
 `insights.md:366-371` groups all three as one afternoon.
+
+## Answer
+
+Both were describing what the EDITOR stores rather than what the CONSUMER is handed.
+
+**`OverlayHandler.ref`** is now the element's own type. React's `ref` prop is invariant in the
+element, so `{current: HTMLElement | null}` is assignable to no concrete element ref at all —
+`useOverlay` takes the element as a type parameter defaulted to `HTMLElement`, and
+`useOverlay<HTMLDivElement>()` hands back the same object with the type the consumer already knows.
+The one erasure it costs lives inside the hook, where core's own storage is the reason for it,
+instead of at every call site. The shipped `Popup` stops asserting its ref (its `oxlint-disable`
+went with it), `Overlay.fixtures.react.tsx` stops wrapping it in a callback, and the doc casts went
+from **14** — the ticket counted eight; the number had grown — to **0**. The Vue twin is untouched
+and needs nothing: its `ref` is a getter/setter pair over `HTMLElement | null`, which a subtype
+assigns to fine, and what a Vue consumer unwraps is a template ref's `Element | ComponentPublicInstance`
+([23](23-row-component-contract-is-silent.md)'s `unwrapEl`), not this.
+
+**`MarkedInputProps.Span`** is `ComponentType<SpanProps>`, and `SpanProps` is `MarkProps` with the
+`ref` a text token's component has always been handed — the consignment without which the text is
+unbound and the caret cannot resolve into it. `RowProps` declares its own for the same reason, so
+this is the pair completed rather than a new idea. The widening is source-compatible: a component
+written against `MarkProps` still satisfies the prop, because the ref it ignores is optional. The
+guide's two Span samples drop their hand-written `MarkProps & {ref?: RefCallback<HTMLElement>}`.
+
+Both pins are in the doc-sample harness and both were seen red. Narrowing `Span` back to
+`ComponentType<MarkProps>` reddens `slots-customization.md` with *"TS2339: Property 'ref' does not
+exist on type 'MarkProps'"* on the inline-Span fence; naming the wrong element on the overlay
+sample reddens `overlay-customization.md` with *"TS2322: Type 'RefObject<HTMLDivElement | null>' is
+not assignable to type 'Ref<HTMLUListElement> | undefined'"*.
+
+**Behaviour change:** none at runtime — both are type corrections, and the `ref` a Span receives has
+always been passed. The DTS moves: `OverlayHandler` and `useOverlay` gain a type parameter, and
+`SpanProps` is a new published type. `StyledMarkProps` in the storybook narrows its own `ref` to the
+callback the editor actually hands over, because the wider `Ref` also admits `null`, which no
+generated mark can be given.

@@ -2,7 +2,7 @@
 
 Type: task
 Status: needs-triage
-Blocked by: —
+Blocked by: — (the record's own ordering named 12, 13 and 16; all three are now answered)
 
 > ONE ticket, because the record itself groups these four under one verdict and one reason to wait
 > (`insights.md:392-395`, `outcome.md:594-597`). Each keeps its own measurement below, so splitting

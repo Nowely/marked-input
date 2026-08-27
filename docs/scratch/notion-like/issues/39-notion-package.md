@@ -2,7 +2,7 @@
 
 Type: task
 Status: needs-triage
-Blocked by: 03, 10, 12, 25
+Blocked by: 03 (its open half) — 10, 12 and 25 are answered
 
 ## Problem
 
@@ -30,7 +30,8 @@ passes (`packages/storybook/src/pages/Notion/boundary.spec.ts`: no import leaves
 ## Blocked by, concretely
 
 - [03](03-row-node-not-nameable.md)'s open half — `Store` re-exported from both adapters.
-- [10](10-controllers-are-not-selectable.md) — `useMarkput(s => s.rows)` must compile.
-- [25](25-published-type-corrections.md) — the two boundary types a consumer would meet.
-- [12](12-upward-mouse-selection.md) — publishing a mouse-driven editor that cannot select upward
-  freezes the defect into a package's contract and its consumers' workarounds.
+- ~~[10](10-controllers-are-not-selectable.md) — `useMarkput(s => s.rows)` must compile.~~ Answered in T-C.
+- ~~[25](25-published-type-corrections.md) — the two boundary types a consumer would meet.~~ Answered
+  2026-08-27: `useOverlay<T>()` names its element and `SpanProps` declares the ref.
+- ~~[12](12-upward-mouse-selection.md) — publishing a mouse-driven editor that cannot select upward
+  freezes the defect into a package's contract and its consumers' workarounds.~~ Answered.

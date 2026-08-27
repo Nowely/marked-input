@@ -1,7 +1,7 @@
 # An atomic row leaves the caret nowhere to go, and nothing can ask for the row after
 
 Type: task
-Status: ready-for-human
+Status: resolved — the invariant moved off the caret and onto the document's last row (2026-08-27)
 Blocked by: —
 
 ## Problem
@@ -52,3 +52,54 @@ turn-into one.** The closest anything has come to an answer is the click claim's
 position is inert"* — which decides what a pointer does and not where a caret may be asked for.
 
 Whatever is chosen has to answer all three faces above, or it is the fourth patch around the hole.
+
+## Answer
+
+**The editor guarantees the trailing row**, and the rule moved off the caret. `#keepTailEnterable`
+asked its question of the CARET'S row, which is why it could only ever answer the raw-body half: an
+atomic row holds no position at all, so no caret can be in one to provoke it. `#settleTail` asks the
+DOCUMENT'S LAST row instead, and both traps answer the same test — a raw closed body, and a row
+whose entry no caret may reach.
+
+`#recoverCaret`'s own opening arm came out with it. The two were one rule written twice, and the
+second copy fired only for a caret already stranded. Measured rather than argued (doctrine A.1):
+removed alone at `94ecfd19`'s parent it reddens three browser pins — *"opens a row after an atomic
+block that ends the document"*, *"opens a row after a raw-bodied block that ends the document"* and
+*"undoes and redoes the whole gesture that made a code block and typed in it"*; removed beside
+`#settleTail` it reddens nothing.
+
+### The three questions the decision was bounded by
+
+- **When does it fire?** On the caret invariant's own clock, one microtask past a commit or an
+  element registration, and only while the document's last row is PAINTED. `'absent'` is a frame
+  that has not reached the row and stands down; `'boxless'` is a collapsed room, where the door
+  would be one nobody can see and the value would grow on every pass.
+- **Does a value merely HANDED to the editor get rewritten on mount?** No, and deliberately — the
+  existing rule is kept. It fires only while someone is IN the document, which is `#settleRows`'
+  gate and its reason. A SELECTION counts and not only a caret, which is what closes the one-row
+  document: the only gesture such a document takes is a click, and a click on frozen presentation
+  writes a row selection. Pinned by *"leaves a document nobody is standing in alone"*.
+- **Does the row survive an undo as one step?** It is not a step at all. Every write the invariant
+  makes carries `EditRecord.repair`, so the row folds into the edit that provoked it and ONE press
+  takes back both — the rule `HistoryModel.spec` already pins for the fence, now pinned for the
+  atomic row too (*"folds the row it opens into the edit that provoked it"*).
+
+### The three items that hang off this one
+
+1. **The dead end at the end of the document** — DISSOLVED. Both halves are now one rule, and the
+   atomic half no longer needs a caret to be stranded in the trap first.
+2. **`Code`'s missing seed** — NOT dissolved, and it is a different hole. A fence's body IS
+   reachable; what it lacks is a caret LINE when its body is empty, because an empty body paints a
+   `<span></span>` the showcase's line-box selector cannot match. That is a paint question in the
+   showcase's own theme, not a tree one, and this rule cannot see it: the row is painted and its
+   entry is reachable, so there is nothing for the invariant to repair.
+3. **No verb names a caret** — NOT dissolved, and it is now smaller rather than gone. The trailing
+   row removes the reason `choose` needed an insert-after contract, which is what the fork was
+   about; what stays open is the option API's own gap — there is still no insert-ABOVE verb, and
+   `addSibling` still names no caret. `RowNode.writeRows` now names one (see
+   [19](19-mid-body-split-loses-the-caret.md)), so the primitive exists where a verb wants it.
+
+**Behaviour change:** a document ending in an atomic row grows a blank row under it as soon as
+anyone is in the document; a one-row atomic document gains a caret target where it had none at all.
+The raw-body arm writes the same bytes it always did but no longer waits for the caret to be inside
+the trap.

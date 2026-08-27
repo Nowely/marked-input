@@ -43,3 +43,30 @@ blocked on … when a fourth turns up, it stops being a feature and becomes the 
 
 The doctrine's own first test — what does the proposal delete — is what keeps it out today: it
 deletes nothing and adds published surface (`insights.md:392-395`).
+
+## A direction, recorded rather than acted on (2026-08-27)
+
+The maintainer's own, and it is not `RowSpec.group`: **a FENCE before and after the table, with the
+mark parsing the interior** — which is how the properties panel, the table of contents and the board
+already work. It answers all three wants at once and adds no published surface: one element wraps
+the run, so columns align in a real table box, `role="table"` has somewhere to live, and the header
+is a position in the interior rather than a run read off the DOM.
+
+**The trade it implies, measured rather than asserted**, on the two shapes side by side:
+
+- A CELL IS A ROW. `'| a @[Kara] | b'` under `split: {at: ' | ', as: cell}` parses to one row with
+  TWO child ROWS, and the first holds `text('a ')`, a MARK and `text('')`. So the caret enters a
+  cell, every row verb addresses it, and a mention parses inside it — which is what probe ticket
+  [02](02-variadic-placeholders.md) was closed on.
+- A RAW CLOSED BODY IS ONE TEXT CHILD. `'@table⏎a @[Kara] | b⏎@end'` under
+  `'@table⏎__value__⏎@end'` parses to one row with ONE text child carrying `'a @[Kara] | b'`
+  verbatim. No cells, no mark, no caret position the editor owns — the interior is the consumer's
+  to parse and to paint.
+
+So a fenced table gives up EDITABLE CELLS to gain the three wants. That is the trade, and it is a
+real one in both directions: everything the interior does — a caret in a cell, Tab between cells, a
+mention inside one, a drag of one line — would be the mark's own to rebuild, and none of it is
+markup the editor can read back.
+
+Left open. Nothing here decides between the two; both sides are now on the record with the
+measurement that supports them.
