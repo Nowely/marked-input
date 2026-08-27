@@ -281,11 +281,25 @@ export function contentSpan(roots: readonly TreeNode[], anchors: Anchors): {star
 	if (held.start >= held.end) return undefined
 	const lines = contentLines(roots)
 	const interior = (at: number) => lines.some(line => line.start < at && at < line.end)
-	if (interior(held.start) || interior(held.end)) return undefined
-	const opens = lines.find(line => line.start >= held.start)
-	const closes = lines.findLast(line => line.end <= held.end)
-	if (!opens || !closes || opens.start > closes.end) return undefined
-	return {start: opens.start, end: closes.end}
+	// AN EDGE IN A STRUCTURAL RUN RESOLVES WHATEVER THE OTHER EDGE IS, and that is the amendment. The
+	// pair test below asks whether this is a text selection, and it answered YES for a pair with one
+	// edge INSIDE content and the other on bytes no caret may occupy — so the write kept the raw span
+	// and took the structure between them. MEASURED on the showcase: triple-click the intro
+	// paragraph's LAST line — Chromium ends that range on the `@toc` row's own ELEMENT, which is an
+	// offset in the run before its first line — and type once: 76 lines to 74, the table of contents
+	// destroyed and the paragraph truncated, `store.rows.selected()` empty the whole time so round
+	// nine's refusal never saw it.
+	// A POSITION A CARET MAY HOLD is a line's interior OR either of its edges; an offset touching no
+	// line at all lies in a structural RUN, which is the case an ordinary text span may never keep.
+	const named = (at: number) => lines.some(line => line.start <= at && at <= line.end)
+	// AN ORDINARY TEXT SELECTION stays exactly the bytes the event named, and that is the pair both
+	// of whose edges a caret may hold with at least one INSIDE content: a mid-row sweep still merges
+	// its two rows, which is the behaviour this function was written not to change.
+	if (named(held.start) && named(held.end) && (interior(held.start) || interior(held.end))) return undefined
+	const opens = interior(held.start) ? held.start : lines.find(line => line.start >= held.start)?.start
+	const closes = interior(held.end) ? held.end : lines.findLast(line => line.end <= held.end)?.end
+	if (opens === undefined || closes === undefined || opens > closes) return undefined
+	return {start: opens, end: closes}
 }
 
 /**

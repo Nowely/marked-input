@@ -481,11 +481,47 @@ export class TokenModel {
 	 * tree's.
 	 */
 	rowSelectionText(anchors: Anchors): Anchors | undefined {
-		const span = untracked(() => contentSpan(this.#tree.roots(), anchors))
+		const span = untracked(() => contentSpan(this.#tree.roots(), this.#offFrozen(anchors)))
 		if (!span) return undefined
 		if (!this.rowSelection(anchors).every(row => this.#dom.reachable(untracked(() => entryAnchor(row)))))
 			return undefined
 		return {anchor: this.anchorAt(span.start), head: this.anchorAt(span.end)}
+	}
+
+	/**
+	 * AN EDGE THE DOM CANNOT REACH NAMES A ROW, NOT A POSITION IN IT — the reading {@link contentSpan}
+	 * cannot make for itself, because whether a kind paints its own text is the consumer's fact and
+	 * not the tree's.
+	 *
+	 * A frozen row's body has NO surface, so an offset in it is a position no caret may occupy — but
+	 * in the VALUE it is an ordinary content offset, indistinguishable from the entry of an editable
+	 * row one line down. That is the difference between the two gestures that produce the same shape:
+	 * a sweep ending at a heading's first character is a text selection and MERGES the two rows
+	 * (`rowKeys.spec`'s 'writes exactly the named span when the selection covers no row whole'), and a
+	 * sweep ending at a table of contents' first character has reached bytes the user can neither see
+	 * nor edit. MEASURED on the showcase: triple-click the intro paragraph's LAST line and type once —
+	 * Chromium ends that range at `(the toc's element, 0)`, which resolves to the toc's own first
+	 * content offset, so both edges read as content, the raw span stood, and `@toc` and its first
+	 * entry went with the sentence: 76 lines to 74.
+	 *
+	 * SO THE EDGE MOVES TO THE ROW'S OWN BOUNDARY, where the offset is structural and `contentSpan`
+	 * resolves it the way it resolves every other structural edge — the LOW edge to `{after}` and the
+	 * HIGH edge to `{before}`, so the answer can only ever SHRINK.
+	 *
+	 * THE ROW SELECTION IS READ FROM THE ORIGINAL PAIR and is untouched by this, which is what keeps
+	 * round nine's refusal: a frozen row held WHOLE still answers `rowSelection`, `reachable` still
+	 * declines it, and the typed character is still consumed and refused rather than replacing the row.
+	 */
+	#offFrozen(anchors: Anchors): Anchors {
+		const roots = this.#tree.roots()
+		const resolve = (anchor: NodeAnchor, low: boolean): NodeAnchor => {
+			if (this.#dom.reachable(anchor)) return anchor
+			const row = rowOf(roots, anchor)?.row
+			if (!row) return anchor
+			return low ? {after: row} : {before: row}
+		}
+		const low = offsetOfAnchor(roots, anchors.anchor) <= offsetOfAnchor(roots, anchors.head)
+		return {anchor: resolve(anchors.anchor, low), head: resolve(anchors.head, !low)}
 	}
 
 	/**

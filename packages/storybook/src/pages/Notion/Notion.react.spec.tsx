@@ -863,6 +863,32 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * A SELECTION EDGE ON A FROZEN ROW'S ELEMENT MAY NOT BE WRITTEN THROUGH. The pair is a text
+	 * selection — one edge is INSIDE the paragraph's content, `store.rows.selected()` is empty, and
+	 * round nine's refusal never sees it — but the other edge names bytes the user can neither see nor
+	 * put a caret in. MEASURED on the showcase: triple-click the intro paragraph's LAST wrapped line,
+	 * where Chromium ends the range at `(the table of contents' element, 0)`, and type once: the
+	 * `@toc` opener and its first entry went with the sentence, 76 lines to 74, two rows merged into
+	 * the truncated paragraph.
+	 *
+	 * THE RANGE IS BUILT BY HAND, and deliberately: the triple-click that produced it now selects the
+	 * ROW, so driving the gesture would pin the gesture instead of the write it exposed — and a mouse
+	 * sweep still reaches this shape.
+	 */
+	it('writes no bytes of a frozen row a text selection ends on', async () => {
+		const {host, value} = await mountControlled(Showcase, 'lead sentence\n@toc\nSection\n@end\nafter')
+		const lead = rowAt(host, 'lead sentence').firstChild?.firstChild
+		const frozen = host.querySelector<HTMLElement>('[class*="tableOfContents"]')
+		if (!(lead instanceof Text) || !frozen) throw new Error('the page painted no paragraph text or no toc')
+
+		window.getSelection()?.setBaseAndExtent(lead, 5, frozen, 0)
+		await settle()
+		await userEvent.keyboard('Z')
+
+		await expect.poll(value).toBe('lead Z\n@toc\nSection\n@end\nafter')
+	})
+
+	/**
 	 * AND A CONTROL THAT WRITES NOTHING GIVES THE FOCUS BACK TOO. The rule above ran on the COMMIT,
 	 * so it reached exactly the controls that edit the document and none of the DECORATIONS beside
 	 * them — and a decoration is a `<button>`, which takes focus on mousedown like any other. All
