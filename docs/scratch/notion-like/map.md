@@ -641,6 +641,26 @@ becomes a ticket here.
 
 ## Fog
 
+- **THE TWELFTH AND FINAL DRIVING SESSION'S OPEN FINDINGS, which never reached this Fog and are
+  recorded in `insights.md` alone** (filed as tickets 2026-08-27). Its four defects reduce to one
+  sentence — *the editor answering a pointer with "place a caret" when the user meant "extend a
+  selection"* — and the one that matters is an upward mouse drag on a two-paragraph document, which
+  no amount of block sophistication compensates for:
+  - **NO UPWARD MOUSE SELECTION** — press in a paragraph, drag up, and the caret is re-placed instead
+    of the selection extending. `insights.md:302-313`, with the harness gap that hid it (the whole
+    corpus dispatches `mousemove` twice and every backward selection in it is a Shift+click, a
+    Shift+Arrow or a `setBaseAndExtent`). TICKET [12](issues/12-upward-mouse-selection.md), and it
+    is the blocker.
+  - **A ROW COVER STILL TAKES A COLLAPSED TOGGLE'S HIDDEN BODY** — `#visibleEnd` guards
+    `rowSelectionText` and not `replaceRows`. `insights.md:315-325`. TICKET
+    [13](issues/13-collapsed-body-lost-on-a-row-cover.md).
+  - **ARROWDOWN STILL SKIPS AN EMPTY ROW** — round eleven's line box has a height and no width, so
+    only the reported direction was fixed. `insights.md:327-332`. TICKET
+    [14](issues/14-arrowdown-skips-an-empty-row.md).
+  - **`Code` HAS NO SEED, so `/`+Code+type puts the code in the paragraph below the fence** — an empty
+    body with no caret line, which `insights.md:68-78` calls the same hole as the trailing paragraph
+    seen from the option API's side. TICKET [16](issues/16-trailing-paragraph.md).
+
 - **A paste whose SPAN crosses two rows is still spliced raw**, which is the one shape of
   defect 1 left open. MEASURED 2026-08-26 on the tip: `'- alpha⏎⇥- beta'`, DOM selection from
   offset 2 of `alpha` to offset 2 of `beta`, paste `'one⏎two'` → `'- alone⏎twota'` — the second
@@ -650,6 +670,7 @@ becomes a ticket here.
   LAST covered row's tail follows the last piece, and every row between them plus three subtree
   placements are consumed in one plan. That is a contract change to `splitPlan`, not a
   hardening fix, so it is declared in `keyboard-handling.md` rather than half-built.
+  TICKET [17](issues/17-cross-row-paste-is-spliced-raw.md).
 - **`duplicate` and `insertAfter` on a CARVED PIECE fail open in the shape `addSibling` just
   stopped failing in.** MEASURED 2026-08-26: on `'| a | b⏎after'` the first cell answers
   `duplicate() === true` → `'| a| a | b⏎after'` and `insertAfter('\n') === true` →
@@ -658,6 +679,7 @@ becomes a ticket here.
   with `addSibling` because that verb was this phase's own and these are not; a cell is
   unreachable from `BlockController` (its target comes from `state.menu`, and `rowAt` treats a
   carved row as a leaf), so both are published-API-only today.
+  TICKET [18](issues/18-carved-piece-verbs-fail-open.md).
 - Three review findings REJECTED on measurement, recorded so they are not re-filed:
   `#enterRow`'s `into === 0` fork is load-bearing (above); `RowNode.writeRows` is not
   misplaced surface — the rule this codebase states is that a verb lives on the MODEL when the
@@ -665,9 +687,13 @@ becomes a ticket here.
   when it does, and `writeRows` writes inside one row's own body exactly as `splitAt`,
   `turnInto` and `setDepth` do; and `replaceRowSelection`'s docstring was wrong about routing
   rather than the routing being wrong (fixed as prose, `e98160d0`).
+  NOT re-filed as tickets, deliberately — `issues/README.md` lists them under what was checked and
+  not filed.
 - What a package on top of this owns: does it wrap `MarkedInput` and ship
   options + components, or does it need core changes first? The ticket list here
   is the input to that decision, not the answer.
+  TICKET [39](issues/39-notion-package.md) — the answer the effort reached is "a move, not a build,
+  and not yet", with the blockers named there.
 - **The gutter `+` of `showcase.md` interaction 1 was never built, and nothing said so.**
   `showcase.md:56` asks for "its **drag grip** and a **+** on the left gutter". MEASURED
   2026-08-26: `packages/react/markput/src/components/BlockControls.tsx` paints exactly ONE
@@ -676,6 +702,8 @@ becomes a ticket here.
   decision retires it. So it is undeclared rather than declined, which is the part being fixed
   here. The row verb it was also blocked on now exists — `RowNode.addSibling()`, P11.6 — so a `+`
   at a nested row's gutter would open its row at the right depth; what is left is the affordance.
+  TICKET [27](issues/27-four-missing-affordances.md), with the three other affordances the record
+  groups under the same verdict.
 - **The showcase net is single-framework, and that is an accepted cost rather than an oversight.**
   MEASURED 2026-08-26: `pnpm -w exec vitest list --project vue | grep -ci notion` → `0`, while
   `pages/` holds nineteen framework-free `*.spec.ts` that BOTH projects run. Five of the ten
@@ -688,6 +716,7 @@ becomes a ticket here.
   rules whose only pin was that file — Enter deferring to the suggestions protocol, no trigger in
   a raw closed body, the re-probe on a caret move — now have core unit pins that run once for
   both adapters. The remaining exposure is the ADAPTER arms, which is exactly what P12 buys.
+  TICKET [26](issues/26-vue-showcase-p12.md).
 - **One split shape a single window cannot place the caret in: MID-BODY, on a row that KEEPS a
   subtree.** `splitPlan`'s window is trimmed to the changed bytes now, which is what put the caret
   at the tail's start for every childless split (the ordinary Enter). It cannot be trimmed when the
@@ -699,6 +728,7 @@ becomes a ticket here.
   that case is pinned. Closing the last shape needs a post-edit CARET carried through the
   transaction to adoption rather than inferred from window arithmetic — new surface across
   `applyRange`, `CommitSink` and `adopt`, which is a design change and not this repair.
+  TICKET [19](issues/19-mid-body-split-loses-the-caret.md).
 - **A table is a run of independent lines, and three wants hang off that one gap.** Columns cannot
   align, the accessible semantics cannot be a table (one `role="table"` per LINE describes a table
   of one row, which is why the probe carries none), and the header can only be read from the DOM
@@ -706,14 +736,21 @@ becomes a ticket here.
   component, `RowSpec.group` — and none of them is a reason to give a cell a node kind of its own.
   The alignment line is a fourth: `'| ---'` is a longer opener than `'| '`, so a kind of its own is
   available to the consumer whenever someone wants it to paint as a rule instead of as dashes.
+  TICKET [20](issues/20-rowspec-group.md) — THE ticket for `RowSpec.group`, which these records cite
+  from four places with three wants hanging off it, filed once. The table's own gesture gaps — a
+  header-only seed, a dead Tab at the last cell, no escape for the carve delimiter — are
+  [21](issues/21-table-gestures.md).
 - Caret ergonomics at document scale — atomic tables and code blocks, Tab
   leaving the field (ADR-0002's accepted cost) — are unmeasured over a document
   this size. Native undo is no longer on that list: the editor owns it (ADR-0012).
+  TICKET [33](issues/33-nothing-is-measured-at-document-scale.md), together with the row-verb
+  runtime, which shares its rubric.
 - **A value the editor did not write disables undo while it stands** (P8, declared). A parent that
   writes `value` itself, or another author's change arriving through it, leaves every entry naming
   a projection the document no longer holds, and `canUndo` answers `false` until it comes back.
   Mapping recorded windows through foreign changes is the collaborative-editing design, and this
   one does not foreclose it.
+  TICKET [30](issues/30-foreign-value-disables-undo.md).
 - **Nothing scopes the row menu to the trigger that owns it, and that needs a
   decision rather than a default.** `overlay.entries` reads only "is an overlay
   open", never `match.option`, so the two overlay protocols share one state.
@@ -741,12 +778,14 @@ becomes a ticket here.
   filtering and no insert logic" — is met by there being no such component. Twenty-five
   entries in one unsectioned list is the cost, and it is the first thing a painter would
   fix. `icon?: Slot` is still the version that keeps the criterion.
+  TICKET [27](issues/27-four-missing-affordances.md).
 - **P11 owes a per-entry icon, and `MenuSpec.icon` is not the shape to bring back.**
   The spec's `icon?: unknown` was unrenderable and was rightly dropped inside P7.
   But a showcase menu that wants icons and has no field for one keeps an
   option-to-icon map in the consumer component — which is precisely the shape P7's
   exit criterion forbids. `icon?: Slot` is the version that keeps the criterion, and
   it lands with the painter, as `section` now does.
+  TICKET [27](issues/27-four-missing-affordances.md), same entry as the flat list above.
 - **`continues` CARRIES A KIND AND NEVER A DEPTH, so no option can say "Enter opens a CHILD of
   this row" — which is what a CONTAINER wants.** The showcase's toggles declared `continues: true`
   and got the only thing the field can express: another toggle beside this one (`'▾ Why'` + Enter +
@@ -770,6 +809,7 @@ becomes a ticket here.
   - and it inherits two refusals it must not re-derive: the scan's ceiling
     (`AnchoredRow.childDepth`, which an EMPTY row makes 0) and `TokenModel.#nestingIsPainted`, a DOM
     fact that lives at the seam because `tree/` cannot ask whether a kind paints child rows.
+  TICKET [22](issues/22-continues-carries-no-depth.md), which carries this costing verbatim.
 - **CLOSED 2026-08-26 (round eight): the arrows are finished, not refused.** The cure below was
   taken, at the SEAM rather than in `DomModel`: `TokenModel.selectRowSpan` is the one write every
   row-selection gesture makes, and an end whose anchor `#dom.reachable` declines falls back on its
@@ -1175,8 +1215,11 @@ becomes a ticket here.
     which after the retype is still the FOOTER. The editor did exactly what its landing rule says. The
     gap is the option API's and is already named in `options.tsx`: `addSibling` opens BELOW, there is
     no insert-above verb, and no published way to say "put the caret in the row I just made".
+  TICKET [16](issues/16-trailing-paragraph.md) — the option API's half of the trailing-paragraph
+  decision.
   - **WHAT I COULD NOT MAKE REDDEN, stated plainly.** Round ten wrote "the row selection is read from
     the ORIGINAL pair, which is what keeps round nine's refusal". Feeding it the CLAMPED pair instead
     is green over the whole suite AND identical on the running page across six gestures (chip, board
     card and toc entry x type/Backspace). The distinction the comment documents is real in the code and
     unexercised by anything; the code is left as it is and the claim is flagged rather than trusted.
+  TICKET [35](issues/35-unexercised-clamp-distinction.md).

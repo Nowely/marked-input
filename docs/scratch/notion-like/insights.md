@@ -403,3 +403,24 @@ a deletion candidate, not a pin.
 - **`softBreak`.** ADR-0011's amendment declared four costs and the two the P6 review found were
   both repairable inside the continuation-row reading, in one expression each. Nothing since has
   produced a case the continuation cannot carry. It stays not-built until one does.
+
+---
+
+## Where these items live now
+
+Filed as tickets 2026-08-27 (`docs/scratch/notion-like/issues/`, indexed by its `README.md`), so this
+record stays the evidence and the tracker carries the queue. The line numbers cited above and
+throughout the tickets are this file as of `52ef65ae`.
+
+**Next steps, ranked** — 1 → [12](issues/12-upward-mouse-selection.md), 2 →
+[13](issues/13-collapsed-body-lost-on-a-row-cover.md), 3 →
+[14](issues/14-arrowdown-skips-an-empty-row.md), 4 → [15](issues/15-opener-prefix-is-unchecked.md),
+5 → [16](issues/16-trailing-paragraph.md), 6 → [26](issues/26-vue-showcase-p12.md), 7 → the probe's
+[03](issues/03-row-node-not-nameable.md) and [10](issues/10-controllers-are-not-selectable.md) plus
+[25](issues/25-published-type-corrections.md), 8 → [35](issues/35-unexercised-clamp-distinction.md).
+
+**What I would not do yet** — the package is
+[39](issues/39-notion-package.md), the four affordances are
+[27](issues/27-four-missing-affordances.md), `RowSpec.group` is [20](issues/20-rowspec-group.md),
+the per-kind drag axis is [38](issues/38-per-kind-drag-axis.md), and `softBreak` is
+[37](issues/37-softbreak-stays-unbuilt.md).

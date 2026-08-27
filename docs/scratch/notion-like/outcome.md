@@ -218,11 +218,17 @@ phases of consequences left no room, not because anything about them is hard.
 Everything below is an accepted cost or an open hole, gathered here so nothing hides in a commit
 body. Each is real today.
 
+Every open item now names the ticket that carries it — `issues/12` onward, filed 2026-08-27 and
+indexed in `issues/README.md`. The tickets quote these measurements rather than re-deriving them,
+so this list stays the evidence and the tracker stays the queue. Two items name no ticket, and say
+why in place.
+
 1. **`softBreak` is not built.** Under `'\n'` a soft break is a continuation ROW, with four declared
    costs: Backspace at its start outdents before it merges (two presses to rejoin); a consumer
    cannot tell it from a Tab-nested row; typed into a row that has children it lands before them and
    shifts their ids; and a kind whose component ignores the `rows` prop paints no continuation at
    all. (ADR-0011 amendment.)
+   Ticket: [37](issues/37-softbreak-stays-unbuilt.md).
 2. **A kind whose component drops the `rows` prop drops every child row it has** — continuation,
    Tab-nested, moved and pasted alike. Core cannot see whether a component reads a prop, so this is a
    contract on the kind and nothing enforces it. **NARROWED 2026-08-26**: such a kind registers no
@@ -231,6 +237,7 @@ body. Each is real today.
    edit can no longer take rows off the screen while leaving them in the value. What stands: a value
    merely HANDED to the editor is left alone, deliberately, since rewriting a consumer's own bytes on
    mount would emit an edit nobody made.
+   Ticket: [23](issues/23-row-component-contract-is-silent.md).
 3. **An atomic kind leaves the caret nowhere to go.** `choose` turns THIS ROW into the kind and an
    atomic row generates no caret position, so nothing a consumer can write asks for the trailing
    empty paragraph Notion leaves under such a block. On a one-row document the editor has no caret
@@ -238,15 +245,20 @@ body. Each is real today.
    such a row does is decided now — nothing moves, and where the editor holds no caret at all the DOM
    selection is dropped and the editing host gives up focus, so the click is inert rather than
    stranding. The hole itself is untouched: there is still no way to ask for the row after.
+   Ticket: [16](issues/16-trailing-paragraph.md) — the decision this item wants, with `Code`'s
+   missing seed and the `+ New` caret gap folded into it.
 4. **A paste whose SPAN crosses two rows is spliced raw.** Recorded in the map's Fog, measured
    2026-08-26: `'- alpha⏎⇥- beta'`, selection from `alpha`+2 to `beta`+2, paste `'one⏎two'` →
    `'- alone⏎twota'`. `splitPlan` refuses deliberately; widening it is a contract change.
+   Ticket: [17](issues/17-cross-row-paste-is-spliced-raw.md).
 5. **`duplicate` and `insertAfter` on a carved PIECE fail open.** Map's Fog, measured 2026-08-26: on
    `'| a | b⏎after'` the first cell answers `duplicate() === true` and corrupts the line.
    Pre-existing, published-API-only, a family rather than a case.
+   Ticket: [18](issues/18-carved-piece-verbs-fail-open.md).
 6. **One split shape cannot place the caret**: mid-body, on a row that keeps a subtree. Map's Fog:
    `'abcd⏎⇥child⏎tail'` split at 2 puts the caret at 12 where the tail's start is 10. Closing it
    needs a post-edit caret carried through the transaction — new surface across three modules.
+   Ticket: [19](issues/19-mid-body-split-loses-the-caret.md).
 7. ~~**Nothing scopes the row menu to the trigger that owns it.**~~ **FIXED 2026-08-26** as a side
    effect of the list collapse: `OverlayListModel.rows` answers the matched option's `overlay.data`
    when it declares any and the row menu ONLY when it does not, so the two lists can no longer both
@@ -254,12 +266,17 @@ body. Each is real today.
 8. **`RowSpec.group` is not built**, and three wants hang off that one gap: table columns cannot
    align, the accessible semantics cannot be a table (the showcase carries no `role="table"` because
    one per line would be a lie), and the header can only be read from the DOM run.
+   Ticket: [20](issues/20-rowspec-group.md) — the ONE ticket for `RowSpec.group`. The table's own
+   gesture gaps are [21](issues/21-table-gestures.md).
 9. **The `+` in the hover gutter was never built and nothing said so** until 2026-08-26.
    `RowControls.tsx` paints exactly one `<button>`. `showcase.md:56` asks for both.
+   Ticket: [27](issues/27-four-missing-affordances.md).
 10. **`ROW_MENU_ITEMS` is three entries** — Add below, Duplicate, Delete. No "Turn into".
+    Ticket: [27](issues/27-four-missing-affordances.md).
 11. **The `/` menu is a flat list of 23 unsectioned labels.** `MenuSpec.section` and `MenuSpec.icon`
     were deleted for having zero readers; they come back with the painter that needs them, and
     `icon?: Slot` is the shape that keeps P7's exit criterion.
+    Ticket: [27](issues/27-four-missing-affordances.md).
 12. ~~**`RowMenu` has no keyboard navigation.**~~ **FIXED 2026-08-26**, and by deletion rather
     than by addition: `SuggestionsModel` and `OverlayController.entries` were the same list twice,
     so they became one `OverlayListModel` whose `rows` come from the matched option's
@@ -285,21 +302,31 @@ body. Each is real today.
     eight onto its own tokens in `notion/theme/tokens.css`.
 16. **`.Container` sets no `outline`**, so the UA focus ring paints around the whole editor. `.Row`
     sets `outline: none`; the container does not.
+    Ticket: none — the ring was judged and KEPT (`map.md:853-856`): the container is the one editing
+    host (ADR-0002), so it is the one focus target, and a consumer can style it.
 17. **Tab leaves the field only in an editor where NO option declares `indents`** (ADR-0002's
     accepted cost, narrowed 2026-08-26 from "wherever no KIND declares it" — the per-kind reading was
     itself the defect, since it disagreed with the drop over four of the showcase's 35 rows). 7 of
     the showcase's 26 kinds declare it, so Tab never leaves the field there: a row of any kind
     consumes the key and `indentRows` alone decides whether the depth moves. A ROOT paragraph has no
     parent to inherit from, so a paragraph outdented to depth 0 cannot be indented again.
+    Ticket: [28](issues/28-gestures-the-first-session-left-standing.md), item 3.
 18. **A row selection is painted as a text selection.** There is no block band; the row's own text
     highlights and nothing else.
+    Ticket: none — **NO LONGER TRUE.** `36404009` paints it in the editor: `.RowSelected::after`
+    (`styles.module.css:146`) plus both adapters' `Row`, an overlay rather than a background,
+    because a kind's own backgrounds hid the platform highlight.
 19. **A collapsed toggle costs two things**: an arrow from the title jumps over the closed subtree,
     and a selection dragged across it takes the closed text with it. New cost added when openness
     became the document's fact: **find-in-page landing inside a closed toggle now EDITS the
     document**, because `beforematch` opens the row and opening it is a retype.
+    Tickets: the find-in-page half is [31](issues/31-find-in-page-edits-the-document.md); the
+    selection half is [13](issues/13-collapsed-body-lost-on-a-row-cover.md); the arrow over a closed
+    subtree is the RULE now (`map.md:889-896`), not a gap.
 20. **A cross-parent drop keeps the NODE and loses the COMPONENT**, measured in both adapters.
     `store.rows.collapsed` — a core-owned per-row view store — is what would fix it and was not
     built.
+    Ticket: [32](issues/32-no-per-row-view-state.md).
 21. ~~**The board is one row and its card drag is the consumer's own.**~~ **FIXED 2026-08-26**, in
     the showcase, where it belonged: `Board` is controlled now — the arrangement is the prop, a drop
     announces the next one, and the option writes it back with `node.turnInto(board, {text})`, the
@@ -307,33 +334,43 @@ body. Each is real today.
     defect ("not owned by core" = "keep it in the component") is corrected in `showcase.md`.
     The metric cards are still stacked, not beside the callout: two rows cannot sit side by side
     while the drop tiles the document by Y.
+    Ticket for what is left: [38](issues/38-per-kind-drag-axis.md).
 22. **A value the editor did not write disables undo while it stands.** `canUndo` answers `false`
     until the document comes back.
+    Ticket: [30](issues/30-foreign-value-disables-undo.md).
 23. **The showcase net is single-framework.** `vitest list --project vue` piped through
     `grep -ci notion` answers `0`, re-measured today.
     Five of the ten defects the hardening round fixed have their only regression pin in
     `Notion.react.spec.tsx`. P12 — the Vue vocabulary, ~800 lines plus sixteen leaves, and Vue's
     `useControlRef` — is owed.
+    Ticket: [26](issues/26-vue-showcase-p12.md).
 24. **`RowProps.index` has no reader anywhere in the repo and is kept**, because it is published
     surface with its own generated API page. Measured removable: typecheck 0, suite green.
+    Ticket: [36](issues/36-published-surface-leftovers.md).
 25. **The grip's `aria-label` still reads "Block options"** when `draggable` is false — user-visible
     text, so changing it is a behaviour change rather than a rename.
+    Ticket: [36](issues/36-published-surface-leftovers.md).
 26. **`Store` carries an open rename TODO** in `store/Store.ts`, and it is published, so renaming it
     is a public change.
+    Ticket: [36](issues/36-published-surface-leftovers.md).
 27. **Caret ergonomics at document scale are unmeasured** — atomic tables and code blocks, Tab
     leaving the field, over a document this size.
+    Ticket: [33](issues/33-nothing-is-measured-at-document-scale.md).
 28. **`OverlayHandler.ref` is `RefObject<HTMLElement | null>`**, unassignable to any concrete element
     ref. The repo already works around it in two places and the docs now cast in eight.
     **`MarkedInputProps.Span` is `ComponentType<MarkProps>`** but a Span component is handed a `ref`
     that `MarkProps` does not declare. Both are published-type corrections wanting their own
     decision.
+    Ticket: [25](issues/25-published-type-corrections.md).
 29. **The doc-sample check reads fenced code only.** `effectScope` and `store.bus` also sat in prose
     backticks, where nothing checks them. **`CONTEXT.md`'s own `_Avoid_` and DELETED words are
     unenforced** — nothing stops a rename re-introducing `block` or `lexeme`.
+    Ticket: [34](issues/34-rot-guards-do-not-cover-prose.md).
 30. **Row-verb runtime is uncharacterised.** `rowOf` is a full pre-order walk now run on every Enter,
     Tab and Backspace, with no benchmark. The one figure that exists is the drop tick: **~1.5 ms
     per `dragover` at 4000 rows, 9% of a frame**, kept because the alternative is a depth rule
     restated outside the mover.
+    Ticket: [33](issues/33-nothing-is-measured-at-document-scale.md).
 
 **And three that were NOT declared**, found by driving the page and traced to their owner here, so
 the list above is the whole of what is open rather than the whole of what was written down.
@@ -459,12 +496,24 @@ Backspace at the start of the row after an atomic block, the grip menu's missing
 (`ROW_MENU_ITEMS` is still Add below / Duplicate / Delete), nesting as a one-way door for a root
 paragraph, and undo granularity.
 
+Tickets: [28](issues/28-gestures-the-first-session-left-standing.md) carries Cmd+A, the Backspace
+no-op, the one-way nesting and the undo granularity; the Table header-only seed is
+[21](issues/21-table-gestures.md); the missing "Turn into" is
+[27](issues/27-four-missing-affordances.md). The row selection is painted by the EDITOR now
+(`36404009`), so that one is closed rather than standing.
+
 **Seven things are missing** against `showcase.md` and against Notion: the gutter `+`; a trailing
 empty paragraph and click-below-to-append; a selection toolbar (bold, italic, link and colour are
 unreachable except by typing markup); "Turn into" and any set-wide verb beyond indent and drag;
 grouping and icons in the `/` menu; a table worth the name (no column model, no Tab-creates-row, and
 a pipe typed in prose silently becomes a cell boundary); and Notion's toggle entry, where the first
 Enter opens the toggle and drops the caret inside as a child.
+
+Tickets: the gutter `+`, "Turn into" and any set-wide verb, `/` menu grouping and icons, and the
+selection toolbar are [27](issues/27-four-missing-affordances.md); the trailing empty paragraph and
+click-below-to-append are [16](issues/16-trailing-paragraph.md); a table worth the name is
+[21](issues/21-table-gestures.md) over [20](issues/20-rowspec-group.md); Notion's toggle entry is
+[22](issues/22-continues-carries-no-depth.md).
 
 The blunt summary: **the document model is good and the editing experience is not.** Every
 structural gesture the maintainer asked for exists and is pinned. Nearly every gesture a person
