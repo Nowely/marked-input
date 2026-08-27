@@ -292,7 +292,7 @@ export class SelectionDriver {
 	 *
 	 * FOCUS SAYS WHOSE GESTURE IT IS. A control the browser can focus — a `<button>`, a `<select>`, a
 	 * checkbox — ANSWERS the pointer itself, so its click is not a landing and a caret the user still
-	 * holds elsewhere is theirs to keep: `Notion.react.spec`'s decorations loop pins that three times
+	 * holds elsewhere is theirs to keep: `Notion.spec`'s decorations loop pins that three times
 	 * over, one `it` per component. Frozen PRESENTATION focuses nothing, the host keeps the focus, and
 	 * that click IS a landing.
 	 *
@@ -345,7 +345,7 @@ export class SelectionDriver {
 			// THE FOCUS TEST IS NOT THAT RULE and it stays: it says WHOSE gesture this is. A control the
 			// browser can focus — a `<button>`, a `<select>`, a checkbox — answers the pointer ITSELF,
 			// so its click is not a landing and the caret the user still holds elsewhere is theirs to
-			// keep (pinned three times over in `Notion.react.spec`'s decorations loop). Frozen
+			// keep (pinned three times over in `Notion.spec`'s decorations loop). Frozen
 			// PRESENTATION focuses nothing, the host keeps the focus, and that click IS a landing.
 			const pointer = this.#pointerControl
 			this.#pointerControl = undefined

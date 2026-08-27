@@ -46,9 +46,10 @@ new pins in specs both projects run.
 
 ## Answer (T-VUE, 2026-08-27)
 
-**The net is DOUBLE-RUN.** `Notion.spec.ts` (92), `caret.spec.ts` (18) and `structure.spec.ts` (37)
+**The net is DOUBLE-RUN.** `Notion.spec.ts` (92), `caret.spec.ts` (15) and `structure.spec.ts` (37)
 are framework-free and both vitest projects run them: 144 assertions per project where there were
-144 in one. `Notion.stories.ts` is shared too, so the `Showcase` and `Empty` story snapshots moved
+144 in one. (`vitest list` per project, 2026-08-27; the first write of this line said 18 for the
+caret file, which does not add up to 144 and was not measured.) `Notion.stories.ts` is shared too, so the `Showcase` and `Empty` story snapshots moved
 out of `stories.react.spec.tsx.snap` and into the file both projects compare against.
 
 **The port was not the deliverable and it was not a rename either.** What made it small was
@@ -104,3 +105,27 @@ stay in `stories.react.spec.tsx.snap`.
 NARROWED rather than dropped: a `useMarkput` selector that takes no store is the Vue bridge above
 and is allowed; one that takes a parameter is not, which is exactly the destructure the member grep
 cannot see. All four of its rules were mutation-checked, each reddening its own case and no other.
+
+### Corrections from the review round (2026-08-28)
+
+- **Its glob could not see a `.vue` file.** `./**/*.{ts,tsx}` scanned the Vue paint by accident of
+  spelling — it is written as `.vue.ts` modules — so a single-file component, the ordinary Vue
+  spelling, escaped all six rules. Measured: a `notion/ui/Probe.vue` with a deep `@markput/core/src`
+  import AND an `s.tokens` reach passed 6/6. Widened to `{ts,tsx,vue}`, where the same file reddens
+  two rules.
+- **`caret.spec.ts`'s five no-argument mounts moved silently.** `mountControlled`'s
+  `value: string = APOLLO_DOC` default turned five uncontrolled mounts into controlled ones and
+  moved the echo mirror's baseline from `''` to the whole document. The mode move is kept — a
+  controlled caret is the harder path — but the default is gone and every call site names its own
+  document, as `Notion.spec.ts` already did.
+- **Vue's `RowProps` published `class` and `style`, and declaring them is what breaks them.** Both
+  are FALLTHROUGH attributes, and Vue removes a declared key from `$attrs` — so a kind written as
+  `defineProps<RowProps>()` painted neither `styles.Row` nor the drag opacity. They are off the
+  type; `Base.fixtures.vue.ts` pins the key set against it.
+- **`Container.vue` had the same `className`-overwrites-`class` defect `268feab1` fixed in
+  `Row.vue`**, plus an undeclared second half: a `slotProps.container.class` key rode through the
+  spread and left the host with THAT class alone, dropping `styles.Container`. Both fixed, and
+  `Slots.spec.ts` pins the container case for both adapters.
+- **The 34 kind-name re-exports came out of both option files** (`export {kinds}`), the React leaves
+  stopped forking four vocabulary types, and `Chip`/`Callout` stopped disagreeing about an unknown
+  tone.

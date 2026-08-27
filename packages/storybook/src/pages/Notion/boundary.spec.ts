@@ -132,6 +132,11 @@ describe('the Notion showcase is options and components', () => {
 	 * unchanged props and a stable slot, so a parent's repaint stops at it and a panel fed a plain
 	 * read is correct once and stale for ever. A selector that takes a PARAMETER is the whole of
 	 * what reaching for a store looks like, and that is what this rejects.
+	 *
+	 * IT IS A NARROWING TAKEN FOR A MISSING AFFORDANCE, not for a consumer need: the showcase
+	 * reaches for `useMarkput` only because a Vue row kind has no published reactive read of its own
+	 * node. Ticket 46 owns the way out, and closing it tightens this rule back to naming
+	 * `useMarkput` outright — that is 46's acceptance test.
 	 */
 	it('lets no `useMarkput` selector take a store', () => {
 		const offenders = files.flatMap(([path, source]) =>

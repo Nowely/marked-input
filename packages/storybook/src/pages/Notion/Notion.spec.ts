@@ -246,7 +246,7 @@ describe('the showcase page', () => {
 	})
 
 	/**
-	 * THE STATUS TONE MAP, which lives in `marks.tsx` because the tone is a property of the STATUS
+	 * THE STATUS TONE MAP, which lives in `vocabulary.ts` because the tone is a property of the STATUS
 	 * and not of the document. Every entry driven, plus the fallback: a value nobody mapped goes
 	 * grey rather than disappearing, which is the arm an unmapped status would otherwise reach
 	 * silently.
@@ -269,7 +269,7 @@ describe('the showcase page', () => {
 	/**
 	 * THE DUE DATE'S THREE READINGS, and the reason the document carries the third: "done" is not
 	 * knowable from inside a mark, so `<due:… done>` is how the row says it. The reference date is
-	 * `marks.tsx`'s own `TODAY`, deliberately not a wall-clock read — a page whose colours change
+	 * `vocabulary.ts`'s own `TODAY`, deliberately not a wall-clock read — a page whose colours change
 	 * on a date nobody chose has no assertable state.
 	 */
 	it('reddens a due date that is past and mutes one that is done or ahead', async () => {
@@ -1806,7 +1806,7 @@ describe('drag', () => {
 
 		const dataTransfer = new DataTransfer()
 		card.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer}))
-		// The board learns WHICH card is in flight from React state, which the dragstart above only
+		// The board learns WHICH card is in flight from its own in-flight state, which the dragstart above only
 		// schedules — a drop dispatched in the same tick reads the state from before it.
 		await new Promise(resolve => setTimeout(resolve, 0))
 		const target = columnWith('Shipped')
@@ -1928,8 +1928,9 @@ describe('the empty row', () => {
 
 /**
  * THE BOARD, and the one component on this page that was writing nowhere. Its columns ARE the
- * document — a raw row body the option parses — but the component kept the arrangement in its own
- * `useState`, so a card dragged between columns moved on screen and nothing else happened: the
+ * document — a raw row body the option parses — but the component kept the arrangement in a state
+ * of its own (`useState` in react, a `ref` in vue), so a card dragged between columns moved on
+ * screen and nothing else happened: the
  * emitted value never changed, undo had nothing to undo, and the counts in the column headers
  * went stale against what a user could see.
  *
@@ -1985,8 +1986,9 @@ describe('the board', () => {
 	/**
 	 * The HTML5 card drag, end to end: the card is the source, the column is the target.
 	 *
-	 * AWAITED BETWEEN THE EVENTS, and it is not padding: the drag source announces itself through
-	 * React state, and a `drop` dispatched in the same task reads the handler closure from BEFORE
+	 * AWAITED BETWEEN THE EVENTS, and it is not padding: the drag source announces itself through the
+	 * board's own in-flight state, and a `drop` dispatched in the same task reads the handler
+	 * closure from BEFORE
 	 * that state landed — so the whole gesture is a no-op with nothing said. A real pointer takes
 	 * frames between these; this is the deterministic spelling of that.
 	 */

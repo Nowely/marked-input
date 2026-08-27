@@ -73,6 +73,7 @@ measurement, which is the first one in this tracker to have been RUN rather than
 | [43](43-cross-row-write-takes-hidden-rows.md) | A cross-row write takes the rows a collapsed toggle hides | resolved | Wider than filed — FIVE gestures, not the crossing arm alone — so the clip went to the one owner of "the span a ranged edit writes over" and the paste path was made to ask it. Reopened in review for the shape where the clip empties, and closed on the first NON-EMPTY visible stretch |
 | [44](44-painted-selection-outruns-the-write.md) | The painted selection is not the span a keystroke replaces | needs-triage | DRIVEN: 6 painted characters over 3 boxes against a 2-character write, and 43's fix widens it from the fence to the closed toggle. Both directions priced; the choice is the maintainer's |
 | [45](45-a-split-repaints-every-row-after-it.md) | A structural row edit re-renders every sibling after it | needs-triage | Filed out of 33's measurement: Enter at the top of 4000 rows costs 286 ms where core's own split costs 6 |
+| [46](46-vue-row-kind-has-no-reactive-node-read.md) | A Vue row kind has no reactive read of its own node | needs-triage | Filed out of 26's review round: the answer shipped is an incantation every Vue consumer copies, and it is why `boundary.spec.ts`'s store-hook rule had to be narrowed. Closing it tightens that rule back |
 
 ## The affordance group (T-D, 2026-08-27)
 
@@ -197,3 +198,9 @@ kind could not keep its own class (the adapter passed React's `className` where 
 says `class`, and Vue overwrote), and a kind reading its own raw body never repainted (a core signal
 is not Vue-reactive, and `Atomic` is a child that bails when its parent repaints). Neither is
 reachable by reading; both were found by a spec that had only ever run in React.
+
+**And the review round found four more, all in the same family** (2026-08-28): `Container.vue` had
+the class defect one file over and nothing pinned it; `slotProps.container.class` could delete
+`styles.Container` outright; Vue's `RowProps` published `class`/`style`, which are fallthrough
+attributes a kind must NOT declare; and `boundary.spec.ts`'s glob could not read a `.vue` file at
+all. Each is measured on ticket 26.

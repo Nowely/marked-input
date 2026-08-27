@@ -499,7 +499,7 @@ describe('every kind the showcase declares', () => {
 
 	/**
 	 * THE GATE, and it runs last because it reads what the cases above left behind. A kind added to
-	 * `options.tsx` with no case lands here rather than in a reviewer's memory, and so does a kind
+	 * `vocabulary.ts` with no case lands here rather than in a reviewer's memory, and so does a kind
 	 * the compile DROPPED — a markup that breaks a row rule, or a second option claiming an opener
 	 * an earlier one already owns, parses nothing and shows up as missing.
 	 *

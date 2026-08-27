@@ -704,7 +704,10 @@ becomes a ticket here.
   at a nested row's gutter would open its row at the right depth; what is left is the affordance.
   TICKET [27](issues/27-four-missing-affordances.md), with the three other affordances the record
   groups under the same verdict.
-- **The showcase net is single-framework, and that is an accepted cost rather than an oversight.**
+- ~~**The showcase net is single-framework, and that is an accepted cost rather than an oversight.**~~
+  **Answered 2026-08-27, ticket 26**: the page moved to the shared harness and the net is DOUBLE-RUN.
+  Re-measured 2026-08-27, `vitest list` per project over `pages/Notion`: react 92 + 15 + 37,
+  vue 92 + 15 + 37 — 144 apiece, where vue had 0. What follows is the record as it stood.
   MEASURED 2026-08-26: `pnpm -w exec vitest list --project vue | grep -ci notion` → `0`, while
   `pages/` holds nineteen framework-free `*.spec.ts` that BOTH projects run. Five of the ten
   defects the hardening round fixed have their only regression pin in `Notion.react.spec.tsx`.
@@ -712,6 +715,8 @@ becomes a ticket here.
   rename the shape suggests: `Notion.fixtures.vue.ts` has to re-declare the whole vocabulary —
   ~800 lines of `options.tsx` plus sixteen presentational leaves — as Vue components, which is a
   second implementation and its own phase (`spec.md`'s P12, still owed with `useControlRef`).
+  (The ~800-line estimate was itself wrong: `options.tsx` is 498 lines once the vocabulary is
+  shared, and `vocabulary.ts` — the half neither adapter re-declares — is 512.)
   What the 2026-08-26 pass did INSTEAD, so the cost is bounded rather than unpaid: the three core
   rules whose only pin was that file — Enter deferring to the suggestions protocol, no trigger in
   a raw closed body, the re-probe on a caret move — now have core unit pins that run once for

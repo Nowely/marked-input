@@ -243,10 +243,18 @@ component of your own registers the element that component rendered:
 import {defineComponent} from 'vue'
 import {Atomic, useControlRef} from '@markput/vue'
 
+// ONE control, in a row whose text is still the document's.
 const Bullet = defineComponent({
-    components: {Atomic},
     setup: () => ({setControlRef: useControlRef()}),
     template: '<div><span class="bullet" :ref="setControlRef" /><slot /><slot name="rows" /></div>',
+})
+
+// A WHOLE interior: this row paints no document surface at all, so it takes one `Atomic` rather
+// than a registration per leaf. A `class` on it falls through onto the one element it renders.
+const Board = defineComponent({
+    components: {Atomic},
+    props: {columns: {type: Array, default: () => []}},
+    template: '<div><Atomic class="board"><div v-for="c in columns" :key="c">{{ c }}</div></Atomic></div>',
 })
 ```
 

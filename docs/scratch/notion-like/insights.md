@@ -366,12 +366,15 @@ empty row, or `choose` gains an insert-after contract beside its turn-into one. 
 round since has patched around it, and item 4 of the DX list (`Code`'s missing seed) is the same
 hole seen from the option API's side.
 
-**6. P12 — the Vue showcase.** ~800 lines of `options.tsx` vocabulary plus sixteen presentational
-leaves re-declared as Vue components, plus Vue's `useControlRef`.
-**Reason:** the showcase's net is still three React-only files (`Notion.react.spec.tsx`,
+**6. ~~P12 — the Vue showcase.~~** **Answered 2026-08-27, ticket 26**. The three spec files are
+framework-free (`Notion.spec.ts`, `caret.spec.ts`, `structure.spec.ts`) and both projects run all
+144, where vue ran 0. The estimate was wrong in the cheap direction: what had to be re-declared was
+498 lines of paint, not ~800, because 512 lines of vocabulary moved to a module neither adapter
+owns. What follows is the record as it stood.
+~~**Reason:** the showcase's net is still three React-only files (`Notion.react.spec.tsx`,
 `caret.react.spec.tsx`, `structure.react.spec.tsx`), and the rules those pin — caret, focus,
 claim ordering — are exactly where an adapter can differ. Every fix from round eight on ships
-half-measured.
+half-measured.~~
 **Cost:** the largest single item on this list, and it is a second implementation rather than a
 rename. The mitigation already taken is real and bounds the exposure: the three core rules whose
 only pin was that file now have core unit pins, and rounds 8–11 put most new pins in specs both

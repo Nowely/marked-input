@@ -338,11 +338,13 @@ why in place.
 22. **A value the editor did not write disables undo while it stands.** `canUndo` answers `false`
     until the document comes back.
     Ticket: [30](issues/30-foreign-value-disables-undo.md).
-23. **The showcase net is single-framework.** `vitest list --project vue` piped through
-    `grep -ci notion` answers `0`, re-measured today.
-    Five of the ten defects the hardening round fixed have their only regression pin in
-    `Notion.react.spec.tsx`. P12 — the Vue vocabulary, ~800 lines plus sixteen leaves, and Vue's
-    `useControlRef` — is owed.
+23. ~~**The showcase net is single-framework.**~~ `vitest list --project vue` piped through
+    `grep -ci notion` answered `0` when this was written.
+    Five of the ten defects the hardening round fixed had their only regression pin in
+    `Notion.react.spec.tsx`.
+    **Answered 2026-08-27, ticket 26**: the page is on the shared harness and both projects run
+    all 144 of its assertions. Vue gained `useControlRef` and `Atomic`; the vocabulary the two
+    paints share is 512 lines that neither re-declares.
     Ticket: [26](issues/26-vue-showcase-p12.md).
 24. **`RowProps.index` has no reader anywhere in the repo and is kept**, because it is published
     surface with its own generated API page. Measured removable: typecheck 0, suite green.
@@ -568,11 +570,11 @@ Ranked by (breaks a core gesture) × (cheap) × (nothing else is blocked on it f
    `638c7a46`). The flip uncovered a second defect underneath it: both adapters read
    `overlay.position()` non-reactively, so the popup had been frozen where it opened and did not
    follow the caret as the user typed.
-7. **Convert the showcase to the shared harness (P12).** ~800 lines of Vue vocabulary plus Vue's
-   `useControlRef`. Ranks seventh despite being the largest item, because five of the ten defects
-   the last hardening round fixed have their only pin in a React-only file — so **every fix above
-   ships half-measured until this lands**. It should be reconsidered upward the moment an adapter
-   defect escapes.
+7. ~~**Convert the showcase to the shared harness (P12).**~~ **DONE 2026-08-27**, ticket 26. The
+   three spec files are framework-free and both projects run them: 144 assertions apiece, where vue
+   ran none. The port found two Vue-only defects on its way — a row kind could not keep its own
+   class, and a component root that is not an element hit `removeAttribute` — which is the case the
+   item was making.
 8. **Theme the shipped popup** — ~~and drop the container's focus ring~~. **HALF DONE 2026-08-26**
    (`5167f690`): eight `var(--markput-…, <old value>)` names cover the popup, its highlighted row,
    the grip and the drop line, and the showcase maps all eight onto its own tokens. The FOCUS RING
@@ -586,15 +588,12 @@ Ranked by (breaks a core gesture) × (cheap) × (nothing else is blocked on it f
     Ranks last not because it is unimportant but because it is a decision, not a task: the repo
     already works around both in three places, and the docs now cast in eight.
 
-**Where the list stands after two driving sessions** (2026-08-26): 1, 2, 4, 5 and 6 are done and 8 is
-half done, so **the trailing paragraph (3) is the top open item** and it is still a decision rather
-than a task — every repair since has walked around it, and the click-claim's "a row with no position
-is inert" is the closest anything has come to answering it. **P12 (7) has not fallen**: the last two
-sessions did put most of their new pins at core level or in specs both projects run
-(`Base/keyboard.spec.ts`, `Base/rowKeymap.spec.ts`, `Drag/Drag.spec.ts`), but the showcase's own net
-is still three React-only files — `Notion.react.spec.tsx`, `caret.react.spec.tsx`,
-`structure.react.spec.tsx` — and the caret rules the last two pin are exactly where an adapter can
-differ.
+**Where the list stands after three driving sessions** (2026-08-27): 1, 2, 4, 5, 6 and **7** are
+done and 8 is half done, so **the trailing paragraph (3) is the top open item** and it is still a
+decision rather than a task — every repair since has walked around it, and the click-claim's "a row
+with no position is inert" is the closest anything has come to answering it. **P12 (7) HAS fallen**:
+the showcase's three spec files are framework-free and both projects run them, so the half-measured
+qualifier on every fix above is retired.
 
 **Not recommended yet, and why.** A selection toolbar, "Turn into" in the grip menu, `RowSpec.group`
 and a per-kind drag axis are all real gaps, and every one of them adds published surface. The
