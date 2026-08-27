@@ -1,7 +1,7 @@
 import type {RowNode} from '@markput/core'
 import {cx, renderSubscription} from '@markput/core'
 import type {CSSProperties} from 'react'
-import {memo, useMemo} from 'react'
+import {memo, useEffect, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 // oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Row` paints one row and its own list. The cycle is the recursion, and both sides are used only inside a render body.
@@ -69,6 +69,12 @@ export const Row = memo(({node, depth, index}: RowRenderProps) => {
 		consignRow(el)
 		hostRow(el)
 	}
+
+	// React attaches refs before it runs effects, so by here `setRowRef` has fired for every kind
+	// that spread the `ref` it was handed. Core reports the ones that did not; see `rowPainted`.
+	useEffect(() => {
+		tokens.rowPainted(node)
+	}, [tokens, node])
 
 	const childRows = node.rows()
 	// HIDDEN rather than absent is the consumer's contract for a collapsed row: an unpainted row

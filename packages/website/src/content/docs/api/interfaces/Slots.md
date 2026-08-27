@@ -5,7 +5,7 @@ prev: false
 title: "Slots"
 ---
 
-Defined in: [react/markput/src/types.ts:113](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L113)
+Defined in: [react/markput/src/types.ts:114](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L114)
 
 Available slots for customizing MarkedInput internal components
 
@@ -21,7 +21,7 @@ Available slots for customizing MarkedInput internal components
 optional container: ElementType<Record<string, unknown>>;
 ```
 
-Defined in: [react/markput/src/types.ts:115](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L115)
+Defined in: [react/markput/src/types.ts:116](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L116)
 
 Root container component
 

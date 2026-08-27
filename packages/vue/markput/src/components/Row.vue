@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type {CSSProperties, RowNode} from '@markput/core'
 import {cx, renderSubscription} from '@markput/core'
-import {computed} from 'vue'
+import {computed, onMounted} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
@@ -54,6 +54,11 @@ const setRowRef = (el: unknown) => {
 }
 
 const setRowsRef = (el: unknown) => hostRows(unwrapEl(el))
+
+// Vue sets template refs before it runs mounted hooks, so by here `setRowRef` has fired for every
+// kind that let the editor's `ref` reach an element. Core reports the ones that did not; see
+// `rowPainted`.
+onMounted(() => store.tokens.rowPainted(props.node))
 
 // The per-row subscription: a row's kind, its meta and its children are what this component
 // paints, so an edit to any of them must re-render it — `renderSubscription`'s row arm, the same

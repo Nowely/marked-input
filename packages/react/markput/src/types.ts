@@ -55,7 +55,8 @@ export interface RowProps {
 	 * A row kind's component is a SLOT component: spread `ref`, `className` and `style` onto the
 	 * element it renders, the way `slots.container` and `slots.paragraph` consumers already do. The
 	 * ref is how the editor finds the row's element; a component that drops it leaves the row
-	 * unbound, and the caret cannot resolve into it.
+	 * unbound, and the caret cannot resolve into it. That one is REPORTED — nothing on screen says
+	 * it otherwise; the other two cost a row that looks wrong rather than one the editor cannot use.
 	 */
 	ref?: RefCallback<HTMLElement>
 	className?: string

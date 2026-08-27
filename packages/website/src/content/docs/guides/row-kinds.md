@@ -105,7 +105,9 @@ Everything a kind declares beyond its markup lives in [`RowSpec`](/api/interface
 | `ref`, `className`, `style` | Slot plumbing. **Spread all three onto the element you render.**                                   |
 
 The `ref` is load-bearing. It is how the editor finds the row's element; a component that drops it
-leaves the row unbound and the caret cannot resolve into it.
+leaves the row unbound and the caret cannot resolve into it. Nothing on screen says so, which is why
+the editor does: a row whose component paints no element the editor can bind is reported to the
+console, once per such row, naming the kind's markup.
 
 **A kind that never renders `rows` cannot be nested under.** Rendering it is how the editor learns
 that this kind has somewhere to put a child: the wrapper the adapter hands over registers itself,

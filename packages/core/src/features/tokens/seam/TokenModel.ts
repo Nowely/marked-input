@@ -229,6 +229,36 @@ export class TokenModel {
 		return this.#refInto(this.#tokenElements, id)
 	}
 
+	/**
+	 * The framework finished painting a ROW, and this is the one prop a kind's component can drop
+	 * with no other sign of it. `RowProps.ref` is optional, so forgetting to spread it type-checks;
+	 * what it costs is total and invisible — the row is never consigned, so it binds to nothing,
+	 * has no anchors, and the caret cannot resolve into it.
+	 *
+	 * IT IS THE ADAPTER'S FACT TO HAND OVER, not core's to derive. `bind` runs on the COMMIT, which
+	 * is before the frame that paints it, so a row unconsigned there is the ordinary case of an
+	 * element that has not arrived yet. "The component mounted and its ref did not fire" is a
+	 * question only the caller that rendered it can answer, and both adapters answer it from the
+	 * hook that runs after refs attach.
+	 *
+	 * REPORTED, NOT REPAIRED, and not extended to the row's other two props. There is nothing to
+	 * repair: without a consignment core has no element, and inventing one by walking the DOM is
+	 * the re-derivation consignment replaced. `className` and `style` are left alone deliberately —
+	 * their loss is a row that looks wrong, while this is a row the editor cannot use at all.
+	 *
+	 * Once per mounted row rather than once per kind: it takes a Set to say the latter, and a
+	 * document holding many rows of one broken kind is a document whose author is about to fix it.
+	 */
+	rowPainted(node: RowNode): void {
+		if (this.#tokenElements.latest(node.id) !== undefined) return
+		const markup = untracked(() => node.descriptor()?.markup)
+		reportBadProp(
+			`${markup === undefined ? 'The `slots.paragraph` component' : `The row kind "${markup}"`} rendered no ` +
+				'element the editor could bind: spread `ref` onto the one element the component renders. ' +
+				'Until it does, the caret cannot resolve into this row.'
+		)
+	}
+
 	// ═══ Engine SPI (in-core consumers) ═══════════════════════════════════════
 
 	/**

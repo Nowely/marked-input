@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it, vi} from 'vitest'
 
 import {defineMark, Empty, Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
@@ -70,6 +70,33 @@ describe('row kinds', () => {
 		})
 
 		expect(host.textContent).toBe('plain')
+	})
+
+	/**
+	 * AND IT SAYS SO. The same shape from the consumer's side, and the one mistake a row kind can
+	 * make with nothing on screen to show it. React reaches it by not spreading the `ref` it is
+	 * handed; Vue, whose row component takes the ref through its instance, reaches it by painting
+	 * no element — which is `Empty` here, the one spelling both frameworks share.
+	 *
+	 * It is the ADAPTER's report to raise, from the hook that runs once refs have attached: `bind`
+	 * runs on the commit, a frame before the paint, where an unconsigned row is the ordinary case.
+	 */
+	it('reports the kind whose component painted no element', async () => {
+		const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+		try {
+			await mountComponent({
+				value: '# Title',
+				...ROWS,
+				options: [{markup: '# __slot__', row: {Component: Empty}}],
+			})
+
+			expect(errors.mock.calls.map(call => String(call[0]))).toEqual([
+				'[markput] The row kind "# __slot__" rendered no element the editor could bind: spread `ref` onto ' +
+					'the one element the component renders. Until it does, the caret cannot resolve into this row.',
+			])
+		} finally {
+			errors.mockRestore()
+		}
 	})
 
 	it('repaints a row when only its kind changes', async () => {

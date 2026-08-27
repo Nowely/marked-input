@@ -32,7 +32,7 @@ The row's own inline content, already rendered.
 optional className: string;
 ```
 
-Defined in: [react/markput/src/types.ts:61](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L61)
+Defined in: [react/markput/src/types.ts:62](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L62)
 
 ***
 
@@ -90,12 +90,13 @@ The live row node: its id, its own text and its verbs.
 optional ref: RefCallback<HTMLElement>;
 ```
 
-Defined in: [react/markput/src/types.ts:60](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L60)
+Defined in: [react/markput/src/types.ts:61](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L61)
 
 A row kind's component is a SLOT component: spread `ref`, `className` and `style` onto the
 element it renders, the way `slots.container` and `slots.paragraph` consumers already do. The
 ref is how the editor finds the row's element; a component that drops it leaves the row
-unbound, and the caret cannot resolve into it.
+unbound, and the caret cannot resolve into it. That one is REPORTED — nothing on screen says
+it otherwise; the other two cost a row that looks wrong rather than one the editor cannot use.
 
 ***
 
@@ -126,4 +127,4 @@ would walk into a row with no element.
 optional style: CSSProperties;
 ```
 
-Defined in: [react/markput/src/types.ts:62](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L62)
+Defined in: [react/markput/src/types.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L63)
