@@ -9,7 +9,17 @@ import {Host, PropsModel} from '../features/state'
 import {TokenModel} from '../features/tokens'
 import {MarkputHandle} from './MarkputHandle'
 
-//TODO rename to Markput, Core, Engine, Editor?
+/**
+ * ONE editor: every feature's state hangs off a field here, and the field name is how core, both
+ * adapters and a consumer's own selector all address it.
+ *
+ * THE NAME STAYS, and that is a decision rather than an omission. It carried
+ * `//TODO rename to Markput, Core, Engine, Editor?` from before either adapter published it; all
+ * four name the PRODUCT or the PACKAGE rather than this object's role, `MarkputHandle` already
+ * carries the product name for the thing a consumer holds, and this is `useMarkput`'s selector
+ * parameter — so a rename lands in the first line of every consumer that reaches the imperative
+ * surface, against no defect and no better name.
+ */
 export class Store {
 	readonly host = new Host()
 	readonly props = new PropsModel()
