@@ -152,6 +152,12 @@ adapters' row contract differs, because a rendered node is a slot in Vue and a n
 editor's `ref` resolves through the component instance, so there is nothing to spread; `class` and
 `style` fall through onto the root element unless the component declares `inheritAttrs: false`.
 
+That root must be a single HTML element. A component with several roots, or one that renders
+nothing, has a fragment or a comment where the instance's element would be, and the editor binds
+neither — such a row is unbound and reported. An `<svg>` root is refused for the same reason: the
+editor writes `contentEditable` on the row's element, which SVG does not carry. Put the `<svg>`
+inside the element the component renders.
+
 ```ts
 import {defineComponent} from 'vue'
 

@@ -11,6 +11,12 @@
  * `tokenElement.removeAttribute is not a function` out of the ref callback, from inside Vue's own
  * patch. Nothing is registered instead, which is the truth about such a component: it painted no
  * element the editor can bind.
+ *
+ * HTML, NOT `Element`, and that is the contract rather than an oversight: `DomRef` is
+ * `(element: HTMLElement | null) => void`, and `bind` writes `contentEditable` on what it is
+ * given — a property `SVGElement` does not implement. A component whose single root is `<svg>`
+ * reached the registry before this guard and was half-bound there; it now registers nothing and
+ * says so. A row that wants an SVG puts it INSIDE the element it consigns.
  */
 export const unwrapEl = (el: unknown): HTMLElement | null => {
 	if (el instanceof HTMLElement) return el
