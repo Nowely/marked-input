@@ -556,6 +556,11 @@ export class TokenModel {
 	 */
 	rowSelectionText(anchors: Anchors): Anchors | undefined {
 		const span = untracked(() => contentSpan(this.#tree.roots(), this.#offBlockInterior(anchors)))
+		// A CARET NAMES NO CONTENT, so there is nothing to clip — {@link contentSpan}'s own first
+		// rule, and it belongs here too because it is what keeps a document walk off the plain
+		// keystroke path: this function runs twice per `beforeinput`, and at 4000 rows the walk
+		// below costs 0.37 ms each time against a 6 ms keystroke (`rowVerbCost.bench.ts`'s W4).
+		if (!span && anchorEquals(anchors.anchor, anchors.head)) return undefined
 		const held = span ?? untracked(() => this.#spanOf(anchors))
 		// `<`, not `<=`: an EMPTY content span is a POSITION rather than a refusal — see
 		// {@link contentSpan}'s no-content arm — and refusing one put the raw pair back on the

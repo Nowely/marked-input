@@ -52,6 +52,7 @@ takes the early return out of all three settle arms.
 | W1 `preorderRows` — the whole walk | 0.0035 | 0.062 | 0.206 | 0.275 |
 | W2 `rowOf` @mid — what every row key runs first | 0.0011 | 0.018 | **0.067** | 0.103 |
 | W3 `boundarySpan` — Backspace's row half | 0.012 | 0.162 | 0.511 | 0.723 |
+| W4 `rowSelectionText` @caret — twice per `beforeinput` | 0.0021 | 0.035 | 0.129 | 0.175 |
 | K1 plain keystroke — the commit, structure unchanged | 0.19 | 1.21 | **6.15** | 6.59 |
 | V1 Enter (`splitAt`) | 0.20 | 1.42 | 6.03 | 6.93 |
 | V2 Tab (`indentRows`) | 0.009 | 0.139 | 0.496 | 0.684 |
@@ -76,6 +77,12 @@ Read across, three answers:
   caret's row stops being enterable, so its cost is W1 and it needs no rung of its own.
 - **The refusal channel is free** — one signal write, size-independent. The PAINT is the adapter's
   and is outside this bench's half; the browser half below shows no keystroke cost for it either.
+- **W4 has already caught something, in this pass's own work.** Ticket 43's visibility clip was
+  written to fall through to a raw span, which put a `preorderRows` walk on the plain keystroke path
+  where there had been none — 0.372 ms at 4000 rows, twice per `beforeinput`, on a 6 ms keystroke.
+  A caret names no content and needs no clip; saying so took the rung to the 0.121 ms in the table,
+  which is the resolution that was already there. That is the bench paying for itself on the day it
+  was written, and it is why W4 is a rung rather than a note.
 
 ### Half two — the real adapter, driven in Chromium
 

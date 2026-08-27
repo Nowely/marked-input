@@ -19,6 +19,7 @@ import type {RowNode, TreeNode} from './tree/types'
  *   W2 rowOf @mid         the walk plus an anchor resolution — what Enter, Tab and Backspace
  *                         each run BEFORE they do anything
  *   W3 boundarySpan       Backspace's row half at a row boundary: which separator to remove
+ *   W4 rowSelectionText   the span resolution every `beforeinput` runs, at a plain caret
  *   K1 plain keystroke    one character in and out of the middle row — the commit, unchanged
  *                         structure, and the baseline the three verbs are read against
  *   V1 Enter              `RowNode.splitAt` — a full commit
@@ -40,6 +41,11 @@ import type {RowNode, TreeNode} from './tree/types'
  * count and none of them is 2% of the commit it precedes — `rowOf` costs 0.067 ms at 4000 rows —
  * and the three verbs cost what a PLAIN keystroke costs at the same size, so the row layer adds
  * nothing measurable to the commit it rides on.
+ *
+ * W4 IS THE ONE RUNG THAT HAS ALREADY CAUGHT SOMETHING. The visibility clip was written to fall
+ * through to a raw span, which put a `preorderRows` walk on the plain keystroke path where there
+ * had been none: 0.372 ms here, twice per `beforeinput`, on a 6 ms keystroke. A caret names no
+ * content and needs no clip, and saying so took it back to 0.121 ms.
  *
  * The `nested 4000 rows` group takes ~90-120 s on its own, because every rebuild parses and mounts
  * a 4000-row document; the flat groups take ~13 s each.
@@ -153,6 +159,20 @@ function rowOfRung(store: Store): Gesture {
 }
 
 /**
+ * W4: the span resolution EVERY `beforeinput` runs, at a plain caret — `rowSelectionText`, which
+ * asks whether the pair's edges sit on structural bytes and whether it crosses a row nobody can
+ * see. It is on the keystroke path twice per event (the row-selection arm, then the shared tail),
+ * so a document walk here is charged to every character typed.
+ */
+function spanRung(store: Store): Gesture {
+	const offset = midOffset(store)
+	return () => {
+		const at = store.tokens.anchorAt(offset)
+		sink += store.tokens.rowSelectionText({anchor: at, head: at}) === undefined ? 0 : 1
+	}
+}
+
+/**
  * K1: the PLAIN keystroke — one character in and out of the middle row, through the same
  * `EditController.replace` a typed character reaches. The baseline every verb below is read
  * against: it changes no structure, so what it prices is the commit itself at this row count.
@@ -256,6 +276,11 @@ for (const doc of docs) {
 		bench(
 			'W3 boundarySpan',
 			lazy(() => boundaryRung(storeFor(doc))),
+			options
+		)
+		bench(
+			'W4 rowSelectionText @caret',
+			lazy(() => spanRung(storeFor(doc))),
 			options
 		)
 		bench(
