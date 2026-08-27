@@ -37,7 +37,13 @@ there would fuse every row before anything could re-derive them.
 
 **The case is the concept count, not speed.** Measured, the inversion's own margin is about 1.2×;
 the 12× that the design was once sold on belongs to a defect in the old pass's two quadratic
-loops, and it was fixed separately before this landed. **It is not a code reduction.** Measured in
+loops, and it was fixed separately before this landed. Re-measured 2026-08-27 on the same
+generated document (medians of 40 after 20 warmups, three independent runs, ±4–10% between runs),
+that margin is 1.3× at 1000–8000 rows and 1.1× at 250 — and it is CONDITIONAL, which the flat
+figure above hid. It holds only where the markups are declared as row kinds; declare the same
+markups as inline marks and the new parser is at parity or marginally slower (2.87 ms against
+2.68 at 4000 rows). The win is a row kind leaving the inline alternation, not the scan being
+cheaper. Nothing here is an argument for the inversion; the argument is the four defects above. **It is not a code reduction.** Measured in
 production lines only (`*.spec.*`, `__testing__`, `__snapshots__` and docs excluded): parser +136,
 tree +115, seam +50, slots +26, shared +20, storybook +31, React +21, Vue +14 — **net +418**. What
 shrinks is what has to be held in the head: one fixpoint, one mutual dependence and two functions
