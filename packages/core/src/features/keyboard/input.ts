@@ -272,14 +272,23 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 	// AHEAD OF THE ROW ARM, because the plan reads the span to decide which rows it crosses: handed
 	// the raw pair it opened its rows across a collapsed toggle's hidden body and across a fence's
 	// interior. `undefined` is that owner's ORDINARY-TEXT verdict and leaves the event's own pair.
-	const written = store.tokens.rowSelectionText(anchors) ?? anchors
+	//
+	// AND A DELETE ASKS IT THROUGH `anchorsForDelete`, NOT HERE. Its answer is DIFFERENT — that door
+	// reads a COLLAPSED pair as a caret before asking, where this line hands one to the owner and
+	// gets back the cover of a row no caret may enter — so the two cannot be folded into one call;
+	// what this one can do is not run. A delete's replacement is `''`, so `writeRowsFromInput`
+	// refuses at its first test without reading the pair, and `written` was then discarded unread.
+	// MEASURED: a second full document walk per ranged delete, 0.775 ms at 4000 rows
+	// (`rowVerbCost.bench.ts`'s W5), against a 5.9 ms keystroke.
+	const deleting = event.inputType.startsWith('delete')
+	const written = deleting ? anchors : (store.tokens.rowSelectionText(anchors) ?? anchors)
 	if (writeRowsFromInput(store, written, replacement)) {
 		event.preventDefault()
 		return
 	}
 
 	// Only a DELETE expands; every other type edits exactly the span the owner above answered.
-	const target = event.inputType.startsWith('delete') ? anchorsForDelete(store, event.inputType, anchors) : written
+	const target = deleting ? anchorsForDelete(store, event.inputType, anchors) : written
 	if (!target) {
 		dropUnexpressedInput(container, event)
 		return

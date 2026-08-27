@@ -159,16 +159,35 @@ function rowOfRung(store: Store): Gesture {
 }
 
 /**
- * W4: the span resolution EVERY `beforeinput` runs, at a plain caret — `rowSelectionText`, which
+ * W4: the span resolution EVERY `beforeinput` runs, at a plain CARET — `rowSelectionText`, which
  * asks whether the pair's edges sit on structural bytes and whether it crosses a row nobody can
  * see. It is on the keystroke path twice per event (the row-selection arm, then the shared tail),
  * so a document walk here is charged to every character typed.
+ *
+ * A CARET IS THE CHEAP HALF and this rung prices only that: since `a502c5fd` a collapsed pair with
+ * no content span returns before the visibility walk, so what W4 measures is the early return plus
+ * two anchor resolutions. W5 is the same call on the shape that pays the walk.
  */
 function spanRung(store: Store): Gesture {
 	const offset = midOffset(store)
 	return () => {
 		const at = store.tokens.anchorAt(offset)
 		sink += store.tokens.rowSelectionText({anchor: at, head: at}) === undefined ? 0 : 1
+	}
+}
+
+/**
+ * W5: the same resolution over a RANGED pair — a sweep inside the middle row, which is the shape
+ * every selection gesture produces and the one the caret guard cannot short-circuit. It reaches
+ * `#hiddenWithin`, whose `preorderRows` walk is the document-scale cost on this path, and it is
+ * charged TWICE per ranged `beforeinput` (`rowKeys.replaceRowSelection`, then `input.ts`'s tail).
+ */
+function rangedSpanRung(store: Store): Gesture {
+	const slot = midRow(store).slotRange()
+	return () => {
+		const anchor = store.tokens.anchorAt(slot.start + 2)
+		const head = store.tokens.anchorAt(slot.end - 1)
+		sink += store.tokens.rowSelectionText({anchor, head}) === undefined ? 0 : 1
 	}
 }
 
@@ -252,11 +271,11 @@ const options = {time: 1000, warmupTime: 200} as const
  * Builds the world on the first call and reuses it — a mounted 4000-row world costs far more to
  * build than the gesture it measures, and vitest's warmup pass absorbs that first call.
  */
-function lazy(build: () => Gesture): () => void {
-	let gesture: Gesture | undefined
+function lazy<T>(build: () => () => T): () => T {
+	let gesture: (() => T) | undefined
 	return () => {
 		gesture ??= build()
-		gesture()
+		return gesture()
 	}
 }
 
@@ -281,6 +300,11 @@ for (const doc of docs) {
 		bench(
 			'W4 rowSelectionText @caret',
 			lazy(() => spanRung(storeFor(doc))),
+			options
+		)
+		bench(
+			'W5 rowSelectionText @ranged',
+			lazy(() => rangedSpanRung(storeFor(doc))),
 			options
 		)
 		bench(
