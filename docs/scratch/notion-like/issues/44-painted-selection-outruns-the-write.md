@@ -68,6 +68,17 @@ browser painted, exactly as a sweep into a fence already did. That is a strict i
 what stops the hidden body being deleted — and it widens this ticket's reach from one shape to two.
 Declared at the commit rather than left to be found here.
 
+**AND A THIRD, from 43's review round.** A sweep starting at the toggle's title END writes the
+first NON-EMPTY visible stretch, which is on the FAR side of the hidden body:
+
+| sweep | painted | typed once, value became |
+| --- | --- | --- |
+| `▸ head` `head\|` → `af\|ter`, toggle CLOSED | `"⏎⇥body⏎af"` | `'▸ head⏎⇥body⏎Zter'` |
+
+The write is inside the paint as before, but for the first time it does not start at the paint's low
+edge — it lands after a stretch the browser highlighted. Whichever direction this ticket takes, the
+clamp it paints is a SUBRANGE of the sweep and not a prefix of it.
+
 ## What the two directions look like now, priced
 
 The ticket named them; the measurement prices them.
