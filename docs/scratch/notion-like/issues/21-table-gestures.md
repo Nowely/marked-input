@@ -1,7 +1,7 @@
 # The table's own gestures: a header-only seed, a dead Tab at the last cell, no escape for the delimiter
 
 Type: task
-Status: needs-triage — 1 built, 2 answered by the refusal channel, 3 still the named follow-up
+Status: needs-triage — 1 REVERTED in review, 2 answered by the refusal channel, 3 still the named follow-up
 Blocked by: —
 
 > The three gaps `outcome.md:509` calls *"a table worth the name"*, separated from the missing
@@ -72,3 +72,39 @@ is a walk rather than a write.
 **3. A `|` in a cell's body — UNCHANGED, and deliberately not folded in.** It is `RowSpec.split`'s
 own named follow-up, it wants an escape grammar, and it is the only one of the three with real cost.
 Nothing here touches it.
+
+## Corrected 2026-08-27, in review — item 1 came back out
+
+**THE TWO-LINE SEED SPLITS THE TABLE ACROSS TWO DEPTHS ON ANY NESTED ROW.** The claim the build
+rested on — *"a body may carry a separator, which the table footer's own `turnInto` already relies
+on"* — is false as a general rule. The body IS re-parsed, and the extra line is written at the depth
+its OWN lead says. A seed carries no lead, so its second line always lands at the document ROOT.
+
+Measured at core level, a bullet with one nested empty row turned into a two-line-seeded kind:
+
+```
+'- parent⏎⇥x'  →  '- parent⏎⇥|= A | B⏎|  | '
+'- parent⏎x'   →  '- parent⏎|= A | B⏎|  | '
+```
+
+The header is nested under the bullet and the grid's only data row is at the root: one menu pick,
+a table in two pieces. All three showcase cases seed at `rowsOf(host)[0]`, a ROOT row, where depth 0
+is the right answer by accident — which is why the suite was green.
+
+The footer's `turnInto(tableLine, {text: '⏎|+ ' + slot})` (`options.tsx:611`) is the same shape and
+is PRE-EXISTING; it works because a table in the showcase document sits at the root. Not touched.
+
+**The seed is one line again** and `MenuSpec.text` now says so: a seed is ONE ROW's body and may not
+carry the separator. `continues: tableLine` still opens the first data line on Enter.
+
+**So item 1 is OPEN again, and the two shapes that would close it properly are:**
+
+1. **A seed that opens ROWS.** `menu.text` stays one row and gains a sibling — a list of lines the
+   entry writes UNDER the row it seeds, at that row's own depth. New published surface on
+   `MenuSpec`, and it needs a rule for where the caret lands across several rows.
+2. **Re-lead the seed at the seam.** `OverlayController.#turnRowInto` knows the target row, so it
+   could rewrite `separator` as `separator + row.lead()` before handing the text to `turnInto`.
+   Four lines, but it gives `menu.text` a meaning `node.turnInto` does not share — two answers to
+   one contract, which is the thing this effort keeps taking out.
+
+Neither is a fixer's call. (1) is the honest one and is the more expensive.

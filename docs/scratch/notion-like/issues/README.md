@@ -47,7 +47,7 @@ for the same reason.
 | [18](18-carved-piece-verbs-fail-open.md) | `duplicate` and `insertAfter` fail open on a carved piece | resolved | One test in `#insertAfter` answers all three verbs; `addSibling`'s own copy came out |
 | [19](19-mid-body-split-loses-the-caret.md) | A mid-body split on a row that keeps a subtree loses the caret | resolved | Its stated cost was refuted: `applyRange` has carried a caret since the seeded retype |
 | [20](20-rowspec-group.md) | `RowSpec.group` | needs-triage | THE ticket for it — three wants, a fourth as the threshold, and a FENCED alternative with its trade measured |
-| [21](21-table-gestures.md) | The table's own gestures | needs-triage | The seed is a grid now and the dead Tab says it refused; the delimiter escape is untouched and still the named follow-up |
+| [21](21-table-gestures.md) | The table's own gestures | needs-triage | The dead Tab says it refused; the grid seed was reverted in review (a body may not carry the separator) and the delimiter escape is untouched |
 | [22](22-continues-carries-no-depth.md) | No option can say "Enter opens a CHILD of this row" | needs-triage | Judged and left filed; two of its four costs shrank when `splitPlan` lost its `tail` index |
 | [23](23-row-component-contract-is-silent.md) | A row component can drop `ref`/`className`/`style` | resolved | Taken for `ref` alone; re-asked whenever a row's component changes, and the verdict waits a frame so a late element is not accused |
 | [24](24-ship-the-atomic-wrapper.md) | Every consumer writes `Atomic` themselves | resolved | Shipped from `@markput/react` and the showcase's copy came out; the Vue twin waits on 26 |
@@ -82,10 +82,11 @@ boundary was writing nothing and taking an undo step for it, and 08's premise wa
 file its own grep could not reach. Three affordances were judged and NOT taken, each with its reason
 recorded on 27 so nobody re-opens it blind.
 
-The pass's own review then corrected it: Mod+A was DEAD in an empty row rather than merely missing
-a rung (a collapsed span read as a widening), the delete door's announcement fired at the plain
-document edge and came back out, and 29's third item — the clamped sweep — was neither answered nor
-recorded, and is now [44](44-painted-selection-outruns-the-write.md).
+The pass's own review then corrected it in four places: Mod+A was DEAD in an empty row rather than
+merely missing a rung (a collapsed span read as a widening), the delete door's announcement fired at
+the plain document edge and came back out, the `/table` grid seed split the table across two depths
+on any nested row and came back out with it, and 29's third item — the clamped sweep — was neither
+answered nor recorded, and is now [44](44-painted-selection-outruns-the-write.md).
 
 ## What was checked and NOT filed
 

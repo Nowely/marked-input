@@ -581,17 +581,21 @@ export const tableHeader: Option = {
 		),
 	},
 	/**
-	 * THE SEED IS A GRID, not a header. `menu.text` is the row's own body, and a body may carry a
-	 * separator — the footer's own `turnInto` already writes one — so the entry seeds the header
-	 * line and one empty data line under it, with a cell for each column. Seeding the header alone
-	 * gave `/table` a single line on a construct whose whole point is a grid, and left the user to
-	 * know that Enter opens the next one.
+	 * THE SEED IS ONE LINE, and that is a limit of `menu.text` rather than a choice. A seed is the
+	 * row's own BODY, and a body may not carry the document separator: the projection re-parses it,
+	 * and the extra line is written at the DEPTH ITS OWN LEAD SAYS — which for a seed is none.
+	 * Measured: `'- parent⏎⇥x'` with the caret in the nested row, seeded with a header and a data
+	 * line, emitted `'- parent⏎⇥|= A | B⏎|  | '` — the header nested under the bullet and the grid's
+	 * only data row at the document root, the table split across two depths from one menu pick.
+	 *
+	 * Seeding the grid needs a seed that opens ROWS at the target's depth rather than a string with
+	 * a separator in it; see ticket 21 for the two shapes and what each costs. Until then the header
+	 * seeds alone and `continues` opens the first data line on Enter.
 	 */
 	menu: {
 		label: 'Table',
 		keywords: ['database', 'grid', 'table'],
-		// `'| '` then four delimiters: five empty cells, one per column of the header above it.
-		text: `Task | Status | Owner | Due | Effort\n| ${' | '.repeat(4)}`,
+		text: 'Task | Status | Owner | Due | Effort',
 	},
 }
 

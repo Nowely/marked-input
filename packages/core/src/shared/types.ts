@@ -108,6 +108,11 @@ export interface MenuSpec {
 	 * says what the row starts as, and `choose` is the only thing that writes it. They apply only
 	 * where there is nothing to keep — a row that already has text keeps its own body, since a
 	 * turn-into must not discard what the user typed.
+	 *
+	 * ONE ROW, so `text` may not carry the document separator. It becomes the row's BODY, and the
+	 * projection re-parses it: an extra line lands at the depth ITS OWN lead says, which for a seed
+	 * is none — so a two-line seed on a NESTED row writes its second line at the document root and
+	 * splits the construct across two depths.
 	 */
 	meta?: string
 	text?: string

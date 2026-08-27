@@ -387,11 +387,11 @@ describe('the slash menu', () => {
 		await focusAtStart(rowsOf(host)[0])
 		dispatchInsertText(editingHost(host), '/')
 		await choose('Table')
-		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n|  |  |  |  | ')
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort')
 
 		await userEvent.keyboard('Z')
 
-		await expect.poll(value).toBe('|= ZTask | Status | Owner | Due | Effort\n|  |  |  |  | ')
+		await expect.poll(value).toBe('|= ZTask | Status | Owner | Due | Effort')
 	})
 
 	/**
@@ -1504,14 +1504,14 @@ describe('the inline database', () => {
 		await focusAtStart(rowsOf(host)[0])
 		dispatchInsertText(editingHost(host), '/')
 		await choose('Table')
-		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n|  |  |  |  | ')
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort')
 
 		await focusAtEnd([...host.querySelectorAll<HTMLElement>('[class*="tableHeadCell"]')].at(-1)!)
 		await userEvent.keyboard('{Enter}')
 		dispatchInsertText(editingHost(host), 'Auth | Done | Kara')
 
-		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n| Auth | Done | Kara\n|  |  |  |  | ')
-		expect(cellsOf(host).map(cell => cell.textContent)).toEqual(['Auth', 'Done', 'Kara', '', '', '', '', ''])
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n| Auth | Done | Kara')
+		expect(cellsOf(host).map(cell => cell.textContent)).toEqual(['Auth', 'Done', 'Kara'])
 	})
 
 	/**
@@ -1533,11 +1533,11 @@ describe('the inline database', () => {
 		await focusAtStart(rowsOf(host)[0])
 		dispatchInsertText(editingHost(host), '/')
 		await choose('Table')
-		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n|  |  |  |  | ')
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort')
 
 		await userEvent.keyboard('{Enter}')
 
-		await expect.poll(value).toBe('| \n|= Task | Status | Owner | Due | Effort\n|  |  |  |  | ')
+		await expect.poll(value).toBe('| \n|= Task | Status | Owner | Due | Effort')
 		expect(host.querySelectorAll('[class*="tableHeadCell"]').length).toBe(5)
 	})
 
