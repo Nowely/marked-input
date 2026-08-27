@@ -1,7 +1,7 @@
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import {depthCeiling} from '../parser/core/RowScanner'
 import type {RowConfig} from '../parser/types'
-import {anchorEquals, entryAnchor, offsetOfAnchor, rowBoundary} from './anchors'
+import {anchorEquals, entryAnchor, offsetOfAnchor, rowBoundary, spanOf} from './anchors'
 import {hasCells, preorderRows} from './rows'
 import {rowContent, rowLine, rowMarkup} from './tree'
 import type {
@@ -216,8 +216,7 @@ export function rowSelectionSpan(
 	take: 'replace' | 'remove'
 ): {start: number; end: number; rows: readonly RowNode[]} | undefined {
 	if (separator === undefined) return undefined
-	const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
-	const held = {start: Math.min(...ends), end: Math.max(...ends)}
+	const held = spanOf(roots, anchors)
 	const covered = rowsWithin(roots, held, separator)
 	if (covered.length === 0) return undefined
 
@@ -275,8 +274,7 @@ export function rowSelectionSpan(
  * legal answer and is a collapsed span, not `undefined` — see the no-content arm below.
  */
 export function contentSpan(roots: readonly TreeNode[], anchors: Anchors): {start: number; end: number} | undefined {
-	const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
-	const held = {start: Math.min(...ends), end: Math.max(...ends)}
+	const held = spanOf(roots, anchors)
 	// A CARET names no content, and the collapsed case is every ordinary keystroke: resolving one
 	// would move the insertion point off the position the user is typing at.
 	if (held.start >= held.end) return undefined
@@ -386,8 +384,7 @@ export function rowScope(
 		return found && rowSpan(roots, found.row, separator)
 	}
 
-	const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
-	const covered = rowsWithin(roots, {start: Math.min(...ends), end: Math.max(...ends)}, separator)
+	const covered = rowsWithin(roots, spanOf(roots, anchors), separator)
 	if (covered.length === 0) return undefined
 
 	const rows = preorderRows(roots)
@@ -1045,9 +1042,7 @@ export function splitPlan(
 	if (index < 0) return undefined
 
 	const slot = node.slotRange()
-	const ends = [offsetOfAnchor(roots, span.anchor), offsetOfAnchor(roots, span.head)]
-	const from = Math.min(...ends)
-	const to = Math.max(...ends)
+	const {start: from, end: to} = spanOf(roots, span)
 	if (from < slot.start || from > slot.end) return undefined
 	// THE ROW THE SPAN ENDS IN, which is `node` for every span inside one body and a LATER row for a
 	// cross-row paste. An offset in the structural run BETWEEN two lines belongs to no body and is

@@ -28,6 +28,7 @@ import {
 	entryAnchor,
 	offsetOfAnchor,
 	slotWithout,
+	spanOf,
 	stepAnchor,
 } from '../tree/anchors'
 import {gapWindow} from '../tree/gapWindow'
@@ -314,7 +315,7 @@ export class TokenModel {
 		// Lowered in the TREE's coordinate space: that is what `transactions.dispatch` splices,
 		// and the space the anchors themselves resolve in. NOT {@link value}, which is props-first
 		// and runs ahead of the tree while a controlled parent's arrival is still in flight.
-		const span = untracked(() => this.#spanOf({anchor: from, head: to}))
+		const span = untracked(() => spanOf(this.#tree.roots(), {anchor: from, head: to}))
 		return this.#replaceWithin(span.start, span.end, text)
 	}
 
@@ -562,7 +563,7 @@ export class TokenModel {
 		// keystroke path: at 4000 rows the walk below costs 0.13 ms at a caret and 0.78 ms over a
 		// range against a 5.9 ms keystroke (`rowVerbCost.bench.ts`'s W4 and W5).
 		if (!span && anchorEquals(anchors.anchor, anchors.head)) return undefined
-		const held = span ?? untracked(() => this.#spanOf(anchors))
+		const held = span ?? untracked(() => spanOf(this.#tree.roots(), anchors))
 		const visible = this.#visibleRun(held)
 		// AN ANSWER THAT DID NOT SHRINK IS NOT AN ANSWER, so `undefined` still means what it meant.
 		// Only the `!span` arm asks, because a resolved content span is already this function's
@@ -606,7 +607,7 @@ export class TokenModel {
 	holdsFrozenRow(anchors: Anchors): boolean {
 		const lines = untracked(() => {
 			const roots = this.#tree.roots()
-			const span = this.#spanOf(anchors)
+			const span = spanOf(this.#tree.roots(), anchors)
 			return contentLineRows(roots)
 				.filter(line => line.range.start < span.end && span.start < line.range.end)
 				.map(line => ({row: line.row, entry: entryAnchor(line.row)}))
@@ -693,13 +694,6 @@ export class TokenModel {
 		return {start, end: Math.max(start, span.end)}
 	}
 
-	/** An anchor pair as the OFFSET RANGE it names, low end first — the tree's own coordinate space. */
-	#spanOf(anchors: Anchors): {start: number; end: number} {
-		const roots = this.#tree.roots()
-		const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
-		return {start: Math.min(...ends), end: Math.max(...ends)}
-	}
-
 	/**
 	 * AN EDGE INSIDE A BLOCK NAMES THE BLOCK, NOT A POSITION IN IT — the reading {@link contentSpan}
 	 * cannot make for itself, because whether a kind paints its own text is the consumer's fact and
@@ -737,6 +731,10 @@ export class TokenModel {
 	 * THE ROW SELECTION IS READ FROM THE ORIGINAL PAIR and is untouched by this, which is what keeps
 	 * round nine's refusal: a frozen row held WHOLE still answers `rowSelection`, `reachable` still
 	 * declines it, and the typed character is still consumed and refused rather than replacing the row.
+	 *
+	 * IT RESOLVES THE TWO ENDS ITSELF RATHER THAN THROUGH {@link spanOf}, and that is the one place
+	 * in this file that does: it needs the ORDER — which edge the user dragged from decides which
+	 * anchor resolves to `{after}` and which to `{before}` — and a range has thrown order away.
 	 */
 	#offBlockInterior(anchors: Anchors): Anchors {
 		const roots = this.#tree.roots()

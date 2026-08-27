@@ -3,7 +3,7 @@ import {computed, signal} from '../../../shared/signals'
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'
 import type {RowConfig, RowToken, Token} from '../parser/types'
 import {annotate} from '../parser/utils/annotate'
-import {offsetOfAnchor} from './anchors'
+import {spanOf} from './anchors'
 import {hasCells, preorderRows} from './rows'
 import type {Id, MarkNode, NodeAnchor, RowNode, TextNode, TreeCommands, TreeNode} from './types'
 
@@ -188,9 +188,8 @@ export function findNode(nodes: readonly TreeNode[], id: Id): TreeNode | undefin
  * of the fallback, not a rule anyone stated.
  */
 export function sliceNodes(roots: readonly TreeNode[], from: NodeAnchor, to: NodeAnchor, separator?: string): string {
-	const a = offsetOfAnchor(roots, from)
-	const b = offsetOfAnchor(roots, to)
-	return sliceWithin(roots, Math.min(a, b), Math.max(a, b), separator)
+	const span = spanOf(roots, {anchor: from, head: to})
+	return sliceWithin(roots, span.start, span.end, separator)
 }
 
 function sliceWithin(nodes: readonly TreeNode[], start: number, end: number, separator?: string): string {

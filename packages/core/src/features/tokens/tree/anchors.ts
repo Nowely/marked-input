@@ -67,6 +67,21 @@ export function offsetOfAnchor(roots: readonly TreeNode[], anchor: NodeAnchor): 
 }
 
 /**
+ * AN ANCHOR PAIR AS THE OFFSET RANGE IT NAMES, low end first — the tree's own coordinate space,
+ * and the one spelling of it. A pair carries no order: `anchor` is where the gesture began and
+ * `head` is where it ended, so a backward sweep names its high edge first and every caller that
+ * wants a SPAN has to sort them. Six did it by hand.
+ *
+ * ORDER IS LOST HERE, deliberately — a caller that needs the direction (which edge the user
+ * dragged from) reads the two anchors itself rather than asking for a range.
+ */
+export function spanOf(roots: readonly TreeNode[], anchors: Anchors): {start: number; end: number} {
+	const a = offsetOfAnchor(roots, anchors.anchor)
+	const b = offsetOfAnchor(roots, anchors.head)
+	return {start: Math.min(a, b), end: Math.max(a, b)}
+}
+
+/**
  * The mark whose own boundary sits exactly ON `anchor`: the one ENDING there for `-1`, the
  * one STARTING there for `+1`. NESTED-FIRST, so an inner mark wins over an enclosing one at
  * a shared boundary — the order `keyboard/input.ts`'s token walk had before it moved here.
