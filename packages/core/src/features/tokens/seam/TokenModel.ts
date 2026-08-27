@@ -1738,22 +1738,19 @@ export class TokenModel {
 
 	/**
 	 * WHERE THE CARET GOES when the position it holds is one no caret may occupy: the nearest row
-	 * entry AFTER it that is painted and editable, else a row opened after it when it ENDS the
-	 * document, else the nearest entry before it.
+	 * entry AFTER it that is painted and editable, else the nearest entry before it.
 	 *
 	 * ITS QUESTION IS "WHERE NEXT", not "where did you point" — the row under the caret stopped
 	 * being one a caret can hold (a collapse, a retype, a frame that unpainted it), so travel
 	 * continues in the direction a person's own ArrowDown would. A POINTER asks the other question
 	 * and takes {@link #claimRow}.
 	 *
-	 * FORWARD FIRST because that is where a person continues, and it is also what makes the opening
-	 * arm terminate: the row it opens is reachable, so the next pass finds it by search rather than
-	 * opening a second one — which is the pass controlled mode always needs, since a verb names no
-	 * caret there.
-	 *
-	 * IT OPENS A ROW ONLY AT THE DOCUMENT'S END, which is where the invariant bites and — since the
-	 * DOM clock also pulses per REGISTRATION, mid-patch — the one condition no half-painted frame
-	 * can fake: it is read off the tree, not off the elements.
+	 * FORWARD FIRST because that is where a person continues. IT OPENS NOTHING: whether a document
+	 * ends in a row the caret can enter is {@link #settleTail}'s question, asked of the document's
+	 * LAST row rather than of the caret's, and this only ever moves the caret to a row already
+	 * there. The walk stops on `'absent'` rather than stepping past it, so a row the frame has not
+	 * painted is a "not yet" here as everywhere else — which is also why it cannot reach a row
+	 * `#settleTail` opened in the same microtask.
 	 */
 	#recoverCaret(from: RowNode): void {
 		const rows = untracked(() => preorderRows(this.#tree.roots()).map(entry => entry.row))

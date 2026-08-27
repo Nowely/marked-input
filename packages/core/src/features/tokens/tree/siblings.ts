@@ -968,9 +968,9 @@ export function rowSelectionRows(
 }
 
 /**
- * Opening ROWS inside one row's own body, as ONE splice plus the PRE-ORDER index of the row the
- * caret belongs in and how far into it. Enter's split is the degenerate case — two empty pieces,
- * which is a cut and nothing written at it.
+ * Opening ROWS at a span that begins in this row's body, as ONE splice plus the ABSOLUTE offset the
+ * caret belongs at. Enter's split is the degenerate case — two empty pieces, which is a cut and
+ * nothing written at it.
  *
  * `rows` are the pieces written AT THE CUT, one per line the edit opens: `rows[0]` joins the head,
  * `rows.at(-1)` opens the tail and the rest of the body follows it, and every piece between them
@@ -982,6 +982,12 @@ export function rowSelectionRows(
  *
  * A SPAN rather than one anchor, so a paste over a text selection is one splice: the head keeps
  * what precedes the span and the tail what follows it. Enter passes its caret on both ends.
+ *
+ * THE SPAN MAY LEAVE THE ROW. Its low end is in this row's body; its high end may be in a LATER
+ * row's, and then every row between the two — and every one of their subtrees — is consumed by the
+ * one plan, with the LAST covered row's tail following the last piece. Held to one body, a paste
+ * across two rows fell back on the ordinary splice and wrote bytes in nobody's language: the second
+ * line of the clip carried neither the lead nor the opener its row needed.
  *
  * The window covers the row's LINE BODY AND ITS WHOLE SUBTREE, and re-emits the descendants
  * unchanged in the middle, because the tail row normally lands AFTER them. That placement is
@@ -1012,8 +1018,10 @@ export function rowSelectionRows(
  * BODY length, which is a parse this layer does not have.
  *
  * `undefined` — fail closed — for a non-row, a dead node, an editor with no separator to split at,
- * fewer than two pieces, and a span that is not inside the row's own body — which is what sends a
- * paste across several rows back to the ordinary splice.
+ * fewer than two pieces, and four refusals of its own: a LOW END outside this row's body, a HIGH END
+ * in the structural run between two lines (it names no content, so there is no tail to keep), a LAST
+ * COVERED ROW WITH CHILDREN (the tail is written at the head's lead, so they would be re-parented
+ * rather than moved), and a FOLLOWING ROW whose depth the clamp would change.
  */
 export function splitPlan(
 	roots: readonly TreeNode[],
