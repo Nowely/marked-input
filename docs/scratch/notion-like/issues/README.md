@@ -5,7 +5,7 @@ Two generations of tickets live here.
 - **01–11 are the PROBE's**, filed 2026-08-25 before any of the work started, against the editor as
   it then was. Seven are closed; `outcome.md:189-212` is the account of which decision closed each,
   and that four of the seven closures are ONE decision (the scan-first inversion, ADR-0010).
-- **12–39 came out of the BUILD**, filed 2026-08-27 from what the effort declared and did not
+- **12–40 came out of the BUILD**, filed 2026-08-27 from what the effort declared and did not
   build: `outcome.md`'s "What is declared but not built", `map.md`'s Fog, and `insights.md`'s
   ranked next steps and its "what I would not do yet". Nothing here is new analysis — every problem
   statement quotes a record and cites the file the record cites, re-verified against the code at
@@ -37,7 +37,7 @@ Two generations of tickets live here.
 | # | Ticket | Status | One line |
 | --- | --- | --- | --- |
 | [12](12-upward-mouse-selection.md) | An upward mouse drag re-places the caret instead of extending the selection | resolved | The write-back's `addRange` re-seated the drag's base; a real sweep harness now exists |
-| [13](13-collapsed-body-lost-on-a-row-cover.md) | A selection covering a collapsed toggle whole deletes its hidden body | resolved | `replaceRows` asks `#visibleEnd` too; the cut's clipboard asymmetry is declared |
+| [13](13-collapsed-body-lost-on-a-row-cover.md) | A selection covering a collapsed toggle whole deletes its hidden body | resolved | `#hiddenWithin` excludes each hidden subtree; the first answer clipped the span END and was wrong twice |
 | [14](14-arrowdown-skips-an-empty-row.md) | ArrowDown skips an empty row | resolved | Not the direction and not the width: the caret's own visit appended a zero-length `Text` |
 | [15](15-opener-prefix-is-unchecked.md) | Two kinds may share an opener PREFIX | resolved | `shadowedRowKinds` drops a closed kind whose opener extends another's; the recorded condition was wrong twice |
 | [16](16-trailing-paragraph.md) | An atomic row leaves the caret nowhere to go | ready-for-human | The top open DECLARED item; a published-contract decision, not a task |
@@ -64,6 +64,7 @@ Two generations of tickets live here.
 | [37](37-softbreak-stays-unbuilt.md) | `softBreak` stays unbuilt | wontfix | Standing deferral; re-open on a case the continuation row cannot carry |
 | [38](38-per-kind-drag-axis.md) | A per-kind drag axis | wontfix | Cross-axis hit-testing is a phase, refused on a measurement |
 | [39](39-notion-package.md) | A published `@markput/notion` package | needs-triage | A move, not a build — blocked on 03, 10, 12 and 25 |
+| [40](40-copy-projects-what-the-write-excludes.md) | A copy projects content the matching write refuses to take | needs-triage | The asymmetry 13 declared, now filed: cut clipboards a collapsed toggle's body and leaves it |
 
 ## What was checked and NOT filed
 

@@ -1198,8 +1198,10 @@ divergence between the adapters is a failing test rather than a difference nobod
    `---` collapses everything between them into one uneditable row. *Mitigation:* ~~the body-gap-only
    rule plus end-at-a-separator bound the damage to one row's body~~ — **falsified in P11**: the
    body gap IS the crossing gap, so nothing bounds it. Measured, one **Divider** click at the end of
-   the showcase page took the page from 36 rows to 3. The mitigation that holds is risk 8's, below:
-   do not give two kinds a shared opener prefix. A closing literal *inside* a raw body still ends
+   the showcase page took the page from 36 rows to 3. Risk 8's rule, below, bounds the shape where
+   two kinds share an opener; it does **not** mitigate this one, and the ticket says so where this
+   text used to imply otherwise. A single closed kind declared ALONE detonates the same document —
+   measured 2026-08-27 (ticket 15) — so this risk stands undischarged. A closing literal *inside* a raw body still ends
    the row early, which is the same declared limitation `__value__` has today, with a pinned spec.
 4. **A split cell cannot contain its delimiter.** *Mitigation:* declared; the follow-up (a per-kind
    escape scoped to the cell body) is named and deliberately not built.
@@ -1223,9 +1225,13 @@ divergence between the adapters is a failing test rather than a difference nobod
    swallowed every row between. `properties` is now `'@properties\n__value__\n@end'`, the shape the
    four other closed kinds already use, and the two kinds share no prefix. The standing rule is
    therefore the plain one: **two row kinds must not share an opener prefix when either has a raw
-   body**. `rowMarkupError` still rejects only an *identical* opener, which is a weaker check than
+   body**. ~~`rowMarkupError` still rejects only an *identical* opener, which is a weaker check than
    the rule; pinned instead by a browser spec that adds a divider to the whole showcase page and
-   counts its rows.
+   counts its rows.~~ **Answered 2026-08-27, ticket 15**, and the rule above was wrong twice:
+   rawness decides nothing, and only the kind whose body closes at its OWN literal is dangerous —
+   longest-first already protects the pair the other way round. `usableOptions` now drops such a
+   kind and reports it (`shadowedRowKinds`, `471d626b`), pinned in `TokenModel.parse.spec.ts` on
+   the document that fuses.
 9. **Snapshot churn across every block-layout story.** *Mitigation:* AGENTS.md's rule, enforced per
    phase — diff the old and new structure, explain the diff, never regenerate.
 10. **Collapsed rows must be hidden, not unmounted.** An unpainted row leaves `bind`

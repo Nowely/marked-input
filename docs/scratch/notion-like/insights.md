@@ -77,9 +77,13 @@ detects the neighbouring one (`#keepTailEnterable` grows a blank row after a doc
 body). The consumer-side half is a docs line; the class is core's, and calling it *atomic* is what
 let one kind out of the sweep.
 
-**5. Two row kinds must not share an opener PREFIX when either has a raw body — and nothing checks
-it.** `usableOptions` (`TokenModel.ts:1928`) rejects a **duplicate** opener by exact string
-equality. The standing rule is strictly wider, and the failure is total and silent: the showcase's
+**5. Two row kinds must not share an opener PREFIX ~~when either has a raw body~~ — and nothing
+checks it.** **Corrected 2026-08-27, ticket 15**: the recorded condition was wrong twice over.
+Rawness decides nothing (`__slot__` and `__value__` collapse identically), and "either" is too wide
+— longest-first already protects the pair whose SHORTER opener is the closed one. The rule that
+holds is *no kind whose body closes at its own literal may extend another kind's opener*, and it is
+`shadowedRowKinds` (`471d626b`). `usableOptions` (`TokenModel.ts:1928`) rejects a **duplicate**
+opener by exact string equality. The standing rule is strictly wider, and the failure is total and silent: the showcase's
 `properties` was `'---\n__value__\n---'` against a `'---__slot__'` divider, and one **Divider**
 click from the `/` menu took the page from **36 rows to 3**, every row between the two rules
 swallowed into one panel the caret could not enter. The text survived in the value; nothing on the
@@ -324,16 +328,20 @@ the delete path and P11.6 fixed on the paste path — the third door of the same
 sweep covering a collapsed toggle would then leave the hidden body behind, which is a strict
 improvement and still observable, so it is declared per AGENTS.md rather than filed as a fix.
 
-**3. ArrowDown over an empty row.** The round-eleven line box exists and is zero-width
+**3. ArrowDown over an empty row.** ~~The round-eleven line box exists and is zero-width
 (`display: inline-block, height: 16px, 1 client rect`), so upward traversal finds it and downward
-traversal falls through.
+traversal falls through.~~ **Refuted 2026-08-27, ticket 14**: measured false in both halves. The box
+works in both directions and its width is irrelevant; the cause was the editor's own appended
+zero-length `Text`, which the caret's visit left in the surface (`87ea7472`).
 **Cost:** a CSS measurement with no editor in the page, both directions, and a pin per direction.
 Cheap, and it closes the last of the four "arrows skip empty rows" reports that has survived three
 attempts.
 
 **4. Make the opener-prefix rule checkable.** `usableOptions` rejects an identical opener
-(`TokenModel.ts:1928`); the standing rule is *no shared opener prefix where either kind has a raw
-body*, and its one measured failure took the showcase from 36 rows to 3 on a single menu click.
+(`TokenModel.ts:1928`); the standing rule is ~~*no shared opener prefix where either kind has a raw
+body*~~ — **corrected 2026-08-27, ticket 15**, to *no kind that closes its own body may extend
+another kind's opener* — and its one measured failure took the showcase from 36 rows to 3 on a
+single menu click.
 **Reason:** it is the only unbounded document-loss class on the open list, and it is currently
 guarded by one browser spec that counts rows after adding a divider — a pin for one instance of an
 unwritten rule.

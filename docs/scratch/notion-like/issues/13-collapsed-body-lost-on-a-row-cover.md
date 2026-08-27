@@ -1,7 +1,7 @@
 # A selection covering a collapsed toggle WHOLE still deletes its hidden body
 
 Type: task
-Status: resolved — `replaceRows` asks `#visibleEnd` too (2026-08-27)
+Status: resolved — `replaceRows` excludes each hidden subtree (2026-08-27)
 Blocked by: —
 
 ## Problem
@@ -68,7 +68,58 @@ cover now puts the hidden body on the clipboard AND leaves it in the document. T
 *"a cut takes exactly what the copy above put on the clipboard"* — is no longer true for this one
 shape. It fails in the safe direction (a duplicate on paste rather than a silent loss), and the
 follow-up is the copy path's own clip, which is a wider change: `selectedContent` and `valueBetween`
-serve plain copy too.
+serve plain copy too. **Filed as [40](40-copy-projects-what-the-write-excludes.md)**, and the
+comment at `ClipboardController.ts:22-32` now states the disagreement and points at it — the
+declaration had been living in a commit body a reader of that file does not have.
+
+## The clip was wrong twice, and the rule is now written as the rule
+
+Three reviewers of the pass re-measured the answer above and all three found the same regression;
+one found a second. Both are fixed, and the mechanism is no longer a clipped END.
+
+**It fused two rows when the covered run ended the document.** `rowSelectionSpan` charges a
+document-final removal its LEADING separator, because the run it takes owns no trailing one
+(`tree/siblings.ts:241`). Clipping the END un-finalises that removal, and nothing re-read the
+start, so both separators went: `'intro⏎before⏎▸ head⏎⇥body'`, Esc, Shift+ArrowDown, Backspace gave
+`'intro⇥body'` — the child's indent a literal tab in the middle of a paragraph. Silent structural
+corruption from three keystrokes, where the original defect was silent loss. **Neither the shipped
+pins nor the implementer's own probe file could see it: every one of them put an `after` row below
+the toggle's subtree, so `endsDocument` was false in all of them.**
+
+**And a cover spanning PAST one collapsed toggle under-deleted every visible row beyond it.** A
+truncation stops at the first hidden row and drops the rest of the span:
+`'before⏎▸ one⏎⇥b1⏎▸ two⏎⇥b2⏎after'` swept whole and deleted left `'⇥b1⏎▸ two⏎⇥b2⏎after'`. `'▸ two'`
+is a row the user selected, could see, and watched survive a delete; at showcase scale a sweep of
+twenty rows crossing one toggle deleted down to it and left the other fifteen standing. The
+docstring's *"the visible half of what the user asked for"* held for one hidden subtree and stopped
+holding for the second.
+
+The rule the clip argues for is a per-SUBTREE exclusion, so `#hiddenWithin` now answers the hidden
+subtrees inside a span; `replaceRows` writes the span whole and puts each of them back, and
+`#visibleEnd` is the first element of that same list — `rowSelectionText` holds an anchor pair,
+which has no way to say "all of this except the middle". One walk, one paint reading, one owner.
+A PASTE over a cover crossing two toggles now keeps both bodies as well.
+
+Four pins in `Notion.react.spec.tsx`, each seen to redden on the clause it holds: dropping the
+leading separator reddens the document-final pin ALONE; dropping the trailing one reddens it and
+the older ticket-13 pin; keeping only the first hidden subtree reddens the two-toggle delete and
+paste pins ALONE; removing the empty-`kept` short-circuit reddens the new no-toggle control (a
+document-final delete with nothing hidden must still leave `'intro'`) and two older pins.
+
+## Two things measured and deliberately left
+
+**A typed character over an exact row cover holding a collapsed toggle is a NO-OP**, and Delete over
+one behaves as `rowSelectionText` decides rather than as this door does. Measured byte-for-byte
+identical at `ddc0a6c3` and after the fix, so it is pre-existing and not this door's: those gestures
+reach `rowSelectionText`, whose clip can only shrink a span. `replaceRows`'s docstring lists a typed
+character among the gestures it serves; for this shape that is unverified. Worth its own ticket if
+the no-op is judged wrong — the safe answer today is that nothing is destroyed.
+
+**Every pin here is React-only**, because the Notion page has never been migrated to the shared-spec
+harness (ticket [26](26-vue-showcase-p12.md)). The clip's whole verdict comes from
+`DomModel.rowPaint` → `element.checkVisibility()`, i.e. from what the ADAPTER painted, so a Vue
+regression in collapsed-row painting would take it down with the suite green. No Vue test anywhere
+exercises a `'boxless'` row.
 
 **Measured and NOT changed:** select-all followed by Backspace still clears the whole document,
 hidden child included — `''` both before and after the fix, on `'intro⏎▸ closed⏎\tchild'`. The
