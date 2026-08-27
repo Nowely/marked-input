@@ -48,9 +48,9 @@ export const Markdown = story({
  *
  * They used to carry `style: {marginLeft: '64px'}`, and the note here called it load-bearing:
  * the controls layer hangs the grip band off its row's LEFT edge
- * (`.SidePanel { margin-left: -24px }`), and core's 24px gutter was a NUMERIC `paddingLeft`
+ * (`.SidePanel { margin-left: -48px }`), and core's gutter was a NUMERIC `paddingLeft`
  * that React turned into `24px` and Vue dropped, so flush against the viewport Vue's grip was
- * outside it and unclickable. Core emits `'24px'` now, the gutter exists in both frameworks,
+ * outside it and unclickable. Core emits a CSS-ready string now, the gutter exists in both frameworks,
  * the band sits inside the container's padding box, and the margin is gone.
  */
 export const PlainTextDrag = story({

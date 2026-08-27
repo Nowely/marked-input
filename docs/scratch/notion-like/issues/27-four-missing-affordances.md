@@ -109,3 +109,34 @@ answer for every selection that is not plain text: crossing two rows, covering a
 enter, spanning a carved cell's delimiter. Each of those is a refusal, and a toolbar has to say
 which button is greyed out and why — which is [29](29-refusal-is-silent.md)'s channel asked to
 carry a REASON, the one thing it deliberately does not.
+
+## Corrected 2026-08-27, in review — the layout cost was stated for one configuration of three
+
+The commit and `guides/rows.md` declared the 24→48px reservation *"while the rows drag"*. That is
+one of three configurations, and the other two were undeclared. Measured in both adapters, with the
+container at `marginLeft: 120px` so it is not at the page edge:
+
+| configuration | before | after |
+| --- | --- | --- |
+| `draggable: true`, no consumer style | reservation 24, band 24, overhang **0** | reservation 48, band 48, overhang **0** |
+| `draggable: false` | reservation 0, band 24, overhang **24** | reservation 0, band 48, overhang **48** |
+| `draggable: true` + consumer `style={{paddingLeft: '24px'}}` | overhang **0** | `+` at x=96, container at x=120 → **24px outside** |
+
+The band's width and the container's reservation are set from two different conditions:
+`.SidePanel` is 48px whenever the controls layer paints, `ROW_GUTTER_WIDTH` is applied only when
+`rowsDraggable && !readOnly`, and it is spread BEFORE the consumer's own style so a consumer
+`paddingLeft` wins. Nothing became newly outside — with `draggable: false` the band was already
+100% outside, which `Drag.spec`'s `hang the grip band LEFT of its row` pins as INTENDED — but the
+page room it needs doubled, and the `+` is the outermost 24px of it.
+
+**Done here:** the `draggable: false` overhang is now asserted (48px, band width 48, reservation
+0px), so a later widening cannot double it unnoticed; mutating `.SidePanel` back to 24px reddens it
+in both projects. The four stale `24px` claims in files this pass edited are corrected.
+
+**NOT done, and it is a maintainer's call rather than a fixer's.** The width is TWO copies of one
+fact and the rows README now instructs hand-agreement rather than deriving it. The single-owner
+shape is to delete `ROW_GUTTER_WIDTH` and the `mergedStyle` ternary and put the reservation in
+`styles.module.css` beside `.SidePanel`, toggled through the class the container already builds —
+one file holds the number and the two cannot disagree. The cost is real: `containerProps().style` is
+published surface, `Store.spec.ts` asserts `paddingLeft` on it in four places, and a consumer inline
+`style={{paddingLeft}}` currently overrides core and would stop doing so.

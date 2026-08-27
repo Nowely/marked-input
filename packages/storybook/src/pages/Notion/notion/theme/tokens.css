@@ -94,9 +94,9 @@
 	--notion-indent-step: 24px;
 	--notion-block-depth: 1;
 
-	/* The left gutter markput reserves for the drag grip
-	   (`packages/core/styles.module.css` `.SidePanel`). The showcase's own gutter has to
-	   line up with it. */
+	/* ONE CONTROL wide, and every use doubles it: markput's own band holds two (the insert
+	   button and the grip, `packages/core/styles.module.css` `.SidePanel`, 48px), and the
+	   showcase's own gutter has to line up with that. */
 	--notion-gutter-width: 24px;
 	--notion-content-width: 700px;
 

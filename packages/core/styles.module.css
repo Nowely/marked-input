@@ -1,7 +1,7 @@
 .Container {
 	min-height: 1.4em;
 	/* The controls layer's containing block: it is `position: absolute; inset: 0` inside the
-	   container, and its origin is the container's PADDING box — where the 24px drag gutter
+	   container, and its origin is the container's PADDING box — where the 48px row gutter
 	   already lives. Always applied via `cx(styles.Container, …)`, so `slots.container` cannot
 	   drop it; a consumer inline `style={{position: 'static'}}` still would. */
 	position: relative;

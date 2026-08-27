@@ -28,8 +28,9 @@
 	font-family: var(--notion-font-family-sans);
 	font-size: var(--notion-font-size-body);
 	line-height: var(--notion-line-height-body);
-	/* `pre-wrap` is the consumer's job — core sets none, and a row of soft breaks is
-	   unreadable without it (see `Notion.stories.react.tsx`). */
+	/* Core sets `pre-wrap` on `.Container span` already, so this is the showcase agreeing with
+	   it rather than supplying it — a row of soft breaks is unreadable without it. The claim
+	   that core sets none was ticket 08's premise and was refuted by measurement. */
 	white-space: pre-wrap;
 }
 

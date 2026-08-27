@@ -51,8 +51,8 @@ export interface RowBox {
 }
 
 /**
- * The indent unit assumed when the document has NO nesting to measure — one grip gutter, which is
- * the only horizontal unit core owns. Reached exactly when the pointer is choosing between depth 0
+ * The indent unit assumed when the document has NO nesting to measure — one CONTROL wide, which is
+ * the only horizontal unit core owns. Half the row gutter, which holds two of them. Reached exactly when the pointer is choosing between depth 0
  * and depth 1 in a flat document, where no painted parent/child pair exists to read one off.
  */
 const ASSUMED_INDENT = 24

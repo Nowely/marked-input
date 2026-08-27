@@ -743,9 +743,15 @@ describe('Feature: drag rows', () => {
 		})
 
 		it('hang the grip band LEFT of its row, where core reserves no gutter', async () => {
-			// Core supplies the 24px gutter only for draggable, editable rows. A band
-			// anchored to the layer's own origin therefore covers the first 24px of the hovered
+			// Core supplies the 48px gutter only for draggable, editable rows. A band
+			// anchored to the layer's own origin therefore covers the first 48px of the hovered
 			// row and swallows the click that should place a caret there.
+			//
+			// SO THE BAND HANGS ITS FULL WIDTH OUTSIDE, and the number is asserted below rather
+			// than left to be discovered: the two controls are 48px and nothing is reserved for
+			// them, so a consumer whose container sits at the page's left edge has neither. That
+			// was 24px and one control before the `+` landed; `marginLeft` here is what gives the
+			// band somewhere to be.
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',
@@ -763,11 +769,19 @@ describe('Feature: drag rows', () => {
 
 			const hit = document.elementFromPoint(rect.left + 2, centerY(row))
 			expect(row.contains(hit)).toBe(true)
+
+			// AND THE OVERHANG IS THE WHOLE BAND, stated so a later widening cannot double it
+			// unnoticed the way the `+` did. Core reserves `padding-left` only while the rows drag,
+			// the band paints whenever the menu grip does, so here the two disagree by the band's
+			// full width — 48px, up from 24px, and the `+` is the outermost control of it.
+			expect(getComputedStyle(host).paddingLeft).toBe('0px')
+			expect(band.width).toBe(48)
+			expect(Math.round(host.getBoundingClientRect().left - band.left)).toBe(48)
 		})
 
 		it('put the grip INSIDE the container gutter core reserves, in BOTH frameworks', async () => {
 			// The other half of the same anchor: WITH a gutter the band has to land in it. A
-			// band placed 24px left of the layer's origin overshoots by exactly the gutter, and
+			// band placed 48px left of the layer's origin overshoots by exactly the gutter, and
 			// an `overflow: auto` consumer container clips it out of existence.
 			//
 			// The gutter is core's own here — no `slotProps` stand-in. It used to need one: core
