@@ -1,7 +1,7 @@
 # A consumer cannot name a Row
 
 Type: task
-Status: needs-triage (half landed in P1 — see the note at the bottom)
+Status: resolved — both halves landed; `Store` and `MarkInfo` are in both adapter barrels (2026-08-27)
 Blocked by: —
 
 ## Problem
@@ -38,3 +38,27 @@ barrels (`packages/react/markput/index.ts:23`, `packages/vue/markput/index.ts:22
 a new `RowProps` in each. The second half is UNTOUCHED: `Store` is still not re-exported from
 either adapter, so a react consumer selecting through `useMarkput(s => …)` still has to add
 `@markput/core` to name the type it already receives. Stays open for that.
+
+## Answer — the second half (2026-08-27)
+
+`export type {MarkInfo, Store}` in both adapter barrels. TYPE only: core exports the `Store` class
+as a value because both adapters construct one, and publishing the constructor from an adapter
+would offer "build an editor by hand" as a contract nobody asked for.
+
+`MarkInfo` went with it, found by the audit this ticket asks for: `useMarkInfo()` is published by
+both adapters and its RETURN type was not, so declaring that value separately cost the same second
+dependency. The generated page for the hook named it and linked nothing.
+
+**Checked and NOT taken: `CSSProperties`.** `packages/storybook/src/shared/lib/marks.shared.ts` and
+`marks.react.tsx` import it from core, but those files are framework-FREE by design and could not
+use an adapter barrel either way, so they are not evidence about this boundary. A consumer's
+spelling is `RowProps['style']`, which is what the showcase itself uses (`options.tsx`'s
+`Paragraph`), and indexed access is the same reasoning that dropped `Id` and `MarkPatch` from
+core's own barrel.
+
+**The audit's own answer, recorded so it is not re-run blind:** the showcase imports NOTHING from
+`@markput/core`, and cannot — `boundary.spec.ts` fails on any specifier that is not `react`,
+`@markput/react` or a file inside its own directory. The one core import under `pages/Notion/` is
+`structure.react.spec.tsx`'s `new Store()`, which is a headless parse harness reaching test-only
+oracles, not consumer code. The last time this grep found something real, the answer was publishing
+`Suggestion`; this time it is `Store` and `MarkInfo`.

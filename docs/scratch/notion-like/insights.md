@@ -49,9 +49,14 @@ the UA focus ring back.
 an element, and making them non-optional only moves the mistake into `{...props}`. Core already
 owns the right channel and the right doctrine for this: `reportBadProp` refuses and carries on at
 the props boundary (doctrine A.7, censused over 13 bad prop values), and `bind` already knows that
-a consigned row id received no element. Proposal, not a decision: **one `reportBadProp` when a
+~~a consigned row id received no element~~. Proposal, not a decision: **one `reportBadProp` when a
 mounted row's consignment is never called.** Nothing like it exists today — `console.error` appears
 in core exactly once outside a bench, in `reportBadProp` itself.
+**Taken 2026-08-27, ticket 23**, for `ref` alone — and NOT from `bind`, which is where the sentence
+above is wrong: that walk runs on the COMMIT, a frame before the paint, so a row unconsigned there
+is the ordinary case of an element that has not arrived yet. Each adapter calls
+`TokenModel.rowPainted` from the hook that runs once refs have attached. `className` and `style`
+get no diagnostic: their loss is a row that looks wrong, this one is a row the editor cannot use.
 
 **3. A control a kind paints must call `useControlRef()`, or it is document content.** P11 shipped
 believing atomicity was automatic; measured, **four of the seven** atomic kinds had no control root,
@@ -63,6 +68,9 @@ contenteditable is a legitimate thing to edit, which is exactly why `KEYBOARD_OW
 (`SelectionDriver.ts:327`). The gap that IS ours is that every consumer writes `Atomic` themselves.
 It is six lines and the showcase proved the shape; shipping it beside `useControlRef` costs one
 export and deletes a class of "I forgot on one of the seven".
+**Shipped 2026-08-27, ticket 24**: `Atomic` from `@markput/react`, with the showcase's own copy
+deleted so the shape has one home. No Vue twin — that adapter publishes no `useControlRef` at all,
+which is P12's gap (ticket 26).
 
 **4. An option whose body a keystroke cannot reach must seed it, and "atomic" was the wrong word for
 that class.** The rule as written is *an atomic kind's `/` entry must carry `menu.text`*, and the

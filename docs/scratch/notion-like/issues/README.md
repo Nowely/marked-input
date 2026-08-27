@@ -22,14 +22,14 @@ Two generations of tickets live here.
 | --- | --- | --- |
 | [01](01-row-start-anchoring.md) | A markup cannot be anchored to the start of a row | resolved (P1) |
 | [02](02-variadic-placeholders.md) | No repeatable placeholder, so no table structure | resolved (P9) |
-| [03](03-row-node-not-nameable.md) | A consumer cannot name a Row | needs-triage — half landed; `Store` is still in neither adapter's barrel |
+| [03](03-row-node-not-nameable.md) | A consumer cannot name a Row | resolved (P1 + T-C) |
 | [04](04-bare-mention.md) | A mention must be delimited; bare `@Name` is impossible | needs-triage — untouched, neither sketch taken |
 | [05](05-per-item-rows.md) | One separator per editor, so a list item cannot be a row | resolved (P2) |
 | [06](06-repeats-nest-instead-of-continuing.md) | A row-level markup re-matches inside its own slot | resolved (P1) |
 | [07](07-closing-literal-newline.md) | A closing literal may not begin with a newline | resolved (P1) |
 | [08](08-soft-breaks-are-invisible.md) | A soft break is invisible | needs-triage — representation answered, visibility half rests on a corrected grep |
 | [09](09-frontmatter-only-at-offset-zero.md) | A `\n`-delimited fence matches only at offset 0 | resolved (P1) |
-| [10](10-controllers-are-not-selectable.md) | `useMarkput(s => s.rows)` does not compile | needs-triage |
+| [10](10-controllers-are-not-selectable.md) | `useMarkput(s => s.rows)` does not compile | resolved (T-C) |
 | [11](11-overlay-inserts-one-markup.md) | An overlay can insert only its own markup | resolved (P7) |
 
 ## What the build left open
@@ -47,8 +47,8 @@ Two generations of tickets live here.
 | [20](20-rowspec-group.md) | `RowSpec.group` | needs-triage | THE ticket for it — three wants, and the threshold is a fourth |
 | [21](21-table-gestures.md) | The table's own gestures | needs-triage | Header-only seed, a dead Tab at the last cell, no escape for the delimiter |
 | [22](22-continues-carries-no-depth.md) | No option can say "Enter opens a CHILD of this row" | needs-triage | Notion's toggle entry; costed against the code in the Fog |
-| [23](23-row-component-contract-is-silent.md) | A row component can drop `ref`/`className`/`style` | needs-triage | Proposal: one `reportBadProp` when a mounted row is never consigned |
-| [24](24-ship-the-atomic-wrapper.md) | Every consumer writes `Atomic` themselves | needs-triage | Six lines and one export, but it is published surface |
+| [23](23-row-component-contract-is-silent.md) | A row component can drop `ref`/`className`/`style` | resolved | Taken for `ref` alone, from the adapters' post-paint hook — `bind` runs a frame too early to ask |
+| [24](24-ship-the-atomic-wrapper.md) | Every consumer writes `Atomic` themselves | resolved | Shipped from `@markput/react` and the showcase's copy came out; the Vue twin waits on 26 |
 | [25](25-published-type-corrections.md) | Two published types are wrong at the boundary | needs-triage | `OverlayHandler.ref`, `MarkedInputProps.Span` |
 | [26](26-vue-showcase-p12.md) | The showcase's net is single-framework | ready-for-human | P12; every adapter-sensitive fix ships half-measured until it lands |
 | [27](27-four-missing-affordances.md) | Gutter `+`, "Turn into", `/` menu sections and icons, selection toolbar | needs-triage | Four affordances the record groups under one verdict: not before 12, 13 and 16 |
@@ -60,7 +60,7 @@ Two generations of tickets live here.
 | [33](33-nothing-is-measured-at-document-scale.md) | Row-verb runtime and caret ergonomics are unmeasured | needs-triage | One number exists: ~1.5 ms per `dragover` at 4000 rows |
 | [34](34-rot-guards-do-not-cover-prose.md) | The rot guards stop at fenced code | ready-for-agent | Prose backticks unchecked; `CONTEXT.md`'s avoid-list unenforced |
 | [35](35-unexercised-clamp-distinction.md) | `rowSelectionText`'s original-vs-clamped distinction | needs-triage | Delete it or pin it; nothing exercises it |
-| [36](36-published-surface-leftovers.md) | Grip `aria-label`, `Store`'s rename TODO, `RowProps.index` | needs-triage | Three published leftovers of the block→row rename |
+| [36](36-published-surface-leftovers.md) | Grip `aria-label`, `Store`'s rename TODO, `RowProps.index` | resolved | "Row options" announced; `Store` keeps its name; `index` kept with its reason |
 | [37](37-softbreak-stays-unbuilt.md) | `softBreak` stays unbuilt | wontfix | Standing deferral; re-open on a case the continuation row cannot carry |
 | [38](38-per-kind-drag-axis.md) | A per-kind drag axis | wontfix | Cross-axis hit-testing is a phase, refused on a measurement |
 | [39](39-notion-package.md) | A published `@markput/notion` package | needs-triage | A move, not a build — blocked on 03, 10, 12 and 25 |
@@ -76,6 +76,11 @@ Two generations of tickets live here.
 - **An arrow jumping over a closed subtree** — the rule now, not a defect (`map.md:929-936`).
 - **`'- [ ] pack'` typed inside a bullet giving `'- - [ ] pack'`**, and row-scoped Home/End inside a
   carved row — reported as surprises and judged correct (`insights.md:180-186`, `map.md:1136-1142`).
+- **A Vue row kind whose component paints no element** — found while closing 23 and FIXED rather
+  than filed: `unwrapEl` trusted a component instance's `$el`, which for a null-rendering component
+  is a Comment, so consigning it threw `tokenElement.removeAttribute is not a function` out of Vue's
+  own patch. Pre-existing, measured at the parent commit, and never exercised because no fixture in
+  either project had such a kind (`90de09e1`).
 - **The 12px drop band** and three P11.6 review findings (`#enterRow`'s `into === 0` fork,
   `RowNode.writeRows`'s placement, `replaceRowSelection`'s docstring) — measured false or fixed as
   prose; `map.md:683-689` records them so they are not re-filed.

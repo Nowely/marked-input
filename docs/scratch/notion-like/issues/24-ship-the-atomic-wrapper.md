@@ -1,7 +1,7 @@
 # Every consumer writes `Atomic` themselves
 
 Type: task
-Status: needs-triage
+Status: resolved — shipped from `@markput/react`; the Vue twin rides with 26 (2026-08-27)
 Blocked by: —
 
 ## Problem
@@ -42,3 +42,26 @@ wrapper is React-only today, so a Vue twin lands with it (see [26](26-vue-showca
 engineering default in AGENTS.md is not to add published surface without a current caller; the
 caller here is every consumer who paints a control, which is a maintainer's call rather than an
 agent's.
+
+## Answer (2026-08-27)
+
+**Shipped:** `Atomic` from `@markput/react`, one `<div>` taking `className` and `useControlRef()`.
+
+**And the showcase's own copy came OUT**, which is what makes it an export rather than a second
+implementation: `options.tsx` imports it now, so the shape has one home. The element is identical,
+so no story snapshot moved — checked, not assumed.
+
+**No Vue twin here, and the reason is not symmetry for its own sake.** `@markput/vue` publishes no
+`useControlRef` at all, so a Vue consumer cannot register a control through the public API and a
+wrapper over a primitive that package does not have would be the wrong half to ship first. That gap
+is P12's, filed as [26](26-vue-showcase-p12.md), which already names Vue's `useControlRef` among
+what it owes.
+
+**On AGENTS.md's "no published surface without a current caller":** the caller is `options.tsx`,
+which now imports it, and the case is the measured one this ticket carries — four of seven atomic
+kinds shipped with no control root, and a click parked a blinking caret in a properties grid where
+every keystroke was swallowed. `useControlRef` stays exported beside it: the hook marks ONE control,
+the component marks a whole interior, and eight of the showcase's call sites are still the former.
+
+Documented at `guides/row-kinds.md` → "Controls inside a row", with a fence the `docs` project
+type-checks against the adapter source.

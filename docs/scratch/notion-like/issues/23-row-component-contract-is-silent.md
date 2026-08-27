@@ -1,7 +1,7 @@
 # A row kind's component can drop `ref`, `className` or `style`, and every cost is silent
 
 Type: task
-Status: needs-triage
+Status: resolved — the proposal taken for `ref` alone, refused for `className`/`style` (2026-08-27)
 Blocked by: —
 
 ## Problem
@@ -49,3 +49,49 @@ non-optional only moves the mistake into `{...props}`."*
 
 That diagnostic catches the dropped `ref` only. Whether a dropped `className` deserves one too — it
 is detectable the same way, from `bind`'s side — is part of the decision.
+
+## Answer (2026-08-27)
+
+**The proposal is taken, in its narrow form: one `reportBadProp`, for the dropped `ref` only.**
+`TokenModel.rowPainted(node)` reads its own consignment registry and reports a row that has no
+element, naming the kind's markup — or `slots.paragraph` for a row with no kind.
+
+**It could not live in `bind`, and that is the correction to the proposal's own reasoning.** `bind`
+runs on the COMMIT, a frame before the paint, so "a consigned row id received no element" is there
+the ordinary case of an element that has not arrived yet — a report from that walk would fire on
+every structural commit. "The component mounted and its ref never fired" is answerable only by the
+caller that rendered it. So the RULE and the CHANNEL stay in core and each adapter hands over the
+one fact core cannot derive, from the hook that runs after refs attach: React's effect, Vue's
+`onMounted`. That is doctrine B.10's shape — stop re-deriving a fact the framework already holds.
+
+**`className` and `style` get no diagnostic.** The line is what the editor can survive: without
+`ref` the row binds to nothing, holds no anchors and the caret cannot resolve into it; without the
+other two the row still works and looks wrong. Detecting a dropped `className` would also mean
+inspecting the consumer's own element after paint, which is a DOM guess about their markup.
+
+**No bookkeeping.** One report per mounted row, not per kind: saying "per kind" takes a Set, and a
+document full of one broken kind is a document whose author is about to fix it.
+
+**The Vue half is a different mistake.** Vue's `RowProps` declares no `ref` at all — the editor's
+ref resolves through the component instance — so the prop cannot be dropped there. What reaches the
+report in Vue is a component that paints no element, and that case used to CRASH: `unwrapEl`
+trusted `$el`, which for a null-rendering component is a Comment, and consigning it threw
+`tokenElement.removeAttribute is not a function` out of Vue's own patch. Pre-existing, measured at
+the parent commit, fixed alongside — such a component now registers nothing, which is the truth
+about it.
+
+**Pins, both seen red.** `TokenModel.rowPainted.spec.ts` for the rule (flip the registry test: 3 of
+4 red). `pages/Base/rowKinds.spec.ts`, which both projects run, for the wiring end to end: deleting
+the React effect and the Vue `onMounted` reddens it in both, `expected [] to deeply equal
+[ Array(1) ]`.
+
+**False positives, measured rather than argued:** the whole browser suite, both frameworks, 113
+files and 2271 tests, emits exactly TWO `[markput]` reports — one per project, both from the test
+that provokes one on purpose.
+
+## What this ticket does NOT close
+
+The `rows`-prop half quoted above is unchanged: a value merely HANDED to the editor whose rows sit
+under a kind that paints no child-rows host still paints without them until an edit touches it.
+`#settleRows` repairs what a WRITE produces, deliberately, and rewriting a consumer's own bytes on
+mount would emit an edit nobody made.
