@@ -35,22 +35,12 @@ import rows from './rows.module.css'
  * A kind's component is a SLOT component: it spreads `ref`, `className` and `style` onto the one
  * element it renders. Dropping the ref leaves the row unbound and the caret cannot resolve into
  * it.
- */
-
-const cls = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(' ')
-
-const CHIP_TONES: ChipTone[] = ['grey', 'red', 'amber', 'green', 'blue', 'purple']
-
-/** A tone the document names wrongly is drawn grey rather than dropping what carries it. */
-const chipTone = (name: string): ChipTone => CHIP_TONES.find(tone => tone === name) ?? 'grey'
-
-/**
+ *
  * A kind whose component paints no `{children}` is an ATOMIC row: its text round-trips and it
- * drags and selects as a row, but nothing it paints is document surface. Every card below is
- * one, because the leaves they render take strings rather than nodes, and Notion's own bookmark,
- * board and properties panel behave the same way. Such a kind wraps its whole interior in ONE
- * {@link Atomic}, which the adapter ships — this page wrote the same six lines by hand until it
- * did.
+ * drags and selects as a row, but nothing it paints is document surface. Every card below is one,
+ * because the leaves they render take strings rather than nodes, and Notion's own bookmark, board
+ * and properties panel behave the same way. Such a kind wraps its whole interior in ONE
+ * {@link Atomic}, which the adapter ships.
  *
  * AND IT MUST BE SEEDED. `/` turns THIS ROW into the chosen kind, so a menu entry with no
  * `menu.text` inserts an EMPTY body — which for an atomic kind is a block that can never be
@@ -59,10 +49,17 @@ const chipTone = (name: string): ChipTone => CHIP_TONES.find(tone => tone === na
  *
  * WHAT THE OPTION API STILL CANNOT EXPRESS, named rather than worked around: after inserting an
  * atomic kind the caret has nowhere to go. An atomic row generates no caret position, and the
- * menu's contract is turn-this-row rather than insert-a-row, so nothing a consumer can write
- * asks for the empty paragraph Notion leaves below such a block. On a one-row document that
- * means the editor has no caret target at all until the user clicks elsewhere.
+ * menu's contract is turn-this-row rather than insert-a-row, so nothing a consumer can write asks
+ * for the empty paragraph Notion leaves below such a block. On a one-row document that means the
+ * editor has no caret target at all until the user clicks elsewhere.
  */
+
+const cls = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(' ')
+
+const CHIP_TONES: ChipTone[] = ['grey', 'red', 'amber', 'green', 'blue', 'purple']
+
+/** A tone the document names wrongly is drawn grey rather than dropping what carries it. */
+const chipTone = (name: string): ChipTone => CHIP_TONES.find(tone => tone === name) ?? 'grey'
 
 /* ── page furniture ─────────────────────────────────────────────────────── */
 

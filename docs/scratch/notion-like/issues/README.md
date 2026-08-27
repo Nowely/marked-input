@@ -47,7 +47,7 @@ Two generations of tickets live here.
 | [20](20-rowspec-group.md) | `RowSpec.group` | needs-triage | THE ticket for it — three wants, and the threshold is a fourth |
 | [21](21-table-gestures.md) | The table's own gestures | needs-triage | Header-only seed, a dead Tab at the last cell, no escape for the delimiter |
 | [22](22-continues-carries-no-depth.md) | No option can say "Enter opens a CHILD of this row" | needs-triage | Notion's toggle entry; costed against the code in the Fog |
-| [23](23-row-component-contract-is-silent.md) | A row component can drop `ref`/`className`/`style` | resolved | Taken for `ref` alone, from the adapters' post-paint hook — `bind` runs a frame too early to ask |
+| [23](23-row-component-contract-is-silent.md) | A row component can drop `ref`/`className`/`style` | resolved | Taken for `ref` alone; re-asked whenever a row's component changes, and the verdict waits a frame so a late element is not accused |
 | [24](24-ship-the-atomic-wrapper.md) | Every consumer writes `Atomic` themselves | resolved | Shipped from `@markput/react` and the showcase's copy came out; the Vue twin waits on 26 |
 | [25](25-published-type-corrections.md) | Two published types are wrong at the boundary | needs-triage | `OverlayHandler.ref`, `MarkedInputProps.Span` |
 | [26](26-vue-showcase-p12.md) | The showcase's net is single-framework | ready-for-human | P12; every adapter-sensitive fix ships half-measured until it lands |
@@ -60,7 +60,7 @@ Two generations of tickets live here.
 | [33](33-nothing-is-measured-at-document-scale.md) | Row-verb runtime and caret ergonomics are unmeasured | needs-triage | One number exists: ~1.5 ms per `dragover` at 4000 rows |
 | [34](34-rot-guards-do-not-cover-prose.md) | The rot guards stop at fenced code | ready-for-agent | Prose backticks unchecked; `CONTEXT.md`'s avoid-list unenforced |
 | [35](35-unexercised-clamp-distinction.md) | `rowSelectionText`'s original-vs-clamped distinction | needs-triage | Delete it or pin it; nothing exercises it |
-| [36](36-published-surface-leftovers.md) | Grip `aria-label`, `Store`'s rename TODO, `RowProps.index` | resolved | "Row options" announced; `Store` keeps its name; `index` kept with its reason |
+| [36](36-published-surface-leftovers.md) | Grip `aria-label`, `Store`'s rename TODO, `RowProps.index` | resolved | "Row options" announced; `Store` keeps its name; `index` kept — as a sibling position, not the ordinal first published |
 | [37](37-softbreak-stays-unbuilt.md) | `softBreak` stays unbuilt | wontfix | Standing deferral; re-open on a case the continuation row cannot carry |
 | [38](38-per-kind-drag-axis.md) | A per-kind drag axis | wontfix | Cross-axis hit-testing is a phase, refused on a measurement |
 | [39](39-notion-package.md) | A published `@markput/notion` package | needs-triage | A move, not a build — blocked on 03, 10, 12 and 25 |

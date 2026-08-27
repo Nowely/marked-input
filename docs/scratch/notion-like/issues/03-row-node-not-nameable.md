@@ -62,3 +62,29 @@ core's own barrel.
 `structure.react.spec.tsx`'s `new Store()`, which is a headless parse harness reaching test-only
 oracles, not consumer code. The last time this grep found something real, the answer was publishing
 `Suggestion`; this time it is `Store` and `MarkInfo`.
+
+### Three follow-ups, answered (2026-08-27)
+
+**The re-exports had no pin, and now `Store` does.** Deleting either line from both barrels left
+`typecheck` and every project green; the only trace was typedoc quietly deleting a page.
+`guides/rows.md`'s controller sample now imports `type Store` and annotates the local, so the `docs`
+project fails with TS2305 if the export goes — seen. `MarkInfo` is still unpinned: no fence names
+the type, and annotating one to name it would be a sample about the type rather than about
+`useMarkInfo`. Left as published surface with no in-repo caller, which is the `api.focus()` rule.
+
+**Indexed access is THE spelling, and an export needs it.** Exporting `Store` does not make
+`useMarkput(s => s.rows)`'s return nameable: the return is `RowController`, which no barrel
+exports, so a library built on markput that re-exports a hook of its own gets `TS2883 — the
+inferred type of 'useRows' cannot be named without a reference to 'RowController'` under
+declaration emit. Reproduced in `packages/react/markput` with a probe. NOT answered by publishing
+the three controller classes: `Store['rows']` already names it, the annotation is what TS2883 asks
+for, and `TokenModel` alone would put ninety-odd members into the published contract. Same
+reasoning as `CSSProperties` above. `guides/rows.md` now says the annotation is optional inside a
+component and not optional on an export.
+
+**`Store`'s generated page names ten types nothing exports** — `ClipboardController`,
+`EditController`, `HistoryModel`, `Host`, `KeyboardController`, `OverlayController`, `PropsModel`,
+`RowController`, `SlotsFeature`, `TokenModel`; only `MarkputHandle` resolves. Accepted, and
+recorded here so the next audit does not re-derive the `MarkInfo` argument from it: the page
+documents a type whose USE is indexed access, and publishing eleven classes to make eleven links
+resolve would widen the contract far past "one selector parameter".

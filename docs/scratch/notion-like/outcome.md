@@ -346,12 +346,17 @@ why in place.
     Ticket: [26](issues/26-vue-showcase-p12.md).
 24. **`RowProps.index` has no reader anywhere in the repo and is kept**, because it is published
     surface with its own generated API page. Measured removable: typecheck 0, suite green.
+    **Answered 2026-08-27, ticket 36**: kept, and both adapters' doc comments now say what for —
+    a sibling position across kinds, explicitly not a list ordinal.
     Ticket: [36](issues/36-published-surface-leftovers.md).
-25. **The grip's `aria-label` still reads "Block options"** when `draggable` is false — user-visible
-    text, so changing it is a behaviour change rather than a rename.
+25. ~~**The grip's `aria-label` still reads "Block options"** when `draggable` is false~~ — user-visible
+    text, so changing it is a behaviour change rather than a rename. **Fixed 2026-08-27, ticket 36**:
+    it reads "Row options"; `Drag.spec.ts` locates the grip by the new label in both projects.
     Ticket: [36](issues/36-published-surface-leftovers.md).
-26. **`Store` carries an open rename TODO** in `store/Store.ts`, and it is published, so renaming it
-    is a public change.
+26. ~~**`Store` carries an open rename TODO** in `store/Store.ts`~~, and it is published, so renaming
+    it is a public change. **Answered 2026-08-27, ticket 36**: the TODO is replaced by the decision
+    not to rename — all four candidate names name the product or the package rather than this
+    object's role, and both adapters now publish `Store` as `useMarkput`'s selector parameter.
     Ticket: [36](issues/36-published-surface-leftovers.md).
 27. **Caret ergonomics at document scale are unmeasured** — atomic tables and code blocks, Tab
     leaving the field, over a document this size.

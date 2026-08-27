@@ -89,6 +89,35 @@ the React effect and the Vue `onMounted` reddens it in both, `expected [] to dee
 files and 2271 tests, emits exactly TWO `[markput]` reports — one per project, both from the test
 that provokes one on purpose.
 
+### Two corrections, both measured (2026-08-27)
+
+**The report was silent on a TURN-INTO, which is the path a consumer takes first.** A row's node
+survives a kind change — its id, its element and its grip are the row's identity and only the kind
+moves underneath — so neither React's `useEffect(…, [tokens, node])` nor Vue's `onMounted` fired
+again, and the mechanism said nothing about the kind the slash menu had just applied. Measured in
+both adapters: mount at `plain`, then `# plain` with a kind whose component paints nothing → the
+row goes blank and zero reports. React's effect now names the resolved component in its deps and
+Vue trades `onMounted` for a post-flush watcher on the same value; both pinned in
+`rowKinds.spec.ts`, seen red with the change reverted.
+
+**The verdict was raised on the wrong frame, and accused correct kinds.** A component that paints
+`null` first and its element on a flip set from its own mount — an SSR guard, a lazy chart, a
+`defineAsyncComponent` — is correct, and both adapters' hooks necessarily run on the element-less
+commit. Measured in both: the `<h1>` was on screen, bound, and the console read "spread `ref` onto
+the one element the component renders" — the one mistake the author had not made, never retracted.
+`rowPainted` now waits a frame and hands back the cancel; a row that is genuinely unbound stays
+unbound for the life of the document, so nothing is lost. A microtask was tried first and silences
+React only.
+
+**The React-shaped mistake had no test.** Both shipped cases provoked the report through a
+component that paints NOTHING, which is Vue's failure mode and the one spelling both frameworks
+share. `rowKinds.react.spec.tsx` now renders a kind that paints a good `<h1>` and drops the `ref` —
+this ticket's own headline — and reddens when the report is silenced.
+
+**Correction to the counts above:** the core spec now holds 5 tests — the frame and the cancel got
+their own — and removing the registry check reddens 2 of them, not 3 of 4. The report's own
+"exactly TWO `[markput]` reports" census also predates the two new provoking tests.
+
 ## What this ticket does NOT close
 
 The `rows`-prop half quoted above is unchanged: a value merely HANDED to the editor whose rows sit
