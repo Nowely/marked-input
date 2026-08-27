@@ -1,13 +1,12 @@
-import {composeStories} from '@storybook/react-vite'
-import {useState} from 'react'
-import {describe, expect, it} from 'vitest'
-import {render} from 'vitest-browser-react'
+import {beforeEach, describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {ROW_CONTROLS, findEditingHost, getElement} from '../../shared/lib/dom'
+import {ROW_CONTROLS, getElement} from '../../shared/lib/dom'
 import {focusAtEnd} from '../../shared/lib/focus'
+import {composePage, mountEcho} from '../../shared/lib/page'
 import {APOLLO_DOC} from './document'
-import * as NotionStories from './Notion.stories.react'
+import {NOTION_THEME, theme} from './notion'
+import * as NotionStories from './Notion.stories'
 
 /**
  * WHERE THE CARET IS ALLOWED TO BE, driven on the showcase.
@@ -18,21 +17,16 @@ import * as NotionStories from './Notion.stories.react'
  * Nothing below reads an internal — each is a click or a keystroke and the value that came out.
  */
 
-const {Showcase, Empty} = composeStories(NotionStories)
-
-type Story = typeof Showcase
+const {Showcase, Empty} = composePage(NotionStories)
 
 /** The page as a CONTROLLED field, echoing `onChange` back — the mode every value assertion runs in. */
-async function mountControlled(Story: Story, initial?: string) {
-	const latest = {current: initial ?? ''}
-	function Echo() {
-		const [value, setValue] = useState(initial)
-		latest.current = value ?? ''
-		return <Story onChange={setValue} value={value} />
-	}
-	const {container} = await render(<Echo />)
-	return {host: findEditingHost(container), value: () => latest.current}
-}
+const mountControlled = (Story: typeof Showcase, value: string = APOLLO_DOC) => mountEcho(Story, {value})
+
+/** The theme's own variables; see `Notion.spec.ts` for why they go on the document. */
+beforeEach(() => {
+	document.body.classList.add(NOTION_THEME, theme.page)
+	return () => document.body.classList.remove(NOTION_THEME, theme.page)
+})
 
 const ROW = `[class*="Row"]:not(${ROW_CONTROLS}):not(${ROW_CONTROLS} *)`
 

@@ -1,17 +1,14 @@
-import type {MarkedInputProps} from '@markput/react'
-import {composeStories} from '@storybook/react-vite'
-import {useState} from 'react'
-import {describe, expect, it} from 'vitest'
-import {render} from 'vitest-browser-react'
+import {beforeEach, describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {ROW_CONTROLS, editingHost, findEditingHost, getElement, rowsOf} from '../../shared/lib/dom'
+import {ROW_CONTROLS, editingHost, getElement, rowsOf} from '../../shared/lib/dom'
 import {dragRowTo, GRIP} from '../../shared/lib/drag'
 import {focusAtEnd, focusAtOffset, focusAtStart, settle} from '../../shared/lib/focus'
 import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
+import {composePage, mount, mountEcho} from '../../shared/lib/page'
 import {APOLLO_DOC} from './document'
-import {notionOptions} from './notion'
-import * as NotionStories from './Notion.stories.react'
+import {notionOptions, NOTION_THEME, theme} from './notion'
+import * as NotionStories from './Notion.stories'
 
 /**
  * THE SHOWCASE, DRIVEN. Every claim below is a gesture a user makes and the value the editor
@@ -24,29 +21,27 @@ import * as NotionStories from './Notion.stories.react'
  * drag, the undo stack — is the editor's own.
  */
 
-const {Showcase, Empty} = composeStories(NotionStories)
-
-type Story = typeof Showcase
-
-async function mount(Story: Story, args: Partial<MarkedInputProps> = {}) {
-	const {container} = await render(<Story {...args} />)
-	return {host: findEditingHost(container)}
-}
+const {Showcase, Empty} = composePage(NotionStories)
 
 /**
  * The page as a CONTROLLED field, echoing every `onChange` back into `value` — the mode where the
- * tree has not moved when a verb returns, and the one every value assertion below runs in.
+ * tree has not moved when a verb returns, and the one every value assertion below runs in. It
+ * mounts the story's ARGS rather than the story, so the page furniture the decorator draws is not
+ * part of what any assertion sees.
  */
-async function mountControlled(Story: Story, initial: string) {
-	const latest = {current: initial}
-	function Echo() {
-		const [value, setValue] = useState(initial)
-		latest.current = value
-		return <Story onChange={setValue} value={value} />
-	}
-	const {container} = await render(<Echo />)
-	return {host: findEditingHost(container), value: () => latest.current}
-}
+const mountControlled = (Story: typeof Showcase, value: string) => mountEcho(Story, {value})
+
+/**
+ * The page's own theme, which its story decorator carries and `mountEcho` does not: the token
+ * declarations a computed-colour assertion reads, and the typography every geometric one does — a
+ * row drawn at the browser's default line height is shorter than the 24px grip that hangs beside
+ * it. It goes on the DOCUMENT rather than on a wrapper because the overlay is a fixed-position
+ * element that may sit outside the editor entirely.
+ */
+beforeEach(() => {
+	document.body.classList.add(NOTION_THEME, theme.page)
+	return () => document.body.classList.remove(NOTION_THEME, theme.page)
+})
 
 /**
  * The row element reading exactly `text`, at any depth in document order — a nested row is not a
@@ -81,6 +76,10 @@ const cellsOf = (host: HTMLElement): HTMLElement[] => [
  * The TEXT NODE reading `text` inside `element` — what a hand-built `Range` endpoint takes, where
  * `rowAt` and its neighbours answer the element around it. A kind that paints furniture beside its
  * body (a toggle's arrow, a to-do's box) has no single child to reach for.
+ *
+ * IT IS ALSO WHAT A PLAIN ROW NEEDS, which `.firstChild.firstChild` looked like it answered: Vue
+ * gives a `v-for` its own Fragment, so a row's first child there is the fragment's empty text
+ * anchor and the walk landed on nothing. The two frameworks name the same node through this.
  */
 const textReading = (element: HTMLElement, text: string): Text => {
 	const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
@@ -901,9 +900,9 @@ describe('the keymap on the showcase kinds', () => {
 	it('writes no bytes of a frozen row a text selection ends on', async () => {
 		const {host, value} = await mountControlled(Showcase, 'lead sentence\n@toc\nSection\n@end\nafter')
 		await focusAtStart(rowAt(host, 'lead sentence'))
-		const lead = rowAt(host, 'lead sentence').firstChild?.firstChild
+		const lead = textReading(rowAt(host, 'lead sentence'), 'lead sentence')
 		const frozen = host.querySelector<HTMLElement>('[class*="tableOfContents"]')
-		if (!(lead instanceof Text) || !frozen) throw new Error('the page painted no paragraph text or no toc')
+		if (!frozen) throw new Error('the page painted no toc')
 
 		window.getSelection()?.setBaseAndExtent(lead, 5, frozen, 0)
 		await settle()
@@ -924,8 +923,7 @@ describe('the keymap on the showcase kinds', () => {
 		const {host, value} = await mountControlled(Showcase, '▸ head\n\tbody\nafter')
 		await focusAtStart(toggleStarting(host, 'head'))
 		const head = textReading(toggleStarting(host, 'head'), 'head')
-		const next = rowAt(host, 'after').firstChild?.firstChild
-		if (!(next instanceof Text)) throw new Error('the page painted no row text')
+		const next = textReading(rowAt(host, 'after'), 'after')
 
 		// The range a triple-click of the closed toggle makes: its own line, plus the body it hides.
 		window.getSelection()?.setBaseAndExtent(head, 0, next, 0)
@@ -948,9 +946,8 @@ describe('the keymap on the showcase kinds', () => {
 	it('leaves a collapsed toggle its hidden body when a row cover is deleted', async () => {
 		const {host, value} = await mountControlled(Showcase, 'before\n▸ head\n\tbody\nafter')
 		await focusAtStart(rowAt(host, 'before'))
-		const first = rowAt(host, 'before').firstChild?.firstChild
-		const next = rowAt(host, 'after').firstChild?.firstChild
-		if (!(first instanceof Text) || !(next instanceof Text)) throw new Error('the page painted no row text')
+		const first = textReading(rowAt(host, 'before'), 'before')
+		const next = textReading(rowAt(host, 'after'), 'after')
 
 		// An exact cover of the two rows the user can see: the paragraph, and the toggle's own line.
 		window.getSelection()?.setBaseAndExtent(first, 0, next, 0)
@@ -968,9 +965,8 @@ describe('the keymap on the showcase kinds', () => {
 	it('takes an OPEN toggle’s children under the same row cover', async () => {
 		const {host, value} = await mountControlled(Showcase, 'before\n▾ head\n\tbody\nafter')
 		await focusAtStart(rowAt(host, 'before'))
-		const first = rowAt(host, 'before').firstChild?.firstChild
-		const next = rowAt(host, 'after').firstChild?.firstChild
-		if (!(first instanceof Text) || !(next instanceof Text)) throw new Error('the page painted no row text')
+		const first = textReading(rowAt(host, 'before'), 'before')
+		const next = textReading(rowAt(host, 'after'), 'after')
 
 		window.getSelection()?.setBaseAndExtent(first, 0, next, 0)
 		await settle()
@@ -1025,9 +1021,8 @@ describe('the keymap on the showcase kinds', () => {
 	it('takes every visible row a cover spans across two collapsed toggles', async () => {
 		const {host, value} = await mountControlled(Showcase, 'before\n▸ one\n\tb1\n▸ two\n\tb2\nafter')
 		await focusAtStart(rowAt(host, 'before'))
-		const first = rowAt(host, 'before').firstChild?.firstChild
-		const next = rowAt(host, 'after').firstChild?.firstChild
-		if (!(first instanceof Text) || !(next instanceof Text)) throw new Error('the page painted no row text')
+		const first = textReading(rowAt(host, 'before'), 'before')
+		const next = textReading(rowAt(host, 'after'), 'after')
 
 		window.getSelection()?.setBaseAndExtent(first, 0, next, 0)
 		await settle()
@@ -1042,9 +1037,8 @@ describe('the keymap on the showcase kinds', () => {
 	 */
 	it('keeps both hidden bodies when a cover across two collapsed toggles is pasted over', async () => {
 		const {host, value} = await mountControlled(Showcase, 'before\n▸ one\n\tb1\n▸ two\n\tb2\nafter')
-		const first = rowAt(host, 'before').firstChild?.firstChild
-		const next = rowAt(host, 'after').firstChild?.firstChild
-		if (!(first instanceof Text) || !(next instanceof Text)) throw new Error('the page painted no row text')
+		const first = textReading(rowAt(host, 'before'), 'before')
+		const next = textReading(rowAt(host, 'after'), 'after')
 
 		window.getSelection()?.setBaseAndExtent(first, 0, next, 0)
 		await settle()

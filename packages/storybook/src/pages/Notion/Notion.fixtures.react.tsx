@@ -1,27 +1,18 @@
 import type {Option, Suggestion} from '@markput/react'
-import type {ReactNode} from 'react'
+import type {ComponentType, ReactNode} from 'react'
 
 import {CoverBand, mention, NOTION_THEME, notionOptions, PageChrome, Paragraph, theme} from './notion'
+import {TEAM} from './team'
 
 /**
  * The FRAMEWORK HALF of the showcase page: the option array the editor is given, the paragraph
- * slot, and the page furniture the editor sits inside. The story file names these and nothing
- * else, so porting the page to Vue is writing this file again rather than writing the page again.
+ * slot, and the page furniture the editor sits inside. `Notion.stories.ts` names these and nothing
+ * else, and `Notion.fixtures.vue.ts` answers with the same three names.
  *
  * Everything with a markup in it comes from `notion/`. What is added here is what belongs
  * to a PAGE rather than to the block vocabulary: who the `@` picker may name, and the fact that
  * `/` opens the shipped row menu.
  */
-
-/** The people a `@` can name. `meta` is the id the document stores, `value` is what it shows. */
-const TEAM: Suggestion[] = [
-	{value: 'Kara Vance', meta: 'kara.vance'},
-	{value: 'Ines Duarte', meta: 'ines.duarte'},
-	{value: 'Milo Freeman', meta: 'milo.freeman'},
-	{value: 'Priya Raman', meta: 'priya.raman'},
-	{value: 'Tomas Alvarez', meta: 'tomas.alvarez'},
-	{value: 'Platform', meta: 'team-platform'},
-]
 
 /**
  * Trigger lookup — unlike matching — IS order-sensitive: the FIRST option carrying the character
@@ -35,7 +26,7 @@ const TEAM: Suggestion[] = [
  * or inserts.
  */
 const options: Option[] = [
-	{...mention, overlay: {trigger: '@', data: TEAM}},
+	{...mention, overlay: {trigger: '@', data: TEAM satisfies readonly Suggestion[]}},
 	{overlay: {trigger: '/'}},
 	...notionOptions.filter(option => option !== mention),
 ]
@@ -55,5 +46,17 @@ export const fixtures = {
 	options,
 	/** `slots.paragraph` is the row with no kind, and the only fallback. */
 	slots: {paragraph: Paragraph},
-	Page,
+	/**
+	 * The page furniture, as a STORY decorator rather than as a story of its own: the shared spec
+	 * mounts the editor's args directly, so a wrapper that only dresses the page must not be a
+	 * thing the assertions depend on. What the spec DOES need — the theme's own variables — it
+	 * puts on the body itself.
+	 */
+	decorators: [
+		(Story: ComponentType) => (
+			<Page>
+				<Story />
+			</Page>
+		),
+	],
 }

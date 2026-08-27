@@ -8,12 +8,13 @@ import {describe, expect, it} from 'vitest'
  * outside the published API. Two readings say so, and both are mechanical rather than
  * argumentative:
  *
- * 1. every import the showcase makes resolves to `react`, to `@markput/react`, or to a file
- *    inside this directory. Reaching into `@markput/core/src` is the failure this names, and so
- *    is a relative path that climbs out of `pages/Notion/`;
+ * 1. every import the showcase makes resolves to a FRAMEWORK — `react` or `vue` — to that
+ *    framework's published adapter, or to a file inside this directory. Reaching into
+ *    `@markput/core/src` is the failure this names, and so is a relative path that climbs out of
+ *    `pages/Notion/`;
  * 2. the two store members a consumer would reach for if the option API were not enough —
- *    `.edit`, the raw text write, and `.tokens`, the seam — appear nowhere, and neither does
- *    `useMarkput`, the one published door through which either could be reached.
+ *    `.edit`, the raw text write, and `.tokens`, the seam — appear nowhere, and no `useMarkput`
+ *    selector takes the store either, since that is the one published door to both.
  *
  * Sources are read with `import.meta.glob`, not `node:fs`, so the check is a pure Vite read and
  * does not depend on the working directory the runner was started from.
@@ -23,6 +24,11 @@ import {describe, expect, it} from 'vitest'
  * would otherwise have added is `@markput/core`, and that is the very door this file exists to
  * keep shut. What it took instead was publishing `Suggestion` from the adapters, which is where
  * the type belonged.
+ *
+ * IT NOW SCANS TWO PAINTS. The page is framework-free above its components, so the same claim has
+ * to hold for the Vue half — and widening `ALLOWED` by the two Vue names is the whole of what that
+ * took. `@markput/core` is still shut for both, which is the claim: neither adapter's showcase
+ * reaches past its own published surface, and the vocabulary they share imports nothing at all.
  *
  * WHAT IS EXCLUDED AND WHY. `*.stories.*` and `*.spec.*` are the harness — Storybook's own
  * `Meta`/`StoryObj`, Vitest, the browser locators — none of which a consumer ships. Everything
@@ -57,10 +63,10 @@ function specifiersOf(source: string): string[] {
 	return [...stripComments(source).matchAll(/(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g)].map(match => match[1])
 }
 
-const ALLOWED = new Set(['react', '@markput/react'])
+const ALLOWED = new Set(['react', '@markput/react', 'vue', '@markput/vue'])
 
 describe('the Notion showcase is options and components', () => {
-	it('imports the published adapter, React, and its own files — nothing else', () => {
+	it('imports a published adapter, its framework, and its own files — nothing else', () => {
 		const offenders = files.flatMap(([path, source]) =>
 			specifiersOf(source)
 				.filter(specifier => !ALLOWED.has(specifier))
@@ -109,29 +115,59 @@ describe('the Notion showcase is options and components', () => {
 	})
 
 	/**
-	 * AND IT DOES NOT OPEN THE DOOR AT ALL. `useMarkput` is the adapter's published store hook and
-	 * the only way a consumer reaches the store from outside; the member check above catches what
-	 * you do with it, this catches holding it. A destructure — `const {tokens} = useMarkput(s => s)`
-	 * — is invisible to a member grep and is not invisible here.
+	 * AND NO SELECTOR NAMES THE STORE. `useMarkput` is the adapter's published store hook and the
+	 * only way a consumer reaches a store from outside; the member check above catches what you do
+	 * with one, this catches holding it. A destructure — `const {tokens} = useMarkput(s => s)` — is
+	 * invisible to a member grep and is not invisible here.
+	 *
+	 * WHAT IT ADMITS, and why that is a narrowing rather than a hole: `useMarkput(() => …)` takes no
+	 * store at all. It is the Vue paint's bridge from a core signal to Vue reactivity, which React
+	 * gets for free from re-rendering, and it is load-bearing — `Atomic` is a child component with
+	 * unchanged props and a stable slot, so a parent's repaint stops at it and a panel fed a plain
+	 * read is correct once and stale for ever. A selector that takes a PARAMETER is the whole of
+	 * what reaching for a store looks like, and that is what this rejects.
 	 */
-	it('imports no store hook from the adapter', () => {
-		const offenders = files.filter(([, source]) => /\buseMarkput\b/.test(stripComments(source)))
+	it('lets no `useMarkput` selector take a store', () => {
+		const offenders = files.flatMap(([path, source]) =>
+			stripComments(source)
+				.split('\n')
+				.map((text, index) => ({line: index + 1, text}))
+				.filter(entry => /\buseMarkput\s*(?:<[^<>]*>)?\s*\(\s*(?!\(\s*\)\s*=>)/.test(entry.text))
+				.map(entry => `${path}:${entry.line} ${entry.text.trim()}`)
+		)
 
-		expect(offenders.map(([path]) => path)).toEqual([])
+		expect(offenders).toEqual([])
 	})
 
 	/**
 	 * Every assertion above is `toEqual([])`, which an empty input satisfies — so this is the guard
 	 * that the glob resolved something, and that the something is the right something.
 	 *
-	 * The two NAMED files are the load-bearing half. `options.tsx` is the block vocabulary and
-	 * `Notion.fixtures.react.tsx` is the consumer wiring; a narrowed glob or a widened exclusion
-	 * that drops either one turns this file into decoration, and a count alone would not notice.
+	 * The NAMED files are the load-bearing half, and there are five of them because the page has
+	 * two paints and one vocabulary: each adapter's block file, each adapter's consumer wiring, and
+	 * the declarations both read. A narrowed glob or a widened exclusion that drops any one of them
+	 * turns this file into decoration, and a count alone would not notice.
 	 */
-	it('scans the whole showcase, so an empty answer came from looking', () => {
-		expect(files.length).toBeGreaterThan(20)
-		expect(files.some(([path]) => path.endsWith('/options.tsx'))).toBe(true)
-		expect(files.some(([path]) => path.endsWith('/Notion.fixtures.react.tsx'))).toBe(true)
+	it('scans the whole showcase, both paints, so an empty answer came from looking', () => {
+		expect(files.length).toBeGreaterThan(40)
+		const named = [
+			'/notion/vocabulary.ts',
+			'/notion/options.tsx',
+			'/notion/options.vue.ts',
+			'/Notion.fixtures.react.tsx',
+			'/Notion.fixtures.vue.ts',
+		]
+		expect(named.filter(name => !files.some(([path]) => path.endsWith(name)))).toEqual([])
+	})
+
+	/**
+	 * AND THE VOCABULARY IMPORTS NOTHING, which is what lets both projects compile it: a framework
+	 * name reaching that file would make the shared half half-shared, and every rule in it would
+	 * have to be written a second time for the other adapter.
+	 */
+	it('leaves the shared vocabulary with no import at all', () => {
+		const vocabulary = files.find(([path]) => path.endsWith('/notion/vocabulary.ts'))
+		expect(vocabulary && specifiersOf(vocabulary[1])).toEqual([])
 	})
 })
 

@@ -1,5 +1,5 @@
+import type {CoreOption} from '@markput/core'
 import {Store} from '@markput/core'
-import type {Option} from '@markput/react'
 import {describe, expect, it} from 'vitest'
 
 import {rowsToDebugTree} from '../../../../core/src/features/tokens/parser/__testing__/tokensToDebugTree'
@@ -10,7 +10,7 @@ import * as vocabulary from './notion'
 import {fixtures} from './Notion.fixtures'
 
 /**
- * THE STRUCTURAL HALF of the showcase's coverage. `Notion.react.spec.tsx` drives the page and
+ * THE STRUCTURAL HALF of the showcase's coverage. `Notion.spec.ts` drives the page and
  * asserts the VALUE a gesture leaves behind; this file asserts the SHAPE the value parses to, so
  * a change in core that keeps every byte and loses the nesting is caught here and nowhere else.
  *
@@ -737,7 +737,7 @@ const DECLARED = Object.entries(vocabulary).flatMap(([name, exported]) =>
  * a copy of itself with the `@` picker attached. `—` is the option that carries neither, and
  * exists only to own `/`.
  */
-function nameOf(option: Option): string {
+function nameOf(option: CoreOption): string {
 	const found =
 		DECLARED.find(entry => entry.option === option) ??
 		DECLARED.find(entry => entry.option.markup !== undefined && entry.option.markup === option.markup)
@@ -749,7 +749,7 @@ function nameOf(option: Option): string {
  * reports as `descriptor.index` and a snapshot prints as `kind=N`. Matched the same two ways, for
  * the same two reasons.
  */
-function indexOf(option: Option): number {
+function indexOf(option: CoreOption): number {
 	const identical = fixtures.options.indexOf(option)
 	if (identical >= 0) return identical
 	return fixtures.options.findIndex(other => other.markup !== undefined && other.markup === option.markup)
