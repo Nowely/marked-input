@@ -247,13 +247,18 @@ function isKeystroke(window: Window): boolean {
  * deletion.
  *
  * NOTHING CARRYING A {@link Window.pairing} REACHES IT, for the reason {@link isKeystroke} states
- * from the other side plus one: `previous` can only be a one-character deletion or a run of them
- * ({@link HistoryModel.#runGrewAt} is what says so), and the verbs that claim a pairing rewrite
- * whole lines.
+ * from the other side: the two verbs that claim a pairing rewrite whole lines, so their window is
+ * a span with `insertedLength: text.length` and satisfies neither test on the line below.
  *
  * A DELETE AND A KEYSTROKE NEVER JOIN, which is why this is a second function rather than a wider
  * first one: their composition is a REPLACEMENT rather than a splice of one shape, and unwinding a
- * correction wants the deletion and the retyping as separate presses.
+ * correction wants the deletion and the retyping as separate presses. `isDeletion(previous.window)`
+ * is the whole of that rule, and it is load-bearing rather than a shape check that happens to hold:
+ * {@link HistoryModel.#runGrewAt} opens on a KEYSTROKE too, so `previous` is routinely a plain
+ * insertion by the time this is asked. Without it, `'hello'` typed `x` then Backspaced merges —
+ * the FORWARD test reads `next.start === previous.start` off an insertion's point window — into
+ * `{base: 'hello', next: 'hello', window: {start: 5, end: 6}}`, an entry naming an offset past the
+ * end of its own base, whose undo does nothing and whose keystroke is gone.
  */
 function deletedTogether(previous: EditRecord, next: EditRecord): EditRecord | undefined {
 	if (previous.next !== next.base) return undefined

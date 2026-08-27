@@ -245,6 +245,26 @@ describe('history: what is one step', () => {
 		expect(store.tokens.value()).toBe('hello')
 	})
 
+	it('keeps a keystroke and the Backspace that takes it back apart', () => {
+		// The OTHER direction of the rule above, and the one that needs its own case: delete→type is
+		// already refused by `typedTogether`, so the pair above never reaches `deletedTogether` at
+		// all. Here it does — `#runGrewAt` opens on a keystroke as well as on a one-character
+		// delete, so `previous` is a plain insertion — and only `isDeletion(previous.window)` stands
+		// between it and a merge. Without that half the two records compose into a window naming an
+		// offset past the end of its own base: one undo does nothing and the typed character is
+		// gone, with the whole rest of the suite green.
+		const store = mount('hello')
+		type(store, 5, 'x')
+		caretAt(store, 6)
+		store.edit.replace(...anchorsAt(store, 5, 6), '')
+		expect(store.tokens.value()).toBe('hello')
+
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hellox')
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hello')
+	})
+
 	it('keeps a paste out of the typing run it lands in the middle of', () => {
 		// One gesture, one entry, however many characters it carries — and the character typed
 		// right before it does not join it just because the two are adjacent.
@@ -314,6 +334,23 @@ describe('history: what is one step', () => {
 
 		expect(store.history.undo()).toBe(true)
 		expect(store.tokens.value()).toBe('aelloX')
+	})
+
+	it('does not merge a delete run across a value the editor did not write', () => {
+		// The delete side of the same chain guard. `deletedTogether` copied it from
+		// `typedTogether` and not its pin: with the line gone the case above still reddens and this
+		// one is the only thing in the suite that does, so the foreign `a` is undone away in
+		// silence.
+		const store = mountControlled('hello', echoes)
+		caretAt(store, 5)
+		store.edit.replace(...anchorsAt(store, 4, 5), '')
+		store.props.update({value: 'aell'})
+		caretAt(store, 4)
+		store.edit.replace(...anchorsAt(store, 3, 4), '')
+		expect(store.tokens.value()).toBe('ael')
+
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('aell')
 	})
 
 	it('does not merge two characters typed at unrelated places', () => {
