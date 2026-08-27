@@ -1034,3 +1034,69 @@ becomes a ticket here.
     outranking a reading, and the gate with nothing to restore — and two do not: the frozen-row
     write is `replaceRowSelection`'s composition rule and the divider is Enter's ladder. Naming a
     single owner for all five would have been a story, not a fix.
+
+- **The tenth driving session: five defects, and the rule round nine wrote was HALF backwards**
+  (2026-08-27). Every one reproduced in the running showcase first, and every pin was seen to redden
+  by MUTATING its mechanism — seven mutations, seven single reds.
+  - **THE INVERTED RULE, and what survived the inversion.** Round nine wrote "a reading the model CAN
+    make outranks a landing". Inverted: **a pointer claim outranks any reading its own gesture could
+    not have produced — a CARET, wherever it is, and an extent with neither end in the row the
+    pointer landed in — and defers to the one it could, an extent with an END in that row.** What
+    was NOT backwards, and is measured: `document.activeElement === container`. That gate asks whose
+    gesture it is, not whether the model can read something — a control the browser FOCUSES answered
+    the pointer itself — and dropping it reddened `Notion.react.spec`'s three decoration pins at
+    once (`'+ Add a property'`, a view tab, `'Reply…'`). It stays, with the fresh-page arm round nine
+    added: with NO reading at all a control's click is a landing too, since there is nothing to go
+    back to. The gate that WAS backwards is `!domAnchors()` in the click microtask, which read "the
+    user already has a caret" as "there is nothing to claim".
+  - **A CHARACTER AFTER CLICKING A RICH BLOCK LANDED IN THE TITLE — two defects, not one.** Clicking
+    the same chip, toc entry or metric card TWICE: Chromium empties the selection on the second
+    mouse UP, proven by patching `Selection.removeAllRanges` (its only caller was our own paint of
+    the first click), and the `selectionchange` listener read "no focus node" as "nothing to do". The
+    model still held the row, the screen no longer said so, and the next keystroke was answered with
+    the caret Chromium INVENTS at the host's start — `'@title YApollo — Q2 launch plan'`. A
+    `selectionchange` that leaves the document with NO selection is the DOM losing what the model
+    holds, so the stored pair goes back in; only the re-apply, never the release, because releasing
+    BLURS the host and took the board's `Mod+Z` pin red. The second way in is the pointer claim
+    above: a `draggable` card moves no caret and fires no `selectionchange`, so the click is the only
+    arm its claim reaches, and with a caret already in the page the old gate threw it away —
+    `'Apollo Ymoves the collaboration layer'`, three screens from the pointer. 14 of 14 targets green
+    on the running page afterwards.
+  - **A TRIPLE-CLICK ENDING ON FROZEN PRESENTATION DESTROYED IT** (`contentSpan`, `#offFrozen`). The
+    intro paragraph's LAST wrapped line: Chromium ends that range at `(the toc's element, 0)`,
+    `store.rows.selected()` is EMPTY the whole time so round nine's refusal never sees it, and one
+    keystroke took 76 lines to 74 — `@toc` and its first entry gone, the paragraph truncated. TWO
+    halves, and each has its own mutation: `contentSpan` refused the PAIR whenever either edge was
+    inside content, where an edge in a structural RUN must resolve whatever the other edge is doing;
+    and that range's far end is not in a run at all — it resolves to the toc's own first content
+    offset, indistinguishable in the VALUE from the entry of an editable row one line down. Whether
+    a kind paints its own text is a DOM fact, so the edge is moved to the row's own boundary
+    (`{before}`/`{after}`) before `contentSpan` sees it. The row selection is still read from the
+    ORIGINAL pair, which is what keeps round nine's refusal intact.
+  - **A COLLAPSED TOGGLE LOST ITS HIDDEN BODY** (`#visibleEnd`). A closed toggle RENDERS its children
+    and hides them, so `range.toString()` carries them and the write took them: `'▸ Z'`, 76 lines to
+    75, with nothing on screen having shown what went. The span an edit writes is clipped to the last
+    line the frame PAINTS — `'boxless'` only, since `'absent'` is a race — so the visible half of the
+    selection is still replaced and the invisible half is left alone. The open toggle beside it is
+    unchanged under the same gesture, which is what makes this the collapse and not the selection.
+  - **A FENCE THREW THE CARET BACK INTO ITS BODY** (`#settleCaret`). Type the fence, a line of code
+    and the closing backticks: the model's own post-edit anchor is `{after: row}` and is RIGHT, but a
+    row's DOM boundary DESCENDS to its edge child (`DomModel.#entryOf`), which for a closed body is
+    the last character of the CODE — Chromium read it back, `syncFromDom` stored it, and Enter after
+    it wrote another line inside the fence. `{after: row}` on a raw body travels FORWARD instead
+    (`#recoverCaret`), which opens the trailing row where the fence ends the document. NOT the total
+    trap the brief described: ArrowDown always escaped, measured both mid-document and at the end.
+  - **THE TRIPLE-CLICK IS THE EDITOR'S NOW** (`TokenModel.selectLine`). The platform answers the
+    visual LINE, so the same gesture on the same wrapped row selected a different amount of text
+    depending on where the window edge fell, and its raw range ends on the next row's own element —
+    which is how two of the four defects above were reached. It answers the ROW's content, or the
+    CELL's inside a carved row, and falls back on the block selection where the row paints no text of
+    its own. `keyboard-handling.md`'s claim that a triple-click "is a row selection by every reading
+    this editor has" is true for the first time.
+  - **JUDGED CORRECT AS IT STANDS, both reported as surprises.** Typing `'- [ ] pack'` inside a
+    bullet gives `'- - [ ] pack'`: a row is typed by the bytes at its START, and the second opener is
+    body text — converting would mean the scan re-reads a body as an opener, which is the shape
+    `docs/scratch/token-born-edit/issues/08` rejected. And typing on a divider does NOT mutate it
+    into text: the showcase's own markup is `'---__slot__'` and its component renders `{children}`,
+    so `'---caption'` is still a divider, and the caption is painted and visible (measured: 676×61,
+    `checkVisibility()` true). Both are the consumer's vocabulary doing what it declares.
