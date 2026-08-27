@@ -561,6 +561,37 @@ export class TokenModel {
 	}
 
 	/**
+	 * THE ROW'S OWN CONTENT — what a TRIPLE-CLICK selects, and the reason the editor takes that
+	 * gesture at all.
+	 *
+	 * THE PLATFORM ANSWERS A VISUAL LINE. Measured with no editor loaded and again on the showcase: a
+	 * triple-click inside a wrapped paragraph selects exactly the line under the pointer, so the same
+	 * gesture on the same row selects a different amount of text depending on where the window edge
+	 * falls. Every editor a person has used answers the BLOCK, and every defect the ninth and tenth
+	 * driving sessions found arrived through this gesture — its raw range ends on the next row's own
+	 * element, which is bytes no highlight showed.
+	 *
+	 * THE LINE, not the row's subtree: a parent's own content stops where its first CHILD begins
+	 * ({@link RowNode.slotRange}), and inside a carved row the piece under the pointer is the line —
+	 * the same reading {@link rowOf} makes for every key. So a triple-click in a table cell takes the
+	 * cell, not the whole table line, which is what a person pointing at a cell means.
+	 *
+	 * A ROW WITH NO EDITABLE CONTENT TAKES THE BLOCK SELECTION instead ({@link #selectRow}), which is
+	 * the answer a pointer landing on frozen presentation already gets: the toc's own text has no
+	 * surface, so a content span there would name two boundaries the DOM cannot paint.
+	 */
+	selectLine(): boolean {
+		const anchors = this.#selectionDriver.domAnchors()
+		const found = anchors && this.rowOf(anchors.anchor)
+		if (!found) return false
+		const line = found.cell ?? found.row
+		if (!this.#dom.reachable(untracked(() => entryAnchor(line)))) return this.#selectRow(found.row)
+		const range = untracked(() => line.slotRange())
+		this.selection.select(this.anchorAt(range.start), this.anchorAt(range.end))
+		return true
+	}
+
+	/**
 	 * THE SPAN a row-selection gesture widens to — see {@link rowScope}. `undefined` when the
 	 * gesture has nothing to widen to, which is what leaves the key to the browser.
 	 */
@@ -898,6 +929,7 @@ export class TokenModel {
 			handle: id => this.handle(id),
 			dom: this.#dom,
 			claimRow: origin => this.#claimRow(origin),
+			selectLine: () => this.selectLine(),
 		})
 
 		// THE DOM CLOCK, because where a caret MAY be is a question about the frame the framework

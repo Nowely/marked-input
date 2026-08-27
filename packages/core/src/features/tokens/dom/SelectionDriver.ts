@@ -38,6 +38,12 @@ export type SelectionDriverDeps = {
 	 * declined claim leaves the ordinary DOM sync to run.
 	 */
 	claimRow(origin: Node): boolean
+
+	/**
+	 * THE ROW'S OWN CONTENT, for the one gesture that asks for it — see `TokenModel.selectLine`.
+	 * Answers whether it stored a selection.
+	 */
+	selectLine(): boolean
 }
 
 /**
@@ -428,7 +434,19 @@ export class SelectionDriver {
 		// AFTER the consumer's own handler, which is what the microtask is for: a control that moves
 		// focus somewhere itself has done so by then, and it is `document.activeElement` — not the
 		// element clicked — that this reads.
-		listen(container, 'click', () => {
+		// AND THE EDITOR OWNS THE TRIPLE-CLICK. `detail === 3` is the gesture, and what it selects is a
+		// question about the DOCUMENT rather than about the layout: the platform answers the visual LINE
+		// under the pointer, so on a wrapped row the same gesture takes a different amount of text
+		// depending on where the window edge falls, and its raw range ends on the next row's own element
+		// — bytes no highlight showed and the write path had to be taught twice not to take.
+		//
+		// NOT INSIDE A CONTROL THAT OWNS ITS OWN KEYBOARD: a triple-click in an `<input>` or an editable
+		// island selects that field's text and leaves the document selection alone, so re-reading the
+		// document here would answer with whatever row the caret was in before.
+		listen(container, 'click', event => {
+			const target = event.target
+			const owner = target instanceof Element ? target.closest(KEYBOARD_OWNERS) : null
+			if (event.detail === 3 && (owner === null || owner === container)) this.deps.selectLine()
 			queueMicrotask(() => {
 				// CONSUMED ONLY WHEN IT IS ACTUALLY CLAIMED, and that is measured: this microtask runs
 				// BEFORE the `selectionchange` task, so clearing the field unconditionally STOLE the

@@ -685,5 +685,33 @@ describe('SelectionDriver', () => {
 			expect(store.tokens.selection.anchors()).toBe(held)
 			container.remove()
 		})
+
+		/**
+		 * AND THE TRIPLE-CLICK IS THE EDITOR'S. The platform answers a VISUAL LINE — the same gesture on
+		 * the same row selects a different amount of text depending on where the window edge falls — and
+		 * its raw range ends on the NEXT row's own element, which is bytes no highlight showed. The
+		 * ROW's own content is what every other editor answers and what the write path can address.
+		 */
+		it("takes the row's content on a triple-click", async () => {
+			const {store, container, surfaces} = mountDecoratedRows()
+			await new Promise(resolve => setTimeout(resolve, 0))
+			const text = surfaces[1].firstChild
+			if (!text) throw new Error('the row surface rendered no text node')
+			container.focus()
+			// The platform's own answer, standing in for the wrapped line: one character of the row.
+			window.getSelection()?.setBaseAndExtent(text, 1, text, 2)
+			document.dispatchEvent(new Event('selectionchange'))
+
+			surfaces[1].dispatchEvent(new MouseEvent('click', {bubbles: true, detail: 3}))
+			await Promise.resolve()
+
+			const anchors = store.tokens.selection.anchors()
+			const roots = store.tokens.nodes()
+			// '- one\n- two': row 1's body runs from 8 to 11.
+			expect(anchors && offsetOfAnchor(roots, anchors.anchor)).toBe(8)
+			expect(anchors && offsetOfAnchor(roots, anchors.head)).toBe(11)
+			expect(store.rows.selected()).toHaveLength(1)
+			container.remove()
+		})
 	})
 })
