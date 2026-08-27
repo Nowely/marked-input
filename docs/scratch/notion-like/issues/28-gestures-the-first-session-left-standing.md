@@ -1,7 +1,7 @@
 # Four gestures the first driving session reported that no commit since names
 
 Type: task
-Status: needs-triage — 1 and 3 answered, 2 refuted and its neighbour fixed, 4 still open
+Status: needs-triage — 1 and 3 answered, 2 refuted and its neighbour fixed, 4 re-driven and narrowed to deletions
 Blocked by: —
 
 > `outcome.md:491-497` lists what the first session's "thirteen things felt wrong" left standing
@@ -83,7 +83,29 @@ saying so, which is the whole of what "a dead key" meant. Releasing the key to t
 was NOT taken: it is the split ADR-0002 measured as a defect, where Tab indents on one row and
 moves focus on the next.
 
-**4. Undo granularity — STILL OPEN, and it now has one measured cause and one honest bound.**
+**4. Undo granularity — RE-DRIVEN 2026-08-27 in review, and the reported symptom is REFUTED.**
+The re-drive the section below said was the next step was not done in the pass itself; it is done
+now, against the current stack, driving real `beforeinput` and `keydown` through a mounted store:
+
+```
+type 'hello'                                   → 1 undo
+type 'undoubtedly'  (eleven characters)        → 1 undo
+type 'hello', move the caret, type 'xy'        → 2 undos
+type 'hello', Backspace, Backspace, type 'p'   → 4 undos
+```
+
+*"Splitting mid-word"* does NOT reproduce. A typing run of ANY length is one entry — the
+eleven-character shape that used to come off in six presses is the defect `HistoryModel`'s
+run-openness state already fixed, and a caret move correctly closes the run.
+
+What is left is the fourth line: a DELETION does not coalesce. Each Backspace is its own entry, and
+a typing run after one starts fresh — four gestures, four undos, where the same four as pure typing
+would be one. That is the most plausible remaining source of *"57 undos to unwind ~30 gestures"*,
+and it is a POLICY question with a name now rather than an unmeasured complaint.
+
+The old text follows, and its first paragraph still holds:
+
+
 `2cd50c8d` removed a class of step that was pure noise: a refused Backspace at a raw-body boundary
 occupied an entry, so a user unwinding that gesture spent two undos where the document moved once.
 How much of "57 undos to unwind ~30 gestures" that class accounts for is unmeasured, and the rest
