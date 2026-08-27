@@ -128,6 +128,24 @@ selection shown is not the selection that will be replaced), filed as
 never announced either. With the keydown site gone the two doors agree, which is what "one
 mechanism" meant.
 
+**TWO OF `replaceRowSelection`'S THREE ARMS ARE UNPINNED, and I could not write the pin.** Only the
+first (`holdsFrozenRow(anchors)`) is exercised by any test; silencing the other two to a bare
+`return true` is invisible to the whole suite. I drove eight shapes looking for a witness — a sweep
+from a plain row into a fence interior, a row selection over a carved table row, over a fence whole,
+over a frozen card with its surface removed, a sweep ENDING exactly at a frozen row's start, an
+empty frozen body, a first-row-to-frozen-end selection, and a sweep from a plain row into a frozen
+card — and every one that touches a frozen row at all lands on ARM 1. That follows from
+`holdsFrozenRow`'s overlap test being asked of the RAW pair: a resolution can only cover a frozen
+line the pair already touches, except at an exact boundary, and the boundary case was driven and
+does not reach it either.
+
+So the honest state is: arm 2 may be DEAD in the current model, and arm 3 is reachable only through
+a shape none of these fixtures makes. Their comment cites defects that WERE measured, at a time the
+model has since changed under. Not deleted — the class they guard is a page-scale delete from one
+click and one keystroke — and not pinned, because a pin against a shape I cannot construct would be
+the §A.12 failure mode again. Whoever takes it should drive the SHOWCASE, where a frozen row is a
+real atomic kind rather than a fixture with its surface removed.
+
 **NOT DONE, recorded so nobody re-measures it blind:** `state.refused` is never cleared, so a dead
 refusal is re-measured by `boxOf` on every geometry bump and keeps an `opacity: 0` element mounted
 for the editor's lifetime. The rAF loop bumps `geometry` only when a box actually moved, so the

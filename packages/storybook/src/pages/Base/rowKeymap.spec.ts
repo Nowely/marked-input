@@ -220,6 +220,27 @@ describe('the row keymap', () => {
 		expect(Math.round(tint.width)).toBe(Math.round(row.width))
 		expect(window.getComputedStyle(painted!).backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
 
+		// AND IT IS ACTUALLY PAINTED, which every assertion above is blind to: `.RowRefused` ships
+		// at `opacity: 0` and the ONE thing that ever makes it visible is its keyframe run. Deleting
+		// that line left an element with the right box and the right colour, permanently invisible,
+		// and both projects stayed green — the §A.12 failure mode, a pin asserted against a shape
+		// the mechanism does not govern. Asked through the animation itself rather than by sampling
+		// opacity, so the assertion does not race the 420ms run.
+		//
+		// The declared consequence: an environment that suppresses CSS animations turns the whole
+		// channel off, silently. That is fail-safe rather than fail-noisy, and it is why the tint is
+		// the announcement rather than the only one a consumer could build — `state.refused` is
+		// published.
+		const run = painted!.getAnimations()
+		expect(run).toHaveLength(1)
+		expect(run[0].playState).toBe('running')
+
+		// AND IT ENDS. Nothing clears `state.refused`, so one run of the animation is the whole of
+		// the tint's visible life: a fade that never finished would leave a red block sitting on the
+		// last-refused row for the rest of the session.
+		await run[0].finished
+		expect(window.getComputedStyle(painted!).opacity).toBe('0')
+
 		// A SECOND PRESS SAYS IT AGAIN: the element is re-mounted, so the animation starts over
 		// instead of resting where the first run left it.
 		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
