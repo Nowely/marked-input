@@ -38,7 +38,7 @@ Two generations of tickets live here.
 | --- | --- | --- | --- |
 | [12](12-upward-mouse-selection.md) | An upward mouse drag re-places the caret instead of extending the selection | ready-for-human | **The shipping blocker.** No backward mouse selection, and no test in the suite can see it |
 | [13](13-collapsed-body-lost-on-a-row-cover.md) | A selection covering a collapsed toggle whole deletes its hidden body | resolved | `replaceRows` asks `#visibleEnd` too; the cut's clipboard asymmetry is declared |
-| [14](14-arrowdown-skips-an-empty-row.md) | ArrowDown skips an empty row | ready-for-agent | The line box has a height and no width; the mirror direction was never measured |
+| [14](14-arrowdown-skips-an-empty-row.md) | ArrowDown skips an empty row | resolved | Not the direction and not the width: the caret's own visit appended a zero-length `Text` |
 | [15](15-opener-prefix-is-unchecked.md) | Two kinds may share an opener PREFIX | resolved | `shadowedRowKinds` drops a closed kind whose opener extends another's; the recorded condition was wrong twice |
 | [16](16-trailing-paragraph.md) | An atomic row leaves the caret nowhere to go | ready-for-human | The top open DECLARED item; a published-contract decision, not a task |
 | [17](17-cross-row-paste-is-spliced-raw.md) | A paste whose span crosses two rows is spliced raw | needs-triage | `splitPlan` refuses deliberately; widening it is a contract change |

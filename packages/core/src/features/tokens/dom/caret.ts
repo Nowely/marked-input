@@ -96,12 +96,20 @@ function isScroller(element: HTMLElement): boolean {
 export type CaretBoundary = {node: Node; offset: number}
 
 /**
- * Resolve a character offset within a structural text surface to a concrete
- * (Text, offset) pair. If the surface contains no Text node, append an empty
- * one and target it. Used by `TokenHandle.caretBoundary` — needs the
- * empty-Text fallback so freshly-mounted empty surfaces still accept a caret.
+ * Resolve a character offset within a structural text surface to a concrete boundary. Used by
+ * `TokenHandle.caretBoundary`.
+ *
+ * AN EMPTY SURFACE ANSWERS ITSELF, and that is not a detail of shape. It used to have an empty
+ * `Text` appended to it so a freshly-mounted empty surface would accept a caret — and MEASURED,
+ * with no editor in the page: a zero-length `Text` inside an empty inline-block defeats Chromium's
+ * own vertical caret movement in BOTH directions, exactly as if the line box were not there
+ * (`'one', '', 'three', '', 'five'`: ArrowDown visits 2, 4 and ArrowUp visits 2, 0, where the same
+ * markup without the node visits every row). So the caret's own first visit to a blank row was what
+ * made that row unreachable by an arrow key ever after. The surface itself is an anchorable
+ * boundary and needs nothing added to it; `caretBoundary` already answers element boundaries for a
+ * token with no surface at all.
  */
-export function findTextBoundary(surface: HTMLElement, offset: number): {node: Text; offset: number} {
+export function findTextBoundary(surface: HTMLElement, offset: number): CaretBoundary {
 	const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
 	let remaining = Math.max(0, offset)
 	let node = nextText(walker)
@@ -110,9 +118,9 @@ export function findTextBoundary(surface: HTMLElement, offset: number): {node: T
 		remaining -= node.length
 		node = nextText(walker)
 	}
-	const text = surface.firstChild instanceof Text ? surface.firstChild : document.createTextNode('')
-	if (!text.parentNode) surface.append(text)
-	return {node: text, offset: text.length}
+	const text = surface.firstChild
+	if (text instanceof Text) return {node: text, offset: text.length}
+	return {node: surface, offset: surface.childNodes.length}
 }
 
 /**

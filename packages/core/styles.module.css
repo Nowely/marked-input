@@ -112,6 +112,12 @@
    and no reading. `min-height` is load-bearing and measured: an empty inline-block at the line's own
    height is still stepped over, and so are `::after` content, a ZWSP and `min-height` on the row.
 
+   THE SURFACE HAS TO STAY CHILDLESS FOR ANY OF THIS TO HOLD, which is a constraint on the caret
+   layer rather than on this file: a zero-length `Text` inside the box defeats the walk in BOTH
+   directions, measured with no editor in the page, though the box itself is unchanged at 0x16 and
+   `:empty` still matches. `findTextBoundary` therefore answers an empty surface with the surface
+   itself rather than appending one to it.
+
    THE SELECTOR IS "THIS ROW PAINTS NOTHING BUT ITS OWN EMPTY TEXT", and every looser spelling was
    measured wrong on the showcase's 75 rows:
 

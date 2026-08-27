@@ -198,6 +198,53 @@ describe('an empty row', () => {
 		expect(visited).toEqual([6, 5, 4, 3, 2, 1, 0])
 	})
 
+	/**
+	 * THE MIRROR DIRECTION, measured rather than assumed. The rule above was pinned upward only,
+	 * and the record read the remaining downward reports as the line box working in one direction —
+	 * it does not: with the same eight rows ArrowDown visits every one of them too.
+	 */
+	it('is reached by the arrow key that walks DOWN past it', async () => {
+		const {host} = await mountEcho(Default, {value: LADDER, separator: '\n'})
+		const rows = rowsOf(host)
+
+		await focusAtEnd(rows[0])
+		const visited: number[] = []
+		for (let step = 0; step < 7; step++) {
+			await userEvent.keyboard('{ArrowDown}')
+			await settle()
+			visited.push(rows.indexOf(rowOfCaret(host)))
+		}
+
+		expect(visited).toEqual([1, 2, 3, 4, 5, 6, 7])
+	})
+
+	/**
+	 * AND THE CARET'S OWN VISIT MUST NOT COST THE ROW ITS LINE. A blank row a user has just made
+	 * with Enter is a row the caret has been in, and placing a caret in an empty surface used to
+	 * append a zero-length `Text` to it — which defeats the line box as thoroughly as having no box
+	 * at all: measured with no editor in the page, the same eight rows go from visiting every row
+	 * to ArrowDown 2, 4 and ArrowUp 2, 0. So the row was arrowed over ever after, and only the row
+	 * a document arrived with was reachable.
+	 */
+	it('is reached by an arrow after the caret has already been in it', async () => {
+		const {host} = await mountEcho(Default, {value: 'one\nthree', separator: '\n'})
+
+		await focusAtEnd(rowsOf(host)[0])
+		await userEvent.keyboard('{Enter}')
+		await settle()
+
+		const rows = rowsOf(host)
+		await focusAtEnd(rows[0])
+		await userEvent.keyboard('{ArrowDown}')
+		await settle()
+		expect(rows.indexOf(rowOfCaret(host))).toBe(1)
+
+		await focusAtEnd(rows[2])
+		await userEvent.keyboard('{ArrowUp}')
+		await settle()
+		expect(rows.indexOf(rowOfCaret(host))).toBe(1)
+	})
+
 	it('takes the character typed into it once the arrow stops there', async () => {
 		const {host, value} = await mountEcho(Default, {value: LADDER, separator: '\n'})
 
