@@ -423,10 +423,23 @@ describe('TokenModel', () => {
 					{markup: '---\n__value__\n---', row: {Component: 'div'}},
 					{markup: '---__slot__', row: {Component: 'hr'}},
 				],
-				defaultValue: 'a\n---\nb',
+				// The document that FUSES, so the drop is what the assertion reads. `'a\n---\nb'`
+				// cannot exhibit it: with one `'---'` the closed kind finds no closing literal and
+				// declines the row whether or not it was dropped, so option 1 wins either way and
+				// the pin held down the report alone.
+				defaultValue: 'a\n---\nb\nc\nd\n---\ne',
 			})
 			store.host.container(document.createElement('div'))
 
+			expect(treeShape(store.tokens.nodes()).map(node => node.content)).toEqual([
+				'a',
+				'---',
+				'b',
+				'c',
+				'd',
+				'---',
+				'e',
+			])
 			const rule = store.tokens.nodes()[1]
 			if (rule.kind !== 'row') throw new Error('expected a row')
 			expect(rule.option()).toBe(1)
