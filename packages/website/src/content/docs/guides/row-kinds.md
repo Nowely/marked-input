@@ -54,7 +54,10 @@ keeps its index.
   is what your component gets as children.
 - `__value__` — the body is **raw** and never re-parsed. Enter inside it is a literal newline rather
   than a row split, and a separator inside it is that markup's own text, not a boundary — which is
-  how a fenced code block or a frontmatter frame reads as ONE row across several visual lines.
+  how a fenced code block or a frontmatter frame reads as ONE row across several visual lines. The
+  keystroke that CLOSES such a body leaves the caret in the row AFTER it — one is opened when the
+  body ends the document — rather than at the end of the body: the position after the closing
+  literal is not one the row can hold, and a person who has just closed a block continues below it.
 
 ```tsx value uses=CodeFence
 {markup: '```__meta__\n__value__\n```', row: {Component: CodeFence}}
@@ -206,9 +209,16 @@ keyboard stays dead until the user clicks back into the text.
 
 A control that is only PRESENTATION — a bullet glyph, a card, a properties grid — takes no focus,
 and a click on one names no position the editor can use: the browser either leaves its caret inside
-the frozen element or, for a `draggable` one, collapses it to the start of the editing host. Either
-way the row the pointer was IN is the row the caret gets, at that row's own entry. A click never
-reaches a neighbouring row.
+the frozen element or, for a `draggable` one, leaves the selection exactly where it was and moves
+nothing at all. Either way the row the pointer was IN is the row the caret gets, at that row's own
+entry. A click never reaches a neighbouring row.
+
+THE POINTER OUTRANKS A CARET ITS OWN GESTURE COULD NOT HAVE MOVED, which is what makes that true on
+a page you have already typed in: a caret three rows up is a reading the editor CAN make and it is
+not one this press produced, so the landing wins. What still outranks a landing is an EXTENT with an
+end in the row you pressed in — a sweep that began there and was dragged away is yours, and no claim
+can re-derive it. A control that takes FOCUS is not a landing at all: it answered the pointer itself,
+so the caret you were holding stays where it was and your next character goes there.
 
 A row that paints none of its own text — an atomic kind, the whole card — holds no entry to claim,
 so a click on it SELECTS the row instead: the selection is written across the row's own element, the
